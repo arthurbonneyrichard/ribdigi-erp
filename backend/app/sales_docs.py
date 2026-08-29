@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json, require_honest_narrative
 from app.inventory import apply_stock_change
 from app.doc_numbers import (
     next_credit_note_number,
@@ -135,10 +136,10 @@ async def serialize_quotation(db: AsyncSession, quote: m.SalesQuotation) -> dict
         "quotation_number": quote.quotation_number,
         "customer_id": quote.customer_id,
         "status": quote.status,
-        "subtotal": float(quote.subtotal),
-        "tax_amount": float(quote.tax_amount),
-        "discount_amount": float(quote.discount_amount),
-        "total_amount": float(quote.total_amount),
+        "subtotal": money_json(quote.subtotal),
+        "tax_amount": money_json(quote.tax_amount),
+        "discount_amount": money_json(quote.discount_amount),
+        "total_amount": money_json(quote.total_amount),
         "valid_until": quote.valid_until,
         "notes": quote.notes,
         "rejection_reason": quote.rejection_reason,
@@ -152,12 +153,12 @@ async def serialize_quotation(db: AsyncSession, quote: m.SalesQuotation) -> dict
                 "id": i.id,
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
-                "quantity": float(i.quantity),
+                "quantity": money_json(i.quantity),
                 "unit_id": i.unit_id,
-                "unit_price": float(i.unit_price),
-                "tax_rate": float(i.tax_rate),
-                "discount": float(i.discount),
-                "line_total": float(i.line_total),
+                "unit_price": money_json(i.unit_price),
+                "tax_rate": money_json(i.tax_rate),
+                "discount": money_json(i.discount),
+                "line_total": money_json(i.line_total),
             }
             for i in items
         ],
@@ -291,9 +292,7 @@ async def reject_quotation(
         quote.status = "expired"
         await db.flush()
         raise HTTPException(status_code=409, detail="Quotation has expired")
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="rejection reason is required")
+    reason_s = require_honest_narrative(reason, label="rejection reason")
     quote.status = "rejected"
     quote.rejection_reason = reason_s
     quote.updated_at = datetime.utcnow()
@@ -631,9 +630,7 @@ async def cancel_order(
     user_id: str | None = None,
     reason: str | None = None,
 ) -> m.SalesOrder:
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="cancel reason is required")
+    reason_s = require_honest_narrative(reason, label="cancel reason")
     order = await get_order(db, tenant_id, order_id)
     if order.status not in ORDER_CANCELABLE:
         raise HTTPException(status_code=409, detail=f"Cannot cancel order in status {order.status}")
@@ -787,9 +784,7 @@ async def cancel_return(
     return_id: str,
     reason: str | None = None,
 ) -> m.SalesReturn:
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="cancel reason is required")
+    reason_s = require_honest_narrative(reason, label="cancel reason")
     ret = await get_return(db, tenant_id, return_id)
     if ret.status != "draft":
         raise HTTPException(status_code=409, detail="Only draft sales returns can be cancelled")

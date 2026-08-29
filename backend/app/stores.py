@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import require_honest_narrative
 from app.inventory import allocate_unlocated_stock, apply_warehouse_stock_change, get_or_create_warehouse_stock
 
 TRANSFER_EDITABLE = {"draft"}
@@ -710,9 +711,7 @@ async def reject_transfer(
             # If neither store has a manager assigned, any store_manager may reject
             if from_store.manager_id or to_store.manager_id:
                 raise HTTPException(status_code=403, detail="Not an assigned store manager for this transfer")
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="rejection reason is required")
+    reason_s = require_honest_narrative(reason, label="rejection reason")
     transfer.status = "cancelled"
     transfer.rejected_by = user_id
     transfer.rejection_reason = reason_s
@@ -839,9 +838,7 @@ async def cancel_transfer(
     transfer = await get_transfer(db, tenant_id, transfer_id)
     if transfer.status not in TRANSFER_CANCELLABLE:
         raise HTTPException(status_code=409, detail=f"Cannot cancel transfer in status {transfer.status}")
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="cancel reason is required")
+    reason_s = require_honest_narrative(reason, label="cancel reason")
 
     if transfer.status == "in_transit":
         items = await list_transfer_items(db, tenant_id, transfer_id)

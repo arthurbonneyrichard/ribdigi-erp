@@ -1226,7 +1226,12 @@ export default function Page() {
                 </option>
               ))}
           </select>
-          <input value={creditLimit} onChange={(e) => setCreditLimit(e.target.value)} placeholder="Credit limit" />
+          <input
+            value={creditLimit}
+            onChange={(e) => setCreditLimit(e.target.value)}
+            placeholder="Credit limit"
+            aria-label="Customer credit limit"
+          />
           <input
             value={paymentTermsDays}
             onChange={(e) => setPaymentTermsDays(e.target.value)}

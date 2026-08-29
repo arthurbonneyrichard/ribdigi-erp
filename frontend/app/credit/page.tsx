@@ -561,6 +561,7 @@ export default function Page() {
               placeholder="Settle FX rate"
               style={{ width: 110 }}
               title="Optional payment exchange rate (same currency as invoice)"
+              aria-label="Payment FX rate"
             />
             <button onClick={recordPayment} aria-label="Record payment">
               Pay
@@ -591,6 +592,7 @@ export default function Page() {
                 placeholder="Net days"
                 style={{ width: 90 }}
                 title="Payment terms (days)"
+                aria-label="Customer payment terms days"
               />
               <button onClick={updateLimit}>Set limit / terms</button>
             </div>
@@ -603,6 +605,7 @@ export default function Page() {
                 placeholder="Net days"
                 style={{ width: 90 }}
                 title="Supplier payment terms (days)"
+                aria-label="Supplier payment terms days"
               />
               <button type="button" onClick={updateSupplierTerms}>
                 Set terms

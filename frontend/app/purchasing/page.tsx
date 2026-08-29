@@ -1517,7 +1517,12 @@ export default function Page() {
                   </option>
                 ))}
               </select>
-              <input value={prQty} onChange={(e) => setPrQty(e.target.value)} placeholder="Quantity" />
+              <input
+                value={prQty}
+                onChange={(e) => setPrQty(e.target.value)}
+                placeholder="Quantity"
+                aria-label="Purchase request quantity"
+              />
               <input
                 value={prDepartment}
                 onChange={(e) => setPrDepartment(e.target.value)}
@@ -1915,8 +1920,18 @@ export default function Page() {
               </option>
             ))}
           </select>
-          <input value={qty} onChange={(e) => setQty(e.target.value)} placeholder="Quantity" />
-          <input value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder="Unit price" />
+          <input
+            value={qty}
+            onChange={(e) => setQty(e.target.value)}
+            placeholder="Quantity"
+            aria-label="Purchase order quantity"
+          />
+          <input
+            value={unitPrice}
+            onChange={(e) => setUnitPrice(e.target.value)}
+            placeholder="Unit price"
+            aria-label="Purchase order unit price"
+          />
           <input
             value={lineDiscount}
             onChange={(e) => setLineDiscount(e.target.value)}
@@ -2595,8 +2610,18 @@ export default function Page() {
               </option>
             ))}
           </select>
-          <input value={manualInvQty} onChange={(e) => setManualInvQty(e.target.value)} placeholder="Quantity" />
-          <input value={manualInvPrice} onChange={(e) => setManualInvPrice(e.target.value)} placeholder="Unit price" />
+          <input
+            value={manualInvQty}
+            onChange={(e) => setManualInvQty(e.target.value)}
+            placeholder="Quantity"
+            aria-label="Purchase invoice quantity"
+          />
+          <input
+            value={manualInvPrice}
+            onChange={(e) => setManualInvPrice(e.target.value)}
+            placeholder="Unit price"
+            aria-label="Purchase invoice unit price"
+          />
           <input
             value={manualInvTaxRate}
             onChange={(e) => setManualInvTaxRate(e.target.value)}

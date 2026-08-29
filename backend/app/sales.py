@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
-from app.honesty import money_json
+from app.honesty import money_json, require_honest_narrative
 from app.tax import resolve_product_tax
 from app.credit import default_due_date, party_terms_days
 from app.catalog import resolve_sale_line, stock_out_with_batch
@@ -672,9 +672,7 @@ async def cancel_sales_invoice(
     invoice_id: str,
     reason: str | None = None,
 ) -> m.SalesInvoice:
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="cancel reason is required")
+    reason_s = require_honest_narrative(reason, label="cancel reason")
     invoice = await get_invoice(db, tenant_id, invoice_id)
     if invoice.status != "draft":
         raise HTTPException(status_code=409, detail="Only draft invoices can be cancelled")

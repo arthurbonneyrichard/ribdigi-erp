@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json, require_honest_narrative
 from app.inventory import apply_stock_change
 from app.tax import resolve_product_tax
 from app.credit import default_due_date, party_terms_days
@@ -252,7 +253,7 @@ def serialize_po_amendment(row: m.PurchaseOrderAmendment) -> dict:
 async def serialize_po(db: AsyncSession, po: m.PurchaseOrder) -> dict:
     items = await list_po_items(db, po.tenant_id, po.id)
     amendments = await list_po_amendments(db, po.tenant_id, po.id)
-    has_receipts = any(float(i.received_qty or 0) > 0 for i in items)
+    has_receipts = any(money_json(i.received_qty) > 0 for i in items)
     can_amend = po.status in PO_AMENDABLE and not has_receipts
     can_cancel = po.status not in {"received", "cancelled"} and not has_receipts
     return {
@@ -261,11 +262,11 @@ async def serialize_po(db: AsyncSession, po: m.PurchaseOrder) -> dict:
         "supplier_id": po.supplier_id,
         "warehouse_id": po.warehouse_id,
         "status": po.status,
-        "subtotal": float(po.subtotal),
-        "tax_amount": float(po.tax_amount),
-        "total_amount": float(po.total_amount),
-        "paid_amount": float(po.paid_amount or 0),
-        "balance_due": max(float(po.total_amount) - float(po.paid_amount or 0), 0),
+        "subtotal": money_json(po.subtotal),
+        "tax_amount": money_json(po.tax_amount),
+        "total_amount": money_json(po.total_amount),
+        "paid_amount": money_json(po.paid_amount),
+        "balance_due": max(money_json(po.total_amount) - money_json(po.paid_amount), 0),
         "due_date": po.due_date,
         "notes": po.notes,
         "delivery_address": getattr(po, "delivery_address", None),
@@ -280,14 +281,14 @@ async def serialize_po(db: AsyncSession, po: m.PurchaseOrder) -> dict:
             {
                 "id": i.id,
                 "product_id": i.product_id,
-                "quantity": float(i.quantity),
-                "received_qty": float(i.received_qty),
+                "quantity": money_json(i.quantity),
+                "received_qty": money_json(i.received_qty),
                 "unit_id": i.unit_id,
-                "unit_price": float(i.unit_price),
-                "tax_rate": float(i.tax_rate),
-                "discount": float(getattr(i, "discount", 0) or 0),
-                "line_total": float(i.line_total),
-                "outstanding_qty": max(float(i.quantity) - float(i.received_qty or 0), 0),
+                "unit_price": money_json(i.unit_price),
+                "tax_rate": money_json(i.tax_rate),
+                "discount": money_json(getattr(i, "discount", 0) or 0),
+                "line_total": money_json(i.line_total),
+                "outstanding_qty": max(money_json(i.quantity) - money_json(i.received_qty), 0),
             }
             for i in items
         ],
@@ -477,9 +478,7 @@ async def cancel_purchase_order(
     po_id: str,
     reason: str | None = None,
 ) -> m.PurchaseOrder:
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="cancel reason is required")
+    reason_s = require_honest_narrative(reason, label="cancel reason")
     po = await get_po(db, tenant_id, po_id)
     if po.status in {"received", "cancelled"}:
         raise HTTPException(status_code=409, detail=f"Cannot cancel PO in status {po.status}")
@@ -523,9 +522,7 @@ async def amend_purchase_order(
     """
     from app import emailer
 
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="amend reason is required")
+    reason_s = require_honest_narrative(reason, label="amend reason")
 
     po = await get_po(db, tenant_id, po_id)
     if po.status not in PO_AMENDABLE:
@@ -786,12 +783,9 @@ async def create_grn(
                 detail="accepted_qty + rejected_qty must equal received_qty",
             )
         reason = (raw.get("rejection_reason") or "").strip() or None
-        if rejected_qty > 1e-9 and not reason:
-            raise HTTPException(
-                status_code=400,
-                detail="rejection_reason is required when rejected_qty > 0",
-            )
-        if rejected_qty <= 1e-9:
+        if rejected_qty > 1e-9:
+            reason = require_honest_narrative(reason, label="rejection reason")
+        else:
             reason = None
             rejected_qty = 0.0
 
@@ -1433,9 +1427,7 @@ async def cancel_purchase_return(
     return_id: str,
     reason: str | None = None,
 ) -> m.PurchaseReturn:
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="cancel reason is required")
+    reason_s = require_honest_narrative(reason, label="cancel reason")
     ret = await get_purchase_return(db, tenant_id, return_id)
     if ret.status != "draft":
         raise HTTPException(status_code=409, detail="Only draft purchase returns can be cancelled")
@@ -2098,9 +2090,7 @@ async def cancel_purchase_invoice(
     inv = await get_purchase_invoice(db, tenant_id, invoice_id)
     if inv.status == "cancelled":
         return inv
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="cancel reason is required")
+    reason_s = require_honest_narrative(reason, label="cancel reason")
     if float(inv.paid_amount or 0) > 0:
         raise HTTPException(status_code=409, detail="Cannot cancel invoice with payments")
     if inv.status not in {"draft", "unpaid", "overdue"}:

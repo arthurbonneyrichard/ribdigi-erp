@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.doc_numbers import next_expense_number
-from app.honesty import require_honest_narrative
+from app.honesty import money_json, require_honest_narrative
 
 DEFAULT_CATEGORIES = [
     ("RENT", "Rent"),
@@ -231,7 +231,7 @@ def serialize_recurring(row: m.RecurringExpense) -> dict:
         "category": row.category,
         "category_id": row.category_id,
         "description": row.description,
-        "amount": float(row.amount),
+        "amount": money_json(row.amount),
         "frequency": row.frequency,
         "payment_method": row.payment_method,
         "payee": row.payee,
@@ -489,7 +489,7 @@ def serialize_expense(expense: m.Expense, actions: list[m.ExpenseApprovalAction]
         "category_id": expense.category_id,
         "category": expense.category,
         "description": expense.description,
-        "amount": float(expense.amount),
+        "amount": money_json(expense.amount),
         "expense_date": expense.expense_date,
         "payment_method": expense.payment_method,
         "liquid_account_id": getattr(expense, "liquid_account_id", None),

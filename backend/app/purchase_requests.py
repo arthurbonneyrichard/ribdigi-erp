@@ -13,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import require_honest_narrative
 from app import purchasing as purchasing_svc
 from app.doc_numbers import next_purchase_request_number
 
@@ -529,9 +530,7 @@ async def reject_request(
     settings = await get_approval_settings(db, tenant_id)
     assert_actor_may_act(levels=settings["levels"], step=step, actor_role=actor_role)
 
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="rejection reason is required")
+    reason_s = require_honest_narrative(reason, label="rejection reason")
     await _record_action(
         db,
         tenant_id=tenant_id,

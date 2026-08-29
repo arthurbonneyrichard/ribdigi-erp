@@ -45,7 +45,7 @@
 - **Multipart** uploads use `multipart/form-data` (company/brand logos, product images, expense/PI/journal attachments, bank statement import, AI document analyze, catalog/product CSV import, etc.). Those routes are documented per endpoint — do not send JSON bodies there.
 - Date / datetime **inputs** (`IsoDateQueryValue` and related): accept calendar **`YYYY-MM-DD`** or ISO datetime (e.g. `2026-08-07T13:51:00Z`); blank/invalid/`01/02/2024` → **422**. Not limited to a single `YYYY-MM-DDTHH:MM:SSZ` form.
 - Currency / money fields on **request bodies** are JSON **numbers** (IEEE-754 doubles via Pydantic `float` Values such as `PositiveMoneyValue` / `NonNegativeMoneyValue`). Clients may send `199.99` (not required as `"199.99"` strings). NaN/Inf and out-of-range values → **422**.
-- Currency / money fields in **JSON responses** are likewise JSON **numbers**. Sales invoice serialization uses `app.honesty.money_json` (ORM `Numeric`/`Decimal` → finite IEEE-754 float; NaN/Inf rejected — not decimal strings). Other serializers may still use bare `float(...)`; CSV product export may still render prices as text columns.
+- Currency / money fields in **JSON responses** are likewise JSON **numbers**. Response serializers use `app.honesty.money_json` (ORM `Numeric`/`Decimal` → finite IEEE-754 float; NaN/Inf rejected — not decimal strings) on sales invoice, quotation, purchase order, expense/recurring, cheque, and journal pilots. Other serializers may still use bare `float(...)`; CSV product export may still render prices as text columns.
 
 ### 1.2 Response Envelope
 Successful **JSON** API responses use the `env()` helper envelope:

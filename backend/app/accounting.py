@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.doc_numbers import next_journal_entry_number
-from app.honesty import require_honest_narrative
+from app.honesty import money_json, require_honest_narrative
 
 DEFAULT_ACCOUNTS = [
     ("1000", "Cash", "asset", True, False),
@@ -532,20 +532,20 @@ async def serialize_journal(db: AsyncSession, entry: m.JournalEntry) -> dict:
         "description": entry.description,
         "source_type": entry.source_type,
         "source_id": entry.source_id,
-        "total_debit": float(entry.total_debit),
-        "total_credit": float(entry.total_credit),
+        "total_debit": money_json(entry.total_debit),
+        "total_credit": money_json(entry.total_credit),
         "status": entry.status,
         "attachment_url": entry.attachment_url,
         "has_attachment": bool(entry.attachment_url),
         "can_unpost": journal_can_unpost(entry, tenant),
         "created_at": entry.created_at,
-        "balanced": abs(float(entry.total_debit) - float(entry.total_credit)) < 0.01,
+        "balanced": abs(money_json(entry.total_debit) - money_json(entry.total_credit)) < 0.01,
         "lines": [
             {
                 "id": ln.id,
                 "account_id": ln.account_id,
-                "debit": float(ln.debit),
-                "credit": float(ln.credit),
+                "debit": money_json(ln.debit),
+                "credit": money_json(ln.credit),
                 "description": ln.description,
             }
             for ln in lines

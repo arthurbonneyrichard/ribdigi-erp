@@ -14,7 +14,7 @@ from app.accounting import (
     is_cheque_method,
     post_journal_entry,
 )
-from app.honesty import require_honest_narrative
+from app.honesty import money_json, require_honest_narrative
 
 RECEIVED = "received"
 ISSUED = "issued"
@@ -34,7 +34,7 @@ def serialize_cheque(row: m.Cheque) -> dict:
         "direction": row.direction,
         "status": row.status,
         "cheque_number": row.cheque_number,
-        "amount": float(row.amount),
+        "amount": money_json(row.amount),
         "bank_name": row.bank_name,
         "cheque_date": row.cheque_date,
         "party_id": row.party_id,

@@ -335,7 +335,11 @@ export default function Page() {
         </div>
         <div className="card">
           <h3>Calculator</h3>
-          <input value={calcAmount} onChange={(e) => setCalcAmount(e.target.value)} />
+          <input
+            value={calcAmount}
+            onChange={(e) => setCalcAmount(e.target.value)}
+            aria-label="Tax calculator amount"
+          />
           <button onClick={calculate} style={{ marginTop: 8 }}>
             Calculate with default rate
           </button>

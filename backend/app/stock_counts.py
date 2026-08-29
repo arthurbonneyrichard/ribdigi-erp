@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.doc_numbers import next_stock_count_number
+from app.honesty import require_honest_narrative
 from app.inventory import allocate_unlocated_stock, apply_stock_change, get_or_create_warehouse_stock
 
 # Lifecycle statuses for StockCount (create → draft; complete → completed; cancel → cancelled).
@@ -347,9 +348,7 @@ async def cancel_count(
     user_id: str | None = None,
     reason: str | None = None,
 ) -> m.StockCount:
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="cancel reason is required")
+    reason_s = require_honest_narrative(reason, label="cancel reason")
     count = await get_count(db, tenant_id, count_id)
     if count.status != "draft":
         raise HTTPException(status_code=409, detail=f"Cannot cancel count in status {count.status}")

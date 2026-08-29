@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import require_honest_narrative
 from app.rbac import has_permission
 
 DEFAULT_PAYMENT_TERMS_DAYS = 30
@@ -74,16 +75,21 @@ def enforce_customer_credit_limit(
             },
         )
 
-    reason = (override_reason or "").strip()
-    if not reason:
+    try:
+        reason = require_honest_narrative(override_reason, label="override_reason")
+    except HTTPException as exc:
         raise HTTPException(
             status_code=400,
             detail={
                 **detail,
                 "code": "CREDIT_OVERRIDE_REASON_REQUIRED",
-                "message": "override_reason is required when override_credit_limit is true",
+                "message": (
+                    "override_reason is required when override_credit_limit is true"
+                    if "required" in str(exc.detail)
+                    else "override_reason must be a plain narrative"
+                ),
             },
-        )
+        ) from exc
     return {
         "customer_id": customer.id,
         "customer_name": customer.name,
