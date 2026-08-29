@@ -2019,10 +2019,10 @@ export default function Page() {
             downloads the current catalog in the same column layout.
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button type="button" onClick={downloadImportTemplate}>
+            <button type="button" onClick={downloadImportTemplate} aria-label="Download product CSV template">
               Download CSV template
             </button>
-            <button type="button" onClick={downloadProductsExport}>
+            <button type="button" onClick={downloadProductsExport} aria-label="Export products CSV">
               Export products CSV
             </button>
           </div>

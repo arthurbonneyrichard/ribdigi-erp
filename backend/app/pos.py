@@ -494,9 +494,9 @@ async def shift_report(db: AsyncSession, session: m.PosSession) -> dict:
         "sales": sale_rows,
         "returns": return_rows,
         "payment_breakdown": {
-            "cash": float(session.cash_sales or 0),
-            "card": float(session.card_sales or 0),
-            "other": float(session.other_sales or 0),
-            "total": float(session.total_sales or 0),
+            "cash": money_json(session.cash_sales or 0),
+            "card": money_json(session.card_sales or 0),
+            "other": money_json(session.other_sales or 0),
+            "total": money_json(session.total_sales or 0),
         },
     }

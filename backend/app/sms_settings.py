@@ -9,6 +9,7 @@ from fastapi import HTTPException
 
 from app import models as m
 from app.config import settings
+from app.honesty import optional_honest_narrative
 
 
 @dataclass(frozen=True)
@@ -113,7 +114,13 @@ def apply_sms_settings_update(tenant: m.Tenant, payload: dict[str, Any]) -> dict
     """Merge PATCH fields into tenant.sms_settings. Auth token encrypted; never returned."""
     current = _raw_settings(tenant)
     if "account_sid" in payload and payload["account_sid"] is not None:
-        current["account_sid"] = str(payload["account_sid"]).strip()[:64]
+        # OpenAPI TwilioAccountSidValue → 422; service defense-in-depth → 400.
+        sid = optional_honest_narrative(
+            payload["account_sid"], label="Twilio account SID", max_length=64
+        )
+        if not sid:
+            raise HTTPException(status_code=400, detail="Twilio account SID is required")
+        current["account_sid"] = sid[:64]
     if "from_number" in payload and payload["from_number"] is not None:
         current["from_number"] = str(payload["from_number"]).strip()[:32]
     if payload.get("clear_auth_token"):

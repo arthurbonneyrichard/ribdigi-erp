@@ -89,7 +89,7 @@ async def _invoice_baskets(
                 "id": inv.id,
                 "customer_id": inv.customer_id,
                 "posted_at": inv.posted_at,
-                "total": float(inv.total_amount or 0),
+                "total": money_json(inv.total_amount or 0),
                 "product_ids": set(),
             },
         )
@@ -122,7 +122,7 @@ async def _pos_events(
             {
                 "id": tx.id,
                 "created_at": tx.created_at,
-                "total": float(tx.total or 0),
+                "total": money_json(tx.total or 0),
                 "product_ids": pids,
             }
         )

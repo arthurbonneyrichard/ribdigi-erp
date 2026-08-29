@@ -925,7 +925,7 @@ async def record_customer_payment(
         data={
             "payment_id": payment.id,
             "payment_number": payment.payment_number,
-            "amount": float(payment.amount or 0),
+            "amount": money_json(payment.amount or 0),
             "customer_id": customer_id,
             "sales_invoice_id": payment.sales_invoice_id,
             "currency": pay_cur,

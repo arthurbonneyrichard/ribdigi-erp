@@ -4000,7 +4000,7 @@ async def adjust(
     return env(
         {
             "product_id": product.id,
-            "stock_qty": float(product.stock_qty),
+            "stock_qty": money_json(product.stock_qty),
             "reason": reason,
             "warehouse_id": payload.warehouse_id or None,
         },
@@ -5626,7 +5626,7 @@ async def post_sales_invoice(
         data={
             "invoice_id": invoice.id,
             "invoice_number": invoice.invoice_number,
-            "amount": float(invoice.total_amount or 0),
+            "amount": money_json(invoice.total_amount or 0),
             "customer_id": invoice.customer_id,
             "status": invoice.status,
         },
@@ -6160,11 +6160,11 @@ async def record_sales_payment(
         {
             "id": payment.id,
             "payment_number": payment.payment_number,
-            "amount": float(payment.amount),
+            "amount": money_json(payment.amount),
             "sales_invoice_id": payment.sales_invoice_id,
             "currency": getattr(payment, "currency", None) or "",
-            "exchange_rate": float(getattr(payment, "exchange_rate", None) or 1),
-            "fx_gain_loss": float(getattr(payment, "fx_gain_loss", 0) or 0),
+            "exchange_rate": money_json(getattr(payment, "exchange_rate", None), default=1),
+            "fx_gain_loss": money_json(getattr(payment, "fx_gain_loss", 0) or 0),
         },
         "Payment recorded",
     )
@@ -7438,13 +7438,13 @@ async def pos_sale(
         data={
             "sale_id": tx.id,
             "reference": ref,
-            "amount": float(tx.total or 0),
+            "amount": money_json(tx.total or 0),
             "customer_id": payload.party_id,
             "payment_method": payment_method,
             "status": tx.status,
             "source": "pos",
             "session_id": session.id,
-            "credit_amount": float(credit_amount or 0),
+            "credit_amount": money_json(credit_amount or 0),
         },
     )
     # Fully settled at till (no on-account credit tender) → also emit sale.paid.
@@ -7456,11 +7456,14 @@ async def pos_sale(
             data={
                 "sale_id": tx.id,
                 "reference": ref,
-                "amount": float(tx.total or 0),
+                "amount": money_json(tx.total or 0),
                 "customer_id": payload.party_id,
                 "payment_method": payment_method,
                 "payments": [
-                    {"payment_method": p.get("payment_method"), "amount": float(p.get("amount") or 0)}
+                    {
+                        "payment_method": p.get("payment_method"),
+                        "amount": money_json(p.get("amount") or 0),
+                    }
                     for p in payments
                 ],
                 "source": "pos",
@@ -7471,11 +7474,11 @@ async def pos_sale(
         "id": tx.id,
         "reference": ref,
         "session_id": session.id,
-        "subtotal": float(tx.subtotal),
-        "tax": float(tx.tax),
-        "total": float(tx.total),
-        "discount_amount": cart_discount,
-        "line_discounts": round(line_discounts, 2),
+        "subtotal": money_json(tx.subtotal),
+        "tax": money_json(tx.tax),
+        "total": money_json(tx.total),
+        "discount_amount": money_json(cart_discount),
+        "line_discounts": money_json(round(line_discounts, 2)),
         "payment_method": payment_method,
         "payments": [pos_svc.serialize_payment(p) for p in payment_rows],
         "customer_name": customer_name,
@@ -7527,7 +7530,7 @@ async def pos_search(
             return cached
         spec = await resolve_product_tax(db, claims["tenant_id"], product)
         payload = {
-            "tax_rate_pct": float(spec.rate_pct or 0),
+            "tax_rate_pct": money_json(spec.rate_pct or 0),
             "tax_pricing_mode": (spec.pricing_mode or "exclusive"),
             "tax_reverse_charge": bool(spec.is_reverse_charge),
             "tax_components": list(spec.components) if spec.components else None,
@@ -7545,8 +7548,8 @@ async def pos_search(
             "name": p.name,
             "sku": p.sku,
             "barcode": p.barcode,
-            "selling_price": float(p.selling_price or 0),
-            "stock_qty": float(p.stock_qty or 0),
+            "selling_price": money_json(p.selling_price or 0),
+            "stock_qty": money_json(p.stock_qty or 0),
             "kind": "product",
             "has_image": bool(p.image_url),
         }
@@ -7596,8 +7599,8 @@ async def pos_search(
                 "name": v.name,
                 "sku": v.sku,
                 "barcode": v.barcode,
-                "selling_price": float(v.selling_price or 0),
-                "stock_qty": float(v.stock_qty or 0),
+                "selling_price": money_json(v.selling_price or 0),
+                "stock_qty": money_json(v.stock_qty or 0),
                 "kind": "variant",
                 "has_image": False,
             }
@@ -8281,7 +8284,7 @@ async def approve_expense(
             event="expense.approved",
             data={
                 "expense_id": expense.id,
-                "amount": float(expense.amount or 0),
+                "amount": money_json(expense.amount or 0),
                 "category": expense.category,
                 "approved_by": expense.approved_by,
                 "approved_at": expense.approved_at.isoformat()
@@ -10468,9 +10471,10 @@ async def customer_payment_alias(
         {
             "id": payment.id,
             "payment_number": payment.payment_number,
+            "amount": money_json(payment.amount),
             "currency": getattr(payment, "currency", None) or "",
-            "exchange_rate": float(getattr(payment, "exchange_rate", None) or 1),
-            "fx_gain_loss": float(getattr(payment, "fx_gain_loss", 0) or 0),
+            "exchange_rate": money_json(getattr(payment, "exchange_rate", None), default=1),
+            "fx_gain_loss": money_json(getattr(payment, "fx_gain_loss", 0) or 0),
         },
         "Payment recorded",
     )
@@ -10592,11 +10596,13 @@ async def supplier_payment(
         {
             "id": payment.id,
             "payment_number": payment.payment_number,
-            "amount": float(payment.amount),
-            "early_payment_discount": float(getattr(payment, "early_payment_discount", 0) or 0),
+            "amount": money_json(payment.amount),
+            "early_payment_discount": money_json(
+                getattr(payment, "early_payment_discount", 0) or 0
+            ),
             "currency": getattr(payment, "currency", None) or "",
-            "exchange_rate": float(getattr(payment, "exchange_rate", None) or 1),
-            "fx_gain_loss": float(getattr(payment, "fx_gain_loss", 0) or 0),
+            "exchange_rate": money_json(getattr(payment, "exchange_rate", None), default=1),
+            "fx_gain_loss": money_json(getattr(payment, "fx_gain_loss", 0) or 0),
         },
         "Supplier payment recorded",
     )

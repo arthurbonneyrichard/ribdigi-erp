@@ -834,6 +834,25 @@
 - **Report purchases pending orders CSV aria OpenAPI (BR-14.3):** Reports **Export purchases pending orders CSV** button (`aria-label`).
 - **Report purchases returns Excel aria OpenAPI (BR-14.3):** Reports **Export purchases returns Excel** button (`aria-label`).
 - **Report purchases returns CSV aria OpenAPI (BR-14.3):** Reports **Export purchases returns CSV** button (`aria-label`).
+- **Passkey name defense-in-depth OpenAPI (BR-19 / WebAuthn):** `verify_registration` uses `optional_honest_narrative` (**400**) matching `PasskeyNameValue` (**422**); omit/`null`/blank → `"Passkey"`.
+- **Company SMTP from_name defense-in-depth OpenAPI (BR-20.3):** `apply_email_settings_update` uses `optional_honest_narrative` (**400**) matching `SmtpFromNameValue` (**422**).
+- **Company SMS account_sid defense-in-depth OpenAPI (BR-15.2):** `apply_sms_settings_update` uses `optional_honest_narrative` (**400**) matching `TwilioAccountSidValue` (**422**).
+- **POS sale create money_json Decimal pilot OpenAPI (BR-8.1):** `POST /pos/sales` response `subtotal`/`tax`/`total`/`discount_amount`/`line_discounts` use `honesty.money_json`.
+- **POS sale webhook money_json Decimal pilot OpenAPI (BR-8.1 / BR-18.6):** POS `sale.created` / `sale.paid` webhook `amount` (+ tender amounts) use `honesty.money_json`.
+- **POS product search money_json Decimal pilot OpenAPI (BR-8.1):** `GET /pos/products/search` `selling_price`/`stock_qty`/`tax_rate_pct` use `honesty.money_json`.
+- **Customer payment response money_json Decimal pilot OpenAPI (BR-11):** `POST /sales/payments` + nested customer payment responses use `honesty.money_json` for amount/FX.
+- **Supplier payment response money_json Decimal pilot OpenAPI (BR-11):** `POST /purchasing/payments` (supplier) amount/discount/FX use `honesty.money_json`.
+- **POS session payment_breakdown money_json Decimal pilot OpenAPI (BR-8.2):** Session Z-report `payment_breakdown` cash/card/other/total use `honesty.money_json`.
+- **AI sales analysis money_json Decimal pilot OpenAPI (BR-21.5):** Invoice/POS basket `total` fields use `honesty.money_json`.
+- **Stock adjustment money_json Decimal pilot OpenAPI (BR-5.2):** `POST /inventory/adjust` response `stock_qty` uses `honesty.money_json`.
+- **Product warehouse-stock reorder money_json Decimal pilot OpenAPI (BR-5.2 / BR-18.2):** `GET /products/{id}/warehouse-stock` consolidated `reorder_level` uses `honesty.money_json`.
+- **Sales invoice post webhook money_json Decimal pilot OpenAPI (BR-7.4 / BR-18.6):** `sale.created` webhook `amount` uses `honesty.money_json`.
+- **Expense approve webhook money_json Decimal pilot OpenAPI (BR-9.3 / BR-18.6):** `expense.approved` webhook `amount` uses `honesty.money_json`.
+- **AR payment webhook money_json Decimal pilot OpenAPI (BR-11 / BR-18.6):** `sale.paid` webhook `amount` uses `honesty.money_json`.
+- **PO amend snapshot money_json Decimal pilot OpenAPI (BR-6.3):** Amendment before/after header + line money/qty snapshots use `honesty.money_json`.
+- **Inventory Export products CSV aria OpenAPI (BR-18.2):** Inventory Lookup **Export products CSV** button (`aria-label`).
+- **Inventory Download product CSV template aria OpenAPI (BR-18.2):** Inventory Lookup **Download product CSV template** button (`aria-label`).
+- **Audit Export CSV aria OpenAPI (BR-17):** Audit **Export audit CSV** button (`aria-label`).
 - **Report export date Query OpenAPI (BR-14):** `GET /reports/export` Query `from_date` / `to_date` / `date` / `as_of` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound / live as_of fallbacks; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Reports shared **Report From/To/as of date** inputs (`aria-label`s).
 - **Tax date Query OpenAPI:** `GET /reports/tax` + `GET /reports/tax/filing` Query `from_date` / `to_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Tax **Tax From/To date** inputs (`aria-label`s).
 - **Expenses date Query OpenAPI (BR-14.4):** `GET /reports/expenses/summary` + `GET /reports/expenses/budget-vs-actual` Query `from_date` / `to_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Reports **Expenses** tab uses shared **Report From/To date** inputs (`aria-label`s).

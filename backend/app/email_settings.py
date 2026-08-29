@@ -9,6 +9,7 @@ from fastapi import HTTPException
 
 from app import models as m
 from app.config import settings
+from app.honesty import optional_honest_narrative
 
 
 @dataclass(frozen=True)
@@ -138,7 +139,13 @@ def apply_email_settings_update(tenant: m.Tenant, payload: dict[str, Any]) -> di
     if "from_email" in payload and payload["from_email"] is not None:
         current["from_email"] = str(payload["from_email"]).strip()[:200]
     if "from_name" in payload and payload["from_name"] is not None:
-        current["from_name"] = str(payload["from_name"]).strip()[:120]
+        # OpenAPI SmtpFromNameValue → 422; service defense-in-depth → 400.
+        from_name = optional_honest_narrative(
+            payload["from_name"], label="SMTP from name", max_length=120
+        )
+        if not from_name:
+            raise HTTPException(status_code=400, detail="SMTP from name is required")
+        current["from_name"] = from_name
     if "use_tls" in payload and payload["use_tls"] is not None:
         current["use_tls"] = bool(payload["use_tls"])
     if "use_ssl" in payload and payload["use_ssl"] is not None:

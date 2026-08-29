@@ -180,12 +180,12 @@ def _po_items_snapshot(items: list[m.PurchaseOrderItem]) -> list[dict]:
     return [
         {
             "product_id": i.product_id,
-            "quantity": float(i.quantity),
+            "quantity": money_json(i.quantity),
             "unit_id": i.unit_id,
-            "unit_price": float(i.unit_price),
-            "tax_rate": float(i.tax_rate),
-            "discount": float(getattr(i, "discount", 0) or 0),
-            "line_total": float(i.line_total),
+            "unit_price": money_json(i.unit_price),
+            "tax_rate": money_json(i.tax_rate),
+            "discount": money_json(getattr(i, "discount", 0) or 0),
+            "line_total": money_json(i.line_total),
         }
         for i in items
     ]
@@ -210,9 +210,9 @@ def _po_header_snapshot(po: m.PurchaseOrder) -> dict:
         "notes": po.notes,
         "delivery_address": getattr(po, "delivery_address", None),
         "due_date": po.due_date.isoformat() if po.due_date else None,
-        "subtotal": float(po.subtotal),
-        "tax_amount": float(po.tax_amount),
-        "total_amount": float(po.total_amount),
+        "subtotal": money_json(po.subtotal),
+        "tax_amount": money_json(po.tax_amount),
+        "total_amount": money_json(po.total_amount),
         "revision_no": int(getattr(po, "revision_no", 0) or 0),
     }
 
