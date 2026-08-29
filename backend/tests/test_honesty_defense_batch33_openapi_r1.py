@@ -60,7 +60,7 @@ def test_honesty_batch33_docs_and_agents():
 
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
     standards = docs.split("## 1. API Standards")[1].split("## 2.")[0]
-    assert "product CSV export/commit" in standards
+    assert "Product CSV export/commit" in standards
     assert "receipts `_money`" in standards or "receipts _money" in standards
 
     stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
