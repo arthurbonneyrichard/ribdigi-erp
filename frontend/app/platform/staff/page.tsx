@@ -277,7 +277,12 @@ export default function PlatformStaffPage() {
           </p>
           <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
             <span>Grant as</span>
-            <select value={grantRole} onChange={(e) => setGrantRole(e.target.value)} disabled={busy}>
+            <select
+              value={grantRole}
+              onChange={(e) => setGrantRole(e.target.value)}
+              disabled={busy}
+              aria-label="Platform grant role"
+            >
               {roles
                 .filter((r) => r.key !== 'super_admin')
                 .map((r) => (

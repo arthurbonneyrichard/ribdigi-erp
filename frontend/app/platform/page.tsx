@@ -678,6 +678,7 @@ export default function PlatformConsole() {
                     setSubForm((f) => ({ ...f, package_code }));
                     applyPackageModules(package_code);
                   }}
+                  aria-label="Subscription package"
                 >
                   {packages.map((p) => (
                     <option key={p.code} value={p.code}>
@@ -704,6 +705,7 @@ export default function PlatformConsole() {
                 <select
                   value={subForm.term_unit}
                   onChange={(e) => setSubForm((f) => ({ ...f, term_unit: e.target.value }))}
+                  aria-label="Subscription term unit"
                 >
                   <option value="months">Months</option>
                   <option value="years">Years</option>

@@ -563,7 +563,11 @@ export default function Page() {
               aria-label="Report as of date"
             />
             {tab === 'balancesheet' && (
-              <select value={compare} onChange={(e) => setCompare(e.target.value)}>
+              <select
+                value={compare}
+                onChange={(e) => setCompare(e.target.value)}
+                aria-label="Balance sheet compare"
+              >
                 <option value="">No compare</option>
                 <option value="prior_period">vs prior month-end</option>
                 <option value="prior_year">vs prior year</option>
@@ -2181,6 +2185,7 @@ export default function Page() {
                 <select
                   value={schedForm.weekday}
                   onChange={(e) => setSchedForm({ ...schedForm, weekday: e.target.value })}
+                  aria-label="Report schedule weekday"
                 >
                   {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d, i) => (
                     <option key={d} value={String(i)}>

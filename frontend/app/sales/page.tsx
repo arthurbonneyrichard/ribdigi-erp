@@ -1153,6 +1153,7 @@ export default function Page() {
           <select
             value={customerProfileType}
             onChange={(e) => setCustomerProfileType(e.target.value)}
+            aria-label="Customer profile type"
             title="Customer type"
           >
             <option value="registered">Registered</option>
@@ -1166,7 +1167,12 @@ export default function Page() {
             title="Customer category (optional; 1–80 chars; letters/digits required)"
             style={{ width: 120 }}
           />
-          <select value={customerStatus} onChange={(e) => setCustomerStatus(e.target.value)} title="Status">
+          <select
+            value={customerStatus}
+            onChange={(e) => setCustomerStatus(e.target.value)}
+            aria-label="Customer status"
+            title="Status"
+          >
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
           </select>

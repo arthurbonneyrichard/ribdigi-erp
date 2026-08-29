@@ -1717,6 +1717,7 @@ export default function Page() {
           <select
             value={supplierProfileType}
             onChange={(e) => setSupplierProfileType(e.target.value)}
+            aria-label="Supplier profile type"
             title="Supplier type"
           >
             <option value="registered">Registered</option>
@@ -1733,7 +1734,12 @@ export default function Page() {
             title="Supplier category (optional; 1–80 chars; letters/digits required)"
             style={{ width: 120 }}
           />
-          <select value={supplierStatus} onChange={(e) => setSupplierStatus(e.target.value)} title="Status">
+          <select
+            value={supplierStatus}
+            onChange={(e) => setSupplierStatus(e.target.value)}
+            aria-label="Supplier status"
+            title="Status"
+          >
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
           </select>
@@ -3017,7 +3023,11 @@ export default function Page() {
               </option>
             ))}
           </select>
-          <select value={returnReason} onChange={(e) => setReturnReason(e.target.value)}>
+          <select
+            value={returnReason}
+            onChange={(e) => setReturnReason(e.target.value)}
+            aria-label="Purchase return reason"
+          >
             <option value="">Select reason</option>
             <option value="damaged">Damaged</option>
             <option value="wrong_item">Wrong item</option>

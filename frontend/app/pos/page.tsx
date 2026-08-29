@@ -1537,7 +1537,11 @@ export default function Page() {
               </label>
               <label className="tpos-field">
                 <span>Receipt</span>
-                <select value={paper} onChange={(e) => setPaper(e.target.value)}>
+                <select
+                  value={paper}
+                  onChange={(e) => setPaper(e.target.value)}
+                  aria-label="POS receipt paper"
+                >
                   <option value="80mm">80mm thermal</option>
                   <option value="58mm">58mm thermal</option>
                 </select>
