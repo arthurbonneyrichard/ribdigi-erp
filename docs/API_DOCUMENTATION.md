@@ -638,6 +638,8 @@ Product responses include `stock_qty`, `reorder_level`, plus traffic-light field
 - Variant equivalents: `POST|GET /products/{pid}/variants/{vid}/barcode/generate|png|label` (same symbology query params). Inventory Variants tab: barcode column + Generate/Label.  
 Barcodes are unique across **products and variants** in the tenant (409 on clash). Assigning a 12/13-digit barcode via create/PATCH validates the check digit.
 
+**Integrator lookup (BR-18.2):** `GET /inventory/products/lookup` — Query `q` ∈ `ProductSearchQueryValue` (strip; max 120; empty default OK; ≥1 letter/digit when non-empty; no `://`; blank/`!!!`/`http://…` → **422**); Query `barcode` ∈ `ProductBarcodeValue` (strip + upper; 4–48; omit/`null` → name/SKU `q` path; blank/`!!!!`/`ab`/`http://…` → **422**). Inventory **Product lookup search** / **Product lookup barcode** (`aria-label`s); lookup omits blank. Also `GET /products/{id}/warehouse-stock` and `GET /products/export`.
+
 ### 5.5 Stock Operations
 
 **Stock In:** `POST /inventory/stock-in`

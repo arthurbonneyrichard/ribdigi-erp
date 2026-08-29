@@ -47,6 +47,7 @@ def test_product_search_q_receipt_to_ui_and_docs():
     assert "ProductSearchQueryValue" in docs
     assert "ReceiptOverrideToValue" in docs
     assert "/inventory/products/lookup" in docs
+    assert "Integrator lookup" in docs
 
     inv = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Product lookup search"' in inv
