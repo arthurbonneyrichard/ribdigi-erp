@@ -37,13 +37,13 @@ def enforce_customer_credit_limit(
     Returns override audit payload when an override was applied; otherwise None.
     ``credit_limit <= 0`` means unlimited (no enforcement).
     """
-    credit_limit = float(customer.credit_limit or 0)
+    credit_limit = money_json(customer.credit_limit or 0)
     if credit_limit <= 0:
         return None
-    amount = float(amount or 0)
+    amount = money_json(amount or 0)
     if amount <= 0:
         return None
-    current = float(customer.balance or 0)
+    current = money_json(customer.balance or 0)
     projected = current + amount
     if projected <= credit_limit + 1e-9:
         return None
@@ -51,11 +51,11 @@ def enforce_customer_credit_limit(
     detail: dict[str, Any] = {
         "code": "CREDIT_LIMIT_EXCEEDED",
         "message": "This sale would exceed the customer credit limit",
-        "credit_limit": credit_limit,
-        "current_balance": current,
-        "amount": amount,
-        "projected_balance": round(projected, 2),
-        "over_by": round(projected - credit_limit, 2),
+        "credit_limit": money_json(credit_limit),
+        "current_balance": money_json(current),
+        "amount": money_json(amount),
+        "projected_balance": money_json(round(projected, 2)),
+        "over_by": money_json(round(projected - credit_limit, 2)),
         "customer_id": customer.id,
         "customer_name": customer.name,
     }
@@ -93,11 +93,11 @@ def enforce_customer_credit_limit(
     return {
         "customer_id": customer.id,
         "customer_name": customer.name,
-        "credit_limit": credit_limit,
-        "current_balance": current,
-        "amount": amount,
-        "projected_balance": round(projected, 2),
-        "over_by": round(projected - credit_limit, 2),
+        "credit_limit": money_json(credit_limit),
+        "current_balance": money_json(current),
+        "amount": money_json(amount),
+        "projected_balance": money_json(round(projected, 2)),
+        "over_by": money_json(round(projected - credit_limit, 2)),
         "reason": reason,
     }
 
@@ -124,12 +124,12 @@ def invoice_early_discount(
     due = max(money_json(invoice.total_amount) - money_json(invoice.paid_amount), 0)
     result = {
         "eligible": False,
-        "discount_amount": 0.0,
-        "cash_to_settle": round(due, 2),
-        "balance_due": round(due, 2),
+        "discount_amount": money_json(0),
+        "cash_to_settle": money_json(round(due, 2)),
+        "balance_due": money_json(round(due, 2)),
         "days_since_post": None,
         "window_days": days,
-        "discount_pct": pct,
+        "discount_pct": money_json(pct),
     }
     if due <= 0 or pct <= 0 or days <= 0:
         return result
@@ -140,10 +140,10 @@ def invoice_early_discount(
     result["days_since_post"] = age
     if age < 0 or age > days:
         return result
-    discount = round(due * pct / 100.0, 2)
+    discount = money_json(round(due * pct / 100.0, 2))
     result["eligible"] = discount > 0
     result["discount_amount"] = discount
-    result["cash_to_settle"] = round(max(due - discount, 0), 2)
+    result["cash_to_settle"] = money_json(round(max(due - discount, 0), 2))
     return result
 
 
@@ -159,12 +159,12 @@ def purchase_invoice_early_discount(
     due = max(money_json(invoice.total_amount) - money_json(invoice.paid_amount), 0)
     result = {
         "eligible": False,
-        "discount_amount": 0.0,
-        "cash_to_settle": round(due, 2),
-        "balance_due": round(due, 2),
+        "discount_amount": money_json(0),
+        "cash_to_settle": money_json(round(due, 2)),
+        "balance_due": money_json(round(due, 2)),
         "days_since_approve": None,
         "window_days": days,
-        "discount_pct": pct,
+        "discount_pct": money_json(pct),
     }
     if due <= 0 or pct <= 0 or days <= 0:
         return result
@@ -175,10 +175,10 @@ def purchase_invoice_early_discount(
     result["days_since_approve"] = age
     if age < 0 or age > days:
         return result
-    discount = round(due * pct / 100.0, 2)
+    discount = money_json(round(due * pct / 100.0, 2))
     result["eligible"] = discount > 0
     result["discount_amount"] = discount
-    result["cash_to_settle"] = round(max(due - discount, 0), 2)
+    result["cash_to_settle"] = money_json(round(max(due - discount, 0), 2))
     return result
 
 
@@ -876,7 +876,7 @@ async def customer_credit_info(db: AsyncSession, tenant_id: str, customer_id: st
             {
                 "invoice_id": inv.id,
                 "invoice_number": inv.invoice_number,
-                "amount": round(due, 2),
+                "amount": money_json(round(due, 2)),
                 "total_amount": money_json(inv.total_amount or 0),
                 "paid_amount": money_json(inv.paid_amount or 0),
                 "due_date": inv.due_date,
@@ -884,13 +884,13 @@ async def customer_credit_info(db: AsyncSession, tenant_id: str, customer_id: st
             }
         )
 
-    credit_limit = float(customer.credit_limit or 0)
-    outstanding = float(customer.balance or 0)
+    credit_limit = money_json(customer.credit_limit or 0)
+    outstanding = money_json(customer.balance or 0)
     # Prefer live party balance; fall back to open invoice sum if balance unset/stale at 0
     if abs(outstanding) < 1e-9 and open_invoice_total > 0:
-        outstanding = round(open_invoice_total, 2)
+        outstanding = money_json(round(open_invoice_total, 2))
     unlimited = credit_limit <= 0
-    available = None if unlimited else round(max(credit_limit - outstanding, 0), 2)
+    available = None if unlimited else money_json(round(max(credit_limit - outstanding, 0), 2))
     over_limit = (not unlimited) and outstanding > credit_limit + 1e-9
 
     return {
@@ -901,13 +901,13 @@ async def customer_credit_info(db: AsyncSession, tenant_id: str, customer_id: st
             "phone": customer.phone,
             "payment_terms_days": getattr(customer, "payment_terms_days", None),
         },
-        "credit_limit": credit_limit,
+        "credit_limit": money_json(credit_limit),
         "credit_unlimited": unlimited,
-        "outstanding_balance": round(outstanding, 2),
+        "outstanding_balance": money_json(round(outstanding, 2)),
         "available_credit": available,
         "is_over_limit": over_limit,
         "open_invoice_count": len(credit_sales),
-        "open_invoice_total": round(open_invoice_total, 2),
+        "open_invoice_total": money_json(round(open_invoice_total, 2)),
         "credit_sales": credit_sales,
     }
 
@@ -958,7 +958,7 @@ async def supplier_credit_info(db: AsyncSession, tenant_id: str, supplier_id: st
                 "purchase_invoice_id": inv.id,
                 "invoice_number": inv.invoice_number,
                 "purchase_order_id": inv.purchase_order_id,
-                "amount": round(due, 2),
+                "amount": money_json(round(due, 2)),
                 "due_date": inv.due_date,
                 "status": inv.status,
             }
@@ -976,15 +976,15 @@ async def supplier_credit_info(db: AsyncSession, tenant_id: str, supplier_id: st
                 "document_type": "purchase_order",
                 "purchase_order_id": po.id,
                 "po_number": po.po_number,
-                "amount": round(due, 2),
+                "amount": money_json(round(due, 2)),
                 "due_date": po.due_date,
                 "status": po.status,
             }
         )
 
-    outstanding = float(supplier.balance or 0)
+    outstanding = money_json(supplier.balance or 0)
     if abs(outstanding) < 1e-9 and open_total > 0:
-        outstanding = round(open_total, 2)
+        outstanding = money_json(round(open_total, 2))
 
     return {
         "supplier": {
@@ -994,9 +994,9 @@ async def supplier_credit_info(db: AsyncSession, tenant_id: str, supplier_id: st
             "phone": getattr(supplier, "phone", None),
             "payment_terms_days": getattr(supplier, "payment_terms_days", None),
         },
-        "outstanding_balance": round(outstanding, 2),
+        "outstanding_balance": money_json(round(outstanding, 2)),
         "open_bill_count": len(open_bills),
-        "open_bill_total": round(open_total, 2),
+        "open_bill_total": money_json(round(open_total, 2)),
         "open_bills": open_bills,
     }
 

@@ -2905,7 +2905,7 @@ export default function Page() {
                         Download
                       </button>
                       {inv.status === 'draft' && (
-                        <button onClick={() => suggestInvoiceOcr(inv.id)}>OCR</button>
+                        <button onClick={() => suggestInvoiceOcr(inv.id)} aria-label={`Suggest purchase invoice OCR ${inv.id}`}>OCR</button>
                       )}
                     </>
                   )}

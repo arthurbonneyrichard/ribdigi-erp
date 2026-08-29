@@ -170,7 +170,7 @@ def normalize_approval_matrix(raw: dict | list | None) -> list[dict]:
         levels.append(
             {
                 "step": i + 1,
-                "min_amount": round(min_amount, 2),
+                "min_amount": money_json(round(min_amount, 2)),
                 "roles": roles,
                 "label": label,
             }

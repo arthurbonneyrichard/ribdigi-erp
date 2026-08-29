@@ -369,6 +369,7 @@ export default function PlatformStaffPage() {
                           className="btn-ok"
                           disabled={busy}
                           onClick={() => setActive(u, true)}
+                          aria-label={`Activate platform staff ${u.id}`}
                         >
                           Activate
                         </button>
@@ -378,12 +379,18 @@ export default function PlatformStaffPage() {
                           className="btn-danger"
                           disabled={busy}
                           onClick={() => setActive(u, false)}
+                          aria-label={`Deactivate platform staff ${u.id}`}
                         >
                           Deactivate
                         </button>
                       )}
                       {u.role !== 'super_admin' && (
-                        <button type="button" disabled={busy} onClick={() => revokeAccess(u)}>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => revokeAccess(u)}
+                          aria-label={`Revoke dashboard access ${u.id}`}
+                        >
                           Revoke dashboard
                         </button>
                       )}

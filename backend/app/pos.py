@@ -461,7 +461,7 @@ async def shift_report(db: AsyncSession, session: m.PosSession) -> dict:
             )
         if not include:
             continue
-        amount = float(ret.total_amount or 0)
+        amount = money_json(ret.total_amount or 0)
         return_total += amount
         return_rows.append(
             {
@@ -470,7 +470,7 @@ async def shift_report(db: AsyncSession, session: m.PosSession) -> dict:
                 "credit_note_number": ret.credit_note_number,
                 "status": ret.status,
                 "reason": ret.reason,
-                "total_amount": amount,
+                "total_amount": money_json(amount),
                 "sales_invoice_id": ret.sales_invoice_id,
                 "posted_at": ret.posted_at,
                 "created_at": ret.created_at,
@@ -479,13 +479,13 @@ async def shift_report(db: AsyncSession, session: m.PosSession) -> dict:
 
     summary = {
         "sale_count": len(sale_rows),
-        "subtotal": round(subtotal_sum, 2),
-        "tax": round(tax_sum, 2),
-        "discounts": round(discount_sum, 2),
-        "net_sales": round(net_sum, 2),
+        "subtotal": money_json(round(subtotal_sum, 2)),
+        "tax": money_json(round(tax_sum, 2)),
+        "discounts": money_json(round(discount_sum, 2)),
+        "net_sales": money_json(round(net_sum, 2)),
         "return_count": len(return_rows),
-        "return_total": round(return_total, 2),
-        "net_after_returns": round(net_sum - return_total, 2),
+        "return_total": money_json(round(return_total, 2)),
+        "net_after_returns": money_json(round(net_sum - return_total, 2)),
     }
 
     return {

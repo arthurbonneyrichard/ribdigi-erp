@@ -1472,7 +1472,7 @@ export default function Page() {
                 <td>{q.valid_until ? String(q.valid_until).slice(0, 10) : '—'}</td>
                 <td>{q.rejection_reason || '—'}</td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  <button onClick={() => setSelected(q)}>View</button>
+                  <button onClick={() => setSelected(q)} aria-label={`View quotation ${q.id}`}>View</button>
                   {q.status === 'draft' && (
                     <button
                       onClick={() => act(`/sales/quotations/${q.id}/send`, 'Quotation emailed')}
@@ -1631,7 +1631,7 @@ export default function Page() {
                   {o.notes || '—'}
                 </td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  <button onClick={() => setSelected(o)}>View</button>
+                  <button onClick={() => setSelected(o)} aria-label={`View sales order ${o.id}`}>View</button>
                   {o.status === 'draft' && (
                     <button
                       type="button"
@@ -1825,7 +1825,7 @@ export default function Page() {
                   {inv.notes || '—'}
                 </td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  <button onClick={() => setSelected(inv)}>View</button>
+                  <button onClick={() => setSelected(inv)} aria-label={`View sales invoice ${inv.id}`}>View</button>
                   {inv.status === 'draft' && (
                     <>
                       <button
@@ -1899,6 +1899,7 @@ export default function Page() {
                           setSelected(inv);
                           pay();
                         }}
+                        aria-label={`Pay sales invoice ${inv.id}`}
                       >
                         Pay
                       </button>
@@ -2045,7 +2046,7 @@ export default function Page() {
                   {r.notes || '—'}
                 </td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  <button onClick={() => setSelected(r)}>View</button>
+                  <button onClick={() => setSelected(r)} aria-label={`View sales return ${r.id}`}>View</button>
                   {r.status === 'draft' && (
                     <>
                       <button

@@ -144,7 +144,7 @@ export default function Page() {
         <button onClick={() => setStatus('')} disabled={status === ''}>
           All (90 days)
         </button>
-        <button onClick={markAll}>Mark all read</button>
+        <button onClick={markAll} aria-label="Mark all notifications read">Mark all read</button>
         <button onClick={scanDue} aria-label="Scan due notification alerts">
           Scan due alerts
         </button>

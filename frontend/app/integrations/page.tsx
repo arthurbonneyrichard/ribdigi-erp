@@ -416,7 +416,7 @@ export default function Page() {
                 <td>{k.status}</td>
                 <td>{k.request_count ?? 0}</td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  <button type="button" onClick={() => loadUsage(k.id)}>
+                  <button type="button" onClick={() => loadUsage(k.id)} aria-label={`View API key usage ${k.id}`}>
                     Usage
                   </button>
                   {k.status === 'active' && (
@@ -608,7 +608,7 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
                   <button type="button" onClick={() => loadDeliveries(h.id)} aria-label={`Load webhook deliveries ${h.id}`}>
                     Deliveries
                   </button>
-                  <button type="button" onClick={() => rotateSecret(h.id)}>
+                  <button type="button" onClick={() => rotateSecret(h.id)} aria-label={`Rotate webhook secret ${h.id}`}>
                     Rotate secret
                   </button>
                   <button type="button" onClick={() => toggleActive(h)} aria-label={`${h.is_active ? "Disable" : "Enable"} webhook ${h.id}`}>

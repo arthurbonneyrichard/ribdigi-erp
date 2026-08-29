@@ -1173,7 +1173,7 @@ export default function Page() {
                 <button type="button" onClick={saveRecurringEdit} disabled={!recCategoryId || recBusy} aria-label="Save recurring expense schedule">
                   {recBusy ? 'Saving…' : 'Save schedule'}
                 </button>
-                <button type="button" onClick={cancelRecurringEdit} disabled={recBusy}>
+                <button type="button" onClick={cancelRecurringEdit} disabled={recBusy} aria-label="Cancel recurring expense edit">
                   Cancel
                 </button>
               </>
@@ -1625,7 +1625,7 @@ export default function Page() {
               <button type="button" onClick={saveEdit} disabled={editBusy} aria-label="Save expense changes">
                 {editBusy ? 'Saving…' : 'Save changes'}
               </button>
-              <button type="button" onClick={cancelEdit} disabled={editBusy}>
+              <button type="button" onClick={cancelEdit} disabled={editBusy} aria-label="Cancel expense edit">
                 Cancel
               </button>
             </div>
@@ -1721,7 +1721,7 @@ export default function Page() {
                     <button onClick={() => downloadAttachment(r.id)} aria-label="Download expense attachment">
                       Download
                     </button>
-                    <button onClick={() => suggestOcr(r.id)}>OCR</button>
+                    <button onClick={() => suggestOcr(r.id)} aria-label={`Suggest expense OCR ${r.id}`}>OCR</button>
                     <button onClick={() => removeAttachment(r.id)} aria-label={`Remove expense attachment ${r.id}`}>Remove</button>
                   </span>
                 ) : (

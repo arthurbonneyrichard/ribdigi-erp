@@ -331,7 +331,7 @@ export default function Page() {
           {passkeys.map((p) => (
             <li key={p.id}>
               {p.name || 'Passkey'} · sign count {p.sign_count}{' '}
-              <button type="button" onClick={() => removePasskey(p.id)}>
+              <button type="button" onClick={() => removePasskey(p.id)} aria-label={`Remove passkey ${p.id}`}>
                 Remove
               </button>
             </li>
@@ -344,7 +344,7 @@ export default function Page() {
         <div className="card" style={{ marginBottom: 16 }}>
           <h2>Enable TOTP</h2>
           {!setup ? (
-            <button onClick={startSetup}>Start setup</button>
+            <button onClick={startSetup} aria-label="Start 2FA setup">Start setup</button>
           ) : (
             <>
               {setup.qr_png_base64 && (

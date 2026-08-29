@@ -153,7 +153,7 @@ async def build_dashboard(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
             "label": datetime(yy, mm, 1).strftime("%b %y"),
             "year": yy,
             "month": mm,
-            "total": round(month_totals[(yy, mm)], 2),
+            "total": money_json(round(month_totals[(yy, mm)], 2)),
         }
         for (yy, mm) in months_seq
     ]
@@ -208,8 +208,8 @@ async def build_dashboard(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
         {
             "label": d.strftime("%d %b"),
             "date": d.isoformat(),
-            "sales": round(daily[d]["sales"], 2),
-            "profit": round(daily[d]["profit"], 2),
+            "sales": money_json(round(daily[d]["sales"], 2)),
+            "profit": money_json(round(daily[d]["profit"], 2)),
         }
         for d in days_seq
     ]
@@ -221,8 +221,8 @@ async def build_dashboard(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
                 "product_id": pid,
                 "name": product_names.get(pid) or pid,
                 "sku": product_skus.get(pid),
-                "quantity": round(top_qty.get(pid, 0.0), 2),
-                "revenue": round(top_rev.get(pid, 0.0), 2),
+                "quantity": money_json(round(top_qty.get(pid, 0.0), 2)),
+                "revenue": money_json(round(top_rev.get(pid, 0.0), 2)),
             }
             for pid, _ in ranked
         ]

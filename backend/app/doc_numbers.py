@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import require_honest_narrative
 
 _SEQ_RE = re.compile(r"-(\d+)$")
 _PREFIX_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,19}$")
@@ -165,8 +166,12 @@ def format_series_number(prefix: str, year: int, seq: int, *, pad: int = SERIES_
 
 
 def normalize_prefix(prefix: str | None, *, default: str = "INV") -> str:
-    text = (prefix or default).strip().upper()
-    if not text or not _PREFIX_RE.match(text):
+    # OpenAPI DocumentPrefixValue → 422; service defense-in-depth → 400.
+    raw = prefix if prefix is not None and str(prefix).strip() else default
+    text = require_honest_narrative(
+        raw, label="document prefix", max_length=20
+    ).strip().upper()
+    if not _PREFIX_RE.match(text):
         raise HTTPException(
             status_code=400,
             detail="Document prefix must be 1–20 chars: letters, digits, underscore, or hyphen",

@@ -495,7 +495,7 @@ async def list_warehouse_stock(
         "include_zero": include_zero,
         "count": len(items),
         "items": items,
-        "total_quantity": round(sum(i["quantity"] for i in items), 3),
+        "total_quantity": money_json(round(sum(i["quantity"] for i in items), 3)),
     }
 
 
@@ -650,5 +650,5 @@ async def list_product_warehouse_stock(
         "reorder_level": money_json(product.reorder_level or 0),
         "count": len(items),
         "items": items,
-        "total_quantity": round(sum(i["quantity"] for i in items), 3),
+        "total_quantity": money_json(round(sum(i["quantity"] for i in items), 3)),
     }
