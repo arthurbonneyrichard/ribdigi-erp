@@ -911,6 +911,8 @@ class PlatformRevokeAccess(BaseModel):
 
 
 class AccountCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required COA identity ∈ AccountCodeValue; blank/`!!!`/`a b`/`http://…` → **422**
     # (was free `str`; blank late service **400**; garbage could persist).
     code: AccountCodeValue
@@ -933,6 +935,8 @@ class AccountCreate(BaseModel):
 
 
 class AccountUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank late service **400**; garbage could persist on COA display name).
     name: AccountNameValue | None = None
@@ -957,6 +961,8 @@ class OpeningBalanceLine(BaseModel):
     **400**; malformed codes were late **404** Account not found). Same
     AccountCodeValue as AccountCreate.code.
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     # Optional COA ∈ UuidIdValue; omit/`null` OK when account_code set; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach COA lookup).
@@ -969,6 +975,8 @@ class OpeningBalanceLine(BaseModel):
 
 
 class OpeningBalanceCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     lines: list[OpeningBalanceLine] = Field(min_length=1)
     # omit/`null` → auto COA-OPEN-YYYYMMDD; blank/`!!!`/`http://…` → **422** (was free
     # `str`; blank silently auto-labeled / garbage could persist on journal reference).
@@ -979,6 +987,8 @@ class OpeningBalanceCreate(BaseModel):
 
 
 class CashTransferCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # BR-10.3 — schema Literal; omit defaults to transfer; blank/invalid → 422
     kind: Literal["transfer", "deposit", "withdrawal"] = "transfer"
     # Optional source liquid COA ∈ UuidIdValue; omit/`null` → service requires
@@ -1186,6 +1196,8 @@ class CustomRoleUpdate(BaseModel):
 
 
 class ProductCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required catalog label ∈ ProductNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on product create).
     name: ProductNameValue
@@ -1244,6 +1256,8 @@ class ProductCreate(BaseModel):
 
 
 class ProductUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank late service **400**; garbage could persist on product display name).
     name: ProductNameValue | None = None
@@ -1518,6 +1532,8 @@ class ProductImagePrimaryUpdate(BaseModel):
 
 
 class PartyCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required party label ∈ PartyNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on customer/supplier).
     name: PartyNameValue
@@ -1556,6 +1572,8 @@ class PartyCreate(BaseModel):
 
 
 class PartyUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on customer/supplier PATCH).
     name: PartyNameValue | None = None
@@ -1593,6 +1611,8 @@ class PartyUpdate(BaseModel):
 
 
 class PartyContactCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required contact label ∈ PartyContactNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on customer/supplier contact create).
     name: PartyContactNameValue
@@ -1607,6 +1627,8 @@ class PartyContactCreate(BaseModel):
 
 
 class PartyContactUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     name: PartyContactNameValue | None = None
     # omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`;
     # blank/garbage could persist on customer/supplier contact PATCH).
@@ -1717,6 +1739,8 @@ class CreditLimitOverrideBody(BaseModel):
     `max_length=500` only — whitespace failed model_validator, but punctuation-
     only / URL-like garbage could land in audit `credit_limit_override.details.reason`).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     override_credit_limit: bool = False
     override_reason: CreditOverrideReasonValue | None = None
@@ -2375,6 +2399,8 @@ class StoreOperatingHours(BaseModel):
 
 
 class StoreCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required store label ∈ StoreNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on multi-store create).
     name: StoreNameValue
@@ -2400,6 +2426,8 @@ class StoreCreate(BaseModel):
 
 
 class StoreUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on store display name).
     name: StoreNameValue | None = None
@@ -2488,6 +2516,8 @@ class InventoryFefoSettingsUpdate(BaseModel):
 
 
 class WarehouseCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required warehouse label ∈ WarehouseNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on multi-store warehouse create).
     name: WarehouseNameValue
@@ -2513,6 +2543,8 @@ class WarehouseCreate(BaseModel):
 
 
 class WarehouseUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on warehouse display name).
     name: WarehouseNameValue | None = None
@@ -3468,6 +3500,8 @@ class SalesReturnPost(BaseModel):
 
 
 class CustomerPaymentCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required customer ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach party lookup). Existence remains
     # tenant-scoped customer lookup (**404**). Distinct from SupplierPaymentCreate.
@@ -6823,6 +6857,8 @@ class FxAutoRefreshUpdate(BaseModel):
 
 
 class BankConnectionCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required liquid COA ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach liquid-account lookup). Existence remains
     # tenant-scoped liquid account lookup (**404**).
@@ -6844,6 +6880,8 @@ class BankConnectionCreate(BaseModel):
 
 
 class BankConnectionUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # BR-10.3 — omit = no change; blank/invalid → 422 (no silent mock)
     provider: Literal["mock", "http_json"] | None = None
     # omit/`null` = no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist)
@@ -6993,6 +7031,8 @@ class BankClearGroupBody(BaseModel):
 
 
 class SupplierPaymentCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required supplier ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach party lookup). Existence remains
     # tenant-scoped supplier lookup (**404**). Distinct from CustomerPaymentCreate
@@ -7040,6 +7080,8 @@ class SupplierPaymentCreate(BaseModel):
 
 
 class CreditLimitUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
     credit_limit: NonNegativeMoneyValue
     payment_terms_days: int | None = Field(default=None, ge=0, le=3650)
@@ -8323,6 +8365,8 @@ class ChequeLifecycleReason(BaseModel):
     only / URL-like garbage could be appended to cheque `notes` / journal).
     Shared by bounce and cancel endpoints.
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     reason: ChequeLifecycleReasonValue
 
