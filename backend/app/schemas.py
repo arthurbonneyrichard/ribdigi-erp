@@ -1548,9 +1548,10 @@ class TransactionCreate(BaseModel):
     # reach party lookup). Existence remains tenant-scoped customer lookup
     # (**404**). Legacy sale create path (POS uses PosSaleCreate.party_id).
     party_id: UuidIdValue | None = None
-    subtotal: float = 0
-    tax: float = 0
-    total: float = 0
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was unconstrained float)
+    subtotal: NonNegativeMoneyValue = 0
+    tax: NonNegativeMoneyValue = 0
+    total: NonNegativeMoneyValue = 0
     # BR-8.1 / legacy sale — only completed create path; blank/invalid → 422 (no garbage persist)
     status: Literal["completed"] = "completed"
     payload: dict = Field(default_factory=dict)
@@ -2115,7 +2116,8 @@ class ApprovalLevelUpdate(BaseModel):
     roles: list[SystemRoleValue] = Field(min_length=1)
     # omit/`null` → no label; blank/`!!!`/`http://…` → **422** (was free `str`).
     label: ApprovalLevelLabelValue | None = None
-    step: int | None = None
+    # omit/`null` → service order by list index; 0/`-1`/`21` → **422** (was unconstrained int)
+    step: int | None = Field(default=None, ge=1, le=20)
 
 
 class ExpenseThresholdUpdate(BaseModel):
@@ -2757,7 +2759,8 @@ class PurchaseApprovalLevelUpdate(BaseModel):
     roles: list[SystemRoleValue] = Field(min_length=1)
     # omit/`null` → no label; blank/`!!!`/`http://…` → **422** (was free `str`).
     label: ApprovalLevelLabelValue | None = None
-    step: int | None = None
+    # omit/`null` → service order by list index; 0/`-1`/`21` → **422** (was unconstrained int)
+    step: int | None = Field(default=None, ge=1, le=20)
 
 
 class PurchaseApprovalSettingsUpdate(BaseModel):
@@ -2829,7 +2832,8 @@ class AiLowStockPredictionLine(BaseModel):
     # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str` with blank→None strip; garbage could reach catalog lookup).
     product_id: UuidIdValue
-    confidence: float | None = Field(default=None, ge=0, le=1)
+    # omit/`null` OK; nan/inf/out-of-range → **422** (was Field(ge=0, le=1) — Inf/NaN edge cases)
+    confidence: UnitIntervalValue | None = None
     # omit/`null` OK; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
     suggested_order_qty: NonNegativeQtyValue | None = None
     # omit/`null` OK; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
@@ -2865,7 +2869,8 @@ class AiLowStockPredictionRequestsBody(BaseModel):
 
     lines: list[AiLowStockPredictionLine] | None = None
     days_ahead: int = Field(default=14, ge=1, le=365)
-    min_confidence: float = Field(default=0, ge=0, le=1)
+    # ∈ UnitIntervalValue; omit → 0; nan/inf/out-of-range → **422** (was Field(ge=0, le=1))
+    min_confidence: UnitIntervalValue = 0
     # omit/`null` → no header notes; blank/`!!!`/`http://…` → **422** (was free
     # `str` stripped to null; blank/garbage could persist on draft PREQ notes).
     notes: PurchaseRequestNotesValue | None = None
@@ -5919,6 +5924,11 @@ LongitudeValue = Annotated[
     float,
     Field(allow_inf_nan=False, ge=-180, le=180),
 ]
+# Unit interval 0–1 (AI confidence floors) — finite; nan/inf/out-of-range → 422.
+UnitIntervalValue = Annotated[
+    float,
+    Field(allow_inf_nan=False, ge=0, le=1),
+]
 
 
 def validate_address_value(value: str) -> str:
@@ -8122,9 +8132,10 @@ class PosSaleCreate(BaseModel):
     party_id: UuidIdValue | None = None
     # omit/`null` → walk-in (no name); blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist)
     customer_name: PosCustomerNameValue | None = None
-    subtotal: float = 0
-    tax: float = 0
-    total: float = 0
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was unconstrained float; FE usually omits — server totals)
+    subtotal: NonNegativeMoneyValue = 0
+    tax: NonNegativeMoneyValue = 0
+    total: NonNegativeMoneyValue = 0
     # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
     discount_amount: NonNegativeMoneyValue = 0
     # BR-8.1 — only completed POS create; omit → completed; blank/invalid → 422

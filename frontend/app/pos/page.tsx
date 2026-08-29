@@ -1385,7 +1385,7 @@ export default function Page() {
                 />
               </label>
 
-              <div className="tpos-totals">
+              <div className="tpos-totals" aria-label="POS cart totals">
                 <div className="tpos-total-row">
                   <span>Subtotal</span>
                   <strong>{money(cartTotals.subtotal)}</strong>

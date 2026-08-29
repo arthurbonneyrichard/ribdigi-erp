@@ -18,6 +18,7 @@ export default function Page() {
   const [includeOpenPr, setIncludeOpenPr] = useState(false);
   const [predictionNotes, setPredictionNotes] = useState('');
   const [predictionRiskReason, setPredictionRiskReason] = useState('');
+  const [minConfidence, setMinConfidence] = useState('');
   const [lastDocExtract, setLastDocExtract] = useState<any | null>(null);
   const [documentType, setDocumentType] = useState<'auto' | 'receipt' | 'invoice' | 'purchase_order'>('auto');
   const [expectedAmount, setExpectedAmount] = useState('');
@@ -186,6 +187,13 @@ export default function Page() {
         notes: predictionNotes.trim() || null,
         include_open: includeOpenPr,
       };
+      const mc = minConfidence.trim() === '' ? null : Number(minConfidence);
+      if (mc != null && Number.isFinite(mc)) {
+        body.min_confidence = mc;
+      } else if (minConfidence.trim() !== '') {
+        setError('Min confidence must be a number from 0 to 1');
+        return;
+      }
       // Prefer lines already loaded so the UI matches what the user saw.
       // Slim to AiLowStockPredictionLine allow-list (extra=forbid on API).
       if (lastAtRisk.length) {
@@ -819,6 +827,14 @@ export default function Page() {
           >
             {draftPrBusy ? 'Creating draft PR(s)…' : 'Create draft PR(s)'}
           </button>
+          <input
+            value={minConfidence}
+            onChange={(e) => setMinConfidence(e.target.value)}
+            placeholder="Min confidence 0–1"
+            aria-label="AI prediction min confidence"
+            title="Optional confidence floor for draft PRs (0–1 finite; blank → 0)"
+            style={{ width: 140 }}
+          />
           <input
             value={predictionNotes}
             onChange={(e) => setPredictionNotes(e.target.value)}
