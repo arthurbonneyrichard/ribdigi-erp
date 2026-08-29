@@ -1595,7 +1595,11 @@ export default function Page() {
                 aria-label="Account name"
                 title="Account display name (1–150 chars; letters/digits required)"
               />
-              <select value={newAcctKind} onChange={(e) => setNewAcctKind(e.target.value)}>
+              <select
+                value={newAcctKind}
+                onChange={(e) => setNewAcctKind(e.target.value)}
+                aria-label="Liquid account kind"
+              >
                 <option value="cash">Cash</option>
                 <option value="bank">Bank</option>
               </select>
@@ -1634,7 +1638,11 @@ export default function Page() {
               withdrawal debits equity.
             </p>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              <select value={xferKind} onChange={(e) => setXferKind(e.target.value)}>
+              <select
+                value={xferKind}
+                onChange={(e) => setXferKind(e.target.value)}
+                aria-label="Cash transfer kind"
+              >
                 <option value="transfer">Transfer</option>
                 <option value="deposit">Deposit</option>
                 <option value="withdrawal">Withdrawal</option>
@@ -1873,7 +1881,11 @@ export default function Page() {
               without deleting the connection (use Remove to delete).
             </p>
             <input aria-label="Bank connection display name" value={connName} onChange={(e) => setConnName(e.target.value)} placeholder="Connection name" />
-            <select value={connProvider} onChange={(e) => setConnProvider(e.target.value)}>
+            <select
+              value={connProvider}
+              onChange={(e) => setConnProvider(e.target.value)}
+              aria-label="Bank connection provider"
+            >
               <option value="mock">mock (built-in sample feed)</option>
               <option value="http_json">http_json (GET JSON feed URL)</option>
             </select>

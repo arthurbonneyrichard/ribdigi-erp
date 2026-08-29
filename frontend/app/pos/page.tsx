@@ -1456,7 +1456,11 @@ export default function Page() {
               {!splitTender ? (
                 <label className="tpos-field">
                   <span>Payment</span>
-                  <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+                  <select
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    aria-label="POS payment method"
+                  >
                     <option value="cash">Cash</option>
                     <option value="card">Card</option>
                     <option value="wallet">Digital wallet</option>

@@ -658,6 +658,7 @@ export default function Page() {
           <select
             value={form.record_scope}
             onChange={(e) => setForm({ ...form, record_scope: e.target.value })}
+            aria-label="User record scope"
           >
             {RECORD_SCOPES.map((s) => (
               <option key={s.value || 'default'} value={s.value}>
@@ -779,6 +780,7 @@ export default function Page() {
                   <select
                     value={r.record_scope || 'own'}
                     onChange={(e) => setRecordScope(r.id, e.target.value)}
+                    aria-label={`Edit user record scope for ${r.email}`}
                   >
                     {RECORD_SCOPES.filter((s) => s.value).map((s) => (
                       <option key={s.value} value={s.value}>

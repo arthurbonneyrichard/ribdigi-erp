@@ -1037,7 +1037,12 @@ export default function Page() {
               aria-label={editWhId ? 'Edit warehouse name' : 'Warehouse name'}
               title="Warehouse name (1–150 chars; letters/digits required)"
             />
-            <select value={whType} onChange={(e) => setWhType(e.target.value)} title="Warehouse type">
+            <select
+              value={whType}
+              onChange={(e) => setWhType(e.target.value)}
+              aria-label="Warehouse type"
+              title="Warehouse type"
+            >
               <option value="retail">Retail</option>
               <option value="bulk">Bulk</option>
               <option value="cold_storage">Cold storage</option>
@@ -1189,7 +1194,11 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <select value={drawerMode} onChange={(e) => setDrawerMode(e.target.value)}>
+            <select
+              value={drawerMode}
+              onChange={(e) => setDrawerMode(e.target.value)}
+              aria-label="Cash drawer mode"
+            >
               <option value="none">none (disabled)</option>
               <option value="mock">mock (log pulse)</option>
               <option value="network">network (ESC/POS TCP)</option>

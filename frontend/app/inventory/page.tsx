@@ -1762,7 +1762,11 @@ export default function Page() {
               aria-label="Edit product selling price"
             />
             <label className="muted">Tax supply class</label>
-            <select value={editSupplyClass} onChange={(e) => setEditSupplyClass(e.target.value)}>
+            <select
+              value={editSupplyClass}
+              onChange={(e) => setEditSupplyClass(e.target.value)}
+              aria-label="Edit product supply class"
+            >
               <option value="standard">Standard-rated</option>
               <option value="zero_rated">Zero-rated</option>
               <option value="exempt">Exempt</option>
@@ -2170,7 +2174,11 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <select value={productSupplyClass} onChange={(e) => setProductSupplyClass(e.target.value)}>
+            <select
+              value={productSupplyClass}
+              onChange={(e) => setProductSupplyClass(e.target.value)}
+              aria-label="Product supply class"
+            >
               <option value="standard">Tax: standard-rated</option>
               <option value="zero_rated">Tax: zero-rated</option>
               <option value="exempt">Tax: exempt</option>
