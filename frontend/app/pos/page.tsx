@@ -961,6 +961,8 @@ export default function Page() {
               onChange={(e) => setPosPrefix(e.target.value.toUpperCase())}
               placeholder="Prefix"
               style={{ width: 100 }}
+              aria-label="POS sale number prefix"
+              title="Document prefix (letters, digits, _ or -)"
             />
             <input
               className="tpos-input"
@@ -968,6 +970,7 @@ export default function Page() {
               onChange={(e) => setPosNext(e.target.value)}
               placeholder="Next #"
               style={{ width: 90 }}
+              aria-label="POS sale next number"
             />
             <span className="muted">{posPreview || '—'}</span>
           </div>
@@ -979,6 +982,8 @@ export default function Page() {
               onChange={(e) => setShiftPrefix(e.target.value.toUpperCase())}
               placeholder="Prefix"
               style={{ width: 100 }}
+              aria-label="POS session number prefix"
+              title="Document prefix (letters, digits, _ or -)"
             />
             <input
               className="tpos-input"
@@ -986,6 +991,7 @@ export default function Page() {
               onChange={(e) => setShiftNext(e.target.value)}
               placeholder="Next #"
               style={{ width: 90 }}
+              aria-label="POS session next number"
             />
             <span className="muted">{shiftPreview || '—'}</span>
             <button type="button" className="tpos-btn" onClick={savePosNumbering}>

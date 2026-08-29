@@ -477,6 +477,7 @@ export default function PlatformConsole() {
               <select
                 value={form.industry}
                 onChange={(e) => setForm((f) => ({ ...f, industry: e.target.value }))}
+                aria-label="Tenant industry"
               >
                 {INDUSTRIES.map((i) => (
                   <option key={i} value={i}>

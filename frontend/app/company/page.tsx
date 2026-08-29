@@ -334,6 +334,7 @@ export default function Page() {
         <select
           value={tenant.industry || 'retail'}
           onChange={(e) => setTenant({ ...tenant, industry: e.target.value })}
+          aria-label="Company industry"
         >
           {['retail', 'mart', 'pharmacy', 'restaurant', 'bakery', 'wholesale', 'manufacturing'].map((i) => (
             <option key={i} value={i}>

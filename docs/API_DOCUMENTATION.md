@@ -231,7 +231,7 @@ Client idle auto-logout uses tenant `inactivity_timeout_minutes` (default `30`, 
 }
 ```
 
-`industry` schema `Literal["retail","pharmacy","restaurant","bakery","wholesale","manufacturing","mart"]` (omit → `retail`; blank/invalid → **422**; case-insensitive coerce via `BeforeValidator`, e.g. `Wholesale` → `wholesale`). Service `normalize_industry` remains defense-in-depth **400**. Company page industry `<select>` matches the allow-list.
+`industry` schema `Literal["retail","pharmacy","restaurant","bakery","wholesale","manufacturing","mart"]` (omit → `retail`; blank/invalid → **422**; case-insensitive coerce via `BeforeValidator`, e.g. `Wholesale` → `wholesale`). Service `normalize_industry` remains defense-in-depth **400**. Company **Company industry** + Platform **Tenant industry** selects (`aria-label`s) match the allow-list.
 
 `currency` ∈ 3-letter ISO (`CurrencyCodeValue`; strip/upper; omit → `GHS`; blank/non-ISO → **422** — was free `str` with no create-path check). Same honesty on `PATCH /tenants/me`. Company **Currency** select.
 
@@ -289,7 +289,7 @@ Also: `GET /tenants/{tenant_id}` for platform cross-tenant reads where authorize
 }
 ```
 
-`industry` (when sent) uses the same schema `Literal` as create (omit = no change; blank/invalid → **422**).
+`industry` (when sent) uses the same schema `Literal` as create (omit = no change; blank/invalid → **422**). Company **Company industry** select (`aria-label`).
 
 `currency` (when sent) same `CurrencyCodeValue` as create / FX rates (omit = no change; blank/non-ISO → **422** — was free `str` with length-only late service **400**; non-ISO could persist). Company **Currency** select.
 
@@ -1327,7 +1327,7 @@ Expense example: `{ "code": "6100", "name": "Misc Expense", "account_type": "exp
 - `POST /accounting/transfers` — typed `CashTransferCreate` (`extra=forbid`; unknown keys → **422**). Body `{ "kind": "transfer|deposit|withdrawal", "from_account_id", "to_account_id", "amount", "reference", "notes" }` — `kind` schema `Literal` (omit → `transfer`; blank/invalid → **422**). Required `amount` ∈ `PositiveMoneyValue` (`nan`/`inf`/≤0 → **422** — was `Field(gt=0)` only). Accounting **Cash transfer amount** (`aria-label`). Optional `from_account_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → service requires for transfer/withdrawal; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach liquid-account lookup; existence remains tenant-scoped account lookup **404**). Accounting **Cash transfer from account** select (`aria-label`); Post cash transfer sends trim or `null` when blank. Optional `to_account_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → service requires for transfer/deposit; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach liquid-account lookup; existence remains tenant-scoped account lookup **404**). Accounting **Cash transfer to account** select (`aria-label`); Post cash transfer sends trim or `null` when blank. Optional `reference` ∈ `CashTransferReferenceValue` (strip; 1–80; ≥1 letter/digit; no `://`/`@`; omit/`null` → auto `XFER-YYYY-NNNN`; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently auto-numbered / garbage could persist). Optional `notes` ∈ `CashTransferNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → no notes; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently dropped / garbage could persist). Accounting **Cash transfer reference** / **Cash transfer notes** inputs.  
 - `GET /accounting/transfers/{id}`  
 
-**Numbering:** `GET|PATCH /accounting/settings` exposes `cash_transfer_numbering` alongside `journal_numbering`. Create allocates `{PREFIX}-{YYYY}-{NNNN}` (default `XFER`) when `reference` is omitted; explicit references are kept. Journal line `reference` uses the same value (BR-10.3 / BR-20.4). Nested `prefix` ∈ `DocumentPrefixValue` (strip + upper; `^[A-Za-z0-9][A-Za-z0-9_-]{0,19}$`); blank/`!!!`/`JE!`/`a b` → **422** (was free `str`; service `normalize_prefix` late **400**). Nested `DocumentNumberingFields` `extra=forbid` (unknown keys → **422**). Accounting **Journal number prefix** / **Cash transfer number prefix** inputs (`aria-label`s).
+**Numbering:** `GET|PATCH /accounting/settings` exposes `cash_transfer_numbering` alongside `journal_numbering`. Create allocates `{PREFIX}-{YYYY}-{NNNN}` (default `XFER`) when `reference` is omitted; explicit references are kept. Journal line `reference` uses the same value (BR-10.3 / BR-20.4). Nested `prefix` ∈ `DocumentPrefixValue` (strip + upper; `^[A-Za-z0-9][A-Za-z0-9_-]{0,19}$`); blank/`!!!`/`JE!`/`a b` → **422** (was free `str`; service `normalize_prefix` late **400**). Nested `DocumentNumberingFields` `extra=forbid` (unknown keys → **422**). Accounting **Journal number prefix** / **Cash transfer number prefix** inputs (`aria-label`s). Same prefix honesty + `aria-label`s on Sales (Invoice/Quotation/Sales order/Sales return/Credit note/Payment receipt), Purchasing (PO/GRN/PI/Request/PR/DN/SPY), Expenses (Expense), Inventory (Transfer/Stock count/Opening stock), and POS (Sale/Shift) numbering settings.
 
 `transfer` requires two distinct liquid accounts (Dr destination / Cr source).  
 `deposit` credits Owner's Equity `3000` into a liquid account; `withdrawal` is the reverse.

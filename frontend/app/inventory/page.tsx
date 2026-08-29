@@ -1547,12 +1547,15 @@ export default function Page() {
             onChange={(e) => setTrPrefix(e.target.value.toUpperCase())}
             placeholder="Prefix"
             style={{ width: 100 }}
+            aria-label="Stock transfer number prefix"
+            title="Document prefix (letters, digits, _ or -)"
           />
           <input
             value={trNext}
             onChange={(e) => setTrNext(e.target.value)}
             placeholder="Next #"
             style={{ width: 90 }}
+            aria-label="Stock transfer next number"
           />
           <span className="muted">{trPreview || '—'}</span>
         </div>
@@ -1563,12 +1566,15 @@ export default function Page() {
             onChange={(e) => setScPrefix(e.target.value.toUpperCase())}
             placeholder="Prefix"
             style={{ width: 100 }}
+            aria-label="Stock count number prefix"
+            title="Document prefix (letters, digits, _ or -)"
           />
           <input
             value={scNext}
             onChange={(e) => setScNext(e.target.value)}
             placeholder="Next #"
             style={{ width: 90 }}
+            aria-label="Stock count next number"
           />
           <span className="muted">{scPreview || '—'}</span>
         </div>
@@ -1579,12 +1585,15 @@ export default function Page() {
             onChange={(e) => setOsPrefix(e.target.value.toUpperCase())}
             placeholder="Prefix"
             style={{ width: 100 }}
+            aria-label="Opening stock number prefix"
+            title="Document prefix (letters, digits, _ or -)"
           />
           <input
             value={osNext}
             onChange={(e) => setOsNext(e.target.value)}
             placeholder="Next #"
             style={{ width: 90 }}
+            aria-label="Opening stock next number"
           />
           <span className="muted">{osPreview || '—'}</span>
           <button type="button" onClick={saveInventoryNumbering}>

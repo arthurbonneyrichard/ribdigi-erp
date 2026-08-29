@@ -810,12 +810,15 @@ export default function Page() {
             onChange={(e) => setExpPrefix(e.target.value.toUpperCase())}
             placeholder="Prefix"
             style={{ width: 100 }}
+            aria-label="Expense number prefix"
+            title="Document prefix (letters, digits, _ or -)"
           />
           <input
             value={expNext}
             onChange={(e) => setExpNext(e.target.value)}
             placeholder="Next #"
             style={{ width: 90 }}
+            aria-label="Expense next number"
           />
           <span className="muted">{expPreview || '—'}</span>
           <button type="button" onClick={saveExpenseNumbering}>

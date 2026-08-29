@@ -1289,12 +1289,15 @@ export default function Page() {
                 onChange={(e) => setPoPrefix(e.target.value.toUpperCase())}
                 placeholder="Prefix"
                 style={{ width: 100 }}
+                aria-label="Purchase order number prefix"
+                title="Document prefix (letters, digits, _ or -)"
               />
               <input
                 value={poNext}
                 onChange={(e) => setPoNext(e.target.value)}
                 placeholder="Next #"
                 style={{ width: 90 }}
+                aria-label="Purchase order next number"
               />
               <span className="muted">{poPreview || '—'}</span>
             </div>
@@ -1305,12 +1308,15 @@ export default function Page() {
                 onChange={(e) => setGrnPrefix(e.target.value.toUpperCase())}
                 placeholder="Prefix"
                 style={{ width: 100 }}
+                aria-label="GRN number prefix"
+                title="Document prefix (letters, digits, _ or -)"
               />
               <input
                 value={grnNext}
                 onChange={(e) => setGrnNext(e.target.value)}
                 placeholder="Next #"
                 style={{ width: 90 }}
+                aria-label="GRN next number"
               />
               <span className="muted">{grnPreview || '—'}</span>
             </div>
@@ -1321,12 +1327,15 @@ export default function Page() {
                 onChange={(e) => setPiPrefix(e.target.value.toUpperCase())}
                 placeholder="Prefix"
                 style={{ width: 100 }}
+                aria-label="Purchase invoice number prefix"
+                title="Document prefix (letters, digits, _ or -)"
               />
               <input
                 value={piNext}
                 onChange={(e) => setPiNext(e.target.value)}
                 placeholder="Next #"
                 style={{ width: 90 }}
+                aria-label="Purchase invoice next number"
               />
               <span className="muted">{piPreview || '—'}</span>
             </div>
@@ -1337,12 +1346,15 @@ export default function Page() {
                 onChange={(e) => setPreqPrefix(e.target.value.toUpperCase())}
                 placeholder="Prefix"
                 style={{ width: 100 }}
+                aria-label="Purchase request number prefix"
+                title="Document prefix (letters, digits, _ or -)"
               />
               <input
                 value={preqNext}
                 onChange={(e) => setPreqNext(e.target.value)}
                 placeholder="Next #"
                 style={{ width: 90 }}
+                aria-label="Purchase request next number"
               />
               <span className="muted">{preqPreview || '—'}</span>
             </div>
@@ -1353,12 +1365,15 @@ export default function Page() {
                 onChange={(e) => setPrPrefix(e.target.value.toUpperCase())}
                 placeholder="Prefix"
                 style={{ width: 100 }}
+                aria-label="Purchase return number prefix"
+                title="Document prefix (letters, digits, _ or -)"
               />
               <input
                 value={prNext}
                 onChange={(e) => setPrNext(e.target.value)}
                 placeholder="Next #"
                 style={{ width: 90 }}
+                aria-label="Purchase return next number"
               />
               <span className="muted">{prPreview || '—'}</span>
             </div>
@@ -1369,12 +1384,15 @@ export default function Page() {
                 onChange={(e) => setDnPrefix(e.target.value.toUpperCase())}
                 placeholder="Prefix"
                 style={{ width: 100 }}
+                aria-label="Debit note number prefix"
+                title="Document prefix (letters, digits, _ or -)"
               />
               <input
                 value={dnNext}
                 onChange={(e) => setDnNext(e.target.value)}
                 placeholder="Next #"
                 style={{ width: 90 }}
+                aria-label="Debit note next number"
               />
               <span className="muted">{dnPreview || '—'}</span>
             </div>
@@ -1385,12 +1403,15 @@ export default function Page() {
                 onChange={(e) => setSpyPrefix(e.target.value.toUpperCase())}
                 placeholder="Prefix"
                 style={{ width: 100 }}
+                aria-label="Supplier payment number prefix"
+                title="Document prefix (letters, digits, _ or -)"
               />
               <input
                 value={spyNext}
                 onChange={(e) => setSpyNext(e.target.value)}
                 placeholder="Next #"
                 style={{ width: 90 }}
+                aria-label="Supplier payment next number"
               />
               <span className="muted">{spyPreview || '—'}</span>
               <button type="button" onClick={savePurchasingNumbering}>
