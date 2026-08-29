@@ -1,4 +1,4 @@
-"""OpenAPI honesty tips #719–#751: optional notes defense + money_json + residual aria."""
+"""OpenAPI honesty tips #719–#752: optional notes defense + money_json + residual aria."""
 
 from __future__ import annotations
 
@@ -49,6 +49,7 @@ def test_honesty_batch4_docs_and_agents():
         "Bank clear-group notes defense-in-depth OpenAPI",
         "Backup notes defense-in-depth OpenAPI",
         "Webhook description defense-in-depth OpenAPI",
+        "Brand description defense-in-depth OpenAPI",
         "Stock movement notes defense-in-depth OpenAPI",
         "Opening stock notes defense-in-depth OpenAPI",
         "Opening balance notes defense-in-depth OpenAPI",
@@ -124,6 +125,8 @@ def test_services_wire_optional_honest_narrative_batch4():
     assert "optional_honest_narrative" in inspect.getsource(backup_mod.create_backup)
     assert "optional_honest_narrative" in inspect.getsource(webhooks_mod.create_endpoint)
     assert "optional_honest_narrative" in inspect.getsource(webhooks_mod.update_endpoint)
+    assert "optional_honest_narrative" in inspect.getsource(catalog_meta_mod.create_brand)
+    assert "optional_honest_narrative" in inspect.getsource(catalog_meta_mod.update_brand)
     assert "optional_honest_narrative" in inspect.getsource(catalog_mod.stock_in_with_batch)
     assert "optional_honest_narrative" in inspect.getsource(catalog_mod.stock_out_with_batch)
     assert "optional_honest_narrative" in inspect.getsource(inventory_mod.apply_stock_change)

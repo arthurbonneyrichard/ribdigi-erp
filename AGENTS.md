@@ -661,6 +661,7 @@
 - **Bank clear-group notes defense-in-depth OpenAPI (BR-10.3):** `create_clearing_group` uses `optional_honest_narrative` (**400**) matching `BankClearGroupNotesValue` (**422**).
 - **Backup notes defense-in-depth OpenAPI (BR-16):** `create_backup` uses `optional_honest_narrative` (**400**) matching `BackupNotesValue` (**422**).
 - **Webhook description defense-in-depth OpenAPI (BR-18.6):** `create_endpoint` / `update_endpoint` use `optional_honest_narrative` (**400**) matching `WebhookDescriptionValue` (**422**).
+- **Brand description defense-in-depth OpenAPI (BR-5.1):** `create_brand` / `update_brand` use `optional_honest_narrative` (**400**) matching `BrandDescriptionValue` (**422**).
 - **Stock movement notes defense-in-depth OpenAPI (BR-5.2):** `stock_in_with_batch` / `stock_out_with_batch` / `apply_stock_change` use `optional_honest_narrative` (**400**) matching StockIn/Out/AdjustNotesValue (**422**).
 - **Opening stock notes defense-in-depth OpenAPI (BR-5.2):** `post_opening_stock` header + line notes use `optional_honest_narrative` (**400**) matching `OpeningStockNotesValue` (**422**).
 - **Opening balance notes defense-in-depth OpenAPI (BR-10.1):** `post_coa_opening_balances` uses `optional_honest_narrative` (**400**) matching `OpeningBalanceNotesValue` (**422**).

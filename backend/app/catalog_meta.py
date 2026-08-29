@@ -124,7 +124,7 @@ def serialize_unit(row: m.UnitOfMeasure, *, base: m.UnitOfMeasure | None = None)
         "code": row.code,
         "name": row.name,
         "base_unit_id": getattr(row, "base_unit_id", None),
-        "conversion_ratio": float(getattr(row, "conversion_ratio", None) or 1),
+        "conversion_ratio": money_json(getattr(row, "conversion_ratio", None), default=1.0),
         "base_unit_code": base.code if base else None,
         "is_active": bool(row.is_active),
         "created_at": row.created_at,
