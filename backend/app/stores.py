@@ -313,7 +313,7 @@ async def store_inventory(
                 "reorder_qty": reorder_qty,
                 "below_reorder": reorder > 0 and qty <= reorder,
                 "suggested_order_qty": (
-                    money_json(max(reorder_qty, round(reorder - qty, 3)))
+                    money_json(max(reorder_qty, money_json(round(reorder - qty, 3))))
                     if reorder > 0 and qty <= reorder
                     else reorder_qty
                 ),

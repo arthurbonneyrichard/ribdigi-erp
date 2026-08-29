@@ -437,7 +437,7 @@ async def notify_warehouse_low_stock_if_needed(
     ).scalar_one_or_none()
     loc = wh.code if wh else stock.warehouse_id[:8]
     suggested = money_json(getattr(stock, "reorder_qty", 0) or 0) or max(
-        round(reorder - qty, 3), 0
+        money_json(round(reorder - qty, 3)), 0
     )
     note = await create_notification(
         db,

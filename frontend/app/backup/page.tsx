@@ -145,6 +145,7 @@ export default function Page() {
             <label>
               <input
                 type="checkbox"
+                aria-label="Backup schedule enabled"
                 checked={!!settings.enabled}
                 onChange={(e) => setSettings({ ...settings, enabled: e.target.checked })}
               />{' '}

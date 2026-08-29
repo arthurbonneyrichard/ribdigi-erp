@@ -381,9 +381,9 @@ async def create_purchase_order(
         supplier_id=supplier_id,
         warehouse_id=warehouse_id,
         status="draft",
-        subtotal=round(subtotal, 2),
-        tax_amount=round(tax_total, 2),
-        total_amount=round(max(subtotal + tax_total - discount_total, 0), 2),
+        subtotal=money_json(round(subtotal, 2)),
+        tax_amount=money_json(round(tax_total, 2)),
+        total_amount=money_json(round(max(subtotal + tax_total - discount_total, 0), 2)),
         notes=optional_honest_narrative(notes, label="purchase order notes"),
         delivery_address=optional_honest_narrative(
             delivery_address, label="purchase order delivery address", max_length=500
@@ -635,9 +635,9 @@ async def amend_purchase_order(
                     line_total=line_total,
                 )
             )
-        po.subtotal = round(subtotal, 2)
-        po.tax_amount = round(tax_total, 2)
-        po.total_amount = round(max(subtotal + tax_total - discount_total, 0), 2)
+        po.subtotal = money_json(round(subtotal, 2))
+        po.tax_amount = money_json(round(tax_total, 2))
+        po.total_amount = money_json(round(max(subtotal + tax_total - discount_total, 0), 2))
 
     if notes is not None:
         # OpenAPI PurchaseOrderNotesValue → 422; null clears; blank/garbage → 400.
@@ -794,7 +794,7 @@ async def create_grn(
             raise HTTPException(status_code=400, detail="accepted/rejected qty cannot be negative")
         # If rejected omitted but accepted < received, treat remainder as rejected.
         if rejected_qty == 0 and accepted_qty < received_qty - 1e-9:
-            rejected_qty = round(received_qty - accepted_qty, 3)
+            rejected_qty = money_json(round(received_qty - accepted_qty, 3))
         if abs((accepted_qty + rejected_qty) - received_qty) > 1e-6:
             raise HTTPException(
                 status_code=400,
@@ -1074,7 +1074,7 @@ async def record_supplier_payment(
             if amount + 1e-9 >= due:
                 invoice_allocations.append((inv, min(amount, due), 0.0))
             else:
-                discount = round(due - amount, 2)
+                discount = money_json(round(due - amount, 2))
                 if discount > quote["discount_amount"] + 1e-9:
                     raise HTTPException(
                         status_code=409,
@@ -1121,12 +1121,12 @@ async def record_supplier_payment(
                 discount = quote["discount_amount"]
                 cash_used = quote["cash_to_settle"]
                 invoice_allocations.append((inv, settlement, discount))
-                total_discount = round(total_discount + discount, 2)
-                remaining = round(remaining - cash_used, 2)
+                total_discount = money_json(round(total_discount + discount, 2))
+                remaining = money_json(round(remaining - cash_used, 2))
             else:
                 apply_amt = min(remaining, due)
                 invoice_allocations.append((inv, apply_amt, 0.0))
-                remaining = round(remaining - apply_amt, 2)
+                remaining = money_json(round(remaining - apply_amt, 2))
             if remaining <= 0:
                 break
         due_po = money_json(po.total_amount) - money_json(po.paid_amount or 0)
@@ -1159,18 +1159,18 @@ async def record_supplier_payment(
                 discount = quote["discount_amount"]
                 cash_used = quote["cash_to_settle"]
                 invoice_allocations.append((inv, settlement, discount))
-                total_discount = round(total_discount + discount, 2)
+                total_discount = money_json(round(total_discount + discount, 2))
                 if inv.purchase_order_id:
                     po = await get_po(db, tenant_id, inv.purchase_order_id)
                     po_allocations.append((po, settlement))
-                remaining = round(remaining - cash_used, 2)
+                remaining = money_json(round(remaining - cash_used, 2))
             else:
                 apply_amt = min(remaining, due)
                 invoice_allocations.append((inv, apply_amt, 0.0))
                 if inv.purchase_order_id:
                     po = await get_po(db, tenant_id, inv.purchase_order_id)
                     po_allocations.append((po, apply_amt))
-                remaining = round(remaining - apply_amt, 2)
+                remaining = money_json(round(remaining - apply_amt, 2))
             if remaining <= 0:
                 break
         if remaining > 1e-9:
@@ -1191,7 +1191,7 @@ async def record_supplier_payment(
                     continue
                 apply_amt = min(remaining, due)
                 po_allocations.append((po, apply_amt))
-                remaining = round(remaining - apply_amt, 2)
+                remaining = money_json(round(remaining - apply_amt, 2))
                 if remaining <= 0:
                     break
             if remaining > 1e-9 and (open_pos or open_invs):
@@ -1240,10 +1240,10 @@ async def record_supplier_payment(
         for inv, amt, disc in invoice_allocations
     )
     if invoice_allocations:
-        settlement_base = round(
+        settlement_base = money_json(round(
             sum(to_base(amt, doc_rate(inv)) for inv, amt, _ in invoice_allocations),
             2,
-        )
+        ))
     else:
         settlement_base = to_base(amount, pay_rate)
 
@@ -1255,7 +1255,7 @@ async def record_supplier_payment(
         purchase_invoice_id=primary_inv.id if primary_inv else purchase_invoice_id,
         amount=amount,
         payment_method=payment_method,
-        early_payment_discount=round(total_discount, 2),
+        early_payment_discount=money_json(round(total_discount, 2)),
         currency=pay_cur,
         exchange_rate=pay_rate,
         liquid_account_id=liquid_account_id,
@@ -1402,8 +1402,8 @@ async def serialize_purchase_return(db: AsyncSession, ret: m.PurchaseReturn) -> 
         qty = money_json(i.quantity)
         unit = money_json(i.unit_price)
         rate = money_json(i.tax_rate)
-        line_net = round(qty * unit, 2)
-        line_tax = round(line_net * (rate / 100.0), 2)
+        line_net = money_json(round(qty * unit, 2))
+        line_tax = money_json(round(line_net * (rate / 100.0), 2))
         line_total = money_json(i.line_total)
         # Discount baked into line_total at create (no separate column)
         disc = max(money_json(round(line_net + line_tax - line_total, 2)), 0.0)
@@ -1531,14 +1531,14 @@ async def create_purchase_return(
         line_disc_po = money_json(getattr(po_item, "discount", 0) or 0)
         disc = 0.0
         if ordered > 1e-9 and line_disc_po > 0:
-            disc = round(line_disc_po * (qty / ordered), 2)
+            disc = money_json(round(line_disc_po * (qty / ordered), 2))
             merch = qty * unit
             if disc > merch + 1e-9:
-                disc = round(max(merch, 0), 2)
-        line_net = round(qty * unit, 2)
-        line_tax = round(line_net * (rate / 100.0), 2)
+                disc = money_json(round(max(merch, 0), 2))
+        line_net = money_json(round(qty * unit, 2))
+        line_tax = money_json(round(line_net * (rate / 100.0), 2))
         # Tax before discount (match PO/PI); bake discount into line_total
-        line_total = round(max(line_net + line_tax - disc, 0), 2)
+        line_total = money_json(round(max(line_net + line_tax - disc, 0), 2))
         subtotal += line_net
         tax_total += line_tax
         discount_total += disc
@@ -1563,9 +1563,9 @@ async def create_purchase_return(
         warehouse_id=grn.warehouse_id,
         status="draft",
         reason=reason,
-        subtotal=round(subtotal, 2),
-        tax_amount=round(tax_total, 2),
-        total_amount=round(max(subtotal + tax_total - discount_total, 0), 2),
+        subtotal=money_json(round(subtotal, 2)),
+        tax_amount=money_json(round(tax_total, 2)),
+        total_amount=money_json(round(max(subtotal + tax_total - discount_total, 0), 2)),
         notes=optional_honest_narrative(notes, label="purchase return notes"),
         created_by=user_id,
     )
@@ -1953,10 +1953,10 @@ async def create_purchase_invoice(
                     ordered = money_json(poi.quantity or 0)
                     line_disc = money_json(getattr(poi, "discount", 0) or 0)
                     if ordered > 1e-9 and line_disc > 0:
-                        disc = round(line_disc * (qty / ordered), 2)
+                        disc = money_json(round(line_disc * (qty / ordered), 2))
                         merch = qty * unit_price
                         if disc > merch + 1e-9:
-                            disc = round(max(merch, 0), 2)
+                            disc = money_json(round(max(merch, 0), 2))
                 items.append(
                     {
                         "product_id": gi.product_id,
@@ -1969,10 +1969,10 @@ async def create_purchase_invoice(
             # When client leaves header discount at 0, mirror sum of carried line discounts
             # so invoice total_amount matches negotiated PO economics (PI totals use header).
             if money_json(discount_amount or 0) <= 0:
-                discount_amount = round(
+                discount_amount = money_json(round(
                     sum(money_json(i.get("discount") or 0) for i in items),
                     2,
-                )
+                ))
     elif purchase_order_id:
         po = await get_po(db, tenant_id, purchase_order_id)
         supplier_id = supplier_id or po.supplier_id
@@ -1994,10 +1994,10 @@ async def create_purchase_invoice(
         # Supplier invoice is net; tax is self-assessed and excluded from AP.
         total = max(subtotal - discount_amount, 0)
         charged_tax = 0.0
-        rc_tax = round(tax_total, 2)
+        rc_tax = money_json(round(tax_total, 2))
     else:
         total = max(gross - discount_amount, 0)
-        charged_tax = round(tax_total, 2)
+        charged_tax = money_json(round(tax_total, 2))
         rc_tax = 0.0
     inv_date = invoice_date or datetime.utcnow()
     if due_date is None:
@@ -2018,12 +2018,12 @@ async def create_purchase_invoice(
         status="draft",
         invoice_date=inv_date,
         due_date=due_date,
-        subtotal=round(subtotal, 2),
+        subtotal=money_json(round(subtotal, 2)),
         tax_amount=charged_tax,
         reverse_charge_tax=rc_tax,
         is_reverse_charge=is_rc,
-        discount_amount=round(discount_amount, 2),
-        total_amount=round(total, 2),
+        discount_amount=money_json(round(discount_amount, 2)),
+        total_amount=money_json(round(total, 2)),
         paid_amount=0,
         currency=cur,
         exchange_rate=rate,

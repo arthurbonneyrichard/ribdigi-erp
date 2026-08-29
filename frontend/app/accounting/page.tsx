@@ -2190,6 +2190,7 @@ export default function Page() {
                             {ln.status === 'unmatched' && (
                               <input
                                 type="checkbox"
+                                aria-label={`Bank reconcile pick statement line ${ln.id}`}
                                 checked={pickBank.includes(ln.id)}
                                 onChange={() => togglePick(pickBank, ln.id, setPickBank)}
                               />
@@ -2248,6 +2249,7 @@ export default function Page() {
                               onChange={() =>
                                 togglePick(pickBook, jl.journal_line_id, setPickBook)
                               }
+                              aria-label={`Bank reconcile pick book line ${jl.journal_line_id}`}
                             />
                           </td>
                           <td>{jl.entry_number}</td>

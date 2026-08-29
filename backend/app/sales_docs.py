@@ -181,7 +181,7 @@ async def create_quotation(
         db, tenant_id, items, customer_id=customer_id
     )
     discount_amount = money_json(discount_amount or 0)
-    total = round(subtotal + tax_total - discount_amount, 2)
+    total = money_json(round(subtotal + tax_total - discount_amount, 2))
     if total < 0:
         raise HTTPException(status_code=400, detail="Total cannot be negative")
     quote = m.SalesQuotation(
@@ -412,7 +412,7 @@ async def create_order(
         db, tenant_id, items, customer_id=customer_id
     )
     discount_amount = money_json(discount_amount or 0)
-    total = round(subtotal + tax_total - discount_amount, 2)
+    total = money_json(round(subtotal + tax_total - discount_amount, 2))
     order = m.SalesOrder(
         tenant_id=tenant_id,
         order_number=await next_sales_order_number(db, tenant_id),
@@ -854,9 +854,9 @@ async def create_return(
             raise HTTPException(status_code=400, detail="Return quantity exceeds invoice quantity")
         unit = money_json(src.unit_price)
         rate = money_json(src.tax_rate or 0)
-        line_net = round(qty * unit, 2)
-        line_tax = round(line_net * (rate / 100.0), 2)
-        line_total = round(line_net + line_tax, 2)
+        line_net = money_json(round(qty * unit, 2))
+        line_tax = money_json(round(line_net * (rate / 100.0), 2))
+        line_total = money_json(round(line_net + line_tax, 2))
         subtotal += line_net
         tax_total += line_tax
         condition = (item.get("condition") or "").strip()
@@ -887,9 +887,9 @@ async def create_return(
         status="draft",
         reason=reason,
         restock=restock,
-        subtotal=round(subtotal, 2),
-        tax_amount=round(tax_total, 2),
-        total_amount=round(subtotal + tax_total, 2),
+        subtotal=money_json(round(subtotal, 2)),
+        tax_amount=money_json(round(tax_total, 2)),
+        total_amount=money_json(round(subtotal + tax_total, 2)),
         notes=optional_honest_narrative(notes, label="sales return notes"),
         created_by=user_id,
     )
@@ -952,11 +952,11 @@ async def post_return(
                 )
             )
 
-    return_total = round(money_json(ret.total_amount), 2)
+    return_total = money_json(round(money_json(ret.total_amount), 2))
     invoice = await get_invoice(db, tenant_id, ret.sales_invoice_id)
     open_ar = max(money_json(invoice.total_amount) - money_json(invoice.paid_amount or 0), 0.0)
     apply_to_invoice = min(return_total, open_ar)
-    excess = round(return_total - apply_to_invoice, 2)
+    excess = money_json(round(return_total - apply_to_invoice, 2))
 
     method = (settlement_method or "").strip().lower() or None
     # Defense in depth: SalesReturnPost Literal rejects blank/unknown with 422.
@@ -996,7 +996,7 @@ async def post_return(
 
     customer = await get_customer(db, tenant_id, ret.customer_id)
     # Negative balance = customer store credit after return
-    customer.balance = round(money_json(customer.balance or 0) - return_total, 2)
+    customer.balance = money_json(round(money_json(customer.balance or 0) - return_total, 2))
 
     ret.credit_note_number = await next_credit_note_number(db, tenant_id)
     ret.settlement_method = method
@@ -1023,7 +1023,7 @@ async def post_return(
         ret.refund_liquid_account_id = liquid_account_id
         ret.refunded_amount = excess
         # Cash paid out instead of leaving store credit for the excess
-        customer.balance = round(money_json(customer.balance or 0) + excess, 2)
+        customer.balance = money_json(round(money_json(customer.balance or 0) + excess, 2))
 
     from app.notifications import create_notification
 

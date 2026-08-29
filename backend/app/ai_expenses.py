@@ -184,7 +184,7 @@ async def expense_analysis(
     dup_key: dict[tuple, list[m.Expense]] = defaultdict(list)
     for e in rows:
         day = e.expense_date.date().isoformat() if e.expense_date else ""
-        dup_key[(e.payee or "", round(money_json(e.amount or 0), 2), day)].append(e)
+        dup_key[(e.payee or "", money_json(round(money_json(e.amount or 0), 2)), day)].append(e)
     duplicates = [
         {
             "payee": k[0],
@@ -210,7 +210,7 @@ async def expense_analysis(
         )
     if prior > 0 and recent > prior * 1.25:
         suggestions.append(
-            f"Overall approved expenses rose {round((recent / prior - 1) * 100, 1)}% vs prior half of the window."
+            f"Overall approved expenses rose {money_json(round((recent / prior - 1) * 100, 1))}% vs prior half of the window."
         )
     for d in duplicates[:3]:
         suggestions.append(

@@ -384,7 +384,7 @@ async def create_sales_invoice(
         status="draft",
         subtotal=subtotal,
         tax_amount=tax_total,
-        reverse_charge_tax=round(reverse_charge_tax, 2),
+        reverse_charge_tax=money_json(round(reverse_charge_tax, 2)),
         is_reverse_charge=header_rc,
         discount_amount=discount_amount,
         total_amount=total,
@@ -756,7 +756,7 @@ async def record_customer_payment(
             if amount + 1e-9 >= due:
                 allocations.append((invoice, min(amount, due), 0.0))
             else:
-                discount = round(due - amount, 2)
+                discount = money_json(round(due - amount, 2))
                 if discount > quote["discount_amount"] + 1e-9:
                     raise HTTPException(
                         status_code=409,
@@ -796,12 +796,12 @@ async def record_customer_payment(
                 discount = quote["discount_amount"]
                 cash_used = quote["cash_to_settle"]
                 allocations.append((invoice, settlement, discount))
-                total_discount = round(total_discount + discount, 2)
-                remaining = round(remaining - cash_used, 2)
+                total_discount = money_json(round(total_discount + discount, 2))
+                remaining = money_json(round(remaining - cash_used, 2))
             else:
                 apply_amt = min(remaining, due)
                 allocations.append((invoice, apply_amt, 0.0))
-                remaining = round(remaining - apply_amt, 2)
+                remaining = money_json(round(remaining - apply_amt, 2))
             if remaining <= 0:
                 break
         if remaining > 1e-9 and open_invoices:
@@ -841,10 +841,10 @@ async def record_customer_payment(
         f"{inv.invoice_number}:{amt:.2f}" + (f"(disc {disc:.2f})" if disc else "")
         for inv, amt, disc in allocations
     )
-    settlement_base = round(
+    settlement_base = money_json(round(
         sum(to_base(amt, doc_rate(inv)) for inv, amt, _ in allocations),
         2,
-    )
+    ))
     payment = m.CustomerPayment(
         tenant_id=tenant_id,
         payment_number=await next_customer_payment_number(db, tenant_id),
@@ -852,7 +852,7 @@ async def record_customer_payment(
         sales_invoice_id=sales_invoice_id or primary_invoice_id,
         amount=amount,
         payment_method=payment_method,
-        early_payment_discount=round(total_discount, 2),
+        early_payment_discount=money_json(round(total_discount, 2)),
         currency=pay_cur,
         exchange_rate=pay_rate,
         liquid_account_id=liquid_account_id,

@@ -1732,6 +1732,57 @@
 - **Party normalize longitude money_json Decimal pilot OpenAPI (BR-6.1 / BR-7.1):** party create/update longitude normalize uses `honesty.money_json`.
 - **API product audit float _jsonable money_json Decimal pilot OpenAPI (BR-5.1 / BR-17):** product PATCH audit float `_jsonable` uses `honesty.money_json`.
 - **Party contact email aria OpenAPI (BR-6.1 / BR-7.1):** Party contacts **Party contact email** input (`aria-label`).
+- **PO create totals money_json Decimal pilot OpenAPI (BR-6.3):** PO create `subtotal` / `tax_amount` / `total_amount` use `honesty.money_json(round(...))`.
+- **PO amend totals money_json Decimal pilot OpenAPI (BR-6.3):** PO amend `subtotal` / `tax_amount` / `total_amount` use `honesty.money_json(round(...))`.
+- **GRN rejected_qty money_json Decimal pilot OpenAPI (BR-6.4):** GRN inferred `rejected_qty` uses `honesty.money_json(round(...))`.
+- **Supplier payment discount money_json Decimal pilot OpenAPI (BR-11):** supplier payment early-discount / remaining / apply use `honesty.money_json(round(...))`.
+- **Supplier payment settlement_base money_json Decimal pilot OpenAPI (BR-11 / BR-2.6):** supplier payment `settlement_base` / `early_payment_discount` use `honesty.money_json(round(...))`.
+- **PI from-GRN line money_json Decimal pilot OpenAPI (BR-6.5):** PI from-GRN line net/tax/disc/total use `honesty.money_json(round(...))`.
+- **PI from-GRN header money_json Decimal pilot OpenAPI (BR-6.5):** PI from-GRN header subtotal/tax/total use `honesty.money_json(round(...))`.
+- **PI create totals money_json Decimal pilot OpenAPI (BR-6.5):** PI create/approve discount/RC/tax/totals use `honesty.money_json(round(...))`.
+- **Sales reverse_charge_tax money_json Decimal pilot OpenAPI (BR-7.4 / BR-12):** SI `reverse_charge_tax` assign uses `honesty.money_json(round(...))`.
+- **Customer payment discount money_json Decimal pilot OpenAPI (BR-11):** customer payment discount / remaining / apply use `honesty.money_json(round(...))`.
+- **Customer payment settlement_base money_json Decimal pilot OpenAPI (BR-11 / BR-2.6):** customer payment `settlement_base` / `early_payment_discount` use `honesty.money_json(round(...))`.
+- **Sales docs QT/SO total money_json Decimal pilot OpenAPI (BR-7.2 / BR-7.3):** quotation/order create `total` uses `honesty.money_json(round(...))`.
+- **Sales return line money_json Decimal pilot OpenAPI (BR-7.5):** sales-return line net/tax/total + header use `honesty.money_json(round(...))`.
+- **Sales return excess money_json Decimal pilot OpenAPI (BR-7.5):** sales-return excess / customer balance adjust use `honesty.money_json(round(...))`.
+- **Accounting AR FX settlement money_json Decimal pilot OpenAPI (BR-11 / BR-10.2):** AR payment FX settle/cash/disc/fx_gain_loss use `honesty.money_json(round(...))`.
+- **Accounting AP FX settlement money_json Decimal pilot OpenAPI (BR-11 / BR-10.2):** AP payment FX settle/disc/fx_gain_loss use `honesty.money_json(round(...))`.
+- **Accounting PI journal net money_json Decimal pilot OpenAPI (BR-6.5 / BR-10.2):** PI journal net-of-discount round uses `honesty.money_json(round(...))`.
+- **Accounting POS revenue split money_json Decimal pilot OpenAPI (BR-8.1 / BR-10.2):** POS journal revenue / tender amount use `honesty.money_json(round(...))`.
+- **API POS cart totals money_json Decimal pilot OpenAPI (BR-8.1):** POS cart gross/taxable/discount/total use `honesty.money_json(round(...))`.
+- **Opening balance residual money_json Decimal pilot OpenAPI (BR-10.1):** opening-balance residual / plug credit / opening_balance use `honesty.money_json(round(...))`.
+- **FX AR plug money_json Decimal pilot OpenAPI (BR-2.6):** FX AR settlement plug uses `honesty.money_json(round(...))`.
+- **FX AP plug money_json Decimal pilot OpenAPI (BR-2.6):** FX AP settlement plug uses `honesty.money_json(round(...))`.
+- **Notifications low-stock suggested money_json Decimal pilot OpenAPI (BR-5.5 / BR-15):** warehouse low-stock suggested qty uses `honesty.money_json(round(...))`.
+- **AI expenses MoM pct money_json Decimal pilot OpenAPI (BR-21.6):** AI expenses MoM rise pct uses `honesty.money_json(round(...))`.
+- **Stores suggested_order_qty money_json Decimal pilot OpenAPI (BR-13 / BR-5.5):** store warehouse `suggested_order_qty` gap uses `honesty.money_json(round(...))`.
+- **Reports sales accumulate money_json Decimal pilot OpenAPI (BR-14.1):** reports sales/by-* revenue/tax/qty accumulate use `honesty.money_json(round(...))`.
+- **Reports returns accumulate money_json Decimal pilot OpenAPI (BR-14.1 / BR-14.3):** sales/purchase returns by_reason/party accumulate use `honesty.money_json(round(...))`.
+- **Reports low-stock suggested money_json Decimal pilot OpenAPI (BR-14.2):** reports low-stock `suggested_order_qty` gap uses `honesty.money_json(round(...))`.
+- **Reports pending PO accumulate money_json Decimal pilot OpenAPI (BR-14.3):** pending-orders total accumulate uses `honesty.money_json(round(...))`.
+- **Party contact primary aria OpenAPI (BR-6.1 / BR-7.1):** Party contacts **Party contact primary** checkbox (`aria-label`).
+- **Platform feature module aria OpenAPI (BR-1):** Platform **Platform feature module** checkbox (`aria-label`).
+- **Low-stock suggestion select aria OpenAPI (BR-6.2 / BR-14.2):** Reports **Low-stock suggestion select** checkbox (`aria-label`).
+- **Report schedule enabled aria OpenAPI (BR-14):** Reports **Report schedule enabled** checkbox (`aria-label`).
+- **FEFO strict warehouse aria OpenAPI (BR-5.2 / BR-13):** Multi-Store **FEFO strict warehouse** checkbox (`aria-label`).
+- **Cash drawer open on cash sale aria OpenAPI (BR-8.1):** Multi-Store **Cash drawer open on cash sale** checkbox (`aria-label`).
+- **Use customer group price aria OpenAPI (BR-7.1 / BR-7.4):** Sales **Use customer group price** checkbox (`aria-label`).
+- **Sales invoice reverse charge aria OpenAPI (BR-7.4 / BR-12):** Sales **Sales invoice reverse charge** checkbox (`aria-label`).
+- **Sales return restock aria OpenAPI (BR-7.5):** Sales **Sales return restock** checkbox (`aria-label`).
+- **FX auto-refresh aria OpenAPI (BR-2.6):** Credit **FX auto-refresh** checkbox (`aria-label`).
+- **Apply early payment discount aria OpenAPI (BR-11):** Credit **Apply early payment discount** checkbox (`aria-label`).
+- **Bank reconcile pick statement line aria OpenAPI (BR-10.3):** Accounting **Bank reconcile pick statement line** checkbox (`aria-label`).
+- **Bank reconcile pick book line aria OpenAPI (BR-10.3):** Accounting **Bank reconcile pick book line** checkbox (`aria-label`).
+- **Webhook event aria OpenAPI (BR-18.6):** Integrations **Webhook event** checkbox (`aria-label`).
+- **Opening stock post journal aria OpenAPI (BR-5.2):** Inventory **Opening stock post journal** checkbox (`aria-label`).
+- **Warehouse stock include zero aria OpenAPI (BR-5.2 / BR-13):** Inventory **Warehouse stock include zero** checkbox (`aria-label`).
+- **Backup schedule enabled aria OpenAPI (BR-16):** Backup **Backup schedule enabled** checkbox (`aria-label`).
+- **POS split tender aria OpenAPI (BR-8.1):** POS **POS split tender** checkbox (`aria-label`).
+- **PO amend notify supplier aria OpenAPI (BR-6.3):** Purchasing **PO amend notify supplier** checkbox (`aria-label`).
+- **Purchase invoice reverse charge aria OpenAPI (BR-6.5 / BR-12):** Purchasing **Purchase invoice reverse charge** checkbox (`aria-label`).
+- **Company SMTP use TLS aria OpenAPI (BR-20.3):** Company **Company SMTP use TLS** checkbox (`aria-label`).
+- **Company SMTP use SSL aria OpenAPI (BR-20.3):** Company **Company SMTP use SSL** checkbox (`aria-label`).
 - **Report export date Query OpenAPI (BR-14):** `GET /reports/export` Query `from_date` / `to_date` / `date` / `as_of` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound / live as_of fallbacks; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Reports shared **Report From/To/as of date** inputs (`aria-label`s).
 - **Tax date Query OpenAPI:** `GET /reports/tax` + `GET /reports/tax/filing` Query `from_date` / `to_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Tax **Tax From/To date** inputs (`aria-label`s).
 - **Expenses date Query OpenAPI (BR-14.4):** `GET /reports/expenses/summary` + `GET /reports/expenses/budget-vs-actual` Query `from_date` / `to_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Reports **Expenses** tab uses shared **Report From/To date** inputs (`aria-label`s).

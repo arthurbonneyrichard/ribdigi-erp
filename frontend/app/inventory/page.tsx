@@ -3254,6 +3254,7 @@ export default function Page() {
             <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <input
                 type="checkbox"
+                aria-label="Opening stock post journal"
                 checked={openingPostJournal}
                 onChange={(e) => setOpeningPostJournal(e.target.checked)}
               />
@@ -3885,6 +3886,7 @@ export default function Page() {
                 type="checkbox"
                 checked={whStockIncludeZero}
                 onChange={(e) => setWhStockIncludeZero(e.target.checked)}
+                aria-label="Warehouse stock include zero"
               />
               <span className="muted">Include zero-qty rows</span>
             </label>

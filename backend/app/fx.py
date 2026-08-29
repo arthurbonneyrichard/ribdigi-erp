@@ -182,7 +182,7 @@ def fx_lines_for_receipt(
 ) -> tuple[float, list[dict]]:
     """Return (fx_amount signed: +gain/-loss, extra journal lines for FX)."""
     # Dr Cash + Dr Discount = Cr AR + Cr FX(gain) | Dr FX(loss)
-    plug = round(cash_base + discount_base - ar_base, 2)
+    plug = money_json(round(cash_base + discount_base - ar_base, 2))
     if abs(plug) < 0.005:
         return 0.0, []
     if plug > 0:
@@ -212,7 +212,7 @@ def fx_lines_for_payment(
 ) -> tuple[float, list[dict]]:
     """Supplier pay: Dr AP = Cr Cash + Cr Disc + Cr FX(gain) | Dr FX(loss)."""
     # ap_base should equal cash_base + discount_base + fx_gain - fx_loss
-    plug = round(ap_base - cash_base - discount_base, 2)
+    plug = money_json(round(ap_base - cash_base - discount_base, 2))
     if abs(plug) < 0.005:
         return 0.0, []
     if plug > 0:

@@ -722,6 +722,7 @@ export default function Page() {
           <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
             <input
               type="checkbox"
+              aria-label="Company SMTP use TLS"
               checked={emailUseTls}
               onChange={(e) => {
                 setEmailUseTls(e.target.checked);
@@ -738,6 +739,7 @@ export default function Page() {
                 setEmailUseSsl(e.target.checked);
                 if (e.target.checked) setEmailUseTls(false);
               }}
+              aria-label="Company SMTP use SSL"
             />
             Use SSL
           </label>

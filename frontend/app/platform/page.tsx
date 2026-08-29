@@ -833,6 +833,7 @@ export default function PlatformConsole() {
                   >
                     <input
                       type="checkbox"
+                      aria-label={`Platform feature module ${mod}`}
                       checked={on}
                       disabled={locked}
                       onChange={() => toggleModule(mod)}

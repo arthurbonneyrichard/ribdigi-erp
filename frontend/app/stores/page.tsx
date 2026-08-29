@@ -813,7 +813,7 @@ export default function Page() {
 
       <div className="card" style={{ marginBottom: 16 }}>
         <label className="muted">
-          <input type="checkbox" checked={fefoStrict} onChange={() => toggleFefo()} /> FEFO
+          <input type="checkbox" checked={fefoStrict} onChange={() => toggleFefo()} aria-label="FEFO strict warehouse" /> FEFO
           strict warehouse (stock-out only from batches tagged to that warehouse)
         </label>
       </div>
@@ -1236,6 +1236,7 @@ export default function Page() {
             <label>
               <input
                 type="checkbox"
+                aria-label="Cash drawer open on cash sale"
                 checked={drawerOnCash}
                 onChange={(e) => setDrawerOnCash(e.target.checked)}
               />{' '}

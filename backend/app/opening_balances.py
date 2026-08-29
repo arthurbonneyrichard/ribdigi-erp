@@ -152,7 +152,7 @@ async def post_coa_opening_balances(
         )
 
     # Auto-plug residual to Owner's Equity (3000)
-    residual = round(total_debit - total_credit, 2)
+    residual = money_json(round(total_debit - total_credit, 2))
     plug_account = None
     if abs(residual) > 0.009:
         plug_account = await get_account_by_code(db, tenant_id, EQUITY_PLUG_CODE)
@@ -165,9 +165,9 @@ async def post_coa_opening_balances(
         if residual > 0:
             # Need more credit
             if existing_plug:
-                existing_plug["credit"] = round(
+                existing_plug["credit"] = money_json(round(
                     money_json(existing_plug["credit"]) + residual, 2
-                )
+                ))
             else:
                 journal_lines.append(
                     {
@@ -177,17 +177,17 @@ async def post_coa_opening_balances(
                         "description": "Opening balance plug (equity)",
                     }
                 )
-            plug_account.opening_balance = round(
+            plug_account.opening_balance = money_json(round(
                 money_json(plug_account.opening_balance or 0) + residual, 2
-            )
+            ))
         else:
             need_debit = abs(residual)
             if existing_plug:
                 # reduce credit or flip — simplest: add debit side
                 if money_json(existing_plug["credit"]) >= need_debit:
-                    existing_plug["credit"] = round(
+                    existing_plug["credit"] = money_json(round(
                         money_json(existing_plug["credit"]) - need_debit, 2
-                    )
+                    ))
                     if existing_plug["credit"] == 0 and existing_plug["debit"] == 0:
                         journal_lines.remove(existing_plug)
                 else:
@@ -204,9 +204,9 @@ async def post_coa_opening_balances(
                         "description": "Opening balance plug (equity)",
                     }
                 )
-            plug_account.opening_balance = round(
+            plug_account.opening_balance = money_json(round(
                 money_json(plug_account.opening_balance or 0) - need_debit, 2
-            )
+            ))
 
     if len(journal_lines) < 2:
         raise HTTPException(

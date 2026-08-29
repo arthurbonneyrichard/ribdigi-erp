@@ -1339,6 +1339,7 @@ export default function Page() {
           <label style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
             <input
               type="checkbox"
+              aria-label="Use customer group price"
               checked={useGroupPrice}
               onChange={(e) => setUseGroupPrice(e.target.checked)}
             />
@@ -1385,6 +1386,7 @@ export default function Page() {
             type="checkbox"
             checked={invoiceReverseCharge}
             onChange={(e) => setInvoiceReverseCharge(e.target.checked)}
+            aria-label="Sales invoice reverse charge"
           />
           Reverse charge (tax memo only — not charged to customer)
         </label>
@@ -1970,7 +1972,7 @@ export default function Page() {
             <option value="discard">discard</option>
           </select>
           <label>
-            <input type="checkbox" checked={restock} onChange={(e) => setRestock(e.target.checked)} /> Restock
+            <input type="checkbox" checked={restock} onChange={(e) => setRestock(e.target.checked)} aria-label="Sales return restock" /> Restock
           </label>
           <input
             value={returnNotes}

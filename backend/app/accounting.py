@@ -1012,10 +1012,10 @@ async def post_customer_payment_journal(
         cash_at_inv = 0.0
         for inv, settle, disc in allocations:
             inv_rate = doc_rate(inv)
-            cash_doc = round(settle - disc, 2)
-            ar_base = round(ar_base + to_base(settle, inv_rate), 2)
-            disc_base = round(disc_base + to_base(disc, inv_rate), 2)
-            cash_at_inv = round(cash_at_inv + to_base(cash_doc, inv_rate), 2)
+            cash_doc = money_json(round(settle - disc, 2))
+            ar_base = money_json(round(ar_base + to_base(settle, inv_rate), 2))
+            disc_base = money_json(round(disc_base + to_base(disc, inv_rate), 2))
+            cash_at_inv = money_json(round(cash_at_inv + to_base(cash_doc, inv_rate), 2))
         # Remeasure cash portion at payment rate vs invoice rates
         cash_base = to_base(amount, pay_rate)
         fx_amt, fx_extra = fx_lines_for_receipt(
@@ -1027,7 +1027,7 @@ async def post_customer_payment_journal(
         disc_base = to_base(discount, pay_rate)
         fx_amt, fx_extra = 0.0, []
 
-    payment.fx_gain_loss = round(fx_amt, 2)
+    payment.fx_gain_loss = money_json(round(fx_amt, 2))
     lines = [
         {
             "account_code": liquid_code,
@@ -1093,8 +1093,8 @@ async def post_supplier_payment_journal(
         disc_base = 0.0
         for inv, settle, disc in allocations:
             inv_rate = doc_rate(inv)
-            ap_base = round(ap_base + to_base(settle, inv_rate), 2)
-            disc_base = round(disc_base + to_base(disc, inv_rate), 2)
+            ap_base = money_json(round(ap_base + to_base(settle, inv_rate), 2))
+            disc_base = money_json(round(disc_base + to_base(disc, inv_rate), 2))
         fx_amt, fx_extra = fx_lines_for_payment(
             cash_base=cash_base, ap_base=ap_base, discount_base=disc_base
         )
@@ -1103,7 +1103,7 @@ async def post_supplier_payment_journal(
         disc_base = to_base(discount, pay_rate)
         fx_amt, fx_extra = 0.0, []
 
-    payment.fx_gain_loss = round(fx_amt, 2)
+    payment.fx_gain_loss = money_json(round(fx_amt, 2))
     lines = [
         {
             "account_code": "2000",
@@ -1233,11 +1233,11 @@ async def post_purchase_invoice_journal(
 
     rate = doc_rate(purchase_invoice)
     net = to_base(
-        round(
+        money_json(round(
             money_json(purchase_invoice.subtotal or 0)
             - money_json(purchase_invoice.discount_amount or 0),
             2,
-        ),
+        )),
         rate,
     )
     rc = to_base(
@@ -1289,11 +1289,11 @@ async def post_purchase_invoice_reversal_journal(
 
     rate = doc_rate(purchase_invoice)
     net = to_base(
-        round(
+        money_json(round(
             money_json(purchase_invoice.subtotal or 0)
             - money_json(purchase_invoice.discount_amount or 0),
             2,
-        ),
+        )),
         rate,
     )
     rc = to_base(
@@ -1401,7 +1401,7 @@ async def post_pos_sale_journal(
     await ensure_default_accounts(db, tenant_id)
     amount = money_json(tx.total or 0)
     tax = money_json(tx.tax or 0)
-    revenue = round(amount - tax, 2)
+    revenue = money_json(round(amount - tax, 2))
     if abs(amount - (revenue + tax)) > 0.02:
         raise HTTPException(status_code=400, detail="POS journal amounts do not balance")
 
@@ -1412,7 +1412,7 @@ async def post_pos_sale_journal(
     debit_sum = 0.0
     for tender in tenders:
         method = (tender.get("payment_method") or "cash").strip().lower()
-        part = round(money_json(tender.get("amount") or 0), 2)
+        part = money_json(round(money_json(tender.get("amount") or 0), 2))
         if part <= 0:
             continue
         liquid_id = tender.get("liquid_account_id")
@@ -1892,7 +1892,7 @@ async def profit_and_loss(
                 "balance": 0.0,
             },
         )
-        bucket["balance"] = round(money_json(bucket["balance"]) + net, 2)
+        bucket["balance"] = money_json(round(money_json(bucket["balance"]) + net, 2))
 
     accounts_out = sorted(by_account.values(), key=lambda r: r["code"] or "")
     return _pnl_pack(

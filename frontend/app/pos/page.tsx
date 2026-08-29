@@ -1449,6 +1449,7 @@ export default function Page() {
               <label className="tpos-split-toggle">
                 <input
                   type="checkbox"
+                  aria-label="POS split tender"
                   checked={splitTender}
                   onChange={(e) => enableSplit(e.target.checked)}
                 />

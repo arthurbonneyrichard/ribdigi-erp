@@ -1284,6 +1284,7 @@ export default function Page() {
                         <td>
                           <input
                             type="checkbox"
+                            aria-label="Low-stock suggestion select"
                             checked={!!suggestSelected[key]}
                             onChange={(e) =>
                               setSuggestSelected((prev) => ({ ...prev, [key]: e.target.checked }))
@@ -2319,6 +2320,7 @@ export default function Page() {
                 type="checkbox"
                 checked={schedForm.enabled}
                 onChange={(e) => setSchedForm({ ...schedForm, enabled: e.target.checked })}
+                aria-label="Report schedule enabled"
               />{' '}
               Enabled
             </label>

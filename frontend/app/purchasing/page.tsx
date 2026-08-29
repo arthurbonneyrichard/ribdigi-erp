@@ -2426,6 +2426,7 @@ export default function Page() {
                   <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <input
                       type="checkbox"
+                      aria-label="PO amend notify supplier"
                       checked={amendNotify}
                       onChange={(e) => setAmendNotify(e.target.checked)}
                       disabled={selected.status !== 'sent' && !selected.emailed_at}
@@ -2702,7 +2703,7 @@ export default function Page() {
             aria-label="Purchase invoice FX rate"
           />
           <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <input type="checkbox" checked={manualInvRc} onChange={(e) => setManualInvRc(e.target.checked)} />
+            <input type="checkbox" checked={manualInvRc} onChange={(e) => setManualInvRc(e.target.checked)} aria-label="Purchase invoice reverse charge" />
             Reverse charge (self-assess VAT; AP = net)
           </label>
           <button

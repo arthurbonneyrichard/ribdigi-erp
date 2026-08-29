@@ -201,6 +201,7 @@ export default function PartyContactsPanel({ kind, partyId, partyLabel }: Props)
             type="checkbox"
             checked={asPrimary}
             onChange={(e) => setAsPrimary(e.target.checked)}
+            aria-label="Party contact primary"
           />
           Primary
         </label>

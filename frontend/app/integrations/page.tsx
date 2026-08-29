@@ -542,6 +542,7 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
             <label key={ev} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
               <input
                 type="checkbox"
+                aria-label={`Webhook event ${ev}`}
                 checked={hookEvents.includes(ev)}
                 onChange={() => toggleEvent(ev)}
               />

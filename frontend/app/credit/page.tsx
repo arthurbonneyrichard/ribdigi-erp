@@ -434,7 +434,7 @@ export default function Page() {
             </button>
           </div>
           <label className="muted" style={{ display: 'block', marginTop: 8 }}>
-            <input type="checkbox" checked={fxAutoRefresh} onChange={toggleFxAutoRefresh} />{' '}
+            <input type="checkbox" checked={fxAutoRefresh} onChange={toggleFxAutoRefresh} aria-label="FX auto-refresh" />{' '}
             Auto-refresh via scheduled job
           </label>
           <ul style={{ marginTop: 8, paddingLeft: 18 }}>
@@ -581,6 +581,7 @@ export default function Page() {
             <label className="muted" style={{ display: 'block', marginTop: 8 }}>
               <input
                 type="checkbox"
+                aria-label="Apply early payment discount"
                 checked={applyEarly}
                 onChange={(e) => setApplyEarly(e.target.checked)}
               />{' '}
