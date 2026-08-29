@@ -98,7 +98,10 @@ async def update_account(
             bank_name, label="bank name", max_length=120
         )
     if account_number is not None:
-        row.account_number = account_number.strip() or None
+        # OpenAPI BankAccountNumberValue → 422; service defense-in-depth → 400.
+        row.account_number = optional_honest_narrative(
+            account_number, label="bank account number", max_length=64
+        )
     if bank_branch is not None:
         # OpenAPI BankBranchValue → 422; service defense-in-depth → 400.
         row.bank_branch = optional_honest_narrative(
@@ -125,11 +128,12 @@ async def create_account(
     bank_branch: str | None = None,
 ) -> m.Account:
     await ensure_default_accounts(db, tenant_id)
-    code_key = (code or "").strip()
+    # OpenAPI AccountCodeValue → 422; service defense-in-depth → 400.
+    code_key = require_honest_narrative(
+        (code or "").strip(), label="account code", max_length=30
+    )
     # OpenAPI AccountNameValue → 422; service defense-in-depth → 400.
     name_key = require_honest_narrative(name, label="account name", max_length=150)
-    if not code_key:
-        raise HTTPException(status_code=400, detail="code and name are required")
     # Defense in depth: AccountCreate Literals reject blank/unknown with 422
     # before this runs. Empty account_type used to coerce to "asset".
     atype = (account_type or "asset").strip().lower()
@@ -165,7 +169,10 @@ async def create_account(
         bank_name=optional_honest_narrative(
             bank_name, label="bank name", max_length=120
         ),
-        account_number=(account_number or "").strip() or None,
+        # OpenAPI BankAccountNumberValue → 422; service defense-in-depth → 400.
+        account_number=optional_honest_narrative(
+            account_number, label="bank account number", max_length=64
+        ),
         bank_branch=optional_honest_narrative(
             bank_branch, label="bank branch", max_length=120
         ),

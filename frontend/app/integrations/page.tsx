@@ -598,7 +598,11 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
                   {h.last_status_code != null ? ` · HTTP ${h.last_status_code}` : ''}
                 </td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  <button type="button" onClick={() => testWebhook(h.id)}>
+                  <button
+                    type="button"
+                    onClick={() => testWebhook(h.id)}
+                    aria-label={`Test webhook ${h.id}`}
+                  >
                     Test
                   </button>
                   <button type="button" onClick={() => loadDeliveries(h.id)} aria-label={`Load webhook deliveries ${h.id}`}>

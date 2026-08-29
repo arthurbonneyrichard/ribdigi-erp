@@ -1342,6 +1342,7 @@ export default function Page() {
                     type="button"
                     className="btn-ok"
                     onClick={() => setDepartmentActive(d.id, true)}
+                    aria-label={`Reactivate department ${d.id}`}
                   >
                     Reactivate
                   </button>
@@ -1350,6 +1351,7 @@ export default function Page() {
                     type="button"
                     className="btn-danger"
                     onClick={() => setDepartmentActive(d.id, false)}
+                    aria-label={`Deactivate department ${d.id}`}
                   >
                     Deactivate
                   </button>
@@ -1650,7 +1652,12 @@ export default function Page() {
                   Edit
                 </button>
                 {w.is_active === false ? (
-                  <button type="button" className="btn-ok" onClick={() => setWarehouseActive(w.id, true)}>
+                  <button
+                    type="button"
+                    className="btn-ok"
+                    onClick={() => setWarehouseActive(w.id, true)}
+                    aria-label={`Activate warehouse ${w.id}`}
+                  >
                     Activate
                   </button>
                 ) : (
@@ -1658,6 +1665,7 @@ export default function Page() {
                     type="button"
                     className="btn-danger"
                     onClick={() => setWarehouseActive(w.id, false)}
+                    aria-label={`Deactivate warehouse ${w.id}`}
                   >
                     Deactivate
                   </button>

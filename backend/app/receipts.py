@@ -185,9 +185,9 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     lines.append("-" * width)
     for item in receipt.get("items") or []:
         name = str(item.get("name") or "Item")
-        qty = float(item.get("quantity") or 0)
-        unit = float(item.get("unit_price") or 0)
-        total = float(item.get("line_total") or qty * unit)
+        qty = money_json(item.get("quantity") or 0)
+        unit = money_json(item.get("unit_price") or 0)
+        total = money_json(item.get("line_total") or qty * unit)
         for i, part in enumerate(_wrap(name, width)):
             lines.append(part if i == 0 else ("  " + part)[:width])
         lines.append(_lr(f"  {qty:g} x {_money(unit)}", _money(total), width))
@@ -195,7 +195,7 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     currency = receipt.get("currency") or ""
     lines.append(_lr("Subtotal", _money(receipt.get("subtotal") or 0), width))
     lines.append(_lr("Tax", _money(receipt.get("tax") or 0), width))
-    discount_amount = float(receipt.get("discount_amount") or 0)
+    discount_amount = money_json(receipt.get("discount_amount") or 0)
     if discount_amount > 0:
         lines.append(_lr("Discount", f"-{_money(discount_amount)}", width))
     lines.append(_lr(f"TOTAL {currency}".strip(), _money(receipt.get("total") or 0), width))

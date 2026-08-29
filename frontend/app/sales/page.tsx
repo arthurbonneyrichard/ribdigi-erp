@@ -962,6 +962,11 @@ export default function Page() {
                   type="button"
                   className={g.is_active === false ? 'btn-ok' : 'btn-danger'}
                   onClick={() => setGroupActive(g, g.is_active === false)}
+                  aria-label={
+                    g.is_active === false
+                      ? `Activate customer group ${g.id}`
+                      : `Deactivate customer group ${g.id}`
+                  }
                 >
                   {g.is_active === false ? 'Activate' : 'Deactivate'}
                 </button>
@@ -1486,7 +1491,13 @@ export default function Page() {
                   )}
                   {['draft', 'sent'].includes(q.status) && (
                     <>
-                      <button className="btn-ok" onClick={() => act(`/sales/quotations/${q.id}/accept`, 'Accepted')}>Accept</button>
+                      <button
+                        className="btn-ok"
+                        onClick={() => act(`/sales/quotations/${q.id}/accept`, 'Accepted')}
+                        aria-label={`Accept quotation ${q.id}`}
+                      >
+                        Accept
+                      </button>
                       <button
                         className="btn-danger"
                         onClick={() => act(`/sales/quotations/${q.id}/reject`, 'Rejected')}
@@ -1504,6 +1515,7 @@ export default function Page() {
                         type="button"
                         className="btn-ok"
                         onClick={() => act(`/sales/quotations/${q.id}/convert-order`, 'Order')}
+                        aria-label={`Convert quotation to order ${q.id}`}
                       >
                         → Order
                       </button>
@@ -1511,6 +1523,7 @@ export default function Page() {
                         type="button"
                         className="btn-ok"
                         onClick={() => act(`/sales/quotations/${q.id}/convert-invoice`, 'Invoice')}
+                        aria-label={`Convert quotation to invoice ${q.id}`}
                       >
                         → Invoice
                       </button>
@@ -1639,6 +1652,7 @@ export default function Page() {
                             : {}
                         )
                       }
+                      aria-label={`Confirm sales order ${o.id}`}
                     >
                       Confirm
                     </button>
@@ -1648,6 +1662,7 @@ export default function Page() {
                       type="button"
                       className="btn-ok"
                       onClick={() => act(`/sales/orders/${o.id}/process`, 'Processing')}
+                      aria-label={`Process sales order ${o.id}`}
                     >
                       Process
                     </button>
@@ -1657,6 +1672,7 @@ export default function Page() {
                       type="button"
                       className="btn-ok"
                       onClick={() => act(`/sales/orders/${o.id}/ship`, 'Shipped')}
+                      aria-label={`Ship sales order ${o.id}`}
                     >
                       Ship
                     </button>
@@ -1666,6 +1682,7 @@ export default function Page() {
                       type="button"
                       className="btn-ok"
                       onClick={() => act(`/sales/orders/${o.id}/deliver`, 'Delivered')}
+                      aria-label={`Deliver sales order ${o.id}`}
                     >
                       Deliver
                     </button>
@@ -1675,6 +1692,7 @@ export default function Page() {
                       type="button"
                       className="btn-ok"
                       onClick={() => act(`/sales/orders/${o.id}/convert-invoice`, 'Invoice')}
+                      aria-label={`Convert sales order to invoice ${o.id}`}
                     >
                       → Invoice
                     </button>

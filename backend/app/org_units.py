@@ -16,8 +16,11 @@ from app.schemas import validate_e164_phone_value
 CODE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$")
 
 
-def _clean_code(code: str) -> str:
-    value = (code or "").strip().upper()
+def _clean_code(code: str, *, label: str = "code") -> str:
+    # OpenAPI BranchCodeValue / DepartmentCodeValue → 422; service defense → 400.
+    value = require_honest_narrative(
+        (code or "").strip().upper(), label=label, max_length=40
+    )
     if not CODE_RE.fullmatch(value):
         raise HTTPException(
             status_code=400,
@@ -146,7 +149,7 @@ async def create_branch(
     email: str | None = None,
     manager_id: str | None = None,
 ) -> m.Branch:
-    code = _clean_code(code)
+    code = _clean_code(code, label="branch code")
     # OpenAPI BranchNameValue → 422; service defense-in-depth → 400.
     name_clean = require_honest_narrative(
         name, label="branch name", min_length=2, max_length=150
@@ -221,7 +224,7 @@ async def create_department(
     branch_id: str | None = None,
     head_user_id: str | None = None,
 ) -> m.Department:
-    code = _clean_code(code)
+    code = _clean_code(code, label="department code")
     # OpenAPI DepartmentNameValue → 422; service defense-in-depth → 400.
     name_clean = require_honest_narrative(
         name, label="department name", min_length=2, max_length=150

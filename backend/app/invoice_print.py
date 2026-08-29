@@ -177,9 +177,9 @@ def render_invoice_thermal_text(payload: dict[str, Any], *, paper: str = "80mm")
     lines.append("-" * width)
     for item in payload.get("items") or []:
         name = str(item.get("name") or "Item")
-        qty = float(item.get("quantity") or 0)
-        unit = float(item.get("unit_price") or 0)
-        total = float(item.get("line_total") or qty * unit)
+        qty = money_json(item.get("quantity") or 0)
+        unit = money_json(item.get("unit_price") or 0)
+        total = money_json(item.get("line_total") or qty * unit)
         for i, part in enumerate(_wrap(name, width)):
             lines.append(part if i == 0 else ("  " + part)[:width])
         lines.append(_lr(f"  {qty:g} x {_money(unit)}", _money(total), width))
@@ -283,11 +283,11 @@ def to_invoice_a4_pdf(payload: dict[str, Any]) -> bytes:
     add("-" * 72, 9)
     for item in payload.get("items") or []:
         name = str(item.get("name") or "Item")[:30]
-        qty = float(item.get("quantity") or 0)
-        unit = float(item.get("unit_price") or 0)
-        tax = float(item.get("tax_rate") or 0)
-        line_tax = float(item.get("line_tax") or 0)
-        line_total = float(item.get("line_total") or 0)
+        qty = money_json(item.get("quantity") or 0)
+        unit = money_json(item.get("unit_price") or 0)
+        tax = money_json(item.get("tax_rate") or 0)
+        line_tax = money_json(item.get("line_tax") or 0)
+        line_total = money_json(item.get("line_total") or 0)
         add(
             f"{qty:>4g}  {name:<30} {_money(unit):>7} {_money(tax):>5} {_money(line_tax):>8} {_money(line_total):>8}",
             9,

@@ -1741,7 +1741,12 @@ export default function Page() {
               </td>
               <td>
                 {(r.status === 'pending' || r.status === 'rejected') && (
-                  <button type="button" onClick={() => startEdit(r)} style={{ marginRight: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => startEdit(r)}
+                    style={{ marginRight: 8 }}
+                    aria-label={`Edit expense ${r.id}`}
+                  >
                     Edit
                   </button>
                 )}

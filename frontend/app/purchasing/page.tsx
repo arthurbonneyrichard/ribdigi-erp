@@ -1650,6 +1650,7 @@ export default function Page() {
                           className="btn-ok"
                           disabled={prBusy === `approve:${r.id}`}
                           onClick={() => prAction(r.id, 'approve')}
+                          aria-label={`Approve purchase request ${r.id}`}
                         >
                           Approve L{r.awaiting_level || r.approval_step || 1}
                         </button>

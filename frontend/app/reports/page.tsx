@@ -752,7 +752,7 @@ export default function Page() {
             ))}
           </select>
         )}
-        <button onClick={() => load()} disabled={loading}>
+        <button onClick={() => load()} disabled={loading} aria-label="Apply report filters">
           {loading ? 'Loading…' : 'Apply filters'}
         </button>
         <button onClick={() => download('csv')} aria-label="Export report CSV">

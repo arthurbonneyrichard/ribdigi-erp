@@ -518,6 +518,11 @@ export default function Page() {
                   type="button"
                   className={r.is_active === false ? 'btn-ok' : 'btn-danger'}
                   onClick={() => setRateActive(r, r.is_active === false)}
+                  aria-label={
+                    r.is_active === false
+                      ? `Activate tax rate ${r.id}`
+                      : `Deactivate tax rate ${r.id}`
+                  }
                 >
                   {r.is_active === false ? 'Activate' : 'Deactivate'}
                 </button>

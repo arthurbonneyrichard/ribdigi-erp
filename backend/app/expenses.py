@@ -373,8 +373,8 @@ def settings_from_levels(levels: list[dict]) -> dict:
     auto_t = float(levels[0]["min_amount"]) if levels else DEFAULT_APPROVAL_THRESHOLD
     l2_t = float(levels[1]["min_amount"]) if len(levels) > 1 else max(DEFAULT_L2_THRESHOLD, auto_t)
     return {
-        "expense_approval_threshold": auto_t,
-        "expense_l2_threshold": l2_t,
+        "expense_approval_threshold": money_json(auto_t),
+        "expense_l2_threshold": money_json(l2_t),
         "levels": levels,
         "max_levels": MAX_APPROVAL_LEVELS,
     }

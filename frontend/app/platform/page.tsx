@@ -739,7 +739,11 @@ export default function PlatformConsole() {
                   aria-label="Store entitlement override"
                 />
               </label>
-              <button type="submit" disabled={busy === selected.id}>
+              <button
+                type="submit"
+                disabled={busy === selected.id}
+                aria-label="Assign package and term"
+              >
                 {busy === selected.id ? 'Saving…' : 'Assign package & term'}
               </button>
             </form>
@@ -771,6 +775,7 @@ export default function PlatformConsole() {
               <button
                 type="button"
                 disabled={busy === selected.id}
+                aria-label="Save store entitlement override"
                 onClick={async () => {
                   setBusy(selected.id);
                   setError('');
@@ -841,7 +846,12 @@ export default function PlatformConsole() {
               <button type="button" disabled={busy === selected.id} onClick={saveModules} aria-label="Save feature modules">
                 Save feature modules
               </button>
-              <button type="button" disabled={busy === selected.id} onClick={resetModules}>
+              <button
+                type="button"
+                disabled={busy === selected.id}
+                onClick={resetModules}
+                aria-label="Reset feature modules to package default"
+              >
                 Reset to package default
               </button>
             </div>

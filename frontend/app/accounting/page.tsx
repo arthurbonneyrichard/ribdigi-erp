@@ -1129,6 +1129,7 @@ export default function Page() {
                 <button
                   type="button"
                   onClick={() => setManualLines((prev) => [...prev, emptyManualLine()])}
+                  aria-label="Add journal line"
                 >
                   Add line
                 </button>
