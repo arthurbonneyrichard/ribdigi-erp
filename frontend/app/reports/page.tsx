@@ -146,12 +146,14 @@ export default function Page() {
     const params = new URLSearchParams();
     if (fromDate) params.set('from_date', fromDate);
     if (toDate) params.set('to_date', toDate);
-    // trim so inventory movements (UuidIdValue Query store_id/warehouse_id) do not 422
+    // trim so UuidIdValue Query store/warehouse/branch/department do not 422
     const storeTrim = storeId.trim();
     const warehouseTrim = warehouseId.trim();
+    const branchTrim = branchId.trim();
+    const departmentTrim = departmentId.trim();
     if (storeTrim) params.set('store_id', storeTrim);
-    if (branchId) params.set('branch_id', branchId);
-    if (departmentId) params.set('department_id', departmentId);
+    if (branchTrim) params.set('branch_id', branchTrim);
+    if (departmentTrim) params.set('department_id', departmentTrim);
     if (warehouseTrim) params.set('warehouse_id', warehouseTrim);
     Object.entries(extra).forEach(([k, v]) => v && params.set(k, v));
     const s = params.toString();
@@ -163,8 +165,10 @@ export default function Page() {
     const effectiveAsOf = asOf || toDate;
     if (effectiveAsOf) params.set('as_of', effectiveAsOf);
     if (compare) params.set('compare', compare);
-    if (storeId) params.set('store_id', storeId);
-    if (branchId) params.set('branch_id', branchId);
+    const storeTrim = storeId.trim();
+    const branchTrim = branchId.trim();
+    if (storeTrim) params.set('store_id', storeTrim);
+    if (branchTrim) params.set('branch_id', branchTrim);
     const s = params.toString();
     return s ? `?${s}` : '';
   }
@@ -173,8 +177,10 @@ export default function Page() {
     const params = new URLSearchParams();
     const effectiveAsOf = asOf || toDate;
     if (effectiveAsOf) params.set('as_of', effectiveAsOf);
-    if (storeId) params.set('store_id', storeId);
-    if (branchId) params.set('branch_id', branchId);
+    const storeTrim = storeId.trim();
+    const branchTrim = branchId.trim();
+    if (storeTrim) params.set('store_id', storeTrim);
+    if (branchTrim) params.set('branch_id', branchTrim);
     const s = params.toString();
     return s ? `?${s}` : '';
   }
@@ -655,7 +661,11 @@ export default function Page() {
               tab === 'cashflow' ||
               tab === 'balancesheet' ||
               tab === 'trialbalance') && (
-              <select value={branchId} onChange={(e) => setBranchId(e.target.value)}>
+              <select
+                value={branchId}
+                onChange={(e) => setBranchId(e.target.value)}
+                aria-label="Report financial branch filter"
+              >
                 <option value="">All branches</option>
                 {branches.map((b) => (
                   <option key={b.id} value={b.id}>
@@ -670,6 +680,7 @@ export default function Page() {
                 setStoreId(e.target.value);
                 setCtxStoreId(e.target.value);
               }}
+              aria-label="Report financial store filter"
             >
               <option value="">All stores</option>
               {stores

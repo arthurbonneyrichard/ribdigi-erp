@@ -111,8 +111,11 @@ export default function Page() {
     const params = new URLSearchParams();
     if (pnlFrom) params.set('from_date', pnlFrom);
     if (pnlTo) params.set('to_date', pnlTo);
-    if (pnlStoreId) params.set('store_id', pnlStoreId);
-    if (pnlBranchId) params.set('branch_id', pnlBranchId);
+    // trim so P&L (UuidIdValue Query store_id/branch_id) do not 422
+    const storeTrim = pnlStoreId.trim();
+    const branchTrim = pnlBranchId.trim();
+    if (storeTrim) params.set('store_id', storeTrim);
+    if (branchTrim) params.set('branch_id', branchTrim);
     const s = params.toString();
     return s ? `?${s}` : '';
   }
@@ -1393,7 +1396,11 @@ export default function Page() {
                   title="To date (YYYY-MM-DD)"
                   aria-label="P&L to date"
                 />
-                <select value={pnlBranchId} onChange={(e) => setPnlBranchId(e.target.value)}>
+                <select
+                  value={pnlBranchId}
+                  onChange={(e) => setPnlBranchId(e.target.value)}
+                  aria-label="P&L branch filter"
+                >
                   <option value="">All branches</option>
                   {branches.map((b) => (
                     <option key={b.id} value={b.id}>
@@ -1401,7 +1408,11 @@ export default function Page() {
                     </option>
                   ))}
                 </select>
-                <select value={pnlStoreId} onChange={(e) => setPnlStoreId(e.target.value)}>
+                <select
+                  value={pnlStoreId}
+                  onChange={(e) => setPnlStoreId(e.target.value)}
+                  aria-label="P&L store filter"
+                >
                   <option value="">All stores</option>
                   {stores
                     .filter((s) => !pnlBranchId || s.branch_id === pnlBranchId)

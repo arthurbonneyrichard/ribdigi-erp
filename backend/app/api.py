@@ -9263,8 +9263,10 @@ async def delete_journal_attachment(
 @api.get("/accounting/trial-balance")
 async def get_trial_balance(
     as_of: Annotated[IsoDateQueryValue | None, Query()] = None,
-    store_id: str | None = None,
-    branch_id: str | None = None,
+    # Optional location filters ∈ UuidIdValue; omit/`null` → all; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach store/branch lookup).
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    branch_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9287,8 +9289,9 @@ async def get_trial_balance(
 async def get_profit_loss(
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
-    store_id: str | None = None,
-    branch_id: str | None = None,
+    # Same UuidIdValue Query honesty as trial-balance location filters.
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    branch_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9312,8 +9315,8 @@ async def get_profit_loss(
 async def report_profit_loss(
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
-    store_id: str | None = None,
-    branch_id: str | None = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    branch_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9336,8 +9339,8 @@ async def report_profit_loss(
 @api.get("/reports/trial-balance")
 async def report_trial_balance(
     as_of: Annotated[IsoDateQueryValue | None, Query()] = None,
-    store_id: str | None = None,
-    branch_id: str | None = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    branch_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9354,8 +9357,8 @@ async def report_trial_balance(
 async def report_cash_flow(
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
-    store_id: str | None = None,
-    branch_id: str | None = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    branch_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9376,8 +9379,8 @@ async def report_balance_sheet(
     as_of: Annotated[IsoDateQueryValue | None, Query()] = None,
     # omit → no compare; blank/invalid → 422 (was free str → service 400; "" → no compare)
     compare: Annotated[BalanceSheetCompareValue | None, Query()] = None,
-    store_id: str | None = None,
-    branch_id: str | None = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    branch_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9397,8 +9400,8 @@ async def report_balance_sheet(
 async def accounting_balance_sheet(
     as_of: Annotated[IsoDateQueryValue | None, Query()] = None,
     compare: Annotated[BalanceSheetCompareValue | None, Query()] = None,
-    store_id: str | None = None,
-    branch_id: str | None = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    branch_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9425,17 +9428,19 @@ async def reports_export(
     date: Annotated[IsoDateQueryValue | None, Query()] = None,
     year: int | None = None,
     month: int | None = None,
-    warehouse_id: str | None = None,
+    # Optional location/category filters ∈ UuidIdValue; omit/`null` OK; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`).
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
     # omit → export default (tax_filing_gh → GH); blank/unsupported → 422
     jurisdiction: Annotated[TaxFilingJurisdictionValue | None, Query()] = None,
-    store_id: str | None = None,
-    branch_id: str | None = None,
-    category_id: str | None = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    branch_id: Annotated[UuidIdValue | None, Query()] = None,
+    category_id: Annotated[UuidIdValue | None, Query()] = None,
     days: int | None = None,
     as_of: Annotated[IsoDateQueryValue | None, Query()] = None,
     # omit → no compare; blank/invalid → 422 (same Literal as balance-sheet routes)
     compare: Annotated[BalanceSheetCompareValue | None, Query()] = None,
-    department_id: str | None = None,
+    department_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9861,9 +9866,11 @@ async def report_inventory_transfers(
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     status: Annotated[TransferReportStatusValue | None, Query()] = None,
-    from_store_id: str | None = None,
-    to_store_id: str | None = None,
-    store_id: str | None = None,
+    # Optional store filters ∈ UuidIdValue; omit/`null` → all; blank/`!!!`/`http://…`/
+    # non-UUID → **422** (was free `str`; garbage could reach store lookup).
+    from_store_id: Annotated[UuidIdValue | None, Query()] = None,
+    to_store_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9886,8 +9893,9 @@ async def report_inventory_transfers(
 async def report_inventory_stock_counts(
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
-    warehouse_id: str | None = None,
-    store_id: str | None = None,
+    # Same UuidIdValue Query honesty as other inventory report location filters.
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     variance_only: bool = True,
     status: Annotated[StockCountReportStatusValue, Query()] = "completed",
     claims=Depends(require_permission("reports", "read")),
