@@ -410,12 +410,15 @@ export default function Page() {
           : mvProductOnly
             ? selectedId
             : null;
-      if (warehouse) params.set('warehouse_id', warehouse);
+      // trim so Movements (UuidIdValue Query product_id/warehouse_id) do not 422
+      const warehouseTrim = warehouse ? String(warehouse).trim() : '';
+      const productTrim = productId ? String(productId).trim() : '';
+      if (warehouseTrim) params.set('warehouse_id', warehouseTrim);
       if (type) params.set('movement_type', type);
       if (reason) params.set('reason', reason);
       if (from) params.set('from_date', from);
       if (to) params.set('to_date', to);
-      if (productOnly && productId) params.set('product_id', productId);
+      if (productOnly && productTrim) params.set('product_id', productTrim);
       const q = params.toString();
       const r = await api(`/inventory/movements${q ? `?${q}` : ''}`);
       const data = r.data || {};
@@ -3413,7 +3416,11 @@ export default function Page() {
               date, or the selected product above.
             </p>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              <select value={mvWarehouseId} onChange={(e) => setMvWarehouseId(e.target.value)}>
+              <select
+                value={mvWarehouseId}
+                onChange={(e) => setMvWarehouseId(e.target.value)}
+                aria-label="Movement warehouse filter"
+              >
                 <option value="">All warehouses</option>
                 {warehouses
                 .filter((w) => w.is_active !== false)
@@ -3470,6 +3477,7 @@ export default function Page() {
                   type="checkbox"
                   checked={mvProductOnly}
                   onChange={(e) => setMvProductOnly(e.target.checked)}
+                  aria-label="Movement selected product only"
                 />
                 Selected product only
               </label>

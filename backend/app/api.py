@@ -79,6 +79,7 @@ from app.schemas import (
     ScheduleFrequencyValue,
     JobNameValue,
     OnboardingStepIdValue,
+    UuidIdValue,
     BalanceSheetCompareValue,
     CreditAgingKindValue,
     InventoryValuationMethodValue,
@@ -3788,9 +3789,11 @@ async def lowstock(claims=Depends(require_permission("inventory", "read")), db: 
 
 @api.get("/inventory/movements")
 async def movements(
-    product_id: str | None = None,
-    warehouse_id: str | None = None,
-    store_id: str | None = None,
+    # Optional filters ∈ UuidIdValue; omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach product/warehouse/store lookup).
+    product_id: Annotated[UuidIdValue | None, Query()] = None,
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     movement_type: Annotated[MovementTypeValue | None, Query()] = None,
     created_by: str | None = None,
     reason: Annotated[StockAdjustReasonValue | None, Query()] = None,
@@ -9786,11 +9789,12 @@ async def report_inventory_valuation(
 
 @api.get("/reports/inventory/movements")
 async def report_inventory_movements(
-    product_id: str | None = None,
+    # Same UuidIdValue Query honesty as GET /inventory/movements.
+    product_id: Annotated[UuidIdValue | None, Query()] = None,
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
-    warehouse_id: str | None = None,
-    store_id: str | None = None,
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     movement_type: Annotated[MovementTypeValue | None, Query()] = None,
     created_by: str | None = None,
     reason: Annotated[StockAdjustReasonValue | None, Query()] = None,

@@ -146,10 +146,13 @@ export default function Page() {
     const params = new URLSearchParams();
     if (fromDate) params.set('from_date', fromDate);
     if (toDate) params.set('to_date', toDate);
-    if (storeId) params.set('store_id', storeId);
+    // trim so inventory movements (UuidIdValue Query store_id/warehouse_id) do not 422
+    const storeTrim = storeId.trim();
+    const warehouseTrim = warehouseId.trim();
+    if (storeTrim) params.set('store_id', storeTrim);
     if (branchId) params.set('branch_id', branchId);
     if (departmentId) params.set('department_id', departmentId);
-    if (warehouseId) params.set('warehouse_id', warehouseId);
+    if (warehouseTrim) params.set('warehouse_id', warehouseTrim);
     Object.entries(extra).forEach(([k, v]) => v && params.set(k, v));
     const s = params.toString();
     return s ? `?${s}` : '';
@@ -556,6 +559,7 @@ export default function Page() {
                 setCtxStoreId(e.target.value);
                 setWarehouseId('');
               }}
+              aria-label="Report inventory store filter"
             >
               <option value="">All stores</option>
               {stores
@@ -579,6 +583,7 @@ export default function Page() {
                   }
                 }
               }}
+              aria-label="Report inventory warehouse filter"
             >
               <option value="">All warehouses (company stock)</option>
               {warehouses
