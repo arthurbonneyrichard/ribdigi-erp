@@ -1117,14 +1117,22 @@ class ProductCreate(BaseModel):
     # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
     # unit lookup / FK). Existence remains tenant-scoped unit lookup (**404**/integrity).
     unit_id: UuidIdValue | None = None
-    cost_price: float = 0
-    selling_price: float = 0
-    weight: float | None = Field(default=None, ge=0)
-    length: float | None = Field(default=None, ge=0)
-    width: float | None = Field(default=None, ge=0)
-    height: float | None = Field(default=None, ge=0)
-    stock_qty: float = 0
-    reorder_level: float = 0
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was unconstrained float)
+    cost_price: NonNegativeMoneyValue = 0
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was unconstrained float)
+    selling_price: NonNegativeMoneyValue = 0
+    # omit/`null` OK; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    weight: NonNegativeQtyValue | None = None
+    # omit/`null` OK; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    length: NonNegativeQtyValue | None = None
+    # omit/`null` OK; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    width: NonNegativeQtyValue | None = None
+    # omit/`null` OK; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    height: NonNegativeQtyValue | None = None
+    # ∈ NonNegativeQtyValue; nan/inf/<0 → **422** (was unconstrained float)
+    stock_qty: NonNegativeQtyValue = 0
+    # ∈ NonNegativeQtyValue; nan/inf/<0 → **422** (was unconstrained float)
+    reorder_level: NonNegativeQtyValue = 0
     # Optional product tax rate FK ∈ UuidIdValue; omit/`null` → category/tenant default path;
     # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
     # tax-rate lookup / FK). Existence remains tenant-scoped tax-rate lookup (**404**/integrity).
@@ -1166,13 +1174,20 @@ class ProductUpdate(BaseModel):
     # unit lookup / FK). Existence remains tenant-scoped unit lookup (**404**/integrity).
     # Same honesty as ProductCreate.unit_id.
     unit_id: UuidIdValue | None = None
-    cost_price: float | None = None
-    selling_price: float | None = None
-    weight: float | None = Field(default=None, ge=0)
-    length: float | None = Field(default=None, ge=0)
-    width: float | None = Field(default=None, ge=0)
-    height: float | None = Field(default=None, ge=0)
-    reorder_level: float | None = None
+    # omit/`null` → no change / default; nan/inf/<0 → **422**
+    cost_price: NonNegativeMoneyValue | None = None
+    # omit/`null` → no change / default; nan/inf/<0 → **422**
+    selling_price: NonNegativeMoneyValue | None = None
+    # omit/`null` OK; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    weight: NonNegativeQtyValue | None = None
+    # omit/`null` OK; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    length: NonNegativeQtyValue | None = None
+    # omit/`null` OK; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    width: NonNegativeQtyValue | None = None
+    # omit/`null` OK; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    height: NonNegativeQtyValue | None = None
+    # omit/`null` → no change; nan/inf/<0 → **422**
+    reorder_level: NonNegativeQtyValue | None = None
     # Optional product tax rate FK ∈ UuidIdValue; omit/`null` → no change;
     # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
     # tax-rate lookup / FK). Existence remains tenant-scoped tax-rate lookup
@@ -1205,7 +1220,8 @@ class StockCountItemUpdate(BaseModel):
     # remains tenant-scoped product on count (**404**/400). Inventory Counts save
     # sends `product_id` trim.
     product_id: UuidIdValue
-    counted_qty: float
+    # ∈ NonNegativeQtyValue; nan/inf/<0 → **422** (was unconstrained float)
+    counted_qty: NonNegativeQtyValue
     # omit/`null` → no line notes (or clear when sent null); blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank silently dropped via strip-to-None / garbage could persist).
     notes: StockCountItemNotesValue | None = None
@@ -1303,7 +1319,8 @@ class UnitOfMeasureCreate(BaseModel):
     # non-UUID → **422** (was free `str`; garbage could reach base lookup).
     # Existence / root-base rules remain validate_unit_base (**404**/400).
     base_unit_id: UuidIdValue | None = None
-    conversion_ratio: float | None = 1
+    # ∈ PositiveQtyValue; omit → 1; nan/inf/≤0 → **422** (was unconstrained float)
+    conversion_ratio: PositiveQtyValue | None = 1
 
 
 class UnitOfMeasureUpdate(BaseModel):
@@ -1318,7 +1335,8 @@ class UnitOfMeasureUpdate(BaseModel):
     # garbage could reach base lookup). clear_base remains explicit root clear.
     # Existence / root-base rules remain validate_unit_base (**404**/400).
     base_unit_id: UuidIdValue | None = None
-    conversion_ratio: float | None = None
+    # omit/`null` → no change; nan/inf/≤0 → **422**
+    conversion_ratio: PositiveQtyValue | None = None
     clear_base: bool = False
 
 
@@ -1327,7 +1345,8 @@ class UnitConvertPreview(BaseModel):
     # (was free `str`; garbage could reach catalog lookup). Existence remains
     # tenant-scoped product lookup (**404**).
     product_id: UuidIdValue
-    quantity: float = Field(gt=0)
+    # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    quantity: PositiveQtyValue
     # Optional entered UoM ∈ UuidIdValue; omit/`null` → product stock unit; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach UoM lookup).
     # Existence / conversion remain to_stock_qty (**404**/400).
@@ -1351,8 +1370,10 @@ class ProductVariantCreate(BaseModel):
     color: VariantAttrValue | None = None
     flavor: VariantAttrValue | None = None
     dosage: VariantAttrValue | None = None
-    cost_price: float | None = None
-    selling_price: float | None = None
+    # omit/`null` → no change / default; nan/inf/<0 → **422**
+    cost_price: NonNegativeMoneyValue | None = None
+    # omit/`null` → no change / default; nan/inf/<0 → **422**
+    selling_price: NonNegativeMoneyValue | None = None
 
 
 class ProductVariantUpdate(BaseModel):
@@ -1371,8 +1392,10 @@ class ProductVariantUpdate(BaseModel):
     color: VariantAttrValue | None = None
     flavor: VariantAttrValue | None = None
     dosage: VariantAttrValue | None = None
-    cost_price: float | None = None
-    selling_price: float | None = None
+    # omit/`null` → no change / default; nan/inf/<0 → **422**
+    cost_price: NonNegativeMoneyValue | None = None
+    # omit/`null` → no change / default; nan/inf/<0 → **422**
+    selling_price: NonNegativeMoneyValue | None = None
     is_active: bool | None = None
 
 
@@ -1405,8 +1428,10 @@ class PartyCreate(BaseModel):
     # blank/garbage could persist on customer/supplier create). Same AddressValue
     # as Company/Store/Branch/Warehouse.
     address: AddressValue | None = None
-    latitude: float | None = None
-    longitude: float | None = None
+    # omit/`null` OK; nan/inf/out-of-range → **422** (was unconstrained float)
+    latitude: LatitudeValue | None = None
+    # omit/`null` OK; nan/inf/out-of-range → **422** (was unconstrained float)
+    longitude: LongitudeValue | None = None
     # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was unconstrained float default 0)
     credit_limit: NonNegativeMoneyValue = 0
     payment_terms_days: int = Field(default=30, ge=0, le=3650)
@@ -1440,8 +1465,10 @@ class PartyUpdate(BaseModel):
     # blank/garbage could persist on customer/supplier PATCH). Same AddressValue
     # as Company/Store/Branch/Warehouse.
     address: AddressValue | None = None
-    latitude: float | None = None
-    longitude: float | None = None
+    # omit/`null` OK; nan/inf/out-of-range → **422** (was unconstrained float)
+    latitude: LatitudeValue | None = None
+    # omit/`null` OK; nan/inf/out-of-range → **422** (was unconstrained float)
+    longitude: LongitudeValue | None = None
     # omit/`null` → no change; nan/inf/<0 → **422** (was unconstrained float)
     credit_limit: NonNegativeMoneyValue | None = None
     payment_terms_days: int | None = Field(default=None, ge=0, le=3650)
@@ -1501,14 +1528,16 @@ class LineItem(BaseModel):
     # (was free `str`; garbage could reach catalog lookup). Existence remains
     # tenant-scoped product lookup (**404**). Shared by TransactionCreate + PosSaleCreate.
     product_id: UuidIdValue
-    quantity: float = Field(gt=0)
+    # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    quantity: PositiveQtyValue
     # Optional entered UoM ∈ UuidIdValue; omit/`null` → product stock unit; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach UoM lookup).
     unit_id: UuidIdValue | None = None
     # Optional variant ∈ UuidIdValue; omit/`null` → no variant; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach variant lookup).
     variant_id: UuidIdValue | None = None
-    unit_price: float | None = None
+    # omit/`null` → catalog/group price; nan/inf/<0 → **422**
+    unit_price: NonNegativeMoneyValue | None = None
     # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
     discount: NonNegativeMoneyValue = 0
 
@@ -1556,7 +1585,8 @@ class CreditLimitOverrideBody(BaseModel):
 
 
 class StockAdjust(BaseModel):
-    quantity: float
+    # ∈ FiniteQtyValue (signed stock adjust); nan/inf → **422** (was unconstrained float)
+    quantity: FiniteQtyValue
     # Coded reason (BR-5.2); OpenAPI Literal → omit/blank/invalid → 422
     reason: Literal["damage", "theft", "expiry", "found", "lost"]
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
@@ -1590,7 +1620,8 @@ class StockMove(BaseModel):
     # (was free `str`; garbage could reach catalog lookup). Existence remains
     # tenant-scoped product lookup (**404**).
     product_id: UuidIdValue
-    quantity: float = Field(gt=0)
+    # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    quantity: PositiveQtyValue
     # Optional entered UoM ∈ UuidIdValue; omit/`null` → product stock unit; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach UoM lookup).
     unit_id: UuidIdValue | None = None
@@ -1635,7 +1666,8 @@ class StockOut(BaseModel):
     # (was free `str`; garbage could reach catalog lookup). Existence remains
     # tenant-scoped product lookup (**404**).
     product_id: UuidIdValue
-    quantity: float = Field(gt=0)
+    # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    quantity: PositiveQtyValue
     # Optional entered UoM ∈ UuidIdValue; omit/`null` → product stock unit; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach UoM lookup).
     unit_id: UuidIdValue | None = None
@@ -1674,7 +1706,8 @@ class OpeningStockLine(BaseModel):
     # (was free `str`; garbage could reach catalog lookup). Existence remains
     # tenant-scoped product lookup (**404**).
     product_id: UuidIdValue
-    quantity: float = Field(gt=0)
+    # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    quantity: PositiveQtyValue
     # Optional entered UoM ∈ UuidIdValue; omit/`null` → product stock unit; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach UoM lookup).
     unit_id: UuidIdValue | None = None
@@ -1689,7 +1722,8 @@ class OpeningStockLine(BaseModel):
     batch_number: BatchNumberValue | None = None
     manufacturing_date: IsoDateQueryValue | None = None
     expiry_date: IsoDateQueryValue | None = None
-    unit_cost: float | None = Field(default=None, ge=0)  # defaults to product.cost_price
+    # omit/`null` → product.cost_price; nan/inf/<0 → **422** (was Field(ge=0) only)
+    unit_cost: NonNegativeMoneyValue | None = None
     # omit/`null` → no line notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could merge onto StockMovement.notes). Same `OpeningStockNotesValue`
     # as header notes.
@@ -2260,8 +2294,10 @@ class StoreReorderPolicyUpdate(BaseModel):
     # tenant-scoped product lookup (**404**). Multi-Store **Store reorder product**
     # select; Save policy sends trim.
     product_id: UuidIdValue
-    reorder_level: float = Field(ge=0)
-    reorder_qty: float = Field(default=0, ge=0)
+    # ∈ NonNegativeQtyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    reorder_level: NonNegativeQtyValue
+    # ∈ NonNegativeQtyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    reorder_qty: NonNegativeQtyValue = 0
 
 
 class WarehouseReorderPolicyUpdate(BaseModel):
@@ -2275,8 +2311,10 @@ class WarehouseReorderPolicyUpdate(BaseModel):
     # tenant-scoped product lookup (**404**). Inventory **Warehouse reorder
     # product** select; Save reorder policy sends trim.
     product_id: UuidIdValue
-    reorder_level: float = Field(ge=0)
-    reorder_qty: float = Field(default=0, ge=0)
+    # ∈ NonNegativeQtyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    reorder_level: NonNegativeQtyValue
+    # ∈ NonNegativeQtyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    reorder_qty: NonNegativeQtyValue = 0
 
 
 class InventoryFefoSettingsUpdate(BaseModel):
@@ -2307,7 +2345,8 @@ class WarehouseCreate(BaseModel):
     # omit/`null` → no address; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on create). Same AddressValue as Company/Store/Branch.
     address: AddressValue | None = None
-    capacity: float | None = Field(default=None, ge=0)
+    # omit/`null` OK; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    capacity: NonNegativeQtyValue | None = None
 
 
 class WarehouseUpdate(BaseModel):
@@ -2330,7 +2369,8 @@ class WarehouseUpdate(BaseModel):
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silently cleared; garbage could persist). Same AddressValue as Company/Store/Branch.
     address: AddressValue | None = None
-    capacity: float | None = Field(default=None, ge=0)
+    # omit/`null` OK; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    capacity: NonNegativeQtyValue | None = None
     clear_capacity: bool = False
     is_active: bool | None = None
 
@@ -2347,7 +2387,8 @@ class StockTransferItemCreate(BaseModel):
     # (was free `str`; garbage could reach catalog lookup). Existence remains
     # tenant-scoped product lookup (**404**).
     product_id: UuidIdValue
-    quantity: float = Field(gt=0)
+    # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    quantity: PositiveQtyValue
 
 
 class StockTransferCreate(BaseModel):
@@ -2557,12 +2598,14 @@ class PurchaseOrderItemCreate(BaseModel):
     # (was free `str`; garbage could reach catalog lookup). Existence remains
     # tenant-scoped product lookup (**404**).
     product_id: UuidIdValue
-    quantity: float = Field(gt=0)
+    # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    quantity: PositiveQtyValue
     # Optional entered UoM ∈ UuidIdValue; omit/`null` → product stock unit; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach UoM lookup).
     # Existence / conversion remain resolve_line_unit (**404**/400).
     unit_id: UuidIdValue | None = None
-    unit_price: float = Field(ge=0)
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    unit_price: NonNegativeMoneyValue
     # Omit to auto-resolve product → category → tenant default (BR-12.2); explicit 0 allowed
     # omit/`null` → auto-resolve; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
     tax_rate: NonNegativeMoneyValue | None = None
@@ -2639,7 +2682,8 @@ class PurchaseRequestItemCreate(BaseModel):
     # (was free `str`; garbage could reach catalog lookup). Existence remains
     # tenant-scoped product lookup (**404**).
     product_id: UuidIdValue
-    quantity: float = Field(gt=0)
+    # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    quantity: PositiveQtyValue
     # Optional variant ∈ UuidIdValue; omit/`null` → no variant; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach variant lookup).
     # Existence / product match remain create_request (**404**).
@@ -2738,7 +2782,8 @@ class LowStockSuggestionLine(BaseModel):
     # (was free `str`; garbage could reach catalog lookup). Existence remains
     # tenant-scoped product lookup (**404**).
     product_id: UuidIdValue
-    quantity: float | None = Field(default=None, gt=0)
+    # omit/`null` OK; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    quantity: PositiveQtyValue | None = None
     # Optional warehouse ∈ UuidIdValue; omit/`null` → no warehouse; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach warehouse lookup).
     warehouse_id: UuidIdValue | None = None
@@ -2785,8 +2830,10 @@ class AiLowStockPredictionLine(BaseModel):
     # (was free `str` with blank→None strip; garbage could reach catalog lookup).
     product_id: UuidIdValue
     confidence: float | None = Field(default=None, ge=0, le=1)
-    suggested_order_qty: float | None = Field(default=None, ge=0)
-    recommended_order_qty: float | None = Field(default=None, ge=0)
+    # omit/`null` OK; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    suggested_order_qty: NonNegativeQtyValue | None = None
+    # omit/`null` OK; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    recommended_order_qty: NonNegativeQtyValue | None = None
     # Optional warehouse ∈ UuidIdValue; omit/`null` → no warehouse; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; blank silently stripped to null).
     warehouse_id: UuidIdValue | None = None
@@ -2850,9 +2897,12 @@ class GrnItemCreate(BaseModel):
     """
 
     po_item_id: UuidIdValue
-    received_qty: float = Field(gt=0)
-    accepted_qty: float | None = None
-    rejected_qty: float = Field(default=0, ge=0)
+    # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    received_qty: PositiveQtyValue
+    # omit/`null` → received_qty; nan/inf/<0 → **422**
+    accepted_qty: NonNegativeQtyValue | None = None
+    # ∈ NonNegativeQtyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    rejected_qty: NonNegativeQtyValue = 0
     rejection_reason: GrnRejectionReasonValue | None = None
     # Optional lot ∈ BatchNumberValue; required by service when product.tracks_batches
     batch_number: BatchNumberValue | None = None
@@ -2893,7 +2943,8 @@ class PurchaseReturnItemCreate(BaseModel):
     # remains tenant-scoped GRN line lookup (**404**/400). Purchasing **Purchase
     # return GRN line** select; Draft return sends trim.
     goods_receipt_item_id: UuidIdValue
-    quantity: float = Field(gt=0)
+    # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    quantity: PositiveQtyValue
 
 
 class PurchaseReturnCreate(BaseModel):
@@ -2927,8 +2978,10 @@ class PurchaseInvoiceItemCreate(BaseModel):
     # tenant-scoped product lookup (**404**). Purchasing **Purchase invoice
     # product** select; Draft manual PI sends trim.
     product_id: UuidIdValue
-    quantity: float = Field(gt=0)
-    unit_price: float | None = None
+    # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    quantity: PositiveQtyValue
+    # omit/`null` → catalog/group price; nan/inf/<0 → **422**
+    unit_price: NonNegativeMoneyValue | None = None
     # Omit to auto-resolve product → category → tenant default (BR-12.2); explicit 0 allowed
     # omit/`null` → auto-resolve; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
     tax_rate: NonNegativeMoneyValue | None = None
@@ -3015,12 +3068,14 @@ class SalesInvoiceItemCreate(BaseModel):
     # (was free `str`; garbage could reach catalog lookup). Existence remains
     # tenant-scoped product lookup (**404**). Shared by SI / QT / SO create lines.
     product_id: UuidIdValue
-    quantity: float = Field(gt=0)
+    # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    quantity: PositiveQtyValue
     # Optional entered UoM ∈ UuidIdValue; omit/`null` → product stock unit; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach UoM lookup).
     # Same honesty as LineItem.unit_id (POS / legacy sale).
     unit_id: UuidIdValue | None = None
-    unit_price: float | None = None
+    # omit/`null` → catalog/group price; nan/inf/<0 → **422**
+    unit_price: NonNegativeMoneyValue | None = None
     # omit/`null` → auto-resolve; nan/inf/<0 → **422** (was unconstrained float)
     tax_rate: NonNegativeMoneyValue | None = None
     # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
@@ -3155,7 +3210,8 @@ class SalesReturnItemCreate(BaseModel):
     # (was free `str`; garbage could reach catalog lookup). Existence remains
     # tenant-scoped product lookup (**404**).
     product_id: UuidIdValue
-    quantity: float = Field(gt=0)
+    # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    quantity: PositiveQtyValue
     # Required coded condition (BR-7.5); OpenAPI Literal → omit/blank/invalid → 422
     condition: Literal["sellable", "discard"]
     # Optional variant ∈ UuidIdValue; omit/`null` → no variant; blank/`!!!`/
@@ -5838,6 +5894,30 @@ NonNegativeMoneyValue = Annotated[
 PercentRateValue = Annotated[
     float,
     Field(allow_inf_nan=False, ge=0, le=100),
+]
+# Positive quantity (line qty, received qty) — gt 0 + finite.
+PositiveQtyValue = Annotated[
+    float,
+    Field(allow_inf_nan=False, gt=0, le=1_000_000_000_000_000),
+]
+# Non-negative quantity (stock, reorder, capacity, dims) — ge 0 + finite.
+NonNegativeQtyValue = Annotated[
+    float,
+    Field(allow_inf_nan=False, ge=0, le=1_000_000_000_000_000),
+]
+# Signed finite quantity (stock adjust +/-) — reject nan/inf/absurd magnitude.
+FiniteQtyValue = Annotated[
+    float,
+    Field(allow_inf_nan=False, ge=-1_000_000_000_000_000, le=1_000_000_000_000_000),
+]
+# GPS latitude / longitude bounds — finite; out-of-range → 422.
+LatitudeValue = Annotated[
+    float,
+    Field(allow_inf_nan=False, ge=-90, le=90),
+]
+LongitudeValue = Annotated[
+    float,
+    Field(allow_inf_nan=False, ge=-180, le=180),
 ]
 
 

@@ -1176,14 +1176,16 @@ export default function Page() {
             onChange={(e) => setCustomerLat(e.target.value)}
             placeholder="Lat"
             style={{ width: 90 }}
-            title="GPS latitude"
+            title="GPS latitude (−90…90)"
+            aria-label="Customer latitude"
           />
           <input
             value={customerLng}
             onChange={(e) => setCustomerLng(e.target.value)}
             placeholder="Lng"
             style={{ width: 90 }}
-            title="GPS longitude"
+            title="GPS longitude (−180…180)"
+            aria-label="Customer longitude"
           />
           <select
             value={customerGroupId}
@@ -1274,7 +1276,13 @@ export default function Page() {
               </option>
             ))}
           </select>
-          <input value={qty} onChange={(e) => setQty(e.target.value)} placeholder="Qty" style={{ width: 80 }} />
+          <input
+            value={qty}
+            onChange={(e) => setQty(e.target.value)}
+            placeholder="Qty"
+            aria-label="Line quantity"
+            style={{ width: 80 }}
+          />
           <input
             value={unitPrice}
             onChange={(e) => {
@@ -1282,6 +1290,7 @@ export default function Page() {
               setUnitPrice(e.target.value);
             }}
             placeholder="Price"
+            aria-label="Line unit price"
             style={{ width: 100 }}
           />
           <label style={{ display: 'flex', gap: 4, alignItems: 'center' }}>

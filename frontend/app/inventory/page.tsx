@@ -1715,31 +1715,43 @@ export default function Page() {
                 value={editWeight}
                 onChange={(e) => setEditWeight(e.target.value)}
                 placeholder="Weight"
+                aria-label="Edit product weight"
                 style={{ width: 100 }}
               />
               <input
                 value={editLength}
                 onChange={(e) => setEditLength(e.target.value)}
                 placeholder="Length"
+                aria-label="Edit product length"
                 style={{ width: 80 }}
               />
               <input
                 value={editWidth}
                 onChange={(e) => setEditWidth(e.target.value)}
                 placeholder="Width"
+                aria-label="Edit product width"
                 style={{ width: 80 }}
               />
               <input
                 value={editHeight}
                 onChange={(e) => setEditHeight(e.target.value)}
                 placeholder="Height"
+                aria-label="Edit product height"
                 style={{ width: 80 }}
               />
             </div>
             <label className="muted">Reorder level</label>
-            <input value={editReorder} onChange={(e) => setEditReorder(e.target.value)} />
+            <input
+              value={editReorder}
+              onChange={(e) => setEditReorder(e.target.value)}
+              aria-label="Edit product reorder level"
+            />
             <label className="muted">Selling price</label>
-            <input value={editPrice} onChange={(e) => setEditPrice(e.target.value)} />
+            <input
+              value={editPrice}
+              onChange={(e) => setEditPrice(e.target.value)}
+              aria-label="Edit product selling price"
+            />
             <label className="muted">Tax supply class</label>
             <select value={editSupplyClass} onChange={(e) => setEditSupplyClass(e.target.value)}>
               <option value="standard">Standard-rated</option>
@@ -2067,30 +2079,39 @@ export default function Page() {
               title="Optional description (1–500 chars; letters/digits required)"
               rows={2}
             />
-            <input value={productPrice} onChange={(e) => setProductPrice(e.target.value)} placeholder="Selling price" />
+            <input
+              value={productPrice}
+              onChange={(e) => setProductPrice(e.target.value)}
+              placeholder="Selling price"
+              aria-label="Product selling price"
+            />
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <input
                 value={productWeight}
                 onChange={(e) => setProductWeight(e.target.value)}
                 placeholder="Weight kg"
+                aria-label="Product weight"
                 style={{ width: 100 }}
               />
               <input
                 value={productLength}
                 onChange={(e) => setProductLength(e.target.value)}
                 placeholder="L cm"
+                aria-label="Product length"
                 style={{ width: 80 }}
               />
               <input
                 value={productWidth}
                 onChange={(e) => setProductWidth(e.target.value)}
                 placeholder="W cm"
+                aria-label="Product width"
                 style={{ width: 80 }}
               />
               <input
                 value={productHeight}
                 onChange={(e) => setProductHeight(e.target.value)}
                 placeholder="H cm"
+                aria-label="Product height"
                 style={{ width: 80 }}
               />
             </div>
@@ -2623,6 +2644,7 @@ export default function Page() {
               value={unitRatio}
               onChange={(e) => setUnitRatio(e.target.value)}
               placeholder="Conversion ratio"
+              aria-label="Unit conversion ratio"
               disabled={!unitBaseId}
             />
             <button
@@ -3801,11 +3823,13 @@ export default function Page() {
               value={whReorderLevel}
               onChange={(e) => setWhReorderLevel(e.target.value)}
               placeholder="Reorder level"
+              aria-label="Warehouse reorder level"
             />
             <input
               value={whReorderQty}
               onChange={(e) => setWhReorderQty(e.target.value)}
               placeholder="Reorder qty"
+              aria-label="Warehouse reorder qty"
             />
             <button
               type="button"

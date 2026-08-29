@@ -1740,14 +1740,16 @@ export default function Page() {
             onChange={(e) => setSupplierLat(e.target.value)}
             placeholder="Lat"
             style={{ width: 90 }}
-            title="GPS latitude"
+            title="GPS latitude (−90…90)"
+            aria-label="Supplier latitude"
           />
           <input
             value={supplierLng}
             onChange={(e) => setSupplierLng(e.target.value)}
             placeholder="Lng"
             style={{ width: 90 }}
-            title="GPS longitude"
+            title="GPS longitude (−180…180)"
+            aria-label="Supplier longitude"
           />
           <input
             value={supplierTermsDays}

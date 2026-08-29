@@ -1053,6 +1053,7 @@ export default function Page() {
               value={whCapacity}
               onChange={(e) => setWhCapacity(e.target.value)}
               placeholder="Capacity (optional)"
+              aria-label="Warehouse capacity"
             />
             <select
               value={whManagerId}
@@ -1541,12 +1542,14 @@ export default function Page() {
               value={reorderLevel}
               onChange={(e) => setReorderLevel(e.target.value)}
               placeholder="Reorder level"
+              aria-label="Store reorder level"
               style={{ width: 110 }}
             />
             <input
               value={reorderQty}
               onChange={(e) => setReorderQty(e.target.value)}
               placeholder="Reorder qty"
+              aria-label="Store reorder qty"
               style={{ width: 110 }}
             />
             <button onClick={saveReorder} aria-label="Save store reorder policy">
