@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app import totp as totp_svc
+from app.honesty import optional_honest_narrative
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -73,6 +74,7 @@ def decrypt_webhook_secret(token: str) -> str:
 
 
 def validate_url(url: str) -> str:
+    # Defense in depth: WebhookCreate/Update WebhookUrlValue → 422 on blank/non-http(s).
     cleaned = (url or "").strip()
     parsed = urlparse(cleaned)
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
@@ -171,22 +173,36 @@ async def list_deliveries(
     tenant_id: str,
     webhook_id: str,
     *,
+    status: str | None = None,
     limit: int = 50,
 ) -> list[m.WebhookDelivery]:
     """Recent delivery attempts for one webhook endpoint (Integrations UI)."""
     await get_endpoint(db, tenant_id, webhook_id)
     lim = max(1, min(int(limit or 50), 200))
-    rows = (
-        await db.execute(
-            select(m.WebhookDelivery)
-            .where(
-                m.WebhookDelivery.tenant_id == tenant_id,
-                m.WebhookDelivery.webhook_id == webhook_id,
-            )
-            .order_by(m.WebhookDelivery.created_at.desc())
-            .limit(lim)
+    stmt = (
+        select(m.WebhookDelivery)
+        .where(
+            m.WebhookDelivery.tenant_id == tenant_id,
+            m.WebhookDelivery.webhook_id == webhook_id,
         )
-    ).scalars().all()
+        .order_by(m.WebhookDelivery.created_at.desc())
+        .limit(lim)
+    )
+    if status is not None:
+        # Schema WebhookDeliveryStatusFilterValue rejects blank/invalid → 422;
+        # keep allow-list defense-in-depth (no silent empty filter / blank→all).
+        wanted = (status or "").strip().lower()
+        allowed = {STATUS_PENDING, STATUS_PENDING_RETRY, STATUS_DELIVERED, STATUS_FAILED}
+        if not wanted:
+            pass
+        elif wanted not in allowed:
+            raise HTTPException(
+                status_code=422,
+                detail="status must be pending, pending_retry, delivered, or failed",
+            )
+        else:
+            stmt = stmt.where(m.WebhookDelivery.status == wanted)
+    rows = (await db.execute(stmt)).scalars().all()
     return list(rows)
 
 
@@ -257,7 +273,13 @@ async def create_endpoint(
 ) -> tuple[m.WebhookEndpoint, str]:
     cleaned_url = validate_url(url)
     event_list = normalize_events(events)
-    raw_secret = (secret or "").strip() or generate_secret()
+    # OpenAPI WebhookSecretValue → 422; omit/`null`/blank → auto-generate; garbage → 400.
+    cleaned_secret = optional_honest_narrative(
+        secret, label="webhook signing secret", max_length=128
+    )
+    if cleaned_secret and " " in cleaned_secret:
+        raise HTTPException(status_code=400, detail="webhook signing secret must be a plain narrative")
+    raw_secret = cleaned_secret or generate_secret()
     if not raw_secret.startswith("whsec_"):
         # Allow custom secrets but normalize empty; non-whsec custom still ok if long enough
         if len(raw_secret) < 16:
@@ -267,7 +289,7 @@ async def create_endpoint(
         url=cleaned_url,
         events=event_list,
         secret_enc=encrypt_webhook_secret(raw_secret),
-        description=(description or "").strip() or None,
+        description=optional_honest_narrative(description, label="webhook description"),
         is_active=bool(is_active),
         created_by=user_id,
     )
@@ -294,7 +316,9 @@ async def update_endpoint(
     if events is not None:
         row.events = normalize_events(events)
     if description is not None:
-        row.description = description.strip() or None
+        row.description = optional_honest_narrative(
+            description, label="webhook description"
+        )
     if is_active is not None:
         row.is_active = bool(is_active)
     if rotate_secret:

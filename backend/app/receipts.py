@@ -9,13 +9,14 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json
 
 # Typical 80mm thermal width (~48 monospace chars); 58mm ~32
 THERMAL_WIDTHS = {"80mm": 42, "58mm": 32}
 
 
 def _money(value: float) -> str:
-    return f"{float(value):.2f}"
+    return f"{money_json(value or 0):.2f}"
 
 
 def _wrap(text: str, width: int) -> list[str]:
@@ -75,14 +76,16 @@ def build_receipt_payload(
             or raw.get("product_id")
             or "Item"
         )
-        qty = float(raw.get("quantity") or 0)
-        unit = float(
+        qty = money_json(raw.get("quantity") or 0)
+        unit = money_json(
             raw.get("unit_price")
             if raw.get("unit_price") is not None
             else raw.get("selling_price")
             or 0
         )
-        line_total = float(raw.get("line_total") if raw.get("line_total") is not None else qty * unit)
+        line_total = money_json(
+            raw.get("line_total") if raw.get("line_total") is not None else qty * unit
+        )
         normalized_items.append(
             {
                 "name": str(name),
@@ -136,11 +139,11 @@ def build_receipt_payload(
         "currency": tenant.currency if tenant else "GHS",
         "cashier_name": cashier_name,
         "customer_name": customer_name,
-        "subtotal": float(tx.subtotal or 0),
-        "tax": float(tx.tax or 0),
-        "discount_amount": float(payload.get("discount_amount") or 0),
-        "line_discounts": float(payload.get("line_discounts") or 0),
-        "total": float(tx.total or 0),
+        "subtotal": money_json(tx.subtotal),
+        "tax": money_json(tx.tax),
+        "discount_amount": money_json(payload.get("discount_amount") or 0),
+        "line_discounts": money_json(payload.get("line_discounts") or 0),
+        "total": money_json(tx.total),
         "items": normalized_items,
         "payment_method": payload.get("payment_method", "cash"),
         "payments": payload.get("payments") or [],
@@ -182,9 +185,9 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     lines.append("-" * width)
     for item in receipt.get("items") or []:
         name = str(item.get("name") or "Item")
-        qty = float(item.get("quantity") or 0)
-        unit = float(item.get("unit_price") or 0)
-        total = float(item.get("line_total") or qty * unit)
+        qty = money_json(item.get("quantity") or 0)
+        unit = money_json(item.get("unit_price") or 0)
+        total = money_json(item.get("line_total") or qty * unit)
         for i, part in enumerate(_wrap(name, width)):
             lines.append(part if i == 0 else ("  " + part)[:width])
         lines.append(_lr(f"  {qty:g} x {_money(unit)}", _money(total), width))
@@ -192,7 +195,7 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     currency = receipt.get("currency") or ""
     lines.append(_lr("Subtotal", _money(receipt.get("subtotal") or 0), width))
     lines.append(_lr("Tax", _money(receipt.get("tax") or 0), width))
-    discount_amount = float(receipt.get("discount_amount") or 0)
+    discount_amount = money_json(receipt.get("discount_amount") or 0)
     if discount_amount > 0:
         lines.append(_lr("Discount", f"-{_money(discount_amount)}", width))
     lines.append(_lr(f"TOTAL {currency}".strip(), _money(receipt.get("total") or 0), width))

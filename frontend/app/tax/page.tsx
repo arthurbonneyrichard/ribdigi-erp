@@ -39,6 +39,7 @@ export default function Page() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [taxRateManageFilter, setTaxRateManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [filingJurisdictionFilter, setFilingJurisdictionFilter] = useState<'' | 'GH'>('');
 
   const managedRates = rows.filter((r) => {
     if (taxRateManageFilter === 'all') return true;
@@ -50,7 +51,10 @@ export default function Page() {
     const params = new URLSearchParams();
     if (fromDate) params.set('from_date', fromDate);
     if (toDate) params.set('to_date', toDate);
-    if (storeId) params.set('store_id', storeId);
+    // trim so UuidIdValue Query store_id does not 422
+    const storeTrim = storeId.trim();
+    if (storeTrim) params.set('store_id', storeTrim);
+    if (filingJurisdictionFilter) params.set('jurisdiction', filingJurisdictionFilter);
     const s = params.toString();
     return s ? `?${s}` : '';
   }
@@ -83,18 +87,38 @@ export default function Page() {
     if (ctxStoreId) setStoreId(ctxStoreId);
   }, [ctxStoreId]);
   async function createRate() {
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      setError('Tax rate name is required.');
+      setMessage('');
+      return;
+    }
     setError('');
     setMessage('');
     try {
       let components = null;
       if (componentsJson.trim()) {
-        components = JSON.parse(componentsJson);
-        if (!Array.isArray(components)) throw new Error('Components must be a JSON array');
+        const parsed = JSON.parse(componentsJson);
+        if (!Array.isArray(parsed)) throw new Error('Components must be a JSON array');
+        // Omit blank code/name so schema omit/`null` path applies (blank → 422).
+        components = parsed.map((c: Record<string, unknown>) => {
+          if (!c || typeof c !== 'object') return c;
+          const next: Record<string, unknown> = { ...c };
+          if (typeof next.code === 'string') {
+            const code = next.code.trim();
+            next.code = code || null;
+          }
+          if (typeof next.name === 'string') {
+            const label = next.name.trim();
+            next.name = label || null;
+          }
+          return next;
+        });
       }
       await api('/tax/rates', {
         method: 'POST',
         body: JSON.stringify({
-          name,
+          name: trimmedName,
           rate: Number(rate),
           tax_type: taxType,
           pricing_mode: pricingMode,
@@ -163,8 +187,13 @@ export default function Page() {
       params.set('format', format);
       if (fromDate) params.set('from_date', fromDate);
       if (toDate) params.set('to_date', toDate);
-      if (storeId) params.set('store_id', storeId);
-      if (reportType === 'tax_filing_gh') params.set('jurisdiction', 'GH');
+      const storeTrim = storeId.trim();
+      if (storeTrim) params.set('store_id', storeTrim);
+      if (reportType === 'tax_filing_gh') {
+        params.set('jurisdiction', filingJurisdictionFilter || 'GH');
+      } else if (filingJurisdictionFilter) {
+        params.set('jurisdiction', filingJurisdictionFilter);
+      }
       const res = await fetch(`${base}/reports/export?${params}`, {
         headers: {
           Authorization: token ? `Bearer ${token}` : '',
@@ -207,14 +236,27 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Period</h3>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
-          <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+          <input
+            type="date"
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+            title="From date (YYYY-MM-DD)"
+            aria-label="Tax from date"
+          />
+          <input
+            type="date"
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+            title="To date (YYYY-MM-DD)"
+            aria-label="Tax to date"
+          />
           <select
             value={storeId}
             onChange={(e) => {
               setStoreId(e.target.value);
               setCtxStoreId(e.target.value);
             }}
+            aria-label="Tax report store filter"
           >
             <option value="">All stores</option>
             {stores
@@ -225,8 +267,20 @@ export default function Page() {
               </option>
             ))}
           </select>
+          <select
+            value={filingJurisdictionFilter}
+            onChange={(e) => {
+              const next = e.target.value as '' | 'GH';
+              setFilingJurisdictionFilter(next);
+            }}
+            aria-label="Tax filing jurisdiction filter"
+          >
+            <option value="">Tenant default</option>
+            <option value="GH">GH — Ghana VAT</option>
+          </select>
           <button
             onClick={() => refresh().catch((err) => setError(err.message))}
+            aria-label="Apply tax period filters"
           >
             Apply
           </button>
@@ -237,15 +291,23 @@ export default function Page() {
         <div className="card">
           <h3>Create rate</h3>
           <div style={{ display: 'grid', gap: 8 }}>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
-            <input value={rate} onChange={(e) => setRate(e.target.value)} placeholder="Rate %" />
-            <select value={taxType} onChange={(e) => setTaxType(e.target.value)}>
+            <input aria-label="Tax rate name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
+            <input value={rate} onChange={(e) => setRate(e.target.value)} placeholder="Rate %" aria-label="Tax rate percent" />
+            <select
+              value={taxType}
+              onChange={(e) => setTaxType(e.target.value)}
+              aria-label="Tax rate type"
+            >
               <option value="vat">VAT</option>
               <option value="gst">GST</option>
               <option value="sales_tax">Sales tax</option>
               <option value="custom">Custom</option>
             </select>
-            <select value={pricingMode} onChange={(e) => setPricingMode(e.target.value)}>
+            <select
+              value={pricingMode}
+              onChange={(e) => setPricingMode(e.target.value)}
+              aria-label="Tax pricing mode"
+            >
               <option value="exclusive">Exclusive</option>
               <option value="inclusive">Inclusive</option>
             </select>
@@ -254,6 +316,7 @@ export default function Page() {
                 type="checkbox"
                 checked={reverseCharge}
                 onChange={(e) => setReverseCharge(e.target.checked)}
+                aria-label="Tax reverse charge"
               />{' '}
               Reverse charge
             </label>
@@ -263,14 +326,22 @@ export default function Page() {
               onChange={(e) => setComponentsJson(e.target.value)}
               rows={3}
               placeholder='[{"code":"cgst","name":"CGST","rate":9,"basis":"net"},{"code":"sgst","name":"SGST","rate":9,"basis":"net"}]'
+              aria-label="Tax rate components JSON"
+              title="JSON array of {code,name,rate,basis}; code/name omit or non-empty (blank/!!!/URL → 422); basis net|compound"
             />
-            <button onClick={createRate}>Add rate</button>
+            <button type="button" aria-label="Add tax rate" onClick={createRate} disabled={!name.trim()}>
+              Add rate
+            </button>
           </div>
         </div>
         <div className="card">
           <h3>Calculator</h3>
-          <input value={calcAmount} onChange={(e) => setCalcAmount(e.target.value)} />
-          <button onClick={calculate} style={{ marginTop: 8 }}>
+          <input
+            value={calcAmount}
+            onChange={(e) => setCalcAmount(e.target.value)}
+            aria-label="Tax calculator amount"
+          />
+          <button onClick={calculate} style={{ marginTop: 8 }} aria-label="Calculate tax">
             Calculate with default rate
           </button>
           {calcResult && (
@@ -308,12 +379,33 @@ export default function Page() {
             : ' · TIN not set (set on Company)'}
         </p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-          <button onClick={() => downloadFiling('csv')}>Export CSV</button>
-          <button onClick={() => downloadFiling('xlsx')}>Export Excel</button>
-          <button onClick={() => downloadFiling('pdf')}>Export PDF</button>
-          <button onClick={() => downloadFiling('xlsx', 'tax_filing_gh')}>Export Ghana VAT (XLSX)</button>
-          <button onClick={() => downloadFiling('csv', 'tax_filing_gh')}>Export Ghana VAT (CSV)</button>
-          <button onClick={() => downloadFiling('pdf', 'tax_filing_gh')}>Export Ghana VAT (PDF)</button>
+          <button onClick={() => downloadFiling('csv')} aria-label="Export tax filing CSV">
+            Export CSV
+          </button>
+          <button onClick={() => downloadFiling('xlsx')} aria-label="Export tax filing Excel">
+            Export Excel
+          </button>
+          <button onClick={() => downloadFiling('pdf')} aria-label="Export tax filing PDF">
+            Export PDF
+          </button>
+          <button
+            onClick={() => downloadFiling('xlsx', 'tax_filing_gh')}
+            aria-label="Export Ghana VAT Excel"
+          >
+            Export Ghana VAT (XLSX)
+          </button>
+          <button
+            onClick={() => downloadFiling('csv', 'tax_filing_gh')}
+            aria-label="Export Ghana VAT CSV"
+          >
+            Export Ghana VAT (CSV)
+          </button>
+          <button
+            onClick={() => downloadFiling('pdf', 'tax_filing_gh')}
+            aria-label="Export Ghana VAT PDF"
+          >
+            Export Ghana VAT (PDF)
+          </button>
         </div>
         {!!filing?.government?.warnings?.length && (
           <p style={{ color: '#b45309' }}>{filing.government.warnings.join(' · ')}</p>
@@ -418,7 +510,7 @@ export default function Page() {
               </td>
               <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {r.is_active !== false && !r.is_default && (
-                  <button type="button" onClick={() => makeDefault(r.id)}>
+                  <button type="button" onClick={() => makeDefault(r.id)} aria-label={`Set default tax rate ${r.id}`}>
                     Set default
                   </button>
                 )}
@@ -426,6 +518,11 @@ export default function Page() {
                   type="button"
                   className={r.is_active === false ? 'btn-ok' : 'btn-danger'}
                   onClick={() => setRateActive(r, r.is_active === false)}
+                  aria-label={
+                    r.is_active === false
+                      ? `Activate tax rate ${r.id}`
+                      : `Deactivate tax rate ${r.id}`
+                  }
                 >
                   {r.is_active === false ? 'Activate' : 'Deactivate'}
                 </button>

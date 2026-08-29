@@ -16,6 +16,37 @@ from app import models as m
 
 GENESIS_HASH = "0" * 64
 
+# Modules accepted on GET /audit-logs?module= (record_event + middleware segments + system).
+AUDIT_MODULES = frozenset(
+    {
+        "accounting",
+        "ai",
+        "audit",
+        "auth",
+        "backup",
+        "company",
+        "credit",
+        "dashboard",
+        "expenses",
+        "inventory",
+        "notifications",
+        "onboarding",
+        "platform_staff",
+        "pos",
+        "purchasing",
+        "reports",
+        "sales",
+        "security",
+        "settings",
+        "stores",
+        "system",
+        "tax",
+        "tenants",
+        "users",
+        "webhooks",
+    }
+)
+
 
 def canonical_payload(
     *,
@@ -141,7 +172,15 @@ async def query_logs(
     if user_id:
         stmt = stmt.where(m.AuditLog.user_id == user_id)
     if module:
-        stmt = stmt.where(m.AuditLog.module == module)
+        # Schema AuditModuleValue rejects blank/unknown → 422; keep allow-list defense-in-depth.
+        mod = module.strip().lower()
+        if mod and mod not in AUDIT_MODULES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"module must be one of: {', '.join(sorted(AUDIT_MODULES))}",
+            )
+        if mod:
+            stmt = stmt.where(m.AuditLog.module == mod)
     if action:
         stmt = stmt.where(m.AuditLog.action == action)
     if entity:

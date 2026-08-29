@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json, require_honest_narrative
 
 DEFAULT_GROUPS = (
     ("RETAIL", "Retail", 0.0),
@@ -50,7 +51,7 @@ def serialize_group(row: m.CustomerGroup) -> dict:
         "id": row.id,
         "code": row.code,
         "name": row.name,
-        "discount_percent": float(row.discount_percent or 0),
+        "discount_percent": money_json(row.discount_percent),
         "is_active": bool(row.is_active),
         "created_at": row.created_at,
     }
@@ -103,11 +104,15 @@ async def create_group(
     discount_percent: float = 0,
 ) -> m.CustomerGroup:
     await ensure_default_groups(db, tenant_id)
-    name = (name or "").strip()
-    if not name:
-        raise HTTPException(status_code=400, detail="name is required")
-    code_key = (code or _slug_code(name)).strip().upper()[:40]
-    pct = float(discount_percent or 0)
+    name = require_honest_narrative(name, label="customer group name", max_length=120)
+    # OpenAPI CustomerGroupCodeValue → 422; service defense-in-depth → 400.
+    if code is not None and str(code).strip():
+        code_key = require_honest_narrative(
+            str(code).strip().upper(), label="customer group code", max_length=40
+        )
+    else:
+        code_key = _slug_code(name).strip().upper()[:40]
+    pct = money_json(discount_percent or 0)
     if pct < 0 or pct > 100:
         raise HTTPException(status_code=422, detail="discount_percent must be between 0 and 100")
     exists = (
@@ -143,12 +148,11 @@ async def update_group(
 ) -> m.CustomerGroup:
     row = await get_group(db, tenant_id, group_id)
     if name is not None:
-        name = name.strip()
-        if not name:
-            raise HTTPException(status_code=400, detail="name cannot be empty")
-        row.name = name
+        row.name = require_honest_narrative(
+            name, label="customer group name", max_length=120
+        )
     if discount_percent is not None:
-        pct = float(discount_percent)
+        pct = money_json(discount_percent)
         if pct < 0 or pct > 100:
             raise HTTPException(status_code=422, detail="discount_percent must be between 0 and 100")
         row.discount_percent = pct
@@ -186,10 +190,10 @@ async def customer_group_discount(
     ).scalar_one_or_none()
     if not group:
         return 0.0, None
-    return float(group.discount_percent or 0), group
+    return money_json(group.discount_percent or 0), group
 
 
 def apply_discount(base_price: float, discount_percent: float) -> float:
-    base = float(base_price or 0)
-    pct = max(0.0, min(100.0, float(discount_percent or 0)))
-    return round(base * (1.0 - pct / 100.0), 2)
+    base = money_json(base_price or 0)
+    pct = max(0.0, min(100.0, money_json(discount_percent or 0)))
+    return money_json(round(base * (1.0 - pct / 100.0), 2))

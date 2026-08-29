@@ -86,7 +86,7 @@ type Warehouse = {
   is_active?: boolean;
 };
 type UserRow = { id: string; email?: string; full_name?: string; name?: string };
-type Product = { id: string; name: string; sku: string; stock_qty: number };
+type Product = { id: string; name: string; sku: string; stock_qty: number; is_active?: boolean };
 type Transfer = {
   id: string;
   transfer_number: string;
@@ -112,12 +112,14 @@ export default function Page() {
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
+  const [phone, setPhone] = useState('');
   const [managerId, setManagerId] = useState('');
   const [branchId, setBranchId] = useState('');
   const [hours, setHours] = useState<OperatingHours>(defaultHours());
   const [editStoreId, setEditStoreId] = useState('');
   const [editName, setEditName] = useState('');
   const [editAddress, setEditAddress] = useState('');
+  const [editPhone, setEditPhone] = useState('');
   const [editManagerId, setEditManagerId] = useState('');
   const [editBranchId, setEditBranchId] = useState('');
   const [editHours, setEditHours] = useState<OperatingHours>(defaultHours());
@@ -162,6 +164,9 @@ export default function Page() {
   const [warehouseManageFilter, setWarehouseManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [branchManageFilter, setBranchManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [departmentManageFilter, setDepartmentManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [transferManageFilter, setTransferManageFilter] = useState<
+    'all' | 'draft' | 'requested' | 'in_transit' | 'received' | 'cancelled'
+  >('all');
   const [entitlement, setEntitlement] = useState<{
     stores_active?: number;
     stores_total?: number;
@@ -185,6 +190,10 @@ export default function Page() {
   const managedWarehouses = byStatus(warehouses, warehouseManageFilter);
   const managedBranches = byStatus(branches, branchManageFilter);
   const managedDepartments = byStatus(departments, departmentManageFilter);
+  const managedTransfers = transfers.filter((t) => {
+    if (transferManageFilter === 'all') return true;
+    return (t.status || 'draft') === transferManageFilter;
+  });
 
   async function refresh() {
     const [s, p, t, settings, wh, u, br, dep, ent] = await Promise.all([
@@ -235,17 +244,20 @@ export default function Page() {
       await api('/stores', {
         method: 'POST',
         body: JSON.stringify({
-          code,
-          name,
-          address: address || undefined,
-          manager_id: managerId || null,
-          branch_id: branchId || null,
+          code: code.trim(),
+          name: name.trim(),
+          // Omit blank address so Create does not 422 (AddressValue).
+          ...(address.trim() ? { address: address.trim() } : {}),
+          phone: phone.trim() || null,
+          manager_id: managerId.trim() || null,
+          branch_id: branchId.trim() || null,
           operating_hours: hours,
         }),
       });
       setCode('');
       setName('');
       setAddress('');
+      setPhone('');
       setManagerId('');
       setBranchId('');
       setHours(defaultHours());
@@ -283,6 +295,7 @@ export default function Page() {
     setEditStoreId(s.id);
     setEditName(s.name || '');
     setEditAddress(s.address || '');
+    setEditPhone(s.phone || '');
     setEditManagerId(s.manager_id || '');
     setEditBranchId(s.branch_id || '');
     setEditHours(s.operating_hours ? { ...defaultHours(), ...s.operating_hours } : defaultHours());
@@ -297,11 +310,14 @@ export default function Page() {
         method: 'PATCH',
         body: JSON.stringify({
           name: editName.trim() || undefined,
-          address: editAddress,
-          manager_id: editManagerId || null,
-          clear_manager: !editManagerId,
-          branch_id: editBranchId || null,
-          clear_branch: !editBranchId,
+          // Omit blank address so Save does not 422 (AddressValue); leave prior.
+          ...(editAddress.trim() ? { address: editAddress.trim() } : {}),
+          // Omit blank phone so Save does not 422 (E164PhoneValue); leave prior value.
+          ...(editPhone.trim() ? { phone: editPhone.trim() } : {}),
+          manager_id: editManagerId.trim() || null,
+          clear_manager: !editManagerId.trim(),
+          branch_id: editBranchId.trim() || null,
+          clear_branch: !editBranchId.trim(),
           operating_hours: editHours,
         }),
       });
@@ -364,6 +380,7 @@ export default function Page() {
                   type="checkbox"
                   checked={closed}
                   onChange={(e) => onDay(key, { closed: e.target.checked })}
+                  aria-label={`Store ${label} closed`}
                 />
                 Closed
               </label>
@@ -373,12 +390,14 @@ export default function Page() {
                     type="time"
                     value={d.open || '09:00'}
                     onChange={(e) => onDay(key, { open: e.target.value, closed: false })}
+                    aria-label={`Store ${label} open time`}
                   />
                   <span className="muted">–</span>
                   <input
                     type="time"
                     value={d.close || '18:00'}
                     onChange={(e) => onDay(key, { close: e.target.value, closed: false })}
+                    aria-label={`Store ${label} close time`}
                   />
                 </>
               )}
@@ -399,10 +418,11 @@ export default function Page() {
           code: whCode.trim(),
           name: whName.trim(),
           warehouse_type: whType,
-          address: whAddress.trim() || null,
+          // Omit blank address so Create does not 422 (AddressValue).
+          ...(whAddress.trim() ? { address: whAddress.trim() } : {}),
           capacity: whCapacity === '' ? null : Number(whCapacity),
-          manager_id: whManagerId || null,
-          store_id: whStoreId || null,
+          manager_id: whManagerId.trim() || null,
+          store_id: whStoreId.trim() || null,
         }),
       });
       setWhCode('');
@@ -429,13 +449,14 @@ export default function Page() {
         body: JSON.stringify({
           name: whName.trim() || undefined,
           warehouse_type: whType,
-          address: whAddress,
+          // Omit blank address so Save does not 422 (AddressValue); leave prior.
+          ...(whAddress.trim() ? { address: whAddress.trim() } : {}),
           capacity: whCapacity === '' ? null : Number(whCapacity),
           clear_capacity: whCapacity === '',
-          manager_id: whManagerId || null,
-          clear_manager: !whManagerId,
-          store_id: whStoreId || null,
-          clear_store: !whStoreId,
+          manager_id: whManagerId.trim() || null,
+          clear_manager: !whManagerId.trim(),
+          store_id: whStoreId.trim() || null,
+          clear_store: !whStoreId.trim(),
         }),
       });
       setEditWhId('');
@@ -483,10 +504,11 @@ export default function Page() {
         body: JSON.stringify({
           code: brCode.trim(),
           name: brName.trim(),
-          address: brAddress.trim() || null,
+          // Omit blank address so Create does not 422 (AddressValue).
+          ...(brAddress.trim() ? { address: brAddress.trim() } : {}),
           phone: brPhone.trim() || null,
           email: brEmail.trim() || null,
-          manager_id: brManagerId || null,
+          manager_id: brManagerId.trim() || null,
         }),
       });
       resetBranchForm();
@@ -506,11 +528,13 @@ export default function Page() {
         method: 'PATCH',
         body: JSON.stringify({
           name: brName.trim() || undefined,
-          address: brAddress,
-          phone: brPhone,
+          // Omit blank address so Save does not 422 (AddressValue); leave prior.
+          ...(brAddress.trim() ? { address: brAddress.trim() } : {}),
+          // Omit blank phone so Save does not 422 (E164PhoneValue); leave prior value.
+          ...(brPhone.trim() ? { phone: brPhone.trim() } : {}),
           email: brEmail.trim() || null,
-          manager_id: brManagerId || null,
-          clear_manager: !brManagerId,
+          manager_id: brManagerId.trim() || null,
+          clear_manager: !brManagerId.trim(),
         }),
       });
       resetBranchForm();
@@ -593,8 +617,9 @@ export default function Page() {
         body: JSON.stringify({
           code: deptCode.trim(),
           name: deptName.trim(),
-          branch_id: deptBranchId || null,
-          head_user_id: deptHeadId || null,
+          // trim so Create department (UuidIdValue branch_id) does not 422 on whitespace
+          branch_id: deptBranchId.trim() || null,
+          head_user_id: deptHeadId.trim() || null,
         }),
       });
       resetDeptForm();
@@ -614,10 +639,10 @@ export default function Page() {
         method: 'PATCH',
         body: JSON.stringify({
           name: deptName.trim() || undefined,
-          branch_id: deptBranchId || null,
-          clear_branch: !deptBranchId,
-          head_user_id: deptHeadId || null,
-          clear_head: !deptHeadId,
+          branch_id: deptBranchId.trim() || null,
+          clear_branch: !deptBranchId.trim(),
+          head_user_id: deptHeadId.trim() || null,
+          clear_head: !deptHeadId.trim(),
         }),
       });
       resetDeptForm();
@@ -660,7 +685,8 @@ export default function Page() {
         method: 'PATCH',
         body: JSON.stringify({
           drawer_mode: drawerMode,
-          drawer_host: drawerHost || null,
+          // Blank → null (omit clears); garbage rejected by SmtpHostValue → 422.
+          drawer_host: drawerHost.trim() || null,
           drawer_port: Number(drawerPort) || 9100,
           drawer_open_on_cash: drawerOnCash,
         }),
@@ -691,7 +717,8 @@ export default function Page() {
       await api(`/stores/${viewStore}/reorder-policy`, {
         method: 'PUT',
         body: JSON.stringify({
-          product_id: reorderProductId,
+          // trim so Save policy (UuidIdValue product_id) does not 422
+          product_id: reorderProductId.trim(),
           reorder_level: Number(reorderLevel) || 0,
           reorder_qty: Number(reorderQty) || 0,
         }),
@@ -728,10 +755,11 @@ export default function Page() {
       const r = await api('/stores/transfers', {
         method: 'POST',
         body: JSON.stringify({
-          from_store_id: fromStore,
-          to_store_id: toStore,
+          from_store_id: fromStore.trim(),
+          to_store_id: toStore.trim(),
           submit: true,
-          items: [{ product_id: productId, quantity: Number(qty) }],
+          // trim so StockTransferItemCreate (UuidIdValue product_id) does not 422 on whitespace
+          items: [{ product_id: productId.trim(), quantity: Number(qty) }],
         }),
       });
       setMessage(`Transfer ${r.data.transfer_number} requested`);
@@ -785,7 +813,7 @@ export default function Page() {
 
       <div className="card" style={{ marginBottom: 16 }}>
         <label className="muted">
-          <input type="checkbox" checked={fefoStrict} onChange={() => toggleFefo()} /> FEFO
+          <input type="checkbox" checked={fefoStrict} onChange={() => toggleFefo()} aria-label="FEFO strict warehouse" /> FEFO
           strict warehouse (stock-out only from batches tagged to that warehouse)
         </label>
       </div>
@@ -798,17 +826,41 @@ export default function Page() {
               value={brCode}
               onChange={(e) => setBrCode(e.target.value)}
               placeholder="Code"
+              aria-label="Branch code"
+              title="Branch code (1–40 chars; letters/digits required)"
               disabled={!!editBrId}
             />
-            <input value={brName} onChange={(e) => setBrName(e.target.value)} placeholder="Name" />
+            <input
+              value={brName}
+              onChange={(e) => setBrName(e.target.value)}
+              placeholder="Name"
+              aria-label={editBrId ? 'Edit branch name' : 'Branch name'}
+              title="Branch name (1–150 chars; letters/digits required)"
+            />
             <input
               value={brAddress}
               onChange={(e) => setBrAddress(e.target.value)}
               placeholder="Address"
+              aria-label="Branch address"
             />
-            <input value={brPhone} onChange={(e) => setBrPhone(e.target.value)} placeholder="Phone" />
-            <input value={brEmail} onChange={(e) => setBrEmail(e.target.value)} placeholder="Email" />
-            <select value={brManagerId} onChange={(e) => setBrManagerId(e.target.value)}>
+            <input
+              value={brPhone}
+              onChange={(e) => setBrPhone(e.target.value)}
+              placeholder="Phone (optional, E.164 e.g. +233...)"
+              aria-label="Branch phone"
+            />
+            <input
+              value={brEmail}
+              onChange={(e) => setBrEmail(e.target.value)}
+              placeholder="Email"
+              aria-label="Branch email"
+            />
+            <select
+              value={brManagerId}
+              onChange={(e) => setBrManagerId(e.target.value)}
+              aria-label={editBrId ? 'Edit branch manager' : 'Branch manager'}
+              title="Branch manager (optional tenant user)"
+            >
               <option value="">Manager (optional)</option>
               {users.map((u) => (
                 <option key={u.id} value={u.id}>
@@ -818,10 +870,10 @@ export default function Page() {
             </select>
             {editBrId ? (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button type="button" onClick={saveBranchEdit} disabled={!brName.trim()}>
+                <button type="button" onClick={saveBranchEdit} disabled={!brName.trim()} aria-label="Save branch">
                   Save branch
                 </button>
-                <button type="button" onClick={resetBranchForm}>
+                <button type="button" onClick={resetBranchForm} aria-label="Cancel branch edit">
                   Cancel
                 </button>
               </div>
@@ -830,6 +882,7 @@ export default function Page() {
                 type="button"
                 onClick={createBranch}
                 disabled={!brCode.trim() || !brName.trim()}
+                aria-label="Create branch"
               >
                 Create branch
               </button>
@@ -843,14 +896,23 @@ export default function Page() {
               value={deptCode}
               onChange={(e) => setDeptCode(e.target.value)}
               placeholder="Code"
+              aria-label="Department code"
+              title="Department code (1–40 chars; letters/digits required)"
               disabled={!!editDeptId}
             />
             <input
               value={deptName}
               onChange={(e) => setDeptName(e.target.value)}
               placeholder="Name (e.g. Sales)"
+              aria-label={editDeptId ? 'Edit department name' : 'Department name'}
+              title="Department name (1–150 chars; letters/digits required)"
             />
-            <select value={deptBranchId} onChange={(e) => setDeptBranchId(e.target.value)}>
+            <select
+              value={deptBranchId}
+              onChange={(e) => setDeptBranchId(e.target.value)}
+              aria-label={editDeptId ? 'Edit department branch' : 'Department branch'}
+              title="Department branch (optional)"
+            >
               <option value="">Branch (optional)</option>
               {branches
                 .filter((b) => b.is_active !== false)
@@ -860,7 +922,12 @@ export default function Page() {
                   </option>
                 ))}
             </select>
-            <select value={deptHeadId} onChange={(e) => setDeptHeadId(e.target.value)}>
+            <select
+              value={deptHeadId}
+              onChange={(e) => setDeptHeadId(e.target.value)}
+              aria-label={editDeptId ? 'Edit department head' : 'Department head'}
+              title="Department head (optional tenant user)"
+            >
               <option value="">Department head (optional)</option>
               {users.map((u) => (
                 <option key={u.id} value={u.id}>
@@ -870,10 +937,10 @@ export default function Page() {
             </select>
             {editDeptId ? (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button type="button" onClick={saveDepartmentEdit} disabled={!deptName.trim()}>
+                <button type="button" onClick={saveDepartmentEdit} disabled={!deptName.trim()} aria-label="Save department">
                   Save department
                 </button>
-                <button type="button" onClick={resetDeptForm}>
+                <button type="button" onClick={resetDeptForm} aria-label="Cancel department edit">
                   Cancel
                 </button>
               </div>
@@ -882,6 +949,7 @@ export default function Page() {
                 type="button"
                 onClick={createDepartment}
                 disabled={!deptCode.trim() || !deptName.trim()}
+                aria-label="Create department"
               >
                 Create department
               </button>
@@ -891,10 +959,38 @@ export default function Page() {
         <div className="card">
           <h3>New store</h3>
           <div style={{ display: 'grid', gap: 8 }}>
-            <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Code" />
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
-            <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Address" />
-            <select value={managerId} onChange={(e) => setManagerId(e.target.value)}>
+            <input
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="Code"
+              aria-label="Store code"
+              title="Store code (1–50 chars; letters/digits required)"
+            />
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Name"
+              aria-label="Store name"
+              title="Store name (1–150 chars; letters/digits required)"
+            />
+            <input
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="Address"
+              aria-label="Store address"
+            />
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="Phone (optional, E.164 e.g. +233...)"
+              aria-label="Store phone"
+            />
+            <select
+              value={managerId}
+              onChange={(e) => setManagerId(e.target.value)}
+              aria-label="Store manager"
+              title="Store manager (optional tenant user)"
+            >
               <option value="">Manager (optional)</option>
               {users.map((u) => (
                 <option key={u.id} value={u.id}>
@@ -902,7 +998,12 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <select value={branchId} onChange={(e) => setBranchId(e.target.value)}>
+            <select
+              value={branchId}
+              onChange={(e) => setBranchId(e.target.value)}
+              aria-label="Store branch"
+              title="Store branch (optional)"
+            >
               <option value="">Branch (optional)</option>
               {branches
                 .filter((b) => b.is_active !== false)
@@ -914,7 +1015,11 @@ export default function Page() {
             </select>
             <label className="muted">Operating hours</label>
             <HoursEditor value={hours} onDay={(day, patch) => setDayHours('create', day, patch)} />
-            <button onClick={createStore} disabled={!code.trim() || !name.trim()}>
+            <button
+              onClick={createStore}
+              disabled={!code.trim() || !name.trim()}
+              aria-label="Create store"
+            >
               Create store
             </button>
           </div>
@@ -926,10 +1031,23 @@ export default function Page() {
               value={whCode}
               onChange={(e) => setWhCode(e.target.value)}
               placeholder="Code"
+              aria-label="Warehouse code"
+              title="Warehouse code (1–50 chars; letters/digits required)"
               disabled={!!editWhId}
             />
-            <input value={whName} onChange={(e) => setWhName(e.target.value)} placeholder="Name" />
-            <select value={whType} onChange={(e) => setWhType(e.target.value)} title="Warehouse type">
+            <input
+              value={whName}
+              onChange={(e) => setWhName(e.target.value)}
+              placeholder="Name"
+              aria-label={editWhId ? 'Edit warehouse name' : 'Warehouse name'}
+              title="Warehouse name (1–150 chars; letters/digits required)"
+            />
+            <select
+              value={whType}
+              onChange={(e) => setWhType(e.target.value)}
+              aria-label="Warehouse type"
+              title="Warehouse type"
+            >
               <option value="retail">Retail</option>
               <option value="bulk">Bulk</option>
               <option value="cold_storage">Cold storage</option>
@@ -939,13 +1057,20 @@ export default function Page() {
               value={whAddress}
               onChange={(e) => setWhAddress(e.target.value)}
               placeholder="Address"
+              aria-label="Warehouse address"
             />
             <input
               value={whCapacity}
               onChange={(e) => setWhCapacity(e.target.value)}
               placeholder="Capacity (optional)"
+              aria-label="Warehouse capacity"
             />
-            <select value={whManagerId} onChange={(e) => setWhManagerId(e.target.value)}>
+            <select
+              value={whManagerId}
+              onChange={(e) => setWhManagerId(e.target.value)}
+              aria-label={editWhId ? 'Edit warehouse manager' : 'Warehouse manager'}
+              title="Warehouse manager (optional tenant user)"
+            >
               <option value="">Manager (optional)</option>
               {users.map((u) => (
                 <option key={u.id} value={u.id}>
@@ -953,7 +1078,12 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <select value={whStoreId} onChange={(e) => setWhStoreId(e.target.value)}>
+            <select
+              value={whStoreId}
+              onChange={(e) => setWhStoreId(e.target.value)}
+              aria-label={editWhId ? 'Edit warehouse store' : 'Warehouse store'}
+              title="Linked store (optional)"
+            >
               <option value="">Linked store (optional)</option>
               {stores
                 .filter((s) => s.is_active !== false)
@@ -965,7 +1095,7 @@ export default function Page() {
             </select>
             {editWhId ? (
               <div style={{ display: 'flex', gap: 8 }}>
-                <button type="button" onClick={saveWarehouseEdit} disabled={!whName.trim()}>
+                <button type="button" onClick={saveWarehouseEdit} disabled={!whName.trim()} aria-label="Save warehouse">
                   Save warehouse
                 </button>
                 <button
@@ -980,6 +1110,7 @@ export default function Page() {
                     setWhManagerId('');
                     setWhStoreId('');
                   }}
+                  aria-label="Cancel warehouse edit"
                 >
                   Cancel
                 </button>
@@ -989,6 +1120,7 @@ export default function Page() {
                 type="button"
                 onClick={createWarehouse}
                 disabled={!whCode.trim() || !whName.trim()}
+                aria-label="Create warehouse"
               >
                 Create warehouse
               </button>
@@ -998,7 +1130,12 @@ export default function Page() {
         <div className="card">
           <h3>New transfer</h3>
           <div style={{ display: 'grid', gap: 8 }}>
-            <select value={fromStore} onChange={(e) => setFromStore(e.target.value)}>
+            <select
+              value={fromStore}
+              onChange={(e) => setFromStore(e.target.value)}
+              aria-label="Stock transfer from store"
+              title="Source store for inter-store transfer"
+            >
               {stores
                 .filter((s) => s.is_active !== false)
                 .map((s) => (
@@ -1007,7 +1144,12 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <select value={toStore} onChange={(e) => setToStore(e.target.value)}>
+            <select
+              value={toStore}
+              onChange={(e) => setToStore(e.target.value)}
+              aria-label="Stock transfer to store"
+              title="Destination store for inter-store transfer"
+            >
               {stores
                 .filter((s) => s.is_active !== false)
                 .map((s) => (
@@ -1016,7 +1158,11 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <select value={productId} onChange={(e) => setProductId(e.target.value)}>
+            <select
+              value={productId}
+              onChange={(e) => setProductId(e.target.value)}
+              aria-label="Stock transfer product"
+            >
               {products
                 .filter((p) => p.is_active !== false)
                 .map((p) => (
@@ -1025,8 +1171,13 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <input value={qty} onChange={(e) => setQty(e.target.value)} placeholder="Qty" />
-            <button onClick={createTransfer}>Create & request</button>
+            <input
+              value={qty}
+              onChange={(e) => setQty(e.target.value)}
+              placeholder="Qty"
+              aria-label="Stock transfer quantity"
+            />
+            <button onClick={createTransfer} aria-label="Create and request stock transfer">Create & request</button>
           </div>
         </div>
         <div className="card">
@@ -1045,6 +1196,8 @@ export default function Page() {
                   setDrawerOnCash(s.drawer_open_on_cash !== false);
                 }
               }}
+              aria-label="Cash drawer store"
+              title="Store for cash drawer settings"
             >
               {stores
                 .filter((s) => s.is_active !== false)
@@ -1054,7 +1207,11 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <select value={drawerMode} onChange={(e) => setDrawerMode(e.target.value)}>
+            <select
+              value={drawerMode}
+              onChange={(e) => setDrawerMode(e.target.value)}
+              aria-label="Cash drawer mode"
+            >
               <option value="none">none (disabled)</option>
               <option value="mock">mock (log pulse)</option>
               <option value="network">network (ESC/POS TCP)</option>
@@ -1065,24 +1222,31 @@ export default function Page() {
                 <input
                   value={drawerHost}
                   onChange={(e) => setDrawerHost(e.target.value)}
-                  placeholder="Printer/drawer host"
+                  placeholder="Host (e.g. 127.0.0.1)"
+                  aria-label="Cash drawer host"
                 />
                 <input
                   value={drawerPort}
                   onChange={(e) => setDrawerPort(e.target.value)}
                   placeholder="Port (9100)"
+                  aria-label="Cash drawer port"
                 />
               </>
             )}
             <label>
               <input
                 type="checkbox"
+                aria-label="Cash drawer open on cash sale"
                 checked={drawerOnCash}
                 onChange={(e) => setDrawerOnCash(e.target.checked)}
               />{' '}
               Open on cash POS sales
             </label>
-            <button onClick={saveDrawerSettings} disabled={!drawerStoreId}>
+            <button
+              onClick={saveDrawerSettings}
+              disabled={!drawerStoreId}
+              aria-label="Save drawer settings"
+            >
               Save drawer settings
             </button>
           </div>
@@ -1126,15 +1290,15 @@ export default function Page() {
               <td>{b.address || '—'}</td>
               <td>{b.is_active === false ? 'no' : 'yes'}</td>
               <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <button type="button" onClick={() => startEditBranch(b)}>
+                <button type="button" onClick={() => startEditBranch(b)} aria-label={`Edit branch ${b.id}`}>
                   Edit
                 </button>
                 {b.is_active === false ? (
-                  <button type="button" className="btn-ok" onClick={() => setBranchActive(b.id, true)}>
+                  <button type="button" className="btn-ok" onClick={() => setBranchActive(b.id, true)} aria-label={`Reactivate branch ${b.id}`}>
                     Reactivate
                   </button>
                 ) : (
-                  <button type="button" className="btn-danger" onClick={() => setBranchActive(b.id, false)}>
+                  <button type="button" className="btn-danger" onClick={() => setBranchActive(b.id, false)} aria-label={`Deactivate branch ${b.id}`}>
                     Deactivate
                   </button>
                 )}
@@ -1177,7 +1341,7 @@ export default function Page() {
               <td>{d.head_user_id ? userLabel(d.head_user_id) : '—'}</td>
               <td>{d.is_active === false ? 'no' : 'yes'}</td>
               <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <button type="button" onClick={() => startEditDepartment(d)}>
+                <button type="button" onClick={() => startEditDepartment(d)} aria-label={`Edit department ${d.id}`}>
                   Edit
                 </button>
                 {d.is_active === false ? (
@@ -1185,6 +1349,7 @@ export default function Page() {
                     type="button"
                     className="btn-ok"
                     onClick={() => setDepartmentActive(d.id, true)}
+                    aria-label={`Reactivate department ${d.id}`}
                   >
                     Reactivate
                   </button>
@@ -1193,6 +1358,7 @@ export default function Page() {
                     type="button"
                     className="btn-danger"
                     onClick={() => setDepartmentActive(d.id, false)}
+                    aria-label={`Deactivate department ${d.id}`}
                   >
                     Deactivate
                   </button>
@@ -1241,9 +1407,10 @@ export default function Page() {
                 value={storeLimitDraft}
                 onChange={(e) => setStoreLimitDraft(e.target.value)}
                 style={{ width: 120 }}
+                aria-label="Company store allocation"
               />
             </label>
-            <button type="button" onClick={saveStoreLimit}>
+            <button type="button" onClick={saveStoreLimit} aria-label="Save store limit allocation">
               Save allocation
             </button>
             <span className="muted" style={{ fontSize: 12 }}>
@@ -1293,16 +1460,16 @@ export default function Page() {
               <td style={{ maxWidth: 280, fontSize: 13 }}>{summarizeHours(s.operating_hours)}</td>
               <td>{s.is_active === false ? 'no' : 'yes'}</td>
               <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <button type="button" onClick={() => startEditStore(s)}>
+                <button type="button" onClick={() => startEditStore(s)} aria-label={`Edit store ${s.id}`}>
                   Edit
                 </button>
-                <button onClick={() => loadInventory(s.id)}>Inventory / reorder</button>
+                <button onClick={() => loadInventory(s.id)} aria-label={`Open inventory reorder for store ${s.id}`}>Inventory / reorder</button>
                 {s.is_active === false ? (
-                  <button type="button" className="btn-ok" onClick={() => setStoreActive(s.id, true)}>
+                  <button type="button" className="btn-ok" onClick={() => setStoreActive(s.id, true)} aria-label={`Activate store ${s.id}`}>
                     Activate
                   </button>
                 ) : (
-                  <button type="button" className="btn-danger" onClick={() => setStoreActive(s.id, false)}>
+                  <button type="button" className="btn-danger" onClick={() => setStoreActive(s.id, false)} aria-label={`Deactivate store ${s.id}`}>
                     Deactivate
                   </button>
                 )}
@@ -1316,13 +1483,31 @@ export default function Page() {
         <div className="card" style={{ marginTop: 16, marginBottom: 16 }}>
           <h3>Edit store · {stores.find((s) => s.id === editStoreId)?.code || editStoreId.slice(0, 8)}</h3>
           <div style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
-            <input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Name" />
+            <input
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              placeholder="Name"
+              aria-label="Edit store name"
+              title="Store name (1–150 chars; letters/digits required)"
+            />
             <input
               value={editAddress}
               onChange={(e) => setEditAddress(e.target.value)}
               placeholder="Address"
+              aria-label="Store address"
             />
-            <select value={editManagerId} onChange={(e) => setEditManagerId(e.target.value)}>
+            <input
+              value={editPhone}
+              onChange={(e) => setEditPhone(e.target.value)}
+              placeholder="Phone (optional, E.164 e.g. +233...)"
+              aria-label="Store phone"
+            />
+            <select
+              value={editManagerId}
+              onChange={(e) => setEditManagerId(e.target.value)}
+              aria-label="Edit store manager"
+              title="Store manager (optional tenant user)"
+            >
               <option value="">No manager</option>
               {users.map((u) => (
                 <option key={u.id} value={u.id}>
@@ -1330,7 +1515,12 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <select value={editBranchId} onChange={(e) => setEditBranchId(e.target.value)}>
+            <select
+              value={editBranchId}
+              onChange={(e) => setEditBranchId(e.target.value)}
+              aria-label="Edit store branch"
+              title="Store branch (optional)"
+            >
               <option value="">No branch</option>
               {branches
                 .filter((b) => b.is_active !== false)
@@ -1343,10 +1533,19 @@ export default function Page() {
             <label className="muted">Operating hours</label>
             <HoursEditor value={editHours} onDay={(day, patch) => setDayHours('edit', day, patch)} />
             <div style={{ display: 'flex', gap: 8 }}>
-              <button type="button" onClick={saveStoreEdit} disabled={!editName.trim()}>
+              <button
+                type="button"
+                onClick={saveStoreEdit}
+                disabled={!editName.trim()}
+                aria-label="Save store"
+              >
                 Save store
               </button>
-              <button type="button" onClick={() => setEditStoreId('')}>
+              <button
+                type="button"
+                onClick={() => setEditStoreId('')}
+                aria-label="Cancel store edit"
+              >
                 Cancel
               </button>
             </div>
@@ -1358,7 +1557,11 @@ export default function Page() {
         <div className="card" style={{ marginTop: 16 }}>
           <h3>Inventory · {storeName(viewStore)}</h3>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-            <select value={reorderProductId} onChange={(e) => setReorderProductId(e.target.value)}>
+            <select
+              value={reorderProductId}
+              onChange={(e) => setReorderProductId(e.target.value)}
+              aria-label="Store reorder product"
+            >
               {products.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -1369,15 +1572,19 @@ export default function Page() {
               value={reorderLevel}
               onChange={(e) => setReorderLevel(e.target.value)}
               placeholder="Reorder level"
+              aria-label="Store reorder level"
               style={{ width: 110 }}
             />
             <input
               value={reorderQty}
               onChange={(e) => setReorderQty(e.target.value)}
               placeholder="Reorder qty"
+              aria-label="Store reorder qty"
               style={{ width: 110 }}
             />
-            <button onClick={saveReorder}>Save policy</button>
+            <button onClick={saveReorder} aria-label="Save store reorder policy">
+              Save policy
+            </button>
           </div>
           {inventory.length === 0 && <p className="muted">No warehouse stock / policy rows yet</p>}
           <table className="table">
@@ -1452,11 +1659,16 @@ export default function Page() {
               <td>{w.capacity != null ? w.capacity : '—'}</td>
               <td>{w.is_active === false ? 'no' : 'yes'}</td>
               <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <button type="button" onClick={() => startEditWarehouse(w)}>
+                <button type="button" onClick={() => startEditWarehouse(w)} aria-label={`Edit warehouse ${w.id}`}>
                   Edit
                 </button>
                 {w.is_active === false ? (
-                  <button type="button" className="btn-ok" onClick={() => setWarehouseActive(w.id, true)}>
+                  <button
+                    type="button"
+                    className="btn-ok"
+                    onClick={() => setWarehouseActive(w.id, true)}
+                    aria-label={`Activate warehouse ${w.id}`}
+                  >
                     Activate
                   </button>
                 ) : (
@@ -1464,6 +1676,7 @@ export default function Page() {
                     type="button"
                     className="btn-danger"
                     onClick={() => setWarehouseActive(w.id, false)}
+                    aria-label={`Deactivate warehouse ${w.id}`}
                   >
                     Deactivate
                   </button>
@@ -1492,6 +1705,8 @@ export default function Page() {
             value={xferRejectReason}
             onChange={(e) => setXferRejectReason(e.target.value)}
             placeholder="Required before Reject or Cancel"
+            title="Required reject/cancel reason (1–500 chars; letters/digits required)"
+            aria-label="Stock transfer reject reason"
             style={{ minWidth: 280 }}
           />
         </label>
@@ -1499,6 +1714,30 @@ export default function Page() {
           Used by Reject and Cancel (stored as <code>rejection_reason</code>; status → cancelled).
         </p>
       </div>
+      <select
+        value={transferManageFilter}
+        onChange={(e) =>
+          setTransferManageFilter(
+            e.target.value as
+              | 'all'
+              | 'draft'
+              | 'requested'
+              | 'in_transit'
+              | 'received'
+              | 'cancelled'
+          )
+        }
+        title="Filter stock transfer list by status"
+        aria-label="Stock transfer status filter"
+        style={{ marginBottom: 12 }}
+      >
+        <option value="all">All statuses</option>
+        <option value="draft">Draft only</option>
+        <option value="requested">Requested only</option>
+        <option value="in_transit">In transit only</option>
+        <option value="received">Received only</option>
+        <option value="cancelled">Cancelled only</option>
+      </select>
       <table className="table">
         <thead>
           <tr>
@@ -1512,7 +1751,7 @@ export default function Page() {
           </tr>
         </thead>
         <tbody>
-          {transfers.map((t) => (
+          {managedTransfers.map((t) => (
             <tr key={t.id}>
               <td>{t.transfer_number}</td>
               <td>{storeName(t.from_store_id)}</td>
@@ -1530,38 +1769,52 @@ export default function Page() {
               <td>{t.rejection_reason || '—'}</td>
               <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {t.status === 'draft' && (
-                  <button type="button" className="btn-ok" onClick={() => act(t.id, 'submit')}>
+                  <button type="button" className="btn-ok" onClick={() => act(t.id, 'submit')} aria-label={`Submit stock transfer ${t.id}`}>
                     Submit
                   </button>
                 )}
                 {t.status === 'requested' && !t.fully_approved && (
                   <>
-                    <button type="button" className="btn-ok" onClick={() => act(t.id, 'approve')}>
+                    <button type="button" className="btn-ok" onClick={() => act(t.id, 'approve')} aria-label={`Approve stock transfer ${t.id}`}>
                       Approve {t.awaiting_approval === 'dest' ? 'dest' : 'source'}
                     </button>
-                    <button type="button" className="btn-danger" onClick={() => act(t.id, 'reject')}>
+                    <button
+                      type="button"
+                      className="btn-danger"
+                      onClick={() => act(t.id, 'reject')}
+                      aria-label={`Reject stock transfer ${t.id}`}
+                    >
                       Reject
                     </button>
                   </>
                 )}
                 {t.can_ship && (
-                  <button type="button" className="btn-ok" onClick={() => act(t.id, 'ship')}>
+                  <button type="button" className="btn-ok" onClick={() => act(t.id, 'ship')} aria-label={`Ship stock transfer ${t.id}`}>
                     Ship
                   </button>
                 )}
                 {t.status === 'in_transit' && (
-                  <button type="button" className="btn-ok" onClick={() => act(t.id, 'receive')}>
+                  <button type="button" className="btn-ok" onClick={() => act(t.id, 'receive')} aria-label={`Receive stock transfer ${t.id}`}>
                     Receive
                   </button>
                 )}
                 {['draft', 'requested', 'in_transit'].includes(t.status) && (
-                  <button type="button" className="btn-danger" onClick={() => act(t.id, 'cancel')}>
+                  <button type="button" className="btn-danger" onClick={() => act(t.id, 'cancel')} aria-label={`Cancel stock transfer ${t.id}`}>
                     Cancel
                   </button>
                 )}
               </td>
             </tr>
           ))}
+          {managedTransfers.length === 0 && (
+            <tr>
+              <td colSpan={7} className="muted">
+                {transfers.length === 0
+                  ? 'No transfers yet'
+                  : 'No stock transfers for this filter'}
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </Shell>

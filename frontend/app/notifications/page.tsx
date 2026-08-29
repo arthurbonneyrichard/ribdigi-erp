@@ -138,14 +138,24 @@ export default function Page() {
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-        <button onClick={() => setStatus('unread')} disabled={status === 'unread'}>
+        <button
+          onClick={() => setStatus('unread')}
+          disabled={status === 'unread'}
+          aria-label="Filter unread notifications"
+        >
           Unread
         </button>
-        <button onClick={() => setStatus('')} disabled={status === ''}>
+        <button
+          onClick={() => setStatus('')}
+          disabled={status === ''}
+          aria-label="Filter all notifications"
+        >
           All (90 days)
         </button>
-        <button onClick={markAll}>Mark all read</button>
-        <button onClick={scanDue}>Scan due alerts</button>
+        <button onClick={markAll} aria-label="Mark all notifications read">Mark all read</button>
+        <button onClick={scanDue} aria-label="Scan due notification alerts">
+          Scan due alerts
+        </button>
       </div>
 
       <div className="notif-chips" aria-label="Filter by category">
@@ -155,6 +165,7 @@ export default function Page() {
             type="button"
             className={category === c.id ? 'notif-chip active' : 'notif-chip'}
             onClick={() => setCategory(c.id)}
+            aria-label={`Filter notifications by ${c.label}`}
           >
             {c.label}
           </button>
@@ -180,9 +191,9 @@ export default function Page() {
               <td>{n.status}</td>
               <td>
                 {n.status === 'unread' ? (
-                  <button onClick={() => markRead(n.id)}>Mark read</button>
+                  <button onClick={() => markRead(n.id)} aria-label={`Mark notification ${n.id} read`}>Mark read</button>
                 ) : (
-                  <button onClick={() => markUnread(n.id)}>Mark unread</button>
+                  <button onClick={() => markUnread(n.id)} aria-label={`Mark notification ${n.id} unread`}>Mark unread</button>
                 )}
               </td>
             </tr>
@@ -193,7 +204,7 @@ export default function Page() {
       {prefs && (
         <div className="card" style={{ marginTop: 16 }}>
           <h3>Channel preferences</h3>
-          <table className="table">
+          <table className="table" aria-label="Channel preferences">
             <thead>
               <tr>
                 <th>Type</th>
@@ -208,7 +219,11 @@ export default function Page() {
                   <td>{cat}</td>
                   {(['dashboard', 'email', 'sms'] as const).map((ch) => (
                     <td key={ch}>
-                      <button onClick={() => togglePref(cat, ch)}>
+                      <button
+                        type="button"
+                        aria-label={`${cat} ${ch}`}
+                        onClick={() => togglePref(cat, ch)}
+                      >
                         {channels[ch] ? 'On' : 'Off'}
                       </button>
                     </td>

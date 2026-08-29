@@ -10,6 +10,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
+from app.schemas import validate_e164_phone_value
 from app.inventory import allocate_unlocated_stock, apply_warehouse_stock_change, get_or_create_warehouse_stock
 
 TRANSFER_EDITABLE = {"draft"}
@@ -25,8 +27,22 @@ WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
 _TIME_RE = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
 
 
+def _optional_store_phone(value: str | None) -> str | None:
+    """OpenAPI E164PhoneValue → 422; service defense-in-depth → 400."""
+    if value is None:
+        return None
+    try:
+        return validate_e164_phone_value(str(value).strip())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 def normalize_operating_hours(value: dict | None) -> dict | None:
-    """Validate weekly hours map; return normalized dict or None."""
+    """Validate weekly hours map; return normalized dict or None.
+
+    Schema StoreOperatingHours / StoreDayHours rejects unknown days and bad
+    HH:MM → 422; keep allow-list + time defense-in-depth here.
+    """
     if value is None:
         return None
     if not isinstance(value, dict):
@@ -166,12 +182,18 @@ async def create_store(
         ).scalar_one_or_none()
         if not user:
             raise HTTPException(status_code=404, detail="User not found in tenant")
+    # OpenAPI StoreNameValue → 422; service defense-in-depth → 400.
+    name_clean = require_honest_narrative(name, label="store name", max_length=150)
+    # OpenAPI StoreCodeValue → 422; service defense-in-depth → 400.
+    code_clean = require_honest_narrative(
+        (code or "").strip().upper(), label="store code", max_length=50
+    )
     store = m.Store(
         tenant_id=tenant_id,
-        name=name,
-        code=code.strip().upper(),
-        address=address,
-        phone=phone,
+        name=name_clean,
+        code=code_clean,
+        address=optional_honest_narrative(address, label="store address", max_length=500),
+        phone=_optional_store_phone(phone),
         manager_id=manager_id,
         branch_id=branch_id,
         operating_hours=normalize_operating_hours(operating_hours),
@@ -209,14 +231,15 @@ async def update_store(
 ) -> m.Store:
     store = await get_store(db, tenant_id, store_id)
     if name is not None:
-        cleaned = name.strip()
-        if not cleaned:
-            raise HTTPException(status_code=400, detail="name cannot be empty")
-        store.name = cleaned
+        # OpenAPI StoreNameValue → 422; service defense-in-depth → 400.
+        store.name = require_honest_narrative(name, label="store name", max_length=150)
     if address is not None:
-        store.address = address.strip() or None
+        store.address = optional_honest_narrative(
+            address, label="store address", max_length=500
+        )
     if phone is not None:
-        store.phone = phone.strip() or None
+        # Defense in depth: StoreUpdate E164PhoneValue → 422 on blank/invalid.
+        store.phone = _optional_store_phone(phone)
     if clear_manager:
         store.manager_id = None
     elif manager_id is not None:
@@ -277,9 +300,9 @@ async def store_inventory(
     rows = (await db.execute(stmt)).all()
     out = []
     for stock, product in rows:
-        qty = float(stock.quantity or 0)
-        reorder = float(getattr(stock, "reorder_level", 0) or 0)
-        reorder_qty = float(getattr(stock, "reorder_qty", 0) or 0)
+        qty = money_json(stock.quantity)
+        reorder = money_json(getattr(stock, "reorder_level", 0) or 0)
+        reorder_qty = money_json(getattr(stock, "reorder_qty", 0) or 0)
         out.append(
             {
                 "product_id": product.id,
@@ -289,11 +312,13 @@ async def store_inventory(
                 "reorder_level": reorder,
                 "reorder_qty": reorder_qty,
                 "below_reorder": reorder > 0 and qty <= reorder,
-                "suggested_order_qty": max(reorder_qty, round(reorder - qty, 3))
-                if reorder > 0 and qty <= reorder
-                else reorder_qty,
+                "suggested_order_qty": (
+                    money_json(max(reorder_qty, money_json(round(reorder - qty, 3))))
+                    if reorder > 0 and qty <= reorder
+                    else reorder_qty
+                ),
                 "warehouse_id": wh.id,
-                "consolidated_stock": float(product.stock_qty or 0),
+                "consolidated_stock": money_json(product.stock_qty),
             }
         )
     return out
@@ -320,18 +345,18 @@ async def set_store_reorder_policy(
     row = await get_or_create_warehouse_stock(
         db, tenant_id=tenant_id, warehouse_id=wh.id, product_id=product_id
     )
-    row.reorder_level = max(float(reorder_level or 0), 0)
-    row.reorder_qty = max(float(reorder_qty or 0), 0)
+    row.reorder_level = max(money_json(reorder_level or 0), 0)
+    row.reorder_qty = max(money_json(reorder_qty or 0), 0)
     await db.flush()
-    qty = float(row.quantity or 0)
-    reorder = float(row.reorder_level or 0)
+    qty = money_json(row.quantity or 0)
+    reorder = money_json(row.reorder_level or 0)
     return {
         "product_id": product.id,
         "sku": product.sku,
         "name": product.name,
         "quantity": qty,
         "reorder_level": reorder,
-        "reorder_qty": float(row.reorder_qty or 0),
+        "reorder_qty": money_json(row.reorder_qty or 0),
         "below_reorder": reorder > 0 and qty <= reorder,
         "warehouse_id": wh.id,
         "store_id": store_id,
@@ -350,6 +375,41 @@ async def get_transfer(db: AsyncSession, tenant_id: str, transfer_id: str) -> m.
     if not row:
         raise HTTPException(status_code=404, detail="Transfer not found")
     return row
+
+
+async def list_transfers(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    status: str | None = None,
+    limit: int = 100,
+) -> list[m.StockTransfer]:
+    """Manage list for Inventory / Multi-Store transfer tabs (BR-5.2 / BR-13.2)."""
+    from app.reports import TRANSFER_REPORT_STATUSES
+
+    stmt = (
+        select(m.StockTransfer)
+        .where(m.StockTransfer.tenant_id == tenant_id)
+        .order_by(m.StockTransfer.created_at.desc())
+        .limit(limit)
+    )
+    if status is not None:
+        # Schema TransferReportStatusValue rejects blank/invalid → 422;
+        # keep allow-list defense-in-depth (no silent empty filter / blank→all).
+        wanted = (status or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in TRANSFER_REPORT_STATUSES:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Invalid transfer status '{wanted}'. "
+                    f"Allowed: {sorted(TRANSFER_REPORT_STATUSES)}"
+                ),
+            )
+        else:
+            stmt = stmt.where(m.StockTransfer.status == wanted)
+    return list((await db.execute(stmt)).scalars().all())
 
 
 async def list_transfer_items(
@@ -405,9 +465,9 @@ async def serialize_transfer(db: AsyncSession, transfer: m.StockTransfer) -> dic
             {
                 "id": i.id,
                 "product_id": i.product_id,
-                "quantity": float(i.quantity),
-                "shipped_qty": float(i.shipped_qty or 0),
-                "received_qty": float(i.received_qty or 0),
+                "quantity": money_json(i.quantity),
+                "shipped_qty": money_json(i.shipped_qty),
+                "received_qty": money_json(i.received_qty),
             }
             for i in items
         ],
@@ -474,7 +534,7 @@ async def create_transfer(
         from_warehouse_id=from_wh.id,
         to_warehouse_id=to_wh.id,
         status="requested" if submit else "draft",
-        notes=notes,
+        notes=optional_honest_narrative(notes, label="stock transfer notes"),
         created_by=user_id,
         approval_step=1 if submit else 0,
         approval_steps_required=steps_required,
@@ -484,7 +544,7 @@ async def create_transfer(
 
     for item in items:
         product_id = item["product_id"]
-        qty = float(item["quantity"])
+        qty = money_json(item["quantity"])
         if qty <= 0:
             raise HTTPException(status_code=400, detail="Transfer quantities must be positive")
         product = (
@@ -670,9 +730,7 @@ async def reject_transfer(
             # If neither store has a manager assigned, any store_manager may reject
             if from_store.manager_id or to_store.manager_id:
                 raise HTTPException(status_code=403, detail="Not an assigned store manager for this transfer")
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="rejection reason is required")
+    reason_s = require_honest_narrative(reason, label="rejection reason")
     transfer.status = "cancelled"
     transfer.rejected_by = user_id
     transfer.rejection_reason = reason_s
@@ -707,17 +765,17 @@ async def ship_transfer(
             tenant_id=tenant_id,
             warehouse_id=transfer.from_warehouse_id,
             product_id=item.product_id,
-            quantity_delta=-float(item.quantity),
+            quantity_delta=-money_json(item.quantity),
         )
         product = await db.get(m.Product, item.product_id)
-        before = float(product.stock_qty or 0) if product else 0
+        before = money_json(product.stock_qty or 0) if product else 0
         db.add(
             m.StockMovement(
                 tenant_id=tenant_id,
                 product_id=item.product_id,
                 warehouse_id=transfer.from_warehouse_id,
                 movement_type="transfer_out",
-                quantity=-float(item.quantity),
+                quantity=-money_json(item.quantity),
                 quantity_before=before,
                 quantity_after=before,
                 reference_type="stock_transfer",
@@ -726,7 +784,7 @@ async def ship_transfer(
                 created_by=user_id,
             )
         )
-        item.shipped_qty = float(item.quantity)
+        item.shipped_qty = money_json(item.quantity)
 
     transfer.status = "in_transit"
     transfer.shipped_by = user_id
@@ -754,7 +812,7 @@ async def receive_transfer(
         raise HTTPException(status_code=409, detail=f"Cannot receive transfer in status {transfer.status}")
     items = await list_transfer_items(db, tenant_id, transfer_id)
     for item in items:
-        qty = float(item.shipped_qty or item.quantity)
+        qty = money_json(item.shipped_qty or item.quantity)
         await apply_warehouse_stock_change(
             db,
             tenant_id=tenant_id,
@@ -763,7 +821,7 @@ async def receive_transfer(
             quantity_delta=qty,
         )
         product = await db.get(m.Product, item.product_id)
-        before = float(product.stock_qty or 0) if product else 0
+        before = money_json(product.stock_qty or 0) if product else 0
         db.add(
             m.StockMovement(
                 tenant_id=tenant_id,
@@ -799,14 +857,12 @@ async def cancel_transfer(
     transfer = await get_transfer(db, tenant_id, transfer_id)
     if transfer.status not in TRANSFER_CANCELLABLE:
         raise HTTPException(status_code=409, detail=f"Cannot cancel transfer in status {transfer.status}")
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="cancel reason is required")
+    reason_s = require_honest_narrative(reason, label="cancel reason")
 
     if transfer.status == "in_transit":
         items = await list_transfer_items(db, tenant_id, transfer_id)
         for item in items:
-            qty = float(item.shipped_qty or item.quantity)
+            qty = money_json(item.shipped_qty or item.quantity)
             await apply_warehouse_stock_change(
                 db,
                 tenant_id=tenant_id,
@@ -815,7 +871,7 @@ async def cancel_transfer(
                 quantity_delta=qty,
             )
             product = await db.get(m.Product, item.product_id)
-            before = float(product.stock_qty or 0) if product else 0
+            before = money_json(product.stock_qty or 0) if product else 0
             db.add(
                 m.StockMovement(
                     tenant_id=tenant_id,

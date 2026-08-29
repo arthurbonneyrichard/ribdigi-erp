@@ -18,12 +18,12 @@ def test_pos_payment_method_literal_schema():
     ok = PosSaleCreate.model_validate(
         {
             "payment_method": "digital_wallet",
-            "items": [{"product_id": "p1", "quantity": 1, "unit_price": 1}],
+            "items": [{"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1, "unit_price": 1}],
         }
     )
     assert ok.payment_method == "wallet"
     defaulted = PosSaleCreate.model_validate(
-        {"items": [{"product_id": "p1", "quantity": 1, "unit_price": 1}]}
+        {"items": [{"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1, "unit_price": 1}]}
     )
     assert defaulted.payment_method == "cash"
     split = PosSaleCreate.model_validate(
@@ -33,7 +33,7 @@ def test_pos_payment_method_literal_schema():
                 {"payment_method": "cash", "amount": 1},
                 {"payment_method": "card", "amount": 1},
             ],
-            "items": [{"product_id": "p1", "quantity": 1, "unit_price": 1}],
+            "items": [{"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1, "unit_price": 1}],
         }
     )
     assert split.payment_method == "split"
@@ -42,14 +42,14 @@ def test_pos_payment_method_literal_schema():
         PosSaleCreate.model_validate(
             {
                 "payment_method": "",
-                "items": [{"product_id": "p1", "quantity": 1, "unit_price": 1}],
+                "items": [{"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1, "unit_price": 1}],
             }
         )
     with pytest.raises(ValidationError):
         PosSaleCreate.model_validate(
             {
                 "payment_method": "bitcoin",
-                "items": [{"product_id": "p1", "quantity": 1, "unit_price": 1}],
+                "items": [{"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1, "unit_price": 1}],
             }
         )
     with pytest.raises(ValidationError):

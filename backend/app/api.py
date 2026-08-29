@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Path, Query, Request, UploadFile
 from fastapi.responses import PlainTextResponse, Response
+from pydantic import EmailStr, TypeAdapter, ValidationError as PydanticValidationError
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
@@ -56,6 +57,8 @@ from app import backup as backup_svc
 from app import tenants as tenants_svc
 from app import packages as packages_svc
 from app import storage as storage_svc
+from app.honesty import money_json, require_honest_narrative
+from app.schemas import validate_e164_phone_value
 from app import cheques as cheques_svc
 from app import stock_counts as stock_counts_svc
 from app import catalog_meta as catalog_meta_svc
@@ -67,10 +70,18 @@ from app.schemas import (
     BrandCreate,
     BrandUpdate,
     BackupSettingsUpdate,
+    BackupCreateBody,
+    BackupVerifyBody,
+    BackupRestoreBody,
+    BackupJobStatusFilterValue,
     ReportScheduleCreate,
     ReportScheduleUpdate,
     ReportTypeValue,
     ReportExportFormatValue,
+    ScheduleFrequencyValue,
+    JobNameValue,
+    OnboardingStepIdValue,
+    UuidIdValue,
     BalanceSheetCompareValue,
     CreditAgingKindValue,
     InventoryValuationMethodValue,
@@ -80,7 +91,34 @@ from app.schemas import (
     StockCountReportStatusValue,
     TransferReportStatusValue,
     PendingPoReportStatusValue,
+    PurchaseOrderStatusValue,
+    PurchaseInvoiceStatusValue,
+    SalesInvoiceStatusValue,
+    PurchaseRequestStatusValue,
+    SalesQuotationStatusValue,
+    SalesOrderStatusValue,
     ReturnReportStatusValue,
+    TenantStatusFilterValue,
+    ApiKeyStatusFilterValue,
+    ApiKeyCreate,
+    ExpenseStatusFilterValue,
+    JournalStatusFilterValue,
+    CashTransferKindFilterValue,
+    PosSessionStatusFilterValue,
+    TaxFilingJurisdictionValue,
+    BankStatementStatusFilterValue,
+    WebhookDeliveryStatusFilterValue,
+    AuditModuleValue,
+    AuditActionValue,
+    TenantRefValue,
+    RoleKeyValue,
+    BankStatementNotesValue,
+    AuditEntityValue,
+    ProductBarcodeValue,
+    ReceiptOverrideToValue,
+    FiniteMoneyValue,
+    ProductSearchQueryValue,
+    IsoDateQueryValue,
     SalesReturnReportReasonValue,
     PurchaseReturnReportReasonValue,
     MovementTypeValue,
@@ -106,18 +144,29 @@ from app.schemas import (
     InvoicePrintFormatValue,
     ReceiptPrintFormatValue,
     ReceiptChannelValue,
+    E164PhoneValue,
     EmailVerifyConfirm,
     ResendVerificationRequest,
     ExchangeRateRefresh,
     ExchangeRateUpsert,
+    CurrencyCodeValue,
     FxAutoRefreshUpdate,
     BankConnectionCreate,
     BankConnectionUpdate,
     BankAutoClearBody,
+    BankStatementCreateBody,
+    BankStatementMatchBody,
+    BankClearGroupBody,
     ExpenseCategoryCreate,
     ExpenseCategoryUpdate,
     ExpenseCreate,
     AiDocumentExpenseCreate,
+    AiChatBody,
+    AiCustomerAssistBody,
+    AiReportsGenerateBody,
+    AiReportsExportBody,
+    AiReportTemplateCreateBody,
+    AiLowStockPredictionRequestsBody,
     AiDocumentPurchaseInvoiceCreate,
     ExpenseDecision,
     ExpenseReject,
@@ -257,6 +306,16 @@ from app import platform_reports as platform_reports_svc
 from app.rbac import PLATFORM_ROLES, is_platform_role
 
 api = APIRouter(prefix="/api/v1")
+
+
+def _optional_user_phone(value: str | None) -> str | None:
+    """OpenAPI E164PhoneValue → 422; service defense-in-depth → 400."""
+    if value is None:
+        return None
+    try:
+        return validate_e164_phone_value(str(value).strip())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 def env(data=None, message: str = "Operation completed successfully"):
@@ -407,8 +466,11 @@ async def metrics_endpoint():
 @api.post("/tenants")
 async def create_tenant(payload: TenantCreate, db: AsyncSession = Depends(get_db)):
     validate_password_strength(payload.admin_password)
+    # OpenAPI TenantSlugValue / CompanyNameValue → 422; service defense-in-depth → 400.
+    slug = tenants_svc.require_tenant_slug(payload.slug)
+    company_name = tenants_svc.require_company_name(payload.company_name)
     existing = (
-        await db.execute(select(m.Tenant).where(m.Tenant.slug == payload.slug))
+        await db.execute(select(m.Tenant).where(m.Tenant.slug == slug))
     ).scalar_one_or_none()
     if existing:
         raise HTTPException(status_code=409, detail="Tenant slug exists")
@@ -417,8 +479,8 @@ async def create_tenant(payload: TenantCreate, db: AsyncSession = Depends(get_db
     trial_end = tenants_svc.default_trial_ends_at()
     now = datetime.utcnow()
     tenant = m.Tenant(
-        slug=payload.slug,
-        company_name=payload.company_name,
+        slug=slug,
+        company_name=company_name,
         industry=industry,
         currency=payload.currency,
         status="trial",
@@ -545,9 +607,7 @@ async def tenant_me_suspend(
 ):
     tenants_svc.assert_writable(claims)
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
-    reason_s = (payload.reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="suspension reason is required")
+    reason_s = require_honest_narrative(payload.reason, label="suspension reason")
     tenant = await tenants_svc.suspend_tenant(
         db, tenant, reason=reason_s, suspended_by=claims["sub"]
     )
@@ -671,7 +731,7 @@ async def tenant_me_logo_delete(
 
 @api.get("/tenants")
 async def tenants_list(
-    status: str | None = None,
+    status: Annotated[TenantStatusFilterValue | None, Query()] = None,
     claims=Depends(require_platform_permission("platform_tenants", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -681,15 +741,13 @@ async def tenants_list(
 
 @api.post("/tenants/{tenant_ref}/suspend")
 async def tenant_suspend_by_ref(
-    tenant_ref: str,
+    tenant_ref: TenantRefValue,
     payload: TenantSuspendRequest,
     claims=Depends(require_platform_permission("platform_tenants", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
-    reason_s = (payload.reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="suspension reason is required")
+    reason_s = require_honest_narrative(payload.reason, label="suspension reason")
     tenant = await tenants_svc.suspend_tenant(
         db, tenant, reason=reason_s, suspended_by=claims["sub"]
     )
@@ -709,7 +767,7 @@ async def tenant_suspend_by_ref(
 
 @api.post("/tenants/{tenant_ref}/activate")
 async def tenant_activate_by_ref(
-    tenant_ref: str,
+    tenant_ref: TenantRefValue,
     claims=Depends(require_platform_permission("platform_tenants", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -745,7 +803,7 @@ async def packages_catalog(
 
 @api.post("/tenants/{tenant_ref}/subscription")
 async def tenant_assign_subscription(
-    tenant_ref: str,
+    tenant_ref: TenantRefValue,
     payload: TenantSubscriptionAssign,
     claims=Depends(require_platform_permission("platform_packages", "write")),
     db: AsyncSession = Depends(get_db),
@@ -760,7 +818,7 @@ async def tenant_assign_subscription(
         package_code=payload.package_code,
         term_value=payload.term_value,
         term_unit=payload.term_unit,
-        start_at=payload.start_at,
+        start_at=reports_svc.parse_date(payload.start_at),
         activate=payload.activate,
         enabled_modules=payload.enabled_modules,
         max_stores_override=data.get("max_stores_override"),
@@ -793,7 +851,7 @@ async def tenant_assign_subscription(
 
 @api.patch("/tenants/{tenant_ref}/modules")
 async def tenant_update_modules(
-    tenant_ref: str,
+    tenant_ref: TenantRefValue,
     payload: TenantModulesUpdate,
     claims=Depends(require_platform_permission("platform_packages", "write")),
     db: AsyncSession = Depends(get_db),
@@ -831,7 +889,7 @@ async def tenant_update_modules(
 
 @api.get("/tenants/{tenant_ref}/usage")
 async def tenant_usage(
-    tenant_ref: str,
+    tenant_ref: TenantRefValue,
     claims=Depends(require_platform_permission("platform_packages", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -841,7 +899,7 @@ async def tenant_usage(
 
 @api.patch("/tenants/{tenant_ref}/store-entitlement")
 async def tenant_store_entitlement_override(
-    tenant_ref: str,
+    tenant_ref: TenantRefValue,
     payload: TenantMaxStoresOverrideUpdate,
     claims=Depends(require_platform_permission("platform_packages", "write")),
     db: AsyncSession = Depends(get_db),
@@ -1015,7 +1073,7 @@ async def platform_staff_grant(
 
 @api.post("/platform/staff/{user_id}/revoke")
 async def platform_staff_revoke(
-    user_id: str,
+    user_id: UuidIdValue,
     payload: PlatformRevokeAccess,
     claims=Depends(require_platform_permission("platform_staff", "write")),
     db: AsyncSession = Depends(get_db),
@@ -1059,7 +1117,7 @@ async def platform_staff_revoke(
 
 @api.patch("/platform/staff/{user_id}")
 async def platform_staff_update(
-    user_id: str,
+    user_id: UuidIdValue,
     payload: PlatformStaffUpdate,
     claims=Depends(require_platform_permission("platform_staff", "write")),
     db: AsyncSession = Depends(get_db),
@@ -1135,7 +1193,8 @@ async def platform_reports_packages(
 
 @api.get("/platform/reports/trials")
 async def platform_reports_trials(
-    within_days: int = 45,
+    # omit → 45; 0/negative/>365 → **422** (was free int; service silently clamped 1–365)
+    within_days: Annotated[int, Query(ge=1, le=365)] = 45,
     claims=Depends(require_platform_permission("platform_reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -1607,7 +1666,7 @@ async def webauthn_register_verify(
 
     user = await db.get(m.User, claims["sub"])
     row = await webauthn.verify_registration(
-        db, user, credential=payload.credential, name=payload.name
+        db, user, credential=payload.credential.model_dump(mode="json"), name=payload.name
     )
     await audit_svc.record_event(
         db,
@@ -1637,7 +1696,7 @@ async def webauthn_list_credentials(
 
 @api.delete("/auth/webauthn/credentials/{credential_id}")
 async def webauthn_delete_credential(
-    credential_id: str,
+    credential_id: UuidIdValue,
     claims=Depends(current_claims),
     db: AsyncSession = Depends(get_db),
 ):
@@ -1685,7 +1744,9 @@ async def webauthn_login_verify(
     user = await db.get(m.User, claims["sub"])
     if not user or not user.is_active or user.tenant_id != claims["tenant_id"]:
         raise HTTPException(status_code=401, detail="Invalid 2FA challenge user")
-    await webauthn.verify_authentication(db, user, credential=payload.credential)
+    await webauthn.verify_authentication(
+        db, user, credential=payload.credential.model_dump(mode="json")
+    )
     access, refresh = await create_session(
         db, user=user, request=request, login_method="webauthn"
     )
@@ -1908,7 +1969,11 @@ async def list_sessions(claims=Depends(current_claims), db: AsyncSession = Depen
 
 
 @api.delete("/auth/sessions/{session_id}")
-async def revoke_session(session_id: str, claims=Depends(current_claims), db: AsyncSession = Depends(get_db)):
+async def revoke_session(
+    session_id: UuidIdValue,
+    claims=Depends(current_claims),
+    db: AsyncSession = Depends(get_db),
+):
     session = (
         await db.execute(
             select(m.AuthSession).where(
@@ -2115,25 +2180,23 @@ async def update_me(
     claims=Depends(current_claims),
     db: AsyncSession = Depends(get_db),
 ):
-    from app import sms as sms_svc
-
     user = await db.get(m.User, claims["sub"])
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if payload.full_name is not None:
-        name = payload.full_name.strip()
-        if not name:
-            raise HTTPException(status_code=400, detail="full_name cannot be empty")
-        user.full_name = name
+        from app.honesty import require_honest_narrative
+
+        user.full_name = require_honest_narrative(
+            payload.full_name, label="full name", max_length=150
+        )
     if payload.phone is not None:
-        phone = payload.phone.strip()
-        if phone == "":
-            user.phone = None
-        else:
-            normalized = sms_svc.normalize_phone(phone)
-            if not normalized:
-                raise HTTPException(status_code=400, detail="Invalid phone number")
-            user.phone = normalized if normalized.startswith("+") else phone.strip()
+        # ProfileUpdate.phone ∈ E164PhoneValue — defense-in-depth → 400.
+        from app.schemas import validate_e164_phone_value
+
+        try:
+            user.phone = validate_e164_phone_value(str(payload.phone).strip())
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
     await db.commit()
     return env(
         {
@@ -2190,7 +2253,7 @@ async def roles_catalog(
 
 @api.get("/roles/{role}")
 async def role_detail(
-    role: str,
+    role: RoleKeyValue,
     claims=Depends(require_permission("users", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -2239,7 +2302,7 @@ async def create_custom_role(
 
 @api.patch("/roles/{role}")
 async def update_custom_role(
-    role: str,
+    role: RoleKeyValue,
     payload: CustomRoleUpdate,
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
@@ -2273,7 +2336,7 @@ async def update_custom_role(
 
 @api.delete("/roles/{role}")
 async def delete_custom_role(
-    role: str,
+    role: RoleKeyValue,
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -2348,7 +2411,7 @@ async def create_branch(
 
 @api.patch("/branches/{branch_id}")
 async def update_branch(
-    branch_id: str,
+    branch_id: UuidIdValue,
     payload: BranchUpdate,
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
@@ -2384,7 +2447,7 @@ async def update_branch(
 
 @api.get("/departments")
 async def list_departments(
-    branch_id: str | None = None,
+    branch_id: Annotated[UuidIdValue | None, Query()] = None,
     active_only: bool = False,
     is_active: bool | None = None,
     claims=Depends(require_permission("users", "read")),
@@ -2433,7 +2496,7 @@ async def create_department(
 
 @api.patch("/departments/{department_id}")
 async def update_department(
-    department_id: str,
+    department_id: UuidIdValue,
     payload: DepartmentUpdate,
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
@@ -2551,7 +2614,7 @@ async def users_import(
 
 @api.get("/users/{user_id}")
 async def get_user(
-    user_id: str,
+    user_id: UuidIdValue,
     claims=Depends(require_permission("users", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -2605,8 +2668,10 @@ async def add_user(
     user = m.User(
         tenant_id=claims["tenant_id"],
         email=payload.email,
-        full_name=payload.full_name,
-        phone=payload.phone,
+        full_name=require_honest_narrative(
+            payload.full_name, label="full name", max_length=150
+        ),
+        phone=_optional_user_phone(payload.phone),
         password_hash=hash_password(payload.password),
         role=role_key,
         permissions=role_perms,
@@ -2659,7 +2724,7 @@ async def add_user(
 
 @api.patch("/users/{user_id}")
 async def update_user(
-    user_id: str,
+    user_id: UuidIdValue,
     payload: UserUpdate,
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
@@ -2668,14 +2733,15 @@ async def update_user(
     changes: dict = {}
 
     if payload.full_name is not None:
-        name = payload.full_name.strip()
-        if len(name) < 2:
-            raise HTTPException(status_code=400, detail="full_name must be at least 2 characters")
+        name = require_honest_narrative(
+            payload.full_name, label="full name", max_length=150
+        )
         user.full_name = name
         changes["full_name"] = name
 
     if payload.phone is not None:
-        user.phone = payload.phone.strip() or None
+        # UserUpdate.phone ∈ E164PhoneValue — defense-in-depth → 400.
+        user.phone = _optional_user_phone(payload.phone)
         changes["phone"] = user.phone
 
     if payload.role is not None:
@@ -2767,7 +2833,7 @@ async def update_user(
 
 @api.delete("/users/{user_id}")
 async def deactivate_user(
-    user_id: str,
+    user_id: UuidIdValue,
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -2855,11 +2921,18 @@ async def add_product(
     )
     data["tax_supply_class"] = supply
     data["tax_exempt"] = supply == "exempt"
+    from app.honesty import optional_honest_narrative, require_honest_narrative
+
+    data["name"] = require_honest_narrative(
+        data.get("name"), label="product name", max_length=200
+    )
     if data.get("description") is not None:
-        data["description"] = str(data["description"]).strip() or None
+        data["description"] = optional_honest_narrative(
+            data["description"], label="product description"
+        )
     for dim in ("weight", "length", "width", "height"):
         if data.get(dim) is not None:
-            data[dim] = float(data[dim])
+            data[dim] = money_json(data[dim])
     sku_norm = catalog_svc.normalize_sku(data.get("sku"))
     if not sku_norm:
         sku_norm = await catalog_svc.allocate_sku(db, claims["tenant_id"], prefix="SKU")
@@ -2870,8 +2943,8 @@ async def add_product(
     sync_product_tax_flags(product, supply_class=supply)
     db.add(product)
     await db.flush()
-    if float(product.stock_qty or 0) > 0:
-        opening = float(product.stock_qty)
+    if money_json(product.stock_qty or 0) > 0:
+        opening = money_json(product.stock_qty)
         product.stock_qty = 0
         await apply_stock_change(
             db,
@@ -2969,7 +3042,7 @@ async def products_import(
 
 @api.get("/products/{product_id}")
 async def get_product(
-    product_id: str,
+    product_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -2988,7 +3061,7 @@ async def get_product(
 
 @api.patch("/products/{product_id}")
 async def patch_product(
-    product_id: str,
+    product_id: UuidIdValue,
     payload: ProductUpdate,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -3068,10 +3141,11 @@ async def patch_product(
 
     for key, value in data.items():
         if key == "name" and value is not None:
-            name = str(value).strip()
-            if len(name) < 1:
-                raise HTTPException(status_code=400, detail="name is required")
-            product.name = name
+            from app.honesty import require_honest_narrative
+
+            product.name = require_honest_narrative(
+                value, label="product name", max_length=200
+            )
         elif key == "barcode":
             code = barcodes_svc.normalize_barcode(str(value) if value is not None else None)
             if code:
@@ -3083,11 +3157,18 @@ async def patch_product(
                 )
             product.barcode = code
         elif key in {"cost_price", "selling_price", "reorder_level"} and value is not None:
-            setattr(product, key, float(value))
+            setattr(product, key, money_json(value))
         elif key == "description":
-            product.description = str(value).strip() or None if value is not None else None
+            from app.honesty import optional_honest_narrative
+
+            if value is None:
+                product.description = None
+            else:
+                product.description = optional_honest_narrative(
+                    value, label="product description"
+                )
         elif key in {"weight", "length", "width", "height"}:
-            setattr(product, key, float(value) if value is not None else None)
+            setattr(product, key, money_json(value) if value is not None else None)
         elif key == "tax_rate_id":
             product.tax_rate_id = value
         elif key == "tax_supply_class" and value is not None:
@@ -3109,14 +3190,14 @@ async def patch_product(
         from decimal import Decimal
 
         if isinstance(value, Decimal):
-            return float(value)
+            return money_json(value)
         if hasattr(value, "isoformat"):
             try:
                 return value.isoformat()
             except Exception:
                 return str(value)
         if isinstance(value, float):
-            return round(value, 4)
+            return money_json(round(value, 4))
         return value
 
     changes = {
@@ -3181,7 +3262,7 @@ async def catalog_create_category(
 
 @api.patch("/catalog/categories/{category_id}")
 async def catalog_patch_category(
-    category_id: str,
+    category_id: UuidIdValue,
     payload: ProductCategoryUpdate,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -3211,7 +3292,7 @@ async def catalog_patch_category(
 
 @api.delete("/catalog/categories/{category_id}")
 async def catalog_delete_category(
-    category_id: str,
+    category_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3254,7 +3335,7 @@ async def catalog_create_brand(
 
 @api.patch("/catalog/brands/{brand_id}")
 async def catalog_patch_brand(
-    brand_id: str,
+    brand_id: UuidIdValue,
     payload: BrandUpdate,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -3277,7 +3358,7 @@ async def catalog_patch_brand(
 
 @api.delete("/catalog/brands/{brand_id}")
 async def catalog_delete_brand(
-    brand_id: str,
+    brand_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3290,7 +3371,7 @@ async def catalog_delete_brand(
 
 @api.post("/catalog/brands/{brand_id}/logo")
 async def catalog_brand_logo_upload(
-    brand_id: str,
+    brand_id: UuidIdValue,
     file: UploadFile = File(...),
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -3334,7 +3415,7 @@ async def catalog_brand_logo_upload(
 
 @api.get("/catalog/brands/{brand_id}/logo")
 async def catalog_brand_logo_get(
-    brand_id: str,
+    brand_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3346,7 +3427,7 @@ async def catalog_brand_logo_get(
 
 @api.delete("/catalog/brands/{brand_id}/logo")
 async def catalog_brand_logo_delete(
-    brand_id: str,
+    brand_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3437,7 +3518,7 @@ async def catalog_convert_unit(
 
 @api.patch("/catalog/units/{unit_id}")
 async def catalog_patch_unit(
-    unit_id: str,
+    unit_id: UuidIdValue,
     payload: UnitOfMeasureUpdate,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -3463,7 +3544,7 @@ async def catalog_patch_unit(
 
 @api.delete("/catalog/units/{unit_id}")
 async def catalog_delete_unit(
-    unit_id: str,
+    unit_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3476,7 +3557,7 @@ async def catalog_delete_unit(
 
 @api.post("/products/{product_id}/image")
 async def product_image_upload(
-    product_id: str,
+    product_id: UuidIdValue,
     file: UploadFile = File(...),
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -3505,7 +3586,7 @@ async def product_image_upload(
 
 @api.get("/products/{product_id}/image")
 async def product_image_get(
-    product_id: str,
+    product_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3524,7 +3605,7 @@ async def product_image_get(
 
 @api.delete("/products/{product_id}/image")
 async def product_image_delete(
-    product_id: str,
+    product_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3537,7 +3618,7 @@ async def product_image_delete(
 
 @api.get("/products/{product_id}/images")
 async def product_images_list(
-    product_id: str,
+    product_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3549,7 +3630,7 @@ async def product_images_list(
 
 @api.post("/products/{product_id}/images")
 async def product_images_upload(
-    product_id: str,
+    product_id: UuidIdValue,
     file: UploadFile = File(...),
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -3577,8 +3658,8 @@ async def product_images_upload(
 
 @api.patch("/products/{product_id}/images/{image_id}")
 async def product_images_patch(
-    product_id: str,
-    image_id: str,
+    product_id: UuidIdValue,
+    image_id: UuidIdValue,
     payload: ProductImagePrimaryUpdate,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -3597,8 +3678,8 @@ async def product_images_patch(
 
 @api.delete("/products/{product_id}/images/{image_id}")
 async def product_images_delete(
-    product_id: str,
-    image_id: str,
+    product_id: UuidIdValue,
+    image_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3614,7 +3695,7 @@ async def product_images_delete(
 
 @api.post("/products/{product_id}/barcode/generate")
 async def product_barcode_generate(
-    product_id: str,
+    product_id: UuidIdValue,
     force: bool = False,
     # omit → code128; blank/invalid → 422 (was free str; "" coerced to code128)
     symbology: Annotated[BarcodeSymbologyValue, Query()] = "code128",
@@ -3665,7 +3746,7 @@ async def product_barcode_generate(
 
 @api.get("/products/{product_id}/barcode.png")
 async def product_barcode_png(
-    product_id: str,
+    product_id: UuidIdValue,
     symbology: Annotated[BarcodeSymbologyValue | None, Query()] = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
@@ -3698,8 +3779,9 @@ async def product_barcode_png(
 
 @api.get("/products/{product_id}/barcode/label")
 async def product_barcode_label(
-    product_id: str,
-    copies: int = 1,
+    product_id: UuidIdValue,
+    # omit → 1; 0/negative/>40 → **422** (was free int; service silently clamped 1–40)
+    copies: Annotated[int, Query(ge=1, le=40)] = 1,
     symbology: Annotated[BarcodeSymbologyValue | None, Query()] = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
@@ -3733,7 +3815,7 @@ async def product_barcode_label(
         product_name=product.name,
         sku=product.sku,
         barcode_value=str(code),
-        price=float(product.selling_price or 0),
+        price=money_json(product.selling_price or 0),
         currency=(tenant.currency if tenant else "GHS"),
         png_data_uri=data_uri,
         copies=copies,
@@ -3757,14 +3839,16 @@ async def lowstock(claims=Depends(require_permission("inventory", "read")), db: 
 
 @api.get("/inventory/movements")
 async def movements(
-    product_id: str | None = None,
-    warehouse_id: str | None = None,
-    store_id: str | None = None,
+    # Optional filters ∈ UuidIdValue; omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach product/warehouse/store lookup).
+    product_id: Annotated[UuidIdValue | None, Query()] = None,
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     movement_type: Annotated[MovementTypeValue | None, Query()] = None,
-    created_by: str | None = None,
+    created_by: Annotated[UuidIdValue | None, Query()] = None,
     reason: Annotated[StockAdjustReasonValue | None, Query()] = None,
-    from_date: str | None = None,
-    to_date: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3787,10 +3871,13 @@ async def movements(
 
 @api.get("/inventory/stock-counts")
 async def list_stock_counts(
+    status: Annotated[StockCountReportStatusValue | None, Query()] = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = await stock_counts_svc.list_counts(db, claims["tenant_id"])
+    rows = await stock_counts_svc.list_counts(
+        db, claims["tenant_id"], status=status
+    )
     out = []
     for row in rows:
         data = await stock_counts_svc.serialize_count(db, row)
@@ -3829,7 +3916,7 @@ async def create_stock_count(
 
 @api.get("/inventory/stock-counts/{count_id}")
 async def get_stock_count(
-    count_id: str,
+    count_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3839,7 +3926,7 @@ async def get_stock_count(
 
 @api.patch("/inventory/stock-counts/{count_id}/items")
 async def patch_stock_count_items(
-    count_id: str,
+    count_id: UuidIdValue,
     payload: StockCountItemsUpdate,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -3848,7 +3935,8 @@ async def patch_stock_count_items(
         db,
         tenant_id=claims["tenant_id"],
         count_id=count_id,
-        items=[i.model_dump() for i in payload.items],
+        # exclude_unset: omit notes → no change; explicit null → clear (BR-5.2).
+        items=[i.model_dump(exclude_unset=True) for i in payload.items],
     )
     await db.commit()
     return env(await stock_counts_svc.serialize_count(db, count), "Count lines updated")
@@ -3856,7 +3944,7 @@ async def patch_stock_count_items(
 
 @api.post("/inventory/stock-counts/{count_id}/complete")
 async def complete_stock_count(
-    count_id: str,
+    count_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3882,7 +3970,7 @@ async def complete_stock_count(
 
 @api.post("/inventory/stock-counts/{count_id}/cancel")
 async def cancel_stock_count(
-    count_id: str,
+    count_id: UuidIdValue,
     payload: StockCountCancel,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -3900,7 +3988,7 @@ async def cancel_stock_count(
 
 @api.post("/inventory/adjust/{product_id}")
 async def adjust(
-    product_id: str,
+    product_id: UuidIdValue,
     payload: StockAdjust,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -3918,7 +4006,7 @@ async def adjust(
         db,
         tenant_id=claims["tenant_id"],
         product_id=product_id,
-        quantity_delta=float(payload.quantity),
+        quantity_delta=money_json(payload.quantity),
         movement_type="adjustment",
         user_id=claims["sub"],
         notes=payload.notes,
@@ -3931,7 +4019,7 @@ async def adjust(
     return env(
         {
             "product_id": product.id,
-            "stock_qty": float(product.stock_qty),
+            "stock_qty": money_json(product.stock_qty),
             "reason": reason,
             "warehouse_id": payload.warehouse_id or None,
         },
@@ -3950,14 +4038,16 @@ async def stock_in(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         product_id=payload.product_id,
-        quantity=float(payload.quantity),
+        quantity=money_json(payload.quantity),
         unit_id=payload.unit_id,
         notes=payload.notes,
         warehouse_id=payload.warehouse_id,
         variant_id=payload.variant_id,
         batch_number=payload.batch_number,
-        manufacturing_date=payload.manufacturing_date,
-        expiry_date=payload.expiry_date,
+        manufacturing_date=reports_svc.parse_date(payload.manufacturing_date),
+        expiry_date=reports_svc.parse_date(payload.expiry_date),
+        reference_type=payload.reference_type,
+        reference_id=payload.reference_id,
     )
     await db.commit()
     return env(result, "Stock in recorded")
@@ -3976,7 +4066,14 @@ async def opening_stock_post(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
-        lines=[line.model_dump() for line in payload.lines],
+        lines=[
+            {
+                **line.model_dump(),
+                "manufacturing_date": reports_svc.parse_date(line.manufacturing_date),
+                "expiry_date": reports_svc.parse_date(line.expiry_date),
+            }
+            for line in payload.lines
+        ],
         post_journal=payload.post_journal,
         reference=payload.reference,
         notes=payload.notes,
@@ -3989,7 +4086,8 @@ async def opening_stock_post(
 async def opening_stock_list(
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
-    limit: int = 100,
+    # omit → 100; 0/negative/>500 → **422** (was free int; service silently clamped 1–500)
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
 ):
     from app import opening_stock as opening_stock_svc
 
@@ -4014,13 +4112,18 @@ async def stock_out(
             status_code=400,
             detail=f"reference_type must be one of {sorted(STOCK_OUT_REFERENCE_TYPES)}",
         )
-    ref_id = (payload.reference_id or "").strip() or None
+    # OpenAPI StockMovementReferenceIdValue → 422; catalog also defends → 400.
+    from app.honesty import optional_honest_narrative
+
+    ref_id = optional_honest_narrative(
+        payload.reference_id, label="stock movement reference id", max_length=36
+    )
     result = await catalog_svc.stock_out_with_batch(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         product_id=payload.product_id,
-        quantity=float(payload.quantity),
+        quantity=money_json(payload.quantity),
         unit_id=payload.unit_id,
         notes=payload.notes,
         warehouse_id=payload.warehouse_id,
@@ -4037,7 +4140,7 @@ async def stock_out(
 
 @api.get("/inventory/warehouse-stock")
 async def inventory_warehouse_stock(
-    warehouse_id: str,
+    warehouse_id: UuidIdValue,
     include_zero: bool = False,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
@@ -4080,9 +4183,10 @@ async def inventory_warehouse_stock_reorder(
 
 @api.get("/inventory/products/lookup")
 async def inventory_products_lookup(
-    q: str = "",
-    barcode: str | None = None,
-    limit: int = 48,
+    q: Annotated[ProductSearchQueryValue, Query()] = "",
+    barcode: Annotated[ProductBarcodeValue | None, Query()] = None,
+    # omit → 48; 0/negative/>100 → **422** (was free int; service silently clamped 1–100)
+    limit: Annotated[int, Query(ge=1, le=100)] = 48,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -4102,7 +4206,7 @@ async def inventory_products_lookup(
 
 @api.get("/products/{product_id}/warehouse-stock")
 async def product_warehouse_stock(
-    product_id: str,
+    product_id: UuidIdValue,
     include_zero: bool = True,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
@@ -4122,7 +4226,7 @@ async def product_warehouse_stock(
 
 @api.get("/products/{product_id}/variants")
 async def list_product_variants(
-    product_id: str,
+    product_id: UuidIdValue,
     is_active: bool | None = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
@@ -4136,7 +4240,7 @@ async def list_product_variants(
 
 @api.post("/products/{product_id}/variants")
 async def create_product_variant(
-    product_id: str,
+    product_id: UuidIdValue,
     payload: ProductVariantCreate,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -4153,8 +4257,8 @@ async def create_product_variant(
 
 @api.patch("/products/{product_id}/variants/{variant_id}")
 async def patch_product_variant(
-    product_id: str,
-    variant_id: str,
+    product_id: UuidIdValue,
+    variant_id: UuidIdValue,
     payload: ProductVariantUpdate,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -4187,8 +4291,8 @@ async def patch_product_variant(
 
 @api.post("/products/{product_id}/variants/{variant_id}/barcode/generate")
 async def variant_barcode_generate(
-    product_id: str,
-    variant_id: str,
+    product_id: UuidIdValue,
+    variant_id: UuidIdValue,
     force: bool = False,
     symbology: Annotated[BarcodeSymbologyValue, Query()] = "code128",
     claims=Depends(require_permission("inventory", "write")),
@@ -4238,8 +4342,8 @@ async def variant_barcode_generate(
 
 @api.get("/products/{product_id}/variants/{variant_id}/barcode.png")
 async def variant_barcode_png(
-    product_id: str,
-    variant_id: str,
+    product_id: UuidIdValue,
+    variant_id: UuidIdValue,
     symbology: Annotated[BarcodeSymbologyValue | None, Query()] = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
@@ -4266,9 +4370,10 @@ async def variant_barcode_png(
 
 @api.get("/products/{product_id}/variants/{variant_id}/barcode/label")
 async def variant_barcode_label(
-    product_id: str,
-    variant_id: str,
-    copies: int = 1,
+    product_id: UuidIdValue,
+    variant_id: UuidIdValue,
+    # omit → 1; 0/negative/>40 → **422** (was free int; service silently clamped 1–40)
+    copies: Annotated[int, Query(ge=1, le=40)] = 1,
     symbology: Annotated[BarcodeSymbologyValue | None, Query()] = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
@@ -4295,7 +4400,7 @@ async def variant_barcode_label(
         product_name=f"{product.name} / {variant.name}",
         sku=variant.sku,
         barcode_value=str(code),
-        price=float(variant.selling_price or product.selling_price or 0),
+        price=money_json(variant.selling_price or product.selling_price or 0),
         currency=(tenant.currency if tenant else "GHS"),
         png_data_uri=data_uri,
         copies=copies,
@@ -4306,8 +4411,8 @@ async def variant_barcode_label(
 
 @api.delete("/products/{product_id}/variants/{variant_id}")
 async def delete_product_variant(
-    product_id: str,
-    variant_id: str,
+    product_id: UuidIdValue,
+    variant_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -4323,7 +4428,7 @@ async def delete_product_variant(
 
 @api.get("/products/{product_id}/batches")
 async def list_product_batches(
-    product_id: str,
+    product_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -4334,7 +4439,8 @@ async def list_product_batches(
 
 @api.get("/inventory/batches/expiring")
 async def inventory_batches_expiring(
-    days: int = 30,
+    # omit → 30; 0/negative/>365 → **422** (was free int; negative/huge horizons accepted)
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -4381,11 +4487,11 @@ def _serialize_party(row: m.Party, group: m.CustomerGroup | None = None) -> dict
         "email": row.email,
         "phone": row.phone,
         "address": getattr(row, "address", None),
-        "latitude": float(lat) if lat is not None else None,
-        "longitude": float(lng) if lng is not None else None,
-        "credit_limit": float(row.credit_limit or 0),
+        "latitude": money_json(lat) if lat is not None else None,
+        "longitude": money_json(lng) if lng is not None else None,
+        "credit_limit": money_json(row.credit_limit),
         "payment_terms_days": int(getattr(row, "payment_terms_days", None) or 30),
-        "balance": float(row.balance or 0),
+        "balance": money_json(row.balance),
         "customer_group_id": getattr(row, "customer_group_id", None),
     }
     if group is not None:
@@ -4412,11 +4518,18 @@ async def _party_with_contacts(
 
 
 def _normalize_party_profile(data: dict, *, kind: str) -> dict:
+    from app.honesty import optional_honest_narrative, require_honest_narrative
+
+    if "name" in data and data["name"] is not None:
+        # OpenAPI PartyNameValue → 422; service defense-in-depth → 400.
+        data["name"] = require_honest_narrative(
+            data["name"], label="party name", max_length=180
+        )
     if "code" in data:
-        code = data["code"]
-        if code is not None:
-            code = str(code).strip() or None
-        data["code"] = code
+        # OpenAPI PartyCodeValue → 422; service defense-in-depth → 400.
+        data["code"] = optional_honest_narrative(
+            data["code"], label="party code", max_length=64
+        )
     if "profile_type" in data:
         pt = data["profile_type"]
         # Defense in depth: PartyCreate/Update Literals reject blank/unknown with
@@ -4441,14 +4554,28 @@ def _normalize_party_profile(data: dict, *, kind: str) -> dict:
             raise HTTPException(status_code=400, detail="Invalid status; expected active or inactive")
         data["status"] = st
     if "category" in data and data["category"] is not None:
-        data["category"] = str(data["category"]).strip() or None
+        # OpenAPI PartyCategoryValue → 422; service defense-in-depth → 400.
+        data["category"] = optional_honest_narrative(
+            data["category"], label="party category", max_length=80
+        )
     if "address" in data and data["address"] is not None:
-        data["address"] = str(data["address"]).strip() or None
+        # OpenAPI AddressValue → 422; service defense-in-depth → 400.
+        data["address"] = optional_honest_narrative(
+            data["address"], label="party address", max_length=500
+        )
+    if "phone" in data and data["phone"] is not None:
+        # OpenAPI E164PhoneValue → 422; service defense-in-depth → 400.
+        from app.schemas import validate_e164_phone_value
+
+        try:
+            data["phone"] = validate_e164_phone_value(str(data["phone"]).strip())
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
     for coord, lo, hi in (("latitude", -90.0, 90.0), ("longitude", -180.0, 180.0)):
         if coord not in data or data[coord] is None:
             continue
         try:
-            val = float(data[coord])
+            val = money_json(data[coord])
         except (TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=f"Invalid {coord}") from exc
         if val < lo or val > hi:
@@ -4512,7 +4639,7 @@ async def create_customer_group(
 
 @api.patch("/customers/groups/{group_id}")
 async def patch_customer_group(
-    group_id: str,
+    group_id: UuidIdValue,
     payload: CustomerGroupUpdate,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
@@ -4571,7 +4698,7 @@ async def customers(
 
 @api.get("/customers/{customer_id}")
 async def get_customer(
-    customer_id: str,
+    customer_id: UuidIdValue,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -4642,7 +4769,7 @@ async def add_customer(
 
 @api.patch("/customers/{customer_id}")
 async def patch_customer(
-    customer_id: str,
+    customer_id: UuidIdValue,
     payload: PartyUpdate,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
@@ -4685,7 +4812,7 @@ async def patch_customer(
 
 @api.get("/customers/{customer_id}/contacts")
 async def list_customer_contacts(
-    customer_id: str,
+    customer_id: UuidIdValue,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -4697,7 +4824,7 @@ async def list_customer_contacts(
 
 @api.post("/customers/{customer_id}/contacts")
 async def create_customer_contact(
-    customer_id: str,
+    customer_id: UuidIdValue,
     payload: PartyContactCreate,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
@@ -4732,8 +4859,8 @@ async def create_customer_contact(
 
 @api.patch("/customers/{customer_id}/contacts/{contact_id}")
 async def patch_customer_contact(
-    customer_id: str,
-    contact_id: str,
+    customer_id: UuidIdValue,
+    contact_id: UuidIdValue,
     payload: PartyContactUpdate,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
@@ -4768,8 +4895,8 @@ async def patch_customer_contact(
 
 @api.delete("/customers/{customer_id}/contacts/{contact_id}")
 async def delete_customer_contact(
-    customer_id: str,
-    contact_id: str,
+    customer_id: UuidIdValue,
+    contact_id: UuidIdValue,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -4799,9 +4926,11 @@ async def delete_customer_contact(
 
 @api.get("/products/{product_id}/price")
 async def product_price_for_customer(
-    product_id: str,
-    customer_id: str | None = None,
-    variant_id: str | None = None,
+    product_id: UuidIdValue,
+    # Optional customer/variant ∈ UuidIdValue; omit/`null` OK; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach party/variant lookup).
+    customer_id: Annotated[UuidIdValue | None, Query()] = None,
+    variant_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -4812,7 +4941,7 @@ async def product_price_for_customer(
     variant = None
     if variant_id:
         variant = await get_variant(db, claims["tenant_id"], variant_id)
-    list_price = float(
+    list_price = money_json(
         (variant.selling_price if variant is not None else product.selling_price) or 0
     )
     _product, _variant, unit_price = await resolve_sale_line(
@@ -4859,7 +4988,7 @@ async def suppliers(
 
 @api.get("/suppliers/{supplier_id}")
 async def get_supplier(
-    supplier_id: str,
+    supplier_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -4910,7 +5039,7 @@ async def add_supplier(
 
 @api.patch("/suppliers/{supplier_id}")
 async def patch_supplier(
-    supplier_id: str,
+    supplier_id: UuidIdValue,
     payload: PartyUpdate,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
@@ -4941,7 +5070,7 @@ async def patch_supplier(
 
 @api.get("/suppliers/{supplier_id}/contacts")
 async def list_supplier_contacts(
-    supplier_id: str,
+    supplier_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -4953,7 +5082,7 @@ async def list_supplier_contacts(
 
 @api.post("/suppliers/{supplier_id}/contacts")
 async def create_supplier_contact(
-    supplier_id: str,
+    supplier_id: UuidIdValue,
     payload: PartyContactCreate,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
@@ -4988,8 +5117,8 @@ async def create_supplier_contact(
 
 @api.patch("/suppliers/{supplier_id}/contacts/{contact_id}")
 async def patch_supplier_contact(
-    supplier_id: str,
-    contact_id: str,
+    supplier_id: UuidIdValue,
+    contact_id: UuidIdValue,
     payload: PartyContactUpdate,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
@@ -5024,8 +5153,8 @@ async def patch_supplier_contact(
 
 @api.delete("/suppliers/{supplier_id}/contacts/{contact_id}")
 async def delete_supplier_contact(
-    supplier_id: str,
-    contact_id: str,
+    supplier_id: UuidIdValue,
+    contact_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -5065,7 +5194,9 @@ async def tx_list(kind: str, claims: dict, db: AsyncSession):
 
 
 async def tx_add(kind: str, payload: TransactionCreate, claims: dict, db: AsyncSession):
-    items = [i.model_dump() for i in payload.items] or list(payload.payload.get("items") or [])
+    items = [i.model_dump() for i in payload.items]
+    if not items and payload.payload and payload.payload.items:
+        items = [i.model_dump() for i in payload.payload.items]
     if kind in {"sale", "pos_sale", "purchase"} and not items:
         raise HTTPException(
             status_code=400,
@@ -5080,7 +5211,7 @@ async def tx_add(kind: str, payload: TransactionCreate, claims: dict, db: AsyncS
         party = await require_active_customer(db, claims["tenant_id"], payload.party_id)
         tx_override_info = enforce_customer_credit_limit(
             party,
-            amount=float(payload.total or 0),
+            amount=money_json(payload.total or 0),
             override=bool(payload.override_credit_limit),
             override_allowed=claims_may_override_credit(claims),
             override_reason=payload.override_reason,
@@ -5092,7 +5223,9 @@ async def tx_add(kind: str, payload: TransactionCreate, claims: dict, db: AsyncS
     body.pop("items", None)
     body.pop("override_credit_limit", None)
     body.pop("override_reason", None)
-    body["payload"] = {**(body.get("payload") or {}), "items": items}
+    body.pop("payload", None)
+    # Server-owned bag — only typed LineItem rows (no client poison keys).
+    body["payload"] = {"items": items}
     tx = m.Transaction(tenant_id=claims["tenant_id"], tx_type=kind, reference=ref, **body)
     db.add(tx)
     await db.flush()
@@ -5112,11 +5245,11 @@ async def tx_add(kind: str, payload: TransactionCreate, claims: dict, db: AsyncS
     if payload.party_id and kind in {"sale", "pos_sale"}:
         party = await db.get(m.Party, payload.party_id)
         if party and party.tenant_id == claims["tenant_id"]:
-            party.balance = float(party.balance or 0) + float(payload.total or 0)
+            party.balance = money_json(party.balance or 0) + money_json(payload.total or 0)
     if payload.party_id and kind == "purchase":
         party = await db.get(m.Party, payload.party_id)
         if party and party.tenant_id == claims["tenant_id"]:
-            party.balance = float(party.balance or 0) + float(payload.total or 0)
+            party.balance = money_json(party.balance or 0) + money_json(payload.total or 0)
 
     if tx_override_info:
         db.add(
@@ -5156,15 +5289,34 @@ async def sale(
 
 @api.get("/sales/invoices")
 async def list_sales_invoices(
+    status: Annotated[SalesInvoiceStatusValue | None, Query()] = None,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.sales import SI_MANAGE_STATUSES
+
     stmt = (
         select(m.SalesInvoice)
         .where(m.SalesInvoice.tenant_id == claims["tenant_id"])
         .order_by(m.SalesInvoice.created_at.desc())
     )
     stmt = apply_created_by_scope(stmt, m.SalesInvoice, claims)
+    # Schema SalesInvoiceStatusValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty filter / blank→all).
+    if status is not None:
+        wanted = (status or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in SI_MANAGE_STATUSES:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Invalid sales invoice status '{wanted}'. "
+                    f"Allowed: {sorted(SI_MANAGE_STATUSES)}"
+                ),
+            )
+        else:
+            stmt = stmt.where(m.SalesInvoice.status == wanted)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await sales_svc.serialize_invoice(db, inv) for inv in rows])
 
@@ -5394,7 +5546,7 @@ async def create_sales_invoice(
 
 @api.get("/sales/invoices/{invoice_id}")
 async def get_sales_invoice(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -5405,7 +5557,7 @@ async def get_sales_invoice(
 
 @api.get("/sales/invoices/{invoice_id}/print")
 async def print_sales_invoice(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     # omit → tenant print branding default; blank/invalid → 422
     template: Annotated[InvoiceTemplateValue | None, Query()] = None,
     # omit → pdf; blank/invalid → 422 (was `format or "pdf"`)
@@ -5475,7 +5627,7 @@ async def print_sales_invoice(
 
 @api.post("/sales/invoices/{invoice_id}/post")
 async def post_sales_invoice(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     payload: CreditLimitOverrideBody | None = None,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
@@ -5501,7 +5653,7 @@ async def post_sales_invoice(
         data={
             "invoice_id": invoice.id,
             "invoice_number": invoice.invoice_number,
-            "amount": float(invoice.total_amount or 0),
+            "amount": money_json(invoice.total_amount or 0),
             "customer_id": invoice.customer_id,
             "status": invoice.status,
         },
@@ -5514,11 +5666,12 @@ async def post_sales_invoice(
 
 @api.post("/sales/invoices/{invoice_id}/send")
 async def send_sales_invoice(
-    invoice_id: str,
-    to: str | None = None,
+    invoice_id: UuidIdValue,
+    to: Annotated[EmailStr | None, Query()] = None,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Email invoice. Optional Query `to` ∈ EmailStr; omit → customer email; blank/invalid → 422."""
     existing = await sales_svc.get_invoice(db, claims["tenant_id"], invoice_id)
     assert_record_access(claims, existing.created_by)
     invoice, delivery = await sales_svc.send_sales_invoice(
@@ -5526,7 +5679,7 @@ async def send_sales_invoice(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         invoice_id=invoice_id,
-        to=to,
+        to=str(to) if to is not None else None,
     )
     await audit_svc.record_event(
         db,
@@ -5546,7 +5699,7 @@ async def send_sales_invoice(
 
 @api.post("/sales/invoices/{invoice_id}/cancel")
 async def cancel_sales_invoice(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     payload: SalesInvoiceCancel,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
@@ -5566,15 +5719,34 @@ async def cancel_sales_invoice(
 
 @api.get("/sales/quotations")
 async def list_quotations(
+    status: Annotated[SalesQuotationStatusValue | None, Query()] = None,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.sales_docs import QT_MANAGE_STATUSES
+
     stmt = (
         select(m.SalesQuotation)
         .where(m.SalesQuotation.tenant_id == claims["tenant_id"])
         .order_by(m.SalesQuotation.created_at.desc())
     )
     stmt = apply_created_by_scope(stmt, m.SalesQuotation, claims)
+    # Schema SalesQuotationStatusValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty filter / blank→all).
+    if status is not None:
+        wanted = (status or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in QT_MANAGE_STATUSES:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Invalid quotation status '{wanted}'. "
+                    f"Allowed: {sorted(QT_MANAGE_STATUSES)}"
+                ),
+            )
+        else:
+            stmt = stmt.where(m.SalesQuotation.status == wanted)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await sales_docs_svc.serialize_quotation(db, q) for q in rows])
 
@@ -5601,7 +5773,7 @@ async def create_quotation(
 
 @api.get("/sales/quotations/{quotation_id}")
 async def get_quotation(
-    quotation_id: str,
+    quotation_id: UuidIdValue,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -5612,15 +5784,19 @@ async def get_quotation(
 
 @api.post("/sales/quotations/{quotation_id}/send")
 async def send_quotation(
-    quotation_id: str,
-    to: str | None = None,
+    quotation_id: UuidIdValue,
+    to: Annotated[EmailStr | None, Query()] = None,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Email quotation. Optional Query `to` ∈ EmailStr; omit → customer email; blank/invalid → 422."""
     existing = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
     assert_record_access(claims, existing.created_by)
     quote, delivery = await sales_docs_svc.send_quotation(
-        db, claims["tenant_id"], quotation_id, to=to
+        db,
+        claims["tenant_id"],
+        quotation_id,
+        to=str(to) if to is not None else None,
     )
     await audit_svc.record_event(
         db,
@@ -5640,7 +5816,7 @@ async def send_quotation(
 
 @api.post("/sales/quotations/{quotation_id}/accept")
 async def accept_quotation(
-    quotation_id: str,
+    quotation_id: UuidIdValue,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -5653,7 +5829,7 @@ async def accept_quotation(
 
 @api.post("/sales/quotations/{quotation_id}/reject")
 async def reject_quotation(
-    quotation_id: str,
+    quotation_id: UuidIdValue,
     payload: SalesQuotationReject,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
@@ -5672,7 +5848,7 @@ async def reject_quotation(
 
 @api.post("/sales/quotations/{quotation_id}/convert-order")
 async def convert_quotation_order(
-    quotation_id: str,
+    quotation_id: UuidIdValue,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -5687,7 +5863,7 @@ async def convert_quotation_order(
 
 @api.post("/sales/quotations/{quotation_id}/convert-invoice")
 async def convert_quotation_invoice(
-    quotation_id: str,
+    quotation_id: UuidIdValue,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -5702,15 +5878,34 @@ async def convert_quotation_invoice(
 
 @api.get("/sales/orders")
 async def list_sales_orders(
+    status: Annotated[SalesOrderStatusValue | None, Query()] = None,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.sales_docs import SO_MANAGE_STATUSES
+
     stmt = (
         select(m.SalesOrder)
         .where(m.SalesOrder.tenant_id == claims["tenant_id"])
         .order_by(m.SalesOrder.created_at.desc())
     )
     stmt = apply_created_by_scope(stmt, m.SalesOrder, claims)
+    # Schema SalesOrderStatusValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty filter / blank→all).
+    if status is not None:
+        wanted = (status or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in SO_MANAGE_STATUSES:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Invalid sales order status '{wanted}'. "
+                    f"Allowed: {sorted(SO_MANAGE_STATUSES)}"
+                ),
+            )
+        else:
+            stmt = stmt.where(m.SalesOrder.status == wanted)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await sales_docs_svc.serialize_order(db, o) for o in rows])
 
@@ -5728,7 +5923,7 @@ async def create_sales_order(
         customer_id=payload.customer_id,
         quotation_id=payload.quotation_id,
         store_id=payload.store_id,
-        delivery_date=payload.delivery_date,
+        delivery_date=reports_svc.parse_date(payload.delivery_date),
         delivery_address=payload.delivery_address,
         discount_amount=payload.discount_amount,
         notes=payload.notes,
@@ -5740,7 +5935,7 @@ async def create_sales_order(
 
 @api.get("/sales/orders/{order_id}")
 async def get_sales_order(
-    order_id: str,
+    order_id: UuidIdValue,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -5751,7 +5946,7 @@ async def get_sales_order(
 
 @api.post("/sales/orders/{order_id}/confirm")
 async def confirm_sales_order(
-    order_id: str,
+    order_id: UuidIdValue,
     payload: SalesOrderConfirm = SalesOrderConfirm(),
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
@@ -5763,7 +5958,7 @@ async def confirm_sales_order(
         claims["tenant_id"],
         order_id,
         store_id=payload.store_id,
-        delivery_date=payload.delivery_date,
+        delivery_date=reports_svc.parse_date(payload.delivery_date),
         delivery_address=payload.delivery_address,
     )
     await db.commit()
@@ -5772,7 +5967,7 @@ async def confirm_sales_order(
 
 @api.post("/sales/orders/{order_id}/process")
 async def process_sales_order(
-    order_id: str,
+    order_id: UuidIdValue,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -5785,7 +5980,7 @@ async def process_sales_order(
 
 @api.post("/sales/orders/{order_id}/ship")
 async def ship_sales_order(
-    order_id: str,
+    order_id: UuidIdValue,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -5798,7 +5993,7 @@ async def ship_sales_order(
 
 @api.post("/sales/orders/{order_id}/deliver")
 async def deliver_sales_order(
-    order_id: str,
+    order_id: UuidIdValue,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -5811,7 +6006,7 @@ async def deliver_sales_order(
 
 @api.post("/sales/orders/{order_id}/cancel")
 async def cancel_sales_order(
-    order_id: str,
+    order_id: UuidIdValue,
     payload: SalesOrderCancel,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
@@ -5831,7 +6026,7 @@ async def cancel_sales_order(
 
 @api.post("/sales/orders/{order_id}/convert-invoice")
 async def convert_order_invoice(
-    order_id: str,
+    order_id: UuidIdValue,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -5846,15 +6041,34 @@ async def convert_order_invoice(
 
 @api.get("/sales/returns")
 async def list_sales_returns(
+    status: Annotated[ReturnReportStatusValue | None, Query()] = None,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.reports import RETURN_REPORT_STATUSES
+
     stmt = (
         select(m.SalesReturn)
         .where(m.SalesReturn.tenant_id == claims["tenant_id"])
         .order_by(m.SalesReturn.created_at.desc())
     )
     stmt = apply_created_by_scope(stmt, m.SalesReturn, claims)
+    # Schema ReturnReportStatusValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty filter / blank→all).
+    if status is not None:
+        wanted = (status or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in RETURN_REPORT_STATUSES:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Invalid return status '{wanted}'. "
+                    f"Allowed: {sorted(RETURN_REPORT_STATUSES)}"
+                ),
+            )
+        else:
+            stmt = stmt.where(m.SalesReturn.status == wanted)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await sales_docs_svc.serialize_return(db, r) for r in rows])
 
@@ -5881,7 +6095,7 @@ async def create_sales_return(
 
 @api.get("/sales/returns/{return_id}")
 async def get_sales_return(
-    return_id: str,
+    return_id: UuidIdValue,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -5892,7 +6106,7 @@ async def get_sales_return(
 
 @api.post("/sales/returns/{return_id}/post")
 async def post_sales_return(
-    return_id: str,
+    return_id: UuidIdValue,
     payload: SalesReturnPost = SalesReturnPost(),
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
@@ -5917,7 +6131,7 @@ async def post_sales_return(
 
 @api.post("/sales/returns/{return_id}/cancel")
 async def cancel_sales_return(
-    return_id: str,
+    return_id: UuidIdValue,
     payload: SalesReturnCancel,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
@@ -5962,7 +6176,7 @@ async def record_sales_payment(
         notes=payload.notes,
         cheque_number=payload.cheque_number,
         bank_name=payload.bank_name,
-        cheque_date=payload.cheque_date,
+        cheque_date=reports_svc.parse_date(payload.cheque_date),
         apply_early_discount=payload.apply_early_discount,
         liquid_account_id=payload.liquid_account_id,
         currency=payload.currency,
@@ -5973,11 +6187,11 @@ async def record_sales_payment(
         {
             "id": payment.id,
             "payment_number": payment.payment_number,
-            "amount": float(payment.amount),
+            "amount": money_json(payment.amount),
             "sales_invoice_id": payment.sales_invoice_id,
             "currency": getattr(payment, "currency", None) or "",
-            "exchange_rate": float(getattr(payment, "exchange_rate", None) or 1),
-            "fx_gain_loss": float(getattr(payment, "fx_gain_loss", 0) or 0),
+            "exchange_rate": money_json(getattr(payment, "exchange_rate", None), default=1),
+            "fx_gain_loss": money_json(getattr(payment, "fx_gain_loss", 0) or 0),
         },
         "Payment recorded",
     )
@@ -5999,15 +6213,34 @@ async def purchase(
 
 @api.get("/purchasing/requests")
 async def list_purchase_requests(
+    status: Annotated[PurchaseRequestStatusValue | None, Query()] = None,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.purchase_requests import PR_MANAGE_STATUSES
+
     stmt = (
         select(m.PurchaseRequest)
         .where(m.PurchaseRequest.tenant_id == claims["tenant_id"])
         .order_by(m.PurchaseRequest.created_at.desc())
     )
     stmt = apply_created_by_scope(stmt, m.PurchaseRequest, claims)
+    # Schema PurchaseRequestStatusValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty filter / blank→all).
+    if status is not None:
+        wanted = (status or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in PR_MANAGE_STATUSES:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Invalid purchase request status '{wanted}'. "
+                    f"Allowed: {sorted(PR_MANAGE_STATUSES)}"
+                ),
+            )
+        else:
+            stmt = stmt.where(m.PurchaseRequest.status == wanted)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await purchase_requests_svc.serialize_request(db, r) for r in rows])
 
@@ -6040,8 +6273,10 @@ async def update_purchase_request_settings(
 
 @api.get("/purchasing/suggestions/low-stock")
 async def list_low_stock_suggestions(
-    store_id: str | None = None,
-    warehouse_id: str | None = None,
+    # Optional location ∈ UuidIdValue; omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach store/warehouse lookup).
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
     include_open: bool = False,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
@@ -6089,7 +6324,7 @@ async def create_purchase_request(
         user_id=claims["sub"],
         preferred_supplier_id=payload.preferred_supplier_id,
         warehouse_id=payload.warehouse_id,
-        required_date=payload.required_date,
+        required_date=reports_svc.parse_date(payload.required_date),
         department=payload.department,
         notes=payload.notes,
         items=[i.model_dump() for i in payload.items],
@@ -6100,7 +6335,7 @@ async def create_purchase_request(
 
 @api.get("/purchasing/requests/{request_id}")
 async def get_purchase_request(
-    request_id: str,
+    request_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6111,7 +6346,7 @@ async def get_purchase_request(
 
 @api.post("/purchasing/requests/{request_id}/submit")
 async def submit_purchase_request(
-    request_id: str,
+    request_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6126,7 +6361,7 @@ async def submit_purchase_request(
 
 @api.post("/purchasing/requests/{request_id}/approve")
 async def approve_purchase_request(
-    request_id: str,
+    request_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "approve")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6151,7 +6386,7 @@ async def approve_purchase_request(
 
 @api.post("/purchasing/requests/{request_id}/reject")
 async def reject_purchase_request(
-    request_id: str,
+    request_id: UuidIdValue,
     payload: PurchaseRequestReject,
     claims=Depends(require_permission("purchasing", "approve")),
     db: AsyncSession = Depends(get_db),
@@ -6170,7 +6405,7 @@ async def reject_purchase_request(
 
 @api.post("/purchasing/requests/{request_id}/convert")
 async def convert_purchase_request(
-    request_id: str,
+    request_id: UuidIdValue,
     payload: PurchaseRequestConvert | None = None,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
@@ -6192,15 +6427,34 @@ async def convert_purchase_request(
 
 @api.get("/purchasing/orders")
 async def list_purchase_orders(
+    status: Annotated[PurchaseOrderStatusValue | None, Query()] = None,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.purchasing import PO_MANAGE_STATUSES
+
     stmt = (
         select(m.PurchaseOrder)
         .where(m.PurchaseOrder.tenant_id == claims["tenant_id"])
         .order_by(m.PurchaseOrder.created_at.desc())
     )
     stmt = apply_created_by_scope(stmt, m.PurchaseOrder, claims)
+    # Schema PurchaseOrderStatusValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty filter / blank→all).
+    if status is not None:
+        wanted = (status or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in PO_MANAGE_STATUSES:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Invalid purchase order status '{wanted}'. "
+                    f"Allowed: {sorted(PO_MANAGE_STATUSES)}"
+                ),
+            )
+        else:
+            stmt = stmt.where(m.PurchaseOrder.status == wanted)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await purchasing_svc.serialize_po(db, po) for po in rows])
 
@@ -6230,7 +6484,7 @@ async def create_purchase_order(
             "po_number": po.po_number,
             "supplier_id": po.supplier_id,
             "warehouse_id": po.warehouse_id,
-            "total_amount": float(getattr(po, "total_amount", 0) or 0),
+            "total_amount": money_json(getattr(po, "total_amount", 0) or 0),
             "status": po.status,
         },
     )
@@ -6240,7 +6494,7 @@ async def create_purchase_order(
 
 @api.get("/purchasing/orders/{po_id}")
 async def get_purchase_order(
-    po_id: str,
+    po_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6251,15 +6505,20 @@ async def get_purchase_order(
 
 @api.post("/purchasing/orders/{po_id}/send")
 async def send_purchase_order(
-    po_id: str,
-    to: str | None = None,
+    po_id: UuidIdValue,
+    to: Annotated[EmailStr | None, Query()] = None,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Email PO. Optional Query `to` ∈ EmailStr; omit → supplier email; blank/invalid → 422."""
     existing = await purchasing_svc.get_po(db, claims["tenant_id"], po_id)
     assert_record_access(claims, existing.created_by)
     po, delivery = await purchasing_svc.send_purchase_order(
-        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], po_id=po_id, to=to
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        po_id=po_id,
+        to=str(to) if to is not None else None,
     )
     await audit_svc.record_event(
         db,
@@ -6279,7 +6538,7 @@ async def send_purchase_order(
 
 @api.post("/purchasing/orders/{po_id}/amend")
 async def amend_purchase_order(
-    po_id: str,
+    po_id: UuidIdValue,
     payload: PurchaseOrderAmend,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
@@ -6295,11 +6554,11 @@ async def amend_purchase_order(
         items=items,
         notes=payload.notes,
         delivery_address=payload.delivery_address,
-        due_date=payload.due_date,
+        due_date=reports_svc.parse_date(payload.due_date),
         clear_due_date=payload.clear_due_date,
         reason=payload.reason,
         notify_supplier=payload.notify_supplier,
-        notify_to=payload.to,
+        notify_to=str(payload.to) if payload.to is not None else None,
     )
     await audit_svc.record_event(
         db,
@@ -6329,7 +6588,7 @@ async def amend_purchase_order(
 
 @api.get("/purchasing/orders/{po_id}/amendments")
 async def list_purchase_order_amendments(
-    po_id: str,
+    po_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6341,7 +6600,7 @@ async def list_purchase_order_amendments(
 
 @api.post("/purchasing/orders/{po_id}/cancel")
 async def cancel_purchase_order(
-    po_id: str,
+    po_id: UuidIdValue,
     payload: PurchaseOrderCancel,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
@@ -6387,7 +6646,14 @@ async def create_grn(
         purchase_order_id=payload.purchase_order_id,
         warehouse_id=payload.warehouse_id,
         notes=payload.notes,
-        items=[i.model_dump() for i in payload.items],
+        items=[
+            {
+                **i.model_dump(),
+                "manufacturing_date": reports_svc.parse_date(i.manufacturing_date),
+                "expiry_date": reports_svc.parse_date(i.expiry_date),
+            }
+            for i in payload.items
+        ],
     )
     await webhooks_svc.emit_event(
         db,
@@ -6408,7 +6674,7 @@ async def create_grn(
 
 @api.get("/purchasing/grn/{grn_id}")
 async def get_grn(
-    grn_id: str,
+    grn_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6419,15 +6685,34 @@ async def get_grn(
 
 @api.get("/purchasing/returns")
 async def list_purchase_returns(
+    status: Annotated[ReturnReportStatusValue | None, Query()] = None,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.reports import RETURN_REPORT_STATUSES
+
     stmt = (
         select(m.PurchaseReturn)
         .where(m.PurchaseReturn.tenant_id == claims["tenant_id"])
         .order_by(m.PurchaseReturn.created_at.desc())
     )
     stmt = apply_created_by_scope(stmt, m.PurchaseReturn, claims)
+    # Schema ReturnReportStatusValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty filter / blank→all).
+    if status is not None:
+        wanted = (status or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in RETURN_REPORT_STATUSES:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Invalid return status '{wanted}'. "
+                    f"Allowed: {sorted(RETURN_REPORT_STATUSES)}"
+                ),
+            )
+        else:
+            stmt = stmt.where(m.PurchaseReturn.status == wanted)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await purchasing_svc.serialize_purchase_return(db, r) for r in rows])
 
@@ -6453,7 +6738,7 @@ async def create_purchase_return(
 
 @api.get("/purchasing/returns/{return_id}")
 async def get_purchase_return(
-    return_id: str,
+    return_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6464,7 +6749,7 @@ async def get_purchase_return(
 
 @api.post("/purchasing/returns/{return_id}/post")
 async def post_purchase_return(
-    return_id: str,
+    return_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6482,7 +6767,7 @@ async def post_purchase_return(
 
 @api.post("/purchasing/returns/{return_id}/cancel")
 async def cancel_purchase_return(
-    return_id: str,
+    return_id: UuidIdValue,
     payload: PurchaseReturnCancel,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
@@ -6505,15 +6790,34 @@ async def cancel_purchase_return(
 
 @api.get("/purchasing/invoices")
 async def list_purchase_invoices(
+    status: Annotated[PurchaseInvoiceStatusValue | None, Query()] = None,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app.purchasing import PI_MANAGE_STATUSES
+
     stmt = (
         select(m.PurchaseInvoice)
         .where(m.PurchaseInvoice.tenant_id == claims["tenant_id"])
         .order_by(m.PurchaseInvoice.created_at.desc())
     )
     stmt = apply_created_by_scope(stmt, m.PurchaseInvoice, claims)
+    # Schema PurchaseInvoiceStatusValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty filter / blank→all).
+    if status is not None:
+        wanted = (status or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in PI_MANAGE_STATUSES:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Invalid purchase invoice status '{wanted}'. "
+                    f"Allowed: {sorted(PI_MANAGE_STATUSES)}"
+                ),
+            )
+        else:
+            stmt = stmt.where(m.PurchaseInvoice.status == wanted)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await purchasing_svc.serialize_purchase_invoice(db, r) for r in rows])
 
@@ -6546,7 +6850,7 @@ async def create_purchase_invoice(
 
 @api.get("/purchasing/invoices/{invoice_id}")
 async def get_purchase_invoice(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6557,7 +6861,7 @@ async def get_purchase_invoice(
 
 @api.patch("/purchasing/invoices/{invoice_id}")
 async def patch_purchase_invoice(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     payload: PurchaseInvoiceUpdate,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
@@ -6572,8 +6876,8 @@ async def patch_purchase_invoice(
         invoice_id=invoice_id,
         supplier_invoice_number=payload.supplier_invoice_number,
         notes=payload.notes,
-        invoice_date=payload.invoice_date,
-        due_date=payload.due_date,
+        invoice_date=reports_svc.parse_date(payload.invoice_date),
+        due_date=reports_svc.parse_date(payload.due_date),
     )
     await audit_svc.record_event(
         db,
@@ -6591,7 +6895,7 @@ async def patch_purchase_invoice(
 
 @api.post("/purchasing/invoices/{invoice_id}/ocr-suggest")
 async def purchase_invoice_ocr_suggest(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6607,7 +6911,7 @@ async def purchase_invoice_ocr_suggest(
 
 @api.post("/purchasing/invoices/{invoice_id}/approve")
 async def approve_purchase_invoice(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6620,7 +6924,7 @@ async def approve_purchase_invoice(
 
 @api.post("/purchasing/invoices/{invoice_id}/cancel")
 async def cancel_purchase_invoice(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     payload: PurchaseInvoiceCancel,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
@@ -6640,7 +6944,7 @@ async def cancel_purchase_invoice(
 
 @api.post("/purchasing/invoices/{invoice_id}/attachment")
 async def upload_purchase_invoice_attachment(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     file: UploadFile = File(...),
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
@@ -6680,7 +6984,7 @@ async def upload_purchase_invoice_attachment(
 
 @api.get("/purchasing/invoices/{invoice_id}/attachment")
 async def download_purchase_invoice_attachment(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6701,7 +7005,7 @@ async def download_purchase_invoice_attachment(
 
 @api.delete("/purchasing/invoices/{invoice_id}/attachment")
 async def delete_purchase_invoice_attachment(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6784,23 +7088,36 @@ async def pos_current_session(
 
 @api.get("/pos/sessions")
 async def pos_list_sessions(
+    status: Annotated[PosSessionStatusFilterValue | None, Query()] = None,
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = (
-        await db.execute(
-            select(m.PosSession)
-            .where(m.PosSession.tenant_id == claims["tenant_id"])
-            .order_by(m.PosSession.opened_at.desc())
-            .limit(50)
-        )
-    ).scalars().all()
+    # Schema PosSessionStatusFilterValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty filter / blank→all). Runtime statuses: open|closed.
+    stmt = (
+        select(m.PosSession)
+        .where(m.PosSession.tenant_id == claims["tenant_id"])
+        .order_by(m.PosSession.opened_at.desc())
+        .limit(50)
+    )
+    if status is not None:
+        wanted = (status or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in {"open", "closed"}:
+            raise HTTPException(
+                status_code=422,
+                detail="status must be open or closed",
+            )
+        else:
+            stmt = stmt.where(m.PosSession.status == wanted)
+    rows = (await db.execute(stmt)).scalars().all()
     return env([await pos_svc.serialize_session(db, s) for s in rows])
 
 
 @api.post("/pos/sessions/{session_id}/close")
 async def pos_close_session(
-    session_id: str,
+    session_id: UuidIdValue,
     payload: PosSessionClose,
     claims=Depends(require_permission("pos", "write")),
     db: AsyncSession = Depends(get_db),
@@ -6819,7 +7136,7 @@ async def pos_close_session(
 
 @api.get("/pos/sessions/{session_id}/drawer")
 async def pos_session_drawer(
-    session_id: str,
+    session_id: UuidIdValue,
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6835,7 +7152,7 @@ async def pos_session_drawer(
 
 @api.post("/pos/sessions/{session_id}/drawer/open")
 async def pos_open_cash_drawer(
-    session_id: str,
+    session_id: UuidIdValue,
     payload: PosDrawerOpen,
     claims=Depends(require_permission("pos", "write")),
     db: AsyncSession = Depends(get_db),
@@ -6875,7 +7192,7 @@ async def pos_open_cash_drawer(
 
 @api.get("/pos/sessions/{session_id}/report")
 async def pos_session_report(
-    session_id: str,
+    session_id: UuidIdValue,
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6962,13 +7279,15 @@ async def pos_sale(
             customer_id=payload.party_id,
         )
         spec = await resolve_product_tax(db, claims["tenant_id"], product)
-        line_discount = round(float(item.get("discount") or 0), 2)
+        line_discount = money_json(round(money_json(item.get("discount") or 0), 2))
         if line_discount < 0:
             raise HTTPException(status_code=400, detail="Line discount must be >= 0")
-        gross_before_discount = round(float(item["quantity"]) * float(unit_price), 2)
+        gross_before_discount = money_json(round(
+            money_json(item["quantity"]) * money_json(unit_price), 2
+        ))
         if line_discount > gross_before_discount + 1e-9:
             raise HTTPException(status_code=400, detail="Line discount exceeds line amount")
-        taxable_base = round(gross_before_discount - line_discount, 2)
+        taxable_base = money_json(round(gross_before_discount - line_discount, 2))
         line_sub, line_tax, line_gross = spec.compute_amounts(taxable_base)
         subtotal += line_sub
         line_discounts += line_discount
@@ -6990,13 +7309,13 @@ async def pos_sale(
                 "is_reverse_charge": spec.is_reverse_charge,
             }
         )
-    cart_discount = round(float(payload.discount_amount or 0), 2)
+    cart_discount = money_json(round(money_json(payload.discount_amount or 0), 2))
     if cart_discount < 0:
         raise HTTPException(status_code=400, detail="discount_amount must be >= 0")
-    max_cart_discount = round(subtotal + tax_total, 2)
+    max_cart_discount = money_json(round(subtotal + tax_total, 2))
     if cart_discount > max_cart_discount + 1e-9:
         raise HTTPException(status_code=400, detail="Cart discount exceeds sale total")
-    total = round(subtotal + tax_total - cart_discount, 2)
+    total = money_json(round(subtotal + tax_total - cart_discount, 2))
 
     payments = pos_svc.resolve_sale_payments(
         total=total,
@@ -7012,7 +7331,12 @@ async def pos_sale(
         )
 
     party = None
-    customer_name = (payload.customer_name or "").strip() or None
+    # OpenAPI PosCustomerNameValue → 422; service defense-in-depth → 400.
+    from app.honesty import optional_honest_narrative
+
+    customer_name = optional_honest_narrative(
+        payload.customer_name, label="POS customer name", max_length=180
+    )
     if payload.party_id:
         from app.sales import require_active_customer
 
@@ -7026,7 +7350,7 @@ async def pos_sale(
 
         pos_override_info = enforce_customer_credit_limit(
             party,
-            amount=float(credit_amount),
+            amount=money_json(credit_amount),
             override=bool(payload.override_credit_limit),
             override_allowed=claims_may_override_credit(claims),
             override_reason=payload.override_reason,
@@ -7044,14 +7368,13 @@ async def pos_sale(
     body.pop("override_credit_limit", None)
     body.pop("override_reason", None)
     body["payload"] = {
-        **(body.get("payload") or {}),
         "items": priced_items,
         "payment_method": payment_method,
         "payments": payments,
         "session_id": session.id,
         "customer_name": customer_name,
         "discount_amount": cart_discount,
-        "line_discounts": round(line_discounts, 2),
+        "line_discounts": money_json(round(line_discounts, 2)),
     }
     tx = m.Transaction(
         tenant_id=claims["tenant_id"],
@@ -7059,9 +7382,9 @@ async def pos_sale(
         reference=ref,
         party_id=payload.party_id,
         session_id=session.id,
-        subtotal=round(subtotal, 2),
-        tax=round(tax_total, 2),
-        total=total,
+        subtotal=money_json(round(subtotal, 2)),
+        tax=money_json(round(tax_total, 2)),
+        total=money_json(total),
         # Schema Literal["completed"] already rejects blank/unknown with 422.
         status=payload.status,
         payload=body["payload"],
@@ -7098,7 +7421,7 @@ async def pos_sale(
     if payload.party_id and credit_amount > 0:
         party = await db.get(m.Party, payload.party_id)
         if party and party.tenant_id == claims["tenant_id"]:
-            party.balance = float(party.balance or 0) + float(credit_amount)
+            party.balance = money_json(party.balance or 0) + money_json(credit_amount)
 
     from app.accounting import post_pos_sale_journal
 
@@ -7144,17 +7467,17 @@ async def pos_sale(
         data={
             "sale_id": tx.id,
             "reference": ref,
-            "amount": float(tx.total or 0),
+            "amount": money_json(tx.total or 0),
             "customer_id": payload.party_id,
             "payment_method": payment_method,
             "status": tx.status,
             "source": "pos",
             "session_id": session.id,
-            "credit_amount": float(credit_amount or 0),
+            "credit_amount": money_json(credit_amount or 0),
         },
     )
     # Fully settled at till (no on-account credit tender) → also emit sale.paid.
-    if float(credit_amount or 0) <= 0:
+    if money_json(credit_amount or 0) <= 0:
         await webhooks_svc.emit_event(
             db,
             tenant_id=claims["tenant_id"],
@@ -7162,11 +7485,14 @@ async def pos_sale(
             data={
                 "sale_id": tx.id,
                 "reference": ref,
-                "amount": float(tx.total or 0),
+                "amount": money_json(tx.total or 0),
                 "customer_id": payload.party_id,
                 "payment_method": payment_method,
                 "payments": [
-                    {"payment_method": p.get("payment_method"), "amount": float(p.get("amount") or 0)}
+                    {
+                        "payment_method": p.get("payment_method"),
+                        "amount": money_json(p.get("amount") or 0),
+                    }
                     for p in payments
                 ],
                 "source": "pos",
@@ -7177,11 +7503,11 @@ async def pos_sale(
         "id": tx.id,
         "reference": ref,
         "session_id": session.id,
-        "subtotal": float(tx.subtotal),
-        "tax": float(tx.tax),
-        "total": float(tx.total),
-        "discount_amount": cart_discount,
-        "line_discounts": round(line_discounts, 2),
+        "subtotal": money_json(tx.subtotal),
+        "tax": money_json(tx.tax),
+        "total": money_json(tx.total),
+        "discount_amount": money_json(cart_discount),
+        "line_discounts": money_json(round(line_discounts, 2)),
         "payment_method": payment_method,
         "payments": [pos_svc.serialize_payment(p) for p in payment_rows],
         "customer_name": customer_name,
@@ -7195,8 +7521,8 @@ async def pos_sale(
 
 @api.get("/pos/products/search")
 async def pos_search(
-    q: str = "",
-    barcode: str | None = None,
+    q: Annotated[ProductSearchQueryValue, Query()] = "",
+    barcode: Annotated[ProductBarcodeValue | None, Query()] = None,
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -7233,7 +7559,7 @@ async def pos_search(
             return cached
         spec = await resolve_product_tax(db, claims["tenant_id"], product)
         payload = {
-            "tax_rate_pct": float(spec.rate_pct or 0),
+            "tax_rate_pct": money_json(spec.rate_pct or 0),
             "tax_pricing_mode": (spec.pricing_mode or "exclusive"),
             "tax_reverse_charge": bool(spec.is_reverse_charge),
             "tax_components": list(spec.components) if spec.components else None,
@@ -7251,8 +7577,8 @@ async def pos_search(
             "name": p.name,
             "sku": p.sku,
             "barcode": p.barcode,
-            "selling_price": float(p.selling_price or 0),
-            "stock_qty": float(p.stock_qty or 0),
+            "selling_price": money_json(p.selling_price or 0),
+            "stock_qty": money_json(p.stock_qty or 0),
             "kind": "product",
             "has_image": bool(p.image_url),
         }
@@ -7302,8 +7628,8 @@ async def pos_search(
                 "name": v.name,
                 "sku": v.sku,
                 "barcode": v.barcode,
-                "selling_price": float(v.selling_price or 0),
-                "stock_qty": float(v.stock_qty or 0),
+                "selling_price": money_json(v.selling_price or 0),
+                "stock_qty": money_json(v.stock_qty or 0),
                 "kind": "variant",
                 "has_image": False,
             }
@@ -7324,7 +7650,7 @@ async def pos_search(
 
 @api.get("/pos/sales/{sale_id}/receipt")
 async def pos_receipt(
-    sale_id: str,
+    sale_id: UuidIdValue,
     # omit → json; blank/invalid → 422 (was `format or "json"`)
     format: Annotated[ReceiptPrintFormatValue, Query()] = "json",
     # omit → branding default; blank/invalid → 422 (was silent branding fallback)
@@ -7372,10 +7698,12 @@ async def pos_receipt(
 
 @api.post("/pos/sales/{sale_id}/receipt/send")
 async def pos_receipt_send(
-    sale_id: str,
+    sale_id: UuidIdValue,
     # omit → email; blank/invalid → 422 (was `channel or "email"`)
     channel: Annotated[ReceiptChannelValue, Query()] = "email",
-    to: str | None = None,
+    # omit → cashier email/phone; blank/invalid → 422 via ReceiptOverrideToValue
+    # (email or E.164); channel refine remains below (email vs sms).
+    to: Annotated[ReceiptOverrideToValue | None, Query()] = None,
     # omit → 80mm; blank/invalid → 422 (was silent 80mm for garbage)
     paper: Annotated[ReceiptPaperValue, Query()] = "80mm",
     claims=Depends(require_permission("pos", "write")),
@@ -7395,9 +7723,27 @@ async def pos_receipt_send(
     text = receipts_svc.render_thermal_text(receipt, paper=paper)
     channel = channel.lower() if isinstance(channel, str) else channel
 
+    override: str | None = None
+    if to is not None:
+        # Channel refine: schema already ensured email|E.164 shape.
+        try:
+            if channel == "email":
+                override = str(TypeAdapter(EmailStr).validate_python(to))
+            else:
+                override = TypeAdapter(E164PhoneValue).validate_python(to)
+        except PydanticValidationError as exc:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "to must be a valid email"
+                    if channel == "email"
+                    else "to must be E.164 (+ and 8–15 digits)"
+                ),
+            ) from exc
+
     if channel == "email":
         user = await db.get(m.User, claims["sub"])
-        recipient = to or (user.email if user else None)
+        recipient = override or (user.email if user else None)
         if not recipient:
             raise HTTPException(status_code=400, detail="No email recipient")
         tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
@@ -7427,7 +7773,7 @@ async def pos_receipt_send(
 
     if channel == "sms":
         user = await db.get(m.User, claims["sub"])
-        recipient = to or (user.phone if user else None)
+        recipient = override or (user.phone if user else None)
         if not recipient:
             raise HTTPException(status_code=400, detail="No SMS recipient phone")
         body = (
@@ -7455,7 +7801,7 @@ async def pos_receipt_send(
 
 def _money_safe(value) -> str:
     try:
-        return f"{float(value or 0):.2f}"
+        return f"{money_json(value or 0):.2f}"
     except (TypeError, ValueError):
         return "0.00"
 
@@ -7512,8 +7858,13 @@ async def create_expense_category(
     )
     cat = m.ExpenseCategory(
         tenant_id=claims["tenant_id"],
-        code=payload.code.strip().upper(),
-        name=payload.name.strip(),
+        # OpenAPI ExpenseCategoryCodeValue → 422; service defense-in-depth → 400.
+        code=require_honest_narrative(
+            payload.code.strip().upper(), label="expense category code", max_length=40
+        ),
+        name=require_honest_narrative(
+            payload.name, label="expense category name", max_length=120
+        ),
         budget_amount=payload.budget_amount,
         account_id=account.id if account else None,
     )
@@ -7529,7 +7880,7 @@ async def create_expense_category(
 
 @api.patch("/expenses/categories/{category_id}")
 async def patch_expense_category(
-    category_id: str,
+    category_id: UuidIdValue,
     payload: ExpenseCategoryUpdate,
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
@@ -7661,7 +8012,7 @@ async def create_recurring_expense(
 
 @api.patch("/expenses/recurring/{recurring_id}")
 async def update_recurring_expense(
-    recurring_id: str,
+    recurring_id: UuidIdValue,
     payload: RecurringExpenseUpdate,
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
@@ -7696,7 +8047,7 @@ async def update_recurring_expense(
 
 @api.post("/expenses/recurring/{recurring_id}/skip-next")
 async def skip_next_recurring_expense(
-    recurring_id: str,
+    recurring_id: UuidIdValue,
     payload: RecurringSkipNext,
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
@@ -7732,13 +8083,30 @@ async def generate_recurring_expenses(
 
 
 @api.get("/expenses")
-async def expenses(claims=Depends(require_permission("expenses", "read")), db: AsyncSession = Depends(get_db)):
+async def expenses(
+    status: Annotated[ExpenseStatusFilterValue | None, Query()] = None,
+    claims=Depends(require_permission("expenses", "read")),
+    db: AsyncSession = Depends(get_db),
+):
     stmt = (
         select(m.Expense)
         .where(m.Expense.tenant_id == claims["tenant_id"])
         .order_by(m.Expense.created_at.desc())
     )
     stmt = apply_created_by_scope(stmt, m.Expense, claims)
+    # Schema ExpenseStatusFilterValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty filter / blank→all).
+    if status is not None:
+        wanted = (status or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in {"pending", "approved", "rejected"}:
+            raise HTTPException(
+                status_code=422,
+                detail="status must be pending, approved, or rejected",
+            )
+        else:
+            stmt = stmt.where(m.Expense.status == wanted)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await expenses_svc.serialize_expense_full(db, e) for e in rows])
 
@@ -7764,7 +8132,7 @@ async def add_expense(
         branch_id=payload.branch_id,
         department_id=payload.department_id,
         liquid_account_id=payload.liquid_account_id,
-        expense_date=payload.expense_date,
+        expense_date=reports_svc.parse_date(payload.expense_date),
     )
     await db.commit()
     return env(await expenses_svc.serialize_expense_full(db, expense), "Expense recorded")
@@ -7772,7 +8140,7 @@ async def add_expense(
 
 @api.get("/expenses/{expense_id}")
 async def get_expense(
-    expense_id: str,
+    expense_id: UuidIdValue,
     claims=Depends(require_permission("expenses", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -7783,7 +8151,7 @@ async def get_expense(
 
 @api.patch("/expenses/{expense_id}")
 async def patch_expense(
-    expense_id: str,
+    expense_id: UuidIdValue,
     payload: ExpenseUpdate,
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
@@ -7799,7 +8167,7 @@ async def patch_expense(
         description=payload.description,
         payee=payload.payee,
         reference=payload.reference,
-        expense_date=payload.expense_date,
+        expense_date=reports_svc.parse_date(payload.expense_date),
         payment_method=payload.payment_method,
         category_id=payload.category_id,
         category=payload.category,
@@ -7818,7 +8186,7 @@ async def patch_expense(
         action="expense_update",
         entity="expense",
         entity_id=expense.id,
-        details={"status": expense.status, "amount": float(expense.amount)},
+        details={"status": expense.status, "amount": money_json(expense.amount)},
     )
     await db.commit()
     return env(await expenses_svc.serialize_expense_full(db, expense), "Expense updated")
@@ -7826,7 +8194,7 @@ async def patch_expense(
 
 @api.post("/expenses/{expense_id}/ocr-suggest")
 async def expense_ocr_suggest(
-    expense_id: str,
+    expense_id: UuidIdValue,
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -7842,7 +8210,7 @@ async def expense_ocr_suggest(
 
 @api.post("/expenses/{expense_id}/attachment")
 async def upload_expense_attachment(
-    expense_id: str,
+    expense_id: UuidIdValue,
     file: UploadFile = File(...),
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
@@ -7882,7 +8250,7 @@ async def upload_expense_attachment(
 
 @api.get("/expenses/{expense_id}/attachment")
 async def download_expense_attachment(
-    expense_id: str,
+    expense_id: UuidIdValue,
     claims=Depends(require_permission("expenses", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -7902,7 +8270,7 @@ async def download_expense_attachment(
 
 @api.delete("/expenses/{expense_id}/attachment")
 async def delete_expense_attachment(
-    expense_id: str,
+    expense_id: UuidIdValue,
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -7928,7 +8296,7 @@ async def delete_expense_attachment(
 
 @api.post("/expenses/{expense_id}/approve")
 async def approve_expense(
-    expense_id: str,
+    expense_id: UuidIdValue,
     payload: ExpenseDecision = ExpenseDecision(),
     claims=Depends(require_permission("expenses", "approve")),
     db: AsyncSession = Depends(get_db),
@@ -7948,7 +8316,7 @@ async def approve_expense(
             event="expense.approved",
             data={
                 "expense_id": expense.id,
-                "amount": float(expense.amount or 0),
+                "amount": money_json(expense.amount or 0),
                 "category": expense.category,
                 "approved_by": expense.approved_by,
                 "approved_at": expense.approved_at.isoformat()
@@ -7963,7 +8331,7 @@ async def approve_expense(
 
 @api.post("/expenses/{expense_id}/reject")
 async def reject_expense(
-    expense_id: str,
+    expense_id: UuidIdValue,
     payload: ExpenseReject,
     claims=Depends(require_permission("expenses", "approve")),
     db: AsyncSession = Depends(get_db),
@@ -7982,7 +8350,7 @@ async def reject_expense(
 
 @api.delete("/expenses/{expense_id}")
 async def delete_expense(
-    expense_id: str,
+    expense_id: UuidIdValue,
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8057,7 +8425,7 @@ async def create_account(
 
 @api.patch("/accounting/accounts/{account_id}")
 async def patch_account(
-    account_id: str,
+    account_id: UuidIdValue,
     payload: AccountUpdate,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
@@ -8095,7 +8463,7 @@ async def patch_account(
 
 @api.get("/accounting/accounts/{account_id}")
 async def get_account(
-    account_id: str,
+    account_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8154,12 +8522,15 @@ async def liquid_accounts(
 
 @api.get("/accounting/transfers")
 async def list_cash_transfers(
+    kind: Annotated[CashTransferKindFilterValue | None, Query()] = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     from app import cash_transfers as cash_xfer_svc
 
-    rows = await cash_xfer_svc.list_transfers(db, claims["tenant_id"])
+    # Schema CashTransferKindFilterValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty filter / blank→all).
+    rows = await cash_xfer_svc.list_transfers(db, claims["tenant_id"], kind=kind)
     amap = await cash_xfer_svc.accounts_map_for_transfers(db, claims["tenant_id"], rows)
     return env([cash_xfer_svc.serialize_transfer(r, accounts=amap) for r in rows])
 
@@ -8194,7 +8565,7 @@ async def create_cash_transfer(
         entity_id=row.id,
         details={
             "kind": row.kind,
-            "amount": float(row.amount),
+            "amount": money_json(row.amount),
             "from_account_id": row.from_account_id,
             "to_account_id": row.to_account_id,
         },
@@ -8210,7 +8581,7 @@ async def create_cash_transfer(
 
 @api.get("/accounting/transfers/{transfer_id}")
 async def get_cash_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8283,7 +8654,7 @@ async def create_bank_connection(
 
 @api.patch("/accounting/bank-connections/{connection_id}")
 async def update_bank_connection(
-    connection_id: str,
+    connection_id: UuidIdValue,
     payload: BankConnectionUpdate,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
@@ -8302,7 +8673,7 @@ async def update_bank_connection(
 
 @api.delete("/accounting/bank-connections/{connection_id}")
 async def delete_bank_connection(
-    connection_id: str,
+    connection_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8327,7 +8698,7 @@ async def delete_bank_connection(
 
 @api.post("/accounting/bank-connections/{connection_id}/sync")
 async def sync_bank_connection(
-    connection_id: str,
+    connection_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8363,12 +8734,15 @@ async def sync_bank_connection(
 
 @api.get("/accounting/bank-statements")
 async def list_bank_statements(
+    status: Annotated[BankStatementStatusFilterValue | None, Query()] = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     from app import bank_recon as bank_recon_svc
 
-    rows = await bank_recon_svc.list_statements(db, claims["tenant_id"])
+    rows = await bank_recon_svc.list_statements(
+        db, claims["tenant_id"], status=status
+    )
     out = []
     for row in rows:
         lines = await bank_recon_svc.list_statement_lines(db, claims["tenant_id"], row.id)
@@ -8378,24 +8752,26 @@ async def list_bank_statements(
 
 @api.post("/accounting/bank-statements")
 async def create_bank_statement(
-    payload: dict,
+    payload: BankStatementCreateBody,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     from app.accounting import ensure_default_accounts
     from app import bank_recon as bank_recon_svc
 
+    # Schema BankStatementCreateBody rejects unknown keys / blank account_id /
+    # zero line amounts → 422.
     await ensure_default_accounts(db, claims["tenant_id"])
     stmt = await bank_recon_svc.create_statement(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims.get("sub"),
-        account_id=payload.get("account_id") or "",
-        statement_date=payload.get("statement_date"),
-        opening_balance=float(payload.get("opening_balance") or 0),
-        closing_balance=float(payload.get("closing_balance") or 0),
-        notes=payload.get("notes"),
-        lines=payload.get("lines") or [],
+        account_id=payload.account_id,
+        statement_date=payload.statement_date,
+        opening_balance=money_json(payload.opening_balance or 0),
+        closing_balance=money_json(payload.closing_balance or 0),
+        notes=payload.notes,
+        lines=[ln.model_dump() for ln in payload.lines],
     )
     await db.commit()
     lines = await bank_recon_svc.list_statement_lines(db, claims["tenant_id"], stmt.id)
@@ -8404,12 +8780,13 @@ async def create_bank_statement(
 
 @api.post("/accounting/bank-statements/import")
 async def import_bank_statement(
-    account_id: str,
+    account_id: UuidIdValue,
     file: UploadFile = File(...),
-    opening_balance: float | None = None,
-    closing_balance: float | None = None,
-    statement_date: str | None = None,
-    notes: str | None = None,
+    # omit/`null` → feed/default; nan/inf/out-of-range → **422** (was free float)
+    opening_balance: Annotated[FiniteMoneyValue | None, Query()] = None,
+    closing_balance: Annotated[FiniteMoneyValue | None, Query()] = None,
+    statement_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    notes: Annotated[BankStatementNotesValue | None, Query()] = None,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8447,7 +8824,7 @@ async def import_bank_statement(
 
 @api.get("/accounting/bank-statements/{statement_id}")
 async def get_bank_statement(
-    statement_id: str,
+    statement_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8470,22 +8847,23 @@ async def get_bank_statement(
 
 @api.post("/accounting/bank-statements/{statement_id}/clear-group")
 async def clear_bank_statement_group(
-    statement_id: str,
-    payload: dict,
+    statement_id: UuidIdValue,
+    payload: BankClearGroupBody,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     """Clear N bank lines against M book lines when totals match."""
     from app import bank_recon as bank_recon_svc
 
+    # Schema BankClearGroupBody rejects unknown keys / empty id lists → 422.
     result = await bank_recon_svc.create_clearing_group(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         statement_id=statement_id,
-        statement_line_ids=list(payload.get("statement_line_ids") or []),
-        journal_line_ids=list(payload.get("journal_line_ids") or []),
-        notes=payload.get("notes"),
+        statement_line_ids=payload.statement_line_ids,
+        journal_line_ids=payload.journal_line_ids,
+        notes=payload.notes,
     )
     await db.commit()
     stmt = await bank_recon_svc.get_statement(db, claims["tenant_id"], statement_id)
@@ -8506,8 +8884,8 @@ async def clear_bank_statement_group(
 
 @api.post("/accounting/bank-statements/{statement_id}/clear-groups/{group_id}/dissolve")
 async def dissolve_bank_clearing_group(
-    statement_id: str,
-    group_id: str,
+    statement_id: UuidIdValue,
+    group_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8529,7 +8907,7 @@ async def dissolve_bank_clearing_group(
 
 @api.post("/accounting/bank-statements/{statement_id}/auto-clear")
 async def auto_clear_bank_statement(
-    statement_id: str,
+    statement_id: UuidIdValue,
     payload: BankAutoClearBody | None = None,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
@@ -8558,20 +8936,21 @@ async def auto_clear_bank_statement(
 
 @api.post("/accounting/bank-statements/{statement_id}/lines/{line_id}/match")
 async def match_bank_statement_line(
-    statement_id: str,
-    line_id: str,
-    payload: dict,
+    statement_id: UuidIdValue,
+    line_id: UuidIdValue,
+    payload: BankStatementMatchBody,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     from app import bank_recon as bank_recon_svc
 
+    # Schema BankStatementMatchBody rejects unknown keys / blank journal_line_id → 422.
     stmt = await bank_recon_svc.get_statement(db, claims["tenant_id"], statement_id)
     line = await bank_recon_svc.match_line(
         db,
         tenant_id=claims["tenant_id"],
         line_id=line_id,
-        journal_line_id=payload.get("journal_line_id") or "",
+        journal_line_id=payload.journal_line_id,
     )
     if line.statement_id != stmt.id:
         raise HTTPException(status_code=404, detail="Statement line not found")
@@ -8581,8 +8960,8 @@ async def match_bank_statement_line(
 
 @api.post("/accounting/bank-statements/{statement_id}/lines/{line_id}/unmatch")
 async def unmatch_bank_statement_line(
-    statement_id: str,
-    line_id: str,
+    statement_id: UuidIdValue,
+    line_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8598,8 +8977,8 @@ async def unmatch_bank_statement_line(
 
 @api.post("/accounting/bank-statements/{statement_id}/lines/{line_id}/ignore")
 async def ignore_bank_statement_line(
-    statement_id: str,
-    line_id: str,
+    statement_id: UuidIdValue,
+    line_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8615,7 +8994,7 @@ async def ignore_bank_statement_line(
 
 @api.post("/accounting/bank-statements/{statement_id}/complete")
 async def complete_bank_statement(
-    statement_id: str,
+    statement_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8644,7 +9023,7 @@ async def list_cheques(
 
 @api.get("/accounting/cheques/{cheque_id}")
 async def get_cheque_detail(
-    cheque_id: str,
+    cheque_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8654,7 +9033,7 @@ async def get_cheque_detail(
 
 @api.post("/accounting/cheques/{cheque_id}/deposit")
 async def deposit_cheque_api(
-    cheque_id: str,
+    cheque_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8667,7 +9046,7 @@ async def deposit_cheque_api(
 
 @api.post("/accounting/cheques/{cheque_id}/clear")
 async def clear_cheque_api(
-    cheque_id: str,
+    cheque_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8680,7 +9059,7 @@ async def clear_cheque_api(
 
 @api.post("/accounting/cheques/{cheque_id}/bounce")
 async def bounce_cheque_api(
-    cheque_id: str,
+    cheque_id: UuidIdValue,
     payload: ChequeLifecycleReason,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
@@ -8698,7 +9077,7 @@ async def bounce_cheque_api(
 
 @api.post("/accounting/cheques/{cheque_id}/cancel")
 async def cancel_cheque_api(
-    cheque_id: str,
+    cheque_id: UuidIdValue,
     payload: ChequeLifecycleReason,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
@@ -8767,19 +9146,32 @@ async def update_accounting_settings(
 
 @api.get("/accounting/journal-entries")
 async def list_journals(
+    status: Annotated[JournalStatusFilterValue | None, Query()] = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     from app import accounting as accounting_svc
 
-    rows = (
-        await db.execute(
-            select(m.JournalEntry)
-            .where(m.JournalEntry.tenant_id == claims["tenant_id"])
-            .order_by(m.JournalEntry.created_at.desc())
-            .limit(100)
-        )
-    ).scalars().all()
+    # Schema JournalStatusFilterValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty filter / blank→all).
+    stmt = (
+        select(m.JournalEntry)
+        .where(m.JournalEntry.tenant_id == claims["tenant_id"])
+        .order_by(m.JournalEntry.created_at.desc())
+        .limit(100)
+    )
+    if status is not None:
+        wanted = (status or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in {"posted", "unposted"}:
+            raise HTTPException(
+                status_code=422,
+                detail="status must be posted or unposted",
+            )
+        else:
+            stmt = stmt.where(m.JournalEntry.status == wanted)
+    rows = (await db.execute(stmt)).scalars().all()
     return env([await accounting_svc.serialize_journal(db, e) for e in rows])
 
 
@@ -8797,7 +9189,7 @@ async def create_journal(
         user_id=claims["sub"],
         description=payload.description,
         reference=payload.reference,
-        entry_date=payload.entry_date,
+        entry_date=reports_svc.parse_date(payload.entry_date),
         lines=[ln.model_dump() for ln in payload.lines],
     )
     await db.commit()
@@ -8823,11 +9215,12 @@ async def accounting_period_close(
     """BR-10.2 — close books through an inclusive calendar date."""
     from app import accounting as accounting_svc
 
+    parsed = reports_svc.parse_date(payload.through_date)
     status = await accounting_svc.close_books(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
-        through_date=payload.through_date,
+        through_date=accounting_svc.as_calendar_date(parsed),
         reason=payload.reason,
     )
     await db.commit()
@@ -8843,11 +9236,12 @@ async def accounting_period_reopen(
     """BR-10.2 — reopen books (earlier through_date or clear)."""
     from app import accounting as accounting_svc
 
+    parsed = reports_svc.parse_date(payload.through_date)
     status = await accounting_svc.reopen_books(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
-        through_date=payload.through_date,
+        through_date=accounting_svc.as_calendar_date(parsed),
         reason=payload.reason,
     )
     await db.commit()
@@ -8856,7 +9250,7 @@ async def accounting_period_reopen(
 
 @api.post("/accounting/journal-entries/{entry_id}/unpost")
 async def unpost_journal(
-    entry_id: str,
+    entry_id: UuidIdValue,
     payload: JournalUnpost,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
@@ -8876,7 +9270,7 @@ async def unpost_journal(
 
 @api.post("/accounting/journal-entries/{entry_id}/attachment")
 async def upload_journal_attachment(
-    entry_id: str,
+    entry_id: UuidIdValue,
     file: UploadFile = File(...),
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
@@ -8917,7 +9311,7 @@ async def upload_journal_attachment(
 
 @api.get("/accounting/journal-entries/{entry_id}/attachment")
 async def download_journal_attachment(
-    entry_id: str,
+    entry_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8938,7 +9332,7 @@ async def download_journal_attachment(
 
 @api.delete("/accounting/journal-entries/{entry_id}/attachment")
 async def delete_journal_attachment(
-    entry_id: str,
+    entry_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8965,9 +9359,11 @@ async def delete_journal_attachment(
 
 @api.get("/accounting/trial-balance")
 async def get_trial_balance(
-    as_of: str | None = None,
-    store_id: str | None = None,
-    branch_id: str | None = None,
+    as_of: Annotated[IsoDateQueryValue | None, Query()] = None,
+    # Optional location filters ∈ UuidIdValue; omit/`null` → all; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach store/branch lookup).
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    branch_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8988,10 +9384,11 @@ async def get_trial_balance(
 
 @api.get("/accounting/profit-loss")
 async def get_profit_loss(
-    from_date: str | None = None,
-    to_date: str | None = None,
-    store_id: str | None = None,
-    branch_id: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    # Same UuidIdValue Query honesty as trial-balance location filters.
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    branch_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9013,10 +9410,10 @@ async def get_profit_loss(
 
 @api.get("/reports/profit-loss")
 async def report_profit_loss(
-    from_date: str | None = None,
-    to_date: str | None = None,
-    store_id: str | None = None,
-    branch_id: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    branch_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9038,9 +9435,9 @@ async def report_profit_loss(
 
 @api.get("/reports/trial-balance")
 async def report_trial_balance(
-    as_of: str | None = None,
-    store_id: str | None = None,
-    branch_id: str | None = None,
+    as_of: Annotated[IsoDateQueryValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    branch_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9055,10 +9452,10 @@ async def report_trial_balance(
 
 @api.get("/reports/cash-flow")
 async def report_cash_flow(
-    from_date: str | None = None,
-    to_date: str | None = None,
-    store_id: str | None = None,
-    branch_id: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    branch_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9076,11 +9473,11 @@ async def report_cash_flow(
 
 @api.get("/reports/balance-sheet")
 async def report_balance_sheet(
-    as_of: str | None = None,
+    as_of: Annotated[IsoDateQueryValue | None, Query()] = None,
     # omit → no compare; blank/invalid → 422 (was free str → service 400; "" → no compare)
     compare: Annotated[BalanceSheetCompareValue | None, Query()] = None,
-    store_id: str | None = None,
-    branch_id: str | None = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    branch_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9098,10 +9495,10 @@ async def report_balance_sheet(
 
 @api.get("/accounting/balance-sheet")
 async def accounting_balance_sheet(
-    as_of: str | None = None,
+    as_of: Annotated[IsoDateQueryValue | None, Query()] = None,
     compare: Annotated[BalanceSheetCompareValue | None, Query()] = None,
-    store_id: str | None = None,
-    branch_id: str | None = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    branch_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9123,21 +9520,27 @@ async def reports_export(
     report_type: Annotated[ReportTypeValue, Query()],
     # omit → csv; blank/invalid → 422 (was `fmt or "csv"`)
     format: Annotated[ReportExportFormatValue, Query()] = "csv",
-    from_date: str | None = None,
-    to_date: str | None = None,
-    date: str | None = None,
-    year: int | None = None,
-    month: int | None = None,
-    warehouse_id: str | None = None,
-    jurisdiction: str | None = None,
-    store_id: str | None = None,
-    branch_id: str | None = None,
-    category_id: str | None = None,
-    days: int | None = None,
-    as_of: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    # omit/`null` → export default year; <2000/>2100 → **422** (was free int)
+    year: Annotated[int, Query(ge=2000, le=2100)] | None = None,
+    # omit/`null` → export default month; <1/>12 → **422** (was free int)
+    month: Annotated[int, Query(ge=1, le=12)] | None = None,
+    # Optional location/category filters ∈ UuidIdValue; omit/`null` OK; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`).
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
+    # omit → export default (tax_filing_gh → GH); blank/unsupported → 422
+    jurisdiction: Annotated[TaxFilingJurisdictionValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    branch_id: Annotated[UuidIdValue | None, Query()] = None,
+    category_id: Annotated[UuidIdValue | None, Query()] = None,
+    # omit/`null` → export default horizon; 0/negative/>365 → **422** (was free int)
+    days: Annotated[int, Query(ge=1, le=365)] | None = None,
+    as_of: Annotated[IsoDateQueryValue | None, Query()] = None,
     # omit → no compare; blank/invalid → 422 (same Literal as balance-sheet routes)
     compare: Annotated[BalanceSheetCompareValue | None, Query()] = None,
-    department_id: str | None = None,
+    department_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9180,10 +9583,20 @@ async def reports_exportable(claims=Depends(require_permission("reports", "read"
 
 @api.get("/reports/schedules")
 async def report_schedules_list(
+    enabled: bool | None = None,
+    frequency: Annotated[ScheduleFrequencyValue | None, Query()] = None,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = await report_schedules_svc.list_schedules(db, claims["tenant_id"])
+    # enabled: FastAPI bool Query (omit → all; invalid → 422).
+    # frequency: ScheduleFrequencyValue rejects blank/invalid → 422; service allow-list
+    # remains defense-in-depth.
+    rows = await report_schedules_svc.list_schedules(
+        db,
+        claims["tenant_id"],
+        enabled=enabled,
+        frequency=frequency,
+    )
     return env([report_schedules_svc.serialize_schedule(r) for r in rows])
 
 
@@ -9212,7 +9625,7 @@ async def report_schedules_create(
 
 @api.patch("/reports/schedules/{schedule_id}")
 async def report_schedules_patch(
-    schedule_id: str,
+    schedule_id: UuidIdValue,
     payload: ReportScheduleUpdate,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
@@ -9237,7 +9650,7 @@ async def report_schedules_patch(
 
 @api.delete("/reports/schedules/{schedule_id}")
 async def report_schedules_delete(
-    schedule_id: str,
+    schedule_id: UuidIdValue,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9248,7 +9661,7 @@ async def report_schedules_delete(
 
 @api.post("/reports/schedules/{schedule_id}/run")
 async def report_schedules_run(
-    schedule_id: str,
+    schedule_id: UuidIdValue,
     force: bool = True,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
@@ -9278,8 +9691,10 @@ async def report_schedules_run_due(
 
 @api.get("/reports/sales/daily")
 async def report_sales_daily(
-    date: str | None = None,
-    store_id: str | None = None,
+    date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    # Optional store ∈ UuidIdValue; omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach store lookup).
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9295,9 +9710,11 @@ async def report_sales_daily(
 
 @api.get("/reports/sales/monthly")
 async def report_sales_monthly(
-    year: int | None = None,
-    month: int | None = None,
-    store_id: str | None = None,
+    # omit/`null` → current UTC year; <2000/>2100 → **422** (was free int)
+    year: Annotated[int, Query(ge=2000, le=2100)] | None = None,
+    # omit/`null` → current UTC month; <1/>12 → **422** (was free int)
+    month: Annotated[int, Query(ge=1, le=12)] | None = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9315,10 +9732,12 @@ async def report_sales_monthly(
 
 @api.get("/reports/sales/products")
 async def report_sales_products(
-    from_date: str | None = None,
-    to_date: str | None = None,
-    store_id: str | None = None,
-    category_id: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    # Optional category ∈ UuidIdValue; omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach category lookup).
+    category_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9337,9 +9756,9 @@ async def report_sales_products(
 
 @api.get("/reports/sales/customers")
 async def report_sales_customers(
-    from_date: str | None = None,
-    to_date: str | None = None,
-    store_id: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     limit: int | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
@@ -9359,12 +9778,14 @@ async def report_sales_customers(
 
 @api.get("/reports/sales/returns")
 async def report_sales_returns(
-    from_date: str | None = None,
-    to_date: str | None = None,
-    customer_id: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    # Optional customer ∈ UuidIdValue; omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach party lookup).
+    customer_id: Annotated[UuidIdValue | None, Query()] = None,
     reason: Annotated[SalesReturnReportReasonValue | None, Query()] = None,
     status: Annotated[ReturnReportStatusValue | None, Query()] = None,
-    store_id: str | None = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9385,10 +9806,12 @@ async def report_sales_returns(
 
 @api.get("/reports/sales/salesperson")
 async def report_sales_salesperson(
-    from_date: str | None = None,
-    to_date: str | None = None,
-    department_id: str | None = None,
-    store_id: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    # Optional department ∈ UuidIdValue; omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach department lookup).
+    department_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9406,9 +9829,9 @@ async def report_sales_salesperson(
 
 @api.get("/reports/sales/by-store")
 async def report_sales_by_store(
-    from_date: str | None = None,
-    to_date: str | None = None,
-    department_id: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    department_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9425,9 +9848,9 @@ async def report_sales_by_store(
 
 @api.get("/reports/sales/by-department")
 async def report_sales_by_department(
-    from_date: str | None = None,
-    to_date: str | None = None,
-    department_id: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    department_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9445,8 +9868,9 @@ async def report_sales_by_department(
 
 @api.get("/reports/inventory/balance")
 async def report_inventory_balance(
-    warehouse_id: str | None = None,
-    store_id: str | None = None,
+    # Same UuidIdValue Query honesty as low-stock / expiry location filters.
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9463,8 +9887,9 @@ async def report_inventory_balance(
 @api.get("/reports/inventory/valuation")
 async def report_inventory_valuation(
     method: Annotated[InventoryValuationMethodValue, Query()] = "standard",
-    warehouse_id: str | None = None,
-    store_id: str | None = None,
+    # Same UuidIdValue Query honesty as low-stock / expiry / balance location filters.
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9481,13 +9906,14 @@ async def report_inventory_valuation(
 
 @api.get("/reports/inventory/movements")
 async def report_inventory_movements(
-    product_id: str | None = None,
-    from_date: str | None = None,
-    to_date: str | None = None,
-    warehouse_id: str | None = None,
-    store_id: str | None = None,
+    # Same UuidIdValue Query honesty as GET /inventory/movements.
+    product_id: Annotated[UuidIdValue | None, Query()] = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     movement_type: Annotated[MovementTypeValue | None, Query()] = None,
-    created_by: str | None = None,
+    created_by: Annotated[UuidIdValue | None, Query()] = None,
     reason: Annotated[StockAdjustReasonValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
@@ -9510,8 +9936,10 @@ async def report_inventory_movements(
 
 @api.get("/reports/inventory/low-stock")
 async def report_low_stock(
-    store_id: str | None = None,
-    warehouse_id: str | None = None,
+    # Optional location filters ∈ UuidIdValue; omit/`null` → all; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach store/warehouse lookup).
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9524,9 +9952,11 @@ async def report_low_stock(
 
 @api.get("/reports/inventory/expiry")
 async def report_inventory_expiry(
-    days: int = 30,
-    warehouse_id: str | None = None,
-    store_id: str | None = None,
+    # omit → 30; 0/negative/>365 → **422** (was free int; Reports UI max was 3650)
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
+    # Same UuidIdValue Query honesty as low-stock location filters.
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9544,12 +9974,14 @@ async def report_inventory_expiry(
 
 @api.get("/reports/inventory/transfers")
 async def report_inventory_transfers(
-    from_date: str | None = None,
-    to_date: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     status: Annotated[TransferReportStatusValue | None, Query()] = None,
-    from_store_id: str | None = None,
-    to_store_id: str | None = None,
-    store_id: str | None = None,
+    # Optional store filters ∈ UuidIdValue; omit/`null` → all; blank/`!!!`/`http://…`/
+    # non-UUID → **422** (was free `str`; garbage could reach store lookup).
+    from_store_id: Annotated[UuidIdValue | None, Query()] = None,
+    to_store_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9570,10 +10002,11 @@ async def report_inventory_transfers(
 
 @api.get("/reports/inventory/stock-counts")
 async def report_inventory_stock_counts(
-    from_date: str | None = None,
-    to_date: str | None = None,
-    warehouse_id: str | None = None,
-    store_id: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    # Same UuidIdValue Query honesty as other inventory report location filters.
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     variance_only: bool = True,
     status: Annotated[StockCountReportStatusValue, Query()] = "completed",
     claims=Depends(require_permission("reports", "read")),
@@ -9596,10 +10029,12 @@ async def report_inventory_stock_counts(
 
 @api.get("/reports/purchases/summary")
 async def report_purchases_summary(
-    from_date: str | None = None,
-    to_date: str | None = None,
-    warehouse_id: str | None = None,
-    store_id: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    # Optional location ∈ UuidIdValue; omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach warehouse/store lookup).
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9617,11 +10052,13 @@ async def report_purchases_summary(
 
 @api.get("/reports/purchases/suppliers")
 async def report_purchases_suppliers(
-    supplier_id: str | None = None,
-    from_date: str | None = None,
-    to_date: str | None = None,
-    warehouse_id: str | None = None,
-    store_id: str | None = None,
+    # Optional supplier ∈ UuidIdValue; omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach party lookup).
+    supplier_id: Annotated[UuidIdValue | None, Query()] = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9640,12 +10077,12 @@ async def report_purchases_suppliers(
 
 @api.get("/reports/purchases/pending-orders")
 async def report_purchases_pending_orders(
-    from_date: str | None = None,
-    to_date: str | None = None,
-    supplier_id: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    supplier_id: Annotated[UuidIdValue | None, Query()] = None,
     status: Annotated[PendingPoReportStatusValue | None, Query()] = None,
-    warehouse_id: str | None = None,
-    store_id: str | None = None,
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9666,13 +10103,13 @@ async def report_purchases_pending_orders(
 
 @api.get("/reports/purchases/returns")
 async def report_purchases_returns(
-    from_date: str | None = None,
-    to_date: str | None = None,
-    supplier_id: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    supplier_id: Annotated[UuidIdValue | None, Query()] = None,
     reason: Annotated[PurchaseReturnReportReasonValue | None, Query()] = None,
     status: Annotated[ReturnReportStatusValue | None, Query()] = None,
-    warehouse_id: str | None = None,
-    store_id: str | None = None,
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9694,12 +10131,14 @@ async def report_purchases_returns(
 
 @api.get("/reports/expenses/summary")
 async def report_expenses_summary(
-    from_date: str | None = None,
-    to_date: str | None = None,
-    category_id: str | None = None,
-    branch_id: str | None = None,
-    department_id: str | None = None,
-    store_id: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    # Optional filters ∈ UuidIdValue; omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach category/branch/department/store lookup).
+    category_id: Annotated[UuidIdValue | None, Query()] = None,
+    branch_id: Annotated[UuidIdValue | None, Query()] = None,
+    department_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9719,12 +10158,12 @@ async def report_expenses_summary(
 
 @api.get("/reports/expenses/budget-vs-actual")
 async def report_expenses_budget_vs_actual(
-    from_date: str | None = None,
-    to_date: str | None = None,
-    category_id: str | None = None,
-    branch_id: str | None = None,
-    department_id: str | None = None,
-    store_id: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    category_id: Annotated[UuidIdValue | None, Query()] = None,
+    branch_id: Annotated[UuidIdValue | None, Query()] = None,
+    department_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9835,7 +10274,8 @@ async def update_fx_auto_refresh(
 
 @api.put("/credit/exchange-rates/{currency_code}")
 async def upsert_exchange_rate(
-    currency_code: str,
+    # Path + body CurrencyCodeValue → 422 on blank/non-ISO (was late service **400**)
+    currency_code: Annotated[CurrencyCodeValue, Path()],
     payload: ExchangeRateUpsert,
     claims=Depends(require_permission("credit", "write")),
     db: AsyncSession = Depends(get_db),
@@ -9855,7 +10295,7 @@ async def upsert_exchange_rate(
 
 @api.delete("/credit/exchange-rates/{currency_code}")
 async def delete_exchange_rate(
-    currency_code: str,
+    currency_code: Annotated[CurrencyCodeValue, Path()],
     claims=Depends(require_permission("credit", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9868,7 +10308,7 @@ async def delete_exchange_rate(
 
 @api.get("/credit/invoices/{invoice_id}/early-discount")
 async def invoice_early_discount_quote(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9885,7 +10325,7 @@ async def invoice_early_discount_quote(
 
 @api.get("/credit/purchase-invoices/{invoice_id}/early-discount")
 async def purchase_invoice_early_discount_quote(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9902,7 +10342,7 @@ async def purchase_invoice_early_discount_quote(
 
 @api.get("/credit/customers/{customer_id}/statement")
 async def customer_credit_statement(
-    customer_id: str,
+    customer_id: UuidIdValue,
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9911,9 +10351,9 @@ async def customer_credit_statement(
 
 @api.get("/customers/{customer_id}/history")
 async def customer_history(
-    customer_id: str,
-    from_date: str | None = None,
-    to_date: str | None = None,
+    customer_id: UuidIdValue,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9931,7 +10371,7 @@ async def customer_history(
 
 @api.get("/credit/suppliers/{supplier_id}/statement")
 async def supplier_credit_statement(
-    supplier_id: str,
+    supplier_id: UuidIdValue,
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9940,9 +10380,9 @@ async def supplier_credit_statement(
 
 @api.get("/suppliers/{supplier_id}/history")
 async def supplier_history(
-    supplier_id: str,
-    from_date: str | None = None,
-    to_date: str | None = None,
+    supplier_id: UuidIdValue,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9960,7 +10400,7 @@ async def supplier_history(
 
 @api.patch("/customers/{customer_id}/credit-limit")
 async def update_customer_credit_limit(
-    customer_id: str,
+    customer_id: UuidIdValue,
     payload: CreditLimitUpdate,
     claims=Depends(require_permission("credit", "write")),
     db: AsyncSession = Depends(get_db),
@@ -9984,16 +10424,16 @@ async def update_customer_credit_limit(
         {
             "id": customer.id,
             "name": customer.name,
-            "credit_limit": float(customer.credit_limit),
+            "credit_limit": money_json(customer.credit_limit),
             "payment_terms_days": int(customer.payment_terms_days or 30),
-            "balance": float(customer.balance or 0),
+            "balance": money_json(customer.balance),
         }
     )
 
 
 @api.get("/customers/{customer_id}/credit")
 async def customer_credit(
-    customer_id: str,
+    customer_id: UuidIdValue,
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10003,7 +10443,7 @@ async def customer_credit(
 
 @api.get("/customers/{customer_id}/outstanding")
 async def customer_outstanding(
-    customer_id: str,
+    customer_id: UuidIdValue,
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10018,14 +10458,14 @@ async def customer_outstanding(
     ).scalars().all()
     rows = []
     for inv in invoices:
-        due = max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
+        due = max(money_json(inv.total_amount) - money_json(inv.paid_amount or 0), 0)
         if due <= 0:
             continue
         rows.append(
             {
                 "invoice_id": inv.id,
                 "invoice_number": inv.invoice_number,
-                "amount": due,
+                "amount": money_json(due),
                 "due_date": inv.due_date,
                 "status": inv.status,
             }
@@ -10035,7 +10475,7 @@ async def customer_outstanding(
 
 @api.post("/customers/{customer_id}/payments")
 async def customer_payment_alias(
-    customer_id: str,
+    customer_id: UuidIdValue,
     payload: CustomerPaymentCreate,
     claims=Depends(require_permission("credit", "write")),
     db: AsyncSession = Depends(get_db),
@@ -10052,7 +10492,7 @@ async def customer_payment_alias(
         notes=payload.notes,
         cheque_number=payload.cheque_number,
         bank_name=payload.bank_name,
-        cheque_date=payload.cheque_date,
+        cheque_date=reports_svc.parse_date(payload.cheque_date),
         apply_early_discount=payload.apply_early_discount,
         liquid_account_id=payload.liquid_account_id,
         currency=payload.currency,
@@ -10063,9 +10503,10 @@ async def customer_payment_alias(
         {
             "id": payment.id,
             "payment_number": payment.payment_number,
+            "amount": money_json(payment.amount),
             "currency": getattr(payment, "currency", None) or "",
-            "exchange_rate": float(getattr(payment, "exchange_rate", None) or 1),
-            "fx_gain_loss": float(getattr(payment, "fx_gain_loss", 0) or 0),
+            "exchange_rate": money_json(getattr(payment, "exchange_rate", None), default=1),
+            "fx_gain_loss": money_json(getattr(payment, "fx_gain_loss", 0) or 0),
         },
         "Payment recorded",
     )
@@ -10073,7 +10514,7 @@ async def customer_payment_alias(
 
 @api.get("/suppliers/{supplier_id}/credit")
 async def supplier_credit(
-    supplier_id: str,
+    supplier_id: UuidIdValue,
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10083,7 +10524,7 @@ async def supplier_credit(
 
 @api.get("/suppliers/{supplier_id}/outstanding")
 async def supplier_outstanding(
-    supplier_id: str,
+    supplier_id: UuidIdValue,
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10107,7 +10548,7 @@ async def supplier_outstanding(
     ).scalars().all()
     out = []
     for inv in invoices:
-        due = max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
+        due = max(money_json(inv.total_amount) - money_json(inv.paid_amount or 0), 0)
         if due <= 0:
             continue
         out.append(
@@ -10115,7 +10556,7 @@ async def supplier_outstanding(
                 "purchase_invoice_id": inv.id,
                 "invoice_number": inv.invoice_number,
                 "purchase_order_id": inv.purchase_order_id,
-                "amount": due,
+                "amount": money_json(due),
                 "due_date": inv.due_date,
                 "status": inv.status,
                 "document_type": "purchase_invoice",
@@ -10125,14 +10566,14 @@ async def supplier_outstanding(
     for po in orders:
         if po.id in invoiced_pos:
             continue
-        due = max(float(po.total_amount) - float(po.paid_amount or 0), 0)
+        due = max(money_json(po.total_amount) - money_json(po.paid_amount or 0), 0)
         if due <= 0:
             continue
         out.append(
             {
                 "purchase_order_id": po.id,
                 "po_number": po.po_number,
-                "amount": due,
+                "amount": money_json(due),
                 "due_date": po.due_date,
                 "status": po.status,
                 "document_type": "purchase_order",
@@ -10143,7 +10584,7 @@ async def supplier_outstanding(
 
 @api.get("/suppliers/{supplier_id}/payment-schedule")
 async def supplier_payment_schedule(
-    supplier_id: str,
+    supplier_id: UuidIdValue,
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10158,7 +10599,7 @@ async def supplier_payment_schedule(
 
 @api.post("/suppliers/{supplier_id}/payments")
 async def supplier_payment(
-    supplier_id: str,
+    supplier_id: UuidIdValue,
     payload: SupplierPaymentCreate,
     claims=Depends(require_permission("credit", "write")),
     db: AsyncSession = Depends(get_db),
@@ -10176,7 +10617,7 @@ async def supplier_payment(
         notes=payload.notes,
         cheque_number=payload.cheque_number,
         bank_name=payload.bank_name,
-        cheque_date=payload.cheque_date,
+        cheque_date=reports_svc.parse_date(payload.cheque_date),
         liquid_account_id=payload.liquid_account_id,
         apply_early_discount=payload.apply_early_discount,
         currency=payload.currency,
@@ -10187,11 +10628,13 @@ async def supplier_payment(
         {
             "id": payment.id,
             "payment_number": payment.payment_number,
-            "amount": float(payment.amount),
-            "early_payment_discount": float(getattr(payment, "early_payment_discount", 0) or 0),
+            "amount": money_json(payment.amount),
+            "early_payment_discount": money_json(
+                getattr(payment, "early_payment_discount", 0) or 0
+            ),
             "currency": getattr(payment, "currency", None) or "",
-            "exchange_rate": float(getattr(payment, "exchange_rate", None) or 1),
-            "fx_gain_loss": float(getattr(payment, "fx_gain_loss", 0) or 0),
+            "exchange_rate": money_json(getattr(payment, "exchange_rate", None), default=1),
+            "fx_gain_loss": money_json(getattr(payment, "fx_gain_loss", 0) or 0),
         },
         "Supplier payment recorded",
     )
@@ -10232,6 +10675,9 @@ async def add_tax(
         data["rate"] = tax_svc.effective_rate_from_components(comps, data.get("rate") or 0)
     else:
         data["components"] = None
+    data["name"] = require_honest_narrative(
+        data.get("name"), label="tax rate name", max_length=80
+    )
     tax = m.TaxRate(tenant_id=claims["tenant_id"], **data)
     db.add(tax)
     await db.commit()
@@ -10240,7 +10686,7 @@ async def add_tax(
 
 @api.get("/tax/rates/{rate_id}")
 async def get_tax_rate(
-    rate_id: str,
+    rate_id: UuidIdValue,
     claims=Depends(require_permission("tax", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10250,7 +10696,7 @@ async def get_tax_rate(
 
 @api.patch("/tax/rates/{rate_id}")
 async def patch_tax_rate(
-    rate_id: str,
+    rate_id: UuidIdValue,
     payload: TaxUpdate,
     claims=Depends(require_permission("tax", "write")),
     db: AsyncSession = Depends(get_db),
@@ -10280,7 +10726,7 @@ async def patch_tax_rate(
 
 @api.post("/tax/rates/{rate_id}/default")
 async def set_default_tax(
-    rate_id: str,
+    rate_id: UuidIdValue,
     claims=Depends(require_permission("tax", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10306,7 +10752,7 @@ async def calculate_tax(
     is_rc = bool(payload.is_reverse_charge) if payload.is_reverse_charge is not None else False
     if payload.tax_rate_id:
         row = await tax_svc.get_tax_rate(db, claims["tenant_id"], payload.tax_rate_id)
-        rate_pct = float(row.rate)
+        rate_pct = money_json(row.rate)
         mode = payload.pricing_mode or row.pricing_mode
         if components is None:
             components = row.components
@@ -10316,7 +10762,7 @@ async def calculate_tax(
         default = await tax_svc.get_default_tax_rate(db, claims["tenant_id"])
         if not default:
             raise HTTPException(status_code=400, detail="No tax rate available")
-        rate_pct = float(default.rate)
+        rate_pct = money_json(default.rate)
         mode = payload.pricing_mode or default.pricing_mode
         if components is None:
             components = default.components
@@ -10349,9 +10795,11 @@ async def calculate_tax(
 
 @api.get("/reports/tax")
 async def reports_tax(
-    from_date: str | None = None,
-    to_date: str | None = None,
-    store_id: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    # Optional store ∈ UuidIdValue; omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach store lookup).
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10368,15 +10816,17 @@ async def reports_tax(
 
 @api.get("/reports/tax/filing")
 async def reports_tax_filing(
-    from_date: str | None = None,
-    to_date: str | None = None,
-    jurisdiction: str | None = None,
-    store_id: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    # omit → tenant tax_jurisdiction (neutral pack if unsupported); blank/unsupported → 422
+    jurisdiction: Annotated[TaxFilingJurisdictionValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("tax", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     from app import tax_filings as tax_filings_svc
 
+    # Schema TaxFilingJurisdictionValue rejects blank/unknown → 422 (blank was silent omit).
     fd = reports_svc.parse_date(from_date)
     td = reports_svc.parse_date(to_date, end_of_day=True)
     if jurisdiction:
@@ -10484,7 +10934,11 @@ async def add_store(
             phone=payload.phone,
             manager_id=payload.manager_id,
             branch_id=payload.branch_id,
-            operating_hours=payload.operating_hours,
+            operating_hours=(
+                payload.operating_hours.model_dump(exclude_none=True)
+                if payload.operating_hours is not None
+                else None
+            ),
         )
     except HTTPException as exc:
         if (
@@ -10526,7 +10980,7 @@ async def add_store(
 
 @api.patch("/stores/{store_id}")
 async def patch_store(
-    store_id: str,
+    store_id: UuidIdValue,
     payload: StoreUpdate,
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
@@ -10575,7 +11029,7 @@ async def patch_store(
 
 @api.patch("/stores/{store_id}/drawer")
 async def update_store_drawer(
-    store_id: str,
+    store_id: UuidIdValue,
     payload: StoreDrawerSettingsUpdate,
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
@@ -10587,7 +11041,17 @@ async def update_store_drawer(
     if "drawer_mode" in data and data["drawer_mode"] is not None:
         store.drawer_mode = cash_drawer_svc.normalize_mode(data["drawer_mode"])
     if "drawer_host" in data:
-        store.drawer_host = (data["drawer_host"] or "").strip() or None
+        raw_host = data["drawer_host"]
+        if raw_host is None or not str(raw_host).strip():
+            store.drawer_host = None
+        else:
+            # OpenAPI SmtpHostValue → 422; service defense-in-depth → 400.
+            from app.schemas import validate_smtp_host_value
+
+            try:
+                store.drawer_host = validate_smtp_host_value(str(raw_host).strip())
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
     if "drawer_port" in data and data["drawer_port"] is not None:
         store.drawer_port = int(data["drawer_port"])
     if "drawer_open_on_cash" in data and data["drawer_open_on_cash"] is not None:
@@ -10616,7 +11080,7 @@ async def update_store_drawer(
 
 @api.get("/stores/{store_id}/inventory")
 async def store_inventory(
-    store_id: str,
+    store_id: UuidIdValue,
     include_zero: bool = False,
     claims=Depends(require_permission("stores", "read")),
     db: AsyncSession = Depends(get_db),
@@ -10630,7 +11094,7 @@ async def store_inventory(
 
 @api.put("/stores/{store_id}/reorder-policy")
 async def set_store_reorder_policy(
-    store_id: str,
+    store_id: UuidIdValue,
     payload: StoreReorderPolicyUpdate,
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
@@ -10718,17 +11182,13 @@ async def update_inventory_settings(
 
 @api.get("/stores/transfers")
 async def list_transfers(
+    status: Annotated[TransferReportStatusValue | None, Query()] = None,
     claims=Depends(require_permission("stores", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = (
-        await db.execute(
-            select(m.StockTransfer)
-            .where(m.StockTransfer.tenant_id == claims["tenant_id"])
-            .order_by(m.StockTransfer.created_at.desc())
-            .limit(100)
-        )
-    ).scalars().all()
+    rows = await stores_svc.list_transfers(
+        db, claims["tenant_id"], status=status
+    )
     return env([await stores_svc.serialize_transfer(db, t) for t in rows])
 
 
@@ -10756,7 +11216,7 @@ async def create_transfer(
 
 @api.get("/stores/transfers/{transfer_id}")
 async def get_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     claims=Depends(require_permission("stores", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10767,7 +11227,7 @@ async def get_transfer(
 
 @api.post("/stores/transfers/{transfer_id}/submit")
 async def submit_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10780,7 +11240,7 @@ async def submit_transfer(
 
 @api.post("/stores/transfers/{transfer_id}/approve")
 async def approve_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10804,7 +11264,7 @@ async def approve_transfer(
 
 @api.post("/stores/transfers/{transfer_id}/reject")
 async def reject_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     payload: StockTransferReject,
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
@@ -10823,7 +11283,7 @@ async def reject_transfer(
 
 @api.post("/stores/transfers/{transfer_id}/ship")
 async def ship_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10836,7 +11296,7 @@ async def ship_transfer(
 
 @api.post("/stores/transfers/{transfer_id}/receive")
 async def receive_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10849,7 +11309,7 @@ async def receive_transfer(
 
 @api.post("/stores/transfers/{transfer_id}/cancel")
 async def cancel_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     payload: StockTransferReject,
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
@@ -10870,17 +11330,13 @@ async def cancel_transfer(
 
 @api.get("/inventory/stock-transfers")
 async def inventory_list_transfers(
+    status: Annotated[TransferReportStatusValue | None, Query()] = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = (
-        await db.execute(
-            select(m.StockTransfer)
-            .where(m.StockTransfer.tenant_id == claims["tenant_id"])
-            .order_by(m.StockTransfer.created_at.desc())
-            .limit(100)
-        )
-    ).scalars().all()
+    rows = await stores_svc.list_transfers(
+        db, claims["tenant_id"], status=status
+    )
     return env([await stores_svc.serialize_transfer(db, t) for t in rows])
 
 
@@ -10908,7 +11364,7 @@ async def inventory_create_transfer(
 
 @api.get("/inventory/stock-transfers/{transfer_id}")
 async def inventory_get_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10918,7 +11374,7 @@ async def inventory_get_transfer(
 
 @api.post("/inventory/stock-transfers/{transfer_id}/submit")
 async def inventory_submit_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10931,7 +11387,7 @@ async def inventory_submit_transfer(
 
 @api.post("/inventory/stock-transfers/{transfer_id}/approve")
 async def inventory_approve_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10955,7 +11411,7 @@ async def inventory_approve_transfer(
 
 @api.post("/inventory/stock-transfers/{transfer_id}/reject")
 async def inventory_reject_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     payload: StockTransferReject,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -10974,7 +11430,7 @@ async def inventory_reject_transfer(
 
 @api.post("/inventory/stock-transfers/{transfer_id}/ship")
 async def inventory_ship_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10987,7 +11443,7 @@ async def inventory_ship_transfer(
 
 @api.post("/inventory/stock-transfers/{transfer_id}/receive")
 async def inventory_receive_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11000,7 +11456,7 @@ async def inventory_receive_transfer(
 
 @api.post("/inventory/stock-transfers/{transfer_id}/cancel")
 async def inventory_cancel_transfer(
-    transfer_id: str,
+    transfer_id: UuidIdValue,
     payload: StockTransferReject,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -11018,7 +11474,7 @@ async def inventory_cancel_transfer(
 
 @api.get("/stores/{store_id}")
 async def get_store(
-    store_id: str,
+    store_id: UuidIdValue,
     claims=Depends(require_permission("stores", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11051,7 +11507,7 @@ async def warehouses(
 
 @api.get("/warehouses/{warehouse_id}")
 async def get_warehouse(
-    warehouse_id: str,
+    warehouse_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11087,7 +11543,7 @@ async def add_warehouse(
 
 @api.patch("/warehouses/{warehouse_id}")
 async def patch_warehouse(
-    warehouse_id: str,
+    warehouse_id: UuidIdValue,
     payload: WarehouseUpdate,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -11147,7 +11603,8 @@ async def notifications(
     status: Annotated[NotificationStatusValue | None, Query()] = None,
     # omit → all categories; blank/invalid → 422
     category: Annotated[NotificationCategoryValue | None, Query()] = None,
-    limit: int = 100,
+    # omit → 100; 0/negative/>200 → **422** (was free int; API silently clamped 1–200)
+    limit: Annotated[int, Query(ge=1, le=200)] = 100,
     claims=Depends(require_permission("notifications", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11174,7 +11631,7 @@ async def notifications_unread_count(
 
 @api.patch("/notifications/{nid}/read")
 async def notification_read(
-    nid: str,
+    nid: UuidIdValue,
     claims=Depends(require_permission("notifications", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11187,7 +11644,7 @@ async def notification_read(
 
 @api.patch("/notifications/{nid}/unread")
 async def notification_unread(
-    nid: str,
+    nid: UuidIdValue,
     claims=Depends(require_permission("notifications", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11226,7 +11683,10 @@ async def update_notification_settings(
     db: AsyncSession = Depends(get_db),
 ):
     prefs = await notifications_svc.update_preferences(
-        db, claims["tenant_id"], claims["sub"], payload.preferences
+        db,
+        claims["tenant_id"],
+        claims["sub"],
+        payload.preferences.model_dump(exclude_none=True),
     )
     await db.commit()
     return env(prefs, "Notification preferences updated")
@@ -11291,7 +11751,7 @@ async def list_jobs(
 
 @api.post("/jobs/{job_name}/run")
 async def run_job_now(
-    job_name: str,
+    job_name: Annotated[JobNameValue, Path()],
     enqueue: bool = False,
     claims=Depends(require_roles("super_admin", "platform_owner")),
 ):
@@ -11299,8 +11759,10 @@ async def run_job_now(
     from app import jobs as jobs_svc
     from app.config import settings as app_settings
 
+    # Schema JobNameValue rejects unknown/blank path → 422 (was late **404**).
+    # Keep allow-list defense-in-depth if Literal and JOB_HANDLERS drift.
     if job_name not in jobs_svc.JOB_HANDLERS:
-        raise HTTPException(status_code=404, detail=f"Unknown job: {job_name}")
+        raise HTTPException(status_code=422, detail=f"Unknown job: {job_name}")
 
     if enqueue:
         if not app_settings.CELERY_ENABLED:
@@ -11319,13 +11781,14 @@ async def run_job_now(
 
 @api.get("/audit-logs")
 async def audit_logs(
-    user_id: str | None = None,
-    module: str | None = None,
-    action: str | None = None,
-    entity: str | None = None,
-    from_date: str | None = None,
-    to_date: str | None = None,
-    limit: int = 200,
+    user_id: Annotated[UuidIdValue | None, Query()] = None,
+    module: Annotated[AuditModuleValue | None, Query()] = None,
+    action: Annotated[AuditActionValue | None, Query()] = None,
+    entity: Annotated[AuditEntityValue | None, Query()] = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    # omit → 200; 0/negative/>1000 → **422** (was free int; service only capped at 1000)
+    limit: Annotated[int, Query(ge=1, le=1000)] = 200,
     claims=Depends(require_permission("audit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11356,7 +11819,8 @@ async def audit_logs_retention(
 
 @api.get("/audit-logs/archives")
 async def audit_logs_archives(
-    limit: int = 50,
+    # omit → 50; 0/negative/>200 → **422** (was free int; service capped at 200)
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11368,7 +11832,8 @@ async def audit_logs_archives(
 
 @api.post("/audit-logs/archive-cold")
 async def audit_logs_archive_cold(
-    older_than_days: int | None = None,
+    # omit/`null` → retention policy days; 0/negative/>3650 → **422** (was free int; service max(1, days))
+    older_than_days: Annotated[int, Query(ge=1, le=3650)] | None = None,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11392,11 +11857,12 @@ async def audit_logs_archive_cold(
 
 @api.get("/audit-logs/export")
 async def audit_logs_export(
-    user_id: str | None = None,
-    module: str | None = None,
-    action: str | None = None,
-    from_date: str | None = None,
-    to_date: str | None = None,
+    user_id: Annotated[UuidIdValue | None, Query()] = None,
+    module: Annotated[AuditModuleValue | None, Query()] = None,
+    action: Annotated[AuditActionValue | None, Query()] = None,
+    entity: Annotated[AuditEntityValue | None, Query()] = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     claims=Depends(require_permission("audit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11410,6 +11876,7 @@ async def audit_logs_export(
         user_id=scoped_user,
         module=module,
         action=action,
+        entity=entity,
         from_date=reports_svc.parse_date(from_date),
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
         limit=1000,
@@ -11433,7 +11900,7 @@ async def audit_logs_verify(
 
 @api.delete("/audit-logs/{log_id}")
 async def audit_logs_delete_blocked(
-    log_id: str,
+    log_id: UuidIdValue,
     claims=Depends(require_permission("audit", "read")),
 ):
     audit_svc.reject_mutation()
@@ -11441,7 +11908,7 @@ async def audit_logs_delete_blocked(
 
 @api.patch("/audit-logs/{log_id}")
 async def audit_logs_patch_blocked(
-    log_id: str,
+    log_id: UuidIdValue,
     claims=Depends(require_permission("audit", "read")),
 ):
     audit_svc.reject_mutation()
@@ -11478,27 +11945,29 @@ async def backup_settings_patch(
 
 @api.get("/backup")
 async def backup_list(
+    status: Annotated[BackupJobStatusFilterValue | None, Query()] = None,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
-    rows = await backup_svc.list_backups(db, claims["tenant_id"])
+    rows = await backup_svc.list_backups(db, claims["tenant_id"], status=status)
     return env([backup_svc.serialize_job(r) for r in rows])
 
 
 @api.post("/backup")
 async def backup_create(
     request: Request,
-    payload: dict | None = None,
+    payload: BackupCreateBody | None = None,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
     backup_svc.ensure_backup_dir_writable()
-    notes = (payload or {}).get("notes")
+    # Schema BackupCreateBody rejects unknown keys → 422.
+    body = payload or BackupCreateBody()
     job = await backup_svc.create_backup(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims.get("sub"),
-        notes=notes,
+        notes=body.notes,
     )
     await audit_svc.record_event(
         db,
@@ -11533,7 +12002,7 @@ async def backup_run_due(
 
 @api.get("/backup/{backup_id}")
 async def backup_get(
-    backup_id: str,
+    backup_id: UuidIdValue,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11543,7 +12012,7 @@ async def backup_get(
 
 @api.get("/backup/{backup_id}/download")
 async def backup_download(
-    backup_id: str,
+    backup_id: UuidIdValue,
     request: Request,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
@@ -11575,21 +12044,20 @@ async def backup_download(
 
 @api.post("/backup/{backup_id}/verify")
 async def backup_verify(
-    backup_id: str,
+    backup_id: UuidIdValue,
     request: Request,
-    payload: dict | None = None,
+    payload: BackupVerifyBody | None = None,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
     """Decrypt backup and prove field match against live tenant data."""
-    body = payload or {}
-    sample_limit = int(body.get("sample_limit") or 100)
-    sample_limit = max(1, min(sample_limit, 500))
+    # Schema BackupVerifyBody rejects unknown keys / bad sample_limit → 422.
+    body = payload or BackupVerifyBody()
     report = await backup_svc.verify_backup(
         db,
         tenant_id=claims["tenant_id"],
         backup_id=backup_id,
-        sample_limit=sample_limit,
+        sample_limit=body.sample_limit,
     )
     await audit_svc.record_event(
         db,
@@ -11618,20 +12086,17 @@ async def backup_verify(
 
 @api.post("/backup/{backup_id}/restore")
 async def backup_restore(
-    backup_id: str,
+    backup_id: UuidIdValue,
     request: Request,
-    payload: dict | None = None,
+    payload: BackupRestoreBody | None = None,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
-    body = payload or {}
-    dry_run = bool(body.get("dry_run", True))
-    confirm = bool(body.get("confirm", False))
-    if confirm and not dry_run and body.get("confirm_text") != "RESTORE":
-        raise HTTPException(
-            status_code=400,
-            detail='Destructive restore requires confirm=true, dry_run=false, and confirm_text="RESTORE"',
-        )
+    # Schema BackupRestoreBody rejects unknown keys / bad confirm_text → 422
+    # (destructive apply without confirm_text="RESTORE" was late route 400).
+    body = payload or BackupRestoreBody()
+    dry_run = bool(body.dry_run)
+    confirm = bool(body.confirm)
     report = await backup_svc.restore_backup(
         db,
         tenant_id=claims["tenant_id"],
@@ -11662,7 +12127,7 @@ async def backup_restore(
 
 @api.get("/api-keys")
 async def api_keys_list(
-    status: str | None = None,
+    status: Annotated[ApiKeyStatusFilterValue | None, Query()] = None,
     active_only: bool = False,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
@@ -11676,30 +12141,21 @@ async def api_keys_list(
 @api.post("/api-keys")
 async def api_keys_create(
     request: Request,
-    payload: dict | None = None,
+    payload: ApiKeyCreate,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
     from app import tenants as tenants_svc
 
     tenants_svc.assert_writable(claims)
-    body = payload or {}
-    expires_at = None
-    raw_exp = body.get("expires_at")
-    if raw_exp:
-        try:
-            expires_at = datetime.fromisoformat(str(raw_exp).replace("Z", "+00:00")).replace(
-                tzinfo=None
-            )
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail="expires_at must be ISO-8601") from exc
+    # Schema ApiKeyCreate rejects unknown keys / bad name / expires_at / modules → 422.
     row, raw = await api_keys_svc.create_key(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims.get("sub"),
-        name=str(body.get("name") or ""),
-        permissions=body.get("permissions"),
-        expires_at=expires_at,
+        name=payload.name,
+        permissions=payload.permissions,
+        expires_at=reports_svc.parse_datetime(payload.expires_at),
     )
     await audit_svc.record_event(
         db,
@@ -11722,7 +12178,7 @@ async def api_keys_create(
 
 @api.get("/api-keys/{key_id}")
 async def api_keys_get(
-    key_id: str,
+    key_id: UuidIdValue,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11732,7 +12188,7 @@ async def api_keys_get(
 
 @api.get("/api-keys/{key_id}/usage")
 async def api_keys_usage(
-    key_id: str,
+    key_id: UuidIdValue,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11741,7 +12197,7 @@ async def api_keys_usage(
 
 @api.delete("/api-keys/{key_id}")
 async def api_keys_revoke(
-    key_id: str,
+    key_id: UuidIdValue,
     request: Request,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
@@ -11821,7 +12277,7 @@ async def webhooks_create(
 
 @api.get("/webhooks/{webhook_id}")
 async def webhooks_get(
-    webhook_id: str,
+    webhook_id: UuidIdValue,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11831,7 +12287,7 @@ async def webhooks_get(
 
 @api.patch("/webhooks/{webhook_id}")
 async def webhooks_patch(
-    webhook_id: str,
+    webhook_id: UuidIdValue,
     request: Request,
     payload: WebhookUpdate,
     claims=Depends(require_roles("company_admin", "super_admin")),
@@ -11870,7 +12326,7 @@ async def webhooks_patch(
 
 @api.delete("/webhooks/{webhook_id}")
 async def webhooks_delete(
-    webhook_id: str,
+    webhook_id: UuidIdValue,
     request: Request,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
@@ -11895,7 +12351,7 @@ async def webhooks_delete(
 
 @api.post("/webhooks/{webhook_id}/test")
 async def webhooks_test_delivery(
-    webhook_id: str,
+    webhook_id: UuidIdValue,
     request: Request,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
@@ -11927,22 +12383,24 @@ async def webhooks_test_delivery(
 
 @api.get("/webhooks/{webhook_id}/deliveries")
 async def webhooks_list_deliveries(
-    webhook_id: str,
-    limit: int = 50,
+    webhook_id: UuidIdValue,
+    status: Annotated[WebhookDeliveryStatusFilterValue | None, Query()] = None,
+    # omit → 50; 0/negative/>200 → **422** (was free int; service silently clamped 1–200)
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
     """Recent outbound delivery attempts for one webhook (Integrations UI)."""
     rows = await webhooks_svc.list_deliveries(
-        db, claims["tenant_id"], webhook_id, limit=limit
+        db, claims["tenant_id"], webhook_id, status=status, limit=limit
     )
     return env([webhooks_svc.serialize_delivery(r) for r in rows])
 
 
 @api.post("/webhooks/{webhook_id}/deliveries/{delivery_id}/retry")
 async def webhooks_retry_delivery(
-    webhook_id: str,
-    delivery_id: str,
+    webhook_id: UuidIdValue,
+    delivery_id: UuidIdValue,
     request: Request,
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
@@ -11986,10 +12444,11 @@ async def onboarding_checklist_get(
 
 @api.post("/onboarding/checklist/steps/{step_id}/skip")
 async def onboarding_checklist_skip(
-    step_id: str,
+    step_id: Annotated[OnboardingStepIdValue, Path()],
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
+    # Schema OnboardingStepIdValue rejects blank/unknown → 422 (was late service **400**).
     tenants_svc.assert_writable(claims)
     data = await onboarding_svc.skip_step(db, claims["tenant_id"], step_id)
     await db.commit()
@@ -11998,7 +12457,7 @@ async def onboarding_checklist_skip(
 
 @api.post("/onboarding/checklist/steps/{step_id}/unskip")
 async def onboarding_checklist_unskip(
-    step_id: str,
+    step_id: Annotated[OnboardingStepIdValue, Path()],
     claims=Depends(require_roles("company_admin", "super_admin")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -12042,7 +12501,8 @@ async def ai_status(claims=Depends(require_permission("ai", "read"))):
 
 @api.get("/ai/queries")
 async def ai_queries(
-    limit: int = 50,
+    # omit → 50; 0/negative/>200 → **422** (was free int; service silently clamped 1–200)
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -12052,8 +12512,10 @@ async def ai_queries(
 
 @api.get("/ai/security/alerts")
 async def ai_security_alerts(
-    limit: int = 50,
-    min_score: int | None = None,
+    # omit → 50; 0/negative/>200 → **422** (was free int; service silently clamped 1–200)
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    # omit/`null` → no floor; <0/>100 → **422** (was free int)
+    min_score: Annotated[int, Query(ge=0, le=100)] | None = None,
     scan: bool = False,
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
@@ -12098,8 +12560,13 @@ async def ai_security_scan(
 
 
 @api.post("/ai/chat")
-async def ai_chat(payload: dict, claims=Depends(require_permission("ai", "write")), db: AsyncSession = Depends(get_db)):
-    data = await ai_svc.handle_chat(db, claims=claims, payload=payload)
+async def ai_chat(
+    payload: AiChatBody,
+    claims=Depends(require_permission("ai", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    # Schema AiChatBody rejects unknown keys / blank message|prompt → 422.
+    data = await ai_svc.handle_chat(db, claims=claims, payload=payload.model_dump())
     return env(data)
 
 
@@ -12143,7 +12610,8 @@ async def ai_inventory_predictions(
 
 @api.get("/ai/inventory/low-stock-prediction")
 async def ai_low_stock_prediction(
-    days_ahead: int = 14,
+    # omit → 14; 0/negative/>90 → **422** (was free int; service silently clamped 1–90)
+    days_ahead: Annotated[int, Query(ge=1, le=90)] = 14,
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -12159,23 +12627,26 @@ async def ai_low_stock_prediction(
 
 @api.post("/ai/inventory/low-stock-prediction/requests")
 async def ai_low_stock_prediction_requests(
-    payload: dict | None = None,
+    payload: AiLowStockPredictionRequestsBody | None = None,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     """Auto-generate draft purchase requests from prediction rows (BR-21.4)."""
-    body = payload or {}
-    lines = body.get("lines")
-    days_ahead = int(body.get("days_ahead") or 14)
-    min_confidence = float(body.get("min_confidence") or 0)
+    # Schema AiLowStockPredictionRequestsBody rejects unknown keys /
+    # bad days_ahead|min_confidence → 422. Nested AiLowStockPredictionLine
+    # rejects unknown line keys / blank product_id / bad qty|confidence → 422.
+    body = payload or AiLowStockPredictionRequestsBody()
+    lines: list = body.lines or []
     if not lines:
         pred = await ai_inventory_svc.low_stock_prediction(
             db,
             tenant_id=claims["tenant_id"],
-            days_ahead=days_ahead,
+            days_ahead=body.days_ahead,
             actor_user_id=claims.get("sub"),
         )
         lines = pred.get("at_risk") or []
+    else:
+        lines = [ln.model_dump() for ln in lines]
     from app import purchase_suggestions as purchase_suggestions_svc
 
     result = await purchase_suggestions_svc.create_requests_from_predictions(
@@ -12183,9 +12654,9 @@ async def ai_low_stock_prediction_requests(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         at_risk_lines=lines,
-        notes=body.get("notes"),
-        min_confidence=min_confidence,
-        include_open=bool(body.get("include_open")),
+        notes=body.notes,
+        min_confidence=body.min_confidence,
+        include_open=body.include_open,
     )
     await db.commit()
     return env(result, f"Created {result.get('created_count', 0)} draft purchase request(s)")
@@ -12193,8 +12664,8 @@ async def ai_low_stock_prediction_requests(
 
 @api.get("/ai/sales/analysis")
 async def ai_sales_analysis(
-    from_date: str | None = None,
-    to_date: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -12211,8 +12682,8 @@ async def ai_sales_analysis(
 
 @api.get("/ai/expenses/analysis")
 async def ai_expenses_analysis(
-    from_date: str | None = None,
-    to_date: str | None = None,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -12229,18 +12700,19 @@ async def ai_expenses_analysis(
 
 @api.post("/ai/customer/assist")
 async def ai_customer_assist(
-    payload: dict | None = None,
+    payload: AiCustomerAssistBody | None = None,
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     """BR-21.9 rule-based customer assistant (churn, best, promos, balance)."""
-    body = payload or {}
+    # Schema AiCustomerAssistBody rejects unknown keys → 422.
+    body = payload or AiCustomerAssistBody()
     data = await ai_customer_svc.customer_assist(
         db,
         tenant_id=claims["tenant_id"],
         actor_user_id=claims.get("sub"),
-        customer_id=body.get("customer_id"),
-        query=body.get("query") or body.get("message"),
+        customer_id=body.customer_id,
+        query=body.query or body.message,
     )
     return env(data)
 
@@ -12250,7 +12722,8 @@ async def ai_documents_analyze(
     file: UploadFile = File(...),
     # None default (not "auto"): empty Form "" must 422, not silently become auto.
     document_type: Annotated[AiDocumentTypeValue | None, Form()] = None,
-    expected_amount: float | None = Form(None),
+    # omit/`null` → no expected amount; nan/inf/out-of-range → **422** (was free float)
+    expected_amount: Annotated[FiniteMoneyValue | None, Form()] = None,
     claims=Depends(require_permission("ai", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -12317,43 +12790,46 @@ async def ai_documents_create_purchase_invoice(
 
 @api.post("/ai/reports/generate")
 async def ai_reports_generate(
-    payload: dict | None = None,
+    payload: AiReportsGenerateBody,
     claims=Depends(require_permission("ai", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     """BR-21.7 constrained NL / structured report generation (JSON preview)."""
-    body = payload or {}
+    # Schema AiReportsGenerateBody rejects unknown keys / bad format|type /
+    # missing prompt|template_id|report_type → 422.
     data = await ai_reports_svc.generate_report(
         db,
         tenant_id=claims["tenant_id"],
         actor_user_id=claims.get("sub"),
-        prompt=body.get("prompt"),
-        format=body.get("format"),
-        template_id=body.get("template_id"),
-        report_type=body.get("report_type"),
-        period=body.get("period"),
-        filters=body.get("filters") or body.get("params"),
+        prompt=payload.prompt,
+        format=payload.format,
+        template_id=payload.template_id,
+        report_type=payload.report_type,
+        period=payload.period,
+        filters=payload.filters or payload.params,
     )
     return env(data, "Report generated")
 
 
 @api.post("/ai/reports/export")
 async def ai_reports_export(
-    payload: dict | None = None,
+    payload: AiReportsExportBody,
     claims=Depends(require_permission("ai", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     """Export a generated AI report as csv/pdf/xlsx."""
-    body = payload or {}
+    # Schema AiReportsExportBody rejects unknown keys / bad format|type /
+    # missing prompt|template_id|report_type → 422.
     content, media, filename, _meta = await ai_reports_svc.export_from_intent(
         db,
         tenant_id=claims["tenant_id"],
         actor_user_id=claims.get("sub"),
-        prompt=body.get("prompt"),
-        format=body.get("format") or "csv",
-        template_id=body.get("template_id"),
-        report_type=body.get("report_type"),
-        params=body.get("params") or body.get("filters"),
+        prompt=payload.prompt,
+        format=payload.format,
+        template_id=payload.template_id,
+        report_type=payload.report_type,
+        period=payload.period,
+        params=payload.params or payload.filters,
     )
     return Response(
         content=content,
@@ -12364,7 +12840,8 @@ async def ai_reports_export(
 
 @api.get("/ai/reports/templates")
 async def ai_report_templates_list(
-    limit: int = 50,
+    # omit → 50; 0/negative/>200 → **422** (was free int; service silently clamped 1–200)
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
     claims=Depends(require_permission("ai", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -12376,17 +12853,19 @@ async def ai_report_templates_list(
 
 @api.post("/ai/reports/templates")
 async def ai_report_templates_create(
-    payload: dict,
+    payload: AiReportTemplateCreateBody,
     claims=Depends(require_permission("ai", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    # Schema AiReportTemplateCreateBody rejects unknown keys / blank name|prompt /
+    # bad format → 422.
     row = await ai_reports_svc.create_template(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims.get("sub"),
-        name=str(payload.get("name") or ""),
-        prompt=str(payload.get("prompt") or ""),
-        format=payload.get("format"),
+        name=payload.name,
+        prompt=payload.prompt,
+        format=payload.format,
     )
     await db.commit()
     return env(ai_reports_svc.serialize_template(row), "Report template saved")
@@ -12394,7 +12873,7 @@ async def ai_report_templates_create(
 
 @api.delete("/ai/reports/templates/{template_id}")
 async def ai_report_templates_delete(
-    template_id: str,
+    template_id: UuidIdValue,
     claims=Depends(require_permission("ai", "write")),
     db: AsyncSession = Depends(get_db),
 ):

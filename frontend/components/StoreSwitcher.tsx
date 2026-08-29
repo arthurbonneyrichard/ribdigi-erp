@@ -11,19 +11,16 @@ export default function StoreSwitcher({ visible }: { visible: boolean }) {
   return (
     <label
       className="store-switcher"
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
       title="Active store context for POS, sales, reports, and expenses"
     >
-      <span className="muted" style={{ fontSize: 12 }}>
-        Store
-      </span>
+      <span className="store-switcher-label muted">Store</span>
       <select
         aria-label="Active store"
         data-testid="store-context-switcher"
+        className="store-switcher-select"
         value={storeId}
         disabled={loading}
         onChange={(e) => setStoreId(e.target.value)}
-        style={{ maxWidth: 180 }}
       >
         {stores.length > 1 ? <option value="">All stores</option> : null}
         {stores.map((s) => (

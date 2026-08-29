@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import require_honest_narrative
 from app.rbac import (
     PLATFORM_ROLES,
     can_assign_platform_role,
@@ -168,7 +169,9 @@ async def create_platform_staff(
     user = m.User(
         tenant_id=tenant_id,
         email=email.lower().strip(),
-        full_name=full_name.strip(),
+        full_name=require_honest_narrative(
+            full_name, label="full name", max_length=150
+        ),
         password_hash=hash_password(password),
         role=role_key,
         phone=phone,
@@ -215,10 +218,9 @@ async def update_platform_staff(
         user.role = role_key
         user.permissions = permissions_for_role(role_key)
     if full_name is not None:
-        name = full_name.strip()
-        if not name:
-            raise HTTPException(status_code=400, detail="full_name cannot be empty")
-        user.full_name = name
+        user.full_name = require_honest_narrative(
+            full_name, label="full name", max_length=150
+        )
     if phone is not None:
         user.phone = phone.strip() or None
     if is_active is not None:

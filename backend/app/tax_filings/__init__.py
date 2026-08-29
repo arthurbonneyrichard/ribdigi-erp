@@ -13,7 +13,18 @@ SUPPORTED = {
 }
 
 
+def coerce_tax_filing_jurisdiction_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip/uppercase; blank stays blank for Literal 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().upper()
+
+
 def normalize_jurisdiction(code: str | None) -> str:
+    # Schema TaxFilingJurisdictionValue rejects blank/unknown Query → 422 when the
+    # client passes jurisdiction=; keep length checks for tenant-default / export paths.
     cur = (code or "").strip().upper()
     if not cur:
         raise HTTPException(status_code=400, detail="jurisdiction is required")

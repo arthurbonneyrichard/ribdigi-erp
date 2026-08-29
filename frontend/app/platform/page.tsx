@@ -123,6 +123,7 @@ export default function PlatformConsole() {
     package_code: 'professional',
     term_value: 12,
     term_unit: 'months',
+    start_at: '',
     max_stores_override: '' as string,
   });
   const [moduleDraft, setModuleDraft] = useState<string[]>([]);
@@ -171,6 +172,7 @@ export default function PlatformConsole() {
       package_code: sel.package_code || sel.subscription?.package_code || 'professional',
       term_value: sel.subscription?.term_value || 12,
       term_unit: sel.subscription?.term_unit || 'months',
+      start_at: '',
       max_stores_override:
         sel.max_stores_override != null
           ? String(sel.max_stores_override)
@@ -213,6 +215,12 @@ export default function PlatformConsole() {
 
   async function createTenant(e: React.FormEvent) {
     e.preventDefault();
+    const trimmedPassword = form.admin_password.trim();
+    if (!trimmedPassword) {
+      setError('Tenant admin password is required.');
+      setMessage('');
+      return;
+    }
     setCreating(true);
     setError('');
     setMessage('');
@@ -225,7 +233,7 @@ export default function PlatformConsole() {
           industry: form.industry,
           currency: form.currency.trim().toUpperCase() || 'GHS',
           admin_email: form.admin_email.trim(),
-          admin_password: form.admin_password,
+          admin_password: trimmedPassword,
         }),
       });
       setForm(emptyCreate);
@@ -295,6 +303,7 @@ export default function PlatformConsole() {
         term_unit: subForm.term_unit,
         activate: true,
       };
+      if (subForm.start_at.trim()) body.start_at = subForm.start_at.trim();
       if (subForm.max_stores_override.trim() !== '') {
         body.max_stores_override = Number(subForm.max_stores_override);
       }
@@ -387,12 +396,14 @@ export default function PlatformConsole() {
               and control package features per tenant.
             </p>
           </div>
-          <div className="plat-filters">
+          <div className="plat-filters" role="group" aria-label="Tenant status">
             {['all', 'active', 'trial', 'grace', 'suspended'].map((s) => (
               <button
                 key={s}
                 type="button"
                 className={filter === s ? 'plat-chip active' : 'plat-chip'}
+                aria-pressed={filter === s}
+                aria-label={s === 'all' ? 'Tenant status all' : `Tenant status ${s}`}
                 onClick={() => setFilter(s)}
               >
                 {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
@@ -447,12 +458,14 @@ export default function PlatformConsole() {
                   }));
                 }}
                 placeholder="Sunrise Mart Ltd"
+                aria-label="Tenant company name"
                 required
               />
             </label>
             <label>
               <span>Slug</span>
               <input
+                aria-label="Tenant slug"
                 value={form.slug}
                 onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value.toLowerCase() }))}
                 placeholder="sunrise-mart"
@@ -465,6 +478,7 @@ export default function PlatformConsole() {
               <select
                 value={form.industry}
                 onChange={(e) => setForm((f) => ({ ...f, industry: e.target.value }))}
+                aria-label="Tenant industry"
               >
                 {INDUSTRIES.map((i) => (
                   <option key={i} value={i}>
@@ -478,6 +492,7 @@ export default function PlatformConsole() {
               <input
                 value={form.currency}
                 onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value }))}
+                aria-label="Tenant currency"
                 required
               />
             </label>
@@ -488,6 +503,7 @@ export default function PlatformConsole() {
                 value={form.admin_email}
                 onChange={(e) => setForm((f) => ({ ...f, admin_email: e.target.value }))}
                 placeholder="admin@company.example.com"
+                aria-label="Tenant admin email"
                 required
               />
             </label>
@@ -498,10 +514,15 @@ export default function PlatformConsole() {
                 value={form.admin_password}
                 onChange={(e) => setForm((f) => ({ ...f, admin_password: e.target.value }))}
                 placeholder="Min 8 chars, upper/lower/number/symbol"
+                aria-label="Tenant admin password"
                 required
               />
             </label>
-            <button type="submit" disabled={creating}>
+            <button
+              type="submit"
+              disabled={creating || !form.admin_password.trim()}
+              aria-label="Create tenant"
+            >
               {creating ? 'Creating…' : 'Create tenant'}
             </button>
           </form>
@@ -516,6 +537,8 @@ export default function PlatformConsole() {
                 value={suspendReason}
                 onChange={(e) => setSuspendReason(e.target.value)}
                 placeholder="Required before Suspend"
+                title="Required suspend reason (1–500 chars; letters/digits required)"
+                aria-label="Tenant suspend reason"
                 style={{ minWidth: 280 }}
               />
             </label>
@@ -581,11 +604,11 @@ export default function PlatformConsole() {
                     </td>
                     <td>
                       <div className="plat-actions">
-                        <button type="button" disabled={busy === t.id} onClick={() => setSelectedId(t.id)}>
+                        <button type="button" disabled={busy === t.id} onClick={() => setSelectedId(t.id)} aria-label={`Manage tenant ${t.id}`}>
                           Manage
                         </button>
                         {t.status === 'suspended' ? (
-                          <button type="button" className="btn-ok" disabled={busy === t.id} onClick={() => activateTenant(t)}>
+                          <button type="button" className="btn-ok" disabled={busy === t.id} onClick={() => activateTenant(t)} aria-label={`Activate tenant ${t.id}`}>
                             Activate
                           </button>
                         ) : (
@@ -594,6 +617,7 @@ export default function PlatformConsole() {
                             className="btn-danger"
                             disabled={busy === t.id}
                             onClick={() => suspendTenant(t)}
+                            aria-label={`Suspend tenant ${t.id}`}
                           >
                             Suspend
                           </button>
@@ -615,7 +639,7 @@ export default function PlatformConsole() {
                 type="button"
                 style={{ float: 'right', fontSize: 13 }}
                 onClick={() => setSelectedId(null)}
-              >
+               aria-label="Close tenant management panel">
                 Close
               </button>
             </h2>
@@ -657,6 +681,7 @@ export default function PlatformConsole() {
                     setSubForm((f) => ({ ...f, package_code }));
                     applyPackageModules(package_code);
                   }}
+                  aria-label="Subscription package"
                 >
                   {packages.map((p) => (
                     <option key={p.code} value={p.code}>
@@ -675,6 +700,7 @@ export default function PlatformConsole() {
                   onChange={(e) =>
                     setSubForm((f) => ({ ...f, term_value: Number(e.target.value) || 1 }))
                   }
+                  aria-label="Subscription term length"
                   required
                 />
               </label>
@@ -683,10 +709,22 @@ export default function PlatformConsole() {
                 <select
                   value={subForm.term_unit}
                   onChange={(e) => setSubForm((f) => ({ ...f, term_unit: e.target.value }))}
+                  aria-label="Subscription term unit"
                 >
                   <option value="months">Months</option>
                   <option value="years">Years</option>
                 </select>
+              </label>
+              <label>
+                <span>Start date</span>
+                <input
+                  aria-label="Subscription start date"
+                  type="text"
+                  placeholder="YYYY-MM-DD (blank = now)"
+                  title="Optional subscription start (YYYY-MM-DD or ISO; blank = now)"
+                  value={subForm.start_at}
+                  onChange={(e) => setSubForm((f) => ({ ...f, start_at: e.target.value }))}
+                />
               </label>
               <label>
                 <span>Store entitlement override</span>
@@ -698,9 +736,14 @@ export default function PlatformConsole() {
                   onChange={(e) =>
                     setSubForm((f) => ({ ...f, max_stores_override: e.target.value }))
                   }
+                  aria-label="Store entitlement override"
                 />
               </label>
-              <button type="submit" disabled={busy === selected.id}>
+              <button
+                type="submit"
+                disabled={busy === selected.id}
+                aria-label="Assign package and term"
+              >
                 {busy === selected.id ? 'Saving…' : 'Assign package & term'}
               </button>
             </form>
@@ -725,12 +768,14 @@ export default function PlatformConsole() {
                   placeholder="Clear / package"
                   value={overrideDraft}
                   onChange={(e) => setOverrideDraft(e.target.value)}
+                  aria-label="Store entitlement override draft"
                   style={{ width: 120 }}
                 />
               </label>
               <button
                 type="button"
                 disabled={busy === selected.id}
+                aria-label="Save store entitlement override"
                 onClick={async () => {
                   setBusy(selected.id);
                   setError('');
@@ -788,6 +833,7 @@ export default function PlatformConsole() {
                   >
                     <input
                       type="checkbox"
+                      aria-label={`Platform feature module ${mod}`}
                       checked={on}
                       disabled={locked}
                       onChange={() => toggleModule(mod)}
@@ -798,10 +844,15 @@ export default function PlatformConsole() {
               })}
             </div>
             <div className="plat-actions" style={{ marginTop: 14 }}>
-              <button type="button" disabled={busy === selected.id} onClick={saveModules}>
+              <button type="button" disabled={busy === selected.id} onClick={saveModules} aria-label="Save feature modules">
                 Save feature modules
               </button>
-              <button type="button" disabled={busy === selected.id} onClick={resetModules}>
+              <button
+                type="button"
+                disabled={busy === selected.id}
+                onClick={resetModules}
+                aria-label="Reset feature modules to package default"
+              >
                 Reset to package default
               </button>
             </div>

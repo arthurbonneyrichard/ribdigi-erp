@@ -50,6 +50,12 @@ export default function PartyContactsPanel({ kind, partyId, partyLabel }: Props)
   }, [partyId, kind]);
 
   async function addContact() {
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      setError('Party contact name is required.');
+      setMessage('');
+      return;
+    }
     setError('');
     setMessage('');
     setLoading(true);
@@ -57,7 +63,7 @@ export default function PartyContactsPanel({ kind, partyId, partyLabel }: Props)
       await api(base, {
         method: 'POST',
         body: JSON.stringify({
-          name: name.trim(),
+          name: trimmedName,
           phone: phone.trim() || null,
           email: email.trim() || null,
           designation: designation.trim() || null,
@@ -143,11 +149,19 @@ export default function PartyContactsPanel({ kind, partyId, partyLabel }: Props)
               <td>{c.email || '—'}</td>
               <td style={{ whiteSpace: 'nowrap' }}>
                 {!c.is_primary && (
-                  <button type="button" onClick={() => makePrimary(c.id)}>
+                  <button
+                    type="button"
+                    onClick={() => makePrimary(c.id)}
+                    aria-label={`Make party contact ${c.id} primary`}
+                  >
                     Make primary
                   </button>
                 )}{' '}
-                <button type="button" onClick={() => removeContact(c.id)}>
+                <button
+                  type="button"
+                  onClick={() => removeContact(c.id)}
+                  aria-label={`Delete party contact ${c.id}`}
+                >
                   Delete
                 </button>
               </td>
@@ -163,23 +177,35 @@ export default function PartyContactsPanel({ kind, partyId, partyLabel }: Props)
         </tbody>
       </table>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Contact name" />
+        <input aria-label="Party contact name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Contact name" />
         <input
           value={designation}
           onChange={(e) => setDesignation(e.target.value)}
           placeholder="Designation"
+          aria-label="Party contact designation"
         />
-        <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone" />
-        <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
+        <input
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="Phone (E.164 e.g. +233...)"
+          aria-label="Party contact phone"
+        />
+        <input
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          aria-label="Party contact email"
+        />
         <label className="muted" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <input
             type="checkbox"
             checked={asPrimary}
             onChange={(e) => setAsPrimary(e.target.checked)}
+            aria-label="Party contact primary"
           />
           Primary
         </label>
-        <button type="button" onClick={addContact} disabled={loading || !name.trim()}>
+        <button type="button" aria-label="Add party contact" onClick={addContact} disabled={loading || !name.trim()}>
           {loading ? 'Saving…' : 'Add contact'}
         </button>
       </div>

@@ -17,10 +17,13 @@ def test_expense_reject_reason_ui_wired():
     assert "rejectReason" in expenses
     assert "Enter a reject reason before rejecting an expense" in expenses
     assert "Required before Reject" in expenses
+    assert 'aria-label="Expense reject reason"' in expenses
     assert "rejection_reason" in expenses
     assert "|| 'Rejected'" not in expenses
     assert 'reason: rejectReason || "Rejected"' not in expenses
     assert "reason: rejectReason || 'Rejected'" not in expenses
+    agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    assert "ExpenseRejectReasonValue" in agents
 
 
 @pytest.mark.asyncio
@@ -60,7 +63,15 @@ async def test_expense_reject_requires_and_persists_reason(client):
         headers=headers,
         json={"reason": "  "},
     )
-    assert blank.status_code == 400, blank.text
+    # OpenAPI honesty: strip + ExpenseRejectReasonValue → 422 (was service 400).
+    assert blank.status_code == 422, blank.text
+
+    garbage = await ac.post(
+        f"/api/v1/expenses/{eid}/reject",
+        headers=headers,
+        json={"reason": "!!!!"},
+    )
+    assert garbage.status_code == 422, garbage.text
 
     ok = await ac.post(
         f"/api/v1/expenses/{eid}/reject",

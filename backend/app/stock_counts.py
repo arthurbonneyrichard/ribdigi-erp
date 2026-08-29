@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.doc_numbers import next_stock_count_number
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 from app.inventory import allocate_unlocated_stock, apply_stock_change, get_or_create_warehouse_stock
 
 # Lifecycle statuses for StockCount (create → draft; complete → completed; cancel → cancelled).
@@ -64,9 +65,9 @@ async def list_count_items(
 
 
 def serialize_item(item: m.StockCountItem, *, product: m.Product | None = None) -> dict:
-    counted = None if item.counted_qty is None else float(item.counted_qty)
-    expected = float(item.expected_qty or 0)
-    variance = None if counted is None else round(counted - expected, 3)
+    counted = None if item.counted_qty is None else money_json(item.counted_qty)
+    expected = money_json(item.expected_qty)
+    variance = None if counted is None else money_json(round(counted - expected, 3))
     return {
         "id": item.id,
         "product_id": item.product_id,
@@ -111,19 +112,33 @@ async def serialize_count(db: AsyncSession, count: m.StockCount) -> dict:
     }
 
 
-async def list_counts(db: AsyncSession, tenant_id: str, *, limit: int = 50) -> list[m.StockCount]:
-    return list(
-        (
-            await db.execute(
-                select(m.StockCount)
-                .where(m.StockCount.tenant_id == tenant_id)
-                .order_by(m.StockCount.created_at.desc())
-                .limit(limit)
-            )
-        )
-        .scalars()
-        .all()
+async def list_counts(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    status: str | None = None,
+    limit: int = 50,
+) -> list[m.StockCount]:
+    stmt = (
+        select(m.StockCount)
+        .where(m.StockCount.tenant_id == tenant_id)
+        .order_by(m.StockCount.created_at.desc())
+        .limit(limit)
     )
+    if status is not None:
+        # Schema StockCountReportStatusValue rejects blank/invalid → 422;
+        # keep allow-list defense-in-depth (no silent empty filter / blank→all).
+        wanted = (status or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in COUNT_STATUSES:
+            raise HTTPException(
+                status_code=422,
+                detail="status must be draft, completed, or cancelled",
+            )
+        else:
+            stmt = stmt.where(m.StockCount.status == wanted)
+    return list((await db.execute(stmt)).scalars().all())
 
 
 async def _resolve_product_ids(
@@ -215,7 +230,7 @@ async def create_count(
         warehouse_id=warehouse_id,
         count_number=await next_stock_count_number(db, tenant_id),
         status="draft",
-        notes=(notes or "").strip() or None,
+        notes=optional_honest_narrative(notes, label="stock count notes"),
         created_by=user_id,
     )
     db.add(count)
@@ -233,7 +248,7 @@ async def create_count(
                 tenant_id=tenant_id,
                 stock_count_id=count.id,
                 product_id=product_id,
-                expected_qty=float(stock.quantity or 0),
+                expected_qty=money_json(stock.quantity or 0),
                 counted_qty=None,
             )
         )
@@ -262,15 +277,23 @@ async def update_count_items(
         if "counted_qty" not in raw:
             raise HTTPException(status_code=400, detail="counted_qty is required for each item")
         try:
-            qty = float(raw.get("counted_qty"))
+            qty = money_json(raw.get("counted_qty"))
         except (TypeError, ValueError) as exc:
             raise HTTPException(status_code=400, detail="counted_qty must be a number") from exc
         if qty < 0:
             raise HTTPException(status_code=400, detail="counted_qty cannot be negative")
         line = existing[product_id]
-        line.counted_qty = round(qty, 3)
-        if raw.get("notes") is not None:
-            line.notes = str(raw.get("notes") or "").strip() or None
+        line.counted_qty = money_json(round(qty, 3))
+        # Schema StockCountItemNotesValue rejects blank/garbage → 422; explicit null clears.
+        if "notes" in raw:
+            notes_val = raw.get("notes")
+            if notes_val is None:
+                line.notes = None
+            else:
+                # Defense-in-depth vs OpenAPI StockCountItemNotesValue (**422**).
+                line.notes = optional_honest_narrative(
+                    str(notes_val), label="stock count line notes"
+                )
     await db.flush()
     return count
 
@@ -297,9 +320,9 @@ async def complete_count(
         )
 
     for item in items:
-        expected = float(item.expected_qty or 0)
-        counted = float(item.counted_qty or 0)
-        variance = round(counted - expected, 3)
+        expected = money_json(item.expected_qty or 0)
+        counted = money_json(item.counted_qty or 0)
+        variance = money_json(round(counted - expected, 3))
         if abs(variance) < 1e-9:
             continue
         await apply_stock_change(
@@ -331,9 +354,7 @@ async def cancel_count(
     user_id: str | None = None,
     reason: str | None = None,
 ) -> m.StockCount:
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="cancel reason is required")
+    reason_s = require_honest_narrative(reason, label="cancel reason")
     count = await get_count(db, tenant_id, count_id)
     if count.status != "draft":
         raise HTTPException(status_code=409, detail=f"Cannot cancel count in status {count.status}")

@@ -178,14 +178,30 @@ async def test_a05_error_404_has_no_traceback(client):
 
 @pytest.mark.asyncio
 async def test_a07_missing_and_garbage_bearer_rejected(client):
-    ac, _seed = client
+    ac, seed = client
     missing = await ac.get("/api/v1/products")
     assert missing.status_code == 401
     garbage = await ac.get(
         "/api/v1/products",
-        headers={"Authorization": "Bearer not-a-jwt", "X-Tenant-ID": "alpha"},
+        headers={
+            "Authorization": "Bearer not-a-jwt",
+            "X-Tenant-ID": seed["t1"].id,
+        },
     )
     assert garbage.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_a07_garbage_x_tenant_header_rejected_422(client):
+    """Malformed X-Tenant-ID → 422 before JWT auth (UuidIdValue honesty)."""
+    ac, seed = client
+    headers = await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")
+    for bad in ("alpha", "!!!", "http://evil", "not-a-uuid"):
+        r = await ac.get(
+            "/api/v1/products",
+            headers={**headers, "X-Tenant-ID": bad},
+        )
+        assert r.status_code == 422, bad
 
 
 @pytest.mark.asyncio

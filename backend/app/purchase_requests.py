@@ -13,12 +13,17 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 from app import purchasing as purchasing_svc
 from app.doc_numbers import next_purchase_request_number
 
 PR_EDITABLE = frozenset({"draft"})
 PR_APPROVABLE = frozenset({"pending"})
 PR_CONVERTIBLE = frozenset({"approved"})
+# Manage list statuses (full PR lifecycle).
+PR_MANAGE_STATUSES = frozenset(
+    {"draft", "pending", "approved", "rejected", "converted"}
+)
 MAX_APPROVAL_LEVELS = 5
 
 
@@ -39,7 +44,11 @@ def default_approval_levels() -> list[dict]:
 
 
 def normalize_approval_matrix(raw: dict | list | None) -> list[dict]:
-    """Validate/normalize PR role-chain levels (no amount thresholds)."""
+    """Validate/normalize PR role-chain levels (no amount thresholds).
+
+    Schema PurchaseApprovalLevelUpdate.roles rejects blank/unknown → 422; keep
+    VALID_ROLES allow-list defense-in-depth here.
+    """
     from app.rbac import VALID_ROLES
 
     if raw is None:
@@ -74,7 +83,14 @@ def normalize_approval_matrix(raw: dict | list | None) -> list[dict]:
                 roles.append(role)
         if not roles:
             raise HTTPException(status_code=400, detail=f"level {i + 1} roles must be a non-empty list")
-        label = str(item.get("label") or f"Level {i + 1}").strip() or f"Level {i + 1}"
+        # OpenAPI ApprovalLevelLabelValue → 422; service defense-in-depth → 400.
+        raw_label = item.get("label")
+        if raw_label is None or not str(raw_label).strip():
+            label = f"Level {i + 1}"
+        else:
+            label = optional_honest_narrative(
+                str(raw_label), label="approval level label", max_length=120
+            ) or f"Level {i + 1}"
         levels.append({"step": i + 1, "roles": roles, "label": label})
     return levels
 
@@ -256,7 +272,7 @@ async def serialize_request(db: AsyncSession, row: m.PurchaseRequest) -> dict:
                 "id": i.id,
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
-                "quantity": float(i.quantity),
+                "quantity": money_json(i.quantity),
                 "notes": i.notes,
             }
             for i in items
@@ -310,7 +326,7 @@ async def create_request(
             raise HTTPException(status_code=404, detail=f"Product not found: {item['product_id']}")
         if not product.is_active:
             raise HTTPException(status_code=400, detail=f"Product is inactive: {product.sku}")
-        qty = float(item.get("quantity") or 0)
+        qty = money_json(item.get("quantity") or 0)
         if qty <= 0:
             raise HTTPException(status_code=400, detail="Line quantity must be > 0")
         variant_id = item.get("variant_id")
@@ -331,7 +347,9 @@ async def create_request(
                 "product_id": product.id,
                 "variant_id": variant_id,
                 "quantity": qty,
-                "notes": (item.get("notes") or None),
+                "notes": optional_honest_narrative(
+                    item.get("notes"), label="purchase request line notes"
+                ),
             }
         )
 
@@ -343,8 +361,10 @@ async def create_request(
         preferred_supplier_id=preferred_supplier_id,
         warehouse_id=warehouse_id,
         required_date=required_date,
-        department=((department or "").strip()[:120] or None),
-        notes=notes,
+        department=optional_honest_narrative(
+            department, label="purchase request department", max_length=120
+        ),
+        notes=optional_honest_narrative(notes, label="purchase request notes"),
         created_by=user_id,
         approval_step=0,
         approval_steps_required=0,
@@ -521,9 +541,7 @@ async def reject_request(
     settings = await get_approval_settings(db, tenant_id)
     assert_actor_may_act(levels=settings["levels"], step=step, actor_role=actor_role)
 
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="rejection reason is required")
+    reason_s = require_honest_narrative(reason, label="rejection reason")
     await _record_action(
         db,
         tenant_id=tenant_id,
@@ -585,11 +603,13 @@ async def convert_to_po(
                 )
             )
         ).scalar_one_or_none()
-        unit_price = float(product.cost_price or 0) if product else 0.0
+        unit_price = (
+            money_json(product.cost_price or 0) if product else 0.0
+        )
         po_items.append(
             {
                 "product_id": item.product_id,
-                "quantity": float(item.quantity),
+                "quantity": money_json(item.quantity),
                 "unit_price": unit_price,
                 "tax_rate": 0,
             }

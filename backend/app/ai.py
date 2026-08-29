@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import audit as audit_svc
 from app import models as m
 from app.config import settings
+from app.honesty import money_json, require_honest_narrative
 
 APPROVED_PROVIDERS = frozenset({"openai"})
 # Dev/test only — never allowed when APP_ENV=production.
@@ -120,16 +121,10 @@ def parse_chat_message(payload: dict | None) -> str:
         raise HTTPException(status_code=422, detail="message is required")
     if not isinstance(raw, str):
         raise HTTPException(status_code=422, detail="message must be a string")
-    message = raw.strip()
-    if not message:
-        raise HTTPException(status_code=400, detail="message must not be empty")
-    limit = max_message_chars()
-    if len(message) > limit:
-        raise HTTPException(
-            status_code=400,
-            detail=f"message exceeds maximum length of {limit} characters",
-        )
-    return message
+    # OpenAPI AiChatMessageValue → 422; service defense-in-depth → 400.
+    return require_honest_narrative(
+        raw, label="AI chat message", max_length=max_message_chars()
+    )
 
 
 async def record_query(
@@ -187,8 +182,8 @@ MAX_INSIGHT_NOTES = 20
 
 def _pct_delta(current: float, previous: float) -> float | None:
     if previous == 0:
-        return None if current == 0 else 100.0
-    return round((current - previous) / abs(previous) * 100.0, 1)
+        return None if current == 0 else money_json(100.0)
+    return money_json(round((current - previous) / abs(previous) * 100.0, 1))
 
 
 def build_insight_notes(dash: dict) -> list[str]:
@@ -197,8 +192,8 @@ def build_insight_notes(dash: dict) -> list[str]:
     low = int(dash.get("low_stock") or 0)
     if low > 0:
         notes.append(f"{low} product(s) are at or below reorder level.")
-    expenses = float(dash.get("total_expenses") or 0)
-    sales = float(dash.get("total_sales") or 0)
+    expenses = money_json(dash.get("total_expenses") or 0)
+    sales = money_json(dash.get("total_sales") or 0)
     if expenses > sales and sales > 0:
         notes.append("Expenses currently exceed recorded sales.")
     notes.extend(_sales_spike_drop_notes(dash))
@@ -219,7 +214,7 @@ def _sales_spike_drop_notes(dash: dict) -> list[str]:
         if pct is None:
             continue
         try:
-            pct_f = float(pct)
+            pct_f = money_json(pct)
         except (TypeError, ValueError):
             continue
         if pct_f >= SALES_ANOMALY_PCT:
@@ -229,8 +224,8 @@ def _sales_spike_drop_notes(dash: dict) -> list[str]:
 
     daily = dash.get("daily_sales") or []
     if len(daily) >= 14:
-        recent = sum(float(d.get("sales") or 0) for d in daily[-7:])
-        prior = sum(float(d.get("sales") or 0) for d in daily[-14:-7])
+        recent = sum(money_json(d.get("sales") or 0) for d in daily[-7:])
+        prior = sum(money_json(d.get("sales") or 0) for d in daily[-14:-7])
         wow = _pct_delta(recent, prior)
         if wow is not None and wow >= SALES_ANOMALY_PCT:
             notes.append(f"Sales spike {wow:g}% (last 7 days vs prior 7).")
@@ -260,8 +255,8 @@ async def compose_insights(
     if low > 0:
         add("stock", f"{low} product(s) are at or below reorder level.")
 
-    expenses = float(dash.get("total_expenses") or 0)
-    sales = float(dash.get("total_sales") or 0)
+    expenses = money_json(dash.get("total_expenses") or 0)
+    sales = money_json(dash.get("total_sales") or 0)
     if expenses > sales and sales > 0:
         add("expense_anomaly", "Expenses currently exceed recorded sales.")
 
@@ -301,15 +296,19 @@ async def compose_insights(
         label = str(season.get("label") or "")
         rising = label in {"rising", "emerging_demand"}
         dts = row.get("days_to_stockout")
-        stock = float(row.get("stock_qty") or 0)
-        reorder = float(row.get("reorder_level") or 0)
-        at_risk = stock <= reorder or (dts is not None and float(dts) <= 14)
-        rec_qty = float(row.get("recommended_order_qty") or 0)
+        stock = money_json(row.get("stock_qty") or 0)
+        reorder = money_json(row.get("reorder_level") or 0)
+        try:
+            dts_f = money_json(dts) if dts is not None else None
+        except (TypeError, ValueError):
+            dts_f = None
+        at_risk = stock <= reorder or (dts_f is not None and dts_f <= 14)
+        rec_qty = money_json(row.get("recommended_order_qty") or 0)
         if not (rising and at_risk and rec_qty > 0):
             continue
         ratio = season.get("ratio")
         try:
-            ratio_f = float(ratio) if ratio is not None else None
+            ratio_f = money_json(ratio) if ratio is not None else None
         except (TypeError, ValueError):
             ratio_f = None
         if ratio_f and ratio_f > 1:
@@ -317,8 +316,8 @@ async def compose_insights(
         else:
             up_txt = "recently"
         detail = None
-        if dts is not None:
-            detail = f"stockout in ~{dts} days; suggest order {rec_qty:g}"
+        if dts_f is not None:
+            detail = f"stockout in ~{dts_f:g} days; suggest order {rec_qty:g}"
         elif rec_qty > 0:
             detail = f"suggest order {rec_qty:g}"
         add(

@@ -121,25 +121,36 @@ export default function Page() {
   const [batches, setBatches] = useState<any[]>([]);
   const [expiring, setExpiring] = useState<any[]>([]);
   const [counts, setCounts] = useState<any[]>([]);
+  const [countManageFilter, setCountManageFilter] = useState<
+    'all' | 'draft' | 'completed' | 'cancelled'
+  >('all');
+  const [transferManageFilter, setTransferManageFilter] = useState<
+    'all' | 'draft' | 'requested' | 'in_transit' | 'received' | 'cancelled'
+  >('all');
   const [activeCount, setActiveCount] = useState<any | null>(null);
   const [countWarehouseId, setCountWarehouseId] = useState('');
+  const [countNotes, setCountNotes] = useState('');
   const [countQtys, setCountQtys] = useState<Record<string, string>>({});
+  const [countLineNotes, setCountLineNotes] = useState<Record<string, string>>({});
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
   const [productName, setProductName] = useState('');
   const [productSku, setProductSku] = useState('');
   const [productPrice, setProductPrice] = useState('0');
+  const [productCost, setProductCost] = useState('0');
   const [productDescription, setProductDescription] = useState('');
   const [productWeight, setProductWeight] = useState('');
   const [productLength, setProductLength] = useState('');
   const [productWidth, setProductWidth] = useState('');
   const [productHeight, setProductHeight] = useState('');
   const [productCategoryId, setProductCategoryId] = useState('');
+  const [productTaxRateId, setProductTaxRateId] = useState('');
   const [productBrandId, setProductBrandId] = useState('');
   const [productUnitId, setProductUnitId] = useState('');
   const [editReorder, setEditReorder] = useState('0');
   const [editPrice, setEditPrice] = useState('0');
+  const [editCost, setEditCost] = useState('0');
   const [editBarcode, setEditBarcode] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editWeight, setEditWeight] = useState('');
@@ -149,6 +160,10 @@ export default function Page() {
   const [productBarcode, setProductBarcode] = useState('');
   const [productSupplyClass, setProductSupplyClass] = useState('standard');
   const [editSupplyClass, setEditSupplyClass] = useState('standard');
+  const [editCategoryId, setEditCategoryId] = useState('');
+  const [editBrandId, setEditBrandId] = useState('');
+  const [editUnitId, setEditUnitId] = useState('');
+  const [editTaxRateId, setEditTaxRateId] = useState('');
   const [labelCopies, setLabelCopies] = useState('1');
   const [barcodeSymbology, setBarcodeSymbology] = useState('code128');
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -192,6 +207,8 @@ export default function Page() {
   const [stockWarehouseId, setStockWarehouseId] = useState('');
   const [stockVariantId, setStockVariantId] = useState('');
   const [stockNotes, setStockNotes] = useState('');
+  const [stockRefType, setStockRefType] = useState('');
+  const [stockRefId, setStockRefId] = useState('');
   const [openingQty, setOpeningQty] = useState('10');
   const [openingWarehouseId, setOpeningWarehouseId] = useState('');
   const [openingUnitId, setOpeningUnitId] = useState('');
@@ -202,6 +219,7 @@ export default function Page() {
   const [openingExpiry, setOpeningExpiry] = useState('');
   const [openingReference, setOpeningReference] = useState('');
   const [openingNotes, setOpeningNotes] = useState('');
+  const [openingLineNotes, setOpeningLineNotes] = useState('');
   const [openingPostJournal, setOpeningPostJournal] = useState(true);
   const [openingHistory, setOpeningHistory] = useState<any[]>([]);
   const [movements, setMovements] = useState<any[]>([]);
@@ -394,12 +412,15 @@ export default function Page() {
           : mvProductOnly
             ? selectedId
             : null;
-      if (warehouse) params.set('warehouse_id', warehouse);
+      // trim so Movements (UuidIdValue Query product_id/warehouse_id) do not 422
+      const warehouseTrim = warehouse ? String(warehouse).trim() : '';
+      const productTrim = productId ? String(productId).trim() : '';
+      if (warehouseTrim) params.set('warehouse_id', warehouseTrim);
       if (type) params.set('movement_type', type);
       if (reason) params.set('reason', reason);
       if (from) params.set('from_date', from);
       if (to) params.set('to_date', to);
-      if (productOnly && productId) params.set('product_id', productId);
+      if (productOnly && productTrim) params.set('product_id', productTrim);
       const q = params.toString();
       const r = await api(`/inventory/movements${q ? `?${q}` : ''}`);
       const data = r.data || {};
@@ -497,11 +518,12 @@ export default function Page() {
       const r = await api('/inventory/stock-transfers', {
         method: 'POST',
         body: JSON.stringify({
-          from_warehouse_id: xferFromWh,
-          to_warehouse_id: xferToWh,
+          from_warehouse_id: xferFromWh.trim(),
+          to_warehouse_id: xferToWh.trim(),
           submit: true,
           notes: xferNotes.trim() || null,
-          items: [{ product_id: selectedId, quantity: qty }],
+          // trim so StockTransferItemCreate (UuidIdValue product_id) does not 422 on whitespace
+          items: [{ product_id: selectedId.trim(), quantity: qty }],
         }),
       });
       setMessage(
@@ -570,8 +592,9 @@ export default function Page() {
       const r = await api('/inventory/warehouse-stock/reorder', {
         method: 'PUT',
         body: JSON.stringify({
-          warehouse_id: whStockWarehouseId,
-          product_id: whReorderProductId,
+          // trim so Save warehouse reorder (UuidIdValue warehouse_id / product_id) does not 422
+          warehouse_id: whStockWarehouseId.trim(),
+          product_id: whReorderProductId.trim(),
           reorder_level: Number(whReorderLevel) || 0,
           reorder_qty: Number(whReorderQty) || 0,
         }),
@@ -600,6 +623,7 @@ export default function Page() {
       if (p) {
         setEditReorder(String(p.reorder_level ?? 0));
         setEditPrice(String(p.selling_price ?? 0));
+        setEditCost(String(p.cost_price ?? 0));
         setEditBarcode(String(p.barcode || ''));
         setEditDescription(String(p.description || ''));
         setEditWeight(p.weight != null ? String(p.weight) : '');
@@ -607,6 +631,10 @@ export default function Page() {
         setEditWidth(p.width != null ? String(p.width) : '');
         setEditHeight(p.height != null ? String(p.height) : '');
         setEditSupplyClass(String(p.tax_supply_class || (p.tax_exempt ? 'exempt' : 'standard')));
+        setEditCategoryId(String(p.category_id || ''));
+        setEditBrandId(String(p.brand_id || ''));
+        setEditUnitId(String(p.unit_id || ''));
+        setEditTaxRateId(String(p.tax_rate_id || ''));
       }
     }
   }, [selectedId, products]);
@@ -620,6 +648,7 @@ export default function Page() {
         body: JSON.stringify({
           reorder_level: Number(editReorder) || 0,
           selling_price: Number(editPrice) || 0,
+          cost_price: Number(editCost) || 0,
           barcode: editBarcode.trim() || null,
           description: editDescription.trim() || null,
           weight: editWeight === '' ? null : Number(editWeight),
@@ -627,6 +656,10 @@ export default function Page() {
           width: editWidth === '' ? null : Number(editWidth),
           height: editHeight === '' ? null : Number(editHeight),
           tax_supply_class: editSupplyClass,
+          category_id: editCategoryId.trim() || null,
+          brand_id: editBrandId.trim() || null,
+          unit_id: editUnitId.trim() || null,
+          tax_rate_id: editTaxRateId.trim() || null,
         }),
       });
       setMessage('Product updated');
@@ -708,7 +741,10 @@ export default function Page() {
     try {
       const r = await api('/inventory/stock-counts', {
         method: 'POST',
-        body: JSON.stringify({ warehouse_id: countWarehouseId }),
+        body: JSON.stringify({
+          warehouse_id: countWarehouseId.trim(),
+          notes: countNotes.trim() || null,
+        }),
       });
       setActiveCount(r.data);
       const qtys: Record<string, string> = {};
@@ -716,6 +752,7 @@ export default function Page() {
         qtys[item.product_id] = String(item.expected_qty ?? 0);
       }
       setCountQtys(qtys);
+      setCountNotes('');
       setMessage(`Count ${r.data.count_number} created`);
       setTab('counts');
       await refresh();
@@ -730,11 +767,14 @@ export default function Page() {
       const r = await api(`/inventory/stock-counts/${id}`);
       setActiveCount(r.data);
       const qtys: Record<string, string> = {};
+      const notes: Record<string, string> = {};
       for (const item of r.data.items || []) {
         qtys[item.product_id] =
           item.counted_qty == null ? String(item.expected_qty ?? 0) : String(item.counted_qty);
+        notes[item.product_id] = item.notes || '';
       }
       setCountQtys(qtys);
+      setCountLineNotes(notes);
     } catch (err: any) {
       setError(err.message);
     }
@@ -745,8 +785,10 @@ export default function Page() {
     setError('');
     try {
       const items = (activeCount.items || []).map((item: any) => ({
-        product_id: item.product_id,
+        // trim so Save count lines (UuidIdValue product_id) does not 422
+        product_id: String(item.product_id).trim(),
         counted_qty: Number(countQtys[item.product_id] ?? item.expected_qty ?? 0),
+        notes: (countLineNotes[item.product_id] || '').trim() || null,
       }));
       const r = await api(`/inventory/stock-counts/${activeCount.id}/items`, {
         method: 'PATCH',
@@ -802,18 +844,20 @@ export default function Page() {
       const r = await api('/products', {
         method: 'POST',
         body: JSON.stringify({
-          name: productName,
+          name: productName.trim(),
           sku: productSku.trim() || null,
           barcode: productBarcode.trim() || null,
           description: productDescription.trim() || null,
           selling_price: Number(productPrice) || 0,
+          cost_price: Number(productCost) || 0,
           weight: productWeight === '' ? null : Number(productWeight),
           length: productLength === '' ? null : Number(productLength),
           width: productWidth === '' ? null : Number(productWidth),
           height: productHeight === '' ? null : Number(productHeight),
-          category_id: productCategoryId || null,
-          brand_id: productBrandId || null,
-          unit_id: productUnitId || null,
+          category_id: productCategoryId.trim() || null,
+          tax_rate_id: productTaxRateId.trim() || null,
+          brand_id: productBrandId.trim() || null,
+          unit_id: productUnitId.trim() || null,
           tax_supply_class: productSupplyClass,
         }),
       });
@@ -827,7 +871,9 @@ export default function Page() {
       setProductWidth('');
       setProductHeight('');
       setProductPrice('0');
+      setProductCost('0');
       setProductSupplyClass('standard');
+      setProductTaxRateId('');
       await refresh();
       setSelectedId(r.data.id);
       setTab('products');
@@ -1165,6 +1211,21 @@ export default function Page() {
     }
   }
 
+  async function saveVariantCost(variantId: string, cost: string) {
+    if (!selectedId) return;
+    setError('');
+    try {
+      await api(`/products/${selectedId}/variants/${variantId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ cost_price: Number(cost) || 0 }),
+      });
+      setMessage('Variant cost updated');
+      await refreshSelected(selectedId);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   async function generateVariantBarcode(variantId: string) {
     if (!selectedId) return;
     setError('');
@@ -1223,7 +1284,7 @@ export default function Page() {
       const r = await api(`/products/${selectedId}/variants`, {
         method: 'POST',
         body: JSON.stringify({
-          name: variantName,
+          name: variantName.trim(),
           sku: variantSku.trim() || null,
           barcode: variantBarcode.trim() || null,
           size: variantSize.trim() || null,
@@ -1253,15 +1314,19 @@ export default function Page() {
       const r = await api('/inventory/stock-in', {
         method: 'POST',
         body: JSON.stringify({
-          product_id: selectedId,
+          // trim so Receive batch (UuidIdValue product_id) does not 422 on whitespace
+          product_id: selectedId.trim(),
           quantity: Number(stockQty),
-          unit_id: stockUnitId || null,
-          warehouse_id: stockWarehouseId || null,
-          variant_id: stockVariantId || null,
+          unit_id: stockUnitId.trim() || null,
+          // trim so Receive batch (UuidIdValue warehouse_id) does not 422 on whitespace
+          warehouse_id: stockWarehouseId.trim() || null,
+          variant_id: stockVariantId.trim() || null,
           notes: stockNotes.trim() || null,
-          batch_number: batchNumber,
-          manufacturing_date: mfgDate ? new Date(mfgDate).toISOString() : null,
-          expiry_date: expiryDate ? new Date(expiryDate).toISOString() : undefined,
+          batch_number: batchNumber.trim(),
+          manufacturing_date: mfgDate.trim() || null,
+          expiry_date: expiryDate.trim() || null,
+          reference_type: stockRefType.trim() || null,
+          reference_id: stockRefId.trim() || null,
         }),
       });
       const converted =
@@ -1278,6 +1343,8 @@ export default function Page() {
       setMfgDate('');
       setExpiryDate('');
       setStockNotes('');
+      setStockRefType('');
+      setStockRefId('');
       await refresh();
       await refreshSelected(selectedId);
       setTab('batches');
@@ -1295,21 +1362,23 @@ export default function Page() {
     }
     try {
       const line: Record<string, unknown> = {
-        product_id: selectedId,
+        // trim so Opening stock line (UuidIdValue product_id) does not 422 on whitespace
+        product_id: selectedId.trim(),
         quantity: Number(openingQty),
-        unit_id: openingUnitId || null,
-        warehouse_id: openingWarehouseId || null,
-        variant_id: openingVariantId || null,
-        batch_number: openingBatch || null,
-        manufacturing_date: openingMfg ? new Date(openingMfg).toISOString() : null,
-        expiry_date: openingExpiry ? new Date(openingExpiry).toISOString() : null,
+        unit_id: openingUnitId.trim() || null,
+        warehouse_id: openingWarehouseId.trim() || null,
+        variant_id: openingVariantId.trim() || null,
+        batch_number: openingBatch.trim() || null,
+        manufacturing_date: openingMfg.trim() || null,
+        expiry_date: openingExpiry.trim() || null,
+        notes: openingLineNotes.trim() || null,
       };
       if (openingUnitCost !== '') line.unit_cost = Number(openingUnitCost);
       const r = await api('/inventory/opening-stock', {
         method: 'POST',
         body: JSON.stringify({
-          reference: openingReference || null,
-          notes: openingNotes || null,
+          reference: openingReference.trim() || null,
+          notes: openingNotes.trim() || null,
           post_journal: openingPostJournal,
           lines: [line],
         }),
@@ -1322,6 +1391,7 @@ export default function Page() {
       setOpeningMfg('');
       setOpeningExpiry('');
       setOpeningNotes('');
+      setOpeningLineNotes('');
       await refresh();
       await refreshSelected(selectedId);
       setTab('opening');
@@ -1354,7 +1424,7 @@ export default function Page() {
           quantity: qty,
           reason,
           notes: adjNotes.trim() || null,
-          warehouse_id: adjWarehouseId || null,
+          warehouse_id: adjWarehouseId.trim() || null,
         }),
       });
       setMessage(
@@ -1393,15 +1463,16 @@ export default function Page() {
       const r = await api('/inventory/stock-out', {
         method: 'POST',
         body: JSON.stringify({
-          product_id: selectedId,
+          // trim so Stock out (UuidIdValue product_id) does not 422 on whitespace
+          product_id: selectedId.trim(),
           quantity: qty,
           reference_type: outRefType,
           reference_id: outRefId.trim() || null,
           notes: outNotes.trim() || null,
-          warehouse_id: outWarehouseId || null,
-          variant_id: outVariantId || null,
-          unit_id: outUnitId || null,
-          batch_id: outBatchId || null,
+          warehouse_id: outWarehouseId.trim() || null,
+          variant_id: outVariantId.trim() || null,
+          unit_id: outUnitId.trim() || null,
+          batch_id: outBatchId.trim() || null,
         }),
       });
       setMessage(
@@ -1440,6 +1511,14 @@ export default function Page() {
   const managedBrands = byStatus(brands, brandManageFilter);
   const managedUnits = byStatus(units, unitManageFilter);
   const managedVariants = byStatus(variants, variantManageFilter);
+  const managedCounts = counts.filter((c) => {
+    if (countManageFilter === 'all') return true;
+    return (c.status || 'draft') === countManageFilter;
+  });
+  const managedTransfers = transfers.filter((t) => {
+    if (transferManageFilter === 'all') return true;
+    return (t.status || 'draft') === transferManageFilter;
+  });
 
   return (
     <Shell>
@@ -1470,7 +1549,12 @@ export default function Page() {
             ['adjust', 'Adjust'],
           ] as const
         ).map(([id, label]) => (
-          <button key={id} onClick={() => setTab(id)} disabled={tab === id}>
+          <button
+            key={id}
+            onClick={() => setTab(id)}
+            disabled={tab === id}
+            aria-label={`Show inventory ${id} tab`}
+          >
             {label}
           </button>
         ))}
@@ -1489,12 +1573,15 @@ export default function Page() {
             onChange={(e) => setTrPrefix(e.target.value.toUpperCase())}
             placeholder="Prefix"
             style={{ width: 100 }}
+            aria-label="Stock transfer number prefix"
+            title="Document prefix (letters, digits, _ or -)"
           />
           <input
             value={trNext}
             onChange={(e) => setTrNext(e.target.value)}
             placeholder="Next #"
             style={{ width: 90 }}
+            aria-label="Stock transfer next number"
           />
           <span className="muted">{trPreview || '—'}</span>
         </div>
@@ -1505,12 +1592,15 @@ export default function Page() {
             onChange={(e) => setScPrefix(e.target.value.toUpperCase())}
             placeholder="Prefix"
             style={{ width: 100 }}
+            aria-label="Stock count number prefix"
+            title="Document prefix (letters, digits, _ or -)"
           />
           <input
             value={scNext}
             onChange={(e) => setScNext(e.target.value)}
             placeholder="Next #"
             style={{ width: 90 }}
+            aria-label="Stock count next number"
           />
           <span className="muted">{scPreview || '—'}</span>
         </div>
@@ -1521,15 +1611,18 @@ export default function Page() {
             onChange={(e) => setOsPrefix(e.target.value.toUpperCase())}
             placeholder="Prefix"
             style={{ width: 100 }}
+            aria-label="Opening stock number prefix"
+            title="Document prefix (letters, digits, _ or -)"
           />
           <input
             value={osNext}
             onChange={(e) => setOsNext(e.target.value)}
             placeholder="Next #"
             style={{ width: 90 }}
+            aria-label="Opening stock next number"
           />
           <span className="muted">{osPreview || '—'}</span>
-          <button type="button" onClick={saveInventoryNumbering}>
+          <button type="button" onClick={saveInventoryNumbering} aria-label="Save inventory numbering">
             Save numbering
           </button>
         </div>
@@ -1558,7 +1651,12 @@ export default function Page() {
             <option value="inactive">Inactive only</option>
           </select>
         </div>
-        <select value={selectedId} onChange={(e) => setSelectedId(e.target.value)} style={{ width: '100%' }}>
+        <select
+          value={selectedId}
+          onChange={(e) => setSelectedId(e.target.value)}
+          style={{ width: '100%' }}
+          aria-label="Selected product"
+        >
           <option value="">Select product</option>
           {managedProducts.map((p) => (
             <option key={p.id} value={p.id}>
@@ -1576,6 +1674,7 @@ export default function Page() {
           type="file"
           accept="image/png,image/jpeg,image/webp,image/gif"
           disabled={!selectedId || gallery.length >= 5}
+          aria-label="Product gallery image file"
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) uploadImage(file, { asPrimary: gallery.length === 0 });
@@ -1591,11 +1690,11 @@ export default function Page() {
                   {img.is_primary ? ' (primary)' : ''}
                 </span>
                 {!img.is_primary && (
-                  <button type="button" onClick={() => setPrimaryImage(img.id)}>
+                  <button type="button" onClick={() => setPrimaryImage(img.id)} aria-label={`Set primary product image ${img.id}`}>
                     Set primary
                   </button>
                 )}
-                <button type="button" onClick={() => removeGalleryImage(img.id)}>
+                <button type="button" onClick={() => removeGalleryImage(img.id)} aria-label={`Remove product gallery image ${img.id}`}>
                   Remove
                 </button>
               </li>
@@ -1609,6 +1708,8 @@ export default function Page() {
               value={editBarcode}
               onChange={(e) => setEditBarcode(e.target.value)}
               placeholder="Scan or type barcode"
+              aria-label="Edit product barcode"
+              title="Optional barcode (4–48 chars: letters, numbers, - . _)"
             />
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               <select
@@ -1621,7 +1722,7 @@ export default function Page() {
                 <option value="ean13">EAN-13</option>
                 <option value="upca">UPC-A</option>
               </select>
-              <button type="button" onClick={generateBarcode}>
+              <button type="button" onClick={generateBarcode} aria-label="Generate product barcode">
                 Generate barcode
               </button>
               <input
@@ -1631,7 +1732,7 @@ export default function Page() {
                 title="Label copies"
                 aria-label="Label copies"
               />
-              <button type="button" onClick={printBarcodeLabel}>
+              <button type="button" onClick={printBarcodeLabel} aria-label="Print product barcode label">
                 Print barcode label
               </button>
             </div>
@@ -1640,6 +1741,8 @@ export default function Page() {
               value={editDescription}
               onChange={(e) => setEditDescription(e.target.value)}
               placeholder="Product description"
+              aria-label="Edit product description"
+              title="Optional description (1–500 chars; letters/digits required)"
               rows={2}
             />
             <label className="muted">Weight (kg) / dimensions (cm)</label>
@@ -1648,47 +1751,134 @@ export default function Page() {
                 value={editWeight}
                 onChange={(e) => setEditWeight(e.target.value)}
                 placeholder="Weight"
+                aria-label="Edit product weight"
                 style={{ width: 100 }}
               />
               <input
                 value={editLength}
                 onChange={(e) => setEditLength(e.target.value)}
                 placeholder="Length"
+                aria-label="Edit product length"
                 style={{ width: 80 }}
               />
               <input
                 value={editWidth}
                 onChange={(e) => setEditWidth(e.target.value)}
                 placeholder="Width"
+                aria-label="Edit product width"
                 style={{ width: 80 }}
               />
               <input
                 value={editHeight}
                 onChange={(e) => setEditHeight(e.target.value)}
                 placeholder="Height"
+                aria-label="Edit product height"
                 style={{ width: 80 }}
               />
             </div>
             <label className="muted">Reorder level</label>
-            <input value={editReorder} onChange={(e) => setEditReorder(e.target.value)} />
+            <input
+              value={editReorder}
+              onChange={(e) => setEditReorder(e.target.value)}
+              aria-label="Edit product reorder level"
+            />
+            <label className="muted">Cost price</label>
+            <input
+              value={editCost}
+              onChange={(e) => setEditCost(e.target.value)}
+              aria-label="Edit product cost price"
+            />
             <label className="muted">Selling price</label>
-            <input value={editPrice} onChange={(e) => setEditPrice(e.target.value)} />
+            <input
+              value={editPrice}
+              onChange={(e) => setEditPrice(e.target.value)}
+              aria-label="Edit product selling price"
+            />
             <label className="muted">Tax supply class</label>
-            <select value={editSupplyClass} onChange={(e) => setEditSupplyClass(e.target.value)}>
+            <select
+              value={editSupplyClass}
+              onChange={(e) => setEditSupplyClass(e.target.value)}
+              aria-label="Edit product supply class"
+            >
               <option value="standard">Standard-rated</option>
               <option value="zero_rated">Zero-rated</option>
               <option value="exempt">Exempt</option>
             </select>
+            <label className="muted">Category</label>
+            <select
+              value={editCategoryId}
+              onChange={(e) => setEditCategoryId(e.target.value)}
+              aria-label="Edit product category"
+              title="Product category (catalog picker; API category_id UUID)"
+            >
+              <option value="">Category</option>
+              {categories
+                .filter((c) => c.is_active !== false)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {categoryIndent(c.depth)}
+                    {categoryLabel(c)}
+                  </option>
+                ))}
+            </select>
+            <label className="muted">Brand</label>
+            <select
+              value={editBrandId}
+              onChange={(e) => setEditBrandId(e.target.value)}
+              aria-label="Edit product brand"
+              title="Product brand (optional catalog picker; API brand_id UUID)"
+            >
+              <option value="">Brand</option>
+              {brands
+                .filter((b) => b.is_active !== false)
+                .map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+            </select>
+            <label className="muted">Unit</label>
+            <select
+              value={editUnitId}
+              onChange={(e) => setEditUnitId(e.target.value)}
+              aria-label="Edit product unit"
+              title="Product unit (optional catalog picker; API unit_id UUID)"
+            >
+              <option value="">Unit</option>
+              {units
+                .filter((u) => u.is_active !== false)
+                .map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.code} — {u.name}
+                  </option>
+                ))}
+            </select>
+            <label className="muted">Tax rate</label>
+            <select
+              value={editTaxRateId}
+              onChange={(e) => setEditTaxRateId(e.target.value)}
+              aria-label="Edit product tax rate"
+              title="Product tax rate (optional — category/tenant default when blank)"
+            >
+              <option value="">Tax rate (optional — category/tenant default)</option>
+              {taxRates
+                .filter((r) => r.is_active !== false)
+                .map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name} ({r.rate}%){r.is_default ? ' · default' : ''}
+                  </option>
+                ))}
+            </select>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button type="button" onClick={saveProductEdits}>
+              <button type="button" onClick={saveProductEdits} aria-label="Save product">
                 Save product
               </button>
               {selected?.is_active === false ? (
-                <button type="button" className="btn-ok" onClick={() => setProductActive(true)}>
+                <button type="button" className="btn-ok" aria-label="Activate product" onClick={() => setProductActive(true)}>
                   Activate
                 </button>
               ) : (
-                <button type="button" className="btn-danger" onClick={() => setProductActive(false)}>
+                <button type="button" className="btn-danger" aria-label="Deactivate product" onClick={() => setProductActive(false)}>
                   Deactivate
                 </button>
               )}
@@ -1711,6 +1901,7 @@ export default function Page() {
               onChange={(e) => setLookupBarcode(e.target.value)}
               placeholder="Barcode (exact)"
               style={{ minWidth: 180 }}
+              aria-label="Product lookup barcode"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
@@ -1723,6 +1914,7 @@ export default function Page() {
               onChange={(e) => setLookupQuery(e.target.value)}
               placeholder="Name / SKU search"
               style={{ minWidth: 200 }}
+              aria-label="Product lookup search"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
@@ -1730,7 +1922,12 @@ export default function Page() {
                 }
               }}
             />
-            <button type="button" onClick={() => runProductLookup()} disabled={lookupBusy}>
+            <button
+              type="button"
+              onClick={() => runProductLookup()}
+              disabled={lookupBusy}
+              aria-label="Run product lookup"
+            >
               {lookupBusy ? 'Searching…' : 'Lookup'}
             </button>
           </div>
@@ -1763,7 +1960,7 @@ export default function Page() {
                   </td>
                   <td>{p.is_active === false ? 'inactive' : 'active'}</td>
                   <td>
-                    <button type="button" onClick={() => selectLookupHit(p.id)}>
+                    <button type="button" onClick={() => selectLookupHit(p.id)} aria-label={`Select lookup product ${p.id}`}>
                       Select
                     </button>
                   </td>
@@ -1833,10 +2030,10 @@ export default function Page() {
             downloads the current catalog in the same column layout.
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button type="button" onClick={downloadImportTemplate}>
+            <button type="button" onClick={downloadImportTemplate} aria-label="Download product CSV template">
               Download CSV template
             </button>
-            <button type="button" onClick={downloadProductsExport}>
+            <button type="button" onClick={downloadProductsExport} aria-label="Export products CSV">
               Export products CSV
             </button>
           </div>
@@ -1844,6 +2041,7 @@ export default function Page() {
           <input
             type="file"
             accept=".csv,text/csv"
+            aria-label="Product CSV import file"
             onChange={(e) => {
               setImportFile(e.target.files?.[0] || null);
               setImportReport(null);
@@ -1855,6 +2053,7 @@ export default function Page() {
               type="button"
               onClick={() => runProductImport(true)}
               disabled={!importFile || importBusy}
+              aria-label="Validate product CSV import"
             >
               {importBusy ? 'Working…' : 'Validate'}
             </button>
@@ -1862,6 +2061,7 @@ export default function Page() {
               type="button"
               onClick={() => runProductImport(false)}
               disabled={!importFile || importBusy || !importReport?.can_commit}
+              aria-label="Import valid product CSV rows"
             >
               Import valid rows
             </button>
@@ -1904,51 +2104,83 @@ export default function Page() {
         <>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>Add product</h3>
-            <input value={productName} onChange={(e) => setProductName(e.target.value)} placeholder="Name" />
+            <input
+              value={productName}
+              onChange={(e) => setProductName(e.target.value)}
+              placeholder="Name"
+              aria-label="Product name"
+              title="Product name (1–200 chars; letters/digits required)"
+            />
             <input
               value={productSku}
               onChange={(e) => setProductSku(e.target.value)}
               placeholder="SKU (auto if blank)"
+              aria-label="Product SKU"
+              title="Optional SKU (1–100 chars: letters, digits, . _ -; blank → auto)"
             />
             <input
               value={productBarcode}
               onChange={(e) => setProductBarcode(e.target.value)}
               placeholder="Barcode (optional)"
+              aria-label="Product barcode"
+              title="Optional barcode (4–48 chars: letters, numbers, - . _)"
             />
             <textarea
               value={productDescription}
               onChange={(e) => setProductDescription(e.target.value)}
               placeholder="Description (optional)"
+              aria-label="Product description"
+              title="Optional description (1–500 chars; letters/digits required)"
               rows={2}
             />
-            <input value={productPrice} onChange={(e) => setProductPrice(e.target.value)} placeholder="Selling price" />
+            <input
+              value={productCost}
+              onChange={(e) => setProductCost(e.target.value)}
+              placeholder="Cost price"
+              aria-label="Product cost price"
+            />
+            <input
+              value={productPrice}
+              onChange={(e) => setProductPrice(e.target.value)}
+              placeholder="Selling price"
+              aria-label="Product selling price"
+            />
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <input
                 value={productWeight}
                 onChange={(e) => setProductWeight(e.target.value)}
                 placeholder="Weight kg"
+                aria-label="Product weight"
                 style={{ width: 100 }}
               />
               <input
                 value={productLength}
                 onChange={(e) => setProductLength(e.target.value)}
                 placeholder="L cm"
+                aria-label="Product length"
                 style={{ width: 80 }}
               />
               <input
                 value={productWidth}
                 onChange={(e) => setProductWidth(e.target.value)}
                 placeholder="W cm"
+                aria-label="Product width"
                 style={{ width: 80 }}
               />
               <input
                 value={productHeight}
                 onChange={(e) => setProductHeight(e.target.value)}
                 placeholder="H cm"
+                aria-label="Product height"
                 style={{ width: 80 }}
               />
             </div>
-            <select value={productCategoryId} onChange={(e) => setProductCategoryId(e.target.value)}>
+            <select
+              value={productCategoryId}
+              onChange={(e) => setProductCategoryId(e.target.value)}
+              aria-label="Product category"
+              title="Product category (catalog picker; API category label 1–100)"
+            >
               <option value="">Category</option>
               {categories
                 .filter((c) => c.is_active !== false)
@@ -1959,7 +2191,12 @@ export default function Page() {
                   </option>
                 ))}
             </select>
-            <select value={productBrandId} onChange={(e) => setProductBrandId(e.target.value)}>
+            <select
+              value={productBrandId}
+              onChange={(e) => setProductBrandId(e.target.value)}
+              aria-label="Product brand"
+              title="Product brand (optional catalog picker)"
+            >
               <option value="">Brand</option>
               {brands
                 .filter((b) => b.is_active !== false)
@@ -1969,7 +2206,12 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <select value={productUnitId} onChange={(e) => setProductUnitId(e.target.value)}>
+            <select
+              value={productUnitId}
+              onChange={(e) => setProductUnitId(e.target.value)}
+              aria-label="Product unit"
+              title="Product unit (optional catalog picker)"
+            >
               <option value="">Unit</option>
               {units
                 .filter((u) => u.is_active !== false)
@@ -1979,12 +2221,35 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <select value={productSupplyClass} onChange={(e) => setProductSupplyClass(e.target.value)}>
+            <select
+              value={productSupplyClass}
+              onChange={(e) => setProductSupplyClass(e.target.value)}
+              aria-label="Product supply class"
+            >
               <option value="standard">Tax: standard-rated</option>
               <option value="zero_rated">Tax: zero-rated</option>
               <option value="exempt">Tax: exempt</option>
             </select>
-            <button onClick={createProduct} disabled={!productName.trim()}>
+            <select
+              value={productTaxRateId}
+              onChange={(e) => setProductTaxRateId(e.target.value)}
+              aria-label="Product tax rate"
+              title="Product tax rate (optional — category/tenant default when blank)"
+            >
+              <option value="">Tax rate (optional — category/tenant default)</option>
+              {taxRates
+                .filter((r) => r.is_active !== false)
+                .map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name} ({r.rate}%){r.is_default ? ' · default' : ''}
+                  </option>
+                ))}
+            </select>
+            <button
+              onClick={createProduct}
+              disabled={!productName.trim()}
+              aria-label="Create product"
+            >
               Create product
             </button>
           </div>
@@ -2009,6 +2274,7 @@ export default function Page() {
                     <button
                       onClick={() => setSelectedId(p.id)}
                       style={{ background: 'none', border: 0, color: '#1d4ed8', cursor: 'pointer' }}
+                      aria-label={`Select inventory product ${p.id}`}
                     >
                       {p.name}
                       {p.is_active === false ? ' [inactive]' : ''}
@@ -2039,9 +2305,26 @@ export default function Page() {
               Hierarchical parent/child categories with codes. Optional category tax rate applies when
               a product has no product-level rate (nearest parent wins). Product rate still overrides.
             </p>
-            <input value={catCode} onChange={(e) => setCatCode(e.target.value)} placeholder="Code" />
-            <input value={catName} onChange={(e) => setCatName(e.target.value)} placeholder="Name" />
-            <select value={catParentId} onChange={(e) => setCatParentId(e.target.value)}>
+            <input
+              value={catCode}
+              onChange={(e) => setCatCode(e.target.value)}
+              placeholder="Code"
+              aria-label="Category code"
+              title="Category code (1–40 chars; letters/digits required)"
+            />
+            <input
+              value={catName}
+              onChange={(e) => setCatName(e.target.value)}
+              placeholder="Name"
+              aria-label="Category name"
+              title="Category name (1–120 chars; letters/digits required)"
+            />
+            <select
+              value={catParentId}
+              onChange={(e) => setCatParentId(e.target.value)}
+              aria-label="Category parent"
+              title="Parent category (optional — root when blank)"
+            >
               <option value="">Parent (optional — root)</option>
               {categories
                 .filter((c) => c.is_active !== false)
@@ -2052,7 +2335,12 @@ export default function Page() {
                   </option>
                 ))}
             </select>
-            <select value={catTaxRateId} onChange={(e) => setCatTaxRateId(e.target.value)}>
+            <select
+              value={catTaxRateId}
+              onChange={(e) => setCatTaxRateId(e.target.value)}
+              aria-label="Category tax rate"
+              title="Category tax rate (optional — tenant default when blank)"
+            >
               <option value="">Tax rate (optional — tenant default)</option>
               {taxRates
                 .filter((r) => r.is_active !== false)
@@ -2069,10 +2357,10 @@ export default function Page() {
                   const r = await api('/catalog/categories', {
                     method: 'POST',
                     body: JSON.stringify({
-                      code: catCode,
-                      name: catName,
-                      parent_id: catParentId || null,
-                      tax_rate_id: catTaxRateId || null,
+                      code: catCode.trim(),
+                      name: catName.trim(),
+                      parent_id: catParentId.trim() || null,
+                      tax_rate_id: catTaxRateId.trim() || null,
                     }),
                   });
                   setCatCode('');
@@ -2085,7 +2373,8 @@ export default function Page() {
                   setError(err.message);
                 }
               }}
-              disabled={!catCode || !catName}
+              disabled={!catCode.trim() || !catName.trim()}
+              aria-label="Add category"
             >
               Add category
             </button>
@@ -2133,6 +2422,7 @@ export default function Page() {
                       <button
                         type="button"
                         className="btn-ok"
+                        aria-label={`Activate category ${c.id}`}
                         onClick={async () => {
                           setError('');
                           try {
@@ -2152,12 +2442,12 @@ export default function Page() {
                     ) : (
                       <>
                         <select
-                          aria-label={`Parent for ${c.code}`}
+                          aria-label={`Edit category parent ${c.code}`}
                           value={c.parent_id || ''}
                           onChange={async (e) => {
                             setError('');
                             try {
-                              const value = e.target.value || null;
+                              const value = e.target.value.trim() || null;
                               await api(`/catalog/categories/${c.id}`, {
                                 method: 'PATCH',
                                 body: JSON.stringify({ parent_id: value }),
@@ -2184,11 +2474,12 @@ export default function Page() {
                             ))}
                         </select>
                         <select
+                          aria-label={`Edit category tax rate ${c.code}`}
                           value={c.tax_rate_id || ''}
                           onChange={async (e) => {
                             setError('');
                             try {
-                              const value = e.target.value || null;
+                              const value = e.target.value.trim() || null;
                               await api(`/catalog/categories/${c.id}`, {
                                 method: 'PATCH',
                                 body: JSON.stringify({ tax_rate_id: value }),
@@ -2214,6 +2505,7 @@ export default function Page() {
                         <button
                           type="button"
                           className="btn-danger"
+                          aria-label={`Deactivate category ${c.id}`}
                           onClick={async () => {
                             setError('');
                             try {
@@ -2240,12 +2532,26 @@ export default function Page() {
             <p className="muted" style={{ margin: 0 }}>
               Name, description, and logo (BR-5.1).
             </p>
-            <input value={brandCode} onChange={(e) => setBrandCode(e.target.value)} placeholder="Code" />
-            <input value={brandName} onChange={(e) => setBrandName(e.target.value)} placeholder="Name" />
+            <input
+              value={brandCode}
+              onChange={(e) => setBrandCode(e.target.value)}
+              placeholder="Code"
+              aria-label="Brand code"
+              title="Brand code (1–40 chars; letters/digits required)"
+            />
+            <input
+              value={brandName}
+              onChange={(e) => setBrandName(e.target.value)}
+              placeholder="Name"
+              aria-label="Brand name"
+              title="Brand name (1–120 chars; letters/digits required)"
+            />
             <textarea
               value={brandDescription}
               onChange={(e) => setBrandDescription(e.target.value)}
               placeholder="Description (optional)"
+              aria-label="Brand description"
+              title="Optional description (1–500 chars; letters/digits required)"
               rows={2}
             />
             <button
@@ -2255,8 +2561,8 @@ export default function Page() {
                   await api('/catalog/brands', {
                     method: 'POST',
                     body: JSON.stringify({
-                      code: brandCode,
-                      name: brandName,
+                      code: brandCode.trim(),
+                      name: brandName.trim(),
                       description: brandDescription.trim() || null,
                     }),
                   });
@@ -2269,7 +2575,8 @@ export default function Page() {
                   setError(err.message);
                 }
               }}
-              disabled={!brandCode || !brandName}
+              disabled={!brandCode.trim() || !brandName.trim()}
+              aria-label="Add brand"
             >
               Add brand
             </button>
@@ -2309,6 +2616,7 @@ export default function Page() {
                     <button
                       type="button"
                       className="btn-ok"
+                      aria-label={`Activate brand ${b.id}`}
                       onClick={async () => {
                         setError('');
                         try {
@@ -2332,6 +2640,7 @@ export default function Page() {
                         <input
                           type="file"
                           accept="image/png,image/jpeg,image/webp,image/gif"
+                          aria-label={`Brand logo file ${b.id}`}
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) uploadBrandLogo(b.id, file);
@@ -2340,13 +2649,14 @@ export default function Page() {
                         />
                       </label>
                       {b.has_logo && (
-                        <button type="button" onClick={() => removeBrandLogo(b.id)}>
+                        <button type="button" onClick={() => removeBrandLogo(b.id)} aria-label={`Remove brand logo ${b.id}`}>
                           Remove logo
                         </button>
                       )}
                       <button
                         type="button"
                         className="btn-danger"
+                        aria-label={`Deactivate brand ${b.id}`}
                         onClick={async () => {
                           setError('');
                           try {
@@ -2372,9 +2682,25 @@ export default function Page() {
               Optional base + ratio: 1 of this unit = ratio × base (e.g. BOX = 12 PCS). Stock stays in the
               product&apos;s stock unit.
             </p>
-            <input value={unitCode} onChange={(e) => setUnitCode(e.target.value)} placeholder="Code" />
-            <input value={unitName} onChange={(e) => setUnitName(e.target.value)} placeholder="Name" />
-            <select value={unitBaseId} onChange={(e) => setUnitBaseId(e.target.value)}>
+            <input
+              value={unitCode}
+              onChange={(e) => setUnitCode(e.target.value)}
+              placeholder="Code"
+              aria-label="Unit code"
+              title="Unit code (1–20 chars; letters/digits required)"
+            />
+            <input
+              value={unitName}
+              onChange={(e) => setUnitName(e.target.value)}
+              placeholder="Name"
+              aria-label="Unit name"
+              title="Unit name (1–80 chars; letters/digits required)"
+            />
+            <select
+              value={unitBaseId}
+              onChange={(e) => setUnitBaseId(e.target.value)}
+              aria-label="Unit base unit"
+            >
               <option value="">Base unit (root / none)</option>
               {units
                 .filter((u) => u.is_active !== false && !u.base_unit_id)
@@ -2388,6 +2714,7 @@ export default function Page() {
               value={unitRatio}
               onChange={(e) => setUnitRatio(e.target.value)}
               placeholder="Conversion ratio"
+              aria-label="Unit conversion ratio"
               disabled={!unitBaseId}
             />
             <button
@@ -2397,10 +2724,10 @@ export default function Page() {
                   await api('/catalog/units', {
                     method: 'POST',
                     body: JSON.stringify({
-                      code: unitCode,
-                      name: unitName,
-                      base_unit_id: unitBaseId || null,
-                      conversion_ratio: unitBaseId ? Number(unitRatio) || 1 : 1,
+                      code: unitCode.trim(),
+                      name: unitName.trim(),
+                      base_unit_id: unitBaseId.trim() || null,
+                      conversion_ratio: unitBaseId.trim() ? Number(unitRatio) || 1 : 1,
                     }),
                   });
                   setUnitCode('');
@@ -2413,7 +2740,8 @@ export default function Page() {
                   setError(err.message);
                 }
               }}
-              disabled={!unitCode || !unitName}
+              disabled={!unitCode.trim() || !unitName.trim()}
+              aria-label="Add unit"
             >
               Add unit
             </button>
@@ -2441,6 +2769,7 @@ export default function Page() {
                     <button
                       type="button"
                       className="btn-ok"
+                      aria-label={`Activate unit ${u.id}`}
                       onClick={async () => {
                         setError('');
                         try {
@@ -2461,6 +2790,7 @@ export default function Page() {
                     <button
                       type="button"
                       className="btn-danger"
+                      aria-label={`Deactivate unit ${u.id}`}
                       onClick={async () => {
                         setError('');
                         try {
@@ -2491,30 +2821,60 @@ export default function Page() {
               Size, color, flavor, dosage (pharmacy) with unique SKUs and barcodes (BR-5.1). Use the
               product symbology picker above for Generate / Print on each row.
             </p>
-            <input value={variantName} onChange={(e) => setVariantName(e.target.value)} placeholder="Name" />
+            <input
+              value={variantName}
+              onChange={(e) => setVariantName(e.target.value)}
+              placeholder="Name"
+              aria-label="Variant name"
+              title="Variant name (1–120 chars; letters/digits required)"
+            />
             <input
               value={variantSku}
               onChange={(e) => setVariantSku(e.target.value)}
               placeholder="SKU (auto if blank)"
+              aria-label="Variant SKU"
+              title="Optional SKU (1–100 chars: letters, digits, . _ -; blank → auto)"
             />
             <input
               value={variantBarcode}
               onChange={(e) => setVariantBarcode(e.target.value)}
               placeholder="Barcode (optional)"
+              aria-label="Variant barcode"
+              title="Optional barcode (4–48 chars: letters, numbers, - . _)"
             />
-            <input value={variantSize} onChange={(e) => setVariantSize(e.target.value)} placeholder="Size (optional)" />
-            <input value={variantColor} onChange={(e) => setVariantColor(e.target.value)} placeholder="Color (optional)" />
+            <input
+              value={variantSize}
+              onChange={(e) => setVariantSize(e.target.value)}
+              placeholder="Size (optional)"
+              aria-label="Variant size"
+              title="Optional size (1–80 chars; letters/digits required)"
+            />
+            <input
+              value={variantColor}
+              onChange={(e) => setVariantColor(e.target.value)}
+              placeholder="Color (optional)"
+              aria-label="Variant color"
+              title="Optional color (1–80 chars; letters/digits required)"
+            />
             <input
               value={variantFlavor}
               onChange={(e) => setVariantFlavor(e.target.value)}
               placeholder="Flavor (optional)"
+              aria-label="Variant flavor"
+              title="Optional flavor (1–80 chars; letters/digits required)"
             />
             <input
               value={variantDosage}
               onChange={(e) => setVariantDosage(e.target.value)}
               placeholder="Dosage (optional)"
+              aria-label="Variant dosage"
+              title="Optional dosage (1–80 chars; letters/digits required)"
             />
-            <button onClick={addVariant} disabled={!selectedId || !variantName.trim()}>
+            <button
+              onClick={addVariant}
+              disabled={!selectedId || !variantName.trim()}
+              aria-label="Create variant"
+            >
               Create variant
             </button>
           </div>
@@ -2542,6 +2902,7 @@ export default function Page() {
                 <th>Flavor</th>
                 <th>Dosage</th>
                 <th>Stock</th>
+                <th>Cost</th>
                 <th>Price</th>
                 <th>Active</th>
                 <th />
@@ -2574,6 +2935,18 @@ export default function Page() {
                   <td>{v.stock_qty}</td>
                   <td>
                     <input
+                      defaultValue={String(v.cost_price ?? 0)}
+                      style={{ width: 80 }}
+                      onBlur={(e) => {
+                        if (String(v.cost_price) !== e.target.value) {
+                          saveVariantCost(v.id, e.target.value);
+                        }
+                      }}
+                      aria-label={`Variant cost price ${v.name || v.sku || v.id}`}
+                    />
+                  </td>
+                  <td>
+                    <input
                       defaultValue={String(v.selling_price ?? 0)}
                       style={{ width: 80 }}
                       onBlur={(e) => {
@@ -2581,24 +2954,34 @@ export default function Page() {
                           saveVariantPrice(v.id, e.target.value);
                         }
                       }}
+                      aria-label={`Variant selling price ${v.name || v.sku || v.id}`}
                     />
                   </td>
                   <td>{v.is_active ? 'yes' : 'no'}</td>
                   <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    <button type="button" onClick={() => generateVariantBarcode(v.id)}>
+                    <button
+                      type="button"
+                      onClick={() => generateVariantBarcode(v.id)}
+                      aria-label={`Generate variant barcode ${v.id}`}
+                    >
                       Generate
                     </button>
-                    <button type="button" onClick={() => printVariantBarcodeLabel(v.id)}>
+                    <button
+                      type="button"
+                      onClick={() => printVariantBarcodeLabel(v.id)}
+                      aria-label={`Print variant barcode label ${v.id}`}
+                    >
                       Label
                     </button>
                     {v.is_active === false ? (
-                      <button type="button" className="btn-ok" onClick={() => activateVariant(v.id)}>
+                      <button type="button" className="btn-ok" aria-label={`Activate variant ${v.id}`} onClick={() => activateVariant(v.id)}>
                         Activate
                       </button>
                     ) : (
                       <button
                         type="button"
                         className="btn-danger"
+                        aria-label={`Deactivate variant ${v.id}`}
                         onClick={() => deactivateVariant(v.id)}
                       >
                         Deactivate
@@ -2623,6 +3006,8 @@ export default function Page() {
             <select
               value={stockWarehouseId}
               onChange={(e) => setStockWarehouseId(e.target.value)}
+              aria-label="Stock-in warehouse"
+              title="Optional warehouse for stock-in (UuidIdValue)"
             >
               <option value="">Warehouse (optional)</option>
               {warehouses
@@ -2633,7 +3018,11 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <select value={stockVariantId} onChange={(e) => setStockVariantId(e.target.value)}>
+            <select
+              value={stockVariantId}
+              onChange={(e) => setStockVariantId(e.target.value)}
+              aria-label="Stock-in variant"
+            >
               <option value="">Variant (optional)</option>
               {variants
                 .filter((v) => v.is_active !== false)
@@ -2643,13 +3032,42 @@ export default function Page() {
                   </option>
                 ))}
             </select>
-            <input value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)} placeholder="Batch number" />
+            <input
+              value={batchNumber}
+              onChange={(e) => setBatchNumber(e.target.value)}
+              placeholder="Batch number"
+              aria-label="Stock-in batch number"
+              title="Batch / lot number (1–80 chars; letters/digits required)"
+            />
             <label className="muted">Manufacturing date</label>
-            <input type="date" value={mfgDate} onChange={(e) => setMfgDate(e.target.value)} />
+            <input
+              aria-label="Stock-in manufacturing date"
+              type="text"
+              placeholder="YYYY-MM-DD"
+              title="Manufacturing date (optional YYYY-MM-DD)"
+              value={mfgDate}
+              onChange={(e) => setMfgDate(e.target.value)}
+            />
             <label className="muted">Expiry date</label>
-            <input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
-            <input value={stockQty} onChange={(e) => setStockQty(e.target.value)} placeholder="Quantity" />
-            <select value={stockUnitId} onChange={(e) => setStockUnitId(e.target.value)}>
+            <input
+              aria-label="Stock-in expiry date"
+              type="text"
+              placeholder="YYYY-MM-DD"
+              title="Expiry date (optional YYYY-MM-DD)"
+              value={expiryDate}
+              onChange={(e) => setExpiryDate(e.target.value)}
+            />
+            <input
+              value={stockQty}
+              onChange={(e) => setStockQty(e.target.value)}
+              placeholder="Quantity"
+              aria-label="Stock-in quantity"
+            />
+            <select
+              value={stockUnitId}
+              onChange={(e) => setStockUnitId(e.target.value)}
+              aria-label="Stock-in unit"
+            >
               <option value="">Unit (default = product stock unit)</option>
               {units
                 .filter((u) => u.is_active !== false)
@@ -2664,8 +3082,30 @@ export default function Page() {
               value={stockNotes}
               onChange={(e) => setStockNotes(e.target.value)}
               placeholder="Notes (optional)"
+              aria-label="Stock-in notes"
+              title="Optional notes (1–500 chars; letters/digits required)"
             />
-            <button onClick={stockInBatch} disabled={!selectedId || !batchNumber}>
+            <input
+              value={stockRefType}
+              onChange={(e) => setStockRefType(e.target.value)}
+              placeholder="Reference type (optional)"
+              aria-label="Stock-in reference type"
+              title="Optional source code (1–50 chars; letters/digits required; blank → omit)"
+            />
+            <input
+              value={stockRefId}
+              onChange={(e) => setStockRefId(e.target.value)}
+              placeholder="Reference id (optional)"
+              aria-label="Stock-in reference id"
+              title="Optional external reference (1–36 chars; letters/digits required)"
+            />
+            <button
+              type="button"
+              className="btn-ok"
+              onClick={stockInBatch}
+              disabled={!selectedId || !batchNumber}
+              aria-label="Receive batch"
+            >
               Receive batch
             </button>
           </div>
@@ -2713,6 +3153,8 @@ export default function Page() {
             <select
               value={openingWarehouseId}
               onChange={(e) => setOpeningWarehouseId(e.target.value)}
+              aria-label="Opening stock warehouse"
+              title="Optional warehouse for opening stock line (UuidIdValue)"
             >
               <option value="">Warehouse (optional)</option>
               {warehouses
@@ -2723,7 +3165,11 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <select value={openingVariantId} onChange={(e) => setOpeningVariantId(e.target.value)}>
+            <select
+              value={openingVariantId}
+              onChange={(e) => setOpeningVariantId(e.target.value)}
+              aria-label="Opening stock variant"
+            >
               <option value="">Variant (optional)</option>
               {variants
                 .filter((v) => v.is_active !== false)
@@ -2737,8 +3183,13 @@ export default function Page() {
               value={openingQty}
               onChange={(e) => setOpeningQty(e.target.value)}
               placeholder="Quantity"
+              aria-label="Opening stock quantity"
             />
-            <select value={openingUnitId} onChange={(e) => setOpeningUnitId(e.target.value)}>
+            <select
+              value={openingUnitId}
+              onChange={(e) => setOpeningUnitId(e.target.value)}
+              aria-label="Opening stock unit"
+            >
               <option value="">Unit (product default)</option>
               {units
                 .filter((u) => u.is_active !== false)
@@ -2752,17 +3203,30 @@ export default function Page() {
               value={openingUnitCost}
               onChange={(e) => setOpeningUnitCost(e.target.value)}
               placeholder={`Unit cost (default ${selected?.cost_price ?? 0})`}
+              aria-label="Opening stock unit cost"
             />
             <input
               value={openingBatch}
               onChange={(e) => setOpeningBatch(e.target.value)}
               placeholder="Batch number (if tracked)"
+              aria-label="Opening stock batch number"
+              title="Optional batch / lot number (1–80 chars; letters/digits required)"
             />
             <label className="muted">Manufacturing date</label>
-            <input type="date" value={openingMfg} onChange={(e) => setOpeningMfg(e.target.value)} />
+            <input
+              aria-label="Opening stock manufacturing date"
+              type="text"
+              placeholder="YYYY-MM-DD"
+              title="Manufacturing date (optional YYYY-MM-DD)"
+              value={openingMfg}
+              onChange={(e) => setOpeningMfg(e.target.value)}
+            />
             <label className="muted">Expiry date</label>
             <input
-              type="date"
+              aria-label="Opening stock expiry date"
+              type="text"
+              placeholder="YYYY-MM-DD"
+              title="Expiry date (optional YYYY-MM-DD)"
               value={openingExpiry}
               onChange={(e) => setOpeningExpiry(e.target.value)}
             />
@@ -2770,21 +3234,39 @@ export default function Page() {
               value={openingReference}
               onChange={(e) => setOpeningReference(e.target.value)}
               placeholder="Reference (blank = next OS-YYYY-NNNN)"
+              aria-label="Opening stock reference"
+              title="Optional reference (1–100 chars; blank = next OS-YYYY-NNNN)"
             />
             <input
               value={openingNotes}
               onChange={(e) => setOpeningNotes(e.target.value)}
               placeholder="Notes"
+              aria-label="Opening stock notes"
+              title="Optional notes (1–500 chars; letters/digits required)"
+            />
+            <input
+              value={openingLineNotes}
+              onChange={(e) => setOpeningLineNotes(e.target.value)}
+              placeholder="Line notes (optional)"
+              aria-label="Opening stock line notes"
+              title="Optional per-line notes (1–500 chars; letters/digits required)"
             />
             <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <input
                 type="checkbox"
+                aria-label="Opening stock post journal"
                 checked={openingPostJournal}
                 onChange={(e) => setOpeningPostJournal(e.target.checked)}
               />
               Post inventory / equity journal
             </label>
-            <button type="button" className="btn-ok" onClick={postOpeningStock} disabled={!selectedId}>
+            <button
+              type="button"
+              className="btn-ok"
+              onClick={postOpeningStock}
+              disabled={!selectedId}
+              aria-label="Post opening stock"
+            >
               Post opening stock
             </button>
           </div>
@@ -2851,7 +3333,11 @@ export default function Page() {
         <>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>Start stock count</h3>
-            <select value={countWarehouseId} onChange={(e) => setCountWarehouseId(e.target.value)}>
+            <select
+              value={countWarehouseId}
+              onChange={(e) => setCountWarehouseId(e.target.value)}
+              aria-label="Stock count warehouse"
+            >
               <option value="">Warehouse</option>
               {warehouses
                 .filter((w) => w.is_active !== false)
@@ -2861,7 +3347,20 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <button type="button" onClick={startStockCount} disabled={!countWarehouseId}>
+            <input
+              value={countNotes}
+              onChange={(e) => setCountNotes(e.target.value)}
+              placeholder="Notes (optional)"
+              aria-label="Stock count notes"
+              title="Optional notes (1–500 chars; letters/digits required)"
+            />
+            <button
+              type="button"
+              className="btn-ok"
+              onClick={startStockCount}
+              disabled={!countWarehouseId}
+              aria-label="Create draft count"
+            >
               Create draft count
             </button>
           </div>
@@ -2874,6 +3373,8 @@ export default function Page() {
                 onChange={(e) => setCountCancelReason(e.target.value)}
                 placeholder="Required before Cancel"
                 style={{ minWidth: 280 }}
+                title="Required cancel reason (1–500 chars; letters/digits required)"
+                aria-label="Stock count cancel reason"
               />
             </label>
             <p className="muted" style={{ marginTop: 6 }}>
@@ -2882,6 +3383,22 @@ export default function Page() {
             </p>
           </div>
 
+          <select
+            value={countManageFilter}
+            onChange={(e) =>
+              setCountManageFilter(
+                e.target.value as 'all' | 'draft' | 'completed' | 'cancelled'
+              )
+            }
+            title="Filter stock count list by status"
+            aria-label="Stock count status filter"
+            style={{ marginBottom: 12 }}
+          >
+            <option value="all">All statuses</option>
+            <option value="draft">Draft only</option>
+            <option value="completed">Completed only</option>
+            <option value="cancelled">Cancelled only</option>
+          </select>
           <table className="table" style={{ marginBottom: 16 }}>
             <thead>
               <tr>
@@ -2893,7 +3410,7 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {counts.map((c) => (
+              {managedCounts.map((c) => (
                 <tr key={c.id}>
                   <td>{c.count_number}</td>
                   <td>{c.status}</td>
@@ -2904,17 +3421,29 @@ export default function Page() {
                     {c.notes || '—'}
                   </td>
                   <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                    <button type="button" onClick={() => openCount(c.id)}>
+                    <button type="button" onClick={() => openCount(c.id)} aria-label={`Open stock count ${c.id}`}>
                       Open
                     </button>
                     {(c.can_cancel || c.status === 'draft') && (
-                      <button type="button" className="btn-danger" onClick={() => cancelStockCount(c.id, c.count_number)}>
+                      <button
+                        type="button"
+                        className="btn-danger"
+                        onClick={() => cancelStockCount(c.id, c.count_number)}
+                        aria-label={`Cancel stock count ${c.id}`}
+                      >
                         Cancel
                       </button>
                     )}
                   </td>
                 </tr>
               ))}
+              {!managedCounts.length && (
+                <tr>
+                  <td colSpan={5} className="muted">
+                    No stock counts for this filter
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
 
@@ -2935,6 +3464,7 @@ export default function Page() {
                     <th>Expected</th>
                     <th>Counted</th>
                     <th>Variance</th>
+                    <th>Line notes</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2956,9 +3486,26 @@ export default function Page() {
                               setCountQtys({ ...countQtys, [item.product_id]: e.target.value })
                             }
                             style={{ width: 90 }}
+                            aria-label={`Counted qty ${item.product_sku || item.product_id}`}
                           />
                         </td>
                         <td>{Number.isFinite(variance) ? variance : '—'}</td>
+                        <td>
+                          <input
+                            value={countLineNotes[item.product_id] ?? ''}
+                            disabled={activeCount.status !== 'draft'}
+                            onChange={(e) =>
+                              setCountLineNotes({
+                                ...countLineNotes,
+                                [item.product_id]: e.target.value,
+                              })
+                            }
+                            placeholder="Line notes (optional)"
+                            aria-label={`Stock count line notes ${item.product_sku || item.product_id}`}
+                            title="Optional line notes (1–500 chars; letters/digits required)"
+                            style={{ width: 180 }}
+                          />
+                        </td>
                       </tr>
                     );
                   })}
@@ -2966,16 +3513,17 @@ export default function Page() {
               </table>
               {activeCount.status === 'draft' && (
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <button type="button" onClick={saveCountLines}>
+                  <button type="button" onClick={saveCountLines} aria-label="Save count lines">
                     Save counts
                   </button>
-                  <button type="button" onClick={completeActiveCount}>
+                  <button type="button" onClick={completeActiveCount} aria-label="Complete stock count and post variances">
                     Complete &amp; post variances
                   </button>
                   <button
                     type="button"
                     className="btn-danger"
                     onClick={() => cancelStockCount(activeCount.id, activeCount.count_number)}
+                    aria-label={`Cancel stock count ${activeCount.id}`}
                   >
                     Cancel count
                   </button>
@@ -2995,7 +3543,11 @@ export default function Page() {
               date, or the selected product above.
             </p>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              <select value={mvWarehouseId} onChange={(e) => setMvWarehouseId(e.target.value)}>
+              <select
+                value={mvWarehouseId}
+                onChange={(e) => setMvWarehouseId(e.target.value)}
+                aria-label="Movement warehouse filter"
+              >
                 <option value="">All warehouses</option>
                 {warehouses
                 .filter((w) => w.is_active !== false)
@@ -3032,18 +3584,31 @@ export default function Page() {
                 <option value="lost">lost</option>
               </select>
               <label className="muted">From</label>
-              <input type="date" value={mvFrom} onChange={(e) => setMvFrom(e.target.value)} />
+              <input
+                type="date"
+                value={mvFrom}
+                onChange={(e) => setMvFrom(e.target.value)}
+                title="From date (YYYY-MM-DD)"
+                aria-label="Movement from date"
+              />
               <label className="muted">To</label>
-              <input type="date" value={mvTo} onChange={(e) => setMvTo(e.target.value)} />
+              <input
+                type="date"
+                value={mvTo}
+                onChange={(e) => setMvTo(e.target.value)}
+                title="To date (YYYY-MM-DD)"
+                aria-label="Movement to date"
+              />
               <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                 <input
                   type="checkbox"
                   checked={mvProductOnly}
                   onChange={(e) => setMvProductOnly(e.target.checked)}
+                  aria-label="Movement selected product only"
                 />
                 Selected product only
               </label>
-              <button type="button" onClick={() => loadMovements()}>
+              <button type="button" onClick={() => loadMovements()} aria-label="Refresh inventory movements">
                 Refresh
               </button>
             </div>
@@ -3119,6 +3684,7 @@ export default function Page() {
             value={adjQty}
             onChange={(e) => setAdjQty(e.target.value)}
             placeholder="-1"
+            aria-label="Stock adjustment quantity"
           />
           <label className="muted">Reason</label>
           <select
@@ -3134,7 +3700,12 @@ export default function Page() {
             <option value="lost">lost</option>
           </select>
           <label className="muted">Warehouse (optional)</label>
-          <select value={adjWarehouseId} onChange={(e) => setAdjWarehouseId(e.target.value)}>
+          <select
+            value={adjWarehouseId}
+            onChange={(e) => setAdjWarehouseId(e.target.value)}
+            aria-label="Stock adjustment warehouse"
+            title="Optional warehouse for adjustment (UuidIdValue)"
+          >
             <option value="">Company / product stock only</option>
             {warehouses
                 .filter((w) => w.is_active !== false)
@@ -3149,8 +3720,16 @@ export default function Page() {
             value={adjNotes}
             onChange={(e) => setAdjNotes(e.target.value)}
             placeholder="Details"
+            aria-label="Stock adjustment notes"
+            title="Optional notes (1–500 chars; letters/digits required)"
           />
-          <button type="button" className="btn-ok" onClick={postStockAdjust} disabled={!selectedId || !adjReason}>
+          <button
+            type="button"
+            className="btn-ok"
+            onClick={postStockAdjust}
+            disabled={!selectedId || !adjReason}
+            aria-label="Post stock adjustment"
+          >
             Post adjustment
           </button>
         </div>
@@ -3173,6 +3752,7 @@ export default function Page() {
             value={outQty}
             onChange={(e) => setOutQty(e.target.value)}
             placeholder="1"
+            aria-label="Stock-out quantity"
           />
           <label className="muted">Reference type</label>
           <select
@@ -3193,9 +3773,16 @@ export default function Page() {
             value={outRefId}
             onChange={(e) => setOutRefId(e.target.value)}
             placeholder="Invoice / transfer / ticket id"
+            aria-label="Stock-out reference id"
+            title="Optional external reference (1–36 chars; letters/digits required)"
           />
           <label className="muted">Warehouse (optional)</label>
-          <select value={outWarehouseId} onChange={(e) => setOutWarehouseId(e.target.value)}>
+          <select
+            value={outWarehouseId}
+            onChange={(e) => setOutWarehouseId(e.target.value)}
+            aria-label="Stock-out warehouse"
+            title="Optional warehouse for stock-out (UuidIdValue)"
+          >
             <option value="">Company / product stock only</option>
             {warehouses
                 .filter((w) => w.is_active !== false)
@@ -3206,7 +3793,11 @@ export default function Page() {
             ))}
           </select>
           <label className="muted">Variant (optional)</label>
-          <select value={outVariantId} onChange={(e) => setOutVariantId(e.target.value)}>
+          <select
+            value={outVariantId}
+            onChange={(e) => setOutVariantId(e.target.value)}
+            aria-label="Stock-out variant"
+          >
             <option value="">None</option>
             {variants
               .filter((v) => v.is_active !== false)
@@ -3217,7 +3808,11 @@ export default function Page() {
               ))}
           </select>
           <label className="muted">Unit (optional)</label>
-          <select value={outUnitId} onChange={(e) => setOutUnitId(e.target.value)}>
+          <select
+            value={outUnitId}
+            onChange={(e) => setOutUnitId(e.target.value)}
+            aria-label="Stock-out unit"
+          >
             <option value="">Default = product stock unit</option>
             {units
               .filter((u) => u.is_active !== false)
@@ -3229,7 +3824,11 @@ export default function Page() {
               ))}
           </select>
           <label className="muted">Batch (optional — otherwise FEFO)</label>
-          <select value={outBatchId} onChange={(e) => setOutBatchId(e.target.value)}>
+          <select
+            value={outBatchId}
+            onChange={(e) => setOutBatchId(e.target.value)}
+            aria-label="Stock-out batch"
+          >
             <option value="">FEFO across open batches</option>
             {batches
               .filter((b) => Number(b.quantity) > 0)
@@ -3245,8 +3844,16 @@ export default function Page() {
             value={outNotes}
             onChange={(e) => setOutNotes(e.target.value)}
             placeholder="Details"
+            aria-label="Stock-out notes"
+            title="Optional notes (1–500 chars; letters/digits required)"
           />
-          <button type="button" className="btn-ok" onClick={postStockOut} disabled={!selectedId || !outRefType}>
+          <button
+            type="button"
+            className="btn-ok"
+            onClick={postStockOut}
+            disabled={!selectedId || !outRefType}
+            aria-label="Post stock out"
+          >
             Post stock out
           </button>
         </div>
@@ -3263,6 +3870,7 @@ export default function Page() {
             <select
               value={whStockWarehouseId}
               onChange={(e) => setWhStockWarehouseId(e.target.value)}
+              aria-label="Warehouse stock warehouse"
             >
               <option value="">Select warehouse</option>
               {warehouses
@@ -3278,10 +3886,11 @@ export default function Page() {
                 type="checkbox"
                 checked={whStockIncludeZero}
                 onChange={(e) => setWhStockIncludeZero(e.target.checked)}
+                aria-label="Warehouse stock include zero"
               />
               <span className="muted">Include zero-qty rows</span>
             </label>
-            <button type="button" onClick={() => loadWarehouseStock()} disabled={!whStockWarehouseId}>
+            <button type="button" onClick={() => loadWarehouseStock()} disabled={!whStockWarehouseId} aria-label="Refresh warehouse stock">
               Refresh
             </button>
             <p className="muted" style={{ margin: 0 }}>
@@ -3307,6 +3916,7 @@ export default function Page() {
                   setWhReorderQty(String(row.reorder_qty ?? 0));
                 }
               }}
+              aria-label="Warehouse reorder product"
             >
               <option value="">Product</option>
               {products.map((p) => (
@@ -3319,16 +3929,19 @@ export default function Page() {
               value={whReorderLevel}
               onChange={(e) => setWhReorderLevel(e.target.value)}
               placeholder="Reorder level"
+              aria-label="Warehouse reorder level"
             />
             <input
               value={whReorderQty}
               onChange={(e) => setWhReorderQty(e.target.value)}
               placeholder="Reorder qty"
+              aria-label="Warehouse reorder qty"
             />
             <button
               type="button"
               onClick={saveWarehouseReorder}
               disabled={!whStockWarehouseId || !whReorderProductId}
+              aria-label="Save warehouse reorder policy"
             >
               Save reorder policy
             </button>
@@ -3388,7 +4001,12 @@ export default function Page() {
               {selected ? `${selected.name} (${selected.sku}) — on-hand ${selected.stock_qty}` : 'none'}
             </p>
             <label className="muted">From warehouse</label>
-            <select value={xferFromWh} onChange={(e) => setXferFromWh(e.target.value)}>
+            <select
+              value={xferFromWh}
+              onChange={(e) => setXferFromWh(e.target.value)}
+              aria-label="Stock transfer from warehouse"
+              title="Source warehouse for transfer (UuidIdValue)"
+            >
               <option value="">Select source</option>
               {warehouses
                 .filter((w) => w.store_id)
@@ -3399,7 +4017,12 @@ export default function Page() {
                 ))}
             </select>
             <label className="muted">To warehouse</label>
-            <select value={xferToWh} onChange={(e) => setXferToWh(e.target.value)}>
+            <select
+              value={xferToWh}
+              onChange={(e) => setXferToWh(e.target.value)}
+              aria-label="Stock transfer to warehouse"
+              title="Destination warehouse for transfer (UuidIdValue)"
+            >
               <option value="">Select destination</option>
               {warehouses
                 .filter((w) => w.store_id)
@@ -3410,17 +4033,25 @@ export default function Page() {
                 ))}
             </select>
             <label className="muted">Quantity</label>
-            <input value={xferQty} onChange={(e) => setXferQty(e.target.value)} placeholder="1" />
+            <input
+              value={xferQty}
+              onChange={(e) => setXferQty(e.target.value)}
+              placeholder="1"
+              aria-label="Stock transfer quantity"
+            />
             <label className="muted">Notes (optional)</label>
             <input
               value={xferNotes}
               onChange={(e) => setXferNotes(e.target.value)}
               placeholder="Transfer note"
+              aria-label="Stock transfer notes"
+              title="Optional notes (1–500 chars; letters/digits required)"
             />
             <button
               type="button"
               onClick={createWarehouseTransfer}
               disabled={!selectedId || !xferFromWh || !xferToWh}
+              aria-label="Create stock transfer"
             >
               Create &amp; request
             </button>
@@ -3438,6 +4069,8 @@ export default function Page() {
                 value={xferRejectReason}
                 onChange={(e) => setXferRejectReason(e.target.value)}
                 placeholder="Required before Reject or Cancel"
+                title="Required reject/cancel reason (1–500 chars; letters/digits required)"
+                aria-label="Stock transfer reject reason"
                 style={{ minWidth: 280 }}
               />
             </label>
@@ -3445,9 +4078,33 @@ export default function Page() {
               Used by Reject and Cancel (stored as <code>rejection_reason</code>; status → cancelled).
             </p>
           </div>
-          <button type="button" onClick={() => loadTransfers()} style={{ marginBottom: 8 }}>
+          <button type="button" onClick={() => loadTransfers()} style={{ marginBottom: 8 }} aria-label="Refresh stock transfers">
             Refresh
           </button>
+          <select
+            value={transferManageFilter}
+            onChange={(e) =>
+              setTransferManageFilter(
+                e.target.value as
+                  | 'all'
+                  | 'draft'
+                  | 'requested'
+                  | 'in_transit'
+                  | 'received'
+                  | 'cancelled'
+              )
+            }
+            title="Filter stock transfer list by status"
+            aria-label="Stock transfer status filter"
+            style={{ marginBottom: 12, marginLeft: 8 }}
+          >
+            <option value="all">All statuses</option>
+            <option value="draft">Draft only</option>
+            <option value="requested">Requested only</option>
+            <option value="in_transit">In transit only</option>
+            <option value="received">Received only</option>
+            <option value="cancelled">Cancelled only</option>
+          </select>
           <table className="table">
             <thead>
               <tr>
@@ -3461,7 +4118,7 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {transfers.map((t) => (
+              {managedTransfers.map((t) => (
                 <tr key={t.id}>
                   <td>{t.transfer_number}</td>
                   <td>{warehouseLabel(t.from_warehouse_id)}</td>
@@ -3481,13 +4138,13 @@ export default function Page() {
                   <td className="muted">{t.rejection_reason || '—'}</td>
                   <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {t.status === 'draft' && (
-                      <button type="button" className="btn-ok" onClick={() => transferAct(t.id, 'submit')}>
+                      <button type="button" className="btn-ok" onClick={() => transferAct(t.id, 'submit')} aria-label={`Submit stock transfer ${t.id}`}>
                         Submit
                       </button>
                     )}
                     {t.status === 'requested' && !t.fully_approved && (
                       <>
-                        <button type="button" className="btn-ok" onClick={() => transferAct(t.id, 'approve')}>
+                        <button type="button" className="btn-ok" onClick={() => transferAct(t.id, 'approve')} aria-label={`Approve stock transfer ${t.id}`}>
                           Approve
                           {t.approval_steps_required > 1
                             ? t.awaiting_approval === 'dest'
@@ -3495,33 +4152,40 @@ export default function Page() {
                               : ' source'
                             : ''}
                         </button>
-                        <button type="button" className="btn-danger" onClick={() => transferAct(t.id, 'reject')}>
+                        <button
+                          type="button"
+                          className="btn-danger"
+                          onClick={() => transferAct(t.id, 'reject')}
+                          aria-label={`Reject stock transfer ${t.id}`}
+                        >
                           Reject
                         </button>
                       </>
                     )}
                     {t.can_ship && (
-                      <button type="button" className="btn-ok" onClick={() => transferAct(t.id, 'ship')}>
+                      <button type="button" className="btn-ok" onClick={() => transferAct(t.id, 'ship')} aria-label={`Ship stock transfer ${t.id}`}>
                         Ship
                       </button>
                     )}
                     {t.status === 'in_transit' && (
-                      <button type="button" className="btn-ok" onClick={() => transferAct(t.id, 'receive')}>
+                      <button type="button" className="btn-ok" onClick={() => transferAct(t.id, 'receive')} aria-label={`Receive stock transfer ${t.id}`}>
                         Receive
                       </button>
                     )}
                     {['draft', 'requested', 'in_transit'].includes(t.status) && (
-                      <button type="button" className="btn-danger" onClick={() => transferAct(t.id, 'cancel')}>
+                      <button type="button" className="btn-danger" onClick={() => transferAct(t.id, 'cancel')} aria-label={`Cancel stock transfer ${t.id}`}>
                         Cancel
                       </button>
                     )}
                   </td>
                 </tr>
               ))}
-              {transfers.length === 0 && (
+              {managedTransfers.length === 0 && (
                 <tr>
                   <td colSpan={7} className="muted">
-                    No transfers yet
+                    {transfers.length === 0
+                      ? 'No transfers yet'
+                      : 'No stock transfers for this filter'}
                   </td>
                 </tr>
               )}

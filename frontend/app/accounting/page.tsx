@@ -15,10 +15,16 @@ export default function Page() {
   const [accountManageFilter, setAccountManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [liquid, setLiquid] = useState<any[]>([]);
   const [journals, setJournals] = useState<any[]>([]);
+  const [journalManageFilter, setJournalManageFilter] = useState<'all' | 'posted' | 'unposted'>(
+    'all'
+  );
   const [transfers, setTransfers] = useState<any[]>([]);
   const [trial, setTrial] = useState<any>(null);
   const [pnl, setPnl] = useState<any>(null);
   const [statements, setStatements] = useState<any[]>([]);
+  const [statementManageFilter, setStatementManageFilter] = useState<
+    'all' | 'draft' | 'in_progress' | 'reconciled'
+  >('all');
   const [selected, setSelected] = useState<any>(null);
   const [cheques, setCheques] = useState<any[]>([]);
   const [chequeDirection, setChequeDirection] = useState('');
@@ -27,26 +33,42 @@ export default function Page() {
   const [unpostReason, setUnpostReason] = useState('');
   const [error, setError] = useState('');
   const [attachPreview, setAttachPreview] = useState<{ apiPath: string; title: string } | null>(null);
-  type ManualLine = { account_code: string; debit: string; credit: string };
-  const emptyManualLine = (): ManualLine => ({ account_code: '', debit: '', credit: '' });
+  type ManualLine = { account_id: string; debit: string; credit: string; description: string };
+  const emptyManualLine = (): ManualLine => ({
+    account_id: '',
+    debit: '',
+    credit: '',
+    description: '',
+  });
   const [manualLines, setManualLines] = useState<ManualLine[]>([emptyManualLine(), emptyManualLine()]);
   const [description, setDescription] = useState('Manual adjusting entry');
+  const [journalRef, setJournalRef] = useState('');
+  const [entryDate, setEntryDate] = useState('');
   const [message, setMessage] = useState('');
   const [reconAccountId, setReconAccountId] = useState('');
   const [opening, setOpening] = useState('0');
   const [closing, setClosing] = useState('0');
   const [lineAmount, setLineAmount] = useState('100');
   const [lineDesc, setLineDesc] = useState('Deposit');
+  const [lineExternalRef, setLineExternalRef] = useState('');
+  const [stmtNotes, setStmtNotes] = useState('');
+  const [stmtDate, setStmtDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [lineTxnDate, setLineTxnDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [pickBank, setPickBank] = useState<string[]>([]);
   const [pickBook, setPickBook] = useState<string[]>([]);
+  const [clearGroupNotes, setClearGroupNotes] = useState('');
   const [importFile, setImportFile] = useState<File | null>(null);
   const [connections, setConnections] = useState<any[]>([]);
   const [connectionManageFilter, setConnectionManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [connName, setConnName] = useState('Operating account feed');
   const [connProvider, setConnProvider] = useState('mock');
   const [connFeedUrl, setConnFeedUrl] = useState('');
+  const [connAccessToken, setConnAccessToken] = useState('');
   const [connExtId, setConnExtId] = useState('demo-acct-1');
   const [xferKind, setXferKind] = useState('transfer');
+  const [xferKindManageFilter, setXferKindManageFilter] = useState<
+    'all' | 'transfer' | 'deposit' | 'withdrawal'
+  >('all');
   const [xferFrom, setXferFrom] = useState('');
   const [xferTo, setXferTo] = useState('');
   const [xferAmount, setXferAmount] = useState('100');
@@ -64,10 +86,13 @@ export default function Page() {
   const [xferPreview, setXferPreview] = useState('');
   const [newAcctNumber, setNewAcctNumber] = useState('');
   const [newBankBranch, setNewBankBranch] = useState('');
-  const [coaOpenCode, setCoaOpenCode] = useState('1000');
+  const [coaOpenAccountId, setCoaOpenAccountId] = useState('');
   const [coaOpenAmount, setCoaOpenAmount] = useState('0');
-  const [coaOpenLines, setCoaOpenLines] = useState<{ code: string; amount: string }[]>([]);
+  const [coaOpenLines, setCoaOpenLines] = useState<
+    { id: string; code: string; amount: string }[]
+  >([]);
   const [coaOpenRef, setCoaOpenRef] = useState('');
+  const [coaOpenNotes, setCoaOpenNotes] = useState('');
   const [coaOpenStatus, setCoaOpenStatus] = useState<any>(null);
   const [editAcctId, setEditAcctId] = useState('');
   const [editAcctName, setEditAcctName] = useState('');
@@ -86,8 +111,11 @@ export default function Page() {
     const params = new URLSearchParams();
     if (pnlFrom) params.set('from_date', pnlFrom);
     if (pnlTo) params.set('to_date', pnlTo);
-    if (pnlStoreId) params.set('store_id', pnlStoreId);
-    if (pnlBranchId) params.set('branch_id', pnlBranchId);
+    // trim so P&L (UuidIdValue Query store_id/branch_id) do not 422
+    const storeTrim = pnlStoreId.trim();
+    const branchTrim = pnlBranchId.trim();
+    if (storeTrim) params.set('store_id', storeTrim);
+    if (branchTrim) params.set('branch_id', branchTrim);
     const s = params.toString();
     return s ? `?${s}` : '';
   }
@@ -129,6 +157,12 @@ export default function Page() {
       api('/accounting/settings').catch(() => ({ data: null })),
     ]);
     setAccounts(a.data || []);
+    setCoaOpenAccountId((prev) => {
+      if (prev) return prev;
+      const list = a.data || [];
+      const cash = list.find((x: any) => x.code === '1000') || list.find((x: any) => x.is_active !== false);
+      return cash?.id || '';
+    });
     setJournals(j.data || []);
     setTrial(t.data);
     setPnl(p.data);
@@ -251,15 +285,16 @@ export default function Page() {
     setMessage('');
     try {
       const lines = manualLines.map((l) => ({
-        account_code: l.account_code.trim(),
+        account_id: l.account_id.trim() || null,
         debit: Math.max(0, Number(l.debit) || 0),
         credit: Math.max(0, Number(l.credit) || 0),
+        description: l.description.trim() || null,
       }));
       if (lines.length < 2) {
         throw new Error('Journal entry requires at least two lines');
       }
       for (const line of lines) {
-        if (!line.account_code) throw new Error('Each line needs an account code');
+        if (!line.account_id) throw new Error('Each line needs an account');
         if (line.debit <= 0 && line.credit <= 0) {
           throw new Error('Each line needs a debit or credit amount');
         }
@@ -277,12 +312,17 @@ export default function Page() {
       await api('/accounting/journal-entries', {
         method: 'POST',
         body: JSON.stringify({
-          description,
+          description: description.trim(),
+          reference: journalRef.trim() || null,
+          entry_date: entryDate.trim() || null,
           lines,
         }),
       });
       setMessage('Journal posted');
       setManualLines([emptyManualLine(), emptyManualLine()]);
+      setEntryDate('');
+      setJournalRef('');
+      setDescription('Manual adjusting entry');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -384,7 +424,10 @@ export default function Page() {
         liquid_kind: newAcctKind,
       };
       if (newAcctKind === 'bank') {
-        body.bank_name = newBankName.trim();
+        // Blank bank_name → schema 422 (BankNameValue); omit only when empty so
+        // service required-name 400 still covers intentional omit.
+        const trimmedBank = newBankName.trim();
+        if (trimmedBank) body.bank_name = trimmedBank;
         body.account_number = newAcctNumber.trim() || null;
         body.bank_branch = newBankBranch.trim() || null;
       }
@@ -402,8 +445,13 @@ export default function Page() {
   }
 
   function addCoaOpenLine() {
-    if (!coaOpenCode || !coaOpenAmount || Number(coaOpenAmount) <= 0) return;
-    setCoaOpenLines((prev) => [...prev, { code: coaOpenCode, amount: coaOpenAmount }]);
+    if (!coaOpenAccountId || !coaOpenAmount || Number(coaOpenAmount) <= 0) return;
+    const acct = accounts.find((a) => a.id === coaOpenAccountId && a.is_active !== false);
+    if (!acct) return;
+    setCoaOpenLines((prev) => [
+      ...prev,
+      { id: coaOpenAccountId, code: acct.code, amount: coaOpenAmount },
+    ]);
     setCoaOpenAmount('0');
   }
 
@@ -419,9 +467,9 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           reference: coaOpenRef.trim() || null,
-          notes: 'COA opening balances',
+          notes: coaOpenNotes.trim() || null,
           lines: coaOpenLines.map((l) => ({
-            account_code: l.code,
+            account_id: l.id.trim(),
             amount: Number(l.amount),
           })),
         }),
@@ -434,6 +482,7 @@ export default function Page() {
         `Opening balances posted (${r.data.journal_number})${plug}. Dr ${r.data.total_debit} / Cr ${r.data.total_credit}`,
       );
       setCoaOpenLines([]);
+      setCoaOpenNotes('');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -483,8 +532,8 @@ export default function Page() {
         reference: xferRef.trim() || null,
         notes: xferNotes.trim() || null,
       };
-      if (xferKind === 'transfer' || xferKind === 'withdrawal') body.from_account_id = xferFrom;
-      if (xferKind === 'transfer' || xferKind === 'deposit') body.to_account_id = xferTo;
+      if (xferKind === 'transfer' || xferKind === 'withdrawal') body.from_account_id = xferFrom.trim() || null;
+      if (xferKind === 'transfer' || xferKind === 'deposit') body.to_account_id = xferTo.trim() || null;
       const r = await api('/accounting/transfers', { method: 'POST', body: JSON.stringify(body) });
       setMessage(`${r.data.kind} posted for ${r.data.amount}`);
       setXferNotes('');
@@ -499,24 +548,29 @@ export default function Page() {
     setMessage('');
     try {
       const amt = Number(lineAmount);
+      const desc = lineDesc.trim() || null;
       const r = await api('/accounting/bank-statements', {
         method: 'POST',
         body: JSON.stringify({
-          account_id: reconAccountId,
-          statement_date: new Date().toISOString().slice(0, 10),
+          account_id: reconAccountId.trim(),
+          statement_date: stmtDate || undefined,
           opening_balance: Number(opening),
           closing_balance: Number(closing),
+          notes: stmtNotes.trim() || null,
           lines: [
             {
-              txn_date: new Date().toISOString().slice(0, 10),
+              txn_date: lineTxnDate || undefined,
               amount: amt,
-              description: lineDesc,
+              description: desc,
+              external_ref: lineExternalRef.trim() || null,
             },
           ],
         }),
       });
       setMessage('Statement created');
       setSelected(r.data);
+      setStmtNotes('');
+      setLineExternalRef('');
       await refresh();
       const detail = await api(`/accounting/bank-statements/${r.data.id}`);
       setSelected(detail.data);
@@ -540,6 +594,10 @@ export default function Page() {
         opening_balance: String(Number(opening) || 0),
       });
       if (closing !== '' && closing != null) qs.set('closing_balance', String(Number(closing)));
+      if (stmtDate) qs.set('statement_date', stmtDate);
+      // omit blank so BankStatementNotesValue Query notes does not 422
+      const notesTrim = stmtNotes.trim();
+      if (notesTrim) qs.set('notes', notesTrim);
       const res = await fetch(`${apiBase}/accounting/bank-statements/import?${qs}`, {
         method: 'POST',
         headers: {
@@ -569,17 +627,24 @@ export default function Page() {
 
   async function createConnection() {
     if (!reconAccountId) return;
+    const displayName = connName.trim();
     setError('');
     setMessage('');
     try {
       await api('/accounting/bank-connections', {
         method: 'POST',
         body: JSON.stringify({
-          account_id: reconAccountId,
+          // trim so Connect (UuidIdValue account_id) does not 422 on whitespace
+          account_id: reconAccountId.trim(),
           provider: connProvider,
-          display_name: connName,
-          external_account_id: connExtId || null,
-          feed_url: connProvider === 'http_json' ? connFeedUrl : null,
+          display_name: displayName || null,
+          external_account_id: connExtId.trim() || null,
+          feed_url:
+            connProvider === 'http_json' ? connFeedUrl.trim() || null : null,
+          access_token:
+            connProvider === 'http_json' && connAccessToken.trim()
+              ? connAccessToken.trim()
+              : null,
           auto_sync: true,
           auto_match_after_sync: true,
         }),
@@ -656,7 +721,8 @@ export default function Page() {
     try {
       await api(`/accounting/bank-statements/${selected.id}/lines/${lineId}/match`, {
         method: 'POST',
-        body: JSON.stringify({ journal_line_id: journalLineId }),
+        // trim so Match (UuidIdValue journal_line_id) does not 422 on whitespace
+        body: JSON.stringify({ journal_line_id: String(journalLineId).trim() }),
       });
       setMessage('Matched');
       await openStatement(selected.id);
@@ -748,14 +814,17 @@ export default function Page() {
     try {
       const r = await api(`/accounting/bank-statements/${selected.id}/clear-group`, {
         method: 'POST',
-        body: JSON.stringify({
-          statement_line_ids: pickBank,
-          journal_line_ids: pickBook,
+                  body: JSON.stringify({
+          // trim so Clear group (list[UuidIdValue]) does not 422 on whitespace
+          statement_line_ids: pickBank.map((id) => String(id).trim()),
+          journal_line_ids: pickBook.map((id) => String(id).trim()),
+          notes: clearGroupNotes.trim() || null,
         }),
       });
       setSelected(r.data);
       setPickBank([]);
       setPickBook([]);
+      setClearGroupNotes('');
       setMessage(
         r.data?.clear_result?.mode === 'group'
           ? `Cleared group (${r.data.clear_result.group.bank_total})`
@@ -788,6 +857,18 @@ export default function Page() {
     const active = c.is_active !== false;
     return connectionManageFilter === 'inactive' ? !active : active;
   });
+  const managedStatements = statements.filter((s) => {
+    if (statementManageFilter === 'all') return true;
+    return (s.status || 'draft') === statementManageFilter;
+  });
+  const managedJournals = journals.filter((j) => {
+    if (journalManageFilter === 'all') return true;
+    return (j.status || 'posted') === journalManageFilter;
+  });
+  const managedTransfers = transfers.filter((t) => {
+    if (xferKindManageFilter === 'all') return true;
+    return (t.kind || 'transfer') === xferKindManageFilter;
+  });
 
   const manualDebitTotal = manualLines.reduce((s, l) => s + (Number(l.debit) || 0), 0);
   const manualCreditTotal = manualLines.reduce((s, l) => s + (Number(l.credit) || 0), 0);
@@ -807,16 +888,32 @@ export default function Page() {
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <button onClick={() => setTab('ledger')} disabled={tab === 'ledger'}>
+        <button
+          onClick={() => setTab('ledger')}
+          disabled={tab === 'ledger'}
+          aria-label="Show accounting ledger tab"
+        >
           Ledger
         </button>
-        <button onClick={() => setTab('cash')} disabled={tab === 'cash'}>
+        <button
+          onClick={() => setTab('cash')}
+          disabled={tab === 'cash'}
+          aria-label="Show accounting cash and bank tab"
+        >
           Cash &amp; Bank
         </button>
-        <button onClick={() => setTab('reconcile')} disabled={tab === 'reconcile'}>
+        <button
+          onClick={() => setTab('reconcile')}
+          disabled={tab === 'reconcile'}
+          aria-label="Show accounting reconcile tab"
+        >
           Reconcile
         </button>
-        <button onClick={() => setTab('cheques')} disabled={tab === 'cheques'}>
+        <button
+          onClick={() => setTab('cheques')}
+          disabled={tab === 'cheques'}
+          aria-label="Show accounting cheques tab"
+        >
           Cheques
         </button>
       </div>
@@ -836,12 +933,15 @@ export default function Page() {
                 onChange={(e) => setJePrefix(e.target.value.toUpperCase())}
                 placeholder="Prefix"
                 style={{ width: 100 }}
+                aria-label="Journal number prefix"
+                title="Journal document prefix (letters, digits, _ or -)"
               />
               <input
                 value={jeNext}
                 onChange={(e) => setJeNext(e.target.value)}
                 placeholder="Next #"
                 style={{ width: 90 }}
+                aria-label="Journal next number"
               />
               <span className="muted">{jePreview || '—'}</span>
             </div>
@@ -852,15 +952,18 @@ export default function Page() {
                 onChange={(e) => setXferPrefix(e.target.value.toUpperCase())}
                 placeholder="Prefix"
                 style={{ width: 100 }}
+                aria-label="Cash transfer number prefix"
+                title="Cash transfer document prefix (letters, digits, _ or -)"
               />
               <input
                 value={xferNext}
                 onChange={(e) => setXferNext(e.target.value)}
                 placeholder="Next #"
                 style={{ width: 90 }}
+                aria-label="Cash transfer next number"
               />
               <span className="muted">{xferPreview || '—'}</span>
-              <button type="button" onClick={saveAccountingNumbering}>
+              <button type="button" onClick={saveAccountingNumbering} aria-label="Save accounting numbering">
                 Save numbering
               </button>
             </div>
@@ -881,22 +984,25 @@ export default function Page() {
             </p>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               <input
-                type="date"
                 value={closeThrough}
                 onChange={(e) => setCloseThrough(e.target.value)}
+                placeholder="Through date YYYY-MM-DD"
+                aria-label="Period close through date"
+                title="Period close through date (YYYY-MM-DD)"
               />
               <input
                 value={periodReason}
                 onChange={(e) => setPeriodReason(e.target.value)}
                 placeholder="Required close / reopen reason"
                 style={{ minWidth: 280 }}
+                title="Required close/reopen reason (1–500 chars; letters/digits required)"
                 aria-label="Period close or reopen reason"
               />
-              <button type="button" className="btn-danger" onClick={closeBooks}>
+              <button type="button" className="btn-danger" onClick={closeBooks} aria-label="Close books">
                 Close books
               </button>
               {period?.books_closed_through && (
-                <button type="button" className="btn-ok" onClick={reopenBooks}>
+                <button type="button" className="btn-ok" onClick={reopenBooks} aria-label="Reopen books">
                   Reopen (clear)
                 </button>
               )}
@@ -918,13 +1024,30 @@ export default function Page() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Description"
+                aria-label="Journal description"
+                title="Journal description (2–500 chars; letters/digits required)"
+              />
+              <input
+                value={journalRef}
+                onChange={(e) => setJournalRef(e.target.value)}
+                placeholder="Reference (optional)"
+                aria-label="Journal reference"
+                title="Optional reference (1–100 chars; letters/digits required)"
+              />
+              <input
+                value={entryDate}
+                onChange={(e) => setEntryDate(e.target.value)}
+                placeholder="Entry date YYYY-MM-DD (optional)"
+                aria-label="Journal entry date"
+                title="Journal entry date (optional YYYY-MM-DD; blank → now)"
               />
               <table className="table" aria-label="Manual journal lines">
                 <thead>
                   <tr>
-                    <th>Account code</th>
+                    <th>Account</th>
                     <th>Debit</th>
                     <th>Credit</th>
+                    <th>Line desc</th>
                     <th />
                   </tr>
                 </thead>
@@ -932,19 +1055,25 @@ export default function Page() {
                   {manualLines.map((line, idx) => (
                     <tr key={idx}>
                       <td>
-                        <input
-                          list="manual-journal-accounts"
-                          value={line.account_code}
+                        <select
+                          value={line.account_id}
                           onChange={(e) =>
                             setManualLines((prev) =>
                               prev.map((row, i) =>
-                                i === idx ? { ...row, account_code: e.target.value } : row,
+                                i === idx ? { ...row, account_id: e.target.value } : row,
                               ),
                             )
                           }
-                          placeholder="e.g. 6000"
-                          aria-label={`Journal line ${idx + 1} account code`}
-                        />
+                          aria-label={`Journal line ${idx + 1} account`}
+                          title="Optional COA account (UuidIdValue); blank/garbage → 422"
+                        >
+                          <option value="">Select account</option>
+                          {activeAccounts.map((a) => (
+                            <option key={a.id} value={a.id}>
+                              {a.code} — {a.name}
+                            </option>
+                          ))}
+                        </select>
                       </td>
                       <td>
                         <input
@@ -977,6 +1106,22 @@ export default function Page() {
                         />
                       </td>
                       <td>
+                        <input
+                          value={line.description}
+                          onChange={(e) =>
+                            setManualLines((prev) =>
+                              prev.map((row, i) =>
+                                i === idx ? { ...row, description: e.target.value } : row,
+                              ),
+                            )
+                          }
+                          placeholder="Optional"
+                          style={{ width: 140 }}
+                          aria-label={`Journal line ${idx + 1} description`}
+                          title="Optional line description (1–500 chars; letters/digits required)"
+                        />
+                      </td>
+                      <td>
                         <button
                           type="button"
                           disabled={manualLines.length <= 2}
@@ -988,6 +1133,7 @@ export default function Page() {
                               ? 'Journal requires at least two lines'
                               : 'Remove line'
                           }
+                          aria-label={`Remove journal line ${idx + 1}`}
                         >
                           Remove
                         </button>
@@ -996,17 +1142,11 @@ export default function Page() {
                   ))}
                 </tbody>
               </table>
-              <datalist id="manual-journal-accounts">
-                {activeAccounts.map((a) => (
-                  <option key={a.id} value={a.code}>
-                    {a.name}
-                  </option>
-                ))}
-              </datalist>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                 <button
                   type="button"
                   onClick={() => setManualLines((prev) => [...prev, emptyManualLine()])}
+                  aria-label="Add journal line"
                 >
                   Add line
                 </button>
@@ -1015,7 +1155,13 @@ export default function Page() {
                   {manualBalanced ? ' · balanced' : ' · unbalanced'}
                 </span>
               </div>
-              <button type="button" className="btn-ok" onClick={postManual} disabled={!manualBalanced}>
+              <button
+                type="button"
+                className="btn-ok"
+                onClick={postManual}
+                disabled={!manualBalanced}
+                aria-label="Post balanced entry"
+              >
                 Post balanced entry
               </button>
             </div>
@@ -1035,9 +1181,14 @@ export default function Page() {
             ) : (
               <>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <select value={coaOpenCode} onChange={(e) => setCoaOpenCode(e.target.value)}>
+                  <select
+                    value={coaOpenAccountId}
+                    onChange={(e) => setCoaOpenAccountId(e.target.value)}
+                    aria-label="Opening balance account"
+                    title="Optional COA account (UuidIdValue); blank/garbage → 422"
+                  >
                     {activeAccounts.map((a) => (
-                      <option key={a.id} value={a.code}>
+                      <option key={a.id} value={a.id}>
                         {a.code} — {a.name} ({a.account_type})
                       </option>
                     ))}
@@ -1046,9 +1197,10 @@ export default function Page() {
                     value={coaOpenAmount}
                     onChange={(e) => setCoaOpenAmount(e.target.value)}
                     placeholder="Amount"
+                    aria-label="Opening balance amount"
                     style={{ width: 120 }}
                   />
-                  <button type="button" onClick={addCoaOpenLine}>
+                  <button type="button" aria-label="Add opening balance line" onClick={addCoaOpenLine}>
                     Add line
                   </button>
                 </div>
@@ -1056,17 +1208,27 @@ export default function Page() {
                   value={coaOpenRef}
                   onChange={(e) => setCoaOpenRef(e.target.value)}
                   placeholder="Reference (e.g. FY2026-OPEN)"
+                  aria-label="Opening balance reference"
+                  title="Optional reference (1–100 chars; blank → auto COA-OPEN-YYYYMMDD)"
+                />
+                <input
+                  value={coaOpenNotes}
+                  onChange={(e) => setCoaOpenNotes(e.target.value)}
+                  placeholder="Notes (optional)"
+                  aria-label="Opening balance notes"
+                  title="Optional notes (1–500 chars; letters/digits required)"
                 />
                 {coaOpenLines.length > 0 && (
                   <ul style={{ margin: 0, paddingLeft: 18 }}>
                     {coaOpenLines.map((l, i) => (
-                      <li key={`${l.code}-${i}`}>
+                      <li key={`${l.id}-${i}`}>
                         {l.code}: {l.amount}{' '}
                         <button
                           type="button"
                           onClick={() =>
                             setCoaOpenLines((prev) => prev.filter((_, idx) => idx !== i))
                           }
+                          aria-label={`Remove opening balance line ${l.code}`}
                         >
                           Remove
                         </button>
@@ -1074,7 +1236,13 @@ export default function Page() {
                     ))}
                   </ul>
                 )}
-                <button type="button" className="btn-ok" onClick={postCoaOpening} disabled={!coaOpenLines.length}>
+                <button
+                  type="button"
+                  className="btn-ok"
+                  onClick={postCoaOpening}
+                  disabled={!coaOpenLines.length}
+                  aria-label="Post opening balances"
+                >
                   Post opening balances
                 </button>
               </>
@@ -1090,6 +1258,8 @@ export default function Page() {
                 const a = accounts.find((x) => x.id === e.target.value);
                 setEditAcctName(a?.name || '');
               }}
+              aria-label="Edit account"
+              title="Account to rename"
             >
               <option value="">Select account</option>
               {accounts.map((a) => (
@@ -1103,8 +1273,15 @@ export default function Page() {
               onChange={(e) => setEditAcctName(e.target.value)}
               placeholder="Display name"
               disabled={!editAcctId}
+              aria-label="Edit account name"
+              title="Account display name (1–150 chars; letters/digits required)"
             />
-            <button type="button" onClick={saveAccountName} disabled={!editAcctId}>
+            <button
+              type="button"
+              onClick={saveAccountName}
+              disabled={!editAcctId}
+              aria-label="Save account name"
+            >
               Save name
             </button>
           </div>
@@ -1163,17 +1340,18 @@ export default function Page() {
                   <td>{r.is_active === false ? 'no' : 'yes'}</td>
                   <td>
                     {r.is_active === false ? (
-                      <button type="button" className="btn-ok" onClick={() => setAccountActive(r.id, true)}>
-                        Activate
-                      </button>
+<button type="button" className="btn-ok" onClick={() => setAccountActive(r.id, true)} aria-label={`Activate account ${r.id}`}>
+                          Activate
+                        </button>
                     ) : (
-                      <button
-                        type="button"
-                        className="btn-danger"
-                        onClick={() => setAccountActive(r.id, false)}
-                      >
-                        Deactivate
-                      </button>
+<button
+                          type="button"
+                          className="btn-danger"
+                          onClick={() => setAccountActive(r.id, false)}
+                          aria-label={`Deactivate account ${r.id}`}
+                        >
+                          Deactivate
+                        </button>
                     )}
                   </td>
                 </tr>
@@ -1190,10 +1368,12 @@ export default function Page() {
                   value={tbAsOf}
                   onChange={(e) => setTbAsOf(e.target.value)}
                   title="As of (empty = live balances)"
+                  aria-label="Trial balance as of date"
                 />
                 <button
                   type="button"
                   onClick={() => loadTrial().catch((err) => setError(err.message))}
+                  aria-label="Apply trial balance filters"
                 >
                   Apply
                 </button>
@@ -1230,9 +1410,25 @@ export default function Page() {
             <div className="card">
               <h3>Profit &amp; Loss</h3>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-                <input type="date" value={pnlFrom} onChange={(e) => setPnlFrom(e.target.value)} />
-                <input type="date" value={pnlTo} onChange={(e) => setPnlTo(e.target.value)} />
-                <select value={pnlBranchId} onChange={(e) => setPnlBranchId(e.target.value)}>
+                <input
+                  type="date"
+                  value={pnlFrom}
+                  onChange={(e) => setPnlFrom(e.target.value)}
+                  title="From date (YYYY-MM-DD)"
+                  aria-label="P&L from date"
+                />
+                <input
+                  type="date"
+                  value={pnlTo}
+                  onChange={(e) => setPnlTo(e.target.value)}
+                  title="To date (YYYY-MM-DD)"
+                  aria-label="P&L to date"
+                />
+                <select
+                  value={pnlBranchId}
+                  onChange={(e) => setPnlBranchId(e.target.value)}
+                  aria-label="P&L branch filter"
+                >
                   <option value="">All branches</option>
                   {branches.map((b) => (
                     <option key={b.id} value={b.id}>
@@ -1240,7 +1436,11 @@ export default function Page() {
                     </option>
                   ))}
                 </select>
-                <select value={pnlStoreId} onChange={(e) => setPnlStoreId(e.target.value)}>
+                <select
+                  value={pnlStoreId}
+                  onChange={(e) => setPnlStoreId(e.target.value)}
+                  aria-label="P&L store filter"
+                >
                   <option value="">All stores</option>
                   {stores
                     .filter((s) => !pnlBranchId || s.branch_id === pnlBranchId)
@@ -1255,6 +1455,7 @@ export default function Page() {
                   onClick={() =>
                     loadPnl().catch((err: any) => setError(err.message || String(err)))
                   }
+                  aria-label="Apply profit and loss filters"
                 >
                   Apply
                 </button>
@@ -1281,12 +1482,27 @@ export default function Page() {
             that date. Attach supporting
             documents on any entry (BR-10.2).
           </p>
+          <select
+            value={journalManageFilter}
+            onChange={(e) =>
+              setJournalManageFilter(e.target.value as 'all' | 'posted' | 'unposted')
+            }
+            title="Filter journal list by status"
+            aria-label="Journal status filter"
+            style={{ marginBottom: 12 }}
+          >
+            <option value="all">All statuses</option>
+            <option value="posted">Posted only</option>
+            <option value="unposted">Unposted only</option>
+          </select>
           <label style={{ display: 'block', marginBottom: 8 }}>
             Unpost reason{' '}
             <input
               value={unpostReason}
               onChange={(e) => setUnpostReason(e.target.value)}
               placeholder="Required before Unpost"
+              title="Required unpost reason (1–500 chars; letters/digits required)"
+              aria-label="Journal unpost reason"
               style={{ minWidth: 280 }}
             />
           </label>
@@ -1306,7 +1522,16 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {journals.map((j) => (
+              {managedJournals.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="muted">
+                    {journals.length === 0
+                      ? 'No journals yet'
+                      : 'No journals for this filter'}
+                  </td>
+                </tr>
+              ) : (
+                managedJournals.map((j) => (
                 <tr key={j.id}>
                   <td>{j.entry_number}</td>
                   <td>{j.description}</td>
@@ -1317,7 +1542,12 @@ export default function Page() {
                   <td>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                       {j.can_unpost && j.status === 'posted' && (
-                        <button type="button" className="btn-danger" onClick={() => unpostJournal(j.id)}>
+                        <button
+                          type="button"
+                          className="btn-danger"
+                          onClick={() => unpostJournal(j.id)}
+                          aria-label={`Unpost journal ${j.id}`}
+                        >
                           Unpost
                         </button>
                       )}
@@ -1328,6 +1558,7 @@ export default function Page() {
                         <input
                           type="file"
                           style={{ display: 'none' }}
+                          aria-label={`Attach journal file ${j.id}`}
                           onChange={(e) => {
                             const f = e.target.files?.[0];
                             if (f) uploadJournalAttachment(j.id, f);
@@ -1345,13 +1576,22 @@ export default function Page() {
                                 title: `Journal attachment — ${j.entry_number || j.id.slice(0, 8)}`,
                               })
                             }
+                            aria-label={`Preview journal attachment ${j.id}`}
                           >
                             Preview
                           </button>
-                          <button type="button" onClick={() => downloadJournalAttachment(j.id)}>
+                          <button
+                            type="button"
+                            onClick={() => downloadJournalAttachment(j.id)}
+                            aria-label="Download journal attachment"
+                          >
                             Download
                           </button>
-                          <button type="button" onClick={() => removeJournalAttachment(j.id)}>
+                          <button
+                            type="button"
+                            onClick={() => removeJournalAttachment(j.id)}
+                            aria-label={`Remove journal attachment ${j.id}`}
+                          >
                             Remove file
                           </button>
                         </>
@@ -1359,7 +1599,8 @@ export default function Page() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </>
@@ -1378,13 +1619,21 @@ export default function Page() {
                 onChange={(e) => setNewAcctCode(e.target.value)}
                 placeholder="Code (e.g. 1001)"
                 style={{ width: 120 }}
+                aria-label="Account code"
+                title="Account code (1–30 chars: letters, digits, _ or -)"
               />
               <input
                 value={newAcctName}
                 onChange={(e) => setNewAcctName(e.target.value)}
                 placeholder="Name (e.g. Petty Cash)"
+                aria-label="Account name"
+                title="Account display name (1–150 chars; letters/digits required)"
               />
-              <select value={newAcctKind} onChange={(e) => setNewAcctKind(e.target.value)}>
+              <select
+                value={newAcctKind}
+                onChange={(e) => setNewAcctKind(e.target.value)}
+                aria-label="Liquid account kind"
+              >
                 <option value="cash">Cash</option>
                 <option value="bank">Bank</option>
               </select>
@@ -1394,20 +1643,23 @@ export default function Page() {
                     value={newBankName}
                     onChange={(e) => setNewBankName(e.target.value)}
                     placeholder="Bank name"
+                    aria-label="Bank name"
                   />
                   <input
                     value={newAcctNumber}
                     onChange={(e) => setNewAcctNumber(e.target.value)}
                     placeholder="Account number"
+                    aria-label="Bank account number"
                   />
                   <input
                     value={newBankBranch}
                     onChange={(e) => setNewBankBranch(e.target.value)}
                     placeholder="Branch"
+                    aria-label="Bank branch"
                   />
                 </>
               )}
-              <button type="button" onClick={createLiquidAccount}>
+              <button type="button" onClick={createLiquidAccount} aria-label="Create liquid account">
                 Create account
               </button>
             </div>
@@ -1420,13 +1672,21 @@ export default function Page() {
               withdrawal debits equity.
             </p>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              <select value={xferKind} onChange={(e) => setXferKind(e.target.value)}>
+              <select
+                value={xferKind}
+                onChange={(e) => setXferKind(e.target.value)}
+                aria-label="Cash transfer kind"
+              >
                 <option value="transfer">Transfer</option>
                 <option value="deposit">Deposit</option>
                 <option value="withdrawal">Withdrawal</option>
               </select>
               {(xferKind === 'transfer' || xferKind === 'withdrawal') && (
-                <select value={xferFrom} onChange={(e) => setXferFrom(e.target.value)}>
+                <select
+                  value={xferFrom}
+                  onChange={(e) => setXferFrom(e.target.value)}
+                  aria-label="Cash transfer from account"
+                >
                   <option value="">From</option>
                   {liquid.map((a) => (
                     <option key={a.id} value={a.id}>
@@ -1436,7 +1696,11 @@ export default function Page() {
                 </select>
               )}
               {(xferKind === 'transfer' || xferKind === 'deposit') && (
-                <select value={xferTo} onChange={(e) => setXferTo(e.target.value)}>
+                <select
+                  value={xferTo}
+                  onChange={(e) => setXferTo(e.target.value)}
+                  aria-label="Cash transfer to account"
+                >
                   <option value="">To</option>
                   {liquid.map((a) => (
                     <option key={a.id} value={a.id}>
@@ -1449,19 +1713,23 @@ export default function Page() {
                 value={xferAmount}
                 onChange={(e) => setXferAmount(e.target.value)}
                 placeholder="Amount"
+                aria-label="Cash transfer amount"
                 style={{ width: 100 }}
               />
               <input
                 value={xferRef}
                 onChange={(e) => setXferRef(e.target.value)}
                 placeholder="Reference"
+                aria-label="Cash transfer reference"
               />
               <input
                 value={xferNotes}
                 onChange={(e) => setXferNotes(e.target.value)}
                 placeholder="Notes"
+                aria-label="Cash transfer notes"
+                title="Optional notes (1–500 chars; letters/digits required)"
               />
-              <button type="button" className="btn-ok" onClick={postTransfer}>
+              <button type="button" className="btn-ok" onClick={postTransfer} aria-label="Post cash transfer">
                 Post
               </button>
             </div>
@@ -1496,6 +1764,22 @@ export default function Page() {
           </table>
 
           <h3 style={{ marginTop: 16 }}>Recent movements</h3>
+          <select
+            value={xferKindManageFilter}
+            onChange={(e) =>
+              setXferKindManageFilter(
+                e.target.value as 'all' | 'transfer' | 'deposit' | 'withdrawal',
+              )
+            }
+            title="Filter cash movements by kind"
+            aria-label="Cash transfer kind filter"
+            style={{ marginBottom: 12 }}
+          >
+            <option value="all">All kinds</option>
+            <option value="transfer">Transfer only</option>
+            <option value="deposit">Deposit only</option>
+            <option value="withdrawal">Withdrawal only</option>
+          </select>
           <table className="table">
             <thead>
               <tr>
@@ -1507,15 +1791,23 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {transfers.map((t) => (
-                <tr key={t.id}>
-                  <td>{t.kind}</td>
-                  <td>{t.from_account ? `${t.from_account.code} ${t.from_account.name}` : '—'}</td>
-                  <td>{t.to_account ? `${t.to_account.code} ${t.to_account.name}` : '—'}</td>
-                  <td>{t.amount}</td>
-                  <td>{t.reference || '—'}</td>
+              {managedTransfers.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="muted">
+                    No transfers for this filter
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                managedTransfers.map((t) => (
+                  <tr key={t.id}>
+                    <td>{t.kind}</td>
+                    <td>{t.from_account ? `${t.from_account.code} ${t.from_account.name}` : '—'}</td>
+                    <td>{t.to_account ? `${t.to_account.code} ${t.to_account.name}` : '—'}</td>
+                    <td>{t.amount}</td>
+                    <td>{t.reference || '—'}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </>
@@ -1525,7 +1817,11 @@ export default function Page() {
         <>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>New statement</h3>
-            <select value={reconAccountId} onChange={(e) => setReconAccountId(e.target.value)}>
+            <select
+              value={reconAccountId}
+              onChange={(e) => setReconAccountId(e.target.value)}
+              aria-label="Reconcile liquid account"
+            >
               {liquid.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.code} — {a.name} ({a.balance})
@@ -1533,25 +1829,79 @@ export default function Page() {
               ))}
             </select>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <input value={opening} onChange={(e) => setOpening(e.target.value)} placeholder="Opening" />
-              <input value={closing} onChange={(e) => setClosing(e.target.value)} placeholder="Closing" />
+              <input
+                type="date"
+                value={stmtDate}
+                onChange={(e) => setStmtDate(e.target.value)}
+                title="Statement date (YYYY-MM-DD)"
+                aria-label="Statement date"
+              />
+              <input
+                type="date"
+                value={lineTxnDate}
+                onChange={(e) => setLineTxnDate(e.target.value)}
+                title="Statement line txn date (YYYY-MM-DD)"
+                aria-label="Statement line txn date"
+              />
+              <input
+                value={opening}
+                onChange={(e) => setOpening(e.target.value)}
+                placeholder="Opening"
+                aria-label="Statement opening balance"
+              />
+              <input
+                value={closing}
+                onChange={(e) => setClosing(e.target.value)}
+                placeholder="Closing"
+                aria-label="Statement closing balance"
+              />
               <input
                 value={lineAmount}
                 onChange={(e) => setLineAmount(e.target.value)}
                 placeholder="Line amount (+in/−out)"
+                aria-label="Statement line amount"
               />
-              <input value={lineDesc} onChange={(e) => setLineDesc(e.target.value)} placeholder="Line desc" />
+              <input
+                value={lineDesc}
+                onChange={(e) => setLineDesc(e.target.value)}
+                placeholder="Line desc"
+                aria-label="Statement line description"
+                title="Optional line description (1–500 chars; letters/digits required)"
+              />
+              <input
+                value={lineExternalRef}
+                onChange={(e) => setLineExternalRef(e.target.value)}
+                placeholder="Line external ref (optional)"
+                aria-label="Statement line external ref"
+                title="Optional external ref (1–120 chars; letters/digits required)"
+              />
             </div>
-            <button onClick={createStatement} disabled={!reconAccountId}>
+            <input
+              value={stmtNotes}
+              onChange={(e) => setStmtNotes(e.target.value)}
+              placeholder="Statement notes (optional)"
+              aria-label="Statement notes"
+              title="Optional statement notes (1–500 chars; letters/digits required)"
+            />
+            <button
+              onClick={createStatement}
+              disabled={!reconAccountId}
+              aria-label="Create bank statement"
+            >
               Create statement with one line
             </button>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               <input
                 type="file"
                 accept=".csv,.ofx,.qfx,.txt"
+                aria-label="Bank statement import file"
                 onChange={(e) => setImportFile(e.target.files?.[0] || null)}
               />
-              <button onClick={importFeed} disabled={!reconAccountId || !importFile}>
+              <button
+                onClick={importFeed}
+                disabled={!reconAccountId || !importFile}
+                aria-label="Import bank statement CSV or OFX"
+              >
                 Import CSV / OFX
               </button>
             </div>
@@ -1569,24 +1919,48 @@ export default function Page() {
               duplicates are skipped by external ref. Soft-deactivate pauses Sync / Celery auto-sync
               without deleting the connection (use Remove to delete).
             </p>
-            <input value={connName} onChange={(e) => setConnName(e.target.value)} placeholder="Connection name" />
-            <select value={connProvider} onChange={(e) => setConnProvider(e.target.value)}>
+            <input aria-label="Bank connection display name" value={connName} onChange={(e) => setConnName(e.target.value)} placeholder="Connection name" />
+            <select
+              value={connProvider}
+              onChange={(e) => setConnProvider(e.target.value)}
+              aria-label="Bank connection provider"
+            >
               <option value="mock">mock (built-in sample feed)</option>
               <option value="http_json">http_json (GET JSON feed URL)</option>
             </select>
             <input
+              aria-label="Bank external account id"
               value={connExtId}
               onChange={(e) => setConnExtId(e.target.value)}
               placeholder="External account id"
+              title="Provider account id (1–120 chars; letters/digits required)"
             />
             {connProvider === 'http_json' && (
-              <input
-                value={connFeedUrl}
-                onChange={(e) => setConnFeedUrl(e.target.value)}
-                placeholder="https://…/transactions"
-              />
+              <>
+                <input
+                  value={connFeedUrl}
+                  onChange={(e) => setConnFeedUrl(e.target.value)}
+                  placeholder="https://…/transactions"
+                  title="Absolute https feed URL (http only for localhost)"
+                  aria-label="Bank feed URL"
+                />
+                <input
+                  type="password"
+                  value={connAccessToken}
+                  onChange={(e) => setConnAccessToken(e.target.value)}
+                  placeholder="Bearer / API token (optional)"
+                  title="Optional feed access token (1–128; omit blank to skip)"
+                  aria-label="Bank connection access token"
+                  autoComplete="off"
+                />
+              </>
             )}
-            <button onClick={createConnection} disabled={!reconAccountId}>
+            <button
+              type="button"
+              aria-label="Connect bank account"
+              onClick={createConnection}
+              disabled={!reconAccountId}
+            >
               Connect selected liquid account
             </button>
             <select
@@ -1619,11 +1993,12 @@ export default function Page() {
                     onClick={() => syncConnection(c.id)}
                     disabled={c.is_active === false}
                     title={c.is_active === false ? 'Activate connection before syncing' : undefined}
+                    aria-label={`Sync bank connection ${c.id}`}
                   >
                     Sync now
                   </button>{' '}
                   {c.is_active === false ? (
-                    <button type="button" className="btn-ok" onClick={() => setConnectionActive(c.id, true)}>
+                    <button type="button" className="btn-ok" onClick={() => setConnectionActive(c.id, true)} aria-label={`Activate bank connection ${c.id}`}>
                       Activate
                     </button>
                   ) : (
@@ -1631,11 +2006,12 @@ export default function Page() {
                       type="button"
                       className="btn-danger"
                       onClick={() => setConnectionActive(c.id, false)}
+                      aria-label={`Deactivate bank connection ${c.id}`}
                     >
                       Deactivate
                     </button>
                   )}{' '}
-                  <button type="button" onClick={() => removeConnection(c.id)}>
+                  <button type="button" onClick={() => removeConnection(c.id)} aria-label={`Remove bank connection ${c.id}`}>
                     Remove
                   </button>
                 </li>
@@ -1649,6 +2025,22 @@ export default function Page() {
           </div>
 
           <h3>Statements</h3>
+          <select
+            value={statementManageFilter}
+            onChange={(e) =>
+              setStatementManageFilter(
+                e.target.value as 'all' | 'draft' | 'in_progress' | 'reconciled'
+              )
+            }
+            title="Filter bank statement list by status"
+            aria-label="Bank statement status filter"
+            style={{ marginBottom: 12 }}
+          >
+            <option value="all">All statuses</option>
+            <option value="draft">Draft only</option>
+            <option value="in_progress">In progress only</option>
+            <option value="reconciled">Reconciled only</option>
+          </select>
           <table className="table">
             <thead>
               <tr>
@@ -1661,7 +2053,7 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {statements.map((s) => (
+              {managedStatements.map((s) => (
                 <tr key={s.id}>
                   <td>{String(s.statement_date).slice(0, 10)}</td>
                   <td>{s.status}</td>
@@ -1669,10 +2061,17 @@ export default function Page() {
                   <td>{s.closing_balance}</td>
                   <td>{s.unmatched_count}</td>
                   <td>
-                    <button onClick={() => openStatement(s.id)}>Open</button>
+                    <button onClick={() => openStatement(s.id)} aria-label={`Open bank statement ${s.id}`}>Open</button>
                   </td>
                 </tr>
               ))}
+              {!managedStatements.length && (
+                <tr>
+                  <td colSpan={6} className="muted">
+                    No statements for this filter
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
 
@@ -1685,6 +2084,7 @@ export default function Page() {
                 onClick={completeStatement}
                 disabled={selected.status === 'reconciled'}
                 style={{ marginBottom: 12, marginRight: 8 }}
+                aria-label="Mark bank statement reconciled"
               >
                 Mark reconciled
               </button>
@@ -1692,6 +2092,7 @@ export default function Page() {
                 onClick={() => autoClear('high')}
                 disabled={selected.status === 'reconciled'}
                 style={{ marginBottom: 12, marginRight: 8 }}
+                aria-label="Auto-clear high confidence matches"
               >
                 Auto-clear high confidence
               </button>
@@ -1699,6 +2100,7 @@ export default function Page() {
                 onClick={() => autoClear('medium')}
                 disabled={selected.status === 'reconciled'}
                 style={{ marginBottom: 12, marginRight: 8 }}
+                aria-label="Auto-clear medium confidence matches"
               >
                 Auto-clear medium+
               </button>
@@ -1706,6 +2108,7 @@ export default function Page() {
                 onClick={() => autoClear('low')}
                 disabled={selected.status === 'reconciled'}
                 style={{ marginBottom: 12 }}
+                aria-label="Auto-clear low confidence matches"
               >
                 Auto-clear low+
               </button>
@@ -1719,7 +2122,7 @@ export default function Page() {
                         [{s.confidence}] {s.entry_number}: bank {s.bank_amount} ↔ book{' '}
                         {s.journal_signed_amount}
                         {s.ref_match ? ' (ref)' : ''} Δ{s.date_delta_days}d{' '}
-                        <button onClick={() => applySuggestion(s)}>Apply</button>
+                        <button onClick={() => applySuggestion(s)} aria-label="Apply bank match suggestion">Apply</button>
                       </li>
                     ))}
                   </ul>
@@ -1734,7 +2137,7 @@ export default function Page() {
                       <li key={g.id}>
                         {g.statement_line_ids?.length || 0} bank ↔ {g.journal_line_ids?.length || 0}{' '}
                         book = {g.bank_total}{' '}
-                        <button onClick={() => dissolveGroup(g.id)}>Dissolve</button>
+                        <button onClick={() => dissolveGroup(g.id)} aria-label={`Dissolve clearing group ${g.id}`}>Dissolve</button>
                       </li>
                     ))}
                   </ul>
@@ -1749,7 +2152,19 @@ export default function Page() {
                 <p>
                   Bank picked: {pickBank.length} · Book picked: {pickBook.length}
                 </p>
-                <button onClick={clearGroup} disabled={!pickBank.length || !pickBook.length}>
+                <input
+                  value={clearGroupNotes}
+                  onChange={(e) => setClearGroupNotes(e.target.value)}
+                  placeholder="Clear-group notes (optional)"
+                  aria-label="Clear-group notes"
+                  title="Optional clear-group notes (1–500 chars; letters/digits required)"
+                  style={{ display: 'block', width: '100%', marginBottom: 8 }}
+                />
+                <button
+                  onClick={clearGroup}
+                  disabled={!pickBank.length || !pickBook.length}
+                  aria-label="Clear selected as group"
+                >
                   Clear selected as group
                 </button>
               </div>
@@ -1775,6 +2190,7 @@ export default function Page() {
                             {ln.status === 'unmatched' && (
                               <input
                                 type="checkbox"
+                                aria-label={`Bank reconcile pick statement line ${ln.id}`}
                                 checked={pickBank.includes(ln.id)}
                                 onChange={() => togglePick(pickBank, ln.id, setPickBank)}
                               />
@@ -1789,7 +2205,7 @@ export default function Page() {
                           <td>{ln.status}</td>
                           <td>
                             {ln.status === 'unmatched' && (
-                              <button onClick={() => ignoreLine(ln.id)}>Ignore</button>
+                              <button onClick={() => ignoreLine(ln.id)} aria-label={`Ignore bank statement line ${ln.id}`}>Ignore</button>
                             )}
                             {ln.status === 'matched' && (
                               <button
@@ -1800,6 +2216,7 @@ export default function Page() {
                                   );
                                   await openStatement(selected.id);
                                 }}
+                                aria-label={`Unmatch bank statement line ${ln.id}`}
                               >
                                 Unmatch
                               </button>
@@ -1832,6 +2249,7 @@ export default function Page() {
                               onChange={() =>
                                 togglePick(pickBook, jl.journal_line_id, setPickBook)
                               }
+                              aria-label={`Bank reconcile pick book line ${jl.journal_line_id}`}
                             />
                           </td>
                           <td>{jl.entry_number}</td>
@@ -1845,6 +2263,7 @@ export default function Page() {
                                 <button
                                   key={ln.id}
                                   onClick={() => matchLine(ln.id, jl.journal_line_id)}
+                                  aria-label="Match bank line to journal line"
                                 >
                                   Match first open
                                 </button>
@@ -1911,6 +2330,8 @@ export default function Page() {
                 value={chequeActionReason}
                 onChange={(e) => setChequeActionReason(e.target.value)}
                 placeholder="Required before Bounce or Cancel"
+                title="Required bounce/cancel reason (1–500 chars; letters/digits required)"
+                aria-label="Cheque bounce cancel reason"
                 style={{ minWidth: 280 }}
               />
             </label>
@@ -1943,16 +2364,28 @@ export default function Page() {
                   </td>
                   <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {c.direction === 'received' && c.status === 'pending' && (
-                      <button className="btn-ok" onClick={() => chequeAction(c.id, 'deposit')}>Deposit</button>
+                      <button className="btn-ok" onClick={() => chequeAction(c.id, 'deposit')} aria-label={`Deposit cheque ${c.id}`}>Deposit</button>
                     )}
                     {(c.status === 'pending' || c.status === 'deposited') && (
-                      <button className="btn-ok" onClick={() => chequeAction(c.id, 'clear')}>Clear</button>
+                      <button className="btn-ok" onClick={() => chequeAction(c.id, 'clear')} aria-label={`Clear cheque ${c.id}`}>Clear</button>
                     )}
                     {c.status !== 'bounced' && c.status !== 'cancelled' && (
-                      <button className="btn-danger" onClick={() => chequeAction(c.id, 'bounce')}>Bounce</button>
+                      <button
+                        className="btn-danger"
+                        onClick={() => chequeAction(c.id, 'bounce')}
+                        aria-label={`Bounce cheque ${c.id}`}
+                      >
+                        Bounce
+                      </button>
                     )}
                     {c.direction === 'issued' && c.status === 'pending' && (
-                      <button className="btn-danger" onClick={() => chequeAction(c.id, 'cancel')}>Cancel</button>
+                      <button
+                        className="btn-danger"
+                        onClick={() => chequeAction(c.id, 'cancel')}
+                        aria-label={`Cancel cheque ${c.id}`}
+                      >
+                        Cancel
+                      </button>
                     )}
                   </td>
                 </tr>

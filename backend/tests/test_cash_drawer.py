@@ -53,15 +53,14 @@ async def test_manual_drawer_open_requires_specific_reason(client, monkeypatch):
         headers=headers,
         json={"reason": "  "},
     )
-    assert blank.status_code == 400, blank.text
+    assert blank.status_code == 422, blank.text
 
     placeholder = await ac.post(
         f"/api/v1/pos/sessions/{session_id}/drawer/open",
         headers=headers,
         json={"reason": "manual"},
     )
-    assert placeholder.status_code == 400, placeholder.text
-    assert placeholder.json()["detail"]["code"] == "DRAWER_REASON_REQUIRED"
+    assert placeholder.status_code == 422, placeholder.text
 
     ok = await ac.post(
         f"/api/v1/pos/sessions/{session_id}/drawer/open",

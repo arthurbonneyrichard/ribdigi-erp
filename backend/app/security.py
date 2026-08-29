@@ -4,6 +4,7 @@ import hashlib
 import re
 import secrets
 from datetime import datetime, timedelta, timezone
+from typing import Annotated
 
 from fastapi import Depends, Header, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -16,6 +17,7 @@ from app.config import settings
 from app.db import get_db
 from app import models as m
 from app.rbac import has_permission, is_system_role, permissions_for_role, is_platform_role
+from app.schemas import ApiKeyHeaderValue, UuidIdValue
 
 pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
 bearer = HTTPBearer(auto_error=False)
@@ -122,11 +124,19 @@ async def _claims_from_api_key(
 async def current_claims(
     request: Request,
     creds: HTTPAuthorizationCredentials | None = Depends(bearer),
-    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
-    x_api_key: str | None = Header(default=None, alias="X-API-Key"),
+    x_tenant_id: Annotated[
+        UuidIdValue | None,
+        Header(alias="X-Tenant-ID"),
+    ] = None,
+    x_api_key: Annotated[
+        ApiKeyHeaderValue | None,
+        Header(alias="X-API-Key"),
+    ] = None,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    raw_api_key = (x_api_key or "").strip()
+    # X-Tenant-ID / X-API-Key Values strip + shape-check (blank/slug/garbage → **422**).
+    # Mismatch vs JWT/key tenant remains **403** Cross-tenant (defense-in-depth).
+    raw_api_key = x_api_key or ""
     if not raw_api_key and creds and str(creds.credentials or "").startswith("rdk_"):
         raw_api_key = str(creds.credentials).strip()
     if raw_api_key:

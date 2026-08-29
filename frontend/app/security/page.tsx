@@ -51,7 +51,10 @@ function credentialToJson(cred: PublicKeyCredential): Record<string, unknown> {
   const att = anyCred.response as AuthenticatorAttestationResponse;
   if (att.attestationObject) {
     response.attestationObject = bufferToBase64url(att.attestationObject);
-    response.transports = att.getTransports?.() || [];
+    const allowed = new Set(['usb', 'nfc', 'ble', 'internal', 'hybrid', 'smart-card']);
+    response.transports = (att.getTransports?.() || [])
+      .map((t) => (t === 'cable' ? 'hybrid' : String(t).trim().toLowerCase()))
+      .filter((t) => allowed.has(t));
   }
   const assertion = anyCred.response as AuthenticatorAssertionResponse;
   if (assertion.authenticatorData) {
@@ -156,7 +159,7 @@ export default function Page() {
     try {
       const r = await api('/auth/2fa/confirm', {
         method: 'POST',
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ code: code.trim() }),
       });
       setBackupCodes(r.data?.backup_codes || []);
       setSetup(null);
@@ -181,7 +184,10 @@ export default function Page() {
       if (!cred) throw new Error('Passkey registration cancelled');
       await api('/auth/webauthn/register/verify', {
         method: 'POST',
-        body: JSON.stringify({ credential: credentialToJson(cred), name: passkeyName || 'Passkey' }),
+        body: JSON.stringify({
+          credential: credentialToJson(cred),
+          name: passkeyName.trim() ? passkeyName.trim() : null,
+        }),
       });
       setMessage('Passkey registered');
       await refresh();
@@ -206,7 +212,7 @@ export default function Page() {
     try {
       const r = await api('/auth/2fa/backup-codes', {
         method: 'POST',
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ code: code.trim() }),
       });
       setBackupCodes(r.data?.backup_codes || []);
       setCode('');
@@ -218,10 +224,15 @@ export default function Page() {
 
   async function disable() {
     setError('');
+    const trimmedPassword = disablePassword.trim();
+    if (!trimmedPassword) {
+      setError('Password is required');
+      return;
+    }
     try {
       const r = await api('/auth/2fa/disable', {
         method: 'POST',
-        body: JSON.stringify({ password: disablePassword, code }),
+        body: JSON.stringify({ password: trimmedPassword, code: code.trim() }),
       });
       setMessage(r.message || '2FA disabled');
       setCode('');
@@ -289,7 +300,8 @@ export default function Page() {
               <button
                 type="button"
                 disabled={revokingId === s.id}
-                onClick={() => revokeSession(s.id, Boolean(s.current))}
+                onClick={() => revokeSession(String(s.id).trim(), Boolean(s.current))}
+                aria-label={s.current ? 'Sign out this device' : 'Revoke session'}
               >
                 {revokingId === s.id ? 'Revoking…' : s.current ? 'Sign out here' : 'Revoke'}
               </button>
@@ -304,12 +316,14 @@ export default function Page() {
         <p className="muted">Register a platform or security-key passkey for passwordless second factor.</p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
           <input
+            aria-label="Passkey name"
             value={passkeyName}
             onChange={(e) => setPasskeyName(e.target.value)}
             placeholder="Passkey name"
+            title="Optional label (1–120 chars; letters/digits required)"
             style={{ minWidth: 160 }}
           />
-          <button type="button" onClick={registerPasskey}>
+          <button type="button" onClick={registerPasskey} aria-label="Add passkey">
             Add passkey
           </button>
         </div>
@@ -317,7 +331,7 @@ export default function Page() {
           {passkeys.map((p) => (
             <li key={p.id}>
               {p.name || 'Passkey'} · sign count {p.sign_count}{' '}
-              <button type="button" onClick={() => removePasskey(p.id)}>
+              <button type="button" onClick={() => removePasskey(p.id)} aria-label={`Remove passkey ${p.id}`}>
                 Remove
               </button>
             </li>
@@ -330,7 +344,7 @@ export default function Page() {
         <div className="card" style={{ marginBottom: 16 }}>
           <h2>Enable TOTP</h2>
           {!setup ? (
-            <button onClick={startSetup}>Start setup</button>
+            <button onClick={startSetup} aria-label="Start 2FA setup">Start setup</button>
           ) : (
             <>
               {setup.qr_png_base64 && (
@@ -343,8 +357,15 @@ export default function Page() {
                 />
               )}
               <p className="muted">Secret: {setup.secret}</p>
-              <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="6-digit code" />
-              <button onClick={confirmSetup}>Confirm &amp; enable</button>
+              <input
+                aria-label="2FA setup code"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="6-digit code"
+              />
+              <button type="button" onClick={confirmSetup} aria-label="Confirm 2FA setup">
+                Confirm &amp; enable
+              </button>
             </>
           )}
         </div>
@@ -353,18 +374,28 @@ export default function Page() {
       {status?.enabled && (
         <div className="card" style={{ marginBottom: 16 }}>
           <h2>Backup codes</h2>
-          <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="Current 2FA code" />
-          <button onClick={regenCodes}>Regenerate backup codes</button>
+          <input
+            aria-label="2FA code"
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            placeholder="Current 2FA code"
+          />
+          <button type="button" onClick={regenCodes} aria-label="Regenerate backup codes">
+            Regenerate backup codes
+          </button>
           {!status.role_requires_2fa && (
             <div style={{ marginTop: 12 }}>
               <h3>Disable TOTP</h3>
               <input
                 type="password"
+                aria-label="Disable 2FA password"
                 value={disablePassword}
                 onChange={(e) => setDisablePassword(e.target.value)}
                 placeholder="Password"
               />
-              <button onClick={disable}>Disable</button>
+              <button type="button" onClick={disable} aria-label="Disable 2FA">
+                Disable
+              </button>
             </div>
           )}
         </div>

@@ -63,6 +63,9 @@ export default function Page() {
   const [keys, setKeys] = useState<ApiKeyRow[]>([]);
   const [hooks, setHooks] = useState<WebhookRow[]>([]);
   const [webhookManageFilter, setWebhookManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [apiKeyManageFilter, setApiKeyManageFilter] = useState<
+    'all' | 'active' | 'revoked' | 'expired'
+  >('all');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [revealedKey, setRevealedKey] = useState('');
@@ -71,10 +74,14 @@ export default function Page() {
   const [deliveriesFor, setDeliveriesFor] = useState<string | null>(null);
   const [deliveries, setDeliveries] = useState<WebhookDelivery[]>([]);
   const [deliveriesBusy, setDeliveriesBusy] = useState(false);
+  const [deliveryStatusFilter, setDeliveryStatusFilter] = useState<
+    'all' | 'pending' | 'pending_retry' | 'delivered' | 'failed'
+  >('all');
 
   const [keyName, setKeyName] = useState('');
   const [keyExpires, setKeyExpires] = useState('');
   const [hookUrl, setHookUrl] = useState('');
+  const [hookSecret, setHookSecret] = useState('');
   const [hookDesc, setHookDesc] = useState('');
   const [hookEvents, setHookEvents] = useState<string[]>(['sale.created', 'webhook.test']);
   const [busy, setBusy] = useState(false);
@@ -96,13 +103,20 @@ export default function Page() {
   }
 
   async function createKey() {
+    const name = keyName.trim();
+    if (!name) {
+      setError('API key name is required.');
+      setMessage('');
+      return;
+    }
     setError('');
     setMessage('');
     setRevealedKey('');
     setBusy(true);
     try {
-      const body: Record<string, unknown> = { name: keyName || 'Integration key' };
-      if (keyExpires) body.expires_at = new Date(keyExpires).toISOString();
+      const body: Record<string, unknown> = { name };
+      const expiry = keyExpires.trim();
+      if (expiry) body.expires_at = expiry;
       const r = await api('/api-keys', { method: 'POST', body: JSON.stringify(body) });
       setRevealedKey(r.data?.api_key || '');
       setMessage(r.message || 'API key created — copy the secret now');
@@ -154,15 +168,17 @@ export default function Page() {
       const r = await api('/webhooks', {
         method: 'POST',
         body: JSON.stringify({
-          url: hookUrl,
+          url: hookUrl.trim(),
           events: hookEvents,
-          description: hookDesc || null,
+          secret: hookSecret.trim() || null,
+          description: hookDesc.trim() || null,
           is_active: true,
         }),
       });
       setRevealedSecret(r.data?.secret || '');
       setMessage(r.message || 'Webhook created — copy the signing secret now');
       setHookUrl('');
+      setHookSecret('');
       setHookDesc('');
       await refresh();
     } catch (err: any) {
@@ -275,6 +291,14 @@ export default function Page() {
     const active = h.is_active !== false;
     return webhookManageFilter === 'inactive' ? !active : active;
   });
+  const managedKeys = keys.filter((k) => {
+    if (apiKeyManageFilter === 'all') return true;
+    return (k.status || 'active') === apiKeyManageFilter;
+  });
+  const managedDeliveries = deliveries.filter((d) => {
+    if (deliveryStatusFilter === 'all') return true;
+    return (d.status || 'pending') === deliveryStatusFilter;
+  });
 
   return (
     <Shell>
@@ -301,6 +325,7 @@ export default function Page() {
               <button
                 type="button"
                 onClick={() => navigator.clipboard?.writeText(revealedKey)}
+                aria-label="Copy API key"
               >
                 Copy API key
               </button>
@@ -317,6 +342,7 @@ export default function Page() {
               <button
                 type="button"
                 onClick={() => navigator.clipboard?.writeText(revealedSecret)}
+                aria-label="Copy webhook signing secret"
               >
                 Copy signing secret
               </button>
@@ -336,18 +362,40 @@ export default function Page() {
             value={keyName}
             onChange={(e) => setKeyName(e.target.value)}
             placeholder="Key name"
+            aria-label="API key name"
             style={{ minWidth: 160 }}
           />
           <input
-            type="datetime-local"
+            type="text"
             value={keyExpires}
             onChange={(e) => setKeyExpires(e.target.value)}
-            title="Optional expiry"
+            placeholder="YYYY-MM-DD or ISO datetime"
+            title="Optional expiry (YYYY-MM-DD or ISO datetime)"
+            aria-label="API key expiry"
           />
-          <button type="button" onClick={createKey} disabled={busy}>
+          <button
+            type="button"
+            onClick={createKey}
+            disabled={busy || !keyName.trim()}
+            aria-label="Create API key"
+          >
             Create API key
           </button>
         </div>
+        <select
+          value={apiKeyManageFilter}
+          onChange={(e) =>
+            setApiKeyManageFilter(e.target.value as 'all' | 'active' | 'revoked' | 'expired')
+          }
+          title="Filter manage API key list by status"
+          aria-label="API key status filter"
+          style={{ marginBottom: 12 }}
+        >
+          <option value="all">All statuses</option>
+          <option value="active">Active only</option>
+          <option value="revoked">Revoked only</option>
+          <option value="expired">Expired only</option>
+        </select>
         <table>
           <thead>
             <tr>
@@ -359,7 +407,7 @@ export default function Page() {
             </tr>
           </thead>
           <tbody>
-            {keys.map((k) => (
+            {managedKeys.map((k) => (
               <tr key={k.id}>
                 <td>{k.name}</td>
                 <td>
@@ -368,21 +416,25 @@ export default function Page() {
                 <td>{k.status}</td>
                 <td>{k.request_count ?? 0}</td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  <button type="button" onClick={() => loadUsage(k.id)}>
+                  <button type="button" onClick={() => loadUsage(k.id)} aria-label={`View API key usage ${k.id}`}>
                     Usage
                   </button>
                   {k.status === 'active' && (
-                    <button type="button" onClick={() => revokeKey(k.id)}>
+                    <button
+                      type="button"
+                      onClick={() => revokeKey(k.id)}
+                      aria-label={`Revoke API key ${k.id}`}
+                    >
                       Revoke
                     </button>
                   )}
                 </td>
               </tr>
             ))}
-            {!keys.length && (
+            {!managedKeys.length && (
               <tr>
                 <td colSpan={5} className="muted">
-                  No API keys yet
+                  No API keys for this filter
                 </td>
               </tr>
             )}
@@ -443,6 +495,7 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
 # v1=8ba12e1df3b867331f2ccf13f760ace4afd370df9d542012046eb4aba49bb2e2`}</pre>
             <button
               type="button"
+              aria-label="Copy Python webhook verifier"
               onClick={() =>
                 navigator.clipboard?.writeText(
                   `import hashlib, hmac, time\n\ndef verify(secret, body: bytes, header: str, skew=300) -> bool:\n    parts = dict(p.split("=", 1) for p in header.split(",") if "=" in p)\n    ts = int(parts.get("t", "0"))\n    if abs(int(time.time()) - ts) > skew:\n        return False\n    signed = f"{ts}.".encode() + body\n    got = hmac.new(secret.encode(), signed, hashlib.sha256).hexdigest()\n    return hmac.compare_digest(got, parts.get("v1", ""))\n`
@@ -458,6 +511,19 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
           value={hookUrl}
           onChange={(e) => setHookUrl(e.target.value)}
           placeholder="https://your-app.com/webhooks/ribdigi"
+          aria-label="Webhook endpoint URL"
+          title="Absolute https URL (http only for localhost)"
+          style={{ width: '100%', marginBottom: 8 }}
+        />
+        <label className="muted">Signing secret (optional)</label>
+        <input
+          type="password"
+          value={hookSecret}
+          onChange={(e) => setHookSecret(e.target.value)}
+          placeholder="Leave blank to auto-generate whsec_…"
+          aria-label="Webhook signing secret"
+          title="Optional custom signing secret; blank auto-generates"
+          autoComplete="off"
           style={{ width: '100%', marginBottom: 8 }}
         />
         <label className="muted">Description</label>
@@ -465,6 +531,7 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
           value={hookDesc}
           onChange={(e) => setHookDesc(e.target.value)}
           placeholder="Optional label"
+          aria-label="Webhook description"
           style={{ width: '100%', marginBottom: 8 }}
         />
         <p className="muted" style={{ marginBottom: 4 }}>
@@ -475,6 +542,7 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
             <label key={ev} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
               <input
                 type="checkbox"
+                aria-label={`Webhook event ${ev}`}
                 checked={hookEvents.includes(ev)}
                 onChange={() => toggleEvent(ev)}
               />
@@ -482,7 +550,7 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
             </label>
           ))}
         </div>
-        <button type="button" onClick={createWebhook} disabled={busy || !hookUrl}>
+        <button type="button" onClick={createWebhook} disabled={busy || !hookUrl} aria-label="Create webhook">
           Create webhook
         </button>
 
@@ -532,19 +600,23 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
                   {h.last_status_code != null ? ` · HTTP ${h.last_status_code}` : ''}
                 </td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  <button type="button" onClick={() => testWebhook(h.id)}>
+                  <button
+                    type="button"
+                    onClick={() => testWebhook(h.id)}
+                    aria-label={`Test webhook ${h.id}`}
+                  >
                     Test
                   </button>
-                  <button type="button" onClick={() => loadDeliveries(h.id)}>
+                  <button type="button" onClick={() => loadDeliveries(h.id)} aria-label={`Load webhook deliveries ${h.id}`}>
                     Deliveries
                   </button>
-                  <button type="button" onClick={() => rotateSecret(h.id)}>
+                  <button type="button" onClick={() => rotateSecret(h.id)} aria-label={`Rotate webhook secret ${h.id}`}>
                     Rotate secret
                   </button>
-                  <button type="button" onClick={() => toggleActive(h)}>
+                  <button type="button" onClick={() => toggleActive(h)} aria-label={`${h.is_active ? "Disable" : "Enable"} webhook ${h.id}`}>
                     {h.is_active ? 'Disable' : 'Enable'}
                   </button>
-                  <button type="button" onClick={() => deleteWebhook(h.id)}>
+                  <button type="button" onClick={() => deleteWebhook(h.id)} aria-label={`Delete webhook ${h.id}`}>
                     Delete
                   </button>
                 </td>
@@ -569,8 +641,30 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
             </strong>
             <p className="muted" style={{ margin: 0 }}>
               Recent attempts from GET /webhooks/:id/deliveries. Retry re-signs and POSTs the stored
-              payload (pending_retry or failed).
+              payload (pending_retry or failed). Optional Query status ∈
+              pending|pending_retry|delivered|failed (blank/invalid → 422).
             </p>
+            <select
+              value={deliveryStatusFilter}
+              onChange={(e) =>
+                setDeliveryStatusFilter(
+                  e.target.value as
+                    | 'all'
+                    | 'pending'
+                    | 'pending_retry'
+                    | 'delivered'
+                    | 'failed'
+                )
+              }
+              title="Filter delivery history by status"
+              aria-label="Webhook delivery status filter"
+            >
+              <option value="all">All statuses</option>
+              <option value="pending">Pending only</option>
+              <option value="pending_retry">Pending retry only</option>
+              <option value="delivered">Delivered only</option>
+              <option value="failed">Failed only</option>
+            </select>
             {deliveriesBusy ? <p className="muted">Loading…</p> : null}
             <table className="table">
               <thead>
@@ -585,7 +679,7 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
                 </tr>
               </thead>
               <tbody>
-                {deliveries.map((d) => (
+                {managedDeliveries.map((d) => (
                   <tr key={d.id}>
                     <td style={{ fontSize: 12 }}>
                       {d.created_at ? String(d.created_at).replace('T', ' ').slice(0, 19) : '—'}
@@ -599,7 +693,11 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
                     </td>
                     <td>
                       {d.can_retry ? (
-                        <button type="button" onClick={() => retryDelivery(deliveriesFor, d.id)}>
+                        <button
+                          type="button"
+                          onClick={() => retryDelivery(deliveriesFor, d.id)}
+                          aria-label={`Retry webhook delivery ${d.id}`}
+                        >
                           Retry
                         </button>
                       ) : (
@@ -608,16 +706,23 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
                     </td>
                   </tr>
                 ))}
-                {!deliveries.length && !deliveriesBusy && (
+                {!managedDeliveries.length && !deliveriesBusy && (
                   <tr>
                     <td colSpan={7} className="muted">
-                      No deliveries yet — click Test to create one
+                      {deliveries.length
+                        ? 'No deliveries for this filter'
+                        : 'No deliveries yet — click Test to create one'}
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
-            <button type="button" onClick={() => loadDeliveries(deliveriesFor)} disabled={deliveriesBusy}>
+            <button
+              type="button"
+              onClick={() => loadDeliveries(deliveriesFor)}
+              disabled={deliveriesBusy}
+              aria-label="Refresh webhook deliveries"
+            >
               Refresh deliveries
             </button>
           </div>

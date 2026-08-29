@@ -75,11 +75,11 @@ async def test_store_operating_hours_create_patch_and_validation(client):
         headers=headers,
         json={"operating_hours": {"monday": {"open": "09:00", "close": "17:00"}}},
     )
-    assert bad_day.status_code == 400
+    assert bad_day.status_code == 422
 
     bad_order = await ac.patch(
         f"/api/v1/stores/{sid}",
         headers=headers,
         json={"operating_hours": {"mon": {"open": "18:00", "close": "09:00"}}},
     )
-    assert bad_order.status_code == 400
+    assert bad_order.status_code == 422

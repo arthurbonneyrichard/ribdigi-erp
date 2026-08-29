@@ -114,6 +114,20 @@ export default function Page() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [schedules, setSchedules] = useState<any[]>([]);
+  const [scheduleManageFilter, setScheduleManageFilter] = useState<
+    'all' | 'enabled' | 'disabled'
+  >('all');
+  const [scheduleFrequencyFilter, setScheduleFrequencyFilter] = useState<
+    'all' | 'daily' | 'weekly'
+  >('all');
+  const managedSchedules = schedules.filter((s) => {
+    if (scheduleManageFilter === 'enabled' && !s.enabled) return false;
+    if (scheduleManageFilter === 'disabled' && s.enabled) return false;
+    if (scheduleFrequencyFilter !== 'all' && (s.frequency || '') !== scheduleFrequencyFilter) {
+      return false;
+    }
+    return true;
+  });
   const [schedForm, setSchedForm] = useState({
     name: 'Daily sales summary',
     report_type: 'summary',
@@ -126,15 +140,22 @@ export default function Page() {
   });
   const [suggestSelected, setSuggestSelected] = useState<Record<string, boolean>>({});
   const [suggestBusy, setSuggestBusy] = useState(false);
+  const [suggestNotes, setSuggestNotes] = useState('');
 
   function qs(extra: Record<string, string> = {}) {
     const params = new URLSearchParams();
     if (fromDate) params.set('from_date', fromDate);
     if (toDate) params.set('to_date', toDate);
-    if (storeId) params.set('store_id', storeId);
-    if (branchId) params.set('branch_id', branchId);
-    if (departmentId) params.set('department_id', departmentId);
-    if (warehouseId) params.set('warehouse_id', warehouseId);
+    // trim so UuidIdValue Query store/warehouse/branch/department do not 422
+    const storeTrim = storeId.trim();
+    const warehouseTrim = warehouseId.trim();
+    const branchTrim = branchId.trim();
+    const departmentTrim = departmentId.trim();
+    if (storeTrim) params.set('store_id', storeTrim);
+    if (branchTrim) params.set('branch_id', branchTrim);
+    if (departmentTrim) params.set('department_id', departmentTrim);
+    if (warehouseTrim) params.set('warehouse_id', warehouseTrim);
+    // callers pass category_id (trimmed) in extra when needed
     Object.entries(extra).forEach(([k, v]) => v && params.set(k, v));
     const s = params.toString();
     return s ? `?${s}` : '';
@@ -145,8 +166,10 @@ export default function Page() {
     const effectiveAsOf = asOf || toDate;
     if (effectiveAsOf) params.set('as_of', effectiveAsOf);
     if (compare) params.set('compare', compare);
-    if (storeId) params.set('store_id', storeId);
-    if (branchId) params.set('branch_id', branchId);
+    const storeTrim = storeId.trim();
+    const branchTrim = branchId.trim();
+    if (storeTrim) params.set('store_id', storeTrim);
+    if (branchTrim) params.set('branch_id', branchTrim);
     const s = params.toString();
     return s ? `?${s}` : '';
   }
@@ -155,8 +178,10 @@ export default function Page() {
     const params = new URLSearchParams();
     const effectiveAsOf = asOf || toDate;
     if (effectiveAsOf) params.set('as_of', effectiveAsOf);
-    if (storeId) params.set('store_id', storeId);
-    if (branchId) params.set('branch_id', branchId);
+    const storeTrim = storeId.trim();
+    const branchTrim = branchId.trim();
+    if (storeTrim) params.set('store_id', storeTrim);
+    if (branchTrim) params.set('branch_id', branchTrim);
     const s = params.toString();
     return s ? `?${s}` : '';
   }
@@ -173,7 +198,10 @@ export default function Page() {
       }
       let path = '/reports/summary';
       if (nextTab === 'sales') {
-        path = `/reports/sales/products${qs(categoryId ? { category_id: categoryId } : {})}`;
+        const categoryTrim = categoryId.trim();
+        path = `/reports/sales/products${qs(
+          categoryTrim ? { category_id: categoryTrim } : {}
+        )}`;
       }
       if (nextTab === 'salesperson') path = `/reports/sales/salesperson${qs()}`;
       if (nextTab === 'customers') path = `/reports/sales/customers${qs()}`;
@@ -189,7 +217,11 @@ export default function Page() {
       const r = await api(path);
       if (nextTab === 'sales') {
         const [daily, monthly, returns] = await Promise.all([
-          api(`/reports/sales/daily${qs()}`),
+          api(
+            `/reports/sales/daily${qs(
+              toDate || fromDate ? { date: toDate || fromDate } : {}
+            )}`
+          ),
           api(`/reports/sales/monthly${qs()}`),
           api(
             `/reports/sales/returns${qs({
@@ -210,9 +242,13 @@ export default function Page() {
           api(`/reports/inventory/balance${qs()}`),
           api(`/reports/inventory/valuation${qs({ method: valuationMethod })}`),
           api(`/reports/inventory/movements${qs()}`),
-          api('/purchasing/suggestions/low-stock').catch(() => ({ data: null })),
+          api(`/purchasing/suggestions/low-stock${qs()}`).catch(() => ({ data: null })),
           api(`/reports/inventory/transfers${qs(transferStatus ? { status: transferStatus } : {})}`),
-          api(`/reports/inventory/expiry${qs({ days: expiryDays || '30' })}`),
+          api(
+            `/reports/inventory/expiry${qs({
+              days: String(Math.max(1, Math.min(365, Number(expiryDays) || 30))),
+            })}`
+          ),
           api(`/reports/inventory/stock-counts${qs({ variance_only: 'true', status: stockCountStatus })}`),
         ]);
         setData({
@@ -307,12 +343,14 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           lines: lines.map((ln: any) => ({
-            product_id: ln.product_id,
+            product_id: String(ln.product_id || '').trim(),
             quantity: ln.suggested_order_qty,
-            warehouse_id: ln.warehouse_id || null,
-            preferred_supplier_id: ln.preferred_supplier_id || null,
+            warehouse_id: ln.warehouse_id ? String(ln.warehouse_id).trim() : null,
+            preferred_supplier_id: ln.preferred_supplier_id
+              ? String(ln.preferred_supplier_id).trim()
+              : null,
           })),
-          notes: 'Created from low-stock suggestions',
+          notes: suggestNotes.trim() || null,
         }),
       });
       const created = r.data?.created || [];
@@ -322,6 +360,7 @@ export default function Page() {
           ? `Created draft PR(s): ${nums}. Open Purchasing → Requests to submit.`
           : r.message || 'Done'
       );
+      setSuggestNotes('');
       await load('inventory');
     } catch (err: any) {
       setError(err.message);
@@ -342,15 +381,21 @@ export default function Page() {
       params.set('format', format);
       if (fromDate) params.set('from_date', fromDate);
       if (toDate) params.set('to_date', toDate);
-      if (storeId) params.set('store_id', storeId);
-      if (branchId) params.set('branch_id', branchId);
-      if (departmentId) params.set('department_id', departmentId);
-      if (warehouseId) params.set('warehouse_id', warehouseId);
+      // trim so UuidIdValue Query filters do not 422 on whitespace
+      const storeTrim = storeId.trim();
+      const branchTrim = branchId.trim();
+      const departmentTrim = departmentId.trim();
+      const warehouseTrim = warehouseId.trim();
+      const categoryTrim = categoryId.trim();
+      if (storeTrim) params.set('store_id', storeTrim);
+      if (branchTrim) params.set('branch_id', branchTrim);
+      if (departmentTrim) params.set('department_id', departmentTrim);
+      if (warehouseTrim) params.set('warehouse_id', warehouseTrim);
       if (
         (reportType || TAB_EXPORT[tab]) === 'sales_products' ||
         (!reportType && tab === 'sales')
       ) {
-        if (categoryId) params.set('category_id', categoryId);
+        if (categoryTrim) params.set('category_id', categoryTrim);
       }
       if (
         (reportType || TAB_EXPORT[tab]) === 'balance_sheet' ||
@@ -370,7 +415,8 @@ export default function Page() {
         if (warehouseId) params.set('warehouse_id', warehouseId);
       }
       if ((reportType || TAB_EXPORT[tab]) === 'inventory_expiry' && expiryDays) {
-        params.set('days', expiryDays);
+        const d = Math.max(1, Math.min(365, Number(expiryDays) || 30));
+        params.set('days', String(d));
       }
       const res = await fetch(`${base}/reports/export?${params}`, {
         headers: {
@@ -405,13 +451,13 @@ export default function Page() {
       await api('/reports/schedules', {
         method: 'POST',
         body: JSON.stringify({
-          name: schedForm.name,
+          name: schedForm.name.trim(),
           report_type: schedForm.report_type,
           format: schedForm.format,
           frequency: schedForm.frequency,
           weekday: schedForm.frequency === 'weekly' ? Number(schedForm.weekday) : null,
           hour_utc: Number(schedForm.hour_utc),
-          recipients: schedForm.recipients,
+          recipients: schedForm.recipients.trim(),
           enabled: schedForm.enabled,
         }),
       });
@@ -485,7 +531,12 @@ export default function Page() {
             ['schedules', 'Email schedules'],
           ] as [Tab, string][]
         ).map(([id, label]) => (
-          <button key={id} onClick={() => switchTab(id)} disabled={tab === id}>
+          <button
+            key={id}
+            onClick={() => switchTab(id)}
+            disabled={tab === id}
+            aria-label={`Show reports ${id} tab`}
+          >
             {label}
           </button>
         ))}
@@ -493,8 +544,20 @@ export default function Page() {
 
       {tab !== 'schedules' && (
       <div className="card" style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
-        <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+        <input
+          type="date"
+          value={fromDate}
+          onChange={(e) => setFromDate(e.target.value)}
+          title="From date (YYYY-MM-DD)"
+          aria-label="Report from date"
+        />
+        <input
+          type="date"
+          value={toDate}
+          onChange={(e) => setToDate(e.target.value)}
+          title="To date (YYYY-MM-DD)"
+          aria-label="Report to date"
+        />
         {(tab === 'balancesheet' || tab === 'trialbalance') && (
           <>
             <input
@@ -502,9 +565,14 @@ export default function Page() {
               value={asOf}
               onChange={(e) => setAsOf(e.target.value)}
               title="As of date (defaults to To date)"
+              aria-label="Report as of date"
             />
             {tab === 'balancesheet' && (
-              <select value={compare} onChange={(e) => setCompare(e.target.value)}>
+              <select
+                value={compare}
+                onChange={(e) => setCompare(e.target.value)}
+                aria-label="Balance sheet compare"
+              >
                 <option value="">No compare</option>
                 <option value="prior_period">vs prior month-end</option>
                 <option value="prior_year">vs prior year</option>
@@ -521,6 +589,7 @@ export default function Page() {
                 setCtxStoreId(e.target.value);
                 setWarehouseId('');
               }}
+              aria-label="Report inventory store filter"
             >
               <option value="">All stores</option>
               {stores
@@ -544,6 +613,7 @@ export default function Page() {
                   }
                 }
               }}
+              aria-label="Report inventory warehouse filter"
             >
               <option value="">All warehouses (company stock)</option>
               {warehouses
@@ -557,13 +627,14 @@ export default function Page() {
             </select>
             <input
               type="number"
-              min={0}
-              max={3650}
+              min={1}
+              max={365}
               value={expiryDays}
               onChange={(e) => setExpiryDays(e.target.value)}
               placeholder="Expiry days"
               style={{ width: 110 }}
-              title="Expiry horizon (days)"
+              title="Expiry horizon (1–365 days)"
+              aria-label="Inventory expiry days"
             />
           </>
         )}
@@ -576,6 +647,7 @@ export default function Page() {
                 setCtxStoreId(e.target.value);
                 setWarehouseId('');
               }}
+              aria-label="Report purchases store filter"
             >
               <option value="">All stores</option>
               {stores
@@ -586,7 +658,11 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <select value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)}>
+            <select
+              value={warehouseId}
+              onChange={(e) => setWarehouseId(e.target.value)}
+              aria-label="Report purchases warehouse filter"
+            >
               <option value="">All warehouses</option>
               {warehouses
                 .filter((w) => w.is_active !== false)
@@ -615,7 +691,11 @@ export default function Page() {
               tab === 'cashflow' ||
               tab === 'balancesheet' ||
               tab === 'trialbalance') && (
-              <select value={branchId} onChange={(e) => setBranchId(e.target.value)}>
+              <select
+                value={branchId}
+                onChange={(e) => setBranchId(e.target.value)}
+                aria-label="Report financial branch filter"
+              >
                 <option value="">All branches</option>
                 {branches.map((b) => (
                   <option key={b.id} value={b.id}>
@@ -630,6 +710,7 @@ export default function Page() {
                 setStoreId(e.target.value);
                 setCtxStoreId(e.target.value);
               }}
+              aria-label="Report financial store filter"
             >
               <option value="">All stores</option>
               {stores
@@ -650,6 +731,7 @@ export default function Page() {
           <select
             value={departmentId}
             onChange={(e) => setDepartmentId(e.target.value)}
+            aria-label="Report department filter"
           >
             <option value="">All departments</option>
             {departments
@@ -662,7 +744,11 @@ export default function Page() {
           </select>
         )}
         {tab === 'sales' && (
-          <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+          <select
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+            aria-label="Report sales category filter"
+          >
             <option value="">All categories</option>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
@@ -671,29 +757,69 @@ export default function Page() {
             ))}
           </select>
         )}
-        <button onClick={() => load()} disabled={loading}>
+        <button onClick={() => load()} disabled={loading} aria-label="Apply report filters">
           {loading ? 'Loading…' : 'Apply filters'}
         </button>
-        <button onClick={() => download('csv')}>Export CSV</button>
-        <button onClick={() => download('xlsx')}>Export Excel</button>
-        <button onClick={() => download('pdf')}>Export PDF</button>
+        <button onClick={() => download('csv')} aria-label="Export report CSV">
+          Export CSV
+        </button>
+        <button onClick={() => download('xlsx')} aria-label="Export report Excel">
+          Export Excel
+        </button>
+        <button onClick={() => download('pdf')} aria-label="Export report PDF">
+          Export PDF
+        </button>
         {tab === 'sales' && (
           <>
-            <button onClick={() => download('csv', 'sales_daily')}>Daily CSV</button>
-            <button onClick={() => download('xlsx', 'sales_salesperson')}>Salespeople Excel</button>
-            <button onClick={() => download('xlsx', 'trial_balance')}>Trial balance Excel</button>
-            <button onClick={() => download('csv', 'trial_balance')}>Trial balance CSV</button>
-            <button onClick={() => download('pdf', 'profit_loss')}>P&amp;L PDF</button>
+            <button onClick={() => download('csv', 'sales_daily')} aria-label="Export sales daily CSV">
+              Daily CSV
+            </button>
+            <button
+              onClick={() => download('xlsx', 'sales_salesperson')}
+              aria-label="Export salespeople Excel"
+            >
+              Salespeople Excel
+            </button>
+            <button
+              onClick={() => download('xlsx', 'trial_balance')}
+              aria-label="Export trial balance Excel"
+            >
+              Trial balance Excel
+            </button>
+            <button
+              onClick={() => download('csv', 'trial_balance')}
+              aria-label="Export trial balance CSV"
+            >
+              Trial balance CSV
+            </button>
+            <button onClick={() => download('pdf', 'profit_loss')} aria-label="Export P&L PDF">
+              P&amp;L PDF
+            </button>
           </>
         )}
         {tab === 'salesperson' && (
-          <button onClick={() => download('xlsx', 'sales_salesperson')}>Export Excel</button>
+          <button
+            onClick={() => download('xlsx', 'sales_salesperson')}
+            aria-label="Export salespeople Excel"
+          >
+            Export Excel
+          </button>
         )}
         {tab === 'customers' && (
-          <button onClick={() => download('xlsx', 'sales_customers')}>Export Excel</button>
+          <button
+            onClick={() => download('xlsx', 'sales_customers')}
+            aria-label="Export sales customers Excel"
+          >
+            Export Excel
+          </button>
         )}
         {tab === 'stores' && (
-          <button onClick={() => download('xlsx', 'sales_by_store')}>Export Excel</button>
+          <button
+            onClick={() => download('xlsx', 'sales_by_store')}
+            aria-label="Export sales by store Excel"
+          >
+            Export Excel
+          </button>
         )}
       </div>
       )}
@@ -724,7 +850,10 @@ export default function Page() {
         <>
           <div className="grid">
             <div className="card">
-              <h3>Today{data.daily?.store_name ? ` · ${data.daily.store_name}` : ''}</h3>
+              <h3>
+                {data.daily?.date ? `Day · ${data.daily.date}` : 'Today'}
+                {data.daily?.store_name ? ` · ${data.daily.store_name}` : ''}
+              </h3>
               <p>Revenue: {data.daily?.total_revenue}</p>
               <p>Invoices: {data.daily?.invoice_count} · POS: {data.daily?.pos_count}</p>
             </div>
@@ -763,8 +892,18 @@ export default function Page() {
             </tbody>
           </table>
           <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
-            <button onClick={() => download('xlsx', 'sales_returns')}>Returns Excel</button>
-            <button onClick={() => download('csv', 'sales_returns')}>Returns CSV</button>
+            <button
+              onClick={() => download('xlsx', 'sales_returns')}
+              aria-label="Export sales returns Excel"
+            >
+              Returns Excel
+            </button>
+            <button
+              onClick={() => download('csv', 'sales_returns')}
+              aria-label="Export sales returns CSV"
+            >
+              Returns CSV
+            </button>
           </div>
           <h3 style={{ marginTop: 16 }}>Sales returns</h3>
           <p className="muted">
@@ -1100,13 +1239,24 @@ export default function Page() {
               <h3 style={{ margin: 0 }}>
                 Low-stock suggestions ({data.suggestions?.count ?? data.lowStock?.count ?? 0})
               </h3>
-              <button
-                type="button"
-                onClick={createDraftPrsFromSuggestions}
-                disabled={suggestBusy || !(data.suggestions?.lines || []).length}
-              >
-                {suggestBusy ? 'Creating…' : 'Create draft PR'}
-              </button>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                <input
+                  value={suggestNotes}
+                  onChange={(e) => setSuggestNotes(e.target.value)}
+                  placeholder="Draft PR notes (optional)"
+                  aria-label="Low-stock suggestion notes"
+                  title="Optional notes for draft PRs (1–500 chars; letters/digits required)"
+                  style={{ minWidth: 200 }}
+                />
+                <button
+                  type="button"
+                  onClick={createDraftPrsFromSuggestions}
+                  disabled={suggestBusy || !(data.suggestions?.lines || []).length}
+                  aria-label="Create draft PR from low-stock suggestions"
+                >
+                  {suggestBusy ? 'Creating…' : 'Create draft PR'}
+                </button>
+              </div>
             </div>
             <p className="muted" style={{ marginTop: 8 }}>
               Select lines to raise draft purchase requests. Submit/approve remains in Purchasing.
@@ -1134,6 +1284,7 @@ export default function Page() {
                         <td>
                           <input
                             type="checkbox"
+                            aria-label="Low-stock suggestion select"
                             checked={!!suggestSelected[key]}
                             onChange={(e) =>
                               setSuggestSelected((prev) => ({ ...prev, [key]: e.target.checked }))
@@ -1220,6 +1371,7 @@ export default function Page() {
               type="button"
               style={{ marginTop: 8 }}
               onClick={() => download('xlsx', 'inventory_valuation')}
+              aria-label="Export inventory valuation Excel"
             >
               Export valuation Excel
             </button>
@@ -1235,10 +1387,18 @@ export default function Page() {
                   : ''}
             </p>
             <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-              <button type="button" onClick={() => download('xlsx', 'inventory_movements')}>
+              <button
+                type="button"
+                onClick={() => download('xlsx', 'inventory_movements')}
+                aria-label="Export inventory movements Excel"
+              >
                 Movements Excel
               </button>
-              <button type="button" onClick={() => download('csv', 'inventory_movements')}>
+              <button
+                type="button"
+                onClick={() => download('csv', 'inventory_movements')}
+                aria-label="Export inventory movements CSV"
+              >
                 Movements CSV
               </button>
             </div>
@@ -1325,10 +1485,18 @@ export default function Page() {
                 : ''}
           </p>
           <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-            <button type="button" onClick={() => download('xlsx', 'inventory_expiry')}>
+            <button
+              type="button"
+              onClick={() => download('xlsx', 'inventory_expiry')}
+              aria-label="Export inventory expiry Excel"
+            >
               Expiry Excel
             </button>
-            <button type="button" onClick={() => download('csv', 'inventory_expiry')}>
+            <button
+              type="button"
+              onClick={() => download('csv', 'inventory_expiry')}
+              aria-label="Export inventory expiry CSV"
+            >
               Expiry CSV
             </button>
           </div>
@@ -1396,10 +1564,18 @@ export default function Page() {
             {data.transfers?.store_name ? ` · ${data.transfers.store_name}` : ''}
           </p>
           <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-            <button type="button" onClick={() => download('xlsx', 'inventory_transfers')}>
+            <button
+              type="button"
+              onClick={() => download('xlsx', 'inventory_transfers')}
+              aria-label="Export inventory transfers Excel"
+            >
               Transfers Excel
             </button>
-            <button type="button" onClick={() => download('csv', 'inventory_transfers')}>
+            <button
+              type="button"
+              onClick={() => download('csv', 'inventory_transfers')}
+              aria-label="Export inventory transfers CSV"
+            >
               Transfers CSV
             </button>
           </div>
@@ -1479,10 +1655,18 @@ export default function Page() {
                   : ''}
             </p>
             <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-              <button type="button" onClick={() => download('xlsx', 'inventory_stock_counts')}>
+              <button
+                type="button"
+                onClick={() => download('xlsx', 'inventory_stock_counts')}
+                aria-label="Export inventory stock counts Excel"
+              >
                 Count variances Excel
               </button>
-              <button type="button" onClick={() => download('csv', 'inventory_stock_counts')}>
+              <button
+                type="button"
+                onClick={() => download('csv', 'inventory_stock_counts')}
+                aria-label="Export inventory stock counts CSV"
+              >
                 Count variances CSV
               </button>
             </div>
@@ -1553,16 +1737,28 @@ export default function Page() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-            <button onClick={() => download('xlsx', 'purchases_pending_orders')}>
+            <button
+              onClick={() => download('xlsx', 'purchases_pending_orders')}
+              aria-label="Export purchases pending orders Excel"
+            >
               Pending orders Excel
             </button>
-            <button onClick={() => download('csv', 'purchases_pending_orders')}>
+            <button
+              onClick={() => download('csv', 'purchases_pending_orders')}
+              aria-label="Export purchases pending orders CSV"
+            >
               Pending orders CSV
             </button>
-            <button onClick={() => download('xlsx', 'purchases_returns')}>
+            <button
+              onClick={() => download('xlsx', 'purchases_returns')}
+              aria-label="Export purchases returns Excel"
+            >
               Returns Excel
             </button>
-            <button onClick={() => download('csv', 'purchases_returns')}>
+            <button
+              onClick={() => download('csv', 'purchases_returns')}
+              aria-label="Export purchases returns CSV"
+            >
               Returns CSV
             </button>
           </div>
@@ -2054,10 +2250,13 @@ export default function Page() {
               placeholder="Schedule name"
               value={schedForm.name}
               onChange={(e) => setSchedForm({ ...schedForm, name: e.target.value })}
+              aria-label="Report schedule name"
+              title="Schedule name (2–120 chars; letters/digits required)"
             />
             <select
               value={schedForm.report_type}
               onChange={(e) => setSchedForm({ ...schedForm, report_type: e.target.value })}
+              aria-label="Report schedule report type"
             >
               {REPORT_TYPES.map((t) => (
                 <option key={t} value={t}>
@@ -2069,6 +2268,7 @@ export default function Page() {
               <select
                 value={schedForm.format}
                 onChange={(e) => setSchedForm({ ...schedForm, format: e.target.value })}
+                aria-label="Report schedule format"
               >
                 <option value="xlsx">Excel</option>
                 <option value="csv">CSV</option>
@@ -2077,6 +2277,7 @@ export default function Page() {
               <select
                 value={schedForm.frequency}
                 onChange={(e) => setSchedForm({ ...schedForm, frequency: e.target.value })}
+                aria-label="Report schedule frequency"
               >
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly</option>
@@ -2085,6 +2286,7 @@ export default function Page() {
                 <select
                   value={schedForm.weekday}
                   onChange={(e) => setSchedForm({ ...schedForm, weekday: e.target.value })}
+                  aria-label="Report schedule weekday"
                 >
                   {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d, i) => (
                     <option key={d} value={String(i)}>
@@ -2102,6 +2304,7 @@ export default function Page() {
                   value={schedForm.hour_utc}
                   onChange={(e) => setSchedForm({ ...schedForm, hour_utc: e.target.value })}
                   style={{ width: 64 }}
+                  aria-label="Report schedule hour UTC"
                 />
               </label>
             </div>
@@ -2109,16 +2312,47 @@ export default function Page() {
               placeholder="Recipients (comma-separated emails)"
               value={schedForm.recipients}
               onChange={(e) => setSchedForm({ ...schedForm, recipients: e.target.value })}
+              aria-label="Report schedule recipients"
+              title="Comma-separated recipient emails"
             />
             <label>
               <input
                 type="checkbox"
                 checked={schedForm.enabled}
                 onChange={(e) => setSchedForm({ ...schedForm, enabled: e.target.checked })}
+                aria-label="Report schedule enabled"
               />{' '}
               Enabled
             </label>
-            <button onClick={createSchedule}>Create schedule</button>
+            <button type="button" onClick={createSchedule} aria-label="Create report schedule">
+              Create schedule
+            </button>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+            <select
+              value={scheduleManageFilter}
+              onChange={(e) =>
+                setScheduleManageFilter(e.target.value as 'all' | 'enabled' | 'disabled')
+              }
+              title="Filter schedules by enabled flag"
+              aria-label="Report schedule enabled filter"
+            >
+              <option value="all">All enabled/disabled</option>
+              <option value="enabled">Enabled only</option>
+              <option value="disabled">Disabled only</option>
+            </select>
+            <select
+              value={scheduleFrequencyFilter}
+              onChange={(e) =>
+                setScheduleFrequencyFilter(e.target.value as 'all' | 'daily' | 'weekly')
+              }
+              title="Filter schedules by frequency"
+              aria-label="Report schedule frequency filter"
+            >
+              <option value="all">All frequencies</option>
+              <option value="daily">Daily only</option>
+              <option value="weekly">Weekly only</option>
+            </select>
           </div>
           <table className="table">
             <thead>
@@ -2132,32 +2366,44 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {schedules.map((s) => (
-                <tr key={s.id}>
-                  <td>
-                    {s.name} {!s.enabled && <span className="muted">(off)</span>}
-                  </td>
-                  <td>
-                    {s.report_type} / {s.format}
-                  </td>
-                  <td>
-                    {s.frequency}
-                    {s.frequency === 'weekly' ? ` dow=${s.weekday}` : ''} @ {s.hour_utc}:00 UTC
-                  </td>
-                  <td>{(s.recipients || []).join(', ')}</td>
-                  <td>
-                    {s.last_run_at ? String(s.last_run_at).slice(0, 19) : '—'}
-                    {s.last_error ? (
-                      <div style={{ color: '#b91c1c', fontSize: 12 }}>{s.last_error}</div>
-                    ) : null}
-                  </td>
-                  <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    <button onClick={() => runSchedule(s.id)}>Run now</button>
-                    <button onClick={() => toggleSchedule(s)}>{s.enabled ? 'Disable' : 'Enable'}</button>
-                    <button onClick={() => deleteSchedule(s.id)}>Delete</button>
+              {managedSchedules.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="muted">
+                    No schedules for this filter
                   </td>
                 </tr>
-              ))}
+              ) : (
+                managedSchedules.map((s) => (
+                  <tr key={s.id}>
+                    <td>
+                      {s.name} {!s.enabled && <span className="muted">(off)</span>}
+                    </td>
+                    <td>
+                      {s.report_type} / {s.format}
+                    </td>
+                    <td>
+                      {s.frequency}
+                      {s.frequency === 'weekly' ? ` dow=${s.weekday}` : ''} @ {s.hour_utc}:00 UTC
+                    </td>
+                    <td>{(s.recipients || []).join(', ')}</td>
+                    <td>
+                      {s.last_run_at ? String(s.last_run_at).slice(0, 19) : '—'}
+                      {s.last_error ? (
+                        <div style={{ color: '#b91c1c', fontSize: 12 }}>{s.last_error}</div>
+                      ) : null}
+                    </td>
+                    <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <button onClick={() => runSchedule(s.id)} aria-label={`Run report schedule ${s.id}`}>
+                        Run now
+                      </button>
+                      <button onClick={() => toggleSchedule(s)} aria-label={`${s.enabled ? 'Disable' : 'Enable'} report schedule ${s.id}`}>
+                        {s.enabled ? 'Disable' : 'Enable'}
+                      </button>
+                      <button onClick={() => deleteSchedule(s.id)} aria-label={`Delete report schedule ${s.id}`}>Delete</button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
           {!schedules.length && !loading && <p className="muted">No schedules yet.</p>}

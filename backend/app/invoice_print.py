@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json
 from app.receipts import (
     THERMAL_WIDTHS,
     _center,
@@ -71,15 +72,15 @@ async def build_invoice_print_payload(
             {
                 "name": str(name),
                 "sku": sku,
-                "quantity": float(item.quantity),
-                "unit_price": float(item.unit_price),
-                "tax_rate": float(item.tax_rate or 0),
-                "line_tax": float(getattr(item, "line_tax", None) or 0),
+                "quantity": money_json(item.quantity),
+                "unit_price": money_json(item.unit_price),
+                "tax_rate": money_json(item.tax_rate),
+                "line_tax": money_json(getattr(item, "line_tax", None) or 0),
                 "is_reverse_charge": bool(getattr(item, "is_reverse_charge", False)),
                 "tax_components": getattr(item, "tax_components", None),
-                "discount": float(item.discount or 0),
-                "line_subtotal": float(getattr(item, "line_subtotal", None) or 0),
-                "line_total": float(item.line_total),
+                "discount": money_json(item.discount),
+                "line_subtotal": money_json(getattr(item, "line_subtotal", None) or 0),
+                "line_total": money_json(item.line_total),
                 "product_id": item.product_id,
                 "variant_id": item.variant_id,
             }
@@ -89,8 +90,8 @@ async def build_invoice_print_payload(
     currency = (getattr(invoice, "currency", None) or "").strip() or (
         tenant.currency if tenant else "GHS"
     )
-    paid = float(invoice.paid_amount or 0)
-    total = float(invoice.total_amount or 0)
+    paid = money_json(invoice.paid_amount)
+    total = money_json(invoice.total_amount)
     balance = max(total - paid, 0)
 
     from app.print_branding import branding_fields_for_payload
@@ -123,11 +124,11 @@ async def build_invoice_print_payload(
         "customer_name": customer.name,
         "customer_email": _clean_text(customer.email),
         "customer_phone": _clean_text(getattr(customer, "phone", None)),
-        "subtotal": float(invoice.subtotal or 0),
-        "tax": float(invoice.tax_amount or 0),
-        "tax_amount": float(invoice.tax_amount or 0),
-        "reverse_charge_tax": float(getattr(invoice, "reverse_charge_tax", 0) or 0),
-        "discount_amount": float(invoice.discount_amount or 0),
+        "subtotal": money_json(invoice.subtotal),
+        "tax": money_json(invoice.tax_amount),
+        "tax_amount": money_json(invoice.tax_amount),
+        "reverse_charge_tax": money_json(getattr(invoice, "reverse_charge_tax", 0) or 0),
+        "discount_amount": money_json(invoice.discount_amount),
         "total": total,
         "total_amount": total,
         "paid_amount": paid,
@@ -176,9 +177,9 @@ def render_invoice_thermal_text(payload: dict[str, Any], *, paper: str = "80mm")
     lines.append("-" * width)
     for item in payload.get("items") or []:
         name = str(item.get("name") or "Item")
-        qty = float(item.get("quantity") or 0)
-        unit = float(item.get("unit_price") or 0)
-        total = float(item.get("line_total") or qty * unit)
+        qty = money_json(item.get("quantity") or 0)
+        unit = money_json(item.get("unit_price") or 0)
+        total = money_json(item.get("line_total") or qty * unit)
         for i, part in enumerate(_wrap(name, width)):
             lines.append(part if i == 0 else ("  " + part)[:width])
         lines.append(_lr(f"  {qty:g} x {_money(unit)}", _money(total), width))
@@ -186,7 +187,7 @@ def render_invoice_thermal_text(payload: dict[str, Any], *, paper: str = "80mm")
     currency = payload.get("currency") or ""
     lines.append(_lr("Subtotal", _money(payload.get("subtotal") or 0), width))
     lines.append(_lr("Tax", _money(payload.get("tax") or 0), width))
-    discount_amount = float(payload.get("discount_amount") or 0)
+    discount_amount = money_json(payload.get("discount_amount") or 0)
     if discount_amount > 0:
         lines.append(_lr("Discount", f"-{_money(discount_amount)}", width))
     lines.append(_lr(f"TOTAL {currency}".strip(), _money(payload.get("total") or 0), width))
@@ -282,11 +283,11 @@ def to_invoice_a4_pdf(payload: dict[str, Any]) -> bytes:
     add("-" * 72, 9)
     for item in payload.get("items") or []:
         name = str(item.get("name") or "Item")[:30]
-        qty = float(item.get("quantity") or 0)
-        unit = float(item.get("unit_price") or 0)
-        tax = float(item.get("tax_rate") or 0)
-        line_tax = float(item.get("line_tax") or 0)
-        line_total = float(item.get("line_total") or 0)
+        qty = money_json(item.get("quantity") or 0)
+        unit = money_json(item.get("unit_price") or 0)
+        tax = money_json(item.get("tax_rate") or 0)
+        line_tax = money_json(item.get("line_tax") or 0)
+        line_total = money_json(item.get("line_total") or 0)
         add(
             f"{qty:>4g}  {name:<30} {_money(unit):>7} {_money(tax):>5} {_money(line_tax):>8} {_money(line_total):>8}",
             9,
@@ -295,10 +296,10 @@ def to_invoice_a4_pdf(payload: dict[str, Any]) -> bytes:
     currency = payload.get("currency") or ""
     add(f"Subtotal: {currency} {_money(payload.get('subtotal') or 0)}", 10)
     add(f"Tax: {currency} {_money(payload.get('tax') or 0)}", 10)
-    rc = float(payload.get("reverse_charge_tax") or 0)
+    rc = money_json(payload.get("reverse_charge_tax") or 0)
     if rc > 0:
         add(f"Reverse-charge tax (memo): {currency} {_money(rc)}", 9)
-    disc = float(payload.get("discount_amount") or 0)
+    disc = money_json(payload.get("discount_amount") or 0)
     if disc > 0:
         add(f"Discount: -{currency} {_money(disc)}", 10)
     add(f"TOTAL: {currency} {_money(payload.get('total') or 0)}", 12)

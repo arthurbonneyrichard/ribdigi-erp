@@ -11,14 +11,26 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app import purchase_requests as purchase_requests_svc
 from app import reports as reports_svc
+from app.honesty import money_json, optional_honest_narrative
 
 
 def _product_suggested_qty(*, stock_qty: float, reorder_level: float, reorder_qty: float = 0) -> float:
-    gap = max(0.0, round(float(reorder_level) - float(stock_qty), 3))
-    rq = float(reorder_qty or 0)
+    gap = max(
+        0.0,
+        money_json(round(money_json(reorder_level) - money_json(stock_qty), 3)),
+    )
+    rq = money_json(reorder_qty or 0)
     if rq > 0:
-        return max(rq, gap) if gap > 0 or float(stock_qty) <= float(reorder_level) else 0.0
-    return max(1.0, gap) if float(stock_qty) <= float(reorder_level) else 0.0
+        return (
+            money_json(max(rq, gap))
+            if gap > 0 or money_json(stock_qty) <= money_json(reorder_level)
+            else money_json(0)
+        )
+    return (
+        money_json(max(1.0, gap))
+        if money_json(stock_qty) <= money_json(reorder_level)
+        else money_json(0)
+    )
 
 
 async def _preferred_suppliers_for_products(
@@ -82,7 +94,7 @@ async def list_low_stock_suggestions(
     for row in report.get("warehouse_low_stock") or []:
         pid = row["product_id"]
         covered.add(pid)
-        qty = float(row.get("suggested_order_qty") or 0)
+        qty = money_json(row.get("suggested_order_qty") or 0)
         if qty <= 0:
             continue
         lines.append(
@@ -91,10 +103,10 @@ async def list_low_stock_suggestions(
                 "sku": row.get("sku"),
                 "name": row.get("name"),
                 "scope": "warehouse",
-                "stock_qty": float(row.get("quantity") or 0),
-                "reorder_level": float(row.get("reorder_level") or 0),
-                "reorder_qty": float(row.get("reorder_qty") or 0),
-                "suggested_order_qty": qty,
+                "stock_qty": money_json(row.get("quantity") or 0),
+                "reorder_level": money_json(row.get("reorder_level") or 0),
+                "reorder_qty": money_json(row.get("reorder_qty") or 0),
+                "suggested_order_qty": money_json(qty),
                 "warehouse_id": row.get("warehouse_id"),
                 "warehouse_name": row.get("warehouse_name"),
                 "store_id": row.get("store_id"),
@@ -106,8 +118,8 @@ async def list_low_stock_suggestions(
         pid = row["id"]
         if pid in covered:
             continue
-        stock = float(row.get("stock_qty") or 0)
-        reorder = float(row.get("reorder_level") or 0)
+        stock = money_json(row.get("stock_qty") or 0)
+        reorder = money_json(row.get("reorder_level") or 0)
         qty = _product_suggested_qty(stock_qty=stock, reorder_level=reorder)
         if qty <= 0:
             continue
@@ -117,10 +129,10 @@ async def list_low_stock_suggestions(
                 "sku": row.get("sku"),
                 "name": row.get("name"),
                 "scope": "product",
-                "stock_qty": stock,
-                "reorder_level": reorder,
-                "reorder_qty": 0.0,
-                "suggested_order_qty": qty,
+                "stock_qty": money_json(stock),
+                "reorder_level": money_json(reorder),
+                "reorder_qty": money_json(0),
+                "suggested_order_qty": money_json(qty),
                 "warehouse_id": None,
                 "warehouse_name": None,
                 "store_id": None,
@@ -184,7 +196,7 @@ async def create_requests_from_low_stock(
             skipped.append({"product_id": product_id, "reason": "product_not_found"})
             continue
 
-        qty = float(raw.get("quantity") or 0)
+        qty = money_json(raw.get("quantity") or 0)
         warehouse_id = raw.get("warehouse_id") or None
         if qty <= 0:
             # Derive from current stock / warehouse policy
@@ -199,14 +211,22 @@ async def create_requests_from_low_stock(
                     )
                 ).scalar_one_or_none()
                 if stock:
-                    qty = max(
-                        float(stock.reorder_qty or 0),
-                        round(float(stock.reorder_level or 0) - float(stock.quantity or 0), 3),
+                    qty = money_json(
+                        max(
+                            money_json(stock.reorder_qty or 0),
+                            money_json(
+                                round(
+                                    money_json(stock.reorder_level or 0)
+                                    - money_json(stock.quantity or 0),
+                                    3,
+                                )
+                            ),
+                        )
                     )
             if qty <= 0:
                 qty = _product_suggested_qty(
-                    stock_qty=float(product.stock_qty or 0),
-                    reorder_level=float(product.reorder_level or 0),
+                    stock_qty=money_json(product.stock_qty or 0),
+                    reorder_level=money_json(product.reorder_level or 0),
                 )
         if qty <= 0:
             skipped.append({"product_id": product_id, "reason": "quantity_not_positive"})
@@ -292,20 +312,26 @@ async def create_requests_from_predictions(
     """Turn AI low-stock prediction rows into draft PRs (BR-21.4 auto-suggestions)."""
     lines: list[dict] = []
     for raw in at_risk_lines or []:
-        conf = float(raw.get("confidence") or 0)
-        if conf < float(min_confidence or 0):
+        conf = money_json(raw.get("confidence") or 0)
+        if conf < money_json(min_confidence or 0):
             continue
-        qty = float(raw.get("suggested_order_qty") or raw.get("recommended_order_qty") or 0)
+        qty = money_json(raw.get("suggested_order_qty") or raw.get("recommended_order_qty") or 0)
         if qty <= 0:
             continue
+        risk = optional_honest_narrative(
+            raw.get("risk_reason"), label="AI prediction risk reason"
+        )
+        line_notes = optional_honest_narrative(
+            raw.get("notes"), label="purchase request notes"
+        )
         lines.append(
             {
                 "product_id": raw.get("product_id"),
                 "quantity": qty,
                 "warehouse_id": raw.get("warehouse_id"),
                 "preferred_supplier_id": raw.get("preferred_supplier_id"),
-                "notes": raw.get("notes")
-                or f"AI prediction ({raw.get('risk_reason') or 'at_risk'}); conf={conf}",
+                "notes": line_notes
+                or f"AI prediction ({risk or 'at_risk'}); conf={conf}",
             }
         )
     return await create_requests_from_low_stock(

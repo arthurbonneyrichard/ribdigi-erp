@@ -89,6 +89,7 @@ export default function OnboardingChecklist({
           type="button"
           disabled={busy}
           onClick={() => run('/onboarding/checklist/restore')}
+          aria-label="Restore onboarding checklist"
         >
           Restore checklist
         </button>
@@ -108,7 +109,12 @@ export default function OnboardingChecklist({
         <span className="muted">
           {data.completed_count}/{data.total_count} · {pct}%
         </span>
-        <button type="button" onClick={() => setExpanded((v) => !v)} disabled={busy}>
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          disabled={busy}
+          aria-label={expanded ? 'Collapse onboarding checklist' : 'Expand onboarding checklist'}
+        >
           {expanded ? 'Collapse' : 'Expand'}
         </button>
         {canManage && data.dismissible && (
@@ -116,6 +122,7 @@ export default function OnboardingChecklist({
             type="button"
             onClick={() => run('/onboarding/checklist/dismiss')}
             disabled={busy}
+            aria-label="Dismiss onboarding checklist"
           >
             Dismiss
           </button>
@@ -176,6 +183,11 @@ export default function OnboardingChecklist({
                 <button
                   type="button"
                   disabled={busy}
+                  aria-label={
+                    step.skipped
+                      ? `Onboarding unskip ${step.id}`
+                      : `Onboarding skip ${step.id}`
+                  }
                   onClick={() =>
                     run(
                       step.skipped
@@ -189,7 +201,9 @@ export default function OnboardingChecklist({
               )}
               {!step.completed && (
                 <Link href={step.href}>
-                  <button type="button">Open</button>
+                  <button type="button" aria-label={`Open onboarding step ${step.id}`}>
+                    Open
+                  </button>
                 </Link>
               )}
             </li>

@@ -60,9 +60,14 @@ export default function Login() {
       if (!window.PublicKeyCredential) {
         throw new Error('This browser does not support passkeys');
       }
+      const trimmedChallenge = challengeToken.trim();
+      if (!trimmedChallenge) {
+        setError('2FA challenge token is required');
+        return;
+      }
       const opt = await api('/auth/webauthn/login/options', {
         method: 'POST',
-        body: JSON.stringify({ challenge_token: challengeToken }),
+        body: JSON.stringify({ challenge_token: trimmedChallenge }),
       });
       const publicKey = { ...opt.data };
       publicKey.challenge = base64urlToBuffer(publicKey.challenge);
@@ -89,7 +94,7 @@ export default function Login() {
       };
       const r = await api('/auth/webauthn/login/verify', {
         method: 'POST',
-        body: JSON.stringify({ challenge_token: challengeToken, credential }),
+        body: JSON.stringify({ challenge_token: trimmedChallenge, credential }),
       });
       finishLogin(r.data);
     } catch (err: any) {
@@ -106,21 +111,39 @@ export default function Login() {
           await verifyPasskey();
           return;
         }
+        const trimmedChallenge = challengeToken.trim();
+        if (!trimmedChallenge) {
+          setError('2FA challenge token is required');
+          return;
+        }
         const r = await api('/auth/2fa/verify', {
           method: 'POST',
-          body: JSON.stringify({ challenge_token: challengeToken, code: totpCode }),
+          body: JSON.stringify({
+            challenge_token: trimmedChallenge,
+            code: totpCode.trim(),
+          }),
         });
         finishLogin(r.data);
         return;
       }
 
+      const trimmedPassword = password.trim();
+      if (!trimmedPassword) {
+        setError('Password is required');
+        return;
+      }
+      const trimmedTenant = tenant.trim();
+      if (!trimmedTenant) {
+        setError('Login tenant is required');
+        return;
+      }
       const r = await api('/auth/login', {
         method: 'POST',
         body: JSON.stringify({
-          email,
-          password,
-          tenant_id: tenant,
-          totp_code: totpCode || null,
+          email: email.trim(),
+          password: trimmedPassword,
+          tenant_id: trimmedTenant,
+          totp_code: totpCode.trim() || null,
         }),
       });
       if (r.data?.requires_2fa) {
@@ -148,10 +171,15 @@ export default function Login() {
     setError('');
     setVerifyMessage('');
     setDebugVerifyToken('');
+    const trimmedTenant = tenant.trim();
+    if (!trimmedTenant) {
+      setError('Login tenant is required');
+      return;
+    }
     try {
       const r = await api('/auth/resend-verification', {
         method: 'POST',
-        body: JSON.stringify({ email, tenant_id: tenant }),
+        body: JSON.stringify({ email: email.trim(), tenant_id: trimmedTenant }),
       });
       setVerifyMessage(r.message || 'If verification is needed, a link was sent');
       if (r.data?.verification_token) {
@@ -190,6 +218,7 @@ export default function Login() {
               <label className="login-field">
                 <span>Workspace</span>
                 <input
+                  aria-label="Login tenant"
                   value={tenant}
                   onChange={(e) => setTenant(e.target.value)}
                   placeholder="Tenant slug or ID"
@@ -200,6 +229,7 @@ export default function Login() {
               <label className="login-field">
                 <span>Email</span>
                 <input
+                  aria-label="Login email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@company.com"
@@ -216,6 +246,7 @@ export default function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   autoComplete="current-password"
+                  aria-label="Login password"
                   required
                 />
               </label>
@@ -229,11 +260,21 @@ export default function Login() {
             </>
           )}
 
+          {needs2fa && (
+            <input
+              type="hidden"
+              value={challengeToken}
+              readOnly
+              aria-label="2FA challenge token"
+            />
+          )}
+
           {needs2fa && showTotp && (
             <label className="login-field">
               <span>Authenticator code</span>
               <p className="login-hint">Enter the 6-digit code from your authenticator app, or a backup code.</p>
               <input
+                aria-label="2FA code"
                 value={totpCode}
                 onChange={(e) => setTotpCode(e.target.value)}
                 placeholder="000000"
@@ -247,12 +288,17 @@ export default function Login() {
 
           {showPasskey && <p className="login-hint">Or continue with a registered passkey.</p>}
 
-          <button className="login-primary" type="submit">
+          <button className="login-primary" type="submit" aria-label="Sign in">
             {needs2fa ? (methods.includes('totp') ? 'Verify & continue' : 'Continue') : 'Sign in'}
           </button>
 
           {showPasskey && (
-            <button className="login-secondary" type="button" onClick={verifyPasskey}>
+            <button
+              className="login-secondary"
+              type="button"
+              onClick={verifyPasskey}
+              aria-label="Use passkey"
+            >
               Use passkey
             </button>
           )}
@@ -261,6 +307,7 @@ export default function Login() {
             <button
               className="login-ghost"
               type="button"
+              aria-label="Back to sign in"
               onClick={() => {
                 setNeeds2fa(false);
                 setChallengeToken('');
@@ -278,7 +325,12 @@ export default function Login() {
               <p className="login-hint">
                 Check your inbox for a verification link, or resend one below.
               </p>
-              <button className="login-secondary" type="button" onClick={resendVerification}>
+              <button
+                className="login-secondary"
+                type="button"
+                onClick={resendVerification}
+                aria-label="Resend verification email"
+              >
                 Resend verification email
               </button>
               <Link className="login-ghost" href="/verify-email" style={{ display: 'block', textAlign: 'center' }}>

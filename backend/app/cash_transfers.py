@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app.accounting import ensure_default_accounts, get_account_by_code, post_journal_entry
 from app.doc_numbers import next_cash_transfer_number
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
 TRANSFER_KINDS = frozenset({"transfer", "deposit", "withdrawal"})
 ACCOUNT_TYPES = frozenset({"asset", "liability", "equity", "income", "expense"})
@@ -30,8 +31,8 @@ def serialize_account(account: m.Account) -> dict:
         "code": account.code,
         "name": account.name,
         "account_type": account.account_type,
-        "balance": float(account.balance or 0),
-        "opening_balance": float(getattr(account, "opening_balance", 0) or 0),
+        "balance": money_json(account.balance),
+        "opening_balance": money_json(getattr(account, "opening_balance", 0)),
         "is_system": account.code in system_codes,
         "is_active": bool(getattr(account, "is_active", True)),
         "is_cash_account": bool(account.is_cash_account),
@@ -53,7 +54,7 @@ def serialize_transfer(row: m.CashTransfer, *, accounts: dict[str, m.Account] | 
         "to_account_id": row.to_account_id,
         "from_account": serialize_account(from_acc) if from_acc else None,
         "to_account": serialize_account(to_acc) if to_acc else None,
-        "amount": float(row.amount),
+        "amount": money_json(row.amount),
         "reference": row.reference,
         "notes": row.notes,
         "journal_entry_id": row.journal_entry_id,
@@ -89,16 +90,23 @@ async def update_account(
 ) -> m.Account:
     row = await get_account(db, tenant_id, account_id)
     if name is not None:
-        name_key = name.strip()
-        if not name_key:
-            raise HTTPException(status_code=400, detail="name cannot be empty")
-        row.name = name_key
+        # OpenAPI AccountNameValue → 422; service defense-in-depth → 400.
+        row.name = require_honest_narrative(name, label="account name", max_length=150)
     if bank_name is not None:
-        row.bank_name = bank_name.strip() or None
+        # OpenAPI BankNameValue → 422; service defense-in-depth → 400.
+        row.bank_name = optional_honest_narrative(
+            bank_name, label="bank name", max_length=120
+        )
     if account_number is not None:
-        row.account_number = account_number.strip() or None
+        # OpenAPI BankAccountNumberValue → 422; service defense-in-depth → 400.
+        row.account_number = optional_honest_narrative(
+            account_number, label="bank account number", max_length=64
+        )
     if bank_branch is not None:
-        row.bank_branch = bank_branch.strip() or None
+        # OpenAPI BankBranchValue → 422; service defense-in-depth → 400.
+        row.bank_branch = optional_honest_narrative(
+            bank_branch, label="bank branch", max_length=120
+        )
     if is_active is not None:
         row.is_active = bool(is_active)
     if row.is_bank_account and not row.bank_name:
@@ -120,10 +128,12 @@ async def create_account(
     bank_branch: str | None = None,
 ) -> m.Account:
     await ensure_default_accounts(db, tenant_id)
-    code_key = (code or "").strip()
-    name_key = (name or "").strip()
-    if not code_key or not name_key:
-        raise HTTPException(status_code=400, detail="code and name are required")
+    # OpenAPI AccountCodeValue → 422; service defense-in-depth → 400.
+    code_key = require_honest_narrative(
+        (code or "").strip(), label="account code", max_length=30
+    )
+    # OpenAPI AccountNameValue → 422; service defense-in-depth → 400.
+    name_key = require_honest_narrative(name, label="account name", max_length=150)
     # Defense in depth: AccountCreate Literals reject blank/unknown with 422
     # before this runs. Empty account_type used to coerce to "asset".
     atype = (account_type or "asset").strip().lower()
@@ -156,9 +166,16 @@ async def create_account(
         balance=0,
         is_cash_account=kind == "cash",
         is_bank_account=kind == "bank",
-        bank_name=(bank_name or "").strip() or None,
-        account_number=(account_number or "").strip() or None,
-        bank_branch=(bank_branch or "").strip() or None,
+        bank_name=optional_honest_narrative(
+            bank_name, label="bank name", max_length=120
+        ),
+        # OpenAPI BankAccountNumberValue → 422; service defense-in-depth → 400.
+        account_number=optional_honest_narrative(
+            account_number, label="bank account number", max_length=64
+        ),
+        bank_branch=optional_honest_narrative(
+            bank_branch, label="bank branch", max_length=120
+        ),
     )
     if kind == "bank" and not row.bank_name:
         raise HTTPException(status_code=400, detail="bank_name is required for bank accounts")
@@ -167,17 +184,31 @@ async def create_account(
     return row
 
 
-async def list_transfers(db: AsyncSession, tenant_id: str, *, limit: int = 100) -> list[m.CashTransfer]:
-    return list(
-        (
-            await db.execute(
-                select(m.CashTransfer)
-                .where(m.CashTransfer.tenant_id == tenant_id)
-                .order_by(m.CashTransfer.created_at.desc())
-                .limit(max(1, min(limit, 500)))
-            )
-        ).scalars().all()
+async def list_transfers(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    kind: str | None = None,
+    limit: int = 100,
+) -> list[m.CashTransfer]:
+    stmt = (
+        select(m.CashTransfer)
+        .where(m.CashTransfer.tenant_id == tenant_id)
+        .order_by(m.CashTransfer.created_at.desc())
+        .limit(max(1, min(limit, 500)))
     )
+    if kind is not None:
+        wanted = (kind or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in TRANSFER_KINDS:
+            raise HTTPException(
+                status_code=422,
+                detail=f"kind must be one of: {', '.join(sorted(TRANSFER_KINDS))}",
+            )
+        else:
+            stmt = stmt.where(m.CashTransfer.kind == wanted)
+    return list((await db.execute(stmt)).scalars().all())
 
 
 async def get_transfer(db: AsyncSession, tenant_id: str, transfer_id: str) -> m.CashTransfer:
@@ -214,7 +245,7 @@ async def create_transfer(
             status_code=422,
             detail=f"kind must be one of: {', '.join(sorted(TRANSFER_KINDS))}",
         )
-    amt = round(float(amount or 0), 2)
+    amt = money_json(round(money_json(amount or 0), 2))
     if amt <= 0:
         raise HTTPException(status_code=400, detail="amount must be greater than zero")
 
@@ -262,10 +293,12 @@ async def create_transfer(
         debit_id, credit_id = equity.id, src.id
         description = f"Withdrawal from {src.code}"
 
+    notes = optional_honest_narrative(notes, label="transfer notes")
     if notes:
-        description = f"{description}: {notes.strip()[:120]}"
+        description = f"{description}: {notes[:120]}"
 
-    ref = (reference or "").strip() or None
+    # OpenAPI CashTransferReferenceValue → 422; service defense-in-depth → 400.
+    ref = optional_honest_narrative(reference, label="transfer reference", max_length=80)
     if ref is None:
         ref = await next_cash_transfer_number(db, tenant_id)
 
@@ -276,7 +309,7 @@ async def create_transfer(
         to_account_id=to_account_id,
         amount=amt,
         reference=ref,
-        notes=(notes or "").strip() or None,
+        notes=notes,
         created_by=user_id,
         created_at=datetime.utcnow(),
     )

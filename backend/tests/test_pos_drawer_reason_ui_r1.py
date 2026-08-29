@@ -16,6 +16,8 @@ def test_pos_drawer_reason_ui_wired():
     pos = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
     assert "drawerReason" in pos
     assert "Drawer reason (required)" in pos
+    assert 'aria-label="Cash drawer open reason"' in pos
+    assert 'aria-label="Open cash drawer"' in pos
     assert "Reason for opening the cash drawer (required)" not in pos
     assert "/pos/sessions/${session.session_id}/drawer/open" in pos
     assert "Enter a specific drawer reason (min 3 characters)" in pos
@@ -48,7 +50,7 @@ async def test_pos_drawer_open_with_reason_via_api(client, monkeypatch):
         headers=headers,
         json={"reason": "manual"},
     )
-    assert bad.status_code == 400, bad.text
+    assert bad.status_code == 422, bad.text
 
     ok = await ac.post(
         f"/api/v1/pos/sessions/{session_id}/drawer/open",

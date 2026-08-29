@@ -25,6 +25,9 @@ def test_cheque_bounce_cancel_reason_ui_wired():
     assert "Enter a reason before" in page
     assert "bouncing" in page
     assert "cancelling" in page
+    assert 'aria-label="Cheque bounce cancel reason"' in page
+    assert "aria-label={`Bounce cheque ${c.id}`}" in page
+    assert "aria-label={`Cancel cheque ${c.id}`}" in page
 
 
 async def _admin(ac, seed):
@@ -110,8 +113,14 @@ async def test_bounce_cheque_requires_reason_and_persists(client, db_session, se
         headers=headers,
         json={"reason": "   "},
     )
-    assert blank.status_code == 400
-    assert "reason" in blank.json()["detail"].lower()
+    assert blank.status_code == 422, blank.text
+
+    garbage = await ac.post(
+        f"/api/v1/accounting/cheques/{chq['id']}/bounce",
+        headers=headers,
+        json={"reason": "!!!!"},
+    )
+    assert garbage.status_code == 422, garbage.text
 
     # Query-string reason no longer accepted as the required body.
     query_only = await ac.post(

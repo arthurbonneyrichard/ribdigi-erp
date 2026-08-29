@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import ai as ai_svc
 from app import models as m
 from app import report_export as report_export_svc
+from app.honesty import optional_honest_narrative, require_honest_narrative
 
 # Ordered: first match wins (more specific phrases before generic "sales")
 _REPORT_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
@@ -63,12 +64,10 @@ def _quarter_bounds(q: int, year: int) -> tuple[datetime, datetime, int, int]:
 
 def parse_prompt(prompt: str, *, now: datetime | None = None) -> dict[str, Any]:
     """Map NL prompt → report_type + params. Raises 400 on unknown intent."""
-    text = (prompt or "").strip()
-    if not text:
-        raise HTTPException(status_code=400, detail="prompt must not be empty")
-    limit = ai_svc.max_message_chars()
-    if len(text) > limit:
-        raise HTTPException(status_code=400, detail=f"prompt exceeds maximum length of {limit}")
+    # OpenAPI AiReportPromptValue → 422; service defense-in-depth → 400.
+    text = require_honest_narrative(
+        prompt, label="AI report prompt", max_length=ai_svc.max_message_chars()
+    )
     injection = ai_svc.find_injection(text)
     if injection:
         raise HTTPException(status_code=400, detail="Prompt rejected by AI prompt safety controls")
@@ -209,16 +208,16 @@ async def create_template(
     prompt: str,
     format: str | None = None,
 ) -> m.AiReportTemplate:
-    name = (name or "").strip()
-    if not name:
-        raise HTTPException(status_code=400, detail="name is required")
+    name = require_honest_narrative(
+        name, label="AI report template name", max_length=120
+    )
     intent = parse_prompt(prompt)
     fmt = (format or intent.get("format") or "csv").lower()
     if fmt not in report_export_svc.EXPORT_FORMATS:
         raise HTTPException(status_code=400, detail=f"format must be one of {sorted(report_export_svc.EXPORT_FORMATS)}")
     row = m.AiReportTemplate(
         tenant_id=tenant_id,
-        name=name[:120],
+        name=name,
         prompt=prompt.strip(),
         report_type=intent["report_type"],
         params=intent.get("params") or {},
@@ -236,6 +235,15 @@ async def delete_template(db: AsyncSession, *, tenant_id: str, template_id: str)
     await db.flush()
 
 
+def _as_filters_dict(filters: Any) -> dict[str, Any]:
+    """Normalize AiReportFilters model or plain dict → exclude_none dict."""
+    if filters is None:
+        return {}
+    if hasattr(filters, "model_dump"):
+        return filters.model_dump(exclude_none=True)
+    return dict(filters)
+
+
 async def generate_report(
     db: AsyncSession,
     *,
@@ -246,7 +254,7 @@ async def generate_report(
     template_id: str | None = None,
     report_type: str | None = None,
     period: str | None = None,
-    filters: dict | None = None,
+    filters: dict | Any | None = None,
 ) -> dict[str, Any]:
     """Return JSON preview of generated report (+ export metadata)."""
     if template_id:
@@ -268,7 +276,11 @@ async def generate_report(
         # Structured path from API docs
         if report_type not in report_export_svc.EXPORTABLE:
             raise HTTPException(status_code=400, detail=f"Unknown report type: {report_type}")
-        params = dict(filters or {})
+        params = _as_filters_dict(filters)
+        # OpenAPI AiReportPeriodValue → 422; service defense-in-depth → 400.
+        period = optional_honest_narrative(
+            period, label="AI report period", max_length=80
+        )
         # map period shorthand
         if period:
             intent = parse_prompt(f"{report_type.replace('_', ' ')} {period}")
@@ -301,6 +313,13 @@ async def generate_report(
         month=params.get("month"),
         warehouse_id=params.get("warehouse_id"),
         jurisdiction=params.get("jurisdiction"),
+        store_id=params.get("store_id"),
+        branch_id=params.get("branch_id"),
+        category_id=params.get("category_id"),
+        days=params.get("days"),
+        as_of=params.get("as_of"),
+        compare=params.get("compare"),
+        department_id=params.get("department_id"),
     )
     rows, _pdf_lines, title = report_export_svc.flatten_report(rtype, payload)
     fmt = (intent.get("format") or format or "csv").lower()
@@ -361,7 +380,8 @@ async def export_from_intent(
     format: str | None = None,
     template_id: str | None = None,
     report_type: str | None = None,
-    params: dict | None = None,
+    period: str | None = None,
+    params: dict | Any | None = None,
 ) -> tuple[bytes, str, str, dict[str, Any]]:
     """Return (content, media_type, filename, intent_meta)."""
     generated = await generate_report(
@@ -372,6 +392,7 @@ async def export_from_intent(
         format=format,
         template_id=template_id,
         report_type=report_type,
+        period=period,
         filters=params,
     )
     # generate_report already committed; build export bytes again without re-audit noise
@@ -390,5 +411,12 @@ async def export_from_intent(
         month=p.get("month"),
         warehouse_id=p.get("warehouse_id"),
         jurisdiction=p.get("jurisdiction"),
+        store_id=p.get("store_id"),
+        branch_id=p.get("branch_id"),
+        category_id=p.get("category_id"),
+        days=p.get("days"),
+        as_of=p.get("as_of"),
+        compare=p.get("compare"),
+        department_id=p.get("department_id"),
     )
     return content, media, filename, generated

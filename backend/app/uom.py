@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json
 
 
 async def get_unit(db: AsyncSession, tenant_id: str, unit_id: str) -> m.UnitOfMeasure:
@@ -41,7 +42,7 @@ def factor_to_root(unit: m.UnitOfMeasure, base: m.UnitOfMeasure | None) -> tuple
             status_code=400,
             detail="Multi-hop unit conversions are not supported; base unit must be a root",
         )
-    ratio = float(unit.conversion_ratio or 0)
+    ratio = money_json(unit.conversion_ratio or 0)
     if ratio <= 0:
         raise HTTPException(status_code=400, detail="conversion_ratio must be positive")
     return base.id, ratio
@@ -60,7 +61,7 @@ async def to_stock_qty(
     Returns ``(quantity_base, entered_unit_id, entered_quantity)``.
     When ``from_unit_id`` is omitted or equals the product unit, no conversion.
     """
-    qty = float(quantity)
+    qty = money_json(quantity)
     if qty <= 0:
         raise HTTPException(status_code=400, detail="quantity must be positive")
 
@@ -92,7 +93,7 @@ async def to_stock_qty(
         )
 
     # qty_in_root = qty * from_factor; qty_in_stock = qty_in_root / stock_factor
-    quantity_base = round(qty * from_factor / stock_factor, 6)
+    quantity_base = money_json(round(qty * from_factor / stock_factor, 6))
     if quantity_base <= 0:
         raise HTTPException(status_code=400, detail="Converted quantity must be positive")
     return quantity_base, from_unit.id, qty
@@ -136,7 +137,7 @@ async def validate_unit_base(
             status_code=400,
             detail="Base unit must be a root unit (no further base)",
         )
-    ratio = float(conversion_ratio if conversion_ratio is not None else 1)
+    ratio = money_json(conversion_ratio if conversion_ratio is not None else 1)
     if ratio <= 0:
         raise HTTPException(status_code=422, detail="conversion_ratio must be greater than zero")
     return base.id, ratio

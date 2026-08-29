@@ -8,6 +8,7 @@ from typing import Any
 from fastapi import HTTPException
 
 from app import models as m
+from app.honesty import optional_honest_narrative
 
 DEFAULT_INVOICE_TEMPLATE = "a4"
 DEFAULT_RECEIPT_PAPER = "80mm"
@@ -58,10 +59,25 @@ def print_branding_settings(tenant: m.Tenant | None) -> dict[str, Any]:
 
 def apply_print_branding_update(tenant: m.Tenant, payload: dict[str, Any]) -> dict[str, Any]:
     current = dict(getattr(tenant, "print_branding", None) or {})
-    if "header_text" in payload and payload["header_text"] is not None:
-        current["header_text"] = str(payload["header_text"]).strip()[:200]
-    if "footer_text" in payload and payload["footer_text"] is not None:
-        current["footer_text"] = str(payload["footer_text"]).strip()[:300]
+    # Key present + null → clear; key present + value → set (schema already validated).
+    if "header_text" in payload:
+        val = payload["header_text"]
+        if val is None:
+            current["header_text"] = ""
+        else:
+            cleaned = optional_honest_narrative(
+                val, label="print header text", max_length=200
+            )
+            current["header_text"] = cleaned or ""
+    if "footer_text" in payload:
+        val = payload["footer_text"]
+        if val is None:
+            current["footer_text"] = ""
+        else:
+            cleaned = optional_honest_narrative(
+                val, label="print footer text", max_length=300
+            )
+            current["footer_text"] = cleaned or ""
     if payload.get("default_invoice_template") is not None:
         # Defense in depth: PrintBrandingUpdate Literal rejects blank/unknown with 422.
         # Read path still coerces garbage to a4 silently.

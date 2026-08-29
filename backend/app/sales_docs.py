@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 from app.inventory import apply_stock_change
 from app.doc_numbers import (
     next_credit_note_number,
@@ -22,6 +23,22 @@ from app.catalog import get_variant, resolve_sale_line
 
 RETURN_REASONS = frozenset({"damaged", "wrong_item", "defective", "customer_change", "other"})
 RETURN_CONDITIONS = frozenset({"sellable", "discard"})
+# Manage list statuses (full quotation lifecycle).
+QT_MANAGE_STATUSES = frozenset(
+    {"draft", "sent", "accepted", "rejected", "expired", "converted"}
+)
+# Manage list statuses (full sales order fulfillment lifecycle).
+SO_MANAGE_STATUSES = frozenset(
+    {
+        "draft",
+        "confirmed",
+        "processing",
+        "shipped",
+        "delivered",
+        "invoiced",
+        "cancelled",
+    }
+)
 
 
 async def _prepare_lines(
@@ -47,13 +64,13 @@ async def _prepare_lines(
             tenant_id=tenant_id,
             product=product,
             unit_id=item.get("unit_id"),
-            quantity=float(item["quantity"]),
+            quantity=money_json(item["quantity"]),
         )
-        discount = float(item.get("discount") or 0)
+        discount = money_json(item.get("discount") or 0)
         explicit = item.get("tax_rate")
         if explicit is not None:
             spec = await resolve_product_tax(
-                db, tenant_id, product, explicit_rate=float(explicit)
+                db, tenant_id, product, explicit_rate=money_json(explicit)
             )
         else:
             spec = await resolve_product_tax(db, tenant_id, product, explicit_rate=None)
@@ -77,7 +94,7 @@ async def _prepare_lines(
                 line_total,
             )
         )
-    return round(subtotal, 2), round(tax_total, 2), prepared
+    return money_json(round(subtotal, 2)), money_json(round(tax_total, 2)), prepared
 
 
 def _stamp(prefix: str) -> str:
@@ -119,10 +136,10 @@ async def serialize_quotation(db: AsyncSession, quote: m.SalesQuotation) -> dict
         "quotation_number": quote.quotation_number,
         "customer_id": quote.customer_id,
         "status": quote.status,
-        "subtotal": float(quote.subtotal),
-        "tax_amount": float(quote.tax_amount),
-        "discount_amount": float(quote.discount_amount),
-        "total_amount": float(quote.total_amount),
+        "subtotal": money_json(quote.subtotal),
+        "tax_amount": money_json(quote.tax_amount),
+        "discount_amount": money_json(quote.discount_amount),
+        "total_amount": money_json(quote.total_amount),
         "valid_until": quote.valid_until,
         "notes": quote.notes,
         "rejection_reason": quote.rejection_reason,
@@ -136,12 +153,12 @@ async def serialize_quotation(db: AsyncSession, quote: m.SalesQuotation) -> dict
                 "id": i.id,
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
-                "quantity": float(i.quantity),
+                "quantity": money_json(i.quantity),
                 "unit_id": i.unit_id,
-                "unit_price": float(i.unit_price),
-                "tax_rate": float(i.tax_rate),
-                "discount": float(i.discount),
-                "line_total": float(i.line_total),
+                "unit_price": money_json(i.unit_price),
+                "tax_rate": money_json(i.tax_rate),
+                "discount": money_json(i.discount),
+                "line_total": money_json(i.line_total),
             }
             for i in items
         ],
@@ -163,8 +180,8 @@ async def create_quotation(
     subtotal, tax_total, prepared = await _prepare_lines(
         db, tenant_id, items, customer_id=customer_id
     )
-    discount_amount = float(discount_amount or 0)
-    total = round(subtotal + tax_total - discount_amount, 2)
+    discount_amount = money_json(discount_amount or 0)
+    total = money_json(round(subtotal + tax_total - discount_amount, 2))
     if total < 0:
         raise HTTPException(status_code=400, detail="Total cannot be negative")
     quote = m.SalesQuotation(
@@ -177,7 +194,7 @@ async def create_quotation(
         discount_amount=discount_amount,
         total_amount=total,
         valid_until=datetime.utcnow() + timedelta(days=max(valid_days, 1)),
-        notes=notes,
+        notes=optional_honest_narrative(notes, label="quotation notes"),
         created_by=user_id,
     )
     db.add(quote)
@@ -275,9 +292,7 @@ async def reject_quotation(
         quote.status = "expired"
         await db.flush()
         raise HTTPException(status_code=409, detail="Quotation has expired")
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="rejection reason is required")
+    reason_s = require_honest_narrative(reason, label="rejection reason")
     quote.status = "rejected"
     quote.rejection_reason = reason_s
     quote.updated_at = datetime.utcnow()
@@ -316,7 +331,9 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
 
     reservations = await list_order_reservations(db, order.tenant_id, order.id, status=None)
     active = [r for r in reservations if r.status == "active"]
-    reserved_by_item = {r.sales_order_item_id: float(r.quantity) for r in active if r.sales_order_item_id}
+    reserved_by_item = {
+        r.sales_order_item_id: money_json(r.quantity) for r in active if r.sales_order_item_id
+    }
     return {
         "id": order.id,
         "order_number": order.order_number,
@@ -326,10 +343,10 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
         "delivery_date": getattr(order, "delivery_date", None),
         "delivery_address": getattr(order, "delivery_address", None),
         "status": order.status,
-        "subtotal": float(order.subtotal),
-        "tax_amount": float(order.tax_amount),
-        "discount_amount": float(order.discount_amount),
-        "total_amount": float(order.total_amount),
+        "subtotal": money_json(order.subtotal),
+        "tax_amount": money_json(order.tax_amount),
+        "discount_amount": money_json(order.discount_amount),
+        "total_amount": money_json(order.total_amount),
         "notes": order.notes,
         "converted_invoice_id": order.converted_invoice_id,
         "confirmed_at": order.confirmed_at,
@@ -337,7 +354,7 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
         "shipped_at": getattr(order, "shipped_at", None),
         "delivered_at": getattr(order, "delivered_at", None),
         "created_at": order.created_at,
-        "reserved_qty": round(sum(float(r.quantity) for r in active), 3),
+        "reserved_qty": money_json(round(sum(money_json(r.quantity) for r in active), 3)),
         "reservation_status": (
             "active"
             if active
@@ -353,12 +370,12 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
                 "id": i.id,
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
-                "quantity": float(i.quantity),
+                "quantity": money_json(i.quantity),
                 "unit_id": i.unit_id,
-                "unit_price": float(i.unit_price),
-                "tax_rate": float(i.tax_rate),
-                "discount": float(i.discount),
-                "line_total": float(i.line_total),
+                "unit_price": money_json(i.unit_price),
+                "tax_rate": money_json(i.tax_rate),
+                "discount": money_json(i.discount),
+                "line_total": money_json(i.line_total),
                 "reserved_qty": reserved_by_item.get(i.id, 0.0),
             }
             for i in items
@@ -394,8 +411,8 @@ async def create_order(
     subtotal, tax_total, prepared = await _prepare_lines(
         db, tenant_id, items, customer_id=customer_id
     )
-    discount_amount = float(discount_amount or 0)
-    total = round(subtotal + tax_total - discount_amount, 2)
+    discount_amount = money_json(discount_amount or 0)
+    total = money_json(round(subtotal + tax_total - discount_amount, 2))
     order = m.SalesOrder(
         tenant_id=tenant_id,
         order_number=await next_sales_order_number(db, tenant_id),
@@ -403,13 +420,15 @@ async def create_order(
         quotation_id=quotation_id,
         store_id=resolved_store_id,
         delivery_date=delivery_date,
-        delivery_address=(delivery_address or "").strip() or None,
+        delivery_address=optional_honest_narrative(
+            delivery_address, label="sales order delivery address", max_length=500
+        ),
         status="draft",
         subtotal=subtotal,
         tax_amount=tax_total,
         discount_amount=discount_amount,
         total_amount=total,
-        notes=notes,
+        notes=optional_honest_narrative(notes, label="sales order notes"),
         created_by=user_id,
     )
     db.add(order)
@@ -425,7 +444,7 @@ async def create_order(
         tenant_id=tenant_id,
         category="new_order",
         title="Sales order created",
-        message=f"Order {order.order_number} created for {float(order.total_amount or 0):.2f}.",
+        message=f"Order {order.order_number} created for {money_json(order.total_amount or 0):.2f}.",
         entity_type="sales_order",
         entity_id=order.id,
     )
@@ -456,15 +475,15 @@ async def convert_quotation_to_order(
             {
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
-                "quantity": float(i.quantity),
+                "quantity": money_json(i.quantity),
                 "unit_id": i.unit_id,
-                "unit_price": float(i.unit_price),
-                "tax_rate": float(i.tax_rate),
-                "discount": float(i.discount),
+                "unit_price": money_json(i.unit_price),
+                "tax_rate": money_json(i.tax_rate),
+                "discount": money_json(i.discount),
             }
             for i in items
         ],
-        discount_amount=float(quote.discount_amount or 0),
+        discount_amount=money_json(quote.discount_amount or 0),
         notes=quote.notes,
         quotation_id=quote.id,
     )
@@ -495,7 +514,9 @@ async def confirm_order(
     if delivery_date is not None:
         order.delivery_date = delivery_date
     if delivery_address is not None:
-        order.delivery_address = delivery_address.strip() or None
+        order.delivery_address = optional_honest_narrative(
+            delivery_address, label="sales order delivery address", max_length=500
+        )
     if not order.store_id:
         raise HTTPException(
             status_code=400,
@@ -615,9 +636,7 @@ async def cancel_order(
     user_id: str | None = None,
     reason: str | None = None,
 ) -> m.SalesOrder:
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="cancel reason is required")
+    reason_s = require_honest_narrative(reason, label="cancel reason")
     order = await get_order(db, tenant_id, order_id)
     if order.status not in ORDER_CANCELABLE:
         raise HTTPException(status_code=409, detail=f"Cannot cancel order in status {order.status}")
@@ -663,15 +682,15 @@ async def convert_order_to_invoice(
             {
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
-                "quantity": float(i.quantity),
+                "quantity": money_json(i.quantity),
                 "unit_id": i.unit_id,
-                "unit_price": float(i.unit_price),
-                "tax_rate": float(i.tax_rate),
-                "discount": float(i.discount),
+                "unit_price": money_json(i.unit_price),
+                "tax_rate": money_json(i.tax_rate),
+                "discount": money_json(i.discount),
             }
             for i in items
         ],
-        discount_amount=float(order.discount_amount or 0),
+        discount_amount=money_json(order.discount_amount or 0),
         notes=order.notes,
     )
     invoice.sales_order_id = order.id
@@ -737,12 +756,12 @@ async def serialize_return(db: AsyncSession, ret: m.SalesReturn) -> dict:
         "status": ret.status,
         "reason": ret.reason,
         "restock": ret.restock,
-        "subtotal": float(ret.subtotal),
-        "tax_amount": float(ret.tax_amount),
-        "total_amount": float(ret.total_amount),
+        "subtotal": money_json(ret.subtotal),
+        "tax_amount": money_json(ret.tax_amount),
+        "total_amount": money_json(ret.total_amount),
         "settlement_method": getattr(ret, "settlement_method", None),
         "refund_payment_method": getattr(ret, "refund_payment_method", None),
-        "refunded_amount": float(getattr(ret, "refunded_amount", 0) or 0),
+        "refunded_amount": money_json(getattr(ret, "refunded_amount", None)),
         "notes": ret.notes,
         "posted_at": ret.posted_at,
         "created_at": ret.created_at,
@@ -752,10 +771,10 @@ async def serialize_return(db: AsyncSession, ret: m.SalesReturn) -> dict:
                 "id": i.id,
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
-                "quantity": float(i.quantity),
-                "unit_price": float(i.unit_price),
-                "tax_rate": float(i.tax_rate),
-                "line_total": float(i.line_total),
+                "quantity": money_json(i.quantity),
+                "unit_price": money_json(i.unit_price),
+                "tax_rate": money_json(i.tax_rate),
+                "line_total": money_json(i.line_total),
                 "condition": i.condition,
             }
             for i in items
@@ -771,9 +790,7 @@ async def cancel_return(
     return_id: str,
     reason: str | None = None,
 ) -> m.SalesReturn:
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="cancel reason is required")
+    reason_s = require_honest_narrative(reason, label="cancel reason")
     ret = await get_return(db, tenant_id, return_id)
     if ret.status != "draft":
         raise HTTPException(status_code=409, detail="Only draft sales returns can be cancelled")
@@ -832,14 +849,14 @@ async def create_return(
                 vid = src.variant_id
         if not src:
             raise HTTPException(status_code=400, detail=f"Product {pid} not on original invoice")
-        qty = float(item["quantity"])
-        if qty <= 0 or qty > float(src.quantity) + 1e-9:
+        qty = money_json(item["quantity"])
+        if qty <= 0 or qty > money_json(src.quantity) + 1e-9:
             raise HTTPException(status_code=400, detail="Return quantity exceeds invoice quantity")
-        unit = float(src.unit_price)
-        rate = float(src.tax_rate or 0)
-        line_net = round(qty * unit, 2)
-        line_tax = round(line_net * (rate / 100.0), 2)
-        line_total = round(line_net + line_tax, 2)
+        unit = money_json(src.unit_price)
+        rate = money_json(src.tax_rate or 0)
+        line_net = money_json(round(qty * unit, 2))
+        line_tax = money_json(round(line_net * (rate / 100.0), 2))
+        line_total = money_json(round(line_net + line_tax, 2))
         subtotal += line_net
         tax_total += line_tax
         condition = (item.get("condition") or "").strip()
@@ -870,10 +887,10 @@ async def create_return(
         status="draft",
         reason=reason,
         restock=restock,
-        subtotal=round(subtotal, 2),
-        tax_amount=round(tax_total, 2),
-        total_amount=round(subtotal + tax_total, 2),
-        notes=notes,
+        subtotal=money_json(round(subtotal, 2)),
+        tax_amount=money_json(round(tax_total, 2)),
+        total_amount=money_json(round(subtotal + tax_total, 2)),
+        notes=optional_honest_narrative(notes, label="sales return notes"),
         created_by=user_id,
     )
     db.add(ret)
@@ -903,7 +920,7 @@ async def post_return(
 
     for item in items:
         if ret.restock and item.condition == "sellable":
-            qty = float(item.quantity)
+            qty = money_json(item.quantity)
             await apply_stock_change(
                 db,
                 tenant_id=tenant_id,
@@ -918,7 +935,7 @@ async def post_return(
             )
             if item.variant_id:
                 variant = await get_variant(db, tenant_id, item.variant_id)
-                variant.stock_qty = float(variant.stock_qty or 0) + qty
+                variant.stock_qty = money_json(variant.stock_qty or 0) + qty
         else:
             db.add(
                 m.AuditLog(
@@ -930,16 +947,16 @@ async def post_return(
                     details={
                         "product_id": item.product_id,
                         "variant_id": item.variant_id,
-                        "quantity": float(item.quantity),
+                        "quantity": money_json(item.quantity),
                     },
                 )
             )
 
-    return_total = round(float(ret.total_amount), 2)
+    return_total = money_json(round(money_json(ret.total_amount), 2))
     invoice = await get_invoice(db, tenant_id, ret.sales_invoice_id)
-    open_ar = max(float(invoice.total_amount) - float(invoice.paid_amount or 0), 0.0)
+    open_ar = max(money_json(invoice.total_amount) - money_json(invoice.paid_amount or 0), 0.0)
     apply_to_invoice = min(return_total, open_ar)
-    excess = round(return_total - apply_to_invoice, 2)
+    excess = money_json(round(return_total - apply_to_invoice, 2))
 
     method = (settlement_method or "").strip().lower() or None
     # Defense in depth: SalesReturnPost Literal rejects blank/unknown with 422.
@@ -968,8 +985,8 @@ async def post_return(
         method = method or "adjust"
 
     invoice.paid_amount = min(
-        float(invoice.total_amount),
-        float(invoice.paid_amount or 0) + apply_to_invoice,
+        money_json(invoice.total_amount),
+        money_json(invoice.paid_amount or 0) + apply_to_invoice,
     )
     from app.sales import apply_invoice_status
 
@@ -979,7 +996,7 @@ async def post_return(
 
     customer = await get_customer(db, tenant_id, ret.customer_id)
     # Negative balance = customer store credit after return
-    customer.balance = round(float(customer.balance or 0) - return_total, 2)
+    customer.balance = money_json(round(money_json(customer.balance or 0) - return_total, 2))
 
     ret.credit_note_number = await next_credit_note_number(db, tenant_id)
     ret.settlement_method = method
@@ -1006,7 +1023,7 @@ async def post_return(
         ret.refund_liquid_account_id = liquid_account_id
         ret.refunded_amount = excess
         # Cash paid out instead of leaving store credit for the excess
-        customer.balance = round(float(customer.balance or 0) + excess, 2)
+        customer.balance = money_json(round(money_json(customer.balance or 0) + excess, 2))
 
     from app.notifications import create_notification
 
@@ -1036,7 +1053,7 @@ async def post_return(
                 "credit_note_number": ret.credit_note_number,
                 "total_amount": return_total,
                 "settlement_method": method,
-                "refunded_amount": float(ret.refunded_amount or 0),
+                "refunded_amount": money_json(ret.refunded_amount or 0),
                 "applied_to_invoice": apply_to_invoice,
             },
         )

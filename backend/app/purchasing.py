@@ -9,6 +9,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
+from app.schemas import validate_webhook_url_value
 from app.inventory import apply_stock_change
 from app.tax import resolve_product_tax
 from app.credit import default_due_date, party_terms_days
@@ -20,6 +22,16 @@ from app.doc_numbers import (
     next_purchase_return_number,
     next_supplier_payment_number,
 )
+
+
+def _optional_attachment_url(value: str | None) -> str | None:
+    """OpenAPI WebhookUrlValue → 422; service defense-in-depth → 400."""
+    if value is None or not str(value).strip():
+        return None
+    try:
+        return validate_webhook_url_value(str(value).strip())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 async def _purchase_line_tax(
@@ -37,27 +49,35 @@ async def _purchase_line_tax(
     explicit = item.get("tax_rate")
     if explicit is not None:
         spec = await resolve_product_tax(
-            db, tenant_id, product, explicit_rate=float(explicit)
+            db, tenant_id, product, explicit_rate=money_json(explicit)
         )
     else:
         spec = await resolve_product_tax(db, tenant_id, product, explicit_rate=None)
-    qty = float(item.get("quantity") or 0)
-    unit = float(item.get("unit_price") or 0)
+    qty = money_json(item.get("quantity") or 0)
+    unit = money_json(item.get("unit_price") or 0)
     breakdown = spec.compute_breakdown(qty * unit)
     comps = list(breakdown.get("components") or []) or None
     return (
-        float(breakdown["net"]),
-        float(breakdown["tax"]),
-        float(breakdown["gross"]),
-        float(spec.rate_pct),
+        money_json(breakdown["net"]),
+        money_json(breakdown["tax"]),
+        money_json(breakdown["gross"]),
+        money_json(spec.rate_pct),
         comps,
     )
 
 PO_EDITABLE = {"draft"}
 PO_AMENDABLE = frozenset({"draft", "sent"})
 PO_RECEIVABLE = {"sent", "partially_received"}
+# Manage list + lifecycle statuses (superset of reports.PENDING_PO_STATUSES).
+PO_MANAGE_STATUSES = frozenset(
+    {"draft", "sent", "partially_received", "received", "cancelled"}
+)
 PURCHASE_RETURN_REASONS = frozenset({"damaged", "wrong_item", "expiry", "quality", "other"})
 PURCHASE_INVOICE_OPEN = frozenset({"unpaid", "partial", "overdue"})
+# Manage list statuses (full purchase invoice lifecycle).
+PI_MANAGE_STATUSES = frozenset(
+    {"draft", "unpaid", "partial", "paid", "overdue", "cancelled"}
+)
 
 
 def purchase_invoice_status(
@@ -92,8 +112,8 @@ async def refresh_overdue_purchase_invoices(
     for inv in rows:
         before = inv.status
         new_status = purchase_invoice_status(
-            float(inv.total_amount),
-            float(inv.paid_amount or 0),
+            money_json(inv.total_amount),
+            money_json(inv.paid_amount or 0),
             inv.due_date,
             as_of=as_of,
         )
@@ -109,8 +129,8 @@ async def refresh_overdue_purchase_invoices(
 def derive_po_status(items: list[m.PurchaseOrderItem]) -> str:
     if not items:
         return "sent"
-    fully = all(float(i.received_qty or 0) >= float(i.quantity or 0) for i in items)
-    any_received = any(float(i.received_qty or 0) > 0 for i in items)
+    fully = all(money_json(i.received_qty or 0) >= money_json(i.quantity or 0) for i in items)
+    any_received = any(money_json(i.received_qty or 0) > 0 for i in items)
     if fully:
         return "received"
     if any_received:
@@ -171,12 +191,12 @@ def _po_items_snapshot(items: list[m.PurchaseOrderItem]) -> list[dict]:
     return [
         {
             "product_id": i.product_id,
-            "quantity": float(i.quantity),
+            "quantity": money_json(i.quantity),
             "unit_id": i.unit_id,
-            "unit_price": float(i.unit_price),
-            "tax_rate": float(i.tax_rate),
-            "discount": float(getattr(i, "discount", 0) or 0),
-            "line_total": float(i.line_total),
+            "unit_price": money_json(i.unit_price),
+            "tax_rate": money_json(i.tax_rate),
+            "discount": money_json(getattr(i, "discount", 0) or 0),
+            "line_total": money_json(i.line_total),
         }
         for i in items
     ]
@@ -184,16 +204,16 @@ def _po_items_snapshot(items: list[m.PurchaseOrderItem]) -> list[dict]:
 
 def _po_line_discount(qty: float, unit_price: float, line_total: float, discount: float) -> tuple[float, float]:
     """Tax-before-discount (match PI). Returns (discount, discounted line_total)."""
-    disc = float(discount or 0)
+    disc = money_json(discount or 0)
     if disc < 0:
         raise HTTPException(status_code=400, detail="discount must be >= 0")
-    merch = float(qty) * float(unit_price)
+    merch = money_json(qty) * money_json(unit_price)
     if disc > merch + 1e-9:
         raise HTTPException(
             status_code=400,
             detail="discount cannot exceed quantity × unit_price",
         )
-    return disc, max(float(line_total) - disc, 0)
+    return disc, max(money_json(line_total) - disc, 0)
 
 
 def _po_header_snapshot(po: m.PurchaseOrder) -> dict:
@@ -201,9 +221,9 @@ def _po_header_snapshot(po: m.PurchaseOrder) -> dict:
         "notes": po.notes,
         "delivery_address": getattr(po, "delivery_address", None),
         "due_date": po.due_date.isoformat() if po.due_date else None,
-        "subtotal": float(po.subtotal),
-        "tax_amount": float(po.tax_amount),
-        "total_amount": float(po.total_amount),
+        "subtotal": money_json(po.subtotal),
+        "tax_amount": money_json(po.tax_amount),
+        "total_amount": money_json(po.total_amount),
         "revision_no": int(getattr(po, "revision_no", 0) or 0),
     }
 
@@ -244,7 +264,7 @@ def serialize_po_amendment(row: m.PurchaseOrderAmendment) -> dict:
 async def serialize_po(db: AsyncSession, po: m.PurchaseOrder) -> dict:
     items = await list_po_items(db, po.tenant_id, po.id)
     amendments = await list_po_amendments(db, po.tenant_id, po.id)
-    has_receipts = any(float(i.received_qty or 0) > 0 for i in items)
+    has_receipts = any(money_json(i.received_qty) > 0 for i in items)
     can_amend = po.status in PO_AMENDABLE and not has_receipts
     can_cancel = po.status not in {"received", "cancelled"} and not has_receipts
     return {
@@ -253,11 +273,11 @@ async def serialize_po(db: AsyncSession, po: m.PurchaseOrder) -> dict:
         "supplier_id": po.supplier_id,
         "warehouse_id": po.warehouse_id,
         "status": po.status,
-        "subtotal": float(po.subtotal),
-        "tax_amount": float(po.tax_amount),
-        "total_amount": float(po.total_amount),
-        "paid_amount": float(po.paid_amount or 0),
-        "balance_due": max(float(po.total_amount) - float(po.paid_amount or 0), 0),
+        "subtotal": money_json(po.subtotal),
+        "tax_amount": money_json(po.tax_amount),
+        "total_amount": money_json(po.total_amount),
+        "paid_amount": money_json(po.paid_amount),
+        "balance_due": max(money_json(po.total_amount) - money_json(po.paid_amount), 0),
         "due_date": po.due_date,
         "notes": po.notes,
         "delivery_address": getattr(po, "delivery_address", None),
@@ -272,14 +292,14 @@ async def serialize_po(db: AsyncSession, po: m.PurchaseOrder) -> dict:
             {
                 "id": i.id,
                 "product_id": i.product_id,
-                "quantity": float(i.quantity),
-                "received_qty": float(i.received_qty),
+                "quantity": money_json(i.quantity),
+                "received_qty": money_json(i.received_qty),
                 "unit_id": i.unit_id,
-                "unit_price": float(i.unit_price),
-                "tax_rate": float(i.tax_rate),
-                "discount": float(getattr(i, "discount", 0) or 0),
-                "line_total": float(i.line_total),
-                "outstanding_qty": max(float(i.quantity) - float(i.received_qty or 0), 0),
+                "unit_price": money_json(i.unit_price),
+                "tax_rate": money_json(i.tax_rate),
+                "discount": money_json(getattr(i, "discount", 0) or 0),
+                "line_total": money_json(i.line_total),
+                "outstanding_qty": max(money_json(i.quantity) - money_json(i.received_qty), 0),
             }
             for i in items
         ],
@@ -329,9 +349,9 @@ async def create_purchase_order(
             tenant_id=tenant_id,
             product=product,
             unit_id=item.get("unit_id"),
-            quantity=float(item["quantity"]),
+            quantity=money_json(item["quantity"]),
         )
-        unit_price = float(item.get("unit_price") or 0)
+        unit_price = money_json(item.get("unit_price") or 0)
         line_item = {**item, "quantity": qty, "unit_price": unit_price}
         line_sub, line_tax, line_total, rate_pct, _comps = await _purchase_line_tax(
             db, tenant_id, product, line_item
@@ -361,11 +381,13 @@ async def create_purchase_order(
         supplier_id=supplier_id,
         warehouse_id=warehouse_id,
         status="draft",
-        subtotal=round(subtotal, 2),
-        tax_amount=round(tax_total, 2),
-        total_amount=round(max(subtotal + tax_total - discount_total, 0), 2),
-        notes=notes,
-        delivery_address=(delivery_address or "").strip() or None,
+        subtotal=money_json(round(subtotal, 2)),
+        tax_amount=money_json(round(tax_total, 2)),
+        total_amount=money_json(round(max(subtotal + tax_total - discount_total, 0), 2)),
+        notes=optional_honest_narrative(notes, label="purchase order notes"),
+        delivery_address=optional_honest_narrative(
+            delivery_address, label="purchase order delivery address", max_length=500
+        ),
         created_by=user_id,
     )
     db.add(po)
@@ -394,7 +416,7 @@ async def create_purchase_order(
             action="po_created",
             entity="purchase_order",
             entity_id=po.id,
-            details={"po_number": po.po_number, "total": float(po.total_amount)},
+            details={"po_number": po.po_number, "total": money_json(po.total_amount)},
         )
     )
     return po
@@ -469,14 +491,12 @@ async def cancel_purchase_order(
     po_id: str,
     reason: str | None = None,
 ) -> m.PurchaseOrder:
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="cancel reason is required")
+    reason_s = require_honest_narrative(reason, label="cancel reason")
     po = await get_po(db, tenant_id, po_id)
     if po.status in {"received", "cancelled"}:
         raise HTTPException(status_code=409, detail=f"Cannot cancel PO in status {po.status}")
     items = await list_po_items(db, tenant_id, po.id)
-    if any(float(i.received_qty or 0) > 0 for i in items):
+    if any(money_json(i.received_qty or 0) > 0 for i in items):
         raise HTTPException(status_code=409, detail="Cannot cancel PO after goods have been received")
     po.status = "cancelled"
     po.notes = ((po.notes or "") + f"\nCancel: {reason_s}").strip()
@@ -515,15 +535,13 @@ async def amend_purchase_order(
     """
     from app import emailer
 
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="amend reason is required")
+    reason_s = require_honest_narrative(reason, label="amend reason")
 
     po = await get_po(db, tenant_id, po_id)
     if po.status not in PO_AMENDABLE:
         raise HTTPException(status_code=409, detail=f"Cannot amend PO in status {po.status}")
     existing_items = await list_po_items(db, tenant_id, po.id)
-    if any(float(i.received_qty or 0) > 0 for i in existing_items):
+    if any(money_json(i.received_qty or 0) > 0 for i in existing_items):
         raise HTTPException(status_code=409, detail="Cannot amend PO after goods have been received")
 
     before = {
@@ -571,9 +589,9 @@ async def amend_purchase_order(
                 tenant_id=tenant_id,
                 product=product,
                 unit_id=item.get("unit_id"),
-                quantity=float(item["quantity"]),
+                quantity=money_json(item["quantity"]),
             )
-            unit_price = float(item.get("unit_price") or 0)
+            unit_price = money_json(item.get("unit_price") or 0)
             line_item = {
                 **item,
                 "quantity": qty,
@@ -617,14 +635,17 @@ async def amend_purchase_order(
                     line_total=line_total,
                 )
             )
-        po.subtotal = round(subtotal, 2)
-        po.tax_amount = round(tax_total, 2)
-        po.total_amount = round(max(subtotal + tax_total - discount_total, 0), 2)
+        po.subtotal = money_json(round(subtotal, 2))
+        po.tax_amount = money_json(round(tax_total, 2))
+        po.total_amount = money_json(round(max(subtotal + tax_total - discount_total, 0), 2))
 
     if notes is not None:
-        po.notes = notes
+        # OpenAPI PurchaseOrderNotesValue → 422; null clears; blank/garbage → 400.
+        po.notes = optional_honest_narrative(notes, label="purchase order notes")
     if delivery_address is not None:
-        po.delivery_address = delivery_address.strip() or None
+        po.delivery_address = optional_honest_narrative(
+            delivery_address, label="purchase order delivery address", max_length=500
+        )
     if clear_due_date:
         po.due_date = None
     elif due_date is not None:
@@ -751,7 +772,7 @@ async def create_grn(
         supplier_id=po.supplier_id,
         warehouse_id=warehouse_id or po.warehouse_id,
         status="posted",
-        notes=notes,
+        notes=optional_honest_narrative(notes, label="GRN notes"),
         created_by=user_id,
     )
     db.add(grn)
@@ -762,32 +783,31 @@ async def create_grn(
         if not po_item:
             raise HTTPException(status_code=400, detail=f"Invalid po_item_id: {raw['po_item_id']}")
 
-        received_qty = float(raw.get("received_qty") or 0)
-        accepted_qty = float(raw.get("accepted_qty") if raw.get("accepted_qty") is not None else received_qty)
-        rejected_qty = float(raw.get("rejected_qty") or 0)
+        received_qty = money_json(raw.get("received_qty") or 0)
+        accepted_qty = money_json(
+            raw.get("accepted_qty") if raw.get("accepted_qty") is not None else received_qty
+        )
+        rejected_qty = money_json(raw.get("rejected_qty") or 0)
         if received_qty <= 0:
             raise HTTPException(status_code=400, detail="received_qty must be positive")
         if accepted_qty < 0 or rejected_qty < 0:
             raise HTTPException(status_code=400, detail="accepted/rejected qty cannot be negative")
         # If rejected omitted but accepted < received, treat remainder as rejected.
         if rejected_qty == 0 and accepted_qty < received_qty - 1e-9:
-            rejected_qty = round(received_qty - accepted_qty, 3)
+            rejected_qty = money_json(round(received_qty - accepted_qty, 3))
         if abs((accepted_qty + rejected_qty) - received_qty) > 1e-6:
             raise HTTPException(
                 status_code=400,
                 detail="accepted_qty + rejected_qty must equal received_qty",
             )
         reason = (raw.get("rejection_reason") or "").strip() or None
-        if rejected_qty > 1e-9 and not reason:
-            raise HTTPException(
-                status_code=400,
-                detail="rejection_reason is required when rejected_qty > 0",
-            )
-        if rejected_qty <= 1e-9:
+        if rejected_qty > 1e-9:
+            reason = require_honest_narrative(reason, label="rejection reason")
+        else:
             reason = None
             rejected_qty = 0.0
 
-        outstanding = float(po_item.quantity) - float(po_item.received_qty or 0)
+        outstanding = money_json(po_item.quantity) - money_json(po_item.received_qty or 0)
         if received_qty > outstanding + 1e-9:
             raise HTTPException(
                 status_code=409,
@@ -817,7 +837,10 @@ async def create_grn(
         if accepted_qty > 0:
             from app.catalog import stock_in_with_batch
 
-            batch_number = (raw.get("batch_number") or "").strip() or None
+            # OpenAPI BatchNumberValue → 422; stock_in_with_batch also defends → 400.
+            batch_number = optional_honest_narrative(
+                raw.get("batch_number"), label="batch number", max_length=80
+            )
             await stock_in_with_batch(
                 db,
                 tenant_id=tenant_id,
@@ -834,19 +857,19 @@ async def create_grn(
                 reference_type="grn",
                 reference_id=grn.id,
             )
-            line_gross = accepted_qty * float(po_item.unit_price) * (
-                1 + float(po_item.tax_rate or 0) / 100.0
+            line_gross = accepted_qty * money_json(po_item.unit_price) * (
+                1 + money_json(po_item.tax_rate or 0) / 100.0
             )
             # Proportional share of PO line discount for partial receipts (BR-6.3)
-            ordered = float(po_item.quantity or 0)
-            line_disc = float(getattr(po_item, "discount", 0) or 0)
+            ordered = money_json(po_item.quantity or 0)
+            line_disc = money_json(getattr(po_item, "discount", 0) or 0)
             if ordered > 1e-9 and line_disc > 0:
                 line_gross -= line_disc * (accepted_qty / ordered)
             accepted_value += max(line_gross, 0)
 
         # Count full physical receipt (accepted + rejected) against PO outstanding;
         # only accepted qty is stocked above.
-        po_item.received_qty = float(po_item.received_qty or 0) + received_qty
+        po_item.received_qty = money_json(po_item.received_qty or 0) + received_qty
 
     updated_items = await list_po_items(db, tenant_id, po.id)
     po.status = derive_po_status(updated_items)
@@ -854,7 +877,7 @@ async def create_grn(
 
     if post_supplier_balance and accepted_value > 0:
         supplier = await get_supplier(db, tenant_id, po.supplier_id)
-        supplier.balance = float(supplier.balance or 0) + accepted_value
+        supplier.balance = money_json(supplier.balance or 0) + accepted_value
 
     from app.accounting import post_grn_journal
 
@@ -888,7 +911,7 @@ async def create_grn(
                 "grn_number": grn.grn_number,
                 "po_id": po.id,
                 "po_status": po.status,
-                "accepted_value": accepted_value,
+                "accepted_value": money_json(accepted_value),
             },
         )
     )
@@ -923,7 +946,7 @@ async def serialize_grn(db: AsyncSession, grn: m.GoodsReceipt) -> dict:
     used_mv: set[str] = set()
 
     def _batch_fields_for(item: m.GoodsReceiptItem) -> dict:
-        if float(item.accepted_qty or 0) <= 0:
+        if money_json(item.accepted_qty) <= 0:
             return {
                 "batch_number": None,
                 "manufacturing_date": None,
@@ -968,9 +991,9 @@ async def serialize_grn(db: AsyncSession, grn: m.GoodsReceipt) -> dict:
                 "po_item_id": i.po_item_id,
                 "product_id": i.product_id,
                 "unit_id": i.unit_id,
-                "received_qty": float(i.received_qty),
-                "accepted_qty": float(i.accepted_qty),
-                "rejected_qty": float(i.rejected_qty),
+                "received_qty": money_json(i.received_qty),
+                "accepted_qty": money_json(i.accepted_qty),
+                "rejected_qty": money_json(i.rejected_qty),
                 "rejection_reason": i.rejection_reason,
                 **_batch_fields_for(i),
             }
@@ -1001,7 +1024,7 @@ async def record_supplier_payment(
 ) -> m.SupplierPayment:
     from app.expenses import normalize_expense_payment_method
 
-    amount = float(amount)
+    amount = money_json(amount)
     if amount <= 0:
         raise HTTPException(status_code=400, detail="Payment amount must be positive")
     payment_method = normalize_expense_payment_method(
@@ -1041,7 +1064,7 @@ async def record_supplier_payment(
             raise HTTPException(status_code=409, detail=f"Cannot pay invoice in status {inv.status}")
         if inv.status == "draft":
             raise HTTPException(status_code=409, detail="Approve purchase invoice before payment")
-        due = float(inv.total_amount) - float(inv.paid_amount or 0)
+        due = money_json(inv.total_amount) - money_json(inv.paid_amount or 0)
         quote = purchase_invoice_early_discount(
             inv, pct=ep["early_pay_discount_pct"], days=ep["early_pay_discount_days"]
         )
@@ -1051,7 +1074,7 @@ async def record_supplier_payment(
             if amount + 1e-9 >= due:
                 invoice_allocations.append((inv, min(amount, due), 0.0))
             else:
-                discount = round(due - amount, 2)
+                discount = money_json(round(due - amount, 2))
                 if discount > quote["discount_amount"] + 1e-9:
                     raise HTTPException(
                         status_code=409,
@@ -1087,7 +1110,7 @@ async def record_supplier_payment(
         ).scalars().all()
         remaining = amount
         for inv in open_invs:
-            due = float(inv.total_amount) - float(inv.paid_amount or 0)
+            due = money_json(inv.total_amount) - money_json(inv.paid_amount or 0)
             if due <= 0:
                 continue
             quote = purchase_invoice_early_discount(
@@ -1098,15 +1121,15 @@ async def record_supplier_payment(
                 discount = quote["discount_amount"]
                 cash_used = quote["cash_to_settle"]
                 invoice_allocations.append((inv, settlement, discount))
-                total_discount = round(total_discount + discount, 2)
-                remaining = round(remaining - cash_used, 2)
+                total_discount = money_json(round(total_discount + discount, 2))
+                remaining = money_json(round(remaining - cash_used, 2))
             else:
                 apply_amt = min(remaining, due)
                 invoice_allocations.append((inv, apply_amt, 0.0))
-                remaining = round(remaining - apply_amt, 2)
+                remaining = money_json(round(remaining - apply_amt, 2))
             if remaining <= 0:
                 break
-        due_po = float(po.total_amount) - float(po.paid_amount or 0)
+        due_po = money_json(po.total_amount) - money_json(po.paid_amount or 0)
         settlement_on_po = sum(s for _, s, _ in invoice_allocations) if invoice_allocations else amount
         if amount > due_po + 1e-9 and not invoice_allocations:
             raise HTTPException(status_code=409, detail="Payment exceeds PO balance due")
@@ -1125,7 +1148,7 @@ async def record_supplier_payment(
             )
         ).scalars().all()
         for inv in open_invs:
-            due = float(inv.total_amount) - float(inv.paid_amount or 0)
+            due = money_json(inv.total_amount) - money_json(inv.paid_amount or 0)
             if due <= 0:
                 continue
             quote = purchase_invoice_early_discount(
@@ -1136,18 +1159,18 @@ async def record_supplier_payment(
                 discount = quote["discount_amount"]
                 cash_used = quote["cash_to_settle"]
                 invoice_allocations.append((inv, settlement, discount))
-                total_discount = round(total_discount + discount, 2)
+                total_discount = money_json(round(total_discount + discount, 2))
                 if inv.purchase_order_id:
                     po = await get_po(db, tenant_id, inv.purchase_order_id)
                     po_allocations.append((po, settlement))
-                remaining = round(remaining - cash_used, 2)
+                remaining = money_json(round(remaining - cash_used, 2))
             else:
                 apply_amt = min(remaining, due)
                 invoice_allocations.append((inv, apply_amt, 0.0))
                 if inv.purchase_order_id:
                     po = await get_po(db, tenant_id, inv.purchase_order_id)
                     po_allocations.append((po, apply_amt))
-                remaining = round(remaining - apply_amt, 2)
+                remaining = money_json(round(remaining - apply_amt, 2))
             if remaining <= 0:
                 break
         if remaining > 1e-9:
@@ -1163,12 +1186,12 @@ async def record_supplier_payment(
                 )
             ).scalars().all()
             for po in open_pos:
-                due = float(po.total_amount) - float(po.paid_amount or 0)
+                due = money_json(po.total_amount) - money_json(po.paid_amount or 0)
                 if due <= 0:
                     continue
                 apply_amt = min(remaining, due)
                 po_allocations.append((po, apply_amt))
-                remaining = round(remaining - apply_amt, 2)
+                remaining = money_json(round(remaining - apply_amt, 2))
                 if remaining <= 0:
                     break
             if remaining > 1e-9 and (open_pos or open_invs):
@@ -1202,7 +1225,7 @@ async def record_supplier_payment(
                 detail=f"Payment currency {pay_cur} must match invoice currency {default_cur}",
             )
         if exchange_rate is not None:
-            pay_rate = float(exchange_rate)
+            pay_rate = money_json(exchange_rate)
             if pay_rate <= 0:
                 raise HTTPException(status_code=400, detail="exchange_rate must be positive")
         else:
@@ -1217,10 +1240,10 @@ async def record_supplier_payment(
         for inv, amt, disc in invoice_allocations
     )
     if invoice_allocations:
-        settlement_base = round(
+        settlement_base = money_json(round(
             sum(to_base(amt, doc_rate(inv)) for inv, amt, _ in invoice_allocations),
             2,
-        )
+        ))
     else:
         settlement_base = to_base(amount, pay_rate)
 
@@ -1232,26 +1255,28 @@ async def record_supplier_payment(
         purchase_invoice_id=primary_inv.id if primary_inv else purchase_invoice_id,
         amount=amount,
         payment_method=payment_method,
-        early_payment_discount=round(total_discount, 2),
+        early_payment_discount=money_json(round(total_discount, 2)),
         currency=pay_cur,
         exchange_rate=pay_rate,
         liquid_account_id=liquid_account_id,
-        reference=reference,
-        notes=notes
+        reference=optional_honest_narrative(
+            reference, label="payment reference", max_length=100
+        ),
+        notes=optional_honest_narrative(notes, label="payment notes")
         or (
             f"Auto-allocated: {alloc_note}"
             if alloc_note and not purchase_invoice_id
-            else (f"Early discount {total_discount:.2f}" if total_discount else notes)
+            else (f"Early discount {total_discount:.2f}" if total_discount else None)
         ),
         created_by=user_id,
     )
     db.add(payment)
-    supplier.balance = max(float(supplier.balance or 0) - settlement_base, 0)
+    supplier.balance = max(money_json(supplier.balance or 0) - settlement_base, 0)
 
     for inv, apply_amt, _disc in invoice_allocations:
-        inv.paid_amount = float(inv.paid_amount or 0) + apply_amt
+        inv.paid_amount = money_json(inv.paid_amount or 0) + apply_amt
         inv.status = purchase_invoice_status(
-            float(inv.total_amount), float(inv.paid_amount), inv.due_date
+            money_json(inv.total_amount), money_json(inv.paid_amount), inv.due_date
         )
         inv.updated_at = datetime.utcnow()
 
@@ -1261,7 +1286,7 @@ async def record_supplier_payment(
         po_applied[po.id] = po_applied.get(po.id, 0.0) + apply_amt
     for po_id, apply_amt in po_applied.items():
         po = await get_po(db, tenant_id, po_id)
-        po.paid_amount = float(po.paid_amount or 0) + apply_amt
+        po.paid_amount = money_json(po.paid_amount or 0) + apply_amt
         po.updated_at = datetime.utcnow()
 
     from app.accounting import post_supplier_payment_journal
@@ -1365,7 +1390,7 @@ async def _returned_qty_by_grn_item(
     rows = (await db.execute(q)).all()
     totals: dict[str, float] = {}
     for item_id, qty in rows:
-        totals[item_id] = totals.get(item_id, 0.0) + float(qty or 0)
+        totals[item_id] = totals.get(item_id, 0.0) + money_json(qty or 0)
     return totals
 
 
@@ -1374,14 +1399,14 @@ async def serialize_purchase_return(db: AsyncSession, ret: m.PurchaseReturn) -> 
     serialized_items = []
     discount_total = 0.0
     for i in items:
-        qty = float(i.quantity)
-        unit = float(i.unit_price)
-        rate = float(i.tax_rate or 0)
-        line_net = round(qty * unit, 2)
-        line_tax = round(line_net * (rate / 100.0), 2)
-        line_total = float(i.line_total)
+        qty = money_json(i.quantity)
+        unit = money_json(i.unit_price)
+        rate = money_json(i.tax_rate)
+        line_net = money_json(round(qty * unit, 2))
+        line_tax = money_json(round(line_net * (rate / 100.0), 2))
+        line_total = money_json(i.line_total)
         # Discount baked into line_total at create (no separate column)
-        disc = max(round(line_net + line_tax - line_total, 2), 0.0)
+        disc = max(money_json(round(line_net + line_tax - line_total, 2)), 0.0)
         discount_total += disc
         serialized_items.append(
             {
@@ -1391,7 +1416,7 @@ async def serialize_purchase_return(db: AsyncSession, ret: m.PurchaseReturn) -> 
                 "quantity": qty,
                 "unit_price": unit,
                 "tax_rate": rate,
-                "discount": disc,
+                "discount": money_json(disc),
                 "line_total": line_total,
             }
         )
@@ -1405,10 +1430,10 @@ async def serialize_purchase_return(db: AsyncSession, ret: m.PurchaseReturn) -> 
         "warehouse_id": ret.warehouse_id,
         "status": ret.status,
         "reason": ret.reason,
-        "subtotal": float(ret.subtotal),
-        "tax_amount": float(ret.tax_amount),
-        "discount_amount": round(discount_total, 2),
-        "total_amount": float(ret.total_amount),
+        "subtotal": money_json(ret.subtotal),
+        "tax_amount": money_json(ret.tax_amount),
+        "discount_amount": money_json(round(discount_total, 2)),
+        "total_amount": money_json(ret.total_amount),
         "notes": ret.notes,
         "posted_at": ret.posted_at,
         "created_at": ret.created_at,
@@ -1425,9 +1450,7 @@ async def cancel_purchase_return(
     return_id: str,
     reason: str | None = None,
 ) -> m.PurchaseReturn:
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="cancel reason is required")
+    reason_s = require_honest_narrative(reason, label="cancel reason")
     ret = await get_purchase_return(db, tenant_id, return_id)
     if ret.status != "draft":
         raise HTTPException(status_code=409, detail="Only draft purchase returns can be cancelled")
@@ -1485,10 +1508,10 @@ async def create_purchase_return(
         grn_item = grn_items.get(grn_item_id)
         if not grn_item:
             raise HTTPException(status_code=400, detail=f"Invalid goods_receipt_item_id: {grn_item_id}")
-        qty = float(raw["quantity"])
+        qty = money_json(raw["quantity"])
         if qty <= 0:
             raise HTTPException(status_code=400, detail="Return quantity must be positive")
-        available = float(grn_item.accepted_qty or 0) - already.get(grn_item.id, 0.0)
+        available = money_json(grn_item.accepted_qty or 0) - already.get(grn_item.id, 0.0)
         if qty > available + 1e-9:
             raise HTTPException(
                 status_code=409,
@@ -1502,20 +1525,20 @@ async def create_purchase_return(
         po_item = po_items.get(grn_item.po_item_id)
         if not po_item:
             raise HTTPException(status_code=400, detail="GRN line missing PO item")
-        unit = float(po_item.unit_price)
-        rate = float(po_item.tax_rate or 0)
-        ordered = float(po_item.quantity or 0)
-        line_disc_po = float(getattr(po_item, "discount", 0) or 0)
+        unit = money_json(po_item.unit_price)
+        rate = money_json(po_item.tax_rate or 0)
+        ordered = money_json(po_item.quantity or 0)
+        line_disc_po = money_json(getattr(po_item, "discount", 0) or 0)
         disc = 0.0
         if ordered > 1e-9 and line_disc_po > 0:
-            disc = round(line_disc_po * (qty / ordered), 2)
+            disc = money_json(round(line_disc_po * (qty / ordered), 2))
             merch = qty * unit
             if disc > merch + 1e-9:
-                disc = round(max(merch, 0), 2)
-        line_net = round(qty * unit, 2)
-        line_tax = round(line_net * (rate / 100.0), 2)
+                disc = money_json(round(max(merch, 0), 2))
+        line_net = money_json(round(qty * unit, 2))
+        line_tax = money_json(round(line_net * (rate / 100.0), 2))
         # Tax before discount (match PO/PI); bake discount into line_total
-        line_total = round(max(line_net + line_tax - disc, 0), 2)
+        line_total = money_json(round(max(line_net + line_tax - disc, 0), 2))
         subtotal += line_net
         tax_total += line_tax
         discount_total += disc
@@ -1540,10 +1563,10 @@ async def create_purchase_return(
         warehouse_id=grn.warehouse_id,
         status="draft",
         reason=reason,
-        subtotal=round(subtotal, 2),
-        tax_amount=round(tax_total, 2),
-        total_amount=round(max(subtotal + tax_total - discount_total, 0), 2),
-        notes=notes,
+        subtotal=money_json(round(subtotal, 2)),
+        tax_amount=money_json(round(tax_total, 2)),
+        total_amount=money_json(round(max(subtotal + tax_total - discount_total, 0), 2)),
+        notes=optional_honest_narrative(notes, label="purchase return notes"),
         created_by=user_id,
     )
     db.add(ret)
@@ -1583,10 +1606,10 @@ async def post_purchase_return(
         grn_item = grn_items.get(item.goods_receipt_item_id)
         if not grn_item:
             raise HTTPException(status_code=400, detail="GRN line missing for return item")
-        available = float(grn_item.accepted_qty or 0) - already.get(grn_item.id, 0.0)
-        if float(item.quantity) > available + 1e-9:
+        available = money_json(grn_item.accepted_qty or 0) - already.get(grn_item.id, 0.0)
+        if money_json(item.quantity) > available + 1e-9:
             raise HTTPException(status_code=409, detail="Return quantity no longer available")
-        already[grn_item.id] = already.get(grn_item.id, 0.0) + float(item.quantity)
+        already[grn_item.id] = already.get(grn_item.id, 0.0) + money_json(item.quantity)
 
         from app.uom import to_stock_qty
 
@@ -1597,7 +1620,7 @@ async def post_purchase_return(
         stock_qty, _u, _e = await to_stock_qty(
             db,
             tenant_id=tenant_id,
-            quantity=float(item.quantity),
+            quantity=money_json(item.quantity),
             from_unit_id=line_unit_id,
             product=product,
         )
@@ -1617,7 +1640,7 @@ async def post_purchase_return(
         po_item = po_items.get(grn_item.po_item_id)
         if po_item:
             # received_qty tracked in entered UoM
-            po_item.received_qty = max(float(po_item.received_qty or 0) - float(item.quantity), 0)
+            po_item.received_qty = max(money_json(po_item.received_qty or 0) - money_json(item.quantity), 0)
 
     updated_items = await list_po_items(db, tenant_id, po.id)
     if po.status not in {"cancelled", "draft"}:
@@ -1625,12 +1648,12 @@ async def post_purchase_return(
         po.updated_at = datetime.utcnow()
 
     # Credit against open AP (mirror sales return increasing invoice paid_amount)
-    credit = float(ret.total_amount)
-    po.paid_amount = min(float(po.total_amount), float(po.paid_amount or 0) + credit)
+    credit = money_json(ret.total_amount)
+    po.paid_amount = min(money_json(po.total_amount), money_json(po.paid_amount or 0) + credit)
     po.updated_at = datetime.utcnow()
 
     supplier = await get_supplier(db, tenant_id, ret.supplier_id)
-    supplier.balance = max(float(supplier.balance or 0) - credit, 0)
+    supplier.balance = max(money_json(supplier.balance or 0) - credit, 0)
 
     ret.status = "posted"
     ret.posted_at = datetime.utcnow()
@@ -1661,7 +1684,7 @@ async def post_purchase_return(
             details={
                 "return_number": ret.return_number,
                 "debit_note_number": ret.debit_note_number,
-                "total_amount": credit,
+                "total_amount": money_json(credit),
                 "reason": ret.reason,
             },
         )
@@ -1704,11 +1727,14 @@ async def serialize_purchase_invoice(db: AsyncSession, inv: m.PurchaseInvoice) -
     items = await list_purchase_invoice_items(db, inv.tenant_id, inv.id)
     status = inv.status
     if status in PURCHASE_INVOICE_OPEN:
-        status = purchase_invoice_status(float(inv.total_amount), float(inv.paid_amount or 0), inv.due_date)
+        status = purchase_invoice_status(
+            money_json(inv.total_amount), money_json(inv.paid_amount), inv.due_date
+        )
         if status != inv.status:
             inv.status = status
-    paid = float(inv.paid_amount or 0)
+    paid = money_json(inv.paid_amount)
     can_cancel = status in {"draft", "unpaid", "overdue"} and paid <= 0
+    fx = money_json(getattr(inv, "exchange_rate", None), default=1.0)
     return {
         "id": inv.id,
         "invoice_number": inv.invoice_number,
@@ -1719,21 +1745,19 @@ async def serialize_purchase_invoice(db: AsyncSession, inv: m.PurchaseInvoice) -
         "status": status,
         "invoice_date": inv.invoice_date,
         "due_date": inv.due_date,
-        "subtotal": float(inv.subtotal),
-        "tax_amount": float(inv.tax_amount),
-        "reverse_charge_tax": float(getattr(inv, "reverse_charge_tax", 0) or 0),
+        "subtotal": money_json(inv.subtotal),
+        "tax_amount": money_json(inv.tax_amount),
+        "reverse_charge_tax": money_json(getattr(inv, "reverse_charge_tax", None)),
         "is_reverse_charge": bool(getattr(inv, "is_reverse_charge", False)),
-        "discount_amount": float(inv.discount_amount or 0),
+        "discount_amount": money_json(inv.discount_amount),
         "currency": getattr(inv, "currency", None) or "",
-        "exchange_rate": float(getattr(inv, "exchange_rate", None) or 1),
-        "balance_due_base": round(
-            max(float(inv.total_amount) - paid, 0)
-            * float(getattr(inv, "exchange_rate", None) or 1),
-            2,
+        "exchange_rate": fx,
+        "balance_due_base": money_json(
+            round(max(money_json(inv.total_amount) - paid, 0) * fx, 2)
         ),
-        "total_amount": float(inv.total_amount),
+        "total_amount": money_json(inv.total_amount),
         "paid_amount": paid,
-        "balance_due": max(float(inv.total_amount) - paid, 0),
+        "balance_due": money_json(max(money_json(inv.total_amount) - paid, 0)),
         "ap_posted": bool(inv.ap_posted),
         "attachment_url": inv.attachment_url,
         "has_attachment": bool(inv.attachment_url),
@@ -1746,14 +1770,14 @@ async def serialize_purchase_invoice(db: AsyncSession, inv: m.PurchaseInvoice) -
             {
                 "id": i.id,
                 "product_id": i.product_id,
-                "quantity": float(i.quantity),
-                "unit_price": float(i.unit_price),
-                "tax_rate": float(i.tax_rate),
-                "discount": float(i.discount or 0),
-                "line_subtotal": float(getattr(i, "line_subtotal", None) or _pi_line_subtotal(i)),
-                "line_tax": _pi_line_tax_value(i),
+                "quantity": money_json(i.quantity),
+                "unit_price": money_json(i.unit_price),
+                "tax_rate": money_json(i.tax_rate),
+                "discount": money_json(i.discount),
+                "line_subtotal": money_json(getattr(i, "line_subtotal", None) or _pi_line_subtotal(i)),
+                "line_tax": money_json(_pi_line_tax_value(i)),
                 "tax_components": getattr(i, "tax_components", None) or None,
-                "line_total": float(i.line_total),
+                "line_total": money_json(i.line_total),
             }
             for i in items
         ],
@@ -1761,25 +1785,25 @@ async def serialize_purchase_invoice(db: AsyncSession, inv: m.PurchaseInvoice) -
 
 
 def _pi_line_subtotal(item: m.PurchaseInvoiceItem) -> float:
-    stored = float(getattr(item, "line_subtotal", None) or 0)
+    stored = money_json(getattr(item, "line_subtotal", None) or 0)
     if stored > 0:
         return stored
-    return round(float(item.quantity or 0) * float(item.unit_price or 0), 2)
+    return money_json(round(money_json(item.quantity or 0) * money_json(item.unit_price or 0), 2))
 
 
 def _pi_line_tax_value(item: m.PurchaseInvoiceItem) -> float:
-    stored = float(getattr(item, "line_tax", None) or 0)
+    stored = money_json(getattr(item, "line_tax", None) or 0)
     if stored > 0 or getattr(item, "tax_components", None) is not None:
         return stored
-    rate = float(item.tax_rate or 0)
+    rate = money_json(item.tax_rate or 0)
     if rate <= 0:
-        return 0.0
+        return money_json(0)
     sub = _pi_line_subtotal(item)
-    total = float(item.line_total or 0)
-    discount = float(item.discount or 0)
-    derived = round(total - sub + discount, 2)
+    total = money_json(item.line_total or 0)
+    discount = money_json(item.discount or 0)
+    derived = money_json(round(total - sub + discount, 2))
     if derived < 0:
-        return round(sub * rate / 100.0, 2)
+        return money_json(round(sub * rate / 100.0, 2))
     return derived
 
 
@@ -1791,26 +1815,28 @@ def _purchase_invoice_tax_breakdown(
     line_rows: list[dict] = []
     for i in items:
         line_tax = _pi_line_tax_value(i)
-        rate = float(i.tax_rate or 0)
+        rate = money_json(i.tax_rate or 0)
         key = f"{rate:.4f}"
         bucket = by_rate.setdefault(
             key,
             {"tax_rate": rate, "taxable": 0.0, "tax": 0.0},
         )
-        bucket["taxable"] = round(bucket["taxable"] + _pi_line_subtotal(i), 2)
-        bucket["tax"] = round(bucket["tax"] + line_tax, 2)
+        bucket["taxable"] = money_json(
+            round(bucket["taxable"] + money_json(_pi_line_subtotal(i)), 2)
+        )
+        bucket["tax"] = money_json(round(bucket["tax"] + money_json(line_tax), 2))
         comps = getattr(i, "tax_components", None) or []
         for c in comps:
             cname = str(c.get("name") or c.get("code") or "component")
             cb = component_totals.setdefault(cname, {"name": cname, "tax": 0.0})
-            cb["tax"] = round(cb["tax"] + float(c.get("amount") or 0), 2)
+            cb["tax"] = money_json(round(cb["tax"] + money_json(c.get("amount") or 0), 2))
         line_rows.append(
             {
                 "item_id": i.id,
                 "product_id": i.product_id,
                 "tax_rate": rate,
-                "line_subtotal": _pi_line_subtotal(i),
-                "line_tax": line_tax,
+                "line_subtotal": money_json(_pi_line_subtotal(i)),
+                "line_tax": money_json(line_tax),
                 "tax_components": comps or None,
             }
         )
@@ -1818,8 +1844,8 @@ def _purchase_invoice_tax_breakdown(
         "lines": line_rows,
         "by_rate": sorted(by_rate.values(), key=lambda r: -r["tax_rate"]),
         "by_component": sorted(component_totals.values(), key=lambda r: r["name"]),
-        "tax_amount": float(inv.tax_amount or 0),
-        "reverse_charge_tax": float(getattr(inv, "reverse_charge_tax", 0) or 0),
+        "tax_amount": money_json(inv.tax_amount or 0),
+        "reverse_charge_tax": money_json(getattr(inv, "reverse_charge_tax", 0) or 0),
         "is_reverse_charge": bool(getattr(inv, "is_reverse_charge", False)),
     }
 
@@ -1843,11 +1869,11 @@ async def _prepare_invoice_lines(
             raise HTTPException(status_code=404, detail=f"Product not found: {item['product_id']}")
         if not product.is_active:
             raise HTTPException(status_code=400, detail=f"Product is inactive: {product.sku}")
-        qty = float(item["quantity"])
+        qty = money_json(item["quantity"])
         if qty <= 0:
             raise HTTPException(status_code=400, detail="Line quantity must be positive")
-        unit = float(item.get("unit_price") if item.get("unit_price") is not None else product.cost_price or 0)
-        discount = float(item.get("discount") or 0)
+        unit = money_json(item.get("unit_price") if item.get("unit_price") is not None else product.cost_price or 0)
+        discount = money_json(item.get("discount") or 0)
         line_item = {**item, "quantity": qty, "unit_price": unit}
         line_sub, line_tax, line_total, rate_pct, comps = await _purchase_line_tax(
             db, tenant_id, product, line_item
@@ -1915,22 +1941,22 @@ async def create_purchase_invoice(
             po_items = {i.id: i for i in await list_po_items(db, tenant_id, po.id)}
             items = []
             for gi in await list_grn_items(db, tenant_id, grn.id):
-                qty = float(gi.accepted_qty or 0)
+                qty = money_json(gi.accepted_qty or 0)
                 if qty <= 0:
                     continue
                 poi = po_items.get(gi.po_item_id)
-                unit_price = float(poi.unit_price) if poi else 0.0
-                tax_rate = float(poi.tax_rate or 0) if poi else 0.0
+                unit_price = money_json(poi.unit_price) if poi else 0.0
+                tax_rate = money_json(poi.tax_rate or 0) if poi else 0.0
                 # Carry proportional PO line discount (BR-6.3 → BR-6.5)
                 disc = 0.0
                 if poi is not None:
-                    ordered = float(poi.quantity or 0)
-                    line_disc = float(getattr(poi, "discount", 0) or 0)
+                    ordered = money_json(poi.quantity or 0)
+                    line_disc = money_json(getattr(poi, "discount", 0) or 0)
                     if ordered > 1e-9 and line_disc > 0:
-                        disc = round(line_disc * (qty / ordered), 2)
+                        disc = money_json(round(line_disc * (qty / ordered), 2))
                         merch = qty * unit_price
                         if disc > merch + 1e-9:
-                            disc = round(max(merch, 0), 2)
+                            disc = money_json(round(max(merch, 0), 2))
                 items.append(
                     {
                         "product_id": gi.product_id,
@@ -1942,11 +1968,11 @@ async def create_purchase_invoice(
                 )
             # When client leaves header discount at 0, mirror sum of carried line discounts
             # so invoice total_amount matches negotiated PO economics (PI totals use header).
-            if float(discount_amount or 0) <= 0:
-                discount_amount = round(
-                    sum(float(i.get("discount") or 0) for i in items),
+            if money_json(discount_amount or 0) <= 0:
+                discount_amount = money_json(round(
+                    sum(money_json(i.get("discount") or 0) for i in items),
                     2,
-                )
+                ))
     elif purchase_order_id:
         po = await get_po(db, tenant_id, purchase_order_id)
         supplier_id = supplier_id or po.supplier_id
@@ -1962,16 +1988,16 @@ async def create_purchase_invoice(
         raise HTTPException(status_code=400, detail="Invoice requires line items")
 
     subtotal, tax_total, gross, prepared = await _prepare_invoice_lines(db, tenant_id, items)
-    discount_amount = float(discount_amount or 0)
+    discount_amount = money_json(discount_amount or 0)
     is_rc = bool(is_reverse_charge)
     if is_rc:
         # Supplier invoice is net; tax is self-assessed and excluded from AP.
         total = max(subtotal - discount_amount, 0)
         charged_tax = 0.0
-        rc_tax = round(tax_total, 2)
+        rc_tax = money_json(round(tax_total, 2))
     else:
         total = max(gross - discount_amount, 0)
-        charged_tax = round(tax_total, 2)
+        charged_tax = money_json(round(tax_total, 2))
         rc_tax = 0.0
     inv_date = invoice_date or datetime.utcnow()
     if due_date is None:
@@ -1986,22 +2012,24 @@ async def create_purchase_invoice(
         supplier_id=supplier_id,
         purchase_order_id=purchase_order_id or (po.id if po else None),
         goods_receipt_id=grn.id if grn else None,
-        supplier_invoice_number=supplier_invoice_number,
+        supplier_invoice_number=optional_honest_narrative(
+            supplier_invoice_number, label="supplier invoice number", max_length=100
+        ),
         status="draft",
         invoice_date=inv_date,
         due_date=due_date,
-        subtotal=round(subtotal, 2),
+        subtotal=money_json(round(subtotal, 2)),
         tax_amount=charged_tax,
         reverse_charge_tax=rc_tax,
         is_reverse_charge=is_rc,
-        discount_amount=round(discount_amount, 2),
-        total_amount=round(total, 2),
+        discount_amount=money_json(round(discount_amount, 2)),
+        total_amount=money_json(round(total, 2)),
         paid_amount=0,
         currency=cur,
         exchange_rate=rate,
         ap_posted=False,
-        attachment_url=attachment_url,
-        notes=notes,
+        attachment_url=_optional_attachment_url(attachment_url),
+        notes=optional_honest_narrative(notes, label="purchase invoice notes"),
         created_by=user_id,
     )
     db.add(inv)
@@ -2033,8 +2061,8 @@ async def approve_purchase_invoice(
         from app.fx import doc_rate, to_base
 
         supplier = await get_supplier(db, tenant_id, inv.supplier_id)
-        supplier.balance = float(supplier.balance or 0) + to_base(
-            float(inv.total_amount), doc_rate(inv)
+        supplier.balance = money_json(supplier.balance or 0) + to_base(
+            money_json(inv.total_amount), doc_rate(inv)
         )
         from app.accounting import post_purchase_invoice_journal
 
@@ -2043,7 +2071,7 @@ async def approve_purchase_invoice(
         )
         inv.ap_posted = True
 
-    inv.status = purchase_invoice_status(float(inv.total_amount), float(inv.paid_amount or 0), inv.due_date)
+    inv.status = purchase_invoice_status(money_json(inv.total_amount), money_json(inv.paid_amount or 0), inv.due_date)
     inv.approved_at = datetime.utcnow()
     inv.updated_at = datetime.utcnow()
 
@@ -2054,7 +2082,7 @@ async def approve_purchase_invoice(
         tenant_id=tenant_id,
         category="system",
         title="Purchase invoice approved",
-        message=f"Invoice {inv.invoice_number} approved for {float(inv.total_amount):.2f}.",
+        message=f"Invoice {inv.invoice_number} approved for {money_json(inv.total_amount):.2f}.",
         entity_type="purchase_invoice",
         entity_id=inv.id,
     )
@@ -2067,11 +2095,13 @@ async def approve_purchase_invoice(
             entity_id=inv.id,
             details={
                 "invoice_number": inv.invoice_number,
-                "total": float(inv.total_amount),
+                "total": money_json(inv.total_amount),
                 "ap_posted": inv.ap_posted,
                 "goods_receipt_id": inv.goods_receipt_id,
                 "is_reverse_charge": bool(getattr(inv, "is_reverse_charge", False)),
-                "reverse_charge_tax": float(getattr(inv, "reverse_charge_tax", 0) or 0),
+                "reverse_charge_tax": money_json(
+                    getattr(inv, "reverse_charge_tax", 0) or 0
+                ),
             },
         )
     )
@@ -2090,16 +2120,14 @@ async def cancel_purchase_invoice(
     inv = await get_purchase_invoice(db, tenant_id, invoice_id)
     if inv.status == "cancelled":
         return inv
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="cancel reason is required")
-    if float(inv.paid_amount or 0) > 0:
+    reason_s = require_honest_narrative(reason, label="cancel reason")
+    if money_json(inv.paid_amount or 0) > 0:
         raise HTTPException(status_code=409, detail="Cannot cancel invoice with payments")
     if inv.status not in {"draft", "unpaid", "overdue"}:
         raise HTTPException(status_code=409, detail=f"Cannot cancel invoice in status {inv.status}")
     if inv.ap_posted and inv.status != "draft":
         supplier = await get_supplier(db, tenant_id, inv.supplier_id)
-        supplier.balance = max(float(supplier.balance or 0) - float(inv.total_amount), 0)
+        supplier.balance = max(money_json(supplier.balance or 0) - money_json(inv.total_amount), 0)
         from app.accounting import post_purchase_invoice_reversal_journal
 
         await post_purchase_invoice_reversal_journal(

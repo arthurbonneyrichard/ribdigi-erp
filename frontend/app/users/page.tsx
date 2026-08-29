@@ -74,6 +74,7 @@ type ImportReport = {
 export default function Page() {
   const [rows, setRows] = useState<UserRow[]>([]);
   const [userManageFilter, setUserManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [roleManageFilter, setRoleManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [roles, setRoles] = useState<RoleRow[]>([]);
   const [branches, setBranches] = useState<BranchRow[]>([]);
   const [departments, setDepartments] = useState<DepartmentRow[]>([]);
@@ -146,6 +147,12 @@ export default function Page() {
     const active = r.is_active !== false;
     return userManageFilter === 'inactive' ? !active : active;
   });
+  const managedCustomRoles = roles.filter((r) => {
+    if (!isCustomRole(r)) return false;
+    if (roleManageFilter === 'all') return true;
+    const active = r.is_active !== false;
+    return roleManageFilter === 'inactive' ? !active : active;
+  });
   const activeDepartments = (branchId?: string) =>
     departments.filter(
       (d) =>
@@ -154,6 +161,18 @@ export default function Page() {
 
   async function createUser(e: React.FormEvent) {
     e.preventDefault();
+    const fullName = form.full_name.trim();
+    if (!fullName) {
+      setError('User full name is required.');
+      setMessage('');
+      return;
+    }
+    const trimmedPassword = form.password.trim();
+    if (!trimmedPassword) {
+      setError('User password is required.');
+      setMessage('');
+      return;
+    }
     setError('');
     setMessage('');
     setBusy(true);
@@ -161,13 +180,13 @@ export default function Page() {
       await api('/users', {
         method: 'POST',
         body: JSON.stringify({
-          email: form.email,
-          full_name: form.full_name,
-          password: form.password,
+          email: form.email.trim(),
+          full_name: fullName,
+          password: trimmedPassword,
           role: form.role,
-          phone: form.phone || null,
-          branch_id: form.branch_id || null,
-          department_id: form.department_id || null,
+          phone: form.phone.trim() || null,
+          branch_id: form.branch_id.trim() || null,
+          department_id: form.department_id.trim() || null,
           record_scope: form.record_scope || null,
         }),
       });
@@ -183,6 +202,12 @@ export default function Page() {
 
   async function createCustomRole(e: React.FormEvent) {
     e.preventDefault();
+    const label = roleForm.label.trim();
+    if (!label) {
+      setError('Custom role label is required.');
+      setMessage('');
+      return;
+    }
     setError('');
     setMessage('');
     setBusy(true);
@@ -191,7 +216,7 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           key: roleForm.key.trim(),
-          label: roleForm.label.trim(),
+          label,
           base_role: roleForm.base_role || null,
         }),
       });
@@ -252,19 +277,21 @@ export default function Page() {
   }
 
   async function setBranch(userId: string, branchId: string) {
+    const trimmed = branchId.trim();
     await patchUser(
       userId,
-      branchId
-        ? { branch_id: branchId }
+      trimmed
+        ? { branch_id: trimmed }
         : { clear_branch: true, clear_department: true },
       'Branch assignment updated',
     );
   }
 
   async function setDepartment(userId: string, departmentId: string) {
+    const trimmed = departmentId.trim();
     await patchUser(
       userId,
-      departmentId ? { department_id: departmentId } : { clear_department: true },
+      trimmed ? { department_id: trimmed } : { clear_department: true },
       'Department assignment updated',
     );
   }
@@ -402,16 +429,19 @@ export default function Page() {
             onChange={(e) => setRoleForm({ ...roleForm, key: e.target.value })}
             placeholder="Role key (e.g. warehouse_lead)"
             required
+            aria-label="Custom role key"
           />
           <input
             value={roleForm.label}
             onChange={(e) => setRoleForm({ ...roleForm, label: e.target.value })}
             placeholder="Display label"
             required
+            aria-label="Custom role label"
           />
           <select
             value={roleForm.base_role}
             onChange={(e) => setRoleForm({ ...roleForm, base_role: e.target.value })}
+            aria-label="Clone from system role"
           >
             {roles
               .filter((r) => !isCustomRole(r) && r.role !== 'super_admin')
@@ -421,11 +451,23 @@ export default function Page() {
                 </option>
               ))}
           </select>
-          <button type="submit" disabled={busy}>
+          <button type="submit" disabled={busy || !roleForm.key.trim() || !roleForm.label.trim()} aria-label="Create custom role">
             {busy ? 'Saving…' : 'Create custom role'}
           </button>
+          <select
+            value={roleManageFilter}
+            onChange={(e) =>
+              setRoleManageFilter(e.target.value as 'all' | 'active' | 'inactive')
+            }
+            title="Filter manage custom role list by status"
+            aria-label="Custom role status filter"
+          >
+            <option value="all">All statuses</option>
+            <option value="active">Active only</option>
+            <option value="inactive">Inactive only</option>
+          </select>
           <ul style={{ margin: 0, paddingLeft: 18 }}>
-            {roles.filter(isCustomRole).map((r) => (
+            {managedCustomRoles.map((r) => (
               <li key={r.role}>
                 {r.label} <code>{r.role}</code>
                 {r.is_active === false ? (
@@ -439,7 +481,7 @@ export default function Page() {
                     className="btn-ok"
                     style={{ marginLeft: 8 }}
                     onClick={() => setCustomRoleActive(r.role, true)}
-                  >
+                   aria-label={`Activate custom role ${r.role}`}>
                     Activate
                   </button>
                 ) : (
@@ -448,7 +490,7 @@ export default function Page() {
                     className="btn-danger"
                     style={{ marginLeft: 8 }}
                     onClick={() => setCustomRoleActive(r.role, false)}
-                  >
+                   aria-label={`Deactivate custom role ${r.role}`}>
                     Deactivate
                   </button>
                 )}
@@ -456,11 +498,14 @@ export default function Page() {
                   type="button"
                   style={{ marginLeft: 8 }}
                   onClick={() => deleteCustomRole(r.role)}
-                >
+                 aria-label={`Delete custom role ${r.role}`}>
                   Delete
                 </button>
               </li>
             ))}
+            {!managedCustomRoles.length && (
+              <li className="muted">No custom roles for this filter</li>
+            )}
           </ul>
         </form>
       )}
@@ -473,13 +518,14 @@ export default function Page() {
             meet policy), validate, then import. Import is all-or-nothing.
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button type="button" onClick={downloadImportTemplate}>
+            <button type="button" onClick={downloadImportTemplate} aria-label="Download user CSV template">
               Download CSV template
             </button>
           </div>
           <input
             type="file"
             accept=".csv,text/csv"
+            aria-label="User CSV import file"
             onChange={(e) => {
               setImportFile(e.target.files?.[0] || null);
               setImportReport(null);
@@ -491,6 +537,7 @@ export default function Page() {
               type="button"
               onClick={() => runUserImport(true)}
               disabled={!importFile || importBusy}
+              aria-label="Validate user CSV import"
             >
               {importBusy ? 'Working…' : 'Validate'}
             </button>
@@ -498,6 +545,7 @@ export default function Page() {
               type="button"
               onClick={() => runUserImport(false)}
               disabled={!importFile || importBusy || !importReport?.can_commit}
+              aria-label="Import valid user CSV rows"
             >
               Import valid rows
             </button>
@@ -545,6 +593,7 @@ export default function Page() {
             value={form.full_name}
             onChange={(e) => setForm({ ...form, full_name: e.target.value })}
             placeholder="Full name"
+            aria-label="User full name"
             required
           />
           <input
@@ -552,6 +601,7 @@ export default function Page() {
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             placeholder="Email"
+            aria-label="User email"
             required
           />
           <input
@@ -559,16 +609,19 @@ export default function Page() {
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             placeholder="Temporary password"
+            aria-label="User password"
             required
           />
           <input
             value={form.phone}
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            placeholder="Phone (optional)"
+            placeholder="Phone (optional, E.164 e.g. +233...)"
+            aria-label="User phone"
           />
           <select
             value={form.role}
             onChange={(e) => setForm({ ...form, role: e.target.value })}
+            aria-label="User role"
           >
             {assignableRoles().map((r) => (
               <option key={r.role} value={r.role}>
@@ -582,6 +635,8 @@ export default function Page() {
             onChange={(e) =>
               setForm({ ...form, branch_id: e.target.value, department_id: '' })
             }
+            aria-label="User branch"
+            title="Optional branch assignment (UuidIdValue)"
           >
             <option value="">Branch (optional)</option>
             {activeBranches.map((b) => (
@@ -593,6 +648,8 @@ export default function Page() {
           <select
             value={form.department_id}
             onChange={(e) => setForm({ ...form, department_id: e.target.value })}
+            aria-label="User department"
+            title="Optional department assignment (UuidIdValue)"
           >
             <option value="">Department (optional)</option>
             {activeDepartments(form.branch_id).map((d) => (
@@ -604,6 +661,7 @@ export default function Page() {
           <select
             value={form.record_scope}
             onChange={(e) => setForm({ ...form, record_scope: e.target.value })}
+            aria-label="User record scope"
           >
             {RECORD_SCOPES.map((s) => (
               <option key={s.value || 'default'} value={s.value}>
@@ -611,7 +669,11 @@ export default function Page() {
               </option>
             ))}
           </select>
-          <button type="submit" disabled={busy}>
+          <button
+            type="submit"
+            disabled={busy || !form.full_name.trim() || !form.password.trim()}
+            aria-label="Create user"
+          >
             {busy ? 'Creating…' : 'Create user'}
           </button>
         </form>
@@ -663,7 +725,11 @@ export default function Page() {
               <td>{r.email}</td>
               <td>
                 {canWrite ? (
-                  <select value={r.role} onChange={(e) => setRole(r.id, e.target.value)}>
+                  <select
+                    value={r.role}
+                    onChange={(e) => setRole(r.id, e.target.value)}
+                    aria-label={`Change role for ${r.email}`}
+                  >
                     {assignableRoles(r.role).map((role) => (
                       <option key={role.role} value={role.role}>
                         {role.label}
@@ -681,6 +747,7 @@ export default function Page() {
                   <select
                     value={r.branch_id || ''}
                     onChange={(e) => setBranch(r.id, e.target.value)}
+                    aria-label={`Edit user branch for ${r.email}`}
                   >
                     <option value="">None</option>
                     {activeBranches.map((b) => (
@@ -698,6 +765,7 @@ export default function Page() {
                   <select
                     value={r.department_id || ''}
                     onChange={(e) => setDepartment(r.id, e.target.value)}
+                    aria-label={`Edit user department for ${r.email}`}
                   >
                     <option value="">None</option>
                     {activeDepartments(r.branch_id || undefined).map((d) => (
@@ -715,6 +783,7 @@ export default function Page() {
                   <select
                     value={r.record_scope || 'own'}
                     onChange={(e) => setRecordScope(r.id, e.target.value)}
+                    aria-label={`Edit user record scope for ${r.email}`}
                   >
                     {RECORD_SCOPES.filter((s) => s.value).map((s) => (
                       <option key={s.value} value={s.value}>
@@ -730,11 +799,11 @@ export default function Page() {
               {canWrite && (
                 <td>
                   {r.is_active ? (
-                    <button type="button" className="btn-danger" onClick={() => setActive(r.id, false)}>
+                    <button type="button" className="btn-danger" onClick={() => setActive(r.id, false)} aria-label={`Deactivate user ${r.id}`}>
                       Deactivate
                     </button>
                   ) : (
-                    <button type="button" className="btn-ok" onClick={() => setActive(r.id, true)}>
+                    <button type="button" className="btn-ok" onClick={() => setActive(r.id, true)} aria-label={`Activate user ${r.id}`}>
                       Activate
                     </button>
                   )}

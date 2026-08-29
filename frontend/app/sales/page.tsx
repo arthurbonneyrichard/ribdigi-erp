@@ -48,9 +48,28 @@ async function downloadInvoicePdf(
 export default function Page() {
   const [tab, setTab] = useState<Tab>('invoices');
   const [invoices, setInvoices] = useState<any[]>([]);
+  const [invoiceManageFilter, setInvoiceManageFilter] = useState<
+    'all' | 'draft' | 'posted' | 'sent' | 'partial' | 'paid' | 'overdue' | 'cancelled'
+  >('all');
   const [quotations, setQuotations] = useState<any[]>([]);
+  const [quotationManageFilter, setQuotationManageFilter] = useState<
+    'all' | 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired' | 'converted'
+  >('all');
   const [orders, setOrders] = useState<any[]>([]);
+  const [orderManageFilter, setOrderManageFilter] = useState<
+    | 'all'
+    | 'draft'
+    | 'confirmed'
+    | 'processing'
+    | 'shipped'
+    | 'delivered'
+    | 'invoiced'
+    | 'cancelled'
+  >('all');
   const [returns, setReturns] = useState<any[]>([]);
+  const [returnManageFilter, setReturnManageFilter] = useState<
+    'all' | 'draft' | 'posted' | 'cancelled'
+  >('all');
   const [customers, setCustomers] = useState<any[]>([]);
   const [groups, setGroups] = useState<any[]>([]);
   const [groupManageFilter, setGroupManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -70,6 +89,7 @@ export default function Page() {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerProfileType, setCustomerProfileType] = useState('registered');
+  const [customerCategory, setCustomerCategory] = useState('');
   const [customerStatus, setCustomerStatus] = useState('active');
   const [customerLat, setCustomerLat] = useState('');
   const [customerLng, setCustomerLng] = useState('');
@@ -80,8 +100,10 @@ export default function Page() {
   const [soCancelReason, setSoCancelReason] = useState('');
   const [siCancelReason, setSiCancelReason] = useState('');
   const [srCancelReason, setSrCancelReason] = useState('');
+  const [docEmailTo, setDocEmailTo] = useState('');
   const [paymentTermsDays, setPaymentTermsDays] = useState('30');
   const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupCode, setNewGroupCode] = useState('');
   const [newGroupDiscount, setNewGroupDiscount] = useState('0');
   const [groupDiscountDrafts, setGroupDiscountDrafts] = useState<Record<string, string>>({});
   const [useGroupPrice, setUseGroupPrice] = useState(true);
@@ -98,6 +120,8 @@ export default function Page() {
   const [invoiceId, setInvoiceId] = useState('');
   const [returnReason, setReturnReason] = useState('');
   const [returnCondition, setReturnCondition] = useState('');
+  const [returnNotes, setReturnNotes] = useState('');
+  const [docNotes, setDocNotes] = useState('');
   const [restock, setRestock] = useState(true);
   const [payAmount, setPayAmount] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
@@ -134,7 +158,7 @@ export default function Page() {
         api('/sales/quotations'),
         api('/sales/orders'),
         api('/sales/returns'),
-        api('/stores'),
+        api('/stores').catch(() => ({ data: [] })),
         api('/sales/settings').catch(() => ({ data: null })),
         api('/customers/groups').catch(() => ({ data: [] })),
         api('/tenants/me').catch(() => ({ data: null })),
@@ -222,8 +246,11 @@ export default function Page() {
     if (!productId || !useGroupPrice) return;
     let cancelled = false;
     const qs = new URLSearchParams();
-    if (customerId) qs.set('customer_id', customerId);
-    if (variantId) qs.set('variant_id', variantId);
+    const customerTrim = customerId.trim();
+    const variantTrim = variantId.trim();
+    // omit blank so UuidIdValue Query customer_id / variant_id do not 422
+    if (customerTrim) qs.set('customer_id', customerTrim);
+    if (variantTrim) qs.set('variant_id', variantTrim);
     api(`/products/${productId}/price?${qs.toString()}`)
       .then((r) => {
         if (!cancelled && r.data?.unit_price != null) {
@@ -240,9 +267,9 @@ export default function Page() {
   const hdrDisc = Math.max(0, Number(headerDiscount) || 0);
   const lineItems = [
     {
-      product_id: productId,
-      variant_id: variantId || null,
-      unit_id: unitId || null,
+      product_id: productId.trim(),
+      variant_id: variantId.trim() || null,
+      unit_id: unitId.trim() || null,
       quantity: Number(qty),
       ...(useGroupPrice ? {} : { unit_price: Number(unitPrice) }),
       tax_rate: taxRate === '' ? null : Number(taxRate),
@@ -251,19 +278,24 @@ export default function Page() {
   ];
 
   const linePayload = {
-    customer_id: customerId,
-    store_id: storeId || null,
-    delivery_date: deliveryDate ? new Date(deliveryDate).toISOString() : null,
+    // trim so Create quotation / Create order (UuidIdValue customer_id) do not 422 on whitespace
+    customer_id: customerId.trim(),
+    // null when blank so Create order / invoice (UuidIdValue store_id) do not 422
+    store_id: storeId.trim() || null,
+    delivery_date: deliveryDate.trim() || null,
+    // null when blank so Create order does not 422 (AddressValue).
     delivery_address: deliveryAddress.trim() || null,
     discount_amount: hdrDisc,
+    notes: docNotes.trim() || null,
     items: lineItems,
   };
 
   const invoicePayload = {
-    customer_id: customerId,
-    store_id: storeId || null,
+    customer_id: customerId.trim(),
+    store_id: storeId.trim() || null,
     items: lineItems,
     discount_amount: hdrDisc,
+    notes: docNotes.trim() || null,
     currency: currency.trim() || null,
     exchange_rate: exchangeRate === '' ? null : Number(exchangeRate),
     is_reverse_charge: invoiceReverseCharge,
@@ -275,18 +307,20 @@ export default function Page() {
       const r = await api('/customers', {
         method: 'POST',
         body: JSON.stringify({
-          name: customerName,
+          name: customerName.trim(),
           code: customerCode.trim() || null,
           profile_type: customerProfileType || 'registered',
+          category: customerCategory.trim() || null,
           status: customerStatus || 'active',
-          email: customerEmail || null,
+          email: customerEmail.trim() || null,
           phone: customerPhone.trim() || null,
+          // null when blank so Create does not 422 (AddressValue).
           address: customerAddress.trim() || null,
           latitude: customerLat === '' ? null : Number(customerLat),
           longitude: customerLng === '' ? null : Number(customerLng),
           credit_limit: Number(creditLimit) || 0,
           payment_terms_days: Number(paymentTermsDays) || 0,
-          customer_group_id: customerGroupId || null,
+          customer_group_id: customerGroupId.trim() || null,
         }),
       });
       setCustomerId(r.data.id);
@@ -296,6 +330,7 @@ export default function Page() {
       setCustomerPhone('');
       setCustomerAddress('');
       setCustomerProfileType('registered');
+      setCustomerCategory('');
       setCustomerStatus('active');
       setCustomerLat('');
       setCustomerLng('');
@@ -331,16 +366,23 @@ export default function Page() {
   }
 
   async function createGroup() {
+    const name = newGroupName.trim();
+    if (!name) {
+      setError('Customer group name is required.');
+      return;
+    }
     setError('');
     try {
       await api('/customers/groups', {
         method: 'POST',
         body: JSON.stringify({
-          name: newGroupName,
+          name,
+          code: newGroupCode.trim() || null,
           discount_percent: Number(newGroupDiscount) || 0,
         }),
       });
       setNewGroupName('');
+      setNewGroupCode('');
       setNewGroupDiscount('0');
       await refresh();
       setMessage('Customer group created');
@@ -387,7 +429,7 @@ export default function Page() {
     try {
       await api(`/customers/${customerId}`, {
         method: 'PATCH',
-        body: JSON.stringify({ customer_group_id: customerGroupId }),
+        body: JSON.stringify({ customer_group_id: customerGroupId.trim() }),
       });
       await refresh();
       setMessage('Customer group assigned');
@@ -404,6 +446,7 @@ export default function Page() {
       setSelected(r.data);
       setLineDiscount('');
       setHeaderDiscount('');
+      setDocNotes('');
       setTab('invoices');
       await refresh();
     } catch (err: any) {
@@ -496,6 +539,7 @@ export default function Page() {
       setSelected(r.data);
       setLineDiscount('');
       setHeaderDiscount('');
+      setDocNotes('');
       setTab('quotations');
       await refresh();
     } catch (err: any) {
@@ -511,6 +555,7 @@ export default function Page() {
       setSelected(r.data);
       setLineDiscount('');
       setHeaderDiscount('');
+      setDocNotes('');
       setTab('orders');
       await refresh();
     } catch (err: any) {
@@ -533,13 +578,15 @@ export default function Page() {
       const r = await api('/sales/returns', {
         method: 'POST',
         body: JSON.stringify({
-          sales_invoice_id: invoiceId,
+          // trim so Create return (UuidIdValue sales_invoice_id) does not 422 on whitespace
+          sales_invoice_id: invoiceId.trim(),
           reason: returnReason,
           restock,
+          notes: returnNotes.trim() || null,
           items: [
             {
-              product_id: productId,
-              variant_id: variantId || null,
+              product_id: productId.trim(),
+              variant_id: variantId.trim() || null,
               quantity: Number(qty),
               condition: returnCondition,
             },
@@ -550,6 +597,7 @@ export default function Page() {
       setSelected(r.data);
       setReturnReason('');
       setReturnCondition('');
+      setReturnNotes('');
       setTab('returns');
       await refresh();
     } catch (err: any) {
@@ -593,7 +641,15 @@ export default function Page() {
       body = { ...body, reason };
     }
     try {
-      const r = await api(path, { method: 'POST', body: JSON.stringify(body) });
+      let requestPath = path;
+      if (
+        (path.includes('/quotations/') || path.includes('/invoices/')) &&
+        path.endsWith('/send') &&
+        docEmailTo.trim()
+      ) {
+        requestPath = `${path}?to=${encodeURIComponent(docEmailTo.trim())}`;
+      }
+      const r = await api(requestPath, { method: 'POST', body: JSON.stringify(body) });
       if (path.includes('/quotations/') && path.endsWith('/reject')) {
         setQuoteRejectReason('');
       }
@@ -696,6 +752,22 @@ export default function Page() {
     const active = g.is_active !== false;
     return groupManageFilter === 'inactive' ? !active : active;
   });
+  const managedReturns = returns.filter((r) => {
+    if (returnManageFilter === 'all') return true;
+    return (r.status || 'draft') === returnManageFilter;
+  });
+  const managedInvoices = invoices.filter((inv) => {
+    if (invoiceManageFilter === 'all') return true;
+    return (inv.status || 'draft') === invoiceManageFilter;
+  });
+  const managedQuotations = quotations.filter((q) => {
+    if (quotationManageFilter === 'all') return true;
+    return (q.status || 'draft') === quotationManageFilter;
+  });
+  const managedOrders = orders.filter((o) => {
+    if (orderManageFilter === 'all') return true;
+    return (o.status || 'draft') === orderManageFilter;
+  });
 
   return (
     <Shell>
@@ -713,7 +785,12 @@ export default function Page() {
             ['returns', 'Returns'],
           ] as [Tab, string][]
         ).map(([id, label]) => (
-          <button key={id} onClick={() => setTab(id)} disabled={tab === id}>
+          <button
+            key={id}
+            onClick={() => setTab(id)}
+            disabled={tab === id}
+            aria-label={`Show sales ${id} tab`}
+          >
             {label}
           </button>
         ))}
@@ -731,12 +808,15 @@ export default function Page() {
             onChange={(e) => setInvPrefix(e.target.value.toUpperCase())}
             placeholder="Prefix"
             style={{ width: 100 }}
+            aria-label="Invoice number prefix"
+            title="Document prefix (letters, digits, _ or -)"
           />
           <input
             value={invNext}
             onChange={(e) => setInvNext(e.target.value)}
             placeholder="Next #"
             style={{ width: 90 }}
+            aria-label="Invoice next number"
           />
           <span className="muted">{invPreview || '—'}</span>
         </div>
@@ -747,12 +827,15 @@ export default function Page() {
             onChange={(e) => setQtPrefix(e.target.value.toUpperCase())}
             placeholder="Prefix"
             style={{ width: 100 }}
+            aria-label="Quotation number prefix"
+            title="Document prefix (letters, digits, _ or -)"
           />
           <input
             value={qtNext}
             onChange={(e) => setQtNext(e.target.value)}
             placeholder="Next #"
             style={{ width: 90 }}
+            aria-label="Quotation next number"
           />
           <span className="muted">{qtPreview || '—'}</span>
         </div>
@@ -763,12 +846,15 @@ export default function Page() {
             onChange={(e) => setSoPrefix(e.target.value.toUpperCase())}
             placeholder="Prefix"
             style={{ width: 100 }}
+            aria-label="Sales order number prefix"
+            title="Document prefix (letters, digits, _ or -)"
           />
           <input
             value={soNext}
             onChange={(e) => setSoNext(e.target.value)}
             placeholder="Next #"
             style={{ width: 90 }}
+            aria-label="Sales order next number"
           />
           <span className="muted">{soPreview || '—'}</span>
         </div>
@@ -779,12 +865,15 @@ export default function Page() {
             onChange={(e) => setSrPrefix(e.target.value.toUpperCase())}
             placeholder="Prefix"
             style={{ width: 100 }}
+            aria-label="Sales return number prefix"
+            title="Document prefix (letters, digits, _ or -)"
           />
           <input
             value={srNext}
             onChange={(e) => setSrNext(e.target.value)}
             placeholder="Next #"
             style={{ width: 90 }}
+            aria-label="Sales return next number"
           />
           <span className="muted">{srPreview || '—'}</span>
         </div>
@@ -795,12 +884,15 @@ export default function Page() {
             onChange={(e) => setCnPrefix(e.target.value.toUpperCase())}
             placeholder="Prefix"
             style={{ width: 100 }}
+            aria-label="Credit note number prefix"
+            title="Document prefix (letters, digits, _ or -)"
           />
           <input
             value={cnNext}
             onChange={(e) => setCnNext(e.target.value)}
             placeholder="Next #"
             style={{ width: 90 }}
+            aria-label="Credit note next number"
           />
           <span className="muted">{cnPreview || '—'}</span>
         </div>
@@ -811,15 +903,18 @@ export default function Page() {
             onChange={(e) => setRcpPrefix(e.target.value.toUpperCase())}
             placeholder="Prefix"
             style={{ width: 100 }}
+            aria-label="Payment receipt number prefix"
+            title="Document prefix (letters, digits, _ or -)"
           />
           <input
             value={rcpNext}
             onChange={(e) => setRcpNext(e.target.value)}
             placeholder="Next #"
             style={{ width: 90 }}
+            aria-label="Payment receipt next number"
           />
           <span className="muted">{rcpPreview || '—'}</span>
-          <button type="button" onClick={saveInvoiceNumbering}>
+          <button type="button" onClick={saveInvoiceNumbering} aria-label="Save sales numbering">
             Save numbering
           </button>
         </div>
@@ -865,13 +960,18 @@ export default function Page() {
                   title="Discount percent"
                   aria-label={`${g.name} discount percent`}
                 />
-                <button type="button" onClick={() => saveGroupDiscount(g)}>
+                <button type="button" onClick={() => saveGroupDiscount(g)} aria-label={`Save customer group discount ${g.id}`}>
                   Save discount
                 </button>
                 <button
                   type="button"
                   className={g.is_active === false ? 'btn-ok' : 'btn-danger'}
                   onClick={() => setGroupActive(g, g.is_active === false)}
+                  aria-label={
+                    g.is_active === false
+                      ? `Activate customer group ${g.id}`
+                      : `Deactivate customer group ${g.id}`
+                  }
                 >
                   {g.is_active === false ? 'Activate' : 'Deactivate'}
                 </button>
@@ -880,17 +980,32 @@ export default function Page() {
           </ul>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             <input
+              aria-label="Customer group name"
               value={newGroupName}
               onChange={(e) => setNewGroupName(e.target.value)}
               placeholder="New group name"
             />
             <input
+              aria-label="Customer group code"
+              value={newGroupCode}
+              onChange={(e) => setNewGroupCode(e.target.value)}
+              placeholder="Code (optional)"
+              title="Customer group code (optional; 1–40 chars; blank → slug from name)"
+              style={{ width: 140 }}
+            />
+            <input
               value={newGroupDiscount}
               onChange={(e) => setNewGroupDiscount(e.target.value)}
               placeholder="Discount %"
+              aria-label="Customer group discount percent"
               style={{ width: 100 }}
             />
-            <button type="button" onClick={createGroup}>
+            <button
+              type="button"
+              aria-label="Add group"
+              onClick={createGroup}
+              disabled={!newGroupName.trim()}
+            >
               Add group
             </button>
           </div>
@@ -952,6 +1067,7 @@ export default function Page() {
                   (customers.find((c) => c.id === customerId)?.status || 'active') === 'inactive',
                 )
               }
+              aria-label="Toggle customer active status"
             >
               {(customers.find((c) => c.id === customerId)?.status || 'active') === 'inactive'
                 ? 'Activate'
@@ -988,6 +1104,7 @@ export default function Page() {
               setStoreId(e.target.value);
               setCtxStoreId(e.target.value);
             }}
+            aria-label="Sale store"
           >
             <option value="">Store (required to confirm orders)</option>
             {stores
@@ -999,21 +1116,28 @@ export default function Page() {
             ))}
           </select>
           <input
-            type="date"
+            aria-label="SO delivery date"
+            type="text"
+            placeholder="YYYY-MM-DD"
+            title="Delivery date (optional YYYY-MM-DD)"
             value={deliveryDate}
             onChange={(e) => setDeliveryDate(e.target.value)}
-            title="Delivery date"
           />
           <input
             value={deliveryAddress}
             onChange={(e) => setDeliveryAddress(e.target.value)}
             placeholder="Delivery address"
+            aria-label="SO delivery address"
             style={{ minWidth: 180 }}
           />
           <input
             value={currency}
             onChange={(e) => setCurrency(e.target.value.toUpperCase())}
             placeholder="Currency (blank=base)"
+            aria-label="Sales invoice currency"
+            pattern="[A-Z]{3}"
+            maxLength={3}
+            title="ISO-4217 currency (blank = company base)"
             style={{ width: 140 }}
           />
           <input
@@ -1021,23 +1145,46 @@ export default function Page() {
             onChange={(e) => setExchangeRate(e.target.value)}
             placeholder="FX rate (optional)"
             style={{ width: 120 }}
+            aria-label="Sales invoice FX rate"
           />
-          <input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="New customer" />
+          <input
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+            placeholder="New customer"
+            aria-label="Customer name"
+            title="Customer name (1–180 chars; letters/digits required)"
+          />
           <input
             value={customerCode}
             onChange={(e) => setCustomerCode(e.target.value)}
             placeholder="Code"
+            aria-label="Customer code"
+            title="Customer code (optional; 1–64 chars; letters/digits required)"
             style={{ width: 100 }}
           />
           <select
             value={customerProfileType}
             onChange={(e) => setCustomerProfileType(e.target.value)}
+            aria-label="Customer profile type"
             title="Customer type"
           >
             <option value="registered">Registered</option>
             <option value="walk_in">Walk-in</option>
           </select>
-          <select value={customerStatus} onChange={(e) => setCustomerStatus(e.target.value)} title="Status">
+          <input
+            value={customerCategory}
+            onChange={(e) => setCustomerCategory(e.target.value)}
+            placeholder="Category"
+            aria-label="Customer category"
+            title="Customer category (optional; 1–80 chars; letters/digits required)"
+            style={{ width: 120 }}
+          />
+          <select
+            value={customerStatus}
+            onChange={(e) => setCustomerStatus(e.target.value)}
+            aria-label="Customer status"
+            title="Status"
+          >
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
           </select>
@@ -1045,17 +1192,20 @@ export default function Page() {
             value={customerEmail}
             onChange={(e) => setCustomerEmail(e.target.value)}
             placeholder="Customer email"
+            aria-label="Customer email"
           />
           <input
             value={customerPhone}
             onChange={(e) => setCustomerPhone(e.target.value)}
-            placeholder="Phone"
-            style={{ width: 120 }}
+            placeholder="Phone (E.164 e.g. +233...)"
+            aria-label="Customer phone"
+            style={{ width: 160 }}
           />
           <input
             value={customerAddress}
             onChange={(e) => setCustomerAddress(e.target.value)}
             placeholder="Address"
+            aria-label="Customer address"
             style={{ minWidth: 160 }}
           />
           <input
@@ -1063,16 +1213,22 @@ export default function Page() {
             onChange={(e) => setCustomerLat(e.target.value)}
             placeholder="Lat"
             style={{ width: 90 }}
-            title="GPS latitude"
+            title="GPS latitude (−90…90)"
+            aria-label="Customer latitude"
           />
           <input
             value={customerLng}
             onChange={(e) => setCustomerLng(e.target.value)}
             placeholder="Lng"
             style={{ width: 90 }}
-            title="GPS longitude"
+            title="GPS longitude (−180…180)"
+            aria-label="Customer longitude"
           />
-          <select value={customerGroupId} onChange={(e) => setCustomerGroupId(e.target.value)}>
+          <select
+            value={customerGroupId}
+            onChange={(e) => setCustomerGroupId(e.target.value)}
+            aria-label="Customer group"
+          >
             <option value="">Group (optional)</option>
             {groups
               .filter((g) => g.is_active !== false)
@@ -1082,16 +1238,24 @@ export default function Page() {
                 </option>
               ))}
           </select>
-          <input value={creditLimit} onChange={(e) => setCreditLimit(e.target.value)} placeholder="Credit limit" />
+          <input
+            value={creditLimit}
+            onChange={(e) => setCreditLimit(e.target.value)}
+            placeholder="Credit limit"
+            aria-label="Customer credit limit"
+          />
           <input
             value={paymentTermsDays}
             onChange={(e) => setPaymentTermsDays(e.target.value)}
             placeholder="Net days"
             style={{ width: 90 }}
             title="Payment terms (days)"
+            aria-label="Customer payment terms days"
           />
-          <button onClick={createCustomer}>Add customer</button>
-          <button type="button" onClick={assignCustomerGroup}>
+          <button type="button" onClick={createCustomer} aria-label="Add customer">
+            Add customer
+          </button>
+          <button type="button" onClick={assignCustomerGroup} aria-label="Assign customer group">
             Assign group
           </button>
         </div>
@@ -1115,7 +1279,11 @@ export default function Page() {
           <h3>Create sale</h3>
           <div className="erp-stack" style={{ marginBottom: 0 }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <select value={productId} onChange={(e) => setProductId(e.target.value)}>
+          <select
+            value={productId}
+            onChange={(e) => setProductId(e.target.value)}
+            aria-label="Sales product"
+          >
             <option value="">Product</option>
             {products
               .filter((p) => p.is_active !== false)
@@ -1126,7 +1294,11 @@ export default function Page() {
             ))}
           </select>
           {variants.length > 0 && (
-            <select value={variantId} onChange={(e) => setVariantId(e.target.value)}>
+            <select
+              value={variantId}
+              onChange={(e) => setVariantId(e.target.value)}
+              aria-label="Sales variant"
+            >
               <option value="">Variant (optional)</option>
               {variants.map((v) => (
                 <option key={v.id} value={v.id}>
@@ -1135,7 +1307,11 @@ export default function Page() {
               ))}
             </select>
           )}
-          <select value={unitId} onChange={(e) => setUnitId(e.target.value)}>
+          <select
+            value={unitId}
+            onChange={(e) => setUnitId(e.target.value)}
+            aria-label="Sales unit"
+          >
             <option value="">Unit (default)</option>
             {units.map((u) => (
               <option key={u.id} value={u.id}>
@@ -1143,7 +1319,13 @@ export default function Page() {
               </option>
             ))}
           </select>
-          <input value={qty} onChange={(e) => setQty(e.target.value)} placeholder="Qty" style={{ width: 80 }} />
+          <input
+            value={qty}
+            onChange={(e) => setQty(e.target.value)}
+            placeholder="Qty"
+            aria-label="Line quantity"
+            style={{ width: 80 }}
+          />
           <input
             value={unitPrice}
             onChange={(e) => {
@@ -1151,17 +1333,25 @@ export default function Page() {
               setUnitPrice(e.target.value);
             }}
             placeholder="Price"
+            aria-label="Line unit price"
             style={{ width: 100 }}
           />
           <label style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
             <input
               type="checkbox"
+              aria-label="Use customer group price"
               checked={useGroupPrice}
               onChange={(e) => setUseGroupPrice(e.target.checked)}
             />
             Group price
           </label>
-          <input value={taxRate} onChange={(e) => setTaxRate(e.target.value)} placeholder="Tax %" style={{ width: 80 }} />
+          <input
+            value={taxRate}
+            onChange={(e) => setTaxRate(e.target.value)}
+            placeholder="Tax %"
+            aria-label="Line tax percent"
+            style={{ width: 80 }}
+          />
           <input
             value={lineDiscount}
             onChange={(e) => setLineDiscount(e.target.value)}
@@ -1178,6 +1368,14 @@ export default function Page() {
             style={{ width: 120 }}
             title="Document-level discount amount"
           />
+          <input
+            value={docNotes}
+            onChange={(e) => setDocNotes(e.target.value)}
+            placeholder="Notes (optional)"
+            aria-label="Sales document notes"
+            title="Optional notes (1–500 chars; letters/digits required)"
+            style={{ minWidth: 180 }}
+          />
         </div>
         <p className="muted" style={{ margin: '4px 0 0', fontSize: 12 }}>
           Line discount is stored on the line (tax before discount). Header discount reduces the
@@ -1188,13 +1386,20 @@ export default function Page() {
             type="checkbox"
             checked={invoiceReverseCharge}
             onChange={(e) => setInvoiceReverseCharge(e.target.checked)}
+            aria-label="Sales invoice reverse charge"
           />
           Reverse charge (tax memo only — not charged to customer)
         </label>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button onClick={createQuotation}>Create quotation</button>
-          <button onClick={createOrder}>Create order</button>
-          <button onClick={createInvoice}>Create invoice</button>
+          <button onClick={createQuotation} aria-label="Create quotation">
+            Create quotation
+          </button>
+          <button onClick={createOrder} aria-label="Create order">
+            Create order
+          </button>
+          <button onClick={createInvoice} aria-label="Create invoice">
+            Create invoice
+          </button>
         </div>
           </div>
         </div>
@@ -1209,13 +1414,52 @@ export default function Page() {
                 value={quoteRejectReason}
                 onChange={(e) => setQuoteRejectReason(e.target.value)}
                 placeholder="Required before Reject"
+                aria-label="Quotation reject reason"
+                title="Required reason for Reject (1–500 chars; letters/digits required)"
                 style={{ minWidth: 280 }}
               />
             </label>
             <p className="muted" style={{ marginTop: 6 }}>
               Used by Reject on draft/sent quotations (stored as <code>rejection_reason</code>).
             </p>
+            <label style={{ display: 'block', marginTop: 8 }}>
+              Email override{' '}
+              <input
+                type="email"
+                value={docEmailTo}
+                onChange={(e) => setDocEmailTo(e.target.value)}
+                placeholder="Optional to= (omit → customer email)"
+                aria-label="Document email override to"
+                style={{ minWidth: 280 }}
+              />
+            </label>
           </div>
+        <select
+          value={quotationManageFilter}
+          onChange={(e) =>
+            setQuotationManageFilter(
+              e.target.value as
+                | 'all'
+                | 'draft'
+                | 'sent'
+                | 'accepted'
+                | 'rejected'
+                | 'expired'
+                | 'converted'
+            )
+          }
+          title="Filter quotation list by status"
+          aria-label="Quotation status filter"
+          style={{ marginBottom: 12 }}
+        >
+          <option value="all">All statuses</option>
+          <option value="draft">Draft only</option>
+          <option value="sent">Sent only</option>
+          <option value="accepted">Accepted only</option>
+          <option value="rejected">Rejected only</option>
+          <option value="expired">Expired only</option>
+          <option value="converted">Converted only</option>
+        </select>
         <table className="table">
           <thead>
             <tr>
@@ -1228,7 +1472,7 @@ export default function Page() {
             </tr>
           </thead>
           <tbody>
-            {quotations.map((q) => (
+            {managedQuotations.map((q) => (
               <tr key={q.id}>
                 <td>{q.quotation_number}</td>
                 <td>{q.status}</td>
@@ -1236,25 +1480,50 @@ export default function Page() {
                 <td>{q.valid_until ? String(q.valid_until).slice(0, 10) : '—'}</td>
                 <td>{q.rejection_reason || '—'}</td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  <button onClick={() => setSelected(q)}>View</button>
+                  <button onClick={() => setSelected(q)} aria-label={`View quotation ${q.id}`}>View</button>
                   {q.status === 'draft' && (
-                    <button onClick={() => act(`/sales/quotations/${q.id}/send`, 'Quotation emailed')}>
+                    <button
+                      onClick={() => act(`/sales/quotations/${q.id}/send`, 'Quotation emailed')}
+                      aria-label="Email quotation"
+                    >
                       Email
                     </button>
                   )}
                   {q.status === 'sent' && (
-                    <button onClick={() => act(`/sales/quotations/${q.id}/send`, 'Quotation re-emailed')}>
+                    <button
+                      onClick={() => act(`/sales/quotations/${q.id}/send`, 'Quotation re-emailed')}
+                      aria-label="Resend quotation email"
+                    >
                       Resend
                     </button>
                   )}
                   {['draft', 'sent'].includes(q.status) && (
                     <>
-                      <button className="btn-ok" onClick={() => act(`/sales/quotations/${q.id}/accept`, 'Accepted')}>Accept</button>
-                      <button className="btn-danger" onClick={() => act(`/sales/quotations/${q.id}/reject`, 'Rejected')}>Reject</button>
+                      <button
+                        className="btn-ok"
+                        onClick={() => act(`/sales/quotations/${q.id}/accept`, 'Accepted')}
+                        aria-label={`Accept quotation ${q.id}`}
+                      >
+                        Accept
+                      </button>
+                      <button
+                        className="btn-danger"
+                        onClick={() => act(`/sales/quotations/${q.id}/reject`, 'Rejected')}
+                        aria-label={`Reject quotation ${q.id}`}
+                        disabled={!quoteRejectReason.trim()}
+                        title={
+                          quoteRejectReason.trim()
+                            ? 'Reject quotation'
+                            : 'Enter a reject reason before rejecting'
+                        }
+                      >
+                        Reject
+                      </button>
                       <button
                         type="button"
                         className="btn-ok"
                         onClick={() => act(`/sales/quotations/${q.id}/convert-order`, 'Order')}
+                        aria-label={`Convert quotation to order ${q.id}`}
                       >
                         → Order
                       </button>
@@ -1262,6 +1531,7 @@ export default function Page() {
                         type="button"
                         className="btn-ok"
                         onClick={() => act(`/sales/quotations/${q.id}/convert-invoice`, 'Invoice')}
+                        aria-label={`Convert quotation to invoice ${q.id}`}
                       >
                         → Invoice
                       </button>
@@ -1270,6 +1540,15 @@ export default function Page() {
                 </td>
               </tr>
             ))}
+            {managedQuotations.length === 0 && (
+              <tr>
+                <td colSpan={6} className="muted">
+                  {quotations.length === 0
+                    ? 'No quotations yet'
+                    : 'No quotations for this filter'}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
         </>
@@ -1284,6 +1563,8 @@ export default function Page() {
                 value={soCancelReason}
                 onChange={(e) => setSoCancelReason(e.target.value)}
                 placeholder="Required before Cancel"
+                title="Required cancel reason (1–500 chars; letters/digits required)"
+                aria-label="Sales order cancel reason"
                 style={{ minWidth: 280 }}
               />
             </label>
@@ -1292,6 +1573,34 @@ export default function Page() {
               {'{ reason }'}).
             </p>
           </div>
+          <select
+            value={orderManageFilter}
+            onChange={(e) =>
+              setOrderManageFilter(
+                e.target.value as
+                  | 'all'
+                  | 'draft'
+                  | 'confirmed'
+                  | 'processing'
+                  | 'shipped'
+                  | 'delivered'
+                  | 'invoiced'
+                  | 'cancelled'
+              )
+            }
+            title="Filter sales order list by status"
+            aria-label="Sales order status filter"
+            style={{ marginBottom: 12 }}
+          >
+            <option value="all">All statuses</option>
+            <option value="draft">Draft only</option>
+            <option value="confirmed">Confirmed only</option>
+            <option value="processing">Processing only</option>
+            <option value="shipped">Shipped only</option>
+            <option value="delivered">Delivered only</option>
+            <option value="invoiced">Invoiced only</option>
+            <option value="cancelled">Cancelled only</option>
+          </select>
           <table className="table">
           <thead>
             <tr>
@@ -1306,7 +1615,7 @@ export default function Page() {
             </tr>
           </thead>
           <tbody>
-            {orders.map((o) => (
+            {managedOrders.map((o) => (
               <tr key={o.id}>
                 <td>{o.order_number}</td>
                 <td>{o.status}</td>
@@ -1330,7 +1639,7 @@ export default function Page() {
                   {o.notes || '—'}
                 </td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  <button onClick={() => setSelected(o)}>View</button>
+                  <button onClick={() => setSelected(o)} aria-label={`View sales order ${o.id}`}>View</button>
                   {o.status === 'draft' && (
                     <button
                       type="button"
@@ -1339,17 +1648,19 @@ export default function Page() {
                         act(
                           `/sales/orders/${o.id}/confirm`,
                           'Confirmed',
-                          storeId || o.store_id
+                          storeId.trim() || o.store_id
                             ? {
-                                store_id: storeId || o.store_id,
-                                delivery_date: deliveryDate
-                                  ? new Date(deliveryDate).toISOString()
-                                  : null,
-                                delivery_address: deliveryAddress.trim() || null,
+                                store_id: (storeId.trim() || o.store_id) as string,
+                                delivery_date: deliveryDate.trim() || null,
+                                // Omit blank delivery so Confirm does not 422 (AddressValue).
+                                ...(deliveryAddress.trim()
+                                  ? { delivery_address: deliveryAddress.trim() }
+                                  : {}),
                               }
                             : {}
                         )
                       }
+                      aria-label={`Confirm sales order ${o.id}`}
                     >
                       Confirm
                     </button>
@@ -1359,6 +1670,7 @@ export default function Page() {
                       type="button"
                       className="btn-ok"
                       onClick={() => act(`/sales/orders/${o.id}/process`, 'Processing')}
+                      aria-label={`Process sales order ${o.id}`}
                     >
                       Process
                     </button>
@@ -1368,6 +1680,7 @@ export default function Page() {
                       type="button"
                       className="btn-ok"
                       onClick={() => act(`/sales/orders/${o.id}/ship`, 'Shipped')}
+                      aria-label={`Ship sales order ${o.id}`}
                     >
                       Ship
                     </button>
@@ -1377,6 +1690,7 @@ export default function Page() {
                       type="button"
                       className="btn-ok"
                       onClick={() => act(`/sales/orders/${o.id}/deliver`, 'Delivered')}
+                      aria-label={`Deliver sales order ${o.id}`}
                     >
                       Deliver
                     </button>
@@ -1386,18 +1700,32 @@ export default function Page() {
                       type="button"
                       className="btn-ok"
                       onClick={() => act(`/sales/orders/${o.id}/convert-invoice`, 'Invoice')}
+                      aria-label={`Convert sales order to invoice ${o.id}`}
                     >
                       → Invoice
                     </button>
                   )}
                   {o.can_cancel && (
-                    <button className="btn-danger" onClick={() => act(`/sales/orders/${o.id}/cancel`, 'Cancelled')}>
+                    <button
+                      className="btn-danger"
+                      onClick={() => act(`/sales/orders/${o.id}/cancel`, 'Cancelled')}
+                      aria-label={`Cancel sales order ${o.id}`}
+                    >
                       Cancel
                     </button>
                   )}
                 </td>
               </tr>
             ))}
+            {managedOrders.length === 0 && (
+              <tr>
+                <td colSpan={8} className="muted">
+                  {orders.length === 0
+                    ? 'No sales orders yet'
+                    : 'No sales orders for this filter'}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
         </>
@@ -1413,6 +1741,8 @@ export default function Page() {
                 onChange={(e) => setCreditOverrideReason(e.target.value)}
                 placeholder="Required when posting over credit limit"
                 style={{ minWidth: 300 }}
+                title="Required on over-limit confirm (1–500 chars; letters/digits required)"
+                aria-label="Credit override reason"
               />
             </label>
             <p className="muted" style={{ marginTop: 6 }}>
@@ -1427,6 +1757,8 @@ export default function Page() {
                 value={siCancelReason}
                 onChange={(e) => setSiCancelReason(e.target.value)}
                 placeholder="Required before Cancel"
+                title="Required cancel reason (1–500 chars; letters/digits required)"
+                aria-label="Sales invoice cancel reason"
                 style={{ minWidth: 280 }}
               />
             </label>
@@ -1434,7 +1766,46 @@ export default function Page() {
               Appended to draft invoice notes and audit (<code>POST .../invoices/.../cancel</code>{' '}
               {'{ reason }'}). Draft only.
             </p>
+            <label style={{ display: 'block', marginTop: 8 }}>
+              Email override{' '}
+              <input
+                type="email"
+                value={docEmailTo}
+                onChange={(e) => setDocEmailTo(e.target.value)}
+                placeholder="Optional to= (omit → customer email)"
+                aria-label="Document email override to"
+                style={{ minWidth: 280 }}
+              />
+            </label>
           </div>
+        <select
+          value={invoiceManageFilter}
+          onChange={(e) =>
+            setInvoiceManageFilter(
+              e.target.value as
+                | 'all'
+                | 'draft'
+                | 'posted'
+                | 'sent'
+                | 'partial'
+                | 'paid'
+                | 'overdue'
+                | 'cancelled'
+            )
+          }
+          title="Filter sales invoice list by status"
+          aria-label="Sales invoice status filter"
+          style={{ marginBottom: 12 }}
+        >
+          <option value="all">All statuses</option>
+          <option value="draft">Draft only</option>
+          <option value="posted">Posted only</option>
+          <option value="sent">Sent only</option>
+          <option value="partial">Partial only</option>
+          <option value="paid">Paid only</option>
+          <option value="overdue">Overdue only</option>
+          <option value="cancelled">Cancelled only</option>
+        </select>
         <table className="table">
           <thead>
             <tr>
@@ -1448,7 +1819,7 @@ export default function Page() {
             </tr>
           </thead>
           <tbody>
-            {invoices.map((inv) => (
+            {managedInvoices.map((inv) => (
               <tr key={inv.id}>
                 <td>{inv.invoice_number}</td>
                 <td>{inv.status}</td>
@@ -1462,13 +1833,24 @@ export default function Page() {
                   {inv.notes || '—'}
                 </td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  <button onClick={() => setSelected(inv)}>View</button>
+                  <button onClick={() => setSelected(inv)} aria-label={`View sales invoice ${inv.id}`}>View</button>
                   {inv.status === 'draft' && (
                     <>
-                      <button type="button" className="btn-ok" onClick={() => postInvoice(inv)}>
+                      <button
+                        type="button"
+                        className="btn-ok"
+                        onClick={() => postInvoice(inv)}
+                        aria-label={`Post sales invoice ${inv.id}`}
+                      >
                         Post
                       </button>
-                      <button className="btn-danger" onClick={() => act(`/sales/invoices/${inv.id}/cancel`, 'Cancelled')}>Cancel</button>
+                      <button
+                        className="btn-danger"
+                        onClick={() => act(`/sales/invoices/${inv.id}/cancel`, 'Cancelled')}
+                        aria-label={`Cancel sales invoice ${inv.id}`}
+                      >
+                        Cancel
+                      </button>
                     </>
                   )}
                   {inv.can_print && (
@@ -1479,6 +1861,7 @@ export default function Page() {
                             .then(() => setMessage(`Downloaded A4 ${inv.invoice_number}`))
                             .catch((err) => setError(err.message))
                         }
+                        aria-label="Print sales invoice A4"
                       >
                         Print A4
                       </button>
@@ -1488,13 +1871,17 @@ export default function Page() {
                             .then(() => setMessage(`Downloaded thermal ${inv.invoice_number}`))
                             .catch((err) => setError(err.message))
                         }
+                        aria-label="Print sales invoice thermal"
                       >
                         Print thermal
                       </button>
                     </>
                   )}
                   {inv.can_email && (
-                    <button onClick={() => act(`/sales/invoices/${inv.id}/send`, 'Invoice emailed')}>
+                    <button
+                      onClick={() => act(`/sales/invoices/${inv.id}/send`, 'Invoice emailed')}
+                      aria-label={inv.emailed_at ? 'Resend invoice email' : 'Email invoice'}
+                    >
                       {inv.emailed_at ? 'Resend email' : 'Email'}
                     </button>
                   )}
@@ -1513,12 +1900,14 @@ export default function Page() {
                         }}
                         placeholder="Pay"
                         style={{ width: 80 }}
+                        aria-label={`Sales invoice pay amount ${inv.invoice_number || inv.id}`}
                       />
                       <button
                         onClick={() => {
                           setSelected(inv);
                           pay();
                         }}
+                        aria-label={`Pay sales invoice ${inv.id}`}
                       >
                         Pay
                       </button>
@@ -1527,6 +1916,15 @@ export default function Page() {
                 </td>
               </tr>
             ))}
+            {managedInvoices.length === 0 && (
+              <tr>
+                <td colSpan={7} className="muted">
+                  {invoices.length === 0
+                    ? 'No invoices yet'
+                    : 'No sales invoices for this filter'}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
         </>
@@ -1538,7 +1936,11 @@ export default function Page() {
             <h3>Create return</h3>
             <div className="erp-form-grid">
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <select value={invoiceId} onChange={(e) => setInvoiceId(e.target.value)}>
+          <select
+            value={invoiceId}
+            onChange={(e) => setInvoiceId(e.target.value)}
+            aria-label="Return from invoice"
+          >
             <option value="">Return from invoice</option>
             {invoices
               .filter((i) => ['posted', 'sent', 'partial', 'overdue', 'paid'].includes(i.status))
@@ -1570,11 +1972,20 @@ export default function Page() {
             <option value="discard">discard</option>
           </select>
           <label>
-            <input type="checkbox" checked={restock} onChange={(e) => setRestock(e.target.checked)} /> Restock
+            <input type="checkbox" checked={restock} onChange={(e) => setRestock(e.target.checked)} aria-label="Sales return restock" /> Restock
           </label>
+          <input
+            value={returnNotes}
+            onChange={(e) => setReturnNotes(e.target.value)}
+            placeholder="Return notes (optional)"
+            aria-label="Sales return notes"
+            title="Optional notes (1–500 chars; letters/digits required)"
+            style={{ minWidth: 220 }}
+          />
           <button
             onClick={createReturn}
             disabled={!invoiceId || !productId || !returnReason || !returnCondition}
+            aria-label="Create sales return"
           >
             Create return
           </button>
@@ -1588,6 +1999,8 @@ export default function Page() {
                 value={srCancelReason}
                 onChange={(e) => setSrCancelReason(e.target.value)}
                 placeholder="Required before Cancel"
+                title="Required cancel reason (1–500 chars; letters/digits required)"
+                aria-label="Sales return cancel reason"
                 style={{ minWidth: 280 }}
               />
             </label>
@@ -1596,6 +2009,22 @@ export default function Page() {
               {'{ reason }'}). Draft only.
             </p>
           </div>
+        <select
+          value={returnManageFilter}
+          onChange={(e) =>
+            setReturnManageFilter(
+              e.target.value as 'all' | 'draft' | 'posted' | 'cancelled'
+            )
+          }
+          title="Filter sales return list by status"
+          aria-label="Sales return status filter"
+          style={{ marginBottom: 12 }}
+        >
+          <option value="all">All statuses</option>
+          <option value="draft">Draft only</option>
+          <option value="posted">Posted only</option>
+          <option value="cancelled">Cancelled only</option>
+        </select>
         <table className="table">
           <thead>
             <tr>
@@ -1610,7 +2039,7 @@ export default function Page() {
             </tr>
           </thead>
           <tbody>
-            {returns.map((r) => (
+            {managedReturns.map((r) => (
               <tr key={r.id}>
                 <td>{r.return_number}</td>
                 <td>{r.credit_note_number || '—'}</td>
@@ -1625,12 +2054,13 @@ export default function Page() {
                   {r.notes || '—'}
                 </td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  <button onClick={() => setSelected(r)}>View</button>
+                  <button onClick={() => setSelected(r)} aria-label={`View sales return ${r.id}`}>View</button>
                   {r.status === 'draft' && (
                     <>
                       <button
                         type="button"
                         className="btn-ok"
+                        aria-label={`Post sales return credit ${r.id}`}
                         onClick={() =>
                           act(`/sales/returns/${r.id}/post`, 'Posted (credit)', {
                             settlement_method: 'adjust',
@@ -1642,6 +2072,7 @@ export default function Page() {
                       <button
                         type="button"
                         className="btn-ok"
+                        aria-label={`Post sales return refund ${r.id}`}
                         onClick={() =>
                           act(`/sales/returns/${r.id}/post`, 'Posted (refund)', {
                             settlement_method: 'refund',
@@ -1651,7 +2082,11 @@ export default function Page() {
                       >
                         Post + refund
                       </button>
-                      <button className="btn-danger" onClick={() => act(`/sales/returns/${r.id}/cancel`, 'Cancelled')}>
+                      <button
+                        className="btn-danger"
+                        onClick={() => act(`/sales/returns/${r.id}/cancel`, 'Cancelled')}
+                        aria-label={`Cancel sales return ${r.id}`}
+                      >
                         Cancel
                       </button>
                     </>
@@ -1659,6 +2094,15 @@ export default function Page() {
                 </td>
               </tr>
             ))}
+            {managedReturns.length === 0 && (
+              <tr>
+                <td colSpan={8} className="muted">
+                  {returns.length === 0
+                    ? 'No returns yet'
+                    : 'No sales returns for this filter'}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
         </>

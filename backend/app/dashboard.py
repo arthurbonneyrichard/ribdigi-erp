@@ -11,12 +11,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app import tenants as tenants_svc
 from app.config import settings
+from app.honesty import money_json
 
 
 def _pct_change(current: float, previous: float) -> float | None:
     if previous == 0:
-        return None if current == 0 else 100.0
-    return round((current - previous) / abs(previous) * 100.0, 1)
+        return None if current == 0 else money_json(100)
+    return money_json(round((current - previous) / abs(previous) * 100.0, 1))
 
 
 def _day_start(d: date) -> datetime:
@@ -47,7 +48,7 @@ async def _sum_sales(
         stmt = stmt.where(m.Transaction.created_at >= start)
     if end is not None:
         stmt = stmt.where(m.Transaction.created_at < end)
-    return float((await db.execute(stmt)).scalar() or 0)
+    return money_json((await db.execute(stmt)).scalar())
 
 
 async def build_dashboard(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
@@ -70,7 +71,7 @@ async def build_dashboard(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
     sales_mtd = await _sum_sales(db, tenant_id, start=this_month, end=_day_start(tomorrow))
     sales_prev_month = await _sum_sales(db, tenant_id, start=prev_month, end=this_month)
 
-    purchases = float(
+    purchases = money_json(
         await scalar(
             select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
                 m.Transaction.tenant_id == tenant_id,
@@ -78,7 +79,7 @@ async def build_dashboard(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
             )
         )
     )
-    expenses = float(
+    expenses = money_json(
         await scalar(
             select(func.coalesce(func.sum(m.Expense.amount), 0)).where(
                 m.Expense.tenant_id == tenant_id,
@@ -146,13 +147,13 @@ async def build_dashboard(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
             continue
         key = (created_at.year, created_at.month)
         if key in month_totals:
-            month_totals[key] += float(total or 0)
+            month_totals[key] += money_json(total or 0)
     monthly_sales = [
         {
             "label": datetime(yy, mm, 1).strftime("%b %y"),
             "year": yy,
             "month": mm,
-            "total": round(month_totals[(yy, mm)], 2),
+            "total": money_json(round(month_totals[(yy, mm)], 2)),
         }
         for (yy, mm) in months_seq
     ]
@@ -163,7 +164,7 @@ async def build_dashboard(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
     cost_rows = (
         await db.execute(select(m.Product.id, m.Product.cost_price).where(m.Product.tenant_id == tenant_id))
     ).all()
-    cost_map = {pid: float(cost or 0) for pid, cost in cost_rows}
+    cost_map = {pid: money_json(cost or 0) for pid, cost in cost_rows}
     product_names = {
         pid: name
         for pid, name in (
@@ -193,10 +194,10 @@ async def build_dashboard(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
             continue
         d = created_at.date()
         if d in daily:
-            daily[d]["sales"] += float(total or 0)
+            daily[d]["sales"] += money_json(total or 0)
             for it in (payload or {}).get("items") or []:
-                qty = float(it.get("quantity") or 0)
-                unit_price = float(it.get("unit_price") or 0)
+                qty = money_json(it.get("quantity") or 0)
+                unit_price = money_json(it.get("unit_price") or 0)
                 pid = it.get("product_id")
                 cost = cost_map.get(pid, 0.0)
                 daily[d]["profit"] += qty * (unit_price - cost)
@@ -207,8 +208,8 @@ async def build_dashboard(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
         {
             "label": d.strftime("%d %b"),
             "date": d.isoformat(),
-            "sales": round(daily[d]["sales"], 2),
-            "profit": round(daily[d]["profit"], 2),
+            "sales": money_json(round(daily[d]["sales"], 2)),
+            "profit": money_json(round(daily[d]["profit"], 2)),
         }
         for d in days_seq
     ]
@@ -220,8 +221,8 @@ async def build_dashboard(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
                 "product_id": pid,
                 "name": product_names.get(pid) or pid,
                 "sku": product_skus.get(pid),
-                "quantity": round(top_qty.get(pid, 0.0), 2),
-                "revenue": round(top_rev.get(pid, 0.0), 2),
+                "quantity": money_json(round(top_qty.get(pid, 0.0), 2)),
+                "revenue": money_json(round(top_rev.get(pid, 0.0), 2)),
             }
             for pid, _ in ranked
         ]
@@ -254,7 +255,7 @@ async def build_dashboard(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
             "id": t.id,
             "reference": t.reference,
             "date": t.created_at,
-            "total": float(t.total or 0),
+            "total": money_json(t.total),
             "customer": recent_party_names.get(t.party_id) or "Walk-in",
             "type": t.tx_type,
         }
@@ -278,9 +279,9 @@ async def build_dashboard(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
     }
 
     return {
-        "total_sales": sales_all,
-        "total_purchases": purchases,
-        "total_expenses": expenses,
+        "total_sales": money_json(sales_all),
+        "total_purchases": money_json(purchases),
+        "total_expenses": money_json(expenses),
         "products": products,
         "low_stock": low_stock,
         "out_of_stock": out_of_stock,
@@ -289,11 +290,11 @@ async def build_dashboard(db: AsyncSession, tenant_id: str) -> dict[str, Any]:
         "customers": customers,
         "suppliers": suppliers,
         "comparisons": {
-            "sales_today": round(sales_today, 2),
-            "sales_yesterday": round(sales_yesterday, 2),
+            "sales_today": money_json(round(money_json(sales_today), 2)),
+            "sales_yesterday": money_json(round(money_json(sales_yesterday), 2)),
             "sales_today_pct": _pct_change(sales_today, sales_yesterday),
-            "sales_mtd": round(sales_mtd, 2),
-            "sales_prev_month": round(sales_prev_month, 2),
+            "sales_mtd": money_json(round(money_json(sales_mtd), 2)),
+            "sales_prev_month": money_json(round(money_json(sales_prev_month), 2)),
             "sales_mtd_pct": _pct_change(sales_mtd, sales_prev_month),
         },
         "monthly_sales": monthly_sales,

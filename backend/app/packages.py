@@ -6,6 +6,8 @@ import calendar
 from datetime import datetime
 from typing import Any
 
+from app.honesty import money_json
+
 # Always available so tenants can log in, see home, and get security alerts.
 ALWAYS_ON_MODULES: frozenset[str] = frozenset({"dashboard", "notifications", "security"})
 
@@ -204,11 +206,11 @@ def usage_snapshot(tenant, *, now: datetime | None = None) -> dict[str, Any]:
             months_remaining = 0
 
     if months_assigned is not None:
-        years_assigned = round(months_assigned / 12, 2)
+        years_assigned = money_json(round(months_assigned / 12, 2))
     if months_used is not None:
-        years_used = round(months_used / 12, 2)
+        years_used = money_json(round(months_used / 12, 2))
     if months_remaining is not None:
-        years_remaining = round(months_remaining / 12, 2)
+        years_remaining = money_json(round(months_remaining / 12, 2))
 
     enabled = resolve_enabled_modules(tenant)
     from app import store_entitlements as store_ent_svc

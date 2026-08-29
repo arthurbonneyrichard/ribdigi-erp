@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.catalog import stock_in_with_batch
+from app.honesty import money_json, optional_honest_narrative
 from app.doc_numbers import next_opening_stock_number
 
 
@@ -27,21 +28,28 @@ async def post_opening_stock(
         raise HTTPException(status_code=400, detail="Opening stock requires at least one line")
 
     entry_id = str(uuid.uuid4())
-    ref_label = (reference or "").strip() or None
+    # OpenAPI OpeningStockReferenceValue → 422; service defense-in-depth → 400.
+    ref_label = optional_honest_narrative(
+        reference, label="opening stock reference", max_length=100
+    )
     if ref_label is None:
         ref_label = await next_opening_stock_number(db, tenant_id)
     results: list[dict] = []
     inventory_value = 0.0
+    notes = optional_honest_narrative(notes, label="opening stock notes")
 
     for raw in lines:
         product_id = raw.get("product_id")
         if not product_id:
             raise HTTPException(status_code=400, detail="Each line needs product_id")
-        qty = float(raw.get("quantity") or 0)
+        qty = money_json(raw.get("quantity") or 0)
         if qty <= 0:
             raise HTTPException(status_code=400, detail="quantity must be positive")
 
-        parts = [p for p in (notes, raw.get("notes")) if p]
+        line_note = optional_honest_narrative(
+            raw.get("notes"), label="opening stock line notes"
+        )
+        parts = [p for p in (notes, line_note) if p]
         line_notes = "; ".join(parts) if parts else None
 
         moved = await stock_in_with_batch(
@@ -63,17 +71,17 @@ async def post_opening_stock(
         )
         unit_cost = raw.get("unit_cost")
         if unit_cost is None:
-            unit_cost = float(moved.get("cost_price") or 0)
+            unit_cost = money_json(moved.get("cost_price") or 0)
         else:
-            unit_cost = float(unit_cost)
+            unit_cost = money_json(unit_cost)
             if unit_cost < 0:
                 raise HTTPException(status_code=400, detail="unit_cost cannot be negative")
-        line_value = round(float(moved["quantity_base"]) * unit_cost, 2)
+        line_value = money_json(round(money_json(moved["quantity_base"]) * unit_cost, 2))
         inventory_value += line_value
         results.append(
             {
                 **moved,
-                "unit_cost": unit_cost,
+                "unit_cost": money_json(unit_cost),
                 "line_value": line_value,
             }
         )
@@ -102,7 +110,7 @@ async def post_opening_stock(
             details={
                 "reference": ref_label,
                 "line_count": len(results),
-                "inventory_value": round(inventory_value, 2),
+                "inventory_value": money_json(round(inventory_value, 2)),
                 "journal_id": journal.id if journal else None,
                 "post_journal": post_journal,
             },
@@ -113,7 +121,7 @@ async def post_opening_stock(
         "id": entry_id,
         "reference": ref_label,
         "line_count": len(results),
-        "inventory_value": round(inventory_value, 2),
+        "inventory_value": money_json(round(inventory_value, 2)),
         "journal_id": journal.id if journal else None,
         "journal_number": journal.entry_number if journal else None,
         "lines": results,
@@ -141,9 +149,9 @@ async def list_opening_stock_movements(
             "warehouse_id": r.warehouse_id,
             "variant_id": r.variant_id,
             "batch_id": r.batch_id,
-            "quantity": float(r.quantity),
-            "quantity_before": float(r.quantity_before),
-            "quantity_after": float(r.quantity_after),
+            "quantity": money_json(r.quantity),
+            "quantity_before": money_json(r.quantity_before),
+            "quantity_after": money_json(r.quantity_after),
             "reference_id": r.reference_id,
             "notes": r.notes,
             "created_by": r.created_by,

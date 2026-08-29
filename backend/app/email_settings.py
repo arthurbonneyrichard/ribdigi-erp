@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -9,6 +10,8 @@ from fastapi import HTTPException
 
 from app import models as m
 from app.config import settings
+from app.honesty import optional_honest_narrative
+from app.schemas import validate_smtp_host_value
 
 
 @dataclass(frozen=True)
@@ -127,18 +130,36 @@ def apply_email_settings_update(tenant: m.Tenant, payload: dict[str, Any]) -> di
     """Merge PATCH fields into tenant.email_settings. Password encrypted; never returned."""
     current = _raw_settings(tenant)
     if "host" in payload and payload["host"] is not None:
-        current["host"] = str(payload["host"]).strip()[:200]
+        # OpenAPI SmtpHostValue → 422; service defense-in-depth → 400.
+        try:
+            current["host"] = validate_smtp_host_value(str(payload["host"]).strip())[:200]
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
     if "port" in payload and payload["port"] is not None:
         port = int(payload["port"])
         if port < 1 or port > 65535:
             raise HTTPException(status_code=400, detail="port must be 1–65535")
         current["port"] = port
     if "username" in payload and payload["username"] is not None:
-        current["username"] = str(payload["username"]).strip()[:200]
+        # OpenAPI SmtpUsernameValue → 422 (email-shaped @ allowed; no ://); service → 400.
+        username = str(payload["username"]).strip()[:200]
+        if (
+            not username
+            or "://" in username
+            or not re.search(r"[A-Za-z0-9]", username)
+        ):
+            raise HTTPException(status_code=400, detail="SMTP username is required")
+        current["username"] = username
     if "from_email" in payload and payload["from_email"] is not None:
         current["from_email"] = str(payload["from_email"]).strip()[:200]
     if "from_name" in payload and payload["from_name"] is not None:
-        current["from_name"] = str(payload["from_name"]).strip()[:120]
+        # OpenAPI SmtpFromNameValue → 422; service defense-in-depth → 400.
+        from_name = optional_honest_narrative(
+            payload["from_name"], label="SMTP from name", max_length=120
+        )
+        if not from_name:
+            raise HTTPException(status_code=400, detail="SMTP from name is required")
+        current["from_name"] = from_name
     if "use_tls" in payload and payload["use_tls"] is not None:
         current["use_tls"] = bool(payload["use_tls"])
     if "use_ssl" in payload and payload["use_ssl"] is not None:
@@ -148,7 +169,13 @@ def apply_email_settings_update(tenant: m.Tenant, payload: dict[str, Any]) -> di
     elif payload.get("password") is not None and str(payload.get("password") or "") != "":
         from app.totp import encrypt_secret
 
-        current["password_enc"] = encrypt_secret(str(payload["password"]))
+        # OpenAPI SmtpPasswordValue → 422; service defense-in-depth → 400.
+        password = optional_honest_narrative(
+            payload["password"], label="SMTP password", max_length=128
+        )
+        if not password or " " in password:
+            raise HTTPException(status_code=400, detail="SMTP password is required")
+        current["password_enc"] = encrypt_secret(password)
     # Mutual exclusion: SSL and STARTTLS
     if current.get("use_ssl") and current.get("use_tls", True):
         # Prefer explicit SSL when both set on this update

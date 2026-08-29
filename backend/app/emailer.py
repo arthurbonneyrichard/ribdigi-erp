@@ -15,6 +15,7 @@ from fastapi import HTTPException
 
 from app.config import settings
 from app.email_settings import SmtpConfig, resolve_smtp_config
+from app.honesty import money_json
 
 logger = logging.getLogger(__name__)
 
@@ -415,7 +416,7 @@ async def send_ai_insight_digest_email(
 
 def _fmt_money(value: Any) -> str:
     try:
-        return f"{float(value or 0):.2f}"
+        return f"{money_json(value or 0):.2f}"
     except (TypeError, ValueError):
         return "0.00"
 
@@ -543,7 +544,7 @@ def render_purchase_order_bodies(
         price = _fmt_money(item.get("unit_price"))
         total = _fmt_money(item.get("line_total"))
         tax = _fmt_money(item.get("tax_rate"))
-        disc = float(item.get("discount") or 0)
+        disc = money_json(item.get("discount") or 0)
         disc_s = f" discount {currency} {_fmt_money(disc)}" if disc else ""
         lines.append(
             f"  - {desc}: qty {qty} × {currency} {price} (tax {tax}%{disc_s}) = {currency} {total}"

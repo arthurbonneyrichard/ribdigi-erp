@@ -21,6 +21,8 @@ def test_si_cancel_reason_ui_wired():
     assert "Enter a cancel reason before cancelling a sales invoice" in page
     assert "path.includes('/invoices/') && path.endsWith('/cancel')" in page
     assert "setSiCancelReason" in page
+    assert 'aria-label="Sales invoice cancel reason"' in page
+    assert "aria-label={`Cancel sales invoice ${inv.id}`}" in page
 
 
 async def _admin(ac, seed):
@@ -67,8 +69,14 @@ async def test_si_cancel_requires_reason_and_persists(client, db_session):
         headers=headers,
         json={"reason": "   "},
     )
-    assert blank.status_code == 400
-    assert "reason" in blank.json()["detail"].lower()
+    assert blank.status_code == 422, blank.text
+
+    garbage = await ac.post(
+        f"/api/v1/sales/invoices/{inv_id}/cancel",
+        headers=headers,
+        json={"reason": "!!!!"},
+    )
+    assert garbage.status_code == 422, garbage.text
 
     ok = await ac.post(
         f"/api/v1/sales/invoices/{inv_id}/cancel",

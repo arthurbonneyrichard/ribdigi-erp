@@ -7,6 +7,22 @@ import AttachmentPreview from '../../components/AttachmentPreview';
 import { api } from '../../lib/api';
 
 type Tab = 'requests' | 'orders' | 'grn' | 'invoices' | 'returns';
+
+/** Keep aligned with backend SystemRoleValue / rbac.VALID_ROLES (PR approval matrix). */
+const SYSTEM_ROLES = [
+  'super_admin',
+  'platform_owner',
+  'platform_admin',
+  'platform_support',
+  'platform_finance',
+  'company_admin',
+  'store_manager',
+  'sales_officer',
+  'inventory_officer',
+  'accountant',
+  'cashier',
+] as const;
+
 type Supplier = {
   id: string;
   name: string;
@@ -15,7 +31,7 @@ type Supplier = {
   category?: string | null;
   status?: string | null;
 };
-type Product = { id: string; name: string; sku: string; cost_price: number; tracks_batches?: boolean };
+type Product = { id: string; name: string; sku: string; cost_price: number; tracks_batches?: boolean; is_active?: boolean };
 type PurchaseRequest = {
   id: string;
   request_number: string;
@@ -61,6 +77,7 @@ type PurchaseOrder = {
   total_amount: number;
   notes?: string | null;
   delivery_address?: string | null;
+  due_date?: string | null;
   revision_no?: number;
   can_amend?: boolean;
   can_cancel?: boolean;
@@ -147,11 +164,23 @@ type PurchaseInvoice = {
 export default function Page() {
   const [tab, setTab] = useState<Tab>('orders');
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
+  const [poManageFilter, setPoManageFilter] = useState<
+    'all' | 'draft' | 'sent' | 'partially_received' | 'received' | 'cancelled'
+  >('all');
   const [requests, setRequests] = useState<PurchaseRequest[]>([]);
+  const [prManageFilter, setPrManageFilter] = useState<
+    'all' | 'draft' | 'pending' | 'approved' | 'rejected' | 'converted'
+  >('all');
   const [grns, setGrns] = useState<Grn[]>([]);
   const [invoices, setInvoices] = useState<PurchaseInvoice[]>([]);
+  const [piManageFilter, setPiManageFilter] = useState<
+    'all' | 'draft' | 'unpaid' | 'partial' | 'paid' | 'overdue' | 'cancelled'
+  >('all');
   const [selectedInvoice, setSelectedInvoice] = useState<PurchaseInvoice | null>(null);
   const [returns, setReturns] = useState<PurchaseReturn[]>([]);
+  const [returnManageFilter, setReturnManageFilter] = useState<
+    'all' | 'draft' | 'posted' | 'cancelled'
+  >('all');
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
@@ -189,12 +218,14 @@ export default function Page() {
   const [unitPrice, setUnitPrice] = useState('0');
   const [lineDiscount, setLineDiscount] = useState('0');
   const [poDeliveryAddress, setPoDeliveryAddress] = useState('');
+  const [poNotes, setPoNotes] = useState('');
   const [amendQty, setAmendQty] = useState('');
   const [amendPrice, setAmendPrice] = useState('');
   const [amendDiscount, setAmendDiscount] = useState('0');
   const [amendUnitId, setAmendUnitId] = useState('');
   const [amendNotes, setAmendNotes] = useState('');
   const [amendDeliveryAddress, setAmendDeliveryAddress] = useState('');
+  const [amendDueDate, setAmendDueDate] = useState('');
   const [amendReason, setAmendReason] = useState('');
   const [amendNotify, setAmendNotify] = useState(false);
   const [prSupplierId, setPrSupplierId] = useState('');
@@ -202,11 +233,15 @@ export default function Page() {
   const [prQty, setPrQty] = useState('10');
   const [prDepartment, setPrDepartment] = useState('');
   const [prNotes, setPrNotes] = useState('');
+  const [prItemNotes, setPrItemNotes] = useState('');
+  const [prRequiredDate, setPrRequiredDate] = useState('');
   const [prBusy, setPrBusy] = useState('');
   const [prRejectReason, setPrRejectReason] = useState('');
   const [poCancelReason, setPoCancelReason] = useState('');
   const [piCancelReason, setPiCancelReason] = useState('');
   const [prCancelReason, setPrCancelReason] = useState('');
+  const [poEmailTo, setPoEmailTo] = useState('');
+  const [amendEmailTo, setAmendEmailTo] = useState('');
   const [prLevels, setPrLevels] = useState<{ roles: string[]; label?: string }[]>([
     { roles: ['store_manager'], label: 'Store Manager' },
     { roles: ['company_admin', 'super_admin'], label: 'Company Admin' },
@@ -215,8 +250,12 @@ export default function Page() {
   const [grnItemId, setGrnItemId] = useState('');
   const [returnQty, setReturnQty] = useState('1');
   const [returnReason, setReturnReason] = useState('');
+  const [returnNotes, setReturnNotes] = useState('');
   const [invoiceGrnId, setInvoiceGrnId] = useState('');
   const [supplierInvoiceNo, setSupplierInvoiceNo] = useState('');
+  const [invNotes, setInvNotes] = useState('');
+  const [invAttachmentUrl, setInvAttachmentUrl] = useState('');
+  const [grnNotes, setGrnNotes] = useState('');
   const [manualInvSupplierId, setManualInvSupplierId] = useState('');
   const [manualInvProductId, setManualInvProductId] = useState('');
   const [manualInvQty, setManualInvQty] = useState('1');
@@ -357,13 +396,14 @@ export default function Page() {
       const r = await api('/suppliers', {
         method: 'POST',
         body: JSON.stringify({
-          name: supplierName,
+          name: supplierName.trim(),
           code: supplierCode.trim() || null,
           profile_type: supplierProfileType || 'registered',
           category: supplierCategory.trim() || null,
           status: supplierStatus || 'active',
           email: supplierEmail.trim() || null,
           phone: supplierPhone.trim() || null,
+          // null when blank so Create does not 422 (AddressValue).
           address: supplierAddress.trim() || null,
           latitude: supplierLat === '' ? null : Number(supplierLat),
           longitude: supplierLng === '' ? null : Number(supplierLng),
@@ -418,13 +458,15 @@ export default function Page() {
       const r = await api('/purchasing/orders', {
         method: 'POST',
         body: JSON.stringify({
-          supplier_id: supplierId,
+          supplier_id: supplierId.trim(),
+          // null when blank so Create does not 422 (AddressValue).
           delivery_address: poDeliveryAddress.trim() || null,
+          notes: poNotes.trim() || null,
           items: [
             {
-              product_id: productId,
+              product_id: productId.trim(),
               quantity: Number(qty),
-              unit_id: unitId || null,
+              unit_id: unitId.trim() || null,
               unit_price: Number(unitPrice),
               discount: Math.max(0, Number(lineDiscount) || 0),
               // omit tax_rate → backend resolves product/category/default (BR-12.2)
@@ -434,6 +476,7 @@ export default function Page() {
       });
       setMessage(`Created ${r.data.po_number}`);
       setPoDeliveryAddress('');
+      setPoNotes('');
       setLineDiscount('0');
       await refresh();
       setSelected(r.data);
@@ -446,7 +489,8 @@ export default function Page() {
   async function sendPo(poId: string, resend = false) {
     setError('');
     try {
-      const r = await api(`/purchasing/orders/${poId}/send`, { method: 'POST' });
+      const qs = poEmailTo.trim() ? `?to=${encodeURIComponent(poEmailTo.trim())}` : '';
+      const r = await api(`/purchasing/orders/${poId}/send${qs}`, { method: 'POST' });
       const to = r.data?.delivery?.to || r.data?.emailed_to || 'supplier';
       const mode = r.data?.delivery?.mode ? ` (${r.data.delivery.mode})` : '';
       setMessage(
@@ -517,6 +561,7 @@ export default function Page() {
     setAmendUnitId(line?.unit_id || '');
     setAmendNotes(po.notes || '');
     setAmendDeliveryAddress(po.delivery_address || '');
+    setAmendDueDate(po.due_date ? String(po.due_date).slice(0, 10) : '');
     setAmendReason('');
     setAmendNotify(po.status === 'sent');
   }
@@ -536,14 +581,22 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           reason,
-          notes: amendNotes,
-          delivery_address: amendDeliveryAddress,
+          notes: amendNotes.trim() || null,
+          // Omit blank delivery so Amend does not 422 (AddressValue); leave prior.
+          ...(amendDeliveryAddress.trim()
+            ? { delivery_address: amendDeliveryAddress.trim() }
+            : {}),
+          // Omit blank due date so Amend does not 422 (IsoDateQueryValue); leave prior.
+          ...(amendDueDate.trim() ? { due_date: amendDueDate.trim() } : {}),
           notify_supplier: amendNotify,
+          ...(amendNotify && amendEmailTo.trim()
+            ? { to: amendEmailTo.trim() }
+            : {}),
           items: [
             {
               product_id: line.product_id,
               quantity: Number(amendQty) || line.quantity,
-              unit_id: amendUnitId || line.unit_id || null,
+              unit_id: amendUnitId.trim() || line.unit_id || null,
               unit_price: Number(amendPrice) || line.unit_price,
               discount: Math.max(0, Number(amendDiscount) || 0),
               ...(line.tax_rate != null ? { tax_rate: Number(line.tax_rate) } : {}),
@@ -581,7 +634,8 @@ export default function Page() {
             throw new Error(`Batch number required for ${product.name || i.product_id}`);
           }
           return {
-            po_item_id: i.id,
+            // trim so Post GRN / Receive all (UuidIdValue po_item_id) do not 422
+            po_item_id: String(i.id).trim(),
             received_qty: i.outstanding_qty,
             accepted_qty: i.outstanding_qty,
             rejected_qty: 0,
@@ -596,9 +650,15 @@ export default function Page() {
       }
       const r = await api('/purchasing/grn', {
         method: 'POST',
-        body: JSON.stringify({ purchase_order_id: po.id, items }),
+        body: JSON.stringify({
+          // trim so Post GRN (UuidIdValue purchase_order_id) does not 422 on whitespace
+          purchase_order_id: String(po.id).trim(),
+          notes: grnNotes.trim() || null,
+          items,
+        }),
       });
       setMessage(`Posted ${r.data.grn_number}`);
+      setGrnNotes('');
       await refresh();
       const updated = await api(`/purchasing/orders/${po.id}`);
       setSelected(updated.data);
@@ -642,7 +702,8 @@ export default function Page() {
             throw new Error(`Batch number required for ${product.name || i.product_id}`);
           }
           return {
-            po_item_id: i.id,
+            // trim so Post GRN (UuidIdValue po_item_id) does not 422 on whitespace
+            po_item_id: String(i.id).trim(),
             received_qty,
             accepted_qty,
             rejected_qty,
@@ -659,7 +720,12 @@ export default function Page() {
       }
       const r = await api('/purchasing/grn', {
         method: 'POST',
-        body: JSON.stringify({ purchase_order_id: po.id, items }),
+        body: JSON.stringify({
+          // trim so Post GRN (UuidIdValue purchase_order_id) does not 422 on whitespace
+          purchase_order_id: String(po.id).trim(),
+          notes: grnNotes.trim() || null,
+          items,
+        }),
       });
       const rejectedLines = (r.data.items || []).filter((x: GrnItem) => (x.rejected_qty || 0) > 0);
       setMessage(
@@ -667,6 +733,7 @@ export default function Page() {
           ? `Posted ${r.data.grn_number} (${rejectedLines.length} line(s) with rejected qty)`
           : `Posted ${r.data.grn_number}`
       );
+      setGrnNotes('');
       await refresh();
       const updated = await api(`/purchasing/orders/${po.id}`);
       setSelected(updated.data);
@@ -712,13 +779,16 @@ export default function Page() {
       const r = await api('/purchasing/returns', {
         method: 'POST',
         body: JSON.stringify({
-          goods_receipt_id: grnId,
+          // trim so Draft return (UuidIdValue goods_receipt_id) does not 422 on whitespace
+          goods_receipt_id: grnId.trim(),
           reason: returnReason,
-          items: [{ goods_receipt_item_id: grnItemId, quantity: Number(returnQty) }],
+          notes: returnNotes.trim() || null,
+          items: [{ goods_receipt_item_id: grnItemId.trim(), quantity: Number(returnQty) }],
         }),
       });
       setMessage(`Return ${r.data.return_number} drafted`);
       setReturnReason('');
+      setReturnNotes('');
       setTab('returns');
       await refresh();
     } catch (err: any) {
@@ -733,8 +803,11 @@ export default function Page() {
       const r = await api('/purchasing/invoices', {
         method: 'POST',
         body: JSON.stringify({
-          goods_receipt_id: invoiceGrnId,
-          supplier_invoice_number: supplierInvoiceNo || undefined,
+          // trim so Draft from GRN (UuidIdValue goods_receipt_id) does not 422
+          goods_receipt_id: invoiceGrnId.trim(),
+          supplier_invoice_number: supplierInvoiceNo.trim() || null,
+          notes: invNotes.trim() || null,
+          attachment_url: invAttachmentUrl.trim() || null,
           discount_amount: headerDisc,
           currency: invCurrency.trim() || null,
           exchange_rate: invExchangeRate === '' ? null : Number(invExchangeRate),
@@ -746,6 +819,8 @@ export default function Page() {
       );
       setTab('invoices');
       setSupplierInvoiceNo('');
+      setInvNotes('');
+      setInvAttachmentUrl('');
       setGrnInvHeaderDiscount('0');
       setInvCurrency('');
       setInvExchangeRate('');
@@ -763,15 +838,18 @@ export default function Page() {
       const r = await api('/purchasing/invoices', {
         method: 'POST',
         body: JSON.stringify({
-          supplier_id: manualInvSupplierId,
-          supplier_invoice_number: supplierInvoiceNo || undefined,
+          // trim so Draft manual PI (UuidIdValue supplier_id / product_id) does not 422
+          supplier_id: manualInvSupplierId.trim(),
+          supplier_invoice_number: supplierInvoiceNo.trim() || null,
+          notes: invNotes.trim() || null,
+          attachment_url: invAttachmentUrl.trim() || null,
           is_reverse_charge: manualInvRc,
           discount_amount: headerDisc,
           currency: invCurrency.trim() || null,
           exchange_rate: invExchangeRate === '' ? null : Number(invExchangeRate),
           items: [
             {
-              product_id: manualInvProductId,
+              product_id: manualInvProductId.trim(),
               quantity: Number(manualInvQty),
               unit_price: Number(manualInvPrice),
               discount: lineDisc,
@@ -789,6 +867,8 @@ export default function Page() {
       );
       setTab('invoices');
       setSupplierInvoiceNo('');
+      setInvNotes('');
+      setInvAttachmentUrl('');
       setManualInvLineDiscount('0');
       setManualInvHeaderDiscount('0');
       setManualInvRc(false);
@@ -918,11 +998,13 @@ export default function Page() {
     setMessage('');
     try {
       const body: Record<string, unknown> = {};
-      if (ocrDraft.supplier_invoice_number !== '') {
-        body.supplier_invoice_number = ocrDraft.supplier_invoice_number;
+      if (ocrDraft.supplier_invoice_number.trim() !== '') {
+        body.supplier_invoice_number = ocrDraft.supplier_invoice_number.trim();
       }
-      if (ocrDraft.notes !== '') body.notes = ocrDraft.notes;
-      if (ocrDraft.invoice_date !== '') body.invoice_date = ocrDraft.invoice_date;
+      const ocrNotes = ocrDraft.notes.trim();
+      if (ocrNotes !== '') body.notes = ocrNotes;
+      const invoiceDate = ocrDraft.invoice_date.trim();
+      if (invoiceDate !== '') body.invoice_date = invoiceDate;
       await api(`/purchasing/invoices/${ocrFor}`, { method: 'PATCH', body: JSON.stringify(body) });
       setMessage('OCR suggestions applied to draft invoice');
       setOcrFor(null);
@@ -973,14 +1055,23 @@ export default function Page() {
       const r = await api('/purchasing/requests', {
         method: 'POST',
         body: JSON.stringify({
-          preferred_supplier_id: prSupplierId || null,
+          preferred_supplier_id: prSupplierId.trim() || null,
           department: prDepartment.trim() || null,
           notes: prNotes.trim() || null,
-          items: [{ product_id: prProductId, quantity: Number(prQty) || 1 }],
+          required_date: prRequiredDate.trim() || null,
+          items: [
+            {
+              product_id: prProductId.trim(),
+              quantity: Number(prQty) || 1,
+              notes: prItemNotes.trim() || null,
+            },
+          ],
         }),
       });
       setMessage(`Created ${r.data.request_number}`);
       setPrNotes('');
+      setPrItemNotes('');
+      setPrRequiredDate('');
       await refresh();
       setTab('requests');
     } catch (err: any) {
@@ -997,7 +1088,8 @@ export default function Page() {
         body: JSON.stringify({
           levels: prLevels.map((l) => ({
             roles: l.roles,
-            label: l.label || undefined,
+            // null when blank so Save does not 422 (ApprovalLevelLabelValue).
+            label: (l.label || '').trim() || null,
           })),
         }),
       });
@@ -1142,6 +1234,22 @@ export default function Page() {
 
   const selectedGrn = grns.find((g) => g.id === grnId);
   const productName = (id: string) => products.find((p) => p.id === id)?.name || id.slice(0, 8);
+  const managedReturns = returns.filter((r) => {
+    if (returnManageFilter === 'all') return true;
+    return (r.status || 'draft') === returnManageFilter;
+  });
+  const managedOrders = orders.filter((o) => {
+    if (poManageFilter === 'all') return true;
+    return (o.status || 'draft') === poManageFilter;
+  });
+  const managedRequests = requests.filter((r) => {
+    if (prManageFilter === 'all') return true;
+    return (r.status || 'draft') === prManageFilter;
+  });
+  const managedInvoices = invoices.filter((inv) => {
+    if (piManageFilter === 'all') return true;
+    return (inv.status || 'draft') === piManageFilter;
+  });
 
   return (
     <Shell>
@@ -1160,7 +1268,12 @@ export default function Page() {
             ['returns', 'Returns'],
           ] as const
         ).map(([id, label]) => (
-          <button key={id} onClick={() => setTab(id)} disabled={tab === id}>
+          <button
+            key={id}
+            onClick={() => setTab(id)}
+            disabled={tab === id}
+            aria-label={`Show purchasing ${id} tab`}
+          >
             {label}
           </button>
         ))}
@@ -1181,12 +1294,15 @@ export default function Page() {
                 onChange={(e) => setPoPrefix(e.target.value.toUpperCase())}
                 placeholder="Prefix"
                 style={{ width: 100 }}
+                aria-label="Purchase order number prefix"
+                title="Document prefix (letters, digits, _ or -)"
               />
               <input
                 value={poNext}
                 onChange={(e) => setPoNext(e.target.value)}
                 placeholder="Next #"
                 style={{ width: 90 }}
+                aria-label="Purchase order next number"
               />
               <span className="muted">{poPreview || '—'}</span>
             </div>
@@ -1197,12 +1313,15 @@ export default function Page() {
                 onChange={(e) => setGrnPrefix(e.target.value.toUpperCase())}
                 placeholder="Prefix"
                 style={{ width: 100 }}
+                aria-label="GRN number prefix"
+                title="Document prefix (letters, digits, _ or -)"
               />
               <input
                 value={grnNext}
                 onChange={(e) => setGrnNext(e.target.value)}
                 placeholder="Next #"
                 style={{ width: 90 }}
+                aria-label="GRN next number"
               />
               <span className="muted">{grnPreview || '—'}</span>
             </div>
@@ -1213,12 +1332,15 @@ export default function Page() {
                 onChange={(e) => setPiPrefix(e.target.value.toUpperCase())}
                 placeholder="Prefix"
                 style={{ width: 100 }}
+                aria-label="Purchase invoice number prefix"
+                title="Document prefix (letters, digits, _ or -)"
               />
               <input
                 value={piNext}
                 onChange={(e) => setPiNext(e.target.value)}
                 placeholder="Next #"
                 style={{ width: 90 }}
+                aria-label="Purchase invoice next number"
               />
               <span className="muted">{piPreview || '—'}</span>
             </div>
@@ -1229,12 +1351,15 @@ export default function Page() {
                 onChange={(e) => setPreqPrefix(e.target.value.toUpperCase())}
                 placeholder="Prefix"
                 style={{ width: 100 }}
+                aria-label="Purchase request number prefix"
+                title="Document prefix (letters, digits, _ or -)"
               />
               <input
                 value={preqNext}
                 onChange={(e) => setPreqNext(e.target.value)}
                 placeholder="Next #"
                 style={{ width: 90 }}
+                aria-label="Purchase request next number"
               />
               <span className="muted">{preqPreview || '—'}</span>
             </div>
@@ -1245,12 +1370,15 @@ export default function Page() {
                 onChange={(e) => setPrPrefix(e.target.value.toUpperCase())}
                 placeholder="Prefix"
                 style={{ width: 100 }}
+                aria-label="Purchase return number prefix"
+                title="Document prefix (letters, digits, _ or -)"
               />
               <input
                 value={prNext}
                 onChange={(e) => setPrNext(e.target.value)}
                 placeholder="Next #"
                 style={{ width: 90 }}
+                aria-label="Purchase return next number"
               />
               <span className="muted">{prPreview || '—'}</span>
             </div>
@@ -1261,12 +1389,15 @@ export default function Page() {
                 onChange={(e) => setDnPrefix(e.target.value.toUpperCase())}
                 placeholder="Prefix"
                 style={{ width: 100 }}
+                aria-label="Debit note number prefix"
+                title="Document prefix (letters, digits, _ or -)"
               />
               <input
                 value={dnNext}
                 onChange={(e) => setDnNext(e.target.value)}
                 placeholder="Next #"
                 style={{ width: 90 }}
+                aria-label="Debit note next number"
               />
               <span className="muted">{dnPreview || '—'}</span>
             </div>
@@ -1277,15 +1408,18 @@ export default function Page() {
                 onChange={(e) => setSpyPrefix(e.target.value.toUpperCase())}
                 placeholder="Prefix"
                 style={{ width: 100 }}
+                aria-label="Supplier payment number prefix"
+                title="Document prefix (letters, digits, _ or -)"
               />
               <input
                 value={spyNext}
                 onChange={(e) => setSpyNext(e.target.value)}
                 placeholder="Next #"
                 style={{ width: 90 }}
+                aria-label="Supplier payment next number"
               />
               <span className="muted">{spyPreview || '—'}</span>
-              <button type="button" onClick={savePurchasingNumbering}>
+              <button type="button" onClick={savePurchasingNumbering} aria-label="Save purchasing numbering">
                 Save numbering
               </button>
             </div>
@@ -1306,7 +1440,9 @@ export default function Page() {
                   value={lvl.label || ''}
                   onChange={(e) => updatePrLevel(idx, { label: e.target.value })}
                   placeholder="Label"
+                  title="Optional level label (1–120 chars; letters/digits required)"
                   style={{ width: 160 }}
+                  aria-label={`PR approval level ${idx + 1} label`}
                 />
                 <input
                   value={(lvl.roles || []).join(', ')}
@@ -1318,18 +1454,26 @@ export default function Page() {
                         .filter(Boolean),
                     })
                   }
-                  placeholder="Roles"
+                  placeholder="Roles (comma-separated system roles)"
+                  list="pr-approval-system-roles"
                   style={{ minWidth: 280, flex: 1 }}
+                  aria-label={`PR approval level ${idx + 1} roles`}
                 />
                 <button
                   type="button"
                   onClick={() => setPrLevels((prev) => prev.filter((_, i) => i !== idx))}
                   disabled={prLevels.length <= 1}
+                  aria-label={`Remove PR approval level ${idx + 1}`}
                 >
                   Remove
                 </button>
               </div>
             ))}
+            <datalist id="pr-approval-system-roles">
+              {SYSTEM_ROLES.map((r) => (
+                <option key={r} value={r} />
+              ))}
+            </datalist>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button
                 type="button"
@@ -1337,10 +1481,11 @@ export default function Page() {
                   setPrLevels((prev) => [...prev, { roles: ['company_admin'], label: `Level ${prev.length + 1}` }])
                 }
                 disabled={prLevels.length >= 5}
+                aria-label="Add PR approval level"
               >
                 Add level
               </button>
-              <button type="button" onClick={savePrSettings}>
+              <button type="button" onClick={savePrSettings} aria-label="Save PR approval matrix">
                 Save matrix
               </button>
             </div>
@@ -1349,7 +1494,11 @@ export default function Page() {
           <div className="card" style={{ marginBottom: 16 }}>
             <h3>Create purchase request</h3>
             <div className="erp-form-grid">
-              <select value={prSupplierId} onChange={(e) => setPrSupplierId(e.target.value)}>
+              <select
+                value={prSupplierId}
+                onChange={(e) => setPrSupplierId(e.target.value)}
+                aria-label="Purchase request preferred supplier"
+              >
                 <option value="">Preferred supplier (optional)</option>
                 {suppliers
                   .filter((s) => s.status !== 'inactive')
@@ -1359,7 +1508,11 @@ export default function Page() {
                   </option>
                 ))}
               </select>
-              <select value={prProductId} onChange={(e) => setPrProductId(e.target.value)}>
+              <select
+                value={prProductId}
+                onChange={(e) => setPrProductId(e.target.value)}
+                aria-label="Purchase request product"
+              >
                 <option value="">Select product</option>
                 {products
                   .filter((p) => p.is_active !== false)
@@ -1369,18 +1522,46 @@ export default function Page() {
                   </option>
                 ))}
               </select>
-              <input value={prQty} onChange={(e) => setPrQty(e.target.value)} placeholder="Quantity" />
+              <input
+                value={prQty}
+                onChange={(e) => setPrQty(e.target.value)}
+                placeholder="Quantity"
+                aria-label="Purchase request quantity"
+              />
               <input
                 value={prDepartment}
                 onChange={(e) => setPrDepartment(e.target.value)}
                 placeholder="Requesting department (optional)"
+                aria-label="Purchase request department"
+                title="Requesting department (optional; 1–120 chars; letters/digits required)"
+              />
+              <input
+                aria-label="Purchase request required date"
+                type="text"
+                placeholder="YYYY-MM-DD"
+                title="Required by date (optional YYYY-MM-DD)"
+                value={prRequiredDate}
+                onChange={(e) => setPrRequiredDate(e.target.value)}
               />
               <input
                 value={prNotes}
                 onChange={(e) => setPrNotes(e.target.value)}
                 placeholder="Notes (optional)"
+                aria-label="Purchase request notes"
+                title="Optional notes (1–500 chars; letters/digits required)"
               />
-              <button onClick={createRequest} disabled={!prProductId}>
+              <input
+                value={prItemNotes}
+                onChange={(e) => setPrItemNotes(e.target.value)}
+                placeholder="Line notes (optional)"
+                aria-label="Purchase request line notes"
+                title="Optional per-line notes (1–500 chars; letters/digits required)"
+              />
+              <button
+                onClick={createRequest}
+                disabled={!prProductId}
+                aria-label="Create draft purchase request"
+              >
                 Create draft PR
               </button>
             </div>
@@ -1392,6 +1573,8 @@ export default function Page() {
                 value={prRejectReason}
                 onChange={(e) => setPrRejectReason(e.target.value)}
                 placeholder="Required before Reject"
+                aria-label="Purchase request reject reason"
+                title="Required reason for Reject (1–500 chars; letters/digits required)"
                 style={{ minWidth: 280 }}
               />
             </label>
@@ -1399,6 +1582,30 @@ export default function Page() {
               Used by Reject on pending requests (stored as <code>rejection_reason</code>).
             </p>
           </div>
+          <select
+            value={prManageFilter}
+            onChange={(e) =>
+              setPrManageFilter(
+                e.target.value as
+                  | 'all'
+                  | 'draft'
+                  | 'pending'
+                  | 'approved'
+                  | 'rejected'
+                  | 'converted'
+              )
+            }
+            title="Filter purchase request list by status"
+            aria-label="Purchase request status filter"
+            style={{ marginBottom: 12 }}
+          >
+            <option value="all">All statuses</option>
+            <option value="draft">Draft only</option>
+            <option value="pending">Pending only</option>
+            <option value="approved">Approved only</option>
+            <option value="rejected">Rejected only</option>
+            <option value="converted">Converted only</option>
+          </select>
           <table className="table">
             <thead>
               <tr>
@@ -1412,7 +1619,7 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {requests.map((r) => (
+              {managedRequests.map((r) => (
                 <tr key={r.id}>
                   <td>{r.request_number}</td>
                   <td>{r.status}</td>
@@ -1436,6 +1643,7 @@ export default function Page() {
                         type="button"
                         disabled={prBusy === `submit:${r.id}`}
                         onClick={() => prAction(r.id, 'submit')}
+                        aria-label={`Submit purchase request ${r.id}`}
                       >
                         Submit
                       </button>
@@ -1447,14 +1655,21 @@ export default function Page() {
                           className="btn-ok"
                           disabled={prBusy === `approve:${r.id}`}
                           onClick={() => prAction(r.id, 'approve')}
+                          aria-label={`Approve purchase request ${r.id}`}
                         >
                           Approve L{r.awaiting_level || r.approval_step || 1}
                         </button>
                         <button
                           type="button"
                           className="btn-danger"
-                          disabled={prBusy === `reject:${r.id}`}
+                          disabled={prBusy === `reject:${r.id}` || !prRejectReason.trim()}
                           onClick={() => prAction(r.id, 'reject')}
+                          aria-label={`Reject purchase request ${r.id}`}
+                          title={
+                            prRejectReason.trim()
+                              ? 'Reject purchase request'
+                              : 'Enter a reject reason before rejecting'
+                          }
                         >
                           Reject
                         </button>
@@ -1465,6 +1680,7 @@ export default function Page() {
                         type="button"
                         disabled={prBusy === `convert:${r.id}`}
                         onClick={() => prAction(r.id, 'convert')}
+                        aria-label={`Convert purchase request ${r.id}`}
                       >
                         Convert to PO
                       </button>
@@ -1475,10 +1691,12 @@ export default function Page() {
                   </td>
                 </tr>
               ))}
-              {requests.length === 0 && (
+              {managedRequests.length === 0 && (
                 <tr>
                   <td colSpan={7} className="muted">
-                    No purchase requests yet
+                    {requests.length === 0
+                      ? 'No purchase requests yet'
+                      : 'No purchase requests for this filter'}
                   </td>
                 </tr>
               )}
@@ -1493,16 +1711,25 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Quick add supplier</h3>
         <div className="erp-form-grid">
-          <input value={supplierName} onChange={(e) => setSupplierName(e.target.value)} placeholder="Supplier name" />
+          <input
+            value={supplierName}
+            onChange={(e) => setSupplierName(e.target.value)}
+            placeholder="Supplier name"
+            aria-label="Supplier name"
+            title="Supplier name (1–180 chars; letters/digits required)"
+          />
           <input
             value={supplierCode}
             onChange={(e) => setSupplierCode(e.target.value)}
             placeholder="Code"
+            aria-label="Supplier code"
+            title="Supplier code (optional; 1–64 chars; letters/digits required)"
             style={{ width: 100 }}
           />
           <select
             value={supplierProfileType}
             onChange={(e) => setSupplierProfileType(e.target.value)}
+            aria-label="Supplier profile type"
             title="Supplier type"
           >
             <option value="registered">Registered</option>
@@ -1515,9 +1742,16 @@ export default function Page() {
             value={supplierCategory}
             onChange={(e) => setSupplierCategory(e.target.value)}
             placeholder="Category"
+            aria-label="Supplier category"
+            title="Supplier category (optional; 1–80 chars; letters/digits required)"
             style={{ width: 120 }}
           />
-          <select value={supplierStatus} onChange={(e) => setSupplierStatus(e.target.value)} title="Status">
+          <select
+            value={supplierStatus}
+            onChange={(e) => setSupplierStatus(e.target.value)}
+            aria-label="Supplier status"
+            title="Status"
+          >
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
           </select>
@@ -1525,17 +1759,20 @@ export default function Page() {
             value={supplierEmail}
             onChange={(e) => setSupplierEmail(e.target.value)}
             placeholder="Email"
+            aria-label="Supplier email"
           />
           <input
             value={supplierPhone}
             onChange={(e) => setSupplierPhone(e.target.value)}
-            placeholder="Phone"
-            style={{ width: 120 }}
+            placeholder="Phone (E.164 e.g. +233...)"
+            aria-label="Supplier phone"
+            style={{ width: 160 }}
           />
           <input
             value={supplierAddress}
             onChange={(e) => setSupplierAddress(e.target.value)}
             placeholder="Address"
+            aria-label="Supplier address"
             style={{ minWidth: 160 }}
           />
           <input
@@ -1543,14 +1780,16 @@ export default function Page() {
             onChange={(e) => setSupplierLat(e.target.value)}
             placeholder="Lat"
             style={{ width: 90 }}
-            title="GPS latitude"
+            title="GPS latitude (−90…90)"
+            aria-label="Supplier latitude"
           />
           <input
             value={supplierLng}
             onChange={(e) => setSupplierLng(e.target.value)}
             placeholder="Lng"
             style={{ width: 90 }}
-            title="GPS longitude"
+            title="GPS longitude (−180…180)"
+            aria-label="Supplier longitude"
           />
           <input
             value={supplierTermsDays}
@@ -1558,8 +1797,14 @@ export default function Page() {
             placeholder="Net days"
             style={{ width: 90 }}
             title="Payment terms (days)"
+            aria-label="Supplier payment terms days"
           />
-          <button onClick={createSupplier} disabled={!supplierName.trim()}>
+          <button
+            type="button"
+            onClick={createSupplier}
+            disabled={!supplierName.trim()}
+            aria-label="Add supplier"
+          >
             Add
           </button>
         </div>
@@ -1617,6 +1862,7 @@ export default function Page() {
                   (suppliers.find((s) => s.id === supplierId)?.status || 'active') === 'inactive',
                 )
               }
+              aria-label="Toggle supplier active status"
             >
               {(suppliers.find((s) => s.id === supplierId)?.status || 'active') === 'inactive'
                 ? 'Activate'
@@ -1642,7 +1888,11 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Create purchase order</h3>
         <div className="erp-form-grid">
-          <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
+          <select
+            value={supplierId}
+            onChange={(e) => setSupplierId(e.target.value)}
+            aria-label="PO supplier"
+          >
             <option value="">Select supplier</option>
             {suppliers
               .filter((s) => s.status !== 'inactive')
@@ -1653,7 +1903,11 @@ export default function Page() {
               </option>
             ))}
           </select>
-          <select value={productId} onChange={(e) => setProductId(e.target.value)}>
+          <select
+            value={productId}
+            onChange={(e) => setProductId(e.target.value)}
+            aria-label="PO product"
+          >
             <option value="">Select product</option>
             {products
               .filter((p) => p.is_active !== false)
@@ -1663,7 +1917,11 @@ export default function Page() {
               </option>
             ))}
           </select>
-          <select value={unitId} onChange={(e) => setUnitId(e.target.value)}>
+          <select
+            value={unitId}
+            onChange={(e) => setUnitId(e.target.value)}
+            aria-label="PO unit"
+          >
             <option value="">Unit (product default)</option>
             {units.map((u) => (
               <option key={u.id} value={u.id}>
@@ -1671,8 +1929,18 @@ export default function Page() {
               </option>
             ))}
           </select>
-          <input value={qty} onChange={(e) => setQty(e.target.value)} placeholder="Quantity" />
-          <input value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} placeholder="Unit price" />
+          <input
+            value={qty}
+            onChange={(e) => setQty(e.target.value)}
+            placeholder="Quantity"
+            aria-label="Purchase order quantity"
+          />
+          <input
+            value={unitPrice}
+            onChange={(e) => setUnitPrice(e.target.value)}
+            placeholder="Unit price"
+            aria-label="Purchase order unit price"
+          />
           <input
             value={lineDiscount}
             onChange={(e) => setLineDiscount(e.target.value)}
@@ -1680,13 +1948,26 @@ export default function Page() {
             type="number"
             min={0}
             step="0.01"
+            aria-label="Purchase order line discount"
           />
           <input
             value={poDeliveryAddress}
             onChange={(e) => setPoDeliveryAddress(e.target.value)}
             placeholder="Delivery address (optional)"
+            aria-label="PO delivery address"
           />
-          <button onClick={createPo} disabled={!supplierId || !productId}>
+          <input
+            value={poNotes}
+            onChange={(e) => setPoNotes(e.target.value)}
+            placeholder="PO notes (optional)"
+            aria-label="PO notes"
+            title="Optional notes (1–500 chars; letters/digits required)"
+          />
+          <button
+            onClick={createPo}
+            disabled={!supplierId || !productId}
+            aria-label="Create draft PO"
+          >
             Create draft PO
           </button>
         </div>
@@ -1700,13 +1981,51 @@ export default function Page() {
                 value={poCancelReason}
                 onChange={(e) => setPoCancelReason(e.target.value)}
                 placeholder="Required before Cancel"
+                title="Required cancel reason (1–500 chars; letters/digits required)"
+                aria-label="Purchase order cancel reason"
                 style={{ minWidth: 280 }}
               />
             </label>
             <p className="muted" style={{ marginTop: 6 }}>
               Appended to PO notes and audit (<code>POST .../cancel</code> {'{ reason }'}).
             </p>
+            <label style={{ display: 'block', marginTop: 8 }}>
+              Email override{' '}
+              <input
+                type="email"
+                value={poEmailTo}
+                onChange={(e) => setPoEmailTo(e.target.value)}
+                placeholder="Optional to= (omit → supplier email)"
+                aria-label="Purchase order email override to"
+                style={{ minWidth: 280 }}
+              />
+            </label>
           </div>
+
+          <select
+            value={poManageFilter}
+            onChange={(e) =>
+              setPoManageFilter(
+                e.target.value as
+                  | 'all'
+                  | 'draft'
+                  | 'sent'
+                  | 'partially_received'
+                  | 'received'
+                  | 'cancelled'
+              )
+            }
+            title="Filter purchase order list by status"
+            aria-label="Purchase order status filter"
+            style={{ marginBottom: 12 }}
+          >
+            <option value="all">All statuses</option>
+            <option value="draft">Draft only</option>
+            <option value="sent">Sent only</option>
+            <option value="partially_received">Partially received only</option>
+            <option value="received">Received only</option>
+            <option value="cancelled">Cancelled only</option>
+          </select>
 
           <table className="table">
             <thead>
@@ -1720,12 +2039,13 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {orders.map((o) => (
+              {managedOrders.map((o) => (
                 <tr key={o.id}>
                   <td>
                     <button
                       onClick={() => openAmend(o)}
                       style={{ background: 'none', border: 0, color: '#1d4ed8', cursor: 'pointer' }}
+                      aria-label="GRN purchase order"
                     >
                       {o.po_number}
                     </button>
@@ -1737,28 +2057,52 @@ export default function Page() {
                     {o.notes || '—'}
                   </td>
                   <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {o.status === 'draft' && <button onClick={() => sendPo(o.id)}>Email</button>}
+                    {o.status === 'draft' && (
+                      <button onClick={() => sendPo(o.id)} aria-label="Email purchase order">
+                        Email
+                      </button>
+                    )}
                     {o.status === 'sent' && (
-                      <button onClick={() => sendPo(o.id, true)}>Resend</button>
+                      <button onClick={() => sendPo(o.id, true)} aria-label="Resend purchase order email">
+                        Resend
+                      </button>
                     )}
                     {o.can_amend && (
-                      <button type="button" onClick={() => openAmend(o)}>
+                      <button
+                        type="button"
+                        onClick={() => openAmend(o)}
+                        aria-label={`Amend purchase order ${o.id}`}
+                      >
                         Amend
                       </button>
                     )}
                     {(o.status === 'sent' || o.status === 'partially_received') && (
-                      <button type="button" className="btn-ok" onClick={() => receiveAll(o)}>
+                      <button type="button" className="btn-ok" onClick={() => receiveAll(o)} aria-label={`Receive all for purchase order ${o.id}`}>
                         Receive all
                       </button>
                     )}
                     {o.can_cancel && (
-                      <button type="button" className="btn-danger" onClick={() => cancelPo(o)}>
+                      <button
+                        type="button"
+                        className="btn-danger"
+                        onClick={() => cancelPo(o)}
+                        aria-label={`Cancel purchase order ${o.id}`}
+                      >
                         Cancel
                       </button>
                     )}
                   </td>
                 </tr>
               ))}
+              {managedOrders.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="muted">
+                    {orders.length === 0
+                      ? 'No purchase orders yet'
+                      : 'No purchase orders for this filter'}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
           {selected && (
@@ -1770,7 +2114,12 @@ export default function Page() {
               </h3>
               {selected.can_cancel && (
                 <p style={{ marginTop: 0 }}>
-                  <button type="button" className="btn-danger" onClick={() => cancelPo(selected)}>
+                  <button
+                    type="button"
+                    className="btn-danger"
+                    onClick={() => cancelPo(selected)}
+                    aria-label={`Cancel purchase order ${selected.id}`}
+                  >
                     Cancel PO
                   </button>
                   <span className="muted" style={{ marginLeft: 8 }}>
@@ -1843,6 +2192,7 @@ export default function Page() {
                                 <input
                                   style={{ width: 72 }}
                                   value={draft.received}
+                                  aria-label={`GRN received qty ${i.id}`}
                                   onChange={(e) =>
                                     setReceiveDrafts((prev) => ({
                                       ...prev,
@@ -1859,6 +2209,7 @@ export default function Page() {
                                 <input
                                   style={{ width: 72 }}
                                   value={draft.accepted}
+                                  aria-label={`GRN accepted qty ${i.id}`}
                                   onChange={(e) =>
                                     setReceiveDrafts((prev) => ({
                                       ...prev,
@@ -1875,6 +2226,7 @@ export default function Page() {
                                 <input
                                   style={{ width: 72 }}
                                   value={draft.rejected}
+                                  aria-label={`GRN rejected qty ${i.id}`}
                                   onChange={(e) =>
                                     setReceiveDrafts((prev) => ({
                                       ...prev,
@@ -1892,6 +2244,8 @@ export default function Page() {
                                   style={{ minWidth: 140 }}
                                   value={draft.reason}
                                   placeholder="Damaged / wrong item…"
+                                  title="Required when rejecting qty (1–500 chars; letters/digits required)"
+                                  aria-label={`GRN rejection reason ${i.id}`}
                                   onChange={(e) =>
                                     setReceiveDrafts((prev) => ({
                                       ...prev,
@@ -1909,6 +2263,8 @@ export default function Page() {
                                   style={{ minWidth: 100 }}
                                   value={draft.batch}
                                   placeholder={tracks ? 'Batch required' : 'Batch (opt)'}
+                                  aria-label="GRN batch number"
+                                  title="Batch / lot number (1–80 chars; required when product tracks batches)"
                                   onChange={(e) =>
                                     setReceiveDrafts((prev) => ({
                                       ...prev,
@@ -1923,8 +2279,11 @@ export default function Page() {
                             <td>
                               {receivable ? (
                                 <input
+                                  aria-label="GRN manufacturing date"
                                   style={{ width: 120 }}
-                                  type="date"
+                                  type="text"
+                                  placeholder="YYYY-MM-DD"
+                                  title="Manufacturing date (optional YYYY-MM-DD)"
                                   value={draft.mfg}
                                   onChange={(e) =>
                                     setReceiveDrafts((prev) => ({
@@ -1940,8 +2299,11 @@ export default function Page() {
                             <td>
                               {receivable ? (
                                 <input
+                                  aria-label="GRN expiry date"
                                   style={{ width: 120 }}
-                                  type="date"
+                                  type="text"
+                                  placeholder="YYYY-MM-DD"
+                                  title="Expiry date (optional YYYY-MM-DD)"
                                   value={draft.expiry}
                                   onChange={(e) =>
                                     setReceiveDrafts((prev) => ({
@@ -1963,15 +2325,29 @@ export default function Page() {
               </table>
               {(selected.status === 'sent' || selected.status === 'partially_received') &&
                 selected.items.some((i) => i.outstanding_qty > 0) && (
-                  <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <input
+                      value={grnNotes}
+                      onChange={(e) => setGrnNotes(e.target.value)}
+                      placeholder="GRN notes (optional)"
+                      aria-label="GRN notes"
+                      title="Optional notes (1–500 chars; letters/digits required)"
+                      style={{ minWidth: 220 }}
+                    />
                     <button
                       type="button"
                       className="btn-ok"
                       onClick={() => postPartialReceive(selected)}
+                      aria-label="Post GRN"
                     >
                       Post GRN (accept / reject)
                     </button>
-                    <button type="button" className="btn-ok" onClick={() => receiveAll(selected)}>
+                    <button
+                      type="button"
+                      className="btn-ok"
+                      onClick={() => receiveAll(selected)}
+                      aria-label="Receive all accepted"
+                    >
                       Receive all accepted
                     </button>
                     <span className="muted">
@@ -1983,7 +2359,11 @@ export default function Page() {
               {selected.can_amend && (
                 <div style={{ display: 'grid', gap: 8, marginTop: 12 }}>
                   <h4 style={{ margin: 0 }}>Amend (first line)</h4>
-                  <select value={amendUnitId} onChange={(e) => setAmendUnitId(e.target.value)}>
+                  <select
+                    value={amendUnitId}
+                    onChange={(e) => setAmendUnitId(e.target.value)}
+                    aria-label="PO unit"
+                  >
                     <option value="">Unit (product default)</option>
                     {units.map((u) => (
                       <option key={u.id} value={u.id}>
@@ -1995,11 +2375,13 @@ export default function Page() {
                     value={amendQty}
                     onChange={(e) => setAmendQty(e.target.value)}
                     placeholder="Quantity"
+                    aria-label="PO amend quantity"
                   />
                   <input
                     value={amendPrice}
                     onChange={(e) => setAmendPrice(e.target.value)}
                     placeholder="Unit price"
+                    aria-label="PO amend unit price"
                   />
                   <input
                     value={amendDiscount}
@@ -2008,21 +2390,35 @@ export default function Page() {
                     type="number"
                     min={0}
                     step="0.01"
+                    aria-label="PO amend line discount"
                   />
                   <input
                     value={amendNotes}
                     onChange={(e) => setAmendNotes(e.target.value)}
                     placeholder="Notes"
+                    aria-label="PO amend notes"
+                    title="Optional notes (1–500 chars; letters/digits required); blank clears"
                   />
                   <input
                     value={amendDeliveryAddress}
                     onChange={(e) => setAmendDeliveryAddress(e.target.value)}
                     placeholder="Delivery address"
+                    aria-label="PO amend delivery address"
+                  />
+                  <input
+                    aria-label="PO amend due date"
+                    type="text"
+                    placeholder="YYYY-MM-DD"
+                    title="Due date (optional YYYY-MM-DD; blank leaves prior)"
+                    value={amendDueDate}
+                    onChange={(e) => setAmendDueDate(e.target.value)}
                   />
                   <input
                     value={amendReason}
                     onChange={(e) => setAmendReason(e.target.value)}
                     placeholder="Required amendment reason"
+                    title="Required amendment reason (1–500 chars; letters/digits required)"
+                    aria-label="Purchase order amend reason"
                   />
                   <p className="muted" style={{ margin: 0 }}>
                     Required — stored on amendment history and audit (<code>po_amended.details.reason</code>).
@@ -2030,13 +2426,23 @@ export default function Page() {
                   <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <input
                       type="checkbox"
+                      aria-label="PO amend notify supplier"
                       checked={amendNotify}
                       onChange={(e) => setAmendNotify(e.target.checked)}
                       disabled={selected.status !== 'sent' && !selected.emailed_at}
                     />
                     Email supplier about amendment
                   </label>
-                  <button type="button" onClick={amendPo}>
+                  {amendNotify && (
+                    <input
+                      type="email"
+                      value={amendEmailTo}
+                      onChange={(e) => setAmendEmailTo(e.target.value)}
+                      placeholder="Optional amend to= (omit → supplier email)"
+                      aria-label="PO amend email override to"
+                    />
+                  )}
+                  <button type="button" onClick={amendPo} aria-label="Save purchase order amendment">
                     Save amendment
                   </button>
                 </div>
@@ -2113,7 +2519,11 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Create purchase invoice from GRN</h3>
         <div className="erp-form-grid">
-          <select value={invoiceGrnId} onChange={(e) => setInvoiceGrnId(e.target.value)}>
+          <select
+            value={invoiceGrnId}
+            onChange={(e) => setInvoiceGrnId(e.target.value)}
+            aria-label="Purchase invoice GRN"
+          >
             <option value="">Select GRN</option>
             {grns.map((g) => (
               <option key={g.id} value={g.id}>
@@ -2125,11 +2535,28 @@ export default function Page() {
             value={supplierInvoiceNo}
             onChange={(e) => setSupplierInvoiceNo(e.target.value)}
             placeholder="Supplier invoice #"
+            aria-label="Supplier invoice number"
+            title="Optional supplier invoice # (1–100 chars; letters/digits required)"
+          />
+          <input
+            value={invNotes}
+            onChange={(e) => setInvNotes(e.target.value)}
+            placeholder="Notes (optional)"
+            aria-label="Purchase invoice notes"
+            title="Optional notes (1–500 chars; letters/digits required)"
+          />
+          <input
+            value={invAttachmentUrl}
+            onChange={(e) => setInvAttachmentUrl(e.target.value)}
+            placeholder="Attachment URL (optional https://…)"
+            aria-label="Purchase invoice attachment URL"
+            title="Optional absolute http(s) URL; http only for localhost (blank = none)"
           />
           <input
             value={grnInvHeaderDiscount}
             onChange={(e) => setGrnInvHeaderDiscount(e.target.value)}
             placeholder="Header discount (0 = use PO line discounts)"
+            aria-label="Purchase invoice header discount"
             type="number"
             min={0}
             step="0.01"
@@ -2138,6 +2565,10 @@ export default function Page() {
             value={invCurrency}
             onChange={(e) => setInvCurrency(e.target.value.toUpperCase())}
             placeholder="Currency (blank=base)"
+            aria-label="Purchase invoice currency"
+            pattern="[A-Z]{3}"
+            maxLength={3}
+            title="ISO-4217 currency (blank = company base)"
             style={{ width: 140 }}
           />
           <input
@@ -2148,12 +2579,17 @@ export default function Page() {
             type="number"
             min={0}
             step="0.0001"
+            aria-label="Purchase invoice FX rate"
           />
           <span className="muted span-2">
             From-GRN lines inherit proportional PO discounts; leave header at 0 to mirror them on the
             invoice total. Currency/FX apply when paying foreign supplier invoices (Credit).
           </span>
-          <button onClick={createInvoiceFromGrn} disabled={!invoiceGrnId}>
+          <button
+            onClick={createInvoiceFromGrn}
+            disabled={!invoiceGrnId}
+            aria-label="Draft purchase invoice from GRN"
+          >
             Draft invoice from GRN
           </button>
         </div>
@@ -2161,7 +2597,11 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Create manual purchase invoice</h3>
         <div className="erp-form-grid">
-          <select value={manualInvSupplierId} onChange={(e) => setManualInvSupplierId(e.target.value)}>
+          <select
+            value={manualInvSupplierId}
+            onChange={(e) => setManualInvSupplierId(e.target.value)}
+            aria-label="Purchase invoice supplier"
+          >
             <option value="">Select supplier</option>
             {suppliers
               .filter((s) => s.status !== 'inactive')
@@ -2171,7 +2611,11 @@ export default function Page() {
               </option>
             ))}
           </select>
-          <select value={manualInvProductId} onChange={(e) => setManualInvProductId(e.target.value)}>
+          <select
+            value={manualInvProductId}
+            onChange={(e) => setManualInvProductId(e.target.value)}
+            aria-label="Purchase invoice product"
+          >
             <option value="">Select product</option>
             {products
               .filter((p) => p.is_active !== false)
@@ -2181,17 +2625,29 @@ export default function Page() {
               </option>
             ))}
           </select>
-          <input value={manualInvQty} onChange={(e) => setManualInvQty(e.target.value)} placeholder="Quantity" />
-          <input value={manualInvPrice} onChange={(e) => setManualInvPrice(e.target.value)} placeholder="Unit price" />
+          <input
+            value={manualInvQty}
+            onChange={(e) => setManualInvQty(e.target.value)}
+            placeholder="Quantity"
+            aria-label="Purchase invoice quantity"
+          />
+          <input
+            value={manualInvPrice}
+            onChange={(e) => setManualInvPrice(e.target.value)}
+            placeholder="Unit price"
+            aria-label="Purchase invoice unit price"
+          />
           <input
             value={manualInvTaxRate}
             onChange={(e) => setManualInvTaxRate(e.target.value)}
             placeholder="Tax rate % (blank = auto)"
+            aria-label="Purchase invoice tax rate percent"
           />
           <input
             value={manualInvLineDiscount}
             onChange={(e) => setManualInvLineDiscount(e.target.value)}
             placeholder="Line discount amount"
+            aria-label="Purchase invoice line discount"
             type="number"
             min={0}
             step="0.01"
@@ -2200,6 +2656,7 @@ export default function Page() {
             value={manualInvHeaderDiscount}
             onChange={(e) => setManualInvHeaderDiscount(e.target.value)}
             placeholder="Header discount amount"
+            aria-label="Purchase invoice header discount"
             type="number"
             min={0}
             step="0.01"
@@ -2208,11 +2665,31 @@ export default function Page() {
             value={supplierInvoiceNo}
             onChange={(e) => setSupplierInvoiceNo(e.target.value)}
             placeholder="Supplier invoice #"
+            aria-label="Supplier invoice number"
+            title="Optional supplier invoice # (1–100 chars; letters/digits required)"
+          />
+          <input
+            value={invNotes}
+            onChange={(e) => setInvNotes(e.target.value)}
+            placeholder="Notes (optional)"
+            aria-label="Purchase invoice notes"
+            title="Optional notes (1–500 chars; letters/digits required)"
+          />
+          <input
+            value={invAttachmentUrl}
+            onChange={(e) => setInvAttachmentUrl(e.target.value)}
+            placeholder="Attachment URL (optional https://…)"
+            aria-label="Purchase invoice attachment URL"
+            title="Optional absolute http(s) URL; http only for localhost (blank = none)"
           />
           <input
             value={invCurrency}
             onChange={(e) => setInvCurrency(e.target.value.toUpperCase())}
             placeholder="Currency (blank=base)"
+            aria-label="Purchase invoice currency"
+            pattern="[A-Z]{3}"
+            maxLength={3}
+            title="ISO-4217 currency (blank = company base)"
             style={{ width: 140 }}
           />
           <input
@@ -2223,12 +2700,17 @@ export default function Page() {
             type="number"
             min={0}
             step="0.0001"
+            aria-label="Purchase invoice FX rate"
           />
           <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <input type="checkbox" checked={manualInvRc} onChange={(e) => setManualInvRc(e.target.checked)} />
+            <input type="checkbox" checked={manualInvRc} onChange={(e) => setManualInvRc(e.target.checked)} aria-label="Purchase invoice reverse charge" />
             Reverse charge (self-assess VAT; AP = net)
           </label>
-          <button onClick={createManualInvoice} disabled={!manualInvSupplierId || !manualInvProductId}>
+          <button
+            onClick={createManualInvoice}
+            disabled={!manualInvSupplierId || !manualInvProductId}
+            aria-label="Draft manual purchase invoice"
+          >
             Draft manual invoice
           </button>
         </div>
@@ -2251,8 +2733,11 @@ export default function Page() {
                     setOcrDraft({ ...ocrDraft, supplier_invoice_number: e.target.value })
                   }
                   placeholder="Supplier invoice #"
+                  aria-label="Supplier invoice number"
+                  title="Optional supplier invoice # (1–100 chars; letters/digits required)"
                 />
                 <input
+                  aria-label="Purchase invoice OCR date"
                   value={ocrDraft.invoice_date}
                   onChange={(e) => setOcrDraft({ ...ocrDraft, invoice_date: e.target.value })}
                   placeholder="Invoice date YYYY-MM-DD"
@@ -2261,9 +2746,11 @@ export default function Page() {
                   value={ocrDraft.notes}
                   onChange={(e) => setOcrDraft({ ...ocrDraft, notes: e.target.value })}
                   placeholder="Notes"
+                  aria-label="Purchase invoice OCR notes"
+                  title="Optional notes (1–500 chars; letters/digits required)"
                 />
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button type="button" onClick={applyInvoiceOcr}>
+                  <button type="button" onClick={applyInvoiceOcr} aria-label="Apply purchase invoice OCR">
                     Apply to draft
                   </button>
                   <button
@@ -2273,6 +2760,7 @@ export default function Page() {
                       setOcrDraft(null);
                       setOcrMeta(null);
                     }}
+                    aria-label="Dismiss purchase invoice OCR"
                   >
                     Dismiss
                   </button>
@@ -2287,6 +2775,8 @@ export default function Page() {
               value={piCancelReason}
               onChange={(e) => setPiCancelReason(e.target.value)}
               placeholder="Required before Cancel"
+              title="Required cancel reason (1–500 chars; letters/digits required)"
+              aria-label="Purchase invoice cancel reason"
               style={{ minWidth: 280 }}
             />
           </label>
@@ -2295,6 +2785,32 @@ export default function Page() {
             {'{ reason }'}).
           </p>
         </div>
+        <select
+          value={piManageFilter}
+          onChange={(e) =>
+            setPiManageFilter(
+              e.target.value as
+                | 'all'
+                | 'draft'
+                | 'unpaid'
+                | 'partial'
+                | 'paid'
+                | 'overdue'
+                | 'cancelled'
+            )
+          }
+          title="Filter purchase invoice list by status"
+          aria-label="Purchase invoice status filter"
+          style={{ marginBottom: 12 }}
+        >
+          <option value="all">All statuses</option>
+          <option value="draft">Draft only</option>
+          <option value="unpaid">Unpaid only</option>
+          <option value="partial">Partial only</option>
+          <option value="paid">Paid only</option>
+          <option value="overdue">Overdue only</option>
+          <option value="cancelled">Cancelled only</option>
+        </select>
         <table className="table">
           <thead>
             <tr>
@@ -2312,7 +2828,7 @@ export default function Page() {
             </tr>
           </thead>
           <tbody>
-            {invoices.map((inv) => (
+            {managedInvoices.map((inv) => (
               <tr key={inv.id}>
                 <td>
                   <button
@@ -2326,6 +2842,7 @@ export default function Page() {
                       }
                     }}
                     style={{ background: 'none', border: 0, color: '#1d4ed8', cursor: 'pointer' }}
+                    aria-label={`View purchase invoice ${inv.id}`}
                   >
                     {inv.invoice_number}
                   </button>
@@ -2351,10 +2868,15 @@ export default function Page() {
                 </td>
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
                   {inv.status === 'draft' && (
-                    <button className="btn-ok" onClick={() => approveInvoice(inv.id)}>Approve</button>
+                    <button className="btn-ok" onClick={() => approveInvoice(inv.id)} aria-label={`Approve purchase invoice ${inv.id}`}>Approve</button>
                   )}
                   {inv.can_cancel && (
-                    <button type="button" className="btn-danger" onClick={() => cancelInvoice(inv)}>
+                    <button
+                      type="button"
+                      className="btn-danger"
+                      onClick={() => cancelInvoice(inv)}
+                      aria-label={`Cancel purchase invoice ${inv.id}`}
+                    >
                       Cancel
                     </button>
                   )}
@@ -2366,6 +2888,7 @@ export default function Page() {
                       type="file"
                       accept="application/pdf,image/png,image/jpeg,image/webp,image/gif"
                       style={{ display: 'none' }}
+                      aria-label={`Upload purchase invoice attachment ${inv.id}`}
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) uploadInvoiceAttachment(inv.id, file);
@@ -2377,6 +2900,7 @@ export default function Page() {
                     <>
                       <button
                         type="button"
+                        aria-label={`Preview purchase invoice attachment ${inv.id}`}
                         onClick={() =>
                           setAttachPreview({
                             apiPath: `/purchasing/invoices/${inv.id}/attachment`,
@@ -2386,15 +2910,29 @@ export default function Page() {
                       >
                         Preview
                       </button>
-                      <button onClick={() => downloadInvoiceAttachment(inv.id)}>Download</button>
+                      <button
+                        onClick={() => downloadInvoiceAttachment(inv.id)}
+                        aria-label="Download purchase invoice attachment"
+                      >
+                        Download
+                      </button>
                       {inv.status === 'draft' && (
-                        <button onClick={() => suggestInvoiceOcr(inv.id)}>OCR</button>
+                        <button onClick={() => suggestInvoiceOcr(inv.id)} aria-label={`Suggest purchase invoice OCR ${inv.id}`}>OCR</button>
                       )}
                     </>
                   )}
                 </td>
               </tr>
             ))}
+            {managedInvoices.length === 0 && (
+              <tr>
+                <td colSpan={11} className="muted">
+                  {invoices.length === 0
+                    ? 'No purchase invoices yet'
+                    : 'No purchase invoices for this filter'}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
         {selectedInvoice && (
@@ -2407,7 +2945,12 @@ export default function Page() {
             </h3>
             {selectedInvoice.can_cancel && (
               <p style={{ marginTop: 0 }}>
-                <button type="button" className="btn-danger" onClick={() => cancelInvoice(selectedInvoice)}>
+                <button
+                  type="button"
+                  className="btn-danger"
+                  onClick={() => cancelInvoice(selectedInvoice)}
+                  aria-label={`Cancel purchase invoice ${selectedInvoice.id}`}
+                >
                   Cancel invoice
                 </button>
                 <span className="muted" style={{ marginLeft: 8 }}>
@@ -2510,7 +3053,11 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Create purchase return</h3>
         <div className="erp-form-grid">
-          <select value={grnId} onChange={(e) => setGrnId(e.target.value)}>
+          <select
+            value={grnId}
+            onChange={(e) => setGrnId(e.target.value)}
+            aria-label="Return from GRN"
+          >
             <option value="">Select GRN</option>
             {grns.map((g) => (
               <option key={g.id} value={g.id}>
@@ -2518,7 +3065,12 @@ export default function Page() {
               </option>
             ))}
           </select>
-          <select value={grnItemId} onChange={(e) => setGrnItemId(e.target.value)} disabled={!selectedGrn}>
+          <select
+            value={grnItemId}
+            onChange={(e) => setGrnItemId(e.target.value)}
+            disabled={!selectedGrn}
+            aria-label="Purchase return GRN line"
+          >
             <option value="">Select GRN line</option>
             {(selectedGrn?.items || []).map((i) => (
               <option key={i.id} value={i.id}>
@@ -2526,7 +3078,11 @@ export default function Page() {
               </option>
             ))}
           </select>
-          <select value={returnReason} onChange={(e) => setReturnReason(e.target.value)}>
+          <select
+            value={returnReason}
+            onChange={(e) => setReturnReason(e.target.value)}
+            aria-label="Purchase return reason"
+          >
             <option value="">Select reason</option>
             <option value="damaged">Damaged</option>
             <option value="wrong_item">Wrong item</option>
@@ -2534,8 +3090,24 @@ export default function Page() {
             <option value="quality">Quality</option>
             <option value="other">Other</option>
           </select>
-          <input value={returnQty} onChange={(e) => setReturnQty(e.target.value)} placeholder="Return qty" />
-          <button onClick={createReturn} disabled={!grnId || !grnItemId || !returnReason}>
+          <input
+            value={returnQty}
+            onChange={(e) => setReturnQty(e.target.value)}
+            placeholder="Return qty"
+            aria-label="Purchase return quantity"
+          />
+          <input
+            value={returnNotes}
+            onChange={(e) => setReturnNotes(e.target.value)}
+            placeholder="Notes (optional)"
+            aria-label="Purchase return notes"
+            title="Optional notes (1–500 chars; letters/digits required)"
+          />
+          <button
+            onClick={createReturn}
+            disabled={!grnId || !grnItemId || !returnReason}
+            aria-label="Create purchase return"
+          >
             Draft return
           </button>
         </div>
@@ -2547,6 +3119,8 @@ export default function Page() {
             value={prCancelReason}
             onChange={(e) => setPrCancelReason(e.target.value)}
             placeholder="Required before Cancel"
+            title="Required cancel reason (1–500 chars; letters/digits required)"
+            aria-label="Purchase return cancel reason"
             style={{ minWidth: 280 }}
           />
         </label>
@@ -2555,6 +3129,22 @@ export default function Page() {
           {'{ reason }'}). Draft only; no stock/AP.
         </p>
       </div>
+        <select
+          value={returnManageFilter}
+          onChange={(e) =>
+            setReturnManageFilter(
+              e.target.value as 'all' | 'draft' | 'posted' | 'cancelled'
+            )
+          }
+          title="Filter purchase return list by status"
+          aria-label="Purchase return status filter"
+          style={{ marginBottom: 12 }}
+        >
+          <option value="all">All statuses</option>
+          <option value="draft">Draft only</option>
+          <option value="posted">Posted only</option>
+          <option value="cancelled">Cancelled only</option>
+        </select>
         <table className="table">
           <thead>
             <tr>
@@ -2569,7 +3159,7 @@ export default function Page() {
             </tr>
           </thead>
           <tbody>
-            {returns.map((r) => (
+            {managedReturns.map((r) => (
               <tr key={r.id}>
                 <td>{r.return_number}</td>
                 <td>{r.debit_note_number || '—'}</td>
@@ -2583,15 +3173,30 @@ export default function Page() {
                 <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   {r.status === 'draft' && (
                     <>
-                      <button type="button" className="btn-ok" onClick={() => postReturn(r.id)}>
+                      <button type="button" className="btn-ok" onClick={() => postReturn(r.id)} aria-label={`Post purchase return ${r.id}`}>
                         Post
                       </button>
-                      <button className="btn-danger" onClick={() => cancelReturn(r)}>Cancel</button>
+                      <button
+                        className="btn-danger"
+                        onClick={() => cancelReturn(r)}
+                        aria-label={`Cancel purchase return ${r.id}`}
+                      >
+                        Cancel
+                      </button>
                     </>
                   )}
                 </td>
               </tr>
             ))}
+            {managedReturns.length === 0 && (
+              <tr>
+                <td colSpan={8} className="muted">
+                  {returns.length === 0
+                    ? 'No returns yet'
+                    : 'No purchase returns for this filter'}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
         </>

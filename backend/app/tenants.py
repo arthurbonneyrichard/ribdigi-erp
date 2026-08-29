@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app import packages as packages_svc
 from app.config import settings
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
 VALID_STATUSES = frozenset({"trial", "active", "grace", "suspended"})
 VALID_INDUSTRIES = frozenset(
@@ -113,6 +114,23 @@ def normalize_industry(industry: str | None, *, required: bool = True) -> str | 
     return ind
 
 
+def require_tenant_slug(value: str | None) -> str:
+    """OpenAPI TenantSlugValue → 422; service defense-in-depth → 400."""
+    from app.schemas import validate_tenant_slug_value
+
+    try:
+        return validate_tenant_slug_value((value or "").strip().lower())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+def require_company_name(value: str | None) -> str:
+    """OpenAPI CompanyNameValue → 422; service defense-in-depth → 400."""
+    return require_honest_narrative(
+        value, label="company name", min_length=2, max_length=200
+    )
+
+
 def _validate_separators(decimal_sep: str, thousand_sep: str) -> None:
     if thousand_sep and thousand_sep == decimal_sep:
         raise HTTPException(
@@ -180,10 +198,14 @@ def serialize_tenant(tenant: m.Tenant) -> dict:
         "inactivity_timeout_minutes": int(
             getattr(tenant, "inactivity_timeout_minutes", None) or 30
         ),
-        "expense_approval_threshold": float(tenant.expense_approval_threshold or 0),
-        "expense_l2_threshold": float(getattr(tenant, "expense_l2_threshold", None) or 1000),
+        "expense_approval_threshold": money_json(tenant.expense_approval_threshold),
+        "expense_l2_threshold": money_json(
+            getattr(tenant, "expense_l2_threshold", None), default=1000.0
+        ),
         "expense_approval_matrix": getattr(tenant, "expense_approval_matrix", None),
-        "early_pay_discount_pct": float(getattr(tenant, "early_pay_discount_pct", None) or 0),
+        "early_pay_discount_pct": money_json(
+            getattr(tenant, "early_pay_discount_pct", None)
+        ),
         "early_pay_discount_days": int(getattr(tenant, "early_pay_discount_days", None) or 0),
         "fefo_strict_warehouse": bool(getattr(tenant, "fefo_strict_warehouse", False)),
         "trial_ends_at": tenant.trial_ends_at,
@@ -420,9 +442,10 @@ async def suspend_tenant(
 ) -> m.Tenant:
     if tenant.status == "suspended":
         raise HTTPException(status_code=400, detail="Tenant is already suspended")
+    reason_s = require_honest_narrative(reason, label="suspend reason")
     tenant.status = "suspended"
     tenant.suspended_at = datetime.utcnow()
-    tenant.suspended_reason = (reason or "").strip() or None
+    tenant.suspended_reason = reason_s
     tenant.grace_ends_at = None
     await revoke_all_sessions(db, tenant.id)
     await db.flush()
@@ -591,64 +614,103 @@ async def update_profile(
     inactivity_timeout_minutes: int | None = None,
 ) -> m.Tenant:
     if company_name is not None:
-        name = company_name.strip()
-        if len(name) < 2:
-            raise HTTPException(status_code=400, detail="company_name is required")
-        tenant.company_name = name
+        # OpenAPI CompanyNameValue → 422; service defense-in-depth → 400.
+        tenant.company_name = require_honest_narrative(
+            company_name, label="company name", min_length=2, max_length=200
+        )
     if industry is not None:
         tenant.industry = normalize_industry(industry)
     if currency is not None:
-        cur = currency.strip().upper()
-        if len(cur) < 3 or len(cur) > 10:
-            raise HTTPException(status_code=400, detail="Invalid currency")
-        tenant.currency = cur
+        # Defense in depth: TenantProfileUpdate CurrencyCodeValue → 422 on blank/non-ISO.
+        from app.fx import normalize_currency
+
+        tenant.currency = normalize_currency(currency)
     if phone is not None:
-        tenant.phone = phone.strip() or None
+        # Defense in depth: TenantProfileUpdate E164PhoneValue → 422 on blank/invalid.
+        from app.schemas import validate_e164_phone_value
+
+        try:
+            tenant.phone = validate_e164_phone_value(str(phone).strip())
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
     if email is not None:
         tenant.email = email.strip() or None
     if website is not None:
-        tenant.website = website.strip() or None
+        # Defense in depth: TenantProfileUpdate WebhookUrlValue → 422 on blank/invalid.
+        from app.schemas import validate_webhook_url_value
+
+        try:
+            tenant.website = validate_webhook_url_value(str(website).strip())
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
     if address is not None:
-        tenant.address = address.strip() or None
+        # OpenAPI AddressValue → 422; service defense-in-depth → 400.
+        tenant.address = optional_honest_narrative(
+            address, label="company address", max_length=500
+        )
     if legal_name is not None:
-        ln = legal_name.strip()
-        if ln and len(ln) < 2:
-            raise HTTPException(status_code=400, detail="legal_name must be at least 2 characters")
-        if len(ln) > 200:
-            raise HTTPException(status_code=400, detail="legal_name must be at most 200 characters")
-        tenant.legal_name = ln or None
+        # OpenAPI LegalNameValue → 422; service defense-in-depth → 400.
+        tenant.legal_name = optional_honest_narrative(
+            legal_name, label="legal name", min_length=2, max_length=200
+        )
     if registration_number is not None:
-        reg = registration_number.strip()
-        if len(reg) > 80:
-            raise HTTPException(status_code=400, detail="registration_number must be at most 80 characters")
-        tenant.registration_number = reg or None
+        # OpenAPI RegistrationNumberValue → 422; service defense-in-depth → 400.
+        tenant.registration_number = optional_honest_narrative(
+            registration_number, label="registration number", max_length=80
+        )
     if contact_person is not None:
-        cp = contact_person.strip()
-        if len(cp) > 150:
-            raise HTTPException(status_code=400, detail="contact_person must be at most 150 characters")
-        tenant.contact_person = cp or None
+        # OpenAPI ContactPersonValue → 422; service defense-in-depth → 400.
+        tenant.contact_person = optional_honest_narrative(
+            contact_person, label="contact person", max_length=150
+        )
     if billing_address is not None:
-        tenant.billing_address = billing_address.strip() or None
+        # OpenAPI AddressValue → 422; service defense-in-depth → 400.
+        tenant.billing_address = optional_honest_narrative(
+            billing_address, label="billing address", max_length=500
+        )
     if shipping_address is not None:
-        tenant.shipping_address = shipping_address.strip() or None
+        # OpenAPI AddressValue → 422; service defense-in-depth → 400.
+        tenant.shipping_address = optional_honest_narrative(
+            shipping_address, label="shipping address", max_length=500
+        )
     if timezone is not None:
+        # Defense in depth: TenantProfileUpdate TimezoneValue → 422 on blank/non-IANA.
+        from zoneinfo import ZoneInfo
+
         tz = timezone.strip()
         if not tz:
             raise HTTPException(status_code=400, detail="timezone is required")
+        try:
+            ZoneInfo(tz)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=400,
+                detail="timezone must be a valid IANA timezone",
+            ) from exc
         tenant.timezone = tz
     if fiscal_year_start is not None:
+        # Defense in depth: TenantProfileUpdate FiscalYearStartValue → 422 on blank/bad MM-DD.
+        from app.accounting import parse_fiscal_mmdd
+
         fys = fiscal_year_start.strip()
-        if len(fys) != 5 or fys[2] != "-":
-            raise HTTPException(status_code=400, detail="fiscal_year_start must be MM-DD")
+        parse_fiscal_mmdd(fys)
         tenant.fiscal_year_start = fys
     if tax_jurisdiction is not None:
+        # Defense in depth: TenantProfileUpdate TaxFilingJurisdictionValue → 422 on blank/unknown.
+        from app.tax_filings import SUPPORTED
+
         juris = tax_jurisdiction.strip().upper()
-        if len(juris) < 2 or len(juris) > 10:
-            raise HTTPException(status_code=400, detail="Invalid tax_jurisdiction")
+        if juris not in SUPPORTED:
+            raise HTTPException(
+                status_code=400,
+                detail=f"tax_jurisdiction must be one of: {sorted(SUPPORTED)}",
+            )
         tenant.tax_jurisdiction = juris
     if tax_registration_number is not None:
-        tin = tax_registration_number.strip()
-        tenant.tax_registration_number = tin or None
+        # OpenAPI TaxRegistrationNumberValue → 422; service defense-in-depth → 400.
+        tenant.tax_registration_number = optional_honest_narrative(
+            tax_registration_number, label="tax registration number", max_length=40
+        )
     if tax_filing_period is not None:
         # Defense in depth: TenantProfileUpdate Literal rejects blank/unknown with 422.
         period = tax_filing_period.strip().lower()
@@ -706,9 +768,17 @@ async def update_profile(
 
 async def list_tenants(db: AsyncSession, *, status: str | None = None, limit: int = 100) -> list[m.Tenant]:
     q = select(m.Tenant).order_by(m.Tenant.created_at.desc()).limit(min(max(limit, 1), 500))
+    # Schema TenantStatusFilterValue rejects blank/invalid → 422; keep allow-list
+    # defense-in-depth (no silent empty equality filter / blank→all).
+    if status is not None:
+        key = (status or "").strip().lower()
+        if not key:
+            status = None
+        elif key not in VALID_STATUSES:
+            raise HTTPException(status_code=422, detail="Invalid status filter")
+        else:
+            status = key
     if status:
-        if status not in VALID_STATUSES:
-            raise HTTPException(status_code=400, detail="Invalid status filter")
         q = q.where(m.Tenant.status == status)
     return list((await db.execute(q)).scalars().all())
 

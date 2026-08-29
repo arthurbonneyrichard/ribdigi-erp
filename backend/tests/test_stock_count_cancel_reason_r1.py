@@ -19,6 +19,8 @@ def test_stock_count_cancel_reason_ui_wired():
     inv = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
     assert "countCancelReason" in inv
     assert "Required before Cancel" in inv
+    assert 'aria-label="Stock count cancel reason"' in inv
+    assert "aria-label={`Cancel stock count ${c.id}`}" in inv
     assert "Enter a cancel reason before cancelling a stock count" in inv
     assert "JSON.stringify({ reason })" in inv
     assert "setCountCancelReason" in inv
@@ -90,8 +92,7 @@ async def test_stock_count_cancel_requires_reason_and_persists(client, db_sessio
         headers=headers,
         json={"reason": "   "},
     )
-    assert blank.status_code == 400
-    assert "reason" in blank.json()["detail"].lower()
+    assert blank.status_code == 422
 
     ok = await ac.post(
         f"/api/v1/inventory/stock-counts/{cid}/cancel",

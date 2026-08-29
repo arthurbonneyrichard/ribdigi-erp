@@ -12,10 +12,17 @@ export default function Page() {
   const [partyId, setPartyId] = useState('');
   const [statement, setStatement] = useState<any>(null);
   const [history, setHistory] = useState<any>(null);
+  const [histFromDate, setHistFromDate] = useState('');
+  const [histToDate, setHistToDate] = useState('');
   const [creditInfo, setCreditInfo] = useState<any>(null);
   const [schedule, setSchedule] = useState<any>(null);
   const [payAmount, setPayAmount] = useState('');
   const [payMethod, setPayMethod] = useState('cash');
+  const [payReference, setPayReference] = useState('');
+  const [payNotes, setPayNotes] = useState('');
+  const [payChequeNumber, setPayChequeNumber] = useState('');
+  const [payChequeBankName, setPayChequeBankName] = useState('');
+  const [payChequeDate, setPayChequeDate] = useState('');
   const [liquidAccountId, setLiquidAccountId] = useState('');
   const [liquidAccounts, setLiquidAccounts] = useState<any[]>([]);
   const [creditLimit, setCreditLimit] = useState('');
@@ -95,10 +102,14 @@ export default function Page() {
     if (!partyId) return;
     setError('');
     try {
+      const params = new URLSearchParams();
+      if (histFromDate) params.set('from_date', histFromDate);
+      if (histToDate) params.set('to_date', histToDate);
+      const qs = params.toString() ? `?${params.toString()}` : '';
       const path =
         kind === 'receivable'
-          ? `/customers/${partyId}/history`
-          : `/suppliers/${partyId}/history`;
+          ? `/customers/${partyId}/history${qs}`
+          : `/suppliers/${partyId}/history${qs}`;
       const r = await api(path);
       setHistory(r.data);
       const s = r.data?.summary;
@@ -154,28 +165,46 @@ export default function Page() {
     if (!partyId || !payAmount) return;
     setError('');
     try {
+      const chequeFields =
+        payMethod === 'cheque'
+          ? {
+              // Blank → null so Pay does not 422 (ChequeNumberValue / BankNameValue / IsoDateQueryValue).
+              cheque_number: payChequeNumber.trim() || null,
+              bank_name: payChequeBankName.trim() || null,
+              cheque_date: payChequeDate.trim() || null,
+            }
+          : {};
       if (kind === 'receivable') {
-        await api(`/customers/${partyId}/payments`, {
+        await api(`/customers/${partyId.trim()}/payments`, {
           method: 'POST',
           body: JSON.stringify({
-            customer_id: partyId,
+            // trim so Record payment (UuidIdValue customer_id) does not 422 on whitespace
+            customer_id: partyId.trim(),
             amount: Number(payAmount),
             payment_method: payMethod,
+            reference: payReference.trim() || null,
+            notes: payNotes.trim() || null,
             apply_early_discount: applyEarly,
-            liquid_account_id: liquidAccountId || null,
+            liquid_account_id: liquidAccountId.trim() || null,
             exchange_rate: payFxRate === '' ? null : Number(payFxRate),
+            ...chequeFields,
           }),
         });
       } else {
-        await api(`/suppliers/${partyId}/payments`, {
+        await api(`/suppliers/${partyId.trim()}/payments`, {
           method: 'POST',
           body: JSON.stringify({
-            supplier_id: partyId,
+            // trim so Record payment (UuidIdValue supplier_id) does not 422 on whitespace
+            supplier_id: partyId.trim(),
             amount: Number(payAmount),
             payment_method: payMethod === 'cash' ? 'bank_transfer' : payMethod,
+            reference: payReference.trim() || null,
+            notes: payNotes.trim() || null,
             apply_early_discount: applyEarly,
-            liquid_account_id: liquidAccountId || null,
+            // null when blank so Pay (UuidIdValue liquid_account_id) does not 422
+            liquid_account_id: liquidAccountId.trim() || null,
             exchange_rate: payFxRate === '' ? null : Number(payFxRate),
+            ...chequeFields,
           }),
         });
       }
@@ -185,6 +214,11 @@ export default function Page() {
           : 'Payment recorded (oldest open docs first)',
       );
       setPayAmount('');
+      setPayReference('');
+      setPayNotes('');
+      setPayChequeNumber('');
+      setPayChequeBankName('');
+      setPayChequeDate('');
       await refresh();
       await loadStatement();
     } catch (err: any) {
@@ -319,10 +353,18 @@ export default function Page() {
       {message && <p style={{ color: '#047857' }}>{message}</p>}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        <button onClick={() => setKind('receivable')} disabled={kind === 'receivable'}>
+        <button
+          onClick={() => setKind('receivable')}
+          disabled={kind === 'receivable'}
+          aria-label="Show receivables aging"
+        >
           Receivables
         </button>
-        <button onClick={() => setKind('payable')} disabled={kind === 'payable'}>
+        <button
+          onClick={() => setKind('payable')}
+          disabled={kind === 'payable'}
+          aria-label="Show payables aging"
+        >
           Payables
         </button>
       </div>
@@ -345,15 +387,19 @@ export default function Page() {
               value={epPct}
               onChange={(e) => setEpPct(e.target.value)}
               placeholder="% discount"
+              aria-label="Early pay discount percent"
               style={{ width: 90 }}
             />
             <input
               value={epDays}
               onChange={(e) => setEpDays(e.target.value)}
               placeholder="Days"
+              aria-label="Early pay discount days"
               style={{ width: 80 }}
             />
-            <button onClick={saveEarlyPay}>Save terms</button>
+            <button onClick={saveEarlyPay} aria-label="Save early pay terms">
+              Save terms
+            </button>
           </div>
           <p className="muted" style={{ marginTop: 8 }}>
             Status: {epEnabled ? 'enabled' : 'disabled'}
@@ -369,21 +415,26 @@ export default function Page() {
               value={fxCode}
               onChange={(e) => setFxCode(e.target.value.toUpperCase())}
               placeholder="USD"
+              maxLength={3}
               style={{ width: 70 }}
+              aria-label="FX currency code"
             />
             <input
               value={fxRate}
               onChange={(e) => setFxRate(e.target.value)}
               placeholder="Rate to base"
               style={{ width: 100 }}
+              aria-label="FX rate to base"
             />
-            <button onClick={saveFxRate}>Save rate</button>
-            <button type="button" onClick={refreshFxFromFeed}>
+            <button onClick={saveFxRate} aria-label="Save FX rate">
+              Save rate
+            </button>
+            <button type="button" onClick={refreshFxFromFeed} aria-label="Refresh FX rates from feed">
               Refresh from feed
             </button>
           </div>
           <label className="muted" style={{ display: 'block', marginTop: 8 }}>
-            <input type="checkbox" checked={fxAutoRefresh} onChange={toggleFxAutoRefresh} />{' '}
+            <input type="checkbox" checked={fxAutoRefresh} onChange={toggleFxAutoRefresh} aria-label="FX auto-refresh" />{' '}
             Auto-refresh via scheduled job
           </label>
           <ul style={{ marginTop: 8, paddingLeft: 18 }}>
@@ -394,7 +445,7 @@ export default function Page() {
                 {r.provider_fetched_at
                   ? ` · ${String(r.provider_fetched_at).replace('T', ' ').slice(0, 16)}`
                   : ''}{' '}
-                <button type="button" onClick={() => removeFxRate(r.currency_code)}>
+                <button type="button" onClick={() => removeFxRate(r.currency_code)} aria-label={`Remove exchange rate ${r.currency_code}`}>
                   Remove
                 </button>
               </li>
@@ -404,7 +455,11 @@ export default function Page() {
         </div>
         <div className="card">
           <h3>Party actions</h3>
-          <select value={partyId} onChange={(e) => setPartyId(e.target.value)}>
+          <select
+            value={partyId}
+            onChange={(e) => setPartyId(e.target.value)}
+            aria-label="Credit payment party"
+          >
             {parties.map((p: any) => (
               <option key={p.id} value={p.id}>
                 {p.name} (bal {p.balance ?? 0}
@@ -413,15 +468,29 @@ export default function Page() {
             ))}
           </select>
           <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-            <button onClick={loadStatement}>Statement</button>
-            <button type="button" onClick={loadCreditInfo}>
+            <button aria-label="Load party statement" onClick={loadStatement}>Statement</button>
+            <button type="button" aria-label="Load credit balance" onClick={loadCreditInfo}>
               Balance
             </button>
-            <button type="button" onClick={loadHistory}>
+            <input
+              type="date"
+              value={histFromDate}
+              onChange={(e) => setHistFromDate(e.target.value)}
+              title="History from date (YYYY-MM-DD)"
+              aria-label="Credit history from date"
+            />
+            <input
+              type="date"
+              value={histToDate}
+              onChange={(e) => setHistToDate(e.target.value)}
+              title="History to date (YYYY-MM-DD)"
+              aria-label="Credit history to date"
+            />
+            <button type="button" aria-label="Load party history" onClick={loadHistory}>
               History
             </button>
             {kind === 'payable' && (
-              <button type="button" onClick={loadPaymentSchedule}>
+              <button type="button" aria-label="Load payment schedule" onClick={loadPaymentSchedule}>
                 Payment schedule
               </button>
             )}
@@ -429,18 +498,65 @@ export default function Page() {
               value={payAmount}
               onChange={(e) => setPayAmount(e.target.value)}
               placeholder="Payment amount"
+              aria-label="Payment amount"
               style={{ width: 120 }}
             />
-            <select value={payMethod} onChange={(e) => setPayMethod(e.target.value)}>
+            <select
+              value={payMethod}
+              onChange={(e) => setPayMethod(e.target.value)}
+              aria-label="Payment method"
+            >
               <option value="cash">Cash</option>
               <option value="bank_transfer">Bank transfer</option>
               <option value="card">Card</option>
               <option value="cheque">Cheque</option>
             </select>
+            <input
+              value={payReference}
+              onChange={(e) => setPayReference(e.target.value)}
+              placeholder="Payment reference (optional)"
+              aria-label="Payment reference"
+              title="Optional reference (1–100 chars; letters/digits required)"
+              style={{ width: 180 }}
+            />
+            <input
+              value={payNotes}
+              onChange={(e) => setPayNotes(e.target.value)}
+              placeholder="Payment notes (optional)"
+              aria-label="Payment notes"
+              title="Optional notes (1–500 chars; letters/digits required)"
+              style={{ width: 180 }}
+            />
+            {payMethod === 'cheque' ? (
+              <>
+                <input
+                  value={payChequeNumber}
+                  onChange={(e) => setPayChequeNumber(e.target.value)}
+                  placeholder="Cheque number"
+                  aria-label="Payment cheque number"
+                  style={{ width: 140 }}
+                />
+                <input
+                  value={payChequeBankName}
+                  onChange={(e) => setPayChequeBankName(e.target.value)}
+                  placeholder="Cheque bank name"
+                  aria-label="Payment cheque bank name"
+                  style={{ width: 160 }}
+                />
+                <input
+                  type="date"
+                  value={payChequeDate}
+                  onChange={(e) => setPayChequeDate(e.target.value)}
+                  aria-label="Payment cheque date"
+                  title="Cheque date (YYYY-MM-DD)"
+                />
+              </>
+            ) : null}
             <select
               value={liquidAccountId}
               onChange={(e) => setLiquidAccountId(e.target.value)}
               title="Optional GL override"
+              aria-label="Credit payment liquid account"
             >
               <option value="">GL: method default</option>
               {liquidAccounts.map((a: any) => (
@@ -455,13 +571,17 @@ export default function Page() {
               placeholder="Settle FX rate"
               style={{ width: 110 }}
               title="Optional payment exchange rate (same currency as invoice)"
+              aria-label="Payment FX rate"
             />
-            <button onClick={recordPayment}>Pay</button>
+            <button onClick={recordPayment} aria-label="Record payment">
+              Pay
+            </button>
           </div>
           {(kind === 'receivable' || kind === 'payable') && (
             <label className="muted" style={{ display: 'block', marginTop: 8 }}>
               <input
                 type="checkbox"
+                aria-label="Apply early payment discount"
                 checked={applyEarly}
                 onChange={(e) => setApplyEarly(e.target.checked)}
               />{' '}
@@ -474,6 +594,7 @@ export default function Page() {
                 value={creditLimit}
                 onChange={(e) => setCreditLimit(e.target.value)}
                 placeholder="New credit limit"
+                aria-label="Credit limit"
                 style={{ width: 140 }}
               />
               <input
@@ -482,8 +603,9 @@ export default function Page() {
                 placeholder="Net days"
                 style={{ width: 90 }}
                 title="Payment terms (days)"
+                aria-label="Customer payment terms days"
               />
-              <button onClick={updateLimit}>Set limit / terms</button>
+              <button aria-label="Set customer credit limit and terms" onClick={updateLimit}>Set limit / terms</button>
             </div>
           )}
           {kind === 'payable' && (
@@ -494,8 +616,9 @@ export default function Page() {
                 placeholder="Net days"
                 style={{ width: 90 }}
                 title="Supplier payment terms (days)"
+                aria-label="Supplier payment terms days"
               />
-              <button type="button" onClick={updateSupplierTerms}>
+              <button type="button" aria-label="Set supplier payment terms" onClick={updateSupplierTerms}>
                 Set terms
               </button>
             </div>

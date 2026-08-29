@@ -20,6 +20,7 @@ def test_store_transfer_reject_reason_ui_wired():
     assert "JSON.stringify({ reason: xferRejectReason.trim() })" in stores
     assert "rejection_reason" in stores
     assert "Required before Reject or Cancel" in stores
+    assert 'aria-label="Stock transfer reject reason"' in stores
     reject_block_start = stores.find("Reject / Cancel reason")
     assert reject_block_start > 0
     # Reject path must not use window.prompt
@@ -74,7 +75,14 @@ async def test_stores_transfer_reject_requires_and_persists_reason(client, db_se
         headers=headers,
         json={"reason": "   "},
     )
-    assert blank.status_code == 400, blank.text
+    assert blank.status_code == 422, blank.text
+
+    garbage = await ac.post(
+        f"/api/v1/stores/transfers/{tid}/reject",
+        headers=headers,
+        json={"reason": "!!!!"},
+    )
+    assert garbage.status_code == 422, garbage.text
 
     rejected = await ac.post(
         f"/api/v1/stores/transfers/{tid}/reject",

@@ -5,26 +5,63 @@ from __future__ import annotations
 from collections import defaultdict
 from datetime import datetime, timedelta
 
+from fastapi import HTTPException
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json
 
 
 def parse_date(value: str | datetime | None, *, end_of_day: bool = False) -> datetime | None:
+    # Schema IsoDateQueryValue rejects blank/invalid on audit Query → 422; keep
+    # defense-in-depth so other free-str date Query paths return **400** not **500**.
     if value is None or value == "":
         return None
     if isinstance(value, datetime):
         dt = value
     else:
         text = str(value).strip()
-        if len(text) == 10:
-            dt = datetime.strptime(text, "%Y-%m-%d")
-        else:
-            dt = datetime.fromisoformat(text.replace("Z", "+00:00")).replace(tzinfo=None)
+        if not text:
+            return None
+        try:
+            if len(text) == 10:
+                dt = datetime.strptime(text, "%Y-%m-%d")
+            else:
+                dt = datetime.fromisoformat(text.replace("Z", "+00:00")).replace(tzinfo=None)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid date; use YYYY-MM-DD",
+            ) from exc
     if end_of_day:
         return dt.replace(hour=23, minute=59, second=59, microsecond=999999)
     return dt.replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+def parse_datetime(value: str | datetime | None) -> datetime | None:
+    """Like parse_date but keeps clock time (API key expiry / wall-clock stamps).
+
+    Schema IsoDateQueryValue rejects blank/invalid → **422**; this remains
+    defense-in-depth (**400**). Date-only `YYYY-MM-DD` → midnight; ISO datetime
+    keeps hours/minutes (tz stripped to naive).
+    """
+    if value is None or value == "":
+        return None
+    if isinstance(value, datetime):
+        return value.replace(tzinfo=None) if value.tzinfo is not None else value
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        if len(text) == 10:
+            return datetime.strptime(text, "%Y-%m-%d")
+        return datetime.fromisoformat(text.replace("Z", "+00:00")).replace(tzinfo=None)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid datetime; use YYYY-MM-DD or ISO datetime",
+        ) from exc
 
 
 def day_bounds(day: datetime) -> tuple[datetime, datetime]:
@@ -98,11 +135,11 @@ async def sales_daily(
         pos_stmt = pos_stmt.where(m.PosSession.store_id == store_id)
     pos_rows = (await db.execute(pos_stmt)).all()
 
-    invoice_total = sum(float(i.total_amount or 0) for i in invoices)
-    invoice_tax = sum(float(i.tax_amount or 0) for i in invoices)
-    invoice_discount = sum(float(i.discount_amount or 0) for i in invoices)
-    pos_total = sum(float(t.total or 0) for t, _ in pos_rows)
-    pos_tax = sum(float(t.tax or 0) for t, _ in pos_rows)
+    invoice_total = sum(money_json(i.total_amount) for i in invoices)
+    invoice_tax = sum(money_json(i.tax_amount) for i in invoices)
+    invoice_discount = sum(money_json(i.discount_amount) for i in invoices)
+    pos_total = sum(money_json(t.total) for t, _ in pos_rows)
+    pos_tax = sum(money_json(t.tax) for t, _ in pos_rows)
 
     return {
         "date": start.date().isoformat(),
@@ -110,12 +147,12 @@ async def sales_daily(
         "store_name": store_name,
         "invoice_count": len(invoices),
         "pos_count": len(pos_rows),
-        "invoice_revenue": round(invoice_total, 2),
-        "pos_revenue": round(pos_total, 2),
-        "total_revenue": round(invoice_total + pos_total, 2),
-        "tax": round(invoice_tax + pos_tax, 2),
-        "discounts": round(invoice_discount, 2),
-        "net_sales": round(invoice_total + pos_total - invoice_discount, 2),
+        "invoice_revenue": money_json(round(invoice_total, 2)),
+        "pos_revenue": money_json(round(pos_total, 2)),
+        "total_revenue": money_json(round(invoice_total + pos_total, 2)),
+        "tax": money_json(round(invoice_tax + pos_tax, 2)),
+        "discounts": money_json(round(invoice_discount, 2)),
+        "net_sales": money_json(round(invoice_total + pos_total - invoice_discount, 2)),
     }
 
 
@@ -157,10 +194,10 @@ async def sales_monthly(
     by_day: dict[str, float] = defaultdict(float)
     for inv in invoices:
         key = (inv.posted_at or inv.created_at).date().isoformat()
-        by_day[key] += float(inv.total_amount or 0)
+        by_day[key] += money_json(inv.total_amount)
     for tx, _ in pos_rows:
         key = tx.created_at.date().isoformat()
-        by_day[key] += float(tx.total or 0)
+        by_day[key] += money_json(tx.total)
 
     total = sum(by_day.values())
     prev_year, prev_month = (year - 1, month) if month == 1 else (year, month - 1)
@@ -174,10 +211,15 @@ async def sales_monthly(
         "store_name": store_name,
         "invoice_count": len(invoices),
         "pos_count": len(pos_rows),
-        "total_revenue": round(total, 2),
-        "previous_month_revenue": prev,
-        "change_pct": round(((total - prev) / prev) * 100, 2) if prev else None,
-        "daily": [{"date": d, "revenue": round(v, 2)} for d, v in sorted(by_day.items())],
+        "total_revenue": money_json(round(total, 2)),
+        "previous_month_revenue": money_json(prev),
+        "change_pct": (
+            money_json(round(((total - prev) / prev) * 100, 2)) if prev else None
+        ),
+        "daily": [
+            {"date": d, "revenue": money_json(round(money_json(v), 2))}
+            for d, v in sorted(by_day.items())
+        ],
     }
 
 
@@ -198,7 +240,7 @@ async def sales_monthly_total(
     )
     if store_id:
         inv_stmt = inv_stmt.where(m.SalesInvoice.store_id == store_id)
-    inv = float((await db.execute(inv_stmt)).scalar() or 0)
+    inv = money_json((await db.execute(inv_stmt)).scalar() or 0)
 
     pos_stmt = (
         select(func.coalesce(func.sum(m.Transaction.total), 0))
@@ -213,8 +255,8 @@ async def sales_monthly_total(
     )
     if store_id:
         pos_stmt = pos_stmt.where(m.PosSession.store_id == store_id)
-    pos = float((await db.execute(pos_stmt)).scalar() or 0)
-    return round(inv + pos, 2)
+    pos = money_json((await db.execute(pos_stmt)).scalar() or 0)
+    return money_json(round(inv + pos, 2))
 
 
 async def sales_by_product(
@@ -336,8 +378,8 @@ async def sales_by_product(
     agg: dict[str, dict] = {}
     for item, _inv, product in rows:
         row = _bucket(agg, product)
-        row["quantity"] = round(row["quantity"] + float(item.quantity or 0), 3)
-        row["revenue"] = round(row["revenue"] + float(item.line_total or 0), 2)
+        row["quantity"] = money_json(round(row["quantity"] + money_json(item.quantity), 3))
+        row["revenue"] = money_json(round(row["revenue"] + money_json(item.line_total), 2))
 
     for tx in pos_txs:
         for line in (tx.payload or {}).get("items") or []:
@@ -350,15 +392,18 @@ async def sales_by_product(
             if category_id and product.category_id != category_id:
                 continue
             row = _bucket(agg, product)
-            qty = float(line.get("quantity") or 0)
-            revenue = float(
+            qty = money_json(line.get("quantity") or 0)
+            revenue = money_json(
                 line.get("line_total")
-                or (float(line.get("unit_price") or product.selling_price or 0) * qty)
+                or (money_json(line.get("unit_price") or product.selling_price or 0) * qty)
             )
-            row["quantity"] = round(row["quantity"] + qty, 3)
-            row["revenue"] = round(row["revenue"] + revenue, 2)
+            row["quantity"] = money_json(round(row["quantity"] + qty, 3))
+            row["revenue"] = money_json(round(row["revenue"] + revenue, 2))
 
     products = sorted(agg.values(), key=lambda x: x["revenue"], reverse=True)
+    for row in products:
+        row["quantity"] = money_json(round(row["quantity"], 3))
+        row["revenue"] = money_json(round(row["revenue"], 2))
     return {
         "from_date": from_date,
         "to_date": to_date,
@@ -366,8 +411,8 @@ async def sales_by_product(
         "category_id": category_id,
         "category_name": category_name,
         "products": products,
-        "total_revenue": round(sum(p["revenue"] for p in products), 2),
-        "total_quantity": round(sum(p["quantity"] for p in products), 3),
+        "total_revenue": money_json(round(sum(p["revenue"] for p in products), 2)),
+        "total_quantity": money_json(round(sum(p["quantity"] for p in products), 3)),
     }
 
 
@@ -437,14 +482,14 @@ async def sales_by_customer(
         inv_stmt = inv_stmt.where(m.SalesInvoice.store_id == store_id)
     for inv in (await db.execute(inv_stmt)).scalars().all():
         row = _bucket(agg, inv.customer_id)
-        total = float(inv.total_amount or 0)
-        tax = float(inv.tax_amount or 0)
+        total = money_json(inv.total_amount)
+        tax = money_json(inv.tax_amount)
         row["invoice_count"] += 1
-        row["invoice_revenue"] = round(row["invoice_revenue"] + total, 2)
-        row["invoice_tax"] = round(row["invoice_tax"] + tax, 2)
+        row["invoice_revenue"] = money_json(round(row["invoice_revenue"] + total, 2))
+        row["invoice_tax"] = money_json(round(row["invoice_tax"] + tax, 2))
         row["sale_count"] += 1
-        row["revenue"] = round(row["revenue"] + total, 2)
-        row["tax"] = round(row["tax"] + tax, 2)
+        row["revenue"] = money_json(round(row["revenue"] + total, 2))
+        row["tax"] = money_json(round(row["tax"] + tax, 2))
 
     pos_stmt = select(m.Transaction).where(
         m.Transaction.tenant_id == tenant_id,
@@ -461,14 +506,14 @@ async def sales_by_customer(
         )
     for tx in (await db.execute(pos_stmt)).scalars().all():
         row = _bucket(agg, tx.party_id)
-        total = float(tx.total or 0)
-        tax = float(tx.tax or 0)
+        total = money_json(tx.total)
+        tax = money_json(tx.tax)
         row["pos_count"] += 1
-        row["pos_revenue"] = round(row["pos_revenue"] + total, 2)
-        row["pos_tax"] = round(row["pos_tax"] + tax, 2)
+        row["pos_revenue"] = money_json(round(row["pos_revenue"] + total, 2))
+        row["pos_tax"] = money_json(round(row["pos_tax"] + tax, 2))
         row["sale_count"] += 1
-        row["revenue"] = round(row["revenue"] + total, 2)
-        row["tax"] = round(row["tax"] + tax, 2)
+        row["revenue"] = money_json(round(row["revenue"] + total, 2))
+        row["tax"] = money_json(round(row["tax"] + tax, 2))
 
     party_ids = [k for k in agg.keys() if k != "walk_in"]
     if party_ids:
@@ -492,8 +537,19 @@ async def sales_by_customer(
 
     for row in agg.values():
         row["avg_ticket"] = (
-            round(row["revenue"] / row["sale_count"], 2) if row["sale_count"] else 0.0
+            money_json(round(row["revenue"] / row["sale_count"], 2))
+            if row["sale_count"]
+            else money_json(0)
         )
+        for key in (
+            "invoice_revenue",
+            "invoice_tax",
+            "pos_revenue",
+            "pos_tax",
+            "revenue",
+            "tax",
+        ):
+            row[key] = money_json(round(row[key], 2))
 
     customers = sorted(agg.values(), key=lambda x: x["revenue"], reverse=True)
     if limit is not None and limit > 0:
@@ -503,10 +559,10 @@ async def sales_by_customer(
         "to_date": to_date,
         "store_id": store_id,
         "customers": customers,
-        "total_revenue": round(sum(c["revenue"] for c in customers), 2),
+        "total_revenue": money_json(round(sum(c["revenue"] for c in customers), 2)),
         "total_sales": sum(c["sale_count"] for c in customers),
-        "invoice_revenue": round(sum(c["invoice_revenue"] for c in customers), 2),
-        "pos_revenue": round(sum(c["pos_revenue"] for c in customers), 2),
+        "invoice_revenue": money_json(round(sum(c["invoice_revenue"] for c in customers), 2)),
+        "pos_revenue": money_json(round(sum(c["pos_revenue"] for c in customers), 2)),
         "customer_count": len(customers),
     }
 
@@ -604,9 +660,9 @@ async def sales_returns_summary(
                 )
             )
         ).scalars().all()
-        qty = round(sum(float(i.quantity or 0) for i in items), 3)
-        amount = float(ret.total_amount or 0)
-        refunded = float(ret.refunded_amount or 0)
+        qty = money_json(round(sum(money_json(i.quantity) for i in items), 3))
+        amount = money_json(ret.total_amount)
+        refunded = money_json(ret.refunded_amount)
         total_amount += amount
         total_qty += qty
         refunded_total += refunded
@@ -619,8 +675,8 @@ async def sales_returns_summary(
             {"reason": ret.reason or "other", "return_count": 0, "total_amount": 0.0, "quantity": 0.0},
         )
         reason_row["return_count"] += 1
-        reason_row["total_amount"] = round(reason_row["total_amount"] + amount, 2)
-        reason_row["quantity"] = round(reason_row["quantity"] + qty, 3)
+        reason_row["total_amount"] = money_json(round(reason_row["total_amount"] + amount, 2))
+        reason_row["quantity"] = money_json(round(reason_row["quantity"] + qty, 3))
 
         cust = by_customer.setdefault(
             party.id,
@@ -633,8 +689,8 @@ async def sales_returns_summary(
             },
         )
         cust["return_count"] += 1
-        cust["total_amount"] = round(cust["total_amount"] + amount, 2)
-        cust["quantity"] = round(cust["quantity"] + qty, 3)
+        cust["total_amount"] = money_json(round(cust["total_amount"] + amount, 2))
+        cust["quantity"] = money_json(round(cust["quantity"] + qty, 3))
 
         returns.append(
             {
@@ -648,8 +704,8 @@ async def sales_returns_summary(
                 "restock": bool(ret.restock),
                 "settlement_method": ret.settlement_method,
                 "quantity": qty,
-                "subtotal": float(ret.subtotal or 0),
-                "tax_amount": float(ret.tax_amount or 0),
+                "subtotal": money_json(ret.subtotal),
+                "tax_amount": money_json(ret.tax_amount),
                 "total_amount": amount,
                 "refunded_amount": refunded,
                 "sales_invoice_id": ret.sales_invoice_id,
@@ -660,6 +716,12 @@ async def sales_returns_summary(
 
     reasons = sorted(by_reason.values(), key=lambda x: x["total_amount"], reverse=True)
     customers = sorted(by_customer.values(), key=lambda x: x["total_amount"], reverse=True)
+    for row in reasons:
+        row["total_amount"] = money_json(round(row["total_amount"], 2))
+        row["quantity"] = money_json(round(row["quantity"], 3))
+    for row in customers:
+        row["total_amount"] = money_json(round(row["total_amount"], 2))
+        row["quantity"] = money_json(round(row["quantity"], 3))
     return {
         "from_date": from_date,
         "to_date": to_date,
@@ -669,10 +731,10 @@ async def sales_returns_summary(
         "store_id": store_id,
         "store_name": store_name,
         "return_count": len(returns),
-        "total_amount": round(total_amount, 2),
-        "posted_amount": round(posted_amount, 2),
-        "total_quantity": round(total_qty, 3),
-        "refunded_amount": round(refunded_total, 2),
+        "total_amount": money_json(round(total_amount, 2)),
+        "posted_amount": money_json(round(posted_amount, 2)),
+        "total_quantity": money_json(round(total_qty, 3)),
+        "refunded_amount": money_json(round(refunded_total, 2)),
         "by_status": dict(by_status),
         "by_reason": reasons,
         "by_customer": customers,
@@ -789,14 +851,14 @@ async def sales_by_salesperson(
             inv_stmt = inv_stmt.where(m.SalesInvoice.created_by.in_(dept_user_ids))
     for inv in (await db.execute(inv_stmt)).scalars().all():
         row = _bucket(agg, inv.created_by)
-        total = float(inv.total_amount or 0)
-        tax = float(inv.tax_amount or 0)
+        total = money_json(inv.total_amount)
+        tax = money_json(inv.tax_amount)
         row["invoice_count"] += 1
-        row["invoice_revenue"] = round(row["invoice_revenue"] + total, 2)
-        row["invoice_tax"] = round(row["invoice_tax"] + tax, 2)
+        row["invoice_revenue"] = money_json(round(row["invoice_revenue"] + total, 2))
+        row["invoice_tax"] = money_json(round(row["invoice_tax"] + tax, 2))
         row["sale_count"] += 1
-        row["revenue"] = round(row["revenue"] + total, 2)
-        row["tax"] = round(row["tax"] + tax, 2)
+        row["revenue"] = money_json(round(row["revenue"] + total, 2))
+        row["tax"] = money_json(round(row["tax"] + tax, 2))
 
     pos_stmt = (
         select(m.Transaction, m.PosSession)
@@ -820,14 +882,14 @@ async def sales_by_salesperson(
     for tx, session in (await db.execute(pos_stmt)).all():
         user_id = session.user_id if session else None
         row = _bucket(agg, user_id)
-        total = float(tx.total or 0)
-        tax = float(tx.tax or 0)
+        total = money_json(tx.total)
+        tax = money_json(tx.tax)
         row["pos_count"] += 1
-        row["pos_revenue"] = round(row["pos_revenue"] + total, 2)
-        row["pos_tax"] = round(row["pos_tax"] + tax, 2)
+        row["pos_revenue"] = money_json(round(row["pos_revenue"] + total, 2))
+        row["pos_tax"] = money_json(round(row["pos_tax"] + tax, 2))
         row["sale_count"] += 1
-        row["revenue"] = round(row["revenue"] + total, 2)
-        row["tax"] = round(row["tax"] + tax, 2)
+        row["revenue"] = money_json(round(row["revenue"] + total, 2))
+        row["tax"] = money_json(round(row["tax"] + tax, 2))
 
     user_ids = [k for k in agg.keys() if k != "unknown"]
     dept_names: dict[str, str] = {}
@@ -864,7 +926,20 @@ async def sales_by_salesperson(
                 row["department_name"] = dept_names.get(user.department_id or "", None)
 
     for row in agg.values():
-        row["avg_ticket"] = round(row["revenue"] / row["sale_count"], 2) if row["sale_count"] else 0.0
+        row["avg_ticket"] = (
+            money_json(round(row["revenue"] / row["sale_count"], 2))
+            if row["sale_count"]
+            else money_json(0)
+        )
+        for key in (
+            "invoice_revenue",
+            "invoice_tax",
+            "pos_revenue",
+            "pos_tax",
+            "revenue",
+            "tax",
+        ):
+            row[key] = money_json(round(row[key], 2))
 
     salespeople = sorted(agg.values(), key=lambda x: x["revenue"], reverse=True)
     return {
@@ -875,10 +950,12 @@ async def sales_by_salesperson(
         "store_id": store_id,
         "store_name": store_name,
         "salespeople": salespeople,
-        "total_revenue": round(sum(s["revenue"] for s in salespeople), 2),
+        "total_revenue": money_json(round(sum(s["revenue"] for s in salespeople), 2)),
         "total_sales": sum(s["sale_count"] for s in salespeople),
-        "invoice_revenue": round(sum(s["invoice_revenue"] for s in salespeople), 2),
-        "pos_revenue": round(sum(s["pos_revenue"] for s in salespeople), 2),
+        "invoice_revenue": money_json(
+            round(sum(s["invoice_revenue"] for s in salespeople), 2)
+        ),
+        "pos_revenue": money_json(round(sum(s["pos_revenue"] for s in salespeople), 2)),
     }
 
 
@@ -944,14 +1021,14 @@ async def sales_by_store(
             inv_stmt = inv_stmt.where(m.SalesInvoice.created_by.in_(dept_user_ids))
     for inv in (await db.execute(inv_stmt)).scalars().all():
         row = _bucket(agg, inv.store_id)
-        total = float(inv.total_amount or 0)
-        tax = float(inv.tax_amount or 0)
+        total = money_json(inv.total_amount)
+        tax = money_json(inv.tax_amount)
         row["invoice_count"] += 1
-        row["invoice_revenue"] = round(row["invoice_revenue"] + total, 2)
-        row["invoice_tax"] = round(row["invoice_tax"] + tax, 2)
+        row["invoice_revenue"] = money_json(round(row["invoice_revenue"] + total, 2))
+        row["invoice_tax"] = money_json(round(row["invoice_tax"] + tax, 2))
         row["sale_count"] += 1
-        row["revenue"] = round(row["revenue"] + total, 2)
-        row["tax"] = round(row["tax"] + tax, 2)
+        row["revenue"] = money_json(round(row["revenue"] + total, 2))
+        row["tax"] = money_json(round(row["tax"] + tax, 2))
 
     pos_stmt = (
         select(m.Transaction, m.PosSession)
@@ -973,14 +1050,14 @@ async def sales_by_store(
     for tx, session in (await db.execute(pos_stmt)).all():
         store_id = session.store_id if session else None
         row = _bucket(agg, store_id)
-        total = float(tx.total or 0)
-        tax = float(tx.tax or 0)
+        total = money_json(tx.total)
+        tax = money_json(tx.tax)
         row["pos_count"] += 1
-        row["pos_revenue"] = round(row["pos_revenue"] + total, 2)
-        row["pos_tax"] = round(row["pos_tax"] + tax, 2)
+        row["pos_revenue"] = money_json(round(row["pos_revenue"] + total, 2))
+        row["pos_tax"] = money_json(round(row["pos_tax"] + tax, 2))
         row["sale_count"] += 1
-        row["revenue"] = round(row["revenue"] + total, 2)
-        row["tax"] = round(row["tax"] + tax, 2)
+        row["revenue"] = money_json(round(row["revenue"] + total, 2))
+        row["tax"] = money_json(round(row["tax"] + tax, 2))
 
     # Enrich store rows that came only from activity (not in seed list).
     orphan_ids = [k for k in agg.keys() if k != "unknown" and agg[k]["code"] is None]
@@ -1003,7 +1080,20 @@ async def sales_by_store(
                 agg[key]["name"] = f"Store {key[:8]}"
 
     for row in agg.values():
-        row["avg_ticket"] = round(row["revenue"] / row["sale_count"], 2) if row["sale_count"] else 0.0
+        row["avg_ticket"] = (
+            money_json(round(row["revenue"] / row["sale_count"], 2))
+            if row["sale_count"]
+            else money_json(0)
+        )
+        for key in (
+            "invoice_revenue",
+            "invoice_tax",
+            "pos_revenue",
+            "pos_tax",
+            "revenue",
+            "tax",
+        ):
+            row[key] = money_json(round(row[key], 2))
 
     # Drop pure zero rows for unknown only if empty; keep real stores even at zero.
     stores_out = []
@@ -1021,10 +1111,12 @@ async def sales_by_store(
         "department_id": dept_id,
         "department_name": dept_name,
         "stores": stores_out,
-        "total_revenue": round(sum(s["revenue"] for s in stores_out), 2),
+        "total_revenue": money_json(round(sum(s["revenue"] for s in stores_out), 2)),
         "total_sales": sum(s["sale_count"] for s in stores_out),
-        "invoice_revenue": round(sum(s["invoice_revenue"] for s in stores_out), 2),
-        "pos_revenue": round(sum(s["pos_revenue"] for s in stores_out), 2),
+        "invoice_revenue": money_json(
+            round(sum(s["invoice_revenue"] for s in stores_out), 2)
+        ),
+        "pos_revenue": money_json(round(sum(s["pos_revenue"] for s in stores_out), 2)),
     }
 
 
@@ -1093,14 +1185,14 @@ async def sales_by_department(
         if filter_id and seller_dept != filter_id:
             continue
         row = _bucket(agg, seller_dept)
-        total = float(inv.total_amount or 0)
-        tax = float(inv.tax_amount or 0)
+        total = money_json(inv.total_amount)
+        tax = money_json(inv.tax_amount)
         row["invoice_count"] += 1
-        row["invoice_revenue"] = round(row["invoice_revenue"] + total, 2)
-        row["invoice_tax"] = round(row["invoice_tax"] + tax, 2)
+        row["invoice_revenue"] = money_json(round(row["invoice_revenue"] + total, 2))
+        row["invoice_tax"] = money_json(round(row["invoice_tax"] + tax, 2))
         row["sale_count"] += 1
-        row["revenue"] = round(row["revenue"] + total, 2)
-        row["tax"] = round(row["tax"] + tax, 2)
+        row["revenue"] = money_json(round(row["revenue"] + total, 2))
+        row["tax"] = money_json(round(row["tax"] + tax, 2))
 
     pos_stmt = (
         select(m.Transaction, m.PosSession)
@@ -1120,14 +1212,14 @@ async def sales_by_department(
         if filter_id and seller_dept != filter_id:
             continue
         row = _bucket(agg, seller_dept)
-        total = float(tx.total or 0)
-        tax = float(tx.tax or 0)
+        total = money_json(tx.total)
+        tax = money_json(tx.tax)
         row["pos_count"] += 1
-        row["pos_revenue"] = round(row["pos_revenue"] + total, 2)
-        row["pos_tax"] = round(row["pos_tax"] + tax, 2)
+        row["pos_revenue"] = money_json(round(row["pos_revenue"] + total, 2))
+        row["pos_tax"] = money_json(round(row["pos_tax"] + tax, 2))
         row["sale_count"] += 1
-        row["revenue"] = round(row["revenue"] + total, 2)
-        row["tax"] = round(row["tax"] + tax, 2)
+        row["revenue"] = money_json(round(row["revenue"] + total, 2))
+        row["tax"] = money_json(round(row["tax"] + tax, 2))
 
     orphan_ids = [k for k in agg.keys() if k != "unknown" and agg[k]["code"] is None]
     if orphan_ids:
@@ -1149,7 +1241,20 @@ async def sales_by_department(
                 agg[key]["name"] = f"Department {key[:8]}"
 
     for row in agg.values():
-        row["avg_ticket"] = round(row["revenue"] / row["sale_count"], 2) if row["sale_count"] else 0.0
+        row["avg_ticket"] = (
+            money_json(round(row["revenue"] / row["sale_count"], 2))
+            if row["sale_count"]
+            else money_json(0)
+        )
+        for key in (
+            "invoice_revenue",
+            "invoice_tax",
+            "pos_revenue",
+            "pos_tax",
+            "revenue",
+            "tax",
+        ):
+            row[key] = money_json(round(row[key], 2))
 
     departments_out = []
     for key, row in agg.items():
@@ -1166,10 +1271,14 @@ async def sales_by_department(
         "department_id": filter_id,
         "department_name": filter_name,
         "departments": departments_out,
-        "total_revenue": round(sum(s["revenue"] for s in departments_out), 2),
+        "total_revenue": money_json(round(sum(s["revenue"] for s in departments_out), 2)),
         "total_sales": sum(s["sale_count"] for s in departments_out),
-        "invoice_revenue": round(sum(s["invoice_revenue"] for s in departments_out), 2),
-        "pos_revenue": round(sum(s["pos_revenue"] for s in departments_out), 2),
+        "invoice_revenue": money_json(
+            round(sum(s["invoice_revenue"] for s in departments_out), 2)
+        ),
+        "pos_revenue": money_json(
+            round(sum(s["pos_revenue"] for s in departments_out), 2)
+        ),
     }
 
 
@@ -1212,7 +1321,7 @@ async def inventory_balance(
             agg: dict[str, dict] = {}
             for stock, product in rows:
                 row = agg.get(product.id)
-                qty = float(stock.quantity or 0)
+                qty = money_json(stock.quantity)
                 if not row:
                     agg[product.id] = {
                         "product_id": product.id,
@@ -1222,15 +1331,20 @@ async def inventory_balance(
                         if warehouse_id
                         else (stock.warehouse_id if len(warehouse_ids) == 1 else None),
                         "quantity": qty,
-                        "cost_price": float(product.cost_price or 0),
-                        "value": 0.0,
+                        "cost_price": money_json(product.cost_price),
+                        "value": money_json(0),
                     }
                 else:
-                    row["quantity"] = round(float(row["quantity"]) + qty, 3)
+                    row["quantity"] = money_json(
+                        round(money_json(row["quantity"]) + qty, 3)
+                    )
             items = []
             for row in agg.values():
-                row["value"] = round(
-                    float(row["quantity"]) * float(row["cost_price"] or 0), 2
+                row["quantity"] = money_json(round(money_json(row["quantity"]), 3))
+                row["value"] = money_json(
+                    round(
+                        money_json(row["quantity"]) * money_json(row["cost_price"]), 2
+                    )
                 )
                 items.append(row)
             items.sort(key=lambda x: x["name"] or "")
@@ -1248,9 +1362,11 @@ async def inventory_balance(
                 "sku": p.sku,
                 "name": p.name,
                 "warehouse_id": None,
-                "quantity": float(p.stock_qty or 0),
-                "cost_price": float(p.cost_price or 0),
-                "value": round(float(p.stock_qty or 0) * float(p.cost_price or 0), 2),
+                "quantity": money_json(p.stock_qty),
+                "cost_price": money_json(p.cost_price),
+                "value": money_json(
+                    round(money_json(p.stock_qty) * money_json(p.cost_price), 2)
+                ),
             }
             for p in products
         ]
@@ -1260,8 +1376,12 @@ async def inventory_balance(
         "store_id": store_id,
         "store_name": store_name,
         "items": items,
-        "total_quantity": round(sum(i["quantity"] for i in items), 3),
-        "total_value": round(sum(i["value"] for i in items), 2),
+        "total_quantity": money_json(
+            round(sum(money_json(i["quantity"]) for i in items), 3)
+        ),
+        "total_value": money_json(
+            round(sum(money_json(i["value"]) for i in items), 2)
+        ),
     }
 
 
@@ -1310,7 +1430,7 @@ async def inventory_valuation(
             "value": i["value"],
         }
         for i in balance["items"]
-        if abs(float(i["quantity"] or 0)) > 0.0001 or abs(float(i["value"] or 0)) > 0.0001
+        if abs(money_json(i["quantity"])) > 0.0001 or abs(money_json(i["value"])) > 0.0001
     ]
     return {
         "method": method_key,
@@ -1319,8 +1439,12 @@ async def inventory_valuation(
         "store_id": balance.get("store_id"),
         "store_name": balance.get("store_name"),
         "items": items,
-        "total_quantity": round(sum(float(i["quantity"]) for i in items), 3),
-        "total_value": round(sum(float(i["value"]) for i in items), 2),
+        "total_quantity": money_json(
+            round(sum(money_json(i["quantity"]) for i in items), 3)
+        ),
+        "total_value": money_json(
+            round(sum(money_json(i["value"]) for i in items), 2)
+        ),
     }
 
 
@@ -1454,9 +1578,9 @@ async def inventory_movements(
                 "product_name": product.name if product else None,
                 "warehouse_id": r.warehouse_id,
                 "movement_type": r.movement_type,
-                "quantity": float(r.quantity),
-                "quantity_before": float(r.quantity_before),
-                "quantity_after": float(r.quantity_after),
+                "quantity": money_json(r.quantity),
+                "quantity_before": money_json(r.quantity_before),
+                "quantity_after": money_json(r.quantity_after),
                 "reference_type": r.reference_type,
                 "reference_id": r.reference_id,
                 "notes": r.notes,
@@ -1503,13 +1627,15 @@ async def inventory_low_stock(
             "id": p.id,
             "sku": p.sku,
             "name": p.name,
-            "stock_qty": float(p.stock_qty or 0),
-            "reorder_level": float(p.reorder_level or 0),
-            "suggested_order_qty": max(
-                1.0, round(float(p.reorder_level or 0) - float(p.stock_qty or 0), 3)
+            "stock_qty": money_json(p.stock_qty),
+            "reorder_level": money_json(p.reorder_level),
+            "suggested_order_qty": money_json(
+                max(
+                    1.0, money_json(round(money_json(p.reorder_level) - money_json(p.stock_qty), 3))
+                )
             )
-            if float(p.stock_qty or 0) <= float(p.reorder_level or 0)
-            else 0.0,
+            if money_json(p.stock_qty) <= money_json(p.reorder_level)
+            else money_json(0),
             "scope": "product",
         }
         for p in products
@@ -1539,9 +1665,9 @@ async def inventory_low_stock(
     if wh_filter:
         stmt = stmt.where(m.WarehouseStock.warehouse_id == wh_filter)
     for stock, product, wh in (await db.execute(stmt)).all():
-        qty = float(stock.quantity or 0)
-        reorder = float(stock.reorder_level or 0)
-        reorder_qty = float(stock.reorder_qty or 0)
+        qty = money_json(stock.quantity)
+        reorder = money_json(stock.reorder_level)
+        reorder_qty = money_json(stock.reorder_qty)
         warehouse_rows.append(
             {
                 "product_id": product.id,
@@ -1550,7 +1676,9 @@ async def inventory_low_stock(
                 "quantity": qty,
                 "reorder_level": reorder,
                 "reorder_qty": reorder_qty,
-                "suggested_order_qty": max(reorder_qty, round(reorder - qty, 3)),
+                "suggested_order_qty": money_json(
+                    max(reorder_qty, money_json(round(reorder - qty, 3)))
+                ),
                 "warehouse_id": wh.id,
                 "warehouse_code": wh.code,
                 "warehouse_name": wh.name,
@@ -1622,7 +1750,7 @@ async def inventory_expiry(
         days_until = (exp - today).days if exp else None
         if days_until is not None and days_until < 0:
             expired_count += 1
-        qty = float(b.quantity or 0)
+        qty = money_json(b.quantity)
         total_qty += qty
         row = catalog_svc.serialize_batch(b)
         row.update(
@@ -1643,7 +1771,7 @@ async def inventory_expiry(
         "store_name": store_name,
         "count": len(rows),
         "expired_count": expired_count,
-        "total_quantity": round(total_qty, 3),
+        "total_quantity": money_json(round(total_qty, 3)),
         "batches": rows,
     }
 
@@ -1753,9 +1881,9 @@ async def inventory_transfers(
                 )
             )
         ).scalars().all()
-        qty = round(sum(float(i.quantity or 0) for i in items), 3)
-        shipped_qty = round(sum(float(i.shipped_qty or 0) for i in items), 3)
-        received_qty = round(sum(float(i.received_qty or 0) for i in items), 3)
+        qty = money_json(round(sum(money_json(i.quantity) for i in items), 3))
+        shipped_qty = money_json(round(sum(money_json(i.shipped_qty) for i in items), 3))
+        received_qty = money_json(round(sum(money_json(i.received_qty) for i in items), 3))
         total_qty += qty
         by_status[xfer.status] += 1
         route_key = f"{xfer.from_store_id}->{xfer.to_store_id}"
@@ -1773,7 +1901,7 @@ async def inventory_transfers(
             },
         )
         route["transfer_count"] += 1
-        route["quantity"] = round(route["quantity"] + qty, 3)
+        route["quantity"] = money_json(round(route["quantity"] + qty, 3))
 
         transfers.append(
             {
@@ -1800,6 +1928,8 @@ async def inventory_transfers(
         )
 
     routes = sorted(by_route.values(), key=lambda x: x["transfer_count"], reverse=True)
+    for row in routes:
+        row["quantity"] = money_json(round(row["quantity"], 3))
     return {
         "from_date": from_date,
         "to_date": to_date,
@@ -1809,7 +1939,7 @@ async def inventory_transfers(
         "from_store_id": from_store_id,
         "to_store_id": to_store_id,
         "transfer_count": len(transfers),
-        "total_quantity": round(total_qty, 3),
+        "total_quantity": money_json(round(total_qty, 3)),
         "by_status": dict(by_status),
         "by_route": routes,
         "transfers": transfers,
@@ -1939,10 +2069,10 @@ async def inventory_stock_counts(
             if row["counted_qty"] is not None:
                 lines_counted += 1
             variance = row["variance"]
-            if variance is not None and abs(float(variance)) > 1e-9:
+            if variance is not None and abs(money_json(variance)) > 1e-9:
                 lines_with_variance += 1
-                variance_qty += float(variance)
-            if variance_only and (variance is None or abs(float(variance)) < 1e-9):
+                variance_qty += money_json(variance)
+            if variance_only and (variance is None or abs(money_json(variance)) < 1e-9):
                 continue
             serialized_items.append(row)
             flat_lines.append(
@@ -1987,7 +2117,7 @@ async def inventory_stock_counts(
                 "item_count": len(items),
                 "lines_counted": lines_counted,
                 "lines_with_variance": lines_with_variance,
-                "total_variance_qty": round(variance_qty, 3),
+                "total_variance_qty": money_json(round(variance_qty, 3)),
                 "items": serialized_items,
             }
         )
@@ -2004,7 +2134,7 @@ async def inventory_stock_counts(
         "count_sessions": len(count_rows),
         "total_lines": total_lines,
         "lines_with_variance": total_variance_lines,
-        "total_variance_qty": round(total_variance_qty, 3),
+        "total_variance_qty": money_json(round(total_variance_qty, 3)),
         "counts": count_rows,
         "lines": flat_lines,
     }
@@ -2115,8 +2245,8 @@ async def purchases_summary(
     pending = 0.0
     for po in orders:
         by_status[po.status] += 1
-        total += float(po.total_amount or 0)
-        pending += max(float(po.total_amount or 0) - float(po.paid_amount or 0), 0)
+        total += money_json(po.total_amount)
+        pending += max(money_json(po.total_amount) - money_json(po.paid_amount), 0)
     return {
         "from_date": from_date,
         "to_date": to_date,
@@ -2125,8 +2255,8 @@ async def purchases_summary(
         "store_id": store_id,
         "store_name": store_name,
         "order_count": len(orders),
-        "total_amount": round(total, 2),
-        "outstanding_amount": round(pending, 2),
+        "total_amount": money_json(round(total, 2)),
+        "outstanding_amount": money_json(round(pending, 2)),
         "by_status": dict(by_status),
     }
 
@@ -2214,10 +2344,10 @@ async def purchases_pending_orders(
                 )
             )
         ).scalars().all()
-        ordered_qty = round(sum(float(i.quantity or 0) for i in items), 3)
-        received_qty = round(sum(float(i.received_qty or 0) for i in items), 3)
-        outstanding_qty = round(max(ordered_qty - received_qty, 0), 3)
-        amount = float(po.total_amount or 0)
+        ordered_qty = money_json(round(sum(money_json(i.quantity) for i in items), 3))
+        received_qty = money_json(round(sum(money_json(i.received_qty) for i in items), 3))
+        outstanding_qty = money_json(round(max(ordered_qty - received_qty, 0), 3))
+        amount = money_json(po.total_amount)
         by_status[po.status] += 1
         total_amount += amount
         total_outstanding_qty += outstanding_qty
@@ -2249,8 +2379,8 @@ async def purchases_pending_orders(
         "store_id": store_id,
         "store_name": store_name,
         "order_count": len(orders),
-        "total_amount": round(total_amount, 2),
-        "total_outstanding_qty": round(total_outstanding_qty, 3),
+        "total_amount": money_json(round(total_amount, 2)),
+        "total_outstanding_qty": money_json(round(total_outstanding_qty, 3)),
         "by_status": dict(by_status),
         "orders": orders,
     }
@@ -2356,8 +2486,8 @@ async def purchases_returns_summary(
                 )
             )
         ).scalars().all()
-        qty = round(sum(float(i.quantity or 0) for i in items), 3)
-        amount = float(ret.total_amount or 0)
+        qty = money_json(round(sum(money_json(i.quantity) for i in items), 3))
+        amount = money_json(ret.total_amount)
         total_amount += amount
         total_qty += qty
         by_status[ret.status] += 1
@@ -2369,8 +2499,8 @@ async def purchases_returns_summary(
             {"reason": ret.reason or "other", "return_count": 0, "total_amount": 0.0, "quantity": 0.0},
         )
         reason_row["return_count"] += 1
-        reason_row["total_amount"] = round(reason_row["total_amount"] + amount, 2)
-        reason_row["quantity"] = round(reason_row["quantity"] + qty, 3)
+        reason_row["total_amount"] = money_json(round(reason_row["total_amount"] + amount, 2))
+        reason_row["quantity"] = money_json(round(reason_row["quantity"] + qty, 3))
 
         sup = by_supplier.setdefault(
             party.id,
@@ -2383,8 +2513,8 @@ async def purchases_returns_summary(
             },
         )
         sup["return_count"] += 1
-        sup["total_amount"] = round(sup["total_amount"] + amount, 2)
-        sup["quantity"] = round(sup["quantity"] + qty, 3)
+        sup["total_amount"] = money_json(round(sup["total_amount"] + amount, 2))
+        sup["quantity"] = money_json(round(sup["quantity"] + qty, 3))
 
         returns.append(
             {
@@ -2396,8 +2526,8 @@ async def purchases_returns_summary(
                 "status": ret.status,
                 "reason": ret.reason,
                 "quantity": qty,
-                "subtotal": float(ret.subtotal or 0),
-                "tax_amount": float(ret.tax_amount or 0),
+                "subtotal": money_json(ret.subtotal),
+                "tax_amount": money_json(ret.tax_amount),
                 "total_amount": amount,
                 "goods_receipt_id": ret.goods_receipt_id,
                 "purchase_order_id": ret.purchase_order_id,
@@ -2408,6 +2538,12 @@ async def purchases_returns_summary(
 
     reasons = sorted(by_reason.values(), key=lambda x: x["total_amount"], reverse=True)
     suppliers = sorted(by_supplier.values(), key=lambda x: x["total_amount"], reverse=True)
+    for row in reasons:
+        row["total_amount"] = money_json(round(row["total_amount"], 2))
+        row["quantity"] = money_json(round(row["quantity"], 3))
+    for row in suppliers:
+        row["total_amount"] = money_json(round(row["total_amount"], 2))
+        row["quantity"] = money_json(round(row["quantity"], 3))
     return {
         "from_date": from_date,
         "to_date": to_date,
@@ -2419,9 +2555,9 @@ async def purchases_returns_summary(
         "store_id": store_id,
         "store_name": store_name,
         "return_count": len(returns),
-        "total_amount": round(total_amount, 2),
-        "posted_amount": round(posted_amount, 2),
-        "total_quantity": round(total_qty, 3),
+        "total_amount": money_json(round(total_amount, 2)),
+        "posted_amount": money_json(round(posted_amount, 2)),
+        "total_quantity": money_json(round(total_qty, 3)),
         "by_status": dict(by_status),
         "by_reason": reasons,
         "by_supplier": suppliers,
@@ -2471,15 +2607,17 @@ async def purchases_by_supplier(
             {"supplier_id": party.id, "name": party.name, "order_count": 0, "total_amount": 0.0},
         )
         row["order_count"] += 1
-        row["total_amount"] = round(row["total_amount"] + float(po.total_amount or 0), 2)
+        row["total_amount"] = money_json(round(row["total_amount"] + money_json(po.total_amount), 2))
     suppliers = sorted(agg.values(), key=lambda x: x["total_amount"], reverse=True)
+    for row in suppliers:
+        row["total_amount"] = money_json(round(row["total_amount"], 2))
     return {
         "warehouse_id": warehouse_id,
         "warehouse_name": warehouse_name,
         "store_id": store_id,
         "store_name": store_name,
         "suppliers": suppliers,
-        "total_amount": round(sum(s["total_amount"] for s in suppliers), 2),
+        "total_amount": money_json(round(sum(s["total_amount"] for s in suppliers), 2)),
     }
 
 
@@ -2527,14 +2665,14 @@ async def expenses_summary(
     rows = (await db.execute(stmt)).scalars().all()
     by_category: dict[str, float] = defaultdict(float)
     for e in rows:
-        by_category[e.category or "Uncategorized"] += float(e.amount or 0)
+        by_category[e.category or "Uncategorized"] += money_json(e.amount)
     categories = [
-        {"category": k, "amount": round(v, 2)}
+        {"category": k, "amount": money_json(round(v, 2))}
         for k, v in sorted(by_category.items(), key=lambda x: x[1], reverse=True)
     ]
     return {
         "count": len(rows),
-        "total_amount": round(sum(float(e.amount or 0) for e in rows), 2),
+        "total_amount": money_json(round(sum(money_json(e.amount) for e in rows), 2)),
         "by_category": categories,
         "branch_id": branch_id,
         "branch_name": branch_name,
@@ -2679,7 +2817,7 @@ async def budget_vs_actual(
     actual_by_id: dict[str, float] = defaultdict(float)
     uncategorized = 0.0
     for e in expenses:
-        amt = float(e.amount or 0)
+        amt = money_json(e.amount)
         if e.category_id:
             actual_by_id[e.category_id] += amt
         else:
@@ -2689,18 +2827,20 @@ async def budget_vs_actual(
     total_budget = 0.0
     total_actual = 0.0
     for cat in categories:
-        budget_monthly = float(cat.budget_amount or 0)
+        budget_monthly = money_json(cat.budget_amount)
         scaled = scale_monthly_budget(budget_monthly, period_days)
-        actual = float(actual_by_id.get(cat.id, 0))
+        actual = money_json(actual_by_id.get(cat.id, 0))
         if not cat.is_active and actual <= 0 and budget_monthly <= 0:
             continue
         if budget_monthly <= 0:
             status = "no_budget"
-            variance = actual
+            variance = money_json(actual)
             variance_pct = None
         else:
-            variance = actual - scaled
-            variance_pct = round((variance / scaled) * 100.0, 1) if scaled else 0.0
+            variance = money_json(round(actual - scaled, 2))
+            variance_pct = (
+                money_json(round((variance / scaled) * 100.0, 1)) if scaled else money_json(0)
+            )
             if abs(variance) < 0.01:
                 status = "on_budget"
             elif variance > 0:
@@ -2714,10 +2854,10 @@ async def budget_vs_actual(
                 "category_id": cat.id,
                 "code": cat.code,
                 "category": cat.name,
-                "budget_monthly": round(budget_monthly, 2),
-                "budget_scaled": round(scaled, 2) if budget_monthly > 0 else 0.0,
-                "actual": round(actual, 2),
-                "variance": round(variance, 2),
+                "budget_monthly": money_json(round(budget_monthly, 2)),
+                "budget_scaled": money_json(round(scaled, 2)) if budget_monthly > 0 else money_json(0),
+                "actual": money_json(round(actual, 2)),
+                "variance": money_json(round(variance, 2)),
                 "variance_pct": variance_pct,
                 "status": status,
                 "is_active": bool(cat.is_active),
@@ -2731,26 +2871,26 @@ async def budget_vs_actual(
                 "category_id": None,
                 "code": None,
                 "category": "Uncategorized",
-                "budget_monthly": 0.0,
-                "budget_scaled": 0.0,
-                "actual": round(uncategorized, 2),
-                "variance": round(uncategorized, 2),
+                "budget_monthly": money_json(0),
+                "budget_scaled": money_json(0),
+                "actual": money_json(round(uncategorized, 2)),
+                "variance": money_json(round(uncategorized, 2)),
                 "variance_pct": None,
                 "status": "no_budget",
                 "is_active": True,
             }
         )
 
-    rows_out.sort(key=lambda r: (-float(r["actual"]), r["category"] or ""))
+    rows_out.sort(key=lambda r: (-money_json(r["actual"]), r["category"] or ""))
     top_categories = rows_out[:5]
-    total_variance = total_actual - total_budget
+    total_variance = money_json(round(total_actual - total_budget, 2))
     return {
         "from_date": from_date.isoformat() if from_date else None,
         "to_date": to_date.isoformat() if to_date else None,
         "period_days": period_days,
-        "total_budget_scaled": round(total_budget, 2),
-        "total_actual": round(total_actual, 2),
-        "total_variance": round(total_variance, 2),
+        "total_budget_scaled": money_json(round(total_budget, 2)),
+        "total_actual": money_json(round(total_actual, 2)),
+        "total_variance": money_json(round(total_variance, 2)),
         "top_categories": top_categories,
         "rows": rows_out,
         "branch_id": branch_id,
@@ -2772,9 +2912,11 @@ def _empty_cf_bucket() -> dict:
 
 def _round_cf_bucket(bucket: dict) -> dict:
     return {
-        "inflows": round(float(bucket["inflows"]), 2),
-        "outflows": round(float(bucket["outflows"]), 2),
-        "net": round(float(bucket["inflows"]) - float(bucket["outflows"]), 2),
+        "inflows": money_json(round(money_json(bucket["inflows"]), 2)),
+        "outflows": money_json(round(money_json(bucket["outflows"]), 2)),
+        "net": money_json(
+            round(money_json(bucket["inflows"]) - money_json(bucket["outflows"]), 2)
+        ),
     }
 
 
@@ -2932,8 +3074,8 @@ async def cash_flow(
     outflows = 0.0
     lines = []
     for line, entry in rows:
-        debit = float(line.debit or 0)
-        credit = float(line.credit or 0)
+        debit = money_json(line.debit)
+        credit = money_json(line.credit)
         inflows += debit
         outflows += credit
         activity = cash_flow_activity(
@@ -2950,16 +3092,16 @@ async def cash_flow(
                 "description": entry.description,
                 "account_code": acct.code if acct else None,
                 "account_name": acct.name if acct else None,
-                "inflow": debit,
-                "outflow": credit,
+                "inflow": money_json(debit),
+                "outflow": money_json(credit),
                 "source_type": entry.source_type,
                 "activity": activity,
             }
         )
     return {
-        "inflows": round(inflows, 2),
-        "outflows": round(outflows, 2),
-        "net": round(inflows - outflows, 2),
+        "inflows": money_json(round(money_json(inflows), 2)),
+        "outflows": money_json(round(money_json(outflows), 2)),
+        "net": money_json(round(money_json(inflows) - money_json(outflows), 2)),
         "operating": _round_cf_bucket(buckets["operating"]),
         "investing": _round_cf_bucket(buckets["investing"]),
         "financing": _round_cf_bucket(buckets["financing"]),
@@ -3045,10 +3187,12 @@ def _pack_balance_sheet(
     store_id: str | None = None,
     branch_id: str | None = None,
 ) -> dict:
-    total_assets = round(sum(float(r["balance"]) for r in assets), 2)
-    total_liabilities = round(sum(float(r["balance"]) for r in liabilities), 2)
-    total_equity = round(sum(float(r["balance"]) for r in equity), 2)
-    total_le = round(total_liabilities + total_equity, 2)
+    total_assets = money_json(round(sum(money_json(r["balance"]) for r in assets), 2))
+    total_liabilities = money_json(
+        round(sum(money_json(r["balance"]) for r in liabilities), 2)
+    )
+    total_equity = money_json(round(sum(money_json(r["balance"]) for r in equity), 2))
+    total_le = money_json(round(total_liabilities + total_equity, 2))
     payload = {
         "as_of": as_of_day.isoformat() if hasattr(as_of_day, "isoformat") else str(as_of_day),
         "mode": mode,
@@ -3071,32 +3215,32 @@ def _merge_bs_compare(current: dict, prior: dict, compare_mode: str) -> dict:
     """Attach prior balances / deltas onto current BS sections."""
 
     def merge_section(cur_rows: list[dict], prior_rows: list[dict]) -> list[dict]:
-        prior_by = {r["code"]: float(r["balance"]) for r in prior_rows}
+        prior_by = {r["code"]: money_json(r["balance"]) for r in prior_rows}
         seen = set()
         out = []
         for r in cur_rows:
             code = r["code"]
             seen.add(code)
             prior_bal = prior_by.get(code, 0.0)
-            bal = float(r["balance"])
+            bal = money_json(r["balance"])
             out.append(
                 {
                     **r,
-                    "prior_balance": round(prior_bal, 2),
-                    "delta": round(bal - prior_bal, 2),
+                    "prior_balance": money_json(round(prior_bal, 2)),
+                    "delta": money_json(round(bal - prior_bal, 2)),
                 }
             )
         for r in prior_rows:
             if r["code"] in seen:
                 continue
-            prior_bal = float(r["balance"])
+            prior_bal = money_json(r["balance"])
             out.append(
                 {
                     "code": r["code"],
                     "name": r["name"],
                     "balance": 0.0,
-                    "prior_balance": round(prior_bal, 2),
-                    "delta": round(0.0 - prior_bal, 2),
+                    "prior_balance": money_json(round(prior_bal, 2)),
+                    "delta": money_json(round(0.0 - prior_bal, 2)),
                 }
             )
         return out
@@ -3112,19 +3256,31 @@ def _merge_bs_compare(current: dict, prior: dict, compare_mode: str) -> dict:
         "total_equity": prior["total_equity"],
         "total_liabilities_and_equity": prior["total_liabilities_and_equity"],
         "deltas": {
-            "total_assets": round(
-                float(current["total_assets"]) - float(prior["total_assets"]), 2
+            "total_assets": money_json(
+                round(
+                    money_json(current["total_assets"]) - money_json(prior["total_assets"]),
+                    2,
+                )
             ),
-            "total_liabilities": round(
-                float(current["total_liabilities"]) - float(prior["total_liabilities"]), 2
+            "total_liabilities": money_json(
+                round(
+                    money_json(current["total_liabilities"])
+                    - money_json(prior["total_liabilities"]),
+                    2,
+                )
             ),
-            "total_equity": round(
-                float(current["total_equity"]) - float(prior["total_equity"]), 2
+            "total_equity": money_json(
+                round(
+                    money_json(current["total_equity"]) - money_json(prior["total_equity"]),
+                    2,
+                )
             ),
-            "total_liabilities_and_equity": round(
-                float(current["total_liabilities_and_equity"])
-                - float(prior["total_liabilities_and_equity"]),
-                2,
+            "total_liabilities_and_equity": money_json(
+                round(
+                    money_json(current["total_liabilities_and_equity"])
+                    - money_json(prior["total_liabilities_and_equity"]),
+                    2,
+                )
             ),
         },
     }
@@ -3177,7 +3333,7 @@ async def _balance_sheet_at(
         )
 
     if effective_as_of is None:
-        bal_by_id = {a.id: float(a.balance or 0) for a in accounts}
+        bal_by_id = {a.id: money_json(a.balance) for a in accounts}
         as_of_day = datetime.utcnow().date()
         mode = "balances"
     else:
@@ -3205,10 +3361,10 @@ async def _balance_sheet_at(
             else:
                 stmt = stmt.where(m.JournalEntry.id.in_(allowed_journal_ids))
         for line, account in (await db.execute(stmt)).all():
-            bal_by_id[account.id] = float(bal_by_id.get(account.id, 0)) + _signed_balance_delta(
+            bal_by_id[account.id] = money_json(bal_by_id.get(account.id, 0)) + _signed_balance_delta(
                 account.account_type,
-                float(line.debit or 0),
-                float(line.credit or 0),
+                money_json(line.debit),
+                money_json(line.credit),
             )
         as_of_day = effective_as_of.date()
         mode = "journals"
@@ -3218,7 +3374,7 @@ async def _balance_sheet_at(
         for a in accounts:
             if a.account_type != account_type:
                 continue
-            bal = round(float(bal_by_id.get(a.id, 0)), 2)
+            bal = money_json(round(money_json(bal_by_id.get(a.id, 0)), 2))
             # Live balances mode keeps zero rows (back-compat); journal as-of omits zeros.
             if mode == "journals" and abs(bal) < 0.0001:
                 continue
@@ -3229,12 +3385,12 @@ async def _balance_sheet_at(
     liabilities = rows_for("liability")
     equity = rows_for("equity")
     income = sum(
-        float(bal_by_id.get(a.id, 0)) for a in accounts if a.account_type == "income"
+        money_json(bal_by_id.get(a.id, 0)) for a in accounts if a.account_type == "income"
     )
     expense = sum(
-        float(bal_by_id.get(a.id, 0)) for a in accounts if a.account_type == "expense"
+        money_json(bal_by_id.get(a.id, 0)) for a in accounts if a.account_type == "expense"
     )
-    retained = round(income - expense, 2)
+    retained = money_json(round(income - expense, 2))
     if abs(retained) > 0.0001:
         equity = [
             *equity,

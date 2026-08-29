@@ -11,6 +11,7 @@ export default function Page() {
   const [smsStatus, setSmsStatus] = useState<any>(null);
   const [storageStatus, setStorageStatus] = useState<any>(null);
   const [profilePhone, setProfilePhone] = useState('');
+  const [profileFullName, setProfileFullName] = useState('');
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -87,6 +88,7 @@ export default function Page() {
     }
     setStorageStatus(st.data);
     setProfilePhone(me.data?.phone || '');
+    setProfileFullName(me.data?.full_name || '');
     if (print.data) {
       setPrintHeader(print.data.header_text || '');
       setPrintFooter(print.data.footer_text || '');
@@ -106,22 +108,51 @@ export default function Page() {
       const r = await api('/tenants/me', {
         method: 'PATCH',
         body: JSON.stringify({
-          company_name: tenant.company_name,
+          company_name: String(tenant.company_name || '').trim(),
           industry: tenant.industry,
           currency: tenant.currency,
-          phone: tenant.phone,
-          email: tenant.email,
-          website: tenant.website,
-          address: tenant.address,
-          legal_name: tenant.legal_name,
-          registration_number: tenant.registration_number,
-          contact_person: tenant.contact_person,
-          billing_address: tenant.billing_address,
-          shipping_address: tenant.shipping_address,
+          // Omit blank phone so Save does not 422 (E164PhoneValue); leave prior value.
+          ...(String(tenant.phone || '').trim()
+            ? { phone: String(tenant.phone).trim() }
+            : {}),
+          // Omit blank email so Save does not 422 (EmailStr); leave prior value.
+          ...(String(tenant.email || '').trim()
+            ? { email: String(tenant.email).trim() }
+            : {}),
+          // Omit blank website so Save does not 422 (WebhookUrlValue); leave prior value.
+          ...(String(tenant.website || '').trim()
+            ? { website: String(tenant.website).trim() }
+            : {}),
+          // Omit blank HQ address so Save does not 422 (AddressValue); leave prior.
+          ...(String(tenant.address || '').trim()
+            ? { address: String(tenant.address).trim() }
+            : {}),
+          // Omit blank legal name so Save does not 422 (LegalNameValue); leave prior.
+          ...(String(tenant.legal_name || '').trim()
+            ? { legal_name: String(tenant.legal_name).trim() }
+            : {}),
+          // Omit blank registration so Save does not 422 (RegistrationNumberValue); leave prior.
+          ...(String(tenant.registration_number || '').trim()
+            ? { registration_number: String(tenant.registration_number).trim() }
+            : {}),
+          // Omit blank contact so Save does not 422 (ContactPersonValue); leave prior.
+          ...(String(tenant.contact_person || '').trim()
+            ? { contact_person: String(tenant.contact_person).trim() }
+            : {}),
+          // Omit blank billing/shipping so Save does not 422 (AddressValue); leave prior.
+          ...(String(tenant.billing_address || '').trim()
+            ? { billing_address: String(tenant.billing_address).trim() }
+            : {}),
+          ...(String(tenant.shipping_address || '').trim()
+            ? { shipping_address: String(tenant.shipping_address).trim() }
+            : {}),
           timezone: tenant.timezone,
           fiscal_year_start: tenant.fiscal_year_start,
           tax_jurisdiction: tenant.tax_jurisdiction,
-          tax_registration_number: tenant.tax_registration_number,
+          // Omit blank TIN so Save does not 422 (TaxRegistrationNumberValue); leave prior.
+          ...(String(tenant.tax_registration_number || '').trim()
+            ? { tax_registration_number: String(tenant.tax_registration_number).trim() }
+            : {}),
           tax_filing_period: tenant.tax_filing_period,
           date_format: tenant.date_format,
           decimal_separator: tenant.decimal_separator,
@@ -200,7 +231,7 @@ export default function Page() {
             Trial ends {tenant.trial_ends_at ? String(tenant.trial_ends_at).slice(0, 10) : 'soon'}
             {tenant.days_remaining != null ? ` (${tenant.days_remaining} day(s) left)` : ''}.
           </p>
-          <button className="btn-ok" onClick={activate}>Activate now</button>
+          <button className="btn-ok" aria-label="Activate company" onClick={activate}>Activate now</button>
         </div>
       )}
       {tenant.read_only || tenant.status === 'grace' ? (
@@ -211,7 +242,7 @@ export default function Page() {
               ? ` Grace ends ${String(tenant.grace_ends_at).slice(0, 10)}.`
               : ''}
           </p>
-          <button className="btn-ok" onClick={activate}>Activate to restore access</button>
+          <button className="btn-ok" aria-label="Activate company" onClick={activate}>Activate to restore access</button>
         </div>
       ) : null}
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
@@ -226,6 +257,7 @@ export default function Page() {
           type="file"
           accept="image/png,image/jpeg,image/webp,image/gif"
           disabled={!!tenant.read_only}
+          aria-label="Company logo file"
           onChange={async (e) => {
             const file = e.target.files?.[0];
             if (!file) return;
@@ -258,6 +290,7 @@ export default function Page() {
         {tenant.has_logo && (
           <button
             disabled={!!tenant.read_only}
+            aria-label="Remove company logo"
             onClick={async () => {
               setError('');
               try {
@@ -280,25 +313,30 @@ export default function Page() {
           value={tenant.company_name || ''}
           onChange={(e) => setTenant({ ...tenant, company_name: e.target.value })}
           placeholder="Company name (trading)"
+          aria-label="Company trading name"
         />
         <input
           value={tenant.legal_name || ''}
           onChange={(e) => setTenant({ ...tenant, legal_name: e.target.value })}
           placeholder="Legal name"
+          aria-label="Company legal name"
         />
         <input
           value={tenant.registration_number || ''}
           onChange={(e) => setTenant({ ...tenant, registration_number: e.target.value })}
           placeholder="Company registration number"
+          aria-label="Company registration number"
         />
         <input
           value={tenant.contact_person || ''}
           onChange={(e) => setTenant({ ...tenant, contact_person: e.target.value })}
           placeholder="Primary contact person"
+          aria-label="Company contact person"
         />
         <select
           value={tenant.industry || 'retail'}
           onChange={(e) => setTenant({ ...tenant, industry: e.target.value })}
+          aria-label="Company industry"
         >
           {['retail', 'mart', 'pharmacy', 'restaurant', 'bakery', 'wholesale', 'manufacturing'].map((i) => (
             <option key={i} value={i}>
@@ -306,64 +344,109 @@ export default function Page() {
             </option>
           ))}
         </select>
-        <input
-          value={tenant.currency || ''}
+        <select
+          value={tenant.currency || 'GHS'}
           onChange={(e) => setTenant({ ...tenant, currency: e.target.value })}
-          placeholder="Currency"
-        />
+          aria-label="Company currency"
+        >
+          {Array.from(
+            new Set(
+              [tenant.currency || 'GHS', 'GHS', 'USD', 'EUR', 'GBP', 'NGN', 'XOF', 'CAD'].filter(Boolean),
+            ),
+          ).map((c) => (
+            <option key={c} value={c}>
+              Currency: {c}
+            </option>
+          ))}
+        </select>
         <input
           value={tenant.phone || ''}
           onChange={(e) => setTenant({ ...tenant, phone: e.target.value })}
-          placeholder="Phone"
+          placeholder="Phone (E.164 e.g. +233...)"
+          aria-label="Company phone"
         />
         <input
           value={tenant.email || ''}
           onChange={(e) => setTenant({ ...tenant, email: e.target.value })}
           placeholder="Email"
+          aria-label="Company email"
         />
         <input
           value={tenant.website || ''}
           onChange={(e) => setTenant({ ...tenant, website: e.target.value })}
-          placeholder="Website"
+          placeholder="Website (https://…)"
+          aria-label="Company website"
         />
         <textarea
           value={tenant.address || ''}
           onChange={(e) => setTenant({ ...tenant, address: e.target.value })}
           placeholder="Headquarters address"
+          aria-label="Company headquarters address"
         />
         <textarea
           value={tenant.billing_address || ''}
           onChange={(e) => setTenant({ ...tenant, billing_address: e.target.value })}
           placeholder="Billing address"
+          aria-label="Company billing address"
         />
         <textarea
           value={tenant.shipping_address || ''}
           onChange={(e) => setTenant({ ...tenant, shipping_address: e.target.value })}
           placeholder="Shipping address"
+          aria-label="Company shipping address"
         />
-        <input
-          value={tenant.timezone || ''}
+        <select
+          value={tenant.timezone || 'Africa/Accra'}
           onChange={(e) => setTenant({ ...tenant, timezone: e.target.value })}
-          placeholder="Timezone"
-        />
+          aria-label="Company timezone"
+        >
+          {Array.from(
+            new Set(
+              [
+                tenant.timezone || 'Africa/Accra',
+                'Africa/Accra',
+                'Africa/Lagos',
+                'Africa/Abidjan',
+                'Africa/Nairobi',
+                'Africa/Johannesburg',
+                'UTC',
+                'Europe/London',
+                'America/New_York',
+                'Asia/Dubai',
+              ].filter(Boolean),
+            ),
+          ).map((z) => (
+            <option key={z} value={z}>
+              Timezone: {z}
+            </option>
+          ))}
+        </select>
         <input
-          value={tenant.fiscal_year_start || ''}
+          value={tenant.fiscal_year_start || '01-01'}
           onChange={(e) => setTenant({ ...tenant, fiscal_year_start: e.target.value })}
           placeholder="Fiscal year start MM-DD"
+          pattern="(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])"
+          maxLength={5}
+          aria-label="Fiscal year start"
+          title="MM-DD (e.g. 01-01)"
         />
-        <input
+        <select
           value={tenant.tax_jurisdiction || 'GH'}
-          onChange={(e) => setTenant({ ...tenant, tax_jurisdiction: e.target.value.toUpperCase() })}
-          placeholder="Tax jurisdiction (e.g. GH)"
-        />
+          onChange={(e) => setTenant({ ...tenant, tax_jurisdiction: e.target.value })}
+          aria-label="Tax jurisdiction"
+        >
+          <option value="GH">Tax jurisdiction: GH — Ghana</option>
+        </select>
         <input
           value={tenant.tax_registration_number || ''}
           onChange={(e) => setTenant({ ...tenant, tax_registration_number: e.target.value })}
           placeholder="TIN / VAT registration number (tax ID)"
+          aria-label="TIN / VAT registration number"
         />
         <select
           value={tenant.tax_filing_period || 'monthly'}
           onChange={(e) => setTenant({ ...tenant, tax_filing_period: e.target.value })}
+          aria-label="Tax filing period"
         >
           <option value="monthly">Filing period: monthly</option>
           <option value="quarterly">Filing period: quarterly</option>
@@ -377,6 +460,7 @@ export default function Page() {
         <select
           value={tenant.date_format || 'DD/MM/YYYY'}
           onChange={(e) => setTenant({ ...tenant, date_format: e.target.value })}
+          aria-label="Company date format"
         >
           <option value="DD/MM/YYYY">DD/MM/YYYY</option>
           <option value="MM/DD/YYYY">MM/DD/YYYY</option>
@@ -386,6 +470,7 @@ export default function Page() {
         <select
           value={tenant.decimal_separator || '.'}
           onChange={(e) => setTenant({ ...tenant, decimal_separator: e.target.value })}
+          aria-label="Company decimal separator"
         >
           <option value=".">Dot (1,234.56)</option>
           <option value=",">Comma (1.234,56)</option>
@@ -405,6 +490,7 @@ export default function Page() {
               thousand_separator: e.target.value === 'none' ? '' : e.target.value,
             })
           }
+          aria-label="Company thousand separator"
         >
           <option value=",">Comma</option>
           <option value=".">Dot</option>
@@ -415,6 +501,7 @@ export default function Page() {
         <select
           value={tenant.time_format || '24h'}
           onChange={(e) => setTenant({ ...tenant, time_format: e.target.value })}
+          aria-label="Company time format"
         >
           <option value="24h">24-hour</option>
           <option value="12h">12-hour</option>
@@ -439,6 +526,7 @@ export default function Page() {
               inactivity_timeout_minutes: Number(e.target.value) || 30,
             })
           }
+          aria-label="Company inactivity timeout minutes"
         />
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
@@ -449,18 +537,25 @@ export default function Page() {
                 value={suspendReason}
                 onChange={(e) => setSuspendReason(e.target.value)}
                 placeholder="Required before Suspend"
+                title="Required suspend reason (1–500 chars; letters/digits required)"
+                aria-label="Tenant suspend reason"
                 disabled={!!tenant.read_only}
               />
             </label>
           )}
-          <button onClick={save} disabled={!!tenant.read_only}>
+          <button onClick={save} disabled={!!tenant.read_only} aria-label="Save company profile">
             Save profile
           </button>
           {(tenant.status === 'trial' || tenant.status === 'grace') && (
-            <button className="btn-ok" onClick={activate}>Activate</button>
+            <button className="btn-ok" aria-label="Activate company" onClick={activate}>Activate</button>
           )}
           {tenant.status !== 'suspended' && (
-            <button className="btn-danger" onClick={suspend} disabled={!!tenant.read_only}>
+            <button
+              className="btn-danger"
+              onClick={suspend}
+              disabled={!!tenant.read_only}
+              aria-label="Suspend company"
+            >
               Suspend
             </button>
           )}
@@ -498,6 +593,8 @@ export default function Page() {
           value={printHeader}
           onChange={(e) => setPrintHeader(e.target.value)}
           placeholder="Tagline under company name"
+          title="Optional header (1–200 chars; letters/digits required); blank clears"
+          aria-label="Print branding header text"
           style={{ width: '100%', marginBottom: 8 }}
         />
         <label className="muted">Footer text</label>
@@ -505,19 +602,29 @@ export default function Page() {
           value={printFooter}
           onChange={(e) => setPrintFooter(e.target.value)}
           placeholder="Thank you line"
+          title="Optional footer (1–300 chars; letters/digits required); blank clears"
+          aria-label="Print branding footer text"
           style={{ width: '100%', marginBottom: 8 }}
         />
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
           <label>
             Invoice template{' '}
-            <select value={invTemplate} onChange={(e) => setInvTemplate(e.target.value)}>
+            <select
+              value={invTemplate}
+              onChange={(e) => setInvTemplate(e.target.value)}
+              aria-label="Default invoice template"
+            >
               <option value="a4">A4</option>
               <option value="thermal">Thermal</option>
             </select>
           </label>
           <label>
             Receipt paper{' '}
-            <select value={receiptPaper} onChange={(e) => setReceiptPaper(e.target.value)}>
+            <select
+              value={receiptPaper}
+              onChange={(e) => setReceiptPaper(e.target.value)}
+              aria-label="Default receipt paper"
+            >
               <option value="80mm">80mm</option>
               <option value="58mm">58mm</option>
             </select>
@@ -525,14 +632,16 @@ export default function Page() {
         </div>
         <button
           type="button"
+          aria-label="Save print branding"
           onClick={async () => {
             setError('');
             try {
               const r = await api('/settings/print', {
                 method: 'PATCH',
                 body: JSON.stringify({
-                  header_text: printHeader,
-                  footer_text: printFooter,
+                  // null clears; blank would 422 (PrintHeader/FooterTextValue)
+                  header_text: printHeader.trim() || null,
+                  footer_text: printFooter.trim() || null,
                   default_invoice_template: invTemplate,
                   default_receipt_paper: receiptPaper,
                 }),
@@ -564,18 +673,21 @@ export default function Page() {
             value={emailHost}
             onChange={(e) => setEmailHost(e.target.value)}
             placeholder="smtp.example.com"
+            aria-label="Company SMTP host"
             style={{ width: '100%', marginBottom: 8 }}
           />
           <label className="muted">Port</label>
           <input
             value={emailPort}
             onChange={(e) => setEmailPort(e.target.value)}
+            aria-label="Company SMTP port"
             style={{ width: '100%', marginBottom: 8 }}
           />
           <label className="muted">Username</label>
           <input
             value={emailUser}
             onChange={(e) => setEmailUser(e.target.value)}
+            aria-label="Company SMTP username"
             style={{ width: '100%', marginBottom: 8 }}
           />
           <label className="muted">
@@ -587,24 +699,30 @@ export default function Page() {
             onChange={(e) => setEmailPassword(e.target.value)}
             placeholder={emailStatus.has_password ? '••••••••' : ''}
             autoComplete="new-password"
+            aria-label="Company SMTP password"
+            title="SMTP password (1–128 chars; omit blank to keep)"
             style={{ width: '100%', marginBottom: 8 }}
           />
           <label className="muted">From email</label>
           <input
+            type="email"
             value={emailFromEmail}
             onChange={(e) => setEmailFromEmail(e.target.value)}
             placeholder="noreply@example.com"
+            aria-label="Company from email"
             style={{ width: '100%', marginBottom: 8 }}
           />
           <label className="muted">From name</label>
           <input
             value={emailFromName}
             onChange={(e) => setEmailFromName(e.target.value)}
+            aria-label="Company from name"
             style={{ width: '100%', marginBottom: 8 }}
           />
           <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
             <input
               type="checkbox"
+              aria-label="Company SMTP use TLS"
               checked={emailUseTls}
               onChange={(e) => {
                 setEmailUseTls(e.target.checked);
@@ -621,6 +739,7 @@ export default function Page() {
                 setEmailUseSsl(e.target.checked);
                 if (e.target.checked) setEmailUseTls(false);
               }}
+              aria-label="Company SMTP use SSL"
             />
             Use SSL
           </label>
@@ -630,15 +749,24 @@ export default function Page() {
                 setError('');
                 try {
                   const body: Record<string, unknown> = {
-                    host: emailHost,
                     port: Number(emailPort) || 587,
-                    username: emailUser,
-                    from_email: emailFromEmail,
-                    from_name: emailFromName,
                     use_tls: emailUseTls,
                     use_ssl: emailUseSsl,
                   };
-                  if (emailPassword) body.password = emailPassword;
+                  // Omit blank host so Save does not 422 (SmtpHostValue); leave prior value.
+                  const trimmedHost = emailHost.trim();
+                  if (trimmedHost) body.host = trimmedHost;
+                  // Omit blank username so Save does not 422 (SmtpUsernameValue); leave prior.
+                  const trimmedUser = emailUser.trim();
+                  if (trimmedUser) body.username = trimmedUser;
+                  const trimmedFrom = emailFromEmail.trim();
+                  if (trimmedFrom) body.from_email = trimmedFrom;
+                  // Omit blank from_name so Save does not 422 (SmtpFromNameValue); leave prior.
+                  const trimmedFromName = emailFromName.trim();
+                  if (trimmedFromName) body.from_name = trimmedFromName;
+                  // Omit blank password so Save does not 422 (SmtpPasswordValue); leave prior.
+                  const trimmedPassword = emailPassword.trim();
+                  if (trimmedPassword) body.password = trimmedPassword;
                   const r = await api('/settings/email', {
                     method: 'PATCH',
                     body: JSON.stringify(body),
@@ -651,6 +779,7 @@ export default function Page() {
                   setError(err.message);
                 }
               }}
+              aria-label="Save email settings"
             >
               Save email settings
             </button>
@@ -664,6 +793,7 @@ export default function Page() {
                   setError(err.message);
                 }
               }}
+              aria-label="Send test email to me"
             >
               Send test email to me
             </button>
@@ -684,6 +814,7 @@ export default function Page() {
             value={smsAccountSid}
             onChange={(e) => setSmsAccountSid(e.target.value)}
             placeholder="ACxxxxxxxx"
+            aria-label="Company SMS account SID"
             style={{ width: '100%', marginBottom: 8 }}
           />
           <label className="muted">
@@ -695,6 +826,8 @@ export default function Page() {
             onChange={(e) => setSmsAuthToken(e.target.value)}
             placeholder={smsStatus.has_auth_token ? '••••••••' : ''}
             autoComplete="new-password"
+            aria-label="Company SMS auth token"
+            title="Twilio auth token (1–128 chars; omit blank to keep)"
             style={{ width: '100%', marginBottom: 8 }}
           />
           <label className="muted">From number (E.164)</label>
@@ -702,6 +835,16 @@ export default function Page() {
             value={smsFromNumber}
             onChange={(e) => setSmsFromNumber(e.target.value)}
             placeholder="+15551234567"
+            aria-label="Company SMS from number"
+            style={{ width: '100%', marginBottom: 8 }}
+          />
+          <label className="muted">Your display name</label>
+          <input
+            value={profileFullName}
+            onChange={(e) => setProfileFullName(e.target.value)}
+            placeholder="Full name"
+            aria-label="Profile full name"
+            title="Profile full name (1–150 chars; letters/digits required)"
             style={{ width: '100%', marginBottom: 8 }}
           />
           <label className="muted">Your mobile (for test SMS)</label>
@@ -709,6 +852,7 @@ export default function Page() {
             value={profilePhone}
             onChange={(e) => setProfilePhone(e.target.value)}
             placeholder="Your mobile (E.164 e.g. +233...)"
+            aria-label="Profile phone for SMS test"
             style={{ width: '100%', marginBottom: 8 }}
           />
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -716,11 +860,15 @@ export default function Page() {
               onClick={async () => {
                 setError('');
                 try {
-                  const body: Record<string, unknown> = {
-                    account_sid: smsAccountSid,
-                    from_number: smsFromNumber,
-                  };
-                  if (smsAuthToken) body.auth_token = smsAuthToken;
+                  const body: Record<string, unknown> = {};
+                  // Omit blank SID so Save does not 422 (TwilioAccountSidValue); leave prior.
+                  const trimmedSid = smsAccountSid.trim();
+                  if (trimmedSid) body.account_sid = trimmedSid;
+                  const trimmedFrom = smsFromNumber.trim();
+                  if (trimmedFrom) body.from_number = trimmedFrom;
+                  // Omit blank token so Save does not 422 (TwilioAuthTokenValue); leave prior.
+                  const trimmedToken = smsAuthToken.trim();
+                  if (trimmedToken) body.auth_token = trimmedToken;
                   const r = await api('/settings/sms', {
                     method: 'PATCH',
                     body: JSON.stringify(body),
@@ -733,6 +881,7 @@ export default function Page() {
                   setError(err.message);
                 }
               }}
+              aria-label="Save SMS settings"
             >
               Save SMS settings
             </button>
@@ -740,18 +889,26 @@ export default function Page() {
               onClick={async () => {
                 setError('');
                 try {
+                  const body: Record<string, unknown> = {};
+                  // Omit blank name so Save does not 422 (UserFullNameValue); leave prior.
+                  const trimmedName = profileFullName.trim();
+                  if (trimmedName) body.full_name = trimmedName;
+                  // Omit blank phone so Save does not 422 (E164PhoneValue); leave prior.
+                  const trimmedPhone = profilePhone.trim();
+                  if (trimmedPhone) body.phone = trimmedPhone;
                   await api('/me', {
                     method: 'PATCH',
-                    body: JSON.stringify({ phone: profilePhone }),
+                    body: JSON.stringify(body),
                   });
-                  setMessage('Profile phone saved');
+                  setMessage('Profile saved');
                   await refresh();
                 } catch (err: any) {
                   setError(err.message);
                 }
               }}
+              aria-label="Save my profile"
             >
-              Save my phone
+              Save my profile
             </button>
             <button
               onClick={async () => {
@@ -763,6 +920,7 @@ export default function Page() {
                   setError(err.message);
                 }
               }}
+              aria-label="Send test SMS to me"
             >
               Send test SMS to me
             </button>

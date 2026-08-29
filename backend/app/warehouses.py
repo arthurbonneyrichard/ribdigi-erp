@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
 WAREHOUSE_TYPES = frozenset({"retail", "bulk", "cold_storage", "other"})
 
@@ -22,7 +23,7 @@ def serialize_warehouse(row: m.Warehouse) -> dict:
         "warehouse_type": getattr(row, "warehouse_type", None) or "retail",
         "manager_id": getattr(row, "manager_id", None),
         "address": getattr(row, "address", None),
-        "capacity": float(cap) if cap is not None else None,
+        "capacity": money_json(cap) if cap is not None else None,
         "is_active": bool(getattr(row, "is_active", True)),
     }
 
@@ -98,12 +99,12 @@ async def create_warehouse(
     address: str | None = None,
     capacity: float | None = None,
 ) -> m.Warehouse:
-    code_clean = (code or "").strip().upper()
-    if not code_clean:
-        raise HTTPException(status_code=400, detail="code is required")
-    name_clean = (name or "").strip()
-    if not name_clean:
-        raise HTTPException(status_code=400, detail="name is required")
+    # OpenAPI WarehouseCodeValue → 422; service defense-in-depth → 400.
+    code_clean = require_honest_narrative(
+        (code or "").strip().upper(), label="warehouse code", max_length=50
+    )
+    # OpenAPI WarehouseNameValue → 422; service defense-in-depth → 400.
+    name_clean = require_honest_narrative(name, label="warehouse name", max_length=150)
     existing = (
         await db.execute(
             select(m.Warehouse).where(
@@ -122,7 +123,7 @@ async def create_warehouse(
         store_id=await _assert_store(db, tenant_id, store_id),
         warehouse_type=_normalize_type(warehouse_type),
         manager_id=await _assert_tenant_user(db, tenant_id, manager_id),
-        address=(address or "").strip() or None,
+        address=optional_honest_narrative(address, label="warehouse address", max_length=500),
         capacity=capacity,
         is_active=True,
     )
@@ -149,10 +150,8 @@ async def update_warehouse(
 ) -> m.Warehouse:
     row = await get_warehouse(db, tenant_id, warehouse_id)
     if name is not None:
-        name_clean = name.strip()
-        if not name_clean:
-            raise HTTPException(status_code=400, detail="name cannot be empty")
-        row.name = name_clean
+        # OpenAPI WarehouseNameValue → 422; service defense-in-depth → 400.
+        row.name = require_honest_narrative(name, label="warehouse name", max_length=150)
     if clear_store:
         row.store_id = None
     elif store_id is not None:
@@ -164,7 +163,9 @@ async def update_warehouse(
     elif manager_id is not None:
         row.manager_id = await _assert_tenant_user(db, tenant_id, manager_id)
     if address is not None:
-        row.address = address.strip() or None
+        row.address = optional_honest_narrative(
+            address, label="warehouse address", max_length=500
+        )
     if clear_capacity:
         row.capacity = None
     elif capacity is not None:

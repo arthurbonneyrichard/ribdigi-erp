@@ -8,11 +8,15 @@ const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 export default function Page() {
   const [rows, setRows] = useState<any[]>([]);
+  const [backupManageFilter, setBackupManageFilter] = useState<
+    'all' | 'pending' | 'completed' | 'failed' | 'restoring'
+  >('all');
   const [settings, setSettings] = useState<any>(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [dryReport, setDryReport] = useState<any>(null);
+  const [backupNotes, setBackupNotes] = useState('');
 
   async function refresh() {
     const [list, cfg] = await Promise.all([api('/backup'), api('/backup/settings')]);
@@ -24,12 +28,22 @@ export default function Page() {
     refresh().catch((err) => setError(err.message));
   }, []);
 
+  const managedBackups = rows.filter((r) => {
+    if (backupManageFilter === 'all') return true;
+    return (r.status || 'pending') === backupManageFilter;
+  });
+
   async function createBackup() {
     setError('');
+    setMessage('');
     setBusy(true);
     try {
-      const r = await api('/backup', { method: 'POST', body: JSON.stringify({ notes: 'manual' }) });
+      const r = await api('/backup', {
+        method: 'POST',
+        body: JSON.stringify({ notes: backupNotes.trim() || null }),
+      });
       setMessage(r.message || 'Backup created');
+      setBackupNotes('');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -131,6 +145,7 @@ export default function Page() {
             <label>
               <input
                 type="checkbox"
+                aria-label="Backup schedule enabled"
                 checked={!!settings.enabled}
                 onChange={(e) => setSettings({ ...settings, enabled: e.target.checked })}
               />{' '}
@@ -139,6 +154,7 @@ export default function Page() {
             <select
               value={settings.frequency || 'daily'}
               onChange={(e) => setSettings({ ...settings, frequency: e.target.value })}
+              aria-label="Backup frequency"
             >
               <option value="daily">Daily</option>
               <option value="weekly">Weekly</option>
@@ -150,6 +166,7 @@ export default function Page() {
               value={settings.retention_count ?? 30}
               onChange={(e) => setSettings({ ...settings, retention_count: e.target.value })}
               placeholder="Retention"
+              aria-label="Backup retention count"
               style={{ width: 100 }}
             />
             <input
@@ -159,10 +176,19 @@ export default function Page() {
               value={settings.hour_utc ?? 2}
               onChange={(e) => setSettings({ ...settings, hour_utc: e.target.value })}
               placeholder="Hour UTC"
+              aria-label="Backup hour UTC"
               style={{ width: 100 }}
             />
-            <button onClick={saveSettings}>Save settings</button>
-            <button disabled={busy} onClick={createBackup}>
+            <button aria-label="Save backup settings" onClick={saveSettings}>Save settings</button>
+            <input
+              value={backupNotes}
+              onChange={(e) => setBackupNotes(e.target.value)}
+              placeholder="Backup notes (optional)"
+              aria-label="Backup notes"
+              title="Optional notes (1–500 chars; letters/digits required)"
+              style={{ minWidth: 180 }}
+            />
+            <button disabled={busy} onClick={createBackup} aria-label="Create backup now">
               {busy ? 'Working…' : 'Create backup now'}
             </button>
           </div>
@@ -180,6 +206,23 @@ export default function Page() {
         </div>
       )}
 
+      <select
+        value={backupManageFilter}
+        onChange={(e) =>
+          setBackupManageFilter(
+            e.target.value as 'all' | 'pending' | 'completed' | 'failed' | 'restoring'
+          )
+        }
+        title="Filter backup job list by status"
+        aria-label="Backup job status filter"
+        style={{ marginBottom: 12 }}
+      >
+        <option value="all">All statuses</option>
+        <option value="pending">Pending only</option>
+        <option value="completed">Completed only</option>
+        <option value="failed">Failed only</option>
+        <option value="restoring">Restoring only</option>
+      </select>
       <table className="table">
         <thead>
           <tr>
@@ -192,7 +235,7 @@ export default function Page() {
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
+          {managedBackups.map((r) => (
             <tr key={r.id}>
               <td>{String(r.created_at)}</td>
               <td>{r.filename}</td>
@@ -200,14 +243,29 @@ export default function Page() {
               <td>{r.status}</td>
               <td>{r.checksum_sha256 ? String(r.checksum_sha256).slice(0, 12) : '—'}</td>
               <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <button onClick={() => downloadBackup(r.id, r.filename)}>Download</button>
-                <button onClick={() => dryRun(r.id)}>Dry-run</button>
-                <button disabled={busy} onClick={() => applyRestore(r.id)}>
+                <button onClick={() => downloadBackup(r.id, r.filename)} aria-label="Download backup">
+                  Download
+                </button>
+                <button onClick={() => dryRun(r.id)} aria-label="Backup dry-run restore">
+                  Dry-run
+                </button>
+                <button
+                  disabled={busy}
+                  onClick={() => applyRestore(r.id)}
+                  aria-label="Apply backup restore"
+                >
                   Restore
                 </button>
               </td>
             </tr>
           ))}
+          {!managedBackups.length && (
+            <tr>
+              <td colSpan={6} className="muted">
+                No backups for this filter
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
     </Shell>

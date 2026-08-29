@@ -8,6 +8,21 @@ import { useStoreContext } from '../../lib/storeContext';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
+/** Keep aligned with backend SystemRoleValue / rbac.VALID_ROLES (approval matrix). */
+const SYSTEM_ROLES = [
+  'super_admin',
+  'platform_owner',
+  'platform_admin',
+  'platform_support',
+  'platform_finance',
+  'company_admin',
+  'store_manager',
+  'sales_officer',
+  'inventory_officer',
+  'accountant',
+  'cashier',
+] as const;
+
 type Category = {
   id: string;
   code: string;
@@ -21,6 +36,7 @@ type Category = {
 type Expense = {
   id: string;
   category: string;
+  category_id?: string | null;
   description: string;
   amount: number;
   payment_method: string;
@@ -41,6 +57,9 @@ type Expense = {
 
 export default function Page() {
   const [rows, setRows] = useState<Expense[]>([]);
+  const [expenseManageFilter, setExpenseManageFilter] = useState<
+    'all' | 'pending' | 'approved' | 'rejected'
+  >('all');
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryManageFilter, setCategoryManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [threshold, setThreshold] = useState(100);
@@ -63,6 +82,7 @@ export default function Page() {
   const [branches, setBranches] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [reference, setReference] = useState('');
+  const [expenseDate, setExpenseDate] = useState('');
   const [rejectReason, setRejectReason] = useState('');
   const [approveComment, setApproveComment] = useState('');
   const [ocrFor, setOcrFor] = useState<string | null>(null);
@@ -81,6 +101,13 @@ export default function Page() {
     description: string;
     reference: string;
     payment_method: string;
+    category_id: string;
+    store_id: string;
+    had_store: boolean;
+    branch_id: string;
+    had_branch: boolean;
+    department_id: string;
+    had_department: boolean;
   } | null>(null);
   const [editBusy, setEditBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -169,6 +196,12 @@ export default function Page() {
   }, []);
 
   async function createCategory() {
+    const name = newCatName.trim();
+    if (!name) {
+      setError('Expense category name is required.');
+      setMessage('');
+      return;
+    }
     setError('');
     setMessage('');
     try {
@@ -176,9 +209,9 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           code: newCatCode.trim(),
-          name: newCatName.trim(),
+          name,
           budget_amount: Number(newCatBudget) || 0,
-          account_id: newCatAccountId || null,
+          account_id: newCatAccountId.trim() || null,
         }),
       });
       setNewCatCode('');
@@ -201,10 +234,11 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const accountId = accountDrafts[cat.id] || '';
+      const accountId = (accountDrafts[cat.id] || '').trim();
       const payload: Record<string, unknown> = {
         budget_amount: Number(budgetDrafts[cat.id]) || 0,
       };
+      // trim so Save category (UuidIdValue account_id) does not 422; clear when blank
       if (accountId) payload.account_id = accountId;
       else payload.clear_account = true;
       const r = await api(`/expenses/categories/${cat.id}`, {
@@ -253,22 +287,25 @@ export default function Page() {
       const r = await api('/expenses', {
         method: 'POST',
         body: JSON.stringify({
-          category_id: categoryId || undefined,
+          category_id: categoryId.trim() || null,
           amount: Number(amount),
-          description,
-          payee: payee || undefined,
+          description: description.trim() || null,
+          payee: payee.trim() || null,
+          // null when blank so Create does not 422 (IsoDateQueryValue); omit → today.
+          expense_date: expenseDate.trim() || null,
           payment_method: paymentMethod,
-          liquid_account_id: liquidAccountId || null,
-          reference: reference || undefined,
-          branch_id: branchId || null,
-          department_id: departmentId || null,
-          store_id: storeId || null,
+          liquid_account_id: liquidAccountId.trim() || null,
+          reference: reference.trim() || null,
+          branch_id: branchId.trim() || null,
+          department_id: departmentId.trim() || null,
+          store_id: storeId.trim() || null,
         }),
       });
       setMessage(`Expense ${r.data.status}: ${r.data.amount}`);
       setDescription('');
       setPayee('');
       setReference('');
+      setExpenseDate('');
       setStoreId('');
       setBranchId('');
       setDepartmentId('');
@@ -286,14 +323,14 @@ export default function Page() {
       const r = await api('/expenses/recurring', {
         method: 'POST',
         body: JSON.stringify({
-          category_id: recCategoryId || undefined,
+          category_id: recCategoryId.trim() || null,
           amount: Number(recAmount),
-          description: recDescription,
-          payee: recPayee || undefined,
+          description: recDescription.trim() || null,
+          payee: recPayee.trim() || null,
           frequency: recFrequency,
           payment_method: recPaymentMethod,
-          branch_id: recBranchId || null,
-          department_id: recDepartmentId || null,
+          branch_id: recBranchId.trim() || null,
+          department_id: recDepartmentId.trim() || null,
         }),
       });
       setMessage(
@@ -347,17 +384,17 @@ export default function Page() {
       const r = await api(`/expenses/recurring/${recEditId}`, {
         method: 'PATCH',
         body: JSON.stringify({
-          category_id: recCategoryId || undefined,
+          category_id: recCategoryId.trim() || null,
           amount,
-          description: recDescription,
+          description: recDescription.trim() || null,
           payee: recPayee.trim() || null,
           clear_payee: !recPayee.trim(),
           frequency: recFrequency,
           payment_method: recPaymentMethod,
-          branch_id: recBranchId || null,
-          department_id: recDepartmentId || null,
-          clear_branch: !recBranchId,
-          clear_department: !recDepartmentId,
+          branch_id: recBranchId.trim() || null,
+          department_id: recDepartmentId.trim() || null,
+          clear_branch: !recBranchId.trim(),
+          clear_department: !recDepartmentId.trim(),
         }),
       });
       setMessage(
@@ -566,10 +603,14 @@ export default function Page() {
     try {
       const body: Record<string, unknown> = {};
       if (ocrDraft.amount !== '') body.amount = Number(ocrDraft.amount);
-      if (ocrDraft.payee !== '') body.payee = ocrDraft.payee;
-      if (ocrDraft.description !== '') body.description = ocrDraft.description;
-      if (ocrDraft.reference !== '') body.reference = ocrDraft.reference;
-      if (ocrDraft.expense_date !== '') body.expense_date = ocrDraft.expense_date;
+      const payee = String(ocrDraft.payee || '').trim();
+      if (payee) body.payee = payee;
+      const description = String(ocrDraft.description || '').trim();
+      if (description) body.description = description;
+      const reference = String(ocrDraft.reference || '').trim();
+      if (reference) body.reference = reference;
+      const expenseDate = String(ocrDraft.expense_date || '').trim();
+      if (expenseDate) body.expense_date = expenseDate;
       await api(`/expenses/${ocrFor}`, { method: 'PATCH', body: JSON.stringify(body) });
       setMessage('OCR suggestions applied (pending expense updated)');
       setOcrFor(null);
@@ -594,6 +635,13 @@ export default function Page() {
       description: r.description || '',
       reference: r.reference || '',
       payment_method: r.payment_method || 'cash',
+      category_id: r.category_id || '',
+      store_id: r.store_id || '',
+      had_store: Boolean(r.store_id),
+      branch_id: r.branch_id || '',
+      had_branch: Boolean(r.branch_id),
+      department_id: r.department_id || '',
+      had_department: Boolean(r.department_id),
     });
   }
 
@@ -615,10 +663,29 @@ export default function Page() {
       const body: Record<string, unknown> = {
         amount,
         payee: editDraft.payee.trim() || null,
-        description: editDraft.description.trim() || '',
+        description: editDraft.description.trim() || null,
         reference: editDraft.reference.trim() || null,
         payment_method: editDraft.payment_method.trim() || 'cash',
+        category_id: editDraft.category_id.trim() || null,
       };
+      const storeTrim = editDraft.store_id.trim();
+      if (storeTrim) {
+        body.store_id = storeTrim;
+      } else if (editDraft.had_store) {
+        body.clear_store = true;
+      }
+      const branchTrim = editDraft.branch_id.trim();
+      if (branchTrim) {
+        body.branch_id = branchTrim;
+      } else if (editDraft.had_branch) {
+        body.clear_branch = true;
+      }
+      const departmentTrim = editDraft.department_id.trim();
+      if (departmentTrim) {
+        body.department_id = departmentTrim;
+      } else if (editDraft.had_department) {
+        body.clear_department = true;
+      }
       const r = await api(`/expenses/${editFor}`, { method: 'PATCH', body: JSON.stringify(body) });
       setMessage(
         `Updated ${r.data?.reference || editFor.slice(0, 8)} — ${r.data?.payee || 'expense'} (${r.data?.amount})`
@@ -642,7 +709,8 @@ export default function Page() {
           levels: levels.map((l) => ({
             min_amount: Number(l.min_amount),
             roles: l.roles,
-            label: l.label || undefined,
+            // null when blank so Save does not 422 (ApprovalLevelLabelValue).
+            label: (l.label || '').trim() || null,
           })),
         }),
       });
@@ -713,6 +781,10 @@ export default function Page() {
     const active = r.is_active !== false;
     return recurringManageFilter === 'inactive' ? !active : active;
   });
+  const managedExpenses = rows.filter((r) => {
+    if (expenseManageFilter === 'all') return true;
+    return (r.status || 'pending') === expenseManageFilter;
+  });
 
   return (
     <Shell>
@@ -738,15 +810,18 @@ export default function Page() {
             onChange={(e) => setExpPrefix(e.target.value.toUpperCase())}
             placeholder="Prefix"
             style={{ width: 100 }}
+            aria-label="Expense number prefix"
+            title="Document prefix (letters, digits, _ or -)"
           />
           <input
             value={expNext}
             onChange={(e) => setExpNext(e.target.value)}
             placeholder="Next #"
             style={{ width: 90 }}
+            aria-label="Expense next number"
           />
           <span className="muted">{expPreview || '—'}</span>
-          <button type="button" onClick={saveExpenseNumbering}>
+          <button type="button" aria-label="Save expense numbering" onClick={saveExpenseNumbering}>
             Save numbering
           </button>
         </div>
@@ -770,12 +845,15 @@ export default function Page() {
               onChange={(e) => updateLevel(idx, { min_amount: Number(e.target.value) || 0 })}
               placeholder="Min amount"
               style={{ width: 100 }}
+              aria-label={`Expense approval level ${idx + 1} min amount`}
             />
             <input
               value={lvl.label || ''}
               onChange={(e) => updateLevel(idx, { label: e.target.value })}
               placeholder="Label"
+              title="Optional level label (1–120 chars; letters/digits required)"
               style={{ width: 140 }}
+              aria-label={`Expense approval level ${idx + 1} label`}
             />
             <input
               value={(lvl.roles || []).join(', ')}
@@ -787,19 +865,31 @@ export default function Page() {
                     .filter(Boolean),
                 })
               }
-              placeholder="roles"
+              placeholder="roles (comma-separated system roles)"
+              list="expense-approval-system-roles"
               style={{ minWidth: 220, flex: 1 }}
+              aria-label={`Expense approval level ${idx + 1} roles`}
             />
-            <button type="button" onClick={() => removeLevel(idx)} disabled={levels.length <= 1}>
+            <button
+              type="button"
+              onClick={() => removeLevel(idx)}
+              disabled={levels.length <= 1}
+              aria-label={`Remove expense approval level ${idx + 1}`}
+            >
               Remove
             </button>
           </div>
         ))}
+        <datalist id="expense-approval-system-roles">
+          {SYSTEM_ROLES.map((r) => (
+            <option key={r} value={r} />
+          ))}
+        </datalist>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button type="button" onClick={addLevel} disabled={levels.length >= 5}>
+          <button type="button" onClick={addLevel} disabled={levels.length >= 5} aria-label="Add expense approval level">
             Add level
           </button>
-          <button type="button" onClick={saveApprovalMatrix}>
+          <button type="button" onClick={saveApprovalMatrix} aria-label="Save expense approval matrix">
             Save matrix
           </button>
         </div>
@@ -818,9 +908,12 @@ export default function Page() {
             value={newCatCode}
             onChange={(e) => setNewCatCode(e.target.value)}
             placeholder="Code"
+            aria-label="Expense category code"
+            title="Expense category code (1–40 chars; letters/digits required)"
             style={{ width: 90 }}
           />
           <input
+            aria-label="Expense category name"
             value={newCatName}
             onChange={(e) => setNewCatName(e.target.value)}
             placeholder="Name"
@@ -830,12 +923,14 @@ export default function Page() {
             value={newCatBudget}
             onChange={(e) => setNewCatBudget(e.target.value)}
             placeholder="Monthly budget"
+            aria-label="Expense category monthly budget"
             style={{ width: 120 }}
           />
           <select
             value={newCatAccountId}
             onChange={(e) => setNewCatAccountId(e.target.value)}
             title="GL expense account"
+            aria-label="Expense category GL account"
           >
             <option value="">GL: default 6000</option>
             {expenseAccounts.map((a: any) => (
@@ -846,6 +941,7 @@ export default function Page() {
           </select>
           <button
             type="button"
+            aria-label="Add expense category"
             onClick={createCategory}
             disabled={!newCatCode.trim() || !newCatName.trim()}
           >
@@ -892,6 +988,7 @@ export default function Page() {
                     onChange={(e) =>
                       setBudgetDrafts((prev) => ({ ...prev, [c.id]: e.target.value }))
                     }
+                    aria-label={`Edit expense category budget ${c.code}`}
                     style={{ width: 110 }}
                   />
                 </td>
@@ -901,6 +998,7 @@ export default function Page() {
                     onChange={(e) =>
                       setAccountDrafts((prev) => ({ ...prev, [c.id]: e.target.value }))
                     }
+                    aria-label={`Edit expense category GL account ${c.id}`}
                   >
                     <option value="">Default 6000</option>
                     {expenseAccounts.map((a: any) => (
@@ -912,13 +1010,22 @@ export default function Page() {
                 </td>
                 <td>{c.is_active === false ? 'no' : 'yes'}</td>
                 <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  <button type="button" onClick={() => saveCategoryBudget(c)}>
+                  <button
+                    type="button"
+                    onClick={() => saveCategoryBudget(c)}
+                    aria-label={`Save expense category ${c.id}`}
+                  >
                     Save
                   </button>
                   <button
                     type="button"
                     className={c.is_active === false ? 'btn-ok' : 'btn-danger'}
                     onClick={() => setCategoryActive(c, c.is_active === false)}
+                    aria-label={
+                      c.is_active === false
+                        ? `Activate expense category ${c.id}`
+                        : `Deactivate expense category ${c.id}`
+                    }
                     title={
                       c.is_active === false
                         ? 'Reactivate category for new expenses'
@@ -950,6 +1057,8 @@ export default function Page() {
             value={skipNextReason}
             onChange={(e) => setSkipNextReason(e.target.value)}
             placeholder="Required before Skip next"
+            aria-label="Skip next reason"
+            title="Required reason for Skip next (1–500 chars; letters/digits required)"
             style={{ minWidth: 280 }}
           />
         </label>
@@ -963,7 +1072,14 @@ export default function Page() {
           </p>
         ) : null}
         <div className="erp-form-grid" style={{ marginBottom: 12 }}>
-          <select value={recCategoryId} onChange={(e) => setRecCategoryId(e.target.value)}>
+          <select
+            value={recCategoryId}
+            onChange={(e) => setRecCategoryId(e.target.value)}
+            aria-label={
+              recEditId ? 'Edit recurring expense category' : 'Recurring expense category'
+            }
+            title="Recurring expense category (catalog picker; API category label 1–100)"
+          >
             {categories
               .filter((c) => c.is_active !== false || c.id === recCategoryId)
               .map((c) => (
@@ -991,13 +1107,21 @@ export default function Page() {
             placeholder="Description"
             aria-label="Recurring description"
           />
-          <select value={recFrequency} onChange={(e) => setRecFrequency(e.target.value)}>
+          <select
+            value={recFrequency}
+            onChange={(e) => setRecFrequency(e.target.value)}
+            aria-label="Recurring frequency"
+          >
             <option value="daily">Daily</option>
             <option value="weekly">Weekly</option>
             <option value="monthly">Monthly</option>
             <option value="yearly">Yearly</option>
           </select>
-          <select value={recPaymentMethod} onChange={(e) => setRecPaymentMethod(e.target.value)}>
+          <select
+            value={recPaymentMethod}
+            onChange={(e) => setRecPaymentMethod(e.target.value)}
+            aria-label="Recurring payment method"
+          >
             <option value="cash">Cash</option>
             <option value="bank_transfer">Bank transfer</option>
             <option value="card">Card</option>
@@ -1009,6 +1133,10 @@ export default function Page() {
               setRecBranchId(e.target.value);
               setRecDepartmentId('');
             }}
+            aria-label={
+              recEditId ? 'Edit recurring expense branch' : 'Recurring expense branch'
+            }
+            title="Recurring expense branch (optional org dim)"
           >
             <option value="">No branch</option>
             {branches
@@ -1019,7 +1147,16 @@ export default function Page() {
                 </option>
               ))}
           </select>
-          <select value={recDepartmentId} onChange={(e) => setRecDepartmentId(e.target.value)}>
+          <select
+            value={recDepartmentId}
+            onChange={(e) => setRecDepartmentId(e.target.value)}
+            aria-label={
+              recEditId
+                ? 'Edit recurring expense department'
+                : 'Recurring expense department'
+            }
+            title="Recurring expense department (optional org dim)"
+          >
             <option value="">No department</option>
             {departments
               .filter((d) => d.is_active !== false)
@@ -1033,19 +1170,19 @@ export default function Page() {
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {recEditId ? (
               <>
-                <button type="button" onClick={saveRecurringEdit} disabled={!recCategoryId || recBusy}>
+                <button type="button" onClick={saveRecurringEdit} disabled={!recCategoryId || recBusy} aria-label="Save recurring expense schedule">
                   {recBusy ? 'Saving…' : 'Save schedule'}
                 </button>
-                <button type="button" onClick={cancelRecurringEdit} disabled={recBusy}>
+                <button type="button" onClick={cancelRecurringEdit} disabled={recBusy} aria-label="Cancel recurring expense edit">
                   Cancel
                 </button>
               </>
             ) : (
-              <button type="button" onClick={createRecurring} disabled={!recCategoryId || recBusy}>
+              <button type="button" onClick={createRecurring} disabled={!recCategoryId || recBusy} aria-label="Create recurring expense schedule">
                 {recBusy ? 'Creating…' : 'Create schedule'}
               </button>
             )}
-            <button type="button" onClick={generateDueRecurring}>
+            <button type="button" aria-label="Generate due recurring expenses" onClick={generateDueRecurring}>
               Generate due now
             </button>
           </div>
@@ -1106,7 +1243,7 @@ export default function Page() {
                 </td>
                 <td>{r.is_active ? 'yes' : 'no'}</td>
                 <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  <button type="button" onClick={() => startRecurringEdit(r)}>
+                  <button type="button" onClick={() => startRecurringEdit(r)} aria-label={`Edit recurring expense schedule ${r.id}`}>
                     Edit schedule
                   </button>
                   {r.is_active ? (
@@ -1115,6 +1252,7 @@ export default function Page() {
                       className="btn-danger"
                       onClick={() => skipNextRecurring(r.id)}
                       disabled={!skipNextReason.trim()}
+                      aria-label={`Skip next recurring expense ${r.id}`}
                       title={
                         skipNextReason.trim()
                           ? 'Skip next occurrence'
@@ -1128,6 +1266,11 @@ export default function Page() {
                     type="button"
                     className={r.is_active ? 'btn-danger' : 'btn-ok'}
                     onClick={() => setRecurringActive(r.id, !r.is_active)}
+                    aria-label={
+                      r.is_active
+                        ? `Deactivate recurring expense ${r.id}`
+                        : `Activate recurring expense ${r.id}`
+                    }
                   >
                     {r.is_active ? 'Deactivate' : 'Activate'}
                   </button>
@@ -1142,7 +1285,12 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>New expense</h3>
         <div className="erp-form-grid">
-          <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+          <select
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+            aria-label="Expense spend category"
+            title="Expense spend category (catalog picker; API category label 1–100)"
+          >
             {categories
               .filter((c) => c.is_active !== false || c.id === categoryId)
               .map((c) => (
@@ -1154,19 +1302,42 @@ export default function Page() {
                 </option>
               ))}
           </select>
-          <input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" />
-          <input value={payee} onChange={(e) => setPayee(e.target.value)} placeholder="Payee" />
+          <input
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="Amount"
+            aria-label="Expense amount"
+          />
+          <input
+            value={payee}
+            onChange={(e) => setPayee(e.target.value)}
+            placeholder="Payee"
+            aria-label="Expense payee"
+          />
           <input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Description"
+            aria-label="Expense description"
           />
           <input
             value={reference}
             onChange={(e) => setReference(e.target.value)}
             placeholder="Reference"
+            aria-label="Expense reference"
           />
-          <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+          <input
+            value={expenseDate}
+            onChange={(e) => setExpenseDate(e.target.value)}
+            placeholder="Date YYYY-MM-DD (optional)"
+            aria-label="Expense date"
+            title="Expense date (optional YYYY-MM-DD)"
+          />
+          <select
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(e.target.value)}
+            aria-label="Expense payment method"
+          >
             <option value="cash">Cash</option>
             <option value="bank_transfer">Bank transfer</option>
             <option value="card">Card</option>
@@ -1175,7 +1346,8 @@ export default function Page() {
           <select
             value={liquidAccountId}
             onChange={(e) => setLiquidAccountId(e.target.value)}
-            title="Optional GL override"
+            aria-label="Expense liquid account"
+            title="Optional liquid GL override (UuidIdValue)"
           >
             <option value="">GL: method default</option>
             {liquidAccounts.map((a: any) => (
@@ -1191,7 +1363,8 @@ export default function Page() {
               setDepartmentId('');
               setStoreId('');
             }}
-            title="Branch (optional)"
+            aria-label="Expense branch"
+            title="Optional branch (UuidIdValue)"
           >
             <option value="">All / no branch</option>
             {branches
@@ -1208,7 +1381,8 @@ export default function Page() {
               setStoreId(e.target.value);
               setCtxStoreId(e.target.value);
             }}
-            title="Store (optional)"
+            aria-label="Expense store"
+            title="Optional store (UuidIdValue)"
           >
             <option value="">No store</option>
             {stores
@@ -1223,7 +1397,8 @@ export default function Page() {
           <select
             value={departmentId}
             onChange={(e) => setDepartmentId(e.target.value)}
-            title="Department (optional)"
+            aria-label="Expense department"
+            title="Optional department (UuidIdValue)"
           >
             <option value="">No department</option>
             {departments
@@ -1235,7 +1410,7 @@ export default function Page() {
                 </option>
               ))}
           </select>
-          <button type="button" className="btn-ok" onClick={createExpense}>
+          <button type="button" className="btn-ok" aria-label="Submit expense" onClick={createExpense}>
             Submit expense
           </button>
         </div>
@@ -1248,6 +1423,8 @@ export default function Page() {
             value={approveComment}
             onChange={(e) => setApproveComment(e.target.value)}
             placeholder="Optional — stored as approval_comment"
+            aria-label="Expense approve comment"
+            title="Optional comment (1–500 chars; letters/digits required); blank omits"
             style={{ minWidth: 280 }}
           />
         </label>
@@ -1260,6 +1437,8 @@ export default function Page() {
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
             placeholder="Required before Reject"
+            aria-label="Expense reject reason"
+            title="Required reason for Reject (1–500 chars; letters/digits required)"
             style={{ minWidth: 280 }}
           />
         </label>
@@ -1280,29 +1459,34 @@ export default function Page() {
               value={ocrDraft.amount}
               onChange={(e) => setOcrDraft({ ...ocrDraft, amount: e.target.value })}
               placeholder="Amount"
+              aria-label="OCR expense amount"
             />
             <input
               value={ocrDraft.payee}
               onChange={(e) => setOcrDraft({ ...ocrDraft, payee: e.target.value })}
               placeholder="Payee"
+              aria-label="Expense OCR payee"
             />
             <input
               value={ocrDraft.description}
               onChange={(e) => setOcrDraft({ ...ocrDraft, description: e.target.value })}
               placeholder="Description"
+              aria-label="Expense OCR description"
             />
             <input
               value={ocrDraft.reference}
               onChange={(e) => setOcrDraft({ ...ocrDraft, reference: e.target.value })}
               placeholder="Reference"
+              aria-label="Expense OCR reference"
             />
             <input
               value={ocrDraft.expense_date}
               onChange={(e) => setOcrDraft({ ...ocrDraft, expense_date: e.target.value })}
               placeholder="Date YYYY-MM-DD"
+              aria-label="Expense OCR date"
             />
             <div style={{ display: 'flex', gap: 8 }}>
-              <button type="button" onClick={applyOcr}>
+              <button type="button" aria-label="Apply expense OCR suggestion" onClick={applyOcr}>
                 Apply to expense
               </button>
               <button
@@ -1312,6 +1496,7 @@ export default function Page() {
                   setOcrDraft(null);
                   setOcrMeta(null);
                 }}
+                aria-label="Dismiss expense OCR"
               >
                 Dismiss
               </button>
@@ -1353,6 +1538,80 @@ export default function Page() {
               aria-label="Edit reference"
             />
             <select
+              value={editDraft.category_id}
+              onChange={(e) => setEditDraft({ ...editDraft, category_id: e.target.value })}
+              aria-label="Edit expense category"
+              title="Optional spend category (UuidIdValue); blank → no change / clear path"
+            >
+              <option value="">Keep current category</option>
+              {categories
+                .filter((c) => c.is_active !== false || c.id === editDraft.category_id)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.code} — {c.name}
+                  </option>
+                ))}
+            </select>
+            <select
+              value={editDraft.store_id}
+              onChange={(e) => setEditDraft({ ...editDraft, store_id: e.target.value })}
+              aria-label="Edit expense store"
+              title="Optional store (UuidIdValue); blank clears when previously set"
+            >
+              <option value="">{editDraft.had_store ? 'Clear store' : 'No store'}</option>
+              {stores
+                .filter((s) => s.is_active !== false || s.id === editDraft.store_id)
+                .filter((s) => !editDraft.branch_id || s.branch_id === editDraft.branch_id)
+                .map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.code} — {s.name}
+                  </option>
+                ))}
+            </select>
+            <select
+              value={editDraft.branch_id}
+              onChange={(e) =>
+                setEditDraft({
+                  ...editDraft,
+                  branch_id: e.target.value,
+                  store_id: '',
+                  department_id: '',
+                })
+              }
+              aria-label="Edit expense branch"
+              title="Optional branch (UuidIdValue); blank clears when previously set"
+            >
+              <option value="">{editDraft.had_branch ? 'Clear branch' : 'No branch'}</option>
+              {branches
+                .filter((b) => b.is_active !== false || b.id === editDraft.branch_id)
+                .map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.code} — {b.name}
+                  </option>
+                ))}
+            </select>
+            <select
+              value={editDraft.department_id}
+              onChange={(e) => setEditDraft({ ...editDraft, department_id: e.target.value })}
+              aria-label="Edit expense department"
+              title="Optional department (UuidIdValue); blank clears when previously set"
+            >
+              <option value="">
+                {editDraft.had_department ? 'Clear department' : 'No department'}
+              </option>
+              {departments
+                .filter((d) => d.is_active !== false || d.id === editDraft.department_id)
+                .filter(
+                  (d) =>
+                    !editDraft.branch_id || !d.branch_id || d.branch_id === editDraft.branch_id,
+                )
+                .map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.code} — {d.name}
+                  </option>
+                ))}
+            </select>
+            <select
               value={editDraft.payment_method}
               onChange={(e) => setEditDraft({ ...editDraft, payment_method: e.target.value })}
               aria-label="Edit payment method"
@@ -1364,10 +1623,10 @@ export default function Page() {
               <option value="mobile_money">Mobile money</option>
             </select>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button type="button" onClick={saveEdit} disabled={editBusy}>
+              <button type="button" onClick={saveEdit} disabled={editBusy} aria-label="Save expense changes">
                 {editBusy ? 'Saving…' : 'Save changes'}
               </button>
-              <button type="button" onClick={cancelEdit} disabled={editBusy}>
+              <button type="button" onClick={cancelEdit} disabled={editBusy} aria-label="Cancel expense edit">
                 Cancel
               </button>
             </div>
@@ -1375,6 +1634,23 @@ export default function Page() {
         </div>
       )}
 
+      <div style={{ marginBottom: 12 }}>
+        <select
+          value={expenseManageFilter}
+          onChange={(e) =>
+            setExpenseManageFilter(
+              e.target.value as 'all' | 'pending' | 'approved' | 'rejected'
+            )
+          }
+          title="Filter expense list by status"
+          aria-label="Expense status filter"
+        >
+          <option value="all">All statuses</option>
+          <option value="pending">Pending only</option>
+          <option value="approved">Approved only</option>
+          <option value="rejected">Rejected only</option>
+        </select>
+      </div>
       <table className="table">
         <thead>
           <tr>
@@ -1394,7 +1670,14 @@ export default function Page() {
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
+          {managedExpenses.length === 0 ? (
+            <tr>
+              <td colSpan={13} className="muted">
+                No expenses for this filter
+              </td>
+            </tr>
+          ) : (
+            managedExpenses.map((r) => (
             <tr key={r.id}>
               <td>{r.category}</td>
               <td>
@@ -1426,19 +1709,22 @@ export default function Page() {
                 {r.has_attachment ? (
                   <span style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>
                     <button
-                      type="button"
-                      onClick={() =>
-                        setAttachPreview({
-                          apiPath: `/expenses/${r.id}/attachment`,
-                          title: `Receipt — ${r.reference || r.description || r.id.slice(0, 8)}`,
-                        })
-                      }
-                    >
-                      Preview
+                    type="button"
+                    aria-label={`Preview expense attachment ${r.id}`}
+                    onClick={() =>
+                      setAttachPreview({
+                        apiPath: `/expenses/${r.id}/attachment`,
+                        title: `Receipt — ${r.reference || r.description || r.id.slice(0, 8)}`,
+                      })
+                    }
+                  >
+                    Preview
+                  </button>
+                    <button onClick={() => downloadAttachment(r.id)} aria-label="Download expense attachment">
+                      Download
                     </button>
-                    <button onClick={() => downloadAttachment(r.id)}>Download</button>
-                    <button onClick={() => suggestOcr(r.id)}>OCR</button>
-                    <button onClick={() => removeAttachment(r.id)}>Remove</button>
+                    <button onClick={() => suggestOcr(r.id)} aria-label={`Suggest expense OCR ${r.id}`}>OCR</button>
+                    <button onClick={() => removeAttachment(r.id)} aria-label={`Remove expense attachment ${r.id}`}>Remove</button>
                   </span>
                 ) : (
                   <label style={{ cursor: 'pointer' }}>
@@ -1446,6 +1732,7 @@ export default function Page() {
                     <input
                       type="file"
                       style={{ display: 'none' }}
+                      aria-label={`Upload expense attachment ${r.id}`}
                       onChange={(e) => {
                         const f = e.target.files?.[0];
                         if (f) uploadAttachment(r.id, f);
@@ -1457,21 +1744,44 @@ export default function Page() {
               </td>
               <td>
                 {(r.status === 'pending' || r.status === 'rejected') && (
-                  <button type="button" onClick={() => startEdit(r)} style={{ marginRight: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => startEdit(r)}
+                    style={{ marginRight: 8 }}
+                    aria-label={`Edit expense ${r.id}`}
+                  >
                     Edit
                   </button>
                 )}
                 {r.status === 'pending' && (
                   <>
-                    <button className="btn-ok" onClick={() => approve(r.id)} style={{ marginRight: 8 }}>
+                    <button
+                      className="btn-ok"
+                      onClick={() => approve(r.id)}
+                      style={{ marginRight: 8 }}
+                      aria-label="Approve expense"
+                    >
                       Approve
                     </button>
-                    <button className="btn-danger" onClick={() => reject(r.id)}>Reject</button>
+                    <button
+                      className="btn-danger"
+                      onClick={() => reject(r.id)}
+                      aria-label={`Reject expense ${r.id}`}
+                      disabled={!rejectReason.trim()}
+                      title={
+                        rejectReason.trim()
+                          ? 'Reject expense'
+                          : 'Enter a reject reason before rejecting'
+                      }
+                    >
+                      Reject
+                    </button>
                   </>
                 )}
               </td>
             </tr>
-          ))}
+          ))
+          )}
         </tbody>
       </table>
       {attachPreview && (

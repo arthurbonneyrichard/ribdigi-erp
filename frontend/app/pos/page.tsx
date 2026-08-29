@@ -42,6 +42,7 @@ type Customer = {
   name: string;
   email?: string | null;
   phone?: string | null;
+  status?: string | null;
   customer_group_id?: string | null;
   customer_group?: { id: string; name: string; discount_percent: number } | null;
 };
@@ -235,6 +236,7 @@ export default function Page() {
   const [session, setSession] = useState<Session | null>(null);
   const [openingCash, setOpeningCash] = useState('100');
   const [actualCash, setActualCash] = useState('');
+  const [closeNotes, setCloseNotes] = useState('');
   const [stores, setStores] = useState<Store[]>([]);
   const [storeId, setStoreId] = useState('');
   const { storeId: ctxStoreId, setStoreId: setCtxStoreId } = useStoreContext();
@@ -242,7 +244,9 @@ export default function Page() {
   const [splitTender, setSplitTender] = useState(false);
   const [cashTender, setCashTender] = useState('');
   const [cardTender, setCardTender] = useState('');
+  const [paymentReference, setPaymentReference] = useState('');
   const [paper, setPaper] = useState('80mm');
+  const [receiptTo, setReceiptTo] = useState('');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerId, setCustomerId] = useState('');
   const [customerName, setCustomerName] = useState('');
@@ -263,6 +267,8 @@ export default function Page() {
   const [shiftPrefix, setShiftPrefix] = useState('SHIFT');
   const [shiftNext, setShiftNext] = useState('1');
   const [shiftPreview, setShiftPreview] = useState('');
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [shiftManageFilter, setShiftManageFilter] = useState<'all' | 'open' | 'closed'>('all');
 
   const groupDiscountPct = useMemo(() => {
     const match = customers.find((c) => c.id === customerId);
@@ -308,6 +314,21 @@ export default function Page() {
     setSession(r.data || null);
   }
 
+  async function loadSessions() {
+    try {
+      const r = await api('/pos/sessions');
+      setSessions(r.data || []);
+    } catch {
+      // Keep prior cache on transient failures (e.g. rate limit) so the
+      // Recent shifts filter does not flash empty.
+    }
+  }
+
+  const managedShifts = sessions.filter((s) => {
+    if (shiftManageFilter === 'all') return true;
+    return (s.status || '') === shiftManageFilter;
+  });
+
 
   const browse = useCallback(async (query = '') => {
     const r = await api('/pos/products/search?q=' + encodeURIComponent(query));
@@ -319,6 +340,7 @@ export default function Page() {
     refreshSession()
       .then(() => browse(''))
       .catch((err) => setError(err.message));
+    loadSessions().catch(() => setSessions([]));
     api('/customers')
       .then((r) => setCustomers(r.data || []))
       .catch(() => setCustomers([]));
@@ -353,7 +375,9 @@ export default function Page() {
         }
       })
       .catch(() => setStores([]));
-  }, [browse, ctxStoreId, setCtxStoreId]);
+    // setCtxStoreId intentionally omitted: stable setter (see storeContext noops);
+    // including an unstable fallback previously caused a mount request storm.
+  }, [browse, ctxStoreId]);
 
   function selectCustomer(id: string) {
     setCustomerId(id);
@@ -389,12 +413,14 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           opening_cash: Number(openingCash) || 0,
-          store_id: storeId || null,
+          // null when blank so Open shift (UuidIdValue store_id) does not 422
+          store_id: storeId.trim() || null,
         }),
       });
       setSession(r.data);
       setMessage('Shift opened');
       await browse(q);
+      await loadSessions();
     } catch (err: any) {
       setError(err.message);
     }
@@ -446,6 +472,7 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           actual_cash: Number(actualCash || session.expected_cash),
+          notes: closeNotes.trim() || null,
         }),
       });
       setSession(null);
@@ -454,7 +481,9 @@ export default function Page() {
         `Shift closed. Variance: ${r.data.variance ?? 0} (expected ${r.data.expected_cash})`
       );
       setActualCash('');
+      setCloseNotes('');
       setCart([]);
+      await loadSessions();
     } catch (err: any) {
       setError(err.message);
     }
@@ -633,18 +662,21 @@ export default function Page() {
       discount: Number(c.discount) || 0,
     }));
     const body: Record<string, unknown> = {
-      session_id: session.session_id,
+      // trim so Complete sale (UuidIdValue session_id / party_id) does not 422
+      session_id: String(session.session_id).trim(),
       discount_amount: cartDiscountAmount,
       status: 'completed',
-      party_id: customerId || null,
-      customer_name: name || null,
+      party_id: customerId.trim() || null,
+      customer_name: name.trim() || null,
       items,
     };
-    let payments: { payment_method: string; amount: number }[] | null = null;
+    let payments: { payment_method: string; amount: number; reference?: string | null }[] | null =
+      null;
+    const tenderRef = paymentReference.trim() || null;
     if (splitTender) {
       payments = [
-        { payment_method: 'cash', amount: Number(cashTender) || 0 },
-        { payment_method: 'card', amount: Number(cardTender) || 0 },
+        { payment_method: 'cash', amount: Number(cashTender) || 0, reference: null },
+        { payment_method: 'card', amount: Number(cardTender) || 0, reference: tenderRef },
       ].filter((p) => p.amount > 0);
       if (payments.length < 2) {
         setError('Split tender needs cash and card amounts');
@@ -652,6 +684,17 @@ export default function Page() {
       }
       body.payments = payments;
       body.payment_method = 'split';
+    } else if (tenderRef) {
+      // PosPaymentLine.reference only applies on payments[]; wrap single tender.
+      payments = [
+        {
+          payment_method: paymentMethod,
+          amount: cartTotal,
+          reference: tenderRef,
+        },
+      ];
+      body.payments = payments;
+      body.payment_method = paymentMethod;
     } else {
       body.payment_method = paymentMethod;
     }
@@ -714,6 +757,7 @@ export default function Page() {
       clearCart();
       clearCustomer();
       setSplitTender(false);
+      setPaymentReference('');
       setLastSale({ id: r.data.id, reference: r.data.reference });
       await refreshSession();
       await browse(q);
@@ -747,10 +791,17 @@ export default function Page() {
     setError('');
     setReceiptBusy(channel);
     try {
-      await api(`/pos/sales/${lastSale.id}/receipt/send?channel=${channel}`, {
+      const params = new URLSearchParams({ channel });
+      if (receiptTo.trim()) params.set('to', receiptTo.trim());
+      await api(`/pos/sales/${lastSale.id}/receipt/send?${params.toString()}`, {
         method: 'POST',
         body: '{}',
       });
+      setMessage(
+        channel === 'email'
+          ? `Receipt emailed${receiptTo.trim() ? ` to ${receiptTo.trim()}` : ''}`
+          : `Receipt SMS sent${receiptTo.trim() ? ` to ${receiptTo.trim()}` : ''}`,
+      );
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -779,7 +830,7 @@ export default function Page() {
                       setStoreId(e.target.value);
                       setCtxStoreId(e.target.value);
                     }}
-                    aria-label="Store"
+                    aria-label="POS store"
                   >
                     <option value="">Select store</option>
                     {stores.map((s) => (
@@ -798,7 +849,12 @@ export default function Page() {
                   placeholder="Opening cash"
                   aria-label="Opening cash"
                 />
-                <button type="button" className="tpos-btn tpos-btn-primary" onClick={openShift}>
+                <button
+                  type="button"
+                  className="tpos-btn tpos-btn-primary"
+                  onClick={openShift}
+                  aria-label="Open shift"
+                >
                   Open shift
                 </button>
               </>
@@ -819,7 +875,21 @@ export default function Page() {
                   placeholder={`Count ${session.expected_cash}`}
                   aria-label="Counted cash"
                 />
-                <button type="button" className="tpos-btn" onClick={closeShift}>
+                <input
+                  className="tpos-input"
+                  value={closeNotes}
+                  onChange={(e) => setCloseNotes(e.target.value)}
+                  placeholder="Close notes (optional)"
+                  aria-label="POS shift close notes"
+                  title="Optional notes (1–500 chars; letters/digits required)"
+                  style={{ minWidth: 180 }}
+                />
+                <button
+                  type="button"
+                  className="tpos-btn"
+                  onClick={closeShift}
+                  aria-label="Close shift"
+                >
                   Close shift
                 </button>
                 <button
@@ -827,6 +897,7 @@ export default function Page() {
                   className="tpos-btn"
                   onClick={loadShiftReport}
                   disabled={reportBusy}
+                  aria-label={shiftReport ? 'Hide POS shift report' : 'Load POS shift report'}
                 >
                   {reportBusy ? 'Loading…' : shiftReport ? 'Hide report' : 'Shift report'}
                 </button>
@@ -838,11 +909,13 @@ export default function Page() {
                   maxLength={200}
                   autoComplete="off"
                   aria-label="Cash drawer open reason"
+                  title="Specific drawer reason (3–200 chars; not manual/n/a)"
                   style={{ minWidth: 200 }}
                 />
                 <button
                   type="button"
                   className="tpos-btn"
+                  aria-label="Open cash drawer"
                   onClick={async () => {
                     setError('');
                     const cleaned = drawerReason.trim();
@@ -889,6 +962,8 @@ export default function Page() {
               onChange={(e) => setPosPrefix(e.target.value.toUpperCase())}
               placeholder="Prefix"
               style={{ width: 100 }}
+              aria-label="POS sale number prefix"
+              title="Document prefix (letters, digits, _ or -)"
             />
             <input
               className="tpos-input"
@@ -896,6 +971,7 @@ export default function Page() {
               onChange={(e) => setPosNext(e.target.value)}
               placeholder="Next #"
               style={{ width: 90 }}
+              aria-label="POS sale next number"
             />
             <span className="muted">{posPreview || '—'}</span>
           </div>
@@ -907,6 +983,8 @@ export default function Page() {
               onChange={(e) => setShiftPrefix(e.target.value.toUpperCase())}
               placeholder="Prefix"
               style={{ width: 100 }}
+              aria-label="POS session number prefix"
+              title="Document prefix (letters, digits, _ or -)"
             />
             <input
               className="tpos-input"
@@ -914,19 +992,74 @@ export default function Page() {
               onChange={(e) => setShiftNext(e.target.value)}
               placeholder="Next #"
               style={{ width: 90 }}
+              aria-label="POS session next number"
             />
             <span className="muted">{shiftPreview || '—'}</span>
-            <button type="button" className="tpos-btn" onClick={savePosNumbering}>
+            <button type="button" className="tpos-btn" onClick={savePosNumbering} aria-label="Save POS numbering">
               Save numbering
             </button>
           </div>
+        </div>
+
+        <div className="card" style={{ margin: '12px 0' }}>
+          <strong>Recent shifts</strong>
+          <p className="muted" style={{ marginTop: 4 }}>
+            Open vs closed POS sessions for this tenant (BR-8.2). Filter is client-side over the
+            full list cache; API also accepts `?status=open|closed`.
+          </p>
+          <select
+            className="tpos-input"
+            value={shiftManageFilter}
+            onChange={(e) =>
+              setShiftManageFilter(e.target.value as 'all' | 'open' | 'closed')
+            }
+            title="Filter POS shifts by status"
+            aria-label="POS shift status filter"
+            style={{ marginBottom: 12 }}
+          >
+            <option value="all">All statuses</option>
+            <option value="open">Open only</option>
+            <option value="closed">Closed only</option>
+          </select>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Shift</th>
+                <th>Store</th>
+                <th>Status</th>
+                <th>Sales</th>
+                <th>Variance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {managedShifts.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="muted">
+                    No shifts for this filter
+                  </td>
+                </tr>
+              ) : (
+                managedShifts.map((s) => (
+                  <tr key={s.session_id}>
+                    <td>{s.session_number}</td>
+                    <td>{s.store_name || '—'}</td>
+                    <td>{s.status}</td>
+                    <td>
+                      {s.sale_count} · {money(Number(s.total_sales || 0))}
+                    </td>
+                    <td>{s.variance == null ? '—' : s.variance}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
 
         {shiftReport && session && (
           <section className="tpos-report" aria-label="Shift report">
             <div className="tpos-report-head">
               <h2>Shift report</h2>
-              <button type="button" className="tpos-btn" onClick={() => setShiftReport(null)}>
+              <button type="button" className="tpos-btn" onClick={() => setShiftReport(null)} aria-label="Close POS shift report">
                 Close
               </button>
             </div>
@@ -961,7 +1094,7 @@ export default function Page() {
               </div>
               <div>
                 <span>Net sales</span>
-                <strong>{money(Number(shiftReport.summary?.net_sales ?? shiftReport.payment_breakdown?.total || 0))}</strong>
+                <strong>{money(Number(shiftReport.summary?.net_sales ?? shiftReport.payment_breakdown?.total ?? 0))}</strong>
               </div>
             </div>
             <p className="muted" style={{ margin: '8px 0' }}>
@@ -1062,14 +1195,25 @@ export default function Page() {
                   className="tpos-btn"
                   onClick={printLastReceipt}
                   disabled={!!receiptBusy}
+                  aria-label="Print last receipt"
                 >
                   {receiptBusy === 'print' ? 'Printing…' : 'Print'}
                 </button>
+                <input
+                  type="text"
+                  value={receiptTo}
+                  onChange={(e) => setReceiptTo(e.target.value)}
+                  placeholder="Optional to= (email or E.164)"
+                  aria-label="POS receipt override to"
+                  style={{ minWidth: 180 }}
+                  disabled={!!receiptBusy}
+                />
                 <button
                   type="button"
                   className="tpos-btn"
                   onClick={() => sendLastReceipt('email')}
                   disabled={!!receiptBusy}
+                  aria-label="Email last receipt"
                 >
                   {receiptBusy === 'email' ? 'Sending…' : 'Email'}
                 </button>
@@ -1078,6 +1222,7 @@ export default function Page() {
                   className="tpos-btn"
                   onClick={() => sendLastReceipt('sms')}
                   disabled={!!receiptBusy}
+                  aria-label="SMS last receipt"
                 >
                   {receiptBusy === 'sms' ? 'Sending…' : 'SMS'}
                 </button>
@@ -1100,7 +1245,7 @@ export default function Page() {
                 inputMode="text"
                 aria-label="Barcode scan or product search"
               />
-              <button type="submit" className="tpos-btn tpos-btn-primary" disabled={!session}>
+              <button type="submit" className="tpos-btn tpos-btn-primary" disabled={!session} aria-label="POS scan or search products">
                 Scan / Search
               </button>
               <button
@@ -1111,6 +1256,7 @@ export default function Page() {
                   setQ('');
                   browse('').catch((err) => setError(err.message));
                 }}
+                aria-label="Browse all POS products"
               >
                 All
               </button>
@@ -1243,10 +1389,11 @@ export default function Page() {
                   onChange={(e) => setCartDiscount(e.target.value)}
                   placeholder="0.00"
                   inputMode="decimal"
+                  aria-label="POS cart discount"
                 />
               </label>
 
-              <div className="tpos-totals">
+              <div className="tpos-totals" aria-label="POS cart totals">
                 <div className="tpos-total-row">
                   <span>Subtotal</span>
                   <strong>{money(cartTotals.subtotal)}</strong>
@@ -1263,7 +1410,11 @@ export default function Page() {
 
               <label className="tpos-field">
                 <span>Customer {paymentMethod === 'credit' ? '(required)' : '(optional)'}</span>
-                <select value={customerId} onChange={(e) => selectCustomer(e.target.value)}>
+                <select
+                  value={customerId}
+                  onChange={(e) => selectCustomer(e.target.value)}
+                  aria-label="POS customer"
+                >
                   <option value="">Walk-in / none</option>
                   {customers
                     .filter((c) => c.status !== 'inactive')
@@ -1286,6 +1437,7 @@ export default function Page() {
                 <span>Customer name</span>
                 <input
                   className="tpos-input"
+                  aria-label="POS customer name"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   placeholder="Optional name on receipt"
@@ -1297,6 +1449,7 @@ export default function Page() {
               <label className="tpos-split-toggle">
                 <input
                   type="checkbox"
+                  aria-label="POS split tender"
                   checked={splitTender}
                   onChange={(e) => enableSplit(e.target.checked)}
                 />
@@ -1306,7 +1459,11 @@ export default function Page() {
               {!splitTender ? (
                 <label className="tpos-field">
                   <span>Payment</span>
-                  <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+                  <select
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    aria-label="POS payment method"
+                  >
                     <option value="cash">Cash</option>
                     <option value="card">Card</option>
                     <option value="wallet">Digital wallet</option>
@@ -1329,6 +1486,7 @@ export default function Page() {
                         setCardTender(String(Math.max(0, Math.round((cartTotal - cash) * 100) / 100)));
                       }}
                       inputMode="decimal"
+                      aria-label="POS cash tender"
                     />
                   </label>
                   <label className="tpos-field">
@@ -1345,6 +1503,7 @@ export default function Page() {
                         setCashTender(String(Math.max(0, Math.round((cartTotal - card) * 100) / 100)));
                       }}
                       inputMode="decimal"
+                      aria-label="POS card tender"
                     />
                   </label>
                   <p className="tpos-split-hint">
@@ -1355,6 +1514,20 @@ export default function Page() {
               )}
 
               <label className="tpos-field">
+                <span>Payment reference</span>
+                <input
+                  className="tpos-input"
+                  value={paymentReference}
+                  onChange={(e) => setPaymentReference(e.target.value)}
+                  placeholder="Card/auth ref (optional)"
+                  aria-label="POS payment reference"
+                  title="Optional tender reference (1–100 chars; letters/digits required)"
+                  maxLength={100}
+                  autoComplete="off"
+                />
+              </label>
+
+              <label className="tpos-field">
                 <span>Credit override reason</span>
                 <input
                   className="tpos-input"
@@ -1363,11 +1536,17 @@ export default function Page() {
                   placeholder="Required if credit sale exceeds limit"
                   maxLength={500}
                   autoComplete="off"
+                  title="Required on over-limit credit sale (1–500 chars; letters/digits required)"
+                  aria-label="Credit override reason"
                 />
               </label>
               <label className="tpos-field">
                 <span>Receipt</span>
-                <select value={paper} onChange={(e) => setPaper(e.target.value)}>
+                <select
+                  value={paper}
+                  onChange={(e) => setPaper(e.target.value)}
+                  aria-label="POS receipt paper"
+                >
                   <option value="80mm">80mm thermal</option>
                   <option value="58mm">58mm thermal</option>
                 </select>
@@ -1379,7 +1558,7 @@ export default function Page() {
                   className="tpos-btn"
                   onClick={clearCart}
                   disabled={!cart.length}
-                >
+                 aria-label="Clear POS cart">
                   Clear
                 </button>
                 <button
@@ -1387,6 +1566,7 @@ export default function Page() {
                   className="tpos-btn tpos-btn-pay"
                   onClick={checkout}
                   disabled={!cart.length || !session || busy}
+                  aria-label="Charge complete sale"
                 >
                   {busy ? 'Processing…' : 'Charge · Complete sale'}
                 </button>

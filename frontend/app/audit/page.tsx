@@ -8,12 +8,61 @@ const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 const ARCHIVE_ROLES = new Set(['company_admin', 'super_admin']);
 
+const AUDIT_MODULES = [
+  '',
+  'accounting',
+  'ai',
+  'audit',
+  'auth',
+  'backup',
+  'company',
+  'credit',
+  'dashboard',
+  'expenses',
+  'inventory',
+  'notifications',
+  'onboarding',
+  'platform_staff',
+  'pos',
+  'purchasing',
+  'reports',
+  'sales',
+  'security',
+  'settings',
+  'stores',
+  'system',
+  'tax',
+  'tenants',
+  'users',
+  'webhooks',
+] as const;
+
+/** Keep aligned with backend AuditActionValue (strip/lower; digit-start OK for 2fa_*). */
+function auditActionQueryValue(raw: string): string | null {
+  const v = raw.trim().toLowerCase();
+  if (!v) return null;
+  if (!/^[a-z0-9][a-z0-9_]{1,62}$/.test(v)) return null;
+  return v;
+}
+
+/** Keep aligned with backend AuditEntityValue (strip/lower; must start with a letter). */
+function auditEntityQueryValue(raw: string): string | null {
+  const v = raw.trim().toLowerCase();
+  if (!v) return null;
+  if (!/^[a-z][a-z0-9_]{0,62}$/.test(v)) return null;
+  return v;
+}
+
 export default function Page() {
   const [rows, setRows] = useState<any[]>([]);
   const [module, setModule] = useState('');
   const [action, setAction] = useState('');
+  const [appliedAction, setAppliedAction] = useState('');
+  const [entity, setEntity] = useState('');
+  const [appliedEntity, setAppliedEntity] = useState('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [userId, setUserId] = useState('');
   const [verify, setVerify] = useState<any>(null);
   const [retention, setRetention] = useState<any>(null);
   const [archives, setArchives] = useState<any[]>([]);
@@ -25,13 +74,20 @@ export default function Page() {
   const refreshLogs = useCallback(async () => {
     const params = new URLSearchParams();
     if (module) params.set('module', module);
-    if (action) params.set('action', action);
+    const actionQ = auditActionQueryValue(appliedAction);
+    if (actionQ) params.set('action', actionQ);
+    const entityQ = auditEntityQueryValue(appliedEntity);
+    if (entityQ) params.set('entity', entityQ);
     if (fromDate) params.set('from_date', fromDate);
     if (toDate) params.set('to_date', toDate);
+    // trim/omit so UuidIdValue Query user_id does not 422
+    const userTrim = userId.trim();
+    if (userTrim) params.set('user_id', userTrim);
     const q = params.toString() ? `?${params}` : '';
     const r = await api(`/audit-logs${q}`);
     setRows(r.data || []);
-  }, [module, action, fromDate, toDate]);
+    setError('');
+  }, [module, appliedAction, appliedEntity, fromDate, toDate, userId]);
 
   const refreshPolicy = useCallback(async () => {
     const [policy, me] = await Promise.all([api('/audit-logs/retention'), api('/me')]);
@@ -69,13 +125,26 @@ export default function Page() {
   async function exportCsv() {
     setError('');
     try {
+      if (action.trim() && !auditActionQueryValue(action)) {
+        setError('Action must be snake_case (2+ chars; 2fa_* OK)');
+        return;
+      }
+      if (entity.trim() && !auditEntityQueryValue(entity)) {
+        setError('Entity must be snake_case starting with a letter');
+        return;
+      }
       const token = localStorage.getItem('token');
       const tenant = localStorage.getItem('tenant');
       const params = new URLSearchParams();
       if (module) params.set('module', module);
-      if (action) params.set('action', action);
+      const actionQ = auditActionQueryValue(action);
+      if (actionQ) params.set('action', actionQ);
+      const entityQ = auditEntityQueryValue(entity);
+      if (entityQ) params.set('entity', entityQ);
       if (fromDate) params.set('from_date', fromDate);
       if (toDate) params.set('to_date', toDate);
+      const userTrim = userId.trim();
+      if (userTrim) params.set('user_id', userTrim);
       const res = await fetch(`${base}/audit-logs/export?${params}`, {
         headers: {
           Authorization: token ? `Bearer ${token}` : '',
@@ -149,7 +218,7 @@ export default function Page() {
           </div>
           {canArchive && (
             <div>
-              <button type="button" onClick={archiveCold} disabled={busy}>
+              <button type="button" onClick={archiveCold} disabled={busy} aria-label="Archive cold audit logs">
                 {busy ? 'Archiving…' : 'Archive cold now'}
               </button>
             </div>
@@ -205,31 +274,76 @@ export default function Page() {
       )}
 
       <div className="card" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-        <input
+        <select
           value={module}
           onChange={(e) => setModule(e.target.value)}
-          placeholder="Module (auth, users…)"
+          aria-label="Audit module filter"
+          title="Filter audit logs by module"
+        >
+          {AUDIT_MODULES.map((m) => (
+            <option key={m || 'all'} value={m}>
+              {m ? `Module: ${m}` : 'All modules'}
+            </option>
+          ))}
+        </select>
+        <input
+          value={action}
+          onChange={(e) => setAction(e.target.value)}
+          placeholder="Action"
+          title="Filter by audit action (snake_case; 2fa_* allowed)"
+          aria-label="Audit action filter"
         />
-        <input value={action} onChange={(e) => setAction(e.target.value)} placeholder="Action" />
+        <input
+          value={entity}
+          onChange={(e) => setEntity(e.target.value)}
+          placeholder="Entity"
+          title="Filter by audit entity (snake_case; start with a letter)"
+          aria-label="Audit entity filter"
+        />
         <input
           type="date"
           value={fromDate}
           onChange={(e) => setFromDate(e.target.value)}
-          title="From date"
+          title="From date (YYYY-MM-DD)"
+          aria-label="Audit from date"
         />
         <input
           type="date"
           value={toDate}
           onChange={(e) => setToDate(e.target.value)}
-          title="To date"
+          title="To date (YYYY-MM-DD)"
+          aria-label="Audit to date"
         />
-        <button type="button" onClick={() => refreshLogs().catch((e) => setError(e.message))}>
+        <input
+          value={userId}
+          onChange={(e) => setUserId(e.target.value)}
+          placeholder="User id (UUID)"
+          title="Filter by actor user id (UUID)"
+          aria-label="Audit user filter"
+        />
+        <button
+          type="button"
+          aria-label="Apply audit filters"
+          onClick={() => {
+            if (action.trim() && !auditActionQueryValue(action)) {
+              setError('Action must be snake_case (2+ chars; 2fa_* OK)');
+              return;
+            }
+            if (entity.trim() && !auditEntityQueryValue(entity)) {
+              setError('Entity must be snake_case starting with a letter');
+              return;
+            }
+            setError('');
+            setAppliedAction(auditActionQueryValue(action) || '');
+            setAppliedEntity(auditEntityQueryValue(entity) || '');
+          }}
+        >
           Filter
         </button>
-        <button type="button" onClick={runVerify}>
+        <button type="button" aria-label="Verify audit chain" onClick={runVerify}>
           Verify chain
         </button>
-        <button type="button" onClick={exportCsv}>
+        <button type="button" onClick={exportCsv} aria-label="Export audit CSV">
           Export CSV
         </button>
       </div>
