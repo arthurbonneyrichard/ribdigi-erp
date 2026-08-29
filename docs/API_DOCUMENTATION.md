@@ -1202,13 +1202,15 @@ Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, a
 ```
 
 ### 8.3 Product Search
-**Endpoint:** `GET /pos/products/search?q=flour&barcode=8901234567890`
+**Endpoint:** `GET /pos/products/search?q=flour&barcode=8901234567890` — Query `q` ∈ `ProductSearchQueryValue` (strip; empty OK; non-empty max 120; ≥1 letter/digit; no `://`); `!!!`/`http://…`/punctuation-only → **422** (was free `str`). Optional Query `barcode` ∈ `ProductBarcodeValue` (omit/`null` → name/SKU `q` path; blank/invalid → **422**). POS **Barcode scan or product search** (`aria-label`).
+
+**Inventory lookup:** `GET /inventory/products/lookup` — same Query `q` ∈ `ProductSearchQueryValue` + `barcode` ∈ `ProductBarcodeValue` honesty. Inventory **Product lookup search** / **Product lookup barcode** (`aria-label`s); lookup omits blank params.
 
 ### 8.4 Receipt Printing
 **Endpoint:** `GET /pos/sales/{sale_id}/receipt`  
 Query `format` ∈ json|text|pdf (omit → `json`; blank/invalid → **422**); `paper` ∈ 58mm|80mm (omit → company print branding default; blank/invalid → **422**). POS paper select.
 
-**Send:** `POST /pos/sales/{sale_id}/receipt/send` — query `channel` ∈ email|sms (omit → `email`; blank/invalid → **422**; no silent email from `""`); `paper` ∈ 58mm|80mm (omit → `80mm`; blank/invalid → **422**); optional Query `to` typed by channel — email → `EmailStr`; sms → `E164PhoneValue`; omit → cashier email/phone; blank/`not-an-email`/`not-a-phone` → **422** (blank was silent fallthrough; garbage was accepted until soft send failure). POS **POS receipt override to** + Email / SMS buttons.
+**Send:** `POST /pos/sales/{sale_id}/receipt/send` — query `channel` ∈ email|sms (omit → `email`; blank/invalid → **422**; no silent email from `""`); `paper` ∈ 58mm|80mm (omit → `80mm`; blank/invalid → **422**); optional Query `to` ∈ `ReceiptOverrideToValue` (strip; email or E.164); omit/`null` → cashier email/phone; blank/`!!!`/`not-an-email`/`not-a-phone` → **422** (was free `str`; blank was silent fallthrough; garbage reached soft send failure). Channel refine remains in API (email rejects E.164-only; sms rejects email). POS **POS receipt override to** + Email / SMS buttons.
 
 **Query Params (legacy note):** `?format=pdf&paper=80mm`
 

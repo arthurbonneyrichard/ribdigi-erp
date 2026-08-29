@@ -11,6 +11,7 @@ from pydantic import (
     ConfigDict,
     EmailStr,
     Field,
+    TypeAdapter,
     field_validator,
     model_validator,
 )
@@ -163,6 +164,38 @@ ReceiptChannelValue = Annotated[
     Literal["email", "sms"],
     BeforeValidator(coerce_invoice_template_value),
 ]
+
+
+def coerce_product_search_query_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank (empty search OK)."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_product_search_query_value(value: str) -> str:
+    """AfterValidator: product lookup/search `q`; empty OK; garbage/URL → 422 (max 120)."""
+    if value == "":
+        return value
+    if len(value) > 120:
+        raise ValueError("search query must be 1–120 characters")
+    if "://" in value:
+        raise ValueError("search query must be a product name/SKU fragment (no URL)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("search query must include a letter or digit")
+    return value
+
+
+# Inventory / POS product search Query `q` — empty default OK; blank punctuation/URL → 422.
+ProductSearchQueryValue = Annotated[
+    str,
+    BeforeValidator(coerce_product_search_query_value),
+    AfterValidator(validate_product_search_query_value),
+]
+
+
 ExpensePaymentMethod = Annotated[
     Literal["cash", "bank_transfer", "card", "cheque"],
     BeforeValidator(coerce_expense_payment_method_value),
@@ -3663,6 +3696,38 @@ E164PhoneValue = Annotated[
     str,
     BeforeValidator(coerce_e164_phone_value),
     AfterValidator(validate_e164_phone_value),
+]
+
+
+def coerce_receipt_override_to_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for recipient 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_receipt_override_to_value(value: str) -> str:
+    """AfterValidator: email or E.164; blank/garbage → 422 (channel refine remains in API)."""
+    if not value:
+        raise ValueError("to must be a valid email or E.164 phone")
+    if "@" in value:
+        try:
+            return str(TypeAdapter(EmailStr).validate_python(value))
+        except Exception as exc:  # noqa: BLE001 — map to ValueError for OpenAPI 422
+            raise ValueError("to must be a valid email or E.164 phone") from exc
+    try:
+        return validate_e164_phone_value(value)
+    except ValueError as exc:
+        raise ValueError("to must be a valid email or E.164 phone") from exc
+
+
+# POS receipt send Query `to` — omit/`null` → cashier default; blank/invalid → 422.
+ReceiptOverrideToValue = Annotated[
+    str,
+    BeforeValidator(coerce_receipt_override_to_value),
+    AfterValidator(validate_receipt_override_to_value),
 ]
 
 

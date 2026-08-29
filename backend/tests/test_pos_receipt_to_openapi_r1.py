@@ -21,9 +21,11 @@ def test_pos_receipt_to_ui_and_docs():
     assert "receiptTo" in pos
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "POS receipt send Query `to` OpenAPI" in agents
+    assert "ReceiptOverrideToValue" in agents
     assert "E164PhoneValue" in agents
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
     assert "receipt/send" in docs
+    assert "ReceiptOverrideToValue" in docs
     assert "E164PhoneValue" in docs or "EmailStr" in docs
 
 

@@ -113,6 +113,8 @@ from app.schemas import (
     BankStatementNotesValue,
     AuditEntityValue,
     ProductBarcodeValue,
+    ReceiptOverrideToValue,
+    ProductSearchQueryValue,
     IsoDateQueryValue,
     SalesReturnReportReasonValue,
     PurchaseReturnReportReasonValue,
@@ -4132,7 +4134,7 @@ async def inventory_warehouse_stock_reorder(
 
 @api.get("/inventory/products/lookup")
 async def inventory_products_lookup(
-    q: str = "",
+    q: Annotated[ProductSearchQueryValue, Query()] = "",
     barcode: Annotated[ProductBarcodeValue | None, Query()] = None,
     limit: int = 48,
     claims=Depends(require_permission("inventory", "read")),
@@ -7433,7 +7435,7 @@ async def pos_sale(
 
 @api.get("/pos/products/search")
 async def pos_search(
-    q: str = "",
+    q: Annotated[ProductSearchQueryValue, Query()] = "",
     barcode: Annotated[ProductBarcodeValue | None, Query()] = None,
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
@@ -7613,10 +7615,9 @@ async def pos_receipt_send(
     sale_id: UuidIdValue,
     # omit → email; blank/invalid → 422 (was `channel or "email"`)
     channel: Annotated[ReceiptChannelValue, Query()] = "email",
-    # omit → cashier email/phone; blank/invalid → 422 (blank was silent fallthrough;
-    # garbage was accepted until soft email/SMS failure). Typed by channel:
-    # email → EmailStr; sms → E164PhoneValue.
-    to: Annotated[str | None, Query()] = None,
+    # omit → cashier email/phone; blank/invalid → 422 via ReceiptOverrideToValue
+    # (email or E.164); channel refine remains below (email vs sms).
+    to: Annotated[ReceiptOverrideToValue | None, Query()] = None,
     # omit → 80mm; blank/invalid → 422 (was silent 80mm for garbage)
     paper: Annotated[ReceiptPaperValue, Query()] = "80mm",
     claims=Depends(require_permission("pos", "write")),
@@ -7638,17 +7639,12 @@ async def pos_receipt_send(
 
     override: str | None = None
     if to is not None:
-        raw = to.strip() if isinstance(to, str) else str(to).strip()
-        if not raw:
-            raise HTTPException(
-                status_code=422,
-                detail="to must be a valid email or E.164 phone",
-            )
+        # Channel refine: schema already ensured email|E.164 shape.
         try:
             if channel == "email":
-                override = str(TypeAdapter(EmailStr).validate_python(raw))
+                override = str(TypeAdapter(EmailStr).validate_python(to))
             else:
-                override = TypeAdapter(E164PhoneValue).validate_python(raw)
+                override = TypeAdapter(E164PhoneValue).validate_python(to)
         except PydanticValidationError as exc:
             raise HTTPException(
                 status_code=422,
