@@ -12400,6 +12400,59 @@ async def test_store_manager_bi_settings_write_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_bi_overview_settings_formulas_redacted(client, db_session):
+    """Overview/attention must not re-dump BI settings/formulas denied on dedicated GETs."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="BI Config Redact Store",
+        code="BI-CFG-R",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(mine)
+    await db_session.commit()
+
+    admin_ov = await ac.get("/api/v1/business-insights/overview", headers=admin_headers)
+    assert admin_ov.status_code == 200, admin_ov.text
+    admin_body = admin_ov.json()
+    admin_settings = admin_body.get("settings") or {}
+    assert isinstance(admin_settings, dict)
+    assert admin_settings.get("restricted") is not True
+    assert "slow_moving_days" in admin_settings or "health_weights" in admin_settings
+    admin_formulas = admin_body.get("formulas")
+    assert isinstance(admin_formulas, list) and len(admin_formulas) > 0
+    assert (admin_body.get("health") or {}).get("weights") is not None
+
+    mgr_ov = await ac.get("/api/v1/business-insights/overview", headers=headers)
+    assert mgr_ov.status_code == 200, mgr_ov.text
+    mgr_body = mgr_ov.json()
+    assert mgr_body.get("settings") == {"restricted": True}
+    assert mgr_body.get("formulas") == {"restricted": True}
+    assert (mgr_body.get("health") or {}).get("weights") is None
+    # Scoped ops remain (sales/inventory keys present; engine still runs).
+    assert "sales" in mgr_body
+    assert "inventory" in mgr_body
+    assert "slow_moving_days" not in (mgr_body.get("settings") or {})
+
+    mgr_att = await ac.get("/api/v1/business-insights/attention", headers=headers)
+    assert mgr_att.status_code == 200, mgr_att.text
+    assert (mgr_att.json().get("health") or {}).get("weights") is None
+
+
+@pytest.mark.asyncio
 async def test_store_manager_purchasing_settings_write_denied(client, db_session):
     """Purchasing PR approval settings GET/PATCH/export denied for store_manager."""
     ac, seed = client

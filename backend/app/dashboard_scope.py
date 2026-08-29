@@ -3011,7 +3011,8 @@ def assert_company_level_bi_settings_read_denied(
 
     PUT already denied; GET dumped slow_moving_days/health_weights and related
     thresholds. Scoped BI overview/history/acknowledge/dismiss remain; static
-    ``/formulas`` docs separately denied.
+    ``/formulas`` docs separately denied. Overview/attention bundles also omit
+    embedded settings via ``redact_bi_company_config`` when store-scoped.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
@@ -3028,9 +3029,36 @@ def assert_company_level_bi_formulas_read_denied(
 
     Settings GET/PUT already denied; GET ``/business-insights/formulas`` exposed
     Layer-1 formula catalog / threshold semantics. Scoped BI overview/history/
-    acknowledge/dismiss remain.
+    acknowledge/dismiss remain. Overview bundles also omit embedded formulas via
+    ``redact_bi_company_config`` when store-scoped.
     """
     assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_bi_company_config(store_ids: list[str] | None) -> bool:
+    """True when store_manager must omit BI settings/formulas embeds.
+
+    Dedicated GET ``/business-insights/settings`` + ``/formulas`` already denied;
+    overview/attention bundles must not re-dump company thresholds or the formula
+    catalog. Scoped metrics/insights/history/acknowledge/dismiss remain; engine
+    still applies thresholds server-side.
+    """
+    return store_ids is not None
+
+
+def redact_bi_company_config(payload: dict) -> dict:
+    """Restrict settings/formulas embeds and null health weights on BI bundles."""
+    out = dict(payload)
+    if "settings" in out:
+        out["settings"] = {"restricted": True}
+    if "formulas" in out:
+        out["formulas"] = {"restricted": True}
+    health = out.get("health")
+    if isinstance(health, dict) and "weights" in health:
+        h = dict(health)
+        h["weights"] = None
+        out["health"] = h
+    return out
 
 
 async def assert_bi_insight_in_manager_scope(

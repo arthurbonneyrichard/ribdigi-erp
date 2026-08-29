@@ -22,7 +22,12 @@ from app.bi_metrics import BusinessMetricsService
 from app.bi_priority import InsightPriorityService
 from app.bi_rules import InsightRulesService
 from app.credit import ar_aging
-from app.dashboard_scope import assert_bi_insight_in_manager_scope, managed_store_ids
+from app.dashboard_scope import (
+    assert_bi_insight_in_manager_scope,
+    managed_store_ids,
+    omit_bi_company_config,
+    redact_bi_company_config,
+)
 from app.notifications import create_notification
 from app.rbac import has_permission
 
@@ -271,7 +276,7 @@ class BusinessIntelligenceService:
         await self._persist_important(insights)
         await self._notify_critical(insights)
 
-        return {
+        bundle = {
             "generated_at": datetime.utcnow().isoformat(),
             "external_ai_required": False,
             "internet_required": False,
@@ -295,6 +300,10 @@ class BusinessIntelligenceService:
             "formulas": FORMULA_DOCS,
             "settings": settings,
         }
+        # Dedicated /settings + /formulas already denied; do not re-dump via overview.
+        if omit_bi_company_config(metrics.store_ids):
+            bundle = redact_bi_company_config(bundle)
+        return bundle
 
     async def _persist_important(self, insights: list[dict]) -> None:
         """Store CRITICAL/WARNING insights; skip duplicates active same type+entity today."""
