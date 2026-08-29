@@ -1275,7 +1275,12 @@ export default function Page() {
                 </option>
               ))}
           </select>
-          <input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" />
+          <input
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="Amount"
+            aria-label="Expense amount"
+          />
           <input
             value={payee}
             onChange={(e) => setPayee(e.target.value)}
@@ -1423,6 +1428,7 @@ export default function Page() {
               value={ocrDraft.amount}
               onChange={(e) => setOcrDraft({ ...ocrDraft, amount: e.target.value })}
               placeholder="Amount"
+              aria-label="OCR expense amount"
             />
             <input
               value={ocrDraft.payee}

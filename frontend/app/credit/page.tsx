@@ -486,6 +486,7 @@ export default function Page() {
               value={payAmount}
               onChange={(e) => setPayAmount(e.target.value)}
               placeholder="Payment amount"
+              aria-label="Payment amount"
               style={{ width: 120 }}
             />
             <select

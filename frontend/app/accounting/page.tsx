@@ -1178,6 +1178,7 @@ export default function Page() {
                     value={coaOpenAmount}
                     onChange={(e) => setCoaOpenAmount(e.target.value)}
                     placeholder="Amount"
+                    aria-label="Opening balance amount"
                     style={{ width: 120 }}
                   />
                   <button type="button" onClick={addCoaOpenLine}>
@@ -1669,6 +1670,7 @@ export default function Page() {
                 value={xferAmount}
                 onChange={(e) => setXferAmount(e.target.value)}
                 placeholder="Amount"
+                aria-label="Cash transfer amount"
                 style={{ width: 100 }}
               />
               <input

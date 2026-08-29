@@ -864,7 +864,8 @@ class OpeningBalanceLine(BaseModel):
     account_id: UuidIdValue | None = None
     # Optional COA lookup ∈ AccountCodeValue; omit/`null` OK when account_id set
     account_code: AccountCodeValue | None = None
-    amount: float = Field(gt=0)
+    # ∈ PositiveMoneyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    amount: PositiveMoneyValue
 
 
 class OpeningBalanceCreate(BaseModel):
@@ -890,7 +891,8 @@ class CashTransferCreate(BaseModel):
     # garbage could reach liquid-account lookup). Existence remains tenant-scoped
     # account lookup (**404**).
     to_account_id: UuidIdValue | None = None
-    amount: float = Field(gt=0)
+    # ∈ PositiveMoneyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    amount: PositiveMoneyValue
     # omit/`null` → auto XFER-YYYY-NNNN; blank/`!!!`/`http://…` → **422** (was free
     # `str`; blank silently auto-numbered / garbage could persist).
     reference: CashTransferReferenceValue | None = None
@@ -1714,7 +1716,8 @@ class ExpenseCreate(BaseModel):
     # omit/`null` → empty narrative; blank/`!!!`/`http://…` → **422** (was free
     # `str` default `""`; blank/garbage could persist).
     description: ExpenseDescriptionValue | None = None
-    amount: float = Field(gt=0)
+    # ∈ PositiveMoneyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    amount: PositiveMoneyValue
     # BR-9.2 — schema Literal (+ aliases via BeforeValidator); omit → cash;
     # blank/invalid → 422 (no silent cash from garbage).
     payment_method: ExpensePaymentMethod = "cash"
@@ -1809,7 +1812,8 @@ class AiDocumentExpenseCreate(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    amount: float = Field(gt=0)
+    # ∈ PositiveMoneyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    amount: PositiveMoneyValue
     # omit/`null` → no payee; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on AI draft expense).
     payee: ExpensePayeeValue | None = None
@@ -1887,7 +1891,7 @@ class ExpenseUpdate(BaseModel):
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on expense PATCH).
     description: ExpenseDescriptionValue | None = None
-    amount: float | None = Field(default=None, gt=0)
+    amount: PositiveMoneyValue | None = None
     # omit = no change; blank/invalid → 422
     payment_method: ExpensePaymentMethod | None = None
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
@@ -1986,7 +1990,8 @@ class RecurringExpenseCreate(BaseModel):
     # omit/`null` → empty narrative; blank/`!!!`/`http://…` → **422** (was free
     # `str` default `""`; blank/garbage could persist on recurring create).
     description: ExpenseDescriptionValue | None = None
-    amount: float = Field(gt=0)
+    # ∈ PositiveMoneyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    amount: PositiveMoneyValue
     # BR-9.5 — schema Literal; omit defaults to monthly; blank/invalid → 422
     frequency: Literal["daily", "weekly", "monthly", "yearly"] = "monthly"
     # BR-9.2 / BR-9.5 — same ExpensePaymentMethod Literal; omit → bank_transfer
@@ -2008,7 +2013,7 @@ class RecurringExpenseCreate(BaseModel):
 
 class RecurringExpenseUpdate(BaseModel):
     is_active: bool | None = None
-    amount: float | None = Field(default=None, gt=0)
+    amount: PositiveMoneyValue | None = None
     # omit/`null` → no change (unless `clear_payee`); blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on recurring PATCH).
     payee: ExpensePayeeValue | None = None
@@ -2064,7 +2069,8 @@ class ApprovalLevelUpdate(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    min_amount: float = Field(gt=0)
+    # ∈ PositiveMoneyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    min_amount: PositiveMoneyValue
     roles: list[SystemRoleValue] = Field(min_length=1)
     # omit/`null` → no label; blank/`!!!`/`http://…` → **422** (was free `str`).
     label: ApprovalLevelLabelValue | None = None
@@ -2080,8 +2086,8 @@ class ExpenseThresholdUpdate(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    expense_approval_threshold: float | None = Field(default=None, gt=0)
-    expense_l2_threshold: float | None = Field(default=None, gt=0)
+    expense_approval_threshold: PositiveMoneyValue | None = None
+    expense_l2_threshold: PositiveMoneyValue | None = None
     levels: list[ApprovalLevelUpdate] | None = None
     expense_numbering: DocumentNumberingFields | None = None
 
@@ -2491,7 +2497,8 @@ class TaxUpdate(BaseModel):
 
 
 class TaxCalculateRequest(BaseModel):
-    amount: float = Field(gt=0)
+    # ∈ PositiveMoneyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    amount: PositiveMoneyValue
     rate: float | None = None
     # Optional tax rate ∈ UuidIdValue; omit/`null` → use `rate` / tenant default;
     # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could
@@ -3176,7 +3183,8 @@ class CustomerPaymentCreate(BaseModel):
     # (was free `str`; garbage could reach party lookup). Existence remains
     # tenant-scoped customer lookup (**404**). Distinct from SupplierPaymentCreate.
     customer_id: UuidIdValue
-    amount: float = Field(gt=0)
+    # ∈ PositiveMoneyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    amount: PositiveMoneyValue
     # Optional target invoice ∈ UuidIdValue; omit/`null` → apply oldest-open;
     # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could
     # reach invoice lookup). Existence remains tenant-scoped sales-invoice
@@ -5785,6 +5793,24 @@ UuidIdValue = Annotated[
 ]
 
 
+# Finite money amounts — reject NaN/Inf and absurd magnitudes (was unconstrained
+# `float`; `nan`/`inf`/1e308 could persist or break math).
+FiniteMoneyValue = Annotated[
+    float,
+    Field(allow_inf_nan=False, ge=-1_000_000_000_000_000, le=1_000_000_000_000_000),
+]
+# Required positive money (payments/expenses) — gt 0 + finite.
+PositiveMoneyValue = Annotated[
+    float,
+    Field(allow_inf_nan=False, gt=0, le=1_000_000_000_000_000),
+]
+# Non-negative money (cash counts, journal sides, budgets) — ge 0 + finite.
+NonNegativeMoneyValue = Annotated[
+    float,
+    Field(allow_inf_nan=False, ge=0, le=1_000_000_000_000_000),
+]
+
+
 def validate_address_value(value: str) -> str:
     """AfterValidator: non-empty postal/physical address; blank/URL/garbage → 422 (max 500)."""
     if not value:
@@ -6472,7 +6498,8 @@ class BankStatementLineCreate(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    amount: float
+    # ∈ FiniteMoneyValue (signed); zero rejected below; nan/inf → **422**
+    amount: FiniteMoneyValue
     txn_date: IsoDateQueryValue | None = None
     # omit/`null` → no description; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silently dropped via strip-to-None / garbage could persist).
@@ -6487,14 +6514,6 @@ class BankStatementLineCreate(BaseModel):
         if abs(float(value)) < 1e-9:
             raise ValueError("Statement line amount cannot be zero")
         return float(value)
-
-
-# Finite money amounts for Query/Form/body balances — reject NaN/Inf and absurd
-# magnitudes (was unconstrained `float`; `nan`/`inf`/1e308 could persist or break math).
-FiniteMoneyValue = Annotated[
-    float,
-    Field(allow_inf_nan=False, ge=-1_000_000_000_000_000, le=1_000_000_000_000_000),
-]
 
 
 class BankStatementCreateBody(BaseModel):
@@ -6588,7 +6607,8 @@ class SupplierPaymentCreate(BaseModel):
     # tenant-scoped supplier lookup (**404**). Distinct from CustomerPaymentCreate
     # (same Value type; AP payment create path).
     supplier_id: UuidIdValue
-    amount: float = Field(gt=0)
+    # ∈ PositiveMoneyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    amount: PositiveMoneyValue
     # Optional target PO ∈ UuidIdValue; omit/`null` → apply oldest-open; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach PO lookup).
     # Existence remains tenant-scoped purchase-order lookup (**404**).
@@ -6688,8 +6708,9 @@ class JournalLineCreate(BaseModel):
     account_id: UuidIdValue | None = None
     # Optional COA lookup ∈ AccountCodeValue; omit/`null` OK when account_id set
     account_code: AccountCodeValue | None = None
-    debit: float = Field(default=0, ge=0)
-    credit: float = Field(default=0, ge=0)
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    debit: NonNegativeMoneyValue = 0
+    credit: NonNegativeMoneyValue = 0
     # omit/`null` → no line narrative; blank/`!!!`/`http://…` → **422** (was free
     # `str`; blank/garbage could persist on JournalEntryLine.description).
     description: JournalLineDescriptionValue | None = None
@@ -7940,12 +7961,15 @@ class PosSessionOpen(BaseModel):
     # lookup). Existence remains tenant-scoped store lookup (**404**). POS
     # **POS store** select (`aria-label`); Open shift sends trim or `null`.
     store_id: UuidIdValue | None = None
-    opening_cash: float = Field(default=0, ge=0)
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    opening_cash: NonNegativeMoneyValue = 0
 
 
 class PosSessionClose(BaseModel):
-    actual_cash: float = Field(ge=0)
-    closing_cash: float | None = None
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    actual_cash: NonNegativeMoneyValue
+    # omit/`null` → no separate closing figure; nan/inf/<0 → **422**
+    closing_cash: NonNegativeMoneyValue | None = None
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on PosSession.notes Text).
     notes: PosSessionCloseNotesValue | None = None
@@ -7961,7 +7985,8 @@ class PosPaymentLine(BaseModel):
 
     # BR-8.1 — schema Literal (+ wallet aliases via BeforeValidator); blank/invalid → 422
     payment_method: PosTenderMethod = "cash"
-    amount: float = Field(gt=0)
+    # ∈ PositiveMoneyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    amount: PositiveMoneyValue
     # omit/`null` → no tender reference; blank/`!!!`/`http://…` → **422** (was free
     # `str`; blank/garbage could persist on POS payment reference).
     reference: PaymentReferenceValue | None = None
