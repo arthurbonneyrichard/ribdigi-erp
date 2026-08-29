@@ -1407,7 +1407,8 @@ class PartyCreate(BaseModel):
     address: AddressValue | None = None
     latitude: float | None = None
     longitude: float | None = None
-    credit_limit: float = 0
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was unconstrained float default 0)
+    credit_limit: NonNegativeMoneyValue = 0
     payment_terms_days: int = Field(default=30, ge=0, le=3650)
     # Optional customer group ∈ UuidIdValue; omit/`null` → no group; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach group lookup).
@@ -1441,7 +1442,8 @@ class PartyUpdate(BaseModel):
     address: AddressValue | None = None
     latitude: float | None = None
     longitude: float | None = None
-    credit_limit: float | None = None
+    # omit/`null` → no change; nan/inf/<0 → **422** (was unconstrained float)
+    credit_limit: NonNegativeMoneyValue | None = None
     payment_terms_days: int | None = Field(default=None, ge=0, le=3650)
     # omit → no change; `null` → clear group; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach group lookup). Existence / active-group
@@ -1483,12 +1485,14 @@ class CustomerGroupCreate(BaseModel):
     # `str`; blank silently fell through to name-slug; punctuation/URL could persist).
     # Uniqueness remains create_group 409 (defense-in-depth).
     code: CustomerGroupCodeValue | None = None
-    discount_percent: float = 0
+    # ∈ PercentRateValue (0–100 finite); nan/inf/out-of-range → **422** (was unconstrained float)
+    discount_percent: PercentRateValue = 0
 
 
 class CustomerGroupUpdate(BaseModel):
     name: CustomerGroupNameValue | None = None
-    discount_percent: float | None = None
+    # omit/`null` → no change; nan/inf/out-of-range → **422**
+    discount_percent: PercentRateValue | None = None
     is_active: bool | None = None
 
 
@@ -1505,7 +1509,8 @@ class LineItem(BaseModel):
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach variant lookup).
     variant_id: UuidIdValue | None = None
     unit_price: float | None = None
-    discount: float = Field(default=0, ge=0)
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    discount: NonNegativeMoneyValue = 0
 
 
 class TransactionCreate(BaseModel):
@@ -1933,7 +1938,8 @@ class ExpenseCategoryCreate(BaseModel):
     # Required category label ∈ ExpenseCategoryNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on expense category create).
     name: ExpenseCategoryNameValue
-    budget_amount: float = Field(default=0, ge=0)
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    budget_amount: NonNegativeMoneyValue = 0
     # Optional expense-type GL ∈ UuidIdValue; omit/`null` → default 6000; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach COA lookup).
     # Existence remains tenant-scoped account lookup (**404**).
@@ -1942,7 +1948,8 @@ class ExpenseCategoryCreate(BaseModel):
 
 class ExpenseCategoryUpdate(BaseModel):
     name: ExpenseCategoryNameValue | None = None
-    budget_amount: float | None = Field(default=None, ge=0)
+    # omit/`null` → no change; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    budget_amount: NonNegativeMoneyValue | None = None
     is_active: bool | None = None
     # Optional expense-type GL ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach COA lookup).
@@ -2460,7 +2467,8 @@ class TaxComponent(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    rate: float = Field(ge=0)
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    rate: NonNegativeMoneyValue
     # omit → net; blank/invalid → 422 (was free dict; blank silently net; bad late **400**)
     basis: TaxComponentBasisValue = "net"
     # omit/`null` → service uses name or auto `cN`; blank/`!!!`/`http://…` → **422**
@@ -2475,7 +2483,8 @@ class TaxCreate(BaseModel):
     # Required tax rate label ∈ TaxRateNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on tax rate create).
     name: TaxRateNameValue
-    rate: float = Field(ge=0)
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    rate: NonNegativeMoneyValue
     # BR-12.1 — schema Literal; omit defaults; blank/invalid → 422
     tax_type: Literal["vat", "gst", "sales_tax", "custom"] = "vat"
     pricing_mode: Literal["exclusive", "inclusive"] = "exclusive"
@@ -2487,7 +2496,8 @@ class TaxCreate(BaseModel):
 
 class TaxUpdate(BaseModel):
     name: TaxRateNameValue | None = None
-    rate: float | None = Field(default=None, ge=0)
+    # omit/`null` → no change; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    rate: NonNegativeMoneyValue | None = None
     # BR-12.1 — omit = no change; blank/invalid → 422
     tax_type: Literal["vat", "gst", "sales_tax", "custom"] | None = None
     pricing_mode: Literal["exclusive", "inclusive"] | None = None
@@ -2499,7 +2509,8 @@ class TaxUpdate(BaseModel):
 class TaxCalculateRequest(BaseModel):
     # ∈ PositiveMoneyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
     amount: PositiveMoneyValue
-    rate: float | None = None
+    # omit/`null` → use tax_rate_id / tenant default; nan/inf/<0 → **422** (was unconstrained float)
+    rate: NonNegativeMoneyValue | None = None
     # Optional tax rate ∈ UuidIdValue; omit/`null` → use `rate` / tenant default;
     # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could
     # reach tax-rate lookup). Existence remains tenant-scoped tax-rate lookup
@@ -2553,8 +2564,10 @@ class PurchaseOrderItemCreate(BaseModel):
     unit_id: UuidIdValue | None = None
     unit_price: float = Field(ge=0)
     # Omit to auto-resolve product → category → tenant default (BR-12.2); explicit 0 allowed
-    tax_rate: float | None = Field(default=None, ge=0)
-    discount: float = Field(default=0, ge=0)
+    # omit/`null` → auto-resolve; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    tax_rate: NonNegativeMoneyValue | None = None
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    discount: NonNegativeMoneyValue = 0
 
 
 class PurchaseOrderCreate(BaseModel):
@@ -2917,8 +2930,10 @@ class PurchaseInvoiceItemCreate(BaseModel):
     quantity: float = Field(gt=0)
     unit_price: float | None = None
     # Omit to auto-resolve product → category → tenant default (BR-12.2); explicit 0 allowed
-    tax_rate: float | None = Field(default=None, ge=0)
-    discount: float = Field(default=0, ge=0)
+    # omit/`null` → auto-resolve; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    tax_rate: NonNegativeMoneyValue | None = None
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    discount: NonNegativeMoneyValue = 0
 
 
 class PurchaseInvoiceCreate(BaseModel):
@@ -2940,7 +2955,8 @@ class PurchaseInvoiceCreate(BaseModel):
     # `str`; blank/`""` could persist or be stored raw; punctuation/URL could persist
     # on PurchaseInvoice.supplier_invoice_number).
     supplier_invoice_number: SupplierInvoiceNumberValue | None = None
-    discount_amount: float = Field(default=0, ge=0)
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    discount_amount: NonNegativeMoneyValue = 0
     # omit/`null` → no external attachment URL; blank/`ftp://`/`not-a-url`/plain-http
     # remote → **422** (was free `str`; blank/`""` could persist; garbage URLs could
     # persist on PurchaseInvoice.attachment_url). Same absolute http(s) honesty as
@@ -2954,7 +2970,8 @@ class PurchaseInvoiceCreate(BaseModel):
     is_reverse_charge: bool = False
     # omit/null → tenant base via resolve_rate; blank/non-ISO → 422 (was free str; blank silently base)
     currency: CurrencyCodeValue | None = None
-    exchange_rate: float | None = Field(default=None, gt=0)
+    # omit/`null` → resolve_rate; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    exchange_rate: PositiveMoneyValue | None = None
     items: list[PurchaseInvoiceItemCreate] | None = None
 
 
@@ -3004,8 +3021,10 @@ class SalesInvoiceItemCreate(BaseModel):
     # Same honesty as LineItem.unit_id (POS / legacy sale).
     unit_id: UuidIdValue | None = None
     unit_price: float | None = None
-    tax_rate: float | None = None
-    discount: float = Field(default=0, ge=0)
+    # omit/`null` → auto-resolve; nan/inf/<0 → **422** (was unconstrained float)
+    tax_rate: NonNegativeMoneyValue | None = None
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    discount: NonNegativeMoneyValue = 0
     # Optional variant ∈ UuidIdValue; omit/`null` → no variant; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach variant lookup).
     # Same honesty as LineItem.variant_id.
@@ -3018,7 +3037,8 @@ class SalesInvoiceCreate(BaseModel):
     # (was free `str`; garbage could reach party lookup). Existence remains
     # tenant-scoped customer lookup (**404**).
     customer_id: UuidIdValue
-    discount_amount: float = Field(default=0, ge=0)
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    discount_amount: NonNegativeMoneyValue = 0
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on SalesInvoice.notes Text).
     notes: SalesDocumentNotesValue | None = None
@@ -3029,7 +3049,8 @@ class SalesInvoiceCreate(BaseModel):
     store_id: UuidIdValue | None = None
     # omit/null → tenant base via resolve_rate; blank/non-ISO → 422 (was free str; blank silently base)
     currency: CurrencyCodeValue | None = None
-    exchange_rate: float | None = Field(default=None, gt=0)
+    # omit/`null` → resolve_rate; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    exchange_rate: PositiveMoneyValue | None = None
     is_reverse_charge: bool = False
     items: list[SalesInvoiceItemCreate] = Field(min_length=1)
 
@@ -3040,7 +3061,8 @@ class SalesQuotationCreate(BaseModel):
     # tenant-scoped customer lookup (**404**). Distinct from SalesInvoiceCreate /
     # SalesOrderCreate (same honesty; shared Sale customer FE control).
     customer_id: UuidIdValue
-    discount_amount: float = Field(default=0, ge=0)
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    discount_amount: NonNegativeMoneyValue = 0
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on SalesQuotation.notes Text).
     notes: SalesDocumentNotesValue | None = None
@@ -3082,7 +3104,8 @@ class SalesOrderCreate(BaseModel):
     # omit/`null` → no ship-to; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silent→null; garbage could persist). Same AddressValue as PO.
     delivery_address: AddressValue | None = None
-    discount_amount: float = Field(default=0, ge=0)
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    discount_amount: NonNegativeMoneyValue = 0
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on SalesOrder.notes Text).
     notes: SalesDocumentNotesValue | None = None
@@ -3217,11 +3240,13 @@ class CustomerPaymentCreate(BaseModel):
     liquid_account_id: UuidIdValue | None = None
     # omit/null → invoice/base via resolve_rate; blank/non-ISO → 422 (was free str; blank silently base)
     currency: CurrencyCodeValue | None = None
-    exchange_rate: float | None = Field(default=None, gt=0)
+    # omit/`null` → resolve_rate; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    exchange_rate: PositiveMoneyValue | None = None
 
 
 class EarlyPaySettingsUpdate(BaseModel):
-    early_pay_discount_pct: float = Field(ge=0, le=100)
+    # ∈ PercentRateValue; nan/inf/out-of-range → **422** (was Field(ge=0, le=100) — Inf/NaN edge cases)
+    early_pay_discount_pct: PercentRateValue
     early_pay_discount_days: int = Field(ge=0, le=365)
 
 
@@ -5809,6 +5834,11 @@ NonNegativeMoneyValue = Annotated[
     float,
     Field(allow_inf_nan=False, ge=0, le=1_000_000_000_000_000),
 ]
+# Percent rate 0–100 (discounts / early-pay) — finite; nan/inf/out-of-range → 422.
+PercentRateValue = Annotated[
+    float,
+    Field(allow_inf_nan=False, ge=0, le=100),
+]
 
 
 def validate_address_value(value: str) -> str:
@@ -6413,7 +6443,8 @@ class ExchangeRateUpsert(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     currency_code: CurrencyCodeValue
-    rate_to_base: float = Field(gt=0)
+    # ∈ PositiveMoneyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    rate_to_base: PositiveMoneyValue
 
 
 class ExchangeRateRefresh(BaseModel):
@@ -6644,11 +6675,13 @@ class SupplierPaymentCreate(BaseModel):
     liquid_account_id: UuidIdValue | None = None
     # omit/null → invoice/base via resolve_rate; blank/non-ISO → 422 (was free str; blank silently base)
     currency: CurrencyCodeValue | None = None
-    exchange_rate: float | None = Field(default=None, gt=0)
+    # omit/`null` → resolve_rate; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    exchange_rate: PositiveMoneyValue | None = None
 
 
 class CreditLimitUpdate(BaseModel):
-    credit_limit: float = Field(ge=0)
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    credit_limit: NonNegativeMoneyValue
     payment_terms_days: int | None = Field(default=None, ge=0, le=3650)
 
 
@@ -8012,7 +8045,8 @@ class PosSaleCreate(BaseModel):
     subtotal: float = 0
     tax: float = 0
     total: float = 0
-    discount_amount: float = Field(default=0, ge=0)
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    discount_amount: NonNegativeMoneyValue = 0
     # BR-8.1 — only completed POS create; omit → completed; blank/invalid → 422
     # (was free str; garbage persisted on transactions.status)
     status: Literal["completed"] = "completed"

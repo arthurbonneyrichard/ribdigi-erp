@@ -2493,6 +2493,7 @@ export default function Page() {
             value={grnInvHeaderDiscount}
             onChange={(e) => setGrnInvHeaderDiscount(e.target.value)}
             placeholder="Header discount (0 = use PO line discounts)"
+            aria-label="Purchase invoice header discount"
             type="number"
             min={0}
             step="0.01"
@@ -2571,6 +2572,7 @@ export default function Page() {
             value={manualInvLineDiscount}
             onChange={(e) => setManualInvLineDiscount(e.target.value)}
             placeholder="Line discount amount"
+            aria-label="Purchase invoice line discount"
             type="number"
             min={0}
             step="0.01"
@@ -2579,6 +2581,7 @@ export default function Page() {
             value={manualInvHeaderDiscount}
             onChange={(e) => setManualInvHeaderDiscount(e.target.value)}
             placeholder="Header discount amount"
+            aria-label="Purchase invoice header discount"
             type="number"
             min={0}
             step="0.01"

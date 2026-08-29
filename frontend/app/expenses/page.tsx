@@ -916,6 +916,7 @@ export default function Page() {
             value={newCatBudget}
             onChange={(e) => setNewCatBudget(e.target.value)}
             placeholder="Monthly budget"
+            aria-label="Expense category monthly budget"
             style={{ width: 120 }}
           />
           <select
@@ -980,6 +981,7 @@ export default function Page() {
                     onChange={(e) =>
                       setBudgetDrafts((prev) => ({ ...prev, [c.id]: e.target.value }))
                     }
+                    aria-label={`Edit expense category budget ${c.code}`}
                     style={{ width: 110 }}
                   />
                 </td>

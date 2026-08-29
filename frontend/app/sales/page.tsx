@@ -969,6 +969,7 @@ export default function Page() {
               value={newGroupDiscount}
               onChange={(e) => setNewGroupDiscount(e.target.value)}
               placeholder="Discount %"
+              aria-label="Customer group discount percent"
               style={{ width: 100 }}
             />
             <button
@@ -1291,7 +1292,13 @@ export default function Page() {
             />
             Group price
           </label>
-          <input value={taxRate} onChange={(e) => setTaxRate(e.target.value)} placeholder="Tax %" style={{ width: 80 }} />
+          <input
+            value={taxRate}
+            onChange={(e) => setTaxRate(e.target.value)}
+            placeholder="Tax %"
+            aria-label="Line tax percent"
+            style={{ width: 80 }}
+          />
           <input
             value={lineDiscount}
             onChange={(e) => setLineDiscount(e.target.value)}

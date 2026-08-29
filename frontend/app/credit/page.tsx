@@ -379,12 +379,14 @@ export default function Page() {
               value={epPct}
               onChange={(e) => setEpPct(e.target.value)}
               placeholder="% discount"
+              aria-label="Early pay discount percent"
               style={{ width: 90 }}
             />
             <input
               value={epDays}
               onChange={(e) => setEpDays(e.target.value)}
               placeholder="Days"
+              aria-label="Early pay discount days"
               style={{ width: 80 }}
             />
             <button onClick={saveEarlyPay}>Save terms</button>
@@ -580,6 +582,7 @@ export default function Page() {
                 value={creditLimit}
                 onChange={(e) => setCreditLimit(e.target.value)}
                 placeholder="New credit limit"
+                aria-label="Credit limit"
                 style={{ width: 140 }}
               />
               <input

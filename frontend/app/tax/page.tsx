@@ -292,7 +292,7 @@ export default function Page() {
           <h3>Create rate</h3>
           <div style={{ display: 'grid', gap: 8 }}>
             <input aria-label="Tax rate name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
-            <input value={rate} onChange={(e) => setRate(e.target.value)} placeholder="Rate %" />
+            <input value={rate} onChange={(e) => setRate(e.target.value)} placeholder="Rate %" aria-label="Tax rate percent" />
             <select value={taxType} onChange={(e) => setTaxType(e.target.value)}>
               <option value="vat">VAT</option>
               <option value="gst">GST</option>

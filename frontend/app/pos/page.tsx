@@ -1381,6 +1381,7 @@ export default function Page() {
                   onChange={(e) => setCartDiscount(e.target.value)}
                   placeholder="0.00"
                   inputMode="decimal"
+                  aria-label="POS cart discount"
                 />
               </label>
 
