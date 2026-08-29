@@ -1903,7 +1903,7 @@ Service integrations authenticate with tenant API keys (BR-18.1). Manage via `GE
 **Get / usage:** `GET /api-keys/{id}`, `GET /api-keys/{id}/usage`  
 **Revoke:** `DELETE /api-keys/{id}`
 
-**Auth headers:** `X-API-Key: rdk_…` or `Authorization: Bearer rdk_…` (plus `X-Tenant-ID` when required).
+**Auth headers:** `X-API-Key` ∈ `ApiKeyHeaderValue` (`rdk_…`; blank/`!!!`/`http://…`/non-`rdk_` → **422**) or `Authorization: Bearer rdk_…` / JWT. Optional `X-Tenant-ID` ∈ `UuidIdValue` (JWT/key tenant UUID; blank/slug/garbage → **422**; mismatch → **403**).
 
 Default permissions (if omitted): read on `inventory`, `sales`, `purchasing`, `customers`, `reports`.
 
@@ -1996,12 +1996,16 @@ Codes below are values clients may see on **`detail.code`** (object `detail`) or
 
 ## Appendix B: Multi-Tenant Headers
 
-All API requests (except tenant registration) must include:
+Authenticated API requests should send:
 
 ```
-X-Tenant-ID: tenant_abc123
-Authorization: Bearer <jwt_token>
+Authorization: Bearer <access_token>
+X-Tenant-ID: <tenant UUID from JWT user.tenant_id>
 ```
+
+`X-Tenant-ID` ∈ `UuidIdValue` (strip; lower; valid UUID). Omit to rely on the JWT/API-key tenant alone. Blank / slug (`tenant_abc123` / `alpha`) / `!!!` / `http://…` / non-UUID → **422** (was free `str`; non-matching values including slugs reached cross-tenant **403**). A well-formed UUID that differs from the token/key tenant → **403** Cross-tenant access denied.
+
+API keys may use `X-API-Key: rdk_…` (`ApiKeyHeaderValue`; blank/garbage/non-`rdk_` → **422**) instead of a user JWT; optional `X-Tenant-ID` must still be that key’s tenant UUID when sent.
 
 Optional / response correlation:
 
@@ -2010,6 +2014,8 @@ X-Request-ID: <client-or-server-id>
 ```
 
 The API echoes a safe client `X-Request-ID` or generates one; it is **not** duplicated as a JSON body field on success/`env()` responses.
+
+Note: rate-limit middleware may still bucket on the raw `X-Tenant-ID` string for anonymous/health probes — that is not auth validation.
 
 ---
 

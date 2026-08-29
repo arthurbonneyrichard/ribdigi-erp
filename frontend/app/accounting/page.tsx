@@ -1239,6 +1239,8 @@ export default function Page() {
                 const a = accounts.find((x) => x.id === e.target.value);
                 setEditAcctName(a?.name || '');
               }}
+              aria-label="Edit account"
+              title="Account to rename"
             >
               <option value="">Select account</option>
               {accounts.map((a) => (

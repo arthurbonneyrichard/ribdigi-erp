@@ -6383,6 +6383,42 @@ UuidIdValue = Annotated[
 ]
 
 
+def coerce_api_key_header_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for X-API-Key 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_api_key_header_value(value: str) -> str:
+    """AfterValidator: X-API-Key header; blank/URL/@/spaces/non-rdk_ → 422 (1–200).
+
+    Raw keys are ``rdk_`` + urlsafe secret (api_keys.generate_raw_key). Authenticity
+    remains hashed key lookup (**401**).
+    """
+    if not value:
+        raise ValueError("X-API-Key must be a non-empty rdk_… secret (1–200 chars)")
+    if len(value) > 200:
+        raise ValueError("X-API-Key must be a non-empty rdk_… secret (1–200 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("X-API-Key must be a non-empty rdk_… secret (1–200 chars)")
+    if not value.startswith("rdk_"):
+        raise ValueError("X-API-Key must start with rdk_")
+    if not re.search(r"[A-Za-z0-9]", value[4:] if len(value) > 4 else ""):
+        raise ValueError("X-API-Key must be a non-empty rdk_… secret (1–200 chars)")
+    return value
+
+
+# Optional X-API-Key header — strip; rdk_…; 1–200; no :// / @ / spaces (BR-18.1).
+ApiKeyHeaderValue = Annotated[
+    str,
+    BeforeValidator(coerce_api_key_header_value),
+    AfterValidator(validate_api_key_header_value),
+]
+
+
 # Finite money amounts — reject NaN/Inf and absurd magnitudes (was unconstrained
 # `float`; `nan`/`inf`/1e308 could persist or break math).
 FiniteMoneyValue = Annotated[

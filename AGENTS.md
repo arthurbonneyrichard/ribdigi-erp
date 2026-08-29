@@ -22,7 +22,7 @@
 - **Celery does not auto-reload.** After changing `backend/app/jobs.py`, `tasks.py`, or beat schedule, restart `celery_worker` and `celery_beat` or workers keep stale handler maps / crash on unknown jobs.
 - **`run_async` uses one event loop per worker process** so sequential Celery tasks do not hit async SQLAlchemy “Future attached to a different loop” errors. Do not switch back to bare `asyncio.run()` per task without disposing the engine.
 - Deep readiness: `GET /api/v1/health/ready` (and `?deep=true`) probes DB + Redis + Celery broker; shallow `/health` stays liveness-only.
-- Admin job triggers: `GET /api/v1/jobs` (company_admin / super_admin / platform_owner) and `POST /jobs/{name}/run` (**super_admin** / **platform_owner** only). UI: Shell **Jobs** (`/jobs`). Pass `X-Tenant-ID` as the JWT `tenant_id` UUID (slug mismatch → cross-tenant 403).
+- Admin job triggers: `GET /api/v1/jobs` (company_admin / super_admin / platform_owner) and `POST /jobs/{name}/run` (**super_admin** / **platform_owner** only). UI: Shell **Jobs** (`/jobs`). Pass `X-Tenant-ID` as the JWT `tenant_id` UUID (`UuidIdValue`; blank/slug/`!!!`/`http://…` → **422**; UUID mismatch vs JWT → cross-tenant **403**).
 - **Jobs Path job_name OpenAPI (BR-Celery):** `POST /jobs/{job_name}/run` Path `job_name` ∈ `JOB_HANDLERS` keys (`JobNameValue`); blank/unknown → **422** (was late **404**). Allow-list defense-in-depth on handler. Jobs **Run sync** / **Enqueue** (`aria-label`s).
 - **Onboarding Path step_id OpenAPI:** `POST /onboarding/checklist/steps/{step_id}/skip|unskip` Path `step_id` ∈ setup_company|add_products|create_supplier|stock_ready|first_sale (`OnboardingStepIdValue`); blank/unknown → **422** (was late service **400**). Service `VALID_STEP_IDS` remains defense-in-depth. Shell Getting started **Skip** / **Undo skip** (`aria-label`s).
 - **Platform subscriptions:** `GET /packages`, `POST /tenants/{slug}/subscription` (package + months/years), `PATCH /tenants/{slug}/modules`, `GET /tenants/{slug}/usage`. Sidebar hides modules not in `enabled_modules` from `/me`. Run Alembic `20260812_0070` after pull.
@@ -564,6 +564,11 @@
 - **Platform grant role aria OpenAPI:** Platform Staff **Platform grant role** select (`aria-label`).
 - **Platform staff change role aria OpenAPI:** Platform Staff row **Change platform staff role** select (`aria-label`).
 - **PO amend unit aria OpenAPI (BR-6.3):** Purchasing Amend **PO unit** select (`aria-label`; same as Create).
+- **Cash drawer store aria OpenAPI (BR-8.1):** Multi-Store **Cash drawer store** select (`aria-label`).
+- **Edit account select aria OpenAPI (BR-10.1):** Accounting **Edit account** select (`aria-label`; pairs with **Edit account name**).
+- **X-Tenant-ID header OpenAPI:** Optional `X-Tenant-ID` ∈ `UuidIdValue` (strip; lower; valid UUID); omit → JWT/key tenant alone; blank/slug/`!!!`/`http://…`/non-UUID → **422** (was free `str`; slug/`!!!` reached cross-tenant **403**). UUID ≠ claims tenant → **403**. Rate-limit middleware still buckets on raw header string (not auth).
+- **X-API-Key header OpenAPI (BR-18.1):** Optional `X-API-Key` ∈ `ApiKeyHeaderValue` (strip; `rdk_…`; 1–200; ≥1 letter/digit after prefix; no `://`/`@`/spaces); omit → JWT Bearer path; blank/`!!!`/`http://…`/non-`rdk_` → **422** (was free `str`; garbage reached key lookup **401**). Authenticity remains hashed key lookup (**401**). `Authorization: Bearer rdk_…` still accepted (shape soft-path).
+- **Multi-tenant headers docs honesty OpenAPI:** Appendix B / API Keys auth headers document `X-Tenant-ID` as JWT/key **UUID** (not slug `tenant_abc123`).
 - **Response envelope honesty OpenAPI:** Success `env()` body is `{ success, data, message }` only — no JSON `timestamp` / `request_id`; correlation via **`X-Request-ID`** header.
 - **List pagination honesty OpenAPI:** Most lists return unpaginated `data: T[]` (no global cursor/`items`+`pagination` contract).
 - **Money JSON number honesty OpenAPI:** Request Values and response serializers use JSON **numbers** (not decimal strings) for money/qty floats.

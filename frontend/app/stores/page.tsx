@@ -1185,6 +1185,8 @@ export default function Page() {
                   setDrawerOnCash(s.drawer_open_on_cash !== false);
                 }
               }}
+              aria-label="Cash drawer store"
+              title="Store for cash drawer settings"
             >
               {stores
                 .filter((s) => s.is_active !== false)
