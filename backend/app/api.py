@@ -9753,8 +9753,9 @@ async def report_sales_by_department(
 
 @api.get("/reports/inventory/balance")
 async def report_inventory_balance(
-    warehouse_id: str | None = None,
-    store_id: str | None = None,
+    # Same UuidIdValue Query honesty as low-stock / expiry location filters.
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9771,8 +9772,9 @@ async def report_inventory_balance(
 @api.get("/reports/inventory/valuation")
 async def report_inventory_valuation(
     method: Annotated[InventoryValuationMethodValue, Query()] = "standard",
-    warehouse_id: str | None = None,
-    store_id: str | None = None,
+    # Same UuidIdValue Query honesty as low-stock / expiry / balance location filters.
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9819,8 +9821,10 @@ async def report_inventory_movements(
 
 @api.get("/reports/inventory/low-stock")
 async def report_low_stock(
-    store_id: str | None = None,
-    warehouse_id: str | None = None,
+    # Optional location filters ∈ UuidIdValue; omit/`null` → all; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach store/warehouse lookup).
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -9834,8 +9838,9 @@ async def report_low_stock(
 @api.get("/reports/inventory/expiry")
 async def report_inventory_expiry(
     days: int = 30,
-    warehouse_id: str | None = None,
-    store_id: str | None = None,
+    # Same UuidIdValue Query honesty as low-stock location filters.
+    warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
