@@ -3866,7 +3866,7 @@ async def create_stock_count(
 
 @api.get("/inventory/stock-counts/{count_id}")
 async def get_stock_count(
-    count_id: str,
+    count_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3876,7 +3876,7 @@ async def get_stock_count(
 
 @api.patch("/inventory/stock-counts/{count_id}/items")
 async def patch_stock_count_items(
-    count_id: str,
+    count_id: UuidIdValue,
     payload: StockCountItemsUpdate,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -3894,7 +3894,7 @@ async def patch_stock_count_items(
 
 @api.post("/inventory/stock-counts/{count_id}/complete")
 async def complete_stock_count(
-    count_id: str,
+    count_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3920,7 +3920,7 @@ async def complete_stock_count(
 
 @api.post("/inventory/stock-counts/{count_id}/cancel")
 async def cancel_stock_count(
-    count_id: str,
+    count_id: UuidIdValue,
     payload: StockCountCancel,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -4559,7 +4559,7 @@ async def create_customer_group(
 
 @api.patch("/customers/groups/{group_id}")
 async def patch_customer_group(
-    group_id: str,
+    group_id: UuidIdValue,
     payload: CustomerGroupUpdate,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
@@ -4618,7 +4618,7 @@ async def customers(
 
 @api.get("/customers/{customer_id}")
 async def get_customer(
-    customer_id: str,
+    customer_id: UuidIdValue,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -4689,7 +4689,7 @@ async def add_customer(
 
 @api.patch("/customers/{customer_id}")
 async def patch_customer(
-    customer_id: str,
+    customer_id: UuidIdValue,
     payload: PartyUpdate,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
@@ -4732,7 +4732,7 @@ async def patch_customer(
 
 @api.get("/customers/{customer_id}/contacts")
 async def list_customer_contacts(
-    customer_id: str,
+    customer_id: UuidIdValue,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -4744,7 +4744,7 @@ async def list_customer_contacts(
 
 @api.post("/customers/{customer_id}/contacts")
 async def create_customer_contact(
-    customer_id: str,
+    customer_id: UuidIdValue,
     payload: PartyContactCreate,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
@@ -4779,8 +4779,8 @@ async def create_customer_contact(
 
 @api.patch("/customers/{customer_id}/contacts/{contact_id}")
 async def patch_customer_contact(
-    customer_id: str,
-    contact_id: str,
+    customer_id: UuidIdValue,
+    contact_id: UuidIdValue,
     payload: PartyContactUpdate,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
@@ -4815,8 +4815,8 @@ async def patch_customer_contact(
 
 @api.delete("/customers/{customer_id}/contacts/{contact_id}")
 async def delete_customer_contact(
-    customer_id: str,
-    contact_id: str,
+    customer_id: UuidIdValue,
+    contact_id: UuidIdValue,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -4908,7 +4908,7 @@ async def suppliers(
 
 @api.get("/suppliers/{supplier_id}")
 async def get_supplier(
-    supplier_id: str,
+    supplier_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -4959,7 +4959,7 @@ async def add_supplier(
 
 @api.patch("/suppliers/{supplier_id}")
 async def patch_supplier(
-    supplier_id: str,
+    supplier_id: UuidIdValue,
     payload: PartyUpdate,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
@@ -4990,7 +4990,7 @@ async def patch_supplier(
 
 @api.get("/suppliers/{supplier_id}/contacts")
 async def list_supplier_contacts(
-    supplier_id: str,
+    supplier_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -5002,7 +5002,7 @@ async def list_supplier_contacts(
 
 @api.post("/suppliers/{supplier_id}/contacts")
 async def create_supplier_contact(
-    supplier_id: str,
+    supplier_id: UuidIdValue,
     payload: PartyContactCreate,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
@@ -5037,8 +5037,8 @@ async def create_supplier_contact(
 
 @api.patch("/suppliers/{supplier_id}/contacts/{contact_id}")
 async def patch_supplier_contact(
-    supplier_id: str,
-    contact_id: str,
+    supplier_id: UuidIdValue,
+    contact_id: UuidIdValue,
     payload: PartyContactUpdate,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
@@ -5073,8 +5073,8 @@ async def patch_supplier_contact(
 
 @api.delete("/suppliers/{supplier_id}/contacts/{contact_id}")
 async def delete_supplier_contact(
-    supplier_id: str,
-    contact_id: str,
+    supplier_id: UuidIdValue,
+    contact_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -5462,7 +5462,7 @@ async def create_sales_invoice(
 
 @api.get("/sales/invoices/{invoice_id}")
 async def get_sales_invoice(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -5473,7 +5473,7 @@ async def get_sales_invoice(
 
 @api.get("/sales/invoices/{invoice_id}/print")
 async def print_sales_invoice(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     # omit → tenant print branding default; blank/invalid → 422
     template: Annotated[InvoiceTemplateValue | None, Query()] = None,
     # omit → pdf; blank/invalid → 422 (was `format or "pdf"`)
@@ -5543,7 +5543,7 @@ async def print_sales_invoice(
 
 @api.post("/sales/invoices/{invoice_id}/post")
 async def post_sales_invoice(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     payload: CreditLimitOverrideBody | None = None,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
@@ -5582,7 +5582,7 @@ async def post_sales_invoice(
 
 @api.post("/sales/invoices/{invoice_id}/send")
 async def send_sales_invoice(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     to: Annotated[EmailStr | None, Query()] = None,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
@@ -5615,7 +5615,7 @@ async def send_sales_invoice(
 
 @api.post("/sales/invoices/{invoice_id}/cancel")
 async def cancel_sales_invoice(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     payload: SalesInvoiceCancel,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
@@ -5689,7 +5689,7 @@ async def create_quotation(
 
 @api.get("/sales/quotations/{quotation_id}")
 async def get_quotation(
-    quotation_id: str,
+    quotation_id: UuidIdValue,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -5700,7 +5700,7 @@ async def get_quotation(
 
 @api.post("/sales/quotations/{quotation_id}/send")
 async def send_quotation(
-    quotation_id: str,
+    quotation_id: UuidIdValue,
     to: Annotated[EmailStr | None, Query()] = None,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
@@ -5732,7 +5732,7 @@ async def send_quotation(
 
 @api.post("/sales/quotations/{quotation_id}/accept")
 async def accept_quotation(
-    quotation_id: str,
+    quotation_id: UuidIdValue,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -5745,7 +5745,7 @@ async def accept_quotation(
 
 @api.post("/sales/quotations/{quotation_id}/reject")
 async def reject_quotation(
-    quotation_id: str,
+    quotation_id: UuidIdValue,
     payload: SalesQuotationReject,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
@@ -5764,7 +5764,7 @@ async def reject_quotation(
 
 @api.post("/sales/quotations/{quotation_id}/convert-order")
 async def convert_quotation_order(
-    quotation_id: str,
+    quotation_id: UuidIdValue,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -5779,7 +5779,7 @@ async def convert_quotation_order(
 
 @api.post("/sales/quotations/{quotation_id}/convert-invoice")
 async def convert_quotation_invoice(
-    quotation_id: str,
+    quotation_id: UuidIdValue,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -5851,7 +5851,7 @@ async def create_sales_order(
 
 @api.get("/sales/orders/{order_id}")
 async def get_sales_order(
-    order_id: str,
+    order_id: UuidIdValue,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -5862,7 +5862,7 @@ async def get_sales_order(
 
 @api.post("/sales/orders/{order_id}/confirm")
 async def confirm_sales_order(
-    order_id: str,
+    order_id: UuidIdValue,
     payload: SalesOrderConfirm = SalesOrderConfirm(),
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
@@ -5883,7 +5883,7 @@ async def confirm_sales_order(
 
 @api.post("/sales/orders/{order_id}/process")
 async def process_sales_order(
-    order_id: str,
+    order_id: UuidIdValue,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -5896,7 +5896,7 @@ async def process_sales_order(
 
 @api.post("/sales/orders/{order_id}/ship")
 async def ship_sales_order(
-    order_id: str,
+    order_id: UuidIdValue,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -5909,7 +5909,7 @@ async def ship_sales_order(
 
 @api.post("/sales/orders/{order_id}/deliver")
 async def deliver_sales_order(
-    order_id: str,
+    order_id: UuidIdValue,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -5922,7 +5922,7 @@ async def deliver_sales_order(
 
 @api.post("/sales/orders/{order_id}/cancel")
 async def cancel_sales_order(
-    order_id: str,
+    order_id: UuidIdValue,
     payload: SalesOrderCancel,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
@@ -5942,7 +5942,7 @@ async def cancel_sales_order(
 
 @api.post("/sales/orders/{order_id}/convert-invoice")
 async def convert_order_invoice(
-    order_id: str,
+    order_id: UuidIdValue,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6011,7 +6011,7 @@ async def create_sales_return(
 
 @api.get("/sales/returns/{return_id}")
 async def get_sales_return(
-    return_id: str,
+    return_id: UuidIdValue,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6022,7 +6022,7 @@ async def get_sales_return(
 
 @api.post("/sales/returns/{return_id}/post")
 async def post_sales_return(
-    return_id: str,
+    return_id: UuidIdValue,
     payload: SalesReturnPost = SalesReturnPost(),
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
@@ -6047,7 +6047,7 @@ async def post_sales_return(
 
 @api.post("/sales/returns/{return_id}/cancel")
 async def cancel_sales_return(
-    return_id: str,
+    return_id: UuidIdValue,
     payload: SalesReturnCancel,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
@@ -6654,7 +6654,7 @@ async def create_purchase_return(
 
 @api.get("/purchasing/returns/{return_id}")
 async def get_purchase_return(
-    return_id: str,
+    return_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6665,7 +6665,7 @@ async def get_purchase_return(
 
 @api.post("/purchasing/returns/{return_id}/post")
 async def post_purchase_return(
-    return_id: str,
+    return_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6683,7 +6683,7 @@ async def post_purchase_return(
 
 @api.post("/purchasing/returns/{return_id}/cancel")
 async def cancel_purchase_return(
-    return_id: str,
+    return_id: UuidIdValue,
     payload: PurchaseReturnCancel,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
@@ -6766,7 +6766,7 @@ async def create_purchase_invoice(
 
 @api.get("/purchasing/invoices/{invoice_id}")
 async def get_purchase_invoice(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6777,7 +6777,7 @@ async def get_purchase_invoice(
 
 @api.patch("/purchasing/invoices/{invoice_id}")
 async def patch_purchase_invoice(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     payload: PurchaseInvoiceUpdate,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
@@ -6811,7 +6811,7 @@ async def patch_purchase_invoice(
 
 @api.post("/purchasing/invoices/{invoice_id}/ocr-suggest")
 async def purchase_invoice_ocr_suggest(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6827,7 +6827,7 @@ async def purchase_invoice_ocr_suggest(
 
 @api.post("/purchasing/invoices/{invoice_id}/approve")
 async def approve_purchase_invoice(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6840,7 +6840,7 @@ async def approve_purchase_invoice(
 
 @api.post("/purchasing/invoices/{invoice_id}/cancel")
 async def cancel_purchase_invoice(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     payload: PurchaseInvoiceCancel,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
@@ -6860,7 +6860,7 @@ async def cancel_purchase_invoice(
 
 @api.post("/purchasing/invoices/{invoice_id}/attachment")
 async def upload_purchase_invoice_attachment(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     file: UploadFile = File(...),
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
@@ -6900,7 +6900,7 @@ async def upload_purchase_invoice_attachment(
 
 @api.get("/purchasing/invoices/{invoice_id}/attachment")
 async def download_purchase_invoice_attachment(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -6921,7 +6921,7 @@ async def download_purchase_invoice_attachment(
 
 @api.delete("/purchasing/invoices/{invoice_id}/attachment")
 async def delete_purchase_invoice_attachment(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     claims=Depends(require_permission("purchasing", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -7033,7 +7033,7 @@ async def pos_list_sessions(
 
 @api.post("/pos/sessions/{session_id}/close")
 async def pos_close_session(
-    session_id: str,
+    session_id: UuidIdValue,
     payload: PosSessionClose,
     claims=Depends(require_permission("pos", "write")),
     db: AsyncSession = Depends(get_db),
@@ -7052,7 +7052,7 @@ async def pos_close_session(
 
 @api.get("/pos/sessions/{session_id}/drawer")
 async def pos_session_drawer(
-    session_id: str,
+    session_id: UuidIdValue,
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -7068,7 +7068,7 @@ async def pos_session_drawer(
 
 @api.post("/pos/sessions/{session_id}/drawer/open")
 async def pos_open_cash_drawer(
-    session_id: str,
+    session_id: UuidIdValue,
     payload: PosDrawerOpen,
     claims=Depends(require_permission("pos", "write")),
     db: AsyncSession = Depends(get_db),
@@ -7108,7 +7108,7 @@ async def pos_open_cash_drawer(
 
 @api.get("/pos/sessions/{session_id}/report")
 async def pos_session_report(
-    session_id: str,
+    session_id: UuidIdValue,
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8048,7 +8048,7 @@ async def add_expense(
 
 @api.get("/expenses/{expense_id}")
 async def get_expense(
-    expense_id: str,
+    expense_id: UuidIdValue,
     claims=Depends(require_permission("expenses", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8059,7 +8059,7 @@ async def get_expense(
 
 @api.patch("/expenses/{expense_id}")
 async def patch_expense(
-    expense_id: str,
+    expense_id: UuidIdValue,
     payload: ExpenseUpdate,
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
@@ -8102,7 +8102,7 @@ async def patch_expense(
 
 @api.post("/expenses/{expense_id}/ocr-suggest")
 async def expense_ocr_suggest(
-    expense_id: str,
+    expense_id: UuidIdValue,
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8118,7 +8118,7 @@ async def expense_ocr_suggest(
 
 @api.post("/expenses/{expense_id}/attachment")
 async def upload_expense_attachment(
-    expense_id: str,
+    expense_id: UuidIdValue,
     file: UploadFile = File(...),
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
@@ -8158,7 +8158,7 @@ async def upload_expense_attachment(
 
 @api.get("/expenses/{expense_id}/attachment")
 async def download_expense_attachment(
-    expense_id: str,
+    expense_id: UuidIdValue,
     claims=Depends(require_permission("expenses", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8178,7 +8178,7 @@ async def download_expense_attachment(
 
 @api.delete("/expenses/{expense_id}/attachment")
 async def delete_expense_attachment(
-    expense_id: str,
+    expense_id: UuidIdValue,
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8204,7 +8204,7 @@ async def delete_expense_attachment(
 
 @api.post("/expenses/{expense_id}/approve")
 async def approve_expense(
-    expense_id: str,
+    expense_id: UuidIdValue,
     payload: ExpenseDecision = ExpenseDecision(),
     claims=Depends(require_permission("expenses", "approve")),
     db: AsyncSession = Depends(get_db),
@@ -8239,7 +8239,7 @@ async def approve_expense(
 
 @api.post("/expenses/{expense_id}/reject")
 async def reject_expense(
-    expense_id: str,
+    expense_id: UuidIdValue,
     payload: ExpenseReject,
     claims=Depends(require_permission("expenses", "approve")),
     db: AsyncSession = Depends(get_db),
@@ -8258,7 +8258,7 @@ async def reject_expense(
 
 @api.delete("/expenses/{expense_id}")
 async def delete_expense(
-    expense_id: str,
+    expense_id: UuidIdValue,
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8792,7 +8792,7 @@ async def clear_bank_statement_group(
 @api.post("/accounting/bank-statements/{statement_id}/clear-groups/{group_id}/dissolve")
 async def dissolve_bank_clearing_group(
     statement_id: str,
-    group_id: str,
+    group_id: UuidIdValue,
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10209,7 +10209,7 @@ async def delete_exchange_rate(
 
 @api.get("/credit/invoices/{invoice_id}/early-discount")
 async def invoice_early_discount_quote(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10226,7 +10226,7 @@ async def invoice_early_discount_quote(
 
 @api.get("/credit/purchase-invoices/{invoice_id}/early-discount")
 async def purchase_invoice_early_discount_quote(
-    invoice_id: str,
+    invoice_id: UuidIdValue,
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10243,7 +10243,7 @@ async def purchase_invoice_early_discount_quote(
 
 @api.get("/credit/customers/{customer_id}/statement")
 async def customer_credit_statement(
-    customer_id: str,
+    customer_id: UuidIdValue,
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10252,7 +10252,7 @@ async def customer_credit_statement(
 
 @api.get("/customers/{customer_id}/history")
 async def customer_history(
-    customer_id: str,
+    customer_id: UuidIdValue,
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     claims=Depends(require_permission("credit", "read")),
@@ -10272,7 +10272,7 @@ async def customer_history(
 
 @api.get("/credit/suppliers/{supplier_id}/statement")
 async def supplier_credit_statement(
-    supplier_id: str,
+    supplier_id: UuidIdValue,
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10281,7 +10281,7 @@ async def supplier_credit_statement(
 
 @api.get("/suppliers/{supplier_id}/history")
 async def supplier_history(
-    supplier_id: str,
+    supplier_id: UuidIdValue,
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     claims=Depends(require_permission("credit", "read")),
@@ -10301,7 +10301,7 @@ async def supplier_history(
 
 @api.patch("/customers/{customer_id}/credit-limit")
 async def update_customer_credit_limit(
-    customer_id: str,
+    customer_id: UuidIdValue,
     payload: CreditLimitUpdate,
     claims=Depends(require_permission("credit", "write")),
     db: AsyncSession = Depends(get_db),
@@ -10334,7 +10334,7 @@ async def update_customer_credit_limit(
 
 @api.get("/customers/{customer_id}/credit")
 async def customer_credit(
-    customer_id: str,
+    customer_id: UuidIdValue,
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10344,7 +10344,7 @@ async def customer_credit(
 
 @api.get("/customers/{customer_id}/outstanding")
 async def customer_outstanding(
-    customer_id: str,
+    customer_id: UuidIdValue,
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10376,7 +10376,7 @@ async def customer_outstanding(
 
 @api.post("/customers/{customer_id}/payments")
 async def customer_payment_alias(
-    customer_id: str,
+    customer_id: UuidIdValue,
     payload: CustomerPaymentCreate,
     claims=Depends(require_permission("credit", "write")),
     db: AsyncSession = Depends(get_db),
@@ -10414,7 +10414,7 @@ async def customer_payment_alias(
 
 @api.get("/suppliers/{supplier_id}/credit")
 async def supplier_credit(
-    supplier_id: str,
+    supplier_id: UuidIdValue,
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10424,7 +10424,7 @@ async def supplier_credit(
 
 @api.get("/suppliers/{supplier_id}/outstanding")
 async def supplier_outstanding(
-    supplier_id: str,
+    supplier_id: UuidIdValue,
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10484,7 +10484,7 @@ async def supplier_outstanding(
 
 @api.get("/suppliers/{supplier_id}/payment-schedule")
 async def supplier_payment_schedule(
-    supplier_id: str,
+    supplier_id: UuidIdValue,
     claims=Depends(require_permission("credit", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -10499,7 +10499,7 @@ async def supplier_payment_schedule(
 
 @api.post("/suppliers/{supplier_id}/payments")
 async def supplier_payment(
-    supplier_id: str,
+    supplier_id: UuidIdValue,
     payload: SupplierPaymentCreate,
     claims=Depends(require_permission("credit", "write")),
     db: AsyncSession = Depends(get_db),
@@ -10875,7 +10875,7 @@ async def add_store(
 
 @api.patch("/stores/{store_id}")
 async def patch_store(
-    store_id: str,
+    store_id: UuidIdValue,
     payload: StoreUpdate,
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
@@ -10924,7 +10924,7 @@ async def patch_store(
 
 @api.patch("/stores/{store_id}/drawer")
 async def update_store_drawer(
-    store_id: str,
+    store_id: UuidIdValue,
     payload: StoreDrawerSettingsUpdate,
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
@@ -10965,7 +10965,7 @@ async def update_store_drawer(
 
 @api.get("/stores/{store_id}/inventory")
 async def store_inventory(
-    store_id: str,
+    store_id: UuidIdValue,
     include_zero: bool = False,
     claims=Depends(require_permission("stores", "read")),
     db: AsyncSession = Depends(get_db),
@@ -10979,7 +10979,7 @@ async def store_inventory(
 
 @api.put("/stores/{store_id}/reorder-policy")
 async def set_store_reorder_policy(
-    store_id: str,
+    store_id: UuidIdValue,
     payload: StoreReorderPolicyUpdate,
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
@@ -11359,7 +11359,7 @@ async def inventory_cancel_transfer(
 
 @api.get("/stores/{store_id}")
 async def get_store(
-    store_id: str,
+    store_id: UuidIdValue,
     claims=Depends(require_permission("stores", "read")),
     db: AsyncSession = Depends(get_db),
 ):
