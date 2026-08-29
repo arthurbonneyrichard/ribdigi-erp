@@ -389,7 +389,9 @@ export default function Page() {
               aria-label="Early pay discount days"
               style={{ width: 80 }}
             />
-            <button onClick={saveEarlyPay}>Save terms</button>
+            <button onClick={saveEarlyPay} aria-label="Save early pay terms">
+              Save terms
+            </button>
           </div>
           <p className="muted" style={{ marginTop: 8 }}>
             Status: {epEnabled ? 'enabled' : 'disabled'}

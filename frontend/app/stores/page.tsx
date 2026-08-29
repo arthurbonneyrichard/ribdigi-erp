@@ -1401,7 +1401,7 @@ export default function Page() {
                 aria-label="Company store allocation"
               />
             </label>
-            <button type="button" onClick={saveStoreLimit}>
+            <button type="button" onClick={saveStoreLimit} aria-label="Save store limit allocation">
               Save allocation
             </button>
             <span className="muted" style={{ fontSize: 12 }}>

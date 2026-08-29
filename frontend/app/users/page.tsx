@@ -536,6 +536,7 @@ export default function Page() {
               type="button"
               onClick={() => runUserImport(true)}
               disabled={!importFile || importBusy}
+              aria-label="Validate user CSV import"
             >
               {importBusy ? 'Working…' : 'Validate'}
             </button>
@@ -543,6 +544,7 @@ export default function Page() {
               type="button"
               onClick={() => runUserImport(false)}
               disabled={!importFile || importBusy || !importReport?.can_commit}
+              aria-label="Import valid user CSV rows"
             >
               Import valid rows
             </button>

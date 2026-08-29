@@ -11,6 +11,7 @@ from fastapi import HTTPException
 from app import models as m
 from app.config import settings
 from app.honesty import optional_honest_narrative
+from app.schemas import validate_smtp_host_value
 
 
 @dataclass(frozen=True)
@@ -129,7 +130,11 @@ def apply_email_settings_update(tenant: m.Tenant, payload: dict[str, Any]) -> di
     """Merge PATCH fields into tenant.email_settings. Password encrypted; never returned."""
     current = _raw_settings(tenant)
     if "host" in payload and payload["host"] is not None:
-        current["host"] = str(payload["host"]).strip()[:200]
+        # OpenAPI SmtpHostValue → 422; service defense-in-depth → 400.
+        try:
+            current["host"] = validate_smtp_host_value(str(payload["host"]).strip())[:200]
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
     if "port" in payload and payload["port"] is not None:
         port = int(payload["port"])
         if port < 1 or port > 65535:

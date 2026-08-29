@@ -9,6 +9,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json
 
 DEFAULT_PREFERENCES = {
     "low_stock": {"dashboard": True, "email": True, "sms": False},
@@ -358,8 +359,8 @@ async def notify_low_stock_if_needed(
     tenant_id: str,
     product: m.Product,
 ) -> m.Notification | None:
-    stock = float(product.stock_qty or 0)
-    reorder = float(product.reorder_level or 0)
+    stock = money_json(product.stock_qty)
+    reorder = money_json(product.reorder_level)
     if stock > reorder:
         return None
     # Avoid duplicate unread low-stock alerts for same product
@@ -409,8 +410,8 @@ async def notify_warehouse_low_stock_if_needed(
     product: m.Product,
     stock: m.WarehouseStock,
 ) -> m.Notification | None:
-    qty = float(stock.quantity or 0)
-    reorder = float(getattr(stock, "reorder_level", 0) or 0)
+    qty = money_json(stock.quantity)
+    reorder = money_json(getattr(stock, "reorder_level", 0) or 0)
     if reorder <= 0 or qty > reorder:
         return None
     entity_id = stock.id
@@ -435,7 +436,9 @@ async def notify_warehouse_low_stock_if_needed(
         )
     ).scalar_one_or_none()
     loc = wh.code if wh else stock.warehouse_id[:8]
-    suggested = float(getattr(stock, "reorder_qty", 0) or 0) or max(round(reorder - qty, 3), 0)
+    suggested = money_json(getattr(stock, "reorder_qty", 0) or 0) or max(
+        round(reorder - qty, 3), 0
+    )
     note = await create_notification(
         db,
         tenant_id=tenant_id,
@@ -519,7 +522,7 @@ async def scan_payment_due(db: AsyncSession, tenant_id: str, within_days: int = 
         )
     ).scalars().all()
     for inv in ar_invoices:
-        due = max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
+        due = max(money_json(inv.total_amount) - money_json(inv.paid_amount or 0), 0)
         if due <= 0:
             continue
         existing = (
@@ -559,7 +562,7 @@ async def scan_payment_due(db: AsyncSession, tenant_id: str, within_days: int = 
         )
     ).scalars().all()
     for inv in ap_invoices:
-        due = max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
+        due = max(money_json(inv.total_amount) - money_json(inv.paid_amount or 0), 0)
         if due <= 0:
             continue
         existing = (
@@ -688,7 +691,7 @@ async def scan_recurring_expense_due(db: AsyncSession, tenant_id: str, within_da
         when_label = when.date().isoformat() if when else "unknown"
         past = bool(when and when <= now)
         title = "Recurring expense due" if past else "Recurring expense due soon"
-        amount = float(row.amount or 0)
+        amount = money_json(row.amount or 0)
         message = (
             f"Recurring {row.category} ({amount:.2f}) "
             + (

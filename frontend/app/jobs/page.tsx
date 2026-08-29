@@ -97,7 +97,12 @@ export default function Page() {
           Results: {info?.result_backend || '—'}
         </div>
         <div>
-          <button type="button" onClick={() => refresh().catch((e) => setError(e.message))} disabled={!!busy}>
+          <button
+            type="button"
+            onClick={() => refresh().catch((e) => setError(e.message))}
+            disabled={!!busy}
+            aria-label="Refresh jobs list"
+          >
             Refresh
           </button>
         </div>

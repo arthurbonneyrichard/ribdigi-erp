@@ -1716,7 +1716,7 @@ export default function Page() {
                 <option value="ean13">EAN-13</option>
                 <option value="upca">UPC-A</option>
               </select>
-              <button type="button" onClick={generateBarcode}>
+              <button type="button" onClick={generateBarcode} aria-label="Generate product barcode">
                 Generate barcode
               </button>
               <input
@@ -1726,7 +1726,7 @@ export default function Page() {
                 title="Label copies"
                 aria-label="Label copies"
               />
-              <button type="button" onClick={printBarcodeLabel}>
+              <button type="button" onClick={printBarcodeLabel} aria-label="Print product barcode label">
                 Print barcode label
               </button>
             </div>
@@ -2041,6 +2041,7 @@ export default function Page() {
               type="button"
               onClick={() => runProductImport(true)}
               disabled={!importFile || importBusy}
+              aria-label="Validate product CSV import"
             >
               {importBusy ? 'Working…' : 'Validate'}
             </button>
@@ -2048,6 +2049,7 @@ export default function Page() {
               type="button"
               onClick={() => runProductImport(false)}
               disabled={!importFile || importBusy || !importReport?.can_commit}
+              aria-label="Import valid product CSV rows"
             >
               Import valid rows
             </button>
@@ -2937,10 +2939,18 @@ export default function Page() {
                   </td>
                   <td>{v.is_active ? 'yes' : 'no'}</td>
                   <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    <button type="button" onClick={() => generateVariantBarcode(v.id)}>
+                    <button
+                      type="button"
+                      onClick={() => generateVariantBarcode(v.id)}
+                      aria-label={`Generate variant barcode ${v.id}`}
+                    >
                       Generate
                     </button>
-                    <button type="button" onClick={() => printVariantBarcodeLabel(v.id)}>
+                    <button
+                      type="button"
+                      onClick={() => printVariantBarcodeLabel(v.id)}
+                      aria-label={`Print variant barcode label ${v.id}`}
+                    >
                       Label
                     </button>
                     {v.is_active === false ? (

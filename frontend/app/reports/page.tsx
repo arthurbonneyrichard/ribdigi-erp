@@ -2386,8 +2386,10 @@ export default function Page() {
                       ) : null}
                     </td>
                     <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                      <button onClick={() => runSchedule(s.id)}>Run now</button>
-                      <button onClick={() => toggleSchedule(s)}>
+                      <button onClick={() => runSchedule(s.id)} aria-label={`Run report schedule ${s.id}`}>
+                        Run now
+                      </button>
+                      <button onClick={() => toggleSchedule(s)} aria-label={`${s.enabled ? 'Disable' : 'Enable'} report schedule ${s.id}`}>
                         {s.enabled ? 'Disable' : 'Enable'}
                       </button>
                       <button onClick={() => deleteSchedule(s.id)}>Delete</button>

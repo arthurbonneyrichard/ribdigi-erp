@@ -8533,7 +8533,7 @@ async def create_cash_transfer(
         entity_id=row.id,
         details={
             "kind": row.kind,
-            "amount": float(row.amount),
+            "amount": money_json(row.amount),
             "from_account_id": row.from_account_id,
             "to_account_id": row.to_account_id,
         },
@@ -11009,7 +11009,17 @@ async def update_store_drawer(
     if "drawer_mode" in data and data["drawer_mode"] is not None:
         store.drawer_mode = cash_drawer_svc.normalize_mode(data["drawer_mode"])
     if "drawer_host" in data:
-        store.drawer_host = (data["drawer_host"] or "").strip() or None
+        raw_host = data["drawer_host"]
+        if raw_host is None or not str(raw_host).strip():
+            store.drawer_host = None
+        else:
+            # OpenAPI SmtpHostValue → 422; service defense-in-depth → 400.
+            from app.schemas import validate_smtp_host_value
+
+            try:
+                store.drawer_host = validate_smtp_host_value(str(raw_host).strip())
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
     if "drawer_port" in data and data["drawer_port"] is not None:
         store.drawer_port = int(data["drawer_port"])
     if "drawer_open_on_cash" in data and data["drawer_open_on_cash"] is not None:

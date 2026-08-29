@@ -10,6 +10,7 @@ from fastapi import HTTPException
 from app import models as m
 from app.config import settings
 from app.honesty import optional_honest_narrative
+from app.schemas import validate_e164_phone_value
 
 
 @dataclass(frozen=True)
@@ -122,7 +123,13 @@ def apply_sms_settings_update(tenant: m.Tenant, payload: dict[str, Any]) -> dict
             raise HTTPException(status_code=400, detail="Twilio account SID is required")
         current["account_sid"] = sid[:64]
     if "from_number" in payload and payload["from_number"] is not None:
-        current["from_number"] = str(payload["from_number"]).strip()[:32]
+        # OpenAPI E164PhoneValue → 422; service defense-in-depth → 400.
+        try:
+            current["from_number"] = validate_e164_phone_value(
+                str(payload["from_number"]).strip()
+            )[:32]
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
     if payload.get("clear_auth_token"):
         current.pop("auth_token_enc", None)
     elif payload.get("auth_token") is not None and str(payload.get("auth_token") or "") != "":

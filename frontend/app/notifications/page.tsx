@@ -145,7 +145,9 @@ export default function Page() {
           All (90 days)
         </button>
         <button onClick={markAll}>Mark all read</button>
-        <button onClick={scanDue}>Scan due alerts</button>
+        <button onClick={scanDue} aria-label="Scan due notification alerts">
+          Scan due alerts
+        </button>
       </div>
 
       <div className="notif-chips" aria-label="Filter by category">

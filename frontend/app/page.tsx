@@ -319,7 +319,12 @@ export default function Login() {
               <p className="login-hint">
                 Check your inbox for a verification link, or resend one below.
               </p>
-              <button className="login-secondary" type="button" onClick={resendVerification}>
+              <button
+                className="login-secondary"
+                type="button"
+                onClick={resendVerification}
+                aria-label="Resend verification email"
+              >
                 Resend verification email
               </button>
               <Link className="login-ghost" href="/verify-email" style={{ display: 'block', textAlign: 'center' }}>

@@ -947,14 +947,14 @@ async def post_return(
                     details={
                         "product_id": item.product_id,
                         "variant_id": item.variant_id,
-                        "quantity": float(item.quantity),
+                        "quantity": money_json(item.quantity),
                     },
                 )
             )
 
-    return_total = round(float(ret.total_amount), 2)
+    return_total = round(money_json(ret.total_amount), 2)
     invoice = await get_invoice(db, tenant_id, ret.sales_invoice_id)
-    open_ar = max(float(invoice.total_amount) - float(invoice.paid_amount or 0), 0.0)
+    open_ar = max(money_json(invoice.total_amount) - money_json(invoice.paid_amount or 0), 0.0)
     apply_to_invoice = min(return_total, open_ar)
     excess = round(return_total - apply_to_invoice, 2)
 

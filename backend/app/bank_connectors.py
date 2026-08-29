@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.config import settings
-from app.honesty import optional_honest_narrative
+from app.honesty import money_json, optional_honest_narrative
 
 PROVIDERS = frozenset({"mock", "http_json"})
 
@@ -146,7 +146,15 @@ async def create_connection(
     lookback = max(1, min(int(sync_lookback_days or 30), 365))
     creds = None
     if access_token:
-        creds = _encrypt(json.dumps({"access_token": access_token.strip()}))
+        # OpenAPI BankAccessTokenValue → 422; service defense-in-depth → 400.
+        token = optional_honest_narrative(
+            access_token, label="bank connection access token", max_length=128
+        )
+        if not token or " " in token:
+            raise HTTPException(
+                status_code=400, detail="bank connection access token is required"
+            )
+        creds = _encrypt(json.dumps({"access_token": token}))
 
     # OpenAPI BankConnectionDisplayNameValue / BankExternalAccountIdValue → 422.
     display_name = optional_honest_narrative(
@@ -208,9 +216,17 @@ async def update_connection(
     if "is_active" in payload and payload["is_active"] is not None:
         row.is_active = bool(payload["is_active"])
     if payload.get("access_token"):
-        row.credentials_enc = _encrypt(
-            json.dumps({"access_token": str(payload["access_token"]).strip()})
+        # OpenAPI BankAccessTokenValue → 422; service defense-in-depth → 400.
+        token = optional_honest_narrative(
+            payload["access_token"],
+            label="bank connection access token",
+            max_length=128,
         )
+        if not token or " " in token:
+            raise HTTPException(
+                status_code=400, detail="bank connection access token is required"
+            )
+        row.credentials_enc = _encrypt(json.dumps({"access_token": token}))
     if payload.get("clear_credentials"):
         row.credentials_enc = None
     if row.provider == "http_json" and not (row.feed_url or "").strip():
@@ -239,12 +255,12 @@ def _normalize_txn(raw: dict) -> dict | None:
     """Map provider row → bank_recon line shape."""
     amount = raw.get("amount")
     if amount is None and ("debit" in raw or "credit" in raw):
-        debit = float(raw.get("debit") or 0)
-        credit = float(raw.get("credit") or 0)
+        debit = money_json(raw.get("debit") or 0)
+        credit = money_json(raw.get("credit") or 0)
         amount = credit - debit
     if amount is None:
         return None
-    amount = float(amount)
+    amount = money_json(amount)
     if abs(amount) < 1e-9:
         return None
     txn_date = raw.get("txn_date") or raw.get("date") or raw.get("posted_at")
@@ -305,7 +321,7 @@ def _mock_transactions(row: m.BankAccountConnection, *, since: datetime) -> list
         lines.append(
             {
                 "txn_date": stamp,
-                "amount": float(base_amt),
+                "amount": money_json(base_amt),
                 "description": f"Mock deposit {h}",
                 "external_ref": f"mock-{seed}-{stamp}-in",
             }
@@ -313,7 +329,7 @@ def _mock_transactions(row: m.BankAccountConnection, *, since: datetime) -> list
         lines.append(
             {
                 "txn_date": stamp,
-                "amount": -float((base_amt // 2) or 5),
+                "amount": -money_json((base_amt // 2) or 5),
                 "description": f"Mock withdrawal {h}",
                 "external_ref": f"mock-{seed}-{stamp}-out",
             }
@@ -452,9 +468,9 @@ async def sync_connection(
             result["message"] = "No new transactions"
             return result
 
-        net = round(sum(float(ln["amount"]) for ln in fresh), 2)
-        open_bal = float(opening) if opening is not None else 0.0
-        close_bal = float(closing) if closing is not None else round(open_bal + net, 2)
+        net = round(sum(money_json(ln["amount"]) for ln in fresh), 2)
+        open_bal = money_json(opening) if opening is not None else 0.0
+        close_bal = money_json(closing) if closing is not None else round(open_bal + net, 2)
         stmt_date = max(ln["txn_date"] for ln in fresh)
 
         stmt = await bank_recon_svc.create_statement(

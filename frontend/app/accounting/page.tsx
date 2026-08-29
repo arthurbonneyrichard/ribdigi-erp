@@ -1964,6 +1964,7 @@ export default function Page() {
                     onClick={() => syncConnection(c.id)}
                     disabled={c.is_active === false}
                     title={c.is_active === false ? 'Activate connection before syncing' : undefined}
+                    aria-label={`Sync bank connection ${c.id}`}
                   >
                     Sync now
                   </button>{' '}

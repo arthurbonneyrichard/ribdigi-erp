@@ -325,6 +325,7 @@ export default function Page() {
               <button
                 type="button"
                 onClick={() => navigator.clipboard?.writeText(revealedKey)}
+                aria-label="Copy API key"
               >
                 Copy API key
               </button>
@@ -341,6 +342,7 @@ export default function Page() {
               <button
                 type="button"
                 onClick={() => navigator.clipboard?.writeText(revealedSecret)}
+                aria-label="Copy webhook signing secret"
               >
                 Copy signing secret
               </button>
@@ -681,7 +683,11 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
                     </td>
                     <td>
                       {d.can_retry ? (
-                        <button type="button" onClick={() => retryDelivery(deliveriesFor, d.id)}>
+                        <button
+                          type="button"
+                          onClick={() => retryDelivery(deliveriesFor, d.id)}
+                          aria-label={`Retry webhook delivery ${d.id}`}
+                        >
                           Retry
                         </button>
                       ) : (
@@ -701,7 +707,12 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
                 )}
               </tbody>
             </table>
-            <button type="button" onClick={() => loadDeliveries(deliveriesFor)} disabled={deliveriesBusy}>
+            <button
+              type="button"
+              onClick={() => loadDeliveries(deliveriesFor)}
+              disabled={deliveriesBusy}
+              aria-label="Refresh webhook deliveries"
+            >
               Refresh deliveries
             </button>
           </div>
