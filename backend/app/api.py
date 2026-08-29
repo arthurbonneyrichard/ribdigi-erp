@@ -19790,6 +19790,8 @@ async def ai_dead_stock(
         store_ids=managed_stores,
         warehouse_ids=managed_wh,
     )
+    if dashboard_scope_svc.omit_ai_dead_stock_cost(managed_wh):
+        data = dashboard_scope_svc.redact_ai_dead_stock_cost(data)
     return env(data)
 
 
@@ -19813,6 +19815,7 @@ async def ai_dead_stock_export(
         company_id=claims.get("company_id"),
         store_ids=managed_stores,
         warehouse_ids=managed_wh,
+        omit_cost=dashboard_scope_svc.omit_ai_dead_stock_cost(managed_wh),
     )
     return Response(
         content=text,

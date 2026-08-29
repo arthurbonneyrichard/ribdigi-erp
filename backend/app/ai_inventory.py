@@ -540,7 +540,8 @@ async def identify_dead_stock(
             "method": "sales_velocity_v1",
             "count": 0,
             "items": [],
-            "total_carrying_cost": 0.0,
+            # store_manager: catalog cost already redacted — do not dump COGS here
+            "total_carrying_cost": None,
             "scope": "store_manager",
         }
 
@@ -603,13 +604,21 @@ async def identify_dead_stock(
             r["name"],
         )
     )
+    total_carrying = round(sum(i["estimated_carrying_cost"] for i in items), 2)
+    # store_manager: catalog cost already redacted — do not re-dump COGS /
+    # carrying-cost via dead-stock JSON (sort uses cost before redact).
+    if warehouse_ids is not None:
+        for item in items:
+            item["cost_price"] = None
+            item["estimated_carrying_cost"] = None
+        total_carrying = None
     return {
         "generated_at": now,
         "lookback_days": lookback_days,
         "method": "sales_velocity_v1",
         "count": len(items),
         "items": items,
-        "total_carrying_cost": round(sum(i["estimated_carrying_cost"] for i in items), 2),
+        "total_carrying_cost": total_carrying,
         "scope": "store_manager" if warehouse_ids is not None else "company",
     }
 

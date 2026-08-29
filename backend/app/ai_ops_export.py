@@ -485,6 +485,7 @@ async def export_dead_stock_csv(
     company_id: str | None = None,
     store_ids: list[str] | None = None,
     warehouse_ids: list[str] | None = None,
+    omit_cost: bool = False,
 ) -> str:
     """Stage 146 K1 — dead-stock items CSV."""
     data = await ai_inventory_svc.identify_dead_stock(
@@ -500,7 +501,11 @@ async def export_dead_stock_csv(
     writer = csv.DictWriter(buf, fieldnames=DEAD_STOCK_EXPORT_COLUMNS)
     writer.writeheader()
     for row in data.get("items") or []:
-        writer.writerow({k: _cell(row.get(k)) for k in DEAD_STOCK_EXPORT_COLUMNS})
+        out = {k: _cell(row.get(k)) for k in DEAD_STOCK_EXPORT_COLUMNS}
+        if omit_cost:
+            out["cost_price"] = ""
+            out["estimated_carrying_cost"] = ""
+        writer.writerow(out)
     return buf.getvalue()
 
 

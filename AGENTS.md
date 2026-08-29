@@ -66,7 +66,7 @@ store activation — never frontend-only.
    and AI inventory low-stock / demand-forecast / dead-stock / predictions
    (+ exports; chat stockout intent) via managed WarehouseStock + store sales
    (null-store fail-closed; empty managed WH → empty; no `product.stock_qty`
-   fallback), and AI insights + sales/expenses/purchases/cross-domain analysis
+   fallback; **dead-stock cost_price / carrying-cost redacted** on JSON + CSV), and AI insights + sales/expenses/purchases/cross-domain analysis
    (+ exports) with the same store/WH fail-closed semantics, AI customer
    insights/assist (+ export; chat customer count) from managed-store sales
    only (customer universe = buyers on those invoices), AI chat
@@ -123,7 +123,7 @@ store activation — never frontend-only.
    scan-due (payment/recurring) via entity store/WH joins (quotations
    omitted/skipped — no store_id), and products catalog list/get/export/
    lookup/POS search stock_qty from managed WarehouseStock (not
-   product.stock_qty; cost_price redacted on list/get/export + per-product variants; category_id/brand_id/unit_id/tax_rate_id redacted on list/get + category_code/brand_code/unit_code blanked on export; **inventory balance/valuation cost_price/value/total_value redacted** on JSON + `/reports/export`; **low-stock list/export cost_price redacted**), and sales quotations list/export/get/lifecycle
+   product.stock_qty; cost_price redacted on list/get/export + per-product variants; category_id/brand_id/unit_id/tax_rate_id redacted on list/get + category_code/brand_code/unit_code blanked on export; **inventory balance/valuation cost_price/value/total_value redacted** on JSON + `/reports/export`; **low-stock list/export cost_price redacted**; **AI dead-stock cost_price/estimated_carrying_cost/total_carrying_cost redacted** on JSON + CSV), and sales quotations list/export/get/lifecycle
    via own drafts + converted in-scope order/invoice (no store_id), and
    **branches/departments create/patch/list GET/export denied for store_manager** (company-level
    org units) + **users list/get branch_id/department_id org assignment + totp_enabled MFA status + email_verified redacted** (with email/phone

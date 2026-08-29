@@ -2735,8 +2735,9 @@ def omit_product_cost_price(managed_ids: list[str] | None) -> bool:
     variants must not dump company COGS. Selling price + WH stock remain for POS.
     Inventory balance/valuation report cost fields are redacted separately via
     ``redact_inventory_report_cost`` when ``warehouse_ids`` is set. Low-stock
-    alert list/export also omit ``cost_price`` via this helper. AI inventory
-    cost embeds may remain PARTIAL leftovers.
+    alert list/export also omit ``cost_price`` via this helper. AI dead-stock
+    JSON/CSV omit ``cost_price`` / carrying-cost via ``redact_ai_dead_stock_cost``
+    when ``warehouse_ids`` is set.
     """
     return managed_ids is not None
 
@@ -2746,6 +2747,38 @@ def redact_product_cost_price(payload: dict) -> dict:
     out = dict(payload)
     if "cost_price" in out:
         out["cost_price"] = None
+    return out
+
+
+def omit_ai_dead_stock_cost(warehouse_ids: list[str] | None) -> bool:
+    """True when store_manager must omit AI dead-stock COGS / carrying-cost.
+
+    Catalog ``cost_price`` + low-stock alert cost already redacted; WH-scoped
+    dead-stock JSON/CSV must not re-dump ``cost_price`` /
+    ``estimated_carrying_cost`` / ``total_carrying_cost``. Qty / days-without-sale
+    remain for ops.
+    """
+    return warehouse_ids is not None
+
+
+def redact_ai_dead_stock_cost(payload: dict) -> dict:
+    """Null cost/carrying-cost fields on AI dead-stock payloads."""
+    out = dict(payload)
+    if "total_carrying_cost" in out:
+        out["total_carrying_cost"] = None
+    items = out.get("items")
+    if isinstance(items, list):
+        redacted: list = []
+        for row in items:
+            if not isinstance(row, dict):
+                redacted.append(row)
+                continue
+            item = dict(row)
+            for key in ("cost_price", "estimated_carrying_cost"):
+                if key in item:
+                    item[key] = None
+            redacted.append(item)
+        out["items"] = redacted
     return out
 
 

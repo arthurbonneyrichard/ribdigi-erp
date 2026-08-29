@@ -2910,6 +2910,113 @@ async def test_store_manager_ai_inventory_predictions_store_wh_scoped(client, db
 
 
 @pytest.mark.asyncio
+async def test_store_manager_ai_dead_stock_cost_redacted(client, db_session):
+    """store_manager AI dead-stock JSON/CSV omit cost/carrying; admin intact; qty remain."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="AI Dead Cost Store",
+        code="AI-DEAD-CR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(mine)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        name="AI Dead Cost WH",
+        code="AI-DEAD-WH",
+    )
+    db_session.add(wh)
+    await db_session.flush()
+
+    product = m.Product(
+        tenant_id=tid,
+        company_id=cid,
+        name="Dead Stock Cost SKU",
+        sku="DEAD-COST-991",
+        is_active=True,
+        stock_qty=0,
+        cost_price=42.75,
+        selling_price=50,
+        reorder_level=1,
+    )
+    db_session.add(product)
+    await db_session.flush()
+    db_session.add(
+        m.WarehouseStock(
+            tenant_id=tid,
+            company_id=cid,
+            warehouse_id=wh.id,
+            product_id=product.id,
+            quantity=4,
+            reserved_qty=0,
+            reorder_level=1,
+        )
+    )
+    await db_session.commit()
+
+    admin_dead = await ac.get(
+        "/api/v1/ai/inventory/dead-stock",
+        headers=admin_headers,
+        params={"lookback_days": 90},
+    )
+    assert admin_dead.status_code == 200, admin_dead.text
+    admin_row = next(
+        i for i in admin_dead.json()["data"]["items"] if i["product_id"] == product.id
+    )
+    assert float(admin_row["cost_price"]) == pytest.approx(42.75)
+    assert float(admin_row["estimated_carrying_cost"]) == pytest.approx(171.0)
+    assert float(admin_dead.json()["data"]["total_carrying_cost"] or 0) >= 171.0
+
+    mgr_dead = await ac.get(
+        "/api/v1/ai/inventory/dead-stock",
+        headers=headers,
+        params={"lookback_days": 90},
+    )
+    assert mgr_dead.status_code == 200, mgr_dead.text
+    mbody = mgr_dead.json()["data"]
+    assert mbody.get("scope") == "store_manager"
+    mgr_row = next(i for i in mbody["items"] if i["product_id"] == product.id)
+    assert float(mgr_row["stock_qty"]) == pytest.approx(4.0)
+    assert mgr_row.get("cost_price") is None
+    assert mgr_row.get("estimated_carrying_cost") is None
+    assert mbody.get("total_carrying_cost") is None
+
+    exported = await ac.get(
+        "/api/v1/ai/inventory/dead-stock/export",
+        headers=headers,
+        params={"lookback_days": 90},
+    )
+    assert exported.status_code == 200, exported.text
+    assert "DEAD-COST-991" in exported.text
+    assert "42.75" not in exported.text
+    assert "171" not in exported.text
+
+    admin_export = await ac.get(
+        "/api/v1/ai/inventory/dead-stock/export",
+        headers=admin_headers,
+        params={"lookback_days": 90},
+    )
+    assert admin_export.status_code == 200, admin_export.text
+    assert "42.75" in admin_export.text
+
+
+@pytest.mark.asyncio
 async def test_store_manager_ai_insights_and_cross_domain_scoped(client, db_session):
     """Insights / sales / expenses / purchases / cross-domain ignore foreign store+WH totals."""
     from datetime import timedelta
