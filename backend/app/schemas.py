@@ -1900,6 +1900,8 @@ class OpeningStockCreate(BaseModel):
 
 
 class ExpenseCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Denormalized spend category label ∈ ExpenseCategoryLabelValue; omit/`null` OK
     # when `category_id` set (prefer FK); blank/`!!!`/`http://…` → **422** (was free
     # `str`; blank without category_id reached service **400**; punctuation/URL
@@ -2077,6 +2079,8 @@ class AiDocumentPurchaseInvoiceCreate(BaseModel):
 
 
 class ExpenseUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # punctuation/URL could persist on Expense.category). Prefer category_id.
     category: ExpenseCategoryLabelValue | None = None
@@ -2769,6 +2773,8 @@ class ResendVerificationRequest(BaseModel):
 
 
 class PurchaseOrderItemCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach catalog lookup). Existence remains
     # tenant-scoped product lookup (**404**).
@@ -2789,6 +2795,8 @@ class PurchaseOrderItemCreate(BaseModel):
 
 
 class PurchaseOrderCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required supplier ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach party lookup). Existence remains
     # tenant-scoped supplier lookup (**404**).
@@ -2819,6 +2827,8 @@ class PurchaseOrderAmend(BaseModel):
     `min_length=1` only — whitespace still reached service **400**; punctuation-
     only / URL-like garbage could persist on amendment history / audit).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     items: list[PurchaseOrderItemCreate] | None = None
     # omit/`null` → no change / clear when null sent; blank/`!!!`/`http://…` → **422**
@@ -3151,6 +3161,8 @@ class PurchaseReturnCancel(BaseModel):
 
 
 class PurchaseInvoiceItemCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach catalog lookup). Existence remains
     # tenant-scoped product lookup (**404**). Purchasing **Purchase invoice
@@ -3168,6 +3180,8 @@ class PurchaseInvoiceItemCreate(BaseModel):
 
 
 class PurchaseInvoiceCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Optional supplier ∈ UuidIdValue; omit/`null` OK when from-GRN / PO path;
     # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could
     # reach party lookup). Existence remains tenant-scoped supplier lookup (**404**).
@@ -3218,6 +3232,8 @@ class PurchaseInvoiceUpdate(BaseModel):
     omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank
     silently cleared / garbage could persist).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silently cleared / garbage could persist on draft PATCH).
@@ -3270,6 +3286,8 @@ class SalesInvoiceItemCreate(BaseModel):
 
 
 class SalesInvoiceCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required customer ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach party lookup). Existence remains
     # tenant-scoped customer lookup (**404**).
@@ -3293,6 +3311,8 @@ class SalesInvoiceCreate(BaseModel):
 
 
 class SalesQuotationCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required customer ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach party lookup). Existence remains
     # tenant-scoped customer lookup (**404**). Distinct from SalesInvoiceCreate /
@@ -3320,6 +3340,8 @@ class SalesQuotationReject(BaseModel):
 
 
 class SalesOrderCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required customer ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach party lookup). Existence remains
     # tenant-scoped customer lookup (**404**). Distinct from SalesInvoiceCreate.
@@ -3388,6 +3410,8 @@ class SalesInvoiceCancel(BaseModel):
 
 
 class SalesReturnItemCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach catalog lookup). Existence remains
     # tenant-scoped product lookup (**404**).
@@ -3402,6 +3426,8 @@ class SalesReturnItemCreate(BaseModel):
 
 
 class SalesReturnCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Required source invoice ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach invoice lookup). Existence remains
     # tenant-scoped sales invoice lookup (**404**).
@@ -3428,6 +3454,8 @@ class SalesReturnCancel(BaseModel):
 
 
 class SalesReturnPost(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # BR-7.5 — omit OK (service defaults adjust when no excess AR); blank/invalid → 422.
     # When return exceeds open AR, service still requires adjust|refund (400 SETTLEMENT_REQUIRED).
     settlement_method: SalesReturnSettlementMethod | None = None
@@ -7068,6 +7096,8 @@ class JournalLineCreate(BaseModel):
     omit/`null` → no line narrative; blank/`!!!`/`http://…` → **422** (was free
     `str`; blank/garbage could persist on `JournalEntryLine.description`).
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     # Optional COA ∈ UuidIdValue; omit/`null` OK when account_code set; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach COA lookup).
@@ -8260,6 +8290,8 @@ class JournalCreate(BaseModel):
     garbage could persist on journal `reference`). Optional `entry_date` ∈
     IsoDateQueryValue; omit/`null` → now; blank/invalid → **422**.
     """
+    model_config = ConfigDict(extra="forbid")
+
 
     description: JournalDescriptionValue
     # omit/`null` → no reference; blank/`!!!`/`http://…` → **422** (was free `str`;
