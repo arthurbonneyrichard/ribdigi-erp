@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app import purchase_requests as purchase_requests_svc
 from app import reports as reports_svc
+from app.honesty import money_json
 
 
 def _product_suggested_qty(*, stock_qty: float, reorder_level: float, reorder_qty: float = 0) -> float:
@@ -91,10 +92,10 @@ async def list_low_stock_suggestions(
                 "sku": row.get("sku"),
                 "name": row.get("name"),
                 "scope": "warehouse",
-                "stock_qty": float(row.get("quantity") or 0),
-                "reorder_level": float(row.get("reorder_level") or 0),
-                "reorder_qty": float(row.get("reorder_qty") or 0),
-                "suggested_order_qty": qty,
+                "stock_qty": money_json(row.get("quantity") or 0),
+                "reorder_level": money_json(row.get("reorder_level") or 0),
+                "reorder_qty": money_json(row.get("reorder_qty") or 0),
+                "suggested_order_qty": money_json(qty),
                 "warehouse_id": row.get("warehouse_id"),
                 "warehouse_name": row.get("warehouse_name"),
                 "store_id": row.get("store_id"),
@@ -117,10 +118,10 @@ async def list_low_stock_suggestions(
                 "sku": row.get("sku"),
                 "name": row.get("name"),
                 "scope": "product",
-                "stock_qty": stock,
-                "reorder_level": reorder,
-                "reorder_qty": 0.0,
-                "suggested_order_qty": qty,
+                "stock_qty": money_json(stock),
+                "reorder_level": money_json(reorder),
+                "reorder_qty": money_json(0),
+                "suggested_order_qty": money_json(qty),
                 "warehouse_id": None,
                 "warehouse_name": None,
                 "store_id": None,

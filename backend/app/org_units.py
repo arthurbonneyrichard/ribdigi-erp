@@ -10,6 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import optional_honest_narrative
 
 CODE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$")
 
@@ -150,7 +151,7 @@ async def create_branch(
         tenant_id=tenant_id,
         code=code,
         name=name_clean,
-        address=(address or "").strip() or None,
+        address=optional_honest_narrative(address, label="branch address", max_length=500),
         phone=phone,
         email=(email or "").strip() or None,
         manager_id=manager_id,
@@ -181,7 +182,9 @@ async def update_branch(
             raise HTTPException(status_code=400, detail="name must be at least 2 characters")
         row.name = name_clean
     if address is not None:
-        row.address = address.strip() or None
+        row.address = optional_honest_narrative(
+            address, label="branch address", max_length=500
+        )
     if phone is not None:
         # Defense in depth: BranchUpdate E164PhoneValue → 422 on blank/invalid.
         row.phone = phone

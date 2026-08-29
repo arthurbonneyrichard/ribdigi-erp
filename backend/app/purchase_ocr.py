@@ -77,7 +77,9 @@ async def update_purchase_invoice_draft(
         raise HTTPException(status_code=400, detail="No invoice fields provided")
 
     if supplier_invoice_number is not None:
-        inv.supplier_invoice_number = supplier_invoice_number.strip() or None
+        inv.supplier_invoice_number = optional_honest_narrative(
+            supplier_invoice_number, label="supplier invoice number", max_length=100
+        )
     if notes is not None:
         # OpenAPI PurchaseInvoiceNotesValue → 422; blank clears; garbage → 400.
         inv.notes = optional_honest_narrative(notes, label="purchase invoice notes")

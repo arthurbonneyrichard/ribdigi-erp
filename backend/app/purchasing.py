@@ -374,7 +374,9 @@ async def create_purchase_order(
         tax_amount=round(tax_total, 2),
         total_amount=round(max(subtotal + tax_total - discount_total, 0), 2),
         notes=optional_honest_narrative(notes, label="purchase order notes"),
-        delivery_address=(delivery_address or "").strip() or None,
+        delivery_address=optional_honest_narrative(
+            delivery_address, label="purchase order delivery address", max_length=500
+        ),
         created_by=user_id,
     )
     db.add(po)
@@ -630,7 +632,9 @@ async def amend_purchase_order(
         # OpenAPI PurchaseOrderNotesValue → 422; null clears; blank/garbage → 400.
         po.notes = optional_honest_narrative(notes, label="purchase order notes")
     if delivery_address is not None:
-        po.delivery_address = delivery_address.strip() or None
+        po.delivery_address = optional_honest_narrative(
+            delivery_address, label="purchase order delivery address", max_length=500
+        )
     if clear_due_date:
         po.due_date = None
     elif due_date is not None:
@@ -1991,7 +1995,9 @@ async def create_purchase_invoice(
         supplier_id=supplier_id,
         purchase_order_id=purchase_order_id or (po.id if po else None),
         goods_receipt_id=grn.id if grn else None,
-        supplier_invoice_number=supplier_invoice_number,
+        supplier_invoice_number=optional_honest_narrative(
+            supplier_invoice_number, label="supplier invoice number", max_length=100
+        ),
         status="draft",
         invoice_date=inv_date,
         due_date=due_date,

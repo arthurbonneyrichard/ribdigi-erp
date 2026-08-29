@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import ai as ai_svc
 from app import ai_expenses as ai_expenses_svc
 from app import expense_ocr as ocr_svc
+from app.honesty import money_json, optional_honest_narrative
 from app import expenses as expenses_svc
 from app import models as m
 from app import purchasing as purchasing_svc
@@ -116,7 +117,7 @@ def match_purchase_orders(
                     "purchase_order_id": po.id,
                     "po_number": po.po_number,
                     "status": po.status,
-                    "total_amount": float(po.total_amount or 0),
+                    "total_amount": money_json(po.total_amount),
                     "supplier_id": po.supplier_id,
                     "supplier_name": supplier.name if supplier else None,
                     "score": 1.0 if po_n.upper() in blob else 0.8,
@@ -507,7 +508,7 @@ async def create_expense_from_extract(
         message=f"expense:{expense.id}",
         details={
             "expense_id": expense.id,
-            "amount": float(expense.amount),
+            "amount": money_json(expense.amount),
             "payee": expense.payee,
             "reference": expense.reference,
             "method": "rule_based_ocr_apply",
@@ -568,10 +569,10 @@ async def create_purchase_invoice_from_extract(
         items.append(
             {
                 "product_id": poi.product_id,
-                "quantity": qty,
-                "unit_price": float(poi.unit_price or 0),
-                "tax_rate": float(poi.tax_rate or 0),
-                "discount": float(getattr(poi, "discount", 0) or 0),
+                "quantity": money_json(qty),
+                "unit_price": money_json(poi.unit_price),
+                "tax_rate": money_json(poi.tax_rate),
+                "discount": money_json(getattr(poi, "discount", 0) or 0),
             }
         )
     if not items:
@@ -590,7 +591,9 @@ async def create_purchase_invoice_from_extract(
         supplier_id=resolved_supplier_id,
         purchase_order_id=po.id,
         items=items,
-        supplier_invoice_number=(supplier_invoice_number or "").strip() or None,
+        supplier_invoice_number=optional_honest_narrative(
+            supplier_invoice_number, label="supplier invoice number", max_length=100
+        ),
         invoice_date=parsed_date,
         discount_amount=discount_amount,
         notes=inv_notes,

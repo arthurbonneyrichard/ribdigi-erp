@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import optional_honest_narrative, require_honest_narrative
 
 MAX_PARTY_CONTACTS = 20
 
@@ -87,11 +88,9 @@ async def create_contact(
     is_primary: bool = False,
 ) -> m.PartyContact:
     party = await get_party_of_kind(db, tenant_id=tenant_id, party_id=party_id, kind=kind)
-    cleaned = (name or "").strip()
-    if len(cleaned) < 1:
-        raise HTTPException(status_code=400, detail="name is required")
-    if len(cleaned) > 150:
-        raise HTTPException(status_code=400, detail="name must be at most 150 characters")
+    cleaned = require_honest_narrative(
+        name, label="party contact name", min_length=1, max_length=150
+    )
 
     existing = await list_contacts(db, tenant_id=tenant_id, party_id=party_id, kind=kind)
     if len(existing) >= MAX_PARTY_CONTACTS:
@@ -107,9 +106,9 @@ async def create_contact(
 
     phone_n = (phone or "").strip() or None
     email_n = (email or "").strip() or None
-    desig_n = (designation or "").strip() or None
-    if desig_n and len(desig_n) > 120:
-        raise HTTPException(status_code=400, detail="designation must be at most 120 characters")
+    desig_n = optional_honest_narrative(
+        designation, label="party contact designation", max_length=120
+    )
 
     row = m.PartyContact(
         tenant_id=tenant_id,
@@ -152,21 +151,17 @@ async def update_contact(
         raise HTTPException(status_code=404, detail="Contact not found")
 
     if name is not None:
-        cleaned = name.strip()
-        if len(cleaned) < 1:
-            raise HTTPException(status_code=400, detail="name is required")
-        if len(cleaned) > 150:
-            raise HTTPException(status_code=400, detail="name must be at most 150 characters")
-        target.name = cleaned
+        target.name = require_honest_narrative(
+            name, label="party contact name", min_length=1, max_length=150
+        )
     if phone is not None:
         target.phone = phone.strip() or None
     if email is not None:
         target.email = email.strip() or None
     if designation is not None:
-        desig = designation.strip() or None
-        if desig and len(desig) > 120:
-            raise HTTPException(status_code=400, detail="designation must be at most 120 characters")
-        target.designation = desig
+        target.designation = optional_honest_narrative(
+            designation, label="party contact designation", max_length=120
+        )
 
     if is_primary is True:
         others = await list_contacts(db, tenant_id=tenant_id, party_id=party_id, kind=kind)

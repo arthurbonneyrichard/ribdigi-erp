@@ -420,7 +420,9 @@ async def create_order(
         quotation_id=quotation_id,
         store_id=resolved_store_id,
         delivery_date=delivery_date,
-        delivery_address=(delivery_address or "").strip() or None,
+        delivery_address=optional_honest_narrative(
+            delivery_address, label="sales order delivery address", max_length=500
+        ),
         status="draft",
         subtotal=subtotal,
         tax_amount=tax_total,
@@ -512,7 +514,9 @@ async def confirm_order(
     if delivery_date is not None:
         order.delivery_date = delivery_date
     if delivery_address is not None:
-        order.delivery_address = delivery_address.strip() or None
+        order.delivery_address = optional_honest_narrative(
+            delivery_address, label="sales order delivery address", max_length=500
+        )
     if not order.store_id:
         raise HTTPException(
             status_code=400,

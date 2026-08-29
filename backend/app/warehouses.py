@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
-from app.honesty import money_json
+from app.honesty import money_json, optional_honest_narrative
 
 WAREHOUSE_TYPES = frozenset({"retail", "bulk", "cold_storage", "other"})
 
@@ -123,7 +123,7 @@ async def create_warehouse(
         store_id=await _assert_store(db, tenant_id, store_id),
         warehouse_type=_normalize_type(warehouse_type),
         manager_id=await _assert_tenant_user(db, tenant_id, manager_id),
-        address=(address or "").strip() or None,
+        address=optional_honest_narrative(address, label="warehouse address", max_length=500),
         capacity=capacity,
         is_active=True,
     )
@@ -165,7 +165,9 @@ async def update_warehouse(
     elif manager_id is not None:
         row.manager_id = await _assert_tenant_user(db, tenant_id, manager_id)
     if address is not None:
-        row.address = address.strip() or None
+        row.address = optional_honest_narrative(
+            address, label="warehouse address", max_length=500
+        )
     if clear_capacity:
         row.capacity = None
     elif capacity is not None:

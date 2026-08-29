@@ -379,12 +379,33 @@ export default function Page() {
             : ' · TIN not set (set on Company)'}
         </p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-          <button onClick={() => downloadFiling('csv')}>Export CSV</button>
-          <button onClick={() => downloadFiling('xlsx')}>Export Excel</button>
-          <button onClick={() => downloadFiling('pdf')}>Export PDF</button>
-          <button onClick={() => downloadFiling('xlsx', 'tax_filing_gh')}>Export Ghana VAT (XLSX)</button>
-          <button onClick={() => downloadFiling('csv', 'tax_filing_gh')}>Export Ghana VAT (CSV)</button>
-          <button onClick={() => downloadFiling('pdf', 'tax_filing_gh')}>Export Ghana VAT (PDF)</button>
+          <button onClick={() => downloadFiling('csv')} aria-label="Export tax filing CSV">
+            Export CSV
+          </button>
+          <button onClick={() => downloadFiling('xlsx')} aria-label="Export tax filing Excel">
+            Export Excel
+          </button>
+          <button onClick={() => downloadFiling('pdf')} aria-label="Export tax filing PDF">
+            Export PDF
+          </button>
+          <button
+            onClick={() => downloadFiling('xlsx', 'tax_filing_gh')}
+            aria-label="Export Ghana VAT Excel"
+          >
+            Export Ghana VAT (XLSX)
+          </button>
+          <button
+            onClick={() => downloadFiling('csv', 'tax_filing_gh')}
+            aria-label="Export Ghana VAT CSV"
+          >
+            Export Ghana VAT (CSV)
+          </button>
+          <button
+            onClick={() => downloadFiling('pdf', 'tax_filing_gh')}
+            aria-label="Export Ghana VAT PDF"
+          >
+            Export Ghana VAT (PDF)
+          </button>
         </div>
         {!!filing?.government?.warnings?.length && (
           <p style={{ color: '#b45309' }}>{filing.government.warnings.join(' · ')}</p>

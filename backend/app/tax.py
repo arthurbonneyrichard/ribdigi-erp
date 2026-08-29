@@ -836,49 +836,49 @@ async def tax_filing_pack(
             "box": "1",
             "code": "taxable_outputs_net",
             "label": "Standard-rated taxable outputs (net)",
-            "amount": taxable_outputs,
+            "amount": money_json(taxable_outputs),
         },
         {
             "box": "1a",
             "code": "zero_rated_outputs_net",
             "label": "Zero-rated outputs (net)",
-            "amount": zero_rated_outputs,
+            "amount": money_json(zero_rated_outputs),
         },
         {
             "box": "1b",
             "code": "exempt_outputs_net",
             "label": "Exempt outputs (net)",
-            "amount": exempt_outputs,
+            "amount": money_json(exempt_outputs),
         },
         {
             "box": "2",
             "code": "output_tax",
             "label": "Output tax due",
-            "amount": output_tax,
+            "amount": money_json(output_tax),
         },
         {
             "box": "2a",
             "code": "reverse_charge_tax",
             "label": "Reverse charge (memo / self-assess)",
-            "amount": reverse_charge_tax,
+            "amount": money_json(reverse_charge_tax),
         },
         {
             "box": "3",
             "code": "taxable_inputs_net",
             "label": "Taxable inputs (net)",
-            "amount": taxable_inputs,
+            "amount": money_json(taxable_inputs),
         },
         {
             "box": "4",
             "code": "input_tax",
             "label": "Input tax claimable",
-            "amount": input_tax,
+            "amount": money_json(input_tax),
         },
         {
             "box": "5",
             "code": "net_tax_payable",
             "label": "Net tax payable/(refundable)",
-            "amount": net,
+            "amount": money_json(net),
         },
     ]
 
@@ -888,32 +888,42 @@ async def tax_filing_pack(
         "generated_at": datetime.utcnow().isoformat() + "Z",
     }
 
+    # Apply money_json on schedule rows returned to clients.
+    for row in output_schedule:
+        for key in ("net_amount", "tax_amount", "reverse_charge_tax", "gross_amount"):
+            if key in row:
+                row[key] = money_json(row[key])
+    for row in input_schedule:
+        for key in ("net_amount", "tax_amount", "reverse_charge_tax", "gross_amount"):
+            if key in row:
+                row[key] = money_json(row[key])
+
     return {
         "period": period,
         "from_date": from_date,
         "to_date": to_date,
         "store_id": store_id,
         "store_name": store_name,
-        "output_tax": output_tax,
-        "output_tax_invoices": round(output_invoices, 2),
-        "output_tax_pos": round(output_pos, 2),
-        "reverse_charge_tax": reverse_charge_tax,
-        "input_tax": input_tax,
+        "output_tax": money_json(output_tax),
+        "output_tax_invoices": money_json(round(output_invoices, 2)),
+        "output_tax_pos": money_json(round(output_pos, 2)),
+        "reverse_charge_tax": money_json(reverse_charge_tax),
+        "input_tax": money_json(input_tax),
         "input_tax_source": input_source,
-        "net_tax_payable": net,
+        "net_tax_payable": money_json(net),
         "invoice_count": len(invoices),
         "pos_sale_count": len(pos_sales),
         "purchase_count": len(input_schedule),
         "purchase_order_count": len(input_schedule) if input_source == "purchase_orders" else 0,
         "filing_boxes": {
-            "taxable_outputs_net": taxable_outputs,
-            "zero_rated_outputs_net": zero_rated_outputs,
-            "exempt_outputs_net": exempt_outputs,
-            "output_tax": output_tax,
-            "reverse_charge_tax": reverse_charge_tax,
-            "taxable_inputs_net": taxable_inputs,
-            "input_tax": input_tax,
-            "net_tax_payable": net,
+            "taxable_outputs_net": money_json(taxable_outputs),
+            "zero_rated_outputs_net": money_json(zero_rated_outputs),
+            "exempt_outputs_net": money_json(exempt_outputs),
+            "output_tax": money_json(output_tax),
+            "reverse_charge_tax": money_json(reverse_charge_tax),
+            "taxable_inputs_net": money_json(taxable_inputs),
+            "input_tax": money_json(input_tax),
+            "net_tax_payable": money_json(net),
             "boxes": filing_boxes,
         },
         "schedules": {

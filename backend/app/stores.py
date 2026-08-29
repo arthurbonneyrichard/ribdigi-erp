@@ -175,7 +175,7 @@ async def create_store(
         tenant_id=tenant_id,
         name=name,
         code=code.strip().upper(),
-        address=address,
+        address=optional_honest_narrative(address, label="store address", max_length=500),
         phone=phone,
         manager_id=manager_id,
         branch_id=branch_id,
@@ -219,7 +219,9 @@ async def update_store(
             raise HTTPException(status_code=400, detail="name cannot be empty")
         store.name = cleaned
     if address is not None:
-        store.address = address.strip() or None
+        store.address = optional_honest_narrative(
+            address, label="store address", max_length=500
+        )
     if phone is not None:
         # Defense in depth: StoreUpdate E164PhoneValue → 422 on blank/invalid.
         store.phone = phone
