@@ -153,6 +153,7 @@ export default function Page() {
             <select
               value={settings.frequency || 'daily'}
               onChange={(e) => setSettings({ ...settings, frequency: e.target.value })}
+              aria-label="Backup frequency"
             >
               <option value="daily">Daily</option>
               <option value="weekly">Weekly</option>

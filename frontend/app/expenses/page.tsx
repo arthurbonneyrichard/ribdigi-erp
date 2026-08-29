@@ -1102,13 +1102,21 @@ export default function Page() {
             placeholder="Description"
             aria-label="Recurring description"
           />
-          <select value={recFrequency} onChange={(e) => setRecFrequency(e.target.value)}>
+          <select
+            value={recFrequency}
+            onChange={(e) => setRecFrequency(e.target.value)}
+            aria-label="Recurring frequency"
+          >
             <option value="daily">Daily</option>
             <option value="weekly">Weekly</option>
             <option value="monthly">Monthly</option>
             <option value="yearly">Yearly</option>
           </select>
-          <select value={recPaymentMethod} onChange={(e) => setRecPaymentMethod(e.target.value)}>
+          <select
+            value={recPaymentMethod}
+            onChange={(e) => setRecPaymentMethod(e.target.value)}
+            aria-label="Recurring payment method"
+          >
             <option value="cash">Cash</option>
             <option value="bank_transfer">Bank transfer</option>
             <option value="card">Card</option>
@@ -1315,7 +1323,11 @@ export default function Page() {
             aria-label="Expense date"
             title="Expense date (optional YYYY-MM-DD)"
           />
-          <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+          <select
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(e.target.value)}
+            aria-label="Expense payment method"
+          >
             <option value="cash">Cash</option>
             <option value="bank_transfer">Bank transfer</option>
             <option value="card">Card</option>

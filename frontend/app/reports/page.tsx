@@ -2151,6 +2151,7 @@ export default function Page() {
             <select
               value={schedForm.report_type}
               onChange={(e) => setSchedForm({ ...schedForm, report_type: e.target.value })}
+              aria-label="Report schedule report type"
             >
               {REPORT_TYPES.map((t) => (
                 <option key={t} value={t}>
@@ -2162,6 +2163,7 @@ export default function Page() {
               <select
                 value={schedForm.format}
                 onChange={(e) => setSchedForm({ ...schedForm, format: e.target.value })}
+                aria-label="Report schedule format"
               >
                 <option value="xlsx">Excel</option>
                 <option value="csv">CSV</option>
@@ -2170,6 +2172,7 @@ export default function Page() {
               <select
                 value={schedForm.frequency}
                 onChange={(e) => setSchedForm({ ...schedForm, frequency: e.target.value })}
+                aria-label="Report schedule frequency"
               >
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly</option>
