@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
-from app.honesty import money_json
+from app.honesty import money_json, require_honest_narrative
 
 DEFAULT_GROUPS = (
     ("RETAIL", "Retail", 0.0),
@@ -104,9 +104,7 @@ async def create_group(
     discount_percent: float = 0,
 ) -> m.CustomerGroup:
     await ensure_default_groups(db, tenant_id)
-    name = (name or "").strip()
-    if not name:
-        raise HTTPException(status_code=400, detail="name is required")
+    name = require_honest_narrative(name, label="customer group name", max_length=120)
     code_key = (code or _slug_code(name)).strip().upper()[:40]
     pct = float(discount_percent or 0)
     if pct < 0 or pct > 100:
@@ -144,10 +142,9 @@ async def update_group(
 ) -> m.CustomerGroup:
     row = await get_group(db, tenant_id, group_id)
     if name is not None:
-        name = name.strip()
-        if not name:
-            raise HTTPException(status_code=400, detail="name cannot be empty")
-        row.name = name
+        row.name = require_honest_narrative(
+            name, label="customer group name", max_length=120
+        )
     if discount_percent is not None:
         pct = float(discount_percent)
         if pct < 0 or pct > 100:

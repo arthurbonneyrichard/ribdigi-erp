@@ -341,10 +341,9 @@ async def update_category(
 ) -> m.ExpenseCategory:
     cat = await get_category(db, tenant_id, category_id)
     if name is not None:
-        cleaned = name.strip()
-        if not cleaned:
-            raise HTTPException(status_code=400, detail="name cannot be empty")
-        cat.name = cleaned
+        cat.name = require_honest_narrative(
+            name, label="expense category name", max_length=120
+        )
     if budget_amount is not None:
         cat.budget_amount = float(budget_amount)
     if is_active is not None:

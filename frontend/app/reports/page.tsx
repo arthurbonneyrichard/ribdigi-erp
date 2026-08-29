@@ -887,8 +887,18 @@ export default function Page() {
             </tbody>
           </table>
           <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
-            <button onClick={() => download('xlsx', 'sales_returns')}>Returns Excel</button>
-            <button onClick={() => download('csv', 'sales_returns')}>Returns CSV</button>
+            <button
+              onClick={() => download('xlsx', 'sales_returns')}
+              aria-label="Export sales returns Excel"
+            >
+              Returns Excel
+            </button>
+            <button
+              onClick={() => download('csv', 'sales_returns')}
+              aria-label="Export sales returns CSV"
+            >
+              Returns CSV
+            </button>
           </div>
           <h3 style={{ marginTop: 16 }}>Sales returns</h3>
           <p className="muted">
@@ -1355,6 +1365,7 @@ export default function Page() {
               type="button"
               style={{ marginTop: 8 }}
               onClick={() => download('xlsx', 'inventory_valuation')}
+              aria-label="Export inventory valuation Excel"
             >
               Export valuation Excel
             </button>
@@ -1370,10 +1381,18 @@ export default function Page() {
                   : ''}
             </p>
             <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-              <button type="button" onClick={() => download('xlsx', 'inventory_movements')}>
+              <button
+                type="button"
+                onClick={() => download('xlsx', 'inventory_movements')}
+                aria-label="Export inventory movements Excel"
+              >
                 Movements Excel
               </button>
-              <button type="button" onClick={() => download('csv', 'inventory_movements')}>
+              <button
+                type="button"
+                onClick={() => download('csv', 'inventory_movements')}
+                aria-label="Export inventory movements CSV"
+              >
                 Movements CSV
               </button>
             </div>
@@ -1460,10 +1479,18 @@ export default function Page() {
                 : ''}
           </p>
           <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-            <button type="button" onClick={() => download('xlsx', 'inventory_expiry')}>
+            <button
+              type="button"
+              onClick={() => download('xlsx', 'inventory_expiry')}
+              aria-label="Export inventory expiry Excel"
+            >
               Expiry Excel
             </button>
-            <button type="button" onClick={() => download('csv', 'inventory_expiry')}>
+            <button
+              type="button"
+              onClick={() => download('csv', 'inventory_expiry')}
+              aria-label="Export inventory expiry CSV"
+            >
               Expiry CSV
             </button>
           </div>
@@ -1531,10 +1558,18 @@ export default function Page() {
             {data.transfers?.store_name ? ` · ${data.transfers.store_name}` : ''}
           </p>
           <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-            <button type="button" onClick={() => download('xlsx', 'inventory_transfers')}>
+            <button
+              type="button"
+              onClick={() => download('xlsx', 'inventory_transfers')}
+              aria-label="Export inventory transfers Excel"
+            >
               Transfers Excel
             </button>
-            <button type="button" onClick={() => download('csv', 'inventory_transfers')}>
+            <button
+              type="button"
+              onClick={() => download('csv', 'inventory_transfers')}
+              aria-label="Export inventory transfers CSV"
+            >
               Transfers CSV
             </button>
           </div>
@@ -1614,10 +1649,18 @@ export default function Page() {
                   : ''}
             </p>
             <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-              <button type="button" onClick={() => download('xlsx', 'inventory_stock_counts')}>
+              <button
+                type="button"
+                onClick={() => download('xlsx', 'inventory_stock_counts')}
+                aria-label="Export inventory stock counts Excel"
+              >
                 Count variances Excel
               </button>
-              <button type="button" onClick={() => download('csv', 'inventory_stock_counts')}>
+              <button
+                type="button"
+                onClick={() => download('csv', 'inventory_stock_counts')}
+                aria-label="Export inventory stock counts CSV"
+              >
                 Count variances CSV
               </button>
             </div>
@@ -1688,16 +1731,28 @@ export default function Page() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-            <button onClick={() => download('xlsx', 'purchases_pending_orders')}>
+            <button
+              onClick={() => download('xlsx', 'purchases_pending_orders')}
+              aria-label="Export purchases pending orders Excel"
+            >
               Pending orders Excel
             </button>
-            <button onClick={() => download('csv', 'purchases_pending_orders')}>
+            <button
+              onClick={() => download('csv', 'purchases_pending_orders')}
+              aria-label="Export purchases pending orders CSV"
+            >
               Pending orders CSV
             </button>
-            <button onClick={() => download('xlsx', 'purchases_returns')}>
+            <button
+              onClick={() => download('xlsx', 'purchases_returns')}
+              aria-label="Export purchases returns Excel"
+            >
               Returns Excel
             </button>
-            <button onClick={() => download('csv', 'purchases_returns')}>
+            <button
+              onClick={() => download('csv', 'purchases_returns')}
+              aria-label="Export purchases returns CSV"
+            >
               Returns CSV
             </button>
           </div>

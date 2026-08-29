@@ -10,7 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
-from app.honesty import money_json, optional_honest_narrative
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 from app.inventory import apply_stock_change
 
 _SKU_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$")
@@ -209,10 +209,8 @@ async def list_variants(
 
 
 def _clean_attr(value: str | None) -> str | None:
-    if value is None:
-        return None
-    cleaned = value.strip()
-    return cleaned or None
+    """Strip blank → None; non-blank garbage → **400** (VariantAttrValue defense)."""
+    return optional_honest_narrative(value, label="variant attribute", max_length=80)
 
 
 async def create_variant(
@@ -231,9 +229,7 @@ async def create_variant(
     selling_price: float | None = None,
 ) -> m.ProductVariant:
     product = await get_product(db, tenant_id, product_id)
-    name = (name or "").strip()
-    if not name:
-        raise HTTPException(status_code=400, detail="Variant name is required")
+    name = require_honest_narrative(name, label="variant name", max_length=120)
     sku_norm = normalize_sku(sku)
     if not sku_norm:
         sku_norm = await allocate_sku(db, tenant_id, prefix="SKU")
@@ -299,10 +295,9 @@ async def update_variant(
         raise HTTPException(status_code=404, detail="Variant not found")
 
     if name is not None:
-        name = name.strip()
-        if not name:
-            raise HTTPException(status_code=400, detail="Variant name is required")
-        variant.name = name
+        variant.name = require_honest_narrative(
+            name, label="variant name", max_length=120
+        )
     if sku is not None:
         sku_norm = normalize_sku(sku)
         if not sku_norm:
@@ -328,19 +323,19 @@ async def update_variant(
     if clear_size:
         variant.size = None
     elif size is not None:
-        variant.size = size.strip() or None
+        variant.size = _clean_attr(size)
     if clear_color:
         variant.color = None
     elif color is not None:
-        variant.color = color.strip() or None
+        variant.color = _clean_attr(color)
     if clear_flavor:
         variant.flavor = None
     elif flavor is not None:
-        variant.flavor = flavor.strip() or None
+        variant.flavor = _clean_attr(flavor)
     if clear_dosage:
         variant.dosage = None
     elif dosage is not None:
-        variant.dosage = dosage.strip() or None
+        variant.dosage = _clean_attr(dosage)
     if cost_price is not None:
         variant.cost_price = float(cost_price)
     if selling_price is not None:

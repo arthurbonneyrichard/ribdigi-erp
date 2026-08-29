@@ -2170,10 +2170,11 @@ async def update_me(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if payload.full_name is not None:
-        name = payload.full_name.strip()
-        if not name:
-            raise HTTPException(status_code=400, detail="full_name cannot be empty")
-        user.full_name = name
+        from app.honesty import require_honest_narrative
+
+        user.full_name = require_honest_narrative(
+            payload.full_name, label="full name", max_length=150
+        )
     if payload.phone is not None:
         # ProfileUpdate.phone ∈ E164PhoneValue — already stripped/normalized (+…).
         user.phone = payload.phone
@@ -2648,7 +2649,9 @@ async def add_user(
     user = m.User(
         tenant_id=claims["tenant_id"],
         email=payload.email,
-        full_name=payload.full_name,
+        full_name=require_honest_narrative(
+            payload.full_name, label="full name", max_length=150
+        ),
         phone=payload.phone,
         password_hash=hash_password(payload.password),
         role=role_key,
@@ -2711,9 +2714,9 @@ async def update_user(
     changes: dict = {}
 
     if payload.full_name is not None:
-        name = payload.full_name.strip()
-        if len(name) < 2:
-            raise HTTPException(status_code=400, detail="full_name must be at least 2 characters")
+        name = require_honest_narrative(
+            payload.full_name, label="full name", max_length=150
+        )
         user.full_name = name
         changes["full_name"] = name
 
@@ -2899,9 +2902,12 @@ async def add_product(
     )
     data["tax_supply_class"] = supply
     data["tax_exempt"] = supply == "exempt"
-    if data.get("description") is not None:
-        from app.honesty import optional_honest_narrative
+    from app.honesty import optional_honest_narrative, require_honest_narrative
 
+    data["name"] = require_honest_narrative(
+        data.get("name"), label="product name", max_length=200
+    )
+    if data.get("description") is not None:
         data["description"] = optional_honest_narrative(
             data["description"], label="product description"
         )
@@ -3116,10 +3122,11 @@ async def patch_product(
 
     for key, value in data.items():
         if key == "name" and value is not None:
-            name = str(value).strip()
-            if len(name) < 1:
-                raise HTTPException(status_code=400, detail="name is required")
-            product.name = name
+            from app.honesty import require_honest_narrative
+
+            product.name = require_honest_narrative(
+                value, label="product name", max_length=200
+            )
         elif key == "barcode":
             code = barcodes_svc.normalize_barcode(str(value) if value is not None else None)
             if code:
@@ -7820,7 +7827,9 @@ async def create_expense_category(
     cat = m.ExpenseCategory(
         tenant_id=claims["tenant_id"],
         code=payload.code.strip().upper(),
-        name=payload.name.strip(),
+        name=require_honest_narrative(
+            payload.name, label="expense category name", max_length=120
+        ),
         budget_amount=payload.budget_amount,
         account_id=account.id if account else None,
     )
@@ -10628,6 +10637,9 @@ async def add_tax(
         data["rate"] = tax_svc.effective_rate_from_components(comps, data.get("rate") or 0)
     else:
         data["components"] = None
+    data["name"] = require_honest_narrative(
+        data.get("name"), label="tax rate name", max_length=80
+    )
     tax = m.TaxRate(tenant_id=claims["tenant_id"], **data)
     db.add(tax)
     await db.commit()

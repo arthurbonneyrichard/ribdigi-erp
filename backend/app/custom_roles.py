@@ -10,6 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import require_honest_narrative
 from app.rbac import (
     RECORD_SCOPE_KEY,
     VALID_ROLES,
@@ -184,9 +185,7 @@ async def create_custom_role(
     record_scope: str | None = None,
 ) -> m.CustomRole:
     role_key = validate_role_key(key)
-    label_s = (label or "").strip()
-    if not label_s:
-        raise HTTPException(status_code=400, detail="label is required")
+    label_s = require_honest_narrative(label, label="custom role label", max_length=120)
 
     base = (base_role or "").strip() or None
     # Defense in depth: CustomRoleCreate.base_role Literal rejects blank/unknown/super_admin
@@ -243,10 +242,9 @@ async def update_custom_role(
         raise HTTPException(status_code=404, detail="Custom role not found")
 
     if label is not None:
-        label_s = label.strip()
-        if not label_s:
-            raise HTTPException(status_code=400, detail="label is required")
-        row.label = label_s[:120]
+        row.label = require_honest_narrative(
+            label, label="custom role label", max_length=120
+        )
     if permissions is not None:
         row.permissions = normalize_permissions(permissions)
     if record_scope is not None:

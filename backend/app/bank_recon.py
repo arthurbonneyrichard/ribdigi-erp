@@ -371,9 +371,9 @@ async def unmatched_book_lines(
                 "description": line.description or entry.description,
                 "reference": entry.reference,
                 "source_type": entry.source_type,
-                "debit": float(line.debit or 0),
-                "credit": float(line.credit or 0),
-                "signed_amount": signed,
+                "debit": money_json(line.debit),
+                "credit": money_json(line.credit),
+                "signed_amount": money_json(signed),
             }
         )
     return out

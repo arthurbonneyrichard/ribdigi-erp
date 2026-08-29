@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import ai as ai_svc
 from app import models as m
 from app import report_export as report_export_svc
+from app.honesty import require_honest_narrative
 
 # Ordered: first match wins (more specific phrases before generic "sales")
 _REPORT_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
@@ -209,16 +210,16 @@ async def create_template(
     prompt: str,
     format: str | None = None,
 ) -> m.AiReportTemplate:
-    name = (name or "").strip()
-    if not name:
-        raise HTTPException(status_code=400, detail="name is required")
+    name = require_honest_narrative(
+        name, label="AI report template name", max_length=120
+    )
     intent = parse_prompt(prompt)
     fmt = (format or intent.get("format") or "csv").lower()
     if fmt not in report_export_svc.EXPORT_FORMATS:
         raise HTTPException(status_code=400, detail=f"format must be one of {sorted(report_export_svc.EXPORT_FORMATS)}")
     row = m.AiReportTemplate(
         tenant_id=tenant_id,
-        name=name[:120],
+        name=name,
         prompt=prompt.strip(),
         report_type=intent["report_type"],
         params=intent.get("params") or {},

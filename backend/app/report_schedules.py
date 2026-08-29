@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import require_honest_narrative
 from app.report_export import EXPORTABLE, EXPORT_FORMATS, export_report
 
 FREQUENCIES = frozenset({"daily", "weekly"})
@@ -128,9 +129,9 @@ async def create_schedule(
     recipients: list[str] | str | None = None,
     enabled: bool = True,
 ) -> m.ReportSchedule:
-    name = (name or "").strip()
-    if len(name) < 2:
-        raise HTTPException(status_code=400, detail="name is required")
+    name = require_honest_narrative(
+        name, label="report schedule name", min_length=2, max_length=120
+    )
     # Defense in depth: ReportScheduleCreate.report_type Literal rejects blank/unknown with 422.
     if report_type not in EXPORTABLE:
         raise HTTPException(status_code=400, detail=f"report_type must be one of {sorted(EXPORTABLE)}")
@@ -186,10 +187,9 @@ async def update_schedule(
 ) -> m.ReportSchedule:
     row = await get_schedule(db, tenant_id, schedule_id)
     if name is not None:
-        name = name.strip()
-        if len(name) < 2:
-            raise HTTPException(status_code=400, detail="name is required")
-        row.name = name
+        row.name = require_honest_narrative(
+            name, label="report schedule name", min_length=2, max_length=120
+        )
     if report_type is not None:
         # Defense in depth: ReportScheduleUpdate.report_type Literal → 422 on blank/unknown.
         if report_type not in EXPORTABLE:

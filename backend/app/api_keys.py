@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import require_honest_narrative
 from app.rbac import ALLOWED_ACTIONS, SYSTEM_MODULES
 from app.security import hash_token
 
@@ -127,12 +128,9 @@ async def create_key(
     permissions: dict | None = None,
     expires_at: datetime | None = None,
 ) -> tuple[m.ApiKey, str]:
-    cleaned_name = (name or "").strip()
-    # Schema ApiKeyCreate enforces name length → 422; keep defense-in-depth.
-    if len(cleaned_name) < 2:
-        raise HTTPException(status_code=422, detail="name must be at least 2 characters")
-    if len(cleaned_name) > 120:
-        raise HTTPException(status_code=422, detail="name must be at most 120 characters")
+    cleaned_name = require_honest_narrative(
+        name, label="API key name", min_length=2, max_length=120
+    )
     perms = normalize_permissions(permissions)
     raw, prefix, key_hash = generate_raw_key()
     row = m.ApiKey(

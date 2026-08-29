@@ -11,7 +11,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
-from app.honesty import money_json
+from app.honesty import money_json, require_honest_narrative
 
 SUPPLY_CLASSES = frozenset({"standard", "zero_rated", "exempt"})
 TAX_TYPES = frozenset({"vat", "gst", "sales_tax", "custom"})
@@ -380,10 +380,7 @@ async def update_tax_rate(
 ) -> m.TaxRate:
     row = await get_tax_rate(db, tenant_id, rate_id)
     if name is not None:
-        name = name.strip()
-        if not name:
-            raise HTTPException(status_code=400, detail="name cannot be empty")
-        row.name = name
+        row.name = require_honest_narrative(name, label="tax rate name", max_length=80)
     if rate is not None:
         row.rate = float(rate)
     if tax_type is not None:

@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
-from app.honesty import money_json, optional_honest_narrative
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
 DEFAULT_UNITS = (
     ("PCS", "Pieces"),
@@ -257,9 +257,9 @@ async def create_category(
     tax_rate_id: str | None = None,
 ) -> m.ProductCategory:
     code = code.strip().upper()
-    name = name.strip()
-    if not code or not name:
+    if not code:
         raise HTTPException(status_code=400, detail="code and name are required")
+    name = require_honest_narrative(name, label="category name", max_length=120)
     if parent_id:
         parent = await db.get(m.ProductCategory, parent_id)
         if not parent or parent.tenant_id != tenant_id:
@@ -321,10 +321,7 @@ async def update_category(
             raise HTTPException(status_code=409, detail="Category code exists")
         row.code = code
     if name is not None:
-        name = name.strip()
-        if not name:
-            raise HTTPException(status_code=400, detail="name is required")
-        row.name = name
+        row.name = require_honest_narrative(name, label="category name", max_length=120)
     if clear_parent:
         row.parent_id = None
     elif parent_id is not None:
@@ -370,9 +367,9 @@ async def create_brand(
     description: str | None = None,
 ) -> m.Brand:
     code = code.strip().upper()
-    name = name.strip()
-    if not code or not name:
+    if not code:
         raise HTTPException(status_code=400, detail="code and name are required")
+    name = require_honest_narrative(name, label="brand name", max_length=120)
     dup = (
         await db.execute(
             select(m.Brand).where(m.Brand.tenant_id == tenant_id, m.Brand.code == code)
@@ -423,10 +420,7 @@ async def update_brand(
             raise HTTPException(status_code=409, detail="Brand code exists")
         row.code = code
     if name is not None:
-        name = name.strip()
-        if not name:
-            raise HTTPException(status_code=400, detail="name is required")
-        row.name = name
+        row.name = require_honest_narrative(name, label="brand name", max_length=120)
     if clear_description:
         row.description = None
     elif description is not None:
@@ -486,9 +480,9 @@ async def create_unit(
     from app.uom import validate_unit_base
 
     code = code.strip().upper()
-    name = name.strip()
-    if not code or not name:
+    if not code:
         raise HTTPException(status_code=400, detail="code and name are required")
+    name = require_honest_narrative(name, label="unit name", max_length=80)
     dup = (
         await db.execute(
             select(m.UnitOfMeasure).where(
@@ -553,10 +547,7 @@ async def update_unit(
             raise HTTPException(status_code=409, detail="Unit code exists")
         row.code = code
     if name is not None:
-        name = name.strip()
-        if not name:
-            raise HTTPException(status_code=400, detail="name is required")
-        row.name = name
+        row.name = require_honest_narrative(name, label="unit name", max_length=80)
     if is_active is not None:
         row.is_active = bool(is_active)
     if clear_base:
