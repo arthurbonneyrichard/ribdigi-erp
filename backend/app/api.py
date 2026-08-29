@@ -1054,7 +1054,7 @@ async def platform_staff_grant(
 
 @api.post("/platform/staff/{user_id}/revoke")
 async def platform_staff_revoke(
-    user_id: str,
+    user_id: UuidIdValue,
     payload: PlatformRevokeAccess,
     claims=Depends(require_platform_permission("platform_staff", "write")),
     db: AsyncSession = Depends(get_db),
@@ -1098,7 +1098,7 @@ async def platform_staff_revoke(
 
 @api.patch("/platform/staff/{user_id}")
 async def platform_staff_update(
-    user_id: str,
+    user_id: UuidIdValue,
     payload: PlatformStaffUpdate,
     claims=Depends(require_platform_permission("platform_staff", "write")),
     db: AsyncSession = Depends(get_db),
@@ -2379,7 +2379,7 @@ async def create_branch(
 
 @api.patch("/branches/{branch_id}")
 async def update_branch(
-    branch_id: str,
+    branch_id: UuidIdValue,
     payload: BranchUpdate,
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
@@ -2464,7 +2464,7 @@ async def create_department(
 
 @api.patch("/departments/{department_id}")
 async def update_department(
-    department_id: str,
+    department_id: UuidIdValue,
     payload: DepartmentUpdate,
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
@@ -2582,7 +2582,7 @@ async def users_import(
 
 @api.get("/users/{user_id}")
 async def get_user(
-    user_id: str,
+    user_id: UuidIdValue,
     claims=Depends(require_permission("users", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -2690,7 +2690,7 @@ async def add_user(
 
 @api.patch("/users/{user_id}")
 async def update_user(
-    user_id: str,
+    user_id: UuidIdValue,
     payload: UserUpdate,
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
@@ -2799,7 +2799,7 @@ async def update_user(
 
 @api.delete("/users/{user_id}")
 async def deactivate_user(
-    user_id: str,
+    user_id: UuidIdValue,
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3001,7 +3001,7 @@ async def products_import(
 
 @api.get("/products/{product_id}")
 async def get_product(
-    product_id: str,
+    product_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3020,7 +3020,7 @@ async def get_product(
 
 @api.patch("/products/{product_id}")
 async def patch_product(
-    product_id: str,
+    product_id: UuidIdValue,
     payload: ProductUpdate,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -3213,7 +3213,7 @@ async def catalog_create_category(
 
 @api.patch("/catalog/categories/{category_id}")
 async def catalog_patch_category(
-    category_id: str,
+    category_id: UuidIdValue,
     payload: ProductCategoryUpdate,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -3243,7 +3243,7 @@ async def catalog_patch_category(
 
 @api.delete("/catalog/categories/{category_id}")
 async def catalog_delete_category(
-    category_id: str,
+    category_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3286,7 +3286,7 @@ async def catalog_create_brand(
 
 @api.patch("/catalog/brands/{brand_id}")
 async def catalog_patch_brand(
-    brand_id: str,
+    brand_id: UuidIdValue,
     payload: BrandUpdate,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -3309,7 +3309,7 @@ async def catalog_patch_brand(
 
 @api.delete("/catalog/brands/{brand_id}")
 async def catalog_delete_brand(
-    brand_id: str,
+    brand_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3322,7 +3322,7 @@ async def catalog_delete_brand(
 
 @api.post("/catalog/brands/{brand_id}/logo")
 async def catalog_brand_logo_upload(
-    brand_id: str,
+    brand_id: UuidIdValue,
     file: UploadFile = File(...),
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -3366,7 +3366,7 @@ async def catalog_brand_logo_upload(
 
 @api.get("/catalog/brands/{brand_id}/logo")
 async def catalog_brand_logo_get(
-    brand_id: str,
+    brand_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3378,7 +3378,7 @@ async def catalog_brand_logo_get(
 
 @api.delete("/catalog/brands/{brand_id}/logo")
 async def catalog_brand_logo_delete(
-    brand_id: str,
+    brand_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3469,7 +3469,7 @@ async def catalog_convert_unit(
 
 @api.patch("/catalog/units/{unit_id}")
 async def catalog_patch_unit(
-    unit_id: str,
+    unit_id: UuidIdValue,
     payload: UnitOfMeasureUpdate,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -3495,7 +3495,7 @@ async def catalog_patch_unit(
 
 @api.delete("/catalog/units/{unit_id}")
 async def catalog_delete_unit(
-    unit_id: str,
+    unit_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3508,7 +3508,7 @@ async def catalog_delete_unit(
 
 @api.post("/products/{product_id}/image")
 async def product_image_upload(
-    product_id: str,
+    product_id: UuidIdValue,
     file: UploadFile = File(...),
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -3537,7 +3537,7 @@ async def product_image_upload(
 
 @api.get("/products/{product_id}/image")
 async def product_image_get(
-    product_id: str,
+    product_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3556,7 +3556,7 @@ async def product_image_get(
 
 @api.delete("/products/{product_id}/image")
 async def product_image_delete(
-    product_id: str,
+    product_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3569,7 +3569,7 @@ async def product_image_delete(
 
 @api.get("/products/{product_id}/images")
 async def product_images_list(
-    product_id: str,
+    product_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3581,7 +3581,7 @@ async def product_images_list(
 
 @api.post("/products/{product_id}/images")
 async def product_images_upload(
-    product_id: str,
+    product_id: UuidIdValue,
     file: UploadFile = File(...),
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -3609,8 +3609,8 @@ async def product_images_upload(
 
 @api.patch("/products/{product_id}/images/{image_id}")
 async def product_images_patch(
-    product_id: str,
-    image_id: str,
+    product_id: UuidIdValue,
+    image_id: UuidIdValue,
     payload: ProductImagePrimaryUpdate,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -3629,8 +3629,8 @@ async def product_images_patch(
 
 @api.delete("/products/{product_id}/images/{image_id}")
 async def product_images_delete(
-    product_id: str,
-    image_id: str,
+    product_id: UuidIdValue,
+    image_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -3646,7 +3646,7 @@ async def product_images_delete(
 
 @api.post("/products/{product_id}/barcode/generate")
 async def product_barcode_generate(
-    product_id: str,
+    product_id: UuidIdValue,
     force: bool = False,
     # omit → code128; blank/invalid → 422 (was free str; "" coerced to code128)
     symbology: Annotated[BarcodeSymbologyValue, Query()] = "code128",
@@ -3697,7 +3697,7 @@ async def product_barcode_generate(
 
 @api.get("/products/{product_id}/barcode.png")
 async def product_barcode_png(
-    product_id: str,
+    product_id: UuidIdValue,
     symbology: Annotated[BarcodeSymbologyValue | None, Query()] = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
@@ -3730,7 +3730,7 @@ async def product_barcode_png(
 
 @api.get("/products/{product_id}/barcode/label")
 async def product_barcode_label(
-    product_id: str,
+    product_id: UuidIdValue,
     copies: int = 1,
     symbology: Annotated[BarcodeSymbologyValue | None, Query()] = None,
     claims=Depends(require_permission("inventory", "read")),
@@ -3795,7 +3795,7 @@ async def movements(
     warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
     store_id: Annotated[UuidIdValue | None, Query()] = None,
     movement_type: Annotated[MovementTypeValue | None, Query()] = None,
-    created_by: str | None = None,
+    created_by: Annotated[UuidIdValue | None, Query()] = None,
     reason: Annotated[StockAdjustReasonValue | None, Query()] = None,
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
     to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
@@ -3938,7 +3938,7 @@ async def cancel_stock_count(
 
 @api.post("/inventory/adjust/{product_id}")
 async def adjust(
-    product_id: str,
+    product_id: UuidIdValue,
     payload: StockAdjust,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -4084,7 +4084,7 @@ async def stock_out(
 
 @api.get("/inventory/warehouse-stock")
 async def inventory_warehouse_stock(
-    warehouse_id: str,
+    warehouse_id: UuidIdValue,
     include_zero: bool = False,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
@@ -4149,7 +4149,7 @@ async def inventory_products_lookup(
 
 @api.get("/products/{product_id}/warehouse-stock")
 async def product_warehouse_stock(
-    product_id: str,
+    product_id: UuidIdValue,
     include_zero: bool = True,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
@@ -4169,7 +4169,7 @@ async def product_warehouse_stock(
 
 @api.get("/products/{product_id}/variants")
 async def list_product_variants(
-    product_id: str,
+    product_id: UuidIdValue,
     is_active: bool | None = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
@@ -4183,7 +4183,7 @@ async def list_product_variants(
 
 @api.post("/products/{product_id}/variants")
 async def create_product_variant(
-    product_id: str,
+    product_id: UuidIdValue,
     payload: ProductVariantCreate,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -4200,8 +4200,8 @@ async def create_product_variant(
 
 @api.patch("/products/{product_id}/variants/{variant_id}")
 async def patch_product_variant(
-    product_id: str,
-    variant_id: str,
+    product_id: UuidIdValue,
+    variant_id: UuidIdValue,
     payload: ProductVariantUpdate,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -4234,8 +4234,8 @@ async def patch_product_variant(
 
 @api.post("/products/{product_id}/variants/{variant_id}/barcode/generate")
 async def variant_barcode_generate(
-    product_id: str,
-    variant_id: str,
+    product_id: UuidIdValue,
+    variant_id: UuidIdValue,
     force: bool = False,
     symbology: Annotated[BarcodeSymbologyValue, Query()] = "code128",
     claims=Depends(require_permission("inventory", "write")),
@@ -4285,8 +4285,8 @@ async def variant_barcode_generate(
 
 @api.get("/products/{product_id}/variants/{variant_id}/barcode.png")
 async def variant_barcode_png(
-    product_id: str,
-    variant_id: str,
+    product_id: UuidIdValue,
+    variant_id: UuidIdValue,
     symbology: Annotated[BarcodeSymbologyValue | None, Query()] = None,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
@@ -4313,8 +4313,8 @@ async def variant_barcode_png(
 
 @api.get("/products/{product_id}/variants/{variant_id}/barcode/label")
 async def variant_barcode_label(
-    product_id: str,
-    variant_id: str,
+    product_id: UuidIdValue,
+    variant_id: UuidIdValue,
     copies: int = 1,
     symbology: Annotated[BarcodeSymbologyValue | None, Query()] = None,
     claims=Depends(require_permission("inventory", "read")),
@@ -4353,8 +4353,8 @@ async def variant_barcode_label(
 
 @api.delete("/products/{product_id}/variants/{variant_id}")
 async def delete_product_variant(
-    product_id: str,
-    variant_id: str,
+    product_id: UuidIdValue,
+    variant_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -4370,7 +4370,7 @@ async def delete_product_variant(
 
 @api.get("/products/{product_id}/batches")
 async def list_product_batches(
-    product_id: str,
+    product_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -4846,7 +4846,7 @@ async def delete_customer_contact(
 
 @api.get("/products/{product_id}/price")
 async def product_price_for_customer(
-    product_id: str,
+    product_id: UuidIdValue,
     # Optional customer/variant ∈ UuidIdValue; omit/`null` OK; blank/`!!!`/`http://…`/non-UUID → **422**
     # (was free `str`; garbage could reach party/variant lookup).
     customer_id: Annotated[UuidIdValue | None, Query()] = None,
@@ -7788,7 +7788,7 @@ async def create_expense_category(
 
 @api.patch("/expenses/categories/{category_id}")
 async def patch_expense_category(
-    category_id: str,
+    category_id: UuidIdValue,
     payload: ExpenseCategoryUpdate,
     claims=Depends(require_permission("expenses", "write")),
     db: AsyncSession = Depends(get_db),
@@ -9815,7 +9815,7 @@ async def report_inventory_movements(
     warehouse_id: Annotated[UuidIdValue | None, Query()] = None,
     store_id: Annotated[UuidIdValue | None, Query()] = None,
     movement_type: Annotated[MovementTypeValue | None, Query()] = None,
-    created_by: str | None = None,
+    created_by: Annotated[UuidIdValue | None, Query()] = None,
     reason: Annotated[StockAdjustReasonValue | None, Query()] = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
@@ -11392,7 +11392,7 @@ async def warehouses(
 
 @api.get("/warehouses/{warehouse_id}")
 async def get_warehouse(
-    warehouse_id: str,
+    warehouse_id: UuidIdValue,
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11428,7 +11428,7 @@ async def add_warehouse(
 
 @api.patch("/warehouses/{warehouse_id}")
 async def patch_warehouse(
-    warehouse_id: str,
+    warehouse_id: UuidIdValue,
     payload: WarehouseUpdate,
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
@@ -11665,7 +11665,7 @@ async def run_job_now(
 
 @api.get("/audit-logs")
 async def audit_logs(
-    user_id: str | None = None,
+    user_id: Annotated[UuidIdValue | None, Query()] = None,
     module: Annotated[AuditModuleValue | None, Query()] = None,
     action: Annotated[AuditActionValue | None, Query()] = None,
     entity: str | None = None,
@@ -11738,7 +11738,7 @@ async def audit_logs_archive_cold(
 
 @api.get("/audit-logs/export")
 async def audit_logs_export(
-    user_id: str | None = None,
+    user_id: Annotated[UuidIdValue | None, Query()] = None,
     module: Annotated[AuditModuleValue | None, Query()] = None,
     action: Annotated[AuditActionValue | None, Query()] = None,
     from_date: Annotated[IsoDateQueryValue | None, Query()] = None,

@@ -52,6 +52,7 @@ export default function Page() {
   const [appliedAction, setAppliedAction] = useState('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
+  const [userId, setUserId] = useState('');
   const [verify, setVerify] = useState<any>(null);
   const [retention, setRetention] = useState<any>(null);
   const [archives, setArchives] = useState<any[]>([]);
@@ -67,11 +68,14 @@ export default function Page() {
     if (actionQ) params.set('action', actionQ);
     if (fromDate) params.set('from_date', fromDate);
     if (toDate) params.set('to_date', toDate);
+    // trim/omit so UuidIdValue Query user_id does not 422
+    const userTrim = userId.trim();
+    if (userTrim) params.set('user_id', userTrim);
     const q = params.toString() ? `?${params}` : '';
     const r = await api(`/audit-logs${q}`);
     setRows(r.data || []);
     setError('');
-  }, [module, appliedAction, fromDate, toDate]);
+  }, [module, appliedAction, fromDate, toDate, userId]);
 
   const refreshPolicy = useCallback(async () => {
     const [policy, me] = await Promise.all([api('/audit-logs/retention'), api('/me')]);
@@ -121,6 +125,8 @@ export default function Page() {
       if (actionQ) params.set('action', actionQ);
       if (fromDate) params.set('from_date', fromDate);
       if (toDate) params.set('to_date', toDate);
+      const userTrim = userId.trim();
+      if (userTrim) params.set('user_id', userTrim);
       const res = await fetch(`${base}/audit-logs/export?${params}`, {
         headers: {
           Authorization: token ? `Bearer ${token}` : '',
@@ -282,6 +288,13 @@ export default function Page() {
           onChange={(e) => setToDate(e.target.value)}
           title="To date (YYYY-MM-DD)"
           aria-label="Audit to date"
+        />
+        <input
+          value={userId}
+          onChange={(e) => setUserId(e.target.value)}
+          placeholder="User id (UUID)"
+          title="Filter by actor user id (UUID)"
+          aria-label="Audit user filter"
         />
         <button
           type="button"
