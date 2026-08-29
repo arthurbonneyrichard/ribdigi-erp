@@ -524,6 +524,7 @@ export default function Page() {
               inactivity_timeout_minutes: Number(e.target.value) || 30,
             })
           }
+          aria-label="Company inactivity timeout minutes"
         />
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>

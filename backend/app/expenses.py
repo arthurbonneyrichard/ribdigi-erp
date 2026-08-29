@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.doc_numbers import next_expense_number
-from app.honesty import money_json, require_honest_narrative
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
 DEFAULT_CATEGORIES = [
     ("RENT", "Rent"),
@@ -745,6 +745,9 @@ async def approve_expense(
         "super_admin",
     }:
         raise HTTPException(status_code=403, detail="Cannot approve your own expense")
+
+    # Defense-in-depth vs OpenAPI ExpenseApproveCommentValue (**422**).
+    comment = optional_honest_narrative(comment, label="approve comment")
 
     step = int(expense.approval_step or 1)
     required = int(expense.approval_steps_required or 1)

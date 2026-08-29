@@ -571,7 +571,7 @@
 - **Multi-tenant headers docs honesty OpenAPI:** Appendix B / API Keys auth headers document `X-Tenant-ID` as JWT/key **UUID** (not slug `tenant_abc123`).
 - **Response envelope honesty OpenAPI:** Success `env()` body is `{ success, data, message }` only — no JSON `timestamp` / `request_id`; correlation via **`X-Request-ID`** header.
 - **List pagination honesty OpenAPI:** Most lists return unpaginated `data: T[]` (no global cursor/`items`+`pagination` contract).
-- **Money JSON number honesty OpenAPI:** Request Values and response serializers use JSON **numbers** (not decimal strings) for money/qty; pilots use `honesty.money_json` (Decimal→finite float) on sales invoice, quotation, PO, expense/recurring, cheque, and journal serializers.
+- **Money JSON number honesty OpenAPI:** Request Values and response serializers use JSON **numbers** (not decimal strings) for money/qty; pilots use `honesty.money_json` (Decimal→finite float) on sales invoice/quotation/order/return, PO/PI/PR/GRN, expense/recurring, cheque, journal, POS payment/session, cash transfer/account, bank recon, PR/stock-transfer/stock-count qty, and FX rate serializers.
 - **Error envelope honesty OpenAPI:** Errors use FastAPI `detail` shapes; no success-style `{ success:false, error, request_id }` body field.
 - **Request Content-Type honesty OpenAPI:** Default JSON `application/json`; multipart uploads are documented exceptions (not “all requests must be JSON”).
 - **Response media-type honesty OpenAPI:** `env()` wraps JSON successes; CSV/PDF/XLSX/PNG/HTML/metrics/file downloads are non-envelope responses.
@@ -622,6 +622,32 @@
 - **Purchase order qty/price aria OpenAPI (BR-6.3):** Purchasing **Purchase order quantity** + **Purchase order unit price** inputs (`aria-label`s).
 - **Purchase invoice qty/price aria OpenAPI (BR-6.5):** Purchasing **Purchase invoice quantity** + **Purchase invoice unit price** inputs (`aria-label`s).
 - **Tax calculator amount aria OpenAPI (BR-12.1):** Tax **Tax calculator amount** input (`aria-label`).
+- **Optional narrative defense-in-depth OpenAPI:** `honesty.optional_honest_narrative` — omit/`None`/blank → `None`; non-blank garbage/URL/punctuation → **400** (mirrors optional OpenAPI narrative Values).
+- **Expense approve comment defense-in-depth OpenAPI (BR-9.3):** `approve_expense` uses `optional_honest_narrative` (**400**) matching `ExpenseApproveCommentValue` (**422**).
+- **POS shift close notes defense-in-depth OpenAPI (BR-8.2):** `close_session` uses `optional_honest_narrative` (**400**) matching `PosSessionCloseNotesValue` (**422**).
+- **Cash transfer notes defense-in-depth OpenAPI (BR-10.3):** `create_transfer` uses `optional_honest_narrative` (**400**) matching `CashTransferNotesValue` (**422**).
+- **Stock count notes defense-in-depth OpenAPI (BR-5.2):** `create_count` uses `optional_honest_narrative` (**400**) matching `StockCountNotesValue` (**422**).
+- **Sales order money_json Decimal pilot OpenAPI (BR-7.3):** `serialize_order` money/qty/reserved fields use `honesty.money_json`.
+- **Sales return money_json Decimal pilot OpenAPI (BR-7.5):** `serialize_return` money/qty fields use `honesty.money_json`.
+- **Purchase invoice money_json Decimal pilot OpenAPI (BR-6.5):** `serialize_purchase_invoice` money/qty/FX fields use `honesty.money_json`.
+- **Purchase return money_json Decimal pilot OpenAPI (BR-6.6):** `serialize_purchase_return` money/qty fields use `honesty.money_json`.
+- **GRN money_json Decimal pilot OpenAPI (BR-6.4):** `serialize_grn` received/accepted/rejected qty use `honesty.money_json`.
+- **Cash account/transfer money_json Decimal pilot OpenAPI (BR-10.3):** `serialize_account` balances + `serialize_transfer.amount` use `honesty.money_json`.
+- **Bank statement money_json Decimal pilot OpenAPI (BR-10.3):** `serialize_statement` balances + `serialize_line.amount` (+ liquid account balances) use `honesty.money_json`.
+- **POS payment/drawer money_json Decimal pilot OpenAPI (BR-8.1 / BR-8.2):** `serialize_payment.amount` + `drawer_summary` cash totals use `honesty.money_json`.
+- **FX rate money_json Decimal pilot OpenAPI (BR-2.6):** `serialize_rate.rate_to_base` uses `honesty.money_json`.
+- **Purchase request qty money_json Decimal pilot OpenAPI (BR-6.2):** `serialize_request` line `quantity` uses `honesty.money_json`.
+- **Stock count qty money_json Decimal pilot OpenAPI (BR-5.2):** `serialize_item` expected/counted qty use `honesty.money_json`.
+- **Stock transfer qty money_json Decimal pilot OpenAPI (BR-5.2 / BR-13.2):** `serialize_transfer` item qty/shipped/received use `honesty.money_json`.
+- **Company inactivity timeout aria OpenAPI (BR-19.3):** Company **Company inactivity timeout minutes** input (`aria-label`).
+- **Company store allocation aria OpenAPI:** Multi-Store **Company store allocation** input (`aria-label`).
+- **Report schedule hour UTC aria OpenAPI (BR-14):** Reports **Report schedule hour UTC** input (`aria-label`).
+- **Sales customer payment terms days aria OpenAPI (BR-11):** Sales **Customer payment terms days** input (`aria-label`).
+- **Purchase order line discount aria OpenAPI (BR-6.3):** Purchasing **Purchase order line discount** input (`aria-label`).
+- **PO amend unit price/discount aria OpenAPI (BR-6.3):** Purchasing **PO amend unit price** + **PO amend line discount** inputs (`aria-label`s).
+- **Purchase invoice FX rate aria OpenAPI (BR-6.5 / BR-2.6):** Purchasing **Purchase invoice FX rate** input (`aria-label`).
+- **Purchase invoice tax rate percent aria OpenAPI (BR-6.5):** Purchasing **Purchase invoice tax rate percent** input (`aria-label`).
+- **Stock count line notes defense-in-depth OpenAPI (BR-5.2):** `update_count_items` uses `optional_honest_narrative` (**400**) matching `StockCountItemNotesValue` (**422**); explicit `null` clears.
 - **Report export date Query OpenAPI (BR-14):** `GET /reports/export` Query `from_date` / `to_date` / `date` / `as_of` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound / live as_of fallbacks; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Reports shared **Report From/To/as of date** inputs (`aria-label`s).
 - **Tax date Query OpenAPI:** `GET /reports/tax` + `GET /reports/tax/filing` Query `from_date` / `to_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Tax **Tax From/To date** inputs (`aria-label`s).
 - **Expenses date Query OpenAPI (BR-14.4):** `GET /reports/expenses/summary` + `GET /reports/expenses/budget-vs-actual` Query `from_date` / `to_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → no bound; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent omit; invalid was late service **400**). Service `parse_date` remains defense-in-depth (**400**). Reports **Expenses** tab uses shared **Report From/To date** inputs (`aria-label`s).

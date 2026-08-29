@@ -1939,6 +1939,7 @@ export default function Page() {
             type="number"
             min={0}
             step="0.01"
+            aria-label="Purchase order line discount"
           />
           <input
             value={poDeliveryAddress}
@@ -2370,6 +2371,7 @@ export default function Page() {
                     value={amendPrice}
                     onChange={(e) => setAmendPrice(e.target.value)}
                     placeholder="Unit price"
+                    aria-label="PO amend unit price"
                   />
                   <input
                     value={amendDiscount}
@@ -2378,6 +2380,7 @@ export default function Page() {
                     type="number"
                     min={0}
                     step="0.01"
+                    aria-label="PO amend line discount"
                   />
                   <input
                     value={amendNotes}
@@ -2565,6 +2568,7 @@ export default function Page() {
             type="number"
             min={0}
             step="0.0001"
+            aria-label="Purchase invoice FX rate"
           />
           <span className="muted span-2">
             From-GRN lines inherit proportional PO discounts; leave header at 0 to mirror them on the
@@ -2626,6 +2630,7 @@ export default function Page() {
             value={manualInvTaxRate}
             onChange={(e) => setManualInvTaxRate(e.target.value)}
             placeholder="Tax rate % (blank = auto)"
+            aria-label="Purchase invoice tax rate percent"
           />
           <input
             value={manualInvLineDiscount}
@@ -2684,6 +2689,7 @@ export default function Page() {
             type="number"
             min={0}
             step="0.0001"
+            aria-label="Purchase invoice FX rate"
           />
           <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <input type="checkbox" checked={manualInvRc} onChange={(e) => setManualInvRc(e.target.checked)} />

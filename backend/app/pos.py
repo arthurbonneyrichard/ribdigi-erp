@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.doc_numbers import next_pos_sale_number, next_pos_session_number  # re-exported for API callers
+from app.honesty import money_json, optional_honest_narrative
 
 
 def compute_expected_cash(opening_cash: float, cash_sales: float) -> float:
@@ -283,7 +284,7 @@ def serialize_payment(row: m.PosPayment) -> dict:
         "id": row.id,
         "sale_id": row.sale_id,
         "payment_method": row.payment_method,
-        "amount": float(row.amount or 0),
+        "amount": money_json(row.amount),
         "reference": row.reference,
         "liquid_account_id": row.liquid_account_id,
         "created_at": row.created_at,
@@ -299,6 +300,8 @@ async def close_session(
     actual_cash: float,
     notes: str | None = None,
 ) -> m.PosSession:
+    # OpenAPI PosSessionCloseNotesValue → 422; service defense-in-depth → 400.
+    notes_s = optional_honest_narrative(notes, label="close notes")
     session = await get_session(db, tenant_id, session_id)
     if session.status != "open":
         raise HTTPException(status_code=409, detail="POS session is already closed")
@@ -310,7 +313,7 @@ async def close_session(
     session.expected_cash = expected
     session.actual_cash = actual
     session.variance = variance
-    session.notes = notes
+    session.notes = notes_s
     session.status = "closed"
     session.closed_at = datetime.utcnow()
 
@@ -340,15 +343,15 @@ async def drawer_summary(session: m.PosSession) -> dict:
         "session_id": session.id,
         "session_number": session.session_number,
         "status": session.status,
-        "opening_cash": float(session.opening_cash or 0),
-        "cash_sales": float(session.cash_sales or 0),
-        "card_sales": float(session.card_sales or 0),
-        "other_sales": float(session.other_sales or 0),
-        "total_sales": float(session.total_sales or 0),
+        "opening_cash": money_json(session.opening_cash),
+        "cash_sales": money_json(session.cash_sales),
+        "card_sales": money_json(session.card_sales),
+        "other_sales": money_json(session.other_sales),
+        "total_sales": money_json(session.total_sales),
         "sale_count": int(session.sale_count or 0),
         "expected_cash": expected,
-        "actual_cash": float(session.actual_cash) if session.actual_cash is not None else None,
-        "variance": float(session.variance) if session.variance is not None else None,
+        "actual_cash": money_json(session.actual_cash) if session.actual_cash is not None else None,
+        "variance": money_json(session.variance) if session.variance is not None else None,
     }
 
 

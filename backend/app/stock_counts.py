@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.doc_numbers import next_stock_count_number
-from app.honesty import require_honest_narrative
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 from app.inventory import allocate_unlocated_stock, apply_stock_change, get_or_create_warehouse_stock
 
 # Lifecycle statuses for StockCount (create → draft; complete → completed; cancel → cancelled).
@@ -65,8 +65,8 @@ async def list_count_items(
 
 
 def serialize_item(item: m.StockCountItem, *, product: m.Product | None = None) -> dict:
-    counted = None if item.counted_qty is None else float(item.counted_qty)
-    expected = float(item.expected_qty or 0)
+    counted = None if item.counted_qty is None else money_json(item.counted_qty)
+    expected = money_json(item.expected_qty)
     variance = None if counted is None else round(counted - expected, 3)
     return {
         "id": item.id,
@@ -230,7 +230,7 @@ async def create_count(
         warehouse_id=warehouse_id,
         count_number=await next_stock_count_number(db, tenant_id),
         status="draft",
-        notes=(notes or "").strip() or None,
+        notes=optional_honest_narrative(notes, label="stock count notes"),
         created_by=user_id,
     )
     db.add(count)
@@ -287,7 +287,13 @@ async def update_count_items(
         # Schema StockCountItemNotesValue rejects blank/garbage → 422; explicit null clears.
         if "notes" in raw:
             notes_val = raw.get("notes")
-            line.notes = None if notes_val is None else str(notes_val).strip() or None
+            if notes_val is None:
+                line.notes = None
+            else:
+                # Defense-in-depth vs OpenAPI StockCountItemNotesValue (**422**).
+                line.notes = optional_honest_narrative(
+                    str(notes_val), label="stock count line notes"
+                )
     await db.flush()
     return count
 

@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
-from app.honesty import require_honest_narrative
+from app.honesty import money_json, require_honest_narrative
 from app.inventory import allocate_unlocated_stock, apply_warehouse_stock_change, get_or_create_warehouse_stock
 
 TRANSFER_EDITABLE = {"draft"}
@@ -446,9 +446,9 @@ async def serialize_transfer(db: AsyncSession, transfer: m.StockTransfer) -> dic
             {
                 "id": i.id,
                 "product_id": i.product_id,
-                "quantity": float(i.quantity),
-                "shipped_qty": float(i.shipped_qty or 0),
-                "received_qty": float(i.received_qty or 0),
+                "quantity": money_json(i.quantity),
+                "shipped_qty": money_json(i.shipped_qty),
+                "received_qty": money_json(i.received_qty),
             }
             for i in items
         ],

@@ -925,7 +925,7 @@ async def serialize_grn(db: AsyncSession, grn: m.GoodsReceipt) -> dict:
     used_mv: set[str] = set()
 
     def _batch_fields_for(item: m.GoodsReceiptItem) -> dict:
-        if float(item.accepted_qty or 0) <= 0:
+        if money_json(item.accepted_qty) <= 0:
             return {
                 "batch_number": None,
                 "manufacturing_date": None,
@@ -970,9 +970,9 @@ async def serialize_grn(db: AsyncSession, grn: m.GoodsReceipt) -> dict:
                 "po_item_id": i.po_item_id,
                 "product_id": i.product_id,
                 "unit_id": i.unit_id,
-                "received_qty": float(i.received_qty),
-                "accepted_qty": float(i.accepted_qty),
-                "rejected_qty": float(i.rejected_qty),
+                "received_qty": money_json(i.received_qty),
+                "accepted_qty": money_json(i.accepted_qty),
+                "rejected_qty": money_json(i.rejected_qty),
                 "rejection_reason": i.rejection_reason,
                 **_batch_fields_for(i),
             }
@@ -1376,12 +1376,12 @@ async def serialize_purchase_return(db: AsyncSession, ret: m.PurchaseReturn) -> 
     serialized_items = []
     discount_total = 0.0
     for i in items:
-        qty = float(i.quantity)
-        unit = float(i.unit_price)
-        rate = float(i.tax_rate or 0)
+        qty = money_json(i.quantity)
+        unit = money_json(i.unit_price)
+        rate = money_json(i.tax_rate)
         line_net = round(qty * unit, 2)
         line_tax = round(line_net * (rate / 100.0), 2)
-        line_total = float(i.line_total)
+        line_total = money_json(i.line_total)
         # Discount baked into line_total at create (no separate column)
         disc = max(round(line_net + line_tax - line_total, 2), 0.0)
         discount_total += disc
@@ -1407,10 +1407,10 @@ async def serialize_purchase_return(db: AsyncSession, ret: m.PurchaseReturn) -> 
         "warehouse_id": ret.warehouse_id,
         "status": ret.status,
         "reason": ret.reason,
-        "subtotal": float(ret.subtotal),
-        "tax_amount": float(ret.tax_amount),
+        "subtotal": money_json(ret.subtotal),
+        "tax_amount": money_json(ret.tax_amount),
         "discount_amount": round(discount_total, 2),
-        "total_amount": float(ret.total_amount),
+        "total_amount": money_json(ret.total_amount),
         "notes": ret.notes,
         "posted_at": ret.posted_at,
         "created_at": ret.created_at,
@@ -1704,11 +1704,14 @@ async def serialize_purchase_invoice(db: AsyncSession, inv: m.PurchaseInvoice) -
     items = await list_purchase_invoice_items(db, inv.tenant_id, inv.id)
     status = inv.status
     if status in PURCHASE_INVOICE_OPEN:
-        status = purchase_invoice_status(float(inv.total_amount), float(inv.paid_amount or 0), inv.due_date)
+        status = purchase_invoice_status(
+            money_json(inv.total_amount), money_json(inv.paid_amount), inv.due_date
+        )
         if status != inv.status:
             inv.status = status
-    paid = float(inv.paid_amount or 0)
+    paid = money_json(inv.paid_amount)
     can_cancel = status in {"draft", "unpaid", "overdue"} and paid <= 0
+    fx = money_json(getattr(inv, "exchange_rate", None), default=1.0)
     return {
         "id": inv.id,
         "invoice_number": inv.invoice_number,
@@ -1719,21 +1722,17 @@ async def serialize_purchase_invoice(db: AsyncSession, inv: m.PurchaseInvoice) -
         "status": status,
         "invoice_date": inv.invoice_date,
         "due_date": inv.due_date,
-        "subtotal": float(inv.subtotal),
-        "tax_amount": float(inv.tax_amount),
-        "reverse_charge_tax": float(getattr(inv, "reverse_charge_tax", 0) or 0),
+        "subtotal": money_json(inv.subtotal),
+        "tax_amount": money_json(inv.tax_amount),
+        "reverse_charge_tax": money_json(getattr(inv, "reverse_charge_tax", None)),
         "is_reverse_charge": bool(getattr(inv, "is_reverse_charge", False)),
-        "discount_amount": float(inv.discount_amount or 0),
+        "discount_amount": money_json(inv.discount_amount),
         "currency": getattr(inv, "currency", None) or "",
-        "exchange_rate": float(getattr(inv, "exchange_rate", None) or 1),
-        "balance_due_base": round(
-            max(float(inv.total_amount) - paid, 0)
-            * float(getattr(inv, "exchange_rate", None) or 1),
-            2,
-        ),
-        "total_amount": float(inv.total_amount),
+        "exchange_rate": fx,
+        "balance_due_base": round(max(money_json(inv.total_amount) - paid, 0) * fx, 2),
+        "total_amount": money_json(inv.total_amount),
         "paid_amount": paid,
-        "balance_due": max(float(inv.total_amount) - paid, 0),
+        "balance_due": max(money_json(inv.total_amount) - paid, 0),
         "ap_posted": bool(inv.ap_posted),
         "attachment_url": inv.attachment_url,
         "has_attachment": bool(inv.attachment_url),
@@ -1746,14 +1745,14 @@ async def serialize_purchase_invoice(db: AsyncSession, inv: m.PurchaseInvoice) -
             {
                 "id": i.id,
                 "product_id": i.product_id,
-                "quantity": float(i.quantity),
-                "unit_price": float(i.unit_price),
-                "tax_rate": float(i.tax_rate),
-                "discount": float(i.discount or 0),
-                "line_subtotal": float(getattr(i, "line_subtotal", None) or _pi_line_subtotal(i)),
+                "quantity": money_json(i.quantity),
+                "unit_price": money_json(i.unit_price),
+                "tax_rate": money_json(i.tax_rate),
+                "discount": money_json(i.discount),
+                "line_subtotal": money_json(getattr(i, "line_subtotal", None) or _pi_line_subtotal(i)),
                 "line_tax": _pi_line_tax_value(i),
                 "tax_components": getattr(i, "tax_components", None) or None,
-                "line_total": float(i.line_total),
+                "line_total": money_json(i.line_total),
             }
             for i in items
         ],

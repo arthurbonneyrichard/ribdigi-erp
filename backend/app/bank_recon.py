@@ -9,6 +9,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json
 
 
 def serialize_account(account: m.Account) -> dict:
@@ -20,8 +21,8 @@ def serialize_account(account: m.Account) -> dict:
         "code": account.code,
         "name": account.name,
         "account_type": account.account_type,
-        "balance": float(account.balance or 0),
-        "opening_balance": float(getattr(account, "opening_balance", 0) or 0),
+        "balance": money_json(account.balance),
+        "opening_balance": money_json(getattr(account, "opening_balance", 0)),
         "is_system": account.code in system_codes,
         "is_active": bool(getattr(account, "is_active", True)),
         "is_cash_account": bool(account.is_cash_account),
@@ -37,7 +38,7 @@ def serialize_line(line: m.BankStatementLine) -> dict:
         "id": line.id,
         "statement_id": line.statement_id,
         "txn_date": line.txn_date,
-        "amount": float(line.amount),
+        "amount": money_json(line.amount),
         "description": line.description,
         "external_ref": line.external_ref,
         "status": line.status,
@@ -56,8 +57,8 @@ def serialize_statement(stmt: m.BankStatement, lines: list[m.BankStatementLine] 
         "id": stmt.id,
         "account_id": stmt.account_id,
         "statement_date": stmt.statement_date,
-        "opening_balance": float(stmt.opening_balance or 0),
-        "closing_balance": float(stmt.closing_balance or 0),
+        "opening_balance": money_json(stmt.opening_balance),
+        "closing_balance": money_json(stmt.closing_balance),
         "status": stmt.status,
         "notes": stmt.notes,
         "reconciled_at": stmt.reconciled_at,

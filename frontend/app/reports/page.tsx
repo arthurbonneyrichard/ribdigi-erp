@@ -2203,6 +2203,7 @@ export default function Page() {
                   value={schedForm.hour_utc}
                   onChange={(e) => setSchedForm({ ...schedForm, hour_utc: e.target.value })}
                   style={{ width: 64 }}
+                  aria-label="Report schedule hour UTC"
                 />
               </label>
             </div>

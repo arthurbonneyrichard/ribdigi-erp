@@ -331,7 +331,9 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
 
     reservations = await list_order_reservations(db, order.tenant_id, order.id, status=None)
     active = [r for r in reservations if r.status == "active"]
-    reserved_by_item = {r.sales_order_item_id: float(r.quantity) for r in active if r.sales_order_item_id}
+    reserved_by_item = {
+        r.sales_order_item_id: money_json(r.quantity) for r in active if r.sales_order_item_id
+    }
     return {
         "id": order.id,
         "order_number": order.order_number,
@@ -341,10 +343,10 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
         "delivery_date": getattr(order, "delivery_date", None),
         "delivery_address": getattr(order, "delivery_address", None),
         "status": order.status,
-        "subtotal": float(order.subtotal),
-        "tax_amount": float(order.tax_amount),
-        "discount_amount": float(order.discount_amount),
-        "total_amount": float(order.total_amount),
+        "subtotal": money_json(order.subtotal),
+        "tax_amount": money_json(order.tax_amount),
+        "discount_amount": money_json(order.discount_amount),
+        "total_amount": money_json(order.total_amount),
         "notes": order.notes,
         "converted_invoice_id": order.converted_invoice_id,
         "confirmed_at": order.confirmed_at,
@@ -352,7 +354,7 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
         "shipped_at": getattr(order, "shipped_at", None),
         "delivered_at": getattr(order, "delivered_at", None),
         "created_at": order.created_at,
-        "reserved_qty": round(sum(float(r.quantity) for r in active), 3),
+        "reserved_qty": round(sum(money_json(r.quantity) for r in active), 3),
         "reservation_status": (
             "active"
             if active
@@ -368,12 +370,12 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
                 "id": i.id,
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
-                "quantity": float(i.quantity),
+                "quantity": money_json(i.quantity),
                 "unit_id": i.unit_id,
-                "unit_price": float(i.unit_price),
-                "tax_rate": float(i.tax_rate),
-                "discount": float(i.discount),
-                "line_total": float(i.line_total),
+                "unit_price": money_json(i.unit_price),
+                "tax_rate": money_json(i.tax_rate),
+                "discount": money_json(i.discount),
+                "line_total": money_json(i.line_total),
                 "reserved_qty": reserved_by_item.get(i.id, 0.0),
             }
             for i in items
@@ -750,12 +752,12 @@ async def serialize_return(db: AsyncSession, ret: m.SalesReturn) -> dict:
         "status": ret.status,
         "reason": ret.reason,
         "restock": ret.restock,
-        "subtotal": float(ret.subtotal),
-        "tax_amount": float(ret.tax_amount),
-        "total_amount": float(ret.total_amount),
+        "subtotal": money_json(ret.subtotal),
+        "tax_amount": money_json(ret.tax_amount),
+        "total_amount": money_json(ret.total_amount),
         "settlement_method": getattr(ret, "settlement_method", None),
         "refund_payment_method": getattr(ret, "refund_payment_method", None),
-        "refunded_amount": float(getattr(ret, "refunded_amount", 0) or 0),
+        "refunded_amount": money_json(getattr(ret, "refunded_amount", None)),
         "notes": ret.notes,
         "posted_at": ret.posted_at,
         "created_at": ret.created_at,
@@ -765,10 +767,10 @@ async def serialize_return(db: AsyncSession, ret: m.SalesReturn) -> dict:
                 "id": i.id,
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
-                "quantity": float(i.quantity),
-                "unit_price": float(i.unit_price),
-                "tax_rate": float(i.tax_rate),
-                "line_total": float(i.line_total),
+                "quantity": money_json(i.quantity),
+                "unit_price": money_json(i.unit_price),
+                "tax_rate": money_json(i.tax_rate),
+                "line_total": money_json(i.line_total),
                 "condition": i.condition,
             }
             for i in items

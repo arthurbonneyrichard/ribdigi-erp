@@ -13,7 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
-from app.honesty import require_honest_narrative
+from app.honesty import money_json, require_honest_narrative
 from app import purchasing as purchasing_svc
 from app.doc_numbers import next_purchase_request_number
 
@@ -265,7 +265,7 @@ async def serialize_request(db: AsyncSession, row: m.PurchaseRequest) -> dict:
                 "id": i.id,
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
-                "quantity": float(i.quantity),
+                "quantity": money_json(i.quantity),
                 "notes": i.notes,
             }
             for i in items

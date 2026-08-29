@@ -41,6 +41,27 @@ def require_honest_narrative(
     return text
 
 
+def optional_honest_narrative(
+    value: str | None,
+    *,
+    label: str,
+    min_length: int = 1,
+    max_length: int = 500,
+) -> str | None:
+    """Like ``require_honest_narrative``, but omit/`None`/blank → ``None``.
+
+    Non-blank garbage/URL/punctuation still → **400** (defense-in-depth vs
+    OpenAPI optional narrative Values that 422 at the schema layer).
+    """
+    if value is None:
+        return None
+    if not str(value).strip():
+        return None
+    return require_honest_narrative(
+        value, label=label, min_length=min_length, max_length=max_length
+    )
+
+
 def money_json(value: Any, *, default: float = 0.0) -> float:
     """Convert Decimal / numeric / None to a finite JSON number for responses.
 

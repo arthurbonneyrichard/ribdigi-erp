@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json
 
 _CURRENCY_RE = re.compile(r"^[A-Z]{3}$")
 
@@ -70,7 +71,7 @@ def serialize_rate(row: m.ExchangeRate) -> dict:
     return {
         "id": row.id,
         "currency_code": row.currency_code,
-        "rate_to_base": float(row.rate_to_base),
+        "rate_to_base": money_json(row.rate_to_base),
         "source": getattr(row, "source", None) or "manual",
         "provider_fetched_at": getattr(row, "provider_fetched_at", None),
         "updated_at": row.updated_at,

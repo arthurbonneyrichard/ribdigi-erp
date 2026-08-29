@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app.accounting import ensure_default_accounts, get_account_by_code, post_journal_entry
 from app.doc_numbers import next_cash_transfer_number
+from app.honesty import money_json, optional_honest_narrative
 
 TRANSFER_KINDS = frozenset({"transfer", "deposit", "withdrawal"})
 ACCOUNT_TYPES = frozenset({"asset", "liability", "equity", "income", "expense"})
@@ -30,8 +31,8 @@ def serialize_account(account: m.Account) -> dict:
         "code": account.code,
         "name": account.name,
         "account_type": account.account_type,
-        "balance": float(account.balance or 0),
-        "opening_balance": float(getattr(account, "opening_balance", 0) or 0),
+        "balance": money_json(account.balance),
+        "opening_balance": money_json(getattr(account, "opening_balance", 0)),
         "is_system": account.code in system_codes,
         "is_active": bool(getattr(account, "is_active", True)),
         "is_cash_account": bool(account.is_cash_account),
@@ -53,7 +54,7 @@ def serialize_transfer(row: m.CashTransfer, *, accounts: dict[str, m.Account] | 
         "to_account_id": row.to_account_id,
         "from_account": serialize_account(from_acc) if from_acc else None,
         "to_account": serialize_account(to_acc) if to_acc else None,
-        "amount": float(row.amount),
+        "amount": money_json(row.amount),
         "reference": row.reference,
         "notes": row.notes,
         "journal_entry_id": row.journal_entry_id,
@@ -276,8 +277,9 @@ async def create_transfer(
         debit_id, credit_id = equity.id, src.id
         description = f"Withdrawal from {src.code}"
 
+    notes = optional_honest_narrative(notes, label="transfer notes")
     if notes:
-        description = f"{description}: {notes.strip()[:120]}"
+        description = f"{description}: {notes[:120]}"
 
     ref = (reference or "").strip() or None
     if ref is None:
@@ -290,7 +292,7 @@ async def create_transfer(
         to_account_id=to_account_id,
         amount=amt,
         reference=ref,
-        notes=(notes or "").strip() or None,
+        notes=notes,
         created_by=user_id,
         created_at=datetime.utcnow(),
     )

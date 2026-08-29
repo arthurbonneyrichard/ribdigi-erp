@@ -1238,6 +1238,7 @@ export default function Page() {
             placeholder="Net days"
             style={{ width: 90 }}
             title="Payment terms (days)"
+            aria-label="Customer payment terms days"
           />
           <button type="button" onClick={createCustomer} aria-label="Add customer">
             Add customer

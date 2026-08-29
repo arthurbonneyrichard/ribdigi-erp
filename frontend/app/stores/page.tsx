@@ -1393,6 +1393,7 @@ export default function Page() {
                 value={storeLimitDraft}
                 onChange={(e) => setStoreLimitDraft(e.target.value)}
                 style={{ width: 120 }}
+                aria-label="Company store allocation"
               />
             </label>
             <button type="button" onClick={saveStoreLimit}>
