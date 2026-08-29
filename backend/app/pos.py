@@ -134,7 +134,7 @@ async def open_session(
 
         store = await stores_svc.require_active_store(db, tenant_id, store_id)
 
-    cash = round(float(opening_cash or 0), 2)
+    cash = money_json(round(float(opening_cash or 0), 2))
     if cash < 0:
         raise HTTPException(status_code=400, detail="opening_cash must be >= 0")
 
@@ -165,7 +165,7 @@ def resolve_sale_payments(
     payments: list[dict] | None,
 ) -> list[dict]:
     """Normalize single or split tenders; amounts must sum to sale total."""
-    sale_total = round(float(total or 0), 2)
+    sale_total = money_json(round(float(total or 0), 2))
     if sale_total < 0:
         raise HTTPException(status_code=400, detail="Sale total cannot be negative")
 
@@ -175,7 +175,7 @@ def resolve_sale_payments(
         normalized: list[dict] = []
         for raw in payments:
             method = normalize_payment_method(raw.get("payment_method"))
-            amount = round(float(raw.get("amount") or 0), 2)
+            amount = money_json(round(float(raw.get("amount") or 0), 2))
             if amount <= 0:
                 raise HTTPException(status_code=400, detail="Each payment amount must be > 0")
             normalized.append(
@@ -188,7 +188,7 @@ def resolve_sale_payments(
                     "liquid_account_id": raw.get("liquid_account_id") or None,
                 }
             )
-        paid = round(sum(p["amount"] for p in normalized), 2)
+        paid = money_json(round(sum(p["amount"] for p in normalized), 2))
         if abs(paid - sale_total) > 0.01:
             raise HTTPException(
                 status_code=400,
@@ -223,9 +223,11 @@ def primary_payment_method(payments: list[dict]) -> str:
 
 
 def credit_portion(payments: list[dict]) -> float:
-    return round(
-        sum(p["amount"] for p in payments if p["payment_method"] == "credit"),
-        2,
+    return money_json(
+        round(
+            sum(p["amount"] for p in payments if p["payment_method"] == "credit"),
+            2,
+        )
     )
 
 
@@ -240,21 +242,21 @@ async def apply_sale_to_session(
     payment_method: str,
     payments: list[dict] | None = None,
 ) -> None:
-    amount = round(float(total or 0), 2)
+    amount = money_json(round(float(total or 0), 2))
     tenders = payments or [
         {"payment_method": normalize_payment_method(payment_method), "amount": amount}
     ]
-    session.total_sales = round(float(session.total_sales or 0) + amount, 2)
+    session.total_sales = money_json(round(float(session.total_sales or 0) + amount, 2))
     session.sale_count = int(session.sale_count or 0) + 1
     for tender in tenders:
         method = normalize_payment_method(tender.get("payment_method"))
-        part = round(float(tender.get("amount") or 0), 2)
+        part = money_json(round(float(tender.get("amount") or 0), 2))
         if method == "cash":
-            session.cash_sales = round(float(session.cash_sales or 0) + part, 2)
+            session.cash_sales = money_json(round(float(session.cash_sales or 0) + part, 2))
         elif method == "card":
-            session.card_sales = round(float(session.card_sales or 0) + part, 2)
+            session.card_sales = money_json(round(float(session.card_sales or 0) + part, 2))
         else:
-            session.other_sales = round(float(session.other_sales or 0) + part, 2)
+            session.other_sales = money_json(round(float(session.other_sales or 0) + part, 2))
     session.expected_cash = compute_expected_cash(session.opening_cash, session.cash_sales)
 
 
@@ -309,7 +311,7 @@ async def close_session(
         raise HTTPException(status_code=409, detail="POS session is already closed")
 
     expected = compute_expected_cash(session.opening_cash, session.cash_sales)
-    actual = round(float(actual_cash), 2)
+    actual = money_json(round(float(actual_cash), 2))
     variance = compute_variance(actual, expected)
 
     session.expected_cash = expected

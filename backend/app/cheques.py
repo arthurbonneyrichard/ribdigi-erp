@@ -276,7 +276,7 @@ async def _reverse_customer_payment(db: AsyncSession, tenant_id: str, payment: m
 
     amount = float(payment.amount)
     discount = money_json(getattr(payment, "early_payment_discount", 0) or 0)
-    settlement = round(amount + discount, 2)
+    settlement = money_json(round(amount + discount, 2))
     # Prefer invoice rate for base restore when linked.
     if payment.sales_invoice_id:
         inv = await get_invoice(db, tenant_id, payment.sales_invoice_id)
@@ -328,7 +328,7 @@ async def _reverse_supplier_payment(db: AsyncSession, tenant_id: str, payment: m
 
     amount = float(payment.amount)
     discount = money_json(getattr(payment, "early_payment_discount", 0) or 0)
-    settlement = round(amount + discount, 2)
+    settlement = money_json(round(amount + discount, 2))
     if payment.purchase_invoice_id:
         inv = await get_purchase_invoice(db, tenant_id, payment.purchase_invoice_id)
         settlement_base = to_base(settlement, doc_rate(inv))
@@ -399,7 +399,7 @@ async def bounce_cheque(
                 discount = money_json(getattr(payment, "early_payment_discount", 0) or 0)
                 pay_amount = float(payment.amount)
                 await _reverse_customer_payment(db, tenant_id, payment)
-        ar_restore = round(pay_amount + discount, 2)
+        ar_restore = money_json(round(pay_amount + discount, 2))
         if cheque.status == PENDING:
             lines = [
                 {"account_code": "1100", "debit": ar_restore, "credit": 0, "description": "AR restore"},
@@ -453,7 +453,7 @@ async def bounce_cheque(
                 discount = money_json(getattr(payment, "early_payment_discount", 0) or 0)
                 pay_amount = float(payment.amount)
                 await _reverse_supplier_payment(db, tenant_id, payment)
-        ap_restore = round(pay_amount + discount, 2)
+        ap_restore = money_json(round(pay_amount + discount, 2))
         if cheque.status == PENDING:
             # Reverse Dr AP / Cr 2015 (+ Cr 4200 if discount) → Dr 2015 (+ Dr 4200) / Cr AP
             lines = [

@@ -269,7 +269,7 @@ async def ensure_default_categories(db: AsyncSession, tenant_id: str) -> None:
 def scale_monthly_budget(budget_monthly: float, period_days: int) -> float:
     """Scale a monthly category budget to an arbitrary reporting window (AI + reports)."""
     days = max(1, int(period_days))
-    return float(budget_monthly or 0) * (days / 30.0)
+    return money_json(float(budget_monthly or 0) * (days / 30.0))
 
 
 def serialize_category(cat: m.ExpenseCategory, account: m.Account | None = None) -> dict:

@@ -531,7 +531,7 @@ async def complete_statement(db: AsyncSession, *, tenant_id: str, statement_id: 
         )
 
     net = sum(money_json(ln.amount) for ln in lines)
-    expected_closing = round(money_json(stmt.opening_balance or 0) + net, 2)
+    expected_closing = money_json(round(money_json(stmt.opening_balance or 0) + net, 2))
     if abs(expected_closing - money_json(stmt.closing_balance or 0)) > 0.01:
         raise HTTPException(
             status_code=409,

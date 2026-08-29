@@ -7372,7 +7372,7 @@ async def pos_sale(
         "session_id": session.id,
         "customer_name": customer_name,
         "discount_amount": cart_discount,
-        "line_discounts": round(line_discounts, 2),
+        "line_discounts": money_json(round(line_discounts, 2)),
     }
     tx = m.Transaction(
         tenant_id=claims["tenant_id"],
@@ -7380,9 +7380,9 @@ async def pos_sale(
         reference=ref,
         party_id=payload.party_id,
         session_id=session.id,
-        subtotal=round(subtotal, 2),
-        tax=round(tax_total, 2),
-        total=total,
+        subtotal=money_json(round(subtotal, 2)),
+        tax=money_json(round(tax_total, 2)),
+        total=money_json(total),
         # Schema Literal["completed"] already rejects blank/unknown with 422.
         status=payload.status,
         payload=body["payload"],

@@ -1750,10 +1750,12 @@ async def serialize_purchase_invoice(db: AsyncSession, inv: m.PurchaseInvoice) -
         "discount_amount": money_json(inv.discount_amount),
         "currency": getattr(inv, "currency", None) or "",
         "exchange_rate": fx,
-        "balance_due_base": round(max(money_json(inv.total_amount) - paid, 0) * fx, 2),
+        "balance_due_base": money_json(
+            round(max(money_json(inv.total_amount) - paid, 0) * fx, 2)
+        ),
         "total_amount": money_json(inv.total_amount),
         "paid_amount": paid,
-        "balance_due": max(money_json(inv.total_amount) - paid, 0),
+        "balance_due": money_json(max(money_json(inv.total_amount) - paid, 0)),
         "ap_posted": bool(inv.ap_posted),
         "attachment_url": inv.attachment_url,
         "has_attachment": bool(inv.attachment_url),
@@ -1817,13 +1819,15 @@ def _purchase_invoice_tax_breakdown(
             key,
             {"tax_rate": rate, "taxable": 0.0, "tax": 0.0},
         )
-        bucket["taxable"] = round(bucket["taxable"] + money_json(_pi_line_subtotal(i)), 2)
-        bucket["tax"] = round(bucket["tax"] + money_json(line_tax), 2)
+        bucket["taxable"] = money_json(
+            round(bucket["taxable"] + money_json(_pi_line_subtotal(i)), 2)
+        )
+        bucket["tax"] = money_json(round(bucket["tax"] + money_json(line_tax), 2))
         comps = getattr(i, "tax_components", None) or []
         for c in comps:
             cname = str(c.get("name") or c.get("code") or "component")
             cb = component_totals.setdefault(cname, {"name": cname, "tax": 0.0})
-            cb["tax"] = round(cb["tax"] + money_json(c.get("amount") or 0), 2)
+            cb["tax"] = money_json(round(cb["tax"] + money_json(c.get("amount") or 0), 2))
         line_rows.append(
             {
                 "item_id": i.id,

@@ -141,7 +141,7 @@ def parse_csv_feed(content: str) -> dict:
         lines.append(
             {
                 "txn_date": _parse_date(date_raw),
-                "amount": round(money_json(amount), 2),
+                "amount": money_json(round(money_json(amount), 2)),
                 "description": desc or None,
                 "external_ref": ref or None,
             }
@@ -191,7 +191,7 @@ def parse_ofx_feed(content: str) -> dict:
         lines.append(
             {
                 "txn_date": _parse_date(dt),
-                "amount": round(money_json(amount), 2),
+                "amount": money_json(round(money_json(amount), 2)),
                 "description": desc.strip() or None,
                 "external_ref": ref.strip() or None,
             }
@@ -214,7 +214,7 @@ def parse_ofx_feed(content: str) -> dict:
             lines.append(
                 {
                     "txn_date": _parse_date(dt),
-                    "amount": round(money_json(amount), 2),
+                    "amount": money_json(round(money_json(amount), 2)),
                     "description": desc.strip() or None,
                     "external_ref": ref.strip() or None,
                 }
@@ -225,8 +225,8 @@ def parse_ofx_feed(content: str) -> dict:
 
     # Infer opening from closing − net when LEDGERBAL present
     if closing is not None:
-        net = round(sum(money_json(ln["amount"]) for ln in lines), 2)
-        opening = round(money_json(closing) - net, 2)
+        net = money_json(round(sum(money_json(ln["amount"]) for ln in lines), 2))
+        opening = money_json(round(money_json(closing) - net, 2))
 
     return {
         "format": "ofx",

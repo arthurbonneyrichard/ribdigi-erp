@@ -148,7 +148,7 @@ def normalize_components(raw: list | None) -> list[dict[str, Any]] | None:
 
 def effective_rate_from_components(components: list[dict] | None, fallback: float) -> float:
     if not components:
-        return float(fallback or 0)
+        return money_json(fallback or 0)
     # Approximate header rate: sum of net-basis rates (compound legs not additive).
     total = 0.0
     for c in components:

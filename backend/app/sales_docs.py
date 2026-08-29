@@ -354,7 +354,7 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
         "shipped_at": getattr(order, "shipped_at", None),
         "delivered_at": getattr(order, "delivered_at", None),
         "created_at": order.created_at,
-        "reserved_qty": round(sum(money_json(r.quantity) for r in active), 3),
+        "reserved_qty": money_json(round(sum(money_json(r.quantity) for r in active), 3)),
         "reservation_status": (
             "active"
             if active

@@ -252,15 +252,17 @@ def _invoice_tax_breakdown(items: list[m.SalesInvoiceItem], invoice: m.SalesInvo
                 "tax": 0.0,
             },
         )
-        bucket["taxable"] = round(
-            bucket["taxable"] + money_json(getattr(i, "line_subtotal", None) or 0), 2
+        bucket["taxable"] = money_json(
+            round(
+                bucket["taxable"] + money_json(getattr(i, "line_subtotal", None) or 0), 2
+            )
         )
-        bucket["tax"] = round(bucket["tax"] + money_json(line_tax), 2)
+        bucket["tax"] = money_json(round(bucket["tax"] + money_json(line_tax), 2))
         comps = getattr(i, "tax_components", None) or []
         for c in comps:
             cname = str(c.get("name") or c.get("code") or "component")
             cb = component_totals.setdefault(cname, {"name": cname, "tax": 0.0})
-            cb["tax"] = round(cb["tax"] + money_json(c.get("amount") or 0), 2)
+            cb["tax"] = money_json(round(cb["tax"] + money_json(c.get("amount") or 0), 2))
         line_rows.append(
             {
                 "item_id": i.id,

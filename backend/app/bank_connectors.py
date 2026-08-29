@@ -484,9 +484,13 @@ async def sync_connection(
             result["message"] = "No new transactions"
             return result
 
-        net = round(sum(money_json(ln["amount"]) for ln in fresh), 2)
+        net = money_json(round(sum(money_json(ln["amount"]) for ln in fresh), 2))
         open_bal = money_json(opening) if opening is not None else 0.0
-        close_bal = money_json(closing) if closing is not None else round(open_bal + net, 2)
+        close_bal = (
+            money_json(closing)
+            if closing is not None
+            else money_json(round(open_bal + net, 2))
+        )
         stmt_date = max(ln["txn_date"] for ln in fresh)
 
         stmt = await bank_recon_svc.create_statement(
