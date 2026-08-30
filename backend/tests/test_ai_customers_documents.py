@@ -92,7 +92,7 @@ async def test_customer_churn_best_and_assist(db_session, seeded):
 @pytest.mark.asyncio
 async def test_customer_assist_api_tenant_scoped(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     store = await _bind_mgr_store(db_session, seed, code="AI-CA")
     now = datetime.utcnow()
     db_session.add(
@@ -130,7 +130,7 @@ async def test_customer_assist_api_tenant_scoped(client, db_session):
 @pytest.mark.asyncio
 async def test_document_analyze_receipt_text_pdf(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
 
     from io import BytesIO
     from pypdf import PdfWriter

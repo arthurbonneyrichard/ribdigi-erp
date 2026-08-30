@@ -22,7 +22,7 @@ async def _mgr(ac):
 @pytest.mark.asyncio
 async def test_credit_aging_exportable_and_http(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
     cid = seed["c1"].id
 
@@ -103,7 +103,7 @@ async def test_credit_aging_exportable_and_http(client, db_session):
 @pytest.mark.asyncio
 async def test_tax_reports_surfaced_via_reports_export(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
 
     tax = await ac.get("/api/v1/reports/tax", headers=headers)
     assert tax.status_code == 200, tax.text

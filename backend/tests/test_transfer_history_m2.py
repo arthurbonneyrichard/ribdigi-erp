@@ -91,7 +91,7 @@ async def _seed_inter_store_transfer(ac, db_session, seed, *, qty: float = 5.0):
     )
     await db_session.commit()
 
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     created = await ac.post(
         "/api/v1/stores/transfers",
         headers=headers,

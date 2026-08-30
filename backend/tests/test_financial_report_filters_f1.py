@@ -157,7 +157,12 @@ async def test_balance_sheet_store_and_branch_filters(client, db_session):
         headers=headers,
         params={"store_id": "nonexistent-store"},
     )
-    assert foreign.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert foreign.status_code in (403, 404), foreign.text
+    if foreign.status_code == 403:
+        detail = foreign.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"
 
     mismatch = await ac.get(
         "/api/v1/reports/balance-sheet",

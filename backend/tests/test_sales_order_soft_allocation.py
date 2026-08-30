@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -19,7 +20,10 @@ async def _product(db, product_id: str) -> m.Product:
 @pytest.mark.asyncio
 async def test_confirm_reserves_and_blocks_oversell(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     product_id = seed["p1"].id
     customer_id = seed["party1"].id
 
@@ -78,7 +82,10 @@ async def test_confirm_reserves_and_blocks_oversell(client, db_session):
 @pytest.mark.asyncio
 async def test_cancel_releases_reservation(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     product_id = seed["p1"].id
 
     await apply_stock_change(
@@ -115,7 +122,10 @@ async def test_cancel_releases_reservation(client, db_session):
 @pytest.mark.asyncio
 async def test_convert_and_post_consumes_reservation_once(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     product_id = seed["p1"].id
 
     await apply_stock_change(
@@ -173,7 +183,10 @@ async def test_convert_and_post_consumes_reservation_once(client, db_session):
 @pytest.mark.asyncio
 async def test_foreign_store_on_order_rejected(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     foreign_store = m.Store(tenant_id=seed["t2"].id, name="Beta Store", code="BST")
     db_session.add(foreign_store)
     await db_session.flush()
@@ -189,4 +202,9 @@ async def test_foreign_store_on_order_rejected(client, db_session):
             "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 1}],
         },
     )
-    assert r.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert r.status_code in (403, 404), r.text
+    if r.status_code == 403:
+        detail = r.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"

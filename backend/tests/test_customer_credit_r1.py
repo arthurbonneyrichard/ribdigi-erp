@@ -12,8 +12,15 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _super(ac, seed):
@@ -31,7 +38,7 @@ async def test_customer_credit_limit_block_override_balance_payment_statement(
     from app import models as m
 
     ac, seed = client
-    mgr_h = await _mgr(ac)
+    mgr_h = await _mgr(ac, seed)
     super_h = await _super(ac, seed)
     seed["p1"].stock_qty = 100
     store = m.Store(

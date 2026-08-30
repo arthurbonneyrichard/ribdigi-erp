@@ -28,7 +28,7 @@ async def _super(ac, seed):
 @pytest.mark.asyncio
 async def test_expense_and_manual_journal_store_filters_pnl_cashflow(client, db_session):
     ac, seed = client
-    mgr = await _mgr(ac)
+    mgr = await _mgr(ac, seed)
     super_h = await _super(ac, seed)
     tenant_id = seed["t1"].id
     await accounting_svc.ensure_default_accounts(db_session, tenant_id)

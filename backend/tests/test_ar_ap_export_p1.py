@@ -16,8 +16,15 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _super(ac, seed):
@@ -31,7 +38,7 @@ async def _super(ac, seed):
 async def test_ar_ap_aging_payments_overdue_and_export(client, db_session):
     """BR-10.4–10.6: AR/AP auto + aging + partial pay + due notify + PDF/Excel export."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     super_h = await _super(ac, seed)
     tenant_id = seed["t1"].id
     now = datetime.utcnow()

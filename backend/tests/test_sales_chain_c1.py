@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -12,8 +13,15 @@ from app.tax import TaxSpec
 from tests.conftest import auth_headers
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 def test_sale_line_tax_on_net_after_discount():
@@ -36,7 +44,7 @@ def test_sale_line_tax_on_net_after_discount():
 @pytest.mark.asyncio
 async def test_customer_quote_order_invoice_payment_chain(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     store = m.Store(
         tenant_id=seed["t1"].id,
         company_id=seed["c1"].id,

@@ -196,7 +196,7 @@ async def _seed_four_actuals(db_session, seed):
 @pytest.mark.asyncio
 async def test_business_insights_four_actuals(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     await _seed_four_actuals(db_session, seed)
 
     r = await ac.get("/api/v1/ai/insights", headers=headers)
@@ -232,7 +232,7 @@ async def test_business_insights_four_actuals(client, db_session):
 @pytest.mark.asyncio
 async def test_business_insights_tenant_isolation(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     store = m.Store(
         tenant_id=seed["t1"].id,
         company_id=seed["c1"].id,

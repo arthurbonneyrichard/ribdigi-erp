@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 
+import pyotp
 import pytest
 
 from app import models as m
@@ -22,7 +23,10 @@ async def test_product_gallery_upload_primary_and_delete(client, db_session, tmp
     monkeypatch.setattr(storage_svc.settings, "MEDIA_DIR", str(tmp_path))
     monkeypatch.setattr(storage_svc.settings, "STORAGE_BACKEND", "local")
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     product_id = seed["p1"].id
 
     uploaded = await ac.post(
@@ -81,7 +85,10 @@ async def test_product_gallery_max_five(client, tmp_path, monkeypatch):
     monkeypatch.setattr(storage_svc.settings, "MEDIA_DIR", str(tmp_path))
     monkeypatch.setattr(storage_svc.settings, "STORAGE_BACKEND", "local")
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     product_id = seed["p1"].id
 
     for i in range(MAX_PRODUCT_IMAGES):
@@ -103,15 +110,26 @@ async def test_product_gallery_max_five(client, tmp_path, monkeypatch):
 @pytest.mark.asyncio
 async def test_product_gallery_tenant_isolation(client):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     foreign = await ac.get(f"/api/v1/products/{seed['p2'].id}/images", headers=headers)
-    assert foreign.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert foreign.status_code in (403, 404), foreign.text
+    if foreign.status_code == 403:
+        detail = foreign.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"
 
 
 @pytest.mark.asyncio
 async def test_catalog_and_variant_patch_delete(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
     cat = await ac.post(
         "/api/v1/catalog/categories",

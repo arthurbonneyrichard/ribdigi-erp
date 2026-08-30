@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -61,6 +62,7 @@ async def test_inter_store_transfer_stock_movement_chain(client, db_session):
     from_store = await create_store(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         code="S16M1S",
         name="S16 M1 Source",
         manager_id=mgr_from.id,
@@ -68,6 +70,7 @@ async def test_inter_store_transfer_stock_movement_chain(client, db_session):
     to_store = await create_store(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         code="S16M1D",
         name="S16 M1 Dest",
         manager_id=mgr_to.id,
@@ -109,7 +112,10 @@ async def test_inter_store_transfer_stock_movement_chain(client, db_session):
     assert await _wh_qty(db_session, tenant_id, from_wh_id, product_id) == pytest.approx(opening)
     assert await _wh_qty(db_session, tenant_id, to_wh_id, product_id) == pytest.approx(0)
 
-    mgr_from_h = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    _totp = pyotp.TOTP(seed['super_totp_secret']).now()
+    mgr_from_h = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=_totp
+    )
     mgr_to_h = await auth_headers(
         ac, email="mgr-s16-m1-dest@alpha.example.com", tenant_slug="alpha"
     )
@@ -270,6 +276,7 @@ async def test_inter_store_ship_insufficient_warehouse_stock(client, db_session)
     from_store = await create_store(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         code="S16M1A",
         name="S16 M1 Insuf Src",
         manager_id=mgr_from.id,
@@ -277,6 +284,7 @@ async def test_inter_store_ship_insufficient_warehouse_stock(client, db_session)
     to_store = await create_store(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         code="S16M1B",
         name="S16 M1 Insuf Dst",
         manager_id=mgr_to.id,
@@ -303,7 +311,10 @@ async def test_inter_store_ship_insufficient_warehouse_stock(client, db_session)
     )
     await db_session.commit()
 
-    mgr_from_h = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    _totp = pyotp.TOTP(seed['super_totp_secret']).now()
+    mgr_from_h = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=_totp
+    )
     created = await ac.post(
         "/api/v1/stores/transfers",
         headers=mgr_from_h,

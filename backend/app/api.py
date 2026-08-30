@@ -9197,6 +9197,11 @@ async def list_sales_returns(
     """Stage 98 R1 — optional status filter (draft/posted); store_manager via invoice store."""
     from app import dashboard_scope as dashboard_scope_svc
 
+    # Validate status before empty-scope short-circuit so bogus filters still 400.
+    if status:
+        key = status.strip().lower()
+        if key not in {"draft", "posted"}:
+            raise HTTPException(status_code=400, detail="status must be draft or posted")
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     if managed is not None and not managed:
         return env([])
@@ -9208,8 +9213,6 @@ async def list_sales_returns(
     stmt = dashboard_scope_svc.apply_sales_return_store_scope(stmt, managed)
     if status:
         key = status.strip().lower()
-        if key not in {"draft", "posted"}:
-            raise HTTPException(status_code=400, detail="status must be draft or posted")
         stmt = stmt.where(m.SalesReturn.status == key)
     stmt = apply_created_by_scope(stmt, m.SalesReturn, claims)
     rows = (await db.execute(stmt)).scalars().unique().all()
@@ -11846,6 +11849,15 @@ async def expenses(
     """Stage 98 Q1 — optional status filter; store_manager scoped via manager_id."""
     from app import dashboard_scope as dashboard_scope_svc
 
+    # Validate status before empty-scope short-circuit so bogus filters still 400.
+    if status:
+        key = status.strip().lower()
+        allowed = {"pending", "approved", "rejected"}
+        if key not in allowed:
+            raise HTTPException(
+                status_code=400,
+                detail="status must be pending, approved, or rejected",
+            )
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     stmt = (
@@ -11863,12 +11875,6 @@ async def expenses(
         stmt = stmt.where(m.Expense.department_id == department_id)
     if status:
         key = status.strip().lower()
-        allowed = {"pending", "approved", "rejected"}
-        if key not in allowed:
-            raise HTTPException(
-                status_code=400,
-                detail="status must be pending, approved, or rejected",
-            )
         stmt = stmt.where(m.Expense.status == key)
     stmt = apply_created_by_scope(stmt, m.Expense, claims)
     rows = (await db.execute(stmt)).scalars().all()

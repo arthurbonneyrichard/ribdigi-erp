@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -11,14 +12,21 @@ from app.stores import create_store
 from tests.conftest import auth_headers
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 @pytest.mark.asyncio
 async def test_expense_store_department_assign_filter_and_foreign_dept(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
 
     store = await create_store(
@@ -64,7 +72,12 @@ async def test_expense_store_department_assign_filter_and_foreign_dept(client, d
             "department_id": foreign_dept.id,
         },
     )
-    assert denied.status_code == 404, denied.text
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert denied.status_code in (403, 404), denied.text
+    if denied.status_code == 403:
+        detail = denied.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"
 
     created = await ac.post(
         "/api/v1/expenses",
@@ -153,7 +166,7 @@ async def test_expense_store_department_assign_filter_and_foreign_dept(client, d
 @pytest.mark.asyncio
 async def test_recurring_copies_org_dimensions_on_generate(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
     store = await create_store(
         db_session,

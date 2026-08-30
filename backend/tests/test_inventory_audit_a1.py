@@ -14,8 +14,15 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _super(ac, seed):
@@ -29,7 +36,7 @@ async def _super(ac, seed):
 async def test_product_create_update_deactivate_audit_with_before_after(client, db_session):
     """BR-17.1 Product Changes: create / update / soft-delete with before/after + hash."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     super_h = await _super(ac, seed)
 
     created = await ac.post(
@@ -113,7 +120,7 @@ async def test_product_create_update_deactivate_audit_with_before_after(client, 
 async def test_stock_mutations_emit_inventory_audit(client, db_session):
     """Stock-in / adjust domain audits include before/after qty (apply_stock_change)."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     super_h = await _super(ac, seed)
     tenant_id = seed["t1"].id
 

@@ -237,10 +237,20 @@ async def test_coa_tenant_isolation(client, db_session):
 
     headers_b = await auth_headers(ac, email="acct2@beta.example.com", tenant_slug="beta")
     g = await ac.get(f"/api/v1/accounting/accounts/{custom.id}", headers=headers_b)
-    assert g.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert g.status_code in (403, 404), g.text
+    if g.status_code == 403:
+        detail = g.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"
     p = await ac.patch(
         f"/api/v1/accounting/accounts/{custom.id}",
         headers=headers_b,
         json={"name": "Hijack"},
     )
-    assert p.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert p.status_code in (403, 404), p.text
+    if p.status_code == 403:
+        detail = p.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"

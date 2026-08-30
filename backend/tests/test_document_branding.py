@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
+import pyotp
 import pytest
 
 from app import storage as storage_svc
@@ -191,7 +192,10 @@ async def test_invoice_print_html_includes_uploaded_logo(client, db_session, tmp
     monkeypatch.setattr(storage_svc.settings, "MEDIA_DIR", str(tmp_path))
     monkeypatch.setattr(storage_svc.settings, "STORAGE_BACKEND", "local")
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
     t = seed["t1"]
     t.legal_name = "Alpha Retail Limited"

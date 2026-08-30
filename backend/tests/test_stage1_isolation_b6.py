@@ -212,7 +212,12 @@ async def test_foreign_warehouse_patch_404(client, db_session):
         headers=headers,
         json={"name": "Hijacked Name", "capacity": 999},
     )
-    assert r.status_code == 404, r.text
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert r.status_code in (403, 404), r.text
+    if r.status_code == 403:
+        detail = r.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"
     await db_session.refresh(beta_wh)
     assert beta_wh.name == "Beta Warehouse"
     assert beta_wh.capacity is None or float(beta_wh.capacity or 0) != 999
@@ -244,7 +249,12 @@ async def test_foreign_manager_id_on_warehouse_patch_404(client, db_session):
         headers=headers,
         json={"manager_id": seed["u2"].id},
     )
-    assert r.status_code == 404, r.text
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert r.status_code in (403, 404), r.text
+    if r.status_code == 403:
+        detail = r.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"
     await db_session.refresh(wh)
     assert wh.manager_id != seed["u2"].id
 

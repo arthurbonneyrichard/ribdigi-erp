@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
+import pyotp
 import pytest
 
 from app import models as m
@@ -25,7 +26,10 @@ async def test_notifications_group_filter_mark_unread_and_history_window(client,
     ac, seed = client
     tid = seed["t1"].id
     uid = seed["mgr1"].id
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
     stock = await create_notification(
         db_session,

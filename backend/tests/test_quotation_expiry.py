@@ -24,7 +24,7 @@ def test_quotation_expiry_in_default_preferences():
 @pytest.mark.asyncio
 async def test_scan_quotation_expiry_reminds_and_marks_expired(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     store = m.Store(
         tenant_id=seed["t1"].id,
         company_id=seed["c1"].id,

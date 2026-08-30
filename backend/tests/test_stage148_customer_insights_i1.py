@@ -20,7 +20,7 @@ async def _mgr(ac):
 @pytest.mark.asyncio
 async def test_customer_insights_export_csv(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     store = m.Store(
         tenant_id=seed["t1"].id,
         company_id=seed["c1"].id,

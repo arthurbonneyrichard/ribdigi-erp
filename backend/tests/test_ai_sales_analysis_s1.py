@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import pyotp
 import pytest
 
 from app import models as m
@@ -13,8 +14,15 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _seed_sales_patterns(db_session, seed):
@@ -119,7 +127,7 @@ async def _seed_sales_patterns(db_session, seed):
 async def test_sales_trend_rfm_affinity_peaks_api(client, db_session):
     """BR-21.5: trend forecast, RFM, affinity, peak hour/day via /ai/sales/analysis."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     seeded = await _seed_sales_patterns(db_session, seed)
 
     r = await ac.get(
@@ -181,7 +189,7 @@ async def test_sales_trend_rfm_affinity_peaks_api(client, db_session):
 async def test_sales_analysis_tenant_isolation(client, db_session):
     """BR-21.5: analysis stays on caller's tenant (no Beta leakage)."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     now = datetime.utcnow()
     db_session.add(
         m.SalesInvoice(

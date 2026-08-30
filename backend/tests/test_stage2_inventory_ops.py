@@ -68,7 +68,7 @@ async def test_movements_date_filter(client, db_session):
 async def test_product_warehouse_stock(client, db_session):
     """Store managers only see warehouse-stock rows for managed-store warehouses."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tid = seed["t1"].id
     cid = seed["c1"].id
     mgr = seed["mgr1"]

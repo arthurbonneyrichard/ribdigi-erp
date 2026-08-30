@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -13,8 +14,15 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _wh_qty(db, tenant_id: str, warehouse_id: str, product_id: str) -> float:
@@ -34,7 +42,7 @@ async def _wh_qty(db, tenant_id: str, warehouse_id: str, product_id: str) -> flo
 async def test_stock_count_complete_posts_adjustments_and_variance_report(client, db_session):
     """Create → patch counts → complete → adjustment movement → variance export; immutable."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
 
     product = m.Product(

@@ -172,7 +172,7 @@ async def _seed_cross_domain(db_session, seed):
 @pytest.mark.asyncio
 async def test_cross_domain_analysis_api(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     await _seed_cross_domain(db_session, seed)
 
     r = await ac.get(
@@ -225,7 +225,7 @@ async def test_cross_domain_analysis_api(client, db_session):
 @pytest.mark.asyncio
 async def test_cross_domain_tenant_isolation(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     store = m.Store(
         tenant_id=seed["t1"].id,
         company_id=seed["c1"].id,

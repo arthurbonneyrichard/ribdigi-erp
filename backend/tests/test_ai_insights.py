@@ -159,7 +159,7 @@ async def _bind_mgr_store_wh(db_session, seed, *, code: str = "AI-INS"):
 @pytest.mark.asyncio
 async def test_insights_api_returns_cards(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     store, wh = await _bind_mgr_store_wh(db_session, seed, code="AI-CARD")
     seed["p1"].stock_qty = 0
     seed["p1"].reorder_level = 5

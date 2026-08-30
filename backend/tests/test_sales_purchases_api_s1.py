@@ -14,8 +14,15 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _admin(ac, seed):
@@ -29,7 +36,7 @@ async def _admin(ac, seed):
 async def test_purchases_api_br_18_5_jwt(client, db_session):
     """BR-18.5: suppliers, PR→PO, GRN, purchase invoice, supplier payment via JWT."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     admin = await _admin(ac, seed)
     product_id = seed["p1"].id
 
@@ -134,7 +141,7 @@ async def test_purchases_api_br_18_5_jwt(client, db_session):
 async def test_sales_api_br_18_4_thin_regression(client, db_session):
     """BR-18.4 thin JWT regression: quote→order→invoice→payment + POS sale."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     cashier = await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")
     product_id = seed["p1"].id
     tenant_id = seed["t1"].id

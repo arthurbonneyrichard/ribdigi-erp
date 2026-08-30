@@ -57,7 +57,7 @@ def test_render_quotation_text_html_pdf_branded():
 @pytest.mark.asyncio
 async def test_quotation_print_formats_and_foreign_404(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     store = m.Store(
         tenant_id=seed["t1"].id,
         company_id=seed["c1"].id,

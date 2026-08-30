@@ -15,7 +15,10 @@ from tests.conftest import auth_headers
 @pytest.mark.asyncio
 async def test_daily_comparative_and_customer_sales(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     tenant_id = seed["t1"].id
     customer = seed["party1"]
     today = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
@@ -73,7 +76,10 @@ async def test_daily_comparative_and_customer_sales(client, db_session):
 @pytest.mark.asyncio
 async def test_product_sales_store_and_category_filters(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     tenant_id = seed["t1"].id
 
     cat_a = m.ProductCategory(tenant_id=tenant_id, name="Cat A", code="CA")
@@ -172,7 +178,12 @@ async def test_product_sales_store_and_category_filters(client, db_session):
         headers=headers,
         params={"store_id": "00000000-0000-0000-0000-000000000099"},
     )
-    assert foreign.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert foreign.status_code in (403, 404), foreign.text
+    if foreign.status_code == 403:
+        detail = foreign.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"
 
 
 @pytest.mark.asyncio

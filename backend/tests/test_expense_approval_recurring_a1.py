@@ -57,7 +57,7 @@ async def _managed_store(db_session, seed) -> str:
 async def test_expense_approval_and_recurring_fidelity(client, db_session):
     """BR-9.3 thresholds/chain/comments/notify + BR-9.5 frequency/generate/notify/skip/modify."""
     ac, seed = client
-    mgr_h = await _mgr(ac)
+    mgr_h = await _mgr(ac, seed)
     super_h = await _super(ac, seed)
     tenant_id = seed["t1"].id
     store_id = await _managed_store(db_session, seed)

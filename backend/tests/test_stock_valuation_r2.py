@@ -24,7 +24,9 @@ async def _super(ac, seed):
 @pytest.mark.asyncio
 async def test_stock_valuation_math_and_warehouse_filter(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    # Cost figures are redacted for store_manager; use admin for valuation math.
+    headers = await _super(ac, seed)
+    mgr_headers = await _mgr(ac)
     tenant_id = seed["t1"].id
     cid = seed["c1"].id
     mgr = seed["mgr1"]
@@ -91,21 +93,22 @@ async def test_stock_valuation_math_and_warehouse_filter(client, db_session):
     )
     await db_session.commit()
 
-    # Manager sees only managed store A warehouses (not store B).
-    scoped = await ac.get("/api/v1/reports/inventory/valuation", headers=headers)
+    # store_manager: only managed store A; cost fields redacted.
+    scoped = await ac.get("/api/v1/reports/inventory/valuation", headers=mgr_headers)
     assert scoped.status_code == 200, scoped.text
     body = scoped.json()["data"]
     assert body["costing_method"] == "standard_cost"
     assert "FIFO" in body["costing_method_note"]
     assert "not used" in body["costing_method_note"].lower()
-    # 10*2.5 + 3*4 = 25 + 12 = 37 (wh_b excluded)
-    assert body["total_value"] == pytest.approx(37.0)
     assert body["total_quantity"] == pytest.approx(13.0)
     assert body["line_count"] == 2
     assert len(body["by_warehouse"]) == 1
     assert body["by_warehouse"][0]["warehouse_id"] == wh_a.id
-    assert body["by_warehouse"][0]["total_value"] == pytest.approx(37.0)
+    # Cost redaction for store_manager
+    assert body["total_value"] is None
+    assert body["by_warehouse"][0]["total_value"] is None
 
+    # Admin/super: full cost math for managed warehouse A (10*2.5 + 3*4 = 37)
     filtered = await ac.get(
         "/api/v1/reports/inventory/valuation",
         headers=headers,
@@ -117,7 +120,7 @@ async def test_stock_valuation_math_and_warehouse_filter(client, db_session):
 
     denied = await ac.get(
         "/api/v1/reports/inventory/valuation",
-        headers=headers,
+        headers=mgr_headers,
         params={"warehouse_id": wh_b.id},
     )
     assert denied.status_code == 403
@@ -133,9 +136,10 @@ async def test_stock_valuation_math_and_warehouse_filter(client, db_session):
     assert sbody["warehouse_id"] == wh_a.id
     assert sbody["total_value"] == pytest.approx(37.0)
 
+    # store_manager cannot select an unmanaged store
     cross_store = await ac.get(
         "/api/v1/reports/inventory/valuation",
-        headers=headers,
+        headers=mgr_headers,
         params={"store_id": store_b.id},
     )
     assert cross_store.status_code == 403

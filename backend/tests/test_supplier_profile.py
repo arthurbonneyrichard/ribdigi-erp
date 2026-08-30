@@ -18,8 +18,15 @@ async def _company_admin(ac, seed):
     )
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _ensure_mgr_warehouse(db_session, seed):
@@ -146,7 +153,7 @@ async def test_supplier_profile_contacts_history_and_deactivate(client, db_sessi
 @pytest.mark.asyncio
 async def test_po_send_email_console_and_print(client, db_session, monkeypatch):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     _store, wh = await _ensure_mgr_warehouse(db_session, seed)
     clear_dev_outbox()
     monkeypatch.setattr("app.emailer.settings.EMAIL_ENABLED", True)
@@ -205,7 +212,7 @@ async def test_po_send_email_console_and_print(client, db_session, monkeypatch):
 @pytest.mark.asyncio
 async def test_po_send_without_email_when_no_recipient(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     _store, wh = await _ensure_mgr_warehouse(db_session, seed)
 
     supplier = await ac.post(

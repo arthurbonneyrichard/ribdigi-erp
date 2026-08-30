@@ -96,7 +96,7 @@ async def _seed_customer_intel(db_session, seed):
 async def test_customer_churn_best_promos_api(client, db_session):
     """BR-21.9: churn risk, best customers, promotion suggestions via insights API."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     stale = await _seed_customer_intel(db_session, seed)
 
     r = await ac.get(
@@ -142,7 +142,7 @@ async def test_customer_churn_best_promos_api(client, db_session):
 async def test_security_login_txn_alerts_and_notify(client, db_session):
     """BR-21.10: unusual login (IP/device), txn burst, admin notify via alerts API."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
     user = seed["mgr1"]
     now = datetime.utcnow()

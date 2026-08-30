@@ -80,7 +80,7 @@ async def test_insufficient_sales_history_not_at_risk(db_session, seeded):
 @pytest.mark.asyncio
 async def test_low_stock_prediction_api_tenant_scoped(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     product = seed["p1"]
     product.stock_qty = 24
     product.company_id = seed["c1"].id

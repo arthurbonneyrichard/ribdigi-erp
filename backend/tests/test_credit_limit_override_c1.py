@@ -200,7 +200,10 @@ async def test_pos_credit_override_and_cashier_denied(client, db_session):
     assert denied.json()["detail"]["code"] == "CREDIT_OVERRIDE_FORBIDDEN"
 
     # store_manager has credit:approve but credit_limit_override remains finance/admin only
-    mgr = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    _totp = pyotp.TOTP(seed['super_totp_secret']).now()
+    mgr = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=_totp
+    )
     opened_m = await ac.post(
         "/api/v1/pos/sessions/open",
         headers=mgr,

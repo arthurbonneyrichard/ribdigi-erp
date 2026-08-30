@@ -121,7 +121,7 @@ async def test_dead_stock_identification(db_session, seeded):
 @pytest.mark.asyncio
 async def test_demand_forecast_and_dead_stock_api_tenant_scoped(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     # Bind manager to store + warehouse so WH/store-scoped AI endpoints are non-empty.
     store = m.Store(
         tenant_id=seed["t1"].id,

@@ -135,7 +135,7 @@ async def test_low_stock_traffic_lights_suggested_qty_and_reorder_po(client, db_
 async def test_warehouse_low_stock_suggested_uses_reorder_qty(client, db_session):
     """Warehouse-scoped thresholds (store reorder policy) appear on low-stock with reorder_qty."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
     cid = seed["c1"].id
     mgr = seed["mgr1"]

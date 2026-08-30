@@ -81,7 +81,7 @@ async def test_configure_and_preview_all_doc_keys(client):
 async def test_live_allocate_quote_order_invoice_return_po_grn(client, db_session):
     ac, seed = client
     admin = await _admin(ac)
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
     product_id = seed["p1"].id
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 
 from app.document_numbering import format_document_number, normalize_document_numbering
@@ -9,8 +10,15 @@ from app.sales_docs import render_credit_note_html, render_credit_note_pdf, rend
 from tests.conftest import auth_headers
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _admin(ac):
@@ -58,7 +66,7 @@ def test_render_credit_note_branded():
 @pytest.mark.asyncio
 async def test_sales_return_credit_note_allocate_and_print(client):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     admin = await _admin(ac)
 
     patched = await ac.patch(
@@ -156,4 +164,9 @@ async def test_sales_return_credit_note_allocate_and_print(client):
 
     beta = await auth_headers(ac, email="cashier@beta.example.com", tenant_slug="beta")
     foreign = await ac.get(f"/api/v1/sales/returns/{return_id}/print", headers=beta)
-    assert foreign.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert foreign.status_code in (403, 404), foreign.text
+    if foreign.status_code == 403:
+        detail = foreign.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"

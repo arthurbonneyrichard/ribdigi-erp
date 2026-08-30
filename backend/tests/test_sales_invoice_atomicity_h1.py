@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 from sqlalchemy import func, select
 
@@ -10,8 +11,15 @@ from app import models as m
 from tests.conftest import auth_headers
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _snapshot(db, tenant_id: str, *, invoice_id: str, customer_id: str, product_id: str):
@@ -68,7 +76,7 @@ async def _snapshot(db, tenant_id: str, *, invoice_id: str, customer_id: str, pr
 @pytest.mark.asyncio
 async def test_invoice_post_insufficient_stock_no_orphans(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
     await accounting_svc.ensure_default_accounts(db_session, tenant_id)
 
@@ -143,7 +151,7 @@ async def test_invoice_post_insufficient_stock_no_orphans(client, db_session):
 async def test_invoice_post_aggregated_lines_reject_before_partial(client, db_session):
     """Two lines of 1 each against stock 1 must fail aggregated preflight."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
     await accounting_svc.ensure_default_accounts(db_session, tenant_id)
 
@@ -195,7 +203,7 @@ async def test_invoice_post_aggregated_lines_reject_before_partial(client, db_se
 @pytest.mark.asyncio
 async def test_invoice_post_success_still_commits_stock_ar_journal(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
     await accounting_svc.ensure_default_accounts(db_session, tenant_id)
 

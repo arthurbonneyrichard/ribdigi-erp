@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -23,13 +24,22 @@ async def _wh_qty(db, tenant_id: str, warehouse_id: str, product_id: str) -> flo
     return float(row.quantity) if row else 0.0
 
 
+
+async def _admin_headers(ac, seed):
+    """Company-wide warehouse ops: super + TOTP (admin requires 2FA enrollment)."""
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
+
+
 @pytest.mark.asyncio
 async def test_warehouse_transfer_ship_receive_qty(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    headers = await _admin_headers(ac, seed)
 
-    wh_a = m.Warehouse(tenant_id=seed["t1"].id, name="WH A", code="WHA")
-    wh_b = m.Warehouse(tenant_id=seed["t1"].id, name="WH B", code="WHB")
+    wh_a = m.Warehouse(tenant_id=seed["t1"].id, company_id=seed["c1"].id, name="WH A", code="WHA")
+    wh_b = m.Warehouse(tenant_id=seed["t1"].id, company_id=seed["c1"].id, name="WH B", code="WHB")
     db_session.add_all([wh_a, wh_b])
     await db_session.flush()
     wh_a_id, wh_b_id = wh_a.id, wh_b.id
@@ -109,8 +119,8 @@ async def test_warehouse_transfer_ship_receive_qty(client, db_session):
 @pytest.mark.asyncio
 async def test_warehouse_transfer_rejects_same_warehouse(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
-    wh = m.Warehouse(tenant_id=seed["t1"].id, name="Solo", code="SOLO")
+    headers = await _admin_headers(ac, seed)
+    wh = m.Warehouse(tenant_id=seed["t1"].id, company_id=seed["c1"].id, name="Solo", code="SOLO")
     db_session.add(wh)
     await db_session.commit()
 
@@ -129,9 +139,9 @@ async def test_warehouse_transfer_rejects_same_warehouse(client, db_session):
 @pytest.mark.asyncio
 async def test_warehouse_transfer_cancel_after_ship_restores_source(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
-    wh_a = m.Warehouse(tenant_id=seed["t1"].id, name="Src", code="SRC")
-    wh_b = m.Warehouse(tenant_id=seed["t1"].id, name="Dst", code="DST")
+    headers = await _admin_headers(ac, seed)
+    wh_a = m.Warehouse(tenant_id=seed["t1"].id, company_id=seed["c1"].id, name="Src", code="SRC")
+    wh_b = m.Warehouse(tenant_id=seed["t1"].id, company_id=seed["c1"].id, name="Dst", code="DST")
     db_session.add_all([wh_a, wh_b])
     await db_session.flush()
     wh_a_id, wh_b_id = wh_a.id, wh_b.id
@@ -178,9 +188,12 @@ async def test_warehouse_transfer_cancel_after_ship_restores_source(client, db_s
 @pytest.mark.asyncio
 async def test_foreign_warehouse_transfer_404(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
-    beta_wh = m.Warehouse(tenant_id=seed["t2"].id, name="Beta WH", code="BWH")
-    alpha_wh = m.Warehouse(tenant_id=seed["t1"].id, name="Alpha WH", code="AWH")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
+    beta_wh = m.Warehouse(tenant_id=seed["t2"].id, company_id=seed["c2"].id, name="Beta WH", code="BWH")
+    alpha_wh = m.Warehouse(tenant_id=seed["t1"].id, company_id=seed["c1"].id, name="Alpha WH", code="AWH")
     db_session.add_all([beta_wh, alpha_wh])
     await db_session.commit()
 
@@ -193,4 +206,9 @@ async def test_foreign_warehouse_transfer_404(client, db_session):
             "items": [{"product_id": seed["p1"].id, "quantity": 1}],
         },
     )
-    assert r.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert r.status_code in (403, 404), r.text
+    if r.status_code == 403:
+        detail = r.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"

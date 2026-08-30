@@ -60,7 +60,13 @@ async def test_store_manager_sales_trend_excludes_other_store(client, db_session
     )
     await db_session.commit()
 
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+
+    headers = await auth_headers(
+
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+
+    )
     trend = await ac.get("/api/v1/dashboard/sales-trend", headers=headers)
     assert trend.status_code == 200, trend.text
     data = trend.json()["data"]

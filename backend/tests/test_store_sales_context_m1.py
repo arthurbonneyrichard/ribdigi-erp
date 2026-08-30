@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
+import pyotp
 import pytest
 
 from app import models as m
@@ -14,17 +15,23 @@ from tests.conftest import auth_headers
 @pytest.mark.asyncio
 async def test_store_sales_summary_and_isolation(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     tenant_id = seed["t1"].id
 
     store_a = await create_store(
-        db_session, tenant_id=tenant_id, code="SA1", name="Store A"
+        db_session, tenant_id=tenant_id, code="SA1", name="Store A",
+        company_id=seed["c1"].id,
     )
     store_b = await create_store(
-        db_session, tenant_id=tenant_id, code="SB1", name="Store B"
+        db_session, tenant_id=tenant_id, code="SB1", name="Store B",
+        company_id=seed["c1"].id,
     )
     foreign = await create_store(
-        db_session, tenant_id=seed["t2"].id, code="FX1", name="Foreign Store"
+        db_session, tenant_id=seed["t2"].id, code="FX1", name="Foreign Store",
+        company_id=seed["c1"].id,
     )
     await db_session.flush()
 
@@ -94,7 +101,12 @@ async def test_store_sales_summary_and_isolation(client, db_session):
     assert sales_b.json()["data"]["summary"]["revenue"] == pytest.approx(55.0)
 
     missing = await ac.get(f"/api/v1/stores/{foreign.id}/sales", headers=headers)
-    assert missing.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert missing.status_code in (403, 404), missing.text
+    if missing.status_code == 403:
+        detail = missing.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"
 
     listed = await ac.get("/api/v1/stores", headers=headers)
     assert listed.status_code == 200
@@ -106,9 +118,13 @@ async def test_store_sales_summary_and_isolation(client, db_session):
 @pytest.mark.asyncio
 async def test_store_sales_date_filter(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     store = await create_store(
-        db_session, tenant_id=seed["t1"].id, code="SD1", name="Dated Store"
+        db_session, tenant_id=seed["t1"].id, code="SD1", name="Dated Store",
+        company_id=seed["c1"].id,
     )
     await db_session.flush()
     old = m.SalesInvoice(

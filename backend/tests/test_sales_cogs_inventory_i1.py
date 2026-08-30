@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -11,8 +12,15 @@ from app.inventory import apply_stock_change
 from tests.conftest import auth_headers
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _codes_by_account(db_session, tenant_id: str, lines: list[dict]) -> dict[str, list[dict]]:
@@ -36,7 +44,7 @@ async def _codes_by_account(db_session, tenant_id: str, lines: list[dict]) -> di
 @pytest.mark.asyncio
 async def test_invoice_posts_cogs_and_inventory_gl(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
     product = seed["p1"]
     product.cost_price = 3.5
@@ -126,7 +134,7 @@ async def test_invoice_posts_cogs_and_inventory_gl(client, db_session):
 @pytest.mark.asyncio
 async def test_return_restock_reverses_cogs_inventory(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
     product = seed["p1"]
     product.cost_price = 5
@@ -197,7 +205,7 @@ async def test_return_restock_reverses_cogs_inventory(client, db_session):
 @pytest.mark.asyncio
 async def test_zero_cost_skips_cogs_lines(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
     product = seed["p1"]
     product.cost_price = 0

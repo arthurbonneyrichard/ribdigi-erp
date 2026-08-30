@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -12,8 +13,15 @@ from app.stores import create_store, warehouse_for_store
 from tests.conftest import auth_headers
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _codes_by_account(db_session, tenant_id: str, lines: list[dict]) -> dict[str, list[dict]]:
@@ -36,12 +44,13 @@ async def _codes_by_account(db_session, tenant_id: str, lines: list[dict]) -> di
 @pytest.mark.asyncio
 async def test_return_restock_warehouse_tax_cogs_store_journal(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
     await accounting_svc.ensure_default_accounts(db_session, tenant_id)
 
     store = await create_store(
-        db_session, tenant_id=tenant_id, code="R1WH", name="R1 Return Store"
+        db_session, tenant_id=tenant_id, code="R1WH", name="R1 Return Store",
+        company_id=seed["c1"].id,
     )
     store_id = store.id
     wh = await warehouse_for_store(db_session, tenant_id, store_id)
@@ -183,7 +192,7 @@ async def test_return_restock_warehouse_tax_cogs_store_journal(client, db_sessio
 async def test_return_fx_safe_customer_balance_and_journal(client, db_session):
     """Return AR/balance use invoice exchange_rate → base (Stage 15 R1)."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
     await accounting_svc.ensure_default_accounts(db_session, tenant_id)
 

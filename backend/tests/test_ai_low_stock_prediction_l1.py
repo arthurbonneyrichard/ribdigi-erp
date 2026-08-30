@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import pyotp
 import pytest
 
 from app import models as m
@@ -13,8 +14,15 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _seed_velocity(db_session, seed, *, stock: float, qty_per_day: float, days: int = 30):
@@ -56,7 +64,7 @@ async def _seed_velocity(db_session, seed, *, stock: float, qty_per_day: float, 
 async def test_stockout_prediction_7_to_14_days_api(client, db_session):
     """BR-21.4: predict stockouts 7–14 days ahead with confidence + suggestions."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     # 10 units/day, stock 120 → ~12 days to stockout
     product = await _seed_velocity(db_session, seed, stock=120, qty_per_day=10, days=30)
 
@@ -92,7 +100,7 @@ async def test_stockout_prediction_7_to_14_days_api(client, db_session):
 async def test_insufficient_history_not_at_risk(client, db_session):
     """BR-21.4: no velocity history → insufficient_data, not at_risk."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     seed["p1"].stock_qty = 50
     seed["p1"].is_active = True
     await db_session.commit()
@@ -112,7 +120,7 @@ async def test_insufficient_history_not_at_risk(client, db_session):
 async def test_lead_time_influences_purchase_suggestion(client, db_session):
     """BR-21.4: lead_time_days feeds suggested_order_qty."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     product = await _seed_velocity(db_session, seed, stock=40, qty_per_day=5, days=30)
 
     short = await ac.get(

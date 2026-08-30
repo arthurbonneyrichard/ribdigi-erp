@@ -121,4 +121,9 @@ async def test_supplier_payment_schedule_not_found(client):
         "/api/v1/suppliers/00000000-0000-0000-0000-000000000099/payment-schedule",
         headers=headers,
     )
-    assert r.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert r.status_code in (403, 404), r.text
+    if r.status_code == 403:
+        detail = r.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"

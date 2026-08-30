@@ -64,7 +64,7 @@ async def test_foreign_expense_and_pi_ocr_apply_404(client, db_session):
     inv.attachment_url = f"{seed['t2'].id}/purchase_invoices/beta-apply.pdf"
     await db_session.commit()
 
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     exp_r = await ac.post(
         f"/api/v1/expenses/{expense.id}/ocr-apply",
         headers=headers,
@@ -165,7 +165,7 @@ async def test_foreign_stock_count_and_warehouse_transfer_404(client, db_session
     await db_session.commit()
     count_id, transfer_id = count.id, transfer.id
 
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     assert (await ac.get(f"/api/v1/inventory/stock-counts/{count_id}", headers=headers)).status_code == 404
     assert (
         await ac.post(f"/api/v1/inventory/stock-counts/{count_id}/complete", headers=headers)
@@ -211,7 +211,7 @@ async def test_foreign_quotation_order_and_product_surfaces_404(client, db_sessi
     db_session.add_all([quote, order])
     await db_session.commit()
 
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     assert (await ac.get(f"/api/v1/sales/quotations/{quote.id}", headers=headers)).status_code == 404
     assert (await ac.get(f"/api/v1/sales/orders/{order.id}", headers=headers)).status_code == 404
     assert (await ac.get(f"/api/v1/products/{seed['p2'].id}", headers=headers)).status_code == 404

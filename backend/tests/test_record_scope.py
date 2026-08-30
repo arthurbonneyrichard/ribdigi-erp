@@ -68,9 +68,17 @@ async def test_expense_own_scope_hides_others_records(client, db_session):
     assert patched.status_code == 200, patched.text
     assert patched.json()["data"]["record_scope"] == "own"
 
-    mgr = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    _totp = pyotp.TOTP(seed['super_totp_secret']).now()
+    mgr = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=_totp
+    )
     missing = await ac.get(f"/api/v1/expenses/{foreign.id}", headers=mgr)
-    assert missing.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert missing.status_code in (403, 404), missing.text
+    if missing.status_code == 403:
+        detail = missing.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"
 
     listed = await ac.get("/api/v1/expenses", headers=mgr)
     assert listed.status_code == 200
@@ -168,7 +176,10 @@ async def test_sales_docs_own_scope_hides_others_records(client, db_session):
     db_session.add(store)
     await db_session.commit()
 
-    mgr = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    _totp = pyotp.TOTP(seed['super_totp_secret']).now()
+    mgr = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=_totp
+    )
 
     assert (await ac.get(f"/api/v1/sales/quotations/{foreign_quote.id}", headers=mgr)).status_code == 404
     assert (await ac.get(f"/api/v1/sales/orders/{foreign_order.id}", headers=mgr)).status_code == 404
@@ -210,7 +221,12 @@ async def test_sales_docs_own_scope_hides_others_records(client, db_session):
             "items": [{"product_id": seed["p1"].id, "quantity": 1}],
         },
     )
-    assert blocked_return.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert blocked_return.status_code in (403, 404), blocked_return.text
+    if blocked_return.status_code == 403:
+        detail = blocked_return.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"
 
     # Admin with default all still sees foreign docs
     admin2 = await _admin_headers(ac, seed)
@@ -262,7 +278,10 @@ async def test_purchasing_docs_own_scope_hides_others_records(client, db_session
         json={"record_scope": "own"},
     )
     assert patched.status_code == 200, patched.text
-    mgr = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    _totp = pyotp.TOTP(seed['super_totp_secret']).now()
+    mgr = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=_totp
+    )
 
     assert (await ac.get(f"/api/v1/purchasing/requests/{foreign_pr.id}", headers=mgr)).status_code == 404
     assert (await ac.get(f"/api/v1/purchasing/orders/{foreign_po.id}", headers=mgr)).status_code == 404

@@ -27,7 +27,7 @@ async def _mgr(ac):
 async def test_reports_suite_outline_endpoints(client, db_session):
     """Sales / Inventory / Low Stock / Purchasing / Expenses / Financial / Store Performance."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
     await accounting_svc.ensure_default_accounts(db_session, tenant_id)
     await ensure_default_categories(db_session, tenant_id)
@@ -202,7 +202,7 @@ async def test_reports_suite_outline_endpoints(client, db_session):
 async def test_reports_suite_tenant_isolation(client, db_session):
     """Alpha sales revenue must not appear in beta tenant sales_daily aggregation."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     today = datetime.utcnow().replace(hour=14, minute=0, second=0, microsecond=0)
     store = await create_store(
         db_session,
