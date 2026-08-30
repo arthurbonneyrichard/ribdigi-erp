@@ -199,6 +199,8 @@ async def test_invoice_print_html_includes_uploaded_logo(client, db_session, tmp
 
     t = seed["t1"]
     t.legal_name = "Alpha Retail Limited"
+    c = seed["c1"]
+    c.legal_name = "Alpha Retail Limited"
     logo_dir = tmp_path / t.id / "logos"
     logo_dir.mkdir(parents=True)
     logo_path = logo_dir / "brand.png"

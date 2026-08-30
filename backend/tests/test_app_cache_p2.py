@@ -96,7 +96,7 @@ async def test_dashboard_and_products_cache_hit(client, fake_cache):
 
     p1 = await ac.get("/api/v1/products", headers=headers)
     assert p1.status_code == 200, p1.text
-    products_key = cache_svc.app_cache.products_key(seed["t1"].id)
+    products_key = cache_svc.app_cache.products_key(seed["t1"].id) + f':co:{seed["c1"].id}'
     assert products_key in fake_cache.store
     assert fake_cache.ttls[products_key] == 600
     sets_mid = fake_cache.sets
@@ -131,7 +131,7 @@ async def test_product_create_invalidates_catalog_and_dashboard(client, fake_cac
     await ac.get("/api/v1/dashboard", headers=headers)
     await ac.get("/api/v1/products", headers=headers)
     dash_key = cache_svc.app_cache.dashboard_key(seed["t1"].id, role="super_admin") + f':co:{seed["c1"].id}'
-    products_key = cache_svc.app_cache.products_key(seed["t1"].id)
+    products_key = cache_svc.app_cache.products_key(seed["t1"].id) + f':co:{seed["c1"].id}'
     assert dash_key in fake_cache.store
     assert products_key in fake_cache.store
 

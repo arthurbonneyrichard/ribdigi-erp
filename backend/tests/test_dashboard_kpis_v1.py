@@ -56,7 +56,8 @@ async def test_dashboard_kpis_alerts_and_charts_fidelity(client, db_session):
             expiry_date=now + timedelta(days=10),
         )
     )
-    supplier = m.Party(tenant_id=tid, name="V1 Supplier", kind="supplier", credit_limit=0)
+    supplier = m.Party(tenant_id=tid,
+        company_id=seed["c1"].id, name="V1 Supplier", kind="supplier", credit_limit=0)
     db_session.add(supplier)
     db_session.add_all(
         [

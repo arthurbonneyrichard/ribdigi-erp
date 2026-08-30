@@ -242,6 +242,7 @@ async def test_purchasing_docs_own_scope_hides_others_records(client, db_session
 
     supplier = m.Party(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         kind="supplier",
         name="Scope Supplier",
         status="active",

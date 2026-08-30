@@ -52,9 +52,10 @@ async def _seed_sales_patterns(db_session, seed):
     await db_session.flush()
 
     now = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
-    # Rising trend: day-offset i has amount (i+1)*20 at hour 10 (peak) or 15
+    # Rising trend: day-offset i has amount (i+1)*20 at hour 10 (peak) or 15.
+    # Anchor at least 1 day back so peak hours never fall after "now".
     for i in range(14):
-        when = now - timedelta(days=13 - i)
+        when = now - timedelta(days=14 - i)
         when = when.replace(hour=10 if i % 3 else 15)
         amt = float((i + 1) * 20)
         inv = m.SalesInvoice(

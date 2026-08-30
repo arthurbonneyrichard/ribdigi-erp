@@ -92,6 +92,7 @@ async def test_create_draft_po_via_chat(client, db_session):
     tenant_id = seed["t1"].id
     supplier = m.Party(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="Alpha Supplier",
         kind="supplier",
         status="active",
@@ -141,6 +142,7 @@ async def test_create_po_denied_without_purchasing_write(client, db_session):
     db_session.add(
         m.Party(
             tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
             name="Alpha Supplier 2",
             kind="supplier",
             status="active",
@@ -190,7 +192,7 @@ async def test_chat_history_persisted_and_user_scoped(client, db_session):
 
 @pytest.mark.asyncio
 async def test_chat_empty_message_rejected(client):
-    ac, _seed = client
+    ac, seed = client
     headers = await _mgr(ac, seed)
     r = await ac.post("/api/v1/ai/chat", headers=headers, json={"message": "   "})
     assert r.status_code == 400

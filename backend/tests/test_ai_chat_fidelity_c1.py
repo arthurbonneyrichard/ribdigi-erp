@@ -128,6 +128,7 @@ async def test_safe_create_po_command_and_deny(client, db_session):
     db_session.add(
         m.Party(
             tenant_id=tenant_id,
+        company_id=seed["c1"].id,
             name="C1 Supplier",
             kind="supplier",
             status="active",
@@ -182,7 +183,7 @@ async def test_safe_create_po_command_and_deny(client, db_session):
 @pytest.mark.asyncio
 async def test_chat_history_persistence(client):
     """BR-21.1: chat history persisted per user."""
-    ac, _seed = client
+    ac, seed = client
     headers = await _mgr(ac, seed)
 
     ask = await ac.post(

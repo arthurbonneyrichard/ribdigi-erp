@@ -12,7 +12,7 @@ async def test_expense_attachment_upload_download_delete(client, tmp_path, monke
     from app import storage as storage_svc
 
     monkeypatch.setattr(storage_svc.settings, "MEDIA_DIR", str(tmp_path))
-    ac, _seed = client
+    ac, seed = client
     code = pyotp.TOTP(seed['super_totp_secret']).now()
     headers = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
