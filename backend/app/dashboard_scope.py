@@ -16,7 +16,7 @@ import re
 from datetime import datetime
 
 from fastapi import HTTPException
-from sqlalchemy import exists, or_, select, func, and_
+from sqlalchemy import exists, or_, select, func, and_, false as sql_false
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
@@ -433,7 +433,8 @@ def apply_warehouse_scope_filter(stmt, model, managed_wh_ids: list[str] | None):
     if managed_wh_ids is None:
         return stmt
     if not managed_wh_ids:
-        return stmt.where(func.false())
+        # sql_false() → ``0 = 1`` on SQLite (func.false() → invalid ``false()``).
+        return stmt.where(sql_false())
     return stmt.where(getattr(model, "warehouse_id").in_(managed_wh_ids))
 
 
@@ -3610,7 +3611,8 @@ def apply_purchase_invoice_warehouse_scope(stmt, managed_wh_ids: list[str] | Non
     if managed_wh_ids is None:
         return stmt
     if not managed_wh_ids:
-        return stmt.where(func.false())
+        # sql_false() → ``0 = 1`` on SQLite (func.false() → invalid ``false()``).
+        return stmt.where(sql_false())
     stmt = stmt.outerjoin(
         m.GoodsReceipt, m.GoodsReceipt.id == m.PurchaseInvoice.goods_receipt_id
     ).outerjoin(
@@ -3895,7 +3897,8 @@ def apply_bank_statement_store_scope(
     if managed_store_ids is None:
         return stmt
     if not managed_store_ids:
-        return stmt.where(func.false())
+        # sql_false() → ``0 = 1`` on SQLite (func.false() → invalid ``false()``).
+        return stmt.where(sql_false())
 
     BS = m.BankStatement
     BSL = m.BankStatementLine
