@@ -43,6 +43,7 @@ async def test_insights_api_sales_expense_and_restock(client, db_session):
         db_session.add(
             m.SalesInvoice(
                 tenant_id=tenant_id,
+                company_id=seed["c1"].id,
                 invoice_number=f"INV-I1-W-{i}",
                 customer_id=seed["party1"].id,
                 status="posted",
@@ -56,6 +57,7 @@ async def test_insights_api_sales_expense_and_restock(client, db_session):
     db_session.add(
         m.SalesInvoice(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             invoice_number="INV-I1-PW-1",
             customer_id=seed["party1"].id,
             status="posted",
@@ -69,6 +71,7 @@ async def test_insights_api_sales_expense_and_restock(client, db_session):
     db_session.add(
         m.Expense(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             category="Utilities",
             description="I1 spike",
             amount=800,
@@ -80,6 +83,7 @@ async def test_insights_api_sales_expense_and_restock(client, db_session):
     db_session.add(
         m.Expense(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             category="Utilities",
             description="I1 prior",
             amount=100,
@@ -94,6 +98,7 @@ async def test_insights_api_sales_expense_and_restock(client, db_session):
     for day in range(20):
         inv = m.SalesInvoice(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             invoice_number=f"INV-I1-RS-{day}",
             customer_id=seed["party1"].id,
             status="posted",
@@ -108,6 +113,7 @@ async def test_insights_api_sales_expense_and_restock(client, db_session):
         db_session.add(
             m.SalesInvoiceItem(
                 tenant_id=tenant_id,
+                company_id=seed["c1"].id,
                 sales_invoice_id=inv.id,
                 product_id=product.id,
                 quantity=5,

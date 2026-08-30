@@ -19,9 +19,9 @@ async def _super(ac, seed):
     )
 
 
-async def _post_dated(db, *, tenant_id, user_id, when: datetime, **kwargs):
+async def _post_dated(db, *, tenant_id, user_id, when: datetime, company_id=None, **kwargs):
     entry = await accounting_svc.post_journal_entry(
-        db, tenant_id=tenant_id, user_id=user_id, **kwargs
+        db, tenant_id=tenant_id, user_id=user_id, company_id=company_id, **kwargs
     )
     entry.entry_date = when
     await db.flush()
@@ -34,12 +34,13 @@ async def test_profit_loss_date_range_and_buckets(client, db_session):
     headers = await _super(ac, seed)
     tenant_id = seed["t1"].id
     user_id = seed["admin1"].id
-    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+    await accounting_svc.ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
     when = datetime(2026, 6, 15)
 
     await _post_dated(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         user_id=user_id,
         when=when,
         description="In-range sales",
@@ -52,6 +53,7 @@ async def test_profit_loss_date_range_and_buckets(client, db_session):
     await _post_dated(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         user_id=user_id,
         when=when,
         description="In-range COGS",
@@ -64,6 +66,7 @@ async def test_profit_loss_date_range_and_buckets(client, db_session):
     await _post_dated(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         user_id=user_id,
         when=when,
         description="In-range opex",
@@ -84,6 +87,7 @@ async def test_profit_loss_date_range_and_buckets(client, db_session):
             {"account_code": "4000", "debit": 0, "credit": 999},
         ],
         source_type="sales_invoice",
+        company_id=seed["c1"].id,
     )
     await db_session.commit()
 
@@ -116,11 +120,12 @@ async def test_profit_loss_excludes_unposted(client, db_session):
     ac, seed = client
     headers = await _super(ac, seed)
     tenant_id = seed["t1"].id
-    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+    await accounting_svc.ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
 
     entry = await accounting_svc.post_journal_entry(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         user_id=seed["admin1"].id,
         description="Will unpost",
         lines=[
@@ -150,7 +155,7 @@ async def test_cash_flow_oif_split_and_opening(client, db_session):
     headers = await _super(ac, seed)
     tenant_id = seed["t1"].id
     user_id = seed["admin1"].id
-    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+    await accounting_svc.ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
 
     await _post_dated(
         db_session,
@@ -164,6 +169,7 @@ async def test_cash_flow_oif_split_and_opening(client, db_session):
         ],
         source_type="opening_balance",
         source_id="seed-prior",
+        company_id=seed["c1"].id,
     )
     await _post_dated(
         db_session,
@@ -176,10 +182,15 @@ async def test_cash_flow_oif_split_and_opening(client, db_session):
             {"account_code": "4000", "debit": 0, "credit": 40},
         ],
         source_type="pos_sale",
+        company_id=seed["c1"].id,
     )
 
-    cash = await accounting_svc.get_account_by_code(db_session, tenant_id, "1000")
-    bank = await accounting_svc.get_account_by_code(db_session, tenant_id, "1010")
+    cash = await accounting_svc.get_account_by_code(
+        db_session, tenant_id, "1000", company_id=seed["c1"].id
+    )
+    bank = await accounting_svc.get_account_by_code(
+        db_session, tenant_id, "1010", company_id=seed["c1"].id
+    )
     xfer = await accounting_svc.transfer_liquid_funds(
         db_session,
         tenant_id=tenant_id,
@@ -188,6 +199,7 @@ async def test_cash_flow_oif_split_and_opening(client, db_session):
         to_account_id=bank.id,
         amount=25,
         kind="deposit",
+        company_id=seed["c1"].id,
     )
     xfer.entry_date = datetime(2026, 6, 12)
     await db_session.commit()
@@ -224,10 +236,11 @@ async def test_profit_loss_export_respects_dates(client, db_session):
     ac, seed = client
     headers = await _super(ac, seed)
     tenant_id = seed["t1"].id
-    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+    await accounting_svc.ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
     entry = await accounting_svc.post_journal_entry(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         user_id=seed["admin1"].id,
         description="Export window",
         lines=[

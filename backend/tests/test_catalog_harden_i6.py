@@ -12,7 +12,7 @@ from tests.conftest import auth_headers
 
 @pytest.mark.asyncio
 async def test_uom_conversion_ratios(client):
-    ac, _seed = client
+    ac, seed = client
     code = pyotp.TOTP(seed['super_totp_secret']).now()
     headers = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
@@ -77,7 +77,7 @@ async def test_brand_logo_upload_get_delete(client, tmp_path, monkeypatch):
 
     monkeypatch.setattr(storage_svc.settings, "MEDIA_DIR", str(tmp_path))
     monkeypatch.setattr(storage_svc.settings, "STORAGE_BACKEND", "local")
-    ac, _seed = client
+    ac, seed = client
     code = pyotp.TOTP(seed['super_totp_secret']).now()
     headers = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code

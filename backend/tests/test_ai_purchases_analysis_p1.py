@@ -52,6 +52,7 @@ async def _seed_purchase_patterns(db_session, seed):
         amt = float((i + 1) * 25)
         inv = m.PurchaseInvoice(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             invoice_number=f"PI-P1-T-{i}",
             supplier_id=primary.id,
             status="unpaid",
@@ -70,6 +71,7 @@ async def _seed_purchase_patterns(db_session, seed):
     db_session.add(
         m.PurchaseInvoice(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             invoice_number="PI-P1-SEC",
             supplier_id=secondary.id,
             status="paid",
@@ -87,6 +89,7 @@ async def _seed_purchase_patterns(db_session, seed):
     db_session.add(
         m.PurchaseInvoice(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             invoice_number="PI-P1-OVER",
             supplier_id=primary.id,
             status="overdue",
@@ -102,6 +105,7 @@ async def _seed_purchase_patterns(db_session, seed):
     # Open sent PO + partially received PO with fill gap
     sent_po = m.PurchaseOrder(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         po_number="PO-P1-OPEN",
         supplier_id=primary.id,
         status="sent",
@@ -111,6 +115,7 @@ async def _seed_purchase_patterns(db_session, seed):
     )
     partial_po = m.PurchaseOrder(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         po_number="PO-P1-PART",
         supplier_id=secondary.id,
         status="partially_received",
@@ -120,6 +125,7 @@ async def _seed_purchase_patterns(db_session, seed):
     )
     draft_po = m.PurchaseOrder(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         po_number="PO-P1-DRAFT-1",
         supplier_id=primary.id,
         status="draft",
@@ -129,6 +135,7 @@ async def _seed_purchase_patterns(db_session, seed):
     )
     draft_po2 = m.PurchaseOrder(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         po_number="PO-P1-DRAFT-2",
         supplier_id=primary.id,
         status="draft",
@@ -138,6 +145,7 @@ async def _seed_purchase_patterns(db_session, seed):
     )
     draft_po3 = m.PurchaseOrder(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         po_number="PO-P1-DRAFT-3",
         supplier_id=secondary.id,
         status="draft",
@@ -150,6 +158,7 @@ async def _seed_purchase_patterns(db_session, seed):
 
     sent_item = m.PurchaseOrderItem(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         purchase_order_id=sent_po.id,
         product_id=product.id,
         quantity=10,
@@ -159,6 +168,7 @@ async def _seed_purchase_patterns(db_session, seed):
     )
     part_item = m.PurchaseOrderItem(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         purchase_order_id=partial_po.id,
         product_id=product.id,
         quantity=10,
@@ -171,6 +181,7 @@ async def _seed_purchase_patterns(db_session, seed):
 
     grn = m.GoodsReceipt(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         grn_number="GRN-P1-1",
         purchase_order_id=partial_po.id,
         supplier_id=secondary.id,
@@ -182,6 +193,7 @@ async def _seed_purchase_patterns(db_session, seed):
     db_session.add(
         m.GoodsReceiptItem(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             goods_receipt_id=grn.id,
             po_item_id=part_item.id,
             product_id=product.id,

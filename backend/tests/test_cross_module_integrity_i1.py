@@ -124,7 +124,7 @@ async def test_inventory_qty_equals_stage17_movement_chain(client, db_session):
         selling_price=10,
         stock_qty=0,
     )
-    wh = m.Warehouse(tenant_id=tenant_id, name="S18 I1 WH", code="S18I1WH")
+    wh = m.Warehouse(tenant_id=tenant_id, company_id=seed["c1"].id, name="S18 I1 WH", code="S18I1WH")
     db_session.add_all([product, wh])
     await db_session.commit()
     product_id, warehouse_id = product.id, wh.id
@@ -198,7 +198,7 @@ async def test_accounting_tb_inventory_gl_and_ar_sanity(client, db_session):
     headers = await _mgr(ac, seed)
     super_h = await _super(ac, seed)
     tenant_id = seed["t1"].id
-    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+    await accounting_svc.ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
 
     product = m.Product(
         tenant_id=tenant_id,
@@ -302,7 +302,7 @@ async def test_pos_money_path_no_orphans_and_stock_reconciles(client, db_session
     ac, seed = client
     cashier = await _cashier(ac)
     tenant_id = seed["t1"].id
-    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+    await accounting_svc.ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
 
     product = m.Product(
         tenant_id=tenant_id,

@@ -28,6 +28,7 @@ async def test_daily_comparative_and_customer_sales(client, db_session):
         [
             m.SalesInvoice(
                 tenant_id=tenant_id,
+                company_id=seed["c1"].id,
                 invoice_number="INV-R1-TODAY",
                 customer_id=customer.id,
                 status="posted",
@@ -39,6 +40,7 @@ async def test_daily_comparative_and_customer_sales(client, db_session):
             ),
             m.SalesInvoice(
                 tenant_id=tenant_id,
+                company_id=seed["c1"].id,
                 invoice_number="INV-R1-YDAY",
                 customer_id=customer.id,
                 status="posted",
@@ -108,6 +110,7 @@ async def test_product_sales_store_and_category_filters(client, db_session):
     now = datetime.utcnow()
     inv_a = m.SalesInvoice(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         invoice_number="INV-R1-A",
         customer_id=seed["party1"].id,
         store_id=store_a.id,
@@ -119,6 +122,7 @@ async def test_product_sales_store_and_category_filters(client, db_session):
     )
     inv_b = m.SalesInvoice(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         invoice_number="INV-R1-B",
         customer_id=seed["party1"].id,
         store_id=store_b.id,
@@ -134,6 +138,7 @@ async def test_product_sales_store_and_category_filters(client, db_session):
         [
             m.SalesInvoiceItem(
                 tenant_id=tenant_id,
+                company_id=seed["c1"].id,
                 sales_invoice_id=inv_a.id,
                 product_id=p_a.id,
                 quantity=2,
@@ -142,6 +147,7 @@ async def test_product_sales_store_and_category_filters(client, db_session):
             ),
             m.SalesInvoiceItem(
                 tenant_id=tenant_id,
+                company_id=seed["c1"].id,
                 sales_invoice_id=inv_b.id,
                 product_id=p_b.id,
                 quantity=10,

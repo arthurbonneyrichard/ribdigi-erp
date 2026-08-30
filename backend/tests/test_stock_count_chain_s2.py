@@ -53,7 +53,7 @@ async def test_stock_count_complete_posts_adjustments_and_variance_report(client
         selling_price=2,
         stock_qty=0,
     )
-    wh = m.Warehouse(tenant_id=tenant_id, name="S17 S2 Count WH", code="S17S2WH")
+    wh = m.Warehouse(tenant_id=tenant_id, company_id=seed["c1"].id, name="S17 S2 Count WH", code="S17S2WH")
     db_session.add_all([product, wh])
     await db_session.commit()
     product_id, warehouse_id = product.id, wh.id

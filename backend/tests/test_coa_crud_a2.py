@@ -25,7 +25,7 @@ async def test_create_account_with_parent_and_tree(client, db_session):
     ac, seed = client
     headers = await _super(ac, seed)
     tenant_id = seed["t1"].id
-    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+    await accounting_svc.ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
     await db_session.commit()
 
     listed = await ac.get("/api/v1/accounting/accounts", headers=headers)
@@ -110,7 +110,7 @@ async def test_parent_type_mismatch_and_cycle(client, db_session):
     ac, seed = client
     headers = await _super(ac, seed)
     tenant_id = seed["t1"].id
-    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+    await accounting_svc.ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
     await db_session.commit()
 
     listed = await ac.get("/api/v1/accounting/accounts", headers=headers)
@@ -158,7 +158,7 @@ async def test_opening_balance_posts_balanced_journal(client, db_session):
     ac, seed = client
     headers = await _super(ac, seed)
     tenant_id = seed["t1"].id
-    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+    await accounting_svc.ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
     await db_session.commit()
 
     listed = await ac.get("/api/v1/accounting/accounts", headers=headers)
@@ -225,7 +225,7 @@ async def test_coa_tenant_isolation(client, db_session):
             totp_enabled=False,
         )
     )
-    await accounting_svc.ensure_default_accounts(db_session, tenant_a)
+    await accounting_svc.ensure_default_accounts(db_session, tenant_a, company_id=seed["c1"].id)
     custom = await accounting_svc.create_coa_account(
         db_session,
         tenant_id=tenant_a,

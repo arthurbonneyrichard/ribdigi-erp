@@ -35,6 +35,7 @@ async def test_purchase_orders_export_csv(client, db_session):
         [
             m.PurchaseOrder(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 po_number="PO-134-DRAFT",
                 supplier_id=supplier.id,
                 status="draft",
@@ -44,6 +45,7 @@ async def test_purchase_orders_export_csv(client, db_session):
             ),
             m.PurchaseOrder(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 po_number="PO-134-SENT",
                 supplier_id=supplier.id,
                 status="sent",

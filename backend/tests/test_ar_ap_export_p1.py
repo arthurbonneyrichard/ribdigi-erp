@@ -96,6 +96,7 @@ async def test_ar_ap_aging_payments_overdue_and_export(client, db_session):
     db_session.add(
         m.SalesInvoice(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             invoice_number="INV-P1-AGE-90",
             customer_id=customer_id,
             status="posted",

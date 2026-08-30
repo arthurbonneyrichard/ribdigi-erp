@@ -25,6 +25,7 @@ async def test_notifications_export_csv(client, db_session):
         [
             m.Notification(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 user_id=seed["mgr1"].id,
                 category="system",
                 title="Stage129 Unread",
@@ -33,6 +34,7 @@ async def test_notifications_export_csv(client, db_session):
             ),
             m.Notification(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 user_id=seed["mgr1"].id,
                 category="system",
                 title="Stage129 Read",

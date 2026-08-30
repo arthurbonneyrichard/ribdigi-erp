@@ -25,6 +25,7 @@ async def _post_dated(db, *, tenant_id, user_id, when: datetime, store_id=None, 
     entry = await accounting_svc.post_journal_entry(
         db,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         user_id=user_id,
         store_id=store_id,
         **kwargs,
@@ -40,7 +41,7 @@ async def test_balance_sheet_store_and_branch_filters(client, db_session):
     headers = await _super(ac, seed)
     tenant_id = seed["t1"].id
     user_id = seed["admin1"].id
-    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+    await accounting_svc.ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
 
     branch_a = await ac.post(
         "/api/v1/branches",
@@ -78,6 +79,7 @@ async def test_balance_sheet_store_and_branch_filters(client, db_session):
     await _post_dated(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         user_id=user_id,
         when=when,
         store_id=store_a_id,
@@ -91,6 +93,7 @@ async def test_balance_sheet_store_and_branch_filters(client, db_session):
     await _post_dated(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         user_id=user_id,
         when=when,
         store_id=store_b_id,

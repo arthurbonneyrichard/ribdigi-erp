@@ -29,6 +29,7 @@ async def test_category_tax_resolution_precedence(client, db_session):
 
     default = m.TaxRate(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="Default VAT",
         rate=10,
         tax_type="vat",
@@ -38,6 +39,7 @@ async def test_category_tax_resolution_precedence(client, db_session):
     )
     cat_rate = m.TaxRate(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="Category VAT",
         rate=15,
         tax_type="vat",
@@ -47,6 +49,7 @@ async def test_category_tax_resolution_precedence(client, db_session):
     )
     prod_rate = m.TaxRate(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="Product VAT",
         rate=5,
         tax_type="vat",
@@ -107,6 +110,7 @@ async def test_category_tax_patch_and_foreign_rate_rejected(client, db_session):
 
     rate = m.TaxRate(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="Patch VAT",
         rate=12,
         tax_type="vat",

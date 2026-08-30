@@ -43,15 +43,20 @@ async def test_sales_analysis_rfm_affinity_peaks(db_session, seeded):
 
     now = datetime.utcnow()
     for i, hour in enumerate((10, 10, 15)):
+        # Anchor on yesterday so peak hours cannot fall after "now" (UTC morning flake).
+        when = (now - timedelta(days=i + 1)).replace(
+            hour=hour, minute=0, second=0, microsecond=0
+        )
         inv = m.SalesInvoice(
             tenant_id=tenant_id,
+            company_id=seeded["c1"].id,
             invoice_number=f"INV-SA-{i}",
             customer_id=seeded["party1"].id,
             status="posted",
             subtotal=30,
             total_amount=30,
-            created_at=now.replace(hour=hour, minute=0, second=0) - timedelta(days=i),
-            posted_at=now.replace(hour=hour, minute=0, second=0) - timedelta(days=i),
+            created_at=when,
+            posted_at=when,
         )
         db_session.add(inv)
         await db_session.flush()
@@ -59,6 +64,7 @@ async def test_sales_analysis_rfm_affinity_peaks(db_session, seeded):
             [
                 m.SalesInvoiceItem(
                     tenant_id=tenant_id,
+                    company_id=seeded["c1"].id,
                     sales_invoice_id=inv.id,
                     product_id=p1.id,
                     quantity=2,
@@ -67,6 +73,7 @@ async def test_sales_analysis_rfm_affinity_peaks(db_session, seeded):
                 ),
                 m.SalesInvoiceItem(
                     tenant_id=tenant_id,
+                    company_id=seeded["c1"].id,
                     sales_invoice_id=inv.id,
                     product_id=p_extra.id,
                     quantity=4,
@@ -108,6 +115,7 @@ async def test_expense_analysis_budget_and_anomaly(db_session, seeded):
         db_session.add(
             m.Expense(
                 tenant_id=tenant_id,
+                company_id=seeded["c1"].id,
                 category_id=util.id,
                 category=util.name,
                 description=f"Electric bill {amt}",
@@ -140,6 +148,7 @@ async def test_sales_and_expense_analysis_api_tenant_scoped(client, db_session):
     now = datetime.utcnow()
     inv = m.SalesInvoice(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         invoice_number="INV-API-SA-1",
         customer_id=seed["party1"].id,
         status="posted",

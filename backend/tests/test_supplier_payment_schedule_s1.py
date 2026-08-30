@@ -24,7 +24,7 @@ async def test_supplier_payment_schedule_buckets_and_early_pay(client, db_sessio
     ac, seed = client
     headers = await _admin(ac, seed)
     tenant_id = seed["t1"].id
-    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+    await accounting_svc.ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
     seed["t1"].early_pay_discount_pct = 2
     seed["t1"].early_pay_discount_days = 10
 
@@ -40,6 +40,7 @@ async def test_supplier_payment_schedule_buckets_and_early_pay(client, db_sessio
 
     overdue = m.PurchaseInvoice(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         invoice_number="PI-SCHED-OVER",
         supplier_id=supplier.id,
         status="unpaid",
@@ -54,6 +55,7 @@ async def test_supplier_payment_schedule_buckets_and_early_pay(client, db_sessio
     )
     upcoming = m.PurchaseInvoice(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         invoice_number="PI-SCHED-UP",
         supplier_id=supplier.id,
         status="unpaid",

@@ -35,6 +35,7 @@ async def _seed_velocity(db_session, seed, *, stock: float, qty_per_day: float, 
     for day in range(days):
         inv = m.SalesInvoice(
             tenant_id=seed["t1"].id,
+            company_id=seed["c1"].id,
             invoice_number=f"INV-L1-{int(stock)}-{day}",
             customer_id=seed["party1"].id,
             status="posted",
@@ -49,6 +50,7 @@ async def _seed_velocity(db_session, seed, *, stock: float, qty_per_day: float, 
         db_session.add(
             m.SalesInvoiceItem(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 sales_invoice_id=inv.id,
                 product_id=product.id,
                 quantity=qty_per_day,

@@ -175,7 +175,7 @@ async def test_bi_tenant_isolation_history(client, db_session: AsyncSession):
     db_session.add(
         m.BusinessInsight(
             tenant_id=seed["t2"].id,
-            company_id=seed["c2"].id,
+            company_id=seed["c1"].id,
             insight_type="low_stock",
             category="inventory",
             priority="WARNING",

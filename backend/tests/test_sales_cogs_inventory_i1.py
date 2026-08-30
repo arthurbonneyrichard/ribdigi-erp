@@ -49,7 +49,7 @@ async def test_invoice_posts_cogs_and_inventory_gl(client, db_session):
     product = seed["p1"]
     product.cost_price = 3.5
     product.stock_qty = 50
-    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+    await accounting_svc.ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
     await db_session.commit()
 
     inv_acct = (
@@ -147,7 +147,7 @@ async def test_return_restock_reverses_cogs_inventory(client, db_session):
         movement_type="stock_in",
         user_id=seed["mgr1"].id,
     )
-    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+    await accounting_svc.ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
     await db_session.commit()
 
     cust = await ac.post(

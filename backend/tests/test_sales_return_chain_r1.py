@@ -46,11 +46,11 @@ async def test_return_restock_warehouse_tax_cogs_store_journal(client, db_sessio
     ac, seed = client
     headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
-    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+    await accounting_svc.ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
 
     store = await create_store(
-        db_session, tenant_id=tenant_id, code="R1WH", name="R1 Return Store",
-        company_id=seed["c1"].id,
+        db_session, tenant_id=tenant_id,
+                company_id=seed["c1"].id, code="R1WH", name="R1 Return Store",
     )
     store_id = store.id
     wh = await warehouse_for_store(db_session, tenant_id, store_id)
@@ -194,7 +194,7 @@ async def test_return_fx_safe_customer_balance_and_journal(client, db_session):
     ac, seed = client
     headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
-    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+    await accounting_svc.ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
 
     product = seed["p1"]
     product.cost_price = 0  # isolate FX math from COGS

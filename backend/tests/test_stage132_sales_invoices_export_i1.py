@@ -29,6 +29,7 @@ async def test_sales_invoices_export_csv(client, db_session):
         [
             m.SalesInvoice(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 invoice_number="INV-132-DRAFT",
                 customer_id=seed["party1"].id,
                 status="draft",
@@ -38,6 +39,7 @@ async def test_sales_invoices_export_csv(client, db_session):
             ),
             m.SalesInvoice(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 invoice_number="INV-132-POSTED",
                 customer_id=seed["party1"].id,
                 status="posted",

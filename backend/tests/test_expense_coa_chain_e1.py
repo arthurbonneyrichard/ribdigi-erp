@@ -37,7 +37,7 @@ async def test_category_account_maps_expense_journal_and_statements(client, db_s
     mgr = await _mgr(ac, seed)
     super_h = await _super(ac, seed)
     tenant_id = seed["t1"].id
-    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+    await accounting_svc.ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
     await db_session.commit()
 
     # Custom expense COA under Operating Expenses family
@@ -203,7 +203,7 @@ async def test_patch_category_account_and_clear(client, db_session):
     mgr = await _mgr(ac, seed)
     super_h = await _super(ac, seed)
     tenant_id = seed["t1"].id
-    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+    await accounting_svc.ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
     await db_session.commit()
 
     acct = await ac.post(

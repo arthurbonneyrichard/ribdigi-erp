@@ -118,7 +118,7 @@ async def test_api_stock_ops_persist_movements_and_reconcile(client, db_session)
     }
     # Auditable trail: each row has before/after and actor
     for mv in moves:
-        assert mv.created_by == seed["mgr1"].id
+        assert mv.created_by == seed["super"].id
         assert mv.quantity_before is not None
         assert mv.quantity_after is not None
         assert float(mv.quantity_after) == float(mv.quantity_before) + float(mv.quantity)
@@ -133,8 +133,8 @@ async def test_warehouse_stock_reconciles_to_warehouse_movements(client, db_sess
     ac, seed = client
     headers = await _mgr(ac, seed)
     product = await _make_product(db_session, seed["t1"].id, "REC-WH-1")
-    wh_a = m.Warehouse(tenant_id=seed["t1"].id, name="Rec A", code="RECA")
-    wh_b = m.Warehouse(tenant_id=seed["t1"].id, name="Rec B", code="RECB")
+    wh_a = m.Warehouse(tenant_id=seed["t1"].id, company_id=seed["c1"].id, name="Rec A", code="RECA")
+    wh_b = m.Warehouse(tenant_id=seed["t1"].id, company_id=seed["c1"].id, name="Rec B", code="RECB")
     db_session.add_all([wh_a, wh_b])
     await db_session.commit()
 
@@ -202,8 +202,8 @@ async def test_inter_warehouse_transfer_preserves_product_balance(client, db_ses
     ac, seed = client
     headers = await _mgr(ac, seed)
     product = await _make_product(db_session, seed["t1"].id, "REC-XFER-1")
-    wh_a = m.Warehouse(tenant_id=seed["t1"].id, name="Xfer A", code="XFERA")
-    wh_b = m.Warehouse(tenant_id=seed["t1"].id, name="Xfer B", code="XFERB")
+    wh_a = m.Warehouse(tenant_id=seed["t1"].id, company_id=seed["c1"].id, name="Xfer A", code="XFERA")
+    wh_b = m.Warehouse(tenant_id=seed["t1"].id, company_id=seed["c1"].id, name="Xfer B", code="XFERB")
     db_session.add_all([wh_a, wh_b])
     await db_session.commit()
 

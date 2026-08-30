@@ -31,6 +31,7 @@ async def test_expense_analysis_export_csv(client, db_session):
     headers = await _mgr(ac, seed)
     expense = m.Expense(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         category="Supplies",
         description="Stage 147 expense analysis seed",
         amount=125.5,

@@ -36,6 +36,7 @@ async def _seed_steady_sales(db_session, seed, *, days: int = 30, qty_per_day: f
     for day in range(days):
         inv = m.SalesInvoice(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             invoice_number=f"INV-V1-FC-{day}",
             customer_id=seed["party1"].id,
             status="posted",
@@ -50,6 +51,7 @@ async def _seed_steady_sales(db_session, seed, *, days: int = 30, qty_per_day: f
         db_session.add(
             m.SalesInvoiceItem(
                 tenant_id=tenant_id,
+                company_id=seed["c1"].id,
                 sales_invoice_id=inv.id,
                 product_id=product.id,
                 quantity=qty_per_day,
@@ -100,6 +102,7 @@ async def test_dead_stock_identification_api(client, db_session):
 
     inv = m.SalesInvoice(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         invoice_number="INV-V1-DEAD-OLD",
         customer_id=seed["party1"].id,
         status="posted",
@@ -114,6 +117,7 @@ async def test_dead_stock_identification_api(client, db_session):
     db_session.add(
         m.SalesInvoiceItem(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             sales_invoice_id=inv.id,
             product_id=product.id,
             quantity=2,

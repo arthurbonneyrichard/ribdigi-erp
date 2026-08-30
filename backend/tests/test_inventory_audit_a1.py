@@ -132,7 +132,7 @@ async def test_stock_mutations_emit_inventory_audit(client, db_session):
         selling_price=2,
         stock_qty=0,
     )
-    wh = m.Warehouse(tenant_id=tenant_id, name="S17 A1 WH", code="S17A1WH")
+    wh = m.Warehouse(tenant_id=tenant_id, company_id=seed["c1"].id, name="S17 A1 WH", code="S17A1WH")
     db_session.add_all([product, wh])
     await db_session.commit()
     product_id, wh_id = product.id, wh.id

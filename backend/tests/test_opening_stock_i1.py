@@ -88,7 +88,7 @@ async def test_opening_stock_warehouse_and_batch_items(client, db_session):
     headers = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
     )
-    wh = m.Warehouse(tenant_id=seed["t1"].id, name="Opening WH", code="OPWH")
+    wh = m.Warehouse(tenant_id=seed["t1"].id, company_id=seed["c1"].id, name="Opening WH", code="OPWH")
     db_session.add(wh)
     await db_session.flush()
     p2 = m.Product(

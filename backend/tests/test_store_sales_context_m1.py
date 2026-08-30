@@ -22,22 +22,23 @@ async def test_store_sales_summary_and_isolation(client, db_session):
     tenant_id = seed["t1"].id
 
     store_a = await create_store(
-        db_session, tenant_id=tenant_id, code="SA1", name="Store A",
-        company_id=seed["c1"].id,
+        db_session, tenant_id=tenant_id,
+                company_id=seed["c1"].id, code="SA1", name="Store A",
     )
     store_b = await create_store(
-        db_session, tenant_id=tenant_id, code="SB1", name="Store B",
-        company_id=seed["c1"].id,
+        db_session, tenant_id=tenant_id,
+                company_id=seed["c1"].id, code="SB1", name="Store B",
     )
     foreign = await create_store(
-        db_session, tenant_id=seed["t2"].id, code="FX1", name="Foreign Store",
-        company_id=seed["c1"].id,
+        db_session, tenant_id=seed["t2"].id,
+                company_id=seed["c1"].id, code="FX1", name="Foreign Store",
     )
     await db_session.flush()
 
     now = datetime.utcnow()
     inv_a = m.SalesInvoice(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         invoice_number="INV-SA-1",
         customer_id=seed["party1"].id,
         store_id=store_a.id,
@@ -49,6 +50,7 @@ async def test_store_sales_summary_and_isolation(client, db_session):
     )
     inv_b = m.SalesInvoice(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         invoice_number="INV-SB-1",
         customer_id=seed["party1"].id,
         store_id=store_b.id,
@@ -60,6 +62,7 @@ async def test_store_sales_summary_and_isolation(client, db_session):
     )
     session = m.PosSession(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         store_id=store_a.id,
         user_id=seed["mgr1"].id,
         session_number="SESS-SA-1",
@@ -70,6 +73,7 @@ async def test_store_sales_summary_and_isolation(client, db_session):
     await db_session.flush()
     pos = m.Transaction(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         tx_type="pos_sale",
         reference="POS-SA-1",
         session_id=session.id,
@@ -123,12 +127,13 @@ async def test_store_sales_date_filter(client, db_session):
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
     )
     store = await create_store(
-        db_session, tenant_id=seed["t1"].id, code="SD1", name="Dated Store",
-        company_id=seed["c1"].id,
+        db_session, tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id, code="SD1", name="Dated Store",
     )
     await db_session.flush()
     old = m.SalesInvoice(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         invoice_number="INV-OLD-1",
         customer_id=seed["party1"].id,
         store_id=store.id,
@@ -140,6 +145,7 @@ async def test_store_sales_date_filter(client, db_session):
     )
     recent = m.SalesInvoice(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         invoice_number="INV-NEW-1",
         customer_id=seed["party1"].id,
         store_id=store.id,

@@ -33,6 +33,7 @@ async def test_purchase_returns_export_csv(client, db_session):
 
     po = m.PurchaseOrder(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         po_number="PO-135-RET",
         supplier_id=supplier.id,
         status="received",
@@ -42,6 +43,7 @@ async def test_purchase_returns_export_csv(client, db_session):
 
     grn = m.GoodsReceipt(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         grn_number="GRN-135-RET",
         purchase_order_id=po.id,
         supplier_id=supplier.id,
@@ -54,6 +56,7 @@ async def test_purchase_returns_export_csv(client, db_session):
         [
             m.PurchaseReturn(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 return_number="PRTN-135-DRAFT",
                 supplier_id=supplier.id,
                 purchase_order_id=po.id,
@@ -64,6 +67,7 @@ async def test_purchase_returns_export_csv(client, db_session):
             ),
             m.PurchaseReturn(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 return_number="PRTN-135-POSTED",
                 supplier_id=supplier.id,
                 purchase_order_id=po.id,

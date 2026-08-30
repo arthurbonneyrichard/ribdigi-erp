@@ -53,8 +53,8 @@ async def test_warehouse_stock_grid_and_transfer_ship_receive(client, db_session
         selling_price=2,
         stock_qty=0,
     )
-    wh_a = m.Warehouse(tenant_id=tenant_id, name="S17 W1 Source", code="S17W1A")
-    wh_b = m.Warehouse(tenant_id=tenant_id, name="S17 W1 Dest", code="S17W1B")
+    wh_a = m.Warehouse(tenant_id=tenant_id, company_id=seed["c1"].id, name="S17 W1 Source", code="S17W1A")
+    wh_b = m.Warehouse(tenant_id=tenant_id, company_id=seed["c1"].id, name="S17 W1 Dest", code="S17W1B")
     db_session.add_all([product, wh_a, wh_b])
     await db_session.commit()
     product_id, wh_a_id, wh_b_id = product.id, wh_a.id, wh_b.id
@@ -193,8 +193,8 @@ async def test_warehouse_transfer_insufficient_stock_no_movements(client, db_ses
         selling_price=2,
         stock_qty=0,
     )
-    wh_a = m.Warehouse(tenant_id=tenant_id, name="S17 W1 Short A", code="S17W1SA")
-    wh_b = m.Warehouse(tenant_id=tenant_id, name="S17 W1 Short B", code="S17W1SB")
+    wh_a = m.Warehouse(tenant_id=tenant_id, company_id=seed["c1"].id, name="S17 W1 Short A", code="S17W1SA")
+    wh_b = m.Warehouse(tenant_id=tenant_id, company_id=seed["c1"].id, name="S17 W1 Short B", code="S17W1SB")
     db_session.add_all([product, wh_a, wh_b])
     await db_session.commit()
 

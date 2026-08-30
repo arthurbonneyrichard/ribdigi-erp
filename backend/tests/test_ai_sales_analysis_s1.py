@@ -42,6 +42,7 @@ async def _seed_sales_patterns(db_session, seed):
     champ = seed["party1"]
     at_risk = m.Party(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="S1 At Risk Customer",
         kind="customer",
         credit_limit=50,
@@ -57,6 +58,7 @@ async def _seed_sales_patterns(db_session, seed):
         amt = float((i + 1) * 20)
         inv = m.SalesInvoice(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             invoice_number=f"INV-S1-T-{i}",
             customer_id=champ.id,
             status="posted",
@@ -73,6 +75,7 @@ async def _seed_sales_patterns(db_session, seed):
             [
                 m.SalesInvoiceItem(
                     tenant_id=tenant_id,
+                    company_id=seed["c1"].id,
                     sales_invoice_id=inv.id,
                     product_id=p1.id,
                     quantity=2,
@@ -81,6 +84,7 @@ async def _seed_sales_patterns(db_session, seed):
                 ),
                 m.SalesInvoiceItem(
                     tenant_id=tenant_id,
+                    company_id=seed["c1"].id,
                     sales_invoice_id=inv.id,
                     product_id=p2.id,
                     quantity=2,
@@ -97,6 +101,7 @@ async def _seed_sales_patterns(db_session, seed):
         when = when.replace(hour=11)
         inv = m.SalesInvoice(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             invoice_number=f"INV-S1-R-{j}",
             customer_id=at_risk.id,
             status="posted",
@@ -111,6 +116,7 @@ async def _seed_sales_patterns(db_session, seed):
         db_session.add(
             m.SalesInvoiceItem(
                 tenant_id=tenant_id,
+                company_id=seed["c1"].id,
                 sales_invoice_id=inv.id,
                 product_id=p1.id,
                 quantity=1,

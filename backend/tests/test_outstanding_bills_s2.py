@@ -24,7 +24,7 @@ async def test_customer_outstanding_lists_open_invoices(client, db_session):
     ac, seed = client
     headers = await _admin(ac, seed)
     tenant_id = seed["t1"].id
-    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+    await accounting_svc.ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
 
     customer = m.Party(
         tenant_id=tenant_id, name="AR Customer", kind="customer", credit_limit=500, balance=80
@@ -34,6 +34,7 @@ async def test_customer_outstanding_lists_open_invoices(client, db_session):
 
     open_inv = m.SalesInvoice(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         invoice_number="INV-OUT-1",
         customer_id=customer.id,
         status="posted",
@@ -47,6 +48,7 @@ async def test_customer_outstanding_lists_open_invoices(client, db_session):
     )
     paid_inv = m.SalesInvoice(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         invoice_number="INV-OUT-PAID",
         customer_id=customer.id,
         status="paid",
@@ -83,6 +85,7 @@ async def test_supplier_outstanding_lists_open_bills(client, db_session):
     await db_session.flush()
     inv = m.PurchaseInvoice(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         invoice_number="PI-OUT-1",
         supplier_id=supplier.id,
         status="unpaid",
