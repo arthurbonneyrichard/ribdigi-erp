@@ -1489,7 +1489,8 @@ async def post_sales_invoice_journal(
     user_id: str,
     invoice: m.SalesInvoice,
 ) -> m.JournalEntry:
-    await ensure_default_accounts(db, tenant_id)
+    company_id = getattr(invoice, "company_id", None)
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
     from app.fx import doc_rate, to_base
 
     rate = doc_rate(invoice)
@@ -1525,6 +1526,7 @@ async def post_sales_invoice_journal(
         source_type="sales_invoice",
         source_id=invoice.id,
         store_id=getattr(invoice, "store_id", None),
+        company_id=company_id,
         lines=lines,
     )
 
@@ -1537,7 +1539,9 @@ async def post_sales_return_journal(
     sales_return: m.SalesReturn,
     invoice: m.SalesInvoice | None = None,
 ) -> m.JournalEntry:
-    await ensure_default_accounts(db, tenant_id)
+    company_id = getattr(sales_return, "company_id", None) or (
+        getattr(invoice, "company_id", None) if invoice is not None else None
+    )
     from app.fx import doc_rate, to_base
 
     if invoice is None:
@@ -1549,6 +1553,10 @@ async def post_sales_return_journal(
                 )
             )
         ).scalar_one_or_none()
+    company_id = company_id or (
+        getattr(invoice, "company_id", None) if invoice is not None else None
+    )
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
     rate = doc_rate(invoice) if invoice is not None else 1.0
     revenue = to_base(float(sales_return.subtotal or 0), rate)
     tax = to_base(float(sales_return.tax_amount or 0), rate)
@@ -1585,6 +1593,7 @@ async def post_sales_return_journal(
         source_type="sales_return",
         source_id=sales_return.id,
         store_id=getattr(invoice, "store_id", None) if invoice is not None else None,
+        company_id=company_id,
         lines=lines,
     )
 
@@ -1598,7 +1607,8 @@ async def post_customer_payment_journal(
     allocations: list[tuple[m.SalesInvoice, float, float]] | None = None,
 ) -> m.JournalEntry:
     """Post receipt. allocations: (invoice, settlement_doc, discount_doc) for FX per invoice rate."""
-    await ensure_default_accounts(db, tenant_id)
+    company_id = getattr(payment, "company_id", None)
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
     from app.fx import doc_rate, fx_lines_for_receipt, to_base
 
     amount = float(payment.amount)
@@ -1670,6 +1680,7 @@ async def post_customer_payment_journal(
         reference=payment.payment_number,
         source_type="customer_payment",
         source_id=payment.id,
+        company_id=company_id,
         lines=lines,
     )
 
@@ -1682,7 +1693,8 @@ async def post_supplier_payment_journal(
     payment: m.SupplierPayment,
     allocations: list[tuple[m.PurchaseInvoice, float, float]] | None = None,
 ) -> m.JournalEntry:
-    await ensure_default_accounts(db, tenant_id)
+    company_id = getattr(payment, "company_id", None)
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
     from app.fx import doc_rate, fx_lines_for_payment, to_base
 
     amount = float(payment.amount)
@@ -1745,6 +1757,7 @@ async def post_supplier_payment_journal(
         reference=payment.payment_number,
         source_type="supplier_payment",
         source_id=payment.id,
+        company_id=company_id,
         lines=lines,
     )
 
@@ -1759,7 +1772,8 @@ async def post_grn_journal(
 ) -> m.JournalEntry | None:
     if accepted_value <= 0:
         return None
-    await ensure_default_accounts(db, tenant_id)
+    company_id = getattr(grn, "company_id", None)
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
     return await post_journal_entry(
         db,
         tenant_id=tenant_id,
@@ -1768,6 +1782,7 @@ async def post_grn_journal(
         reference=grn.grn_number,
         source_type="grn",
         source_id=grn.id,
+        company_id=company_id,
         lines=[
             {"account_code": "1200", "debit": accepted_value, "credit": 0, "description": "Inventory"},
             {"account_code": "2000", "debit": 0, "credit": accepted_value, "description": "AP"},
@@ -1783,7 +1798,8 @@ async def post_purchase_return_journal(
     purchase_return: m.PurchaseReturn,
 ) -> m.JournalEntry:
     """Reverse GRN impact: Dr AP / Cr Inventory for return total (tax-inclusive inventory value)."""
-    await ensure_default_accounts(db, tenant_id)
+    company_id = getattr(purchase_return, "company_id", None)
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
     total = float(purchase_return.total_amount)
     return await post_journal_entry(
         db,
@@ -1793,6 +1809,7 @@ async def post_purchase_return_journal(
         reference=purchase_return.debit_note_number or purchase_return.return_number,
         source_type="purchase_return",
         source_id=purchase_return.id,
+        company_id=company_id,
         lines=[
             {"account_code": "2000", "debit": total, "credit": 0, "description": "AP credit"},
             {"account_code": "1200", "debit": 0, "credit": total, "description": "Inventory out"},
@@ -1814,7 +1831,8 @@ async def post_purchase_invoice_journal(
     Stage 11 C2 GRN-linked RC: Inv/AP already posted by GRN — post self-assess
     Dr 1300 / Cr 2100 only when ``skip_inventory_ap`` is true.
     """
-    await ensure_default_accounts(db, tenant_id)
+    company_id = getattr(purchase_invoice, "company_id", None)
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
     from app.fx import doc_rate, to_base
 
     rate = doc_rate(purchase_invoice)
@@ -1868,6 +1886,7 @@ async def post_purchase_invoice_journal(
         reference=purchase_invoice.supplier_invoice_number or purchase_invoice.invoice_number,
         source_type="purchase_invoice",
         source_id=purchase_invoice.id,
+        company_id=company_id,
         lines=lines,
     )
 
@@ -1880,7 +1899,8 @@ async def post_purchase_invoice_reversal_journal(
     purchase_invoice: m.PurchaseInvoice,
     skip_inventory_ap: bool = False,
 ) -> m.JournalEntry | None:
-    await ensure_default_accounts(db, tenant_id)
+    company_id = getattr(purchase_invoice, "company_id", None)
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
     from app.fx import doc_rate, to_base
 
     rate = doc_rate(purchase_invoice)
@@ -1930,6 +1950,7 @@ async def post_purchase_invoice_reversal_journal(
         reference=purchase_invoice.invoice_number,
         source_type="purchase_invoice_cancel",
         source_id=purchase_invoice.id,
+        company_id=company_id,
         lines=lines,
     )
 
@@ -1941,7 +1962,8 @@ async def post_expense_journal(
     user_id: str,
     expense: m.Expense,
 ) -> m.JournalEntry:
-    await ensure_default_accounts(db, tenant_id)
+    company_id = getattr(expense, "company_id", None)
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
     amount = float(expense.amount)
     liquid_code, liquid_label = await resolve_settlement_gl(
         db,
@@ -1949,7 +1971,7 @@ async def post_expense_journal(
         expense.payment_method,
         liquid_account_id=getattr(expense, "liquid_account_id", None),
         outflow=True,
-        company_id=getattr(expense, "company_id", None),
+        company_id=company_id,
     )
     # Stage 14 E1 — debit mapped category COA when set; else Operating Expenses 6000
     debit_line: dict = {
@@ -1993,7 +2015,7 @@ async def post_expense_journal(
         source_type="expense",
         source_id=expense.id,
         store_id=getattr(expense, "store_id", None),
-        company_id=getattr(expense, "company_id", None),
+        company_id=company_id,
         lines=[
             debit_line,
             {

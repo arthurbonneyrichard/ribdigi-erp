@@ -57,6 +57,7 @@ async def test_stock_in_adjust_opening_warehouse_chain(client, db_session):
 
     product = m.Product(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="S17 S1 Ops SKU",
         sku="S17-S1-OPS",
         cost_price=1,

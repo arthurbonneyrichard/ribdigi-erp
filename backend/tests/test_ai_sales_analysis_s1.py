@@ -31,6 +31,7 @@ async def _seed_sales_patterns(db_session, seed):
     p1 = seed["p1"]
     p2 = m.Product(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="S1 Bundle Mate",
         sku="S1-BUNDLE",
         cost_price=1,

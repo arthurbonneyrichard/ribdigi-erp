@@ -118,6 +118,7 @@ async def test_inventory_qty_equals_stage17_movement_chain(client, db_session):
 
     product = m.Product(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="S18 I1 Stock SKU",
         sku="S18-I1-STOCK",
         cost_price=2.5,
@@ -202,6 +203,7 @@ async def test_accounting_tb_inventory_gl_and_ar_sanity(client, db_session):
 
     product = m.Product(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="S18 I1 GL SKU",
         sku="S18-I1-GL",
         cost_price=4,
@@ -306,6 +308,7 @@ async def test_pos_money_path_no_orphans_and_stock_reconciles(client, db_session
 
     product = m.Product(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="S18 I1 POS SKU",
         sku="S18-I1-POS",
         cost_price=3,

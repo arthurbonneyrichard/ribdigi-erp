@@ -93,6 +93,7 @@ async def test_product_sales_store_and_category_filters(client, db_session):
     p_a.category_id = cat_a.id
     p_b = m.Product(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="Beta Widget",
         sku="B-R1",
         cost_price=1,

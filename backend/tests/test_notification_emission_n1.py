@@ -41,6 +41,7 @@ async def test_low_stock_scan_emits_and_lists_in_stock_group(client, db_session)
 
     product = m.Product(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="S16 N1 Low Stock SKU",
         sku="S16-N1-LOW",
         cost_price=1,
@@ -148,6 +149,7 @@ async def test_credit_limit_alert_on_invoice_post(client, db_session):
 
     product = m.Product(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="S16 N1 Credit SKU",
         sku="S16-N1-CR",
         cost_price=1,
@@ -384,6 +386,7 @@ async def test_transfer_ship_emits_operational_alert(client, db_session):
 
     product = m.Product(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="S16 N1 Xfer SKU",
         sku="S16-N1-XFER",
         cost_price=1,

@@ -52,11 +52,22 @@ async def test_ar_ap_aging_payments_overdue_and_export(client, db_session):
     assert customer.status_code == 200, customer.text
     customer_id = customer.json()["data"]["id"]
 
+    store = m.Store(
+        tenant_id=tenant_id,
+        company_id=seed["c1"].id,
+        name="P1 AR Store",
+        code="P1-AR",
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.commit()
+
     inv = await ac.post(
         "/api/v1/sales/invoices",
         headers=headers,
         json={
             "customer_id": customer_id,
+            "store_id": store.id,
             "items": [
                 {
                     "product_id": seed["p1"].id,

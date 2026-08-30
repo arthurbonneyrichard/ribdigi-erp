@@ -38,6 +38,7 @@ async def test_dashboard_kpis_alerts_and_charts_fidelity(client, db_session):
     db_session.add(
         m.Product(
             tenant_id=tid,
+        company_id=seed["c1"].id,
             name="V1 Low Stock Item",
             sku="V1-LOW",
             cost_price=1,

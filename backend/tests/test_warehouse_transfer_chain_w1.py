@@ -47,6 +47,7 @@ async def test_warehouse_stock_grid_and_transfer_ship_receive(client, db_session
 
     product = m.Product(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="S17 W1 Transfer SKU",
         sku="S17-W1-XFER",
         cost_price=1,
@@ -187,6 +188,7 @@ async def test_warehouse_transfer_insufficient_stock_no_movements(client, db_ses
 
     product = m.Product(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="S17 W1 Short SKU",
         sku="S17-W1-SHORT",
         cost_price=1,

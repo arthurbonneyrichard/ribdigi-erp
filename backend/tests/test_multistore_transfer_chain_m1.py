@@ -36,6 +36,7 @@ async def test_inter_store_transfer_stock_movement_chain(client, db_session):
     # Dedicated product avoids seed unlocated stock being parked on ship via allocate_unlocated_stock.
     product = m.Product(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="S16 M1 Transfer SKU",
         sku="S16-M1-XFER",
         cost_price=3,
@@ -250,6 +251,7 @@ async def test_inter_store_ship_insufficient_warehouse_stock(client, db_session)
 
     product = m.Product(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="S16 M1 Insuf SKU",
         sku="S16-M1-INSUF",
         cost_price=1,

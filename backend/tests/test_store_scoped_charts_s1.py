@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
+import pyotp
 import pytest
 
 from app import models as m
@@ -17,6 +18,7 @@ async def test_store_manager_sales_trend_excludes_other_store(client, db_session
     mgr = seed["mgr1"]
     store = m.Store(
         tenant_id=tid,
+        company_id=seed["c1"].id,
         name="Mgr Store",
         code="MGR-1",
         manager_id=mgr.id,
@@ -24,6 +26,7 @@ async def test_store_manager_sales_trend_excludes_other_store(client, db_session
     )
     other = m.Store(
         tenant_id=tid,
+        company_id=seed["c1"].id,
         name="Other Store",
         code="OTH-1",
         manager_id=None,
@@ -36,6 +39,7 @@ async def test_store_manager_sales_trend_excludes_other_store(client, db_session
         [
             m.SalesInvoice(
                 tenant_id=tid,
+                company_id=seed["c1"].id,
                 invoice_number="INV-CHART-MGR",
                 customer_id=seed["party1"].id,
                 status="posted",
@@ -47,6 +51,7 @@ async def test_store_manager_sales_trend_excludes_other_store(client, db_session
             ),
             m.SalesInvoice(
                 tenant_id=tid,
+                company_id=seed["c1"].id,
                 invoice_number="INV-CHART-OTH",
                 customer_id=seed["party1"].id,
                 status="posted",
@@ -60,13 +65,7 @@ async def test_store_manager_sales_trend_excludes_other_store(client, db_session
     )
     await db_session.commit()
 
-    code = pyotp.TOTP(seed['super_totp_secret']).now()
-
-    headers = await auth_headers(
-
-        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
-
-    )
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
     trend = await ac.get("/api/v1/dashboard/sales-trend", headers=headers)
     assert trend.status_code == 200, trend.text
     data = trend.json()["data"]
@@ -87,8 +86,6 @@ async def test_store_manager_sales_trend_excludes_other_store(client, db_session
 @pytest.mark.asyncio
 async def test_executive_sales_trend_is_tenant_wide(client):
     ac, seed = client
-    import pyotp
-
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
     headers = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
