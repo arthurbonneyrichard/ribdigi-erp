@@ -236,10 +236,14 @@ async def test_inter_store_transfer_stock_movement_chain(client, db_session):
     qty_field = match.get("quantity", match.get("stock_qty", match.get("on_hand")))
     assert float(qty_field) == pytest.approx(qty_ship)
 
-    # Movements report includes both legs
+    # Movements report includes both legs (admin sees full chain across stores)
+    _totp = pyotp.TOTP(seed["super_totp_secret"]).now()
+    admin_h = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=_totp
+    )
     report = await ac.get(
         f"/api/v1/reports/inventory/movements?product_id={product_id}",
-        headers=mgr_from_h,
+        headers=admin_h,
     )
     assert report.status_code == 200, report.text
     movements = report.json()["data"]["movements"]

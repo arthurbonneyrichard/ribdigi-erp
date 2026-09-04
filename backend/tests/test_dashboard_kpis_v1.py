@@ -50,6 +50,7 @@ async def test_dashboard_kpis_alerts_and_charts_fidelity(client, db_session):
     db_session.add(
         m.ProductBatch(
             tenant_id=tid,
+            company_id=seed["c1"].id,
             product_id=product.id,
             batch_number="V1-BATCH",
             quantity=3,

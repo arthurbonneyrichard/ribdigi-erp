@@ -10,6 +10,7 @@ from app import models as m
 from app import sales as sales_svc
 from app.rbac import has_permission, permissions_for_role
 from app.security import hash_password
+from app.stores import create_store
 from tests.conftest import auth_headers
 
 
@@ -200,11 +201,20 @@ async def test_pos_credit_override_and_cashier_denied(client, db_session):
     assert denied.json()["detail"]["code"] == "CREDIT_OVERRIDE_FORBIDDEN"
 
     # store_manager has credit:approve but credit_limit_override remains finance/admin only
+    store = await create_store(
+        db_session,
+        tenant_id=tenant_id,
+        company_id=seed["c1"].id,
+        code="C1-OV",
+        name="C1 Override Store",
+        manager_id=seed["mgr1"].id,
+    )
+    await db_session.commit()
     mgr = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
     opened_m = await ac.post(
         "/api/v1/pos/sessions/open",
         headers=mgr,
-        json={"opening_cash": 50},
+        json={"opening_cash": 50, "store_id": store.id},
     )
     assert opened_m.status_code == 200, opened_m.text
     sid_m = opened_m.json()["data"]["session_id"]

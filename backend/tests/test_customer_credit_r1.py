@@ -49,7 +49,7 @@ async def test_customer_credit_limit_block_override_balance_payment_statement(
     # --- Set per-customer credit limit ---
     created = await ac.post(
         "/api/v1/customers",
-        headers=mgr_h,
+        headers=super_h,
         json={"name": "R1 Credit Customer", "credit_limit": 50},
     )
     assert created.status_code == 200, created.text
@@ -58,14 +58,14 @@ async def test_customer_credit_limit_block_override_balance_payment_statement(
 
     patched = await ac.patch(
         f"/api/v1/customers/{customer_id}/credit-limit",
-        headers=mgr_h,
+        headers=super_h,
         json={"credit_limit": 100},
     )
     assert patched.status_code == 200, patched.text
     assert float(patched.json()["data"]["credit_limit"]) == pytest.approx(100)
     assert "balance" in patched.json()["data"]
 
-    profile = await ac.get(f"/api/v1/customers/{customer_id}", headers=mgr_h)
+    profile = await ac.get(f"/api/v1/customers/{customer_id}", headers=super_h)
     assert profile.status_code == 200, profile.text
     assert float(profile.json()["data"]["credit_limit"]) == pytest.approx(100)
     assert float(profile.json()["data"]["balance"]) == pytest.approx(0)
@@ -73,7 +73,7 @@ async def test_customer_credit_limit_block_override_balance_payment_statement(
     # Invoice that exceeds limit (150 > 100)
     inv = await ac.post(
         "/api/v1/sales/invoices",
-        headers=mgr_h,
+        headers=super_h,
         json={
             "customer_id": customer_id,
             "store_id": store.id,
@@ -116,12 +116,12 @@ async def test_customer_credit_limit_block_override_balance_payment_statement(
     assert pdata.get("credit_limit_overridden") is True
 
     # Outstanding balance on customer profile
-    profile2 = await ac.get(f"/api/v1/customers/{customer_id}", headers=mgr_h)
+    profile2 = await ac.get(f"/api/v1/customers/{customer_id}", headers=super_h)
     assert profile2.status_code == 200
     assert float(profile2.json()["data"]["balance"]) == pytest.approx(150)
 
     outstanding = await ac.get(
-        f"/api/v1/customers/{customer_id}/outstanding", headers=mgr_h
+        f"/api/v1/customers/{customer_id}/outstanding", headers=super_h
     )
     assert outstanding.status_code == 200, outstanding.text
     docs = outstanding.json()["data"]
@@ -131,7 +131,7 @@ async def test_customer_credit_limit_block_override_balance_payment_statement(
     # Payment collections with date, amount, method, reference
     pay = await ac.post(
         f"/api/v1/customers/{customer_id}/payments",
-        headers=mgr_h,
+        headers=super_h,
         json={
             "customer_id": customer_id,
             "amount": 60,
@@ -144,7 +144,7 @@ async def test_customer_credit_limit_block_override_balance_payment_statement(
     pay_body = pay.json()["data"]
     assert pay_body.get("payment_number") or pay_body.get("id")
     assert float(pay_body.get("amount") or 60) == pytest.approx(60)
-    profile3 = await ac.get(f"/api/v1/customers/{customer_id}", headers=mgr_h)
+    profile3 = await ac.get(f"/api/v1/customers/{customer_id}", headers=super_h)
     assert float(profile3.json()["data"]["balance"]) == pytest.approx(90)
 
     # Customer statement: invoices + payments (store-scoped; ledger balance zeroed)

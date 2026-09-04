@@ -34,7 +34,12 @@ async def test_backup_restore_media_roundtrip(client, db_session, tmp_path, monk
 
     tenant_headers = await _admin(ac, seed)
     tenant_headers["X-Workspace-Kind"] = "tenant"
-    company_headers = await _admin(ac, seed)  # default company workspace
+    company_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
     tenant_id = seed["t1"].id
     product_id = seed["p1"].id
 

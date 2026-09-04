@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import pyotp
 import pytest
+from sqlalchemy import select
 
 from app import models as m
 from app import purchasing as purchasing_svc
 from app import sales as sales_svc
 from app import sales_docs as sales_docs_svc
 from app.expenses import create_expense, ensure_default_categories
+from app.stores import create_store
 from app.rbac import (
     RECORD_SCOPE_KEY,
     assert_record_access,
@@ -69,6 +71,16 @@ async def test_expense_own_scope_hides_others_records(client, db_session):
     assert patched.status_code == 200, patched.text
     assert patched.json()["data"]["record_scope"] == "own"
 
+    store = await create_store(
+        db_session,
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        code="SCOPE-E",
+        name="Scope Store",
+        manager_id=seed["mgr1"].id,
+    )
+    await db_session.commit()
+
     mgr = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
     missing = await ac.get(f"/api/v1/expenses/{foreign.id}", headers=mgr)
     # store_manager scope deny (403) may precede tenant-isolation 404
@@ -86,7 +98,13 @@ async def test_expense_own_scope_hides_others_records(client, db_session):
     created = await ac.post(
         "/api/v1/expenses",
         headers=mgr,
-        json={"amount": 12, "description": "Mine", "category": "Supplies", "payment_method": "cash"},
+        json={
+            "amount": 12,
+            "description": "Mine",
+            "category": "Supplies",
+            "payment_method": "cash",
+            "store_id": store.id,
+        },
     )
     assert created.status_code == 200, created.text
     mine_id = created.json()["data"]["id"]
@@ -274,6 +292,25 @@ async def test_purchasing_docs_own_scope_hides_others_records(client, db_session
         json={"record_scope": "own"},
     )
     assert patched.status_code == 200, patched.text
+    scope_store = await create_store(
+        db_session,
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        code="SCOPE-P",
+        name="Scope Purch Store",
+        manager_id=seed["mgr1"].id,
+    )
+    await db_session.flush()
+    scope_wh = (
+        await db_session.execute(
+            select(m.Warehouse).where(
+                m.Warehouse.tenant_id == seed["t1"].id,
+                m.Warehouse.store_id == scope_store.id,
+            )
+        )
+    ).scalar_one()
+    await db_session.commit()
+
     mgr = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
 
     assert (await ac.get(f"/api/v1/purchasing/requests/{foreign_pr.id}", headers=mgr)).status_code == 404
@@ -312,6 +349,7 @@ async def test_purchasing_docs_own_scope_hides_others_records(client, db_session
         headers=mgr,
         json={
             "supplier_id": supplier.id,
+            "warehouse_id": scope_wh.id,
             "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 3}],
         },
     )
