@@ -141,7 +141,7 @@ async def test_a01_foreign_webhook_and_expense_idor(client, db_session):
 async def test_a03_ai_injection_blocked_and_inventory_lookup_safe(client):
     """Stage 5/10 AI guard + inventory lookup remain injection-safe."""
     ac, _seed = client
-    headers = await _mgr(ac, seed)
+    headers = await _mgr(ac)
 
     denied = await ac.post(
         "/api/v1/ai/chat",
@@ -168,7 +168,7 @@ async def test_a03_ai_injection_blocked_and_inventory_lookup_safe(client):
 async def test_a05_stage17_error_surfaces_no_traceback(client):
     """Stage 17 warehouse/stock error responses stay opaque."""
     ac, _seed = client
-    headers = await _mgr(ac, seed)
+    headers = await _mgr(ac)
     missing = await ac.patch(
         "/api/v1/warehouses/00000000-0000-0000-0000-000000000099",
         headers=headers,
