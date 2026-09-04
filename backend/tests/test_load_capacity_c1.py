@@ -28,7 +28,7 @@ async def test_c1_capacity_evidence_artifact(client, db_session):
     _ac, seed = client
     from app import catalog_meta as catalog_meta_svc
 
-    await catalog_meta_svc.ensure_default_catalog(db_session, seed["t1"].id)
+    await catalog_meta_svc.ensure_default_catalog(db_session, seed["t1"].id, company_id=seed["c1"].id)
     await db_session.commit()
 
     EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)

@@ -84,8 +84,8 @@ async def test_product_sales_store_and_category_filters(client, db_session):
     )
     tenant_id = seed["t1"].id
 
-    cat_a = m.ProductCategory(tenant_id=tenant_id, name="Cat A", code="CA")
-    cat_b = m.ProductCategory(tenant_id=tenant_id, name="Cat B", code="CB")
+    cat_a = m.ProductCategory(tenant_id=tenant_id, company_id=seed["c1"].id, name="Cat A", code="CA")
+    cat_b = m.ProductCategory(tenant_id=tenant_id, company_id=seed["c1"].id, name="Cat B", code="CB")
     db_session.add_all([cat_a, cat_b])
     await db_session.flush()
 
@@ -104,8 +104,8 @@ async def test_product_sales_store_and_category_filters(client, db_session):
     db_session.add(p_b)
     await db_session.flush()
 
-    store_a = await create_store(db_session, tenant_id=tenant_id, code="R1A", name="R1 Store A")
-    store_b = await create_store(db_session, tenant_id=tenant_id, code="R1B", name="R1 Store B")
+    store_a = await create_store(db_session, tenant_id=tenant_id, company_id=seed["c1"].id, code="R1A", name="R1 Store A")
+    store_b = await create_store(db_session, tenant_id=tenant_id, company_id=seed["c1"].id, code="R1B", name="R1 Store B")
     await db_session.flush()
 
     now = datetime.utcnow()
