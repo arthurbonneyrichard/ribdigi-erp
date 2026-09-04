@@ -131,48 +131,62 @@ async def list_low_stock_alerts(
     tenant_id: str,
     stock_status: str | None = None,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> list[dict]:
+    """Low-stock alerts.
+
+    ``warehouse_ids``:
+    - ``None`` — tenant/company-wide (product + all warehouse rows)
+    - ``[]`` / list — store_manager mode: omit company-wide product rows; only
+      warehouse-scoped rows in the given IDs (fail closed for central stock)
+    """
     status_filter = _normalize_stock_status(stock_status)
-    prod_stmt = (
-        select(m.Product)
-        .where(
-            m.Product.tenant_id == tenant_id,
-            m.Product.is_active == True,  # noqa: E712
-        )
-        .order_by(m.Product.stock_qty.asc())
-    )
-    if company_id:
-        prod_stmt = prod_stmt.where(m.Product.company_id == company_id)
-    products = (await db.execute(prod_stmt)).scalars().all()
     out: list[dict] = []
-    for p in products:
-        qty = float(p.stock_qty or 0)
-        minimum = float(getattr(p, "minimum_stock", 0) or 0)
-        reorder = float(p.reorder_level or 0)
-        status = compute_stock_status(qty, minimum, reorder)
-        if status == "green":
-            continue
-        if status_filter and status != status_filter:
-            continue
-        out.append(
-            {
-                "id": p.id,
-                "sku": p.sku,
-                "name": p.name,
-                "stock_qty": qty,
-                "minimum_stock": minimum,
-                "reorder_level": reorder,
-                "stock_status": status,
-                "cost_price": float(p.cost_price or 0),
-                "scope": "product",
-                "warehouse_id": None,
-                "warehouse_code": None,
-                "suggested_order_qty": max(
-                    1.0,
-                    round(reorder - qty, 3) if reorder > qty else max(reorder, 1.0),
-                ),
-            }
+
+    # Company-wide product scope is omitted for store_managers (warehouse_ids set).
+    if warehouse_ids is None:
+        prod_stmt = (
+            select(m.Product)
+            .where(
+                m.Product.tenant_id == tenant_id,
+                m.Product.is_active == True,  # noqa: E712
+            )
+            .order_by(m.Product.stock_qty.asc())
         )
+        if company_id:
+            prod_stmt = prod_stmt.where(m.Product.company_id == company_id)
+        products = (await db.execute(prod_stmt)).scalars().all()
+        for p in products:
+            qty = float(p.stock_qty or 0)
+            minimum = float(getattr(p, "minimum_stock", 0) or 0)
+            reorder = float(p.reorder_level or 0)
+            status = compute_stock_status(qty, minimum, reorder)
+            if status == "green":
+                continue
+            if status_filter and status != status_filter:
+                continue
+            out.append(
+                {
+                    "id": p.id,
+                    "sku": p.sku,
+                    "name": p.name,
+                    "stock_qty": qty,
+                    "minimum_stock": minimum,
+                    "reorder_level": reorder,
+                    "stock_status": status,
+                    "cost_price": float(p.cost_price or 0),
+                    "scope": "product",
+                    "warehouse_id": None,
+                    "warehouse_code": None,
+                    "suggested_order_qty": max(
+                        1.0,
+                        round(reorder - qty, 3) if reorder > qty else max(reorder, 1.0),
+                    ),
+                }
+            )
+
+    if warehouse_ids is not None and not warehouse_ids:
+        return out
 
     wh_stmt = (
         select(m.WarehouseStock, m.Product, m.Warehouse)
@@ -189,6 +203,8 @@ async def list_low_stock_alerts(
             m.Product.company_id == company_id,
             m.Warehouse.company_id == company_id,
         )
+    if warehouse_ids is not None:
+        wh_stmt = wh_stmt.where(m.WarehouseStock.warehouse_id.in_(warehouse_ids))
     wh_rows = (await db.execute(wh_stmt)).all()
     for stock, product, wh in wh_rows:
         qty = float(stock.quantity or 0)
@@ -231,6 +247,7 @@ async def export_movements_csv(
     tenant_id: str,
     product_id: str | None = None,
     warehouse_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
     movement_type: str | None = None,
     from_date: str | None = None,
     to_date: str | None = None,
@@ -252,6 +269,7 @@ async def export_movements_csv(
         tenant_id=tenant_id,
         product_id=product_id,
         warehouse_id=warehouse_id,
+        warehouse_ids=warehouse_ids,
         movement_type=movement_type,
         from_dt=reports_svc.parse_date(from_date),
         to_dt=reports_svc.parse_date(to_date, end_of_day=True),
@@ -272,15 +290,24 @@ async def export_low_stock_csv(
     tenant_id: str,
     stock_status: str | None = None,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
+    omit_cost_price: bool = False,
 ) -> str:
     rows = await list_low_stock_alerts(
-        db, tenant_id=tenant_id, stock_status=stock_status, company_id=company_id
+        db,
+        tenant_id=tenant_id,
+        stock_status=stock_status,
+        company_id=company_id,
+        warehouse_ids=warehouse_ids,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=LOW_STOCK_EXPORT_COLUMNS)
     writer.writeheader()
     for row in rows:
-        writer.writerow({k: _cell(row.get(k)) for k in LOW_STOCK_EXPORT_COLUMNS})
+        out = {k: _cell(row.get(k)) for k in LOW_STOCK_EXPORT_COLUMNS}
+        if omit_cost_price:
+            out["cost_price"] = ""
+        writer.writerow(out)
     return buf.getvalue()
 
 
@@ -290,10 +317,15 @@ async def export_expiring_batches_csv(
     tenant_id: str,
     days: int = 30,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
     days_n = max(0, min(int(days), 3650))
     rows = await catalog_svc.list_expiring_batches(
-        db, tenant_id, within_days=days_n, company_id=company_id
+        db,
+        tenant_id,
+        within_days=days_n,
+        company_id=company_id,
+        warehouse_ids=warehouse_ids,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=EXPIRING_BATCH_EXPORT_COLUMNS)
@@ -309,10 +341,18 @@ async def export_product_batches_csv(
     *,
     tenant_id: str,
     product_id: str,
+    company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
     """Stage 154 K1 — per-product batches CSV (distinct from Stage 137 expiring window)."""
     await catalog_svc.get_product(db, tenant_id, product_id)
-    rows = await catalog_svc.list_batches(db, tenant_id, product_id=product_id)
+    rows = await catalog_svc.list_batches(
+        db,
+        tenant_id,
+        product_id=product_id,
+        company_id=company_id,
+        warehouse_ids=warehouse_ids,
+    )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=PRODUCT_BATCH_EXPORT_COLUMNS)
     writer.writeheader()
@@ -328,6 +368,7 @@ async def export_product_warehouse_stock_csv(
     tenant_id: str,
     product_id: str,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
     """Stage 155 W1 — per-product warehouse placement CSV (distinct from Stage 137 movements)."""
     product = await catalog_svc.get_product(db, tenant_id, product_id)
@@ -344,11 +385,30 @@ async def export_product_warehouse_stock_csv(
             (m.WarehouseStock.company_id == company_id)
             | (m.WarehouseStock.company_id.is_(None))
         )
-    rows = (await db.execute(stock_q.order_by(m.Warehouse.code))).all()
+    if warehouse_ids is not None:
+        if not warehouse_ids:
+            rows = []
+        else:
+            stock_q = stock_q.where(m.Warehouse.id.in_(warehouse_ids))
+            rows = (await db.execute(stock_q.order_by(m.Warehouse.code))).all()
+    else:
+        rows = (await db.execute(stock_q.order_by(m.Warehouse.code))).all()
     p_min = float(getattr(product, "minimum_stock", 0) or 0)
     p_ro = float(product.reorder_level or 0)
     p_qty = float(product.stock_qty or 0)
     p_reserved = float(getattr(product, "reserved_qty", 0) or 0)
+    if warehouse_ids is not None:
+        p_qty = sum(float(stock.quantity or 0) for stock, _wh in rows)
+        p_reserved = sum(float(getattr(stock, "reserved_qty", 0) or 0) for stock, _wh in rows)
+        if rows:
+            wh_mins: list[float] = []
+            wh_ros: list[float] = []
+            for stock, _wh in rows:
+                minimum, reorder = effective_warehouse_thresholds(stock, product)
+                wh_mins.append(minimum)
+                wh_ros.append(reorder)
+            p_min = max(wh_mins) if wh_mins else p_min
+            p_ro = max(wh_ros) if wh_ros else p_ro
     consolidated_status = compute_stock_status(p_qty, p_min, p_ro)
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=PRODUCT_WAREHOUSE_STOCK_EXPORT_COLUMNS)

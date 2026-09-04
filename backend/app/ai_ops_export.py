@@ -306,6 +306,9 @@ async def export_security_alerts_csv(
     tenant_id: str,
     lookback_hours: int = 72,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
+    scoped_user_id: str | None = None,
 ) -> str:
     """Stage 145 S1 — AI security alert rows (audit-derived; no secrets)."""
     data = await ai_security_svc.scan_security_alerts(
@@ -314,6 +317,9 @@ async def export_security_alerts_csv(
         lookback_hours=lookback_hours,
         notify=False,
         company_id=company_id,
+        store_ids=store_ids,
+        warehouse_ids=warehouse_ids,
+        scoped_user_id=scoped_user_id,
     )
     lookback = data.get("lookback_hours")
     buf = io.StringIO()
@@ -370,10 +376,21 @@ async def export_report_templates_csv(
 
 
 async def export_business_insights_csv(
-    db: AsyncSession, *, tenant_id: str, company_id: str | None = None
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
     """Stage 145 I1 — business insight cards CSV (rule-based; not LLM transcripts)."""
-    data = await ai_insights_svc.generate_insights(db, tenant_id, company_id=company_id)
+    data = await ai_insights_svc.generate_insights(
+        db,
+        tenant_id,
+        company_id=company_id,
+        store_ids=store_ids,
+        warehouse_ids=warehouse_ids,
+    )
     generated_at = data.get("generated_at")
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=INSIGHT_EXPORT_COLUMNS)
@@ -406,6 +423,8 @@ async def export_low_stock_predictions_csv(
     lead_time_days: int = 7,
     at_risk_only: bool = False,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
     """Stage 146 L1 — low-stock prediction rows CSV."""
     data = await ai_inventory_svc.predict_low_stock(
@@ -416,6 +435,8 @@ async def export_low_stock_predictions_csv(
         lead_time_days=lead_time_days,
         at_risk_only=at_risk_only,
         company_id=company_id,
+        store_ids=store_ids,
+        warehouse_ids=warehouse_ids,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=LOW_STOCK_EXPORT_COLUMNS)
@@ -433,6 +454,8 @@ async def export_demand_forecast_csv(
     lead_time_days: int = 7,
     product_id: str | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
     """Stage 146 F1 — demand forecast rows CSV."""
     data = await ai_inventory_svc.forecast_demand(
@@ -442,6 +465,8 @@ async def export_demand_forecast_csv(
         lead_time_days=lead_time_days,
         product_id=product_id,
         company_id=company_id,
+        store_ids=store_ids,
+        warehouse_ids=warehouse_ids,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=DEMAND_FORECAST_EXPORT_COLUMNS)
@@ -458,6 +483,9 @@ async def export_dead_stock_csv(
     lookback_days: int = 90,
     min_stock: float = 0,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
+    omit_cost: bool = False,
 ) -> str:
     """Stage 146 K1 — dead-stock items CSV."""
     data = await ai_inventory_svc.identify_dead_stock(
@@ -466,12 +494,18 @@ async def export_dead_stock_csv(
         lookback_days=lookback_days,
         min_stock=min_stock,
         company_id=company_id,
+        store_ids=store_ids,
+        warehouse_ids=warehouse_ids,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=DEAD_STOCK_EXPORT_COLUMNS)
     writer.writeheader()
     for row in data.get("items") or []:
-        writer.writerow({k: _cell(row.get(k)) for k in DEAD_STOCK_EXPORT_COLUMNS})
+        out = {k: _cell(row.get(k)) for k in DEAD_STOCK_EXPORT_COLUMNS}
+        if omit_cost:
+            out["cost_price"] = ""
+            out["estimated_carrying_cost"] = ""
+        writer.writerow(out)
     return buf.getvalue()
 
 
@@ -513,6 +547,8 @@ async def export_inventory_predictions_csv(
     horizon_days: int = 14,
     lead_time_days: int = 7,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
     """Stage 157 P1 — combined demand forecast + low-stock predictions CSV.
 
@@ -524,6 +560,8 @@ async def export_inventory_predictions_csv(
         lookback_days=lookback_days,
         lead_time_days=lead_time_days,
         company_id=company_id,
+        store_ids=store_ids,
+        warehouse_ids=warehouse_ids,
     )
     low = await ai_inventory_svc.predict_low_stock(
         db,
@@ -533,6 +571,8 @@ async def export_inventory_predictions_csv(
         lead_time_days=lead_time_days,
         at_risk_only=False,
         company_id=company_id,
+        store_ids=store_ids,
+        warehouse_ids=warehouse_ids,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=INVENTORY_PREDICTIONS_EXPORT_COLUMNS)
@@ -644,6 +684,7 @@ async def export_sales_analysis_csv(
     to_date: str | None = None,
     lookback_days: int = 90,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> str:
     """Stage 147 S1 — sales analysis multi-section CSV (summary / RFM / affinity / peaks)."""
     data = await ai_sales_svc.analyze_sales(
@@ -653,6 +694,7 @@ async def export_sales_analysis_csv(
         to_date=to_date,
         lookback_days=lookback_days,
         company_id=company_id,
+        store_ids=store_ids,
     )
     summary = data.get("summary") or {}
     trend = data.get("trend") or {}
@@ -746,6 +788,7 @@ async def export_expense_analysis_csv(
     from_date: str | None = None,
     to_date: str | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> str:
     """Stage 147 E1 — expense analysis multi-section CSV (summary / anomalies / suggestions)."""
     data = await ai_expenses_svc.analyze_expenses(
@@ -754,6 +797,7 @@ async def export_expense_analysis_csv(
         from_date=from_date,
         to_date=to_date,
         company_id=company_id,
+        store_ids=store_ids,
     )
     summary = data.get("summary") or {}
     budget = data.get("budget_variance") or {}
@@ -828,6 +872,7 @@ async def export_purchases_analysis_csv(
     to_date: str | None = None,
     lookback_days: int = 90,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
     """Stage 147 P1 — purchases analysis multi-section CSV (summary / suppliers / overdue / suggestions)."""
     data = await ai_purchases_svc.analyze_purchases(
@@ -837,6 +882,7 @@ async def export_purchases_analysis_csv(
         to_date=to_date,
         lookback_days=lookback_days,
         company_id=company_id,
+        warehouse_ids=warehouse_ids,
     )
     summary = data.get("summary") or {}
     suppliers = data.get("suppliers") or {}
@@ -962,10 +1008,15 @@ async def export_customer_insights_csv(
     tenant_id: str,
     lookback_days: int = 180,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> str:
     """Stage 148 I1 — customer intelligence multi-section CSV."""
     data = await ai_customers_svc.customer_intelligence(
-        db, tenant_id, lookback_days=lookback_days, company_id=company_id
+        db,
+        tenant_id,
+        lookback_days=lookback_days,
+        company_id=company_id,
+        store_ids=store_ids,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=CUSTOMER_INSIGHTS_EXPORT_COLUMNS)
@@ -1048,6 +1099,8 @@ async def export_cross_domain_analysis_csv(
     to_date: str | None = None,
     lookback_days: int = 90,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
     """Stage 148 X1 — cross-domain analysis multi-section CSV (summary / signals)."""
     data = await ai_cross_domain_svc.analyze_cross_domain(
@@ -1057,6 +1110,8 @@ async def export_cross_domain_analysis_csv(
         to_date=to_date,
         lookback_days=lookback_days,
         company_id=company_id,
+        store_ids=store_ids,
+        warehouse_ids=warehouse_ids,
     )
     summary = data.get("summary") or {}
     buf = io.StringIO()
@@ -1223,6 +1278,8 @@ async def export_document_analyze_csv(
     upload: UploadFile,
     document_type: str = "receipt",
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
     """Stage 149 A1 — document analyze result CSV."""
     data = await ai_documents_svc.analyze_document(
@@ -1231,5 +1288,7 @@ async def export_document_analyze_csv(
         upload=upload,
         document_type=document_type,
         company_id=company_id,
+        store_ids=store_ids,
+        warehouse_ids=warehouse_ids,
     )
     return document_analyze_result_to_csv(data)

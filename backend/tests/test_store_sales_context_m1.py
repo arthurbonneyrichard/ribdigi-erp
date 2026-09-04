@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
+import pyotp
 import pytest
 
 from app import models as m
@@ -14,23 +15,30 @@ from tests.conftest import auth_headers
 @pytest.mark.asyncio
 async def test_store_sales_summary_and_isolation(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     tenant_id = seed["t1"].id
 
     store_a = await create_store(
-        db_session, tenant_id=tenant_id, code="SA1", name="Store A"
+        db_session, tenant_id=tenant_id,
+                company_id=seed["c1"].id, code="SA1", name="Store A",
     )
     store_b = await create_store(
-        db_session, tenant_id=tenant_id, code="SB1", name="Store B"
+        db_session, tenant_id=tenant_id,
+                company_id=seed["c1"].id, code="SB1", name="Store B",
     )
     foreign = await create_store(
-        db_session, tenant_id=seed["t2"].id, code="FX1", name="Foreign Store"
+        db_session, tenant_id=seed["t2"].id,
+                company_id=seed["c2"].id, code="FX1", name="Foreign Store",
     )
     await db_session.flush()
 
     now = datetime.utcnow()
     inv_a = m.SalesInvoice(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         invoice_number="INV-SA-1",
         customer_id=seed["party1"].id,
         store_id=store_a.id,
@@ -42,6 +50,7 @@ async def test_store_sales_summary_and_isolation(client, db_session):
     )
     inv_b = m.SalesInvoice(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         invoice_number="INV-SB-1",
         customer_id=seed["party1"].id,
         store_id=store_b.id,
@@ -53,6 +62,7 @@ async def test_store_sales_summary_and_isolation(client, db_session):
     )
     session = m.PosSession(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         store_id=store_a.id,
         user_id=seed["mgr1"].id,
         session_number="SESS-SA-1",
@@ -63,6 +73,7 @@ async def test_store_sales_summary_and_isolation(client, db_session):
     await db_session.flush()
     pos = m.Transaction(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         tx_type="pos_sale",
         reference="POS-SA-1",
         session_id=session.id,
@@ -94,7 +105,12 @@ async def test_store_sales_summary_and_isolation(client, db_session):
     assert sales_b.json()["data"]["summary"]["revenue"] == pytest.approx(55.0)
 
     missing = await ac.get(f"/api/v1/stores/{foreign.id}/sales", headers=headers)
-    assert missing.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert missing.status_code in (403, 404), missing.text
+    if missing.status_code == 403:
+        detail = missing.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"
 
     listed = await ac.get("/api/v1/stores", headers=headers)
     assert listed.status_code == 200
@@ -106,13 +122,18 @@ async def test_store_sales_summary_and_isolation(client, db_session):
 @pytest.mark.asyncio
 async def test_store_sales_date_filter(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     store = await create_store(
-        db_session, tenant_id=seed["t1"].id, code="SD1", name="Dated Store"
+        db_session, tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id, code="SD1", name="Dated Store",
     )
     await db_session.flush()
     old = m.SalesInvoice(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         invoice_number="INV-OLD-1",
         customer_id=seed["party1"].id,
         store_id=store.id,
@@ -124,6 +145,7 @@ async def test_store_sales_date_filter(client, db_session):
     )
     recent = m.SalesInvoice(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         invoice_number="INV-NEW-1",
         customer_id=seed["party1"].id,
         store_id=store.id,

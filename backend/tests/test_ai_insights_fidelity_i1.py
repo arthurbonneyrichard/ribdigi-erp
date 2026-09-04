@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -18,15 +19,22 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 @pytest.mark.asyncio
 async def test_insights_api_sales_expense_and_restock(client, db_session):
     """BR-21.2: unusual sales/expense signals + restock suggestions via GET /ai/insights."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
     product = seed["p1"]
     now = datetime.utcnow()
@@ -35,6 +43,7 @@ async def test_insights_api_sales_expense_and_restock(client, db_session):
         db_session.add(
             m.SalesInvoice(
                 tenant_id=tenant_id,
+                company_id=seed["c1"].id,
                 invoice_number=f"INV-I1-W-{i}",
                 customer_id=seed["party1"].id,
                 status="posted",
@@ -48,6 +57,7 @@ async def test_insights_api_sales_expense_and_restock(client, db_session):
     db_session.add(
         m.SalesInvoice(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             invoice_number="INV-I1-PW-1",
             customer_id=seed["party1"].id,
             status="posted",
@@ -61,6 +71,7 @@ async def test_insights_api_sales_expense_and_restock(client, db_session):
     db_session.add(
         m.Expense(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             category="Utilities",
             description="I1 spike",
             amount=800,
@@ -72,6 +83,7 @@ async def test_insights_api_sales_expense_and_restock(client, db_session):
     db_session.add(
         m.Expense(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             category="Utilities",
             description="I1 prior",
             amount=100,
@@ -86,6 +98,7 @@ async def test_insights_api_sales_expense_and_restock(client, db_session):
     for day in range(20):
         inv = m.SalesInvoice(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             invoice_number=f"INV-I1-RS-{day}",
             customer_id=seed["party1"].id,
             status="posted",
@@ -100,6 +113,7 @@ async def test_insights_api_sales_expense_and_restock(client, db_session):
         db_session.add(
             m.SalesInvoiceItem(
                 tenant_id=tenant_id,
+                company_id=seed["c1"].id,
                 sales_invoice_id=inv.id,
                 product_id=product.id,
                 quantity=5,
@@ -163,7 +177,7 @@ async def test_weekly_digest_publish_and_job_handler(client, db_session, monkeyp
     assert digests[0].category == "ai_insight"
 
     # Admin jobs dry-run path lists the insights job (HTTP list only)
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     # company_admin/super can list; mgr is store_manager — may 403
     listed = await ac.get("/api/v1/jobs", headers=headers)
     if listed.status_code == 200:

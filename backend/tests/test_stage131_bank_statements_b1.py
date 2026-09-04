@@ -37,6 +37,7 @@ async def test_bank_statements_status_filter_and_export(client, db_session):
 
     draft = m.BankStatement(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         account_id=acct.id,
         status="draft",
         opening_balance=0,
@@ -45,6 +46,7 @@ async def test_bank_statements_status_filter_and_export(client, db_session):
     )
     reconciled = m.BankStatement(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         account_id=acct.id,
         status="reconciled",
         opening_balance=0,

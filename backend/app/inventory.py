@@ -512,6 +512,7 @@ async def list_movements_serialized(
     tenant_id: str,
     product_id: str | None = None,
     warehouse_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
     movement_type: str | None = None,
     from_dt=None,
     to_dt=None,
@@ -525,6 +526,10 @@ async def list_movements_serialized(
         stmt = stmt.where(m.StockMovement.product_id == product_id)
     if warehouse_id:
         stmt = stmt.where(m.StockMovement.warehouse_id == warehouse_id)
+    elif warehouse_ids is not None:
+        if not warehouse_ids:
+            return []
+        stmt = stmt.where(m.StockMovement.warehouse_id.in_(warehouse_ids))
     if movement_type:
         stmt = stmt.where(m.StockMovement.movement_type == movement_type)
     if from_dt:

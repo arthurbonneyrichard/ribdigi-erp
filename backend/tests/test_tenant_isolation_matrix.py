@@ -172,7 +172,10 @@ async def test_store_inventory_isolation(client, db_session):
 
     headers = await _mgr_headers(ac)
     r = await ac.get(f"/api/v1/stores/{store.id}/inventory", headers=headers)
-    assert r.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert r.status_code in (403, 404), r.text
+    if r.status_code == 403:
+        assert r.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
 
 @pytest.mark.asyncio
@@ -596,8 +599,15 @@ async def test_owned_expense_wrong_media_key_403(client, db_session):
 
     headers = await _mgr_headers(ac)
     r = await ac.get(f"/api/v1/expenses/{expense.id}/attachment", headers=headers)
-    assert r.status_code == 403
-    assert "tenant mismatch" in r.json()["detail"].lower()
+    assert r.status_code == 403, r.text
+    detail = r.json()["detail"]
+    if isinstance(detail, dict):
+        # null-store fail-closed for store_manager, or structured media deny
+        code = detail.get("code")
+        msg = str(detail.get("message") or detail.get("detail") or detail).lower()
+        assert code == "STORE_SCOPE_DENIED" or "tenant mismatch" in msg
+    else:
+        assert "tenant mismatch" in str(detail).lower()
 
 
 @pytest.mark.asyncio
@@ -658,7 +668,10 @@ async def test_foreign_product_labels_404(client):
     ac, seed = client
     headers = await _mgr_headers(ac)
     r = await ac.get(f"/api/v1/products/{seed['p2'].id}/labels", headers=headers)
-    assert r.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert r.status_code in (403, 404), r.text
+    if r.status_code == 403:
+        assert r.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
 
 @pytest.mark.asyncio
@@ -838,7 +851,10 @@ async def test_foreign_warehouse_id_on_stock_in_404(client, db_session):
             "warehouse_id": beta_wh.id,
         },
     )
-    assert r.status_code == 404, r.text
+    # store_manager WH scope deny (403) may precede tenant-isolation 404
+    assert r.status_code in (403, 404), r.text
+    if r.status_code == 403:
+        assert r.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
     await db_session.refresh(seed["p1"])
     assert float(seed["p1"].stock_qty or 0) == before
@@ -877,7 +893,10 @@ async def test_foreign_liquid_account_id_on_customer_payment_404(client, db_sess
             "liquid_account_id": beta_bank.id,
         },
     )
-    assert r.status_code == 404, r.text
+    # store_manager write-path scope deny (403) may precede tenant FK resolve (404)
+    assert r.status_code in (403, 404), r.text
+    if r.status_code == 403:
+        assert r.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
     planted = (
         await db_session.execute(
             select(m.CustomerPayment).where(
@@ -957,7 +976,10 @@ async def test_foreign_store_id_on_expense_create_404(client, db_session):
             "store_id": store.id,
         },
     )
-    assert r.status_code == 404, r.text
+    # store_manager write-path scope deny (403) before tenant FK resolve (404)
+    assert r.status_code in (403, 404), r.text
+    if r.status_code == 403:
+        assert r.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
     planted = (
         await db_session.execute(
             select(m.Expense).where(
@@ -982,7 +1004,10 @@ async def test_foreign_manager_id_on_store_create_404(client, db_session):
             "manager_id": seed["u2"].id,
         },
     )
-    assert r.status_code == 404, r.text
+    # store_manager cannot create stores (403) before foreign manager_id resolve (404)
+    assert r.status_code in (403, 404), r.text
+    if r.status_code == 403:
+        assert r.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
     planted = (
         await db_session.execute(
             select(m.Store).where(
@@ -1019,4 +1044,7 @@ async def test_foreign_liquid_account_id_on_expense_create_404(client, db_sessio
             "liquid_account_id": beta_bank.id,
         },
     )
-    assert r.status_code == 404, r.text
+    # store_manager write-path scope deny (403) may precede tenant FK resolve (404)
+    assert r.status_code in (403, 404), r.text
+    if r.status_code == 403:
+        assert r.json()["detail"]["code"] == "STORE_SCOPE_DENIED"

@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+import pyotp
 from sqlalchemy import select
 
 from app import models as m
@@ -56,6 +57,7 @@ async def _seed_inter_store_transfer(ac, db_session, seed, *, qty: float = 5.0):
     from_store = await create_store(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         code="S16M2S",
         name="S16 M2 Source",
         manager_id=mgr_from.id,
@@ -63,6 +65,7 @@ async def _seed_inter_store_transfer(ac, db_session, seed, *, qty: float = 5.0):
     to_store = await create_store(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         code="S16M2D",
         name="S16 M2 Dest",
         manager_id=mgr_to.id,
@@ -88,7 +91,7 @@ async def _seed_inter_store_transfer(ac, db_session, seed, *, qty: float = 5.0):
     )
     await db_session.commit()
 
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     created = await ac.post(
         "/api/v1/stores/transfers",
         headers=headers,
@@ -157,7 +160,13 @@ async def test_transfer_history_exportable(client, db_session):
 
     assert "transfer_history" in EXPORTABLE
 
-    exportable = await ac.get("/api/v1/reports/exportable", headers=headers)
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    exportable = await ac.get("/api/v1/reports/exportable", headers=admin_headers)
     assert exportable.status_code == 200
     assert "transfer_history" in exportable.json()["data"]["types"]
 

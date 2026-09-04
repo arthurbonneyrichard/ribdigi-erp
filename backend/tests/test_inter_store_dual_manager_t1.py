@@ -32,10 +32,22 @@ async def test_inter_store_ship_receive_requires_store_managers(client, db_sessi
     )
     db_session.add(mgr_to)
     await db_session.flush()
+    db_session.add(
+        m.UserCompanyMembership(
+            tenant_id=tenant_id,
+            user_id=mgr_to.id,
+            company_id=seed["c1"].id,
+            role="store_manager",
+            permissions=permissions_for_role("store_manager"),
+            is_active=True,
+        )
+    )
+    await db_session.flush()
 
     from_store = await create_store(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         code="SRC1",
         name="Source Store",
         manager_id=mgr_from.id,
@@ -43,6 +55,7 @@ async def test_inter_store_ship_receive_requires_store_managers(client, db_sessi
     to_store = await create_store(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         code="DST1",
         name="Dest Store",
         manager_id=mgr_to.id,
@@ -136,10 +149,22 @@ async def test_admin_override_ships_with_audit(client, db_session):
     )
     db_session.add(mgr_to)
     await db_session.flush()
+    db_session.add(
+        m.UserCompanyMembership(
+            tenant_id=tenant_id,
+            user_id=mgr_to.id,
+            company_id=seed["c1"].id,
+            role="store_manager",
+            permissions=permissions_for_role("store_manager"),
+            is_active=True,
+        )
+    )
+    await db_session.flush()
 
     from_store = await create_store(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         code="SRC2",
         name="Source Store 2",
         manager_id=mgr_from.id,
@@ -147,6 +172,7 @@ async def test_admin_override_ships_with_audit(client, db_session):
     to_store = await create_store(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         code="DST2",
         name="Dest Store 2",
         manager_id=mgr_to.id,

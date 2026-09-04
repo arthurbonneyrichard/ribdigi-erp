@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -12,20 +13,39 @@ from app.rbac import permissions_for_role
 from tests.conftest import auth_headers
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 @pytest.mark.asyncio
 async def test_top_selling_product_chat(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
     product = seed["p1"]
     now = datetime.utcnow()
+    store = m.Store(
+        tenant_id=tenant_id,
+        company_id=seed["c1"].id,
+        name="Chat Top Store",
+        code="CHAT-TOP",
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
 
     inv = m.SalesInvoice(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
+        store_id=store.id,
         invoice_number="INV-CHAT-TOP-1",
         customer_id=seed["party1"].id,
         status="posted",
@@ -40,6 +60,7 @@ async def test_top_selling_product_chat(client, db_session):
     db_session.add(
         m.SalesInvoiceItem(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             sales_invoice_id=inv.id,
             product_id=product.id,
             quantity=40,
@@ -60,16 +81,18 @@ async def test_top_selling_product_chat(client, db_session):
     assert data["method"] == "rules_v1"
     assert product.name in data["answer"]
     assert data["data"]["product_id"] == product.id
+    assert data["data"].get("scope") == "store_manager"
     assert "Beta" not in data["answer"]
 
 
 @pytest.mark.asyncio
 async def test_create_draft_po_via_chat(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
     supplier = m.Party(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="Alpha Supplier",
         kind="supplier",
         status="active",
@@ -119,6 +142,7 @@ async def test_create_po_denied_without_purchasing_write(client, db_session):
     db_session.add(
         m.Party(
             tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
             name="Alpha Supplier 2",
             kind="supplier",
             status="active",
@@ -142,7 +166,7 @@ async def test_create_po_denied_without_purchasing_write(client, db_session):
 @pytest.mark.asyncio
 async def test_chat_history_persisted_and_user_scoped(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
 
     first = await ac.post(
         "/api/v1/ai/chat",
@@ -168,7 +192,7 @@ async def test_chat_history_persisted_and_user_scoped(client, db_session):
 
 @pytest.mark.asyncio
 async def test_chat_empty_message_rejected(client):
-    ac, _seed = client
-    headers = await _mgr(ac)
+    ac, seed = client
+    headers = await _mgr(ac, seed)
     r = await ac.post("/api/v1/ai/chat", headers=headers, json={"message": "   "})
     assert r.status_code == 400

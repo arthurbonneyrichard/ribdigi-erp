@@ -44,10 +44,218 @@ store activation — never frontend-only.
 5. **Live billing / checkout Completes remain deferred** (ADR-002). Caps are real
    gates on tenant columns, not fabricated MRR.
 6. **User↔store membership** remains deferred (ADR-005). Do not invent parallel
-   membership tables unless that ADR is intentionally opened.
+   membership tables unless that ADR is intentionally opened. Until then, store
+   manager operational scope uses ``stores.manager_id`` via
+   `backend/app/dashboard_scope.py` (`managed_store_ids`, `constrain_store_query`,
+   `assert_transfer_touches_manager_scope`, `managed_warehouse_ids`,
+   `constrain_warehouse_query`, `apply_warehouse_scope_filter`,
+   `apply_purchase_invoice_warehouse_scope`, `STORE_SCOPE_DENIED`) — dashboard/BI,
+   POS sales, sales invoices, expenses, stores, transfers, warehouse inventory ops,
+   purchasing PR/PO/GRN/returns, purchase invoices (direct `warehouse_id` or linked
+   PO/GRN warehouse), sales orders, POS sessions (open requires managed
+   ``store_id``; null/unset fail-closed), low-stock / expiring-batch
+   list+export+reports, inventory balance/valuation/movements reports (**cost/value redacted** for store_manager), sales
+   daily/monthly/products/customers/salesperson/by-store reports, purchasing
+   summary/suppliers/pending/returns reports, transfer history report,
+   inventory stock-transfer write asserts (from-WH required; mutations must touch
+   managed stores), expenses summary + category budget spent/pending
+   (null-store fail-closed; budget limits company-level — create/patch + categories list denied for store_manager; budget_amount/variance/utilization redacted on budgets JSON/CSV + embeds; spend/pending still scoped), expense +
+   recurring create / expense patch store asserts (foreign `store_id` denied;
+   **expense department_id assign/clear denied + department_id redacted** on
+   expense/recurring list/get/export/patch JSON/CSV),
+   and AI inventory low-stock / demand-forecast / dead-stock / predictions
+   (+ exports; chat stockout intent) via managed WarehouseStock + store sales
+   (null-store fail-closed; empty managed WH → empty; no `product.stock_qty`
+   fallback; **dead-stock cost_price / carrying-cost redacted** on JSON + CSV), and AI insights + sales/expenses/purchases/cross-domain analysis
+   (+ exports) with the same store/WH fail-closed semantics, AI customer
+   insights/assist (+ export; chat customer count) from managed-store sales
+   only (customer universe = buyers on those invoices), AI chat
+   top-product / sales-month / expenses / classic low-stock helpers
+   (managed-store invoices/expenses; managed WarehouseStock vs reorder —
+   not `product.stock_qty`; empty managed store/WH → empty/zero), AI
+   security alerts (+ export) fail-closed to self-attributed audit events
+   plus details.store_id/warehouse_id in managed scope (no audit store
+   column), and AI documents/analyze (+ export) match only customers on
+   managed-store sales, suppliers on managed-WH PO/GRN/PI, and products
+   with managed WH stock or managed-store sales (expense categories remain
+   company-level), and credit AR/AP aging (+ export; dashboard credit slice;
+   BI credit; reports credit_aging export) from managed-store invoices /
+   managed-WH purchase bills (null-store/null-WH fail-closed; party ledger
+   balance zeroed under scope), and credit statements / outstanding /
+   payment registers (+ exports) plus customer/supplier payment write
+   asserts (invoice/PO/PI required in managed scope; unallocated payments
+   denied), and accounting P&L / trial balance / cash-flow / balance-sheet
+   (+ path CSVs, `/reports/export`, dashboard MTD P&L) from managed-store
+   journals (null-store fail-closed; foreign `store_id` denied), and tax
+   report / filing (+ path CSV, `/reports/export` tax/tax_filing*) from
+   managed-store sales/POS + managed-WH purchase bills/POs (null-store /
+   null-WH fail-closed; empty managed → zero), and audit list/export
+   fail-closed to self-authored events plus details with managed
+   `store_id`/`warehouse_id` (no audit store column; ADR-005 open), sales
+   returns via linked invoice store (+ export/asserts), and dashboard
+   expenses / stock-alerts / summary (+ main dashboard inventory KPIs /
+   pending expenses) store+WH scoped (not `product.stock_qty`), and
+   accounting journal entries (+ export; create/unpost/attachment asserts)
+   from managed-store journals (null-store fail-closed; foreign `store_id`
+   denied), and sales invoice create/post/send/cancel + CSV export (+ get/print
+   null-store fail-closed) store scoped + **credit_limit_override denied for
+   store_manager on invoice post / POS credit** (default role has credit:approve;
+   override remains company/finance admin), and recurring expense list/export/
+   patch/generate residual store scoped (null-store fail-closed), and COA
+   account ledger (+ export) from managed-store journals (null-store
+   fail-closed), and bank statements list/export/get/reconcile writes
+   (+ create/import) scoped to managed liquid accounts, and bank connections
+   list/create/patch/delete/sync scoped to managed liquid accounts
+   (+ CSV export denied; feed identity redacted on list/patch)
+   (**bank connection is_active lifecycle writes denied for store_manager**;
+   display name patches on managed connections remain; sync policy + credential
+   field patches also denied),
+   and expense approve/reject/delete + OCR suggest/apply +
+   attachment upload/delete writes store scoped, and customer/supplier
+   history (+ CSV) store+WH scoped (open quotations omit without store
+   column), and per-product batches list/export WH scoped (null-WH
+   fail-closed), and cheques list/get/export/lifecycle via payment
+   invoice store / WH scope (null/unallocated fail-closed), and POS
+   holds list/create/resume/discard via `PosSession.store_id` (null
+   session fail-closed) + drawer-settings CSV export store scoped, and
+   stores CSV export + patch/drawer/reorder write asserts (create denied
+   for store_manager), and notifications list/export/unread/mark +
+   scan-due (payment/recurring) via entity store/WH joins (quotations
+   omitted/skipped — no store_id), and products catalog list/get/export/
+   lookup/POS search stock_qty from managed WarehouseStock (not
+   product.stock_qty; cost_price redacted on list/get/export + per-product variants; category_id/brand_id/unit_id/tax_rate_id redacted on list/get + category_code/brand_code/unit_code blanked on export; **inventory balance/valuation cost_price/value/total_value redacted** on JSON + `/reports/export`; **low-stock list/export cost_price redacted**; **AI dead-stock cost_price/estimated_carrying_cost/total_carrying_cost redacted** on JSON + CSV), and sales quotations list/export/get/lifecycle
+   via own drafts + converted in-scope order/invoice (no store_id), and
+   **branches/departments create/patch/list GET/export denied for store_manager** (company-level
+   org units) + **users list/get branch_id/department_id org assignment + totp_enabled MFA status + email_verified redacted** (with email/phone
+   contact PII; name/role/active remain), and **catalog
+   categories/brands/units create/patch/deactivate (+ brand logo writes) denied
+   for store_manager** (company-level catalog meta; list/export/convert + brand
+   logo binary GET denied; product reads + WH stock ops remain), and **customer groups create/patch/deactivate denied for
+   store_manager** (company-level sales master; list/export/get reads allowed),
+   and **product CSV import denied for store_manager** (company-level catalog
+   master bulk seed; template/export reads allowed), and **product catalog
+   master writes denied for store_manager** (create/patch + variants + barcode
+   assign + image writes; list/get/export/lookup/POS search reads + WH stock
+   ops remain), and **stock CSV import denied for store_manager** (company-level
+   bulk WH / product.stock_qty seed; template read + per-WH stock-in/out remain),
+   and **customer/supplier deactivate denied for store_manager** (company-level
+   party master lifecycle; PATCH status also denied; create/list/get + non-credit
+   patch remain), and
+   **party payment_terms_days create/patch denied for store_manager** (credit-
+   adjacent company terms; zero-default create allowed; name/notes patch remain)
+   + **party credit master redacted on list/get/patch JSON** (credit_limit /
+   payment_terms_days / early-pay null; balance/name remain; POS credit checks
+   server-side) + **AI customer insights/assist/export credit_limit redacted**
+   (nested customer rows + balance-answer text; monetary/churn remain) + **AI
+   customer insights/assist/export party ``code`` redacted** (list/get code
+   already redacted; name/monetary/churn remain),
+   and **AI report template create/delete denied for store_manager** (company-
+   level NL report templates; list/export reads allowed), and **AI NL report
+   generate/export denied for store_manager** (company-level ``/ai/reports/generate``;
+   store-scoped ``/reports/*`` + Layer-1 AI insights remain), and **company report
+   schedule CRUD/run denied for store_manager** (even when ``reports:write`` granted;
+   admin allowlist retained; store-scoped ``/reports/*`` reads remain), and
+   **customer/supplier
+   contact create/delete denied for store_manager** (company-level party contact
+   master; get/list reads remain; nested contacts on create denied), and
+   **company membership assign/revoke denied for store_manager** (even when
+   companies write is granted; list/read remain when permitted).
+   and **company profile/logo branding writes denied for store_manager** (even when
+   companies write is granted; company GET remains when permitted),
+   and **business-insights settings GET/PUT + formulas GET denied for store_manager** (overview/attention embeds + health weights redacted)
+   + **BI overview profit COGS / stock_value / expiry value_at_risk redacted** (revenue/expenses/qty remain; engine still uses cost server-side)
+   (company-level BI thresholds/formulas; GET settings/formulas + acknowledge/dismiss remain),
+   and **purchasing PR approval settings PATCH denied for store_manager**
+   (company-level approval matrix; GET/export remain; admin allowlist retained),
+   and **document numbering / print-template / tenant profile PATCH /tenants/me
+   denied for store_manager** (company-level document settings; admin export reads
+   remain),
+   and **legacy POST /sales and /purchases denied for store_manager** (unscoped
+   Transaction writes; use store-scoped invoices / purchasing pipeline), and
+   **store manager_id assign/clear denied for store_manager** (company-level
+   manager assignment; other managed-store patches remain), and **store
+   branch_id assign/clear denied for store_manager** (company-level store↔branch
+   org link; other managed-store patches remain; branch_id redacted on
+   list/export/patch JSON/CSV), and **warehouse manager_id
+   assign/clear denied for store_manager** (company-level WH manager assignment;
+   other managed-WH patches remain; manager_id redacted on list/export/patch
+   JSON/CSV), and **warehouse store_id assign/clear
+   denied for store_manager** (company-level WH↔store org link; other managed-WH
+   patches remain), and **warehouse type/capacity structure writes denied for
+   store_manager** (company inventory-master attributes; name/address on managed
+   WH remain; warehouse_type/capacity redacted on list/export/patch JSON/CSV), and **warehouse is_active lifecycle writes denied for
+   store_manager** (activate/deactivate admin-only; name/address remain), and
+   **store is_active lifecycle writes denied for store_manager**
+   (activate/deactivate admin-only / entitlement-gated; name/phone/address/
+   operating_hours remain), and **opening stock writes denied for
+   store_manager** (company fiscal inventory init / BR-5.2; stock-in/out on
+   managed WH remain), and **inventory barcode labels WH-scoped for
+   store_manager** (products without managed WarehouseStock denied; in-scope
+   print remains), and **POS hold expire-stale denied for store_manager**
+   (company maintenance; list/create/resume auto-expire own holds remain), and
+   **liquid account is_active lifecycle writes denied for store_manager**
+   (activate/deactivate admin-only; name on managed liquid accounts remain), and
+   **bank connection is_active lifecycle writes denied
+   for store_manager** (activate/deactivate admin-only; display name patches on
+   managed connections remain), and **party customer_group assignment
+   denied for store_manager** (company sales-master party↔group link; name/notes
+   party patches remain) + **party customer_group redacted on list/get/patch**
+   (customer_group_id/customer_group/customer_group_name/group_discount_percent
+   null for store_manager; POS/sales apply discount server-side), and **bank connection create/delete denied for
+   store_manager** (company bank-feed credentials; list/patch/sync on
+   managed liquid accounts remain; **CSV export denied**; **feed_url/
+   external_account_id redacted** on list/patch), and **bank connection credential field
+   patches denied for store_manager** (access_token/feed_url/provider/external
+   id; display_name on managed connections remain), and **bank connection sync
+   policy patches denied for store_manager** (auto_sync/auto_match_after_sync/
+   sync_lookback_days; display_name + manual sync on managed connections
+   remain), and
+   **offline device bind store-scoped for store_manager** (managed store_id
+   required; foreign/unset fail-closed; device register/revoke remain admin), and
+   **offline sync push/pull/ack + conflicts/status store-scoped for store_manager**
+   (managed ``store_id`` required on `/sync/push` + `/sync/pull` + `/sync/ack`;
+   conflicts/status limited to managed-store-bound devices; null device fail-closed;
+   Offline Complete remains MISSING), and
+   **liquid account bank detail patches denied for store_manager**
+   (bank_name/account_number/bank_branch/clear_bank_details; name on managed
+   liquid accounts remain), and
+   **party category/party_type classification writes denied for store_manager**
+   (company party master classification; name remain) + **party category/party_type
+   redacted on list/get/patch JSON**, and **party master
+   code writes denied for store_manager** (customer/supplier ``code`` on
+   create/patch; name remain; create without code allowed) + **party master
+   code redacted on list/get/patch JSON**, and
+   **party master email writes denied for store_manager** (customer/supplier
+   ``email`` on create/patch; name remain; create without email allowed;
+   nested contact endpoints remain separately denied), and
+   **party master phone writes denied for store_manager** (customer/supplier
+   ``phone`` on create/patch; name remain; create without phone
+   allowed), and
+   **party master address/geo writes denied for store_manager** (customer/supplier
+   ``address``/``latitude``/``longitude`` on create/patch; name remain;
+   create without address allowed), and
+   **party master notes writes denied for store_manager** (customer/supplier
+   ``notes`` on create/patch; name remain; create without notes allowed), and
+   **party master CSV export denied for store_manager** (customers/suppliers
+   ``/export`` company CRM dump; list/get + scoped history CSV remain), and
+   **party status lifecycle patches denied for store_manager** (PATCH status
+   cannot bypass DELETE deactivate deny; name remain), and **POS session
+   open requires managed store_id for store_manager** (null/unset fail-closed;
+   foreign store denied; list/report remain store scoped), and **POS session
+   close/drawer/report/current null-store fail-closed for store_manager**
+   (``assert_pos_session_store_in_manager_scope``; foreign store still denied),
+   and
+   **company store-limit allocation denied for store_manager** (tenant
+   entitlement allocation; even when companies write granted; tenant-admin path
+   retained).
+   Not store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is
    extended project-wide.
+8. **Offline soft lockdown is PARTIAL:** revoke expires server `offline_authorized_until`
+   and blocks sync; critical alerts can email via security notifications
+   (`POST /offline/alerts/notify`). Remote IndexedDB wipe, push delivery, Offline
+   Complete, and 7-day VERIFIED remain MISSING.
 
 ### Key modules
 

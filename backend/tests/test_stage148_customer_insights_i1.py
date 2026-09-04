@@ -20,10 +20,22 @@ async def _mgr(ac):
 @pytest.mark.asyncio
 async def test_customer_insights_export_csv(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
+    store = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        name="148I Store",
+        code="148I",
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
     customer = seed["party1"]
     inv = m.SalesInvoice(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        store_id=store.id,
         invoice_number="INV-148I-1",
         customer_id=customer.id,
         status="posted",

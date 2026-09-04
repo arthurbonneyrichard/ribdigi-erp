@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -13,8 +14,15 @@ from app.sales import render_invoice_html, render_invoice_pdf, render_invoice_te
 from tests.conftest import auth_headers
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _admin(ac):
@@ -93,7 +101,7 @@ def test_render_invoice_pdf_and_html_branded():
 @pytest.mark.asyncio
 async def test_invoice_print_send_overdue_and_no_repost(client, db_session, monkeypatch):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     admin = await _admin(ac)
     clear_dev_outbox()
     monkeypatch.setattr("app.emailer.settings.EMAIL_ENABLED", True)
@@ -258,7 +266,7 @@ async def test_invoice_print_send_overdue_and_no_repost(client, db_session, monk
 @pytest.mark.asyncio
 async def test_invoice_send_requires_email_and_blocks_draft(client, monkeypatch):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     monkeypatch.setattr("app.emailer.settings.EMAIL_ENABLED", True)
     monkeypatch.setattr("app.emailer.settings.SMTP_HOST", "")
     monkeypatch.setattr("app.emailer.settings.SMTP_FROM_EMAIL", "noreply@localhost")
@@ -291,13 +299,23 @@ async def test_invoice_send_requires_email_and_blocks_draft(client, monkeypatch)
 @pytest.mark.asyncio
 async def test_foreign_invoice_print_and_send_404(client, db_session, monkeypatch):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     monkeypatch.setattr("app.emailer.settings.EMAIL_ENABLED", True)
     monkeypatch.setattr("app.emailer.settings.SMTP_HOST", "")
     monkeypatch.setattr("app.emailer.settings.SMTP_FROM_EMAIL", "noreply@localhost")
 
     foreign_id = seed["inv2"].id
     printed = await ac.get(f"/api/v1/sales/invoices/{foreign_id}/print", headers=headers)
-    assert printed.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert printed.status_code in (403, 404), printed.text
+    if printed.status_code == 403:
+        detail = printed.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"
     sent = await ac.post(f"/api/v1/sales/invoices/{foreign_id}/send", headers=headers)
-    assert sent.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert sent.status_code in (403, 404), sent.text
+    if sent.status_code == 403:
+        detail = sent.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"

@@ -1514,6 +1514,7 @@ class SalesQuotation(Base):
     company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     quotation_number: Mapped[str] = mapped_column(String(50), index=True)
     customer_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
     status: Mapped[str] = mapped_column(String(30), default="draft", index=True)
     subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
@@ -1682,6 +1683,9 @@ class PurchaseInvoice(Base):
     supplier_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
     purchase_order_id: Mapped[str | None] = mapped_column(ForeignKey("purchase_orders.id"), nullable=True, index=True)
     goods_receipt_id: Mapped[str | None] = mapped_column(ForeignKey("goods_receipts.id"), nullable=True, index=True)
+    warehouse_id: Mapped[str | None] = mapped_column(
+        ForeignKey("warehouses.id"), nullable=True, index=True
+    )
     supplier_invoice_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
     status: Mapped[str] = mapped_column(String(30), default="draft", index=True)
     # draft -> unpaid -> partial/paid | cancelled; overdue derived when past due

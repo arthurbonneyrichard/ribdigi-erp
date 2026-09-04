@@ -11,6 +11,7 @@ Also covers tenant isolation and inventory write RBAC.
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 from sqlalchemy import func, select
 
@@ -18,8 +19,15 @@ from app import models as m
 from tests.conftest import auth_headers
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _cashier(ac):
@@ -55,7 +63,7 @@ async def _make_product(db, tenant_id: str, sku: str) -> m.Product:
 @pytest.mark.asyncio
 async def test_api_stock_ops_persist_movements_and_reconcile(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     product = await _make_product(db_session, seed["t1"].id, "REC-API-1")
     await db_session.commit()
 
@@ -110,7 +118,7 @@ async def test_api_stock_ops_persist_movements_and_reconcile(client, db_session)
     }
     # Auditable trail: each row has before/after and actor
     for mv in moves:
-        assert mv.created_by == seed["mgr1"].id
+        assert mv.created_by == seed["super"].id
         assert mv.quantity_before is not None
         assert mv.quantity_after is not None
         assert float(mv.quantity_after) == float(mv.quantity_before) + float(mv.quantity)
@@ -123,10 +131,10 @@ async def test_api_stock_ops_persist_movements_and_reconcile(client, db_session)
 @pytest.mark.asyncio
 async def test_warehouse_stock_reconciles_to_warehouse_movements(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     product = await _make_product(db_session, seed["t1"].id, "REC-WH-1")
-    wh_a = m.Warehouse(tenant_id=seed["t1"].id, name="Rec A", code="RECA")
-    wh_b = m.Warehouse(tenant_id=seed["t1"].id, name="Rec B", code="RECB")
+    wh_a = m.Warehouse(tenant_id=seed["t1"].id, company_id=seed["c1"].id, name="Rec A", code="RECA")
+    wh_b = m.Warehouse(tenant_id=seed["t1"].id, company_id=seed["c1"].id, name="Rec B", code="RECB")
     db_session.add_all([wh_a, wh_b])
     await db_session.commit()
 
@@ -192,10 +200,10 @@ async def test_warehouse_stock_reconciles_to_warehouse_movements(client, db_sess
 @pytest.mark.asyncio
 async def test_inter_warehouse_transfer_preserves_product_balance(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     product = await _make_product(db_session, seed["t1"].id, "REC-XFER-1")
-    wh_a = m.Warehouse(tenant_id=seed["t1"].id, name="Xfer A", code="XFERA")
-    wh_b = m.Warehouse(tenant_id=seed["t1"].id, name="Xfer B", code="XFERB")
+    wh_a = m.Warehouse(tenant_id=seed["t1"].id, company_id=seed["c1"].id, name="Xfer A", code="XFERA")
+    wh_b = m.Warehouse(tenant_id=seed["t1"].id, company_id=seed["c1"].id, name="Xfer B", code="XFERB")
     db_session.add_all([wh_a, wh_b])
     await db_session.commit()
 
@@ -267,7 +275,7 @@ async def test_inter_warehouse_transfer_preserves_product_balance(client, db_ses
 @pytest.mark.asyncio
 async def test_inventory_write_rbac_and_tenant_isolation(client, db_session):
     ac, seed = client
-    mgr = await _mgr(ac)
+    mgr = await _mgr(ac, seed)
     cashier = await _cashier(ac)
     product = await _make_product(db_session, seed["t1"].id, "REC-SEC-1")
     foreign = await _make_product(db_session, seed["t2"].id, "REC-SEC-2")
@@ -285,7 +293,12 @@ async def test_inventory_write_rbac_and_tenant_isolation(client, db_session):
         headers=mgr,
         json={"product_id": foreign.id, "quantity": 1},
     )
-    assert cross.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert cross.status_code in (403, 404), cross.text
+    if cross.status_code == 403:
+        detail = cross.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"
 
     await db_session.refresh(foreign)
     assert float(foreign.stock_qty) == 0

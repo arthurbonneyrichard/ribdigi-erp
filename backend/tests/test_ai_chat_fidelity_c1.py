@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -15,21 +16,40 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 @pytest.mark.asyncio
 async def test_nl_query_top_product_role_scoped(client, db_session):
     """BR-21.1: NL Q&A + role-aware sales read."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
     product = seed["p1"]
     now = datetime.utcnow()
+    store = m.Store(
+        tenant_id=tenant_id,
+        company_id=seed["c1"].id,
+        name="C1 Chat Store",
+        code="C1-CHAT",
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
 
     inv = m.SalesInvoice(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
+        store_id=store.id,
         invoice_number="INV-C1-TOP-1",
         customer_id=seed["party1"].id,
         status="posted",
@@ -44,6 +64,7 @@ async def test_nl_query_top_product_role_scoped(client, db_session):
     db_session.add(
         m.SalesInvoiceItem(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             sales_invoice_id=inv.id,
             product_id=product.id,
             quantity=80,
@@ -64,6 +85,7 @@ async def test_nl_query_top_product_role_scoped(client, db_session):
     assert data["method"] == "rules_v1"
     assert product.name in data["answer"]
     assert data["data"]["product_id"] == product.id
+    assert data["data"].get("scope") == "store_manager"
 
     # User with ai:read only (no sales/dashboard) → denied for top product
     ai_only = m.User(
@@ -101,11 +123,12 @@ async def test_nl_query_top_product_role_scoped(client, db_session):
 async def test_safe_create_po_command_and_deny(client, db_session):
     """BR-21.1: command path creates draft PO only with purchasing write."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
     db_session.add(
         m.Party(
             tenant_id=tenant_id,
+        company_id=seed["c1"].id,
             name="C1 Supplier",
             kind="supplier",
             status="active",
@@ -160,8 +183,8 @@ async def test_safe_create_po_command_and_deny(client, db_session):
 @pytest.mark.asyncio
 async def test_chat_history_persistence(client):
     """BR-21.1: chat history persisted per user."""
-    ac, _seed = client
-    headers = await _mgr(ac)
+    ac, seed = client
+    headers = await _mgr(ac, seed)
 
     ask = await ac.post(
         "/api/v1/ai/chat",

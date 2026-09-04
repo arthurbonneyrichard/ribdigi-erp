@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -15,7 +16,10 @@ from tests.conftest import auth_headers
 @pytest.mark.asyncio
 async def test_opening_stock_add_for_existing_product(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     before = float(seed["p1"].stock_qty or 0)
 
     r = await ac.post(
@@ -50,7 +54,10 @@ async def test_opening_stock_add_for_existing_product(client, db_session):
 @pytest.mark.asyncio
 async def test_opening_stock_set_and_cannot_reduce(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     seed["p1"].stock_qty = 0
     await db_session.commit()
 
@@ -77,8 +84,11 @@ async def test_opening_stock_set_and_cannot_reduce(client, db_session):
 @pytest.mark.asyncio
 async def test_opening_stock_warehouse_and_batch_items(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
-    wh = m.Warehouse(tenant_id=seed["t1"].id, name="Opening WH", code="OPWH")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
+    wh = m.Warehouse(tenant_id=seed["t1"].id, company_id=seed["c1"].id, name="Opening WH", code="OPWH")
     db_session.add(wh)
     await db_session.flush()
     p2 = m.Product(
@@ -124,13 +134,21 @@ async def test_opening_stock_warehouse_and_batch_items(client, db_session):
         headers=headers,
         json={"product_id": seed["p2"].id, "quantity": 1, "mode": "add"},
     )
-    assert foreign.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert foreign.status_code in (403, 404), foreign.text
+    if foreign.status_code == 403:
+        detail = foreign.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"
 
 
 @pytest.mark.asyncio
 async def test_opening_stock_csv_mode(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     product = seed["p1"]
     await apply_stock_change(
         db_session,

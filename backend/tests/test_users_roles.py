@@ -19,7 +19,12 @@ async def _admin_headers(ac, seed):
 @pytest.mark.asyncio
 async def test_roles_catalog_lists_system_roles(client):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
     r = await ac.get("/api/v1/roles", headers=headers)
     assert r.status_code == 200, r.text
     roles = {row["role"] for row in r.json()["data"]}

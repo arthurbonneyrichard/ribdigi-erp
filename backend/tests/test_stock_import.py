@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -12,10 +13,19 @@ from app.stock_import import template_csv
 from tests.conftest import auth_headers
 
 
+async def _admin(ac, seed):
+    return await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+
 @pytest.mark.asyncio
 async def test_stock_csv_adjust_and_set(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    headers = await _admin(ac, seed)
 
     tmpl = await ac.get("/api/v1/inventory/stock/import/template", headers=headers)
     assert tmpl.status_code == 200
@@ -90,10 +100,15 @@ async def test_stock_csv_adjust_and_set(client, db_session):
 @pytest.mark.asyncio
 async def test_stock_csv_warehouse_set(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    headers = await _admin(ac, seed)
     tenant_id = seed["t1"].id
 
-    wh = m.Warehouse(tenant_id=tenant_id, name="Main WH", code="MAIN")
+    wh = m.Warehouse(
+        tenant_id=tenant_id,
+        company_id=seed["c1"].id,
+        name="Main WH",
+        code="MAIN",
+    )
     db_session.add(wh)
     product = await db_session.get(m.Product, seed["p1"].id)
     product.stock_qty = 5
@@ -101,6 +116,7 @@ async def test_stock_csv_warehouse_set(client, db_session):
     db_session.add(
         m.WarehouseStock(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             warehouse_id=wh.id,
             product_id=product.id,
             quantity=5,

@@ -2,19 +2,26 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 
 from tests.conftest import auth_headers
 
 
-async def _sales(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _admin(ac, seed):
+    """Company admin — store_manager is denied customer-group catalog + assignment."""
+    return await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
 
 
 @pytest.mark.asyncio
 async def test_customer_groups_crud_defaults_and_assign(client):
     ac, seed = client
-    headers = await _sales(ac)
+    headers = await _admin(ac, seed)
 
     listed = await ac.get("/api/v1/customers/groups", headers=headers)
     assert listed.status_code == 200, listed.text
@@ -98,7 +105,7 @@ async def test_customer_groups_crud_defaults_and_assign(client):
 @pytest.mark.asyncio
 async def test_gps_validation_and_group_pricing_on_invoice(client):
     ac, seed = client
-    headers = await _sales(ac)
+    headers = await _admin(ac, seed)
 
     bad_gps = await ac.post(
         "/api/v1/customers",
@@ -160,13 +167,13 @@ async def test_gps_validation_and_group_pricing_on_invoice(client):
 async def test_group_pricing_on_pos_sale(client):
     ac, seed = client
     headers = await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")
-    mgr = await _sales(ac)
+    admin = await _admin(ac, seed)
 
-    groups = (await ac.get("/api/v1/customers/groups", headers=mgr)).json()["data"]
+    groups = (await ac.get("/api/v1/customers/groups", headers=admin)).json()["data"]
     wholesale_id = next(g["id"] for g in groups if g["name"] == "Wholesale")
     customer = await ac.post(
         "/api/v1/customers",
-        headers=mgr,
+        headers=admin,
         json={
             "name": "POS Wholesale",
             "customer_group_id": wholesale_id,

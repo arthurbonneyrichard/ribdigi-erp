@@ -51,7 +51,10 @@ async def _period_sales(
     start: datetime,
     end: datetime,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> float:
+    if store_ids is not None and not store_ids:
+        return 0.0
     stmt = select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
         m.SalesInvoice.tenant_id == tenant_id,
         m.SalesInvoice.status.in_(list(POSTED_INVOICE_STATUSES)),
@@ -59,6 +62,8 @@ async def _period_sales(
         m.SalesInvoice.created_at < end,
     )
     stmt = apply_company_filter(stmt, m.SalesInvoice.company_id, company_id)
+    if store_ids is not None:
+        stmt = stmt.where(m.SalesInvoice.store_id.in_(store_ids))
     return float((await db.execute(stmt)).scalar_one() or 0)
 
 
@@ -68,7 +73,10 @@ async def _period_expenses(
     start: datetime,
     end: datetime,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> float:
+    if store_ids is not None and not store_ids:
+        return 0.0
     stmt = select(func.coalesce(func.sum(m.Expense.amount), 0)).where(
         m.Expense.tenant_id == tenant_id,
         m.Expense.status == "approved",
@@ -76,6 +84,8 @@ async def _period_expenses(
         m.Expense.expense_date < end,
     )
     stmt = apply_company_filter(stmt, m.Expense.company_id, company_id)
+    if store_ids is not None:
+        stmt = stmt.where(m.Expense.store_id.in_(store_ids))
     return float((await db.execute(stmt)).scalar_one() or 0)
 
 
@@ -85,7 +95,12 @@ async def _period_purchases(
     start: datetime,
     end: datetime,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> float:
+    from app.dashboard_scope import apply_purchase_invoice_warehouse_scope
+
+    if warehouse_ids is not None and not warehouse_ids:
+        return 0.0
     stmt = select(func.coalesce(func.sum(m.PurchaseInvoice.total_amount), 0)).where(
         m.PurchaseInvoice.tenant_id == tenant_id,
         m.PurchaseInvoice.status.in_(list(POSTED_PI_STATUSES)),
@@ -93,33 +108,48 @@ async def _period_purchases(
         m.PurchaseInvoice.invoice_date < end,
     )
     stmt = apply_company_filter(stmt, m.PurchaseInvoice.company_id, company_id)
+    stmt = apply_purchase_invoice_warehouse_scope(stmt, warehouse_ids)
     return float((await db.execute(stmt)).scalar_one() or 0)
 
 
 async def generate_insights(
-    db: AsyncSession, tenant_id: str, company_id: str | None = None
+    db: AsyncSession,
+    tenant_id: str,
+    company_id: str | None = None,
+    *,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
-    """Build structured insight cards from tenant operational data."""
+    """Build structured insight cards from tenant operational data.
+
+    ``store_ids`` / ``warehouse_ids`` set = store_manager scope (null-store / null-WH fail-closed).
+    """
+    from app.dashboard_scope import (
+        apply_purchase_invoice_warehouse_scope,
+        apply_warehouse_scope_filter,
+    )
+
     now = datetime.utcnow()
     week_ago = now - timedelta(days=7)
     two_weeks_ago = now - timedelta(days=14)
     month_ago = now - timedelta(days=30)
     two_months_ago = now - timedelta(days=60)
+    scoped = store_ids is not None or warehouse_ids is not None
 
     insights: list[dict] = []
 
     # --- Sales WoW / MoM ---
     sales_this_week = await _period_sales(
-        db, tenant_id, week_ago, now, company_id=company_id
+        db, tenant_id, week_ago, now, company_id=company_id, store_ids=store_ids
     )
     sales_prev_week = await _period_sales(
-        db, tenant_id, two_weeks_ago, week_ago, company_id=company_id
+        db, tenant_id, two_weeks_ago, week_ago, company_id=company_id, store_ids=store_ids
     )
     sales_this_month = await _period_sales(
-        db, tenant_id, month_ago, now, company_id=company_id
+        db, tenant_id, month_ago, now, company_id=company_id, store_ids=store_ids
     )
     sales_prev_month = await _period_sales(
-        db, tenant_id, two_months_ago, month_ago, company_id=company_id
+        db, tenant_id, two_months_ago, month_ago, company_id=company_id, store_ids=store_ids
     )
 
     if sales_prev_week > 0:
@@ -182,10 +212,10 @@ async def generate_insights(
 
     # --- Expense anomalies ---
     exp_this_week = await _period_expenses(
-        db, tenant_id, week_ago, now, company_id=company_id
+        db, tenant_id, week_ago, now, company_id=company_id, store_ids=store_ids
     )
     exp_prev_week = await _period_expenses(
-        db, tenant_id, two_weeks_ago, week_ago, company_id=company_id
+        db, tenant_id, two_weeks_ago, week_ago, company_id=company_id, store_ids=store_ids
     )
     if exp_prev_week > 0:
         exp_pct = round(((exp_this_week - exp_prev_week) / exp_prev_week) * 100, 1)
@@ -229,10 +259,15 @@ async def generate_insights(
 
     # --- Purchases actuals (Stage 25 B1) ---
     purch_this_week = await _period_purchases(
-        db, tenant_id, week_ago, now, company_id=company_id
+        db, tenant_id, week_ago, now, company_id=company_id, warehouse_ids=warehouse_ids
     )
     purch_prev_week = await _period_purchases(
-        db, tenant_id, two_weeks_ago, week_ago, company_id=company_id
+        db,
+        tenant_id,
+        two_weeks_ago,
+        week_ago,
+        company_id=company_id,
+        warehouse_ids=warehouse_ids,
     )
     if purch_prev_week > 0:
         purch_pct = round(((purch_this_week - purch_prev_week) / purch_prev_week) * 100, 1)
@@ -257,34 +292,76 @@ async def generate_insights(
                 )
             )
 
-    overdue_pi_stmt = (
-        select(func.count())
-        .select_from(m.PurchaseInvoice)
-        .where(
-            m.PurchaseInvoice.tenant_id == tenant_id,
-            m.PurchaseInvoice.status == "overdue",
+    overdue_pi_n = 0
+    past_due_n = 0
+    open_po_n = 0
+    draft_po_n = 0
+    if not (warehouse_ids is not None and not warehouse_ids):
+        overdue_pi_stmt = (
+            select(func.count())
+            .select_from(m.PurchaseInvoice)
+            .where(
+                m.PurchaseInvoice.tenant_id == tenant_id,
+                m.PurchaseInvoice.status == "overdue",
+            )
         )
-    )
-    overdue_pi_stmt = apply_company_filter(
-        overdue_pi_stmt, m.PurchaseInvoice.company_id, company_id
-    )
-    overdue_pi_n = int((await db.execute(overdue_pi_stmt)).scalar_one() or 0)
-    # Also count unpaid/partial past due_date
-    past_due_stmt = (
-        select(func.count())
-        .select_from(m.PurchaseInvoice)
-        .where(
-            m.PurchaseInvoice.tenant_id == tenant_id,
-            m.PurchaseInvoice.status.in_(["unpaid", "partial", "overdue"]),
-            m.PurchaseInvoice.due_date.is_not(None),
-            m.PurchaseInvoice.due_date < now,
-            (m.PurchaseInvoice.total_amount - m.PurchaseInvoice.paid_amount) > 0.001,
+        overdue_pi_stmt = apply_company_filter(
+            overdue_pi_stmt, m.PurchaseInvoice.company_id, company_id
         )
-    )
-    past_due_stmt = apply_company_filter(
-        past_due_stmt, m.PurchaseInvoice.company_id, company_id
-    )
-    past_due_n = int((await db.execute(past_due_stmt)).scalar_one() or 0)
+        overdue_pi_stmt = apply_purchase_invoice_warehouse_scope(
+            overdue_pi_stmt, warehouse_ids
+        )
+        overdue_pi_n = int((await db.execute(overdue_pi_stmt)).scalar_one() or 0)
+        # Also count unpaid/partial past due_date
+        past_due_stmt = (
+            select(func.count())
+            .select_from(m.PurchaseInvoice)
+            .where(
+                m.PurchaseInvoice.tenant_id == tenant_id,
+                m.PurchaseInvoice.status.in_(["unpaid", "partial", "overdue"]),
+                m.PurchaseInvoice.due_date.is_not(None),
+                m.PurchaseInvoice.due_date < now,
+                (m.PurchaseInvoice.total_amount - m.PurchaseInvoice.paid_amount) > 0.001,
+            )
+        )
+        past_due_stmt = apply_company_filter(
+            past_due_stmt, m.PurchaseInvoice.company_id, company_id
+        )
+        past_due_stmt = apply_purchase_invoice_warehouse_scope(
+            past_due_stmt, warehouse_ids
+        )
+        past_due_n = int((await db.execute(past_due_stmt)).scalar_one() or 0)
+
+        open_po_stmt = (
+            select(func.count())
+            .select_from(m.PurchaseOrder)
+            .where(
+                m.PurchaseOrder.tenant_id == tenant_id,
+                m.PurchaseOrder.status.in_(list(OPEN_PO_STATUSES)),
+            )
+        )
+        open_po_stmt = apply_company_filter(
+            open_po_stmt, m.PurchaseOrder.company_id, company_id
+        )
+        open_po_stmt = apply_warehouse_scope_filter(
+            open_po_stmt, m.PurchaseOrder, warehouse_ids
+        )
+        open_po_n = int((await db.execute(open_po_stmt)).scalar_one() or 0)
+        draft_po_stmt = (
+            select(func.count())
+            .select_from(m.PurchaseOrder)
+            .where(
+                m.PurchaseOrder.tenant_id == tenant_id,
+                m.PurchaseOrder.status == "draft",
+            )
+        )
+        draft_po_stmt = apply_company_filter(
+            draft_po_stmt, m.PurchaseOrder.company_id, company_id
+        )
+        draft_po_stmt = apply_warehouse_scope_filter(
+            draft_po_stmt, m.PurchaseOrder, warehouse_ids
+        )
+        draft_po_n = int((await db.execute(draft_po_stmt)).scalar_one() or 0)
     overdue_n = max(overdue_pi_n, past_due_n)
     if overdue_n > 0:
         insights.append(
@@ -298,31 +375,6 @@ async def generate_insights(
                 domains=["purchases"],
             )
         )
-
-    open_po_stmt = (
-        select(func.count())
-        .select_from(m.PurchaseOrder)
-        .where(
-            m.PurchaseOrder.tenant_id == tenant_id,
-            m.PurchaseOrder.status.in_(list(OPEN_PO_STATUSES)),
-        )
-    )
-    open_po_stmt = apply_company_filter(
-        open_po_stmt, m.PurchaseOrder.company_id, company_id
-    )
-    open_po_n = int((await db.execute(open_po_stmt)).scalar_one() or 0)
-    draft_po_stmt = (
-        select(func.count())
-        .select_from(m.PurchaseOrder)
-        .where(
-            m.PurchaseOrder.tenant_id == tenant_id,
-            m.PurchaseOrder.status == "draft",
-        )
-    )
-    draft_po_stmt = apply_company_filter(
-        draft_po_stmt, m.PurchaseOrder.company_id, company_id
-    )
-    draft_po_n = int((await db.execute(draft_po_stmt)).scalar_one() or 0)
     if draft_po_n >= 3:
         insights.append(
             _insight(
@@ -367,7 +419,13 @@ async def generate_insights(
     from app import ai_inventory as ai_inventory_svc
 
     pred = await ai_inventory_svc.predict_low_stock(
-        db, tenant_id, horizon_days=14, at_risk_only=True, company_id=company_id
+        db,
+        tenant_id,
+        horizon_days=14,
+        at_risk_only=True,
+        company_id=company_id,
+        store_ids=store_ids,
+        warehouse_ids=warehouse_ids,
     )
     for p in pred["predictions"][:5]:
         if p.get("confidence", 0) < 0.25:
@@ -402,18 +460,44 @@ async def generate_insights(
         )
 
     # --- Classic reorder-level low stock ---
-    low_stmt = (
-        select(func.count())
-        .select_from(m.Product)
-        .where(
-            m.Product.tenant_id == tenant_id,
-            m.Product.is_active == True,  # noqa: E712
-            m.Product.stock_qty <= m.Product.reorder_level,
+    if warehouse_ids is not None and not warehouse_ids:
+        low_n = 0
+    elif warehouse_ids is not None:
+        low_stmt = (
+            select(func.count(func.distinct(m.WarehouseStock.product_id)))
+            .select_from(m.WarehouseStock)
+            .join(m.Product, m.Product.id == m.WarehouseStock.product_id)
+            .where(
+                m.WarehouseStock.tenant_id == tenant_id,
+                m.WarehouseStock.warehouse_id.in_(warehouse_ids),
+                m.Product.tenant_id == tenant_id,
+                m.Product.is_active == True,  # noqa: E712
+                (
+                    (
+                        (m.WarehouseStock.reorder_level > 0)
+                        & (m.WarehouseStock.quantity <= m.WarehouseStock.reorder_level)
+                    )
+                    | (
+                        (m.WarehouseStock.reorder_level <= 0)
+                        & (m.WarehouseStock.quantity <= m.Product.reorder_level)
+                    )
+                ),
+            )
         )
-    )
-    low_stmt = apply_company_filter(low_stmt, m.Product.company_id, company_id)
-    low = (await db.execute(low_stmt)).scalar_one()
-    low_n = int(low or 0)
+        low_stmt = apply_company_filter(low_stmt, m.WarehouseStock.company_id, company_id)
+        low_n = int((await db.execute(low_stmt)).scalar_one() or 0)
+    else:
+        low_stmt = (
+            select(func.count())
+            .select_from(m.Product)
+            .where(
+                m.Product.tenant_id == tenant_id,
+                m.Product.is_active == True,  # noqa: E712
+                m.Product.stock_qty <= m.Product.reorder_level,
+            )
+        )
+        low_stmt = apply_company_filter(low_stmt, m.Product.company_id, company_id)
+        low_n = int((await db.execute(low_stmt)).scalar_one() or 0)
     if low_n > 0:
         insights.append(
             _insight(
@@ -455,6 +539,7 @@ async def generate_insights(
     return {
         "generated_at": now,
         "method": "rules_v1",
+        "scope": "store_manager" if scoped else "company",
         "count": len(insights),
         "insights": insights,
         # Backward-compatible string list for older clients / isolation tests

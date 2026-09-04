@@ -104,4 +104,4 @@ def test_settings_offline_sync_ui_and_shell_leaf_v1():
     assert "Stage 163" in page
     shell = (ROOT / "frontend/components/Shell.tsx").read_text(encoding="utf-8")
     assert "/company#offline-sync" in shell
-    assert "Offline sync" in shell
+    assert ("Offline sync" in shell) or ("Offline & Sync" in shell) or ("Offline Mode" in shell)

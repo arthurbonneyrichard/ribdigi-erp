@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
+import pyotp
 from sqlalchemy import select
 
 from app import accounting as accounting_svc
@@ -26,13 +27,18 @@ async def _mgr(ac):
 async def test_reports_suite_outline_endpoints(client, db_session):
     """Sales / Inventory / Low Stock / Purchasing / Expenses / Financial / Store Performance."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
     await accounting_svc.ensure_default_accounts(db_session, tenant_id)
     await ensure_default_categories(db_session, tenant_id)
 
     store = await create_store(
-        db_session, tenant_id=tenant_id, code="S16R1", name="S16 R1 Store"
+        db_session,
+        tenant_id=tenant_id,
+        company_id=seed["c1"].id,
+        code="S16R1",
+        name="S16 R1 Store",
+        manager_id=seed["mgr1"].id,
     )
     await db_session.flush()
 
@@ -40,6 +46,7 @@ async def test_reports_suite_outline_endpoints(client, db_session):
     db_session.add(
         m.SalesInvoice(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             invoice_number="INV-S16-R1",
             customer_id=seed["party1"].id,
             status="posted",
@@ -64,6 +71,7 @@ async def test_reports_suite_outline_endpoints(client, db_session):
     db_session.add(
         m.Expense(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             category_id=cat.id,
             category=cat.name,
             amount=55,
@@ -72,6 +80,7 @@ async def test_reports_suite_outline_endpoints(client, db_session):
             status="approved",
             expense_date=today,
             created_by=seed["mgr1"].id,
+            store_id=store.id,
         )
     )
     seed["p1"].reorder_level = 100
@@ -167,7 +176,13 @@ async def test_reports_suite_outline_endpoints(client, db_session):
 
     assert (await ac.get("/api/v1/reports/trial-balance", headers=headers)).status_code == 200
 
-    exportable = await ac.get("/api/v1/reports/exportable", headers=headers)
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    exportable = await ac.get("/api/v1/reports/exportable", headers=admin_headers)
     assert exportable.status_code == 200, exportable.text
     types = set(exportable.json()["data"]["types"])
     for needed in (
@@ -187,17 +202,27 @@ async def test_reports_suite_outline_endpoints(client, db_session):
 async def test_reports_suite_tenant_isolation(client, db_session):
     """Alpha sales revenue must not appear in beta tenant sales_daily aggregation."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     today = datetime.utcnow().replace(hour=14, minute=0, second=0, microsecond=0)
+    store = await create_store(
+        db_session,
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        code="S16ISO",
+        name="S16 ISO Store",
+        manager_id=seed["mgr1"].id,
+    )
     db_session.add(
         m.SalesInvoice(
             tenant_id=seed["t1"].id,
+            company_id=seed["c1"].id,
             invoice_number="INV-S16-R1-ISO",
             customer_id=seed["party1"].id,
             status="posted",
             subtotal=9999,
             tax_amount=0,
             total_amount=9999,
+            store_id=store.id,
             posted_at=today,
             created_by=seed["mgr1"].id,
         )

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pyotp
 import pytest
 
 from tests.conftest import auth_headers
@@ -14,7 +15,10 @@ ROOT = Path(__file__).resolve().parents[2]
 @pytest.mark.asyncio
 async def test_dashboard_user_stats_export_csv(client):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
     exported = await ac.get("/api/v1/dashboard/user-stats/export", headers=headers)
     assert exported.status_code == 200, exported.text

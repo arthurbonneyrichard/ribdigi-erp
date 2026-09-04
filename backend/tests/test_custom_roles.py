@@ -77,7 +77,7 @@ async def test_cannot_create_system_slug_or_wildcard_custom_role(client):
 
 
 @pytest.mark.asyncio
-async def test_assign_custom_role_enforces_permissions(client):
+async def test_assign_custom_role_enforces_permissions(client, db_session):
     ac, seed = client
     headers = await _admin_headers(ac, seed)
     await ac.post(
@@ -107,6 +107,10 @@ async def test_assign_custom_role_enforces_permissions(client):
     )
     assert created.status_code == 200, created.text
     assert created.json()["data"]["user"]["role"] == "pos_only"
+    uid = created.json()["data"]["user"]["id"]
+    user_row = await db_session.get(m.User, uid)
+    user_row.email_verified = True
+    await db_session.commit()
 
     login = await ac.post(
         "/api/v1/auth/login",

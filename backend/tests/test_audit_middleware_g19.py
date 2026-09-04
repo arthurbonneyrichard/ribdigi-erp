@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -25,21 +26,25 @@ def test_module_and_entity_from_path():
 async def test_mutating_request_writes_http_write_audit(client, db_session):
     ac, seed = client
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
 
-    # PATCH store hours is a real mutating write with RBAC.
-    stores = await ac.get("/api/v1/stores", headers=headers)
-    assert stores.status_code == 200, stores.text
-    rows = stores.json()["data"] or []
-    if not rows:
-        created = await ac.post(
-            "/api/v1/stores",
-            headers=headers,
-            json={"code": "AUD1", "name": "Audit Store"},
-        )
-        assert created.status_code == 200, created.text
-        store_id = created.json()["data"]["id"]
-    else:
-        store_id = rows[0]["id"]
+    # Ensure mgr has a managed store to patch (create is company-admin only).
+    store = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        name="Audit Store",
+        code="AUD1-MGR",
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.commit()
+    store_id = store.id
 
     before = (
         await db_session.execute(
@@ -75,9 +80,14 @@ async def test_mutating_request_writes_http_write_audit(client, db_session):
     assert hit.integrity_hash
     assert hit.user_id
 
-    verify = await ac.get("/api/v1/audit-logs/verify", headers=headers)
+    # Company-wide audit chain verify is admin-only for store_manager RBAC.
+    verify = await ac.get("/api/v1/audit-logs/verify", headers=admin_headers)
     assert verify.status_code == 200, verify.text
     assert verify.json()["data"]["valid"] is True
+
+    denied_verify = await ac.get("/api/v1/audit-logs/verify", headers=headers)
+    assert denied_verify.status_code == 403, denied_verify.text
+    assert denied_verify.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
 
 @pytest.mark.asyncio

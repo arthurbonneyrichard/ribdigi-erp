@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 from sqlalchemy import func, select
 
@@ -13,7 +14,10 @@ from tests.conftest import auth_headers
 @pytest.mark.asyncio
 async def test_movements_include_before_after_user(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     before = float(seed["p1"].stock_qty or 0)
     await apply_stock_change(
         db_session,
@@ -108,7 +112,10 @@ async def test_stock_out_rejects_overdraw(client, db_session):
     sequential guard: a second overdraw after a successful out returns 409.
     """
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     product = await db_session.get(m.Product, seed["p1"].id)
     product.stock_qty = 5
     product.reserved_qty = 0

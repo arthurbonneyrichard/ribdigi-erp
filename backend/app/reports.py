@@ -125,6 +125,7 @@ async def profit_loss_with_optional_compare(
     to_date: datetime | None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    store_ids: list[str] | None = None,
     compare: bool = False,
     company_id: str | None = None,
 ) -> dict:
@@ -138,6 +139,7 @@ async def profit_loss_with_optional_compare(
             to_date=to_date,
             store_id=store_id,
             branch_id=branch_id,
+            store_ids=store_ids,
             company_id=company_id,
         )
     cur_from, cur_to = resolve_compare_period(from_date, to_date)
@@ -149,6 +151,7 @@ async def profit_loss_with_optional_compare(
         to_date=cur_to,
         store_id=store_id,
         branch_id=branch_id,
+        store_ids=store_ids,
         company_id=company_id,
     )
     prior = await profit_and_loss(
@@ -158,6 +161,7 @@ async def profit_loss_with_optional_compare(
         to_date=prior_to,
         store_id=store_id,
         branch_id=branch_id,
+        store_ids=store_ids,
         company_id=company_id,
     )
     current["comparison"] = build_comparison(
@@ -180,6 +184,7 @@ async def cash_flow_with_optional_compare(
     to_date: datetime | None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    store_ids: list[str] | None = None,
     compare: bool = False,
     company_id: str | None = None,
 ) -> dict:
@@ -191,6 +196,7 @@ async def cash_flow_with_optional_compare(
             to_date=to_date,
             store_id=store_id,
             branch_id=branch_id,
+            store_ids=store_ids,
             company_id=company_id,
         )
     cur_from, cur_to = resolve_compare_period(from_date, to_date)
@@ -202,6 +208,7 @@ async def cash_flow_with_optional_compare(
         to_date=cur_to,
         store_id=store_id,
         branch_id=branch_id,
+        store_ids=store_ids,
         company_id=company_id,
     )
     prior = await cash_flow(
@@ -211,6 +218,7 @@ async def cash_flow_with_optional_compare(
         to_date=prior_to,
         store_id=store_id,
         branch_id=branch_id,
+        store_ids=store_ids,
         company_id=company_id,
     )
     current["comparison"] = build_comparison(
@@ -232,6 +240,7 @@ async def balance_sheet_with_optional_compare(
     as_of: datetime | None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    store_ids: list[str] | None = None,
     compare: bool = False,
     company_id: str | None = None,
 ) -> dict:
@@ -242,6 +251,7 @@ async def balance_sheet_with_optional_compare(
             as_of=as_of,
             store_id=store_id,
             branch_id=branch_id,
+            store_ids=store_ids,
             company_id=company_id,
         )
     current_as_of = as_of or datetime.utcnow().replace(
@@ -254,6 +264,7 @@ async def balance_sheet_with_optional_compare(
         as_of=current_as_of,
         store_id=store_id,
         branch_id=branch_id,
+        store_ids=store_ids,
         company_id=company_id,
     )
     prior = await balance_sheet(
@@ -262,6 +273,7 @@ async def balance_sheet_with_optional_compare(
         as_of=prior_as_of,
         store_id=store_id,
         branch_id=branch_id,
+        store_ids=store_ids,
         company_id=company_id,
     )
     current["comparison"] = build_comparison(
@@ -382,23 +394,60 @@ async def _sales_totals_for_bounds(
     end: datetime,
     *,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
+    """Aggregate invoice + POS totals for a window.
+
+    ``store_ids`` None = tenant/company-wide; set (store_manager) filters invoices by
+    ``SalesInvoice.store_id`` and POS via ``PosSession.store_id`` (null store fail-closed).
+    """
+    if store_ids is not None and not store_ids:
+        return {
+            "invoice_count": 0,
+            "pos_count": 0,
+            "invoice_revenue": 0.0,
+            "pos_revenue": 0.0,
+            "total_revenue": 0.0,
+            "tax": 0.0,
+            "discounts": 0.0,
+            "net_sales": 0.0,
+        }
+
     inv_q = select(m.SalesInvoice).where(
         m.SalesInvoice.tenant_id == tenant_id,
         m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
         m.SalesInvoice.posted_at >= start,
         m.SalesInvoice.posted_at <= end,
     )
-    pos_q = select(m.Transaction).where(
-        m.Transaction.tenant_id == tenant_id,
-        m.Transaction.tx_type == "pos_sale",
-        m.Transaction.created_at >= start,
-        m.Transaction.created_at <= end,
-    )
     if company_id:
         inv_q = inv_q.where(m.SalesInvoice.company_id == company_id)
-        pos_q = pos_q.where(m.Transaction.company_id == company_id)
+    if store_ids is not None:
+        inv_q = inv_q.where(m.SalesInvoice.store_id.in_(store_ids))
     invoices = (await db.execute(inv_q)).scalars().all()
+
+    if store_ids is not None:
+        pos_q = (
+            select(m.Transaction)
+            .join(m.PosSession, m.PosSession.id == m.Transaction.session_id)
+            .where(
+                m.Transaction.tenant_id == tenant_id,
+                m.Transaction.tx_type == "pos_sale",
+                m.Transaction.created_at >= start,
+                m.Transaction.created_at <= end,
+                m.PosSession.store_id.in_(store_ids),
+            )
+        )
+        if company_id:
+            pos_q = pos_q.where(m.Transaction.company_id == company_id)
+    else:
+        pos_q = select(m.Transaction).where(
+            m.Transaction.tenant_id == tenant_id,
+            m.Transaction.tx_type == "pos_sale",
+            m.Transaction.created_at >= start,
+            m.Transaction.created_at <= end,
+        )
+        if company_id:
+            pos_q = pos_q.where(m.Transaction.company_id == company_id)
     pos = (await db.execute(pos_q)).scalars().all()
     invoice_total = sum(float(i.total_amount or 0) for i in invoices)
     invoice_tax = sum(float(i.tax_amount or 0) for i in invoices)
@@ -424,15 +473,16 @@ async def sales_daily(
     date: datetime | None = None,
     *,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
     day = date or datetime.utcnow()
     start, end = day_bounds(day)
     current = await _sales_totals_for_bounds(
-        db, tenant_id, start, end, company_id=company_id
+        db, tenant_id, start, end, company_id=company_id, store_ids=store_ids
     )
     prev_start, prev_end = day_bounds(start - timedelta(days=1))
     previous = await _sales_totals_for_bounds(
-        db, tenant_id, prev_start, prev_end, company_id=company_id
+        db, tenant_id, prev_start, prev_end, company_id=company_id, store_ids=store_ids
     )
     prev_rev = float(previous["total_revenue"] or 0)
     cur_rev = float(current["total_revenue"] or 0)
@@ -452,7 +502,19 @@ async def sales_monthly(
     month: int,
     *,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
+    if store_ids is not None and not store_ids:
+        return {
+            "year": year,
+            "month": month,
+            "invoice_count": 0,
+            "pos_count": 0,
+            "total_revenue": 0.0,
+            "previous_month_revenue": 0.0,
+            "change_pct": None,
+            "daily": [],
+        }
     start, end = month_bounds(year, month)
     inv_q = select(m.SalesInvoice).where(
         m.SalesInvoice.tenant_id == tenant_id,
@@ -461,14 +523,30 @@ async def sales_monthly(
         m.SalesInvoice.posted_at <= end,
     )
     inv_q = apply_company_filter(inv_q, m.SalesInvoice.company_id, company_id)
+    if store_ids is not None:
+        inv_q = inv_q.where(m.SalesInvoice.store_id.in_(store_ids))
     invoices = (await db.execute(inv_q)).scalars().all()
-    pos_q = select(m.Transaction).where(
-        m.Transaction.tenant_id == tenant_id,
-        m.Transaction.tx_type == "pos_sale",
-        m.Transaction.created_at >= start,
-        m.Transaction.created_at <= end,
-    )
-    pos_q = apply_company_filter(pos_q, m.Transaction.company_id, company_id)
+    if store_ids is not None:
+        pos_q = (
+            select(m.Transaction)
+            .join(m.PosSession, m.PosSession.id == m.Transaction.session_id)
+            .where(
+                m.Transaction.tenant_id == tenant_id,
+                m.Transaction.tx_type == "pos_sale",
+                m.Transaction.created_at >= start,
+                m.Transaction.created_at <= end,
+                m.PosSession.store_id.in_(store_ids),
+            )
+        )
+        pos_q = apply_company_filter(pos_q, m.Transaction.company_id, company_id)
+    else:
+        pos_q = select(m.Transaction).where(
+            m.Transaction.tenant_id == tenant_id,
+            m.Transaction.tx_type == "pos_sale",
+            m.Transaction.created_at >= start,
+            m.Transaction.created_at <= end,
+        )
+        pos_q = apply_company_filter(pos_q, m.Transaction.company_id, company_id)
     pos = (await db.execute(pos_q)).scalars().all()
 
     by_day: dict[str, float] = defaultdict(float)
@@ -482,7 +560,7 @@ async def sales_monthly(
     total = sum(by_day.values())
     prev_year, prev_month = (year - 1, month) if month == 1 else (year, month - 1)
     prev = await sales_monthly_total(
-        db, tenant_id, prev_year, prev_month, company_id=company_id
+        db, tenant_id, prev_year, prev_month, company_id=company_id, store_ids=store_ids
     )
     return {
         "year": year,
@@ -503,7 +581,10 @@ async def sales_monthly_total(
     month: int,
     *,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> float:
+    if store_ids is not None and not store_ids:
+        return 0.0
     start, end = month_bounds(year, month)
     inv_q = select(func.coalesce(func.sum(m.SalesInvoice.total_amount), 0)).where(
         m.SalesInvoice.tenant_id == tenant_id,
@@ -512,14 +593,31 @@ async def sales_monthly_total(
         m.SalesInvoice.posted_at <= end,
     )
     inv_q = apply_company_filter(inv_q, m.SalesInvoice.company_id, company_id)
+    if store_ids is not None:
+        inv_q = inv_q.where(m.SalesInvoice.store_id.in_(store_ids))
     inv = float((await db.execute(inv_q)).scalar() or 0)
-    pos_q = select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
-        m.Transaction.tenant_id == tenant_id,
-        m.Transaction.tx_type == "pos_sale",
-        m.Transaction.created_at >= start,
-        m.Transaction.created_at <= end,
-    )
-    pos_q = apply_company_filter(pos_q, m.Transaction.company_id, company_id)
+    if store_ids is not None:
+        pos_q = (
+            select(func.coalesce(func.sum(m.Transaction.total), 0))
+            .select_from(m.Transaction)
+            .join(m.PosSession, m.PosSession.id == m.Transaction.session_id)
+            .where(
+                m.Transaction.tenant_id == tenant_id,
+                m.Transaction.tx_type == "pos_sale",
+                m.Transaction.created_at >= start,
+                m.Transaction.created_at <= end,
+                m.PosSession.store_id.in_(store_ids),
+            )
+        )
+        pos_q = apply_company_filter(pos_q, m.Transaction.company_id, company_id)
+    else:
+        pos_q = select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
+            m.Transaction.tenant_id == tenant_id,
+            m.Transaction.tx_type == "pos_sale",
+            m.Transaction.created_at >= start,
+            m.Transaction.created_at <= end,
+        )
+        pos_q = apply_company_filter(pos_q, m.Transaction.company_id, company_id)
     pos = float((await db.execute(pos_q)).scalar() or 0)
     return round(inv + pos, 2)
 
@@ -533,7 +631,18 @@ async def sales_by_product(
     store_id: str | None = None,
     category_id: str | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
+    if store_ids is not None and not store_ids and not store_id:
+        return {
+            "from_date": from_date,
+            "to_date": to_date,
+            "store_id": store_id,
+            "category_id": category_id,
+            "products": [],
+            "total_revenue": 0.0,
+            "total_quantity": 0.0,
+        }
     if store_id:
         from app.stores import get_store
 
@@ -556,6 +665,8 @@ async def sales_by_product(
         stmt = stmt.where(m.SalesInvoice.posted_at <= to_date)
     if store_id:
         stmt = stmt.where(m.SalesInvoice.store_id == store_id)
+    elif store_ids is not None:
+        stmt = stmt.where(m.SalesInvoice.store_id.in_(store_ids))
     if category_id:
         stmt = stmt.where(m.Product.category_id == category_id)
     rows = (await db.execute(stmt)).all()
@@ -590,6 +701,8 @@ async def sales_by_product(
         pos_stmt = pos_stmt.where(m.Transaction.created_at <= to_date)
     if store_id:
         pos_stmt = pos_stmt.where(m.PosSession.store_id == store_id)
+    elif store_ids is not None:
+        pos_stmt = pos_stmt.where(m.PosSession.store_id.in_(store_ids))
     for tx, _session in (await db.execute(pos_stmt)).all():
         for line in (tx.payload or {}).get("items") or []:
             pid = line.get("product_id")
@@ -636,9 +749,19 @@ async def sales_by_customer(
     to_date: datetime | None = None,
     limit: int = 50,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
     """Top customers by revenue and purchase frequency (BR-14.1)."""
     limit = max(1, min(int(limit or 50), 200))
+    if store_ids is not None and not store_ids:
+        return {
+            "from_date": from_date,
+            "to_date": to_date,
+            "customers": [],
+            "total_revenue": 0.0,
+            "total_sales": 0,
+            "customer_count": 0,
+        }
 
     def _bucket(agg: dict[str, dict], customer_id: str | None) -> dict:
         key = customer_id or "walk_in"
@@ -667,6 +790,8 @@ async def sales_by_customer(
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at >= from_date)
     if to_date:
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at <= to_date)
+    if store_ids is not None:
+        inv_stmt = inv_stmt.where(m.SalesInvoice.store_id.in_(store_ids))
     for inv in (await db.execute(inv_stmt)).scalars().all():
         row = _bucket(agg, inv.customer_id)
         row["invoice_count"] += 1
@@ -674,10 +799,21 @@ async def sales_by_customer(
         row["revenue"] = round(row["revenue"] + float(inv.total_amount or 0), 2)
         row["tax"] = round(row["tax"] + float(inv.tax_amount or 0), 2)
 
-    pos_stmt = select(m.Transaction).where(
-        m.Transaction.tenant_id == tenant_id,
-        m.Transaction.tx_type == "pos_sale",
-    )
+    if store_ids is not None:
+        pos_stmt = (
+            select(m.Transaction)
+            .join(m.PosSession, m.PosSession.id == m.Transaction.session_id)
+            .where(
+                m.Transaction.tenant_id == tenant_id,
+                m.Transaction.tx_type == "pos_sale",
+                m.PosSession.store_id.in_(store_ids),
+            )
+        )
+    else:
+        pos_stmt = select(m.Transaction).where(
+            m.Transaction.tenant_id == tenant_id,
+            m.Transaction.tx_type == "pos_sale",
+        )
     pos_stmt = apply_company_filter(pos_stmt, m.Transaction.company_id, company_id)
     if from_date:
         pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
@@ -732,8 +868,19 @@ async def sales_by_salesperson(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
     """Aggregate posted invoices + POS sales by salesperson (invoice created_by / POS session user)."""
+    if store_ids is not None and not store_ids:
+        return {
+            "from_date": from_date,
+            "to_date": to_date,
+            "salespeople": [],
+            "total_revenue": 0.0,
+            "total_sales": 0,
+            "invoice_revenue": 0.0,
+            "pos_revenue": 0.0,
+        }
 
     def _bucket(agg: dict[str, dict], user_id: str | None) -> dict:
         key = user_id or "unknown"
@@ -768,6 +915,8 @@ async def sales_by_salesperson(
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at >= from_date)
     if to_date:
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at <= to_date)
+    if store_ids is not None:
+        inv_stmt = inv_stmt.where(m.SalesInvoice.store_id.in_(store_ids))
     for inv in (await db.execute(inv_stmt)).scalars().all():
         row = _bucket(agg, inv.created_by)
         total = float(inv.total_amount or 0)
@@ -792,6 +941,8 @@ async def sales_by_salesperson(
         pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
     if to_date:
         pos_stmt = pos_stmt.where(m.Transaction.created_at <= to_date)
+    if store_ids is not None:
+        pos_stmt = pos_stmt.where(m.PosSession.store_id.in_(store_ids))
     for tx, session in (await db.execute(pos_stmt)).all():
         user_id = session.user_id if session else None
         row = _bucket(agg, user_id)
@@ -846,8 +997,19 @@ async def sales_by_store(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
     """Aggregate posted invoices + POS sales by store (invoice.store_id / POS session.store_id)."""
+    if store_ids is not None and not store_ids:
+        return {
+            "from_date": from_date,
+            "to_date": to_date,
+            "stores": [],
+            "total_revenue": 0.0,
+            "total_sales": 0,
+            "invoice_revenue": 0.0,
+            "pos_revenue": 0.0,
+        }
 
     def _bucket(agg: dict[str, dict], store_id: str | None) -> dict:
         key = store_id or "unknown"
@@ -875,6 +1037,8 @@ async def sales_by_store(
     # Seed active stores so zero-activity locations still appear.
     store_q = select(m.Store).where(m.Store.tenant_id == tenant_id).order_by(m.Store.name)
     store_q = apply_company_filter(store_q, m.Store.company_id, company_id)
+    if store_ids is not None:
+        store_q = store_q.where(m.Store.id.in_(store_ids))
     stores = (await db.execute(store_q)).scalars().all()
     for store in stores:
         row = _bucket(agg, store.id)
@@ -890,6 +1054,8 @@ async def sales_by_store(
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at >= from_date)
     if to_date:
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at <= to_date)
+    if store_ids is not None:
+        inv_stmt = inv_stmt.where(m.SalesInvoice.store_id.in_(store_ids))
     for inv in (await db.execute(inv_stmt)).scalars().all():
         row = _bucket(agg, inv.store_id)
         total = float(inv.total_amount or 0)
@@ -914,6 +1080,8 @@ async def sales_by_store(
         pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
     if to_date:
         pos_stmt = pos_stmt.where(m.Transaction.created_at <= to_date)
+    if store_ids is not None:
+        pos_stmt = pos_stmt.where(m.PosSession.store_id.in_(store_ids))
     for tx, session in (await db.execute(pos_stmt)).all():
         store_id = session.store_id if session else None
         row = _bucket(agg, store_id)
@@ -954,9 +1122,10 @@ async def sales_by_store(
     for key, row in agg.items():
         if key == "unknown" and row["sale_count"] == 0:
             continue
+        if store_ids is not None and key == "unknown":
+            continue
         stores_out.append(row)
-    stores_out.sort(key=lambda x: x["revenue"], reverse=True)
-
+    stores_out = sorted(stores_out, key=lambda x: x["revenue"], reverse=True)
     return {
         "from_date": from_date,
         "to_date": to_date,
@@ -974,25 +1143,46 @@ async def inventory_balance(
     warehouse_id: str | None = None,
     *,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
-    if warehouse_id:
+    """Inventory balance.
+
+    ``warehouse_ids`` None = tenant/company-wide (product.stock_qty when no WH filter).
+    When set (store_manager), omit product fallback and restrict to managed WHs.
+    """
+    from app import dashboard_scope as dashboard_scope_svc
+
+    if warehouse_ids is not None and not warehouse_ids and not warehouse_id:
+        empty = {
+            "warehouse_id": warehouse_id,
+            "items": [],
+            "total_quantity": 0.0,
+            "total_value": 0.0,
+        }
+        if dashboard_scope_svc.omit_inventory_report_cost(warehouse_ids):
+            return dashboard_scope_svc.redact_inventory_report_cost(empty)
+        return empty
+
+    use_wh = warehouse_id is not None or warehouse_ids is not None
+    if use_wh:
         stmt = (
             select(m.WarehouseStock, m.Product)
             .join(m.Product, m.Product.id == m.WarehouseStock.product_id)
-            .where(
-                m.WarehouseStock.tenant_id == tenant_id,
-                m.WarehouseStock.warehouse_id == warehouse_id,
-            )
+            .where(m.WarehouseStock.tenant_id == tenant_id)
             .order_by(m.Product.name)
         )
         stmt = apply_company_filter(stmt, m.WarehouseStock.company_id, company_id)
+        if warehouse_id:
+            stmt = stmt.where(m.WarehouseStock.warehouse_id == warehouse_id)
+        elif warehouse_ids is not None:
+            stmt = stmt.where(m.WarehouseStock.warehouse_id.in_(warehouse_ids))
         rows = (await db.execute(stmt)).all()
         items = [
             {
                 "product_id": p.id,
                 "sku": p.sku,
                 "name": p.name,
-                "warehouse_id": warehouse_id,
+                "warehouse_id": s.warehouse_id,
                 "quantity": float(s.quantity or 0),
                 "cost_price": float(p.cost_price or 0),
                 "value": round(float(s.quantity or 0) * float(p.cost_price or 0), 2),
@@ -1017,12 +1207,15 @@ async def inventory_balance(
             }
             for p in products
         ]
-    return {
+    result = {
         "warehouse_id": warehouse_id,
         "items": items,
         "total_quantity": round(sum(i["quantity"] for i in items), 3),
         "total_value": round(sum(i["value"] for i in items), 2),
     }
+    if dashboard_scope_svc.omit_inventory_report_cost(warehouse_ids):
+        return dashboard_scope_svc.redact_inventory_report_cost(result)
+    return result
 
 
 async def inventory_valuation(
@@ -1032,10 +1225,13 @@ async def inventory_valuation(
     warehouse_id: str | None = None,
     store_id: str | None = None,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
     """Stock valuation at standard cost: quantity × product.cost_price (Stage 9 R2).
 
     FIFO, LIFO, and weighted-average layer costing are intentionally out of scope.
+    ``warehouse_ids`` set (store_manager) omits product.stock_qty fallback and
+    restricts warehouse rows to that set.
     """
     from app import stores as stores_svc
 
@@ -1050,6 +1246,27 @@ async def inventory_valuation(
 
         await get_warehouse(db, tenant_id, warehouse_id, company_id=company_id)
 
+    if warehouse_ids is not None and not warehouse_ids and not resolved_warehouse_id:
+        empty = {
+            "costing_method": "standard_cost",
+            "costing_method_note": (
+                "Value = quantity × product.cost_price. "
+                "FIFO, LIFO, and weighted average are not used in commercial MVP."
+            ),
+            "warehouse_id": resolved_warehouse_id,
+            "store_id": store_id,
+            "items": [],
+            "by_warehouse": [],
+            "total_quantity": 0.0,
+            "total_value": 0.0,
+            "line_count": 0,
+        }
+        from app import dashboard_scope as dashboard_scope_svc
+
+        if dashboard_scope_svc.omit_inventory_report_cost(warehouse_ids):
+            return dashboard_scope_svc.redact_inventory_report_cost(empty)
+        return empty
+
     stmt = (
         select(m.WarehouseStock, m.Product, m.Warehouse)
         .join(m.Product, m.Product.id == m.WarehouseStock.product_id)
@@ -1061,6 +1278,8 @@ async def inventory_valuation(
         stmt = stmt.where(m.Warehouse.company_id == company_id)
     if resolved_warehouse_id:
         stmt = stmt.where(m.WarehouseStock.warehouse_id == resolved_warehouse_id)
+    if warehouse_ids is not None:
+        stmt = stmt.where(m.WarehouseStock.warehouse_id.in_(warehouse_ids))
     rows = (await db.execute(stmt)).all()
 
     items: list[dict] = []
@@ -1098,7 +1317,8 @@ async def inventory_valuation(
         bucket["total_value"] = round(bucket["total_value"] + value, 2)
 
     # Fallback when tenant stock lives only on product.stock_qty (no warehouse rows yet).
-    if not items and not resolved_warehouse_id:
+    # Store managers never use this fallback (warehouse_ids is set).
+    if not items and not resolved_warehouse_id and warehouse_ids is None:
         products = (
             await db.execute(
                 select(m.Product)
@@ -1106,6 +1326,8 @@ async def inventory_valuation(
                 .order_by(m.Product.name)
             )
         ).scalars().all()
+        if company_id:
+            products = [p for p in products if getattr(p, "company_id", None) == company_id]
         for product in products:
             qty = float(product.stock_qty or 0)
             if qty == 0:
@@ -1126,7 +1348,7 @@ async def inventory_valuation(
             )
 
     by_warehouse = sorted(by_wh.values(), key=lambda x: x["warehouse_code"] or "")
-    return {
+    result = {
         "costing_method": "standard_cost",
         "costing_method_note": (
             "Value = quantity × product.cost_price. "
@@ -1140,6 +1362,11 @@ async def inventory_valuation(
         "total_value": round(sum(i["value"] for i in items), 2),
         "line_count": len(items),
     }
+    from app import dashboard_scope as dashboard_scope_svc
+
+    if dashboard_scope_svc.omit_inventory_report_cost(warehouse_ids):
+        return dashboard_scope_svc.redact_inventory_report_cost(result)
+    return result
 
 
 async def inventory_movements(
@@ -1151,11 +1378,17 @@ async def inventory_movements(
     to_date: datetime | None = None,
     limit: int = 200,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
+    """Movement report. ``warehouse_ids`` set excludes null-WH and out-of-scope rows."""
+    if warehouse_ids is not None and not warehouse_ids:
+        return {"count": 0, "movements": []}
     stmt = select(m.StockMovement).where(m.StockMovement.tenant_id == tenant_id)
     stmt = apply_company_filter(stmt, m.StockMovement.company_id, company_id)
     if product_id:
         stmt = stmt.where(m.StockMovement.product_id == product_id)
+    if warehouse_ids is not None:
+        stmt = stmt.where(m.StockMovement.warehouse_id.in_(warehouse_ids))
     if from_date:
         stmt = stmt.where(m.StockMovement.created_at >= from_date)
     if to_date:
@@ -1189,36 +1422,42 @@ async def inventory_low_stock(
     store_id: str | None = None,
     warehouse_id: str | None = None,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
-    """Product-level and optional store/warehouse reorder breaches."""
+    """Product-level and optional store/warehouse reorder breaches.
+
+    When ``warehouse_ids`` is set (store_manager), omit company-wide product rows and
+    restrict warehouse rows to that set (intersected with store/warehouse filters).
+    """
     from app.inventory import compute_stock_status
 
-    pq = select(m.Product).where(
-        m.Product.tenant_id == tenant_id,
-        m.Product.is_active == True,  # noqa: E712
-    ).order_by(m.Product.stock_qty.asc())
-    pq = apply_company_filter(pq, m.Product.company_id, company_id)
-    products = (await db.execute(pq)).scalars().all()
-    product_rows = []
-    for p in products:
-        qty = float(p.stock_qty or 0)
-        minimum = float(getattr(p, "minimum_stock", 0) or 0)
-        reorder = float(p.reorder_level or 0)
-        status = compute_stock_status(qty, minimum, reorder)
-        if status == "green":
-            continue
-        product_rows.append(
-            {
-                "id": p.id,
-                "sku": p.sku,
-                "name": p.name,
-                "stock_qty": qty,
-                "minimum_stock": minimum,
-                "reorder_level": reorder,
-                "stock_status": status,
-                "scope": "product",
-            }
-        )
+    product_rows: list[dict] = []
+    if warehouse_ids is None:
+        pq = select(m.Product).where(
+            m.Product.tenant_id == tenant_id,
+            m.Product.is_active == True,  # noqa: E712
+        ).order_by(m.Product.stock_qty.asc())
+        pq = apply_company_filter(pq, m.Product.company_id, company_id)
+        products = (await db.execute(pq)).scalars().all()
+        for p in products:
+            qty = float(p.stock_qty or 0)
+            minimum = float(getattr(p, "minimum_stock", 0) or 0)
+            reorder = float(p.reorder_level or 0)
+            status = compute_stock_status(qty, minimum, reorder)
+            if status == "green":
+                continue
+            product_rows.append(
+                {
+                    "id": p.id,
+                    "sku": p.sku,
+                    "name": p.name,
+                    "stock_qty": qty,
+                    "minimum_stock": minimum,
+                    "reorder_level": reorder,
+                    "stock_status": status,
+                    "scope": "product",
+                }
+            )
 
     wh_filter = warehouse_id
     store = None
@@ -1236,6 +1475,17 @@ async def inventory_low_stock(
         await get_warehouse(db, tenant_id, warehouse_id, company_id=company_id)
 
     warehouse_rows: list[dict] = []
+    if warehouse_ids is not None and not warehouse_ids:
+        return {
+            "count": len(product_rows),
+            "products": product_rows,
+            "warehouse_count": 0,
+            "warehouse_low_stock": [],
+            "store_id": store_id,
+            "warehouse_id": wh_filter,
+            "store_name": store.name if store else None,
+        }
+
     stmt = (
         select(m.WarehouseStock, m.Product, m.Warehouse)
         .join(m.Product, m.Product.id == m.WarehouseStock.product_id)
@@ -1249,6 +1499,8 @@ async def inventory_low_stock(
     stmt = apply_company_filter(stmt, m.Warehouse.company_id, company_id)
     if wh_filter:
         stmt = stmt.where(m.WarehouseStock.warehouse_id == wh_filter)
+    if warehouse_ids is not None:
+        stmt = stmt.where(m.WarehouseStock.warehouse_id.in_(warehouse_ids))
     from app.inventory import compute_stock_status, effective_warehouse_thresholds
 
     for stock, product, wh in (await db.execute(stmt)).all():
@@ -1294,11 +1546,16 @@ async def inventory_expiry(
     *,
     within_days: int = 30,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
     from app import catalog as catalog_svc
 
     batches = await catalog_svc.list_expiring_batches(
-        db, tenant_id, within_days=within_days, company_id=company_id
+        db,
+        tenant_id,
+        within_days=within_days,
+        company_id=company_id,
+        warehouse_ids=warehouse_ids,
     )
     return {
         "within_days": within_days,
@@ -1314,13 +1571,26 @@ async def purchases_summary(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
+    """PO summary. ``warehouse_ids`` set (store_manager) restricts to managed WHs."""
+    if warehouse_ids is not None and not warehouse_ids:
+        return {
+            "from_date": from_date,
+            "to_date": to_date,
+            "order_count": 0,
+            "total_amount": 0.0,
+            "outstanding_amount": 0.0,
+            "by_status": {},
+        }
     stmt = select(m.PurchaseOrder).where(
         m.PurchaseOrder.tenant_id == tenant_id,
         m.PurchaseOrder.status != "cancelled",
     )
     if company_id:
         stmt = stmt.where(m.PurchaseOrder.company_id == company_id)
+    if warehouse_ids is not None:
+        stmt = stmt.where(m.PurchaseOrder.warehouse_id.in_(warehouse_ids))
     if from_date:
         stmt = stmt.where(m.PurchaseOrder.created_at >= from_date)
     if to_date:
@@ -1351,12 +1621,17 @@ async def purchases_by_supplier(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
+    if warehouse_ids is not None and not warehouse_ids:
+        return {"suppliers": [], "total_amount": 0.0}
     stmt = select(m.PurchaseOrder, m.Party).join(m.Party, m.Party.id == m.PurchaseOrder.supplier_id).where(
         m.PurchaseOrder.tenant_id == tenant_id,
         m.PurchaseOrder.status != "cancelled",
     )
     stmt = apply_company_filter(stmt, m.PurchaseOrder.company_id, company_id)
+    if warehouse_ids is not None:
+        stmt = stmt.where(m.PurchaseOrder.warehouse_id.in_(warehouse_ids))
     if supplier_id:
         stmt = stmt.where(m.PurchaseOrder.supplier_id == supplier_id)
     if from_date:
@@ -1388,8 +1663,18 @@ async def purchases_pending_orders(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
     """POs not yet fully received — status sent or partially_received."""
+    if warehouse_ids is not None and not warehouse_ids:
+        return {
+            "from_date": from_date,
+            "to_date": to_date,
+            "count": 0,
+            "total_amount": 0.0,
+            "open_qty": 0.0,
+            "orders": [],
+        }
     stmt = (
         select(m.PurchaseOrder, m.Party)
         .join(m.Party, m.Party.id == m.PurchaseOrder.supplier_id)
@@ -1400,6 +1685,8 @@ async def purchases_pending_orders(
         .order_by(m.PurchaseOrder.created_at.asc())
     )
     stmt = apply_company_filter(stmt, m.PurchaseOrder.company_id, company_id)
+    if warehouse_ids is not None:
+        stmt = stmt.where(m.PurchaseOrder.warehouse_id.in_(warehouse_ids))
     if supplier_id:
         stmt = stmt.where(m.PurchaseOrder.supplier_id == supplier_id)
     if from_date:
@@ -1459,8 +1746,22 @@ async def purchases_return_summary(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
     """Purchase return summary by reason and supplier (BR-14.3)."""
+    if warehouse_ids is not None and not warehouse_ids:
+        return {
+            "from_date": from_date,
+            "to_date": to_date,
+            "return_count": 0,
+            "posted_count": 0,
+            "total_amount": 0.0,
+            "posted_amount": 0.0,
+            "by_status": {},
+            "by_reason": [],
+            "by_supplier": [],
+            "returns": [],
+        }
     stmt = (
         select(m.PurchaseReturn, m.Party)
         .join(m.Party, m.Party.id == m.PurchaseReturn.supplier_id)
@@ -1471,6 +1772,8 @@ async def purchases_return_summary(
         .order_by(m.PurchaseReturn.created_at.desc())
     )
     stmt = apply_company_filter(stmt, m.PurchaseReturn.company_id, company_id)
+    if warehouse_ids is not None:
+        stmt = stmt.where(m.PurchaseReturn.warehouse_id.in_(warehouse_ids))
     if supplier_id:
         stmt = stmt.where(m.PurchaseReturn.supplier_id == supplier_id)
     if from_date:
@@ -1554,13 +1857,42 @@ async def expenses_summary(
     to_date: datetime | None = None,
     category_id: str | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
+    """Approved expense summary.
+
+    ``store_ids`` None = tenant/company-wide; set (store_manager) restricts to
+    managed stores and excludes null-store expenses (fail closed).
+    """
+    if store_ids is not None and not store_ids:
+        from app import dashboard_scope as dashboard_scope_svc
+
+        return {
+            "count": 0,
+            "total_amount": 0.0,
+            "by_category": [],
+            "budgets": dashboard_scope_svc.redact_expense_budget_limits(
+                {
+                    "from_date": None,
+                    "to_date": None,
+                    "categories": [],
+                    "totals": {
+                        "budget_amount": 0.0,
+                        "spent": 0.0,
+                        "pending": 0.0,
+                        "variance": 0.0,
+                    },
+                }
+            ),
+        }
     stmt = select(m.Expense).where(
         m.Expense.tenant_id == tenant_id,
         m.Expense.status == "approved",
     )
     if company_id:
         stmt = stmt.where(m.Expense.company_id == company_id)
+    if store_ids is not None:
+        stmt = stmt.where(m.Expense.store_id.in_(store_ids))
     if category_id:
         stmt = stmt.where(m.Expense.category_id == category_id)
     if from_date:
@@ -1578,7 +1910,12 @@ async def expenses_summary(
     from app import expenses as expenses_svc
 
     budget = await expenses_svc.category_budget_variance(
-        db, tenant_id, from_date=from_date, to_date=to_date
+        db,
+        tenant_id,
+        from_date=from_date,
+        to_date=to_date,
+        company_id=company_id,
+        store_ids=store_ids,
     )
     return {
         "count": len(rows),
@@ -1620,19 +1957,25 @@ async def cash_flow(
     to_date: datetime | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    store_ids: list[str] | None = None,
     company_id: str | None = None,
 ) -> dict:
     """Cash flow from cash + bank GL accounts, split into O/I/F activities."""
-    from app.accounting import ensure_default_accounts, resolve_journal_dimension_ids
+    from app.accounting import (
+        ensure_default_accounts,
+        merge_journal_store_scope,
+        resolve_journal_dimension_ids,
+    )
 
     await ensure_default_accounts(db, tenant_id, company_id=company_id)
-    resolved_store, resolved_branch, store_ids = await resolve_journal_dimension_ids(
+    resolved_store, resolved_branch, dim_store_ids = await resolve_journal_dimension_ids(
         db,
         tenant_id=tenant_id,
         store_id=store_id,
         branch_id=branch_id,
         company_id=company_id,
     )
+    store_ids = merge_journal_store_scope(dim_store_ids, store_ids)
     liq_q = select(m.Account).where(
         m.Account.tenant_id == tenant_id,
         (m.Account.is_cash_account.is_(True)) | (m.Account.is_bank_account.is_(True)),
@@ -1790,20 +2133,26 @@ async def balance_sheet(
     as_of: datetime | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    store_ids: list[str] | None = None,
     company_id: str | None = None,
 ) -> dict:
-    """Point-in-time balance sheet; optional as_of / store / branch from posted journals."""
-    from app.accounting import account_balances_through, resolve_journal_dimension_ids
+    """Point-in-time balance sheet; optional as_of / store / branch / scope from posted journals."""
+    from app.accounting import (
+        account_balances_through,
+        merge_journal_store_scope,
+        resolve_journal_dimension_ids,
+    )
 
-    resolved_store, resolved_branch, store_ids = await resolve_journal_dimension_ids(
+    resolved_store, resolved_branch, dim_store_ids = await resolve_journal_dimension_ids(
         db,
         tenant_id=tenant_id,
         store_id=store_id,
         branch_id=branch_id,
         company_id=company_id,
     )
+    effective_store_ids = merge_journal_store_scope(dim_store_ids, store_ids)
     accounts, bal_by_id = await account_balances_through(
-        db, tenant_id, as_of=as_of, store_ids=store_ids, company_id=company_id
+        db, tenant_id, as_of=as_of, store_ids=effective_store_ids, company_id=company_id
     )
 
     def rows_for(account_type: str) -> list[dict]:

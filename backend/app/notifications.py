@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException
-from sqlalchemy import or_, select
+from sqlalchemy import and_, exists, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
@@ -213,6 +213,178 @@ async def create_notification(
     return note
 
 
+def _manager_broadcast_visibility(
+    *,
+    managed_store_ids: list[str],
+    managed_warehouse_ids: list[str],
+):
+    """SQL predicate: broadcast (user_id IS NULL) visible under store/WH scope.
+
+    Fail-closed for entities without store/WH linkage (legacy null-store quotations,
+    product, billing, bare system, null-store expenses, etc.).
+    """
+    arms: list = []
+    store_ids = list(managed_store_ids or [])
+    wh_ids = list(managed_warehouse_ids or [])
+
+    if store_ids:
+        arms.extend(
+            [
+                and_(
+                    m.Notification.entity_type == "sales_invoice",
+                    exists(
+                        select(m.SalesInvoice.id).where(
+                            m.SalesInvoice.id == m.Notification.entity_id,
+                            m.SalesInvoice.store_id.in_(store_ids),
+                        )
+                    ),
+                ),
+                and_(
+                    m.Notification.entity_type == "sales_order",
+                    exists(
+                        select(m.SalesOrder.id).where(
+                            m.SalesOrder.id == m.Notification.entity_id,
+                            m.SalesOrder.store_id.in_(store_ids),
+                        )
+                    ),
+                ),
+                and_(
+                    m.Notification.entity_type == "sales_quotation",
+                    exists(
+                        select(m.SalesQuotation.id).where(
+                            m.SalesQuotation.id == m.Notification.entity_id,
+                            m.SalesQuotation.store_id.in_(store_ids),
+                        )
+                    ),
+                ),
+                and_(
+                    m.Notification.entity_type == "expense",
+                    exists(
+                        select(m.Expense.id).where(
+                            m.Expense.id == m.Notification.entity_id,
+                            m.Expense.store_id.in_(store_ids),
+                        )
+                    ),
+                ),
+                and_(
+                    m.Notification.entity_type == "recurring_expense",
+                    exists(
+                        select(m.RecurringExpense.id).where(
+                            m.RecurringExpense.id == m.Notification.entity_id,
+                            m.RecurringExpense.store_id.in_(store_ids),
+                        )
+                    ),
+                ),
+                and_(
+                    m.Notification.entity_type == "pos_session",
+                    exists(
+                        select(m.PosSession.id).where(
+                            m.PosSession.id == m.Notification.entity_id,
+                            m.PosSession.store_id.in_(store_ids),
+                        )
+                    ),
+                ),
+                and_(
+                    m.Notification.entity_type == "sales_return",
+                    exists(
+                        select(m.SalesReturn.id)
+                        .select_from(m.SalesReturn)
+                        .join(
+                            m.SalesInvoice,
+                            m.SalesInvoice.id == m.SalesReturn.sales_invoice_id,
+                        )
+                        .where(
+                            m.SalesReturn.id == m.Notification.entity_id,
+                            m.SalesInvoice.store_id.in_(store_ids),
+                        )
+                    ),
+                ),
+                and_(
+                    m.Notification.entity_type == "stock_transfer",
+                    exists(
+                        select(m.StockTransfer.id).where(
+                            m.StockTransfer.id == m.Notification.entity_id,
+                            or_(
+                                m.StockTransfer.from_store_id.in_(store_ids),
+                                m.StockTransfer.to_store_id.in_(store_ids),
+                            ),
+                        )
+                    ),
+                ),
+            ]
+        )
+
+    if wh_ids:
+        pi_wh = func.coalesce(
+            m.PurchaseInvoice.warehouse_id,
+            m.GoodsReceipt.warehouse_id,
+            m.PurchaseOrder.warehouse_id,
+        )
+        arms.extend(
+            [
+                and_(
+                    m.Notification.entity_type == "purchase_invoice",
+                    exists(
+                        select(m.PurchaseInvoice.id)
+                        .select_from(m.PurchaseInvoice)
+                        .outerjoin(
+                            m.GoodsReceipt,
+                            m.GoodsReceipt.id == m.PurchaseInvoice.goods_receipt_id,
+                        )
+                        .outerjoin(
+                            m.PurchaseOrder,
+                            m.PurchaseOrder.id == m.PurchaseInvoice.purchase_order_id,
+                        )
+                        .where(
+                            m.PurchaseInvoice.id == m.Notification.entity_id,
+                            pi_wh.in_(wh_ids),
+                        )
+                    ),
+                ),
+                and_(
+                    m.Notification.entity_type == "goods_receipt",
+                    exists(
+                        select(m.GoodsReceipt.id).where(
+                            m.GoodsReceipt.id == m.Notification.entity_id,
+                            m.GoodsReceipt.warehouse_id.in_(wh_ids),
+                        )
+                    ),
+                ),
+                and_(
+                    m.Notification.entity_type == "purchase_request",
+                    exists(
+                        select(m.PurchaseRequest.id).where(
+                            m.PurchaseRequest.id == m.Notification.entity_id,
+                            m.PurchaseRequest.warehouse_id.in_(wh_ids),
+                        )
+                    ),
+                ),
+                and_(
+                    m.Notification.entity_type == "purchase_return",
+                    exists(
+                        select(m.PurchaseReturn.id).where(
+                            m.PurchaseReturn.id == m.Notification.entity_id,
+                            m.PurchaseReturn.warehouse_id.in_(wh_ids),
+                        )
+                    ),
+                ),
+                and_(
+                    m.Notification.entity_type == "warehouse_stock",
+                    or_(
+                        *[
+                            m.Notification.entity_id.like(f"{wid}:%")
+                            for wid in wh_ids
+                        ]
+                    ),
+                ),
+            ]
+        )
+
+    if not arms:
+        return and_(m.Notification.user_id.is_(None), m.Notification.id.is_(None))
+    return and_(m.Notification.user_id.is_(None), or_(*arms))
+
+
 async def list_notifications(
     db: AsyncSession,
     *,
@@ -223,14 +395,30 @@ async def list_notifications(
     group: str | None = None,
     limit: int = 100,
     company_id: str | None = None,
+    managed_store_ids: list[str] | None = None,
+    managed_warehouse_ids: list[str] | None = None,
 ) -> list[m.Notification]:
     stmt = select(m.Notification).where(m.Notification.tenant_id == tenant_id)
     if company_id:
-        stmt = stmt.where(m.Notification.company_id == company_id)
-    if user_id:
+        # Tenant-wide (company_id NULL) system alerts remain visible in company workspace.
         stmt = stmt.where(
-            or_(m.Notification.user_id == user_id, m.Notification.user_id.is_(None))
+            or_(
+                m.Notification.company_id == company_id,
+                m.Notification.company_id.is_(None),
+            )
         )
+    if user_id:
+        if managed_store_ids is not None:
+            personal = m.Notification.user_id == user_id
+            broadcast = _manager_broadcast_visibility(
+                managed_store_ids=managed_store_ids,
+                managed_warehouse_ids=managed_warehouse_ids or [],
+            )
+            stmt = stmt.where(or_(personal, broadcast))
+        else:
+            stmt = stmt.where(
+                or_(m.Notification.user_id == user_id, m.Notification.user_id.is_(None))
+            )
     if status:
         stmt = stmt.where(m.Notification.status == status)
     if category:
@@ -247,7 +435,7 @@ async def list_notifications(
     cutoff = datetime.utcnow() - timedelta(days=HISTORY_DAYS)
     stmt = stmt.where(m.Notification.created_at >= cutoff)
     stmt = stmt.order_by(m.Notification.created_at.desc()).limit(limit)
-    return (await db.execute(stmt)).scalars().all()
+    return list((await db.execute(stmt)).scalars().all())
 
 
 async def unread_count(
@@ -256,6 +444,8 @@ async def unread_count(
     user_id: str | None = None,
     *,
     company_id: str | None = None,
+    managed_store_ids: list[str] | None = None,
+    managed_warehouse_ids: list[str] | None = None,
 ) -> int:
     rows = await list_notifications(
         db,
@@ -264,6 +454,8 @@ async def unread_count(
         status="unread",
         limit=500,
         company_id=company_id,
+        managed_store_ids=managed_store_ids,
+        managed_warehouse_ids=managed_warehouse_ids,
     )
     return len(rows)
 
@@ -275,6 +467,8 @@ async def _get_owned_notification(
     notification_id: str,
     user_id: str | None = None,
     company_id: str | None = None,
+    managed_store_ids: list[str] | None = None,
+    managed_warehouse_ids: list[str] | None = None,
 ) -> m.Notification:
     stmt = select(m.Notification).where(
         m.Notification.id == notification_id,
@@ -292,6 +486,29 @@ async def _get_owned_notification(
         raise HTTPException(status_code=404, detail="Notification not found")
     if user_id and note.user_id and note.user_id != user_id:
         raise HTTPException(status_code=403, detail="Notification belongs to another user")
+    if (
+        managed_store_ids is not None
+        and user_id
+        and note.user_id is None
+    ):
+        # Broadcast: must pass the same join filter as list (fail-closed).
+        visible = await list_notifications(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            company_id=company_id,
+            limit=500,
+            managed_store_ids=managed_store_ids,
+            managed_warehouse_ids=managed_warehouse_ids,
+        )
+        if note.id not in {n.id for n in visible}:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": "STORE_SCOPE_DENIED",
+                    "message": "Notification is outside your managed store scope.",
+                },
+            )
     return note
 
 
@@ -302,6 +519,8 @@ async def mark_read(
     notification_id: str,
     user_id: str | None = None,
     company_id: str | None = None,
+    managed_store_ids: list[str] | None = None,
+    managed_warehouse_ids: list[str] | None = None,
 ) -> m.Notification:
     note = await _get_owned_notification(
         db,
@@ -309,6 +528,8 @@ async def mark_read(
         notification_id=notification_id,
         user_id=user_id,
         company_id=company_id,
+        managed_store_ids=managed_store_ids,
+        managed_warehouse_ids=managed_warehouse_ids,
     )
     note.status = "read"
     await db.flush()
@@ -322,6 +543,8 @@ async def mark_unread(
     notification_id: str,
     user_id: str | None = None,
     company_id: str | None = None,
+    managed_store_ids: list[str] | None = None,
+    managed_warehouse_ids: list[str] | None = None,
 ) -> m.Notification:
     note = await _get_owned_notification(
         db,
@@ -329,6 +552,8 @@ async def mark_unread(
         notification_id=notification_id,
         user_id=user_id,
         company_id=company_id,
+        managed_store_ids=managed_store_ids,
+        managed_warehouse_ids=managed_warehouse_ids,
     )
     note.status = "unread"
     await db.flush()
@@ -341,6 +566,8 @@ async def mark_all_read(
     tenant_id: str,
     user_id: str | None = None,
     company_id: str | None = None,
+    managed_store_ids: list[str] | None = None,
+    managed_warehouse_ids: list[str] | None = None,
 ) -> int:
     rows = await list_notifications(
         db,
@@ -349,6 +576,8 @@ async def mark_all_read(
         status="unread",
         limit=500,
         company_id=company_id,
+        managed_store_ids=managed_store_ids,
+        managed_warehouse_ids=managed_warehouse_ids,
     )
     for note in rows:
         note.status = "read"
@@ -488,8 +717,12 @@ async def scan_payment_due(
     within_days: int = 3,
     *,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> int:
     """Notify when AR invoices or AP bills approach/pass due date (BR-10.4 / 10.5 / 15.1)."""
+    from app.dashboard_scope import apply_purchase_invoice_warehouse_scope
+
     now = datetime.utcnow()
     horizon = now + timedelta(days=within_days)
     created = 0
@@ -502,6 +735,11 @@ async def scan_payment_due(
     )
     if company_id:
         ar_q = ar_q.where(m.SalesInvoice.company_id == company_id)
+    if store_ids is not None:
+        if not store_ids:
+            ar_q = ar_q.where(m.SalesInvoice.id.is_(None))
+        else:
+            ar_q = ar_q.where(m.SalesInvoice.store_id.in_(store_ids))
     ar_invoices = (await db.execute(ar_q)).scalars().all()
     for inv in ar_invoices:
         due = max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
@@ -542,6 +780,7 @@ async def scan_payment_due(
     )
     if company_id:
         ap_q = ap_q.where(m.PurchaseInvoice.company_id == company_id)
+    ap_q = apply_purchase_invoice_warehouse_scope(ap_q, warehouse_ids)
     ap_bills = (await db.execute(ap_q)).scalars().all()
     for bill in ap_bills:
         due = max(float(bill.total_amount) - float(bill.paid_amount or 0), 0)
@@ -583,11 +822,17 @@ async def scan_quotation_expiry(
     within_days: int = 1,
     *,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    skip: bool = False,
 ) -> dict[str, int]:
     """Remind before quotation validity ends; mark past-due draft/sent quotes expired.
 
     USER_MANUAL: remind 1 day before quotation expiry (BR-7.2).
+    When ``store_ids`` is set (store_manager), only native ``store_id`` rows in scope
+    are scanned; legacy null-store quotes are fail-closed.
     """
+    if skip:
+        return {"reminded": 0, "expired": 0}
     now = datetime.utcnow()
     horizon = now + timedelta(days=max(0, int(within_days)))
     q = select(m.SalesQuotation).where(
@@ -597,6 +842,10 @@ async def scan_quotation_expiry(
     )
     if company_id:
         q = q.where(m.SalesQuotation.company_id == company_id)
+    if store_ids is not None:
+        if not store_ids:
+            return {"reminded": 0, "expired": 0}
+        q = q.where(m.SalesQuotation.store_id.in_(store_ids))
     quotes = (await db.execute(q)).scalars().all()
     reminded = 0
     expired = 0
@@ -672,6 +921,7 @@ async def scan_recurring_expense_upcoming(
     within_days: int = 1,
     *,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict[str, int]:
     """Notify before recurring expenses auto-generate (BR-9.5)."""
     now = datetime.utcnow()
@@ -683,6 +933,11 @@ async def scan_recurring_expense_upcoming(
     )
     if company_id:
         rec_q = rec_q.where(m.RecurringExpense.company_id == company_id)
+    if store_ids is not None:
+        if not store_ids:
+            rec_q = rec_q.where(m.RecurringExpense.id.is_(None))
+        else:
+            rec_q = rec_q.where(m.RecurringExpense.store_id.in_(store_ids))
     rows = (await db.execute(rec_q)).scalars().all()
     reminded = 0
     for row in rows:

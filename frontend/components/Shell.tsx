@@ -2059,6 +2059,13 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [tenantAdmin, setTenantAdmin] = useState(false);
   const [tenantName, setTenantName] = useState('');
   const [tenantHasLogo, setTenantHasLogo] = useState(false);
+  const [companyEntitlement, setCompanyEntitlement] = useState<{
+    max_companies: number;
+    max_companies_unlimited?: boolean;
+    used?: number;
+    remaining?: number | null;
+    over_entitlement?: boolean;
+  } | null>(null);
   const [onboarding, setOnboarding] = useState<OnboardingChecklist | null>(null);
   const [onboardingBusy, setOnboardingBusy] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
@@ -2200,6 +2207,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         }
         setPrincipal(meRes.data?.principal || 'tenant');
         setTenantAdmin(Boolean(meRes.data?.tenant_admin));
+        if (meRes.data?.company_entitlement) {
+          setCompanyEntitlement(meRes.data.company_entitlement);
+        }
         const memberships = meRes.data?.company_memberships || [];
         setCompanies(
           memberships.map(
@@ -2256,11 +2266,27 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         } else if (storedKind === 'company' && !getCompanyId() && memberships[0]) {
           setWorkspaceContext('company', memberships[0].company_id);
         }
+        const ent = meRes.data?.company_entitlement;
+        const singleCompanyCap =
+          ent?.max_companies === 1 && !ent?.max_companies_unlimited;
+        if (
+          !meRes.data?.tenant_admin &&
+          singleCompanyCap &&
+          memberships.length === 1 &&
+          getWorkspaceKind() !== 'company'
+        ) {
+          setWorkspaceContext('company', memberships[0].company_id);
+          setWorkspaceKind('company');
+          setCompanyIdState(memberships[0].company_id);
+        }
         try {
           const ws = await api('/workspace');
           if (active && ws.data) {
             setTenantName(ws.data.tenant_name || '');
             setTenantHasLogo(Boolean(ws.data.tenant_has_logo));
+            if (ws.data?.company_entitlement) {
+              setCompanyEntitlement(ws.data.company_entitlement);
+            }
             if (Array.isArray(ws.data.companies) && ws.data.companies.length) {
               setCompanies(
                 ws.data.companies.map(
@@ -2497,7 +2523,15 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     canReadModule(permissions, 'stores') &&
     stores.length > 0;
 
-  const showWorkspaceSwitcher = principal !== 'platform' && (tenantAdmin || companies.length > 0);
+  const singleCompanyCap =
+    companyEntitlement?.max_companies === 1 && !companyEntitlement?.max_companies_unlimited;
+  const hideWorkspaceSwitcherForSingleCompany =
+    singleCompanyCap && companies.length <= 1 && !tenantAdmin;
+
+  const showWorkspaceSwitcher =
+    principal !== 'platform' &&
+    !hideWorkspaceSwitcherForSingleCompany &&
+    (tenantAdmin || companies.length > 0);
 
   function groupIsOpen(id: string): boolean {
     return Boolean(openNavGroups[id]);

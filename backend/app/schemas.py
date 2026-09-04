@@ -950,6 +950,7 @@ class PurchaseInvoiceCreate(BaseModel):
     supplier_id: str | None = None
     goods_receipt_id: str | None = None
     purchase_order_id: str | None = None
+    warehouse_id: str | None = None
     supplier_invoice_number: str | None = None
     discount_amount: float = Field(default=0, ge=0)
     attachment_url: str | None = None
@@ -966,6 +967,7 @@ class PurchaseInvoiceUpdate(BaseModel):
     notes: str | None = None
     invoice_date: datetime | None = None
     due_date: datetime | None = None
+    warehouse_id: str | None = None
 
 
 class PurchaseInvoiceOcrApply(BaseModel):
@@ -999,10 +1001,17 @@ class SalesInvoiceCreate(BaseModel):
 
 class SalesQuotationCreate(BaseModel):
     customer_id: str
+    store_id: str | None = None
     discount_amount: float = Field(default=0, ge=0)
     notes: str | None = None
     valid_days: int = Field(default=14, ge=1, le=365)
     items: list[SalesInvoiceItemCreate] = Field(min_length=1)
+
+
+class SalesQuotationConvert(BaseModel):
+    """Store binding when converting a quotation (required for store_manager scope)."""
+
+    store_id: str | None = None
 
 
 class SalesOrderCreate(BaseModel):
@@ -1161,6 +1170,7 @@ class OpeningBalanceCreate(BaseModel):
 
     amount: float
     description: str | None = None
+    store_id: str | None = None
 
 
 class LiquidAccountCreate(BaseModel):
@@ -1191,6 +1201,7 @@ class LiquidTransferCreate(BaseModel):
     amount: float = Field(gt=0)
     description: str | None = None
     reference: str | None = None
+    store_id: str | None = None
     kind: str | None = Field(
         default=None,
         description="Optional deposit|withdrawal|transfer; inferred from account types when omitted",
@@ -1229,6 +1240,7 @@ class PosSaleCreate(BaseModel):
     party_id: str | None = None
     # Stage 164 I1 — optional online; required for offline sync push pos_sale ops
     client_request_id: str | None = None
+    offline_receipt_number: str | None = Field(default=None, max_length=64)
     subtotal: float = 0
     tax: float = 0
     total: float = 0

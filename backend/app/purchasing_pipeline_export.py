@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app import purchasing as purchasing_svc
+from app import dashboard_scope as dashboard_scope_svc
 from app.rbac import apply_created_by_scope
 from app import workspace as workspace_svc
 from app.session_passkey_doc_export import _cell
@@ -119,6 +120,10 @@ async def export_purchase_requests_csv(
             )
         stmt = stmt.where(m.PurchaseRequest.status == key)
     stmt = apply_created_by_scope(stmt, m.PurchaseRequest, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    stmt = dashboard_scope_svc.apply_warehouse_scope_filter(
+        stmt, m.PurchaseRequest, managed_wh
+    )
     rows = (await db.execute(stmt)).scalars().all()
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=PR_EXPORT_COLUMNS)
@@ -154,6 +159,10 @@ async def export_purchase_orders_csv(
         else:
             stmt = stmt.where(m.PurchaseOrder.status == key)
     stmt = apply_created_by_scope(stmt, m.PurchaseOrder, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    stmt = dashboard_scope_svc.apply_warehouse_scope_filter(
+        stmt, m.PurchaseOrder, managed_wh
+    )
     rows = (await db.execute(stmt)).scalars().all()
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=PO_EXPORT_COLUMNS)
@@ -183,6 +192,10 @@ async def export_grns_csv(
             raise HTTPException(status_code=400, detail="status must be draft or posted")
         stmt = stmt.where(m.GoodsReceipt.status == key)
     stmt = apply_created_by_scope(stmt, m.GoodsReceipt, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    stmt = dashboard_scope_svc.apply_warehouse_scope_filter(
+        stmt, m.GoodsReceipt, managed_wh
+    )
     rows = (await db.execute(stmt)).scalars().all()
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=GRN_EXPORT_COLUMNS)
@@ -212,6 +225,10 @@ async def export_purchase_returns_csv(
             raise HTTPException(status_code=400, detail="status must be draft or posted")
         stmt = stmt.where(m.PurchaseReturn.status == key)
     stmt = apply_created_by_scope(stmt, m.PurchaseReturn, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    stmt = dashboard_scope_svc.apply_warehouse_scope_filter(
+        stmt, m.PurchaseReturn, managed_wh
+    )
     rows = (await db.execute(stmt)).scalars().all()
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=RETURN_EXPORT_COLUMNS)
@@ -232,10 +249,13 @@ async def export_po_amendments_csv(
     """Stage 154 A1 — purchase order amendment history CSV."""
     po = await purchasing_svc.get_po(db, tenant_id, po_id)
     from app.rbac import assert_record_access
-    from app import workspace as workspace_svc
 
     assert_record_access(claims, po.created_by)
     workspace_svc.assert_record_company(claims, po)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, getattr(po, "warehouse_id", None), allow_unset=False
+    )
     rows = await purchasing_svc.list_po_amendments(db, tenant_id, po_id)
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=PO_AMENDMENT_EXPORT_COLUMNS)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from typing import Any
 
@@ -16,6 +17,8 @@ from app import customers as customers_svc
 from app import cache as cache_svc
 from app.inventory import assert_outbound_lines_stock_available, apply_line_items_stock
 from app.schemas import PosSaleCreate
+
+OFFLINE_RECEIPT_NUMBER_RE = re.compile(r"^OFF-[A-Za-z0-9_-]{4,12}-\d{6,}$")
 
 
 async def find_sale_by_client_request_id(
@@ -38,9 +41,41 @@ async def find_sale_by_client_request_id(
     return (await db.execute(stmt)).scalar_one_or_none()
 
 
+async def find_sale_by_offline_receipt_number(
+    db: AsyncSession,
+    tenant_id: str,
+    offline_receipt_number: str,
+    *,
+    company_id: str | None = None,
+) -> m.Transaction | None:
+    ref = (offline_receipt_number or "").strip()
+    if not ref:
+        return None
+    stmt = select(m.Transaction).where(
+        m.Transaction.tenant_id == tenant_id,
+        m.Transaction.reference == ref,
+        m.Transaction.tx_type == "pos_sale",
+    )
+    if company_id:
+        stmt = stmt.where(m.Transaction.company_id == company_id)
+    return (await db.execute(stmt)).scalar_one_or_none()
+
+
+def validate_offline_receipt_number(raw: str | None) -> str | None:
+    value = (raw or "").strip()
+    if not value:
+        return None
+    if not OFFLINE_RECEIPT_NUMBER_RE.match(value):
+        raise HTTPException(
+            status_code=400,
+            detail="offline_receipt_number must match OFF-{device}-{seq} (6+ digit sequence)",
+        )
+    return value
+
+
 def serialize_sale_result(tx: m.Transaction) -> dict[str, Any]:
     payload = tx.payload or {}
-    return {
+    out = {
         "id": tx.id,
         "company_id": getattr(tx, "company_id", None),
         "reference": tx.reference,
@@ -57,6 +92,9 @@ def serialize_sale_result(tx: m.Transaction) -> dict[str, Any]:
         "credit_override_reason": payload.get("credit_override_reason"),
         "replayed": True,
     }
+    if payload.get("offline_receipt_number"):
+        out["offline_receipt_number"] = payload["offline_receipt_number"]
+    return out
 
 
 async def record_pos_sale(
@@ -81,7 +119,15 @@ async def record_pos_sale(
         session_id=payload.session_id,
         company_id=claims.get("company_id"),
     )
+    from app import dashboard_scope as dashboard_scope_svc
+
+    await dashboard_scope_svc.assert_pos_session_store_in_manager_scope(
+        db, claims, session.id, require_session=True
+    )
     company_id = claims.get("company_id") or getattr(session, "company_id", None)
+    offline_receipt_number = validate_offline_receipt_number(
+        getattr(payload, "offline_receipt_number", None)
+    )
     if client_request_id:
         existing = await find_sale_by_client_request_id(
             db,
@@ -91,6 +137,22 @@ async def record_pos_sale(
         )
         if existing:
             return serialize_sale_result(existing)
+    if offline_receipt_number:
+        dup = await find_sale_by_offline_receipt_number(
+            db,
+            claims["tenant_id"],
+            offline_receipt_number,
+            company_id=company_id,
+        )
+        if dup and (not client_request_id or dup.client_request_id != client_request_id):
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "OFFLINE_RECEIPT_DUPLICATE",
+                    "message": f"Offline receipt number already used: {offline_receipt_number}",
+                    "reference": dup.reference,
+                },
+            )
     items = [i.model_dump() for i in payload.items]
     from app.tax import resolve_product_tax
     from app.catalog import resolve_sale_line
@@ -210,7 +272,7 @@ async def record_pos_sale(
         items=items,
     )
 
-    ref = f"POS_SALE-{datetime.utcnow():%Y%m%d%H%M%S%f}"
+    ref = offline_receipt_number or f"POS_SALE-{datetime.utcnow():%Y%m%d%H%M%S%f}"
     body = payload.model_dump()
     body.pop("items", None)
     body.pop("session_id", None)
@@ -231,6 +293,8 @@ async def record_pos_sale(
         "credit_limit_overridden": bool(credit_gate and credit_gate.get("overridden")),
         "credit_override_reason": (credit_gate or {}).get("override_reason"),
     }
+    if offline_receipt_number:
+        body["payload"]["offline_receipt_number"] = offline_receipt_number
     tx = m.Transaction(
         tenant_id=claims["tenant_id"],
         company_id=claims.get("company_id") or session.company_id,
@@ -371,9 +435,11 @@ async def record_pos_sale(
         payload_out["drawer"] = drawer
     payload_out["client_request_id"] = client_request_id
     payload_out["replayed"] = False
+    if offline_receipt_number:
+        payload_out["offline_receipt_number"] = offline_receipt_number
     if commit:
         await db.commit()
-        await cache_svc.app_cache.invalidate_tenant(claims["tenant_id"])
+        await cache_svc.app_cache.invalidate_tenant(claims["tenant_id"], company_id=claims.get("company_id"))
     else:
         await db.flush()
     return payload_out

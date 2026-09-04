@@ -22,7 +22,14 @@ from app.bi_metrics import BusinessMetricsService
 from app.bi_priority import InsightPriorityService
 from app.bi_rules import InsightRulesService
 from app.credit import ar_aging
-from app.dashboard_scope import managed_store_ids
+from app.dashboard_scope import (
+    assert_bi_insight_in_manager_scope,
+    managed_store_ids,
+    omit_bi_company_config,
+    omit_bi_cost_fields,
+    redact_bi_company_config,
+    redact_bi_cost_fields,
+)
 from app.notifications import create_notification
 from app.rbac import has_permission
 
@@ -228,8 +235,12 @@ class BusinessIntelligenceService:
 
         credit = None
         if self.can_read_credit():
+            store_ids = await managed_store_ids(self.db, self.claims)
             credit = await ar_aging(
-                self.db, self.tenant_id, company_id=self.company_id
+                self.db,
+                self.tenant_id,
+                company_id=self.company_id,
+                store_ids=store_ids,
             )
 
         rules = InsightRulesService(settings)
@@ -267,7 +278,7 @@ class BusinessIntelligenceService:
         await self._persist_important(insights)
         await self._notify_critical(insights)
 
-        return {
+        bundle = {
             "generated_at": datetime.utcnow().isoformat(),
             "external_ai_required": False,
             "internet_required": False,
@@ -291,6 +302,13 @@ class BusinessIntelligenceService:
             "formulas": FORMULA_DOCS,
             "settings": settings,
         }
+        # Dedicated /settings + /formulas already denied; do not re-dump via overview.
+        if omit_bi_company_config(metrics.store_ids):
+            bundle = redact_bi_company_config(bundle)
+        # Catalog/inventory cost already redacted; do not re-dump COGS via BI overview.
+        if omit_bi_cost_fields(metrics.store_ids):
+            bundle = redact_bi_cost_fields(bundle)
+        return bundle
 
     async def _persist_important(self, insights: list[dict]) -> None:
         """Store CRITICAL/WARNING insights; skip duplicates active same type+entity today."""
@@ -351,6 +369,11 @@ class BusinessIntelligenceService:
             )
 
     async def list_history(self, *, status: str | None = None, limit: int = 50) -> list[dict]:
+        from fastapi import HTTPException
+
+        managed = await managed_store_ids(self.db, self.claims)
+        # Over-fetch when store-scoped so filtered history can still fill ``limit``.
+        fetch_limit = limit if managed is None else min(max(limit * 5, limit), 250)
         q = select(m.BusinessInsight).where(
             m.BusinessInsight.tenant_id == self.tenant_id
         )
@@ -358,9 +381,22 @@ class BusinessIntelligenceService:
             q = q.where(m.BusinessInsight.company_id == self.company_id)
         if status:
             q = q.where(m.BusinessInsight.status == status)
-        q = q.order_by(m.BusinessInsight.created_at.desc()).limit(limit)
+        q = q.order_by(m.BusinessInsight.created_at.desc()).limit(fetch_limit)
         rows = (await self.db.execute(q)).scalars().all()
-        return [self._row_dict(r) for r in rows]
+        if managed is None:
+            return [self._row_dict(r) for r in rows]
+        out: list[dict] = []
+        for row in rows:
+            try:
+                await assert_bi_insight_in_manager_scope(self.db, self.claims, row)
+            except HTTPException as exc:
+                if getattr(exc, "status_code", None) == 403:
+                    continue
+                raise
+            out.append(self._row_dict(row))
+            if len(out) >= limit:
+                break
+        return out
 
     async def get_insight(self, insight_id: str) -> m.BusinessInsight | None:
         row = await self.db.get(m.BusinessInsight, insight_id)
@@ -374,6 +410,7 @@ class BusinessIntelligenceService:
         row = await self.get_insight(insight_id)
         if not row:
             return None
+        await assert_bi_insight_in_manager_scope(self.db, self.claims, row)
         row.status = INSIGHT_STATUS_ACKNOWLEDGED
         row.acknowledged_at = datetime.utcnow()
         row.acknowledged_by = self.claims.get("sub")
@@ -385,6 +422,7 @@ class BusinessIntelligenceService:
         row = await self.get_insight(insight_id)
         if not row:
             return None
+        await assert_bi_insight_in_manager_scope(self.db, self.claims, row)
         row.status = INSIGHT_STATUS_DISMISSED
         row.resolved_at = datetime.utcnow()
         row.acknowledged_by = self.claims.get("sub")

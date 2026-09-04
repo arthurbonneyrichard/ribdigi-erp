@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pytest
+import pyotp
 
 from app import models as m
 from app.report_export import EXPORTABLE, build_report_payload, flatten_report
@@ -21,15 +22,28 @@ async def _mgr(ac):
 @pytest.mark.asyncio
 async def test_credit_aging_exportable_and_http(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
+    cid = seed["c1"].id
 
     assert "credit_aging" in EXPORTABLE
 
     today = datetime.utcnow()
+    store = m.Store(
+        tenant_id=tenant_id,
+        company_id=cid,
+        name="Credit R2 Store",
+        code="CR-R2",
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
     db_session.add(
         m.SalesInvoice(
             tenant_id=tenant_id,
+            company_id=cid,
+            store_id=store.id,
             invoice_number="INV-S16-R2-AR",
             customer_id=seed["party1"].id,
             status="posted",
@@ -47,8 +61,15 @@ async def test_credit_aging_exportable_and_http(client, db_session):
     aging = await ac.get("/api/v1/credit/aging?kind=receivable", headers=headers)
     assert aging.status_code == 200, aging.text
     assert float(aging.json()["data"]["total_due"]) >= 120
+    assert aging.json()["data"].get("scope") == "store_manager"
 
-    exportable = await ac.get("/api/v1/reports/exportable", headers=headers)
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    exportable = await ac.get("/api/v1/reports/exportable", headers=admin_headers)
     assert exportable.status_code == 200
     assert "credit_aging" in exportable.json()["data"]["types"]
     assert "tax" in exportable.json()["data"]["types"]
@@ -65,7 +86,12 @@ async def test_credit_aging_exportable_and_http(client, db_session):
     assert "INV-S16-R2-AR" in body or "total_due" in body.lower() or seed["party1"].name in body
 
     payload = await build_report_payload(
-        db_session, tenant_id, "credit_aging", kind="receivable"
+        db_session,
+        tenant_id,
+        "credit_aging",
+        kind="receivable",
+        company_id=cid,
+        store_ids=[store.id],
     )
     assert payload["kind"] == "receivable"
     rows, lines, title = flatten_report("credit_aging", payload)
@@ -77,7 +103,7 @@ async def test_credit_aging_exportable_and_http(client, db_session):
 @pytest.mark.asyncio
 async def test_tax_reports_surfaced_via_reports_export(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
 
     tax = await ac.get("/api/v1/reports/tax", headers=headers)
     assert tax.status_code == 200, tax.text

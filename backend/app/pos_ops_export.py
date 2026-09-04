@@ -103,6 +103,7 @@ async def list_pos_sales(
     tenant_id: str,
     session_id: str | None = None,
     store_id: str | None = None,
+    store_ids: list[str] | None = None,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     limit: int = 500,
@@ -125,6 +126,10 @@ async def list_pos_sales(
         stmt = stmt.where(m.Transaction.session_id == session_id.strip())
     if store_id:
         stmt = stmt.where(m.PosSession.store_id == store_id.strip())
+    elif store_ids is not None:
+        if not store_ids:
+            return []
+        stmt = stmt.where(m.PosSession.store_id.in_(store_ids))
     if from_date:
         stmt = stmt.where(m.Transaction.created_at >= from_date)
     if to_date:
@@ -178,6 +183,7 @@ async def export_pos_sales_csv(
     tenant_id: str,
     session_id: str | None = None,
     store_id: str | None = None,
+    store_ids: list[str] | None = None,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     company_id: str | None = None,
@@ -187,6 +193,7 @@ async def export_pos_sales_csv(
         tenant_id=tenant_id,
         session_id=session_id,
         store_id=store_id,
+        store_ids=store_ids,
         from_date=from_date,
         to_date=to_date,
         company_id=company_id,

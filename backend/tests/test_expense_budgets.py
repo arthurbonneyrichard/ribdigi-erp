@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -12,15 +13,34 @@ from app.expenses import category_budget_variance, ensure_default_categories
 from tests.conftest import auth_headers
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 @pytest.mark.asyncio
 async def test_set_category_budget_and_variance(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
+    mgr = seed["mgr1"]
+
+    store = m.Store(
+        tenant_id=tenant_id,
+        company_id=seed["c1"].id,
+        name="Budget Mgr Store",
+        code="BUD-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.commit()
 
     await ensure_default_categories(db_session, tenant_id)
     await db_session.commit()
@@ -47,7 +67,7 @@ async def test_set_category_budget_and_variance(client, db_session):
     assert custom.json()["data"]["budget_amount"] == 250
     travel_id = custom.json()["data"]["id"]
 
-    # Auto-approved low amount against Travel
+    # Auto-approved low amount against Travel (must bind managed store)
     created = await ac.post(
         "/api/v1/expenses",
         headers=headers,
@@ -56,6 +76,7 @@ async def test_set_category_budget_and_variance(client, db_session):
             "amount": 80,
             "description": "Taxi",
             "payment_method": "cash",
+            "store_id": store.id,
         },
     )
     assert created.status_code == 200, created.text
@@ -70,6 +91,7 @@ async def test_set_category_budget_and_variance(client, db_session):
             "amount": 400,
             "description": "Shop rent installment",
             "payment_method": "bank_transfer",
+            "store_id": store.id,
         },
     )
     assert pending.status_code == 200, pending.text

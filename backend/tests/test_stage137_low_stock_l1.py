@@ -28,6 +28,7 @@ async def test_low_stock_filter_and_export(client, db_session):
     # red: qty <= minimum
     red = m.Product(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         name="Stage137 Red",
         sku="SKU-137-RED",
         stock_qty=1,
@@ -39,6 +40,7 @@ async def test_low_stock_filter_and_export(client, db_session):
     # yellow: qty > minimum but <= reorder
     yellow = m.Product(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         name="Stage137 Yellow",
         sku="SKU-137-YEL",
         stock_qty=7,
@@ -50,6 +52,7 @@ async def test_low_stock_filter_and_export(client, db_session):
     # green: above reorder — excluded from low-stock list
     green = m.Product(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         name="Stage137 Green",
         sku="SKU-137-GRN",
         stock_qty=50,

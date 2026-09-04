@@ -27,7 +27,10 @@ export default function Page() {
     const backupStatus =
       opts?.backupStatus !== undefined ? opts.backupStatus : backupStatusFilter;
     const qs = backupStatus ? `?status=${encodeURIComponent(backupStatus)}` : '';
-    const [list, cfg] = await Promise.all([api(`/backup${qs}`), api('/backup/settings')]);
+    const [list, cfg] = await Promise.all([
+      api(`/backup${qs}`).catch(() => ({ data: [] })),
+      api('/backup/settings').catch(() => ({ data: null })),
+    ]);
     setRows(list.data || []);
     setSettings(cfg.data);
   }

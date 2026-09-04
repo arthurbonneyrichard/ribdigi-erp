@@ -13,11 +13,13 @@ from app import models as m
 from app import sales_docs as sales_docs_svc
 from app.rbac import apply_created_by_scope
 from app import workspace as workspace_svc
+from app import dashboard_scope as dashboard_scope_svc
 from app.session_passkey_doc_export import _cell
 
 QUOTATION_EXPORT_COLUMNS = [
     "quotation_number",
     "customer_id",
+    "store_id",
     "status",
     "subtotal",
     "tax_amount",
@@ -81,6 +83,7 @@ async def export_quotations_csv(
     tenant_id: str,
     claims: dict,
     status: str | None = None,
+    managed_store_ids: list[str] | None = None,
 ) -> str:
     stmt = (
         select(m.SalesQuotation)
@@ -97,6 +100,14 @@ async def export_quotations_csv(
             )
         stmt = stmt.where(m.SalesQuotation.status == key)
     stmt = apply_created_by_scope(stmt, m.SalesQuotation, claims)
+    if managed_store_ids is not None:
+        stmt = dashboard_scope_svc.apply_quotation_store_scope(
+            stmt,
+            managed_store_ids=managed_store_ids,
+            user_id=claims.get("sub"),
+            tenant_id=tenant_id,
+            company_id=claims.get("company_id"),
+        )
     rows = (await db.execute(stmt)).scalars().all()
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=QUOTATION_EXPORT_COLUMNS)
@@ -113,6 +124,8 @@ async def export_orders_csv(
     tenant_id: str,
     claims: dict,
     status: str | None = None,
+    store_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> str:
     stmt = (
         select(m.SalesOrder)
@@ -128,6 +141,15 @@ async def export_orders_csv(
                 detail="status must be draft, confirmed, processing, shipped, delivered, or cancelled",
             )
         stmt = stmt.where(m.SalesOrder.status == key)
+    if store_id:
+        stmt = stmt.where(m.SalesOrder.store_id == store_id)
+    elif store_ids is not None:
+        if not store_ids:
+            buf = io.StringIO()
+            writer = csv.DictWriter(buf, fieldnames=ORDER_EXPORT_COLUMNS)
+            writer.writeheader()
+            return buf.getvalue()
+        stmt = stmt.where(m.SalesOrder.store_id.in_(store_ids))
     stmt = apply_created_by_scope(stmt, m.SalesOrder, claims)
     rows = (await db.execute(stmt)).scalars().all()
     buf = io.StringIO()
@@ -146,22 +168,28 @@ async def export_returns_csv(
     claims: dict,
     status: str | None = None,
 ) -> str:
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=RETURN_EXPORT_COLUMNS)
+    writer.writeheader()
+    if managed is not None and not managed:
+        return buf.getvalue()
     stmt = (
         select(m.SalesReturn)
         .where(*workspace_svc.company_scope_filter(m.SalesReturn, claims))
         .order_by(m.SalesReturn.created_at.desc())
         .limit(500)
     )
+    stmt = dashboard_scope_svc.apply_sales_return_store_scope(stmt, managed)
     if status:
         key = status.strip().lower()
         if key not in RETURN_STATUSES:
             raise HTTPException(status_code=400, detail="status must be draft or posted")
         stmt = stmt.where(m.SalesReturn.status == key)
     stmt = apply_created_by_scope(stmt, m.SalesReturn, claims)
-    rows = (await db.execute(stmt)).scalars().all()
-    buf = io.StringIO()
-    writer = csv.DictWriter(buf, fieldnames=RETURN_EXPORT_COLUMNS)
-    writer.writeheader()
+    rows = (await db.execute(stmt)).scalars().unique().all()
     for row in rows:
         data = await sales_docs_svc.serialize_return(db, row)
         writer.writerow({k: _cell(data.get(k)) for k in RETURN_EXPORT_COLUMNS})

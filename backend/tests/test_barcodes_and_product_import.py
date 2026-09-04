@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 
+import pyotp
 import pytest
 from fastapi import HTTPException
 
@@ -12,6 +13,15 @@ from app import catalog_meta as catalog_meta_svc
 from app import models as m
 from app.product_import import template_csv
 from tests.conftest import auth_headers
+
+
+async def _admin(ac, seed):
+    return await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
 
 
 def test_ean13_check_digit_and_formats():
@@ -59,7 +69,10 @@ def test_category_tree_nesting():
 @pytest.mark.asyncio
 async def test_generate_product_and_variant_barcode(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     product_id = seed["p1"].id
 
     gen = await ac.post(
@@ -111,7 +124,10 @@ async def test_generate_product_and_variant_barcode(client, db_session):
 @pytest.mark.asyncio
 async def test_pos_search_matches_barcode(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     code = "2001234567893"  # may be invalid check digit — generate properly
     code = barcode_svc.generate_ean13(body12="200123456789")
     product = await db_session.get(m.Product, seed["p1"].id)
@@ -132,7 +148,7 @@ async def test_pos_search_matches_barcode(client, db_session):
 @pytest.mark.asyncio
 async def test_product_csv_import_dry_run_and_commit(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    headers = await _admin(ac, seed)
 
     tmpl = await ac.get("/api/v1/products/import/template", headers=headers)
     assert tmpl.status_code == 200
@@ -182,7 +198,10 @@ async def test_product_csv_import_dry_run_and_commit(client, db_session):
 @pytest.mark.asyncio
 async def test_category_tree_endpoint_and_cycle_guard(client):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     parent = await ac.post(
         "/api/v1/catalog/categories",
         headers=headers,

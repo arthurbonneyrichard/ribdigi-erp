@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.dashboard_scope import apply_purchase_invoice_warehouse_scope, apply_warehouse_scope_filter
 
 
 def normalize_components(raw: list | None) -> list[dict[str, Any]] | None:
@@ -475,10 +476,18 @@ async def tax_report(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
     """Summary VAT/GST output vs input tax for a period."""
     pack = await tax_filing_pack(
-        db, tenant_id, from_date=from_date, to_date=to_date, company_id=company_id
+        db,
+        tenant_id,
+        from_date=from_date,
+        to_date=to_date,
+        company_id=company_id,
+        store_ids=store_ids,
+        warehouse_ids=warehouse_ids,
     )
     return {
         "from_date": from_date,
@@ -508,8 +517,15 @@ async def tax_filing_pack(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
-    """Jurisdiction-neutral VAT/GST filing pack: boxes + detailed schedules for export."""
+    """Jurisdiction-neutral VAT/GST filing pack: boxes + detailed schedules for export.
+
+    ``store_ids`` / ``warehouse_ids`` None = tenant/company-wide. When set (store_manager),
+    outputs use managed-store sales invoices + POS sessions; inputs use managed-WH
+    purchase invoices (else POs). Null store/WH documents are fail-closed.
+    """
     inv_stmt = select(m.SalesInvoice).where(
         m.SalesInvoice.tenant_id == tenant_id,
         m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
@@ -520,7 +536,12 @@ async def tax_filing_pack(
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at >= from_date)
     if to_date:
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at <= to_date)
-    invoices = (await db.execute(inv_stmt)).scalars().all()
+    if store_ids is not None and not store_ids:
+        invoices = []
+    else:
+        if store_ids is not None:
+            inv_stmt = inv_stmt.where(m.SalesInvoice.store_id.in_(store_ids))
+        invoices = (await db.execute(inv_stmt)).scalars().all()
 
     items_by_invoice: dict[str, list[m.SalesInvoiceItem]] = {}
     if invoices:
@@ -574,17 +595,37 @@ async def tax_filing_pack(
             }
         )
 
-    pos_stmt = select(m.Transaction).where(
-        m.Transaction.tenant_id == tenant_id,
-        m.Transaction.tx_type == "pos_sale",
-    )
-    if company_id:
-        pos_stmt = pos_stmt.where(m.Transaction.company_id == company_id)
-    if from_date:
-        pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
-    if to_date:
-        pos_stmt = pos_stmt.where(m.Transaction.created_at <= to_date)
-    pos_sales = (await db.execute(pos_stmt)).scalars().all()
+    if store_ids is not None and not store_ids:
+        pos_sales = []
+    elif store_ids is not None:
+        pos_stmt = (
+            select(m.Transaction)
+            .join(m.PosSession, m.PosSession.id == m.Transaction.session_id)
+            .where(
+                m.Transaction.tenant_id == tenant_id,
+                m.Transaction.tx_type == "pos_sale",
+                m.PosSession.store_id.in_(store_ids),
+            )
+        )
+        if company_id:
+            pos_stmt = pos_stmt.where(m.Transaction.company_id == company_id)
+        if from_date:
+            pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
+        if to_date:
+            pos_stmt = pos_stmt.where(m.Transaction.created_at <= to_date)
+        pos_sales = (await db.execute(pos_stmt)).scalars().all()
+    else:
+        pos_stmt = select(m.Transaction).where(
+            m.Transaction.tenant_id == tenant_id,
+            m.Transaction.tx_type == "pos_sale",
+        )
+        if company_id:
+            pos_stmt = pos_stmt.where(m.Transaction.company_id == company_id)
+        if from_date:
+            pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
+        if to_date:
+            pos_stmt = pos_stmt.where(m.Transaction.created_at <= to_date)
+        pos_sales = (await db.execute(pos_stmt)).scalars().all()
     output_pos = 0.0
     for tx in pos_sales:
         tax = float(tx.tax or 0)
@@ -627,23 +668,43 @@ async def tax_filing_pack(
     exempt_outputs = supply_nets["exempt"]
 
     # Prefer approved purchase invoices for input tax; fall back to POs.
-    pi_stmt = select(m.PurchaseInvoice).where(
-        m.PurchaseInvoice.tenant_id == tenant_id,
-        m.PurchaseInvoice.status.in_(["unpaid", "partial", "paid", "overdue"]),
-    )
-    if company_id:
-        pi_stmt = pi_stmt.where(m.PurchaseInvoice.company_id == company_id)
-    if from_date:
-        pi_stmt = pi_stmt.where(m.PurchaseInvoice.invoice_date >= from_date)
-    if to_date:
-        pi_stmt = pi_stmt.where(m.PurchaseInvoice.invoice_date <= to_date)
-    purchase_invoices = (await db.execute(pi_stmt)).scalars().all()
-
     input_schedule = []
     input_tax = 0.0
     taxable_inputs = 0.0
     purchase_reverse_charge = 0.0
     input_source = "purchase_invoices"
+    if warehouse_ids is not None and not warehouse_ids:
+        purchase_invoices = []
+        orders = []
+    else:
+        pi_stmt = select(m.PurchaseInvoice).where(
+            m.PurchaseInvoice.tenant_id == tenant_id,
+            m.PurchaseInvoice.status.in_(["unpaid", "partial", "paid", "overdue"]),
+        )
+        if company_id:
+            pi_stmt = pi_stmt.where(m.PurchaseInvoice.company_id == company_id)
+        if from_date:
+            pi_stmt = pi_stmt.where(m.PurchaseInvoice.invoice_date >= from_date)
+        if to_date:
+            pi_stmt = pi_stmt.where(m.PurchaseInvoice.invoice_date <= to_date)
+        pi_stmt = apply_purchase_invoice_warehouse_scope(pi_stmt, warehouse_ids)
+        purchase_invoices = (await db.execute(pi_stmt)).scalars().all()
+        orders = []
+        if not purchase_invoices:
+            input_source = "purchase_orders"
+            po_stmt = select(m.PurchaseOrder).where(
+                m.PurchaseOrder.tenant_id == tenant_id,
+                m.PurchaseOrder.status.in_(["received", "partial", "sent", "closed"]),
+            )
+            if company_id:
+                po_stmt = po_stmt.where(m.PurchaseOrder.company_id == company_id)
+            if from_date:
+                po_stmt = po_stmt.where(m.PurchaseOrder.created_at >= from_date)
+            if to_date:
+                po_stmt = po_stmt.where(m.PurchaseOrder.created_at <= to_date)
+            po_stmt = apply_warehouse_scope_filter(po_stmt, m.PurchaseOrder, warehouse_ids)
+            orders = (await db.execute(po_stmt)).scalars().all()
+
     if purchase_invoices:
         for inv in purchase_invoices:
             tax = float(inv.tax_amount or 0)
@@ -670,18 +731,6 @@ async def tax_filing_pack(
                 }
             )
     else:
-        input_source = "purchase_orders"
-        po_stmt = select(m.PurchaseOrder).where(
-            m.PurchaseOrder.tenant_id == tenant_id,
-            m.PurchaseOrder.status.in_(["received", "partial", "sent", "closed"]),
-        )
-        if company_id:
-            po_stmt = po_stmt.where(m.PurchaseOrder.company_id == company_id)
-        if from_date:
-            po_stmt = po_stmt.where(m.PurchaseOrder.created_at >= from_date)
-        if to_date:
-            po_stmt = po_stmt.where(m.PurchaseOrder.created_at <= to_date)
-        orders = (await db.execute(po_stmt)).scalars().all()
         for po in orders:
             tax = float(po.tax_amount or 0)
             net = float(po.subtotal or 0)

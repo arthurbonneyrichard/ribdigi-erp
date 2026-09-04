@@ -357,6 +357,7 @@ async def category_budget_variance(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
     """Budget vs approved spend by category for a period (defaults to current month)."""
     from app.reports import apply_company_filter
@@ -371,6 +372,23 @@ async def category_budget_variance(
             end = datetime(now.year, now.month + 1, 1) - timedelta(seconds=1)
     else:
         end = to_date
+
+    if store_ids is not None and not store_ids:
+        from app import dashboard_scope as dashboard_scope_svc
+
+        return dashboard_scope_svc.redact_expense_budget_limits(
+            {
+                "from_date": start,
+                "to_date": end,
+                "categories": [],
+                "totals": {
+                    "budget_amount": 0.0,
+                    "spent": 0.0,
+                    "pending": 0.0,
+                    "variance": 0.0,
+                },
+            }
+        )
 
     cat_stmt = (
         select(m.ExpenseCategory)
@@ -387,6 +405,8 @@ async def category_budget_variance(
         m.Expense.status.in_(["approved", "pending"]),
     )
     exp_stmt = apply_company_filter(exp_stmt, m.Expense.company_id, company_id)
+    if store_ids is not None:
+        exp_stmt = exp_stmt.where(m.Expense.store_id.in_(store_ids))
     expenses = (await db.execute(exp_stmt)).scalars().all()
 
     spent_by: dict[str, float] = {}
@@ -423,7 +443,7 @@ async def category_budget_variance(
         total_spent += spent
         total_pending += pending
 
-    return {
+    result = {
         "from_date": start,
         "to_date": end,
         "categories": rows,
@@ -434,6 +454,13 @@ async def category_budget_variance(
             "variance": round(total_budget - total_spent, 2),
         },
     }
+    # store_ids set (including empty) = store_manager scope — omit company
+    # budget_amount master while keeping scoped spent/pending.
+    if store_ids is not None:
+        from app import dashboard_scope as dashboard_scope_svc
+
+        return dashboard_scope_svc.redact_expense_budget_limits(result)
+    return result
 
 
 def resolve_tenant_levels(tenant: m.Tenant) -> list[dict]:
@@ -1287,6 +1314,7 @@ async def list_recurring(
     active_only: bool = False,
     is_active: bool | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> list[m.RecurringExpense]:
     """Stage 125 R1 — is_active / active_only for honest paused-only recurring lists."""
     stmt = select(m.RecurringExpense).where(m.RecurringExpense.tenant_id == tenant_id)
@@ -1296,6 +1324,11 @@ async def list_recurring(
         stmt = stmt.where(m.RecurringExpense.is_active.is_(bool(is_active)))
     elif active_only:
         stmt = stmt.where(m.RecurringExpense.is_active.is_(True))
+    if store_ids is not None:
+        if store_ids:
+            stmt = stmt.where(m.RecurringExpense.store_id.in_(store_ids))
+        else:
+            stmt = stmt.where(m.RecurringExpense.id.is_(None))
     stmt = stmt.order_by(m.RecurringExpense.created_at.desc())
     return list((await db.execute(stmt)).scalars().all())
 
@@ -1393,6 +1426,7 @@ async def generate_due_recurring(
     tenant_id: str,
     user_id: str,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> list[m.Expense]:
     now = datetime.utcnow()
     stmt = select(m.RecurringExpense).where(
@@ -1402,6 +1436,11 @@ async def generate_due_recurring(
     )
     if company_id:
         stmt = stmt.where(m.RecurringExpense.company_id == company_id)
+    if store_ids is not None:
+        if store_ids:
+            stmt = stmt.where(m.RecurringExpense.store_id.in_(store_ids))
+        else:
+            stmt = stmt.where(m.RecurringExpense.id.is_(None))
     rows = (await db.execute(stmt)).scalars().all()
     created: list[m.Expense] = []
     for row in rows:

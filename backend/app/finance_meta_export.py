@@ -64,14 +64,24 @@ async def export_accounts_csv(
     is_active: bool | None = None,
     active_only: bool = False,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> str:
+    from app import dashboard_scope as dashboard_scope_svc
+
     stmt = select(m.Account).where(m.Account.tenant_id == tenant_id)
     if company_id:
         stmt = stmt.where(m.Account.company_id == company_id)
     stmt = _apply_active_filter(
         stmt, m.Account.is_active, is_active=is_active, active_only=active_only
     )
-    rows = (await db.execute(stmt.order_by(m.Account.code))).scalars().all()
+    rows = list((await db.execute(stmt.order_by(m.Account.code))).scalars().all())
+    rows = await dashboard_scope_svc.filter_coa_accounts_for_manager_read(
+        db,
+        tenant_id,
+        rows,
+        store_ids,
+        company_id=company_id,
+    )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=ACCOUNT_EXPORT_COLUMNS)
     writer.writeheader()

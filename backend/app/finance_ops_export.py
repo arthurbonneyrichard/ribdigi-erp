@@ -107,6 +107,7 @@ async def list_journals(
     tenant_id: str,
     status: str | None = None,
     store_id: str | None = None,
+    store_ids: list[str] | None = None,
     company_id: str | None = None,
     limit: int = 100,
 ) -> list[m.JournalEntry]:
@@ -120,6 +121,11 @@ async def list_journals(
         stmt = stmt.where(m.JournalEntry.company_id == company_id)
     if store_id:
         stmt = stmt.where(m.JournalEntry.store_id == store_id)
+    elif store_ids is not None:
+        if store_ids:
+            stmt = stmt.where(m.JournalEntry.store_id.in_(store_ids))
+        else:
+            stmt = stmt.where(m.JournalEntry.id.is_(None))
     status_n = (status or "").strip().lower() or None
     if status_n and status_n != "all":
         stmt = stmt.where(m.JournalEntry.status == status_n)
@@ -132,6 +138,7 @@ async def export_journals_csv(
     tenant_id: str,
     status: str | None = None,
     store_id: str | None = None,
+    store_ids: list[str] | None = None,
     company_id: str | None = None,
 ) -> str:
     rows = await list_journals(
@@ -139,6 +146,7 @@ async def export_journals_csv(
         tenant_id=tenant_id,
         status=status,
         store_id=store_id,
+        store_ids=store_ids,
         company_id=company_id,
         limit=200,
     )
@@ -157,13 +165,25 @@ async def list_bank_statements(
     tenant_id: str,
     status: str | None = None,
     company_id: str | None = None,
+    account_ids: list[str] | None = None,
+    store_ids: list[str] | None = None,
 ) -> list[m.BankStatement]:
+    from app import dashboard_scope as dashboard_scope_svc
+
     q = select(m.BankStatement).where(m.BankStatement.tenant_id == tenant_id)
     if company_id:
         q = q.where(m.BankStatement.company_id == company_id)
+    if account_ids is not None:
+        if account_ids:
+            q = q.where(m.BankStatement.account_id.in_(account_ids))
+        else:
+            q = q.where(m.BankStatement.id.is_(None))
     status_n = (status or "").strip().lower() or None
     if status_n:
         q = q.where(m.BankStatement.status == status_n)
+    q = dashboard_scope_svc.apply_bank_statement_store_scope(
+        q, store_ids, tenant_id=tenant_id
+    )
     q = q.order_by(m.BankStatement.created_at.desc())
     return list((await db.execute(q)).scalars().all())
 
@@ -174,9 +194,16 @@ async def export_bank_statements_csv(
     tenant_id: str,
     status: str | None = None,
     company_id: str | None = None,
+    account_ids: list[str] | None = None,
+    store_ids: list[str] | None = None,
 ) -> str:
     rows = await list_bank_statements(
-        db, tenant_id=tenant_id, status=status, company_id=company_id
+        db,
+        tenant_id=tenant_id,
+        status=status,
+        company_id=company_id,
+        account_ids=account_ids,
+        store_ids=store_ids,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=BANK_STATEMENT_EXPORT_COLUMNS)
@@ -221,6 +248,7 @@ async def export_account_transactions_csv(
     to_date: datetime | None = None,
     include_unposted: bool = False,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> str:
     """Stage 139 A1 — COA account ledger lines CSV."""
     data = await accounting_svc.account_transactions(
@@ -231,6 +259,7 @@ async def export_account_transactions_csv(
         to_date=to_date,
         include_unposted=include_unposted,
         company_id=company_id,
+        store_ids=store_ids,
     )
     account = data.get("account") or {}
     code = account.get("code")
@@ -303,12 +332,15 @@ async def export_trial_balance_csv(
     tenant_id: str,
     as_of=None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> str:
     """Stage 159 B1 — accounting trial-balance CSV (path-scoped; distinct from reports/export)."""
     from app.accounting import ensure_default_accounts, trial_balance
 
     await ensure_default_accounts(db, tenant_id, company_id=company_id)
-    data = await trial_balance(db, tenant_id, as_of=as_of, company_id=company_id)
+    data = await trial_balance(
+        db, tenant_id, as_of=as_of, company_id=company_id, store_ids=store_ids
+    )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=TRIAL_BALANCE_EXPORT_COLUMNS)
     writer.writeheader()
@@ -383,6 +415,7 @@ async def export_profit_loss_csv(
     to_date=None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    store_ids: list[str] | None = None,
     company_id: str | None = None,
 ) -> str:
     """Stage 160 P1 — accounting profit-loss CSV (path-scoped; distinct from reports/export)."""
@@ -396,6 +429,7 @@ async def export_profit_loss_csv(
         to_date=to_date,
         store_id=store_id,
         branch_id=branch_id,
+        store_ids=store_ids,
         company_id=company_id,
     )
     buf = io.StringIO()
@@ -475,6 +509,7 @@ async def export_cash_flow_csv(
     to_date=None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    store_ids: list[str] | None = None,
     company_id: str | None = None,
 ) -> str:
     """Stage 160 C1 — reports cash-flow path CSV (distinct from generic /reports/export)."""
@@ -487,6 +522,7 @@ async def export_cash_flow_csv(
         to_date=to_date,
         store_id=store_id,
         branch_id=branch_id,
+        store_ids=store_ids,
         company_id=company_id,
     )
     buf = io.StringIO()
@@ -562,6 +598,7 @@ async def export_balance_sheet_csv(
     as_of=None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    store_ids: list[str] | None = None,
     company_id: str | None = None,
 ) -> str:
     """Stage 160 S1 — reports balance-sheet path CSV (distinct from generic /reports/export)."""
@@ -573,6 +610,7 @@ async def export_balance_sheet_csv(
         as_of=as_of,
         store_id=store_id,
         branch_id=branch_id,
+        store_ids=store_ids,
         company_id=company_id,
     )
     buf = io.StringIO()
@@ -644,6 +682,8 @@ async def export_tax_report_csv(
     month: int | None = None,
     quarter: int | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
     """Stage 161 X1 — reports tax path CSV (distinct from generic /reports/export)."""
     from app import reports as reports_svc
@@ -663,6 +703,8 @@ async def export_tax_report_csv(
         from_date=fd,
         to_date=td,
         company_id=company_id,
+        store_ids=store_ids,
+        warehouse_ids=warehouse_ids,
     )
     data["period"] = meta.get("period")
     data["period_year"] = meta.get("year")

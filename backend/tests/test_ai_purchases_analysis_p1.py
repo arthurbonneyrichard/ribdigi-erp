@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import pyotp
 import pytest
 
 from app import models as m
@@ -13,8 +14,15 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _seed_purchase_patterns(db_session, seed):
@@ -44,6 +52,7 @@ async def _seed_purchase_patterns(db_session, seed):
         amt = float((i + 1) * 25)
         inv = m.PurchaseInvoice(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             invoice_number=f"PI-P1-T-{i}",
             supplier_id=primary.id,
             status="unpaid",
@@ -62,6 +71,7 @@ async def _seed_purchase_patterns(db_session, seed):
     db_session.add(
         m.PurchaseInvoice(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             invoice_number="PI-P1-SEC",
             supplier_id=secondary.id,
             status="paid",
@@ -79,6 +89,7 @@ async def _seed_purchase_patterns(db_session, seed):
     db_session.add(
         m.PurchaseInvoice(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             invoice_number="PI-P1-OVER",
             supplier_id=primary.id,
             status="overdue",
@@ -94,6 +105,7 @@ async def _seed_purchase_patterns(db_session, seed):
     # Open sent PO + partially received PO with fill gap
     sent_po = m.PurchaseOrder(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         po_number="PO-P1-OPEN",
         supplier_id=primary.id,
         status="sent",
@@ -103,6 +115,7 @@ async def _seed_purchase_patterns(db_session, seed):
     )
     partial_po = m.PurchaseOrder(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         po_number="PO-P1-PART",
         supplier_id=secondary.id,
         status="partially_received",
@@ -112,6 +125,7 @@ async def _seed_purchase_patterns(db_session, seed):
     )
     draft_po = m.PurchaseOrder(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         po_number="PO-P1-DRAFT-1",
         supplier_id=primary.id,
         status="draft",
@@ -121,6 +135,7 @@ async def _seed_purchase_patterns(db_session, seed):
     )
     draft_po2 = m.PurchaseOrder(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         po_number="PO-P1-DRAFT-2",
         supplier_id=primary.id,
         status="draft",
@@ -130,6 +145,7 @@ async def _seed_purchase_patterns(db_session, seed):
     )
     draft_po3 = m.PurchaseOrder(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         po_number="PO-P1-DRAFT-3",
         supplier_id=secondary.id,
         status="draft",
@@ -142,6 +158,7 @@ async def _seed_purchase_patterns(db_session, seed):
 
     sent_item = m.PurchaseOrderItem(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         purchase_order_id=sent_po.id,
         product_id=product.id,
         quantity=10,
@@ -151,6 +168,7 @@ async def _seed_purchase_patterns(db_session, seed):
     )
     part_item = m.PurchaseOrderItem(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         purchase_order_id=partial_po.id,
         product_id=product.id,
         quantity=10,
@@ -163,6 +181,7 @@ async def _seed_purchase_patterns(db_session, seed):
 
     grn = m.GoodsReceipt(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         grn_number="GRN-P1-1",
         purchase_order_id=partial_po.id,
         supplier_id=secondary.id,
@@ -174,6 +193,7 @@ async def _seed_purchase_patterns(db_session, seed):
     db_session.add(
         m.GoodsReceiptItem(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             goods_receipt_id=grn.id,
             po_item_id=part_item.id,
             product_id=product.id,
@@ -189,7 +209,7 @@ async def _seed_purchase_patterns(db_session, seed):
 @pytest.mark.asyncio
 async def test_purchases_analysis_api(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     seeded = await _seed_purchase_patterns(db_session, seed)
 
     r = await ac.get(
@@ -240,7 +260,7 @@ async def test_purchases_analysis_api(client, db_session):
 @pytest.mark.asyncio
 async def test_purchases_analysis_tenant_isolation(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     now = datetime.utcnow()
     db_session.add(
         m.PurchaseInvoice(

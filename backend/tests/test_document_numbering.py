@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 
 from app.document_numbering import format_document_number, normalize_document_numbering
@@ -24,8 +25,14 @@ def test_format_invoice_series_34535():
 @pytest.mark.asyncio
 async def test_configure_and_allocate_sales_invoice_number(client, db_session):
     ac, seed = client
-    admin_headers = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
-    sales_headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    _totp = pyotp.TOTP(seed['super_totp_secret']).now()
+    admin_headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=_totp
+    )
+    _totp = pyotp.TOTP(seed['super_totp_secret']).now()
+    sales_headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=_totp
+    )
     customer_id = seed["party1"].id
     product_id = seed["p1"].id
 
@@ -79,7 +86,10 @@ async def test_configure_and_allocate_sales_invoice_number(client, db_session):
 @pytest.mark.asyncio
 async def test_default_year_padded_invoice_number(client):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     customer_id = seed["party1"].id
     product_id = seed["p1"].id
     created = await ac.post(

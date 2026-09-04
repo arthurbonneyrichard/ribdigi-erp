@@ -129,6 +129,7 @@ async def serialize_quotation(db: AsyncSession, quote: m.SalesQuotation) -> dict
         "company_id": getattr(quote, "company_id", None),
         "quotation_number": quote.quotation_number,
         "customer_id": quote.customer_id,
+        "store_id": getattr(quote, "store_id", None),
         "status": quote.status,
         "subtotal": float(quote.subtotal),
         "tax_amount": float(quote.tax_amount),
@@ -415,6 +416,7 @@ async def create_quotation(
     discount_amount: float = 0,
     notes: str | None = None,
     valid_days: int = 14,
+    store_id: str | None = None,
     company_id: str | None = None,
 ) -> m.SalesQuotation:
     await get_customer(db, tenant_id, customer_id, company_id=company_id)
@@ -433,6 +435,7 @@ async def create_quotation(
         company_id=company_id,
         quotation_number=await _allocate(db, tenant_id, "sales_quotation", company_id=company_id),
         customer_id=customer_id,
+        store_id=(store_id or None),
         status="draft",
         subtotal=subtotal,
         tax_amount=tax_total,
@@ -892,6 +895,7 @@ async def convert_quotation_to_order(
     tenant_id: str,
     user_id: str,
     quotation_id: str,
+    store_id: str | None = None,
 ) -> m.SalesOrder:
     quote = await get_quotation(db, tenant_id, quotation_id)
     if quote.status not in {"draft", "sent", "accepted"}:
@@ -920,10 +924,13 @@ async def convert_quotation_to_order(
         discount_amount=float(quote.discount_amount or 0),
         notes=quote.notes,
         quotation_id=quote.id,
+        store_id=store_id,
         company_id=getattr(quote, "company_id", None),
     )
     quote.status = "converted"
     quote.converted_order_id = order.id
+    if store_id:
+        quote.store_id = store_id
     quote.updated_at = datetime.utcnow()
     await db.flush()
     return order
@@ -1035,9 +1042,14 @@ async def convert_quotation_to_invoice(
     tenant_id: str,
     user_id: str,
     quotation_id: str,
+    store_id: str | None = None,
 ) -> m.SalesInvoice:
     order = await convert_quotation_to_order(
-        db, tenant_id=tenant_id, user_id=user_id, quotation_id=quotation_id
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        quotation_id=quotation_id,
+        store_id=store_id,
     )
     return await convert_order_to_invoice(db, tenant_id=tenant_id, user_id=user_id, order_id=order.id)
 

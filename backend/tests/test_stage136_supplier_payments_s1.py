@@ -35,6 +35,7 @@ async def test_supplier_payments_list_and_export(client, db_session):
         [
             m.SupplierPayment(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 payment_number="SPAY-136-BANK",
                 supplier_id=supplier.id,
                 amount=100,
@@ -42,6 +43,7 @@ async def test_supplier_payments_list_and_export(client, db_session):
             ),
             m.SupplierPayment(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 payment_number="SPAY-136-CHQ",
                 supplier_id=supplier.id,
                 amount=40,

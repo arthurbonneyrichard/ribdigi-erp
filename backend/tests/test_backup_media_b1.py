@@ -32,8 +32,14 @@ async def test_backup_restore_media_roundtrip(client, db_session, tmp_path, monk
     monkeypatch.setattr("app.backup.settings.BACKUP_ENCRYPTION_KEY", "")
     monkeypatch.setattr("app.config.settings.BACKUP_DIR", str(backup_dir))
 
-    headers = await _admin(ac, seed)
-    headers["X-Workspace-Kind"] = "tenant"
+    tenant_headers = await _admin(ac, seed)
+    tenant_headers["X-Workspace-Kind"] = "tenant"
+    company_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
     tenant_id = seed["t1"].id
     product_id = seed["p1"].id
 
@@ -44,7 +50,7 @@ async def test_backup_restore_media_roundtrip(client, db_session, tmp_path, monk
     )
     uploaded = await ac.post(
         f"/api/v1/products/{product_id}/images",
-        headers=headers,
+        headers=company_headers,
         files={"file": ("widget.png", png, "image/png")},
     )
     assert uploaded.status_code == 200, uploaded.text
@@ -53,6 +59,7 @@ async def test_backup_restore_media_roundtrip(client, db_session, tmp_path, monk
     original_sha = hashlib.sha256(png).hexdigest()
     assert storage_svc.read_object(storage_key, tenant_id=tenant_id).data == png
 
+    headers = tenant_headers
     created = await ac.post(
         "/api/v1/backup", headers=headers, json={"notes": "b1-media"}
     )

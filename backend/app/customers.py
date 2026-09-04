@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from fastapi import HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
@@ -627,8 +627,21 @@ async def delete_contact(
 
 
 async def customer_history(
-    db: AsyncSession, *, tenant_id: str, customer_id: str, company_id: str | None = None
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    customer_id: str,
+    company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
+    """Sales history for one customer.
+
+    When ``store_ids`` is set (store_manager), invoices/orders are filtered by
+    ``store_id`` (null-store fail-closed); returns via linked invoice store;
+    payments via linked invoice store (unallocated fail-closed); quotations only
+    when converted order/invoice is in managed store scope (quotes have no store
+    column).
+    """
     await get_customer(db, tenant_id, customer_id)
 
     def _scoped(model):
@@ -637,81 +650,104 @@ async def customer_history(
             clauses.append(model.company_id == company_id)
         return clauses
 
-    invoices = list(
-        (
-            await db.execute(
-                select(m.SalesInvoice)
-                .where(
-                    *_scoped(m.SalesInvoice),
-                    m.SalesInvoice.customer_id == customer_id,
-                )
-                .order_by(m.SalesInvoice.created_at.desc())
-                .limit(50)
-            )
+    inv_stmt = (
+        select(m.SalesInvoice)
+        .where(
+            *_scoped(m.SalesInvoice),
+            m.SalesInvoice.customer_id == customer_id,
         )
-        .scalars()
-        .all()
+        .order_by(m.SalesInvoice.created_at.desc())
+        .limit(50)
     )
-    quotations = list(
-        (
-            await db.execute(
-                select(m.SalesQuotation)
-                .where(
-                    *_scoped(m.SalesQuotation),
-                    m.SalesQuotation.customer_id == customer_id,
-                )
-                .order_by(m.SalesQuotation.created_at.desc())
-                .limit(50)
-            )
+    if store_ids is not None:
+        if store_ids:
+            inv_stmt = inv_stmt.where(m.SalesInvoice.store_id.in_(store_ids))
+        else:
+            inv_stmt = inv_stmt.where(m.SalesInvoice.id.is_(None))
+    invoices = list((await db.execute(inv_stmt)).scalars().all())
+
+    order_stmt = (
+        select(m.SalesOrder)
+        .where(
+            *_scoped(m.SalesOrder),
+            m.SalesOrder.customer_id == customer_id,
         )
-        .scalars()
-        .all()
+        .order_by(m.SalesOrder.created_at.desc())
+        .limit(50)
     )
-    orders = list(
-        (
-            await db.execute(
-                select(m.SalesOrder)
-                .where(
-                    *_scoped(m.SalesOrder),
-                    m.SalesOrder.customer_id == customer_id,
-                )
-                .order_by(m.SalesOrder.created_at.desc())
-                .limit(50)
-            )
+    if store_ids is not None:
+        if store_ids:
+            order_stmt = order_stmt.where(m.SalesOrder.store_id.in_(store_ids))
+        else:
+            order_stmt = order_stmt.where(m.SalesOrder.id.is_(None))
+    orders = list((await db.execute(order_stmt)).scalars().all())
+
+    ret_stmt = (
+        select(m.SalesReturn)
+        .where(
+            *_scoped(m.SalesReturn),
+            m.SalesReturn.customer_id == customer_id,
         )
-        .scalars()
-        .all()
+        .order_by(m.SalesReturn.created_at.desc())
+        .limit(50)
     )
-    returns = list(
-        (
-            await db.execute(
-                select(m.SalesReturn)
-                .where(
-                    *_scoped(m.SalesReturn),
-                    m.SalesReturn.customer_id == customer_id,
-                )
-                .order_by(m.SalesReturn.created_at.desc())
-                .limit(50)
-            )
+    if store_ids is not None:
+        from app import dashboard_scope as dashboard_scope_svc
+
+        ret_stmt = dashboard_scope_svc.apply_sales_return_store_scope(ret_stmt, store_ids)
+    returns = list((await db.execute(ret_stmt)).scalars().all())
+
+    pay_stmt = (
+        select(m.CustomerPayment)
+        .where(
+            *_scoped(m.CustomerPayment),
+            m.CustomerPayment.customer_id == customer_id,
         )
-        .scalars()
-        .all()
+        .order_by(m.CustomerPayment.created_at.desc())
+        .limit(50)
     )
-    payments = list(
-        (
-            await db.execute(
-                select(m.CustomerPayment)
-                .where(
-                    *_scoped(m.CustomerPayment),
-                    m.CustomerPayment.customer_id == customer_id,
-                )
-                .order_by(m.CustomerPayment.created_at.desc())
-                .limit(50)
-            )
+    if store_ids is not None:
+        if store_ids:
+            pay_stmt = pay_stmt.join(
+                m.SalesInvoice, m.SalesInvoice.id == m.CustomerPayment.sales_invoice_id
+            ).where(m.SalesInvoice.store_id.in_(store_ids))
+        else:
+            pay_stmt = pay_stmt.where(m.CustomerPayment.id.is_(None))
+    payments = list((await db.execute(pay_stmt)).scalars().all())
+
+    quote_stmt = (
+        select(m.SalesQuotation)
+        .where(
+            *_scoped(m.SalesQuotation),
+            m.SalesQuotation.customer_id == customer_id,
         )
-        .scalars()
-        .all()
+        .order_by(m.SalesQuotation.created_at.desc())
+        .limit(50)
     )
+    if store_ids is not None:
+        if not store_ids:
+            quote_stmt = quote_stmt.where(m.SalesQuotation.id.is_(None))
+        else:
+            in_scope_order = select(m.SalesOrder.id).where(
+                m.SalesOrder.tenant_id == tenant_id,
+                m.SalesOrder.store_id.in_(store_ids),
+            )
+            in_scope_inv = select(m.SalesInvoice.id).where(
+                m.SalesInvoice.tenant_id == tenant_id,
+                m.SalesInvoice.store_id.in_(store_ids),
+            )
+            if company_id:
+                in_scope_order = in_scope_order.where(m.SalesOrder.company_id == company_id)
+                in_scope_inv = in_scope_inv.where(m.SalesInvoice.company_id == company_id)
+            quote_stmt = quote_stmt.where(
+                or_(
+                    m.SalesQuotation.store_id.in_(store_ids),
+                    m.SalesQuotation.converted_order_id.in_(in_scope_order),
+                    m.SalesQuotation.converted_invoice_id.in_(in_scope_inv),
+                )
+            )
+    quotations = list((await db.execute(quote_stmt)).scalars().all())
+
     return {
         "customer_id": customer_id,
         "invoices": [

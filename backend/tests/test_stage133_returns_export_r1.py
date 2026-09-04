@@ -27,6 +27,7 @@ async def test_returns_export_csv(client, db_session):
 
     inv = m.SalesInvoice(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         invoice_number="INV-133-RET",
         customer_id=seed["party1"].id,
         status="posted",
@@ -41,6 +42,7 @@ async def test_returns_export_csv(client, db_session):
         [
             m.SalesReturn(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 return_number="SR-133-DRAFT",
                 customer_id=seed["party1"].id,
                 sales_invoice_id=inv.id,
@@ -52,6 +54,7 @@ async def test_returns_export_csv(client, db_session):
             ),
             m.SalesReturn(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 return_number="SR-133-POSTED",
                 customer_id=seed["party1"].id,
                 sales_invoice_id=inv.id,

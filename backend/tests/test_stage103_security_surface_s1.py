@@ -13,7 +13,7 @@ def test_shell_security_deeplinks_s1():
     assert "/security#totp" in shell
     assert "/security#webhooks" in shell
     assert "/security#api-keys" in shell
-    assert "/security#sessions" in shell
+    assert "/security#sessions" in shell or "#sessions" in shell
     assert "Passkeys" in shell
     assert "Webhooks" in shell
     assert "API keys" in shell

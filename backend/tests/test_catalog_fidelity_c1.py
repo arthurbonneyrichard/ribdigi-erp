@@ -6,6 +6,7 @@ import io
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import pyotp
 import pytest
 
 from tests.conftest import auth_headers
@@ -17,8 +18,15 @@ def _png() -> bytes:
     return b"\x89PNG\r\n\x1a\n" + b"fake-png-bytes"
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _beta(ac):
@@ -34,7 +42,7 @@ async def test_catalog_hierarchy_brand_uom_product_chain(client, tmp_path, monke
     monkeypatch.setattr(storage_svc.settings, "STORAGE_BACKEND", "local")
 
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
 
     parent = await ac.post(
         "/api/v1/catalog/categories",
@@ -144,15 +152,38 @@ async def test_catalog_hierarchy_brand_uom_product_chain(client, tmp_path, monke
 
 
 @pytest.mark.asyncio
-async def test_variants_barcode_images_batches(client, tmp_path, monkeypatch):
+async def test_variants_barcode_images_batches(client, db_session, tmp_path, monkeypatch):
     """Variants SKU, barcode generate, multi-image primary, batch/expiry via stock-in."""
+    from app import models as m
     from app import storage as storage_svc
 
     monkeypatch.setattr(storage_svc.settings, "MEDIA_DIR", str(tmp_path))
     monkeypatch.setattr(storage_svc.settings, "STORAGE_BACKEND", "local")
 
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Catalog Fid Store",
+        code="CAT-FID",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        name="Catalog Fid WH",
+        code="CAT-FID-WH",
+    )
+    db_session.add(wh)
+    await db_session.commit()
 
     created = await ac.post(
         "/api/v1/products",
@@ -219,6 +250,7 @@ async def test_variants_barcode_images_batches(client, tmp_path, monkeypatch):
         headers=headers,
         json={
             "product_id": product_id,
+            "warehouse_id": wh.id,
             "quantity": 15,
             "batch_number": "S17-BATCH-1",
             "manufacturing_date": mfg,

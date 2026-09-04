@@ -873,6 +873,11 @@ export default function Page() {
                     { headers: { Authorization: `Bearer ${token}` } },
                   );
                   if (!res.ok) {
+                    // Soft-fail store_manager STORE_SCOPE_DENIED (company bank detail dump).
+                    if (res.status === 403) {
+                      setMessage('Liquid accounts CSV export requires a company administrator.');
+                      return;
+                    }
                     setError(await res.text());
                     return;
                   }

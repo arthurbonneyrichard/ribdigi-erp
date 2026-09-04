@@ -33,6 +33,7 @@ async def test_grn_export_csv(client, db_session):
 
     po = m.PurchaseOrder(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         po_number="PO-134-GRN",
         supplier_id=supplier.id,
         status="sent",
@@ -47,6 +48,7 @@ async def test_grn_export_csv(client, db_session):
         [
             m.GoodsReceipt(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 grn_number="GRN-134-DRAFT",
                 purchase_order_id=po.id,
                 supplier_id=supplier.id,
@@ -55,6 +57,7 @@ async def test_grn_export_csv(client, db_session):
             ),
             m.GoodsReceipt(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 grn_number="GRN-134-POSTED",
                 purchase_order_id=po.id,
                 supplier_id=supplier.id,

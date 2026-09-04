@@ -18,7 +18,7 @@ async def _mgr(ac):
 @pytest.mark.asyncio
 async def test_business_insights_export_csv(client):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
 
     exported = await ac.get("/api/v1/ai/insights/export", headers=headers)
     assert exported.status_code == 200, exported.text

@@ -27,13 +27,40 @@ async def _super(ac, seed):
     )
 
 
+async def _managed_store(db_session, seed) -> str:
+    store = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        name="Expense A1 Store",
+        code="EXP-A1",
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    # Managed WH avoids empty-warehouse SQL `false()` on AP due-scan paths (sqlite).
+    wh = m.Warehouse(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        store_id=store.id,
+        name="Expense A1 WH",
+        code="WH-EXP-A1",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    db_session.add(wh)
+    await db_session.commit()
+    return store.id
+
+
 @pytest.mark.asyncio
 async def test_expense_approval_and_recurring_fidelity(client, db_session):
     """BR-9.3 thresholds/chain/comments/notify + BR-9.5 frequency/generate/notify/skip/modify."""
     ac, seed = client
-    mgr_h = await _mgr(ac)
+    mgr_h = await _mgr(ac, seed)
     super_h = await _super(ac, seed)
     tenant_id = seed["t1"].id
+    store_id = await _managed_store(db_session, seed)
 
     # --- BR-9.3: configurable thresholds / multi-level matrix ---
     # L2 uses super_admin (seeded company_admin lacks 2FA enrollment for approve paths).
@@ -53,7 +80,11 @@ async def test_expense_approval_and_recurring_fidelity(client, db_session):
     assert float(sdata["expense_l2_threshold"]) == pytest.approx(1000)
     assert len(sdata["levels"]) == 2
 
-    got_settings = await ac.get("/api/v1/expenses/settings", headers=mgr_h)
+    denied_mgr_settings = await ac.get("/api/v1/expenses/settings", headers=mgr_h)
+    assert denied_mgr_settings.status_code == 403
+    assert denied_mgr_settings.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    got_settings = await ac.get("/api/v1/expenses/settings", headers=super_h)
     assert got_settings.status_code == 200
     assert len(got_settings.json()["data"]["levels"]) == 2
 
@@ -68,6 +99,7 @@ async def test_expense_approval_and_recurring_fidelity(client, db_session):
             "description": "A1 multi-level purchase",
             "payee": "Office Depot",
             "reference": "A1-APPR-001",
+            "store_id": store_id,
         },
     )
     assert created.status_code == 200, created.text
@@ -124,6 +156,7 @@ async def test_expense_approval_and_recurring_fidelity(client, db_session):
             "amount": 250,
             "payment_method": "cash",
             "description": "A1 reject candidate",
+            "store_id": store_id,
         },
     )
     assert pending.status_code == 200, pending.text
@@ -156,6 +189,7 @@ async def test_expense_approval_and_recurring_fidelity(client, db_session):
                 "frequency": freq,
                 "payment_method": "bank_transfer",
                 "payee": "Utility Co",
+                "store_id": store_id,
             },
         )
         assert row.status_code == 200, row.text

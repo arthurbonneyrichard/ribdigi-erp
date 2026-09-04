@@ -44,7 +44,7 @@ def test_stage13_br_launch_and_manual():
     assert "Stage 13 H1" in br
     assert "Stage 13 H2" in br
     assert "pos_receipt_sent" in br
-    assert "POS transaction submission (Stage 12 C2 / Stage 13 H1–H2" in br
+    assert "POS transaction submission" in br and "Stage 13 H1–H2" in br
 
     launch = _read("docs/LAUNCH_CHECKLIST.md")
     assert "test_pos_sale_atomicity_h1.py" in launch

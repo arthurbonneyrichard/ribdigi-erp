@@ -42,6 +42,7 @@ async def test_dashboard_notifications_panel_fidelity(client, db_session):
     stock = await create_notification(
         db_session,
         tenant_id=tid,
+        company_id=seed["c1"].id,
         user_id=uid,
         category="low_stock",
         title="N1 Low Stock",
@@ -50,6 +51,7 @@ async def test_dashboard_notifications_panel_fidelity(client, db_session):
     orders = await create_notification(
         db_session,
         tenant_id=tid,
+        company_id=seed["c1"].id,
         user_id=uid,
         category="new_order",
         title="N1 New Order",
@@ -58,6 +60,7 @@ async def test_dashboard_notifications_panel_fidelity(client, db_session):
     payments = await create_notification(
         db_session,
         tenant_id=tid,
+        company_id=seed["c1"].id,
         user_id=uid,
         category="payment_due",
         title="N1 Payment Due",
@@ -66,6 +69,7 @@ async def test_dashboard_notifications_panel_fidelity(client, db_session):
     system = await create_notification(
         db_session,
         tenant_id=tid,
+        company_id=seed["c1"].id,
         user_id=uid,
         category="system",
         title="N1 System",
@@ -73,6 +77,7 @@ async def test_dashboard_notifications_panel_fidelity(client, db_session):
     )
     ancient = m.Notification(
         tenant_id=tid,
+        company_id=seed["c1"].id,
         user_id=uid,
         category="system",
         title="N1 Ancient",

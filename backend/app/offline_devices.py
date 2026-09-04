@@ -133,10 +133,17 @@ async def get_device(db: AsyncSession, tenant_id: str, device_id: str) -> m.Offl
 
 
 async def revoke_device(db: AsyncSession, tenant_id: str, device_id: str) -> m.OfflineDevice:
+    """Soft-revoke + soft lockdown: block sync/rebind and expire server envelope.
+
+    Pending queue ops are retained (not deleted or auto-applied). Does not remotely
+    wipe offline IndexedDB — Offline Complete / remote wipe remain deferred.
+    """
     row = await get_device(db, tenant_id, device_id)
     if row.revoked_at is None:
         now = datetime.utcnow()
         row.revoked_at = now
+        # Soft lockdown: expire server envelope immediately so sync/server gates fail closed.
+        row.offline_authorized_until = now
         row.updated_at = now
         await db.flush()
     return row

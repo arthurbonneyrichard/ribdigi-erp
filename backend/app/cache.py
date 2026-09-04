@@ -77,17 +77,29 @@ class AppCache:
         return (settings.CACHE_REDIS_PREFIX or "ribdigi:cache").rstrip(":")
 
     def dashboard_key(
-        self, tenant_id: str, *, role: str | None = None, user_id: str | None = None
+        self,
+        tenant_id: str,
+        *,
+        role: str | None = None,
+        user_id: str | None = None,
+        company_id: str | None = None,
     ) -> str:
         # Architecture: dashboard:{tenant_id}:{metric} — role (+ user for store_manager) suffix
         role_part = (role or "any").strip().lower() or "any"
         if user_id and role_part == "store_manager":
-            return f"{self._prefix()}:dashboard:{tenant_id}:summary:{role_part}:{user_id}"
-        return f"{self._prefix()}:dashboard:{tenant_id}:summary:{role_part}"
+            key = f"{self._prefix()}:dashboard:{tenant_id}:summary:{role_part}:{user_id}"
+        else:
+            key = f"{self._prefix()}:dashboard:{tenant_id}:summary:{role_part}"
+        if company_id:
+            return f"{key}:co:{company_id}"
+        return key
 
-    def products_key(self, tenant_id: str) -> str:
+    def products_key(self, tenant_id: str, *, company_id: str | None = None) -> str:
         # Architecture: products:{tenant_id}:{category_id} — MVP full list = all
-        return f"{self._prefix()}:products:{tenant_id}:all"
+        key = f"{self._prefix()}:products:{tenant_id}:all"
+        if company_id:
+            return f"{key}:co:{company_id}"
+        return key
 
     def categories_key(
         self, tenant_id: str, *, tree: bool, company_id: str | None = None
@@ -99,7 +111,7 @@ class AppCache:
 
     def catalog_keys(self, tenant_id: str, *, company_id: str | None = None) -> list[str]:
         return [
-            self.products_key(tenant_id),
+            self.products_key(tenant_id, company_id=company_id),
             self.categories_key(tenant_id, tree=False, company_id=company_id),
             self.categories_key(tenant_id, tree=True, company_id=company_id),
         ]
@@ -167,7 +179,9 @@ class AppCache:
         except Exception as exc:
             logger.warning("App cache delete failed: %s", exc)
 
-    async def invalidate_dashboard(self, tenant_id: str) -> None:
+    async def invalidate_dashboard(
+        self, tenant_id: str, company_id: str | None = None
+    ) -> None:
         # Stage 80 — dashboard cache is role-scoped; clear common role variants.
         roles = (
             "any",
@@ -179,7 +193,12 @@ class AppCache:
             "sales_officer",
             "inventory_officer",
         )
-        await self.delete(*(self.dashboard_key(tenant_id, role=r) for r in roles))
+        keys = [self.dashboard_key(tenant_id, role=r) for r in roles]
+        if company_id:
+            keys.extend(
+                self.dashboard_key(tenant_id, role=r, company_id=company_id) for r in roles
+            )
+        await self.delete(*keys)
 
     async def invalidate_catalog(
         self, tenant_id: str, company_id: str | None = None
@@ -189,10 +208,12 @@ class AppCache:
             keys = list(dict.fromkeys(keys + self.catalog_keys(tenant_id, company_id=company_id)))
         await self.delete(*keys)
 
-    async def invalidate_tenant(self, tenant_id: str) -> None:
+    async def invalidate_tenant(
+        self, tenant_id: str, company_id: str | None = None
+    ) -> None:
         """Invalidate dashboard + catalog read models for a tenant."""
-        await self.invalidate_dashboard(tenant_id)
-        await self.invalidate_catalog(tenant_id)
+        await self.invalidate_dashboard(tenant_id, company_id=company_id)
+        await self.invalidate_catalog(tenant_id, company_id=company_id)
 
     async def invalidate_user_permissions(self, tenant_id: str, user_id: str) -> None:
         await self.delete(self.permissions_key(tenant_id, user_id))

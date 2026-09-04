@@ -11,6 +11,31 @@ from app import purchasing as purchasing_svc
 from tests.conftest import auth_headers
 
 
+async def _managed_warehouse(db_session, seed) -> str:
+    store = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        name="PR Matrix Store",
+        code="PR-MX",
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        store_id=store.id,
+        name="PR Matrix WH",
+        code="WH-PR-MX",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    db_session.add(wh)
+    await db_session.commit()
+    return wh.id
+
+
 def test_default_pr_levels_require_manager_then_admin():
     levels = purchasing_svc.default_pr_approval_levels()
     assert len(levels) == 2
@@ -31,6 +56,7 @@ async def test_pr_two_level_http_flow(client, db_session):
     super_h = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
     )
+    warehouse_id = await _managed_warehouse(db_session, seed)
 
     # L1 store_manager only; L2 super_admin (company_admin seed lacks 2FA enrollment).
     tenant = await db_session.get(m.Tenant, seed["t1"].id)
@@ -54,6 +80,7 @@ async def test_pr_two_level_http_flow(client, db_session):
         headers=super_h,
         json={
             "supplier_id": supplier_id,
+            "warehouse_id": warehouse_id,
             "items": [{"product_id": seed["p1"].id, "quantity": 200, "unit_price": 10}],
         },
     )
@@ -128,7 +155,11 @@ async def test_pr_settings_admin_only_and_role_reject(client, db_session):
     assert ok.status_code == 200, ok.text
     assert len(ok.json()["data"]["levels"]) == 2
 
-    settings = await ac.get("/api/v1/purchasing/settings", headers=mgr)
+    denied_mgr_get = await ac.get("/api/v1/purchasing/settings", headers=mgr)
+    assert denied_mgr_get.status_code == 403
+    assert denied_mgr_get.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    settings = await ac.get("/api/v1/purchasing/settings", headers=super_h)
     assert settings.status_code == 200
     assert settings.json()["data"]["levels"][0]["label"] == "Manager"
 

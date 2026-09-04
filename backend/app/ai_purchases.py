@@ -50,7 +50,14 @@ async def analyze_purchases(
     to_date: datetime | str | None = None,
     lookback_days: int = 90,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
+    """Purchases analysis. ``warehouse_ids`` set = store_manager WH scope (null WH fail-closed)."""
+    from app.dashboard_scope import (
+        apply_purchase_invoice_warehouse_scope,
+        apply_warehouse_scope_filter,
+    )
+
     now = datetime.utcnow()
     lookback_days = max(14, min(int(lookback_days), 365))
     try:
@@ -65,12 +72,62 @@ async def analyze_purchases(
 
         raise HTTPException(status_code=400, detail="to_date must be on or after from_date")
 
+    if warehouse_ids is not None and not warehouse_ids:
+        return {
+            "generated_at": now,
+            "from_date": start,
+            "to_date": end,
+            "method": "rules_v1",
+            "scope": "store_manager",
+            "summary": {
+                "purchase_order_count": 0,
+                "active_po_count": 0,
+                "open_po_count": 0,
+                "open_po_value": 0.0,
+                "grn_count": 0,
+                "purchase_invoice_count": 0,
+                "posted_invoice_count": 0,
+                "total_spend": 0.0,
+                "avg_daily_spend": 0.0,
+                "supplier_count": 0,
+                "overdue_invoice_count": 0,
+                "trend_direction": "flat",
+                "daily_slope": 0.0,
+                "wow_change_pct": None,
+                "top_supplier_spend_share": 0.0,
+            },
+            "trend": {
+                "daily": [],
+                "forecast_totals": {},
+                "direction": "flat",
+                "daily_slope": 0.0,
+                "note": "Linear projection from daily posted purchase-invoice totals (not Prophet).",
+            },
+            "suppliers": {"rows": [], "count": 0, "top_spend_share": 0.0},
+            "purchase_orders": {
+                "status_counts": {},
+                "open_value": 0.0,
+                "fill": [],
+                "draft_count": 0,
+                "partial_count": 0,
+            },
+            "goods_receipts": {"count": 0, "by_status": {}},
+            "purchase_invoices": {
+                "open_count": 0,
+                "overdue": [],
+                "overdue_count": 0,
+                "analyzed_count": 0,
+            },
+            "suggestions": [],
+        }
+
     po_stmt = select(m.PurchaseOrder).where(
         m.PurchaseOrder.tenant_id == tenant_id,
         m.PurchaseOrder.created_at >= start,
         m.PurchaseOrder.created_at <= end,
     )
     po_stmt = apply_company_filter(po_stmt, m.PurchaseOrder.company_id, company_id)
+    po_stmt = apply_warehouse_scope_filter(po_stmt, m.PurchaseOrder, warehouse_ids)
     orders = (await db.execute(po_stmt)).scalars().all()
 
     grn_stmt = select(m.GoodsReceipt).where(
@@ -79,6 +136,7 @@ async def analyze_purchases(
         m.GoodsReceipt.created_at <= end,
     )
     grn_stmt = apply_company_filter(grn_stmt, m.GoodsReceipt.company_id, company_id)
+    grn_stmt = apply_warehouse_scope_filter(grn_stmt, m.GoodsReceipt, warehouse_ids)
     grns = (await db.execute(grn_stmt)).scalars().all()
 
     pi_stmt = select(m.PurchaseInvoice).where(
@@ -87,6 +145,7 @@ async def analyze_purchases(
         m.PurchaseInvoice.invoice_date <= end,
     )
     pi_stmt = apply_company_filter(pi_stmt, m.PurchaseInvoice.company_id, company_id)
+    pi_stmt = apply_purchase_invoice_warehouse_scope(pi_stmt, warehouse_ids)
     invoices = (await db.execute(pi_stmt)).scalars().all()
 
     po_ids = [o.id for o in orders]
@@ -348,6 +407,7 @@ async def analyze_purchases(
         "from_date": start,
         "to_date": end,
         "method": "rules_v1",
+        "scope": "store_manager" if warehouse_ids is not None else "company",
         "summary": {
             "purchase_order_count": len(orders),
             "active_po_count": len(active_orders),

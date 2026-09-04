@@ -4,18 +4,30 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
+import pyotp
 import pytest
-from sqlalchemy import select
 
 from app import models as m
 from app.inventory import apply_stock_change
 from tests.conftest import auth_headers
 
 
+async def _super(ac, seed):
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
+
+
+async def _mgr(ac):
+    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+
 @pytest.mark.asyncio
 async def test_movements_date_filter(client, db_session):
+    """Null-warehouse movements remain visible to tenant-wide roles."""
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    headers = await _super(ac, seed)
     await apply_stock_change(
         db_session,
         tenant_id=seed["t1"].id,
@@ -54,18 +66,38 @@ async def test_movements_date_filter(client, db_session):
 
 @pytest.mark.asyncio
 async def test_product_warehouse_stock(client, db_session):
+    """Store managers only see warehouse-stock rows for managed-store warehouses."""
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
-    wh = m.Warehouse(tenant_id=seed["t1"].id, name="Stock View WH", code="SVWH")
+    headers = await _mgr(ac, seed)
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Stock View Store",
+        code="SVST",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        name="Stock View WH",
+        code="SVWH",
+    )
     db_session.add(wh)
     await db_session.flush()
     await apply_stock_change(
         db_session,
-        tenant_id=seed["t1"].id,
+        tenant_id=tid,
         product_id=seed["p1"].id,
         quantity_delta=7,
         movement_type="stock_in",
-        user_id=seed["mgr1"].id,
+        user_id=mgr.id,
         warehouse_id=wh.id,
     )
     await db_session.commit()
@@ -79,13 +111,15 @@ async def test_product_warehouse_stock(client, db_session):
 
 @pytest.mark.asyncio
 async def test_low_stock_reorder_creates_draft_po(client, db_session):
+    """Tenant-wide role can list product-scope low stock and create draft PO without WH."""
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    headers = await _super(ac, seed)
     seed["p1"].reorder_level = 100
     seed["p1"].stock_qty = 2
     seed["p1"].cost_price = 4.5
     supplier = m.Party(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         name="Reorder Supplier",
         kind="supplier",
         credit_limit=0,

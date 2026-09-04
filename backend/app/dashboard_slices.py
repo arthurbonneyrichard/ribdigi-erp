@@ -108,14 +108,58 @@ async def top_products(
 async def stock_alerts(
     db: AsyncSession, claims: dict, *, company_id: str | None = None
 ) -> dict:
+    from app import dashboard_scope as dashboard_scope_svc
+    from app import reports as reports_svc
+
     tid = claims["tenant_id"]
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+
+    async def scalar(stmt):
+        return (await db.execute(stmt)).scalar() or 0
+
+    if managed_wh is not None:
+        low_payload = await reports_svc.inventory_low_stock(
+            db, tid, company_id=company_id, warehouse_ids=managed_wh
+        )
+        expiry = await reports_svc.inventory_expiry(
+            db, tid, within_days=30, company_id=company_id, warehouse_ids=managed_wh
+        )
+        oos = 0
+        products = 0
+        if managed_wh:
+            oos = int(
+                await scalar(
+                    select(func.count(m.WarehouseStock.id)).where(
+                        m.WarehouseStock.tenant_id == tid,
+                        m.WarehouseStock.warehouse_id.in_(managed_wh),
+                        m.WarehouseStock.quantity <= 0,
+                    )
+                )
+            )
+            products = int(
+                await scalar(
+                    select(func.count(func.distinct(m.WarehouseStock.product_id))).where(
+                        m.WarehouseStock.tenant_id == tid,
+                        m.WarehouseStock.warehouse_id.in_(managed_wh),
+                    )
+                )
+            )
+        payload = {
+            **_meta(claims),
+            "products": products,
+            "low_stock": int(low_payload.get("warehouse_count") or 0),
+            "out_of_stock": oos,
+            "expiring_batches": int(expiry.get("count") or 0),
+            "store_scope": dashboard_scope_svc.store_scope_payload(
+                await dashboard_scope_svc.managed_store_ids(db, claims)
+            ),
+        }
+        return dashboard_views_svc.filter_dashboard_payload(payload, claims)
+
     now = datetime.utcnow()
     from datetime import timedelta
 
     expiry_horizon = now + timedelta(days=30)
-
-    async def scalar(stmt):
-        return (await db.execute(stmt)).scalar() or 0
 
     low_stmt = select(func.count(m.Product.id)).where(
         m.Product.tenant_id == tid,
@@ -157,26 +201,46 @@ async def stock_alerts(
 async def expenses_slice(
     db: AsyncSession, claims: dict, *, company_id: str | None = None
 ) -> dict:
+    from app import dashboard_scope as dashboard_scope_svc
+
     tid = claims["tenant_id"]
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     total_stmt = select(func.coalesce(func.sum(m.Expense.amount), 0)).where(
         m.Expense.tenant_id == tid,
         m.Expense.status == "approved",
     )
     total_stmt = apply_company_filter(total_stmt, m.Expense.company_id, company_id)
+    if managed is not None:
+        if managed:
+            total_stmt = total_stmt.where(m.Expense.store_id.in_(managed))
+        else:
+            total_stmt = total_stmt.where(m.Expense.id.is_(None))
     total = (await db.execute(total_stmt)).scalar() or 0
-    by_cat = await expenses_by_category(db, tid, company_id=company_id)
+    by_cat = await expenses_by_category(
+        db, tid, company_id=company_id, store_ids=managed
+    )
     payload = {
         **_meta(claims),
         "total_expenses": float(total),
         "expenses_by_category": by_cat,
+        "store_scope": dashboard_scope_svc.store_scope_payload(managed),
     }
     return dashboard_views_svc.filter_dashboard_payload(payload, claims)
 
 
 async def expenses_by_category(
-    db: AsyncSession, tenant_id: str, *, company_id: str | None = None
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> list[dict]:
-    """Approved expense totals grouped by category name (Stage 84 S1)."""
+    """Approved expense totals grouped by category name (Stage 84 S1).
+
+    ``store_ids`` set (store_manager) restricts to managed stores; null-store fail-closed.
+    """
+    if store_ids is not None and not store_ids:
+        return []
     cat_name = func.coalesce(m.ExpenseCategory.name, m.Expense.category, "Uncategorized")
     stmt = (
         select(cat_name.label("category"), func.coalesce(func.sum(m.Expense.amount), 0).label("total"))
@@ -188,6 +252,8 @@ async def expenses_by_category(
     )
     if company_id:
         stmt = stmt.where(m.Expense.company_id == company_id)
+    if store_ids is not None:
+        stmt = stmt.where(m.Expense.store_id.in_(store_ids))
     rows = (await db.execute(stmt)).all()
     return [
         {"category": str(row.category or "Uncategorized"), "total": float(row.total or 0)}
@@ -198,15 +264,21 @@ async def expenses_by_category(
 async def credit_slice(db: AsyncSession, claims: dict) -> dict:
     """AR outstanding summary for credit:read dashboards (Stage 84 S1)."""
     from app import credit as credit_svc
+    from app import dashboard_scope as dashboard_scope_svc
 
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
     aging = await credit_svc.ar_aging(
-        db, claims["tenant_id"], company_id=claims.get("company_id")
+        db,
+        claims["tenant_id"],
+        company_id=claims.get("company_id"),
+        store_ids=managed_stores,
     )
     total_due = float(aging.get("total_due") or 0)
     payload = {
         **_meta(claims),
         "credit_outstanding": total_due,
         "ar_total_due": total_due,
+        "scope": aging.get("scope"),
     }
     return dashboard_views_svc.filter_dashboard_payload(payload, claims)
 
@@ -252,7 +324,12 @@ async def summary_slice(
     db: AsyncSession, claims: dict, *, company_id: str | None = None
 ) -> dict:
     """Compact KPI card payload (permission-filtered)."""
+    from app import dashboard_scope as dashboard_scope_svc
+    from app import reports as reports_svc
+
     tid = claims["tenant_id"]
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
 
     async def scalar(stmt):
         return (await db.execute(stmt)).scalar() or 0
@@ -262,32 +339,77 @@ async def summary_slice(
         m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
     )
     sales_stmt = apply_company_filter(sales_stmt, m.SalesInvoice.company_id, company_id)
+    if managed is not None:
+        if managed:
+            sales_stmt = sales_stmt.where(m.SalesInvoice.store_id.in_(managed))
+        else:
+            sales_stmt = sales_stmt.where(m.SalesInvoice.id.is_(None))
     sales = float(await scalar(sales_stmt))
 
-    pos_stmt = select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
-        m.Transaction.tenant_id == tid,
-        m.Transaction.tx_type.in_(["sale", "pos_sale"]),
-    )
-    pos_stmt = apply_company_filter(pos_stmt, m.Transaction.company_id, company_id)
-    pos = float(await scalar(pos_stmt))
+    if managed is not None:
+        if managed:
+            pos_stmt = (
+                select(func.coalesce(func.sum(m.Transaction.total), 0))
+                .select_from(m.Transaction)
+                .join(m.PosSession, m.PosSession.id == m.Transaction.session_id)
+                .where(
+                    m.Transaction.tenant_id == tid,
+                    m.Transaction.tx_type.in_(["sale", "pos_sale"]),
+                    m.PosSession.store_id.in_(managed),
+                )
+            )
+            if company_id:
+                pos_stmt = pos_stmt.where(m.Transaction.company_id == company_id)
+            pos = float(await scalar(pos_stmt))
+        else:
+            pos = 0.0
+    else:
+        pos_stmt = select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
+            m.Transaction.tenant_id == tid,
+            m.Transaction.tx_type.in_(["sale", "pos_sale"]),
+        )
+        pos_stmt = apply_company_filter(pos_stmt, m.Transaction.company_id, company_id)
+        pos = float(await scalar(pos_stmt))
 
     expenses_stmt = select(func.coalesce(func.sum(m.Expense.amount), 0)).where(
         m.Expense.tenant_id == tid,
         m.Expense.status == "approved",
     )
     expenses_stmt = apply_company_filter(expenses_stmt, m.Expense.company_id, company_id)
+    if managed is not None:
+        if managed:
+            expenses_stmt = expenses_stmt.where(m.Expense.store_id.in_(managed))
+        else:
+            expenses_stmt = expenses_stmt.where(m.Expense.id.is_(None))
     expenses = float(await scalar(expenses_stmt))
 
-    products_stmt = select(func.count(m.Product.id)).where(m.Product.tenant_id == tid)
-    products_stmt = apply_company_filter(products_stmt, m.Product.company_id, company_id)
-    products = int(await scalar(products_stmt))
+    if managed_wh is not None:
+        low_payload = await reports_svc.inventory_low_stock(
+            db, tid, company_id=company_id, warehouse_ids=managed_wh
+        )
+        low = int(low_payload.get("warehouse_count") or 0)
+        if managed_wh:
+            products = int(
+                await scalar(
+                    select(func.count(func.distinct(m.WarehouseStock.product_id))).where(
+                        m.WarehouseStock.tenant_id == tid,
+                        m.WarehouseStock.warehouse_id.in_(managed_wh),
+                    )
+                )
+            )
+        else:
+            products = 0
+    else:
+        products_stmt = select(func.count(m.Product.id)).where(m.Product.tenant_id == tid)
+        products_stmt = apply_company_filter(products_stmt, m.Product.company_id, company_id)
+        products = int(await scalar(products_stmt))
 
-    low_stmt = select(func.count(m.Product.id)).where(
-        m.Product.tenant_id == tid,
-        m.Product.stock_qty <= m.Product.reorder_level,
-    )
-    low_stmt = apply_company_filter(low_stmt, m.Product.company_id, company_id)
-    low = int(await scalar(low_stmt))
+        low_stmt = select(func.count(m.Product.id)).where(
+            m.Product.tenant_id == tid,
+            m.Product.stock_qty <= m.Product.reorder_level,
+        )
+        low_stmt = apply_company_filter(low_stmt, m.Product.company_id, company_id)
+        low = int(await scalar(low_stmt))
 
     customers_stmt = select(func.count(m.Party.id)).where(
         m.Party.tenant_id == tid, m.Party.kind == "customer"
@@ -301,5 +423,6 @@ async def summary_slice(
         "products": products,
         "low_stock": low,
         "customers": customers,
+        "store_scope": dashboard_scope_svc.store_scope_payload(managed),
     }
     return dashboard_views_svc.filter_dashboard_payload(payload, claims)

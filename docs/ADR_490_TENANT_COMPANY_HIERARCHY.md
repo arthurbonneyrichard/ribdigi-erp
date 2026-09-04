@@ -74,7 +74,7 @@ ADR-005 (userâ†”store membership) remains deferred. This ADR introduces **userâ†
 - Customer/supplier outstanding bills, statements, and supplier payment schedules (APIs + CSV) filter by workspace `company_id` and reject cross-company party access.
 - Liquid account list/export/create/update are company-scoped; creates stamp `company_id` and use company-scoped uniqueness for account codes.
 - Bank statement list/export/create/import stamp and filter `company_id`; statement GET rejects foreign-company rows.
-- Remaining PARTIAL: bank-connection sync helpers and some adjacent finance tooling may still be tenant-wide; ADR-002 billing and ADR-005 store membership remain deferred.
+- Remaining PARTIAL: fiscal-period close and COA accounts CSV export may still be tenant-wide for store_manager; ADR-002 billing and ADR-005 store membership remain deferred.
 
 ## Phase 8 follow-up (2026-08-14)
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from app import models as m
 from app.sales_docs import render_quotation_html, render_quotation_pdf, render_quotation_text
 from tests.conftest import auth_headers
 
@@ -54,14 +55,24 @@ def test_render_quotation_text_html_pdf_branded():
 
 
 @pytest.mark.asyncio
-async def test_quotation_print_formats_and_foreign_404(client):
+async def test_quotation_print_formats_and_foreign_404(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
+    store = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        name="Print Quote Store",
+        code="PRT-QT",
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.commit()
 
     cust = await ac.post(
         "/api/v1/customers",
         headers=headers,
-        json={"name": "Quote Print Buyer", "credit_limit": 1000},
+        json={"name": "Quote Print Buyer"},
     )
     assert cust.status_code == 200, cust.text
     customer_id = cust.json()["data"]["id"]
@@ -71,6 +82,7 @@ async def test_quotation_print_formats_and_foreign_404(client):
         headers=headers,
         json={
             "customer_id": customer_id,
+            "store_id": store.id,
             "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 12}],
         },
     )

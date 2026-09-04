@@ -74,7 +74,7 @@ Stage 3 here is **not** a rewrite of sales/POS/accounting. Core engines (custome
 - [x] Exceeding credit limit without override → `409 CREDIT_LIMIT_EXCEEDED` (invoice post + POS credit/split credit).
 - [x] Override requires `credit:approve` + `credit_override_reason` (≥3 chars); else `403 CREDIT_OVERRIDE_FORBIDDEN` / `400 CREDIT_OVERRIDE_REASON_REQUIRED`.
 - [x] Successful override records audit action `credit_limit_override`; invoice stores override columns (Alembic `0077`).
-- [x] Roles: `store_manager` and `accountant` have `credit:approve` (not sales_officer/cashier).
+- [x] Roles: `store_manager` and `accountant` have `credit:approve` (not sales_officer/cashier). Note: `store_manager` is denied `credit_limit_override` (`STORE_SCOPE_DENIED`) despite `credit:approve`; override remains finance/admin.
 - [x] Sales + POS UI prompt for reason and retry with override flags.
 - [x] Automated tests in `backend/tests/test_credit_limit_override_c1.py`.
 

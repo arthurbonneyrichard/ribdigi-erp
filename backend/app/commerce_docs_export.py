@@ -13,6 +13,7 @@ from app import models as m
 from app import purchasing as purchasing_svc
 from app import sales as sales_svc
 from app import stores as stores_svc
+from app import dashboard_scope as dashboard_scope_svc
 from app.rbac import apply_created_by_scope
 from app.session_passkey_doc_export import _cell
 
@@ -43,6 +44,7 @@ PURCHASE_INVOICE_EXPORT_COLUMNS = [
     "supplier_id",
     "purchase_order_id",
     "goods_receipt_id",
+    "warehouse_id",
     "supplier_invoice_number",
     "status",
     "invoice_date",
@@ -105,6 +107,8 @@ async def export_sales_invoices_csv(
     tenant_id: str,
     claims: dict,
     status: str | None = None,
+    store_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> str:
     from app import workspace as workspace_svc
 
@@ -125,6 +129,13 @@ async def export_sales_invoices_csv(
             stmt = stmt.where(m.SalesInvoice.status.in_(["posted", "sent"]))
         else:
             stmt = stmt.where(m.SalesInvoice.status == key)
+    if store_id:
+        stmt = stmt.where(m.SalesInvoice.store_id == store_id)
+    elif store_ids is not None:
+        if store_ids:
+            stmt = stmt.where(m.SalesInvoice.store_id.in_(store_ids))
+        else:
+            stmt = stmt.where(m.SalesInvoice.id.is_(None))
     stmt = apply_created_by_scope(stmt, m.SalesInvoice, claims)
     rows = (await db.execute(stmt)).scalars().all()
     buf = io.StringIO()
@@ -165,6 +176,8 @@ async def export_purchase_invoices_csv(
         else:
             stmt = stmt.where(m.PurchaseInvoice.status == key)
     stmt = apply_created_by_scope(stmt, m.PurchaseInvoice, claims)
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    stmt = dashboard_scope_svc.apply_purchase_invoice_warehouse_scope(stmt, managed_wh)
     rows = (await db.execute(stmt)).scalars().all()
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=PURCHASE_INVOICE_EXPORT_COLUMNS)
@@ -181,6 +194,7 @@ async def export_stock_transfers_csv(
     tenant_id: str,
     status: str | None = None,
     store_id: str | None = None,
+    store_ids: list[str] | None = None,
     scope: str = "all",
     company_id: str | None = None,
 ) -> str:
@@ -195,6 +209,7 @@ async def export_stock_transfers_csv(
         tenant_id,
         status=status_n,
         store_id=store_id,
+        store_ids=store_ids,
         scope=scope or "all",
         limit=500,
         company_id=company_id,

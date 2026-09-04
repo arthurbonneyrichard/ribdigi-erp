@@ -86,7 +86,7 @@ async def test_deposit_withdrawal_and_transfer_move_balances(client, db_session)
     headers = await _super(ac, seed)
     tenant_id = seed["t1"].id
 
-    await ensure_default_accounts(db_session, tenant_id)
+    await ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
     await db_session.commit()
 
     seed_je = await ac.post(
@@ -189,7 +189,7 @@ async def test_liquid_transfer_rejects_non_liquid(client, db_session):
     ac, seed = client
     headers = await _super(ac, seed)
     tenant_id = seed["t1"].id
-    await ensure_default_accounts(db_session, tenant_id)
+    await ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
     await db_session.commit()
 
     expense = (

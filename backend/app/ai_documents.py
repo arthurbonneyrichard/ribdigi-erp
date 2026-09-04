@@ -19,9 +19,94 @@ from app import storage as storage_svc
 from app.ai_expenses import suggest_category_from_text
 from app.reports import apply_company_filter
 
+POSTED_INVOICE_STATUSES = frozenset({"posted", "sent", "partial", "paid", "overdue"})
+
 
 def _norm(text: str | None) -> str:
     return re.sub(r"\s+", " ", (text or "").strip().lower())
+
+
+async def _allowed_customer_ids(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    company_id: str | None,
+    store_ids: list[str],
+) -> list[str]:
+    if not store_ids:
+        return []
+    stmt = select(m.SalesInvoice.customer_id).where(
+        m.SalesInvoice.tenant_id == tenant_id,
+        m.SalesInvoice.store_id.in_(store_ids),
+        m.SalesInvoice.customer_id.is_not(None),
+        m.SalesInvoice.status.in_(list(POSTED_INVOICE_STATUSES)),
+    )
+    stmt = apply_company_filter(stmt, m.SalesInvoice.company_id, company_id)
+    rows = (await db.execute(stmt)).scalars().all()
+    return [str(cid) for cid in rows if cid]
+
+
+async def _allowed_supplier_ids(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    company_id: str | None,
+    warehouse_ids: list[str],
+) -> list[str]:
+    """Suppliers seen on managed-warehouse POs / GRNs / purchase invoices."""
+    if not warehouse_ids:
+        return []
+    ids: set[str] = set()
+    for model in (m.PurchaseOrder, m.GoodsReceipt, m.PurchaseInvoice):
+        if not hasattr(model, "supplier_id") or not hasattr(model, "warehouse_id"):
+            continue
+        stmt = select(model.supplier_id).where(
+            model.tenant_id == tenant_id,
+            model.warehouse_id.in_(warehouse_ids),
+            model.supplier_id.is_not(None),
+        )
+        stmt = apply_company_filter(stmt, model.company_id, company_id)
+        for sid in (await db.execute(stmt)).scalars().all():
+            if sid:
+                ids.add(str(sid))
+    return list(ids)
+
+
+async def _allowed_product_ids(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    company_id: str | None,
+    store_ids: list[str],
+    warehouse_ids: list[str],
+) -> list[str]:
+    """Products with managed WarehouseStock or sold on managed-store invoices."""
+    ids: set[str] = set()
+    if warehouse_ids:
+        ws_stmt = select(m.WarehouseStock.product_id).where(
+            m.WarehouseStock.tenant_id == tenant_id,
+            m.WarehouseStock.warehouse_id.in_(warehouse_ids),
+        )
+        ws_stmt = apply_company_filter(ws_stmt, m.WarehouseStock.company_id, company_id)
+        for pid in (await db.execute(ws_stmt)).scalars().all():
+            if pid:
+                ids.add(str(pid))
+    if store_ids:
+        inv_stmt = (
+            select(m.SalesInvoiceItem.product_id)
+            .join(m.SalesInvoice, m.SalesInvoice.id == m.SalesInvoiceItem.sales_invoice_id)
+            .where(
+                m.SalesInvoice.tenant_id == tenant_id,
+                m.SalesInvoice.store_id.in_(store_ids),
+                m.SalesInvoice.status.in_(list(POSTED_INVOICE_STATUSES)),
+                m.SalesInvoiceItem.tenant_id == tenant_id,
+            )
+        )
+        inv_stmt = apply_company_filter(inv_stmt, m.SalesInvoice.company_id, company_id)
+        for pid in (await db.execute(inv_stmt)).scalars().all():
+            if pid:
+                ids.add(str(pid))
+    return list(ids)
 
 
 async def _match_party(
@@ -31,17 +116,22 @@ async def _match_party(
     kind: str,
     payee: str | None,
     company_id: str | None = None,
+    party_ids: list[str] | None = None,
 ) -> dict | None:
     if not payee:
         return None
     needle = _norm(payee)
     if len(needle) < 2:
         return None
+    if party_ids is not None and not party_ids:
+        return None
     stmt = select(m.Party).where(
         m.Party.tenant_id == tenant_id,
         m.Party.kind == kind,
     )
     stmt = apply_company_filter(stmt, m.Party.company_id, company_id)
+    if party_ids is not None:
+        stmt = stmt.where(m.Party.id.in_(party_ids))
     parties = (await db.execute(stmt)).scalars().all()
     exact = [p for p in parties if _norm(p.name) == needle]
     if exact:
@@ -59,12 +149,17 @@ async def _match_products(
     tenant_id: str,
     text: str,
     company_id: str | None = None,
+    product_ids: list[str] | None = None,
 ) -> list[dict]:
+    if product_ids is not None and not product_ids:
+        return []
     stmt = select(m.Product).where(
         m.Product.tenant_id == tenant_id,
         m.Product.is_active == True,  # noqa: E712
     )
     stmt = apply_company_filter(stmt, m.Product.company_id, company_id)
+    if product_ids is not None:
+        stmt = stmt.where(m.Product.id.in_(product_ids))
     products = (await db.execute(stmt)).scalars().all()
     hay = _norm(text)
     hits = []
@@ -91,7 +186,14 @@ async def analyze_document(
     upload: UploadFile,
     document_type: str = "receipt",
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
+    """OCR + match parties/products.
+
+    ``store_ids`` set = store_manager view: only match customers/suppliers/products
+    tied to managed stores/warehouses (fail-closed when empty).
+    """
     doc_type = (document_type or "receipt").strip().lower()
     if doc_type not in {"receipt", "expense", "invoice", "purchase_order", "purchase", "po"}:
         raise HTTPException(
@@ -117,7 +219,28 @@ async def analyze_document(
     warnings = list(ocr.get("warnings") or [])
     discrepancies: list[dict] = []
 
-    # Category suggestion for receipts/expenses
+    manager_scope = store_ids is not None
+    managed_stores = list(store_ids or []) if manager_scope else []
+    managed_wh = list(warehouse_ids or []) if manager_scope else []
+    supplier_ids: list[str] | None = None
+    customer_ids: list[str] | None = None
+    product_ids: list[str] | None = None
+    if manager_scope:
+        supplier_ids = await _allowed_supplier_ids(
+            db, tenant_id, company_id=company_id, warehouse_ids=managed_wh
+        )
+        customer_ids = await _allowed_customer_ids(
+            db, tenant_id, company_id=company_id, store_ids=managed_stores
+        )
+        product_ids = await _allowed_product_ids(
+            db,
+            tenant_id,
+            company_id=company_id,
+            store_ids=managed_stores,
+            warehouse_ids=managed_wh,
+        )
+
+    # Category suggestion for receipts/expenses (company-level catalog; same as budgets)
     cat_stmt = select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == tenant_id)
     cat_stmt = apply_company_filter(cat_stmt, m.ExpenseCategory.company_id, company_id)
     cats = (await db.execute(cat_stmt)).scalars().all()
@@ -140,7 +263,12 @@ async def analyze_document(
     matches: dict = {"party": None, "products": []}
     if doc_type in {"invoice", "purchase", "purchase_order", "po"}:
         matches["party"] = await _match_party(
-            db, tenant_id, kind="supplier", payee=fields.get("payee"), company_id=company_id
+            db,
+            tenant_id,
+            kind="supplier",
+            payee=fields.get("payee"),
+            company_id=company_id,
+            party_ids=supplier_ids,
         )
         if fields.get("payee") and not matches["party"]:
             discrepancies.append(
@@ -152,16 +280,30 @@ async def analyze_document(
             )
     else:
         matches["party"] = await _match_party(
-            db, tenant_id, kind="supplier", payee=fields.get("payee"), company_id=company_id
+            db,
+            tenant_id,
+            kind="supplier",
+            payee=fields.get("payee"),
+            company_id=company_id,
+            party_ids=supplier_ids,
         )
         # also try customer for credit notes / receipts from buyers — rare
         if not matches["party"]:
             matches["party"] = await _match_party(
-                db, tenant_id, kind="customer", payee=fields.get("payee"), company_id=company_id
+                db,
+                tenant_id,
+                kind="customer",
+                payee=fields.get("payee"),
+                company_id=company_id,
+                party_ids=customer_ids,
             )
 
     matches["products"] = await _match_products(
-        db, tenant_id, text_blob, company_id=company_id
+        db,
+        tenant_id,
+        text_blob,
+        company_id=company_id,
+        product_ids=product_ids,
     )
 
     if fields.get("amount") is None:
@@ -181,7 +323,7 @@ async def analyze_document(
             }
         )
 
-    return {
+    out = {
         "generated_at": datetime.utcnow(),
         "method": "rules_v1",
         "document_type": doc_type,
@@ -201,4 +343,6 @@ async def analyze_document(
             "Review extracted fields and matches, then create/update the related "
             "expense or purchase invoice manually — analysis is suggest-only."
         ),
+        "scope": "store_manager" if manager_scope else "company",
     }
+    return out

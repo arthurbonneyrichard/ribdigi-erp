@@ -59,7 +59,9 @@ export default function Page() {
       api(`/credit/aging?kind=${kind}`),
       api('/customers'),
       api('/suppliers'),
-      api('/credit/settings'),
+      api('/credit/settings').catch(() => ({
+        data: { early_pay_discount_pct: 0, early_pay_discount_days: 0, enabled: false },
+      })),
       api('/accounting/liquid-accounts').catch(() => ({ data: [] })),
       api('/credit/exchange-rates').catch(() => ({ data: { base_currency: 'GHS', rates: [] } })),
       api(payPath).catch(() => ({ data: [] })),

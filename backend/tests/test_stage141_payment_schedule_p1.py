@@ -27,7 +27,7 @@ async def test_payment_schedule_export_csv_and_bucket(client, db_session):
     ac, seed = client
     headers = await _super(ac, seed)
     tenant_id = seed["t1"].id
-    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+    await accounting_svc.ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
 
     supplier = m.Party(
         tenant_id=tenant_id,
@@ -42,6 +42,7 @@ async def test_payment_schedule_export_csv_and_bucket(client, db_session):
         [
             m.PurchaseInvoice(
                 tenant_id=tenant_id,
+                company_id=seed["c1"].id,
                 invoice_number="PI-141-OVER",
                 supplier_id=supplier.id,
                 status="unpaid",
@@ -56,6 +57,7 @@ async def test_payment_schedule_export_csv_and_bucket(client, db_session):
             ),
             m.PurchaseInvoice(
                 tenant_id=tenant_id,
+                company_id=seed["c1"].id,
                 invoice_number="PI-141-UP",
                 supplier_id=supplier.id,
                 status="unpaid",

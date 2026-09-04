@@ -35,6 +35,7 @@ async def test_customer_payments_list_and_export(client, db_session):
         [
             m.CustomerPayment(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 payment_number="CPAY-136-CASH",
                 customer_id=customer.id,
                 amount=50,
@@ -42,6 +43,7 @@ async def test_customer_payments_list_and_export(client, db_session):
             ),
             m.CustomerPayment(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 payment_number="CPAY-136-CARD",
                 customer_id=customer.id,
                 amount=75,

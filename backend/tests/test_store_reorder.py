@@ -17,6 +17,7 @@ async def test_store_reorder_policy_and_low_stock_report(db_session, seeded):
     tenant_id = seeded["t1"].id
     store = m.Store(
         tenant_id=tenant_id,
+        company_id=seeded["c1"].id,
         name="Downtown",
         code="DT",
         is_active=True,
@@ -25,6 +26,7 @@ async def test_store_reorder_policy_and_low_stock_report(db_session, seeded):
     await db_session.flush()
     wh = m.Warehouse(
         tenant_id=tenant_id,
+        company_id=seeded["c1"].id,
         store_id=store.id,
         name="Downtown WH",
         code="DT-WH",
@@ -72,13 +74,14 @@ async def test_fefo_strict_excludes_unassigned_batches(db_session, seeded):
     product.tracks_batches = True
     product.stock_qty = 10
 
-    wh = m.Warehouse(tenant_id=tenant_id, name="Strict WH", code="S-WH")
+    wh = m.Warehouse(tenant_id=tenant_id, company_id=seeded["c1"].id, name="Strict WH", code="S-WH")
     db_session.add(wh)
     await db_session.flush()
 
     # Unassigned batch (warehouse_id NULL) — ignored in strict mode
     unassigned = m.ProductBatch(
         tenant_id=tenant_id,
+        company_id=seeded["c1"].id,
         product_id=product.id,
         batch_number="UN-1",
         quantity=10,

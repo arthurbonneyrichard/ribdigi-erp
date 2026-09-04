@@ -80,6 +80,8 @@ export default function Page() {
   // Stage 163 V1 / S1 / Stage 165 R1 — offline devices + sync honesty + conflict resolve
   const [offlineDevices, setOfflineDevices] = useState<any[]>([]);
   const [syncStatus, setSyncStatus] = useState<any>(null);
+  const [offlineAlerts, setOfflineAlerts] = useState<any[]>([]);
+  const [offlineAlertSummary, setOfflineAlertSummary] = useState<any>(null);
   const [syncConflicts, setSyncConflicts] = useState<any[]>([]);
   const [deviceForm, setDeviceForm] = useState({ name: '', platform: 'web' });
   const [deviceBusy, setDeviceBusy] = useState(false);
@@ -92,14 +94,19 @@ export default function Page() {
 
   async function refreshOfflineSync() {
     try {
-      const [devicesRes, syncRes, conflictsRes] = await Promise.all([
+      const [devicesRes, syncRes, conflictsRes, alertsRes] = await Promise.all([
         api('/offline/devices').catch(() => null),
         api('/sync/status').catch(() => null),
         api('/sync/conflicts?status=open').catch(() => null),
+        api('/offline/alerts').catch(() => null),
       ]);
       if (devicesRes?.data) setOfflineDevices(devicesRes.data || []);
       if (syncRes?.data) setSyncStatus(syncRes.data);
       if (conflictsRes?.data) setSyncConflicts(conflictsRes.data || []);
+      if (alertsRes?.data) {
+        setOfflineAlerts(alertsRes.data.alerts || []);
+        setOfflineAlertSummary(alertsRes.data.summary || null);
+      }
     } catch {
       // Company admins only for devices; sync status is authenticated.
     }
@@ -146,9 +153,9 @@ export default function Page() {
           ? '?is_active=false'
           : '';
     const [r, e, s, me, st, br, dep, users] = await Promise.all([
-      api('/tenants/me'),
-      api('/settings/email'),
-      api('/settings/sms'),
+      api('/tenants/me').catch(() => ({ data: null })),
+      api('/settings/email').catch(() => ({ data: null })),
+      api('/settings/sms').catch(() => ({ data: null })),
       api('/me'),
       api('/settings/storage').catch(() => ({ data: null })),
       api(`/branches${branchQs}`).catch(() => ({ data: [] })),
@@ -991,6 +998,11 @@ export default function Page() {
                 headers: { Authorization: `Bearer ${token}` },
               });
               if (!res.ok) {
+                // Soft-fail store_manager STORE_SCOPE_DENIED (company document dump).
+                if (res.status === 403) {
+                  setMessage('Document settings export requires a company administrator.');
+                  return;
+                }
                 setError(await res.text());
                 return;
               }
@@ -1012,8 +1024,9 @@ export default function Page() {
         <h2>Offline sync</h2>
         <p className="muted">
           Stage 168: register/bind devices for IndexedDB queue flush and offline catalog pull (4h TTL).
-          Revoking a device blocks flush and retains pending queue ops (not auto-applied). Conflict
-          accept_client never double-posts applied POS. Offline Complete remains deferred.
+          Revoke soft-locks the device (expires server auth envelope, blocks sync/rebind) and retains
+          pending queue ops (not auto-applied). Conflict accept_client never double-posts applied POS.
+          Remote IndexedDB wipe and Offline Complete remain deferred.
         </p>
         {syncStatus ? (
           <div
@@ -1035,6 +1048,52 @@ export default function Page() {
             </p>
           </div>
         ) : null}
+        {offlineAlerts.length > 0 ? (
+          <div
+            className="card"
+            style={{ marginBottom: 12, padding: 12, borderLeft: '4px solid #f59e0b' }}
+          >
+            <h3 style={{ marginTop: 0 }}>Owner offline alerts</h3>
+            <p className="muted" style={{ marginTop: 0 }}>
+              In-app list plus optional security-email notify for critical alerts. Push delivery
+              and Offline Complete remain deferred.
+              {offlineAlertSummary
+                ? ` · ${offlineAlertSummary.critical ?? 0} critical · ${offlineAlertSummary.warning ?? 0} warning`
+                : ''}
+            </p>
+            <ul style={{ marginBottom: 8, paddingLeft: 20 }}>
+              {offlineAlerts.map((a, idx) => (
+                <li key={`${a.code}-${a.device_id || idx}`}>
+                  <strong>{String(a.severity || 'info').toUpperCase()}</strong> — {a.message}
+                </li>
+              ))}
+            </ul>
+            {(offlineAlertSummary?.critical ?? 0) > 0 ? (
+              <button
+                type="button"
+                disabled={deviceBusy}
+                onClick={async () => {
+                  setError('');
+                  setDeviceBusy(true);
+                  try {
+                    const r = await api('/offline/alerts/notify', { method: 'POST' });
+                    setMessage(
+                      r.data?.message ||
+                        `Notified ${r.data?.notifications_created ?? 0} critical offline alert(s)`,
+                    );
+                    await refreshOfflineSync();
+                  } catch (err: any) {
+                    setError(err.message || 'Offline alert notify failed');
+                  } finally {
+                    setDeviceBusy(false);
+                  }
+                }}
+              >
+                Email critical alerts
+              </button>
+            ) : null}
+          </div>
+        ) : null}
         <div
           style={{
             marginBottom: 12,
@@ -1046,8 +1105,8 @@ export default function Page() {
           <h3 style={{ marginTop: 0 }}>Local recovery export</h3>
           <p className="muted" style={{ marginBottom: 8 }}>
             Download this browser&apos;s IndexedDB offline queue + device/envelope metadata as JSON.
-            Export never clears pending ops. No passwords or tokens are included. Owner alerts and
-            Offline Complete remain deferred.
+            Export never clears pending ops. No passwords or tokens are included. Soft lockdown
+            and critical email notify are PARTIAL; push and Offline Complete remain deferred.
           </p>
           <button
             type="button"
@@ -1297,9 +1356,9 @@ export default function Page() {
                               const pending = r.data?.pending_queue?.pending_total ?? 0;
                               setMessage(
                                 pending > 0
-                                  ? `Offline device revoked — ${pending} pending queue op(s) retained (not auto-applied; flush blocked)`
+                                  ? `Offline device soft-locked — envelope expired; ${pending} pending queue op(s) retained (flush blocked)`
                                   : r.data?.message ||
-                                      'Offline device revoked (soft revoke; no pending queue ops)',
+                                      'Offline device soft-locked (envelope expired; queue empty)',
                               );
                               await refreshOfflineSync();
                             } catch (err: any) {
