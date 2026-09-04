@@ -329,7 +329,8 @@ async def test_purchasing_docs_own_scope_hides_others_records(client, db_session
     assert inv_list.status_code == 200
     assert foreign_inv.id not in {row["id"] for row in inv_list.json()["data"]}
 
-    # Approvals intentionally bypass own-scope (creator is admin1, not mgr)
+    # Approvals intentionally bypass own-scope for record visibility, but store-manager
+    # warehouse scope still applies — use admin for the approve mutation.
     await purchasing_svc.submit_purchase_request(
         db_session,
         tenant_id=seed["t1"].id,
@@ -339,7 +340,7 @@ async def test_purchasing_docs_own_scope_hides_others_records(client, db_session
     await db_session.commit()
     approved = await ac.post(
         f"/api/v1/purchasing/requests/{foreign_pr.id}/approve",
-        headers=mgr,
+        headers=admin,
     )
     assert approved.status_code == 200, approved.text
     assert approved.json()["data"]["status"] == "approved"
