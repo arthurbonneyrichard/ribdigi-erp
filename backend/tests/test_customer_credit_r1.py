@@ -13,14 +13,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 async def _mgr(ac, seed=None):
-    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
-    if seed is None:
-        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
-        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
-    code = pyotp.TOTP(seed["super_totp_secret"]).now()
-    return await auth_headers(
-        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
-    )
+    """Store manager actor for store-scoped credit statement assertions."""
+    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
 
 
 async def _super(ac, seed):

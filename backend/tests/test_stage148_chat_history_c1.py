@@ -14,11 +14,7 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
-async def _mgr(ac, seed=None):
-    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
-    if seed is None:
-        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
-        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+async def _super(ac, seed):
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
     return await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
@@ -28,12 +24,12 @@ async def _mgr(ac, seed=None):
 @pytest.mark.asyncio
 async def test_chat_history_export_csv(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac, seed)
-    mgr = seed["mgr1"]
+    headers = await _super(ac, seed)
     db_session.add(
         m.AiQuery(
             tenant_id=seed["t1"].id,
-            user_id=mgr.id,
+            company_id=seed["c1"].id,
+            user_id=seed["super"].id,
             message="What is my top selling product?",
             answer="Alpha Widget leads posted sales this month.",
             intent="top_product",

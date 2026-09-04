@@ -3865,9 +3865,8 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
         tid,
         role=role,
         user_id=claims.get("sub") if managed_ids is not None else None,
+        company_id=cid,
     )
-    if cid:
-        dash_key = f"{dash_key}:co:{cid}"
     cached = await cache_svc.app_cache.get_json(dash_key)
     if cached is not None:
         return env(cached)
@@ -4627,9 +4626,7 @@ async def products(
     managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     use_cache = not active_only and is_active is None and managed_wh is None
     if use_cache:
-        products_key = cache_svc.app_cache.products_key(tid)
-        if cid:
-            products_key = f"{products_key}:co:{cid}"
+        products_key = cache_svc.app_cache.products_key(tid, company_id=cid)
         cached = await cache_svc.app_cache.get_json(products_key)
         if cached is not None:
             return env(cached)
@@ -4775,7 +4772,7 @@ async def products_import(
             },
         )
         await db.commit()
-        await cache_svc.app_cache.invalidate_tenant(claims["tenant_id"])
+        await cache_svc.app_cache.invalidate_tenant(claims["tenant_id"], company_id=claims.get("company_id"))
     elif not dry_run:
         await db.commit()
     return env(
@@ -4937,7 +4934,7 @@ async def add_product(
     )
     await db.commit()
     await db.refresh(product)
-    await cache_svc.app_cache.invalidate_tenant(claims["tenant_id"])
+    await cache_svc.app_cache.invalidate_tenant(claims["tenant_id"], company_id=claims.get("company_id"))
     return env(catalog_meta_svc.serialize_product(product), "Product created")
 
 
@@ -5107,7 +5104,7 @@ async def patch_product(
     )
     await db.commit()
     await db.refresh(product)
-    await cache_svc.app_cache.invalidate_tenant(claims["tenant_id"])
+    await cache_svc.app_cache.invalidate_tenant(claims["tenant_id"], company_id=claims.get("company_id"))
     return env(catalog_meta_svc.serialize_product(product), "Product updated")
 
 
@@ -8512,7 +8509,7 @@ async def post_sales_invoice(
         },
     )
     await db.commit()
-    await cache_svc.app_cache.invalidate_tenant(claims["tenant_id"])
+    await cache_svc.app_cache.invalidate_tenant(claims["tenant_id"], company_id=claims.get("company_id"))
     return env(await sales_svc.serialize_invoice(db, invoice), "Invoice posted; stock and AR updated")
 
 

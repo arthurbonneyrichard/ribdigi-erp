@@ -400,7 +400,13 @@ async def list_notifications(
 ) -> list[m.Notification]:
     stmt = select(m.Notification).where(m.Notification.tenant_id == tenant_id)
     if company_id:
-        stmt = stmt.where(m.Notification.company_id == company_id)
+        # Tenant-wide (company_id NULL) system alerts remain visible in company workspace.
+        stmt = stmt.where(
+            or_(
+                m.Notification.company_id == company_id,
+                m.Notification.company_id.is_(None),
+            )
+        )
     if user_id:
         if managed_store_ids is not None:
             personal = m.Notification.user_id == user_id

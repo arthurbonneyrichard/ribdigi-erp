@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pyotp
 import pytest
+from sqlalchemy import select
 
 from app import models as m
 from app.expenses import create_expense, ensure_default_categories
@@ -220,7 +221,7 @@ async def test_department_record_scope_peer_visibility(client, db_session):
 
     from sqlalchemy import select
 
-    await ensure_default_categories(db_session, seed["t1"].id)
+    await ensure_default_categories(db_session, seed["t1"].id, company_id=seed["c1"].id)
     cats = (
         await db_session.execute(
             select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == seed["t1"].id)
@@ -230,6 +231,7 @@ async def test_department_record_scope_peer_visibility(client, db_session):
     e1 = await create_expense(
         db_session,
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         user_id=u1.json()["data"]["id"],
         amount=5,
         description="Dept A expense 1",
@@ -239,6 +241,7 @@ async def test_department_record_scope_peer_visibility(client, db_session):
     e2 = await create_expense(
         db_session,
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         user_id=u2.json()["data"]["id"],
         amount=6,
         description="Dept A expense 2",
@@ -248,12 +251,20 @@ async def test_department_record_scope_peer_visibility(client, db_session):
     e3 = await create_expense(
         db_session,
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         user_id=u3.json()["data"]["id"],
         amount=7,
         description="Dept B expense",
         category_id=cats[0].id if cats else None,
         payment_method="cash",
     )
+    await db_session.commit()
+
+    # API-created users start unverified; mark verified for login in this scope test.
+    for row in (
+        await db_session.execute(select(m.User).where(m.User.email == "clerk1@alpha.example.com"))
+    ).scalars():
+        row.email_verified = True
     await db_session.commit()
 
     login = await ac.post(
@@ -344,7 +355,7 @@ async def test_branch_record_scope_peer_visibility(client, db_session):
 
     from sqlalchemy import select
 
-    await ensure_default_categories(db_session, seed["t1"].id)
+    await ensure_default_categories(db_session, seed["t1"].id, company_id=seed["c1"].id)
     cats = (
         await db_session.execute(
             select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == seed["t1"].id)
@@ -354,6 +365,7 @@ async def test_branch_record_scope_peer_visibility(client, db_session):
     e_east = await create_expense(
         db_session,
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         user_id=u_east.json()["data"]["id"],
         amount=8,
         description="East branch expense",
@@ -363,12 +375,20 @@ async def test_branch_record_scope_peer_visibility(client, db_session):
     e_west = await create_expense(
         db_session,
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         user_id=u_west.json()["data"]["id"],
         amount=9,
         description="West branch expense",
         category_id=cats[0].id if cats else None,
         payment_method="cash",
     )
+    await db_session.commit()
+
+    # API-created users start unverified; mark verified for login in this scope test.
+    for row in (
+        await db_session.execute(select(m.User).where(m.User.email == "east@alpha.example.com"))
+    ).scalars():
+        row.email_verified = True
     await db_session.commit()
 
     login = await ac.post(

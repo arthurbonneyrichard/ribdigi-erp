@@ -63,6 +63,7 @@ async def test_dashboard_kpis_alerts_and_charts_fidelity(client, db_session):
         [
             m.Transaction(
                 tenant_id=tid,
+                company_id=seed["c1"].id,
                 tx_type="pos_sale",
                 reference="V1-TODAY",
                 total=50,
@@ -73,6 +74,7 @@ async def test_dashboard_kpis_alerts_and_charts_fidelity(client, db_session):
             ),
             m.Transaction(
                 tenant_id=tid,
+                company_id=seed["c1"].id,
                 tx_type="pos_sale",
                 reference="V1-YDAY",
                 total=25,
@@ -83,6 +85,7 @@ async def test_dashboard_kpis_alerts_and_charts_fidelity(client, db_session):
             ),
             m.Transaction(
                 tenant_id=tid,
+                company_id=seed["c1"].id,
                 tx_type="pos_sale",
                 reference="V1-PRIOR-M",
                 total=40,
@@ -93,6 +96,7 @@ async def test_dashboard_kpis_alerts_and_charts_fidelity(client, db_session):
             ),
             m.Expense(
                 tenant_id=tid,
+                company_id=seed["c1"].id,
                 category="General",
                 amount=12,
                 description="V1 expense",
@@ -104,6 +108,7 @@ async def test_dashboard_kpis_alerts_and_charts_fidelity(client, db_session):
     )
     inv = m.SalesInvoice(
         tenant_id=tid,
+        company_id=seed["c1"].id,
         invoice_number="INV-V1-1",
         customer_id=seed["party1"].id,
         status="posted",

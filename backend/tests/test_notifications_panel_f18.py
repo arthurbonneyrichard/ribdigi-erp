@@ -26,14 +26,12 @@ async def test_notifications_group_filter_mark_unread_and_history_window(client,
     ac, seed = client
     tid = seed["t1"].id
     uid = seed["mgr1"].id
-    code = pyotp.TOTP(seed['super_totp_secret']).now()
-    headers = await auth_headers(
-        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
-    )
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
 
     stock = await create_notification(
         db_session,
         tenant_id=tid,
+        company_id=seed["c1"].id,
         user_id=uid,
         category="low_stock",
         title="Low Stock Alert",
@@ -42,6 +40,7 @@ async def test_notifications_group_filter_mark_unread_and_history_window(client,
     pay = await create_notification(
         db_session,
         tenant_id=tid,
+        company_id=seed["c1"].id,
         user_id=uid,
         category="payment_due",
         title="Payment Due",
@@ -49,6 +48,7 @@ async def test_notifications_group_filter_mark_unread_and_history_window(client,
     )
     old = m.Notification(
         tenant_id=tid,
+        company_id=seed["c1"].id,
         user_id=uid,
         category="system",
         title="Ancient",

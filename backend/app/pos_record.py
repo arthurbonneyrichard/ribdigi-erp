@@ -439,7 +439,7 @@ async def record_pos_sale(
         payload_out["offline_receipt_number"] = offline_receipt_number
     if commit:
         await db.commit()
-        await cache_svc.app_cache.invalidate_tenant(claims["tenant_id"])
+        await cache_svc.app_cache.invalidate_tenant(claims["tenant_id"], company_id=claims.get("company_id"))
     else:
         await db.flush()
     return payload_out

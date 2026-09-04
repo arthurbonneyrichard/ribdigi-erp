@@ -31,7 +31,7 @@ async def test_store_sales_summary_and_isolation(client, db_session):
     )
     foreign = await create_store(
         db_session, tenant_id=seed["t2"].id,
-                company_id=seed["c1"].id, code="FX1", name="Foreign Store",
+                company_id=seed["c2"].id, code="FX1", name="Foreign Store",
     )
     await db_session.flush()
 

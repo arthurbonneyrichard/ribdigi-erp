@@ -45,12 +45,13 @@ def test_assert_record_access_own_hides_foreign():
 async def test_expense_own_scope_hides_others_records(client, db_session):
     ac, seed = client
     admin = await _admin_headers(ac, seed)
-    await ensure_default_categories(db_session, seed["t1"].id)
+    await ensure_default_categories(db_session, seed["t1"].id, company_id=seed["c1"].id)
     await db_session.commit()
 
     foreign = await create_expense(
         db_session,
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         user_id=seed["admin1"].id,
         amount=40,
         description="Admin expense",
@@ -68,10 +69,7 @@ async def test_expense_own_scope_hides_others_records(client, db_session):
     assert patched.status_code == 200, patched.text
     assert patched.json()["data"]["record_scope"] == "own"
 
-    _totp = pyotp.TOTP(seed['super_totp_secret']).now()
-    mgr = await auth_headers(
-        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=_totp
-    )
+    mgr = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
     missing = await ac.get(f"/api/v1/expenses/{foreign.id}", headers=mgr)
     # store_manager scope deny (403) may precede tenant-isolation 404
     assert missing.status_code in (403, 404), missing.text
@@ -176,10 +174,7 @@ async def test_sales_docs_own_scope_hides_others_records(client, db_session):
     db_session.add(store)
     await db_session.commit()
 
-    _totp = pyotp.TOTP(seed['super_totp_secret']).now()
-    mgr = await auth_headers(
-        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=_totp
-    )
+    mgr = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
 
     assert (await ac.get(f"/api/v1/sales/quotations/{foreign_quote.id}", headers=mgr)).status_code == 404
     assert (await ac.get(f"/api/v1/sales/orders/{foreign_order.id}", headers=mgr)).status_code == 404
@@ -279,10 +274,7 @@ async def test_purchasing_docs_own_scope_hides_others_records(client, db_session
         json={"record_scope": "own"},
     )
     assert patched.status_code == 200, patched.text
-    _totp = pyotp.TOTP(seed['super_totp_secret']).now()
-    mgr = await auth_headers(
-        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=_totp
-    )
+    mgr = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
 
     assert (await ac.get(f"/api/v1/purchasing/requests/{foreign_pr.id}", headers=mgr)).status_code == 404
     assert (await ac.get(f"/api/v1/purchasing/orders/{foreign_po.id}", headers=mgr)).status_code == 404

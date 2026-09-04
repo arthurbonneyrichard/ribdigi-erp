@@ -21,11 +21,11 @@ async def _super(ac, seed):
     )
 
 
-async def _post_dated(db, *, tenant_id, user_id, when: datetime, store_id=None, **kwargs):
+async def _post_dated(db, *, tenant_id, user_id, when: datetime, store_id=None, company_id=None, **kwargs):
     entry = await accounting_svc.post_journal_entry(
         db,
         tenant_id=tenant_id,
-        company_id=seed["c1"].id,
+        company_id=company_id,
         user_id=user_id,
         store_id=store_id,
         **kwargs,
