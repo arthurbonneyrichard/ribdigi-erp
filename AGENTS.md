@@ -163,6 +163,7 @@ store activation — never frontend-only.
    and **company profile/logo branding writes denied for store_manager** (even when
    companies write is granted; company GET remains when permitted),
    and **business-insights settings GET/PUT + formulas GET denied for store_manager** (overview/attention embeds + health weights redacted)
+   + **BI overview profit COGS / stock_value / expiry value_at_risk redacted** (revenue/expenses/qty remain; engine still uses cost server-side)
    (company-level BI thresholds/formulas; GET settings/formulas + acknowledge/dismiss remain),
    and **purchasing PR approval settings PATCH denied for store_manager**
    (company-level approval matrix; GET/export remain; admin allowlist retained),

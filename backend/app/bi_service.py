@@ -26,7 +26,9 @@ from app.dashboard_scope import (
     assert_bi_insight_in_manager_scope,
     managed_store_ids,
     omit_bi_company_config,
+    omit_bi_cost_fields,
     redact_bi_company_config,
+    redact_bi_cost_fields,
 )
 from app.notifications import create_notification
 from app.rbac import has_permission
@@ -303,6 +305,9 @@ class BusinessIntelligenceService:
         # Dedicated /settings + /formulas already denied; do not re-dump via overview.
         if omit_bi_company_config(metrics.store_ids):
             bundle = redact_bi_company_config(bundle)
+        # Catalog/inventory cost already redacted; do not re-dump COGS via BI overview.
+        if omit_bi_cost_fields(metrics.store_ids):
+            bundle = redact_bi_cost_fields(bundle)
         return bundle
 
     async def _persist_important(self, insights: list[dict]) -> None:

@@ -3062,6 +3062,118 @@ def redact_bi_company_config(payload: dict) -> dict:
     return out
 
 
+
+def omit_bi_cost_fields(store_ids: list[str] | None) -> bool:
+    """True when store_manager must omit BI COGS / stock valuation fields.
+
+    Catalog ``cost_price`` + inventory report cost already redacted; overview
+    profit ``cogs`` / ``gross_profit`` / ``net_profit``, inventory ``stock_value``,
+    and expiry ``value_at_risk`` (plus batch ``value``) must not re-dump company
+    COGS. Revenue/expenses/qty counts remain; engine still uses cost server-side
+    for health scoring before redaction.
+    """
+    return store_ids is not None
+
+
+def _redact_bi_profit_period(period: dict) -> dict:
+    out = dict(period)
+    for key in ("cogs", "gross_profit", "gross_margin_pct", "net_profit"):
+        if key in out:
+            out[key] = None
+    return out
+
+
+def _redact_bi_expiry_batch_rows(rows) -> list:
+    if not isinstance(rows, list):
+        return rows
+    redacted: list = []
+    for row in rows:
+        if not isinstance(row, dict):
+            redacted.append(row)
+            continue
+        item = dict(row)
+        if "value" in item:
+            item["value"] = None
+        redacted.append(item)
+    return redacted
+
+
+def _redact_bi_insight_cost_message(item: dict) -> dict:
+    """Drop monetary value-at-risk from expiry insight messages."""
+    out = dict(item)
+    msg = out.get("message")
+    if isinstance(msg, str) and "value at risk" in msg.lower():
+        parts = [p.strip() for p in msg.split(";") if p.strip()]
+        kept = [p for p in parts if "value at risk" not in p.lower()]
+        if kept:
+            out["message"] = "; ".join(kept)
+            if not out["message"].endswith("."):
+                out["message"] += "."
+        else:
+            out["message"] = "Expired or near-expiry stock requires attention."
+    return out
+
+
+def redact_bi_cost_fields(payload: dict) -> dict:
+    """Null BI profit COGS / stock_value / expiry value fields on overview bundles."""
+    out = dict(payload)
+
+    inv = out.get("inventory")
+    if isinstance(inv, dict) and "stock_value" in inv:
+        inventory = dict(inv)
+        inventory["stock_value"] = None
+        out["inventory"] = inventory
+
+    profit = out.get("profit")
+    if isinstance(profit, dict) and profit.get("restricted") is not True:
+        p = dict(profit)
+        if isinstance(p.get("current"), dict):
+            p["current"] = _redact_bi_profit_period(p["current"])
+        if isinstance(p.get("prior"), dict):
+            p["prior"] = _redact_bi_profit_period(p["prior"])
+        for key in (
+            "gross_profit_change_pct",
+            "net_profit_change_pct",
+            "cost_data_incomplete",
+            "formula",
+            "data_source",
+        ):
+            if key in p:
+                p[key] = None
+        out["profit"] = p
+
+    expiry = out.get("expiry")
+    if isinstance(expiry, dict):
+        e = dict(expiry)
+        if "value_at_risk" in e:
+            e["value_at_risk"] = None
+        if "expired" in e:
+            e["expired"] = _redact_bi_expiry_batch_rows(e.get("expired"))
+        windows = e.get("windows")
+        if isinstance(windows, dict):
+            redacted_windows = {}
+            for w, payload_w in windows.items():
+                if not isinstance(payload_w, dict):
+                    redacted_windows[w] = payload_w
+                    continue
+                win = dict(payload_w)
+                if "batches" in win:
+                    win["batches"] = _redact_bi_expiry_batch_rows(win.get("batches"))
+                redacted_windows[w] = win
+            e["windows"] = redacted_windows
+        out["expiry"] = e
+
+    for list_key in ("attention", "insights", "opportunities"):
+        rows = out.get(list_key)
+        if isinstance(rows, list):
+            out[list_key] = [
+                _redact_bi_insight_cost_message(row) if isinstance(row, dict) else row
+                for row in rows
+            ]
+
+    return out
+
+
 async def assert_bi_insight_in_manager_scope(
     db: AsyncSession,
     claims: dict,

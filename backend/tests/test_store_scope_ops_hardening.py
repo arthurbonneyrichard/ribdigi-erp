@@ -12453,6 +12453,160 @@ async def test_store_manager_bi_overview_settings_formulas_redacted(client, db_s
 
 
 @pytest.mark.asyncio
+async def test_store_manager_bi_cost_fields_redacted(client, db_session):
+    """BI overview profit COGS / stock_value / expiry value_at_risk redacted for store_manager."""
+    from datetime import timedelta
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    party = seed["party1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="BI Cost Redact Store",
+        code="BI-COST-R",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(mine)
+    await db_session.flush()
+
+    product = m.Product(
+        tenant_id=tid,
+        company_id=cid,
+        name="BI Cost SKU",
+        sku="BI-COST-SKU",
+        selling_price=20.0,
+        cost_price=8.5,
+        stock_qty=12.0,
+        is_active=True,
+    )
+    db_session.add(product)
+    await db_session.flush()
+
+    db_session.add(
+        m.ProductBatch(
+            tenant_id=tid,
+            company_id=cid,
+            product_id=product.id,
+            batch_number="BI-COST-BAT",
+            quantity=4.0,
+            expiry_date=datetime.utcnow() - timedelta(days=2),
+        )
+    )
+
+    inv = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        customer_id=party.id,
+        invoice_number="BI-COST-INV-1",
+        status="posted",
+        subtotal=40.0,
+        tax_amount=0.0,
+        total_amount=40.0,
+        posted_at=datetime.utcnow() - timedelta(days=1),
+        created_at=datetime.utcnow() - timedelta(days=1),
+    )
+    db_session.add(inv)
+    await db_session.flush()
+    db_session.add(
+        m.SalesInvoiceItem(
+            tenant_id=tid,
+            company_id=cid,
+            sales_invoice_id=inv.id,
+            product_id=product.id,
+            quantity=2.0,
+            unit_price=20.0,
+            line_total=40.0,
+        )
+    )
+    await db_session.commit()
+
+    admin_ov = await ac.get("/api/v1/business-insights/overview", headers=admin_headers)
+    assert admin_ov.status_code == 200, admin_ov.text
+    admin_body = admin_ov.json()
+    admin_inv = admin_body.get("inventory") or {}
+    assert admin_inv.get("stock_value") is not None
+    assert float(admin_inv.get("stock_value") or 0) > 0
+    admin_profit = admin_body.get("profit") or {}
+    assert admin_profit.get("restricted") is not True
+    admin_cur = admin_profit.get("current") or {}
+    assert admin_cur.get("cogs") is not None
+    assert float(admin_cur.get("cogs") or 0) > 0
+    admin_expiry = admin_body.get("expiry") or {}
+    assert admin_expiry.get("value_at_risk") is not None
+    assert float(admin_expiry.get("value_at_risk") or 0) > 0
+
+    mgr_ov = await ac.get("/api/v1/business-insights/overview", headers=headers)
+    assert mgr_ov.status_code == 200, mgr_ov.text
+    mgr_body = mgr_ov.json()
+    mgr_inv = mgr_body.get("inventory") or {}
+    assert "stock_value" in mgr_inv
+    assert mgr_inv.get("stock_value") is None
+    assert mgr_inv.get("product_count") is not None
+
+    mgr_profit = mgr_body.get("profit") or {}
+    assert mgr_profit.get("restricted") is not True
+    mgr_cur = mgr_profit.get("current") or {}
+    assert mgr_cur.get("cogs") is None
+    assert mgr_cur.get("gross_profit") is None
+    assert mgr_cur.get("gross_margin_pct") is None
+    assert mgr_cur.get("net_profit") is None
+    assert "revenue" in mgr_cur
+    assert "expenses" in mgr_cur
+    assert mgr_profit.get("formula") is None
+    assert mgr_profit.get("data_source") is None
+    assert mgr_profit.get("gross_profit_change_pct") is None
+    assert mgr_profit.get("net_profit_change_pct") is None
+    assert mgr_profit.get("cost_data_incomplete") is None
+
+    mgr_expiry = mgr_body.get("expiry") or {}
+    assert "value_at_risk" in mgr_expiry
+    assert mgr_expiry.get("value_at_risk") is None
+    assert mgr_expiry.get("qty_at_risk") is not None or mgr_expiry.get("expired_count") is not None
+    for row in mgr_expiry.get("expired") or []:
+        if isinstance(row, dict) and "value" in row:
+            assert row.get("value") is None
+
+    for item in mgr_body.get("attention") or []:
+        if isinstance(item, dict):
+            msg = (item.get("message") or "").lower()
+            assert "value at risk" not in msg
+
+    mgr_att = await ac.get("/api/v1/business-insights/attention", headers=headers)
+    assert mgr_att.status_code == 200, mgr_att.text
+    for item in mgr_att.json().get("items") or []:
+        if isinstance(item, dict):
+            msg = (item.get("message") or "").lower()
+            assert "value at risk" not in msg
+
+    # Dedicated inventory/profit slices also go through build_bundle redaction.
+    mgr_inv_ep = await ac.get("/api/v1/business-insights/inventory", headers=headers)
+    assert mgr_inv_ep.status_code == 200, mgr_inv_ep.text
+    inv_ep = mgr_inv_ep.json()
+    assert (inv_ep.get("inventory") or {}).get("stock_value") is None
+    assert (inv_ep.get("expiry") or {}).get("value_at_risk") is None
+
+    mgr_profit_ep = await ac.get("/api/v1/business-insights/profit", headers=headers)
+    assert mgr_profit_ep.status_code == 200, mgr_profit_ep.text
+    profit_ep = (mgr_profit_ep.json().get("profit") or {}).get("current") or {}
+    assert profit_ep.get("cogs") is None
+    assert profit_ep.get("gross_profit") is None
+    assert "revenue" in profit_ep
+
+
+@pytest.mark.asyncio
 async def test_store_manager_purchasing_settings_write_denied(client, db_session):
     """Purchasing PR approval settings GET/PATCH/export denied for store_manager."""
     ac, seed = client
