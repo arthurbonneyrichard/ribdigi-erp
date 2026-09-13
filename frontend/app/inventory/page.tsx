@@ -2014,8 +2014,7 @@ export default function Page() {
           <p className="muted" style={{ marginBottom: 8 }}>
             Filter via <code>variant_active</code> → <code>GET /products/&#123;id&#125;/variants?is_active=</code>{' '}
             (Stage 124 V1). Admin path-scoped export via{' '}
-            <code>{'GET /products/{id}/variants/export'}</code> (Stage 156 V1; store_manager path
-            variants CSV dump denied); tenant roster{' '}
+            <code>{'GET /products/{id}/variants/export'}</code> (Stage 156 V1; store_manager path variants CSV dump denied); tenant roster{' '}
             <code>/products/variants/export</code> (Stage 124 X1; also denied for store_manager).
             Variants list/get remain for POS/sales.
           </p>
