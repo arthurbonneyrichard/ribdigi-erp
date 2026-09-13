@@ -1659,6 +1659,62 @@ def redact_expense_department_assignment(payload: dict) -> dict:
     return out
 
 
+def omit_expense_category_assignment(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit expense ``category_id`` on JSON.
+
+    Expense categories list/export already denied (company budget master dump).
+    Expense + recurring list/get/patch/OCR/AI embeds must not re-dump the company
+    expense↔category master FK. Free-text ``category`` name, amount, store, and
+    status remain for managed-store ops. Budget row identity (id/code/account)
+    is redacted via ``redact_expense_budget_limits``.
+    """
+    return managed_ids is not None
+
+
+def redact_expense_category_assignment(payload: dict) -> dict:
+    """Null expense category master FKs on expense / recurring / AI / OCR payloads.
+
+    Clears ``category_id`` / ``suggested_category_id`` and walks common nested
+    lists/objects used by AI analysis and OCR suggestion envelopes. Free-text
+    ``category`` / ``suggested_category`` names remain.
+    """
+    out = dict(payload)
+    for key in ("category_id", "suggested_category_id"):
+        if key in out:
+            out[key] = None
+    cat_sug = out.get("category_suggestion")
+    if isinstance(cat_sug, dict):
+        sug = dict(cat_sug)
+        if "id" in sug:
+            sug["id"] = None
+        out["category_suggestion"] = sug
+    suggestions = out.get("suggestions")
+    if isinstance(suggestions, dict):
+        sug = dict(suggestions)
+        if "category_id" in sug:
+            sug["category_id"] = None
+        out["suggestions"] = sug
+    for nest_key in (
+        "categories",
+        "optimization_suggestions",
+        "anomalies",
+        "text_category_suggestions",
+    ):
+        nested = out.get(nest_key)
+        if isinstance(nested, list):
+            out[nest_key] = [
+                redact_expense_category_assignment(row)
+                if isinstance(row, dict)
+                else row
+                for row in nested
+            ]
+    for nest_key in ("categorization", "budget_variance"):
+        nested = out.get(nest_key)
+        if isinstance(nested, dict):
+            out[nest_key] = redact_expense_category_assignment(nested)
+    return out
+
+
 def assert_expense_store_clear_write_denied(
     managed_ids: list[str] | None,
     *,
@@ -2182,13 +2238,15 @@ def omit_expense_budget_limits(managed_ids: list[str] | None) -> bool:
 
     Category list/export already denied; budgets JSON/CSV and embedded report
     budgets must not re-dump ``budget_amount`` (or variance/utilization derived
-    from it). Scoped ``spent`` / ``pending`` remain.
+    from it) or category master identity (``id`` / ``code`` / ``account_id`` /
+    ``company_id`` / ``is_active`` / account labels). Scoped ``name`` /
+    ``spent`` / ``pending`` remain.
     """
     return managed_ids is not None
 
 
 def redact_expense_budget_limits(payload: dict) -> dict:
-    """Null company budget limit fields on a budgets / variance payload."""
+    """Null company budget limit + category master identity on budgets payloads."""
     out = dict(payload)
     cats = out.get("categories")
     if isinstance(cats, list):
@@ -2203,6 +2261,14 @@ def redact_expense_budget_limits(payload: dict) -> dict:
                 "variance",
                 "utilization_pct",
                 "over_budget",
+                # Category list GET already denied — budgets must not re-dump master.
+                "id",
+                "code",
+                "account_id",
+                "company_id",
+                "is_active",
+                "account_code",
+                "account_name",
             ):
                 if key in item:
                     item[key] = None

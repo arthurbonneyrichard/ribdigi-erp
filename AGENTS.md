@@ -61,10 +61,12 @@ store activation — never frontend-only.
    managed stores) + **stock-transfer from_store_manager_id/to_store_manager_id
    redacted** on stores/inventory transfer JSON + transfer history (store/WH ids
    remain; managed-store list ``manager_id`` self-scope remains), expenses summary + category budget spent/pending
-   (null-store fail-closed; budget limits company-level — create/patch + categories list denied for store_manager; budget_amount/variance/utilization redacted on budgets JSON/CSV + embeds; spend/pending still scoped), expense +
+   (null-store fail-closed; budget limits company-level — create/patch + categories list denied for store_manager; budget_amount/variance/utilization + category master id/code/account_id redacted on budgets JSON/CSV + embeds; spend/pending/name still scoped), expense +
    recurring create / expense patch store asserts (foreign `store_id` denied;
    **expense department_id assign/clear denied + department_id redacted** on
-   expense/recurring list/get/export/patch JSON/CSV),
+   expense/recurring list/get/export/patch JSON/CSV; **expense category_id
+   redacted** on expense/recurring list/get/patch JSON + OCR/AI embeds —
+   free-text category name remains),
    and AI inventory low-stock / demand-forecast / dead-stock / predictions
    (+ exports; chat stockout intent) via managed WarehouseStock + store sales
    (null-store fail-closed; empty managed WH → empty; no `product.stock_qty`

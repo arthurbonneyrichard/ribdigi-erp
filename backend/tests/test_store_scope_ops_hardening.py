@@ -9781,12 +9781,18 @@ async def test_store_manager_expense_budget_limits_redacted(client, db_session):
     assert float(mbody["totals"]["spent"]) == pytest.approx(75.0)
     assert mbody["totals"]["budget_amount"] is None
     assert mbody["totals"]["variance"] is None
-    target = next(r for r in mbody["categories"] if r.get("code") == "BUD-REDACT")
+    target = next(r for r in mbody["categories"] if r.get("name") == "Budget Redact Target")
     assert float(target["spent"]) == pytest.approx(75.0)
     assert target.get("budget_amount") is None
     assert target.get("variance") is None
     assert target.get("utilization_pct") is None
     assert target.get("over_budget") is None
+    # Category list GET denied — budgets must not re-dump master identity.
+    assert target.get("id") is None
+    assert target.get("code") is None
+    assert target.get("account_id") is None
+    assert target.get("company_id") is None
+    assert target.get("is_active") is None
 
     admin_budgets = await ac.get("/api/v1/expenses/budgets", headers=admin_headers)
     assert admin_budgets.status_code == 200, admin_budgets.text
@@ -9794,10 +9800,13 @@ async def test_store_manager_expense_budget_limits_redacted(client, db_session):
     admin_row = next(r for r in abody["categories"] if r.get("code") == "BUD-REDACT")
     assert float(admin_row["budget_amount"]) == pytest.approx(2500.0)
     assert admin_row.get("variance") is not None
+    assert admin_row.get("id") == cat.id
+    assert admin_row.get("code") == "BUD-REDACT"
 
     mgr_csv = await ac.get("/api/v1/expenses/budgets/export", headers=headers)
     assert mgr_csv.status_code == 200, mgr_csv.text
-    assert "BUD-REDACT" in mgr_csv.text
+    assert "Budget Redact Target" in mgr_csv.text
+    assert "BUD-REDACT" not in mgr_csv.text
     # budget_amount column empty for manager (redacted); spent still present
     assert "2500" not in mgr_csv.text
     assert "75" in mgr_csv.text
@@ -9807,6 +9816,11 @@ async def test_store_manager_expense_budget_limits_redacted(client, db_session):
     sbudgets = summary.json()["data"]["budgets"]
     assert float(sbudgets["totals"]["spent"]) == pytest.approx(75.0)
     assert sbudgets["totals"]["budget_amount"] is None
+    s_target = next(
+        r for r in sbudgets["categories"] if r.get("name") == "Budget Redact Target"
+    )
+    assert s_target.get("id") is None
+    assert s_target.get("code") is None
 
 
 @pytest.mark.asyncio
@@ -10274,6 +10288,122 @@ async def test_store_manager_expense_department_redacted(client, db_session):
     assert admin_recurring.status_code == 200, admin_recurring.text
     admin_r = next(r for r in admin_recurring.json()["data"] if r["id"] == recurring.id)
     assert admin_r.get("department_id") == dept.id
+
+
+@pytest.mark.asyncio
+async def test_store_manager_expense_category_id_redacted(client, db_session):
+    """Expense/recurring list/get/patch + AI omit category_id; free-text category remains."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    today = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
+
+    cat = m.ExpenseCategory(
+        tenant_id=tid,
+        company_id=cid,
+        code="CAT-FK-RD",
+        name="Category FK Redact Target",
+        budget_amount=1000,
+        is_active=True,
+    )
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Category FK Redact Store",
+        code="CAT-FK-ST",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add_all([cat, store])
+    await db_session.flush()
+    expense = m.Expense(
+        tenant_id=tid,
+        company_id=cid,
+        category_id=cat.id,
+        category=cat.name,
+        description="Category FK redact target",
+        amount=42,
+        store_id=store.id,
+        status="pending",
+        expense_date=today,
+        created_by=mgr.id,
+    )
+    recurring = m.RecurringExpense(
+        tenant_id=tid,
+        company_id=cid,
+        category_id=cat.id,
+        category=cat.name,
+        description="Category FK redact recurring",
+        amount=33,
+        frequency="monthly",
+        payment_method="cash",
+        store_id=store.id,
+        is_active=True,
+        created_by=mgr.id,
+    )
+    db_session.add_all([expense, recurring])
+    await db_session.commit()
+
+    listed = await ac.get("/api/v1/expenses", headers=headers)
+    assert listed.status_code == 200, listed.text
+    mine = next(r for r in listed.json()["data"] if r["id"] == expense.id)
+    assert mine["category"] == "Category FK Redact Target"
+    assert mine.get("category_id") is None
+    assert mine.get("store_id") == store.id
+
+    admin_listed = await ac.get("/api/v1/expenses", headers=admin_headers)
+    assert admin_listed.status_code == 200, admin_listed.text
+    admin_mine = next(r for r in admin_listed.json()["data"] if r["id"] == expense.id)
+    assert admin_mine.get("category_id") == cat.id
+
+    got = await ac.get(f"/api/v1/expenses/{expense.id}", headers=headers)
+    assert got.status_code == 200, got.text
+    assert got.json()["data"].get("category_id") is None
+    assert got.json()["data"]["category"] == "Category FK Redact Target"
+
+    ok_patch = await ac.patch(
+        f"/api/v1/expenses/{expense.id}",
+        headers=headers,
+        json={"description": "Category FK redact target updated"},
+    )
+    assert ok_patch.status_code == 200, ok_patch.text
+    assert ok_patch.json()["data"]["description"] == "Category FK redact target updated"
+    assert ok_patch.json()["data"].get("category_id") is None
+
+    await db_session.refresh(expense)
+    assert expense.category_id == cat.id
+
+    recurring_list = await ac.get("/api/v1/expenses/recurring", headers=headers)
+    assert recurring_list.status_code == 200, recurring_list.text
+    rmine = next(r for r in recurring_list.json()["data"] if r["id"] == recurring.id)
+    assert rmine.get("category_id") is None
+    assert rmine["category"] == "Category FK Redact Target"
+
+    admin_recurring = await ac.get("/api/v1/expenses/recurring", headers=admin_headers)
+    assert admin_recurring.status_code == 200, admin_recurring.text
+    admin_r = next(r for r in admin_recurring.json()["data"] if r["id"] == recurring.id)
+    assert admin_r.get("category_id") == cat.id
+
+    ai = await ac.get("/api/v1/ai/expenses/analysis", headers=headers)
+    assert ai.status_code == 200, ai.text
+    adata = ai.json()["data"]
+    for row in adata.get("budget_variance", {}).get("categories") or []:
+        if row.get("name") == "Category FK Redact Target":
+            assert row.get("id") is None
+            assert row.get("code") is None
+            break
+    for sug in adata.get("optimization_suggestions") or []:
+        assert sug.get("category_id") in (None, "")
+    for hint in (adata.get("categorization") or {}).get("text_category_suggestions") or []:
+        assert hint.get("suggested_category_id") in (None, "")
 
 
 @pytest.mark.asyncio

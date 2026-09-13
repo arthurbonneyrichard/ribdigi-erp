@@ -455,7 +455,7 @@ async def category_budget_variance(
         },
     }
     # store_ids set (including empty) = store_manager scope — omit company
-    # budget_amount master while keeping scoped spent/pending.
+    # budget_amount master + category identity while keeping scoped spent/pending/name.
     if store_ids is not None:
         from app import dashboard_scope as dashboard_scope_svc
 

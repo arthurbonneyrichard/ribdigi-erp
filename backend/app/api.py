@@ -11707,6 +11707,8 @@ async def list_recurring_expenses(
     out = [expenses_svc.serialize_recurring(r) for r in rows]
     if dashboard_scope_svc.omit_expense_department_assignment(managed):
         out = [dashboard_scope_svc.redact_expense_department_assignment(row) for row in out]
+    if dashboard_scope_svc.omit_expense_category_assignment(managed):
+        out = [dashboard_scope_svc.redact_expense_category_assignment(row) for row in out]
     return env(out)
 
 
@@ -11772,6 +11774,8 @@ async def create_recurring_expense(
     payload_out = expenses_svc.serialize_recurring(row)
     if dashboard_scope_svc.omit_expense_department_assignment(managed):
         payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
+    if dashboard_scope_svc.omit_expense_category_assignment(managed):
+        payload_out = dashboard_scope_svc.redact_expense_category_assignment(payload_out)
     return env(payload_out, "Recurring expense created")
 
 
@@ -11809,6 +11813,8 @@ async def update_recurring_expense(
     payload_out = expenses_svc.serialize_recurring(row)
     if dashboard_scope_svc.omit_expense_department_assignment(managed):
         payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
+    if dashboard_scope_svc.omit_expense_category_assignment(managed):
+        payload_out = dashboard_scope_svc.redact_expense_category_assignment(payload_out)
     return env(payload_out, "Recurring expense updated")
 
 
@@ -11831,6 +11837,8 @@ async def generate_recurring_expenses(
     out = [expenses_svc.serialize_expense(e) for e in created]
     if dashboard_scope_svc.omit_expense_department_assignment(managed):
         out = [dashboard_scope_svc.redact_expense_department_assignment(row) for row in out]
+    if dashboard_scope_svc.omit_expense_category_assignment(managed):
+        out = [dashboard_scope_svc.redact_expense_category_assignment(row) for row in out]
     return env(
         out,
         f"Generated {len(created)} expense(s)",
@@ -11880,6 +11888,8 @@ async def expenses(
     out = [await expenses_svc.serialize_expense_full(db, e) for e in rows]
     if dashboard_scope_svc.omit_expense_department_assignment(managed):
         out = [dashboard_scope_svc.redact_expense_department_assignment(row) for row in out]
+    if dashboard_scope_svc.omit_expense_category_assignment(managed):
+        out = [dashboard_scope_svc.redact_expense_category_assignment(row) for row in out]
     return env(out)
 
 
@@ -11957,6 +11967,8 @@ async def add_expense(
     payload_out = await expenses_svc.serialize_expense_full(db, expense)
     if dashboard_scope_svc.omit_expense_department_assignment(managed):
         payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
+    if dashboard_scope_svc.omit_expense_category_assignment(managed):
+        payload_out = dashboard_scope_svc.redact_expense_category_assignment(payload_out)
     return env(payload_out, "Expense recorded")
 
 
@@ -11978,6 +11990,8 @@ async def get_expense(
     payload_out = await expenses_svc.serialize_expense_full(db, expense)
     if dashboard_scope_svc.omit_expense_department_assignment(managed):
         payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
+    if dashboard_scope_svc.omit_expense_category_assignment(managed):
+        payload_out = dashboard_scope_svc.redact_expense_category_assignment(payload_out)
     return env(payload_out)
 
 
@@ -12047,6 +12061,8 @@ async def patch_expense(
     payload_out = await expenses_svc.serialize_expense_full(db, expense)
     if dashboard_scope_svc.omit_expense_department_assignment(managed):
         payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
+    if dashboard_scope_svc.omit_expense_category_assignment(managed):
+        payload_out = dashboard_scope_svc.redact_expense_category_assignment(payload_out)
     return env(payload_out, "Expense updated")
 
 
@@ -12072,6 +12088,8 @@ async def expense_ocr_suggest(
         expense_id=expense_id,
         company_id=claims.get("company_id"),
     )
+    if dashboard_scope_svc.omit_expense_category_assignment(managed):
+        result = dashboard_scope_svc.redact_expense_category_assignment(result)
     return env(result, "OCR suggestions ready — review before applying")
 
 
@@ -12142,6 +12160,8 @@ async def expense_ocr_apply(
     payload_out = await expenses_svc.serialize_expense_full(db, expense)
     if dashboard_scope_svc.omit_expense_department_assignment(managed):
         payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
+    if dashboard_scope_svc.omit_expense_category_assignment(managed):
+        payload_out = dashboard_scope_svc.redact_expense_category_assignment(payload_out)
     return env(
         payload_out,
         "OCR suggestions applied to expense",
@@ -12188,6 +12208,8 @@ async def upload_expense_attachment(
     data = expenses_svc.serialize_expense(expense)
     if dashboard_scope_svc.omit_expense_department_assignment(managed):
         data = dashboard_scope_svc.redact_expense_department_assignment(data)
+    if dashboard_scope_svc.omit_expense_category_assignment(managed):
+        data = dashboard_scope_svc.redact_expense_category_assignment(data)
     data["uploaded"] = {
         "key": stored.key,
         "size": stored.size,
@@ -12257,6 +12279,8 @@ async def delete_expense_attachment(
     payload_out = expenses_svc.serialize_expense(expense)
     if dashboard_scope_svc.omit_expense_department_assignment(managed):
         payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
+    if dashboard_scope_svc.omit_expense_category_assignment(managed):
+        payload_out = dashboard_scope_svc.redact_expense_category_assignment(payload_out)
     return env(payload_out, "Attachment removed")
 
 
@@ -12290,6 +12314,8 @@ async def approve_expense(
     payload_out = await expenses_svc.serialize_expense_full(db, expense)
     if dashboard_scope_svc.omit_expense_department_assignment(managed):
         payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
+    if dashboard_scope_svc.omit_expense_category_assignment(managed):
+        payload_out = dashboard_scope_svc.redact_expense_category_assignment(payload_out)
     return env(payload_out, msg)
 
 
@@ -12320,6 +12346,8 @@ async def reject_expense(
     payload_out = await expenses_svc.serialize_expense_full(db, expense)
     if dashboard_scope_svc.omit_expense_department_assignment(managed):
         payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
+    if dashboard_scope_svc.omit_expense_category_assignment(managed):
+        payload_out = dashboard_scope_svc.redact_expense_category_assignment(payload_out)
     return env(payload_out, "Expense rejected")
 
 
@@ -20035,6 +20063,8 @@ async def ai_expenses_analysis(
         company_id=claims.get("company_id"),
         store_ids=managed_stores,
     )
+    if dashboard_scope_svc.omit_expense_category_assignment(managed_stores):
+        data = dashboard_scope_svc.redact_expense_category_assignment(data)
     return env(data)
 
 
