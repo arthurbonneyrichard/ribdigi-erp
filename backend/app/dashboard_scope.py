@@ -2728,8 +2728,9 @@ def omit_party_master_pii(managed_ids: list[str] | None) -> bool:
     """True when store_manager must omit party CRM PII on customer/supplier JSON.
 
     Party master CSV export already denied; list/get must not re-dump
-    email/phone/address/geo/notes (or nested contact email/phone). Name, code,
-    status, credit fields, and scoped history remain for ops.
+    email/phone/address/geo/notes (or nested contact email/phone before roster
+    omit). Name, status, and scoped history remain for ops. Nested contact
+    roster identity is cleared via ``redact_party_contacts_roster``.
     """
     return managed_ids is not None
 
@@ -2753,6 +2754,25 @@ def redact_party_master_pii(payload: dict) -> dict:
                     row[key] = None
             redacted.append(row)
         out["contacts"] = redacted
+    return out
+
+
+def omit_party_contacts_roster(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit nested party ``contacts`` roster.
+
+    Contact create/delete (+ nested create) already denied; primary email/phone
+    PII already redacted. List/get/patch must not re-dump contact id/name/
+    is_primary (company CRM contact master graph). Party name/status and
+    scoped history remain.
+    """
+    return managed_ids is not None
+
+
+def redact_party_contacts_roster(payload: dict) -> dict:
+    """Clear nested party contacts roster on customer/supplier JSON."""
+    out = dict(payload)
+    if "contacts" in out:
+        out["contacts"] = []
     return out
 
 
@@ -3491,6 +3511,8 @@ def assert_party_master_contact_write_denied(
     Nested ``contacts`` on customer/supplier create use
     ``assert_party_nested_contacts_create_denied``; dedicated ``/contacts``
     POST/DELETE endpoints are the same company-level master surface.
+    List/get/patch must not re-dump the roster
+    (``redact_party_contacts_roster``).
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
@@ -3505,7 +3527,8 @@ def assert_party_nested_contacts_create_denied(
 
     Dedicated ``/contacts`` POST/DELETE are already denied; nested create must
     not bypass that company party-contact master gate. Name-only party create
-    remains allowed.
+    remains allowed. Roster reads are redacted via
+    ``redact_party_contacts_roster``.
     """
     if managed_ids is None:
         return

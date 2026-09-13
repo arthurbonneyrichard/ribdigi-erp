@@ -164,7 +164,9 @@ store activation — never frontend-only.
    admin allowlist retained; store-scoped ``/reports/*`` reads remain), and
    **customer/supplier
    contact create/delete denied for store_manager** (company-level party contact
-   master; get/list reads remain; nested contacts on create denied), and
+   master; nested contacts on create denied) + **party contacts roster
+   redacted** on customer/supplier list/get/patch JSON (contacts → `[]`;
+   name/status remain), and
    **company membership assign/revoke denied for store_manager** (even when
    companies write is granted; list/read remain when permitted).
    and **company profile/logo branding writes denied for store_manager** (even when

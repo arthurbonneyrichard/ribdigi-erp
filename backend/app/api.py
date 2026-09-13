@@ -7154,6 +7154,8 @@ async def _serialize_customer_response(
     payload = customers_svc.serialize_customer(party, contacts, group)
     if dashboard_scope_svc.omit_party_master_pii(managed_store_ids):
         payload = dashboard_scope_svc.redact_party_master_pii(payload)
+    if dashboard_scope_svc.omit_party_contacts_roster(managed_store_ids):
+        payload = dashboard_scope_svc.redact_party_contacts_roster(payload)
     if dashboard_scope_svc.omit_party_customer_group_assignment(managed_store_ids):
         payload = dashboard_scope_svc.redact_party_customer_group_assignment(payload)
     if dashboard_scope_svc.omit_party_classification(managed_store_ids):
@@ -7178,6 +7180,8 @@ async def _serialize_supplier_response(
     payload = suppliers_svc.serialize_supplier(party, contacts)
     if dashboard_scope_svc.omit_party_master_pii(managed_store_ids):
         payload = dashboard_scope_svc.redact_party_master_pii(payload)
+    if dashboard_scope_svc.omit_party_contacts_roster(managed_store_ids):
+        payload = dashboard_scope_svc.redact_party_contacts_roster(payload)
     if dashboard_scope_svc.omit_party_classification(managed_store_ids):
         payload = dashboard_scope_svc.redact_party_classification(payload)
     if dashboard_scope_svc.omit_party_code(managed_store_ids):
@@ -7337,6 +7341,7 @@ async def customers(
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     omit_pii = dashboard_scope_svc.omit_party_master_pii(managed)
+    omit_contacts = dashboard_scope_svc.omit_party_contacts_roster(managed)
     omit_group = dashboard_scope_svc.omit_party_customer_group_assignment(managed)
     omit_class = dashboard_scope_svc.omit_party_classification(managed)
     omit_code = dashboard_scope_svc.omit_party_code(managed)
@@ -7371,6 +7376,8 @@ async def customers(
         )
         if omit_pii:
             payload = dashboard_scope_svc.redact_party_master_pii(payload)
+        if omit_contacts:
+            payload = dashboard_scope_svc.redact_party_contacts_roster(payload)
         if omit_group:
             payload = dashboard_scope_svc.redact_party_customer_group_assignment(payload)
         if omit_class:
@@ -7733,6 +7740,7 @@ async def suppliers(
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     omit_pii = dashboard_scope_svc.omit_party_master_pii(managed)
+    omit_contacts = dashboard_scope_svc.omit_party_contacts_roster(managed)
     omit_class = dashboard_scope_svc.omit_party_classification(managed)
     omit_code = dashboard_scope_svc.omit_party_code(managed)
     omit_credit = dashboard_scope_svc.omit_party_credit_master(managed)
@@ -7758,6 +7766,8 @@ async def suppliers(
         payload = suppliers_svc.serialize_supplier(row, contacts)
         if omit_pii:
             payload = dashboard_scope_svc.redact_party_master_pii(payload)
+        if omit_contacts:
+            payload = dashboard_scope_svc.redact_party_contacts_roster(payload)
         if omit_class:
             payload = dashboard_scope_svc.redact_party_classification(payload)
         if omit_code:

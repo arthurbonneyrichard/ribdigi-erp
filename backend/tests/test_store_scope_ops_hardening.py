@@ -11807,16 +11807,15 @@ async def test_store_manager_party_master_pii_redacted(client, db_session):
     assert mgr_row.get("notes") is None
     assert mgr_row.get("latitude") is None
     assert mgr_row.get("longitude") is None
-    for c in mgr_row.get("contacts") or []:
-        assert c.get("email") is None
-        assert c.get("phone") is None
-        assert c.get("name") == "Hidden Contact"
+    # Nested contact roster cleared (id/name/is_primary) after create/delete deny.
+    assert mgr_row.get("contacts") == []
 
     mgr_get = await ac.get(f"/api/v1/customers/{cust.id}", headers=headers)
     assert mgr_get.status_code == 200, mgr_get.text
     got = mgr_get.json()["data"]
     assert got.get("email") is None
     assert got.get("phone") is None
+    assert got.get("contacts") == []
 
     # Name patch remains; response stays redacted for store_manager.
     patched = await ac.patch(
@@ -11829,6 +11828,7 @@ async def test_store_manager_party_master_pii_redacted(client, db_session):
     assert pbody["name"] == "Alpha Customer Renamed"
     assert pbody.get("email") is None
     assert pbody.get("phone") is None
+    assert pbody.get("contacts") == []
 
     admin_sup = await ac.get(f"/api/v1/suppliers/{supplier.id}", headers=admin_headers)
     assert admin_sup.status_code == 200, admin_sup.text
@@ -11842,11 +11842,13 @@ async def test_store_manager_party_master_pii_redacted(client, db_session):
     assert mgr_sup.get("phone") is None
     assert mgr_sup.get("address") is None
     assert mgr_sup.get("notes") is None
+    assert mgr_sup.get("contacts") == []
 
     mgr_sup_get = await ac.get(f"/api/v1/suppliers/{supplier.id}", headers=headers)
     assert mgr_sup_get.status_code == 200, mgr_sup_get.text
     assert mgr_sup_get.json()["data"].get("email") is None
     assert mgr_sup_get.json()["data"].get("phone") is None
+    assert mgr_sup_get.json()["data"].get("contacts") == []
 
 
 @pytest.mark.asyncio
@@ -12260,10 +12262,140 @@ async def test_store_manager_party_contact_writes_denied(client, db_session):
         json={"name": "Mgr Name Only Customer"},
     )
     assert ok_name_only.status_code == 200, ok_name_only.text
+    assert ok_name_only.json()["data"].get("contacts") == []
 
     got = await ac.get(f"/api/v1/customers/{cust.id}", headers=headers)
     assert got.status_code == 200, got.text
-    assert any(c["id"] == cust_contact.id for c in got.json()["data"].get("contacts") or [])
+    # Nested contact roster redacted for store_manager (create/delete already denied).
+    assert got.json()["data"].get("contacts") == []
+
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_got = await ac.get(f"/api/v1/customers/{cust.id}", headers=admin_headers)
+    assert admin_got.status_code == 200, admin_got.text
+    assert any(
+        c["id"] == cust_contact.id for c in admin_got.json()["data"].get("contacts") or []
+    )
+
+
+@pytest.mark.asyncio
+async def test_store_manager_party_contacts_roster_redacted(client, db_session):
+    """store_manager customer/supplier JSON clears nested contacts roster; admin intact."""
+    from app import models as m
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    cust = seed["party1"]
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["sales"] = ["read", "write"]
+    perms["purchasing"] = ["read", "write"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Contacts Roster Redact Store",
+        code="CTR-RD-ST",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Contacts Roster Supplier",
+        kind="supplier",
+        code="SUP-CTR-RD",
+        status="active",
+        credit_limit=0,
+    )
+    db_session.add(supplier)
+    await db_session.flush()
+
+    cust_contact = m.PartyContact(
+        tenant_id=tid,
+        company_id=cid,
+        party_id=cust.id,
+        name="Roster Cust Contact",
+        email="roster.cust@example.com",
+        phone="555-1111",
+        is_primary=True,
+    )
+    sup_contact = m.PartyContact(
+        tenant_id=tid,
+        company_id=cid,
+        party_id=supplier.id,
+        name="Roster Sup Contact",
+        email="roster.sup@example.com",
+        phone="555-2222",
+        is_primary=True,
+    )
+    db_session.add_all([cust_contact, sup_contact])
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    admin_cust = await ac.get(f"/api/v1/customers/{cust.id}", headers=admin_headers)
+    assert admin_cust.status_code == 200, admin_cust.text
+    admin_contacts = admin_cust.json()["data"].get("contacts") or []
+    assert any(c["id"] == cust_contact.id and c["name"] == "Roster Cust Contact" for c in admin_contacts)
+
+    admin_sup = await ac.get(f"/api/v1/suppliers/{supplier.id}", headers=admin_headers)
+    assert admin_sup.status_code == 200, admin_sup.text
+    assert any(
+        c["id"] == sup_contact.id for c in (admin_sup.json()["data"].get("contacts") or [])
+    )
+
+    mgr_list = await ac.get("/api/v1/customers", headers=headers)
+    assert mgr_list.status_code == 200, mgr_list.text
+    mgr_row = next(r for r in mgr_list.json()["data"] if r["id"] == cust.id)
+    assert mgr_row["name"] == cust.name
+    assert mgr_row.get("contacts") == []
+
+    mgr_get = await ac.get(f"/api/v1/customers/{cust.id}", headers=headers)
+    assert mgr_get.status_code == 200, mgr_get.text
+    assert mgr_get.json()["data"].get("contacts") == []
+
+    patched = await ac.patch(
+        f"/api/v1/customers/{cust.id}",
+        headers=headers,
+        json={"name": cust.name},
+    )
+    assert patched.status_code == 200, patched.text
+    assert patched.json()["data"].get("contacts") == []
+
+    mgr_sup_list = await ac.get("/api/v1/suppliers", headers=headers)
+    assert mgr_sup_list.status_code == 200, mgr_sup_list.text
+    mgr_sup = next(r for r in mgr_sup_list.json()["data"] if r["id"] == supplier.id)
+    assert mgr_sup.get("contacts") == []
+
+    mgr_sup_get = await ac.get(f"/api/v1/suppliers/{supplier.id}", headers=headers)
+    assert mgr_sup_get.status_code == 200, mgr_sup_get.text
+    assert mgr_sup_get.json()["data"].get("contacts") == []
 
 
 @pytest.mark.asyncio
