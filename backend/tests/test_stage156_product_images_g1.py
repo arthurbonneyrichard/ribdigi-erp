@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 @pytest.mark.asyncio
 async def test_product_images_export_csv(client, db_session):
-    """Admins can export product images CSV; store_manager is denied (list remains)."""
+    """Admins can export product images CSV; store_manager list + export denied."""
     ac, seed = client
     product_id = seed["p1"].id
     admin_headers = await auth_headers(
@@ -52,6 +52,10 @@ async def test_product_images_export_csv(client, db_session):
     assert product_id in text
     assert "stage156.png" in text or "image/png" in text
 
+    admin_listed = await ac.get(f"/api/v1/products/{product_id}/images", headers=admin_headers)
+    assert admin_listed.status_code == 200, admin_listed.text
+    assert any(row["id"] == image.id for row in admin_listed.json()["data"])
+
     denied = await ac.get(
         f"/api/v1/products/{product_id}/images/export",
         headers=mgr_headers,
@@ -60,8 +64,8 @@ async def test_product_images_export_csv(client, db_session):
     assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
     listed = await ac.get(f"/api/v1/products/{product_id}/images", headers=mgr_headers)
-    assert listed.status_code == 200, listed.text
-    assert any(row["id"] == image.id for row in listed.json()["data"])
+    assert listed.status_code == 403, listed.text
+    assert listed.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
 
 def test_product_images_export_ui_g1():
@@ -69,3 +73,4 @@ def test_product_images_export_ui_g1():
     assert "Stage 156" in page
     assert "/images/export" in page
     assert "Export images CSV" in page
+    assert "Soft-fail store_manager STORE_SCOPE_DENIED (company product gallery dump)" in page

@@ -3097,6 +3097,24 @@ def assert_company_level_product_variants_export_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_product_images_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list company product image gallery metadata; "
+        "primary image binary GET + product reads + WH stock ops remain."
+    ),
+) -> None:
+    """403 when store_manager lists ``GET /products/{id}/images`` (catalog gallery dump).
+
+    Image upload/patch/delete + CSV export already denied; gallery list still dumped
+    ``storage_key`` / filename / sort_order (company catalog media inventory).
+    Primary ``GET /products/{id}/image`` binary remains for POS/chrome; product
+    list/get + WH stock ops remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_product_images_export_denied(
     managed_ids: list[str] | None,
     *,
@@ -3104,8 +3122,9 @@ def assert_company_level_product_images_export_denied(
 ) -> None:
     """403 when store_manager exports product images metadata CSV (catalog master dump).
 
-    Per-product images list/get remain; CSV dump is company-level administration
-    (image upload/patch/delete already denied).
+    Gallery list GET also denied (``assert_company_level_product_images_read_denied``);
+    CSV dump is the same company-level administration surface (image writes already
+    denied). Primary product image binary GET remains for POS/chrome.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 

@@ -12049,7 +12049,7 @@ async def test_store_manager_product_import_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_product_master_writes_denied(client, db_session):
-    """Product create/patch/variants/barcode/image writes denied for store_manager; reads allowed."""
+    """Product create/patch/variants/barcode/image writes + gallery list denied; reads remain."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
@@ -12186,9 +12186,11 @@ async def test_store_manager_product_master_writes_denied(client, db_session):
     assert denied_gallery_delete.status_code == 403, denied_gallery_delete.text
     assert denied_gallery_delete.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
-    listed_images = await ac.get(f"/api/v1/products/{product.id}/images", headers=headers)
-    assert listed_images.status_code == 200, listed_images.text
-    assert any(row["id"] == image.id for row in listed_images.json()["data"])
+    denied_images_list = await ac.get(
+        f"/api/v1/products/{product.id}/images", headers=headers
+    )
+    assert denied_images_list.status_code == 403, denied_images_list.text
+    assert denied_images_list.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
     denied_images_export = await ac.get(
         f"/api/v1/products/{product.id}/images/export",
@@ -12196,6 +12198,9 @@ async def test_store_manager_product_master_writes_denied(client, db_session):
     )
     assert denied_images_export.status_code == 403, denied_images_export.text
     assert denied_images_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    # Primary image binary GET remains for POS/chrome (gallery metadata dump closed).
+    # Skip fetching binary here — media keys require tenant-prefixed storage objects.
 
     listed = await ac.get("/api/v1/products", headers=headers)
     assert listed.status_code == 200, listed.text
@@ -12220,6 +12225,60 @@ async def test_store_manager_product_master_writes_denied(client, db_session):
     )
     assert ok_product_variants_export.status_code == 200, ok_product_variants_export.text
     assert "A-1-V-DENY" in ok_product_variants_export.text or "sku" in ok_product_variants_export.text.lower()
+
+
+@pytest.mark.asyncio
+async def test_store_manager_product_images_list_denied(client, db_session):
+    """Product gallery list GET denied for store_manager after images CSV export deny.
+
+    storage_key / filename roster is a company catalog media dump; primary image
+    binary GET remains for POS/chrome. Product list/get + WH stock ops remain.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    product = seed["p1"]
+    image = m.ProductImage(
+        tenant_id=tid,
+        company_id=cid,
+        product_id=product.id,
+        storage_key="products/gallery-dump.png",
+        content_type="image/png",
+        sort_order=0,
+        is_primary=True,
+        original_filename="gallery-dump.png",
+    )
+    db_session.add(image)
+    await db_session.commit()
+
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_list = await ac.get(f"/api/v1/products/{product.id}/images", headers=admin_headers)
+    assert admin_list.status_code == 200, admin_list.text
+    assert any(row["storage_key"] == "products/gallery-dump.png" for row in admin_list.json()["data"])
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    denied_list = await ac.get(f"/api/v1/products/{product.id}/images", headers=headers)
+    assert denied_list.status_code == 403, denied_list.text
+    assert denied_list.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_export = await ac.get(
+        f"/api/v1/products/{product.id}/images/export", headers=headers
+    )
+    assert denied_export.status_code == 403, denied_export.text
+    assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    listed = await ac.get("/api/v1/products", headers=headers)
+    assert listed.status_code == 200, listed.text
+    assert any(row["sku"] == "A-1" for row in listed.json()["data"])
+
+    got = await ac.get(f"/api/v1/products/{product.id}", headers=headers)
+    assert got.status_code == 200, got.text
+    assert got.json()["data"]["sku"] == "A-1"
 
 
 @pytest.mark.asyncio

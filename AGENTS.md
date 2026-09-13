@@ -143,7 +143,9 @@ store activation — never frontend-only.
    master bulk seed; template/export reads allowed), and **product catalog
    master writes denied for store_manager** (create/patch + variants + barcode
    assign + image writes; list/get/export/lookup/POS search reads + WH stock
-   ops remain), and **stock CSV import denied for store_manager** (company-level
+   ops remain) + **product images gallery list GET + CSV export denied**
+   (``storage_key`` media dump; primary ``/products/{id}/image`` binary GET
+   remains for POS/chrome), and **stock CSV import denied for store_manager** (company-level
    bulk WH / product.stock_qty seed; template read + per-WH stock-in/out remain),
    and **customer/supplier deactivate denied for store_manager** (company-level
    party master lifecycle; PATCH status also denied; create/list/get + non-credit
@@ -293,7 +295,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `d52a8733c7` — `feat(rbac): redact early-discount quote matrix for store_manager`.  
+**As of tip:** `PENDING_FEATURE_SHA` — `feat(rbac): deny product images list for store_manager`.  
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
@@ -313,8 +315,9 @@ leave contradictory Complete/PARTIAL wording across those three surfaces.
 Defense-in-depth on tip ancestry includes: store/WH ops + report/export scoping;
 company-level admin / settings / catalog / party-master / bank-feed / offline-device
 denies; JSON/CSV redacts for cost, PII, org links, approval-matrix `awaiting_roles`,
-early-discount quote matrix fields, and BI company config/cost embeds. Each slice
-closes one dump or write path; the continuum as a whole stays **PARTIAL**.
+early-discount quote matrix fields, and BI company config/cost embeds; product
+images gallery list GET (after CSV export deny). Each slice closes one dump or
+write path; the continuum as a whole stays **PARTIAL**.
 
 ### Continuum agent contract
 

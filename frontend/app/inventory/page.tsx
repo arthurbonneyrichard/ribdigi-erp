@@ -473,7 +473,8 @@ export default function Page() {
     const [v, b, g] = await Promise.all([
       api(`/products/${id}/variants${variantQs}`),
       api(`/products/${id}/batches`),
-      api(`/products/${id}/images`),
+      // Soft-fail store_manager STORE_SCOPE_DENIED (company product gallery dump).
+      api(`/products/${id}/images`).catch(() => ({ data: [] })),
     ]);
     setVariants(v.data || []);
     setBatches(b.data || []);

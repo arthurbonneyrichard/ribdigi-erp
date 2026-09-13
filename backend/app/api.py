@@ -5751,6 +5751,10 @@ async def product_images_list(
     claims=Depends(require_permission("inventory", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_product_images_read_denied(managed)
     rows = await product_images_svc.list_product_images(
         db,
         tenant_id=claims["tenant_id"],
