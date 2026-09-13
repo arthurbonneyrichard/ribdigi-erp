@@ -15666,7 +15666,10 @@ async def invoice_early_discount_quote(
         pct=ep["early_pay_discount_pct"],
         days=ep["early_pay_discount_days"],
     )
-    return env({"invoice_id": inv.id, "invoice_number": inv.invoice_number, **quote})
+    payload = {"invoice_id": inv.id, "invoice_number": inv.invoice_number, **quote}
+    if dashboard_scope_svc.omit_early_pay_matrix(managed):
+        payload = dashboard_scope_svc.redact_early_pay_quote(payload)
+    return env(payload)
 
 
 @api.get("/credit/purchase-invoices/{invoice_id}/early-discount")
@@ -15680,6 +15683,7 @@ async def purchase_invoice_early_discount_quote(
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     inv = await purchasing_svc.get_purchase_invoice(db, claims["tenant_id"], invoice_id)
     workspace_svc.assert_record_company(claims, inv)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     await dashboard_scope_svc.assert_purchase_invoice_in_manager_scope(db, claims, inv)
     supplier = await purchasing_svc.get_supplier(db, claims["tenant_id"], inv.supplier_id)
     ep = credit_svc.resolve_early_pay_settings(tenant, supplier)
@@ -15688,14 +15692,15 @@ async def purchase_invoice_early_discount_quote(
         pct=ep["early_pay_discount_pct"],
         days=ep["early_pay_discount_days"],
     )
-    return env(
-        {
-            "invoice_id": inv.id,
-            "invoice_number": inv.invoice_number,
-            "source": ep["source"],
-            **quote,
-        }
-    )
+    payload = {
+        "invoice_id": inv.id,
+        "invoice_number": inv.invoice_number,
+        "source": ep["source"],
+        **quote,
+    }
+    if dashboard_scope_svc.omit_early_pay_matrix(managed):
+        payload = dashboard_scope_svc.redact_early_pay_quote(payload)
+    return env(payload)
 
 
 @api.get("/credit/customers/{customer_id}/statement")

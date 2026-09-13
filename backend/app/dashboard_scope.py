@@ -1076,7 +1076,9 @@ def assert_company_level_credit_settings_read_denied(
     """403 when store_manager reads company early-pay credit settings (admin dump).
 
     PATCH and CSV export already denied; GET dumped discount pct/days/enabled.
-    Scoped credit aging/statements/payments remain.
+    Scoped credit aging/statements/payments remain. Early-discount quotes must
+    not re-dump matrix ``discount_pct`` / ``window_days`` / ``source`` (see
+    ``omit_early_pay_matrix`` / ``redact_early_pay_quote``).
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
@@ -2798,6 +2800,28 @@ def redact_approval_matrix_roles(payload: dict) -> dict:
         req = dict(nested)
         req["awaiting_roles"] = []
         out["request"] = req
+    return out
+
+
+def omit_early_pay_matrix(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit early-pay matrix fields on quotes.
+
+    Credit early-pay settings GET/PATCH/export already denied (company discount
+    pct/days dump). Party early-pay master fields already redacted on list/get.
+    Invoice / purchase-invoice early-discount quotes must not re-dump
+    ``discount_pct`` / ``window_days`` / settings ``source``. Operational
+    ``eligible`` / ``discount_amount`` / ``cash_to_settle`` / ``balance_due``
+    and age counters remain for scoped settlement UX; payments remain.
+    """
+    return managed_ids is not None
+
+
+def redact_early_pay_quote(payload: dict) -> dict:
+    """Null early-pay matrix fields on an early-discount quote dict."""
+    out = dict(payload)
+    for key in ("discount_pct", "window_days", "source"):
+        if key in out:
+            out[key] = None
     return out
 
 

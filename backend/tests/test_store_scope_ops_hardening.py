@@ -4689,6 +4689,165 @@ async def test_store_manager_credit_early_discount_store_scoped(client, db_sessi
 
 
 @pytest.mark.asyncio
+async def test_store_manager_early_pay_quote_matrix_redacted(client, db_session):
+    """Early-discount quotes redact company early-pay matrix after settings GET deny."""
+    from datetime import timedelta
+
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    tenant = await db_session.get(m.Tenant, tid)
+    today = datetime.utcnow().date()
+
+    tenant.early_pay_discount_pct = 5.0
+    tenant.early_pay_discount_days = 14
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["credit"] = ["read", "write", "approve"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Early Pay Matrix Store",
+        code="EPM-ST",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        name="Early Pay Matrix WH",
+        code="EPM-WH",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    cust = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Early Pay Matrix Customer",
+        kind="customer",
+        status="active",
+        credit_limit=0,
+    )
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Early Pay Matrix Supplier",
+        kind="supplier",
+        status="active",
+        credit_limit=0,
+        early_pay_discount_pct=3.0,
+        early_pay_discount_days=7,
+    )
+    db_session.add_all([wh, cust, supplier])
+    await db_session.flush()
+
+    inv = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        invoice_number="INV-EPM-1",
+        customer_id=cust.id,
+        status="posted",
+        subtotal=200,
+        total_amount=200,
+        paid_amount=0,
+        due_date=today + timedelta(days=30),
+        posted_at=today,
+        created_at=today,
+    )
+    pi = m.PurchaseInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="PI-EPM-1",
+        supplier_id=supplier.id,
+        warehouse_id=wh.id,
+        status="unpaid",
+        subtotal=150,
+        total_amount=150,
+        paid_amount=0,
+        invoice_date=today,
+        due_date=today + timedelta(days=30),
+        approved_at=today,
+        created_at=today,
+    )
+    db_session.add_all([inv, pi])
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    denied_settings = await ac.get("/api/v1/credit/settings", headers=headers)
+    assert denied_settings.status_code == 403, denied_settings.text
+    assert denied_settings.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    admin_ar = await ac.get(
+        f"/api/v1/credit/invoices/{inv.id}/early-discount", headers=admin_headers
+    )
+    assert admin_ar.status_code == 200, admin_ar.text
+    admin_ar_body = admin_ar.json()["data"]
+    assert float(admin_ar_body["discount_pct"]) == 5.0
+    assert int(admin_ar_body["window_days"]) == 14
+    assert admin_ar_body.get("eligible") is True
+    assert float(admin_ar_body["discount_amount"]) == 10.0
+
+    mgr_ar = await ac.get(
+        f"/api/v1/credit/invoices/{inv.id}/early-discount", headers=headers
+    )
+    assert mgr_ar.status_code == 200, mgr_ar.text
+    mgr_ar_body = mgr_ar.json()["data"]
+    assert mgr_ar_body.get("discount_pct") is None
+    assert mgr_ar_body.get("window_days") is None
+    assert mgr_ar_body.get("eligible") is True
+    assert float(mgr_ar_body["discount_amount"]) == 10.0
+    assert float(mgr_ar_body["cash_to_settle"]) == 190.0
+    assert mgr_ar_body.get("invoice_number") == "INV-EPM-1"
+
+    admin_ap = await ac.get(
+        f"/api/v1/credit/purchase-invoices/{pi.id}/early-discount",
+        headers=admin_headers,
+    )
+    assert admin_ap.status_code == 200, admin_ap.text
+    admin_ap_body = admin_ap.json()["data"]
+    assert float(admin_ap_body["discount_pct"]) == 3.0
+    assert int(admin_ap_body["window_days"]) == 7
+    assert admin_ap_body.get("source") == "supplier"
+
+    mgr_ap = await ac.get(
+        f"/api/v1/credit/purchase-invoices/{pi.id}/early-discount", headers=headers
+    )
+    assert mgr_ap.status_code == 200, mgr_ap.text
+    mgr_ap_body = mgr_ap.json()["data"]
+    assert mgr_ap_body.get("discount_pct") is None
+    assert mgr_ap_body.get("window_days") is None
+    assert mgr_ap_body.get("source") is None
+    assert mgr_ap_body.get("eligible") is True
+    assert float(mgr_ap_body["discount_amount"]) == 4.5
+    assert mgr_ap_body.get("invoice_number") == "PI-EPM-1"
+
+
+@pytest.mark.asyncio
 async def test_store_manager_expense_payment_liquid_account_writes_scoped(
     client, db_session
 ):

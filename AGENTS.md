@@ -177,7 +177,9 @@ store activation — never frontend-only.
    and **purchasing PR approval settings GET/PATCH/export denied for store_manager**
    (company-level approval matrix; admin allowlist retained) + **expense/PR
    ``awaiting_roles`` redacted** on pending expense + purchase-request JSON
-   (settings GET already denied; step/level counters remain),
+   (settings GET already denied; step/level counters remain) + **early-discount
+   quote matrix redacted** (``discount_pct`` / ``window_days`` / ``source`` null
+   after credit early-pay settings GET deny; eligible/discount_amount/cash_to_settle remain),
    and **document numbering / print-template / tenant profile PATCH /tenants/me
    denied for store_manager** (company-level document settings; admin export reads
    remain),
