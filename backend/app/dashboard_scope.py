@@ -3087,12 +3087,17 @@ def redact_product_catalog_assignment(payload: dict) -> dict:
 def assert_company_level_product_variants_export_denied(
     managed_ids: list[str] | None,
     *,
-    message: str = "Store managers cannot export company product variants CSV.",
+    message: str = (
+        "Store managers cannot export company product variants CSV "
+        "(roster or per-product path); variants list/get + product reads remain."
+    ),
 ) -> None:
-    """403 when store_manager exports company-wide product variants CSV (catalog master dump).
+    """403 when store_manager exports product variants CSV (catalog master dump).
 
-    Per-product variants list/get and WH-scoped products export remain; full variants roster
-    export is company-level administration (variant writes already denied).
+    Covers company-wide ``GET /products/variants/export`` and path-scoped
+    ``GET /products/{id}/variants/export`` (SKU/barcode/attribute roster dump).
+    Variant writes already denied; per-product variants list/get remain for
+    POS/sales; WH-scoped products export remains.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 

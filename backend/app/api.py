@@ -6682,9 +6682,16 @@ async def export_product_variants(
     """Stage 156 V1 — path-scoped per-product variants CSV (distinct from Stage 124 roster)."""
     from app import dashboard_scope as dashboard_scope_svc
 
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_product_variants_export_denied(
+        managed,
+        message=(
+            "Store managers cannot export per-product variants CSV; "
+            "variants list/get + product reads + WH stock ops remain."
+        ),
+    )
     product = await catalog_svc.get_product(db, claims["tenant_id"], product_id)
     workspace_svc.assert_record_company(claims, product)
-    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     text = await variant_role_export_svc.export_product_variants_csv(
         db,
         tenant_id=claims["tenant_id"],

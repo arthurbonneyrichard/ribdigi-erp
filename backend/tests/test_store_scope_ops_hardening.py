@@ -12049,7 +12049,7 @@ async def test_store_manager_product_import_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_product_master_writes_denied(client, db_session):
-    """Product create/patch/variants/barcode/image writes + gallery list denied; reads remain."""
+    """Product create/patch/variants/barcode/image writes + gallery list + variants CSV denied; reads remain."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
@@ -12218,13 +12218,72 @@ async def test_store_manager_product_master_writes_denied(client, db_session):
     assert denied_variants_export.status_code == 403, denied_variants_export.text
     assert denied_variants_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
-    # Per-product variants CSV remains (path-scoped read; company roster dump denied above).
-    ok_product_variants_export = await ac.get(
+    denied_product_variants_export = await ac.get(
         f"/api/v1/products/{product.id}/variants/export",
         headers=headers,
     )
-    assert ok_product_variants_export.status_code == 200, ok_product_variants_export.text
-    assert "A-1-V-DENY" in ok_product_variants_export.text or "sku" in ok_product_variants_export.text.lower()
+    assert denied_product_variants_export.status_code == 403, denied_product_variants_export.text
+    assert denied_product_variants_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_product_variants_path_export_denied(client, db_session):
+    """Per-product variants CSV export denied after company roster export deny.
+
+    SKU/barcode/attribute roster is a company catalog dump; variants list/get
+    remain for POS/sales. Product list/get + WH stock ops remain.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    product = seed["p1"]
+    variant = m.ProductVariant(
+        tenant_id=tid,
+        company_id=cid,
+        product_id=product.id,
+        name="Path Export Deny Variant",
+        sku="A-1-V-PATH-DENY",
+        barcode="BAR-PATH-DENY",
+        cost_price=3.5,
+        selling_price=9.0,
+        stock_qty=0,
+        is_active=True,
+    )
+    db_session.add(variant)
+    await db_session.commit()
+
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_export = await ac.get(
+        f"/api/v1/products/{product.id}/variants/export",
+        headers=admin_headers,
+    )
+    assert admin_export.status_code == 200, admin_export.text
+    assert "A-1-V-PATH-DENY" in admin_export.text
+    assert "BAR-PATH-DENY" in admin_export.text
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    denied_path = await ac.get(
+        f"/api/v1/products/{product.id}/variants/export", headers=headers
+    )
+    assert denied_path.status_code == 403, denied_path.text
+    assert denied_path.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_roster = await ac.get("/api/v1/products/variants/export", headers=headers)
+    assert denied_roster.status_code == 403, denied_roster.text
+    assert denied_roster.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    listed = await ac.get(f"/api/v1/products/{product.id}/variants", headers=headers)
+    assert listed.status_code == 200, listed.text
+    assert any(row["sku"] == "A-1-V-PATH-DENY" for row in listed.json()["data"])
+
+    products = await ac.get("/api/v1/products", headers=headers)
+    assert products.status_code == 200, products.text
+    assert any(row["sku"] == "A-1" for row in products.json()["data"])
 
 
 @pytest.mark.asyncio
