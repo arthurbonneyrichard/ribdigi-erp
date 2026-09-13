@@ -15883,7 +15883,7 @@ async def test_store_manager_stock_transfer_store_manager_ids_redacted(client, d
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
     admin_headers = await auth_headers(
         ac,
-        email="admin@alpha.example.com",
+        email="super@alpha.example.com",
         tenant_slug="alpha",
         totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
     )

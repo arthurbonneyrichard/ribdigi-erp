@@ -103,8 +103,9 @@ async def test_inter_store_ship_receive_requires_store_managers(client, db_sessi
 
     admin_headers = await auth_headers(
         ac,
-        email="admin@alpha.example.com",
+        email="super@alpha.example.com",
         tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
     )
     admin_get = await ac.get(
         f"/api/v1/stores/transfers/{transfer_id}",
