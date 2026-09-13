@@ -5369,6 +5369,93 @@ async def test_store_manager_tax_rate_writes_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_tax_calculate_master_resolve_denied(client, db_session):
+    """POST /tax/calculate denies tax_rate_id/default master resolve for store_manager; explicit rate remains."""
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["tax"] = ["read", "write"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    existing = m.TaxRate(
+        tenant_id=tid,
+        company_id=cid,
+        name="Calc Resolve VAT",
+        rate=15.0,
+        is_active=True,
+        is_default=True,
+        pricing_mode="exclusive",
+    )
+    db_session.add(existing)
+    await db_session.commit()
+
+    denied_by_id = await ac.post(
+        "/api/v1/tax/calculate",
+        headers=headers,
+        json={"amount": 100, "tax_rate_id": existing.id},
+    )
+    assert denied_by_id.status_code == 403, denied_by_id.text
+    assert denied_by_id.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_default = await ac.post(
+        "/api/v1/tax/calculate",
+        headers=headers,
+        json={"amount": 100},
+    )
+    assert denied_default.status_code == 403, denied_default.text
+    assert denied_default.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    ok_explicit = await ac.post(
+        "/api/v1/tax/calculate",
+        headers=headers,
+        json={"amount": 100, "rate": 15.0, "pricing_mode": "exclusive"},
+    )
+    assert ok_explicit.status_code == 200, ok_explicit.text
+    body = ok_explicit.json()["data"]
+    assert float(body["tax"]) == pytest.approx(15.0)
+    assert float(body["gross"]) == pytest.approx(115.0)
+
+    ok_admin_id = await ac.post(
+        "/api/v1/tax/calculate",
+        headers=admin_headers,
+        json={"amount": 100, "tax_rate_id": existing.id},
+    )
+    assert ok_admin_id.status_code == 200, ok_admin_id.text
+    assert float(ok_admin_id.json()["data"]["rate"]) == pytest.approx(15.0)
+
+    ok_admin_default = await ac.post(
+        "/api/v1/tax/calculate",
+        headers=admin_headers,
+        json={"amount": 100},
+    )
+    assert ok_admin_default.status_code == 200, ok_admin_default.text
+    assert float(ok_admin_default.json()["data"]["tax"]) == pytest.approx(15.0)
+
+
+@pytest.mark.asyncio
 async def test_store_manager_audit_logs_self_and_store_details_scoped(client, db_session):
     """Audit list/export: mgr sees self + managed store/WH details, not foreign unscoped."""
     ac, seed = client

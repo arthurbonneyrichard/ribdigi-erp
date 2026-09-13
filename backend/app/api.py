@@ -16215,6 +16215,15 @@ async def calculate_tax(
     claims=Depends(require_permission("tax", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_tax_calculate_master_resolve_denied(
+        managed,
+        tax_rate_id=payload.tax_rate_id,
+        rate=payload.rate,
+        components=payload.components,
+    )
     company_id = claims.get("company_id")
     mode = payload.pricing_mode or "exclusive"
     rate_pct = payload.rate

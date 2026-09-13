@@ -983,7 +983,9 @@ def assert_company_level_tax_rate_list_read_denied(
 
     Create/patch/default and CSV export already denied; GET ``/tax/rates`` dumped
     the full company rate table. Detail GET is separately denied. Store-scoped tax
-    report/filing remain; ``/tax/calculate`` remains.
+    report/filing remain. ``/tax/calculate`` must not resolve company master rows
+    (``assert_company_level_tax_calculate_master_resolve_denied``); explicit
+    rate/components math remains.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
@@ -999,9 +1001,42 @@ def assert_company_level_tax_rate_detail_read_denied(
     """403 when store_manager reads a company tax rate by id (master dump).
 
     List GET/export/writes already denied; detail GET would bypass list deny via
-    known ``rate_id``. Store-scoped tax report/filing remain; ``/tax/calculate``
-    remains.
+    known ``rate_id``. Store-scoped tax report/filing remain.
+    ``/tax/calculate`` must not resolve company master rows
+    (``assert_company_level_tax_calculate_master_resolve_denied``); explicit
+    rate/components math remains.
     """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_tax_calculate_master_resolve_denied(
+    managed_ids: list[str] | None,
+    *,
+    tax_rate_id: str | None = None,
+    rate: float | None = None,
+    components: list | None = None,
+    message: str = (
+        "Store managers cannot resolve company tax rate masters via calculate; "
+        "pass explicit rate/components, or use scoped tax reports/filing."
+    ),
+) -> None:
+    """403 when store_manager uses ``/tax/calculate`` to load company tax masters.
+
+    List/detail GET + CSV export + create/patch/default already denied.
+    ``tax_rate_id`` lookup and default-rate fallback re-dumped rate / components /
+    pricing_mode / reverse-charge from the company tax table. Explicit ``rate``
+    and/or ``components`` arithmetic remains (POS/sales line math); scoped tax
+    report/filing remain.
+    """
+    if managed_ids is None:
+        return
+    resolving_id = bool((tax_rate_id or "").strip())
+    has_explicit = rate is not None or (
+        isinstance(components, list) and len(components) > 0
+    )
+    resolving_default = (not resolving_id) and (not has_explicit)
+    if not resolving_id and not resolving_default:
+        return
     assert_company_level_write_denied(managed_ids, message=message)
 
 

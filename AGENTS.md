@@ -93,7 +93,10 @@ store activation — never frontend-only.
    journals (null-store fail-closed; foreign `store_id` denied), and tax
    report / filing (+ path CSV, `/reports/export` tax/tax_filing*) from
    managed-store sales/POS + managed-WH purchase bills/POs (null-store /
-   null-WH fail-closed; empty managed → zero), and audit list/export
+   null-WH fail-closed; empty managed → zero) + **tax rate create/patch/default
+   + list/detail GET + CSV export denied** + **``/tax/calculate`` company master
+   resolve denied** (``tax_rate_id`` / default-rate fallback; explicit
+   rate/components math remains), and audit list/export
    fail-closed to self-authored events plus details with managed
    `store_id`/`warehouse_id` (no audit store column; ADR-005 open), sales
    returns via linked invoice store (+ export/asserts), and dashboard
