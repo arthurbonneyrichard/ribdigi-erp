@@ -2738,6 +2738,8 @@ def omit_product_cost_price(managed_ids: list[str] | None) -> bool:
     ``redact_inventory_report_cost`` when ``warehouse_ids`` is set. Low-stock
     alert list/export also omit ``cost_price`` via this helper. AI dead-stock
     JSON/CSV omit ``cost_price`` / carrying-cost via ``redact_ai_dead_stock_cost``
+    when ``warehouse_ids`` is set. Stock-count variance reports omit
+    ``unit_cost`` / ``variance_value`` via ``redact_stock_count_variance_cost``
     when ``warehouse_ids`` is set.
     """
     return managed_ids is not None
@@ -2824,6 +2826,38 @@ def redact_inventory_report_cost(payload: dict) -> dict:
                 bucket["total_value"] = None
             redacted_wh.append(bucket)
         out["by_warehouse"] = redacted_wh
+    return out
+
+
+def omit_stock_count_variance_cost(warehouse_ids: list[str] | None) -> bool:
+    """True when store_manager must omit stock-count variance COGS fields.
+
+    Catalog ``cost_price`` + inventory balance/valuation cost already redacted;
+    WH-scoped variance JSON/CSV/PDF must not re-dump ``unit_cost`` /
+    ``variance_value`` / ``total_variance_value`` from ``product.cost_price``.
+    Qty variance + SKU/name remain for ops.
+    """
+    return warehouse_ids is not None
+
+
+def redact_stock_count_variance_cost(payload: dict) -> dict:
+    """Null unit_cost / variance_value fields on stock-count variance reports."""
+    out = dict(payload)
+    if "total_variance_value" in out:
+        out["total_variance_value"] = None
+    rows = out.get("rows")
+    if isinstance(rows, list):
+        redacted: list = []
+        for row in rows:
+            if not isinstance(row, dict):
+                redacted.append(row)
+                continue
+            item = dict(row)
+            for key in ("unit_cost", "variance_value"):
+                if key in item:
+                    item[key] = None
+            redacted.append(item)
+        out["rows"] = redacted
     return out
 
 

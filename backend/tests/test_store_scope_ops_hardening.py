@@ -15659,3 +15659,137 @@ async def test_store_manager_sync_conflicts_and_status_store_scoped(client, db_s
     assert body.get("conflict_count") == 1
     assert body.get("registered_devices") == 1
     assert body.get("active_devices") == 1
+
+
+@pytest.mark.asyncio
+async def test_store_manager_stock_count_variance_cost_redacted(client, db_session):
+    """store_manager variance report omits unit_cost/value; admin intact; qty remain."""
+    from app.inventory import apply_stock_change
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Cnt Cost Redact Store",
+        code="CNT-CR-ST",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(mine)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        name="Cnt Cost WH",
+        code="CNT-CR-WH",
+    )
+    db_session.add(wh)
+    await db_session.flush()
+
+    product = m.Product(
+        tenant_id=tid,
+        company_id=cid,
+        name="Cnt Cost SKU",
+        sku="CNT-COST-991",
+        is_active=True,
+        stock_qty=0,
+        cost_price=17.25,
+        selling_price=25,
+    )
+    db_session.add(product)
+    await db_session.flush()
+    await apply_stock_change(
+        db_session,
+        tenant_id=tid,
+        product_id=product.id,
+        quantity_delta=10,
+        movement_type="stock_in",
+        user_id=mgr.id,
+        warehouse_id=wh.id,
+    )
+    await db_session.commit()
+
+    created = await ac.post(
+        "/api/v1/inventory/stock-counts",
+        headers=headers,
+        json={"warehouse_id": wh.id, "product_ids": [product.id]},
+    )
+    assert created.status_code == 200, created.text
+    count_id = created.json()["data"]["id"]
+
+    patched = await ac.patch(
+        f"/api/v1/inventory/stock-counts/{count_id}/items",
+        headers=headers,
+        json={"items": [{"product_id": product.id, "counted_qty": 7}]},
+    )
+    assert patched.status_code == 200, patched.text
+
+    completed = await ac.post(
+        f"/api/v1/inventory/stock-counts/{count_id}/complete",
+        headers=headers,
+    )
+    assert completed.status_code == 200, completed.text
+
+    admin_json = await ac.get(
+        f"/api/v1/inventory/stock-counts/{count_id}/variance-report",
+        headers=admin_headers,
+        params={"format": "json"},
+    )
+    assert admin_json.status_code == 200, admin_json.text
+    admin_body = admin_json.json()["data"]
+    admin_row = next(r for r in admin_body["rows"] if r.get("sku") == "CNT-COST-991")
+    assert float(admin_row["unit_cost"]) == pytest.approx(17.25)
+    assert float(admin_row["variance_value"]) == pytest.approx(-51.75)
+    assert float(admin_body["total_variance_value"]) == pytest.approx(-51.75)
+    assert float(admin_row["variance_qty"]) == pytest.approx(-3.0)
+
+    mgr_json = await ac.get(
+        f"/api/v1/inventory/stock-counts/{count_id}/variance-report",
+        headers=headers,
+        params={"format": "json"},
+    )
+    assert mgr_json.status_code == 200, mgr_json.text
+    mgr_body = mgr_json.json()["data"]
+    mgr_row = next(r for r in mgr_body["rows"] if r.get("sku") == "CNT-COST-991")
+    assert float(mgr_row["variance_qty"]) == pytest.approx(-3.0)
+    assert float(mgr_row["expected_qty"]) == pytest.approx(10.0)
+    assert float(mgr_row["counted_qty"]) == pytest.approx(7.0)
+    assert mgr_row.get("unit_cost") is None
+    assert mgr_row.get("variance_value") is None
+    assert mgr_body.get("total_variance_value") is None
+
+    mgr_csv = await ac.get(
+        f"/api/v1/inventory/stock-counts/{count_id}/variance-report",
+        headers=headers,
+        params={"format": "csv"},
+    )
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    assert "17.25" not in mgr_csv.text
+    assert "-51.75" not in mgr_csv.text
+    csv_rows = list(csv.DictReader(io.StringIO(mgr_csv.text)))
+    assert csv_rows
+    target = next(r for r in csv_rows if r.get("sku") == "CNT-COST-991")
+    assert float(target["variance_qty"]) == pytest.approx(-3.0)
+    assert (target.get("unit_cost") or "").strip() == ""
+    assert (target.get("variance_value") or "").strip() == ""
+
+    admin_csv = await ac.get(
+        f"/api/v1/inventory/stock-counts/{count_id}/variance-report",
+        headers=admin_headers,
+        params={"format": "csv"},
+    )
+    assert admin_csv.status_code == 200, admin_csv.text
+    assert "17.25" in admin_csv.text
+    assert "-51.75" in admin_csv.text

@@ -54,7 +54,7 @@ store activation — never frontend-only.
    purchasing PR/PO/GRN/returns, purchase invoices (direct `warehouse_id` or linked
    PO/GRN warehouse), sales orders, POS sessions (open requires managed
    ``store_id``; null/unset fail-closed), low-stock / expiring-batch
-   list+export+reports, inventory balance/valuation/movements reports (**cost/value redacted** for store_manager), sales
+   list+export+reports, inventory balance/valuation/movements reports (**cost/value redacted** for store_manager) + **stock-count variance unit_cost/variance_value redacted** (JSON/CSV/PDF; qty remain), sales
    daily/monthly/products/customers/salesperson/by-store reports, purchasing
    summary/suppliers/pending/returns reports, transfer history report,
    inventory stock-transfer write asserts (from-WH required; mutations must touch
@@ -123,7 +123,7 @@ store activation — never frontend-only.
    scan-due (payment/recurring) via entity store/WH joins (quotations
    omitted/skipped — no store_id), and products catalog list/get/export/
    lookup/POS search stock_qty from managed WarehouseStock (not
-   product.stock_qty; cost_price redacted on list/get/export + per-product variants; category_id/brand_id/unit_id/tax_rate_id redacted on list/get + category_code/brand_code/unit_code blanked on export; **inventory balance/valuation cost_price/value/total_value redacted** on JSON + `/reports/export`; **low-stock list/export cost_price redacted**; **AI dead-stock cost_price/estimated_carrying_cost/total_carrying_cost redacted** on JSON + CSV), and sales quotations list/export/get/lifecycle
+   product.stock_qty; cost_price redacted on list/get/export + per-product variants; category_id/brand_id/unit_id/tax_rate_id redacted on list/get + category_code/brand_code/unit_code blanked on export; **inventory balance/valuation cost_price/value/total_value redacted** on JSON + `/reports/export`; **low-stock list/export cost_price redacted**; **AI dead-stock cost_price/estimated_carrying_cost/total_carrying_cost redacted** on JSON + CSV; **stock-count variance unit_cost/variance_value/total_variance_value redacted** on JSON/CSV/PDF), and sales quotations list/export/get/lifecycle
    via own drafts + converted in-scope order/invoice (no store_id), and
    **branches/departments create/patch/list GET/export denied for store_manager** (company-level
    org units) + **users list/get branch_id/department_id org assignment + totp_enabled MFA status + email_verified redacted** (with email/phone

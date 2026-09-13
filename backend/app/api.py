@@ -6321,6 +6321,8 @@ async def stock_count_variance_report(
         db, tenant_id=claims["tenant_id"], count_id=count_id,
         company_id=claims.get("company_id"),
     )
+    if dashboard_scope_svc.omit_stock_count_variance_cost(managed_wh):
+        report = dashboard_scope_svc.redact_stock_count_variance_cost(report)
     fmt = (format or "csv").strip().lower()
     safe_num = "".join(c if c.isalnum() or c in "-_" else "_" for c in report["count_number"])
     if fmt == "json":
