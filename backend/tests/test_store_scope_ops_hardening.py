@@ -12983,6 +12983,179 @@ async def test_store_manager_purchasing_settings_write_denied(client, db_session
 
 
 @pytest.mark.asyncio
+async def test_store_manager_approval_matrix_roles_redacted(client, db_session):
+    """Expense/PR awaiting_roles redacted for store_manager after settings GET deny."""
+    from app import expenses as expenses_svc
+    from app import purchasing as purchasing_svc
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    tenant = await db_session.get(m.Tenant, tid)
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["expenses"] = ["read", "write", "approve"]
+    perms["purchasing"] = ["read", "write", "approve"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+
+    await expenses_svc.update_approval_settings(
+        db_session,
+        tenant,
+        levels=[
+            {
+                "min_amount": 10,
+                "roles": ["store_manager", "accountant"],
+                "label": "L1 Secret Matrix",
+            },
+            {
+                "min_amount": 500,
+                "roles": ["company_admin", "super_admin"],
+                "label": "L2 Secret Matrix",
+            },
+        ],
+    )
+    await purchasing_svc.update_pr_approval_settings(
+        db_session,
+        tenant,
+        levels=[
+            {
+                "min_amount": 0.01,
+                "roles": ["store_manager", "accountant"],
+                "label": "PR L1 Secret",
+            },
+            {
+                "min_amount": 1000,
+                "roles": ["company_admin", "super_admin"],
+                "label": "PR L2 Secret",
+            },
+        ],
+    )
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Approval Roles Redact Store",
+        code="APR-RD-ST",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        name="Approval Roles Redact WH",
+        code="APR-RD-WH",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Approval Roles Supplier",
+        kind="supplier",
+        code="SUP-APR-RD",
+        status="active",
+        credit_limit=0,
+    )
+    db_session.add_all([wh, supplier])
+    await db_session.flush()
+
+    expense = await expenses_svc.create_expense(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        amount=250,
+        category="Travel",
+        description="Approval roles redact expense",
+        payment_method="cash",
+        store_id=store.id,
+        company_id=cid,
+    )
+    assert expense.status == "pending"
+    assert expense.approval_steps_required >= 1
+
+    pr = await purchasing_svc.create_purchase_request(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        supplier_id=supplier.id,
+        warehouse_id=wh.id,
+        items=[{"product_id": seed["p1"].id, "quantity": 5, "unit_price": 20}],
+        company_id=cid,
+    )
+    pr = await purchasing_svc.submit_purchase_request(
+        db_session,
+        tenant_id=tid,
+        user_id=seed["admin1"].id,
+        request_id=pr.id,
+    )
+    assert pr.status == "pending"
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    denied_settings = await ac.get("/api/v1/expenses/settings", headers=headers)
+    assert denied_settings.status_code == 403, denied_settings.text
+    denied_pr_settings = await ac.get("/api/v1/purchasing/settings", headers=headers)
+    assert denied_pr_settings.status_code == 403, denied_pr_settings.text
+
+    admin_exp = await ac.get(f"/api/v1/expenses/{expense.id}", headers=admin_headers)
+    assert admin_exp.status_code == 200, admin_exp.text
+    admin_roles = admin_exp.json()["data"].get("awaiting_roles") or []
+    assert "store_manager" in admin_roles
+    assert "accountant" in admin_roles
+
+    mgr_exp = await ac.get(f"/api/v1/expenses/{expense.id}", headers=headers)
+    assert mgr_exp.status_code == 200, mgr_exp.text
+    mgr_exp_body = mgr_exp.json()["data"]
+    assert mgr_exp_body["status"] == "pending"
+    assert mgr_exp_body.get("approval_step") == 1
+    assert mgr_exp_body.get("awaiting_roles") == []
+
+    listed = await ac.get("/api/v1/expenses", headers=headers)
+    assert listed.status_code == 200, listed.text
+    listed_row = next(r for r in listed.json()["data"] if r["id"] == expense.id)
+    assert listed_row.get("awaiting_roles") == []
+    assert listed_row.get("description") == "Approval roles redact expense"
+
+    admin_pr = await ac.get(f"/api/v1/purchasing/requests/{pr.id}", headers=admin_headers)
+    assert admin_pr.status_code == 200, admin_pr.text
+    admin_pr_roles = admin_pr.json()["data"].get("awaiting_roles") or []
+    assert "store_manager" in admin_pr_roles
+    assert "accountant" in admin_pr_roles
+
+    mgr_pr = await ac.get(f"/api/v1/purchasing/requests/{pr.id}", headers=headers)
+    assert mgr_pr.status_code == 200, mgr_pr.text
+    mgr_pr_body = mgr_pr.json()["data"]
+    assert mgr_pr_body["status"] == "pending"
+    assert mgr_pr_body.get("awaiting_roles") == []
+
+    mgr_pr_list = await ac.get("/api/v1/purchasing/requests", headers=headers)
+    assert mgr_pr_list.status_code == 200, mgr_pr_list.text
+    mgr_pr_row = next(r for r in mgr_pr_list.json()["data"] if r["id"] == pr.id)
+    assert mgr_pr_row.get("awaiting_roles") == []
+
+
+@pytest.mark.asyncio
 async def test_store_manager_report_schedule_writes_denied(client, db_session):
     """Company report schedule create/patch/delete/run + list/export denied for store_manager."""
     from app import report_schedules as report_schedules_svc

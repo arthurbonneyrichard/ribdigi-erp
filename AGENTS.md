@@ -174,8 +174,10 @@ store activation — never frontend-only.
    and **business-insights settings GET/PUT + formulas GET denied for store_manager** (overview/attention embeds + health weights redacted)
    + **BI overview profit COGS / stock_value / expiry value_at_risk redacted** (revenue/expenses/qty remain; engine still uses cost server-side)
    (company-level BI thresholds/formulas; GET settings/formulas + acknowledge/dismiss remain),
-   and **purchasing PR approval settings PATCH denied for store_manager**
-   (company-level approval matrix; GET/export remain; admin allowlist retained),
+   and **purchasing PR approval settings GET/PATCH/export denied for store_manager**
+   (company-level approval matrix; admin allowlist retained) + **expense/PR
+   ``awaiting_roles`` redacted** on pending expense + purchase-request JSON
+   (settings GET already denied; step/level counters remain),
    and **document numbering / print-template / tenant profile PATCH /tenants/me
    denied for store_manager** (company-level document settings; admin export reads
    remain),

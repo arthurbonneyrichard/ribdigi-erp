@@ -9545,7 +9545,10 @@ async def list_purchase_requests(
         stmt, m.PurchaseRequest, managed_wh
     )
     rows = (await db.execute(stmt)).scalars().all()
-    return env([await purchasing_svc.serialize_pr(db, pr) for pr in rows])
+    out = [await purchasing_svc.serialize_pr(db, pr) for pr in rows]
+    if dashboard_scope_svc.omit_approval_matrix_roles(managed_wh):
+        out = [dashboard_scope_svc.redact_approval_matrix_roles(row) for row in out]
+    return env(out)
 
 
 @api.get("/purchasing/requests/export")
@@ -9653,7 +9656,10 @@ async def create_purchase_request(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    return env(await purchasing_svc.serialize_pr(db, pr), "Purchase request created")
+    payload_out = await purchasing_svc.serialize_pr(db, pr)
+    if dashboard_scope_svc.omit_approval_matrix_roles(managed_wh):
+        payload_out = dashboard_scope_svc.redact_approval_matrix_roles(payload_out)
+    return env(payload_out, "Purchase request created")
 
 
 @api.get("/purchasing/requests/{request_id}")
@@ -9671,7 +9677,10 @@ async def get_purchase_request(
     dashboard_scope_svc.assert_warehouse_in_manager_scope(
         managed_wh, getattr(pr, "warehouse_id", None), allow_unset=False
     )
-    return env(await purchasing_svc.serialize_pr(db, pr))
+    payload_out = await purchasing_svc.serialize_pr(db, pr)
+    if dashboard_scope_svc.omit_approval_matrix_roles(managed_wh):
+        payload_out = dashboard_scope_svc.redact_approval_matrix_roles(payload_out)
+    return env(payload_out)
 
 
 @api.post("/purchasing/requests/{request_id}/submit")
@@ -9694,6 +9703,8 @@ async def submit_purchase_request(
     )
     await db.commit()
     data = await purchasing_svc.serialize_pr(db, pr)
+    if dashboard_scope_svc.omit_approval_matrix_roles(managed_wh):
+        data = dashboard_scope_svc.redact_approval_matrix_roles(data)
     msg = (
         "Purchase request auto-approved"
         if pr.status == "approved"
@@ -9727,6 +9738,8 @@ async def approve_purchase_request(
     )
     await db.commit()
     data = await purchasing_svc.serialize_pr(db, pr)
+    if dashboard_scope_svc.omit_approval_matrix_roles(managed_wh):
+        data = dashboard_scope_svc.redact_approval_matrix_roles(data)
     msg = (
         "Purchase request approved"
         if pr.status == "approved"
@@ -9759,7 +9772,10 @@ async def reject_purchase_request(
         actor_role=claims.get("role"),
     )
     await db.commit()
-    return env(await purchasing_svc.serialize_pr(db, pr), "Purchase request rejected")
+    payload_out = await purchasing_svc.serialize_pr(db, pr)
+    if dashboard_scope_svc.omit_approval_matrix_roles(managed_wh):
+        payload_out = dashboard_scope_svc.redact_approval_matrix_roles(payload_out)
+    return env(payload_out, "Purchase request rejected")
 
 
 @api.post("/purchasing/requests/{request_id}/cancel")
@@ -9781,7 +9797,10 @@ async def cancel_purchase_request(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], request_id=request_id
     )
     await db.commit()
-    return env(await purchasing_svc.serialize_pr(db, pr), "Purchase request cancelled")
+    payload_out = await purchasing_svc.serialize_pr(db, pr)
+    if dashboard_scope_svc.omit_approval_matrix_roles(managed_wh):
+        payload_out = dashboard_scope_svc.redact_approval_matrix_roles(payload_out)
+    return env(payload_out, "Purchase request cancelled")
 
 
 @api.post("/purchasing/requests/{request_id}/convert")
@@ -9803,11 +9822,14 @@ async def convert_purchase_request(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], request_id=request_id
     )
     await db.commit()
+    payload_out = {
+        "request": await purchasing_svc.serialize_pr(db, pr),
+        "purchase_order": await purchasing_svc.serialize_po(db, po),
+    }
+    if dashboard_scope_svc.omit_approval_matrix_roles(managed_wh):
+        payload_out = dashboard_scope_svc.redact_approval_matrix_roles(payload_out)
     return env(
-        {
-            "request": await purchasing_svc.serialize_pr(db, pr),
-            "purchase_order": await purchasing_svc.serialize_po(db, po),
-        },
+        payload_out,
         "Purchase request converted to PO",
     )
 
@@ -11719,6 +11741,8 @@ async def list_recurring_expenses(
         out = [dashboard_scope_svc.redact_expense_department_assignment(row) for row in out]
     if dashboard_scope_svc.omit_expense_category_assignment(managed):
         out = [dashboard_scope_svc.redact_expense_category_assignment(row) for row in out]
+    if dashboard_scope_svc.omit_approval_matrix_roles(managed):
+        out = [dashboard_scope_svc.redact_approval_matrix_roles(row) for row in out]
     return env(out)
 
 
@@ -11786,6 +11810,8 @@ async def create_recurring_expense(
         payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
     if dashboard_scope_svc.omit_expense_category_assignment(managed):
         payload_out = dashboard_scope_svc.redact_expense_category_assignment(payload_out)
+    if dashboard_scope_svc.omit_approval_matrix_roles(managed):
+        payload_out = dashboard_scope_svc.redact_approval_matrix_roles(payload_out)
     return env(payload_out, "Recurring expense created")
 
 
@@ -11825,6 +11851,8 @@ async def update_recurring_expense(
         payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
     if dashboard_scope_svc.omit_expense_category_assignment(managed):
         payload_out = dashboard_scope_svc.redact_expense_category_assignment(payload_out)
+    if dashboard_scope_svc.omit_approval_matrix_roles(managed):
+        payload_out = dashboard_scope_svc.redact_approval_matrix_roles(payload_out)
     return env(payload_out, "Recurring expense updated")
 
 
@@ -11849,6 +11877,8 @@ async def generate_recurring_expenses(
         out = [dashboard_scope_svc.redact_expense_department_assignment(row) for row in out]
     if dashboard_scope_svc.omit_expense_category_assignment(managed):
         out = [dashboard_scope_svc.redact_expense_category_assignment(row) for row in out]
+    if dashboard_scope_svc.omit_approval_matrix_roles(managed):
+        out = [dashboard_scope_svc.redact_approval_matrix_roles(row) for row in out]
     return env(
         out,
         f"Generated {len(created)} expense(s)",
@@ -11900,6 +11930,8 @@ async def expenses(
         out = [dashboard_scope_svc.redact_expense_department_assignment(row) for row in out]
     if dashboard_scope_svc.omit_expense_category_assignment(managed):
         out = [dashboard_scope_svc.redact_expense_category_assignment(row) for row in out]
+    if dashboard_scope_svc.omit_approval_matrix_roles(managed):
+        out = [dashboard_scope_svc.redact_approval_matrix_roles(row) for row in out]
     return env(out)
 
 
@@ -11979,6 +12011,8 @@ async def add_expense(
         payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
     if dashboard_scope_svc.omit_expense_category_assignment(managed):
         payload_out = dashboard_scope_svc.redact_expense_category_assignment(payload_out)
+    if dashboard_scope_svc.omit_approval_matrix_roles(managed):
+        payload_out = dashboard_scope_svc.redact_approval_matrix_roles(payload_out)
     return env(payload_out, "Expense recorded")
 
 
@@ -12002,6 +12036,8 @@ async def get_expense(
         payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
     if dashboard_scope_svc.omit_expense_category_assignment(managed):
         payload_out = dashboard_scope_svc.redact_expense_category_assignment(payload_out)
+    if dashboard_scope_svc.omit_approval_matrix_roles(managed):
+        payload_out = dashboard_scope_svc.redact_approval_matrix_roles(payload_out)
     return env(payload_out)
 
 
@@ -12073,6 +12109,8 @@ async def patch_expense(
         payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
     if dashboard_scope_svc.omit_expense_category_assignment(managed):
         payload_out = dashboard_scope_svc.redact_expense_category_assignment(payload_out)
+    if dashboard_scope_svc.omit_approval_matrix_roles(managed):
+        payload_out = dashboard_scope_svc.redact_approval_matrix_roles(payload_out)
     return env(payload_out, "Expense updated")
 
 
@@ -12100,6 +12138,8 @@ async def expense_ocr_suggest(
     )
     if dashboard_scope_svc.omit_expense_category_assignment(managed):
         result = dashboard_scope_svc.redact_expense_category_assignment(result)
+    if dashboard_scope_svc.omit_approval_matrix_roles(managed):
+        result = dashboard_scope_svc.redact_approval_matrix_roles(result)
     return env(result, "OCR suggestions ready — review before applying")
 
 
@@ -12172,6 +12212,8 @@ async def expense_ocr_apply(
         payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
     if dashboard_scope_svc.omit_expense_category_assignment(managed):
         payload_out = dashboard_scope_svc.redact_expense_category_assignment(payload_out)
+    if dashboard_scope_svc.omit_approval_matrix_roles(managed):
+        payload_out = dashboard_scope_svc.redact_approval_matrix_roles(payload_out)
     return env(
         payload_out,
         "OCR suggestions applied to expense",
@@ -12220,6 +12262,8 @@ async def upload_expense_attachment(
         data = dashboard_scope_svc.redact_expense_department_assignment(data)
     if dashboard_scope_svc.omit_expense_category_assignment(managed):
         data = dashboard_scope_svc.redact_expense_category_assignment(data)
+    if dashboard_scope_svc.omit_approval_matrix_roles(managed):
+        data = dashboard_scope_svc.redact_approval_matrix_roles(data)
     data["uploaded"] = {
         "key": stored.key,
         "size": stored.size,
@@ -12291,6 +12335,8 @@ async def delete_expense_attachment(
         payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
     if dashboard_scope_svc.omit_expense_category_assignment(managed):
         payload_out = dashboard_scope_svc.redact_expense_category_assignment(payload_out)
+    if dashboard_scope_svc.omit_approval_matrix_roles(managed):
+        payload_out = dashboard_scope_svc.redact_approval_matrix_roles(payload_out)
     return env(payload_out, "Attachment removed")
 
 
@@ -12326,6 +12372,8 @@ async def approve_expense(
         payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
     if dashboard_scope_svc.omit_expense_category_assignment(managed):
         payload_out = dashboard_scope_svc.redact_expense_category_assignment(payload_out)
+    if dashboard_scope_svc.omit_approval_matrix_roles(managed):
+        payload_out = dashboard_scope_svc.redact_approval_matrix_roles(payload_out)
     return env(payload_out, msg)
 
 
@@ -12358,6 +12406,8 @@ async def reject_expense(
         payload_out = dashboard_scope_svc.redact_expense_department_assignment(payload_out)
     if dashboard_scope_svc.omit_expense_category_assignment(managed):
         payload_out = dashboard_scope_svc.redact_expense_category_assignment(payload_out)
+    if dashboard_scope_svc.omit_approval_matrix_roles(managed):
+        payload_out = dashboard_scope_svc.redact_approval_matrix_roles(payload_out)
     return env(payload_out, "Expense rejected")
 
 
@@ -20084,6 +20134,8 @@ async def ai_expenses_analysis(
     )
     if dashboard_scope_svc.omit_expense_category_assignment(managed_stores):
         data = dashboard_scope_svc.redact_expense_category_assignment(data)
+    if dashboard_scope_svc.omit_approval_matrix_roles(managed_stores):
+        data = dashboard_scope_svc.redact_approval_matrix_roles(data)
     return env(data)
 
 

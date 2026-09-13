@@ -2776,6 +2776,31 @@ def redact_party_contacts_roster(payload: dict) -> dict:
     return out
 
 
+def omit_approval_matrix_roles(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit ``awaiting_roles`` on expense/PR JSON.
+
+    Expense + purchasing approval settings GET/PATCH/export already denied
+    (company matrix dump of levels/roles/thresholds). Pending expense and
+    purchase-request payloads must not re-dump ``awaiting_roles`` from those
+    matrices. ``approval_step`` / ``approval_steps_required`` / ``awaiting_level``
+    remain for scoped workflow UX; approve/reject ops remain.
+    """
+    return managed_ids is not None
+
+
+def redact_approval_matrix_roles(payload: dict) -> dict:
+    """Clear approval-matrix ``awaiting_roles`` on expense / PR JSON (+ nested request)."""
+    out = dict(payload)
+    if "awaiting_roles" in out:
+        out["awaiting_roles"] = []
+    nested = out.get("request")
+    if isinstance(nested, dict) and "awaiting_roles" in nested:
+        req = dict(nested)
+        req["awaiting_roles"] = []
+        out["request"] = req
+    return out
+
+
 def assert_company_level_user_admin_export_denied(
     managed_ids: list[str] | None,
     *,
