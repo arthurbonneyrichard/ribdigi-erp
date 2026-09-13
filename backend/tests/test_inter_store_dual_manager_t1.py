@@ -97,8 +97,23 @@ async def test_inter_store_ship_receive_requires_store_managers(client, db_sessi
     assert created.status_code == 200, created.text
     transfer_id = created.json()["data"]["id"]
     body = created.json()["data"]
-    assert body["from_store_manager_id"] == mgr_from.id
-    assert body["to_store_manager_id"] == mgr_to.id
+    # store_manager JSON redacts peer/self store-manager org assignment dump
+    assert body.get("from_store_manager_id") is None
+    assert body.get("to_store_manager_id") is None
+
+    admin_headers = await auth_headers(
+        ac,
+        email="admin@alpha.example.com",
+        tenant_slug="alpha",
+    )
+    admin_get = await ac.get(
+        f"/api/v1/stores/transfers/{transfer_id}",
+        headers=admin_headers,
+    )
+    assert admin_get.status_code == 200, admin_get.text
+    admin_body = admin_get.json()["data"]
+    assert admin_body["from_store_manager_id"] == mgr_from.id
+    assert admin_body["to_store_manager_id"] == mgr_to.id
 
     # Destination manager cannot ship
     denied_ship = await ac.post(

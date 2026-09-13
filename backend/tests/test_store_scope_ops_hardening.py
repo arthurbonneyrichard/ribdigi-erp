@@ -15793,3 +15793,136 @@ async def test_store_manager_stock_count_variance_cost_redacted(client, db_sessi
     assert admin_csv.status_code == 200, admin_csv.text
     assert "17.25" in admin_csv.text
     assert "-51.75" in admin_csv.text
+
+@pytest.mark.asyncio
+async def test_store_manager_stock_transfer_store_manager_ids_redacted(client, db_session):
+    """store_manager transfer JSON omits from/to store manager_ids; admin intact."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+
+    peer = m.User(
+        tenant_id=tid,
+        email="xfer-peer@alpha.example.com",
+        full_name="Xfer Peer Mgr",
+        password_hash=seed["mgr1"].password_hash,
+        role="store_manager",
+        email_verified=True,
+        permissions=seed["mgr1"].permissions,
+        totp_enabled=False,
+    )
+    db_session.add(peer)
+    await db_session.flush()
+    db_session.add(
+        m.UserCompanyMembership(
+            tenant_id=tid,
+            user_id=peer.id,
+            company_id=cid,
+            role="store_manager",
+            permissions=seed["mgr1"].permissions,
+            is_active=True,
+        )
+    )
+    await db_session.flush()
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Xfer Redact Mine",
+        code="XFER-RD-M",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Xfer Redact Peer",
+        code="XFER-RD-P",
+        manager_id=peer.id,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.flush()
+    wh_mine = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=mine.id,
+        name="Xfer Redact Mine WH",
+        code="XFER-RD-MWH",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    wh_other = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=other.id,
+        name="Xfer Redact Peer WH",
+        code="XFER-RD-PWH",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    db_session.add_all([wh_mine, wh_other])
+    await db_session.flush()
+
+    xfer = m.StockTransfer(
+        tenant_id=tid,
+        company_id=cid,
+        transfer_number="XFER-MGR-REDACT-1",
+        from_store_id=other.id,
+        to_store_id=mine.id,
+        from_warehouse_id=wh_other.id,
+        to_warehouse_id=wh_mine.id,
+        status="draft",
+        notes="inbound peer manager dump",
+        created_by=mgr.id,
+    )
+    db_session.add(xfer)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="admin@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    admin_get = await ac.get(f"/api/v1/stores/transfers/{xfer.id}", headers=admin_headers)
+    assert admin_get.status_code == 200, admin_get.text
+    admin_body = admin_get.json()["data"]
+    assert admin_body["from_store_manager_id"] == peer.id
+    assert admin_body["to_store_manager_id"] == mgr.id
+
+    mgr_get = await ac.get(f"/api/v1/stores/transfers/{xfer.id}", headers=headers)
+    assert mgr_get.status_code == 200, mgr_get.text
+    mgr_body = mgr_get.json()["data"]
+    assert mgr_body["from_store_id"] == other.id
+    assert mgr_body["to_store_id"] == mine.id
+    assert mgr_body.get("from_store_manager_id") is None
+    assert mgr_body.get("to_store_manager_id") is None
+
+    listed = await ac.get("/api/v1/stores/transfers", headers=headers)
+    assert listed.status_code == 200, listed.text
+    row = next(r for r in listed.json()["data"] if r["id"] == xfer.id)
+    assert row.get("from_store_manager_id") is None
+    assert row.get("to_store_manager_id") is None
+
+    inv_listed = await ac.get("/api/v1/inventory/stock-transfers", headers=headers)
+    assert inv_listed.status_code == 200, inv_listed.text
+    inv_row = next(r for r in inv_listed.json()["data"] if r["id"] == xfer.id)
+    assert inv_row.get("from_store_manager_id") is None
+    assert inv_row.get("to_store_manager_id") is None
+
+    history = await ac.get("/api/v1/reports/transfers", headers=headers)
+    assert history.status_code == 200, history.text
+    hist_row = next(r for r in history.json()["data"]["transfers"] if r["id"] == xfer.id)
+    assert hist_row.get("from_store_manager_id") is None
+    assert hist_row.get("to_store_manager_id") is None
+
+    # Managed-store list still exposes self-scope manager_id (intentionally open).
+    stores = await ac.get("/api/v1/stores", headers=headers)
+    assert stores.status_code == 200, stores.text
+    store_row = next(r for r in stores.json()["data"] if r["id"] == mine.id)
+    assert store_row.get("manager_id") == mgr.id
+

@@ -15057,20 +15057,21 @@ async def report_transfer_history(
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
-    return env(
-        await stores_svc.transfer_history(
-            db,
-            claims["tenant_id"],
-            status=status,
-            store_id=single,
-            store_ids=multi,
-            from_date=reports_svc.parse_date(from_date),
-            to_date=reports_svc.parse_date(to_date, end_of_day=True),
-            scope=scope,
-            limit=limit,
-            company_id=claims.get("company_id"),
-        )
+    data = await stores_svc.transfer_history(
+        db,
+        claims["tenant_id"],
+        status=status,
+        store_id=single,
+        store_ids=multi,
+        from_date=reports_svc.parse_date(from_date),
+        to_date=reports_svc.parse_date(to_date, end_of_day=True),
+        scope=scope,
+        limit=limit,
+        company_id=claims.get("company_id"),
     )
+    if dashboard_scope_svc.omit_stock_transfer_store_manager_assignment(managed):
+        data = dashboard_scope_svc.redact_stock_transfer_store_manager_assignment(data)
+    return env(data)
 
 
 @api.get("/reports/inventory/expiry")
@@ -16944,7 +16945,13 @@ async def list_transfers(
         limit=limit,
         company_id=claims.get("company_id"),
     )
-    return env([await stores_svc.serialize_transfer(db, t) for t in rows])
+    payload = [await stores_svc.serialize_transfer(db, t) for t in rows]
+    if dashboard_scope_svc.omit_stock_transfer_store_manager_assignment(managed):
+        payload = [
+            dashboard_scope_svc.redact_stock_transfer_store_manager_assignment(row)
+            for row in payload
+        ]
+    return env(payload)
 
 
 @api.get("/stores/transfers/export")
@@ -17001,7 +17008,10 @@ async def create_transfer(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    return env(await stores_svc.serialize_transfer(db, transfer), "Transfer created")
+    payload = await stores_svc.serialize_transfer(db, transfer)
+    if dashboard_scope_svc.omit_stock_transfer_store_manager_assignment(managed):
+        payload = dashboard_scope_svc.redact_stock_transfer_store_manager_assignment(payload)
+    return env(payload, "Transfer created")
 
 
 @api.get("/stores/transfers/{transfer_id}")
@@ -17021,7 +17031,10 @@ async def get_transfer(
         from_store_id=getattr(transfer, "from_store_id", None),
         to_store_id=getattr(transfer, "to_store_id", None),
     )
-    return env(await stores_svc.serialize_transfer(db, transfer))
+    payload = await stores_svc.serialize_transfer(db, transfer)
+    if dashboard_scope_svc.omit_stock_transfer_store_manager_assignment(managed):
+        payload = dashboard_scope_svc.redact_stock_transfer_store_manager_assignment(payload)
+    return env(payload)
 
 
 @api.post("/stores/transfers/{transfer_id}/submit")
@@ -17046,7 +17059,10 @@ async def submit_transfer(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    return env(await stores_svc.serialize_transfer(db, transfer), "Transfer requested")
+    payload = await stores_svc.serialize_transfer(db, transfer)
+    if dashboard_scope_svc.omit_stock_transfer_store_manager_assignment(managed):
+        payload = dashboard_scope_svc.redact_stock_transfer_store_manager_assignment(payload)
+    return env(payload, "Transfer requested")
 
 
 @api.post("/stores/transfers/{transfer_id}/ship")
@@ -17076,7 +17092,10 @@ async def ship_transfer(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    return env(await stores_svc.serialize_transfer(db, transfer), "Transfer shipped")
+    payload = await stores_svc.serialize_transfer(db, transfer)
+    if dashboard_scope_svc.omit_stock_transfer_store_manager_assignment(managed):
+        payload = dashboard_scope_svc.redact_stock_transfer_store_manager_assignment(payload)
+    return env(payload, "Transfer shipped")
 
 
 @api.post("/stores/transfers/{transfer_id}/receive")
@@ -17106,7 +17125,10 @@ async def receive_transfer(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    return env(await stores_svc.serialize_transfer(db, transfer), "Transfer received")
+    payload = await stores_svc.serialize_transfer(db, transfer)
+    if dashboard_scope_svc.omit_stock_transfer_store_manager_assignment(managed):
+        payload = dashboard_scope_svc.redact_stock_transfer_store_manager_assignment(payload)
+    return env(payload, "Transfer received")
 
 
 @api.post("/stores/transfers/{transfer_id}/cancel")
@@ -17131,7 +17153,10 @@ async def cancel_transfer(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    return env(await stores_svc.serialize_transfer(db, transfer), "Transfer cancelled")
+    payload = await stores_svc.serialize_transfer(db, transfer)
+    if dashboard_scope_svc.omit_stock_transfer_store_manager_assignment(managed):
+        payload = dashboard_scope_svc.redact_stock_transfer_store_manager_assignment(payload)
+    return env(payload, "Transfer cancelled")
 
 
 @api.get("/warehouses")
@@ -17391,7 +17416,13 @@ async def list_inventory_stock_transfers(
         limit=limit,
         company_id=claims.get("company_id"),
     )
-    return env([await stores_svc.serialize_transfer(db, row) for row in rows])
+    payload = [await stores_svc.serialize_transfer(db, row) for row in rows]
+    if dashboard_scope_svc.omit_stock_transfer_store_manager_assignment(managed):
+        payload = [
+            dashboard_scope_svc.redact_stock_transfer_store_manager_assignment(row)
+            for row in payload
+        ]
+    return env(payload)
 
 
 @api.get("/inventory/stock-transfers/export")
@@ -17465,7 +17496,10 @@ async def create_inventory_stock_transfer(
         },
     )
     await db.commit()
-    return env(await stores_svc.serialize_transfer(db, transfer), "Warehouse transfer created")
+    payload = await stores_svc.serialize_transfer(db, transfer)
+    if dashboard_scope_svc.omit_stock_transfer_store_manager_assignment(managed_wh):
+        payload = dashboard_scope_svc.redact_stock_transfer_store_manager_assignment(payload)
+    return env(payload, "Warehouse transfer created")
 
 
 @api.post("/inventory/stock-transfers/{transfer_id}/submit")
@@ -17490,7 +17524,10 @@ async def submit_inventory_stock_transfer(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    return env(await stores_svc.serialize_transfer(db, transfer), "Transfer submitted")
+    payload = await stores_svc.serialize_transfer(db, transfer)
+    if dashboard_scope_svc.omit_stock_transfer_store_manager_assignment(managed):
+        payload = dashboard_scope_svc.redact_stock_transfer_store_manager_assignment(payload)
+    return env(payload, "Transfer submitted")
 
 
 @api.post("/inventory/stock-transfers/{transfer_id}/ship")
@@ -17519,7 +17556,10 @@ async def ship_inventory_stock_transfer(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    return env(await stores_svc.serialize_transfer(db, transfer), "Transfer shipped")
+    payload = await stores_svc.serialize_transfer(db, transfer)
+    if dashboard_scope_svc.omit_stock_transfer_store_manager_assignment(managed):
+        payload = dashboard_scope_svc.redact_stock_transfer_store_manager_assignment(payload)
+    return env(payload, "Transfer shipped")
 
 
 @api.post("/inventory/stock-transfers/{transfer_id}/receive")
@@ -17548,7 +17588,10 @@ async def receive_inventory_stock_transfer(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    return env(await stores_svc.serialize_transfer(db, transfer), "Transfer received")
+    payload = await stores_svc.serialize_transfer(db, transfer)
+    if dashboard_scope_svc.omit_stock_transfer_store_manager_assignment(managed):
+        payload = dashboard_scope_svc.redact_stock_transfer_store_manager_assignment(payload)
+    return env(payload, "Transfer received")
 
 
 @api.post("/inventory/stock-transfers/{transfer_id}/cancel")
@@ -17573,7 +17616,10 @@ async def cancel_inventory_stock_transfer(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    return env(await stores_svc.serialize_transfer(db, transfer), "Transfer cancelled")
+    payload = await stores_svc.serialize_transfer(db, transfer)
+    if dashboard_scope_svc.omit_stock_transfer_store_manager_assignment(managed):
+        payload = dashboard_scope_svc.redact_stock_transfer_store_manager_assignment(payload)
+    return env(payload, "Transfer cancelled")
 
 
 @api.get("/reports/summary")

@@ -1552,6 +1552,38 @@ def assert_store_manager_assignment_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def omit_stock_transfer_store_manager_assignment(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit transfer from/to store manager_ids.
+
+    Store ``manager_id`` assign/clear already denied; warehouse ``manager_id``
+    already redacted on WH JSON. Stock-transfer list/get/lifecycle + transfer
+    history must not re-dump the company store-manager org graph (including peer
+    stores on inbound/outbound transfers). Store/WH ids, qty, and status remain
+    for ops. Managed-store ``manager_id`` on store list/get remains (self-scope).
+    """
+    return managed_ids is not None
+
+
+def redact_stock_transfer_store_manager_assignment(payload: dict) -> dict:
+    """Null ``from_store_manager_id`` / ``to_store_manager_id`` on transfer JSON.
+
+    Also redacts nested ``transfers`` rows on transfer-history report payloads.
+    """
+    out = dict(payload)
+    for key in ("from_store_manager_id", "to_store_manager_id"):
+        if key in out:
+            out[key] = None
+    nested = out.get("transfers")
+    if isinstance(nested, list):
+        out["transfers"] = [
+            redact_stock_transfer_store_manager_assignment(row)
+            if isinstance(row, dict)
+            else row
+            for row in nested
+        ]
+    return out
+
+
 def assert_store_branch_assignment_write_denied(
     managed_ids: list[str] | None,
     *,

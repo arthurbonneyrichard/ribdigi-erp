@@ -58,7 +58,9 @@ store activation — never frontend-only.
    daily/monthly/products/customers/salesperson/by-store reports, purchasing
    summary/suppliers/pending/returns reports, transfer history report,
    inventory stock-transfer write asserts (from-WH required; mutations must touch
-   managed stores), expenses summary + category budget spent/pending
+   managed stores) + **stock-transfer from_store_manager_id/to_store_manager_id
+   redacted** on stores/inventory transfer JSON + transfer history (store/WH ids
+   remain; managed-store list ``manager_id`` self-scope remains), expenses summary + category budget spent/pending
    (null-store fail-closed; budget limits company-level — create/patch + categories list denied for store_manager; budget_amount/variance/utilization redacted on budgets JSON/CSV + embeds; spend/pending still scoped), expense +
    recurring create / expense patch store asserts (foreign `store_id` denied;
    **expense department_id assign/clear denied + department_id redacted** on
@@ -173,7 +175,9 @@ store activation — never frontend-only.
    and **legacy POST /sales and /purchases denied for store_manager** (unscoped
    Transaction writes; use store-scoped invoices / purchasing pipeline), and
    **store manager_id assign/clear denied for store_manager** (company-level
-   manager assignment; other managed-store patches remain), and **store
+   manager assignment; other managed-store patches remain; managed-store list
+   ``manager_id`` self-scope remains) + **stock-transfer from/to store
+   manager_id redacted** on transfer JSON + history (peer org graph), and **store
    branch_id assign/clear denied for store_manager** (company-level store↔branch
    org link; other managed-store patches remain; branch_id redacted on
    list/export/patch JSON/CSV), and **warehouse manager_id
