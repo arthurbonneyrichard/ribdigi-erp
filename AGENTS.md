@@ -290,6 +290,47 @@ and attestation Completes remain **MISSING** unless separately delivered with
 evidence. Store, company, and user caps are subscription gates on `Tenant.max_*`
 columns — not checkout or MRR Completes.
 
+## PR #303 store_manager RBAC continuum (honesty source of truth)
+
+**Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
+**As of tip:** `d52a8733c7` — `feat(rbac): redact early-discount quote matrix for store_manager`.  
+**Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
+
+Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
+`/opt/cursor/artifacts/pr303_body_update.md` synchronized on the same tip SHA and
+the same leftovers list. Prefer bumping “as of” after each landed slice; do not
+leave contradictory Complete/PARTIAL wording across those three surfaces.
+
+### Intentionally still open (do not rewrite as closed)
+
+1. Company/tenant **logo binary GET** (workspace chrome; branding *writes* already denied).
+2. Per-user `/auth/sessions` + `/notifications/settings` (self-service; not company dumps).
+3. **ADR-005** user↔store membership **MISSING** (`stores.manager_id` scope remains).
+4. Managed-store list may still expose self-scope `manager_id` (not peer org graph).
+
+### Closed continuum themes (summary — still PARTIAL)
+
+Defense-in-depth on tip ancestry includes: store/WH ops + report/export scoping;
+company-level admin / settings / catalog / party-master / bank-feed / offline-device
+denies; JSON/CSV redacts for cost, PII, org links, approval-matrix `awaiting_roles`,
+early-discount quote matrix fields, and BI company config/cost embeds. Each slice
+closes one dump or write path; the continuum as a whole stays **PARTIAL**.
+
+### Continuum agent contract
+
+1. **Flock before mutate:** `flock -w 300 /tmp/commercial_rbac_slice.lock` before
+   product or honesty edits on this branch. Push honesty with
+   `flock /tmp/git_push_honesty.lock`.
+2. **One dump per slice:** land one focused deny/redact + tests; do not batch
+   unrelated leftovers into the same commit.
+3. **Honesty fields (same way every slice):** tip SHA + short subject; status
+   **PARTIAL** only; refresh the three surfaces above; keep the intentionally-open
+   list unless that exact leftover was the slice.
+4. **PR body:** try `gh pr edit 303 --body-file …`; on failure, always refresh
+   `/opt/cursor/artifacts/pr303_body_update.md` so the next agent has the intended body.
+5. **Do not** claim Offline Complete, 7-day VERIFIED, go-live, paid billing Complete,
+   or ADR-005 Complete. **Do not** rewrite unrelated leftovers as closed.
+
 ## Subscription Company Entitlement
 
 RIBDIGI HOUSE controls the maximum company entitlement for a Tenant

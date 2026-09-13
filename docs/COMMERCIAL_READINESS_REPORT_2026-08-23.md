@@ -4,6 +4,19 @@
 
 **Authoritative audit spines:** `PRODUCTION_READINESS.md`, `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md`, `docs/LAUNCH_CHECKLIST.md` + `ops/launch/checklist-map.json`.
 
+### PR #303 continuum tip honesty (aligned with `AGENTS.md`)
+
+| Field | Value |
+|------|--------|
+| Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
+| **As of tip** | `d52a8733c7` — early-discount quote matrix redact for `store_manager` |
+| RBAC / store scope | **PARTIAL** only |
+| Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
+
+**Intentionally still open (same list as `AGENTS.md`):** company/tenant logo binary GET; per-user `/auth/sessions` + `/notifications/settings`; ADR-005 user↔store membership **MISSING**; managed-store self-scope `manager_id` may remain.
+
+**Closed themes (brief, still PARTIAL):** store/WH ops+reports scope; company-level admin/settings/catalog/party/bank/offline denies; cost/PII/org/approval-matrix/`awaiting_roles`/early-discount-matrix/BI-config redacts. Continuum agent contract: see `AGENTS.md` → “PR #303 store_manager RBAC continuum”. Refresh `/opt/cursor/artifacts/pr303_body_update.md` when `gh pr edit` fails.
+
 ---
 
 ## Verdict summary (Section 60)
