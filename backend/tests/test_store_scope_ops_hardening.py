@@ -12610,6 +12610,92 @@ async def test_store_manager_expense_attachment_url_redacted(client, db_session)
 
 
 @pytest.mark.asyncio
+async def test_store_manager_purchase_invoice_attachment_url_redacted(client, db_session):
+    """Purchase invoice list/get nulls attachment_url storage key for store_manager.
+
+    Binary download remains WH-scoped; has_attachment remains for chrome.
+    Admin list/get keep attachment_url.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="PI Attach URL Store",
+        code="PIAUS1",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        name="PI Attach URL WH",
+        code="WH-PI-AUS",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="PI Attach Supplier",
+        kind="supplier",
+        credit_limit=0,
+    )
+    db_session.add_all([wh, supplier])
+    await db_session.flush()
+    storage_key = f"{tid}/purchase_invoices/url-redact-dump.pdf"
+    inv = m.PurchaseInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="PI-ATTACH-URL-1",
+        supplier_id=supplier.id,
+        warehouse_id=wh.id,
+        status="draft",
+        subtotal=10,
+        tax_amount=0,
+        discount_amount=0,
+        total_amount=10,
+        paid_amount=0,
+        ap_posted=False,
+        attachment_url=storage_key,
+        created_by=mgr.id,
+    )
+    db_session.add(inv)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    admin_got = await ac.get(
+        f"/api/v1/purchasing/invoices/{inv.id}", headers=admin_headers
+    )
+    assert admin_got.status_code == 200, admin_got.text
+    assert admin_got.json()["data"].get("attachment_url") == storage_key
+    assert admin_got.json()["data"].get("has_attachment") is True
+
+    listed = await ac.get("/api/v1/purchasing/invoices", headers=headers)
+    assert listed.status_code == 200, listed.text
+    row = next(r for r in listed.json()["data"] if r["id"] == inv.id)
+    assert row.get("has_attachment") is True
+    assert row.get("attachment_url") is None
+
+    got = await ac.get(f"/api/v1/purchasing/invoices/{inv.id}", headers=headers)
+    assert got.status_code == 200, got.text
+    assert got.json()["data"].get("has_attachment") is True
+    assert got.json()["data"].get("attachment_url") is None
+
+
+@pytest.mark.asyncio
 async def test_store_manager_stock_import_denied(client, db_session):
     """Company-level stock CSV import + template denied for store_manager."""
     ac, seed = client

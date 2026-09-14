@@ -10470,7 +10470,9 @@ async def list_purchase_invoices(
     managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     stmt = dashboard_scope_svc.apply_purchase_invoice_warehouse_scope(stmt, managed_wh)
     rows = (await db.execute(stmt)).scalars().all()
-    return env([await purchasing_svc.serialize_purchase_invoice(db, r) for r in rows])
+    out = [await purchasing_svc.serialize_purchase_invoice(db, r) for r in rows]
+    out = dashboard_scope_svc.apply_purchase_invoice_manager_redacts_list(out, managed_wh)
+    return env(out)
 
 
 @api.get("/purchasing/invoices/export")
@@ -10508,6 +10510,7 @@ async def create_purchase_invoice(
         purchase_order_id=payload.purchase_order_id,
         warehouse_id=payload.warehouse_id,
     )
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     inv = await purchasing_svc.create_purchase_invoice(
         db,
         tenant_id=claims["tenant_id"],
@@ -10527,7 +10530,9 @@ async def create_purchase_invoice(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    return env(await purchasing_svc.serialize_purchase_invoice(db, inv), "Purchase invoice drafted")
+    data = await purchasing_svc.serialize_purchase_invoice(db, inv)
+    data = dashboard_scope_svc.apply_purchase_invoice_manager_redacts(data, managed_wh)
+    return env(data, "Purchase invoice drafted")
 
 
 @api.get("/purchasing/invoices/{invoice_id}")
@@ -10542,7 +10547,10 @@ async def get_purchase_invoice(
     workspace_svc.assert_record_company(claims, inv)
     assert_record_access(claims, inv.created_by)
     await dashboard_scope_svc.assert_purchase_invoice_in_manager_scope(db, claims, inv)
-    return env(await purchasing_svc.serialize_purchase_invoice(db, inv))
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    data = await purchasing_svc.serialize_purchase_invoice(db, inv)
+    data = dashboard_scope_svc.apply_purchase_invoice_manager_redacts(data, managed_wh)
+    return env(data)
 
 
 @api.patch("/purchasing/invoices/{invoice_id}")
@@ -10590,7 +10598,10 @@ async def patch_purchase_invoice(
         details={"invoice_number": inv.invoice_number},
     )
     await db.commit()
-    return env(await purchasing_svc.serialize_purchase_invoice(db, inv), "Purchase invoice updated")
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    data = await purchasing_svc.serialize_purchase_invoice(db, inv)
+    data = dashboard_scope_svc.apply_purchase_invoice_manager_redacts(data, managed_wh)
+    return env(data, "Purchase invoice updated")
 
 
 @api.post("/purchasing/invoices/{invoice_id}/ocr-suggest")
@@ -10666,8 +10677,11 @@ async def purchase_invoice_ocr_apply(
         },
     )
     await db.commit()
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    data = await purchasing_svc.serialize_purchase_invoice(db, inv)
+    data = dashboard_scope_svc.apply_purchase_invoice_manager_redacts(data, managed_wh)
     return env(
-        await purchasing_svc.serialize_purchase_invoice(db, inv),
+        data,
         "OCR suggestions applied to draft invoice",
     )
 
@@ -10688,7 +10702,10 @@ async def approve_purchase_invoice(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], invoice_id=invoice_id
     )
     await db.commit()
-    return env(await purchasing_svc.serialize_purchase_invoice(db, inv), "Purchase invoice approved")
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    data = await purchasing_svc.serialize_purchase_invoice(db, inv)
+    data = dashboard_scope_svc.apply_purchase_invoice_manager_redacts(data, managed_wh)
+    return env(data, "Purchase invoice approved")
 
 
 @api.post("/purchasing/invoices/{invoice_id}/cancel")
@@ -10707,7 +10724,10 @@ async def cancel_purchase_invoice(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], invoice_id=invoice_id
     )
     await db.commit()
-    return env(await purchasing_svc.serialize_purchase_invoice(db, inv), "Purchase invoice cancelled")
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    data = await purchasing_svc.serialize_purchase_invoice(db, inv)
+    data = dashboard_scope_svc.apply_purchase_invoice_manager_redacts(data, managed_wh)
+    return env(data, "Purchase invoice cancelled")
 
 
 @api.post("/purchasing/invoices/{invoice_id}/attachment")
@@ -10744,6 +10764,7 @@ async def upload_purchase_invoice_attachment(
         details={"key": stored.key, "size": stored.size, "content_type": stored.content_type},
     )
     await db.commit()
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     data = await purchasing_svc.serialize_purchase_invoice(db, inv)
     data["uploaded"] = {
         "key": stored.key,
@@ -10751,6 +10772,7 @@ async def upload_purchase_invoice_attachment(
         "content_type": stored.content_type,
         "filename": stored.original_filename,
     }
+    data = dashboard_scope_svc.apply_purchase_invoice_manager_redacts(data, managed_wh)
     return env(data, "Attachment uploaded")
 
 
@@ -10805,7 +10827,10 @@ async def delete_purchase_invoice_attachment(
         entity_id=inv.id,
     )
     await db.commit()
-    return env(await purchasing_svc.serialize_purchase_invoice(db, inv), "Attachment removed")
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    data = await purchasing_svc.serialize_purchase_invoice(db, inv)
+    data = dashboard_scope_svc.apply_purchase_invoice_manager_redacts(data, managed_wh)
+    return env(data, "Attachment removed")
 
 
 @api.post("/pos/sessions/open")
