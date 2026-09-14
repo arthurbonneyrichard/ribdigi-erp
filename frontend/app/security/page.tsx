@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import Shell from '../../components/Shell';
 import PlatformShell from '../../components/PlatformShell';
 import { api, apiFetch } from '../../lib/api';
+import { applyPrincipalFromMe } from '../../lib/authSession';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, t } from '../../lib/i18n';
 
 function bufferToBase64url(buf: ArrayBuffer): string {
@@ -210,6 +211,7 @@ export default function Page() {
     setSessions(sess.data || []);
     const userRole = me.data?.role || r.data?.role || '';
     setRole(userRole);
+    applyPrincipalFromMe(me.data);
     setPrincipal(me.data?.principal || '');
     if (me.data?.locale === 'en' || me.data?.preferred_language === 'en') {
       setLocale('en');

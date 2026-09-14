@@ -4,7 +4,11 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { api } from '../lib/api';
-import { clearLoginSession, hasAuthSession } from '../lib/authSession';
+import {
+  applyPrincipalFromMe,
+  clearLoginSession,
+  hasAuthSession,
+} from '../lib/authSession';
 import { canReadModule } from '../lib/rbac';
 
 const items: [string, string, string][] = [
@@ -61,6 +65,8 @@ export default function PlatformShell({ children }: { children: React.ReactNode 
       try {
         const meRes = await api('/me');
         if (!active) return;
+        // SEC-M5 Phase D — principal from authenticated /me (in-memory), not LS/cookie.
+        applyPrincipalFromMe(meRes.data);
         if (meRes.data?.principal !== 'platform') {
           router.replace(meRes.data?.redirect_path || '/dashboard');
           return;

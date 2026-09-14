@@ -70,7 +70,7 @@ Ribdigi ERP is a multi-tenant FastAPI + Next.js SaaS with shared-schema `tenant_
 | SEC-M2 | Medium | Tokens in `localStorage` | OPEN (Phase C PARTIAL — flag OFF default; flag ON nulls JSON tokens; staging soak still required) |
 | SEC-M3 | Medium | Open `POST /tenants` self-service | FIXED |
 | SEC-M4 | Medium | TOTP/backup Fernet JWT fallback + static salt | FIXED |
-| SEC-M5 | Medium | `ribdigi_principal` cookie is UX boundary only | OPEN (Phase C PARTIAL — flag OFF; principal still UX-only; Phase D not started) |
+| SEC-M5 | Medium | `ribdigi_principal` cookie is UX boundary only | FIXED (Phase D — in-memory principal from `/me`; LS/cookie not auth) |
 | SEC-L1 | Low | Dev default `JWT_SECRET_KEY=change-me` | Accepted with prod gate |
 | SEC-L2 | Low | Unauthenticated deep health posture | FIXED |
 | SEC-L3 | Low | Example local credentials in `.env.example` | Accepted |
@@ -149,7 +149,8 @@ See Phase 1 artifact for SEC-M1…M5 and SEC-L1…L3 (uploads magic bytes, local
 | 3d | M2/M5 | Dual-mode httpOnly cookie + CSRF foundation (`AUTH_HTTPONLY_COOKIES_ENABLED` default **false**); ADR + cookie auth path + `credentials: 'include'` scaffold | `test_sec_m2_m5_cookie_session.py`, `docs/ADR_SESSION_COOKIE_DUAL_MODE.md` | **PARTIAL** — M2/M5 still OPEN |
 | 3e | M2/M5 | Phase B: `authSession` helpers; login skips LS tokens when `cookie_session`; central `api`/`apiFetch`; remaining SPA raw token fetch sites migrated | `test_sec_m2_m5_cookie_phase_b.py`, `frontend/lib/authSession.ts` | **PARTIAL** — M2/M5 still OPEN |
 | 3f | L2 | Public `/health` + `/health/ready` omit `security_posture()`; House `/platform/health` keeps posture via `include_security_posture` | `test_sec_l2_deep_health_posture.py` | Implemented |
-| 3g | M2/M5 | Phase C: when flag ON, login/2FA/refresh JSON nulls `access_token`/`refresh_token`; flag OFF unchanged; `json_auth_tokens` helper | `test_sec_m2_m5_cookie_phase_c.py` | **PARTIAL** — M2/M5 still OPEN (staging soak + Phase D remain) |
+| 3g | M2/M5 | Phase C: when flag ON, login/2FA/refresh JSON nulls `access_token`/`refresh_token`; flag OFF unchanged; `json_auth_tokens` helper | `test_sec_m2_m5_cookie_phase_c.py` | **PARTIAL** — M2 still OPEN (staging soak); M5 deferred to Phase D |
+| 3h | M5 | Phase D: in-memory principal from login + `GET /me`; clear LS/`ribdigi_principal` on logout; middleware stops trusting forgeable principal cookie | `test_sec_m2_m5_cookie_phase_d.py`, `frontend/lib/authSession.ts` | **FIXED** (SEC-M5) |
 
 ---
 
@@ -171,10 +172,12 @@ See Phase 1 artifact for SEC-M1…M5 and SEC-L1…L3 (uploads magic bytes, local
 - SEC-L2: `/opt/cursor/artifacts/sec_l2_deep_health_posture_pytest.log`
 - Existing suites: `pytest -m "security or isolation"`
 
-**Deferred (not FIXED):** SEC-M2 / SEC-M5 Phase C nulls JSON tokens when
+**Deferred (not FIXED):** SEC-M2 Phase C nulls JSON tokens when
 `AUTH_HTTPONLY_COOKIES_ENABLED` is ON, but the flag still defaults OFF (Bearer +
-`localStorage` dual-mode), staging soak evidence is missing, and
-`ribdigi_principal` remains UX-only (Phase D) — both stay OPEN under 🟠.
+`localStorage` dual-mode) and staging soak evidence is missing — M2 stays OPEN
+under 🟠.
+**SEC-M5** is **FIXED** (Phase D — principal from `/me` in memory; forgeable
+`ribdigi_principal` / LS principal no longer treated as auth).
 **SEC-L2** is FIXED (public health posture gated).
 
 ---
@@ -190,11 +193,10 @@ Allowed engagement shorthand: ✅ HARDENED · ⚠️ HIGH REMAINING · 🛑 CRIT
 
 🟠 SECURITY FIXES REQUIRED BEFORE LAUNCH
 
-**Rationale:** No Critical and no unresolved High remain after Phase 2 (SEC-H1…H5 fixed; phase2 suites green). **SEC-M1**, **SEC-M3**, **SEC-M4**, and **SEC-L2** are **FIXED**. Two Medium findings remain open (browser session architecture). Phase 3d–3e + 3g landed dual-mode httpOnly cookie foundation + Phase B client migration + Phase C JSON token omission when flag ON (`AUTH_HTTPONLY_COOKIES_ENABLED` default **false**) — see `docs/ADR_SESSION_COOKIE_DUAL_MODE.md`. This does **not** close M2/M5: flag OFF still returns JWTs for Bearer/`localStorage`, staging soak is outstanding, and `ribdigi_principal` remains UX-only.
+**Rationale:** No Critical and no unresolved High remain after Phase 2 (SEC-H1…H5 fixed; phase2 suites green). **SEC-M1**, **SEC-M3**, **SEC-M4**, **SEC-M5**, and **SEC-L2** are **FIXED**. One Medium finding remains open (browser JWT/`localStorage` session architecture). Phase 3d–3e + 3g–3h landed dual-mode httpOnly cookie foundation + Phase B client migration + Phase C JSON token omission when flag ON + Phase D principal-from-`/me` (`AUTH_HTTPONLY_COOKIES_ENABLED` default **false**) — see `docs/ADR_SESSION_COOKIE_DUAL_MODE.md`. This does **not** close M2: flag OFF still returns JWTs for Bearer/`localStorage`, and staging soak is outstanding.
 
 | ID | Why it blocks a 🟡/🟢 claim |
 |----|-----------------------------|
 | SEC-M2 | Flag still defaults OFF (Bearer/`localStorage` path); Phase C JSON nulling landed but staging soak + evidence required before FIXED |
-| SEC-M5 | `ribdigi_principal` UX-only; not an httpOnly auth boundary (Phase D) |
 
 Prefer 🟠 over 🟡 while SEC-M2 (localStorage tokens) remains open. Do **not** claim 🟢. Continuum leftovers (logo binary GET, `/auth/sessions`, `/notifications/settings`, ADR-005) stay intentional **PARTIAL**, not security Completes.
