@@ -1360,10 +1360,30 @@ def redact_document_company_contact(payload: dict) -> dict:
     return out
 
 
+def omit_document_header_footer(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit receipt ``document_header`` / ``document_footer``.
+
+    Document-settings PATCH/export/preview + GET ``/tenants/me`` already denied.
+    POS receipt JSON must not re-dump company header/footer branding text.
+    ``company_name`` + ``has_logo`` + server-side text/PDF embeds remain.
+    """
+    return managed_ids is not None
+
+
+def redact_document_header_footer(payload: dict) -> dict:
+    """Null ``document_header`` / ``document_footer`` on a receipt/print JSON dict."""
+    out = dict(payload)
+    if "document_header" in out:
+        out["document_header"] = None
+    if "document_footer" in out:
+        out["document_footer"] = None
+    return out
+
+
 def apply_document_logo_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager document-brand JSON redacts (logo + legal + contact)."""
+    """Apply store_manager document-brand JSON redacts (logo + legal + contact + header)."""
     out = payload
     if omit_document_logo_data_url(managed_ids):
         out = redact_document_logo_data_url(out)
@@ -1371,6 +1391,8 @@ def apply_document_logo_manager_redacts(
         out = redact_document_legal_trading_names(out)
     if omit_document_company_contact(managed_ids):
         out = redact_document_company_contact(out)
+    if omit_document_header_footer(managed_ids):
+        out = redact_document_header_footer(out)
     return out
 
 
