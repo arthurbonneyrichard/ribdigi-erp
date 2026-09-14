@@ -41,7 +41,7 @@ def test_prod_templates_keep_demo_seed_and_public_signup_false():
     assert "ALLOW_DEMO_TENANT_SEED=false" in dev
     assert DEMO_DOC.is_file()
     doc = DEMO_DOC.read_text(encoding="utf-8")
-    assert "owner@demo.ribdigi.local" in doc
+    assert "owner@demo.ribdigi.app" in doc
     assert "ALLOW_PUBLIC_TENANT_SIGNUP" in doc
     assert "Offline Complete" in doc or "offline_complete" in doc.lower() or "not** Offline" in doc
 
@@ -68,8 +68,8 @@ async def test_seed_demo_tenant_dry_run_and_create(db_session, monkeypatch):
     result = await seed_demo_tenant(db_session, cfg, dry_run=False, commit=True)
     assert result["dry_run"] is False
     assert result["tenant_slug"] == "demo"
-    assert result["owner_email"] == "owner@demo.ribdigi.local"
-    assert result["cashier_email"] == "cashier@demo.ribdigi.local"
+    assert result["owner_email"] == "owner@demo.ribdigi.app"
+    assert result["cashier_email"] == "cashier@demo.ribdigi.app"
     assert result["honesty"]["offline_complete_claimed"] is False
     assert result["honesty"]["go_live_claimed"] is False
     assert result["honesty"]["paid_billing_complete_claimed"] is False
@@ -84,7 +84,7 @@ async def test_seed_demo_tenant_dry_run_and_create(db_session, monkeypatch):
         await db_session.execute(
             select(m.User).where(
                 m.User.tenant_id == tenant.id,
-                m.User.email == "owner@demo.ribdigi.local",
+                m.User.email == "owner@demo.ribdigi.app",
             )
         )
     ).scalar_one()

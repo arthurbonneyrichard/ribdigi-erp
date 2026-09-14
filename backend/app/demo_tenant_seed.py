@@ -34,8 +34,9 @@ DEFAULT_STORE_CODE = "DEMO-01"
 DEFAULT_STORE_NAME = "Demo Store"
 DEFAULT_WAREHOUSE_CODE = "DEMO-WH"
 DEFAULT_WAREHOUSE_NAME = "Demo Warehouse"
-DEFAULT_OWNER_EMAIL = "owner@demo.ribdigi.local"
-DEFAULT_CASHIER_EMAIL = "cashier@demo.ribdigi.local"
+# Use a public-suffix domain — EmailStr rejects reserved TLDs like .local / .test.
+DEFAULT_OWNER_EMAIL = "owner@demo.ribdigi.app"
+DEFAULT_CASHIER_EMAIL = "cashier@demo.ribdigi.app"
 DEFAULT_OWNER_NAME = "Demo Owner"
 DEFAULT_CASHIER_NAME = "Demo Cashier"
 # Memorable defaults for live demos — operators must override via env in shared envs

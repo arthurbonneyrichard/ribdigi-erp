@@ -24,9 +24,9 @@ Do **not** commit plaintext demo passwords to git. Override with env vars and st
 | Branch | `Demo HQ` (`HQ`) |
 | Store | `Demo Store` (`DEMO-01`) |
 | Warehouse | `Demo Warehouse` (`DEMO-WH`) |
-| Owner email | `owner@demo.ribdigi.local` |
+| Owner email | `owner@demo.ribdigi.app` |
 | Owner role | `company_admin` |
-| Cashier email | `cashier@demo.ribdigi.local` |
+| Cashier email | `cashier@demo.ribdigi.app` |
 | Cashier role | `cashier` |
 
 Password defaults (change after first login; override via env):
@@ -36,7 +36,8 @@ Password defaults (change after first login; override via env):
 
 ## How to create / reset
 
-From `backend/` (Compose service or local venv with `DATABASE_URL` pointed at the target DB):
+From `backend/` (Compose service or local venv with `DATABASE_URL` pointed at the target DB).
+Apply migrations first (`alembic upgrade head`) so schema matches models (e.g. membership columns).
 
 ```bash
 # Plan only (no writes)
@@ -81,7 +82,7 @@ docker compose exec -e ALLOW_DEMO_TENANT_SEED=true \
 
 1. Open the app login page.
 2. Tenant: `demo` (slug).
-3. Email: `owner@demo.ribdigi.local` (full ERP + POS) or `cashier@demo.ribdigi.local` (cashier path).
+3. Email: `owner@demo.ribdigi.app` (full ERP + POS) or `cashier@demo.ribdigi.app` (cashier path).
 4. Password: value from env / ops artifact (not from git).
 
 ## Sample data included
