@@ -261,7 +261,17 @@ async def verify_chain(db: AsyncSession, tenant_id: str) -> dict:
     }
 
 
-def to_csv(rows: list[m.AuditLog]) -> str:
+def to_csv(
+    rows: list[m.AuditLog],
+    *,
+    details_redactor=None,
+) -> str:
+    """Serialize audit rows to CSV.
+
+    ``details_redactor`` (optional) transforms each row's ``details`` dict before
+    JSON encoding — used to redact store_manager FX fields without mutating ORM
+    rows (integrity chain stays intact).
+    """
     buf = io.StringIO()
     writer = csv.writer(buf)
     writer.writerow(
@@ -279,6 +289,9 @@ def to_csv(rows: list[m.AuditLog]) -> str:
         ]
     )
     for row in rows:
+        details = row.details or {}
+        if details_redactor is not None and isinstance(details, dict):
+            details = details_redactor(details)
         writer.writerow(
             [
                 row.created_at.isoformat() if row.created_at else "",
@@ -290,7 +303,7 @@ def to_csv(rows: list[m.AuditLog]) -> str:
                 row.entity_id or "",
                 row.ip_address or "",
                 row.integrity_hash or "",
-                json.dumps(row.details or {}, default=str),
+                json.dumps(details, default=str),
             ]
         )
     return buf.getvalue()

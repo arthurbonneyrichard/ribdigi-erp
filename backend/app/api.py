@@ -19019,7 +19019,9 @@ async def audit_logs(
         warehouse_ids=managed_wh,
         scoped_actor_id=claims.get("sub") if managed is not None else None,
     )
-    return env([audit_svc.serialize_audit(r) for r in rows])
+    out = [audit_svc.serialize_audit(r) for r in rows]
+    out = dashboard_scope_svc.apply_audit_manager_redacts_list(out, managed)
+    return env(out)
 
 
 @api.get("/audit-logs/export")
@@ -19066,7 +19068,10 @@ async def audit_logs_export(
         )
     if fmt != "csv":
         raise HTTPException(status_code=400, detail="format must be csv or pdf")
-    csv_text = audit_svc.to_csv(chronological)
+    details_redactor = None
+    if dashboard_scope_svc.omit_audit_fx_details(managed):
+        details_redactor = dashboard_scope_svc.redact_audit_fx_details
+    csv_text = audit_svc.to_csv(chronological, details_redactor=details_redactor)
     return PlainTextResponse(
         content=csv_text,
         media_type="text/csv",

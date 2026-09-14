@@ -5462,6 +5462,58 @@ def redact_credit_limit_exceeded_invoice_total(detail: dict) -> dict:
     return out
 
 
+# Audit detail keys that re-dump company FX / rate-table identity already
+# redacted on sales/purchase invoice, credit payment, aging, and CLE surfaces.
+_AUDIT_FX_DETAIL_KEYS = (
+    "currency",
+    "exchange_rate",
+    "total_base",
+    "invoice_total_base",
+    "balance_due_base",
+    "fx_gain_loss",
+    "settlement_base",
+)
+
+
+def omit_audit_fx_details(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit FX fields inside audit ``details``.
+
+    Sales/purchase-invoice + credit-payment + aging + CLE surfaces already redact
+    ``currency`` / ``exchange_rate`` / ``*_base`` / ``fx_gain_loss``. Scoped
+    ``GET /audit-logs`` (+ CSV export) must not re-dump the same company FX
+    rate-table identity via ``invoice_posted`` / payment / return audit
+    ``details``. Operational amounts / invoice numbers / store_id remain; admin
+    keeps FX fields in details.
+    """
+    return managed_ids is not None
+
+
+def redact_audit_fx_details(details: dict) -> dict:
+    """Null FX / rate-table keys on an audit ``details`` dict."""
+    out = dict(details)
+    for key in _AUDIT_FX_DETAIL_KEYS:
+        if key in out:
+            out[key] = None
+    return out
+
+
+def apply_audit_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager audit JSON redacts (FX fields inside ``details``)."""
+    out = dict(payload)
+    if omit_audit_fx_details(managed_ids) and isinstance(out.get("details"), dict):
+        out["details"] = redact_audit_fx_details(out["details"])
+    return out
+
+
+def apply_audit_manager_redacts_list(
+    rows: list[dict], managed_ids: list[str] | None
+) -> list[dict]:
+    """Map ``apply_audit_manager_redacts`` across audit list rows."""
+    return [apply_audit_manager_redacts(row, managed_ids) for row in rows]
+
+
 def redact_ai_customer_credit(payload: dict) -> dict:
     """Null ``credit_limit`` on AI customer insights/assist nested customer rows.
 

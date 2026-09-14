@@ -23185,3 +23185,127 @@ async def test_store_manager_credit_payment_exchange_rate_redacted(client, db_se
     mgr_scsv_row = next(r for r in mgr_srows if r.get("payment_number") == "SPAY-XR-1")
     assert mgr_scsv_row.get("exchange_rate") in (None, "")
     assert float(mgr_scsv_row.get("amount") or 0) == pytest.approx(5.0)
+
+
+@pytest.mark.asyncio
+async def test_store_manager_audit_details_fx_redacted(client, db_session):
+    """Audit list/export nulls FX fields inside details for store_manager.
+
+    Sales/purchase-invoice + credit-payment + aging + CLE surfaces already redact
+    currency / exchange_rate / *_base / fx_gain_loss. Scoped audit JSON/CSV must
+    not re-dump company FX rate-table identity via invoice_posted (and sibling)
+    details. Operational amounts / invoice_number / store_id remain; admin keeps
+    FX fields in details. Integrity hashes unchanged (redact on read only).
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    other_user = seed["admin1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Audit FX Redact Store",
+        code="AFX-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+
+    fx_ev = await audit_svc.record_event(
+        db_session,
+        tenant_id=tid,
+        company_id=cid,
+        user_id=other_user.id,
+        module="sales",
+        action="invoice_posted",
+        entity="sales_invoice",
+        entity_id="inv-afx-1",
+        details={
+            "invoice_number": "INV-AFX-1",
+            "total": 80.0,
+            "total_base": 100.0,
+            "currency": "USD",
+            "exchange_rate": 1.25,
+            "fx_gain_loss": 2.5,
+            "settlement_base": 100.0,
+            "balance_due_base": 100.0,
+            "invoice_total_base": 100.0,
+            "store_id": store.id,
+        },
+    )
+    await db_session.commit()
+
+    admin_listed = await ac.get(
+        "/api/v1/audit-logs", headers=admin_company, params={"limit": 500}
+    )
+    assert admin_listed.status_code == 200, admin_listed.text
+    admin_row = next(r for r in admin_listed.json()["data"] if r["id"] == fx_ev.id)
+    admin_details = admin_row.get("details") or {}
+    assert admin_details.get("currency") == "USD"
+    assert float(admin_details.get("exchange_rate") or 0) == pytest.approx(1.25)
+    assert float(admin_details.get("total_base") or 0) == pytest.approx(100.0)
+    assert float(admin_details.get("total") or 0) == pytest.approx(80.0)
+
+    mgr_listed = await ac.get(
+        "/api/v1/audit-logs", headers=headers, params={"limit": 500}
+    )
+    assert mgr_listed.status_code == 200, mgr_listed.text
+    mgr_row = next(r for r in mgr_listed.json()["data"] if r["id"] == fx_ev.id)
+    mgr_details = mgr_row.get("details") or {}
+    assert mgr_details.get("currency") is None
+    assert mgr_details.get("exchange_rate") is None
+    assert mgr_details.get("total_base") is None
+    assert mgr_details.get("invoice_total_base") is None
+    assert mgr_details.get("balance_due_base") is None
+    assert mgr_details.get("fx_gain_loss") is None
+    assert mgr_details.get("settlement_base") is None
+    assert float(mgr_details.get("total") or 0) == pytest.approx(80.0)
+    assert mgr_details.get("invoice_number") == "INV-AFX-1"
+    assert mgr_details.get("store_id") == store.id
+
+    admin_csv = await ac.get(
+        "/api/v1/audit-logs/export",
+        headers=admin_company,
+        params={"format": "csv"},
+    )
+    assert admin_csv.status_code == 200, admin_csv.text
+    admin_detail_rows = list(csv.DictReader(io.StringIO(admin_csv.text)))
+    admin_csv_row = next(r for r in admin_detail_rows if "INV-AFX-1" in (r.get("details") or ""))
+    admin_csv_details = json.loads(admin_csv_row["details"])
+    assert admin_csv_details.get("currency") == "USD"
+    assert float(admin_csv_details.get("exchange_rate") or 0) == pytest.approx(1.25)
+    assert float(admin_csv_details.get("total_base") or 0) == pytest.approx(100.0)
+
+    mgr_csv = await ac.get(
+        "/api/v1/audit-logs/export",
+        headers=headers,
+        params={"format": "csv"},
+    )
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    mgr_detail_rows = list(csv.DictReader(io.StringIO(mgr_csv.text)))
+    mgr_csv_row = next(r for r in mgr_detail_rows if "INV-AFX-1" in (r.get("details") or ""))
+    mgr_csv_details = json.loads(mgr_csv_row["details"])
+    assert mgr_csv_details.get("currency") is None
+    assert mgr_csv_details.get("exchange_rate") is None
+    assert mgr_csv_details.get("total_base") is None
+    assert mgr_csv_details.get("invoice_total_base") is None
+    assert mgr_csv_details.get("balance_due_base") is None
+    assert mgr_csv_details.get("fx_gain_loss") is None
+    assert mgr_csv_details.get("settlement_base") is None
+    assert float(mgr_csv_details.get("total") or 0) == pytest.approx(80.0)
+    assert mgr_csv_details.get("invoice_number") == "INV-AFX-1"
