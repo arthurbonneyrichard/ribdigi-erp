@@ -2922,6 +2922,24 @@ def assert_company_level_product_import_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_company_level_product_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot export company product catalog CSV; "
+        "product list/get + WH stock ops + POS search remain."
+    ),
+) -> None:
+    """403 when store_manager exports ``GET /products/export`` (company catalog dump).
+
+    Import + template already denied; variants roster/path CSV and images gallery
+    list/export already denied. Catalog CSV still dumped SKU/barcode/name/price
+    roster (cost/catalog codes already blanked). Product list/get + WH stock ops
+    + POS/inventory lookup remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_product_master_write_denied(
     managed_ids: list[str] | None,
     *,
@@ -2934,8 +2952,9 @@ def assert_company_level_product_master_write_denied(
 def omit_product_cost_price(managed_ids: list[str] | None) -> bool:
     """True when store_manager must omit catalog ``cost_price`` on JSON/CSV.
 
-    Product master writes already denied; catalog list/get/export and per-product
+    Product master writes already denied; catalog list/get and per-product
     variants must not dump company COGS. Selling price + WH stock remain for POS.
+    Company ``GET /products/export`` is denied for store_manager separately.
     Inventory balance/valuation report cost fields are redacted separately via
     ``redact_inventory_report_cost`` when ``warehouse_ids`` is set. Low-stock
     alert list/export also omit ``cost_price`` via this helper. AI dead-stock
@@ -3097,7 +3116,8 @@ def assert_company_level_product_variants_export_denied(
     Covers company-wide ``GET /products/variants/export`` and path-scoped
     ``GET /products/{id}/variants/export`` (SKU/barcode/attribute roster dump).
     Variant writes already denied; per-product variants list/get remain for
-    POS/sales; WH-scoped products export remains.
+    POS/sales. Company ``GET /products/export`` denied separately via
+    ``assert_company_level_product_export_denied``.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 

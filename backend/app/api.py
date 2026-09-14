@@ -4711,6 +4711,7 @@ async def products_export(
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_product_export_denied(managed)
     managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     text = await product_import_svc.export_products_csv(
         db,

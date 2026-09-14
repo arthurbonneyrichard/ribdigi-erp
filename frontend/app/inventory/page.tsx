@@ -1081,7 +1081,7 @@ export default function Page() {
   }
 
   async function downloadProductsExport() {
-    // Stage 118 E1 — catalog CSV export
+    // Stage 118 E1 — catalog CSV export (store_manager company catalog dump denied).
     setError('');
     try {
       const token = localStorage.getItem('token');
@@ -1089,7 +1089,20 @@ export default function Page() {
       const res = await fetch(`${apiBase}/products/export`, {
         headers: authHeaders(),
       });
-      if (!res.ok) throw new Error('Product export failed');
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const detail = body?.detail;
+        const code = typeof detail === 'object' ? detail?.code : undefined;
+        if (res.status === 403 && code === 'STORE_SCOPE_DENIED') {
+          throw new Error(
+            'Product catalog CSV export is admin-only (company catalog dump).'
+          );
+        }
+        throw new Error(
+          (typeof detail === 'string' ? detail : detail?.message) ||
+            'Product export failed'
+        );
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

@@ -9200,11 +9200,8 @@ async def test_store_manager_products_catalog_stock_wh_scoped(client, db_session
     assert got.json()["data"].get("cost_price") is None
 
     exported = await ac.get("/api/v1/products/export", headers=headers)
-    assert exported.status_code == 200, exported.text
-    assert product.sku in exported.text
-    assert "999.00" not in exported.text
-    assert "12.00" in exported.text
-    assert "77.25" not in exported.text
+    assert exported.status_code == 403, exported.text
+    assert exported.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
     variants = await ac.get(f"/api/v1/products/{product.id}/variants", headers=headers)
     assert variants.status_code == 200, variants.text
@@ -9354,11 +9351,8 @@ async def test_store_manager_product_catalog_assignment_redacted(client, db_sess
     assert body.get("category") == "Widgets"
 
     exported = await ac.get("/api/v1/products/export", headers=headers)
-    assert exported.status_code == 200, exported.text
-    assert product.sku in exported.text
-    assert "CAT-ASGN-RD" not in exported.text
-    assert "BR-ASGN-RD" not in exported.text
-    assert "U-ASGN-RD" not in exported.text
+    assert exported.status_code == 403, exported.text
+    assert exported.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
     admin_got = await ac.get(f"/api/v1/products/{product.id}", headers=admin_headers)
     assert admin_got.status_code == 200, admin_got.text
@@ -12012,7 +12006,7 @@ async def test_store_manager_party_master_pii_redacted(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_product_import_denied(client, db_session):
-    """Company-level product CSV import + template denied; scoped products export remains."""
+    """Company-level product CSV import + template + catalog export denied."""
     ac, seed = client
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
 
@@ -12043,13 +12037,14 @@ async def test_store_manager_product_import_denied(client, db_session):
     assert denied_template.status_code == 403, denied_template.text
     assert denied_template.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
-    exported = await ac.get("/api/v1/products/export", headers=headers)
-    assert exported.status_code == 200, exported.text
+    denied_export = await ac.get("/api/v1/products/export", headers=headers)
+    assert denied_export.status_code == 403, denied_export.text
+    assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
 
 @pytest.mark.asyncio
 async def test_store_manager_product_master_writes_denied(client, db_session):
-    """Product create/patch/variants/barcode/image writes + gallery list + variants CSV denied; reads remain."""
+    """Product create/patch/variants/barcode/image writes + gallery/variants/catalog CSV denied; reads remain."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
@@ -12224,6 +12219,44 @@ async def test_store_manager_product_master_writes_denied(client, db_session):
     )
     assert denied_product_variants_export.status_code == 403, denied_product_variants_export.text
     assert denied_product_variants_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_products_export = await ac.get("/api/v1/products/export", headers=headers)
+    assert denied_products_export.status_code == 403, denied_products_export.text
+    assert denied_products_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_product_catalog_export_denied(client, db_session):
+    """Company product catalog CSV export denied after variants/images dump closes.
+
+    SKU/barcode/name/price roster is a company catalog dump; import + template
+    already denied. Product list/get + WH stock ops + POS search remain.
+    """
+    ac, seed = client
+    product = seed["p1"]
+
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_export = await ac.get("/api/v1/products/export", headers=admin_headers)
+    assert admin_export.status_code == 200, admin_export.text
+    assert product.sku in admin_export.text
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    denied = await ac.get("/api/v1/products/export", headers=headers)
+    assert denied.status_code == 403, denied.text
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    listed = await ac.get("/api/v1/products", headers=headers)
+    assert listed.status_code == 200, listed.text
+    assert any(row["sku"] == product.sku for row in listed.json()["data"])
+
+    got = await ac.get(f"/api/v1/products/{product.id}", headers=headers)
+    assert got.status_code == 200, got.text
+    assert got.json()["data"]["sku"] == product.sku
 
 
 @pytest.mark.asyncio
