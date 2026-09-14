@@ -9,7 +9,7 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `3e0c7cca61da11e3aa1784ec5c8427830f443c0b` — feat redact tax filing `jurisdiction`/`supported_jurisdictions` (`8d34911703`); leftovers still open |
+| **As of tip** | `6317d0656f3c3dd3c3c240a89ab7b068207da902` — feat redact tax filing `jurisdiction`/`supported_jurisdictions` (`8d34911703`); leftovers still open |
 | RBAC / store scope | **PARTIAL** only |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
 
