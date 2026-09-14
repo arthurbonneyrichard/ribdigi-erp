@@ -515,9 +515,8 @@ export default function Page() {
           ))}
         </select>
         <p className="muted" style={{ margin: 0, gridColumn: '1 / -1' }}>
-          Plan is commercial metadata only. Billing/payment for upgrades is deferred (see ADR-002);
-          changing plan does not charge a card or confirm payment. Paid billing scaffold is PARTIAL —
-          Complete remains MISSING.
+          Plan is commercial metadata only. Changing plan does not charge a card or confirm payment.
+          Paid billing is PARTIAL (ADR-002) — Complete remains MISSING.
         </p>
         <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <button
@@ -525,6 +524,7 @@ export default function Page() {
             onClick={async () => {
               try {
                 setError('');
+                setMessage('');
                 const res = await api('/billing/portal-session', {
                   method: 'POST',
                   body: JSON.stringify({
@@ -537,20 +537,22 @@ export default function Page() {
                   window.location.assign(data.portal_url);
                   return;
                 }
-                setMessage(
+                // No portal_url without error should not happen when API is honest —
+                // surface status rather than inventing success.
+                setError(
                   data.message ||
-                    `Billing portal skeleton: ${data.status || 'deferred'} (no payment processed; Complete MISSING)`
+                    `Billing portal unavailable (${data.status || 'unknown'}). Provider keys may be unset.`
                 );
               } catch (err: any) {
                 setError(err.message || 'Billing portal request failed');
               }
             }}
           >
-            Billing portal (scaffold)
+            Open billing portal
           </button>
           <span className="muted">
-            Opens a live provider portal only after cutover — today returns not_configured /
-            live_call_deferred (ADR-002).
+            Opens provider portal when configured (portal_url present). Unconfigured returns a clear
+            error — not payment success. Paid billing Complete still MISSING (ADR-002).
           </span>
         </div>
         <select
