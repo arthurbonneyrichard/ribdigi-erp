@@ -128,7 +128,7 @@ def test_money_json_wired_batch24():
     assert "return money_json(round(base * (1.0 - pct / 100.0), 2))" in disc_src
 
     jl_src = inspect.getsource(bank_recon_mod.journal_line_signed_amount)
-    assert "return money_json(round(float(line.debit or 0)" in jl_src
+    assert "round(money_json(line.debit or 0) - money_json(line.credit or 0), 2)" in jl_src
 
     bucket_src = inspect.getsource(credit_mod.add_to_bucket)
     assert "buckets[key] = money_json(round(" in bucket_src

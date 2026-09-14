@@ -89,16 +89,16 @@ def test_money_json_wired_batch25():
     assert money_json("12.50") == 12.5
 
     to_base_src = inspect.getsource(fx_mod.to_base)
-    assert "return money_json(round(float(amount or 0)" in to_base_src
+    assert "return money_json(round(money_json(amount or 0)" in to_base_src
 
     quotes_src = inspect.getsource(fx_mod.quotes_to_rate_to_base)
     assert "return money_json(round(1.0 / q, 8))" in quotes_src
 
     expected_src = inspect.getsource(pos_mod.compute_expected_cash)
-    assert "return money_json(round(float(opening_cash or 0)" in expected_src
+    assert "return money_json(round(money_json(opening_cash or 0)" in expected_src
 
     var_src = inspect.getsource(pos_mod.compute_variance)
-    assert "return money_json(round(float(actual_cash)" in var_src
+    assert "return money_json(round(money_json(actual_cash)" in var_src
 
     eff_src = inspect.getsource(tax_mod.effective_rate_from_components)
     assert "return money_json(round(total, 4))" in eff_src
@@ -110,7 +110,7 @@ def test_money_json_wired_batch25():
 
     pi_sub = inspect.getsource(purchasing_mod._pi_line_subtotal)
     assert "stored = money_json(getattr(item, \"line_subtotal\"" in pi_sub
-    assert "return money_json(round(float(item.quantity or 0)" in pi_sub
+    assert "return money_json(round(money_json(item.quantity or 0)" in pi_sub
 
     pi_tax = inspect.getsource(purchasing_mod._pi_line_tax_value)
     assert "stored = money_json(getattr(item, \"line_tax\"" in pi_tax
@@ -125,13 +125,13 @@ def test_money_json_wired_batch25():
     assert "return money_json(round(total, 2))" in cogs_src
 
     append_src = inspect.getsource(accounting_mod.append_cogs_lines)
-    assert "cogs = money_json(round(float(cogs or 0), 2))" in append_src
+    assert "cogs = money_json(round(money_json(cogs or 0), 2))" in append_src
 
     ocr_src = inspect.getsource(expense_ocr_mod._parse_amount)
     assert "return money_json(round(float(str(raw).replace" in ocr_src
 
     xfer_src = inspect.getsource(cash_transfers_mod.create_transfer)
-    assert "amt = money_json(round(float(amount or 0), 2))" in xfer_src
+    assert "amt = money_json(round(money_json(amount or 0), 2))" in xfer_src
 
     open_src = inspect.getsource(opening_stock_mod.post_opening_stock)
-    assert "line_value = money_json(round(float(moved[\"quantity_base\"])" in open_src
+    assert "line_value = money_json(round(money_json(moved[\"quantity_base\"])" in open_src

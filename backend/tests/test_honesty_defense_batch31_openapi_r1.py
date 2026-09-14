@@ -159,7 +159,7 @@ def test_money_json_wired_batch31():
 
     exp_src = Path(expenses_mod.__file__).read_text(encoding="utf-8")
     assert "money_json(budget_monthly or 0)" in exp_src
-    assert "amount=round(money_json(amount), 2)" in exp_src
+    assert "amount=money_json(round(money_json(amount), 2))" in exp_src
     assert "money_json(normalized[0][\"min_amount\"])" in exp_src or "money_json(normalized[0]" in exp_src
 
     cat_src = Path(catalog_mod.__file__).read_text(encoding="utf-8")

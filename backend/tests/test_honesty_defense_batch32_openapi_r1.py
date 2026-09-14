@@ -148,9 +148,9 @@ def test_money_json_wired_batch32():
     assert "list_price = money_json(" in api_src
     assert "amount=money_json(payload.total or 0)" in api_src
     assert "party.balance = money_json(party.balance or 0) + money_json(payload.total or 0)" in api_src
-    assert "line_discount = round(money_json(item.get(\"discount\") or 0), 2)" in api_src
+    assert "line_discount = money_json(round(money_json(item.get(\"discount\") or 0), 2))" in api_src
     assert "money_json(item[\"quantity\"]) * money_json(unit_price)" in api_src
-    assert "cart_discount = round(money_json(payload.discount_amount or 0), 2)" in api_src
+    assert "cart_discount = money_json(round(money_json(payload.discount_amount or 0), 2))" in api_src
     assert "amount=money_json(credit_amount)" in api_src
     assert "party.balance = money_json(party.balance or 0) + money_json(credit_amount)" in api_src
     assert "if money_json(credit_amount or 0) <= 0:" in api_src

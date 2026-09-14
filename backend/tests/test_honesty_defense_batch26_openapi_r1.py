@@ -92,22 +92,22 @@ def test_money_json_wired_batch26():
     assert "return money_json(" in credit_src
 
     open_src = inspect.getsource(pos_mod.open_session)
-    assert "cash = money_json(round(float(opening_cash or 0), 2))" in open_src
+    assert "cash = money_json(round(money_json(opening_cash or 0), 2))" in open_src
 
     apply_src = inspect.getsource(pos_mod.apply_sale_to_session)
-    assert "amount = money_json(round(float(total or 0), 2))" in apply_src
-    assert "part = money_json(round(float(tender.get(\"amount\") or 0), 2))" in apply_src
+    assert "amount = money_json(round(money_json(total or 0), 2))" in apply_src
+    assert "part = money_json(round(money_json(tender.get(\"amount\") or 0), 2))" in apply_src
 
     close_src = inspect.getsource(pos_mod.close_session)
-    assert "actual = money_json(round(float(actual_cash), 2))" in close_src
+    assert "actual = money_json(round(money_json(actual_cash), 2))" in close_src
 
     resolve_src = inspect.getsource(pos_mod.resolve_sale_payments)
-    assert "sale_total = money_json(round(float(total or 0), 2))" in resolve_src
-    assert "amount = money_json(round(float(raw.get(\"amount\") or 0), 2))" in resolve_src
+    assert "sale_total = money_json(round(money_json(total or 0), 2))" in resolve_src
+    assert "amount = money_json(round(money_json(raw.get(\"amount\") or 0), 2))" in resolve_src
     assert "paid = money_json(round(sum(p[\"amount\"] for p in normalized), 2))" in resolve_src
 
     scale_src = inspect.getsource(expenses_mod.scale_monthly_budget)
-    assert "return money_json(float(budget_monthly or 0) * (days / 30.0))" in scale_src
+    assert "return money_json(money_json(budget_monthly or 0) * (days / 30.0))" in scale_src
 
     eff_src = inspect.getsource(tax_mod.effective_rate_from_components)
     assert "return money_json(fallback or 0)" in eff_src

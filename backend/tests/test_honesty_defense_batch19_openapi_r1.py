@@ -175,7 +175,7 @@ def test_money_json_wired_batch19():
     tax_src = Path(tax_mod.__file__).read_text(encoding="utf-8")
     assert 'money_json(round(net, 2))' in tax_src
     assert 'money_json(round(tax, 2))' in tax_src
-    assert "money_json(round(float(po.total_amount or 0), 2))" in tax_src
+    assert "money_json(round(money_json(po.total_amount or 0), 2))" in tax_src
     assert 'money_json(round(rc, 2))' in tax_src
 
     ai_src = Path(ai_expenses_mod.__file__).read_text(encoding="utf-8")

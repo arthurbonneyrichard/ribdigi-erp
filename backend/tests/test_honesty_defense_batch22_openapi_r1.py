@@ -113,16 +113,16 @@ def test_money_json_wired_batch22():
     assert 'row["quantity"] = money_json(round(row["quantity"], 3))' in xfer_src
 
     inv_src = inspect.getsource(inventory_mod.list_warehouse_stock)
-    assert "money_json(max(reorder_qty, round(reorder - qty, 3)))" in inv_src
+    assert "money_json(max(reorder_qty, money_json(round(reorder - qty, 3))))" in inv_src
     assert 'INSUFFICIENT_WAREHOUSE_STOCK' in inspect.getsource(
         inventory_mod.apply_warehouse_stock_change
     )
     wh_src = inspect.getsource(inventory_mod.apply_warehouse_stock_change)
     assert '"available": money_json(before)' in wh_src
-    assert '"requested": money_json(abs(float(quantity_delta)))' in wh_src
+    assert '"requested": money_json(abs(money_json(quantity_delta)))' in wh_src
 
     store_src = inspect.getsource(stores_mod.store_inventory)
-    assert "money_json(max(reorder_qty, round(reorder - qty, 3)))" in store_src
+    assert "money_json(max(reorder_qty, money_json(round(reorder - qty, 3))))" in store_src
 
     budget_src = inspect.getsource(reports_mod.budget_vs_actual)
     assert "money_json(round((variance / scaled) * 100.0, 1))" in budget_src

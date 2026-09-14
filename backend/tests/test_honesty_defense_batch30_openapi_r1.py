@@ -122,7 +122,7 @@ def test_money_json_wired_batch30():
     pos_src = inspect.getsource(accounting_mod.post_pos_sale_journal)
     assert "amount = money_json(tx.total or 0)" in pos_src
     assert "tax = money_json(tx.tax or 0)" in pos_src
-    assert "part = round(money_json(tender.get(\"amount\") or 0), 2)" in pos_src
+    assert "part = money_json(round(money_json(tender.get(\"amount\") or 0), 2))" in pos_src
     assert '"quantity": money_json(it.get("quantity") or 0)' in pos_src
 
     tax_src = inspect.getsource(purchasing_mod._purchase_line_tax)
