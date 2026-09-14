@@ -13,7 +13,7 @@
 
 ### Tip — ADR-005 membership Complete (2026-09-15)
 
-**As of tip:** `7c4a1e9398a810df06866df5c8531758c5faba33`
+**As of tip:** `650e899c25a8bb4be316ad346306ad962abdf43e`
 
 ADR-005 attested **Complete** via automated flag-ON soak + POS store bind + honesty
 flags. `STORE_MEMBERSHIP_SCOPE_ENABLED` remains **false** by default (ops cutover;
