@@ -1,8 +1,8 @@
 # ADR-005 Membership → Scope Cutover Design (PARTIAL — not Complete)
 
-**Status:** PARTIAL design + flag-gated wire (default **OFF**) + cashier POS/store-list fail-closed when flag ON  
+**Status:** PARTIAL design + flag-gated wire (default **OFF**) + cashier POS/store-list fail-closed when flag ON + automated flag-ON soak  
 **Date:** 2026-09-14  
-**Related:** [`ADR_005_USER_STORE_ASSIGNMENT.md`](ADR_005_USER_STORE_ASSIGNMENT.md) · [`ADR_005_MEMBERSHIP_SCAFFOLD.md`](ADR_005_MEMBERSHIP_SCAFFOLD.md)
+**Related:** [`ADR_005_USER_STORE_ASSIGNMENT.md`](ADR_005_USER_STORE_ASSIGNMENT.md) · [`ADR_005_MEMBERSHIP_SCAFFOLD.md`](ADR_005_MEMBERSHIP_SCAFFOLD.md) · [`adr005_staging_soak_checklist.md`](adr005_staging_soak_checklist.md)
 
 ## Honesty (do not flip without evidence)
 
@@ -160,10 +160,21 @@ Roles whose dashboard view is not `store_manager` keep `managed_store_ids → No
 
 ---
 
+## Automated soak (landed — still PARTIAL)
+
+| Artifact | Path |
+|----------|------|
+| Flag-ON soak tests | `backend/tests/test_adr005_membership_scope_soak.py` |
+| Operator staging checklist | `docs/adr005_staging_soak_checklist.md` |
+| Scaffold / fail-closed units | `backend/tests/test_store_membership_scaffold.py` |
+
+Automated soak proves flag-ON behavior in CI. It does **not** flip
+`adr005_complete_claimed`, `scope_wired_to_membership`, or production default.
+
 ## Remaining before ADR-005 Complete
 
-1. Ops enable flag in staging; soak + regression on store_manager + cashier POS surfaces.
+1. Ops enable flag in staging per `docs/adr005_staging_soak_checklist.md`; capture soak evidence pack.
 2. POS store-picker UI Completes where product requires (Shell switcher still needs `stores:read`).
-3. Evidence pack; only then consider flipping Complete honesty / production default.
+3. Evidence pack + product sign-off; only then consider flipping Complete honesty / production default.
 
 Offline Complete / 7-day VERIFIED / go-live / paid billing Completes remain **MISSING**.

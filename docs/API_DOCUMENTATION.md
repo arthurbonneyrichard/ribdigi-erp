@@ -1175,7 +1175,7 @@ Consolidated inter-store + warehouse transfer history (same `StockTransfer` reco
 
 **User↔store membership (ADR-005 scaffold — PARTIAL, not Complete):**  
 `GET/POST /stores/{store_id}/memberships` · `DELETE /stores/{store_id}/memberships/{user_id}` · `GET /me/store-memberships`  
-Assignment bookkeeping + optional flag-gated scope: when `STORE_MEMBERSHIP_SCOPE_ENABLED=true`, store_manager `managed_store_ids` = `manager_id` ∪ active memberships; cashiers stay `None` on that helper and are fail-closed on POS bind + `GET /stores` via `store_visibility_ids` (membership or empty). Default **false** = legacy. Company/Admin UI: `/stores#memberships`. Honesty Complete flags stay false. Design: `docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md`. Evidence: `test_store_membership_scaffold.py`, `storeMembershipAdmin.test.mjs`.
+Assignment bookkeeping + optional flag-gated scope: when `STORE_MEMBERSHIP_SCOPE_ENABLED=true`, store_manager `managed_store_ids` = `manager_id` ∪ active memberships; cashiers stay `None` on that helper and are fail-closed on POS bind + `GET /stores` via `store_visibility_ids` (membership or empty). Default **false** = legacy. Company/Admin UI: `/stores#memberships`. Honesty Complete flags stay false. Design: `docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md`. Ops checklist: `docs/adr005_staging_soak_checklist.md`. Evidence: `test_adr005_membership_scope_soak.py`, `test_store_membership_scaffold.py`, `storeMembershipAdmin.test.mjs`.
 
 **Create Store:**
 ```json
