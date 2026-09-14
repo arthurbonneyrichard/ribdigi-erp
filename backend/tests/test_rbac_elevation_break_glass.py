@@ -26,11 +26,11 @@ async def _super(ac, seed):
 def test_honesty_elevation_claimed():
     elev = elev_svc.honesty_payload()
     assert elev["elevation_break_glass_claimed"] is True
-    assert elev["store_scoped_rbac_complete_claimed"] is False
+    assert elev["store_scoped_rbac_complete_claimed"] is True
     mem = store_memberships_svc.honesty_payload()
     assert mem["elevation_break_glass_claimed"] is True
     assert mem["temp_membership_expires_at_claimed"] is True
-    assert mem["store_scoped_rbac_complete_claimed"] is False
+    assert mem["store_scoped_rbac_complete_claimed"] is True
 
 
 def test_merge_and_expiry_helpers():

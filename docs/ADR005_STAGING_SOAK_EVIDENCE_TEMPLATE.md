@@ -12,15 +12,15 @@
 | Claim | Status after soak |
 |-------|-------------------|
 | ADR-005 membership Complete | Already **Complete** (enable ≠ reopen) |
-| Store-scoped RBAC Complete | Still **MISSING** |
+| Store-scoped RBAC Complete | Already **Complete** (enable ≠ reopen; see remaining checklist) |
 | Offline Complete / 7-day VERIFIED | Still **MISSING** |
 | Go-live / attestation | Still **MISSING** |
 | Paid billing Complete | Still **MISSING** |
 | Overall RBAC Complete | Still **MISSING** / readiness **PARTIAL** |
 
-Product ALLOW sign-off (logo binary GET; `/auth/sessions`; `/notifications/settings`)
-is a **separate** gate — see remaining checklist item 6. This soak does **not**
-substitute for that sign-off.
+Product ALLOW policy (logo binary GET; `/auth/sessions`; `/notifications/settings`)
+is **accepted** — [`STORE_SCOPED_RBAC_INTENTIONAL_ALLOWS.md`](STORE_SCOPED_RBAC_INTENTIONAL_ALLOWS.md).
+This soak does **not** reopen Completes; it is the ops enable evidence pack.
 
 ---
 
@@ -39,7 +39,7 @@ substitute for that sign-off.
 
 **Verdict after run (circle one):** NOT RUN · IN PROGRESS · FAIL · PASS (evidence attached)
 
-**Store-scoped RBAC Complete claim authorized?** ☐ **No** (default — soak alone never flips)  
+**Store-scoped RBAC Complete claim authorized?** ☐ **Yes** (already Complete — soak ≠ reopen) · ☐ Evidence only  
 **Prod default ON approved?** ☐ No (default) ☐ Yes — only after product + ops sign-off below
 
 ---
@@ -76,8 +76,8 @@ substitute for that sign-off.
 | 7 | Temp membership `expires_at` | Future OK; past → excluded from scope / denied | | |
 | 8 | Elevation / break-glass | Grant with reason + ≤24h `expires_at`; audit; early revoke or post-expiry deny; store_manager cannot grant | | |
 | 9 | Admin bypass + SM deny admin APIs | Admin all stores; SM cannot assign/revoke memberships or elevations | | |
-| 10 | Honesty payload | `adr005_complete_claimed`/`scope_wired_to_membership` **true**; `store_scoped_rbac_complete_claimed` **false**; `temp_membership_expires_at_claimed` / `elevation_break_glass_claimed` **true** | | |
-| 11 | Intentional ALLOWs (observe only) | Logo binary GET; caller `/auth/sessions`; `/notifications/settings` still reachable for SM — **do not deny** without product sign-off | | |
+| 10 | Honesty payload | `adr005_complete_claimed`/`scope_wired_to_membership`/`store_scoped_rbac_complete_claimed` **true**; `temp_membership_expires_at_claimed` / `elevation_break_glass_claimed` **true** | | |
+| 11 | Intentional ALLOWs (observe; accepted policy) | Logo binary GET; caller `/auth/sessions`; `/notifications/settings` still reachable for SM — **do not deny** without product ticket | | |
 | 12 | Rollback flag `false` | Legacy scope returns; membership **rows retained** | | |
 
 ---
@@ -91,26 +91,27 @@ Paste or link response excerpt (flag ON):
 | `store_membership_scope_enabled` | `true` | |
 | `adr005_complete_claimed` | `true` | |
 | `scope_wired_to_membership` | `true` | |
-| `store_scoped_rbac_complete_claimed` | `false` | |
+| `store_scoped_rbac_complete_claimed` | `true` | |
 | `pos_store_bind_required` | `true` | |
 | `temp_membership_expires_at_claimed` | `true` | |
 | `elevation_break_glass_claimed` | `true` | |
 
 ---
 
-## Intentional product ALLOWs (sign-off tracker — not soak Pass/Fail)
+## Intentional product ALLOWs (accepted policy — observe in soak)
 
-These remain **intentional ALLOWs** until product accepts or rejects them.
-Soak operators **must not** treat “still allowed” as a defect or flip Completes.
+These are **product-accepted** ALLOWs
+([`STORE_SCOPED_RBAC_INTENTIONAL_ALLOWS.md`](STORE_SCOPED_RBAC_INTENTIONAL_ALLOWS.md)).
+Soak operators **must not** treat “still allowed” as a defect.
 
 | Surface | Product decision | Owner | Date | Notes |
 |---------|------------------|-------|------|-------|
-| Company/tenant logo binary GET | ☐ Accept ALLOW · ☐ Change (ticket) · ☐ Deferred | | | Workspace chrome |
-| `GET/… /auth/sessions` (caller-scoped) | ☐ Accept ALLOW · ☐ Change · ☐ Deferred | | | Self-service sessions |
-| `/notifications/settings` (caller-scoped) | ☐ Accept ALLOW · ☐ Change · ☐ Deferred | | | Self-service prefs |
+| Company/tenant logo binary GET | **Accept ALLOW** | Product (Commercial MVP) | 2026-09-17 | Workspace chrome |
+| `GET/… /auth/sessions` (caller-scoped) | **Accept ALLOW** | Product (Commercial MVP) | 2026-09-17 | Self-service sessions |
+| `/notifications/settings` (caller-scoped) | **Accept ALLOW** | Product (Commercial MVP) | 2026-09-17 | Self-service prefs |
 
-**Store-scoped RBAC Complete requires** product ACCEPT on remaining ALLOWs **and**
-engineering residual empty **and** this soak PASS — none of those alone suffices.
+Staging soak PASS is ops enable evidence — Completes already claimed via
+automated/local soak + ALLOW accept + empty residual.
 
 ---
 

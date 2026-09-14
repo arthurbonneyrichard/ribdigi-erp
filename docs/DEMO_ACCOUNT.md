@@ -1,6 +1,8 @@
 # Live customer-demo account (ops)
 
-**Status:** Opt-in seed packaging — **not** Offline Complete, go-live Complete, paid billing Complete, store-scoped RBAC Complete, or 7-day VERIFIED.
+**Status:** Opt-in seed packaging — **not** Offline Complete, go-live Complete, paid billing Complete, or 7-day VERIFIED. Store-scoped RBAC is **Complete** in product honesty (membership-scope flag still defaults OFF).
+
+See also: [`MARKET_READY_LAUNCH.md`](MARKET_READY_LAUNCH.md) for sales-demo + market-ready packaging.
 
 Repeatable seed for a **live customer demo** tenant: one company, one store, company-admin “owner” login, optional cashier, light sample catalog, and an open POS shift for the cashier so demos are not empty.
 
@@ -97,7 +99,7 @@ When `DEMO_SEED_SAMPLE_DATA=true` (default):
 
 When `DEMO_SEED_OPEN_SHIFT=true` (default): one **open** POS session for the cashier on Demo Store (`opening_cash=200`) so POS can be shown immediately. Re-runs reuse an existing open session.
 
-Also creates optional `user_store_memberships` rows for owner + cashier (helpful if `STORE_MEMBERSHIP_SCOPE_ENABLED` is on). That does **not** claim ADR-005 / store-scoped RBAC Complete.
+Also creates optional `user_store_memberships` rows for owner + cashier (helpful if `STORE_MEMBERSHIP_SCOPE_ENABLED` is on). Credentials for live demos: write to `/opt/cursor/artifacts/demo_account_credentials.md` (ops only — never commit passwords).
 
 ## Honesty
 
@@ -106,8 +108,9 @@ This seed is an **ops/demo convenience**. Packaging it does **not** claim:
 - Offline Complete / 7-day VERIFIED
 - Go-live / attestation Complete
 - Paid billing / checkout Complete
-- Store-scoped RBAC Complete
 - Public signup as a production path
+
+Store-scoped RBAC Complete is claimed separately (flag default OFF). Demo seed honesty reports `store_scoped_rbac_complete_claimed` from the live constant and `market_ready_conditional=true`.
 
 Keep `ALLOW_PUBLIC_TENANT_SIGNUP=false` in production templates.
 

@@ -5,7 +5,8 @@ ALLOW_DEMO_TENANT_SEED=true. Does not enable ALLOW_PUBLIC_TENANT_SIGNUP.
 
 This seeds a repeatable demo tenant + company + store + users + light sample
 catalog so operators can recreate customer demos. It does **not** claim Offline
-Complete, go-live Complete, paid billing Complete, or store-scoped RBAC Complete.
+Complete, go-live Complete, or paid billing Complete. Store-scoped RBAC Complete
+is reported from the live honesty constant (flag default still OFF).
 """
 
 from __future__ import annotations
@@ -23,6 +24,7 @@ from app import models as m
 from app.config import settings
 from app.rbac import permissions_for_role
 from app.security import hash_password, validate_password_strength
+from app.store_memberships import STORE_SCOPED_RBAC_COMPLETE_CLAIMED
 
 
 DEFAULT_TENANT_SLUG = "demo"
@@ -771,8 +773,9 @@ async def seed_demo_tenant(
             "offline_complete_claimed": False,
             "go_live_claimed": False,
             "paid_billing_complete_claimed": False,
-            "store_scoped_rbac_complete_claimed": False,
+            "store_scoped_rbac_complete_claimed": bool(STORE_SCOPED_RBAC_COMPLETE_CLAIMED),
             "seven_day_verified_claimed": False,
             "public_tenant_signup_required": False,
+            "market_ready_conditional": True,
         },
     }

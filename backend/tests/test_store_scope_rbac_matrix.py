@@ -4,8 +4,9 @@ Documents/enforces: cross-store deny, membership-on soak, cashier fail-closed,
 manager union, intentional ALLOWs (logo GET, sessions, notification settings).
 Breadth cases index deep modules without re-running the full continuum file.
 
-Honesty: store-scoped RBAC Complete remains MISSING — matrix landing alone is
-not Complete. Do not claim Offline / 7-day / go-live / paid billing Completes.
+Honesty: store-scoped RBAC Complete is claimed (flag default OFF) when residual
+empty + product-accepted ALLOWs + this matrix + automated/local soak. Do not
+claim Offline / 7-day / go-live / paid billing / overall RBAC Completes.
 """
 
 from __future__ import annotations
@@ -30,6 +31,7 @@ ROOT = Path(__file__).resolve().parents[2]
 MATRIX = ROOT / "ops" / "mvp" / "store-scope-rbac-matrix.json"
 DOC = ROOT / "docs" / "STORE_SCOPED_RBAC_TEST_MATRIX.md"
 REMAINING = ROOT / "docs" / "STORE_SCOPED_RBAC_COMPLETE_REMAINING.md"
+ALLOWS = ROOT / "docs" / "STORE_SCOPED_RBAC_INTENTIONAL_ALLOWS.md"
 
 pytestmark = pytest.mark.store_scope
 
@@ -108,7 +110,7 @@ def test_matrix_json_structure_and_honesty():
     mapping = _matrix()
     assert mapping["id"] == "store-scope-rbac-matrix"
     assert mapping["version"] >= 1
-    assert mapping["store_scoped_rbac_complete_claimed"] is False
+    assert mapping["store_scoped_rbac_complete_claimed"] is True
     assert mapping["adr005_complete_claimed"] is True
     assert mapping["overall_rbac_complete_claimed"] is False
     assert mapping["ci_marker"] == "store_scope"
@@ -131,9 +133,12 @@ def test_matrix_json_structure_and_honesty():
             path = ROOT / ref.split("::", 1)[0]
             assert path.is_file(), ref
     never = {x.lower() for x in mapping["never_claim_from_matrix_alone"]}
-    assert "store-scoped rbac complete" in never
+    assert "overall rbac complete" in never
     assert "offline complete" in never
-    assert any("residual" in x.lower() for x in mapping["complete_criteria_not_met"])
+    assert mapping.get("complete_criteria_not_met") == []
+    met = mapping.get("complete_criteria_met") or []
+    assert any("ALLOW" in x or "allow" in x.lower() for x in met)
+    assert any("residual" in x.lower() or "NONE" in x for x in met)
 
 
 def test_matrix_docs_and_remaining_checklist_aligned():
@@ -141,23 +146,28 @@ def test_matrix_docs_and_remaining_checklist_aligned():
     doc = DOC.read_text(encoding="utf-8")
     assert "store_scope" in doc
     assert "store-scope-rbac-matrix.json" in doc
-    assert "MISSING" in doc
+    assert "Complete" in doc
     assert "intentional" in doc.lower() or "ALLOW" in doc
 
     assert REMAINING.is_file()
     remaining = REMAINING.read_text(encoding="utf-8")
-    assert "MISSING" in remaining
+    assert "**Complete**" in remaining
+    assert "EMPTY" in remaining or "empty" in remaining.lower()
     assert "store-scope-rbac-matrix" in remaining or "Living store-scope test matrix" in remaining
     assert "test_store_scope_rbac_matrix.py" in remaining
+    assert ALLOWS.is_file()
+    allows = ALLOWS.read_text(encoding="utf-8")
+    assert "ACCEPT" in allows
+    assert "logo" in allows.lower()
 
 
-def test_matrix_honesty_payloads_still_false():
+def test_matrix_honesty_payloads_complete_true():
     honesty = store_memberships_svc.honesty_payload()
     assert honesty["adr005_complete_claimed"] is True
-    assert honesty["store_scoped_rbac_complete_claimed"] is False
-    assert store_memberships_svc.STORE_SCOPED_RBAC_COMPLETE_CLAIMED is False
+    assert honesty["store_scoped_rbac_complete_claimed"] is True
+    assert store_memberships_svc.STORE_SCOPED_RBAC_COMPLETE_CLAIMED is True
     mapping = _matrix()
-    assert mapping["store_scoped_rbac_complete_claimed"] is False
+    assert mapping["store_scoped_rbac_complete_claimed"] is True
 
 
 def test_matrix_ci_marker_wired():
@@ -353,7 +363,7 @@ async def test_matrix_membership_soak_honesty(client, monkeypatch):
     _enable_membership_scope(monkeypatch)
     honesty = store_memberships_svc.honesty_payload()
     assert honesty["adr005_complete_claimed"] is True
-    assert honesty["store_scoped_rbac_complete_claimed"] is False
+    assert honesty["store_scoped_rbac_complete_claimed"] is True
     assert honesty["store_membership_scope_enabled"] is True
     assert honesty["cashier_membership_fail_closed"] is True
     assert "user_store_memberships" in honesty["operational_scope"]
@@ -368,7 +378,7 @@ async def test_matrix_membership_soak_honesty(client, monkeypatch):
     assert me.status_code == 200, me.text
     payload = me.json()["data"]
     assert payload["adr005_complete_claimed"] is True
-    assert payload["store_scoped_rbac_complete_claimed"] is False
+    assert payload["store_scoped_rbac_complete_claimed"] is True
 
 
 @pytest.mark.asyncio

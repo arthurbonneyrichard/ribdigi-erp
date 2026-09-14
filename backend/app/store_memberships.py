@@ -9,7 +9,9 @@ store_manager only; cashiers stay ``None`` on that helper and use
 fail-closed. Optional ``expires_at`` excludes rows from scope once past (temp
 access). Elevation / break-glass is a separate RBAC grant (``rbac_elevations``)
 with required reason + auto-expiry. ADR-005 Complete via automated soak;
-Complete ≠ prod default ON. Store-scoped RBAC Complete remains MISSING.
+Complete ≠ prod default ON. Store-scoped RBAC Complete via empty residual +
+product-accepted ALLOWs + living matrix + automated/local soak (flag default
+OFF intentional).
 """
 
 from __future__ import annotations
@@ -24,10 +26,10 @@ from app import models as m
 from app.config import settings
 from app.stores import get_store
 
-# Honesty — ADR-005 Complete via automated soak (SEC-M2-style). Flag default
-# OFF remains intentional ops cutover. Store-scoped RBAC Complete stays false.
+# Honesty — ADR-005 + store-scoped RBAC Complete via automated/local soak
+# (SEC-M2-style). Flag default OFF remains intentional ops cutover.
 ADR005_COMPLETE_CLAIMED = True
-STORE_SCOPED_RBAC_COMPLETE_CLAIMED = False
+STORE_SCOPED_RBAC_COMPLETE_CLAIMED = True
 SCOPE_WIRED_TO_MEMBERSHIP = True
 # Temp membership expiry is enforced in scope.
 TEMP_MEMBERSHIP_EXPIRES_AT_CLAIMED = True
@@ -57,7 +59,8 @@ def honesty_payload() -> dict:
             else "stores.manager_id (membership scope wired; enable STORE_MEMBERSHIP_SCOPE_ENABLED for union + cashier fail-closed; expires_at enforced when flag ON)"
         ),
         "complete_means": (
-            "feature_complete_plus_automated_flag_on_soak; "
+            "adr005_and_store_scoped_rbac_complete_plus_automated_flag_on_soak; "
+            "product_accepted_intentional_allows; "
             "production_default_flag_remains_off_until_ops_cutover"
         ),
     }

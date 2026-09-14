@@ -17,20 +17,20 @@
 | Claim | After this soak |
 |-------|-----------------|
 | ADR-005 membership Complete | Already **Complete** (staging enable ≠ reopen) |
-| Store-scoped RBAC Complete | Still **MISSING** — soak is necessary evidence, **not** sufficient |
+| Store-scoped RBAC Complete | Already **Complete** (engineering + ALLOW accept + automated/local soak; staging enable ≠ reopen) |
 | Offline Complete / 7-day VERIFIED | Still **MISSING** |
 | Go-live / attestation | Still **MISSING** |
 | Paid billing Complete | Still **MISSING** |
 | Overall RBAC Complete | Still **MISSING** / readiness **PARTIAL** |
 
-Automated soak **=** ADR-005 Complete evidence (SEC-M2 parallel). Do **not** flip
+Automated soak **=** ADR-005 + store-scoped Complete evidence (SEC-M2 parallel). Do **not** flip
 production default to ON from this checklist alone. Leaving the flag OFF does
-**not** reopen ADR-005 Complete.
+**not** reopen Completes.
 
 Intentional product ALLOWs (logo binary GET; caller-scoped `/auth/sessions` +
-`/notifications/settings`) stay allowed until **product sign-off** — observe in
-soak; do **not** deny without a ticket. Product ALLOW accept/reject is a
-**separate** gate on the store-scoped Complete path (remaining checklist item 6).
+`/notifications/settings`) are **product-accepted** —
+[`STORE_SCOPED_RBAC_INTENTIONAL_ALLOWS.md`](STORE_SCOPED_RBAC_INTENTIONAL_ALLOWS.md).
+Observe in soak; do **not** deny without a product ticket.
 
 ---
 

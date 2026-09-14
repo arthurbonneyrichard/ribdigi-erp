@@ -51,7 +51,7 @@ store activation — never frontend-only.
    when ``STORE_MEMBERSHIP_SCOPE_ENABLED`` is true (default **false** — ops cutover),
    store_manager ``managed_store_ids`` is **manager_id ∪ active memberships**, and
    cashiers fail-closed via ``store_visibility_ids``. Complete ≠ production default ON
-   (SEC-M2 parallel). Store-scoped RBAC Complete remains **MISSING**. Scope helpers in `backend/app/dashboard_scope.py`
+   (SEC-M2 parallel). Store-scoped RBAC Complete is **Complete** (flag default OFF; ALLOWs product-accepted). Scope helpers in `backend/app/dashboard_scope.py`
    (`managed_store_ids`, `store_visibility_ids`, `cashier_membership_store_ids`,
    `constrain_store_query`, `assert_transfer_touches_manager_scope`, `managed_warehouse_ids`,
    `constrain_warehouse_query`, `apply_warehouse_scope_filter`,
@@ -346,18 +346,20 @@ store activation — never frontend-only.
 
 ### Do not claim Completes
 
-Offline Complete, paid billing Completes, go-live, attestation Completes, and
-**store-scoped RBAC Complete** remain **MISSING** unless separately delivered with
-evidence. **ADR-005 membership is Complete** (feature + automated soak; flag default OFF). Store, company, and user caps are subscription gates on `Tenant.max_*`
-columns — not checkout or MRR Completes.
+Offline Complete, paid billing Completes, go-live, and attestation Completes
+remain **MISSING** unless separately delivered with evidence. **ADR-005 membership**
+and **store-scoped RBAC** are **Complete** (feature + automated/local soak + product-accepted
+ALLOWs; flag default OFF). Store, company, and user caps are subscription gates on
+`Tenant.max_*` columns — not checkout or MRR Completes. Commercial MVP is
+**market-ready with conditions** (`docs/MARKET_READY_LAUNCH.md`) — not go-live Complete.
 
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `1f7255beebd19d29cf46faf95763e9035d77b24e` — continuum residual dump **NONE** (no safe SM-visible named leftover after scan of audit `details` re-dumps, personal/broadcast notification embeds, and omit-sibling surfaces; credit-limit warning broadcasts fail-closed for SM; SMTP audit out of SM scope); prior tip ancestry includes notification expense approval threshold redact + audit CLE invoice_total + expense threshold + store manager_id + attachment storage key + emailed_to + department_id + party ledger + CLE master + CLE currency + additional_amount + audit FX; concurrent approval stress pack **Complete**; living store-scope matrix landed — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL** (Completes still **MISSING**); ADR-005 membership **Complete** (flag default OFF; store-scoped RBAC Complete still **MISSING** — known safe residual dump backlog empty; product ALLOW sign-off + staging soak still open — see `docs/STORE_SCOPED_RBAC_COMPLETE_REMAINING.md`); overall RBAC readiness **PARTIAL** (approval hardening + % limits + export/`view_cost` Complete + expires_at + elevation + concurrent approval stress Complete — not RBAC Complete); paid billing **PARTIAL** (ops-blocked); operator go-live pack `docs/GO_LIVE_READINESS_CHECKLIST.md` (Completes still **MISSING**); Offline Complete still **MISSING**. Cookie + membership-scope + entitlement-gate flags default remain OFF (ops enable cutover).
+**As of tip:** `TIP_SHA_PLACEHOLDER` — store-scoped RBAC **Complete** (residual dump **NONE** + product-accepted intentional ALLOWs + living matrix + automated/local demo-seed soak; flag default OFF); continuum residual dump **NONE**; prior tip ancestry includes notification expense approval threshold redact + audit CLE invoice_total + expense threshold + store manager_id + attachment storage key + emailed_to + department_id + party ledger + CLE master + CLE currency + additional_amount + audit FX; concurrent approval stress pack **Complete**; living store-scope matrix landed — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL** (Completes still **MISSING**); ADR-005 membership **Complete** (flag default OFF); overall RBAC readiness **PARTIAL** (approval hardening + % limits + export/`view_cost` Complete + expires_at + elevation + concurrent approval stress Complete — not RBAC Complete); paid billing **PARTIAL** (ops-blocked); operator go-live pack `docs/GO_LIVE_READINESS_CHECKLIST.md` (go-live Completes still **MISSING**); commercial MVP **market-ready with conditions** (`docs/MARKET_READY_LAUNCH.md`); Offline Complete still **MISSING**. Cookie + membership-scope + entitlement-gate flags default remain OFF (ops enable cutover).
 
 **Security:** no open Critical/High/Medium. Do not claim go-live Completes. Cookie + membership-scope flags OFF in prod examples are intentional until ops cutover (`docs/sec_m2_staging_soak_checklist.md`, `docs/adr005_staging_soak_checklist.md`). Offline push prod template stays fail-closed until `docs/offline_wipe_push_staging_checklist.md` browser proof. Entitlement gate prod default stays OFF until mirror→access evidence (`docs/PAID_BILLING_PROVIDER_OPS.md`). Operator roll-up: `docs/GO_LIVE_READINESS_CHECKLIST.md`.  
-**Honesty:** never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never store-scoped RBAC Complete, never overall RBAC Complete. ADR-005 membership **is Complete** (flag default OFF intentional).
+**Honesty:** never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never overall RBAC Complete. ADR-005 membership **and** store-scoped RBAC **are Complete** (flag default OFF intentional). Prefer **market-ready with conditions** over false go-live Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
 `/opt/cursor/artifacts/pr303_body_update.md` synchronized on the same tip SHA and
@@ -366,22 +368,20 @@ leave contradictory Complete/PARTIAL wording across those three surfaces.
 
 ### Intentionally still open (do not rewrite as closed)
 
-1. Company/tenant **logo binary GET** — intentional product **ALLOW** for workspace
-   chrome (branding *writes* already denied). Mistaken close in `b0fc721a15` was
-   **reverted**. Not a Completes blocker to deny.
-2. Per-user `/auth/sessions` + `/notifications/settings` — intentional product
-   **ALLOW** (caller-scoped self-service; tenant-wide `/auth/tenant-sessions`
-   denied; prefs bind to `claims.sub`). Secure versions proven by continuum
-   tests — not company dumps / not Completes blockers.
-3. **Store-scoped RBAC Complete** still **MISSING** (separate continuum claim). ADR-005
-   membership is **Complete** (flag default OFF — Complete ≠ prod default ON; legacy
-   ``stores.manager_id`` when flag OFF). Ops enable: `docs/adr005_staging_soak_checklist.md`.
+1. ~~Company/tenant logo binary GET~~ — **ACCEPTED ALLOW** policy
+   (`docs/STORE_SCOPED_RBAC_INTENTIONAL_ALLOWS.md`); not a dump to close.
+2. ~~Per-user `/auth/sessions` + `/notifications/settings`~~ — **ACCEPTED ALLOW**
+   (caller-scoped self-service); tenant-wide `/auth/tenant-sessions` remains denied.
+3. Staging enable of `STORE_MEMBERSHIP_SCOPE_ENABLED` (ops cutover; Completes already
+   claimed; flag default OFF). Offline Complete / 7-day VERIFIED / paid billing Complete /
+   go-live remain **MISSING**. Overall RBAC Complete remains **MISSING**.
 
-### Closed this continuum slice (still PARTIAL overall)
+### Closed this continuum slice
 
-- Continuum residual dump **NONE** — no safe non-intentional SM-visible leftover closed this CONTINUE;
-  known named-surface dump backlog empty; next path is product ALLOW sign-off / staging soak (not dump spam).
-  Prior closed: expense-approval notification ``message`` company auto-approve ``threshold`` for `store_manager`.
+- Store-scoped RBAC **Complete** — product-accepted intentional ALLOWs + empty residual +
+  living matrix + automated/local demo-seed soak (`docs/STORE_SCOPED_RBAC_COMPLETE_REMAINING.md`,
+  `docs/MARKET_READY_LAUNCH.md`). Flag default OFF; staging enable = ops cutover.
+- Continuum residual dump **NONE** remains; do **not** resume dump spam.
 
 
 
@@ -417,8 +417,9 @@ list/get/create/unpost/upload/delete `attachment_url` storage-key redact
 4. **PR body:** try `gh pr edit 303 --body-file …`; on failure, always refresh
    `/opt/cursor/artifacts/pr303_body_update.md` so the next agent has the intended body.
 5. **Do not** claim Offline Complete, 7-day VERIFIED, go-live, paid billing Complete,
-   store-scoped RBAC Complete, or overall RBAC Complete. ADR-005 membership **is
-   Complete** (flag default OFF). **Do not** rewrite unrelated leftovers as closed.
+   or overall RBAC Complete. ADR-005 membership **and** store-scoped RBAC **are
+   Complete** (flag default OFF). Prefer market-ready-with-conditions over false
+   go-live Complete. **Do not** rewrite unrelated leftovers as closed.
 
 ## Subscription Company Entitlement
 

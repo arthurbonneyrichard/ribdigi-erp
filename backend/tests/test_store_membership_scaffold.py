@@ -273,7 +273,7 @@ async def test_membership_expands_managed_store_ids_when_flag_on(
     assert honesty["cashier_membership_fail_closed"] is True
     assert honesty["adr005_complete_claimed"] is True
     assert honesty["scope_wired_to_membership"] is True
-    assert honesty["store_scoped_rbac_complete_claimed"] is False
+    assert honesty["store_scoped_rbac_complete_claimed"] is True
 
 
 @pytest.mark.asyncio
@@ -511,7 +511,7 @@ def test_adr005_scaffold_docs_and_honesty_flags():
     assert "production default" in cutover.lower() or "prod default" in cutover.lower()
     honesty = store_memberships_svc.honesty_payload()
     assert honesty["adr005_complete_claimed"] is True
-    assert honesty["store_scoped_rbac_complete_claimed"] is False
+    assert honesty["store_scoped_rbac_complete_claimed"] is True
     assert honesty["scope_wired_to_membership"] is True
     assert honesty["scaffold_status"] == "complete"
     assert "cashier_membership_fail_closed" in honesty

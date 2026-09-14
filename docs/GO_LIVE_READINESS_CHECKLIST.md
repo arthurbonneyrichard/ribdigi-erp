@@ -5,16 +5,19 @@
 **As of engineering tip ancestry:** paid billing entitlement gate + ADR-005 soak +
 offline wipe-via-push automation (see `AGENTS.md` tip SHA after merge).
 
-**Engineering → Complete path: ops-blocked.** Landed code + automated suites do
-**not** advance Offline / push-delivery / 7-day VERIFIED / go-live / paid billing /
-store-scoped RBAC Completes. ADR-005 membership is **Complete** (flag default OFF). First-class `export`/`view_cost` RBAC actions are **Complete** for the engine slice (admin/settings/catalog module gates closed; intentional role-gated admin dumps + caller-scoped session/passkey exports retained; not overall RBAC Complete). Temp membership `expires_at` is **Complete**. Elevation / break-glass MVP is **Complete** (time-bounded grant + reason + audit + auto-expiry; not overall RBAC Complete). Cloud-agent Chrome could not finish
+**Engineering → Complete path: ops-blocked for Offline / billing / go-live.** Landed code + automated suites do
+**not** advance Offline / push-delivery / 7-day VERIFIED / go-live / paid billing Completes.
+ADR-005 membership and store-scoped RBAC are **Complete** (flag default OFF; ALLOWs
+product-accepted — [`STORE_SCOPED_RBAC_INTENTIONAL_ALLOWS.md`](STORE_SCOPED_RBAC_INTENTIONAL_ALLOWS.md)).
+First-class `export`/`view_cost` RBAC actions are **Complete** for the engine slice (admin/settings/catalog module gates closed; intentional role-gated admin dumps + caller-scoped session/passkey exports retained; not overall RBAC Complete). Temp membership `expires_at` is **Complete**. Elevation / break-glass MVP is **Complete** (time-bounded grant + reason + audit + auto-expiry; not overall RBAC Complete). Cloud-agent Chrome could not finish
 `PushManager.subscribe` (no FCM endpoint) — that attempt is a **blocker note**,
-not proof. Remaining Completes work is **ops attestation + product sign-off**
-(staging keys, real till browser, soaks, physical matrix). ADR-005 Complete already attested (flag default OFF).
+not proof. Remaining Completes work is **ops attestation**
+(staging keys, real till browser, soaks, physical matrix).
 Continuum company-level dump slices are paused; intentional product ALLOWs
 (logo binary GET; caller-scoped `/auth/sessions` + `/notifications/settings`)
-must stay allowed. Managed-store `manager_id` self-scope dump is **closed**
-(redacted). **Do not mark go-live ready unless every gate below is Complete.**
+are **accepted policy** and must stay allowed. Managed-store `manager_id` self-scope dump is **closed**
+(redacted). Prefer [`MARKET_READY_LAUNCH.md`](MARKET_READY_LAUNCH.md) for commercial MVP
+**market-ready (conditional)** language. **Do not mark go-live ready unless every remaining MISSING gate below is Complete.**
 
 **Honesty — do not claim from this document alone:**
 
@@ -25,11 +28,16 @@ must stay allowed. Managed-store `manager_id` self-scope dump is **closed**
 | Go-live / attestation Complete | **MISSING** |
 | Paid billing Complete / payment_success | **MISSING** |
 | ADR-005 Complete | **Complete** (feature + automated soak; flag default OFF) |
-| Store-scoped RBAC Complete | **MISSING** |
+| Store-scoped RBAC Complete | **Complete** (flag default OFF; ALLOWs product-accepted) |
 
 This pack consolidates FIXED vs PARTIAL vs MISSING gates and the **exact ops
 steps** for staging soaks. Engineering automation is already landed; Completes
 that need staging keys, real browsers, or multi-day physical evidence stay open.
+Store-scoped RBAC Complete is claimed via automated/local soak + ALLOW accept —
+staging §3C enable does **not** reopen it.
+
+**Market-ready (conditional):** [`MARKET_READY_LAUNCH.md`](MARKET_READY_LAUNCH.md) —
+commercial MVP packaging with staging cutovers listed; **not** go-live Complete.
 
 Related deep runbooks (do not duplicate dumps here):
 
@@ -56,7 +64,7 @@ Related deep runbooks (do not duplicate dumps here):
 | Offline Complete attestation | **MISSING** | Explicitly not claimed (`OFFLINE_COMPLETE_ATTESTATION.md`) | Product attestation after endurance + push Complete |
 | 7-day offline physical VERIFIED | **MISSING** | Envelope + client gate shipped only | Execute platform matrix runbook (unchecked) |
 | ADR-005 membership (assignment + flag scope + POS bind) | **Complete** | Assign/list/revoke; flag-gated union; cashier fail-closed; POS picker; automated flag-ON soak | Staging enable (ops cutover ≠ reopen Complete) |
-| Store-scoped RBAC Complete | **MISSING** | Continuum separate from ADR-005; remaining checklist [`STORE_SCOPED_RBAC_COMPLETE_REMAINING.md`](STORE_SCOPED_RBAC_COMPLETE_REMAINING.md); safe residual dump backlog empty; manager_id self-scope dump closed | Product ALLOW sign-off + staging soak PASS — soak alone ≠ Complete |
+| Store-scoped RBAC Complete | **Complete** | Residual NONE + ALLOW accept + living matrix + automated/local soak; flag default OFF | Staging enable cutover (≠ reopen Complete) |
 | Paid billing scaffold (portal/checkout/webhooks) | **PARTIAL** (engineering mock soak ready) | ADR-002 tables; HMAC webhooks; portal + checkout create (503 unconfigured; mock CI); lifecycle + `invoice.paid` non-Complete; `test_paid_billing_soak.py` | Live Stripe keys + staging soak |
 | Paid billing entitlement gate | **PARTIAL** | `PAID_BILLING_ENTITLEMENT_GATE_ENABLED` default **OFF**; when ON gates only `POST /sales` + `PATCH /companies/{id}`; mock gate-ON soak proven | Staging mirror→access evidence before any prod enable |
 | Paid billing Complete / go-live | **MISSING** (ops-blocked) | No `Tenant.plan_code` mutation from Checkout/webhooks; no fabricated MRR; `paid_billing_complete_ops_blocked=true` | Live Stripe cutover + commercial acceptance |
@@ -136,14 +144,15 @@ Criteria / non-claims: [`STORE_SCOPED_RBAC_COMPLETE_REMAINING.md`](STORE_SCOPED_
 8. **Elevation / break-glass:** admin grant with reason + ≤24h `expires_at`; deny after expiry/revoke;
    store_manager cannot grant (MVP Complete ≠ store-scoped Complete).
 9. **company/tenant admin:** all company stores; can assign/revoke; store_manager cannot call membership admin APIs.
-10. Honesty: `adr005_complete_claimed` / `scope_wired_to_membership` **true**;
-    `store_scoped_rbac_complete_claimed` **false**; `temp_membership_expires_at_claimed` /
+10. Honesty: `adr005_complete_claimed` / `scope_wired_to_membership` /
+    `store_scoped_rbac_complete_claimed` **true**; `temp_membership_expires_at_claimed` /
     `elevation_break_glass_claimed` **true**.
-11. **Intentional ALLOWs (observe):** logo binary GET; caller `/auth/sessions` +
-    `/notifications/settings` — need product sign-off separately; do not deny without ticket.
+11. **Intentional ALLOWs (accepted policy):** logo binary GET; caller `/auth/sessions` +
+    `/notifications/settings` — [`STORE_SCOPED_RBAC_INTENTIONAL_ALLOWS.md`](STORE_SCOPED_RBAC_INTENTIONAL_ALLOWS.md);
+    do not deny without ticket.
 12. Rollback: set flag `false`; legacy scope returns (membership rows retained).
-13. Production enable is ops cutover — does **not** reopen ADR-005 Complete and does
-    **not** alone claim store-scoped RBAC Complete.
+13. Production enable is ops cutover — does **not** reopen ADR-005 or store-scoped
+    RBAC Completes.
 
 ### 3D. Offline wipe-via-push real-browser (PARTIAL)
 
@@ -216,7 +225,7 @@ ADR-005 membership is already **Complete** (flag default OFF; enable ≠ reopen)
 | Paid billing provider soak | | | [ ] | **No** — Complete MISSING |
 | Entitlement gate ON | | | [ ] | **No** — Complete MISSING |
 | ADR-005 scope ON | | | [ ] | N/A (Complete; enable ≠ reopen) |
-| Store-scoped RBAC Complete | | | [ ] | **No** — Complete MISSING |
+| Store-scoped RBAC Complete | | | [ ] | **Yes** — Complete (flag OFF; enable ≠ reopen) |
 | Wipe-via-push browser | | | [ ] | **No** — push Complete MISSING |
 | 7-day physical matrix | | | [ ] | **No** — VERIFIED MISSING |
 | Offline Complete attestation | | | [ ] | **No** — MISSING |
@@ -242,16 +251,17 @@ Offline Complete, and 7-day VERIFIED still need operator evidence:
    (`PAID_BILLING_PROVIDER_OPS.md`); entitlement gate ON only after
    mirror→access evidence on the allowlist.
 4. Staging ADR-005 `STORE_MEMBERSHIP_SCOPE_ENABLED=true` soak
-   (`adr005_staging_soak_checklist.md` + `ADR005_STAGING_SOAK_EVIDENCE_TEMPLATE.md`);
-   product ALLOW sign-off (logo / sessions / notifications) before treating
-   store-scoped RBAC as Complete-candidate; product sign-off before any prod default ON.
+   (`adr005_staging_soak_checklist.md` + `ADR005_STAGING_SOAK_EVIDENCE_TEMPLATE.md`)
+   before any prod default ON — Completes already claimed; enable ≠ reopen.
+   Intentional ALLOWs are product-accepted
+   ([`STORE_SCOPED_RBAC_INTENTIONAL_ALLOWS.md`](STORE_SCOPED_RBAC_INTENTIONAL_ALLOWS.md)).
 5. SEC-M2 cookie staging enable when ready (`sec_m2_staging_soak_checklist.md`)
    — FIXED finding; enable is ops cutover only.
 6. Do **not** resume continuum residual dump spam unless a new **named** SM-visible
-   leak is product-prioritized (known safe backlog empty as of NONE honesty tip).
-   Intentional ALLOWs (logo binary GET; caller-scoped sessions/notifications)
-   stay allowed pending product sign-off. Do **not** claim Offline Complete /
-   7-day VERIFIED / go-live / paid billing Complete / store-scoped RBAC Complete /
+   leak is product-prioritized (known safe backlog empty).
+   Do **not** claim Offline Complete / 7-day VERIFIED / go-live / paid billing Complete /
    overall RBAC Complete from this checklist, soak PASS, or flag flips alone.
-   ADR-005 is Complete (flag default OFF). Poll-path ≠ Offline Complete.
-   Go-live ready **only** when §5 Completes are all claimed with ops attestation evidence.
+   ADR-005 + store-scoped RBAC are Complete (flag default OFF). Poll-path ≠ Offline Complete.
+   Prefer [`MARKET_READY_LAUNCH.md`](MARKET_READY_LAUNCH.md) for commercial MVP
+   **market-ready (conditional)** language. Go-live ready **only** when §5 Completes
+   that remain MISSING are claimed with ops attestation evidence.

@@ -73,7 +73,7 @@ async def test_seed_demo_tenant_dry_run_and_create(db_session, monkeypatch):
     assert result["honesty"]["offline_complete_claimed"] is False
     assert result["honesty"]["go_live_claimed"] is False
     assert result["honesty"]["paid_billing_complete_claimed"] is False
-    assert result["honesty"]["store_scoped_rbac_complete_claimed"] is False
+    assert result["honesty"]["store_scoped_rbac_complete_claimed"] is True
     assert "DEMO-001" in (result["sample"]["products"] or [])
     assert result["open_pos_session_id"]
 

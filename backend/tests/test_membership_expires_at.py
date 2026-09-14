@@ -165,4 +165,4 @@ def test_honesty_temp_membership_flags():
     assert payload["temp_membership_expires_at_claimed"] is True
     assert payload["elevation_break_glass_claimed"] is True
     assert payload["adr005_complete_claimed"] is True
-    assert payload["store_scoped_rbac_complete_claimed"] is False
+    assert payload["store_scoped_rbac_complete_claimed"] is True

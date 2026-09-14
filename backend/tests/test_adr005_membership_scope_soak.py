@@ -75,12 +75,14 @@ async def _grant_cashier_stores_read(db_session, cashier, company_id: str) -> No
 
 def _assert_complete_honesty(payload: dict, *, flag_on: bool) -> None:
     assert payload["adr005_complete_claimed"] is True
-    assert payload["store_scoped_rbac_complete_claimed"] is False
+    assert payload["store_scoped_rbac_complete_claimed"] is True
     assert payload["scope_wired_to_membership"] is True
     assert payload["scaffold_status"] == "complete"
     assert payload["store_membership_scope_enabled"] is flag_on
     assert payload["cashier_membership_fail_closed"] is flag_on
-    assert "automated_flag_on_soak" in (payload.get("complete_means") or "")
+    means = payload.get("complete_means") or ""
+    assert "automated_flag_on_soak" in means
+    assert "production_default_flag_remains_off" in means
 
 
 def test_adr005_soak_flag_still_defaults_off_ops_enable():
@@ -101,7 +103,7 @@ def test_adr005_soak_honesty_complete_flags():
     _assert_complete_honesty(honesty, flag_on=False)
     assert store_memberships_svc.ADR005_COMPLETE_CLAIMED is True
     assert store_memberships_svc.SCOPE_WIRED_TO_MEMBERSHIP is True
-    assert store_memberships_svc.STORE_SCOPED_RBAC_COMPLETE_CLAIMED is False
+    assert store_memberships_svc.STORE_SCOPED_RBAC_COMPLETE_CLAIMED is True
 
 
 def test_adr005_soak_docs_and_checklist_present():

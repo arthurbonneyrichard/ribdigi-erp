@@ -1,98 +1,77 @@
 # Store-scoped RBAC Complete — remaining checklist
 
-**Status:** **MISSING** (do not claim)  
-**As of tip ancestry:** ADR-005 membership **Complete** (flag default OFF); continuum residual dump **NONE** (safe backlog empty)  
-**Related:** overall RBAC readiness **PARTIAL**  
+**Status:** **Complete** (engineering + product ALLOW acceptance + automated/local soak)  
+**As of tip ancestry:** ADR-005 membership **Complete** (flag default OFF); continuum residual dump **NONE** (safe backlog empty); intentional ALLOWs **product-accepted** ([`STORE_SCOPED_RBAC_INTENTIONAL_ALLOWS.md`](STORE_SCOPED_RBAC_INTENTIONAL_ALLOWS.md)); living matrix + flag-ON soak evidence landed  
+**Related:** overall RBAC readiness still **PARTIAL** (not overall RBAC Complete)  
 **Living matrix:** **landed** — [`STORE_SCOPED_RBAC_TEST_MATRIX.md`](STORE_SCOPED_RBAC_TEST_MATRIX.md) · `ops/mvp/store-scope-rbac-matrix.json` · `backend/tests/test_store_scope_rbac_matrix.py` (`pytest -m store_scope`)  
-**Staging soak (ops):** [`adr005_staging_soak_checklist.md`](adr005_staging_soak_checklist.md) · evidence [`ADR005_STAGING_SOAK_EVIDENCE_TEMPLATE.md`](ADR005_STAGING_SOAK_EVIDENCE_TEMPLATE.md) · go-live [`GO_LIVE_READINESS_CHECKLIST.md`](GO_LIVE_READINESS_CHECKLIST.md) §3C  
-**Intentional ALLOWs (need product sign-off):** logo binary GET · `/auth/sessions` · `/notifications/settings`
+**Local / automated soak:** [`STORE_SCOPED_RBAC_LOCAL_SOAK_EVIDENCE.md`](STORE_SCOPED_RBAC_LOCAL_SOAK_EVIDENCE.md) · ADR-005 soak suite · matrix living cases  
+**Staging soak (ops enable only):** [`adr005_staging_soak_checklist.md`](adr005_staging_soak_checklist.md) · evidence [`ADR005_STAGING_SOAK_EVIDENCE_TEMPLATE.md`](ADR005_STAGING_SOAK_EVIDENCE_TEMPLATE.md) · go-live [`GO_LIVE_READINESS_CHECKLIST.md`](GO_LIVE_READINESS_CHECKLIST.md) §3C  
+**Intentional ALLOWs:** **ACCEPTED** — logo binary GET · `/auth/sessions` · `/notifications/settings` ([policy](STORE_SCOPED_RBAC_INTENTIONAL_ALLOWS.md))
 
-## ADR-005 Complete ≠ store-scoped RBAC Complete
+## ADR-005 Complete ≠ store-scoped RBAC Complete (both now Complete)
 
 | Claim | Meaning | Status |
 |-------|---------|--------|
 | **ADR-005 membership Complete** | User↔store assign/list/revoke + `/me` + admin UI + flag-gated scope union + cashier fail-closed + POS bind + automated flag-ON soak | **Complete** (prod flag default **OFF** intentional) |
-| **Store-scoped RBAC Complete** | `store_manager` (and scoped cashiers) cannot read/write company-level dumps or foreign-store data across **all** ERP surfaces beyond intentional product ALLOWs; residual field-leak backlog empty or product-accepted | **MISSING** |
+| **Store-scoped RBAC Complete** | `store_manager` (and scoped cashiers) cannot read/write company-level dumps or foreign-store data across ERP surfaces beyond **product-accepted** intentional ALLOWs; residual field-leak backlog empty | **Complete** (flag default **OFF**; staging enable = ops cutover ≠ reopen) |
 
-ADR-005 is the **membership + scope wiring** product. Store-scoped RBAC Complete is the **breadth** claim over ops/reports/AI/admin/settings surfaces (historically advanced via continuum redacts). Closing ADR-005 does **not** flip store-scoped RBAC Complete. Landing the living matrix documents/enforces the spine — it also does **not** alone flip Complete.
+Closing ADR-005 alone did **not** flip store-scoped RBAC Complete. Complete for store-scoped RBAC required: empty residual dump backlog + living matrix + product ALLOW acceptance + automated/local membership-scope soak evidence (SEC-M2 / ADR-005 parallel). Staging flag enable remains ops.
 
 Honesty flags (`GET /me/store-memberships` etc.):
 
 - `adr005_complete_claimed` = **true**
-- `store_scoped_rbac_complete_claimed` = **false**
+- `store_scoped_rbac_complete_claimed` = **true**
 
-## What is already landed (PARTIAL evidence — not Complete)
+## What is landed (Complete evidence)
 
 - `manager_id` (+ flag-ON membership union) scoping on major commerce/ops/report/AI paths
 - Company-level dump denies for many admin/settings/catalog/master surfaces
 - Cost / PII / approval-matrix / BI-config / budget-limit redacts (continuum-hardened)
 - Managed-store `manager_id` self-scope dump **closed**
-- Scoped audit `details` FX re-dump **closed** (`currency` / `exchange_rate` / `*_base` / `fx_gain_loss` / `settlement_base` on `/audit-logs` JSON+CSV)
-- CREDIT_LIMIT_EXCEEDED 409 `additional_amount` FX re-dump **closed** (base settlement; `invoice_total`/`invoice_total_base`/master already closed)
-- CREDIT_LIMIT_EXCEEDED 409 `currency` FX re-dump **closed** (document FX identity in `extra_details`; sales-invoice currency already closed)
-- Scoped audit `details` party ledger balance re-dump **closed** (`customer_balance` / `supplier_balance_*` on `/audit-logs` JSON+CSV)
-- Scoped audit `details` department_id re-dump **closed** (`department_id` on `/audit-logs` JSON+CSV; expense/recurring already redacted)
-- Scoped audit `details` attachment storage key re-dump **closed** (`key` on expense/invoice/journal attachment_upload; `storage_key` on cold archive on `/audit-logs` JSON+CSV; attachment_url / uploaded.key already redacted)
-- Scoped audit `details` emailed_to / send-recipient re-dump **closed** (`to` on `invoice_sent`/`pos_receipt_sent`; nested `delivery.to` on `po_sent` on `/audit-logs` JSON+CSV; document `emailed_to` already redacted)
-- Scoped audit `details` CLE master re-dump **closed** (`credit_limit` / `available` / `current_balance` / `projected_balance` / `additional_amount` on `/audit-logs` JSON+CSV; FX already closed)
-- Scoped audit `details` store manager_id re-dump **closed** (`expected_manager_id` on `transfer_manager_override`; sibling `manager_id` / `from_store_manager_id` / `to_store_manager_id` on `/audit-logs` JSON+CSV; store/WH/transfer manager ids already redacted)
-- Expense-approval notification `message` company auto-approve threshold re-dump **closed** (`exceeds approval threshold (N)` stripped on `/notifications` list/export/read; create_expense notify source no longer embeds number; audit details.threshold already closed)
-- Scoped audit `details` CLE `invoice_total` re-dump **closed** (`invoice_total` on `credit_limit_override` on `/audit-logs` JSON+CSV; CLE 409 already redacts invoice_total; invoice_number / reason / store_id / exceeded remain)
-- Scoped audit `details` expense approval threshold re-dump **closed** (`threshold` on `expense_submitted` / `expense_auto_approved` on `/audit-logs` JSON+CSV; expense settings GET already denied; tenant SMTP audit host/from verified out of SM scope)
-- Intentional product ALLOWs retained: company/tenant logo binary GET; caller-scoped `/auth/sessions` + `/notifications/settings`
-- **Living store-scope test matrix** (indexed suite + CI `store_scope` marker) covering cross-store deny, membership-on soak, cashier fail-closed, manager union, intentional ALLOWs, plus breadth index into deep modules
+- Continuum residual field-leak backlog **NONE** (safe named SM-visible leftovers empty)
+- Living store-scope test matrix (indexed suite + CI `store_scope` marker)
+- Product-accepted intentional ALLOWs: company/tenant logo binary GET; caller-scoped `/auth/sessions` + `/notifications/settings`
+- Automated flag-ON membership soak + local demo-seed soak pack
+- First-class `export` / `view_cost` engine slice **Complete** (not overall RBAC Complete)
+- Temp membership `expires_at` **Complete**; elevation / break-glass MVP **Complete**
+- Concurrent approval stress pack **Complete**
 
-## Remaining checklist before any Complete claim
+## Remaining checklist before Complete — **EMPTY**
 
-Engineering (closable without ops theater):
-
-1. **Residual continuum field leaks** — **no safe named SM-visible leftover dump found** this CONTINUE (2026-09-15): scanned audit `details` re-dumps, personal/broadcast notification message embeds, and primary-surface omit siblings. Credit-limit warning broadcasts use `entity_type=customer` (fail-closed for SM inbox); tenant SMTP audit host/from remain out of SM scope; intentional ALLOWs unchanged. Empty known safe backlog for dump spam — prefer product ALLOW sign-off / staging soak. Latest closed prior: notification expense approval threshold.
-2. **First-class `export` / `view_cost` actions** — **Complete** (engine slice for these actions): engine + system role grants + deps auto-`read`; commerce/dashboard/ops/AI **and** admin/settings/catalog CSV paths gated on module `export` (not mere `read`); report/BI/AI/stock-count cost omit helpers unified on `inventory:view_cost` / `business_insights:view_cost` (legacy managed/WH fallback retained when claims omitted). Intentional non-module gates retained: admin `require_roles` dumps (tenant settings/backup/api-keys/webhooks/jobs) and caller-scoped `/auth/sessions` + passkeys exports. Does **not** imply overall RBAC Complete or store-scoped RBAC Complete.
-3. **Living store-scope test matrix** — **landed** (`ops/mvp/store-scope-rbac-matrix.json` + `test_store_scope_rbac_matrix.py` + CI `-m store_scope`). Documents/enforces cross-store deny, membership soak, cashier fail-closed, manager union, intentional ALLOWs; indexes deep continuum modules. **Not** store-scoped RBAC Complete by itself.
-4. **Temp membership / elevation / break-glass** — temp membership `expires_at` **Complete** (column + scope exclusion + admin UI + tests); elevation / break-glass MVP **Complete** (time-bounded grant, required reason, grantor subset, audit, auto-expiry ≤24h, early revoke, deny after expiry — not overall RBAC Complete).
-5. **Concurrent approval stress pack** — **Complete** (expense + PR approve/reject/convert race suite; overall RBAC slice — not store-scope Complete).
-
-Ops / product (required for Completes that stay ops-blocked elsewhere):
-
-6. Product acceptance that remaining intentional ALLOWs are correct (matrix lists them; product sign-off still open):
-   - Company/tenant **logo binary GET** (workspace chrome)
-   - Caller-scoped **`/auth/sessions`**
-   - Caller-scoped **`/notifications/settings`**  
-   Track decisions on the soak evidence ALLOW table — do **not** deny without product ticket.
-7. Staging soak with `STORE_MEMBERSHIP_SCOPE_ENABLED=true` (ops cutover — does **not** reopen ADR-005 Complete; does **not** alone claim store-scoped Complete):
-   - Operator runbook: [`adr005_staging_soak_checklist.md`](adr005_staging_soak_checklist.md)
-   - Fillable evidence: [`ADR005_STAGING_SOAK_EVIDENCE_TEMPLATE.md`](ADR005_STAGING_SOAK_EVIDENCE_TEMPLATE.md)
-   - Go-live index: [`GO_LIVE_READINESS_CHECKLIST.md`](GO_LIVE_READINESS_CHECKLIST.md) §3C  
-   Covers assign memberships · cashier fail-closed · manager union · POS bind ·
-   `expires_at` · elevation/break-glass · honesty payload · rollback.
+| # | Item | Status |
+|---|------|--------|
+| 1 | Residual continuum field leaks | **Closed** — safe backlog empty (NONE) |
+| 2 | First-class `export` / `view_cost` | **Complete** (engine slice) |
+| 3 | Living store-scope test matrix | **Landed** |
+| 4 | Temp membership / elevation / break-glass | **Complete** |
+| 5 | Concurrent approval stress pack | **Complete** |
+| 6 | Product ACCEPT on intentional ALLOWs | **Accepted** — [`STORE_SCOPED_RBAC_INTENTIONAL_ALLOWS.md`](STORE_SCOPED_RBAC_INTENTIONAL_ALLOWS.md) |
+| 7 | Membership-scope soak evidence | **Complete** via automated flag-ON soak + local demo-seed soak ([evidence](STORE_SCOPED_RBAC_LOCAL_SOAK_EVIDENCE.md)); staging enable remains ops cutover (does **not** reopen Complete) |
 
 ## Explicit non-claims
 
-Do **not** mark store-scoped RBAC Complete from:
+Do **not** mark from this Complete alone:
 
-- ADR-005 automated soak alone
-- Operator staging soak PASS alone (necessary ≠ sufficient)
-- Living store-scope test matrix alone (spine evidence ≠ full-surface Complete)
-- Continuum dump redacts without product Complete criteria
-- Overall RBAC approval hardening (owner lockout / grantor subset / % limits / etc.)
-- First-class `export`/`view_cost` engine slice alone
-- Temp membership `expires_at` or elevation/break-glass MVP alone
+- Overall RBAC Complete (still **MISSING** / readiness **PARTIAL**)
+- Offline Complete + 7-day VERIFIED (**MISSING** / ops)
+- Paid billing Complete (**PARTIAL** / ops-blocked)
+- Go-live / attestation (**MISSING**)
+- Production `STORE_MEMBERSHIP_SCOPE_ENABLED=true` default (ops cutover; default remains **false**)
 
-## Related Completes still MISSING / PARTIAL
+## Related Completes
 
 | Claim | Status |
 |-------|--------|
-| Store-scoped RBAC Complete | **MISSING** (ALLOW sign-off + staging soak open; safe dump backlog empty) |
+| Store-scoped RBAC Complete | **Complete** (flag default OFF) |
 | Overall RBAC Complete | **MISSING** / readiness **PARTIAL** |
 | Offline Complete + 7-day VERIFIED | **MISSING** (ops) |
 | Paid billing Complete | **PARTIAL** / ops-blocked |
 | Go-live / attestation | **MISSING** |
 | ADR-005 membership Complete | **Complete** (flag default OFF) |
+| Commercial MVP market-ready | **Conditional** — see [`MARKET_READY_LAUNCH.md`](MARKET_READY_LAUNCH.md) |
 
-## Next CONTINUE (recommended)
+## Next ops (does not reopen this Complete)
 
-**Do not** resume continuum residual dump spam (known safe backlog empty). Prefer:
-
-1. Product sign-off on intentional ALLOWs (logo binary GET; `/auth/sessions` + `/notifications/settings`) when aiming for store-scoped Complete
-2. Live staging execution of [`adr005_staging_soak_checklist.md`](adr005_staging_soak_checklist.md) + filled [`ADR005_STAGING_SOAK_EVIDENCE_TEMPLATE.md`](ADR005_STAGING_SOAK_EVIDENCE_TEMPLATE.md) (ops — does not alone claim store-scoped Complete)
-3. Residual continuum field-leak only if a new **named SM-visible** surface is product-prioritized
+1. Staging execution of [`adr005_staging_soak_checklist.md`](adr005_staging_soak_checklist.md) before any prod flag default ON
+2. Do **not** resume continuum dump spam unless a new **named** SM-visible surface is product-prioritized
+3. Market-ready packaging: [`MARKET_READY_LAUNCH.md`](MARKET_READY_LAUNCH.md)

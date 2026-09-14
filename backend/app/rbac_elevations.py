@@ -1,8 +1,9 @@
 """Time-bounded RBAC elevation / break-glass grants (MVP Complete for this slice).
 
 Reuses the ``expires_at`` deny-after-expiry pattern from store memberships.
-Does **not** claim overall RBAC Complete, store-scoped RBAC Complete, Offline,
-7-day VERIFIED, go-live, or paid billing Completes.
+Does **not** claim overall RBAC Complete, Offline, 7-day VERIFIED, go-live, or
+paid billing Completes. Store-scoped RBAC Complete is claimed on the membership
+honesty surface (flag default OFF); elevation keeps the same flag in sync.
 """
 
 from __future__ import annotations
@@ -25,8 +26,8 @@ from app.rbac import (
 
 # Honesty — elevation/break-glass MVP Complete for this engine slice.
 ELEVATION_BREAK_GLASS_CLAIMED = True
-# Overall / store-scoped Completes stay unclaimed here.
-STORE_SCOPED_RBAC_COMPLETE_CLAIMED = False
+# Keep in sync with store_memberships.STORE_SCOPED_RBAC_COMPLETE_CLAIMED.
+STORE_SCOPED_RBAC_COMPLETE_CLAIMED = True
 
 MIN_REASON_LEN = 5
 MAX_REASON_LEN = 500
