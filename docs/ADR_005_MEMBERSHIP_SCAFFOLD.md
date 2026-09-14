@@ -5,7 +5,7 @@
 
 ## Landed
 
-Schema `user_store_memberships` · service `store_memberships.py` · assign/list/revoke + `/me/store-memberships` (visibility / `pos_store_bind_required`) · admin UI `/stores#memberships` · POS bind (`posStoreBinding.ts`) · flag `STORE_MEMBERSHIP_SCOPE_ENABLED` default **false** · automated soak `test_adr005_membership_scope_soak.py`.
+Schema `user_store_memberships` · service `store_memberships.py` · assign/list/revoke + `/me/store-memberships` (visibility / `pos_store_bind_required`) · admin UI `/stores#memberships` · POS bind (`posStoreBinding.ts`) · flag `STORE_MEMBERSHIP_SCOPE_ENABLED` default **false** (legacy `stores.manager_id` until ops enable) · automated soak `test_adr005_membership_scope_soak.py`.
 
 ## Complete criteria (SEC-M2 parallel)
 

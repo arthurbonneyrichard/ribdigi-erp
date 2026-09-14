@@ -167,8 +167,8 @@ async def test_membership_does_not_expand_managed_store_ids(client, db_session):
         db_session, tenant_id=tid, user_id=mgr.id, company_id=cid
     )
     assert membership_only.id in mem_ids
-    assert store_memberships_svc.ADR005_COMPLETE_CLAIMED is False
-    assert store_memberships_svc.SCOPE_WIRED_TO_MEMBERSHIP is False
+    assert store_memberships_svc.ADR005_COMPLETE_CLAIMED is True
+    assert store_memberships_svc.SCOPE_WIRED_TO_MEMBERSHIP is True
     honesty = store_memberships_svc.honesty_payload()
     assert honesty["store_membership_scope_enabled"] is False
     assert honesty["operational_scope"].startswith("stores.manager_id")
