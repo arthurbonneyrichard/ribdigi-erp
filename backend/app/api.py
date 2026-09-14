@@ -8491,6 +8491,7 @@ async def print_sales_invoice(
         "trading_name": doc_brand["trading_name"],
         "has_logo": doc_brand["has_logo"],
         "logo_data_url": doc_brand["logo_data_url"],
+        "company_email": doc_brand["company_email"],
     }
     payload = dashboard_scope_svc.apply_document_logo_manager_redacts(payload, managed)
     return env(payload)
@@ -8815,6 +8816,7 @@ async def print_sales_quotation(
         "trading_name": doc_brand["trading_name"],
         "has_logo": doc_brand["has_logo"],
         "logo_data_url": doc_brand["logo_data_url"],
+        "company_email": doc_brand["company_email"],
     }
     payload = dashboard_scope_svc.apply_document_logo_manager_redacts(payload, managed)
     return env(payload)
@@ -9479,6 +9481,7 @@ async def print_sales_return_credit_note(
         "has_logo": doc_brand["has_logo"],
         "logo_data_url": doc_brand["logo_data_url"],
         "invoice_number": invoice.invoice_number,
+        "company_email": doc_brand["company_email"],
     }
     payload = dashboard_scope_svc.apply_document_logo_manager_redacts(payload, managed)
     return env(payload)

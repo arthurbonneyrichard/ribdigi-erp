@@ -130,6 +130,9 @@ def build_receipt_payload(
         "company_address": brand["company_address"]
         or (getattr(company, "address", None) if company else None)
         or (tenant.address if tenant else None),
+        "company_email": brand["company_email"]
+        or (getattr(company, "email", None) if company else None)
+        or (getattr(tenant, "email", None) if tenant else None),
         "currency": (getattr(company, "currency", None) if company else None)
         or (tenant.currency if tenant else "GHS"),
         "cashier_name": cashier_name,
