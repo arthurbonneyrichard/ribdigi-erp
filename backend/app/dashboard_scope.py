@@ -4894,9 +4894,9 @@ def omit_credit_aging_document_currency(managed_ids: list[str] | None) -> bool:
 
     Exchange-rates GET already denied; POS receipt + sales/purchase-invoice JSON
     already redact ``currency``. Credit AR/AP aging JSON/CSV must not re-dump
-    company currency prefs on document rows. Scoped ``balance_due`` /
-    ``balance_due_base`` / buckets / party name remain; admin keeps ``currency``.
-    ``exchange_rate`` is redacted separately (rate-table identity).
+    company currency prefs on document rows. Scoped ``balance_due`` / buckets /
+    party name remain; admin keeps ``currency``. ``exchange_rate`` and
+    ``balance_due_base`` are redacted separately (rate-table / FX-base identity).
     """
     return managed_ids is not None
 
@@ -4925,8 +4925,9 @@ def omit_credit_aging_document_exchange_rate(managed_ids: list[str] | None) -> b
     Exchange-rates GET already denied; aging document ``currency`` already
     redacted; sales/purchase-invoice + credit-payment ``exchange_rate`` already
     redacted. Credit AR/AP aging JSON/CSV must not re-dump company FX rate-table
-    identity on document rows. Scoped ``balance_due`` / ``balance_due_base`` /
-    buckets / party name remain; admin keeps ``exchange_rate``.
+    identity on document rows. Scoped ``balance_due`` / buckets / party name
+    remain; admin keeps ``exchange_rate``. ``balance_due_base`` is redacted
+    separately (FX-converted base amount still implies the rate).
     """
     return managed_ids is not None
 
@@ -4949,10 +4950,43 @@ def redact_credit_aging_document_exchange_rate(payload: dict) -> dict:
     return out
 
 
+def omit_credit_aging_document_balance_due_base(
+    managed_ids: list[str] | None,
+) -> bool:
+    """True when store_manager must omit aging document ``balance_due_base``.
+
+    Exchange-rates GET already denied; aging document ``currency`` +
+    ``exchange_rate`` already redacted; sales/purchase-invoice + credit-payment
+    FX fields already redacted. Credit AR/AP aging JSON/CSV must not re-dump
+    FX-converted base amounts that imply the company rate table
+    (``balance_due`` × rate). Scoped ``balance_due`` / buckets / party name
+    remain; admin keeps ``balance_due_base``.
+    """
+    return managed_ids is not None
+
+
+def redact_credit_aging_document_balance_due_base(payload: dict) -> dict:
+    """Null ``balance_due_base`` on credit-aging document rows."""
+    out = dict(payload)
+    documents = out.get("documents")
+    if isinstance(documents, list):
+        redacted = []
+        for row in documents:
+            if isinstance(row, dict):
+                item = dict(row)
+                if "balance_due_base" in item:
+                    item["balance_due_base"] = None
+                redacted.append(item)
+            else:
+                redacted.append(row)
+        out["documents"] = redacted
+    return out
+
+
 def apply_credit_aging_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager credit-aging redacts (credit_limit + currency + rate)."""
+    """Apply store_manager credit-aging redacts (limit + currency + rate + base)."""
     out = payload
     if omit_credit_aging_party_credit_limit(managed_ids):
         out = redact_credit_aging_party_credit_limit(out)
@@ -4960,6 +4994,8 @@ def apply_credit_aging_manager_redacts(
         out = redact_credit_aging_document_currency(out)
     if omit_credit_aging_document_exchange_rate(managed_ids):
         out = redact_credit_aging_document_exchange_rate(out)
+    if omit_credit_aging_document_balance_due_base(managed_ids):
+        out = redact_credit_aging_document_balance_due_base(out)
     return out
 
 
