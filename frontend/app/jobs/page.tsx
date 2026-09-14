@@ -82,7 +82,7 @@ export default function Page() {
         See <code>docs/CELERY_RELIABILITY_RUNBOOK.md</code>.
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: '#0f766e' }}>{message}</p>}
+      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 
       <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 6 }}>
         <h3 style={{ margin: 0 }}>Broker</h3>

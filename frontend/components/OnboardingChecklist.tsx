@@ -141,7 +141,7 @@ export default function OnboardingChecklist({
           style={{
             width: `${pct}%`,
             height: '100%',
-            background: '#0f766e',
+            background: 'var(--brand, #4AB012)',
             transition: 'width 200ms ease',
           }}
         />
