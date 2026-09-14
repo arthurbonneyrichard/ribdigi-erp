@@ -13,7 +13,7 @@
 
 ### Tip — audit CLE master redact (2026-09-15)
 
-**As of tip:** `5693d4609b23cc94be6fafd8a0cabb3e8241cfe5`
+**As of tip:** `d5656990a95dc33deeb8fd1e92b96c741fe282bb`
 Scoped audit list/export `details` CLE master redact for `store_manager`
 (`credit_limit` / `available` / `current_balance` / `projected_balance` /
 `additional_amount` on `GET /audit-logs` + CSV; FX keys already redacted;
