@@ -706,6 +706,8 @@
 .product-price-field--selling .product-price-hint{color:var(--brand,#7FA347);opacity:0.85}
 [data-theme="dark"] .product-price-label{color:var(--mist,#F3F6F1)}
 [data-theme="dark"] .product-price-field--selling .product-price-label{color:var(--brand-light,#C6D9A8)}
+[data-theme="dark"] .product-price-hint{color:var(--muted,#9AADA4)}
+[data-theme="dark"] .product-price-field--selling .product-price-hint{color:var(--brand-light,#C6D9A8);opacity:0.9}
 
 /* ---------- Notification center (BR-4.4 / BR-15.2) ---------- */
 .bell-wrap{position:relative;display:inline-flex;align-items:center}
