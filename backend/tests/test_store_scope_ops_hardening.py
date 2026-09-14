@@ -11045,7 +11045,7 @@ async def test_store_manager_sales_invoice_currency_redacted(client, db_session)
     assert mgr_data.get("currency") is None
     assert float(mgr_data.get("total_amount") or 0) == 50.0
     assert mgr_data.get("status") == "posted"
-    assert float(mgr_data.get("exchange_rate") or 0) == pytest.approx(1.0)
+    # exchange_rate redacted separately (see exchange_rate test)
 
     listed = await ac.get("/api/v1/sales/invoices", headers=headers)
     assert listed.status_code == 200, listed.text
@@ -11075,6 +11075,111 @@ async def test_store_manager_sales_invoice_currency_redacted(client, db_session)
     print_data = mgr_print.json()["data"]
     assert print_data.get("invoice", {}).get("currency") is None
     assert float(print_data.get("invoice", {}).get("total_amount") or 0) == 50.0
+    assert isinstance(print_data.get("text"), str)
+
+
+@pytest.mark.asyncio
+async def test_store_manager_sales_invoice_exchange_rate_redacted(client, db_session):
+    """Sales invoice list/get/export/print nulls exchange_rate for store_manager.
+
+    Exchange-rates GET already denied; sales-invoice currency already redacted;
+    credit payment exchange_rate already redacted. Invoice JSON/CSV/print must
+    not re-dump company FX rate-table identity. Totals/status/balance remain;
+    admin keeps exchange_rate; print text embed may retain the rate.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    customer = seed["party1"]
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Inv XR Redact Store",
+        code="IXR-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+
+    invoice = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        customer_id=customer.id,
+        invoice_number="INV-IXR-1",
+        status="posted",
+        subtotal=80,
+        tax_amount=0,
+        discount_amount=0,
+        total_amount=80,
+        paid_amount=0,
+        currency="USD",
+        exchange_rate=1.25,
+        created_by=seed["super"].id,
+    )
+    db_session.add(invoice)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    admin_got = await ac.get(
+        f"/api/v1/sales/invoices/{invoice.id}", headers=admin_company
+    )
+    assert admin_got.status_code == 200, admin_got.text
+    admin_data = admin_got.json()["data"]
+    assert float(admin_data.get("exchange_rate") or 0) == pytest.approx(1.25)
+    assert float(admin_data.get("total_amount") or 0) == 80.0
+
+    mgr_got = await ac.get(f"/api/v1/sales/invoices/{invoice.id}", headers=headers)
+    assert mgr_got.status_code == 200, mgr_got.text
+    mgr_data = mgr_got.json()["data"]
+    assert mgr_data.get("exchange_rate") is None
+    assert mgr_data.get("currency") is None
+    assert float(mgr_data.get("total_amount") or 0) == 80.0
+    assert mgr_data.get("status") == "posted"
+
+    listed = await ac.get("/api/v1/sales/invoices", headers=headers)
+    assert listed.status_code == 200, listed.text
+    row = next(r for r in listed.json()["data"] if r["id"] == invoice.id)
+    assert row.get("exchange_rate") is None
+    assert float(row.get("total_amount") or 0) == 80.0
+
+    admin_csv = await ac.get("/api/v1/sales/invoices/export", headers=admin_company)
+    assert admin_csv.status_code == 200, admin_csv.text
+    admin_rows = list(csv.DictReader(io.StringIO(admin_csv.text)))
+    admin_csv_row = next(r for r in admin_rows if r.get("invoice_number") == "INV-IXR-1")
+    assert float(admin_csv_row.get("exchange_rate") or 0) == pytest.approx(1.25)
+
+    mgr_csv = await ac.get("/api/v1/sales/invoices/export", headers=headers)
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    mgr_rows = list(csv.DictReader(io.StringIO(mgr_csv.text)))
+    mgr_csv_row = next(r for r in mgr_rows if r.get("invoice_number") == "INV-IXR-1")
+    assert mgr_csv_row.get("exchange_rate") in (None, "")
+    assert float(mgr_csv_row.get("total_amount") or 0) == pytest.approx(80.0)
+
+    mgr_print = await ac.get(
+        f"/api/v1/sales/invoices/{invoice.id}/print",
+        headers=headers,
+        params={"format": "text"},
+    )
+    assert mgr_print.status_code == 200, mgr_print.text
+    print_data = mgr_print.json()["data"]
+    assert print_data.get("invoice", {}).get("exchange_rate") is None
+    assert float(print_data.get("invoice", {}).get("total_amount") or 0) == 80.0
     assert isinstance(print_data.get("text"), str)
 
 

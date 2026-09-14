@@ -3609,9 +3609,10 @@ def omit_sales_invoice_currency(managed_ids: list[str] | None) -> bool:
     Company profile GET + ``/me``/``/workspace`` switcher already omit company
     ``currency``; POS receipt JSON already redacts ``currency``. Sales-invoice
     list/get/export/print JSON must not re-dump company/tenant (or doc) currency
-    after those profile redacts. Totals / status / balance / ``exchange_rate``
-    remain; server-side HTML/PDF/text embeds may retain the code (resolved before
-    JSON redacts on print).
+    after those profile redacts. Totals / status / balance remain;
+    ``exchange_rate`` is redacted separately (rate-table identity); server-side
+    HTML/PDF/text embeds may retain the code (resolved before JSON redacts on
+    print).
     """
     return managed_ids is not None
 
@@ -3629,10 +3630,35 @@ def redact_sales_invoice_currency(payload: dict) -> dict:
     return out
 
 
+def omit_sales_invoice_exchange_rate(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit sales-invoice ``exchange_rate``.
+
+    Exchange-rates GET already denied; sales-invoice ``currency`` already
+    redacted; credit payment ``exchange_rate`` already redacted. Sales-invoice
+    list/get/export/print JSON must not re-dump company FX rate-table identity.
+    Totals / status / balance remain; admin keeps ``exchange_rate``; server-side
+    HTML/PDF/text embeds may retain the rate (resolved before JSON redacts).
+    """
+    return managed_ids is not None
+
+
+def redact_sales_invoice_exchange_rate(payload: dict) -> dict:
+    """Null ``exchange_rate`` on a sales-invoice JSON/CSV row (+ nested print)."""
+    out = dict(payload)
+    if "exchange_rate" in out:
+        out["exchange_rate"] = None
+    nested = out.get("invoice")
+    if isinstance(nested, dict) and "exchange_rate" in nested:
+        inv = dict(nested)
+        inv["exchange_rate"] = None
+        out["invoice"] = inv
+    return out
+
+
 def apply_sales_invoice_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager sales-invoice JSON redacts (credit-override + emailed_to + currency)."""
+    """Apply store_manager sales-invoice JSON redacts (credit-override + emailed_to + currency + exchange_rate)."""
     out = payload
     if omit_sales_invoice_credit_override(managed_ids):
         out = redact_sales_invoice_credit_override(out)
@@ -3640,6 +3666,8 @@ def apply_sales_invoice_manager_redacts(
         out = redact_document_emailed_to(out)
     if omit_sales_invoice_currency(managed_ids):
         out = redact_sales_invoice_currency(out)
+    if omit_sales_invoice_exchange_rate(managed_ids):
+        out = redact_sales_invoice_exchange_rate(out)
     return out
 
 
