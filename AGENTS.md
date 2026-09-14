@@ -148,7 +148,8 @@ store activation — never frontend-only.
    (``storage_key`` media dump) + **product primary image binary GET denied**
    (``GET /products/{id}/image``; list/get ``has_image`` + WH stock ops remain;
    company/tenant logo binary GET stays open) + **product list/get ``image_url``
-   storage key redacted** (``has_image`` remains; admin list/get keep ``image_url``)
+   storage key redacted** + **product list/get ``has_image`` forced false**
+   (admin list/get keep ``image_url`` + ``has_image``; WH stock ops / POS remain)
    + **product variants CSV export denied**
    (company roster ``/products/variants/export`` + per-product path
    ``/products/{id}/variants/export``; variants list/get remain for POS/sales), and **stock CSV import denied for store_manager** (company-level
@@ -301,7 +302,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `a288ea10b6` — `docs: bump PR #303 tip to 9819c1e9f6 product image_url redact` (feat ancestry `9819c1e9f6`).  
+**As of tip:** `90e34be7b3` — `feat(rbac): redact product has_image for store_manager` (list/get media inventory signal after image_url redact).  
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
@@ -326,7 +327,7 @@ images gallery list GET; product variants path CSV export (after roster export
 deny); product catalog CSV export (`GET /products/export`); users list/get
 (company org roster after users CSV export deny); product primary image binary
 GET (`GET /products/{id}/image`); product list/get `image_url` storage-key
-redact (`has_image` remains). Each slice closes one dump or write path; the
+redact; product list/get `has_image` forced false. Each slice closes one dump or write path; the
 continuum as a whole stays **PARTIAL**.
 
 ### Continuum agent contract
