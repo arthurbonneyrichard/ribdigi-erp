@@ -158,9 +158,12 @@ store activation — never frontend-only.
    + POS receipt; ``company_name`` falls back to trading switcher when distinct;
    ``has_logo`` + server-side HTML/PDF/text embeds remain) + **POS receipt JSON
    ``company_address`` / ``company_phone`` redacted** (``company_name`` + ``has_logo``
-   + server-side text/PDF embeds remain) + **print/receipt JSON ``company_email``
+   + server-side text/PDF embeds remain)    + **print/receipt JSON ``company_email``
    redacted** (invoice/quotation/credit-note print + POS receipt; ``company_name``
-   + ``has_logo`` + server-side text/PDF/HTML embeds remain) + **POS receipt JSON
+   + ``has_logo`` + server-side text/PDF/HTML embeds remain) + **print/receipt JSON
+   ``tax_registration_number`` redacted** (invoice/quotation/credit-note print + POS
+   receipt; ``company_name`` + ``has_logo`` + server-side text/PDF/HTML embeds remain)
+   + **POS receipt JSON
    ``document_header`` / ``document_footer`` redacted** (``company_name`` + ``has_logo``
    + server-side text/PDF embeds remain) + **POS receipt JSON
    ``receipt_print_template`` / ``default_paper`` redacted** (``company_name`` + ``has_logo``
@@ -327,7 +330,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `5eb2864692e627c69a9cb9621034b005eaade1ae` — `feat(rbac): redact print/receipt tax_registration_number for store_manager` (feat ancestry print/receipt TIN `5eb2864692` + company_email `73752ad7e2` + invoice print `template` `5d076753b7` + receipt print template `8d06c785d9` + tax filing TIN `47844e3c4d` + continuum PO `emailed_to` `9ff88796a1` + security H1–H5 `3cf99a5540`/`caf7d98b55`).
+**As of tip:** `13f6e56d639d54a11653f62e648a6dfb2842db0e` — `feat(rbac): redact print/receipt tax_registration_number for store_manager` (feat ancestry print/receipt TIN `5eb2864692` + company_email `73752ad7e2` + invoice print `template` `5d076753b7` + receipt print template `8d06c785d9` + tax filing TIN `47844e3c4d` + continuum PO `emailed_to` `9ff88796a1` + security H1–H5 `3cf99a5540`/`caf7d98b55`).
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
