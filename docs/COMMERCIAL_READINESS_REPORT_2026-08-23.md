@@ -9,7 +9,7 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `51f85f00da177d51cab3233ded63ba6196b24cdf` — docs final tip align after POS receipt `cashier_name` `09da411c82` (after salesperson `role` `0c56a2c5a0`); leftovers still open |
+| **As of tip** | `4ade19ef5572ca4c310f0c00189ba9037906cefa` — docs tip self-align after POS receipt `cashier_name` `09da411c82` (after salesperson `role` `0c56a2c5a0`); leftovers still open |
 | RBAC / store scope | **PARTIAL** only |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
 
