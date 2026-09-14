@@ -20,7 +20,9 @@ def test_shallow_health_unchanged():
     assert body["service"] == "ribdigi-erp"
     assert body["deep"] is False
     assert "checks" not in body
-    assert "security" in body
+    # SEC-L2 — posture flags live on authenticated /platform/health only.
+    assert "security" not in body
+    assert "env" not in body
 
 
 @pytest.mark.asyncio

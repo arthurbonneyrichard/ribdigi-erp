@@ -1757,7 +1757,10 @@ async def platform_health(
 
     Stage 92 K1: protected CORS allowlist detail (not exposed on public /health).
     """
-    report, _status = await health_svc.assemble_health(deep=True)
+    report, _status = await health_svc.assemble_health(
+        deep=True,
+        include_security_posture=True,
+    )
     await platform_svc.ensure_platform_tenant(db)
     platform_tenant = await db.get(m.Tenant, PLATFORM_TENANT_ID)
     report["operator_contacts"] = {
@@ -1777,7 +1780,10 @@ async def platform_health_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 151 H1 — platform health checks CSV (operator posture; not go-live Complete)."""
-    report, _status = await health_svc.assemble_health(deep=True)
+    report, _status = await health_svc.assemble_health(
+        deep=True,
+        include_security_posture=True,
+    )
     await platform_svc.ensure_platform_tenant(db)
     platform_tenant = await db.get(m.Tenant, PLATFORM_TENANT_ID)
     operator_contacts = {
@@ -1990,7 +1996,10 @@ async def platform_operator_evidence(
 
     Not §§1–3 verified, §7 signed, or live go-live Complete.
     """
-    report, _status = await health_svc.assemble_health(deep=True)
+    report, _status = await health_svc.assemble_health(
+        deep=True,
+        include_security_posture=True,
+    )
     await platform_svc.ensure_platform_tenant(db)
     platform_tenant = await db.get(m.Tenant, PLATFORM_TENANT_ID)
     report["security"] = _platform_security_detail()
@@ -2039,7 +2048,10 @@ async def platform_operator_evidence_export(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 151 E1 — operator evidence CSV (packaging honesty only; not go-live Complete)."""
-    report, _status = await health_svc.assemble_health(deep=True)
+    report, _status = await health_svc.assemble_health(
+        deep=True,
+        include_security_posture=True,
+    )
     await platform_svc.ensure_platform_tenant(db)
     platform_tenant = await db.get(m.Tenant, PLATFORM_TENANT_ID)
     report["security"] = _platform_security_detail()

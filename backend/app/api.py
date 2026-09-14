@@ -360,13 +360,20 @@ def _assert_email_verified(user: m.User) -> None:
 
 @api.get("/health")
 async def health(request: Request, deep: bool = False):
-    """Liveness by default; pass deep=true for dependency checks (DB/Redis/broker)."""
+    """Liveness by default; pass deep=true for dependency checks (DB/Redis/broker).
+
+    SEC-L2 — public surface omits security posture flags (see ``/platform/health``).
+    """
     from fastapi.responses import JSONResponse
 
     from app import health as health_svc
 
     factory = getattr(request.app.state, "session_factory", None)
-    body, status_code = await health_svc.assemble_health(deep=deep, session_factory=factory)
+    body, status_code = await health_svc.assemble_health(
+        deep=deep,
+        session_factory=factory,
+        include_security_posture=False,
+    )
     if status_code != 200:
         return JSONResponse(
             status_code=status_code,
@@ -381,13 +388,20 @@ async def health(request: Request, deep: bool = False):
 
 @api.get("/health/ready")
 async def health_ready(request: Request):
-    """Readiness probe — always runs deep dependency checks."""
+    """Readiness probe — always runs deep dependency checks.
+
+    SEC-L2 — public surface omits security posture flags (see ``/platform/health``).
+    """
     from fastapi.responses import JSONResponse
 
     from app import health as health_svc
 
     factory = getattr(request.app.state, "session_factory", None)
-    body, status_code = await health_svc.assemble_health(deep=True, session_factory=factory)
+    body, status_code = await health_svc.assemble_health(
+        deep=True,
+        session_factory=factory,
+        include_security_posture=False,
+    )
     if status_code != 200:
         return JSONResponse(
             status_code=status_code,
