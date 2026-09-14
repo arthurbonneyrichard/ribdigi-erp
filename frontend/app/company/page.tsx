@@ -516,8 +516,43 @@ export default function Page() {
         </select>
         <p className="muted" style={{ margin: 0, gridColumn: '1 / -1' }}>
           Plan is commercial metadata only. Billing/payment for upgrades is deferred (see ADR-002);
-          changing plan does not charge a card or confirm payment.
+          changing plan does not charge a card or confirm payment. Paid billing scaffold is PARTIAL —
+          Complete remains MISSING.
         </p>
+        <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                setError('');
+                const res = await api('/billing/portal-session', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    return_url:
+                      typeof window !== 'undefined' ? `${window.location.origin}/company` : undefined,
+                  }),
+                });
+                const data = res.data || {};
+                if (data.portal_url) {
+                  window.location.assign(data.portal_url);
+                  return;
+                }
+                setMessage(
+                  data.message ||
+                    `Billing portal skeleton: ${data.status || 'deferred'} (no payment processed; Complete MISSING)`
+                );
+              } catch (err: any) {
+                setError(err.message || 'Billing portal request failed');
+              }
+            }}
+          >
+            Billing portal (scaffold)
+          </button>
+          <span className="muted">
+            Opens a live provider portal only after cutover — today returns not_configured /
+            live_call_deferred (ADR-002).
+          </span>
+        </div>
         <select
           value={tenant.industry || 'retail'}
           onChange={(e) => setTenant({ ...tenant, industry: e.target.value })}

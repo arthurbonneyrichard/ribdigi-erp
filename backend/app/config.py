@@ -169,6 +169,17 @@ class Settings(BaseSettings):
     # memberships (docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md). Default OFF keeps
     # legacy manager_id-only scope. Enabling does not claim ADR-005 Complete.
     STORE_MEMBERSHIP_SCOPE_ENABLED: bool = False
+    # ADR-002 paid billing scaffold (PARTIAL). Default OFF — trial/grace/suspend
+    # lifecycle remains the commercial access gate. Enabling does NOT claim paid
+    # billing Complete, checkout Complete, or fabricated MRR. Ops:
+    # docs/PAID_BILLING_PROVIDER_OPS.md · docs/ADR_002_PAID_BILLING_SCAFFOLD.md
+    PAID_BILLING_ENTITLEMENT_GATE_ENABLED: bool = False
+    BILLING_PROVIDER: str = ""  # e.g. "stripe" when intentionally configured
+    BILLING_PROVIDER_SECRET_KEY: str = ""  # never commit real secrets
+    BILLING_PROVIDER_WEBHOOK_SECRET: str = ""
+    BILLING_PROVIDER_PORTAL_RETURN_URL: str = ""
+    # Hard non-claim: scaffold must not enable live checkout success paths.
+    BILLING_CHECKOUT_ENABLED: bool = False
 
     model_config = SettingsConfigDict(env_file="../.env", extra="ignore")
 

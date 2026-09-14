@@ -204,6 +204,69 @@ class UserStoreMembership(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class TenantBillingCustomer(Base):
+    """Provider customer mapping (ADR-002 paid billing scaffold — Complete MISSING).
+
+    Local row only. Presence does not imply live checkout, charges, or MRR.
+    """
+
+    __tablename__ = "tenant_billing_customers"
+    __table_args__ = (UniqueConstraint("tenant_id", "provider"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    provider: Mapped[str] = mapped_column(String(40), default="stripe")
+    provider_customer_id: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    metadata_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class TenantBillingSubscription(Base):
+    """Provider subscription mirror (ADR-002 scaffold — not live subscriptions Complete).
+
+    Never treat a row as payment success. Entitlement gate flag default OFF.
+    """
+
+    __tablename__ = "tenant_billing_subscriptions"
+    __table_args__ = (UniqueConstraint("provider", "provider_subscription_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    billing_customer_id: Mapped[str | None] = mapped_column(
+        ForeignKey("tenant_billing_customers.id"), nullable=True, index=True
+    )
+    provider: Mapped[str] = mapped_column(String(40), default="stripe")
+    provider_subscription_id: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    plan_code: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    status: Mapped[str] = mapped_column(String(40), default="incomplete", index=True)
+    current_period_end: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    cancel_at_period_end: Mapped[bool] = mapped_column(Boolean, default=False)
+    raw_status: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    metadata_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class BillingWebhookEvent(Base):
+    """Inbound provider webhook inbox (idempotent stub — no fake payment success)."""
+
+    __tablename__ = "billing_webhook_events"
+    __table_args__ = (UniqueConstraint("provider", "provider_event_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    provider: Mapped[str] = mapped_column(String(40), default="stripe")
+    provider_event_id: Mapped[str] = mapped_column(String(120))
+    event_type: Mapped[str] = mapped_column(String(120), index=True)
+    tenant_id: Mapped[str | None] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    signature_valid: Mapped[bool] = mapped_column(Boolean, default=False)
+    processing_status: Mapped[str] = mapped_column(String(40), default="received", index=True)
+    processing_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
 
 class Branch(Base):
     """Tenant branch / region for org structure and record scopes."""

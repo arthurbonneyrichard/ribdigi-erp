@@ -42,7 +42,9 @@ store activation — never frontend-only.
    belong to one Company and therefore one Tenant.
 4. **Unlimited** uses integer `-1` (enterprise catalog `None` maps to `-1`).
 5. **Live billing / checkout Completes remain deferred** (ADR-002). Caps are real
-   gates on tenant columns, not fabricated MRR.
+   gates on tenant columns, not fabricated MRR. Paid billing **scaffold** may land
+   as PARTIAL (`docs/ADR_002_PAID_BILLING_SCAFFOLD.md`) — never claim Complete
+   from tables/webhook/portal skeleton alone.
 6. **User↔store membership** is intentionally opened as an **ADR-005 scaffold
    PARTIAL** (`user_store_memberships` + assign/list/revoke + `/me/store-memberships`
    in `backend/app/store_memberships.py` + Company/Admin UI `/stores#memberships`
@@ -424,7 +426,9 @@ is called from `companies.create_company` — never frontend-only.
 3. **Tenant isolation** remains shared-schema + `tenant_id` (ADR-001).
 4. **Unlimited** uses integer `-1` (enterprise catalog `None` maps to `-1`).
 5. **Live billing / checkout Completes remain deferred** (ADR-002). Caps are real
-   gates on tenant columns, not fabricated MRR.
+   gates on tenant columns, not fabricated MRR. Paid billing **scaffold** may land
+   as PARTIAL (`docs/ADR_002_PAID_BILLING_SCAFFOLD.md`) — never claim Complete
+   from tables/webhook/portal skeleton alone.
 6. When `max_companies_override` is set, plan changes do not overwrite
    `Tenant.max_companies` until the override is cleared.
 7. Reuse `companies` RBAC module actions and tenant-admin workspace flows; do not
@@ -469,7 +473,9 @@ after `0107` in deploy order.
    count active `User` rows for the tenant — not per-store membership (ADR-005).
 4. **Unlimited** uses integer `-1` (enterprise catalog `None` maps to `-1`).
 5. **Live billing / checkout Completes remain deferred** (ADR-002). Caps are real
-   gates on tenant columns, not fabricated MRR.
+   gates on tenant columns, not fabricated MRR. Paid billing **scaffold** may land
+   as PARTIAL (`docs/ADR_002_PAID_BILLING_SCAFFOLD.md`) — never claim Complete
+   from tables/webhook/portal skeleton alone.
 6. When `max_users_override` is set, plan changes do not overwrite
    `Tenant.max_users` until the override is cleared.
 7. **User↔store membership** is **PARTIAL** (ADR-005; `/stores#memberships`

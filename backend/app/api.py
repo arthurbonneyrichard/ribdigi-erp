@@ -35,6 +35,7 @@ from app import expenses as expenses_svc
 from app import tax as tax_svc
 from app import stores as stores_svc
 from app import store_memberships as store_memberships_svc
+from app import billing_provider as billing_provider_svc
 from app import credit as credit_svc
 from app import reports as reports_svc
 from app import report_export as report_export_svc
@@ -727,6 +728,88 @@ async def tenant_me_update(
     if payload.plan_code is not None and new_plan != previous_plan:
         msg = "Plan metadata updated (billing deferred; no payment processed)"
     return env(data, msg)
+
+
+@api.get("/billing/status")
+async def billing_status(
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
+    db: AsyncSession = Depends(get_db),
+):
+    """ADR-002 paid billing scaffold status (PARTIAL — Complete MISSING)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_tenant_me_read_denied(
+        managed,
+        message="Store managers cannot read tenant billing status.",
+    )
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    data = await billing_provider_svc.billing_status(db, tenant=tenant)
+    await db.commit()
+    return env(data, message="Paid billing scaffold status (deferred Complete)")
+
+
+@api.post("/billing/portal-session")
+async def billing_portal_session(
+    request: Request,
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Billing portal link skeleton — never invents payment success (ADR-002)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_tenant_lifecycle_write_denied(
+        managed,
+        message="Store managers cannot open the tenant billing portal.",
+    )
+    tenants_svc.assert_writable(claims)
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    body: dict = {}
+    try:
+        raw = await request.json()
+        if isinstance(raw, dict):
+            body = raw
+    except Exception:
+        body = {}
+    return_url = body.get("return_url") if isinstance(body.get("return_url"), str) else None
+    data = await billing_provider_svc.create_portal_session_skeleton(
+        db, tenant=tenant, return_url=return_url
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="billing",
+        action="portal_session_skeleton",
+        entity="tenant",
+        entity_id=tenant.id,
+        details={
+            "status": data.get("status"),
+            "portal_url": None,
+            "payment_processed": False,
+            "paid_billing_complete_claimed": False,
+        },
+    )
+    await db.commit()
+    return env(data, message=data.get("message") or "Billing portal skeleton")
+
+
+@api.post("/billing/webhooks/provider")
+async def billing_provider_webhook(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Inbound provider webhook stub (signature when secret set; no fake success)."""
+    body = await request.body()
+    signature = request.headers.get("Stripe-Signature") or request.headers.get(
+        "X-Billing-Signature"
+    )
+    data = await billing_provider_svc.ingest_provider_webhook(
+        db, body=body, signature_header=signature
+    )
+    await db.commit()
+    return env(data, message=data.get("message") or "Billing webhook recorded")
 
 
 @api.post("/tenants/me/suspend")
