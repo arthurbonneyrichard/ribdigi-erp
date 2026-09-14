@@ -14,6 +14,8 @@ pytestmark = pytest.mark.security
 
 
 def test_production_accepts_secure_defaults():
+    from cryptography.fernet import Fernet
+
     cfg = Settings(
         APP_ENV="production",
         JWT_SECRET_KEY="x" * 32,
@@ -24,6 +26,8 @@ def test_production_accepts_secure_defaults():
         RATE_LIMIT_REQUIRE_REDIS=True,
         EMAIL_ENABLED=False,
         SMS_ENABLED=False,
+        TOTP_ENCRYPTION_KEY=Fernet.generate_key().decode(),
+        BACKUP_ENCRYPTION_KEY=Fernet.generate_key().decode(),
     )
     assert cfg.cors_origins == ["https://app.example.com", "https://admin.example.com"]
     assert cfg.RATE_LIMIT_REQUIRE_REDIS is True
