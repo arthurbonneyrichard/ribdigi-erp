@@ -1010,8 +1010,8 @@ export default function Page() {
           Stage 168: register/bind devices for IndexedDB queue flush and offline catalog pull (4h TTL).
           Revoke soft-locks the device (expires server auth envelope, blocks sync/rebind) and retains
           pending queue ops (not auto-applied). Conflict accept_client never double-posts applied POS.
-          Remote wipe is a scaffold (request → client clear IndexedDB → ack). Push delivery and Offline
-          Complete remain deferred.
+          Remote wipe is PARTIAL (request → Web Push when configured → client clear IndexedDB →
+          ack; online poll fallback). Push-delivery Complete and Offline Complete remain deferred.
         </p>
         {syncStatus ? (
           <div
@@ -1040,8 +1040,8 @@ export default function Page() {
           >
             <h3 style={{ marginTop: 0 }}>Owner offline alerts</h3>
             <p className="muted" style={{ marginTop: 0 }}>
-              In-app list plus optional security-email notify for critical alerts. Push delivery
-              and Offline Complete remain deferred.
+              In-app list plus optional security-email notify for critical alerts. Wipe Web Push is
+              PARTIAL; Offline Complete remains deferred.
               {offlineAlertSummary
                 ? ` · ${offlineAlertSummary.critical ?? 0} critical · ${offlineAlertSummary.warning ?? 0} warning`
                 : ''}
@@ -1311,8 +1311,16 @@ export default function Page() {
                                 user_id: me.data?.id || null,
                                 store_id: getSelectedStoreId() || null,
                               });
+                              try {
+                                const { registerOfflinePushSubscription } = await import(
+                                  '../../lib/offlinePush'
+                                );
+                                await registerOfflinePushSubscription(d.id);
+                              } catch {
+                                /* push optional — wipe poll remains */
+                              }
                               setMessage(
-                                'Browser bound — 7-day offline auth envelope issued (renew online before expiry)',
+                                'Browser bound — 7-day offline auth envelope issued (renew online before expiry). Web Push registration attempted when VAPID configured (PARTIAL).',
                               );
                             } catch (err: any) {
                               setError(err.message || 'Device bind failed');
@@ -1361,7 +1369,7 @@ export default function Page() {
                           onClick={async () => {
                             if (
                               !window.confirm(
-                                'Queue remote IndexedDB wipe for this device? Soft lockdown applies. Push delivery and Offline Complete remain deferred.',
+                                'Queue remote IndexedDB wipe for this device? Soft lockdown applies. Web Push is PARTIAL when configured; Offline Complete remains deferred.',
                               )
                             ) {
                               return;
@@ -1378,7 +1386,7 @@ export default function Page() {
                               }
                               setMessage(
                                 r.data?.message ||
-                                  'Remote wipe queued (scaffold — Offline Complete deferred)',
+                                  'Remote wipe queued (PARTIAL — Offline Complete deferred)',
                               );
                               await refreshOfflineSync();
                             } catch (err: any) {

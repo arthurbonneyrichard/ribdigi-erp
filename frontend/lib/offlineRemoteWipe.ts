@@ -1,10 +1,11 @@
 /**
- * Offline remote IndexedDB wipe scaffold.
+ * Offline remote IndexedDB wipe (PARTIAL — push delivery PARTIAL).
  *
  * Admin queues wipe via POST /offline/devices/{id}/wipe. When this browser's
- * bound device reports wipe_pending, clear local offline IndexedDB stores and
- * POST wipe/ack. Does **not** claim Offline Complete, push delivery, or
- * 7-day VERIFIED.
+ * bound device reports wipe_pending (online poll **or** Web Push), clear local
+ * offline IndexedDB stores and POST wipe/ack.
+ *
+ * Does **not** claim Offline Complete, push-delivery Complete, or 7-day VERIFIED.
  */
 
 import { api } from './api';
@@ -14,6 +15,10 @@ export const OFFLINE_REMOTE_WIPE_CONTRACT = {
   requestEndpoint: '/offline/devices/{id}/wipe',
   ackEndpoint: '/offline/devices/{id}/wipe/ack',
   clearsIndexedDb: true,
+  /** Web Push path exists but is not product-Complete. */
+  pushDeliveryPartial: true,
+  pushDeliveryCompleteClaimed: false,
+  /** @deprecated use pushDeliveryCompleteClaimed — kept false for honesty tests */
   pushDelivery: false,
   offlineCompleteClaimed: false,
 } as const;
@@ -72,12 +77,15 @@ export async function processPendingRemoteWipeIfNeeded(
   if (!deviceId) {
     return { wiped: false, deviceId: null };
   }
-  if (!payload) {
+  if (!payload || payload.wipe_pending === undefined) {
     try {
       const res = await api<{ data?: WipeDevicePayload }>(`/offline/devices/${deviceId}`);
       payload = (res as { data?: WipeDevicePayload })?.data || (res as WipeDevicePayload);
     } catch {
-      return { wiped: false, deviceId };
+      // Push may pass wipe_pending=true before GET works; honor explicit flag.
+      if (!payload?.wipe_pending) {
+        return { wiped: false, deviceId };
+      }
     }
   }
   if (!payload?.wipe_pending) {

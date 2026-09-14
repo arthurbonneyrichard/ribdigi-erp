@@ -9,6 +9,19 @@ export default function ServiceWorkerRegister() {
     navigator.serviceWorker.register('/sw.js').catch(() => {
       // Registration failure must not block the app.
     });
+    // Remote wipe push messages (PARTIAL) — listen after SW register.
+    let unlisten: (() => void) | undefined;
+    void import('../lib/offlinePush')
+      .then(({ listenForRemoteWipePushMessages, registerOfflinePushSubscription }) => {
+        unlisten = listenForRemoteWipePushMessages();
+        void registerOfflinePushSubscription();
+      })
+      .catch(() => {
+        /* push optional */
+      });
+    return () => {
+      if (unlisten) unlisten();
+    };
   }, []);
   return null;
 }

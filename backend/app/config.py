@@ -155,6 +155,12 @@ class Settings(BaseSettings):
     # Stage 18 L1 — structured JSON request/error logs (MVP-lite)
     REQUEST_LOG_ENABLED: bool = True
     LOG_LEVEL: str = "INFO"
+    # Offline Web Push (remote wipe delivery PARTIAL — not Offline Complete).
+    # When VAPID keys unset, wipe still queues; push is skipped_unconfigured.
+    OFFLINE_PUSH_ENABLED: bool = True
+    OFFLINE_PUSH_VAPID_PUBLIC_KEY: str = ""  # applicationServerKey (url-safe base64)
+    OFFLINE_PUSH_VAPID_PRIVATE_KEY: str = ""  # PEM private key (or path accepted by pywebpush)
+    OFFLINE_PUSH_VAPID_SUBJECT: str = "mailto:noreply@localhost"
 
     model_config = SettingsConfigDict(env_file="../.env", extra="ignore")
 
