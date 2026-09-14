@@ -13,7 +13,7 @@
 
 ### Tip — living store-scope RBAC test matrix (2026-09-15)
 
-**As of tip:** pending commit on `cursor/store-scope-test-matrix-630a`
+**As of tip:** `d61c79f194793d0bfdbe8e90546fa2fad19a170e`
 Living indexed store-scope matrix landed (`ops/mvp/store-scope-rbac-matrix.json`,
 `docs/STORE_SCOPED_RBAC_TEST_MATRIX.md`, `backend/tests/test_store_scope_rbac_matrix.py`,
 CI marker `store_scope`). Covers cross-store deny, membership-on soak, cashier
