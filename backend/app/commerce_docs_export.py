@@ -31,6 +31,7 @@ SALES_INVOICE_EXPORT_COLUMNS = [
     "balance_due",
     "currency",
     "exchange_rate",
+    "balance_due_base",
     "due_date",
     "posted_at",
     "emailed_at",
