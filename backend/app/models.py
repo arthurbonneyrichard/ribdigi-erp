@@ -182,6 +182,27 @@ class UserCompanyMembership(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class UserStoreMembership(Base):
+    """User ↔ Store membership assignment (ADR-005 scaffold — Complete still MISSING).
+
+    Assignment rows only. Operational store scope remains ``stores.manager_id`` until
+    an explicit membership scope cutover ships. Do not treat presence of this table
+    as ADR-005 Complete or store-scoped RBAC Complete.
+    """
+
+    __tablename__ = "user_store_memberships"
+    __table_args__ = (UniqueConstraint("tenant_id", "user_id", "store_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str] = mapped_column(ForeignKey("companies.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    store_id: Mapped[str] = mapped_column(ForeignKey("stores.id"), index=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 
 class Branch(Base):
     """Tenant branch / region for org structure and record scopes."""

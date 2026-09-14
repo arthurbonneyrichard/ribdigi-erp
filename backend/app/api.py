@@ -34,6 +34,7 @@ from app import pos as pos_svc
 from app import expenses as expenses_svc
 from app import tax as tax_svc
 from app import stores as stores_svc
+from app import store_memberships as store_memberships_svc
 from app import credit as credit_svc
 from app import reports as reports_svc
 from app import report_export as report_export_svc
@@ -2375,6 +2376,31 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
     if dashboard_scope_svc.omit_me_tenant_preference_settings(managed):
         me_payload = dashboard_scope_svc.redact_me_tenant_preference_settings(me_payload)
     return env(me_payload)
+
+
+@api.get("/me/store-memberships")
+async def me_store_memberships(
+    claims=Depends(current_claims),
+    db: AsyncSession = Depends(get_db),
+):
+    """List the caller's active user↔store memberships (ADR-005 scaffold).
+
+    Assignment listing only — does not change operational store scope
+    (``stores.manager_id``). ADR-005 Complete remains MISSING.
+    """
+    rows = await store_memberships_svc.list_user_store_memberships(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        company_id=claims.get("company_id"),
+        active_only=True,
+    )
+    return env(
+        {
+            "memberships": rows,
+            **store_memberships_svc.honesty_payload(),
+        }
+    )
 
 
 @api.get("/workspace")
@@ -17082,6 +17108,128 @@ async def update_store(
     if dashboard_scope_svc.omit_store_branch_assignment(managed):
         serialized = dashboard_scope_svc.redact_store_branch_assignment(serialized)
     return env(serialized, "Store updated")
+
+
+@api.get("/stores/{store_id}/memberships")
+async def list_store_memberships(
+    store_id: str,
+    active_only: bool = False,
+    claims=Depends(require_permission("stores", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """List user↔store memberships for a store (ADR-005 scaffold — not Complete)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_membership_admin_denied(managed)
+    rows = await store_memberships_svc.list_store_memberships(
+        db,
+        tenant_id=claims["tenant_id"],
+        store_id=store_id,
+        company_id=claims.get("company_id"),
+        active_only=active_only,
+    )
+    return env(
+        {
+            "memberships": rows,
+            **store_memberships_svc.honesty_payload(),
+        }
+    )
+
+
+@api.post("/stores/{store_id}/memberships")
+async def assign_store_membership(
+    store_id: str,
+    payload: dict,
+    claims=Depends(require_permission("stores", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Assign or reactivate a user on a store (ADR-005 scaffold — scope still manager_id)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_membership_admin_denied(
+        managed,
+        message="Store managers cannot assign user↔store memberships.",
+    )
+    user_id = (payload or {}).get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+    row = await store_memberships_svc.assign_store_membership(
+        db,
+        tenant_id=claims["tenant_id"],
+        store_id=store_id,
+        user_id=user_id,
+        company_id=claims.get("company_id"),
+    )
+    user = await db.get(m.User, user_id)
+    store = await stores_svc.get_store(
+        db, claims["tenant_id"], store_id, company_id=claims.get("company_id")
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="stores",
+        action="store_membership_assign",
+        entity="user_store_membership",
+        entity_id=row.id,
+        details={
+            "store_id": store_id,
+            "member_user_id": user_id,
+            "adr005_complete_claimed": False,
+        },
+        company_id=row.company_id,
+    )
+    await db.commit()
+    return env(
+        store_memberships_svc.serialize_membership(row, user=user, store=store),
+        "Store membership assigned (ADR-005 scaffold; scope still manager_id)",
+    )
+
+
+@api.delete("/stores/{store_id}/memberships/{user_id}")
+async def revoke_store_membership(
+    store_id: str,
+    user_id: str,
+    claims=Depends(require_permission("stores", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Deactivate a user↔store membership (ADR-005 scaffold — not Complete)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_store_membership_admin_denied(
+        managed,
+        message="Store managers cannot revoke user↔store memberships.",
+    )
+    row = await store_memberships_svc.revoke_store_membership(
+        db,
+        tenant_id=claims["tenant_id"],
+        store_id=store_id,
+        user_id=user_id,
+        company_id=claims.get("company_id"),
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="stores",
+        action="store_membership_revoke",
+        entity="user_store_membership",
+        entity_id=row.id,
+        details={
+            "store_id": store_id,
+            "member_user_id": user_id,
+            "adr005_complete_claimed": False,
+        },
+        company_id=row.company_id,
+    )
+    await db.commit()
+    return env(
+        store_memberships_svc.serialize_membership(row),
+        "Store membership revoked (ADR-005 scaffold; scope still manager_id)",
+    )
 
 
 @api.patch("/stores/{store_id}/drawer")

@@ -26,7 +26,9 @@ from app.dashboard_views import dashboard_view_for_role
 async def managed_store_ids(db: AsyncSession, claims: dict) -> list[str] | None:
     """Return managed store IDs for store_manager view; None means tenant-wide (no store filter).
 
-    Uses ``stores.manager_id`` only (ADR-005 — no user↔store membership table).
+    Uses ``stores.manager_id`` only. ADR-005 ``user_store_memberships`` scaffold
+    exists but is intentionally **not** consulted here — membership scope cutover
+    remains deferred (``STORE_MEMBERSHIP_SCOPE_ENABLED`` does not change this path).
     """
     role = (claims.get("role") or "").strip().lower()
     if dashboard_view_for_role(role) != "store_manager":
@@ -45,6 +47,18 @@ async def managed_store_ids(db: AsyncSession, claims: dict) -> list[str] | None:
         )
     ).scalars().all()
     return [str(sid) for sid in rows]
+
+
+def assert_store_membership_admin_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list or mutate user↔store memberships; "
+        "company/tenant admins assign store membership (ADR-005 scaffold)."
+    ),
+) -> None:
+    """403 when store_manager attempts company-level store membership admin APIs."""
+    assert_company_level_write_denied(managed_ids, message=message)
 
 
 def store_scope_payload(store_ids: list[str] | None) -> dict:
