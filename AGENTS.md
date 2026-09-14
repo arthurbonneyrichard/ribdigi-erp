@@ -297,7 +297,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `63ee377c49` — `feat(rbac): deny product variants path export for store_manager`.  
+**As of tip:** `45f32f76b0` — `feat(rbac): deny product catalog CSV export for store_manager`.  
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
@@ -319,8 +319,8 @@ company-level admin / settings / catalog / party-master / bank-feed / offline-de
 denies; JSON/CSV redacts for cost, PII, org links, approval-matrix `awaiting_roles`,
 early-discount quote matrix fields, and BI company config/cost embeds; product
 images gallery list GET; product variants path CSV export (after roster export
-deny). Each slice closes one dump or write path; the continuum as a whole stays
-**PARTIAL**.
+deny); product catalog CSV export (`GET /products/export`). Each slice closes
+one dump or write path; the continuum as a whole stays **PARTIAL**.
 
 ### Continuum agent contract
 
