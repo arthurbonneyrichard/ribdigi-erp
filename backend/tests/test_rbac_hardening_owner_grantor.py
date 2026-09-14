@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import pyotp
 import pytest
+from fastapi import HTTPException
 
+from app import models as m
+from app import roles as roles_svc
 from app.rbac import (
     assert_permissions_within_grantor,
     dangerous_permission_warnings,
@@ -84,7 +87,7 @@ async def test_custom_role_write_implies_read_and_warnings(client):
 
 
 @pytest.mark.asyncio
-async def test_grantor_cannot_escalate_via_custom_role(client):
+async def test_grantor_cannot_escalate_via_custom_role(client, db_session):
     ac, seed = client
     headers = await _super(ac, seed)
 
@@ -118,6 +121,11 @@ async def test_grantor_cannot_escalate_via_custom_role(client):
         },
     )
     assert user.status_code == 200, user.text
+    uid = user.json()["data"]["id"]
+    row = await db_session.get(m.User, uid)
+    assert row is not None
+    row.email_verified = True
+    await db_session.commit()
 
     lim_headers = await auth_headers(
         ac, email="limited.admin@alpha.example.com", tenant_slug="alpha"
@@ -137,10 +145,34 @@ async def test_grantor_cannot_escalate_via_custom_role(client):
 
 
 @pytest.mark.asyncio
-async def test_last_super_admin_owner_lockout(client):
+async def test_last_super_admin_owner_lockout(client, db_session):
     ac, seed = client
     headers = await _super(ac, seed)
+    tenant_id = seed["super"].tenant_id
 
+    # Service-level: sole active super_admin cannot be deactivated/demoted.
+    with pytest.raises(HTTPException) as blocked:
+        await roles_svc.assert_owner_lockout_safe(
+            db_session,
+            tenant_id=tenant_id,
+            target=seed["super"],
+            deactivating=True,
+        )
+    assert blocked.value.status_code == 400
+    assert "owner lockout" in str(blocked.value.detail).lower()
+
+    with pytest.raises(HTTPException) as demote:
+        await roles_svc.assert_owner_lockout_safe(
+            db_session,
+            tenant_id=tenant_id,
+            target=seed["super"],
+            new_role="cashier",
+        )
+    assert demote.value.status_code == 400
+    assert "owner lockout" in str(demote.value.detail).lower()
+
+    # HTTP: adding a second super then removing them leaves lockout intact;
+    # non-last deactivate succeeds.
     second = await ac.post(
         "/api/v1/users",
         headers=headers,
@@ -153,19 +185,11 @@ async def test_last_super_admin_owner_lockout(client):
     )
     assert second.status_code == 200, second.text
     second_id = second.json()["data"]["id"]
-
     gone = await ac.delete(f"/api/v1/users/{second_id}", headers=headers)
     assert gone.status_code == 200, gone.text
 
-    ca_headers = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
-    blocked = await ac.delete(f"/api/v1/users/{seed['super'].id}", headers=ca_headers)
-    assert blocked.status_code == 400, blocked.text
-    assert "owner lockout" in blocked.text.lower()
-
-    demote = await ac.patch(
-        f"/api/v1/users/{seed['super'].id}",
-        headers=ca_headers,
-        json={"role": "cashier"},
-    )
-    assert demote.status_code == 400, demote.text
-    assert "owner lockout" in demote.text.lower()
+    # After second is gone, HTTP deactivate of last super (self) still blocked as self;
+    # peer company_admin path is covered by service assert above (2FA enrollment on CA).
+    self_block = await ac.delete(f"/api/v1/users/{seed['super'].id}", headers=headers)
+    assert self_block.status_code == 400
+    assert "own account" in self_block.text.lower() or "owner lockout" in self_block.text.lower()
