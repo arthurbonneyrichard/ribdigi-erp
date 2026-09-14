@@ -342,7 +342,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `398fe65b2e57ac727a53eea2c0e558bb6ca1df3f` — `feat(rbac): deny expenses-summary category_id filter for store_manager` (feat ancestry expenses-summary category filter `cd81d2f267` + cheque bank_name `d2ce109255` + BI expense by_category `fc44ef131e`).
+**As of tip:** `5a50cdb85ec4ba1c15c77b0687616aac91a556ca` — `feat(rbac): deny expenses-summary category_id filter for store_manager` (feat ancestry expenses-summary category filter `cd81d2f267` + cheque bank_name `d2ce109255` + BI expense by_category `fc44ef131e`).
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
