@@ -9,7 +9,7 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `f6921faffb942392d42e07d58f881bc9a7610d91` — feat stock-movement `created_by_email` redact `f6921faffb` (feat ancestry); leftovers still open |
+| **As of tip** | `7d291f109aab145e9c072a4d1455bbb84e842227` — docs sync after stock-movement `created_by_email` `f6921faffb` (feat ancestry); leftovers still open |
 | RBAC / store scope | **PARTIAL** only |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
 
