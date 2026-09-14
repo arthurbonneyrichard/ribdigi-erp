@@ -268,6 +268,8 @@ async def export_customer_payments_csv(
     customer_id: str | None = None,
     payment_method: str | None = None,
 ) -> str:
+    from app import dashboard_scope as dashboard_scope_svc
+
     rows = await list_customer_payments(
         db,
         tenant_id=tenant_id,
@@ -275,11 +277,15 @@ async def export_customer_payments_csv(
         customer_id=customer_id,
         payment_method=payment_method,
     )
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=CUSTOMER_PAYMENT_EXPORT_COLUMNS)
     writer.writeheader()
     for row in rows:
         data = serialize_customer_payment(row)
+        data = dashboard_scope_svc.apply_credit_payment_manager_redacts(
+            data, managed_stores
+        )
         writer.writerow({k: _cell(data.get(k)) for k in CUSTOMER_PAYMENT_EXPORT_COLUMNS})
     return buf.getvalue()
 
@@ -292,6 +298,8 @@ async def export_supplier_payments_csv(
     supplier_id: str | None = None,
     payment_method: str | None = None,
 ) -> str:
+    from app import dashboard_scope as dashboard_scope_svc
+
     rows = await list_supplier_payments(
         db,
         tenant_id=tenant_id,
@@ -299,11 +307,15 @@ async def export_supplier_payments_csv(
         supplier_id=supplier_id,
         payment_method=payment_method,
     )
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=SUPPLIER_PAYMENT_EXPORT_COLUMNS)
     writer.writeheader()
     for row in rows:
         data = serialize_supplier_payment(row)
+        data = dashboard_scope_svc.apply_credit_payment_manager_redacts(
+            data, managed_wh
+        )
         writer.writerow({k: _cell(data.get(k)) for k in SUPPLIER_PAYMENT_EXPORT_COLUMNS})
     return buf.getvalue()
 

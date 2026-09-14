@@ -20764,3 +20764,198 @@ async def test_store_manager_credit_statement_party_credit_limit_redacted(
     assert "Stmt CL Customer" in mgr_csv.text
     assert "INV-STMT-CL-1" in mgr_csv.text
 
+
+
+@pytest.mark.asyncio
+async def test_store_manager_credit_payment_currency_redacted(client, db_session):
+    """Customer/supplier payment list/export nulls currency for store_manager.
+
+    Exchange-rates GET already denied; POS receipt + sales/purchase-invoice +
+    credit-aging document currency already redacted. Payment register JSON/CSV
+    must not re-dump company/tenant currency. Amount / method / exchange_rate
+    remain; admin keeps currency.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Pay Currency Store",
+        code="PAY-CUR-S",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        name="Pay Currency WH",
+        code="PAY-CUR-WH",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    cust = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Pay Currency Customer",
+        kind="customer",
+        status="active",
+        credit_limit=1000,
+        balance=0,
+    )
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Pay Currency Supplier",
+        kind="supplier",
+        status="active",
+        credit_limit=0,
+        balance=0,
+    )
+    db_session.add_all([wh, cust, supplier])
+    await db_session.flush()
+
+    inv = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        invoice_number="INV-PAY-CUR-1",
+        customer_id=cust.id,
+        status="posted",
+        subtotal=40,
+        total_amount=40,
+        paid_amount=10,
+        currency="USD",
+        exchange_rate=1,
+        created_by=mgr.id,
+    )
+    pi = m.PurchaseInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="PI-PAY-CUR-1",
+        supplier_id=supplier.id,
+        warehouse_id=wh.id,
+        status="partial",
+        subtotal=25,
+        tax_amount=0,
+        discount_amount=0,
+        total_amount=25,
+        paid_amount=5,
+        currency="EUR",
+        exchange_rate=1,
+        ap_posted=False,
+        created_by=mgr.id,
+    )
+    db_session.add_all([inv, pi])
+    await db_session.flush()
+
+    cpay = m.CustomerPayment(
+        tenant_id=tid,
+        company_id=cid,
+        payment_number="CPAY-CUR-1",
+        customer_id=cust.id,
+        sales_invoice_id=inv.id,
+        amount=10,
+        payment_method="cash",
+        currency="USD",
+        exchange_rate=1.25,
+        created_by=mgr.id,
+    )
+    spay = m.SupplierPayment(
+        tenant_id=tid,
+        company_id=cid,
+        payment_number="SPAY-CUR-1",
+        supplier_id=supplier.id,
+        purchase_invoice_id=pi.id,
+        amount=5,
+        payment_method="bank_transfer",
+        currency="EUR",
+        exchange_rate=0.9,
+        created_by=mgr.id,
+    )
+    db_session.add_all([cpay, spay])
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    admin_cust = await ac.get("/api/v1/credit/customer-payments", headers=admin_company)
+    assert admin_cust.status_code == 200, admin_cust.text
+    admin_crow = next(
+        r for r in admin_cust.json()["data"] if r.get("payment_number") == "CPAY-CUR-1"
+    )
+    assert admin_crow.get("currency") == "USD"
+    assert float(admin_crow.get("amount") or 0) == pytest.approx(10.0)
+
+    mgr_cust = await ac.get("/api/v1/credit/customer-payments", headers=headers)
+    assert mgr_cust.status_code == 200, mgr_cust.text
+    mgr_crow = next(
+        r for r in mgr_cust.json()["data"] if r.get("payment_number") == "CPAY-CUR-1"
+    )
+    assert mgr_crow.get("currency") is None
+    assert float(mgr_crow.get("amount") or 0) == pytest.approx(10.0)
+    assert mgr_crow.get("payment_method") == "cash"
+    assert float(mgr_crow.get("exchange_rate") or 0) == pytest.approx(1.25)
+
+    admin_sup = await ac.get("/api/v1/credit/supplier-payments", headers=admin_company)
+    assert admin_sup.status_code == 200, admin_sup.text
+    admin_srow = next(
+        r for r in admin_sup.json()["data"] if r.get("payment_number") == "SPAY-CUR-1"
+    )
+    assert admin_srow.get("currency") == "EUR"
+
+    mgr_sup = await ac.get("/api/v1/credit/supplier-payments", headers=headers)
+    assert mgr_sup.status_code == 200, mgr_sup.text
+    mgr_srow = next(
+        r for r in mgr_sup.json()["data"] if r.get("payment_number") == "SPAY-CUR-1"
+    )
+    assert mgr_srow.get("currency") is None
+    assert float(mgr_srow.get("amount") or 0) == pytest.approx(5.0)
+    assert float(mgr_srow.get("exchange_rate") or 0) == pytest.approx(0.9)
+
+    admin_csv = await ac.get(
+        "/api/v1/credit/customer-payments/export", headers=admin_company
+    )
+    assert admin_csv.status_code == 200, admin_csv.text
+    admin_rows = list(csv.DictReader(io.StringIO(admin_csv.text)))
+    admin_csv_row = next(r for r in admin_rows if r.get("payment_number") == "CPAY-CUR-1")
+    assert admin_csv_row.get("currency") == "USD"
+
+    mgr_csv = await ac.get("/api/v1/credit/customer-payments/export", headers=headers)
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    mgr_rows = list(csv.DictReader(io.StringIO(mgr_csv.text)))
+    mgr_csv_row = next(r for r in mgr_rows if r.get("payment_number") == "CPAY-CUR-1")
+    assert mgr_csv_row.get("currency") in (None, "")
+    assert float(mgr_csv_row.get("amount") or 0) == pytest.approx(10.0)
+
+    admin_scsv = await ac.get(
+        "/api/v1/credit/supplier-payments/export", headers=admin_company
+    )
+    assert admin_scsv.status_code == 200, admin_scsv.text
+    admin_srows = list(csv.DictReader(io.StringIO(admin_scsv.text)))
+    admin_scsv_row = next(
+        r for r in admin_srows if r.get("payment_number") == "SPAY-CUR-1"
+    )
+    assert admin_scsv_row.get("currency") == "EUR"
+
+    mgr_scsv = await ac.get("/api/v1/credit/supplier-payments/export", headers=headers)
+    assert mgr_scsv.status_code == 200, mgr_scsv.text
+    mgr_srows = list(csv.DictReader(io.StringIO(mgr_scsv.text)))
+    mgr_scsv_row = next(r for r in mgr_srows if r.get("payment_number") == "SPAY-CUR-1")
+    assert mgr_scsv_row.get("currency") in (None, "")
+    assert float(mgr_scsv_row.get("amount") or 0) == pytest.approx(5.0)

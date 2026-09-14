@@ -4735,6 +4735,46 @@ def apply_credit_aging_manager_redacts(
     return out
 
 
+def omit_credit_payment_currency(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit customer/supplier payment ``currency``.
+
+    Exchange-rates GET already denied; POS receipt + sales/purchase-invoice +
+    credit-aging document JSON already redact ``currency``. Credit payment
+    register list/export (+ create responses) must not re-dump company/tenant
+    (or payment) currency after those redacts. Amount / method /
+    ``exchange_rate`` / ``fx_gain_loss`` / references remain; admin keeps
+    ``currency``.
+    """
+    return managed_ids is not None
+
+
+def redact_credit_payment_currency(payload: dict) -> dict:
+    """Null ``currency`` on a customer/supplier payment JSON/CSV row."""
+    out = dict(payload)
+    if "currency" in out:
+        out["currency"] = None
+    return out
+
+
+def apply_credit_payment_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager credit-payment JSON redacts (currency)."""
+    out = payload
+    if omit_credit_payment_currency(managed_ids):
+        out = redact_credit_payment_currency(out)
+    return out
+
+
+def apply_credit_payment_manager_redacts_list(
+    rows: list[dict], managed_ids: list[str] | None
+) -> list[dict]:
+    """Map ``apply_credit_payment_manager_redacts`` across payment list rows."""
+    return [
+        apply_credit_payment_manager_redacts(row, managed_ids) for row in rows
+    ]
+
+
 def omit_credit_statement_party_credit_limit(managed_ids: list[str] | None) -> bool:
     """True when store_manager must omit statement party ``credit_limit``.
 

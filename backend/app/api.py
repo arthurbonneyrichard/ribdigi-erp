@@ -9579,18 +9579,19 @@ async def record_sales_payment(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    return env(
-        {
-            "id": payment.id,
-            "payment_number": payment.payment_number,
-            "amount": float(payment.amount),
-            "sales_invoice_id": payment.sales_invoice_id,
-            "currency": getattr(payment, "currency", None) or "",
-            "exchange_rate": float(getattr(payment, "exchange_rate", None) or 1),
-            "fx_gain_loss": float(getattr(payment, "fx_gain_loss", 0) or 0),
-        },
-        "Payment recorded",
+    out = {
+        "id": payment.id,
+        "payment_number": payment.payment_number,
+        "amount": float(payment.amount),
+        "sales_invoice_id": payment.sales_invoice_id,
+        "currency": getattr(payment, "currency", None) or "",
+        "exchange_rate": float(getattr(payment, "exchange_rate", None) or 1),
+        "fx_gain_loss": float(getattr(payment, "fx_gain_loss", 0) or 0),
+    }
+    out = dashboard_scope_svc.apply_credit_payment_manager_redacts(
+        out, managed_stores
     )
+    return env(out, "Payment recorded")
 
 
 @api.get("/purchases")
@@ -15482,6 +15483,8 @@ async def list_credit_customer_payments(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 136 C1 — tenant customer payment register."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     rows = await credit_ops_export_svc.list_customer_payments(
         db,
         tenant_id=claims["tenant_id"],
@@ -15489,7 +15492,14 @@ async def list_credit_customer_payments(
         customer_id=customer_id,
         payment_method=payment_method,
     )
-    return env([credit_ops_export_svc.serialize_customer_payment(r) for r in rows])
+    managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
+    out = [
+        credit_ops_export_svc.serialize_customer_payment(r) for r in rows
+    ]
+    out = dashboard_scope_svc.apply_credit_payment_manager_redacts_list(
+        out, managed_stores
+    )
+    return env(out)
 
 
 @api.get("/credit/customer-payments/export")
@@ -15524,6 +15534,8 @@ async def list_credit_supplier_payments(
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 136 S1 — tenant supplier payment register."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     rows = await credit_ops_export_svc.list_supplier_payments(
         db,
         tenant_id=claims["tenant_id"],
@@ -15531,7 +15543,14 @@ async def list_credit_supplier_payments(
         supplier_id=supplier_id,
         payment_method=payment_method,
     )
-    return env([credit_ops_export_svc.serialize_supplier_payment(r) for r in rows])
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    out = [
+        credit_ops_export_svc.serialize_supplier_payment(r) for r in rows
+    ]
+    out = dashboard_scope_svc.apply_credit_payment_manager_redacts_list(
+        out, managed_wh
+    )
+    return env(out)
 
 
 @api.get("/credit/supplier-payments/export")
@@ -16044,16 +16063,17 @@ async def customer_payment_alias(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    return env(
-        {
-            "id": payment.id,
-            "payment_number": payment.payment_number,
-            "currency": getattr(payment, "currency", None) or "",
-            "exchange_rate": float(getattr(payment, "exchange_rate", None) or 1),
-            "fx_gain_loss": float(getattr(payment, "fx_gain_loss", 0) or 0),
-        },
-        "Payment recorded",
+    out = {
+        "id": payment.id,
+        "payment_number": payment.payment_number,
+        "currency": getattr(payment, "currency", None) or "",
+        "exchange_rate": float(getattr(payment, "exchange_rate", None) or 1),
+        "fx_gain_loss": float(getattr(payment, "fx_gain_loss", 0) or 0),
+    }
+    out = dashboard_scope_svc.apply_credit_payment_manager_redacts(
+        out, managed_stores
     )
+    return env(out, "Payment recorded")
 
 
 @api.get("/suppliers/{supplier_id}/outstanding")
@@ -16231,18 +16251,19 @@ async def supplier_payment(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    return env(
-        {
-            "id": payment.id,
-            "payment_number": payment.payment_number,
-            "amount": float(payment.amount),
-            "early_payment_discount": float(getattr(payment, "early_payment_discount", 0) or 0),
-            "currency": getattr(payment, "currency", None) or "",
-            "exchange_rate": float(getattr(payment, "exchange_rate", None) or 1),
-            "fx_gain_loss": float(getattr(payment, "fx_gain_loss", 0) or 0),
-        },
-        "Supplier payment recorded",
+    out = {
+        "id": payment.id,
+        "payment_number": payment.payment_number,
+        "amount": float(payment.amount),
+        "early_payment_discount": float(getattr(payment, "early_payment_discount", 0) or 0),
+        "currency": getattr(payment, "currency", None) or "",
+        "exchange_rate": float(getattr(payment, "exchange_rate", None) or 1),
+        "fx_gain_loss": float(getattr(payment, "fx_gain_loss", 0) or 0),
+    }
+    out = dashboard_scope_svc.apply_credit_payment_manager_redacts(
+        out, managed_wh
     )
+    return env(out, "Supplier payment recorded")
 
 
 @api.get("/tax/rates")
