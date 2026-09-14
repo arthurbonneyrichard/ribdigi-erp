@@ -97,19 +97,19 @@ def render_branded_html(
         )
 
     header_html = (
-        f'<p class="ribdigi-email-header" style="margin:8px 0 0;color:#cbd5e1;font-size:13px;">'
+        f'<p class="ribdigi-email-header" style="margin:8px 0 0;color:#c8e86a;font-size:13px;">'
         f"{html.escape(header)}</p>"
         if header
         else ""
     )
     footer_html = (
-        f'<p class="ribdigi-email-footer" style="margin:0 0 8px;color:#64748b;font-size:12px;">'
+        f'<p class="ribdigi-email-footer" style="margin:0 0 8px;color:#4d5d56;font-size:12px;">'
         f"{html.escape(footer)}</p>"
         if footer
         else ""
     )
     title_html = (
-        f'<h1 style="margin:0 0 16px;font-size:20px;line-height:1.3;color:#0f172a;">'
+        f'<h1 style="margin:0 0 16px;font-size:20px;line-height:1.3;color:#10211b;">'
         f"{html.escape(title)}</h1>"
         if title
         else ""
@@ -120,28 +120,28 @@ def render_branded_html(
         '<html lang="en"><head><meta charset="utf-8"/>'
         '<meta name="viewport" content="width=device-width, initial-scale=1"/>'
         f"<title>{html.escape(title or company)}</title></head>"
-        '<body style="margin:0;padding:0;background:#f1f5f9;">'
+        '<body style="margin:0;padding:0;background:#f2f7ec;">'
         '<table role="presentation" class="ribdigi-email-brand" width="100%" cellspacing="0" '
-        'cellpadding="0" style="background:#f1f5f9;padding:24px 12px;">'
+        'cellpadding="0" style="background:#f2f7ec;padding:24px 12px;">'
         "<tr><td align=\"center\">"
         '<table role="presentation" width="600" cellspacing="0" cellpadding="0" '
         'style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;'
-        'overflow:hidden;border:1px solid #e2e8f0;">'
-        '<tr><td style="padding:20px 24px;background:#0f172a;color:#ffffff;text-align:center;'
-        'font-family:Arial,Helvetica,sans-serif;">'
+        'overflow:hidden;border:1px solid #d4e5c4;">'
+        '<tr><td style="padding:20px 24px;background:#003d1f;color:#ffffff;text-align:center;'
+        'font-family:Arial,Helvetica,sans-serif;border-bottom:3px solid #4ab012;">'
         f"{logo_html}"
         f'<div class="ribdigi-email-company" style="font-size:18px;font-weight:700;'
         f'letter-spacing:.02em;">{company_esc}</div>'
         f"{header_html}"
         "</td></tr>"
-        '<tr><td style="padding:24px;font-family:Arial,Helvetica,sans-serif;color:#0f172a;'
+        '<tr><td style="padding:24px;font-family:Arial,Helvetica,sans-serif;color:#10211b;'
         'font-size:14px;line-height:1.55;">'
         f"{title_html}{body_html}"
         "</td></tr>"
-        '<tr><td style="padding:16px 24px;background:#f8fafc;border-top:1px solid #e2e8f0;'
+        '<tr><td style="padding:16px 24px;background:#f5f7ec;border-top:1px solid #d4e5c4;'
         'text-align:center;font-family:Arial,Helvetica,sans-serif;">'
         f"{footer_html}"
-        '<p style="margin:0;color:#94a3b8;font-size:11px;">Sent via RIBDIGI ERP</p>'
+        '<p style="margin:0;color:#4d5d56;font-size:11px;">Sent via RIBDIGI ERP</p>'
         "</td></tr></table></td></tr></table></body></html>"
     )
 
