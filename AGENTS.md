@@ -329,9 +329,11 @@ store activation — never frontend-only.
    `offline_authorized_until` and blocks sync; critical alerts can email via
    security notifications (`POST /offline/alerts/notify`). Remote IndexedDB wipe
    request/ack + Web Push delivery are **PARTIAL** (VAPID + subscription required
-   for push; online poll remains; automated wipe-via-push evidence in
-   `test_offline_wipe_push_vapid_evidence.py` + operator checklist
-   `docs/offline_wipe_push_staging_checklist.md` — browser proof still required).
+   for push; online poll remains **engineering-ready**; automated wipe-via-push evidence in
+   `test_offline_wipe_push_vapid_evidence.py` + poll-path evidence
+   `test_offline_wipe_poll_path_evidence.py` + operator checklist
+   `docs/offline_wipe_push_staging_checklist.md` / `docs/OFFLINE_WIPE_POLL_LOCAL_ALTERNATIVE.md`
+   — browser FCM proof still required for push Complete).
    Offline Complete and 7-day VERIFIED remain **MISSING**.
 
 ### Key modules
