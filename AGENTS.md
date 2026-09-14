@@ -344,7 +344,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `67a99e2e5b17b254bf858dda52508526317ca22a` — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL**; Offline Complete still **MISSING**. Cookie flag default remains OFF (ops enable cutover). Continuum CLE honesty remains **PARTIAL**.  
+**As of tip:** `f081db3aca1b29bc638061d81dd3e07a5e74c0ae` — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL**; Offline Complete still **MISSING**. Cookie flag default remains OFF (ops enable cutover). Continuum CLE honesty remains **PARTIAL**.  
 **Security:** no open Critical/High/Medium. Do not claim go-live Completes. Flag OFF in prod examples is intentional until ops cutover (`docs/sec_m2_staging_soak_checklist.md`).  
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
