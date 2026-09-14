@@ -21526,8 +21526,8 @@ async def test_store_manager_credit_aging_document_currency_redacted(
 
     Exchange-rates GET already denied; POS receipt + sales/purchase-invoice
     currency already redacted. Aging JSON/CSV must not re-dump company currency
-    on documents. balance_due / balance_due_base / buckets / party name remain;
-    admin keeps currency. ``exchange_rate`` redacted separately.
+    on documents. balance_due / buckets / party name remain; admin keeps
+    currency. ``exchange_rate`` + ``balance_due_base`` redacted separately.
     """
     from datetime import timedelta
 
@@ -21655,7 +21655,8 @@ async def test_store_manager_credit_aging_document_currency_redacted(
     assert mgr_ar_doc.get("currency") is None
     assert mgr_ar_doc.get("exchange_rate") is None
     assert float(mgr_ar_doc.get("balance_due") or 0) == pytest.approx(55.0)
-    assert float(mgr_ar_doc.get("balance_due_base") or 0) == pytest.approx(687.5)
+    # balance_due_base redacted separately (see balance_due_base test)
+    assert mgr_ar_doc.get("balance_due_base") is None
 
     admin_ap = await ac.get(
         "/api/v1/credit/aging?kind=payable", headers=admin_company
@@ -21713,8 +21714,8 @@ async def test_store_manager_credit_aging_document_exchange_rate_redacted(
     Exchange-rates GET already denied; aging document currency already redacted;
     sales/purchase-invoice + credit-payment exchange_rate already redacted.
     Aging JSON/CSV must not re-dump company FX rate-table identity on documents.
-    balance_due / balance_due_base / buckets / party name remain; admin keeps
-    exchange_rate.
+    balance_due / buckets / party name remain; admin keeps exchange_rate.
+    ``balance_due_base`` redacted separately.
     """
     from datetime import timedelta
 
