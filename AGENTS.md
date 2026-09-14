@@ -353,7 +353,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `9ec4ae5e86d68b9e722e49469c6a148f0d5959a5` — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL**; ADR-005 membership **PARTIAL** (scaffold + admin UI + flag-gated scope wire + cashier fail-closed + automated flag-ON soak; default OFF — Complete still **MISSING**); paid billing **PARTIAL** (ADR-002 portal + Checkout Session create + signed webhook proof — Complete still **MISSING**); Offline Complete still **MISSING**. Cookie + membership-scope flags default remain OFF (ops enable cutover). Continuum CLE honesty remains **PARTIAL**.
+**As of tip:** `c0ebe31fc810befa2b64cf2947d90b4e56325c37` — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL**; ADR-005 membership **PARTIAL** (scaffold + admin UI + flag-gated scope wire + cashier fail-closed + automated flag-ON soak; default OFF — Complete still **MISSING**); paid billing **PARTIAL** (ADR-002 portal + Checkout Session create + signed webhook proof — Complete still **MISSING**); Offline Complete still **MISSING**. Cookie + membership-scope flags default remain OFF (ops enable cutover). Continuum CLE honesty remains **PARTIAL**.
 **Security:** no open Critical/High/Medium. Do not claim go-live Completes. Cookie + membership-scope flags OFF in prod examples are intentional until ops cutover (`docs/sec_m2_staging_soak_checklist.md`, `docs/adr005_staging_soak_checklist.md`).  
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
@@ -482,7 +482,8 @@ after `0107` in deploy order.
 7. **User↔store membership** is **PARTIAL** (ADR-005; `/stores#memberships`
    admin UI + flag-gated `managed_store_ids` union when
    `STORE_MEMBERSHIP_SCOPE_ENABLED`; cashiers fail-closed via `store_visibility_ids`;
-   default OFF = ``stores.manager_id`` only).
+   automated flag-ON soak + `docs/adr005_staging_soak_checklist.md`; default OFF =
+   ``stores.manager_id`` only).
    Do not claim membership Complete or production-default membership scope without evidence.
 
 ### Key modules
