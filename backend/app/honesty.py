@@ -32,8 +32,10 @@ def require_honest_narrative(
     Mirrors OpenAPI `*ReasonValue` / narrative Values (422 at schema).
     """
     text = (value or "").strip()
-    if not text or len(text) < min_length or len(text) > max_length:
+    if not text or len(text) < min_length:
         raise HTTPException(status_code=400, detail=f"{label} is required")
+    if len(text) > max_length:
+        raise HTTPException(status_code=400, detail=f"{label} exceeds maximum length")
     if "://" in text or "@" in text:
         raise HTTPException(status_code=400, detail=f"{label} must be a plain narrative")
     if not re.search(r"[A-Za-z0-9]", text):

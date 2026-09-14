@@ -60,8 +60,17 @@ async def test_a01_privilege_escalation_super_admin_blocked(client, db_session):
             "role": "super_admin",
         },
     )
-    assert r.status_code == 403
-    assert "super_admin" in r.text.lower()
+    # RoleKeyValue / create_user reject reserved platform roles before RBAC (400/422);
+    # older builds returned 403. Any of these means escalation was blocked.
+    assert r.status_code in (400, 403, 422)
+    body = r.text.lower()
+    assert (
+        "super_admin" in body
+        or "platform/staff" in body
+        or "platform staff" in body
+        or "reserved" in body
+        or "forbidden" in body
+    ), body
 
 
 @pytest.mark.asyncio

@@ -12,6 +12,14 @@ from app.rbac import normalize_record_scope
 from tests.conftest import auth_headers
 
 
+
+async def _mark_user_email_verified(db_session, email: str) -> None:
+    """Admin-created users start unverified; mark verified before login."""
+    row = (await db_session.execute(select(m.User).where(m.User.email == email))).scalar_one()
+    row.email_verified = True
+    await db_session.commit()
+
+
 async def _admin_headers(ac, seed):
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
     return await auth_headers(
@@ -246,6 +254,11 @@ async def test_department_record_scope_peer_visibility(client, db_session):
         payment_method="cash",
     )
     await db_session.commit()
+    # Admin-created users start unverified; mark them verified before login
+    # (same pattern as test_custom_roles / conftest seeded users).
+    await _mark_user_email_verified(db_session, "clerk1@alpha.example.com")
+    await _mark_user_email_verified(db_session, "clerk2@alpha.example.com")
+    await _mark_user_email_verified(db_session, "clerk3@alpha.example.com")
 
     login = await ac.post(
         "/api/v1/auth/login",
@@ -358,6 +371,8 @@ async def test_branch_record_scope_peer_visibility(client, db_session):
         payment_method="cash",
     )
     await db_session.commit()
+    await _mark_user_email_verified(db_session, "east@alpha.example.com")
+    await _mark_user_email_verified(db_session, "west@alpha.example.com")
 
     login = await ac.post(
         "/api/v1/auth/login",

@@ -57,8 +57,10 @@ def test_expense_category_label_value_schema():
 def test_expense_category_label_ui_and_docs():
     page = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Expense spend category"' in page
-    assert 'aria-label="Recurring expense category"' in page
-    assert "category_id: categoryId || undefined" in page
+    # Recurring select uses a ternary aria-label (create vs edit).
+    assert "Recurring expense category" in page
+    assert "Edit recurring expense category" in page
+    assert "category_id: categoryId.trim() || null" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Expense category label OpenAPI" in agents
     assert "ExpenseCategoryLabelValue" in agents
