@@ -12696,6 +12696,74 @@ async def test_store_manager_purchase_invoice_attachment_url_redacted(client, db
 
 
 @pytest.mark.asyncio
+async def test_store_manager_journal_entry_attachment_url_redacted(client, db_session):
+    """Journal list/get nulls attachment_url storage key for store_manager.
+
+    Binary download remains store-scoped; has_attachment remains for chrome.
+    Admin list/get keep attachment_url.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    await accounting_svc.ensure_default_accounts(db_session, tid, company_id=cid)
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="JE Attach URL Store",
+        code="JE-AUS1",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    storage_key = f"{tid}/journals/url-redact-dump.pdf"
+    entry = await accounting_svc.post_journal_entry(
+        db_session,
+        tenant_id=tid,
+        user_id=mgr.id,
+        description="JE attachment url redact",
+        reference="JE-ATTACH-URL-1",
+        store_id=store.id,
+        company_id=cid,
+        lines=[
+            {"account_code": "1000", "debit": 10, "credit": 0},
+            {"account_code": "4000", "debit": 0, "credit": 10},
+        ],
+    )
+    entry.attachment_url = storage_key
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    admin_got = await ac.get(
+        f"/api/v1/accounting/journal-entries/{entry.id}", headers=admin_headers
+    )
+    assert admin_got.status_code == 200, admin_got.text
+    assert admin_got.json()["data"].get("attachment_url") == storage_key
+    assert admin_got.json()["data"].get("has_attachment") is True
+
+    listed = await ac.get("/api/v1/accounting/journal-entries", headers=headers)
+    assert listed.status_code == 200, listed.text
+    row = next(r for r in listed.json()["data"] if r["id"] == entry.id)
+    assert row.get("has_attachment") is True
+    assert row.get("attachment_url") is None
+
+    got = await ac.get(
+        f"/api/v1/accounting/journal-entries/{entry.id}", headers=headers
+    )
+    assert got.status_code == 200, got.text
+    assert got.json()["data"].get("has_attachment") is True
+    assert got.json()["data"].get("attachment_url") is None
+
+
+@pytest.mark.asyncio
 async def test_store_manager_stock_import_denied(client, db_session):
     """Company-level stock CSV import + template denied for store_manager."""
     ac, seed = client

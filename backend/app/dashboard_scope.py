@@ -1815,6 +1815,41 @@ def apply_purchase_invoice_manager_redacts_list(
     ]
 
 
+def omit_journal_entry_attachment_url(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit journal-entry ``attachment_url`` keys.
+
+    Binary download remains store-scoped via attachment GET. List/get/create/
+    unpost/upload/delete JSON must not re-dump ``attachment_url`` (storage_key /
+    external URL). ``has_attachment`` remains for chrome (JSON + CSV). Same class
+    as expense / purchase-invoice attachment_url redacts.
+    """
+    return managed_ids is not None
+
+
+def redact_journal_entry_attachment_url(payload: dict) -> dict:
+    """Null ``attachment_url`` on a serialized journal entry (+ upload key)."""
+    return redact_attachment_url_storage_key(payload)
+
+
+def apply_journal_entry_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager journal-entry JSON redacts (attachment_url)."""
+    out = payload
+    if omit_journal_entry_attachment_url(managed_ids):
+        out = redact_journal_entry_attachment_url(out)
+    return out
+
+
+def apply_journal_entry_manager_redacts_list(
+    rows: list[dict], managed_ids: list[str] | None
+) -> list[dict]:
+    """Map ``apply_journal_entry_manager_redacts`` across journal list rows."""
+    return [
+        apply_journal_entry_manager_redacts(row, managed_ids) for row in rows
+    ]
+
+
 def apply_expense_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
