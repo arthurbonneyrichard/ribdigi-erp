@@ -4660,10 +4660,12 @@ def apply_credit_statement_manager_redacts(
 def omit_credit_limit_exceeded_master(role: str | None) -> bool:
     """True when store_manager must omit credit master fields on limit-exceeded errors.
 
-    Party list/get + AI + aging + AR statement already redact ``credit_limit``.
-    ``CREDIT_LIMIT_EXCEEDED`` (409) must not re-dump company credit master via
-    ``credit_limit`` / ``available``. Operational ``exceeded`` / ``additional_amount``
-    / ``code`` / ``message`` remain; admin keeps full projection.
+    Party list/get + AI + aging + AR statement already redact ``credit_limit``
+    (statements also zero party ledger ``balance``). ``CREDIT_LIMIT_EXCEEDED``
+    (409) must not re-dump company credit master / AR ledger via ``credit_limit``
+    / ``available`` / ``current_balance`` / ``projected_balance``. Operational
+    ``exceeded`` / ``additional_amount`` / ``code`` / ``message`` remain; admin
+    keeps full projection.
     """
     from app.dashboard_views import dashboard_view_for_role
 
@@ -4671,12 +4673,16 @@ def omit_credit_limit_exceeded_master(role: str | None) -> bool:
 
 
 def redact_credit_limit_exceeded_master(detail: dict) -> dict:
-    """Null ``credit_limit`` / ``available`` on a CREDIT_LIMIT_EXCEEDED detail dict."""
+    """Null credit master + ledger fields on a CREDIT_LIMIT_EXCEEDED detail dict."""
     out = dict(detail)
-    if "credit_limit" in out:
-        out["credit_limit"] = None
-    if "available" in out:
-        out["available"] = None
+    for key in (
+        "credit_limit",
+        "available",
+        "current_balance",
+        "projected_balance",
+    ):
+        if key in out:
+            out[key] = None
     return out
 
 

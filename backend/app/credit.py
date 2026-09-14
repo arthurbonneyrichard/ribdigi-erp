@@ -974,8 +974,10 @@ async def enforce_credit_limit(
         **projection,
         **(extra_details or {}),
     }
-    # Party list/get + AI + aging + statement already redact credit_limit;
-    # 409 detail must not re-dump company credit master for store_manager.
+    # Party list/get + AI + aging + statement already redact credit_limit /
+    # zero ledger balance; 409 detail must not re-dump company credit master
+    # or AR ledger (credit_limit/available/current_balance/projected_balance)
+    # for store_manager.
     if dashboard_scope_svc.omit_credit_limit_exceeded_master(role):
         detail = dashboard_scope_svc.redact_credit_limit_exceeded_master(detail)
 

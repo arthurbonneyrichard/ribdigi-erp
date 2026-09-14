@@ -10466,12 +10466,14 @@ async def test_store_manager_credit_limit_override_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_credit_limit_exceeded_master_redacted(client, db_session):
-    """CREDIT_LIMIT_EXCEEDED 409 nulls credit_limit/available for store_manager.
+    """CREDIT_LIMIT_EXCEEDED 409 nulls credit master + ledger for store_manager.
 
-    Party list/get + AI + aging + AR statement already redact credit_limit.
-    Invoice post / POS credit 409 must not re-dump company credit master via
-    credit_limit or available. exceeded + code + message remain; admin keeps
-    full projection on the same over-limit post.
+    Party list/get + AI + aging + AR statement already redact credit_limit
+    (statements zero party balance). Invoice post / POS credit 409 must not
+    re-dump company credit master / AR ledger via credit_limit, available,
+    current_balance, or projected_balance. exceeded + code + message +
+    additional_amount remain; admin keeps full projection on the same
+    over-limit post.
     """
     ac, seed = client
     tid = seed["t1"].id
@@ -10543,6 +10545,8 @@ async def test_store_manager_credit_limit_exceeded_master_redacted(client, db_se
     assert mgr_detail.get("exceeded") is True
     assert mgr_detail.get("credit_limit") is None
     assert mgr_detail.get("available") is None
+    assert mgr_detail.get("current_balance") is None
+    assert mgr_detail.get("projected_balance") is None
     assert float(mgr_detail.get("additional_amount") or 0) == pytest.approx(90.0)
 
     admin_blocked = await ac.post(
@@ -10555,6 +10559,8 @@ async def test_store_manager_credit_limit_exceeded_master_redacted(client, db_se
     assert admin_detail.get("code") == "CREDIT_LIMIT_EXCEEDED"
     assert float(admin_detail.get("credit_limit") or 0) == pytest.approx(40.0)
     assert float(admin_detail.get("available") or 0) == pytest.approx(40.0)
+    assert float(admin_detail.get("current_balance") or 0) == pytest.approx(0.0)
+    assert float(admin_detail.get("projected_balance") or 0) == pytest.approx(90.0)
 
     await accounting_svc.ensure_default_accounts(db_session, tid, company_id=cid)
     await db_session.commit()
@@ -10582,6 +10588,8 @@ async def test_store_manager_credit_limit_exceeded_master_redacted(client, db_se
     assert pos_detail.get("code") == "CREDIT_LIMIT_EXCEEDED"
     assert pos_detail.get("credit_limit") is None
     assert pos_detail.get("available") is None
+    assert pos_detail.get("current_balance") is None
+    assert pos_detail.get("projected_balance") is None
     assert pos_detail.get("exceeded") is True
 
 
