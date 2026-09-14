@@ -8505,9 +8505,13 @@ async def send_sales_invoice(
     )
     await db.commit()
     data = await sales_svc.serialize_invoice(db, invoice)
-    data = dashboard_scope_svc.apply_sales_invoice_manager_redacts(data, managed)
     data["delivery"] = delivery
-    return env(data, f"Invoice emailed to {delivery['to']} ({delivery['mode']})")
+    data = dashboard_scope_svc.apply_sales_invoice_manager_redacts(data, managed)
+    if dashboard_scope_svc.omit_document_emailed_to(managed):
+        msg = f"Invoice emailed ({delivery.get('mode') or 'email'})"
+    else:
+        msg = f"Invoice emailed to {delivery['to']} ({delivery['mode']})"
+    return env(data, msg)
 
 
 @api.post("/sales/invoices/{invoice_id}/post")

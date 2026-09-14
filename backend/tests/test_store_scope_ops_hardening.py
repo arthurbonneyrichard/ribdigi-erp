@@ -10287,6 +10287,82 @@ async def test_store_manager_sales_invoice_credit_override_redacted(client, db_s
 
 
 @pytest.mark.asyncio
+async def test_store_manager_sales_invoice_emailed_to_redacted(client, db_session):
+    """Sales invoice list/get nulls emailed_to for store_manager.
+
+    Party master email already redacted; invoice JSON must not re-dump the
+    recipient address. emailed_at remains as send-status chrome. Admin keeps
+    emailed_to. Balance/status remain for scoped AR ops.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    customer = seed["party1"]
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Emailed To Redact Store",
+        code="ETR-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+
+    sent_at = __import__("datetime").datetime.utcnow()
+    invoice = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        customer_id=customer.id,
+        invoice_number="INV-ETR-1",
+        status="sent",
+        subtotal=50,
+        tax_amount=0,
+        discount_amount=0,
+        total_amount=50,
+        paid_amount=0,
+        created_by=seed["super"].id,
+        emailed_at=sent_at,
+        emailed_to="vip-customer@example.com",
+    )
+    db_session.add(invoice)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    admin_got = await ac.get(
+        f"/api/v1/sales/invoices/{invoice.id}", headers=admin_headers
+    )
+    assert admin_got.status_code == 200, admin_got.text
+    admin_data = admin_got.json()["data"]
+    assert admin_data.get("emailed_to") == "vip-customer@example.com"
+    assert admin_data.get("emailed_at") is not None
+
+    mgr_got = await ac.get(f"/api/v1/sales/invoices/{invoice.id}", headers=headers)
+    assert mgr_got.status_code == 200, mgr_got.text
+    mgr_data = mgr_got.json()["data"]
+    assert mgr_data.get("emailed_to") is None
+    assert mgr_data.get("emailed_at") is not None
+    assert float(mgr_data.get("total_amount") or 0) == 50.0
+    assert mgr_data.get("status") == "sent"
+
+    listed = await ac.get("/api/v1/sales/invoices", headers=headers)
+    assert listed.status_code == 200, listed.text
+    row = next(r for r in listed.json()["data"] if r["id"] == invoice.id)
+    assert row.get("emailed_to") is None
+    assert row.get("emailed_at") is not None
+
+
+@pytest.mark.asyncio
 async def test_store_manager_branches_departments_writes_denied(client, db_session):
     """Branch/department list GET + create/patch/export denied for store_manager."""
     from app.rbac import permissions_for_role

@@ -2996,13 +2996,38 @@ def redact_sales_invoice_credit_override(payload: dict) -> dict:
     return out
 
 
+def omit_document_emailed_to(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit document ``emailed_to`` party email.
+
+    Party master email is already redacted on customer/supplier JSON; sales-invoice
+    list/get/send must not re-dump the recipient address via ``emailed_to`` (or
+    nested send ``delivery.to``). ``emailed_at`` remains as send-status chrome.
+    """
+    return managed_ids is not None
+
+
+def redact_document_emailed_to(payload: dict) -> dict:
+    """Null ``emailed_to`` (+ nested send ``delivery.to``) on a document dict."""
+    out = dict(payload)
+    if "emailed_to" in out:
+        out["emailed_to"] = None
+    delivery = out.get("delivery")
+    if isinstance(delivery, dict) and "to" in delivery:
+        delivery_out = dict(delivery)
+        delivery_out["to"] = None
+        out["delivery"] = delivery_out
+    return out
+
+
 def apply_sales_invoice_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager sales-invoice JSON redacts (credit-override audit)."""
+    """Apply store_manager sales-invoice JSON redacts (credit-override + emailed_to)."""
     out = payload
     if omit_sales_invoice_credit_override(managed_ids):
         out = redact_sales_invoice_credit_override(out)
+    if omit_document_emailed_to(managed_ids):
+        out = redact_document_emailed_to(out)
     return out
 
 
