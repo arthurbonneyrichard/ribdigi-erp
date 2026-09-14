@@ -132,7 +132,7 @@ export default function OnboardingChecklist({
         style={{
           height: 8,
           borderRadius: 999,
-          background: 'var(--muted-bg, #e2e8f0)',
+          background: 'var(--line, #D4E5C4)',
           overflow: 'hidden',
         }}
         aria-label={`Onboarding progress ${pct} percent`}
