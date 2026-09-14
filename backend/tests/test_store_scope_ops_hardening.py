@@ -18939,3 +18939,106 @@ async def test_store_manager_sales_salesperson_full_name_redacted(client, db_ses
     assert mgr_csv_row.get("email") in (None, "")
     assert float(mgr_csv_row.get("revenue") or 0) == pytest.approx(55.0)
 
+
+@pytest.mark.asyncio
+async def test_store_manager_sales_salesperson_role_redacted(client, db_session):
+    """Sales-by-salesperson nulls staff role for store_manager.
+
+    Users list/get already denied; salesperson email + full_name already
+    redacted. Report JSON/CSV must not re-dump org roster RBAC role labels.
+    Revenue / sale_count / user_id remain; admin JSON/CSV keep role.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    admin = seed["admin1"]
+    today = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="SP Role Store",
+        code="SPR1",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    inv = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="SPE-ROLE-1",
+        customer_id=seed["party1"].id,
+        status="posted",
+        subtotal=65,
+        tax_amount=0,
+        total_amount=65,
+        store_id=store.id,
+        posted_at=today,
+        created_by=admin.id,
+    )
+    db_session.add(inv)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    admin_sp = await ac.get(
+        "/api/v1/reports/sales/salesperson",
+        headers=admin_company,
+    )
+    assert admin_sp.status_code == 200, admin_sp.text
+    admin_people = admin_sp.json()["data"]["salespeople"]
+    admin_row = next(r for r in admin_people if r.get("user_id") == admin.id)
+    assert admin_row.get("role") == "company_admin"
+    assert admin_row.get("full_name") == "Alpha Admin"
+    assert admin_row.get("email") == "admin@alpha.example.com"
+    assert float(admin_row.get("revenue") or 0) >= 65.0
+
+    mgr_sp = await ac.get("/api/v1/reports/sales/salesperson", headers=headers)
+    assert mgr_sp.status_code == 200, mgr_sp.text
+    mgr_data = mgr_sp.json()["data"]
+    assert float(mgr_data["total_revenue"]) == pytest.approx(65.0)
+    mgr_people = mgr_data["salespeople"]
+    mgr_row = next(r for r in mgr_people if r.get("user_id") == admin.id)
+    assert mgr_row.get("role") is None
+    assert mgr_row.get("full_name") is None
+    assert mgr_row.get("email") is None
+    assert mgr_row.get("user_id") == admin.id
+    assert float(mgr_row.get("revenue") or 0) == pytest.approx(65.0)
+
+    admin_csv = await ac.get(
+        "/api/v1/reports/export",
+        headers=admin_company,
+        params={"report_type": "sales_salesperson", "format": "csv"},
+    )
+    assert admin_csv.status_code == 200, admin_csv.text
+    admin_rows = list(csv.DictReader(io.StringIO(admin_csv.text)))
+    admin_csv_row = next(r for r in admin_rows if r.get("user_id") == admin.id)
+    assert admin_csv_row.get("role") == "company_admin"
+
+    mgr_csv = await ac.get(
+        "/api/v1/reports/export",
+        headers=headers,
+        params={"report_type": "sales_salesperson", "format": "csv"},
+    )
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    assert "company_admin" not in mgr_csv.text
+    mgr_rows = list(csv.DictReader(io.StringIO(mgr_csv.text)))
+    mgr_csv_row = next(r for r in mgr_rows if r.get("user_id") == admin.id)
+    assert mgr_csv_row.get("role") in (None, "")
+    assert mgr_csv_row.get("full_name") in (None, "")
+    assert mgr_csv_row.get("email") in (None, "")
+    assert float(mgr_csv_row.get("revenue") or 0) == pytest.approx(65.0)
+

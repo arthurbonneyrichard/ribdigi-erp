@@ -1918,7 +1918,7 @@ def omit_sales_salesperson_full_name(managed_ids: list[str] | None) -> bool:
 
     Users list/get already denied; salesperson ``email`` already redacted.
     Sales-by-salesperson JSON/CSV must not re-dump org roster display names.
-    Revenue / sale counts / ``user_id`` remain for store ops (``role`` later).
+    Revenue / sale counts / ``user_id`` remain for store ops (``role`` redacted separately).
     """
     return managed_ids is not None
 
@@ -1937,15 +1937,41 @@ def redact_sales_salesperson_full_name(payload: dict) -> dict:
     return out
 
 
+def omit_sales_salesperson_role(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit salesperson-report staff ``role``.
+
+    Users list/get already denied; salesperson ``email`` / ``full_name`` already
+    redacted. Sales-by-salesperson JSON/CSV must not re-dump org roster RBAC
+    role labels. Revenue / sale counts / ``user_id`` remain for store ops.
+    """
+    return managed_ids is not None
+
+
+def redact_sales_salesperson_role(payload: dict) -> dict:
+    """Null ``role`` on a salesperson row dict (and nested ``salespeople``)."""
+    out = dict(payload)
+    if "role" in out:
+        out["role"] = None
+    people = out.get("salespeople")
+    if isinstance(people, list):
+        out["salespeople"] = [
+            redact_sales_salesperson_role(row) if isinstance(row, dict) else row
+            for row in people
+        ]
+    return out
+
+
 def apply_sales_salesperson_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager sales-salesperson report redacts (email + full_name)."""
+    """Apply store_manager sales-salesperson report redacts (email + full_name + role)."""
     out = payload
     if omit_sales_salesperson_email(managed_ids):
         out = redact_sales_salesperson_email(out)
     if omit_sales_salesperson_full_name(managed_ids):
         out = redact_sales_salesperson_full_name(out)
+    if omit_sales_salesperson_role(managed_ids):
+        out = redact_sales_salesperson_role(out)
     return out
 
 
