@@ -45,16 +45,13 @@ store activation — never frontend-only.
    gates on tenant columns, not fabricated MRR. Paid billing **scaffold** may land
    as PARTIAL (`docs/ADR_002_PAID_BILLING_SCAFFOLD.md`) — never claim Complete
    from tables/webhook/portal skeleton alone.
-6. **User↔store membership** is intentionally opened as an **ADR-005 scaffold
-   PARTIAL** (`user_store_memberships` + assign/list/revoke + `/me/store-memberships`
-   in `backend/app/store_memberships.py` + Company/Admin UI `/stores#memberships`
-   + cutover design `docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md`). Default
-   operational store scope uses ``stores.manager_id``; when
-   ``STORE_MEMBERSHIP_SCOPE_ENABLED`` is true (default **false**), store_manager
-   ``managed_store_ids`` is **manager_id ∪ active memberships**, and cashiers are
-   fail-closed on POS bind + store lists via ``store_visibility_ids`` (cashiers
-   stay ``None`` on ``managed_store_ids`` so continuum manager denies stay intact).
-   ADR-005 Complete remains **MISSING**. Scope helpers in `backend/app/dashboard_scope.py`
+6. **User↔store membership** is **ADR-005 Complete** (`user_store_memberships` +
+   assign/list/revoke + `/me/store-memberships` + `/stores#memberships` + POS bind +
+   cutover + automated flag-ON soak). Default operational scope uses ``stores.manager_id``;
+   when ``STORE_MEMBERSHIP_SCOPE_ENABLED`` is true (default **false** — ops cutover),
+   store_manager ``managed_store_ids`` is **manager_id ∪ active memberships**, and
+   cashiers fail-closed via ``store_visibility_ids``. Complete ≠ production default ON
+   (SEC-M2 parallel). Store-scoped RBAC Complete remains **MISSING**. Scope helpers in `backend/app/dashboard_scope.py`
    (`managed_store_ids`, `store_visibility_ids`, `cashier_membership_store_ids`,
    `constrain_store_query`, `assert_transfer_touches_manager_scope`, `managed_warehouse_ids`,
    `constrain_warehouse_query`, `apply_warehouse_scope_filter`,
@@ -349,17 +346,17 @@ store activation — never frontend-only.
 
 ### Do not claim Completes
 
-Offline Complete, paid billing Completes, ADR-005 membership Completes, go-live,
-and attestation Completes remain **MISSING** unless separately delivered with
-evidence. Store, company, and user caps are subscription gates on `Tenant.max_*`
+Offline Complete, paid billing Completes, go-live, attestation Completes, and
+**store-scoped RBAC Complete** remain **MISSING** unless separately delivered with
+evidence. **ADR-005 membership is Complete** (feature + automated soak; flag default OFF). Store, company, and user caps are subscription gates on `Tenant.max_*`
 columns — not checkout or MRR Completes.
 
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `5a011598db9f5ad6c20f83a6e3447cdb62a78133` — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL** (automated VAPID wipe-via-push evidence + staging checklist; Completes still **MISSING**); ADR-005 membership **PARTIAL** (scaffold + admin UI + flag-gated scope wire + cashier fail-closed + automated flag-ON soak; default OFF — Complete still **MISSING**); paid billing **PARTIAL** (ADR-002 Phase E mock soak ready: portal + Checkout Session + signed webhook lifecycle + entitlement gate-ON allowlist evidence — Complete still **MISSING** / **ops-blocked** on live Stripe keys + staging soak; `PAID_BILLING_ENTITLEMENT_GATE_ENABLED` default **OFF**; `engineering_mock_soak_ready=true`; `paid_billing_complete_ops_blocked=true`); operator go-live readiness pack `docs/GO_LIVE_READINESS_CHECKLIST.md` (Completes still **MISSING**); Offline Complete still **MISSING**. Cookie + membership-scope + entitlement-gate flags default remain OFF (ops enable cutover).
+**As of tip:** `PENDING_FIXED_POINT` — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL** (automated VAPID wipe-via-push evidence + staging checklist; Completes still **MISSING**); ADR-005 membership **Complete** (flag default OFF — Complete ≠ prod default ON; store-scoped RBAC Complete still **MISSING**); paid billing **PARTIAL** (ADR-002 Phase E mock soak ready: portal + Checkout Session + signed webhook lifecycle + entitlement gate-ON allowlist evidence — Complete still **MISSING** / **ops-blocked** on live Stripe keys + staging soak; `PAID_BILLING_ENTITLEMENT_GATE_ENABLED` default **OFF**; `engineering_mock_soak_ready=true`; `paid_billing_complete_ops_blocked=true`); operator go-live readiness pack `docs/GO_LIVE_READINESS_CHECKLIST.md` (Completes still **MISSING**); Offline Complete still **MISSING**. Cookie + membership-scope + entitlement-gate flags default remain OFF (ops enable cutover).
 **Security:** no open Critical/High/Medium. Do not claim go-live Completes. Cookie + membership-scope flags OFF in prod examples are intentional until ops cutover (`docs/sec_m2_staging_soak_checklist.md`, `docs/adr005_staging_soak_checklist.md`). Offline push prod template stays fail-closed until `docs/offline_wipe_push_staging_checklist.md` browser proof. Entitlement gate prod default stays OFF until mirror→access evidence (`docs/PAID_BILLING_PROVIDER_OPS.md`). Operator roll-up: `docs/GO_LIVE_READINESS_CHECKLIST.md`.  
-**Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
+**Honesty:** never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never store-scoped RBAC Complete. ADR-005 membership **is Complete** (flag default OFF intentional).
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
 `/opt/cursor/artifacts/pr303_body_update.md` synchronized on the same tip SHA and
@@ -375,11 +372,9 @@ leave contradictory Complete/PARTIAL wording across those three surfaces.
    **ALLOW** (caller-scoped self-service; tenant-wide `/auth/tenant-sessions`
    denied; prefs bind to `claims.sub`). Secure versions proven by continuum
    tests — not company dumps / not Completes blockers.
-3. **ADR-005** user↔store membership **PARTIAL** (scaffold + admin UI + flag-gated
-   scope wire + cashier fail-closed + automated flag-ON soak; default OFF — see
-   `docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md` + `docs/adr005_staging_soak_checklist.md`;
-   Complete still **MISSING**; production default still ``stores.manager_id``).
-   **This remains the primary engineering gate for store-scoped RBAC Complete.**
+3. **Store-scoped RBAC Complete** still **MISSING** (separate continuum claim). ADR-005
+   membership is **Complete** (flag default OFF — Complete ≠ prod default ON; legacy
+   ``stores.manager_id`` when flag OFF). Ops enable: `docs/adr005_staging_soak_checklist.md`.
 
 ### Closed this continuum slice (still PARTIAL overall)
 
@@ -493,12 +488,9 @@ after `0107` in deploy order.
    from tables/webhook/portal skeleton alone.
 6. When `max_users_override` is set, plan changes do not overwrite
    `Tenant.max_users` until the override is cleared.
-7. **User↔store membership** is **PARTIAL** (ADR-005; `/stores#memberships`
-   admin UI + flag-gated `managed_store_ids` union when
-   `STORE_MEMBERSHIP_SCOPE_ENABLED`; cashiers fail-closed via `store_visibility_ids`;
-   automated flag-ON soak + `docs/adr005_staging_soak_checklist.md`; default OFF =
-   ``stores.manager_id`` only).
-   Do not claim membership Complete or production-default membership scope without evidence.
+7. **User↔store membership** is **Complete** (ADR-005; flag-gated scope; POS bind;
+   automated soak; default OFF until ops enable). Do not claim store-scoped RBAC
+   Complete or that production already runs with the membership-scope flag ON.
 
 ### Key modules
 

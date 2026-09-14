@@ -11,7 +11,7 @@
 
 Ribdigi ERP is a multi-tenant FastAPI + Next.js SaaS with shared-schema `tenant_id` isolation (ADR-001), JWT/API-key auth, RBAC, MFA, rate limits, and production config validators. Phase 1 found **no Critical** issues and **no committed production secrets**, but **five High** findings that block a production-ready claim: incomplete access-session binding, public metrics, a warehouse-stock tenant defense gap, spoofable rate-limit IPs via `X-Forwarded-For`, and CORS missing workspace headers. Phase 2 closed H1–H5. Phase 3a–3c closed **SEC-M1** (upload magic bytes), **SEC-M4** (dedicated Fernet keys), and **SEC-M3** (public tenant signup gate).
 
-**Overall status:** `✅ HARDENED` — Critical 0, High 0, Medium 0 open (**SEC-M1…M5 FIXED**; **SEC-L2 FIXED**; L1/L3 Accepted). Cookie sessions remain flag-gated (`AUTH_HTTPONLY_COOKIES_ENABLED` default **false**); enabling on staging/prod is an **ops cutover** step, not an open SEC finding. Go-live / Offline Complete / ADR-005 / paid billing remain **MISSING** per product policy.
+**Overall status:** `✅ HARDENED` — Critical 0, High 0, Medium 0 open (**SEC-M1…M5 FIXED**; **SEC-L2 FIXED**; L1/L3 Accepted). Cookie sessions remain flag-gated (`AUTH_HTTPONLY_COOKIES_ENABLED` default **false**); enabling on staging/prod is an **ops cutover** step, not an open SEC finding. Go-live / Offline Complete / store-scoped RBAC Complete / paid billing remain **MISSING** per product policy. ADR-005 membership is **Complete** (flag default OFF).
 
 | Severity | Open (Phase 1) | Notes |
 |----------|----------------|-------|
@@ -27,7 +27,7 @@ Ribdigi ERP is a multi-tenant FastAPI + Next.js SaaS with shared-schema `tenant_
 - Static review of backend auth (`security.py`), tenancy, uploads (`storage.py`), middleware, Compose/Helm prod templates, frontend auth storage.
 - Secrets: current tree + practical git history (tracked `.env`, PEM/key adds, credential regex on index).
 - Cross-check against ADR-001, `PRODUCTION_READINESS.md`, OWASP suites, PR #303 continuum leftovers.
-- **Out of scope for “complete” claims:** logo binary GET, `/auth/sessions`, `/notifications/settings`, ADR-005 membership (intentional PARTIAL).
+- **Out of scope for “complete” claims:** logo binary GET, `/auth/sessions`, `/notifications/settings` (intentional ALLOWs). ADR-005 membership is Complete (flag default OFF); store-scoped RBAC Complete still MISSING.
 
 ---
 
@@ -157,7 +157,7 @@ See Phase 1 artifact for SEC-M1…M5 and SEC-L1…L3 (uploads magic bytes, local
 
 ## Residual Risk / Intentional PARTIAL
 
-- PR #303 continuum: logo binary GET, `/auth/sessions`, `/notifications/settings`, ADR-005 — **intentional PARTIAL**, not treated as go-live Completes.
+- PR #303 continuum: logo binary GET, `/auth/sessions`, `/notifications/settings` — intentional ALLOWs, not go-live Completes. ADR-005 membership Complete (flag default OFF); store-scoped RBAC Complete still MISSING.
 - Offline Complete, paid billing (ADR-002), vendor pen-test / live ZAP — **MISSING**.
 - Schema-per-tenant remains deferred (ADR-001).
 
@@ -196,4 +196,4 @@ Allowed engagement shorthand: ✅ HARDENED · ⚠️ HIGH REMAINING · 🛑 CRIT
 
 **Rationale:** No Critical, High, or Medium findings remain open after Phase 2 (H1–H5) + Phase 3 (M1–M5, L2). **SEC-M2** closed via Phase E automated flag-ON soak (`test_sec_m2_cookie_soak.py`) covering login/2FA/refresh null JSON tokens + Set-Cookie, cookie+CSRF auth, logout/idle cookie clear, and SPA LS skip. Flag default stays **false** — production enable is an **ops cutover** step (not an open finding). See `docs/ADR_SESSION_COOKIE_DUAL_MODE.md`.
 
-Do **not** claim go-live / Offline Complete / 7-day VERIFIED / paid billing Complete / ADR-005 Complete / store-scoped RBAC Complete. Intentional product ALLOWs (logo binary GET; caller-scoped `/auth/sessions` + `/notifications/settings`) are not company dumps. ADR-005 + store-scoped RBAC Complete + go-live stay **MISSING** (not security Completes).
+Do **not** claim go-live / Offline Complete / 7-day VERIFIED / paid billing Complete / store-scoped RBAC Complete. Intentional product ALLOWs (logo binary GET; caller-scoped `/auth/sessions` + `/notifications/settings`) are not company dumps. ADR-005 membership is **Complete** (flag default OFF). Store-scoped RBAC Complete + go-live stay **MISSING** (not security Completes).

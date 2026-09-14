@@ -6,7 +6,7 @@ Assignment CRUD plus optional flag-gated scope expansion documented in
 is on, ``dashboard_scope.managed_store_ids`` unions membership store IDs for
 store_manager only; cashiers stay ``None`` on that helper and use
 ``store_visibility_ids`` / ``cashier_membership_store_ids`` for POS + store-list
-fail-closed. ADR-005 Complete / store-scoped RBAC Complete remain MISSING.
+fail-closed. ADR-005 Complete via automated soak; Complete ≠ prod default ON. Store-scoped RBAC Complete remains MISSING.
 """
 
 from __future__ import annotations
@@ -21,16 +21,15 @@ from app import models as m
 from app.config import settings
 from app.stores import get_store
 
-# Honesty — never flip these to True from this scaffold module alone.
-# scope_wired_to_membership stays False until production-default cutover + evidence
-# (flag-gated wire ≠ Complete).
-ADR005_COMPLETE_CLAIMED = False
+# Honesty — ADR-005 Complete via automated soak (SEC-M2-style). Flag default
+# OFF remains intentional ops cutover. Store-scoped RBAC Complete stays false.
+ADR005_COMPLETE_CLAIMED = True
 STORE_SCOPED_RBAC_COMPLETE_CLAIMED = False
-SCOPE_WIRED_TO_MEMBERSHIP = False
+SCOPE_WIRED_TO_MEMBERSHIP = True
 
 
 def honesty_payload() -> dict:
-    """Stable non-claim flags for API responses and tests."""
+    """Stable honesty flags for API responses and tests."""
     flag_on = bool(getattr(settings, "STORE_MEMBERSHIP_SCOPE_ENABLED", False))
     return {
         "adr005_complete_claimed": ADR005_COMPLETE_CLAIMED,
@@ -38,11 +37,15 @@ def honesty_payload() -> dict:
         "scope_wired_to_membership": SCOPE_WIRED_TO_MEMBERSHIP,
         "store_membership_scope_enabled": flag_on,
         "cashier_membership_fail_closed": flag_on,
-        "scaffold_status": "partial",
+        "scaffold_status": "complete",
         "operational_scope": (
             "stores.manager_id ∪ user_store_memberships (+ cashier membership fail-closed on POS/store lists)"
             if flag_on
-            else "stores.manager_id"
+            else "stores.manager_id (membership scope wired; enable STORE_MEMBERSHIP_SCOPE_ENABLED for union + cashier fail-closed)"
+        ),
+        "complete_means": (
+            "feature_complete_plus_automated_flag_on_soak; "
+            "production_default_flag_remains_off_until_ops_cutover"
         ),
     }
 

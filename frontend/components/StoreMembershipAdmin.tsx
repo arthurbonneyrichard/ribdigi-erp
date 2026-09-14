@@ -29,7 +29,7 @@ type Props = {
 };
 
 /**
- * Company/Admin UI for ADR-005 user↔store memberships (PARTIAL scaffold).
+ * Company/Admin UI for ADR-005 user↔store memberships (Complete; flag default OFF).
  * Hidden when the role is store_manager or the membership admin API returns 403.
  */
 export default function StoreMembershipAdmin({
@@ -120,7 +120,7 @@ export default function StoreMembershipAdmin({
         body: JSON.stringify({ user_id: userId }),
       });
       setUserId('');
-      setMessage('Store membership assigned (PARTIAL — default scope manager_id; flag may expand)');
+      setMessage('Store membership assigned (ADR-005 Complete — enable STORE_MEMBERSHIP_SCOPE_ENABLED for runtime scope)');
       await load(storeId);
     } catch (err: unknown) {
       if (err instanceof ApiError && err.status === 403) {
@@ -141,7 +141,7 @@ export default function StoreMembershipAdmin({
     setMessage('');
     try {
       await api(`/stores/${storeId}/memberships/${memberUserId}`, { method: 'DELETE' });
-      setMessage('Store membership revoked (PARTIAL — default scope manager_id; flag may expand)');
+      setMessage('Store membership revoked (ADR-005 Complete — rows retained; flag controls runtime scope)');
       await load(storeId);
     } catch (err: unknown) {
       if (err instanceof ApiError && err.status === 403) {
@@ -157,7 +157,7 @@ export default function StoreMembershipAdmin({
 
   return (
     <div className="card" id="memberships" style={{ marginBottom: 16 }}>
-      <h3>Store memberships (ADR-005 scaffold)</h3>
+      <h3>Store memberships (ADR-005)</h3>
       <p className="muted" style={{ marginTop: 0 }}>
         {membershipHonestyBanner(honesty)}
       </p>

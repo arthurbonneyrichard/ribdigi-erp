@@ -1,4 +1,4 @@
-"""Store-manager operational API scope hardening (manager_id; ADR-005 scaffold PARTIAL — Complete still MISSING)."""
+"""Store-manager operational API scope hardening (manager_id; ADR-005 Complete; flag default OFF — store-scoped RBAC Complete still MISSING)."""
 
 from __future__ import annotations
 

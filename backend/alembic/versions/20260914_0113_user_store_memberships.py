@@ -1,4 +1,4 @@
-"""ADR-005 user↔store membership table (scaffold — Complete still MISSING).
+"""ADR-005 user↔store membership table (Complete; flag default OFF).
 
 Revision ID: 20260914_0113
 Revises: 20260914_0112

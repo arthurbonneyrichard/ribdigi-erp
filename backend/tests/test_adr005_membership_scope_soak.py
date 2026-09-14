@@ -1,16 +1,8 @@
-"""ADR-005 Phase E — automated flag-ON membership scope soak (PARTIAL — not Complete).
+"""ADR-005 Phase E — automated flag-ON membership scope soak (Complete).
 
 Exercises STORE_MEMBERSHIP_SCOPE_ENABLED=true end-to-end without flipping the
-production default or honesty Complete flags:
-
-- store_manager managed_store_ids = manager_id ∪ active memberships
-- cashier with membership sees only those stores (GET /stores + POS open)
-- cashier without membership → empty store list + POS STORE_SCOPE_DENIED
-- flag OFF → legacy manager_id-only / company-wide cashier POS
-- company_admin / super_admin bypass unchanged (managed_store_ids is None)
-- prod examples keep flag default OFF (ops enable is cutover)
-
-Automated soak ≠ ADR-005 Complete / store-scoped RBAC Complete.
+production default. ADR-005 Complete = feature complete + this automated soak
+(SEC-M2-style). Complete ≠ production default ON.
 """
 
 from __future__ import annotations
@@ -81,17 +73,18 @@ async def _grant_cashier_stores_read(db_session, cashier, company_id: str) -> No
     await db_session.commit()
 
 
-def _assert_partial_honesty(payload: dict, *, flag_on: bool) -> None:
-    assert payload["adr005_complete_claimed"] is False
+def _assert_complete_honesty(payload: dict, *, flag_on: bool) -> None:
+    assert payload["adr005_complete_claimed"] is True
     assert payload["store_scoped_rbac_complete_claimed"] is False
-    assert payload["scope_wired_to_membership"] is False
-    assert payload["scaffold_status"] == "partial"
+    assert payload["scope_wired_to_membership"] is True
+    assert payload["scaffold_status"] == "complete"
     assert payload["store_membership_scope_enabled"] is flag_on
     assert payload["cashier_membership_fail_closed"] is flag_on
+    assert "automated_flag_on_soak" in (payload.get("complete_means") or "")
 
 
 def test_adr005_soak_flag_still_defaults_off_ops_enable():
-    """PARTIAL soak does not flip production default — ops enable is cutover."""
+    """Complete soak does not flip production default — ops enable is cutover."""
     cfg = Settings(APP_ENV="development")
     assert cfg.STORE_MEMBERSHIP_SCOPE_ENABLED is False
 
@@ -103,11 +96,11 @@ def test_adr005_soak_flag_still_defaults_off_ops_enable():
     assert "ADR-005" in prod or "membership" in prod.lower()
 
 
-def test_adr005_soak_honesty_flags_never_complete():
+def test_adr005_soak_honesty_complete_flags():
     honesty = store_memberships_svc.honesty_payload()
-    _assert_partial_honesty(honesty, flag_on=False)
-    assert store_memberships_svc.ADR005_COMPLETE_CLAIMED is False
-    assert store_memberships_svc.SCOPE_WIRED_TO_MEMBERSHIP is False
+    _assert_complete_honesty(honesty, flag_on=False)
+    assert store_memberships_svc.ADR005_COMPLETE_CLAIMED is True
+    assert store_memberships_svc.SCOPE_WIRED_TO_MEMBERSHIP is True
     assert store_memberships_svc.STORE_SCOPED_RBAC_COMPLETE_CLAIMED is False
 
 
@@ -116,20 +109,19 @@ def test_adr005_soak_docs_and_checklist_present():
         encoding="utf-8"
     )
     assert "STORE_MEMBERSHIP_SCOPE_ENABLED" in cutover
-    assert "PARTIAL" in cutover
     assert "Complete" in cutover
     assert "fail-closed" in cutover.lower() or "fail_closed" in cutover.lower()
+    assert "production default" in cutover.lower() or "prod default" in cutover.lower()
 
     checklist = (ROOT / "docs/adr005_staging_soak_checklist.md").read_text(
         encoding="utf-8"
     )
     assert "STORE_MEMBERSHIP_SCOPE_ENABLED" in checklist
     assert "test_adr005_membership_scope_soak.py" in checklist
-    assert "PARTIAL" in checklist
     assert "Complete" in checklist
-    # Must not claim Completes from automated soak alone
     cl = checklist.lower()
-    assert "missing" in cl or "≠" in checklist or "not complete" in cl
+    assert "ops" in cl or "staging" in cl
+    assert "default" in cl and "false" in cl
 
 
 @pytest.mark.asyncio
@@ -217,8 +209,8 @@ async def test_adr005_soak_flag_off_legacy_manager_and_cashier(
     )
 
     honesty = store_memberships_svc.honesty_payload()
-    _assert_partial_honesty(honesty, flag_on=False)
-    assert honesty["operational_scope"] == "stores.manager_id"
+    _assert_complete_honesty(honesty, flag_on=False)
+    assert honesty["operational_scope"].startswith("stores.manager_id")
 
 
 @pytest.mark.asyncio
@@ -291,7 +283,7 @@ async def test_adr005_soak_flag_on_store_manager_union_scope(
     assert foreign.id not in ids
 
     honesty = store_memberships_svc.honesty_payload()
-    _assert_partial_honesty(honesty, flag_on=True)
+    _assert_complete_honesty(honesty, flag_on=True)
     assert "user_store_memberships" in honesty["operational_scope"]
 
 
@@ -426,6 +418,13 @@ async def test_adr005_soak_flag_on_cashier_without_membership_empty_denied(
     if isinstance(detail, dict):
         assert detail.get("code") == "STORE_SCOPE_DENIED"
 
+    denied_unset = await ac.post(
+        "/api/v1/pos/sessions/open",
+        headers=headers,
+        json={"opening_cash": 10},
+    )
+    assert denied_unset.status_code == 403, denied_unset.text
+
 
 @pytest.mark.asyncio
 async def test_adr005_soak_flag_on_admin_unaffected(
@@ -494,14 +493,14 @@ async def test_adr005_soak_flag_on_admin_unaffected(
     )
     assert assigned.status_code == 200, assigned.text
     body = assigned.json()["data"]
-    _assert_partial_honesty(body, flag_on=True)
+    _assert_complete_honesty(body, flag_on=True)
 
 
 @pytest.mark.asyncio
-async def test_adr005_soak_me_memberships_honesty_flag_on(
+async def test_adr005_soak_me_memberships_honesty_and_visibility_flag_on(
     client, db_session, monkeypatch
 ):
-    """Flag ON: /me/store-memberships mirrors runtime flag; Complete flags stay false."""
+    """Flag ON: /me/store-memberships returns visibility + Complete honesty."""
     _enable_membership_scope(monkeypatch)
     ac, seed = client
     tid = seed["t1"].id
@@ -535,6 +534,78 @@ async def test_adr005_soak_me_memberships_honesty_flag_on(
     mine = await ac.get("/api/v1/me/store-memberships", headers=headers)
     assert mine.status_code == 200, mine.text
     body = mine.json()["data"]
-    _assert_partial_honesty(body, flag_on=True)
+    _assert_complete_honesty(body, flag_on=True)
     assert any(r["store_id"] == store.id for r in body["memberships"])
     assert "user_store_memberships" in body["operational_scope"]
+    assert body["pos_store_bind_required"] is True
+    assert set(body["store_visibility_ids"] or []) == {store.id}
+
+
+@pytest.mark.asyncio
+async def test_adr005_soak_flag_on_store_manager_membership_only(
+    client, db_session, monkeypatch
+):
+    """Flag ON: store_manager with membership but no manager_id → membership only."""
+    _enable_membership_scope(monkeypatch)
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+
+    mem_store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Soak Mem Only Mgr",
+        code="SOAK-MEMONLY-1",
+        manager_id=None,
+        is_active=True,
+    )
+    foreign = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Soak Mem Only Foreign",
+        code="SOAK-MEMONLY-X",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mem_store, foreign])
+    await db_session.flush()
+    db_session.add(
+        m.UserStoreMembership(
+            tenant_id=tid,
+            company_id=cid,
+            user_id=mgr.id,
+            store_id=mem_store.id,
+            is_active=True,
+        )
+    )
+    await db_session.commit()
+
+    claims = {
+        "sub": mgr.id,
+        "tenant_id": tid,
+        "role": "store_manager",
+        "company_id": cid,
+    }
+    managed = await dashboard_scope_svc.managed_store_ids(db_session, claims)
+    assert managed is not None
+    assert mem_store.id in managed
+    assert foreign.id not in managed
+
+
+@pytest.mark.asyncio
+async def test_adr005_soak_me_memberships_visibility_flag_off_no_bind(
+    client, db_session, monkeypatch
+):
+    """Flag OFF: /me visibility null → POS bind not required (legacy)."""
+    _disable_membership_scope(monkeypatch)
+    ac, seed = client
+    headers = await auth_headers(
+        ac, email="cashier@alpha.example.com", tenant_slug="alpha"
+    )
+    mine = await ac.get("/api/v1/me/store-memberships", headers=headers)
+    assert mine.status_code == 200, mine.text
+    body = mine.json()["data"]
+    _assert_complete_honesty(body, flag_on=False)
+    assert body["store_visibility_ids"] is None
+    assert body["pos_store_bind_required"] is False

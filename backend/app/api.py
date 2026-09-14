@@ -2542,11 +2542,15 @@ async def me_store_memberships(
     claims=Depends(current_claims),
     db: AsyncSession = Depends(get_db),
 ):
-    """List the caller's active user↔store memberships (ADR-005 scaffold).
+    """List the caller's active user↔store memberships (ADR-005 Complete).
 
-    Assignment listing only — does not change operational store scope
-    (``stores.manager_id``). ADR-005 Complete remains MISSING.
+    Also returns ``store_visibility_ids`` for POS bind UX: ``null`` = tenant-wide
+    (no bind required); a list (possibly empty) means POS open must use an
+    in-scope ``store_id``. Runtime flag may still be OFF — Complete ≠ prod
+    default ON (see ``docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md``).
     """
+    from app import dashboard_scope as dashboard_scope_svc
+
     rows = await store_memberships_svc.list_user_store_memberships(
         db,
         tenant_id=claims["tenant_id"],
@@ -2554,10 +2558,14 @@ async def me_store_memberships(
         company_id=claims.get("company_id"),
         active_only=True,
     )
+    visibility = await dashboard_scope_svc.store_visibility_ids(db, claims)
+    honesty = store_memberships_svc.honesty_payload()
     return env(
         {
             "memberships": rows,
-            **store_memberships_svc.honesty_payload(),
+            "store_visibility_ids": visibility,
+            "pos_store_bind_required": visibility is not None,
+            **honesty,
         }
     )
 
@@ -3302,6 +3310,9 @@ async def create_custom_role(
             base_role=payload.base_role,
             permissions=payload.permissions,
             record_scope=payload.record_scope,
+            grantor_permissions=claims.get("permissions")
+            if isinstance(claims.get("permissions"), dict)
+            else None,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -3316,7 +3327,7 @@ async def create_custom_role(
         details={"slug": row.slug, "label": row.label},
     )
     await db.commit()
-    return env(roles_svc.serialize_custom_role(row), "Custom role created")
+    return env(roles_svc.role_payload_with_hardening(row), "Custom role created")
 
 
 @api.patch("/roles/{role}")
@@ -3346,6 +3357,9 @@ async def update_custom_role(
             permissions=payload.permissions,
             record_scope=payload.record_scope,
             is_active=payload.is_active,
+            grantor_permissions=claims.get("permissions")
+            if isinstance(claims.get("permissions"), dict)
+            else None,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -3360,7 +3374,7 @@ async def update_custom_role(
         details={"slug": row.slug},
     )
     await db.commit()
-    return env(roles_svc.serialize_custom_role(row), "Custom role updated")
+    return env(roles_svc.role_payload_with_hardening(row), "Custom role updated")
 
 
 @api.put("/roles/{role}/permissions")
@@ -3387,6 +3401,9 @@ async def put_custom_role_permissions(
             slug=role,
             permissions=payload.permissions,
             record_scope=payload.record_scope,
+            grantor_permissions=claims.get("permissions")
+            if isinstance(claims.get("permissions"), dict)
+            else None,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -3401,7 +3418,7 @@ async def put_custom_role_permissions(
         details={"slug": row.slug},
     )
     await db.commit()
-    return env(roles_svc.serialize_custom_role(row), "Role permissions updated")
+    return env(roles_svc.role_payload_with_hardening(row), "Role permissions updated")
 
 
 @api.delete("/roles/{role}")
@@ -3989,6 +4006,12 @@ async def update_user(
         if user.id == claims["sub"] and new_role != user.role:
             raise HTTPException(status_code=400, detail="Cannot change your own role")
         if user.role != new_role:
+            await roles_svc.assert_owner_lockout_safe(
+                db,
+                tenant_id=claims["tenant_id"],
+                target=user,
+                new_role=new_role,
+            )
             changes["role"] = {"from": user.role, "to": new_role}
             prev_scope = None
             if isinstance(user.permissions, dict):
@@ -4016,6 +4039,13 @@ async def update_user(
                 if not tenant:
                     raise HTTPException(status_code=404, detail="Tenant not found")
                 await store_ent_svc.assert_can_reactivate_user(db, tenant=tenant, user=user)
+            if user.is_active and not payload.is_active:
+                await roles_svc.assert_owner_lockout_safe(
+                    db,
+                    tenant_id=claims["tenant_id"],
+                    target=user,
+                    deactivating=True,
+                )
             user.is_active = bool(payload.is_active)
             changes["is_active"] = user.is_active
             if not user.is_active:
@@ -4148,6 +4178,12 @@ async def deactivate_user(
         raise HTTPException(status_code=400, detail="Cannot deactivate your own account")
     if not user.is_active:
         return env(serialize_user(user), "User already inactive")
+    await roles_svc.assert_owner_lockout_safe(
+        db,
+        tenant_id=claims["tenant_id"],
+        target=user,
+        deactivating=True,
+    )
     user.is_active = False
     revoked = await _revoke_user_sessions(db, tenant_id=claims["tenant_id"], user_id=user.id)
     await audit_svc.record_event(
@@ -17326,7 +17362,7 @@ async def assign_store_membership(
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Assign or reactivate a user on a store (ADR-005 scaffold — scope still manager_id)."""
+    """Assign or reactivate a user on a store (ADR-005 Complete; flag-gated scope)."""
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
@@ -17348,6 +17384,7 @@ async def assign_store_membership(
     store = await stores_svc.get_store(
         db, claims["tenant_id"], store_id, company_id=claims.get("company_id")
     )
+    honesty = store_memberships_svc.honesty_payload()
     await audit_svc.record_event(
         db,
         tenant_id=claims["tenant_id"],
@@ -17359,14 +17396,15 @@ async def assign_store_membership(
         details={
             "store_id": store_id,
             "member_user_id": user_id,
-            "adr005_complete_claimed": False,
+            "adr005_complete_claimed": honesty["adr005_complete_claimed"],
+            "scope_wired_to_membership": honesty["scope_wired_to_membership"],
         },
         company_id=row.company_id,
     )
     await db.commit()
     return env(
         store_memberships_svc.serialize_membership(row, user=user, store=store),
-        "Store membership assigned (ADR-005 scaffold; scope still manager_id)",
+        "Store membership assigned (ADR-005 Complete; enable STORE_MEMBERSHIP_SCOPE_ENABLED for scope)",
     )
 
 
@@ -17377,7 +17415,7 @@ async def revoke_store_membership(
     claims=Depends(require_permission("stores", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Deactivate a user↔store membership (ADR-005 scaffold — not Complete)."""
+    """Deactivate a user↔store membership (ADR-005 Complete; flag-gated scope)."""
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
@@ -17392,6 +17430,7 @@ async def revoke_store_membership(
         user_id=user_id,
         company_id=claims.get("company_id"),
     )
+    honesty = store_memberships_svc.honesty_payload()
     await audit_svc.record_event(
         db,
         tenant_id=claims["tenant_id"],
@@ -17403,14 +17442,15 @@ async def revoke_store_membership(
         details={
             "store_id": store_id,
             "member_user_id": user_id,
-            "adr005_complete_claimed": False,
+            "adr005_complete_claimed": honesty["adr005_complete_claimed"],
+            "scope_wired_to_membership": honesty["scope_wired_to_membership"],
         },
         company_id=row.company_id,
     )
     await db.commit()
     return env(
         store_memberships_svc.serialize_membership(row),
-        "Store membership revoked (ADR-005 scaffold; scope still manager_id)",
+        "Store membership revoked (ADR-005 Complete; enable STORE_MEMBERSHIP_SCOPE_ENABLED for scope)",
     )
 
 

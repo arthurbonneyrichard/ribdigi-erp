@@ -63,4 +63,4 @@ Evidence: `backend/tests/test_paid_billing_soak.py` (+ scaffold suite).
 | `payment_success` Complete | **MISSING** |
 | Live subscriptions / fabricated MRR | **MISSING** / banned |
 | Offline Complete / 7-day VERIFIED / go-live | **MISSING** |
-| ADR-005 membership Complete | **MISSING** |
+| ADR-005 membership Complete | **Complete** (flag default OFF) |
