@@ -25,11 +25,15 @@ async def _super(ac, seed):
 
 
 def test_permission_dependencies_auto_add_read():
-    out = ensure_permission_dependencies({"inventory": ["write"], "expenses": ["approve"]})
+    out = ensure_permission_dependencies(
+        {"inventory": ["write"], "expenses": ["approve"], "reports": ["export"]}
+    )
     assert "read" in out["inventory"]
     assert "write" in out["inventory"]
     assert "read" in out["expenses"]
     assert "approve" in out["expenses"]
+    assert "read" in out["reports"]
+    assert "export" in out["reports"]
 
 
 def test_grantor_subset_blocks_escalation():

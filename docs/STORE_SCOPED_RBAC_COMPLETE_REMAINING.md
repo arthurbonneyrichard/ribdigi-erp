@@ -31,7 +31,7 @@ Honesty flags (`GET /me/store-memberships` etc.):
 Engineering (closable without ops theater):
 
 1. **Residual continuum field leaks** — only as product-prioritized slices (paused as default CONTINUE path; not dump spam). Empty backlog or explicit ALLOW list with product sign-off.
-2. **First-class `export` / `view_cost` actions** — engine still `read`/`write`/`approve`/`*` only; export/cost splits remain helper-based (**PARTIAL**). Either first-class actions wired end-to-end **or** documented permanent helper model + matrix evidence.
+2. **First-class `export` / `view_cost` actions** — **PARTIAL (engine landed)**: `ALLOWED_ACTIONS` includes `export`/`view_cost`; system roles granted appropriately (`store_manager` has scoped `export`, no `view_cost`); deps auto-add `read`; key backends wired (`/products/export`, variants exports, `/inventory/low-stock/export`, `/sales/invoices/export`, `/reports/export` + product cost redact via `inventory:view_cost`). Remaining: broader export path coverage + report/BI/AI cost omit helpers still dual-path (permission + legacy managed/WH heuristics).
 3. **Living store-scope test matrix** — single indexed suite covering modules claimed Complete (not only `test_store_scope_ops_hardening.py` growth).
 4. **Temp membership / elevation / break-glass** — still **MISSING** (optional for store-scope Complete if product scopes Complete without them; still blocks overall RBAC Complete).
 5. **Concurrent approval stress pack** — still **MISSING** (overall RBAC; not strictly store-scope).
@@ -48,6 +48,7 @@ Do **not** mark store-scoped RBAC Complete from:
 - ADR-005 automated soak alone
 - Continuum dump redacts without product Complete criteria
 - Overall RBAC approval hardening (owner lockout / grantor subset / % limits / etc.)
+- First-class `export`/`view_cost` engine slice alone
 
 ## Related Completes still MISSING / PARTIAL
 
@@ -62,7 +63,7 @@ Do **not** mark store-scoped RBAC Complete from:
 
 Prefer engine Completes over continuum dumps:
 
-1. First-class `export` / `view_cost` (or permanent helper-model ADR + matrix evidence)
+1. ~~First-class `export` / `view_cost`~~ → broaden export gates + unify report/BI/AI cost omit on `view_cost` (finish PARTIAL)
 2. Temporary membership `expires_at` / elevation / break-glass (smallest temp-access MVP)
 3. Concurrent approval stress pack
 4. Only resume store_manager field-leak continuum when product prioritizes a named surface

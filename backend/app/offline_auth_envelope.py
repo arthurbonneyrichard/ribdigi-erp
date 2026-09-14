@@ -59,7 +59,7 @@ def snapshot_permissions(
     out: dict[str, list[str]] = {}
     if base.get("*") == ["*"] or (isinstance(base.get("*"), list) and "*" in (base.get("*") or [])):
         for mod in OFFLINE_PERMISSION_MODULES:
-            out[mod] = ["read", "write", "approve"]
+            out[mod] = ["read", "write", "approve", "export", "view_cost"]
         return out
     for mod in OFFLINE_PERMISSION_MODULES:
         actions = base.get(mod)

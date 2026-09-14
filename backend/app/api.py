@@ -4994,7 +4994,7 @@ async def products(
         company_id=cid,
         warehouse_ids=managed_wh,
     )
-    if dashboard_scope_svc.omit_product_cost_price(managed):
+    if dashboard_scope_svc.omit_product_cost_price(managed, claims=claims):
         payload = [dashboard_scope_svc.redact_product_cost_price(row) for row in payload]
     if dashboard_scope_svc.omit_product_catalog_assignment(managed):
         payload = [
@@ -5055,7 +5055,7 @@ async def products_import_template(
 
 @api.get("/products/export")
 async def products_export(
-    claims=Depends(require_permission("inventory", "read")),
+    claims=Depends(require_permission("inventory", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 118 E1 — catalog CSV export aligned with the product import template columns."""
@@ -5069,7 +5069,7 @@ async def products_export(
         tenant_id=claims["tenant_id"],
         company_id=claims.get("company_id"),
         warehouse_ids=managed_wh,
-        omit_cost_price=dashboard_scope_svc.omit_product_cost_price(managed),
+        omit_cost_price=dashboard_scope_svc.omit_product_cost_price(managed, claims=claims),
         omit_catalog_codes=dashboard_scope_svc.omit_product_catalog_assignment(managed),
     )
     return Response(
@@ -5319,7 +5319,7 @@ async def get_product(
         warehouse_ids=managed_wh,
     )
     row = payload[0]
-    if dashboard_scope_svc.omit_product_cost_price(managed):
+    if dashboard_scope_svc.omit_product_cost_price(managed, claims=claims):
         row = dashboard_scope_svc.redact_product_cost_price(row)
     if dashboard_scope_svc.omit_product_catalog_assignment(managed):
         row = dashboard_scope_svc.redact_product_catalog_assignment(row)
@@ -6260,7 +6260,7 @@ async def lowstock(
         company_id=claims.get("company_id"),
         warehouse_ids=managed_wh,
     )
-    if dashboard_scope_svc.omit_product_cost_price(managed):
+    if dashboard_scope_svc.omit_product_cost_price(managed, claims=claims):
         out = [dashboard_scope_svc.redact_product_cost_price(row) for row in out]
     return env(out)
 
@@ -6268,7 +6268,7 @@ async def lowstock(
 @api.get("/inventory/low-stock/export")
 async def export_low_stock_csv(
     stock_status: str | None = None,
-    claims=Depends(require_permission("inventory", "read")),
+    claims=Depends(require_permission("inventory", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 137 L1 — low-stock alert CSV; store_manager WH-scoped."""
@@ -6282,7 +6282,7 @@ async def export_low_stock_csv(
         stock_status=stock_status,
         company_id=claims.get("company_id"),
         warehouse_ids=managed_wh,
-        omit_cost_price=dashboard_scope_svc.omit_product_cost_price(managed),
+        omit_cost_price=dashboard_scope_svc.omit_product_cost_price(managed, claims=claims),
     )
     return Response(
         content=text,
@@ -6987,7 +6987,7 @@ async def products_variants_export(
     product_id: str | None = None,
     active_only: bool = False,
     is_active: bool | None = None,
-    claims=Depends(require_permission("inventory", "read")),
+    claims=Depends(require_permission("inventory", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 124 X1 — product variants CSV export."""
@@ -7032,7 +7032,7 @@ async def list_product_variants(
     )
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     serialized = [catalog_svc.serialize_variant(v) for v in rows]
-    if dashboard_scope_svc.omit_product_cost_price(managed):
+    if dashboard_scope_svc.omit_product_cost_price(managed, claims=claims):
         serialized = [
             dashboard_scope_svc.redact_product_cost_price(row) for row in serialized
         ]
@@ -7044,7 +7044,7 @@ async def export_product_variants(
     product_id: str,
     active_only: bool = False,
     is_active: bool | None = None,
-    claims=Depends(require_permission("inventory", "read")),
+    claims=Depends(require_permission("inventory", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 156 V1 — path-scoped per-product variants CSV (distinct from Stage 124 roster)."""
@@ -7066,7 +7066,7 @@ async def export_product_variants(
         product_id=product_id,
         is_active=is_active,
         active_only=active_only,
-        omit_cost_price=dashboard_scope_svc.omit_product_cost_price(managed),
+        omit_cost_price=dashboard_scope_svc.omit_product_cost_price(managed, claims=claims),
     )
     return Response(
         content=text,
@@ -8659,7 +8659,7 @@ async def list_sales_invoices(
 async def export_sales_invoices_csv(
     status: str | None = None,
     store_id: str | None = None,
-    claims=Depends(require_permission("sales", "read")),
+    claims=Depends(require_permission("sales", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 132 I1 — sales invoice header CSV (no line dump); store_manager scoped."""
@@ -15135,7 +15135,7 @@ async def reports_export(
     scope: str | None = None,
     limit: int | None = None,
     compare: bool = False,
-    claims=Depends(require_permission("reports", "read")),
+    claims=Depends(require_permission("reports", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     from app import dashboard_scope as dashboard_scope_svc

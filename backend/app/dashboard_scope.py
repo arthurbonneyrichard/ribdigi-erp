@@ -4061,20 +4061,31 @@ def assert_company_level_product_master_write_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
-def omit_product_cost_price(managed_ids: list[str] | None) -> bool:
-    """True when store_manager must omit catalog ``cost_price`` on JSON/CSV.
+def omit_product_cost_price(
+    managed_ids: list[str] | None,
+    claims: dict | None = None,
+) -> bool:
+    """True when caller must omit catalog ``cost_price`` on JSON/CSV.
+
+    First-class ``inventory:view_cost`` is authoritative when ``claims`` is
+    provided (store_manager system role omits view_cost by default). Legacy
+    fallback: ``managed_ids is not None`` (store-scoped manager path).
 
     Product master writes already denied; catalog list/get and per-product
-    variants must not dump company COGS. Selling price + WH stock remain for POS.
-    Company ``GET /products/export`` is denied for store_manager separately.
-    Inventory balance/valuation report cost fields are redacted separately via
-    ``redact_inventory_report_cost`` when ``warehouse_ids`` is set. Low-stock
-    alert list/export also omit ``cost_price`` via this helper. AI dead-stock
-    JSON/CSV omit ``cost_price`` / carrying-cost via ``redact_ai_dead_stock_cost``
-    when ``warehouse_ids`` is set. Stock-count variance reports omit
-    ``unit_cost`` / ``variance_value`` via ``redact_stock_count_variance_cost``
-    when ``warehouse_ids`` is set.
+    variants must not dump company COGS without view_cost. Selling price + WH
+    stock remain for POS. Company ``GET /products/export`` is denied for
+    store_manager separately. Inventory balance/valuation report cost fields
+    are redacted separately via ``redact_inventory_report_cost`` when
+    ``warehouse_ids`` is set. Low-stock alert list/export also omit
+    ``cost_price`` via this helper. AI dead-stock JSON/CSV omit ``cost_price`` /
+    carrying-cost via ``redact_ai_dead_stock_cost`` when ``warehouse_ids`` is
+    set. Stock-count variance reports omit ``unit_cost`` / ``variance_value``
+    via ``redact_stock_count_variance_cost`` when ``warehouse_ids`` is set.
     """
+    if claims is not None:
+        from app.rbac import claims_has_permission
+
+        return not claims_has_permission(claims, "inventory", "view_cost")
     return managed_ids is not None
 
 

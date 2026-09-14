@@ -221,13 +221,15 @@ export default function AdminPermissionsPage() {
                     <th>read</th>
                     <th>write</th>
                     <th>approve</th>
+                    <th>export</th>
+                    <th>view_cost</th>
                   </tr>
                 </thead>
                 <tbody>
                   {MODULES.map((mod) => (
                     <tr key={mod}>
                       <td>{mod}</td>
-                      {(['read', 'write', 'approve'] as const).map((action) => (
+                      {(['read', 'write', 'approve', 'export', 'view_cost'] as const).map((action) => (
                         <td key={action}>
                           <input
                             type="checkbox"
@@ -278,9 +280,9 @@ export default function AdminPermissionsPage() {
         <div className="card" style={{ marginTop: 24 }}>
           <h2 style={{ fontSize: 18 }}>Permission matrix · {editRole}</h2>
           <p className="muted" style={{ marginBottom: 12 }}>
-            Write/approve always includes read on save. Grants beyond your own permissions are
-            rejected by the API. High-risk modules (users, backup, accounting, credit, …) show
-            warnings below.
+            Write/approve/export/view_cost always includes read on save. Grants beyond your own
+            permissions are rejected by the API. High-risk modules (users, backup, accounting,
+            credit, …) show warnings below.
           </p>
           {(() => {
             const dangerous = Object.keys(matrix).filter((m) =>
@@ -320,13 +322,15 @@ export default function AdminPermissionsPage() {
                 <th>read</th>
                 <th>write</th>
                 <th>approve</th>
+                <th>export</th>
+                <th>view_cost</th>
               </tr>
             </thead>
             <tbody>
               {MODULES.map((mod) => (
                 <tr key={mod}>
                   <td>{mod}</td>
-                  {(['read', 'write', 'approve'] as const).map((action) => (
+                  {(['read', 'write', 'approve', 'export', 'view_cost'] as const).map((action) => (
                     <td key={action}>
                       <input
                         type="checkbox"

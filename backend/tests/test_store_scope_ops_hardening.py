@@ -2016,7 +2016,8 @@ async def test_store_manager_low_stock_cost_price_redacted(client, db_session):
     product = seed["p1"]
 
     perms = dict(permissions_for_role("store_manager"))
-    perms["inventory"] = ["read"]
+    # read+export without view_cost — proves cost redact is permission-based, not export-gated
+    perms["inventory"] = ["read", "export"]
     mgr.permissions = perms
     mem = (
         await db_session.execute(

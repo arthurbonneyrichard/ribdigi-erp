@@ -11,6 +11,21 @@
 
 ---
 
+### Tip — first-class export / view_cost RBAC actions (2026-09-15)
+
+**As of tip:** _(updated after commit)_
+
+First-class `export` and `view_cost` actions landed in the RBAC engine
+(`ALLOWED_ACTIONS` + system role grants + dependency auto-`read`). Backend
+enforcement on key surfaces: product/variants/low-stock exports, sales invoice
+export, reports export; product catalog cost redact uses `inventory:view_cost`.
+ADR-005 remains **Complete** (flag default OFF). Overall RBAC readiness remains
+**PARTIAL**. Store-scoped RBAC Complete remains **MISSING** — see
+`docs/STORE_SCOPED_RBAC_COMPLETE_REMAINING.md`. Offline / 7-day / go-live / paid
+billing Completes remain **MISSING**.
+
+---
+
 ### Tip — % approval limits + store-scoped RBAC remaining checklist (2026-09-15)
 
 **As of tip:** `55f325010052768e9881d90e9b7f9f68c9ab1d60`

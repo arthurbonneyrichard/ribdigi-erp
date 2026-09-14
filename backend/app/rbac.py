@@ -51,61 +51,62 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "security": ["read", "write"],
     },
     "store_manager": {
-        "dashboard": ["read"],
-        "inventory": ["read", "write"],
-        "sales": ["read", "write"],
-        "pos": ["read", "write"],
-        "purchasing": ["read", "write", "approve"],
-        "expenses": ["read", "write", "approve"],
-        "accounting": ["read"],
-        "credit": ["read", "write", "approve"],
-        "tax": ["read"],
+        # export: scoped CSV/report dumps allowed; view_cost withheld (COGS redacted).
+        "dashboard": ["read", "export"],
+        "inventory": ["read", "write", "export"],
+        "sales": ["read", "write", "export"],
+        "pos": ["read", "write", "export"],
+        "purchasing": ["read", "write", "approve", "export"],
+        "expenses": ["read", "write", "approve", "export"],
+        "accounting": ["read", "export"],
+        "credit": ["read", "write", "approve", "export"],
+        "tax": ["read", "export"],
         "stores": ["read", "write"],
-        "reports": ["read"],
+        "reports": ["read", "export"],
         "notifications": ["read", "write"],
         "users": ["read"],
         "audit": ["read"],
-        "ai": ["read", "write"],
-        "business_insights": ["read", "write"],
+        "ai": ["read", "write", "export"],
+        "business_insights": ["read", "write", "export"],
         "security": ["read", "write"],
     },
     "sales_officer": {
-        "dashboard": ["read"],
+        "dashboard": ["read", "export"],
         "inventory": ["read"],
-        "sales": ["read", "write"],
-        "pos": ["read", "write"],
-        "credit": ["read", "write"],
-        "customers": ["read", "write"],
-        "reports": ["read"],
+        "sales": ["read", "write", "export"],
+        "pos": ["read", "write", "export"],
+        "credit": ["read", "write", "export"],
+        "customers": ["read", "write", "export"],
+        "reports": ["read", "export"],
         "notifications": ["read", "write"],
         "ai": ["read"],
         "business_insights": ["read"],
         "security": ["read", "write"],
     },
     "inventory_officer": {
-        "dashboard": ["read"],
-        "inventory": ["read", "write"],
-        "purchasing": ["read", "write"],
-        "suppliers": ["read", "write"],
-        "reports": ["read"],
+        "dashboard": ["read", "export"],
+        "inventory": ["read", "write", "export", "view_cost"],
+        "purchasing": ["read", "write", "export", "view_cost"],
+        "suppliers": ["read", "write", "export"],
+        "reports": ["read", "export", "view_cost"],
         "notifications": ["read", "write"],
         "ai": ["read"],
         "business_insights": ["read"],
         "security": ["read", "write"],
     },
     "accountant": {
-        "dashboard": ["read"],
-        "inventory": ["read"],
-        "sales": ["read"],
-        "purchasing": ["read"],
-        "expenses": ["read", "write", "approve"],
-        "accounting": ["read", "write"],
-        "credit": ["read", "write", "approve"],
-        "tax": ["read", "write"],
-        "reports": ["read"],
+        "dashboard": ["read", "export"],
+        "inventory": ["read", "export", "view_cost"],
+        "sales": ["read", "export"],
+        "purchasing": ["read", "export", "view_cost"],
+        "expenses": ["read", "write", "approve", "export"],
+        "accounting": ["read", "write", "export", "view_cost"],
+        "credit": ["read", "write", "approve", "export"],
+        "tax": ["read", "write", "export"],
+        "reports": ["read", "export", "view_cost"],
         "notifications": ["read", "write"],
         "ai": ["read"],
-        "business_insights": ["read", "write"],
+        "business_insights": ["read", "write", "export", "view_cost"],
         "audit": ["read"],
         "security": ["read", "write"],
     },
@@ -209,7 +210,8 @@ SYSTEM_MODULES = frozenset(
         "platform_settings",
     }
 )
-ALLOWED_ACTIONS = frozenset({"read", "write", "approve", "*"})
+# First-class actions: read/write/approve plus export (CSV/dumps) and view_cost (COGS/margin).
+ALLOWED_ACTIONS = frozenset({"read", "write", "approve", "export", "view_cost", "*"})
 _MODULE_KEY_RE = re.compile(r"^[a-z][a-z0-9_]{0,39}$")
 # Stage 84 A1 — common dotted/colon aliases → canonical actions
 _ACTION_ALIASES = {
@@ -218,6 +220,10 @@ _ACTION_ALIASES = {
     "update": "write",
     "create": "write",
     "delete": "write",
+    "cost": "view_cost",
+    "viewcost": "view_cost",
+    "csv": "export",
+    "download": "export",
 }
 
 
@@ -586,13 +592,16 @@ def is_wildcard_admin(permissions: dict | None) -> bool:
     return star == ["*"] or "*" in list(star)
 
 
+_IMPLIES_READ = frozenset({"write", "approve", "export", "view_cost", "*"})
+
+
 def ensure_permission_dependencies(
     raw: dict | None,
     *,
     allow_wildcard: bool = False,
     allow_platform_modules: bool = False,
 ) -> dict[str, list[str]]:
-    """Normalize map and ensure write/approve imply stored ``read``.
+    """Normalize map and ensure write/approve/export/view_cost imply stored ``read``.
 
     Raises ValueError on invalid input (via normalize_permissions_map).
     """
@@ -610,7 +619,7 @@ def ensure_permission_dependencies(
         for a in acts:
             if a not in cleaned:
                 cleaned.append(a)
-        if ("write" in cleaned or "approve" in cleaned or "*" in cleaned) and "read" not in cleaned:
+        if any(a in _IMPLIES_READ for a in cleaned) and "read" not in cleaned:
             cleaned.insert(0, "read")
         if cleaned:
             out[module] = cleaned
@@ -634,11 +643,21 @@ def validate_permission_dependencies(raw: dict | None) -> list[str]:
             acts = []
         if dotted:
             acts = list(dotted) + acts
-        if ("write" in acts or "approve" in acts or "*" in acts) and "read" not in acts:
+        if any(a in _IMPLIES_READ for a in acts) and "read" not in acts:
             issues.append(
-                f"Module '{module}': write/approve requires read (will be auto-added on save)"
+                f"Module '{module}': write/approve/export/view_cost requires read "
+                "(will be auto-added on save)"
             )
     return issues
+
+
+def claims_has_permission(claims: dict | None, module: str, action: str) -> bool:
+    """Check module/action against JWT/API claims (role + permissions overrides)."""
+    if not isinstance(claims, dict):
+        return False
+    role = claims.get("role") or ""
+    overrides = claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
+    return has_permission(role, module, action, overrides=overrides)
 
 
 def permissions_within_grantor(
