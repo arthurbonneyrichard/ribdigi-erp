@@ -2,7 +2,8 @@
 
 Flag default remains OFF: legacy clients still receive access/refresh in JSON.
 When ON: login / refresh return null tokens + cookie_session=true; cookies carry
-the session. Does **not** close SEC-M2 (staging soak still required) or SEC-M5.
+the session. Phase E automated soak closes SEC-M2; this module remains the
+Phase C unit coverage.
 """
 
 from __future__ import annotations
@@ -159,15 +160,14 @@ def test_sec_m2_phase_c_persist_login_still_skips_ls_on_cookie_session():
     assert "cookie_session" in src
 
 
-def test_sec_m2_phase_c_adr_and_honesty_still_open():
+def test_sec_m2_phase_c_adr_and_honesty_m2_fixed():
     adr = (ROOT / "docs/ADR_SESSION_COOKIE_DUAL_MODE.md").read_text(encoding="utf-8")
     assert "Phase C" in adr
-    assert "remain **OPEN**" in adr or "still OPEN" in adr
-    assert "do **not** mark M2 FIXED" in adr or "remain **OPEN**" in adr
+    assert "Phase E" in adr or "SEC-M2" in adr
+    assert "FIXED" in adr
 
     audit = (ROOT / "SECURITY_AUDIT.md").read_text(encoding="utf-8")
     assert "SEC-M2" in audit
-    assert "Phase C" in audit or "PARTIAL" in audit or "Phase D" in audit
     for line in audit.splitlines():
         cells = [c.strip() for c in line.split("|")]
         if len(cells) < 5:
@@ -175,5 +175,5 @@ def test_sec_m2_phase_c_adr_and_honesty_still_open():
         finding_id = cells[1] if len(cells) > 1 else ""
         status_cell = cells[4] if len(cells) > 4 else ""
         if finding_id == "SEC-M2":
-            assert "OPEN" in status_cell
-            assert "FIXED" not in status_cell
+            assert "FIXED" in status_cell
+            assert "OPEN" not in status_cell

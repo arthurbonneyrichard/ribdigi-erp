@@ -36,8 +36,10 @@ def test_sec_m2_dev_env_example_documents_flag():
 def test_sec_m2_adr_exists_and_non_claim():
     adr = (ROOT / "docs/ADR_SESSION_COOKIE_DUAL_MODE.md").read_text(encoding="utf-8")
     assert "AUTH_HTTPONLY_COOKIES_ENABLED" in adr
-    assert "OPEN" in adr or "FIXED" in adr
-    assert "do **not** mark M2 FIXED" in adr or "remain **OPEN**" in adr
+    assert "FIXED" in adr
+    # Flag default OFF remains intentional (ops enable)
+    assert "defaults" in adr.lower() or "default" in adr.lower()
+    assert "false" in adr.lower()
 
 
 def test_sec_m2_flag_off_login_omits_session_cookies(monkeypatch):

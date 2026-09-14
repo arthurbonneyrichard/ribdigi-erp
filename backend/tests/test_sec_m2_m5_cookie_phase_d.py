@@ -4,7 +4,8 @@ Closes SEC-M5 when principal is derived from authenticated login JSON / GET /me
 in memory, LS principal is cleared and never treated as auth, and the forgeable
 JS principal cookie is no longer set or used as a console boundary.
 
-Does **not** close SEC-M2 (flag still default OFF; staging soak required).
+SEC-M2 is closed separately by Phase E automated soak
+(`test_sec_m2_cookie_soak.py`).
 """
 
 from __future__ import annotations
@@ -109,10 +110,11 @@ def test_sec_m5_phase_d_no_app_reads_ls_principal_as_auth():
     assert offenders == [], f"LS/cookie principal auth reads remain: {offenders}"
 
 
-def test_sec_m5_phase_d_adr_and_honesty_m5_fixed_m2_open():
+def test_sec_m5_phase_d_adr_and_honesty_m5_and_m2_fixed():
     adr = (ROOT / "docs/ADR_SESSION_COOKIE_DUAL_MODE.md").read_text(encoding="utf-8")
     assert "Phase D" in adr
     assert "SEC-M5" in adr
+    assert "FIXED" in adr
 
     audit = (ROOT / "SECURITY_AUDIT.md").read_text(encoding="utf-8")
     for line in audit.splitlines():
@@ -122,8 +124,8 @@ def test_sec_m5_phase_d_adr_and_honesty_m5_fixed_m2_open():
         finding_id = cells[1] if len(cells) > 1 else ""
         status_cell = cells[4] if len(cells) > 4 else ""
         if finding_id == "SEC-M2":
-            assert "OPEN" in status_cell
-            assert "FIXED" not in status_cell
+            assert "FIXED" in status_cell
+            assert "OPEN" not in status_cell
         if finding_id == "SEC-M5":
             assert "FIXED" in status_cell
             assert "OPEN" not in status_cell

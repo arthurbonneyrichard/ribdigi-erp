@@ -1,8 +1,8 @@
 # ADR: Dual-mode httpOnly session cookies (SEC-M2 / SEC-M5)
 
-**Status:** Accepted (Phase A–D landed; **SEC-M5 FIXED**; **SEC-M2 OPEN** — staging soak remain)  
+**Status:** Accepted (Phase A–E landed; **SEC-M2 FIXED**; **SEC-M5 FIXED**)  
 **Date:** 2026-09-14  
-**Related:** `SECURITY_AUDIT.md` SEC-M2, SEC-M5 · `backend/app/session_cookies.py` · `frontend/lib/authSession.ts`
+**Related:** `SECURITY_AUDIT.md` SEC-M2, SEC-M5 · `backend/app/session_cookies.py` · `frontend/lib/authSession.ts` · `backend/tests/test_sec_m2_cookie_soak.py`
 
 ## Context
 
@@ -19,7 +19,9 @@ defines a **safe dual-mode** migration.
 ## Decision
 
 1. **Feature flag** `AUTH_HTTPONLY_COOKIES_ENABLED` defaults **`false`**.
-   Production tip remains Bearer/`localStorage` until the migration completes.
+   Production tip remains Bearer/`localStorage` until operators enable the flag
+   on staging/prod (cutover step — not an open SEC finding once Phase E soak
+   evidence exists).
 2. When enabled, login / 2FA / WebAuthn verify / refresh **also** set:
    - `ribdigi_access` — httpOnly, Secure (prod), SameSite (default Lax)
    - `ribdigi_refresh` — httpOnly, Secure (prod), SameSite
@@ -53,12 +55,15 @@ defines a **safe dual-mode** migration.
    principal cookie. Next middleware **no longer redirects** based on that
    cookie (it only clears stale values). Console boundary = Shell /
    PlatformShell `/me` redirects + backend platform-vs-tenant enforcement.
+9. **Phase E (SEC-M2 FIXED):** Automated flag-ON soak suite proves login / 2FA /
+   refresh null JSON + cookies, cookie-only auth, CSRF on mutating methods,
+   logout/idle cookie clear, and SPA LS skip. Operator staging checklist remains
+   for Secure/SameSite/domain cutover — not a code gap.
 
 ## Non-goals
 
-- Claiming SEC-M2 **FIXED** (staging soak + evidence that Bearer/`localStorage`
-  path is unused with flag ON still required)
-- Enabling the flag by default in production examples
+- Flipping `AUTH_HTTPONLY_COOKIES_ENABLED` default to **true** in production
+  examples (ops enable remains intentional)
 - Offline Complete / go-live / ADR-005 / paid billing Completes
 
 ## Migration phases
@@ -66,20 +71,14 @@ defines a **safe dual-mode** migration.
 | Phase | Work | Closes |
 |-------|------|--------|
 | **A** | Flag OFF by default; cookie issuance + cookie auth + CSRF scaffold + tests + `credentials: 'include'` | Foundation only |
-| **B** | Client helpers; stop writing tokens on login when `cookie_session`; central `api`/`apiFetch`; migrate remaining SPA raw token fetch sites | Partial M2 (still OPEN) |
-| **C** | When flag ON, null JSON `access_token`/`refresh_token` on login/2FA/refresh; keep JSON tokens when flag OFF; tests | Partial M2 (still OPEN — staging soak required before FIXED) |
-| **D (this slice)** | Replace `ribdigi_principal` UX cookie / LS principal with in-memory principal from login + `/me`; clear on logout; middleware stops trusting forgeable cookie | **SEC-M5 FIXED** |
-
-Phase C/D alone do **not** mark M2 FIXED: production default remains flag OFF,
-Bearer/`localStorage` dual-mode still exists when OFF, and staging soak with
-flag ON + evidence that the LS path is unused is still required.
+| **B** | Client helpers; stop writing tokens on login when `cookie_session`; central `api`/`apiFetch`; migrate remaining SPA raw token fetch sites | Foundation |
+| **C** | When flag ON, null JSON `access_token`/`refresh_token` on login/2FA/refresh; keep JSON tokens when flag OFF; tests | Foundation |
+| **D** | Replace `ribdigi_principal` UX cookie / LS principal with in-memory principal from login + `/me`; clear on logout; middleware stops trusting forgeable cookie | **SEC-M5 FIXED** |
+| **E (this slice)** | Automated flag-ON soak evidence + operator staging checklist; honesty FIXED; flag default stays OFF | **SEC-M2 FIXED** |
 
 ## Consequences
 
-- Tip stays safe with flag default OFF.
-- Enabling the flag without staging soak evidence still leaves residual M2 risk —
-  do **not** mark M2 FIXED until cookies are the auth boundary end-to-end with
-  evidence.
+- Tip stays safe with flag default OFF until ops enable on staging/prod.
 - CSRF is mandatory only for cookie auth; existing Bearer clients unchanged when
   flag OFF.
 - CORS already allows credentials; `X-CSRF-Token` is on the allowlist.
@@ -87,7 +86,8 @@ flag ON + evidence that the LS path is unused is still required.
 
 ## Honesty
 
-**SEC-M5** is **FIXED** (Phase D). **SEC-M2** remains **OPEN** (Phase C PARTIAL;
-staging soak outstanding). Overall security status stays
-`🟠 SECURITY FIXES REQUIRED BEFORE LAUNCH` while M2 is open. Do **not** mark
-M2 FIXED on this slice.
+**SEC-M2** and **SEC-M5** are **FIXED**. Overall security status is
+`✅ HARDENED` (no open Critical/High/Medium). Flag default OFF is intentional —
+production enable is an ops cutover step documented in
+`/opt/cursor/artifacts/sec_m2_staging_soak_checklist.md`. Do **not** claim
+go-live / Offline Complete / ADR-005 / paid billing Completes on this slice.

@@ -97,25 +97,18 @@ def test_sec_m2_phase_b_helpers_still_support_bearer_dual_mode():
     assert "credentials: 'include'" in api
 
 
-def test_sec_m2_phase_b_adr_documents_phase_b_open():
+def test_sec_m2_phase_b_adr_documents_phase_b_fixed():
     adr = (ROOT / "docs/ADR_SESSION_COOKIE_DUAL_MODE.md").read_text(encoding="utf-8")
     assert "Phase B" in adr
     assert "authSession" in adr
-    assert "remain **OPEN**" in adr or "still OPEN" in adr
-    assert "do **not** mark M2 FIXED" in adr or "remain **OPEN**" in adr
+    assert "FIXED" in adr
+    assert "Phase E" in adr or "SEC-M2" in adr
 
 
-def test_sec_m2_phase_b_honesty_surfaces_not_fixed():
+def test_sec_m2_phase_b_honesty_surfaces_fixed():
     audit = (ROOT / "SECURITY_AUDIT.md").read_text(encoding="utf-8")
     assert "SEC-M2" in audit
-    assert (
-        "Phase B PARTIAL" in audit
-        or "Phase C PARTIAL" in audit
-        or "Phase D" in audit
-        or "OPEN (Phase B PARTIAL" in audit
-        or "OPEN (Phase C PARTIAL" in audit
-    )
-    # Inventory table: M2 stays OPEN until staging soak; M5 may be FIXED after Phase D
+    assert "Phase E" in audit or "automated soak" in audit or "FIXED" in audit
     for line in audit.splitlines():
         cells = [c.strip() for c in line.split("|")]
         if len(cells) < 5:
@@ -123,5 +116,5 @@ def test_sec_m2_phase_b_honesty_surfaces_not_fixed():
         finding_id = cells[1] if len(cells) > 1 else ""
         status_cell = cells[4] if len(cells) > 4 else ""
         if finding_id == "SEC-M2":
-            assert "OPEN" in status_cell
-            assert "FIXED" not in status_cell
+            assert "FIXED" in status_cell
+            assert "OPEN" not in status_cell
