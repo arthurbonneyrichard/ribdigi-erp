@@ -61,7 +61,7 @@
 .stat.s-sales .ico{background:var(--success-bg);color:var(--deep-green)}.stat.s-sales .rail{background:var(--brand)}
 .stat.s-buy .ico{background:#e0f2fe;color:#0369a1}.stat.s-buy .rail{background:var(--brand)}
 .stat.s-exp .ico{background:#fee2e2;color:#b91c1c}.stat.s-exp .rail{background:#fb7185}
-.stat.s-net .ico{background:#ede9fe;color:#6d28d9}.stat.s-net .rail{background:#8b5cf6}
+.stat.s-net .ico{background:color-mix(in srgb, var(--forest) 14%, white);color:var(--forest)}.stat.s-net .rail{background:var(--forest)}
 
 .info-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 .panel{background:var(--white);border-radius:16px;padding:20px;box-shadow:0 6px 18px #003D1F17;border:1px solid var(--line)}
