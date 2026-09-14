@@ -2193,22 +2193,27 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Remote wipe PARTIAL — online poll fallback; Web Push is best-effort (not Offline Complete).
+  // Remote wipe PARTIAL — online poll is source of truth when Web Push/FCM unavailable.
+  // Periodic poll covers already-online tills (Cloud Agent / fail-closed push); not Offline Complete.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     let cancelled = false;
+    const WIPE_POLL_INTERVAL_MS = 45_000;
     const run = () => {
+      if (cancelled || (typeof navigator !== 'undefined' && !navigator.onLine)) return;
       void import('../lib/offlineRemoteWipe')
         .then(({ processPendingRemoteWipeIfNeeded }) => processPendingRemoteWipeIfNeeded())
         .catch(() => {
           /* wipe poll best-effort */
         });
     };
-    if (!cancelled && navigator.onLine) run();
+    run();
     window.addEventListener('online', run);
+    const interval = window.setInterval(run, WIPE_POLL_INTERVAL_MS);
     return () => {
       cancelled = true;
       window.removeEventListener('online', run);
+      window.clearInterval(interval);
     };
   }, []);
 

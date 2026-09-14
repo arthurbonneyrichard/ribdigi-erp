@@ -179,11 +179,21 @@ def test_evidence_staging_checklist_and_ops_docs_present():
     assert "Bind browser" in checklist or "push-subscription" in checklist
     assert "410" in checklist
     assert "Cannot mark Complete" in checklist or "cannot mark Complete" in checklist.lower()
+    assert "OFFLINE_WIPE_POLL_LOCAL_ALTERNATIVE" in checklist
 
     ops = (ROOT / "docs/OFFLINE_WEB_PUSH_VAPID_OPS.md").read_text(encoding="utf-8")
     assert "offline_wipe_push_staging_checklist.md" in ops
     assert "PARTIAL" in ops
     assert "Fail-closed" in ops or "fail-closed" in ops
+    assert "OFFLINE_WIPE_POLL_LOCAL_ALTERNATIVE" in ops or "poll path" in ops.lower()
+
+    alt = (ROOT / "docs/OFFLINE_WIPE_POLL_LOCAL_ALTERNATIVE.md").read_text(encoding="utf-8")
+    assert "engineering-ready" in alt.lower()
+    assert "MISSING" in alt
+
+    seven = (ROOT / "docs/OFFLINE_7DAY_EVIDENCE_TEMPLATE.md").read_text(encoding="utf-8")
+    assert "7-day VERIFIED" in seven
+    assert "MISSING" in seven
 
 
 @pytest.mark.asyncio
