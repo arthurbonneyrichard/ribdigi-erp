@@ -307,7 +307,7 @@
 .login-hint{margin:0;font-size:13px;color:var(--muted);line-height:1.4;font-weight:500}
 .login input{
   width:100%;padding:13px 14px;margin:0;
-  border:1px solid #d7deea;border-radius:12px;
+  border:1px solid #D4E5C4;border-radius:12px;
   font-size:15px;font-family:inherit;background:var(--sand);color:var(--ink);
   transition:border-color .15s,box-shadow .15s,background .15s;
 }
@@ -428,7 +428,7 @@
 .plat-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px;align-items:end}
 .plat-form label{display:flex;flex-direction:column;gap:6px;text-align:left}
 .plat-form label>span{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.02em;text-transform:uppercase}
-.plat-form input,.plat-form select{width:100%;padding:11px 12px;border:1px solid #d7deea;border-radius:10px;font-size:14px;font-family:inherit;background:var(--sand)}
+.plat-form input,.plat-form select{width:100%;padding:11px 12px;border:1px solid #D4E5C4;border-radius:10px;font-size:14px;font-family:inherit;background:var(--sand)}
 .plat-form input:focus,.plat-form select:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--focus-ring);background:var(--white)}
 .plat-form button{grid-column:1/-1;justify-self:start;padding:11px 18px;border:0;border-radius:10px;background:var(--brand);color:#fff;font-weight:700;font-size:14px;cursor:pointer}
 .plat-form button:hover{background:var(--brand-dark)}
@@ -450,7 +450,7 @@
 .tpos-shift-meta strong{font-size:15px}
 .tpos-shift-meta span{font-size:12px;color:var(--muted);font-weight:600}
 .tpos-input,.tpos-search-input,.tpos-field select{
-  min-height:48px;padding:12px 14px;border:1px solid #d7deea;border-radius:12px;
+  min-height:48px;padding:12px 14px;border:1px solid #D4E5C4;border-radius:12px;
   font-size:16px;font-family:inherit;background:var(--white)
 }
 .tpos-btn{

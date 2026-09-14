@@ -138,7 +138,7 @@ function DailyBars({
   const bw = Math.min(26, slot * 0.55);
   return (
     <svg viewBox="0 0 300 172" width="100%" height="172" role="img" aria-label={`Daily ${field}`}>
-      <line x1="8" y1="138" x2="292" y2="138" stroke="#e5e7eb" />
+      <line x1="8" y1="138" x2="292" y2="138" stroke="#D4E5C4" />
       {data.map((t, i) => {
         const v = t[field] || 0;
         const h = Math.max(0, (v / max) * 112);
@@ -175,7 +175,7 @@ function TrendLine({
   });
   return (
     <svg viewBox="0 0 300 172" width="100%" height="172" role="img" aria-label="30-day sales">
-      <line x1="8" y1="138" x2="292" y2="138" stroke="#e5e7eb" />
+      <line x1="8" y1="138" x2="292" y2="138" stroke="#D4E5C4" />
       <polyline fill="none" stroke={color} strokeWidth="2.5" points={pts.join(' ')} />
       <text x="8" y="156" className="vbar-label">
         {data[0]?.label || ''}
@@ -194,7 +194,7 @@ function MonthlyBars({ data }: { data: { label: string; total: number }[] }) {
   const bw = Math.min(18, slot * 0.65);
   return (
     <svg viewBox="0 0 300 172" width="100%" height="172" role="img" aria-label="Monthly sales">
-      <line x1="8" y1="138" x2="292" y2="138" stroke="#e5e7eb" />
+      <line x1="8" y1="138" x2="292" y2="138" stroke="#D4E5C4" />
       {data.map((t, i) => {
         const v = t.total || 0;
         const h = Math.max(0, (v / max) * 112);
@@ -557,7 +557,7 @@ export default function Page() {
             <div className="mix">
               <svg width="140" height="140" viewBox="0 0 140 140" role="img" aria-label="Revenue vs costs">
                 {finTotal <= 0 ? (
-                  <circle cx="70" cy="70" r="66" fill="#eef1f7" />
+                  <circle cx="70" cy="70" r="66" fill="#EAF8D8" />
                 ) : finItems.length === 1 ? (
                   <circle cx="70" cy="70" r="66" fill={finItems[0].color} />
                 ) : (
@@ -591,7 +591,7 @@ export default function Page() {
             <p className="hint">Customers vs suppliers</p>
             <div className="mix">
               <svg width="140" height="140" viewBox="0 0 140 140" role="img" aria-label="Customers vs suppliers">
-                <circle cx="70" cy="70" r={r} fill="none" stroke="#eef1f7" strokeWidth="16" />
+                <circle cx="70" cy="70" r={r} fill="none" stroke="#EAF8D8" strokeWidth="16" />
                 {parties > 0 && (
                   <>
                     <circle
