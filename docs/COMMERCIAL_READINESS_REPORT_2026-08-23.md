@@ -9,7 +9,7 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `cc4773e82ba7a2d71dfff71ac12550fb9640aeb1` — feat deny tax filing `jurisdiction` filter (`cc4773e82ba7`); leftovers still open |
+| **As of tip** | `1b543f193af01622d7528754c5f8b09857cb8b9d` — feat deny tax filing `jurisdiction` filter (`cc4773e82ba7`); leftovers still open |
 | RBAC / store scope | **PARTIAL** only |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
 
