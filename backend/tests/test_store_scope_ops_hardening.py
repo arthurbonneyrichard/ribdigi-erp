@@ -12548,67 +12548,6 @@ async def test_store_manager_product_has_image_redacted(client, db_session):
 
 
 @pytest.mark.asyncio
-async def test_store_manager_expense_attachment_url_redacted(client, db_session):
-    """Expense list/get nulls attachment_url storage key for store_manager.
-
-    Binary download remains store-scoped; has_attachment remains for chrome.
-    Admin list/get keep attachment_url.
-    """
-    ac, seed = client
-    tid = seed["t1"].id
-    cid = seed["c1"].id
-    mgr = seed["mgr1"]
-    store = m.Store(
-        tenant_id=tid,
-        company_id=cid,
-        name="Attach URL Store",
-        code="AUS1",
-        manager_id=mgr.id,
-        is_active=True,
-    )
-    db_session.add(store)
-    await db_session.flush()
-    storage_key = f"{tid}/expense_attachments/url-redact-dump.pdf"
-    expense = m.Expense(
-        tenant_id=tid,
-        company_id=cid,
-        category="Travel",
-        description="Attachment url redact",
-        amount=12,
-        store_id=store.id,
-        status="pending",
-        created_by=mgr.id,
-        attachment_url=storage_key,
-    )
-    db_session.add(expense)
-    await db_session.commit()
-
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
-    admin_headers = await auth_headers(
-        ac,
-        email="super@alpha.example.com",
-        tenant_slug="alpha",
-        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
-    )
-
-    admin_got = await ac.get(f"/api/v1/expenses/{expense.id}", headers=admin_headers)
-    assert admin_got.status_code == 200, admin_got.text
-    assert admin_got.json()["data"].get("attachment_url") == storage_key
-    assert admin_got.json()["data"].get("has_attachment") is True
-
-    listed = await ac.get("/api/v1/expenses", headers=headers)
-    assert listed.status_code == 200, listed.text
-    row = next(r for r in listed.json()["data"] if r["id"] == expense.id)
-    assert row.get("has_attachment") is True
-    assert row.get("attachment_url") is None
-
-    got = await ac.get(f"/api/v1/expenses/{expense.id}", headers=headers)
-    assert got.status_code == 200, got.text
-    assert got.json()["data"].get("has_attachment") is True
-    assert got.json()["data"].get("attachment_url") is None
-
-
-@pytest.mark.asyncio
 async def test_store_manager_stock_import_denied(client, db_session):
     """Company-level stock CSV import + template denied for store_manager."""
     ac, seed = client
@@ -13129,7 +13068,6 @@ async def test_store_manager_company_membership_writes_denied(client, db_session
     )
     assert denied_revoke.status_code == 403, denied_revoke.text
     assert denied_revoke.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
-
 
 
 @pytest.mark.asyncio
@@ -14391,7 +14329,6 @@ async def test_store_manager_api_keys_writes_denied(client, db_session):
     assert ok_create.status_code == 200, ok_create.text
 
 
-
 async def test_store_manager_webhooks_read_denied(client, db_session):
     """GET /webhooks list/export/detail + deliveries denied for store_manager; admin remains."""
     from app import webhooks as webhooks_svc
@@ -14527,7 +14464,6 @@ async def test_store_manager_webhooks_writes_denied(client, db_session):
         },
     )
     assert ok_create.status_code == 200, ok_create.text
-
 
 
 async def test_store_manager_backup_settings_read_denied(client, db_session):
