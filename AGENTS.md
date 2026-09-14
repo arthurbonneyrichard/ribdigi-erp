@@ -150,8 +150,10 @@ store activation — never frontend-only.
    (``GET /products/{id}/image``; WH stock ops remain)
    + **company/tenant logo binary GET denied**
    (``GET /companies/{id}/logo`` + ``GET /tenants/me/logo``; switcher
-   ``has_logo`` / ``tenant_has_logo`` + initials chrome remain; print embeds
-   load logos server-side) + **product list/get ``image_url``
+   ``has_logo`` / ``tenant_has_logo`` + initials chrome remain)
+   + **print/receipt JSON ``logo_data_url`` redacted** (invoice/quotation/
+   credit-note print + POS receipt; ``has_logo`` + server-side HTML/PDF
+   embeds remain) + **product list/get ``image_url``
    storage key redacted** + **product list/get ``has_image`` forced false**
    (admin list/get keep ``image_url`` + ``has_image``; WH stock ops / POS remain)
    + **expense list/get/patch ``attachment_url`` storage key redacted**
@@ -313,7 +315,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `9c54e51fe4e8e30c53eed2e467a37f5cb0a0cbb9` — `docs: bump PR #303 tip to b0fc721a15 company/tenant logo binary GET deny` (feat ancestry `b0fc721a15`).  
+**As of tip:** `64579de8c074229811cef754a60a25da2b4e37d3` — `feat(rbac): redact print/receipt logo_data_url for store_manager` (feat ancestry `64579de8c0`).  
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
@@ -344,7 +346,9 @@ redact (`has_attachment` + WH-scoped binary download remain); journal-entry
 list/get/create/unpost/upload/delete `attachment_url` storage-key redact
 (`has_attachment` + store-scoped binary download remain); company/tenant logo
 binary GET deny (`GET /companies/{id}/logo` + `GET /tenants/me/logo`; switcher
-`has_logo` / `tenant_has_logo` + initials chrome remain). Each slice closes
+`has_logo` / `tenant_has_logo` + initials chrome remain); print/receipt JSON
+`logo_data_url` redact (invoice/quotation/credit-note print + POS receipt;
+`has_logo` + server-side HTML/PDF embeds remain). Each slice closes
 one dump or write path; the continuum as a whole stays **PARTIAL**.
 
 ### Continuum agent contract
