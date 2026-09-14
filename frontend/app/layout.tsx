@@ -3,6 +3,7 @@ import './globals.css';
 export const metadata = {
   title: 'RIBDIGI ERP',
   description: 'One System. Total Business Control. A Ribdigi House Product.',
+  themeColor: '#4AB012',
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
