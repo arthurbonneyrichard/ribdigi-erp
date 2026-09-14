@@ -4837,8 +4837,8 @@ def omit_credit_payment_currency(managed_ids: list[str] | None) -> bool:
     credit-aging document JSON already redact ``currency``. Credit payment
     register list/export (+ create responses) must not re-dump company/tenant
     (or payment) currency after those redacts. Amount / method /
-    ``exchange_rate`` / ``fx_gain_loss`` / references remain; admin keeps
-    ``currency``.
+    ``exchange_rate`` / references remain; admin keeps ``currency``.
+    ``fx_gain_loss`` is redacted separately (FX P&L from rate table).
     """
     return managed_ids is not None
 
@@ -4851,13 +4851,34 @@ def redact_credit_payment_currency(payload: dict) -> dict:
     return out
 
 
+def omit_credit_payment_fx_gain_loss(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit payment ``fx_gain_loss``.
+
+    Exchange-rates GET already denied; payment ``currency`` already redacted.
+    Customer/supplier payment register list/export (+ create responses) must
+    not re-dump FX gain/loss derived from the company rate table. Amount /
+    method / ``exchange_rate`` / references remain; admin keeps ``fx_gain_loss``.
+    """
+    return managed_ids is not None
+
+
+def redact_credit_payment_fx_gain_loss(payload: dict) -> dict:
+    """Null ``fx_gain_loss`` on a customer/supplier payment JSON/CSV row."""
+    out = dict(payload)
+    if "fx_gain_loss" in out:
+        out["fx_gain_loss"] = None
+    return out
+
+
 def apply_credit_payment_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager credit-payment JSON redacts (currency)."""
+    """Apply store_manager credit-payment JSON redacts (currency + fx_gain_loss)."""
     out = payload
     if omit_credit_payment_currency(managed_ids):
         out = redact_credit_payment_currency(out)
+    if omit_credit_payment_fx_gain_loss(managed_ids):
+        out = redact_credit_payment_fx_gain_loss(out)
     return out
 
 
