@@ -46,6 +46,9 @@ def test_scaffold_docs_and_honesty_constants():
     assert honesty["billing_deferred"] is True
     assert honesty["checkout_enabled"] is False
     assert honesty["scaffold_status"] == "partial"
+    assert honesty["engineering_mock_soak_ready"] is True
+    assert honesty["paid_billing_complete_ops_blocked"] is True
+    assert honesty["paid_billing_complete_blocker"] == "live_stripe_keys_and_staging_soak"
     assert honesty["paid_billing_entitlement_gate_enabled"] is False
     assert honesty["provider_mode"] == "unconfigured"
     assert billing_svc.PAID_BILLING_COMPLETE_CLAIMED is False
@@ -797,6 +800,7 @@ def test_entitlement_gate_prod_example_defaults_off_and_go_live_pack_present():
     assert "adr005_staging_soak_checklist.md" in pack
     assert "OFFLINE_PHYSICAL_TEST_RUNBOOK_2026-08-23.md" in pack
     assert "PAID_BILLING_PROVIDER_OPS.md" in pack
+    assert "paid_billing_staging_soak_checklist.md" in pack
     cl = pack.lower()
     for forbidden_complete in (
         "offline complete",

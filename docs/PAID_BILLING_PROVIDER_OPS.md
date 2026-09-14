@@ -1,8 +1,9 @@
-# Paid billing provider ops (ADR-002 — PARTIAL)
+# Paid billing provider ops (ADR-002 — PARTIAL / Complete ops-blocked)
 
-**Honesty:** Configuring these env vars does **not** claim paid billing Complete, checkout Complete, live subscriptions, or fabricated MRR. ADR-002 remains in force until a verified live provider cutover with evidence.
+**Honesty:** Configuring these env vars does **not** claim paid billing Complete, checkout Complete, live subscriptions, or fabricated MRR. Engineering mock soak is ready (`test_paid_billing_soak.py`); Complete remains **MISSING** until a verified live Stripe cutover with staging evidence.
 
-See [`ADR_002_PAID_BILLING_SCAFFOLD.md`](ADR_002_PAID_BILLING_SCAFFOLD.md).
+See [`ADR_002_PAID_BILLING_SCAFFOLD.md`](ADR_002_PAID_BILLING_SCAFFOLD.md) ·
+[`paid_billing_staging_soak_checklist.md`](paid_billing_staging_soak_checklist.md).
 Operator roll-up: [`GO_LIVE_READINESS_CHECKLIST.md`](GO_LIVE_READINESS_CHECKLIST.md).
 
 ## Environment
@@ -32,18 +33,20 @@ Operator roll-up: [`GO_LIVE_READINESS_CHECKLIST.md`](GO_LIVE_READINESS_CHECKLIST
 
 ## Staging checklist (not Complete)
 
+Authoritative step list: [`paid_billing_staging_soak_checklist.md`](paid_billing_staging_soak_checklist.md).
+
 1. Set `BILLING_PROVIDER=stripe` + secret key + webhook secret in staging secrets manager (not git).
 2. Set `BILLING_PROVIDER_MODE=live` (or leave auto with a non-mock secret).
 3. Set `BILLING_PROVIDER_PRICE_IDS` JSON for paid plans (or pass `price_id` per request).
-4. Point provider webhook to `POST /api/v1/billing/webhooks/provider`.
+4. Point provider webhook to `POST /api/v1/billing/webhooks/provider` (`customer.subscription.*`, `checkout.session.completed`, `invoice.paid`).
 5. Confirm signed event lands in `billing_webhook_events` with `signature_valid=true`.
 6. Confirm `POST /api/v1/billing/portal-session` returns a real `portal_url` and Company UI navigates to it.
 7. Confirm `POST /api/v1/billing/checkout-session` returns a real `checkout_url` and Company UI navigates to it.
-8. Confirm Checkout / `invoice.paid` does **not** mutate `Tenant.plan_code`.
-9. Confirm `GET /api/v1/billing/status` still reports `paid_billing_complete_claimed=false` and `checkout_enabled=false`.
+8. Confirm Checkout / `invoice.paid` does **not** mutate `Tenant.plan_code` and never returns `payment_success=true`.
+9. Confirm `GET /api/v1/billing/status` still reports `paid_billing_complete_claimed=false`, `checkout_enabled=false`, `paid_billing_complete_ops_blocked=true`.
 10. Do **not** enable `PAID_BILLING_ENTITLEMENT_GATE_ENABLED` in production until mirror→access evidence exists on the gated allowlist (`POST /sales`, `PATCH /companies/{id}`).
 11. With gate ON in staging: confirm `active`/`trialing` allows gated writes; `past_due`/`canceled`/missing returns `403 PAID_BILLING_ENTITLEMENT_DENIED`.
-12. Do **not** claim paid billing Complete from this checklist alone.
+12. Do **not** claim paid billing Complete from this checklist alone — Complete stays ops-blocked until live soak + commercial acceptance.
 
 ## CI / mock
 
