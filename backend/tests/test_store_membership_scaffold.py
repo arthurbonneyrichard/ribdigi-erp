@@ -10,6 +10,7 @@ import pytest
 from app import dashboard_scope as dashboard_scope_svc
 from app import models as m
 from app import store_memberships as store_memberships_svc
+from sqlalchemy import select
 from tests.conftest import auth_headers
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -340,7 +341,7 @@ async def test_flag_on_admin_bypass_cashier_managed_none_visibility_failclosed(
 async def test_cashier_membership_failclosed_flag_on_off(client, db_session, monkeypatch):
     """Cashier POS open + store list: flag OFF legacy; flag ON membership fail-closed."""
     from app.config import settings
-    from app.rbac import ROLE_PERMISSIONS
+    from app.rbac import permissions_for_role
 
     ac, seed = client
     tid = seed["t1"].id
@@ -396,13 +397,26 @@ async def test_cashier_membership_failclosed_flag_on_off(client, db_session, mon
     )
     assert closed.status_code == 200, closed.text
 
-    # Grant stores:read so GET /stores is reachable for list asserts (role default lacks it).
-    orig_cashier_perms = dict(ROLE_PERMISSIONS["cashier"])
-    monkeypatch.setitem(
-        ROLE_PERMISSIONS,
-        "cashier",
-        {**orig_cashier_perms, "stores": ["read"]},
+    # Grant stores:read on user + company membership (workspace overrides user.permissions).
+    perms = dict(permissions_for_role("cashier"))
+    perms["stores"] = ["read"]
+    user_row = await db_session.get(m.User, cashier.id)
+    assert user_row is not None
+    user_row.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == cashier.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+    await db_session.commit()
+    cash_headers = await auth_headers(
+        ac, email="cashier@alpha.example.com", tenant_slug="alpha"
     )
+
     listed_off = await ac.get("/api/v1/stores", headers=cash_headers)
     assert listed_off.status_code == 200, listed_off.text
     off_ids = {row["id"] for row in listed_off.json()["data"]}
