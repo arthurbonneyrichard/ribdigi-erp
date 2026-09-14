@@ -13,7 +13,7 @@
 
 ### Tip — elevation / break-glass MVP (2026-09-15)
 
-**As of tip:** _(self-fixed after push)_
+**As of tip:** `7150bf940ec39ca8ac8165d48600d98ce20d032d`
 Time-bounded RBAC elevation / break-glass MVP: required reason, grantor-subset
 permissions, audit on grant/revoke, ``expires_at`` auto-deny (≤24h), early revoke.
 Reuses membership expiry patterns; no RBAC rebuild. Elevation slice **Complete**.
@@ -25,7 +25,7 @@ remains **PARTIAL**. Store-scoped RBAC Complete remains **MISSING**. Offline /
 
 ### Tip — export residual closed + temp membership expires_at (2026-09-15)
 
-**As of tip:** `8ac6d3ca138701a959807cdb932d99bdc8174736`
+**As of tip:** `7150bf940ec39ca8ac8165d48600d98ce20d032d`
 Closed residual admin/settings/catalog module `export` gates (role-gated admin
 dumps + caller-scoped session/passkey exports retained intentionally). First-class
 `export` / `view_cost` actions marked **Complete** for this engine slice (not
