@@ -2,7 +2,8 @@
 
 **Status:** **MISSING** (do not claim)  
 **As of tip ancestry:** ADR-005 membership **Complete** (flag default OFF)  
-**Related:** overall RBAC readiness **PARTIAL**
+**Related:** overall RBAC readiness **PARTIAL**  
+**Living matrix:** **landed** — `docs/STORE_SCOPED_RBAC_TEST_MATRIX.md` · `ops/mvp/store-scope-rbac-matrix.json` · `backend/tests/test_store_scope_rbac_matrix.py` (`pytest -m store_scope`)
 
 ## ADR-005 Complete ≠ store-scoped RBAC Complete
 
@@ -11,7 +12,7 @@
 | **ADR-005 membership Complete** | User↔store assign/list/revoke + `/me` + admin UI + flag-gated scope union + cashier fail-closed + POS bind + automated flag-ON soak | **Complete** (prod flag default **OFF** intentional) |
 | **Store-scoped RBAC Complete** | `store_manager` (and scoped cashiers) cannot read/write company-level dumps or foreign-store data across **all** ERP surfaces beyond intentional product ALLOWs; residual field-leak backlog empty or product-accepted | **MISSING** |
 
-ADR-005 is the **membership + scope wiring** product. Store-scoped RBAC Complete is the **breadth** claim over ops/reports/AI/admin/settings surfaces (historically advanced via continuum redacts). Closing ADR-005 does **not** flip store-scoped RBAC Complete.
+ADR-005 is the **membership + scope wiring** product. Store-scoped RBAC Complete is the **breadth** claim over ops/reports/AI/admin/settings surfaces (historically advanced via continuum redacts). Closing ADR-005 does **not** flip store-scoped RBAC Complete. Landing the living matrix documents/enforces the spine — it also does **not** alone flip Complete.
 
 Honesty flags (`GET /me/store-memberships` etc.):
 
@@ -25,6 +26,7 @@ Honesty flags (`GET /me/store-memberships` etc.):
 - Cost / PII / approval-matrix / BI-config / budget-limit redacts (continuum-hardened)
 - Managed-store `manager_id` self-scope dump **closed**
 - Intentional product ALLOWs retained: company/tenant logo binary GET; caller-scoped `/auth/sessions` + `/notifications/settings`
+- **Living store-scope test matrix** (indexed suite + CI `store_scope` marker) covering cross-store deny, membership-on soak, cashier fail-closed, manager union, intentional ALLOWs, plus breadth index into deep modules
 
 ## Remaining checklist before any Complete claim
 
@@ -32,13 +34,13 @@ Engineering (closable without ops theater):
 
 1. **Residual continuum field leaks** — only as product-prioritized slices (paused as default CONTINUE path; not dump spam). Empty backlog or explicit ALLOW list with product sign-off.
 2. **First-class `export` / `view_cost` actions** — **Complete** (engine slice for these actions): engine + system role grants + deps auto-`read`; commerce/dashboard/ops/AI **and** admin/settings/catalog CSV paths gated on module `export` (not mere `read`); report/BI/AI/stock-count cost omit helpers unified on `inventory:view_cost` / `business_insights:view_cost` (legacy managed/WH fallback retained when claims omitted). Intentional non-module gates retained: admin `require_roles` dumps (tenant settings/backup/api-keys/webhooks/jobs) and caller-scoped `/auth/sessions` + passkeys exports. Does **not** imply overall RBAC Complete or store-scoped RBAC Complete.
-3. **Living store-scope test matrix** — single indexed suite covering modules claimed Complete (not only `test_store_scope_ops_hardening.py` growth).
+3. **Living store-scope test matrix** — **landed** (`ops/mvp/store-scope-rbac-matrix.json` + `test_store_scope_rbac_matrix.py` + CI `-m store_scope`). Documents/enforces cross-store deny, membership soak, cashier fail-closed, manager union, intentional ALLOWs; indexes deep continuum modules. **Not** store-scoped RBAC Complete by itself.
 4. **Temp membership / elevation / break-glass** — temp membership `expires_at` **Complete** (column + scope exclusion + admin UI + tests); elevation / break-glass MVP **Complete** (time-bounded grant, required reason, grantor subset, audit, auto-expiry ≤24h, early revoke, deny after expiry — not overall RBAC Complete).
 5. **Concurrent approval stress pack** — still **MISSING** (overall RBAC; not strictly store-scope).
 
 Ops / product (required for Completes that stay ops-blocked elsewhere):
 
-6. Product acceptance that remaining intentional ALLOWs are correct.
+6. Product acceptance that remaining intentional ALLOWs are correct (matrix lists them; product sign-off still open).
 7. Staging soak with `STORE_MEMBERSHIP_SCOPE_ENABLED=true` (ops cutover — does **not** reopen ADR-005 Complete; does **not** alone claim store-scoped Complete).
 
 ## Explicit non-claims
@@ -46,6 +48,7 @@ Ops / product (required for Completes that stay ops-blocked elsewhere):
 Do **not** mark store-scoped RBAC Complete from:
 
 - ADR-005 automated soak alone
+- Living store-scope test matrix alone (spine evidence ≠ full-surface Complete)
 - Continuum dump redacts without product Complete criteria
 - Overall RBAC approval hardening (owner lockout / grantor subset / % limits / etc.)
 - First-class `export`/`view_cost` engine slice alone
@@ -63,6 +66,6 @@ Do **not** mark store-scoped RBAC Complete from:
 
 Prefer engine Completes over continuum dumps:
 
-1. Living store-scope test matrix (indexed suite)
-2. Concurrent approval stress pack
-3. Only resume store_manager field-leak continuum when product prioritizes a named surface
+1. Concurrent approval stress pack
+2. Only resume store_manager field-leak continuum when product prioritizes a named surface
+3. Product sign-off on intentional ALLOWs + residual backlog empty (when aiming for store-scoped Complete)

@@ -23,10 +23,17 @@ PYTEST_INI = ROOT / "backend" / "pytest.ini"
 def test_ci_runs_pytest_markers_and_frontend_build_no_k8s():
     text = CI_WORKFLOW.read_text(encoding="utf-8")
     assert "pytest" in text
-    assert '-m "security or isolation"' in text or "-m 'security or isolation'" in text
+    assert (
+        '-m "security or isolation or store_scope"' in text
+        or "-m 'security or isolation or store_scope'" in text
+        or '-m "security or isolation"' in text
+        or "-m 'security or isolation'" in text
+    )
+    assert "store_scope" in text
     assert "npm run build" in text
     assert "setup-python" in text
     assert "setup-node" in text
+    assert "test_store_scope_rbac_matrix.py" in text
     lowered = text.lower()
     assert "kubernetes" not in lowered or "no kubernetes" in lowered
     assert "helm" not in lowered or "no " in lowered
@@ -42,6 +49,7 @@ def test_pytest_ini_declares_security_and_isolation_markers():
     text = PYTEST_INI.read_text(encoding="utf-8")
     assert "security:" in text
     assert "isolation:" in text
+    assert "store_scope:" in text
 
 
 def test_production_env_template_aligned_with_s1_validators():

@@ -11,6 +11,23 @@
 
 ---
 
+### Tip — living store-scope RBAC test matrix (2026-09-15)
+
+**As of tip:** pending commit on `cursor/store-scope-test-matrix-630a`
+Living indexed store-scope matrix landed (`ops/mvp/store-scope-rbac-matrix.json`,
+`docs/STORE_SCOPED_RBAC_TEST_MATRIX.md`, `backend/tests/test_store_scope_rbac_matrix.py`,
+CI marker `store_scope`). Covers cross-store deny, membership-on soak, cashier
+fail-closed, manager union, intentional ALLOWs (logo GET / sessions /
+notification settings) + breadth index. Store-scoped RBAC Complete remains
+**MISSING** (residual continuum + product ALLOW sign-off + staging soak still
+open — matrix alone ≠ Complete). Elevation / break-glass MVP **Complete**; temp
+membership `expires_at` **Complete**; export/`view_cost` engine slice **Complete**;
+ADR-005 **Complete** (flag default OFF). Overall RBAC readiness **PARTIAL**.
+Offline / 7-day / go-live / paid billing Completes remain **MISSING**. Next
+CONTINUE: concurrent approval stress pack.
+
+---
+
 ### Tip — elevation / break-glass MVP (2026-09-15)
 
 **As of tip:** `7150bf940ec39ca8ac8165d48600d98ce20d032d`
