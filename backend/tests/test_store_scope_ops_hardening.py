@@ -10240,10 +10240,10 @@ async def test_store_manager_sales_invoice_credit_override_redacted(client, db_s
         discount_amount=0,
         total_amount=100,
         paid_amount=0,
-        created_by=seed["super1"].id,
+        created_by=seed["super"].id,
         credit_limit_overridden=True,
         credit_override_reason="Finance VIP exception approved",
-        credit_override_by=seed["super1"].id,
+        credit_override_by=seed["super"].id,
         credit_override_at=__import__("datetime").datetime.utcnow(),
     )
     db_session.add(invoice)
@@ -10264,7 +10264,7 @@ async def test_store_manager_sales_invoice_credit_override_redacted(client, db_s
     admin_data = admin_got.json()["data"]
     assert admin_data.get("credit_limit_overridden") is True
     assert "VIP" in (admin_data.get("credit_override_reason") or "")
-    assert admin_data.get("credit_override_by") == seed["super1"].id
+    assert admin_data.get("credit_override_by") == seed["super"].id
     assert admin_data.get("credit_override_at") is not None
 
     mgr_got = await ac.get(f"/api/v1/sales/invoices/{invoice.id}", headers=headers)
