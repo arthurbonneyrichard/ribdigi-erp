@@ -776,7 +776,9 @@ async def get_expense(
         m.Expense.tenant_id == tenant_id,
     )
     if for_update:
-        stmt = stmt.with_for_update()
+        # populate_existing: ignore stale identity-map after concurrent commits
+        # (expire_on_commit=False) without expiring the whole session.
+        stmt = stmt.with_for_update().execution_options(populate_existing=True)
     expense = (await db.execute(stmt)).scalar_one_or_none()
     if not expense:
         raise HTTPException(status_code=404, detail="Expense not found")
@@ -962,102 +964,115 @@ async def approve_expense(
     comment: str | None = None,
     actor_role: str | None = None,
 ) -> m.Expense:
-    expense = await get_expense(db, tenant_id, expense_id, for_update=True)
-    if expense.status == "approved":
-        raise HTTPException(status_code=409, detail="Expense already approved")
-    if expense.status == "rejected":
-        raise HTTPException(status_code=409, detail="Rejected expenses cannot be approved")
-    if expense.status != "pending":
-        raise HTTPException(status_code=409, detail="Only pending expenses can be approved")
+    from app.approval_locks import expense_approval_lock
 
-    if expense.created_by and expense.created_by == user_id and (actor_role or "") not in {
-        "super_admin",
-    }:
-        raise HTTPException(status_code=403, detail="Cannot approve your own expense")
+    async with expense_approval_lock(tenant_id, expense_id):
+        # End any outer read txn so SQLite observes concurrent commits; locked
+        # get uses populate_existing (not expire_all) to refresh this row only.
+        await db.commit()
+        expense = await get_expense(db, tenant_id, expense_id, for_update=True)
+        if expense.status == "approved":
+            raise HTTPException(status_code=409, detail="Expense already approved")
+        if expense.status == "rejected":
+            raise HTTPException(status_code=409, detail="Rejected expenses cannot be approved")
+        if expense.status != "pending":
+            raise HTTPException(status_code=409, detail="Only pending expenses can be approved")
 
-    step = int(expense.approval_step or 1)
-    required = int(expense.approval_steps_required or 1)
-    settings = await get_approval_settings(db, tenant_id)
-    assert_actor_may_act(levels=settings["levels"], step=step, actor_role=actor_role)
+        if expense.created_by and expense.created_by == user_id and (actor_role or "") not in {
+            "super_admin",
+        }:
+            raise HTTPException(status_code=403, detail="Cannot approve your own expense")
 
-    # Same actor cannot approve consecutive steps
-    prior = await list_approval_actions(db, tenant_id, expense.id)
-    if any(a.action == "approve" and a.actor_id == user_id for a in prior):
-        raise HTTPException(status_code=403, detail="You already approved an earlier step on this expense")
+        step = int(expense.approval_step or 1)
+        required = int(expense.approval_steps_required or 1)
+        settings = await get_approval_settings(db, tenant_id)
+        assert_actor_may_act(levels=settings["levels"], step=step, actor_role=actor_role)
 
-    await _record_action(
-        db,
-        tenant_id=tenant_id,
-        expense_id=expense.id,
-        step=step,
-        action="approve",
-        actor_id=user_id,
-        comment=comment,
-    )
+        # Same actor cannot approve consecutive steps
+        prior = await list_approval_actions(db, tenant_id, expense.id)
+        if any(a.action == "approve" and a.actor_id == user_id for a in prior):
+            raise HTTPException(
+                status_code=403, detail="You already approved an earlier step on this expense"
+            )
 
-    from app import audit as audit_svc
-
-    if step < required:
-        expense.approval_step = step + 1
-        expense.approval_comment = comment or f"Level {step} approved; awaiting level {step + 1}"
-        await notify_expense_approvers(
+        await _record_action(
             db,
             tenant_id=tenant_id,
-            expense=expense,
-            step=step + 1,
-            title="Expense Needs Next-Level Approval",
-            message=(
-                f"Expense {expense.category} of {float(expense.amount):.2f} passed level {step} "
-                f"and awaits level {step + 1} approval."
-            ),
-            exclude_user_ids={user_id, expense.created_by} if expense.created_by else {user_id},
+            expense_id=expense.id,
+            step=step,
+            action="approve",
+            actor_id=user_id,
+            comment=comment,
         )
+
+        from app import audit as audit_svc
+
+        if step < required:
+            expense.approval_step = step + 1
+            expense.approval_comment = comment or f"Level {step} approved; awaiting level {step + 1}"
+            await notify_expense_approvers(
+                db,
+                tenant_id=tenant_id,
+                expense=expense,
+                step=step + 1,
+                title="Expense Needs Next-Level Approval",
+                message=(
+                    f"Expense {expense.category} of {float(expense.amount):.2f} passed level {step} "
+                    f"and awaits level {step + 1} approval."
+                ),
+                exclude_user_ids={user_id, expense.created_by} if expense.created_by else {user_id},
+            )
+            await audit_svc.record_event(
+                db,
+                tenant_id=tenant_id,
+                user_id=user_id,
+                action="expense_level_approved",
+                entity="expense",
+                entity_id=expense.id,
+                details={
+                    "category": expense.category,
+                    "amount": float(expense.amount),
+                    "step": step,
+                    "next_step": step + 1,
+                    "comment": comment,
+                },
+                module="expenses",
+            )
+            await db.flush()
+            # Durable before releasing process lock (see terminal approve commit).
+            await db.commit()
+            return expense
+
+        expense.status = "approved"
+        expense.approved_by = user_id
+        expense.approved_at = datetime.utcnow()
+        expense.approval_comment = comment
+        expense.rejection_reason = None
+        expense.approval_step = required
+
+        from app.accounting import post_expense_journal
+
+        await post_expense_journal(db, tenant_id=tenant_id, user_id=user_id, expense=expense)
         await audit_svc.record_event(
             db,
             tenant_id=tenant_id,
             user_id=user_id,
-            action="expense_level_approved",
+            action="expense_approved",
             entity="expense",
             entity_id=expense.id,
             details={
                 "category": expense.category,
                 "amount": float(expense.amount),
-                "step": step,
-                "next_step": step + 1,
+                "steps": required,
                 "comment": comment,
             },
             module="expenses",
         )
         await db.flush()
+        # Commit while holding the process lock so concurrent sessions cannot
+        # re-read pending before this terminal decision is durable (SQLite).
+        await db.commit()
         return expense
-
-    expense.status = "approved"
-    expense.approved_by = user_id
-    expense.approved_at = datetime.utcnow()
-    expense.approval_comment = comment
-    expense.rejection_reason = None
-    expense.approval_step = required
-
-    from app.accounting import post_expense_journal
-
-    await post_expense_journal(db, tenant_id=tenant_id, user_id=user_id, expense=expense)
-    await audit_svc.record_event(
-        db,
-        tenant_id=tenant_id,
-        user_id=user_id,
-        action="expense_approved",
-        entity="expense",
-        entity_id=expense.id,
-        details={
-            "category": expense.category,
-            "amount": float(expense.amount),
-            "steps": required,
-            "comment": comment,
-        },
-        module="expenses",
-    )
-    await db.flush()
-    return expense
 
 
 async def reject_expense(
@@ -1071,47 +1086,54 @@ async def reject_expense(
 ) -> m.Expense:
     if not (reason or "").strip():
         raise HTTPException(status_code=400, detail="rejection reason is required")
-    expense = await get_expense(db, tenant_id, expense_id, for_update=True)
-    if expense.status != "pending":
-        raise HTTPException(status_code=409, detail="Only pending expenses can be rejected")
+    from app.approval_locks import expense_approval_lock
 
-    step = int(expense.approval_step or 1)
-    settings = await get_approval_settings(db, tenant_id)
-    assert_actor_may_act(levels=settings["levels"], step=step, actor_role=actor_role)
+    async with expense_approval_lock(tenant_id, expense_id):
+        await db.commit()
+        expense = await get_expense(db, tenant_id, expense_id, for_update=True)
+        if expense.status != "pending":
+            raise HTTPException(status_code=409, detail="Only pending expenses can be rejected")
 
-    await _record_action(
-        db,
-        tenant_id=tenant_id,
-        expense_id=expense.id,
-        step=step,
-        action="reject",
-        actor_id=user_id,
-        comment=reason.strip(),
-    )
+        step = int(expense.approval_step or 1)
+        settings = await get_approval_settings(db, tenant_id)
+        assert_actor_may_act(levels=settings["levels"], step=step, actor_role=actor_role)
 
-    expense.status = "rejected"
-    expense.approved_by = user_id
-    expense.approved_at = datetime.utcnow()
-    expense.rejection_reason = reason.strip()
-    from app import audit as audit_svc
+        await _record_action(
+            db,
+            tenant_id=tenant_id,
+            expense_id=expense.id,
+            step=step,
+            action="reject",
+            actor_id=user_id,
+            comment=reason.strip(),
+        )
 
-    await audit_svc.record_event(
-        db,
-        tenant_id=tenant_id,
-        user_id=user_id,
-        action="expense_rejected",
-        entity="expense",
-        entity_id=expense.id,
-        details={
-            "category": expense.category,
-            "amount": float(expense.amount),
-            "reason": expense.rejection_reason,
-            "step": step,
-        },
-        module="expenses",
-    )
-    await db.flush()
-    return expense
+        expense.status = "rejected"
+        expense.approved_by = user_id
+        expense.approved_at = datetime.utcnow()
+        expense.rejection_reason = reason.strip()
+        from app import audit as audit_svc
+
+        await audit_svc.record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="expense_rejected",
+            entity="expense",
+            entity_id=expense.id,
+            details={
+                "category": expense.category,
+                "amount": float(expense.amount),
+                "reason": expense.rejection_reason,
+                "step": step,
+            },
+            module="expenses",
+        )
+        await db.flush()
+        # Commit while holding the process lock so concurrent sessions cannot
+        # re-read pending before this terminal decision is durable (SQLite).
+        await db.commit()
+        return expense
 
 
 async def update_expense(

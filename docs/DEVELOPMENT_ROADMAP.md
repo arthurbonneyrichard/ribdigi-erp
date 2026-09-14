@@ -11,6 +11,20 @@
 
 ---
 
+### Tip — concurrent approval stress pack (2026-09-15)
+
+**As of tip:** `TIP_SHA_PLACEHOLDER`
+Concurrent approval stress pack **Complete**: expense + purchase-request
+double-approve / approve-vs-reject / PR→PO double-convert races covered by
+`backend/tests/test_concurrent_approval_stress.py`. Process locks +
+`SELECT FOR UPDATE` + commit-before-release close the SQLite/API prefetch gap;
+PR convert now locks with `for_update`. Overall RBAC readiness remains
+**PARTIAL**. Store-scoped RBAC Complete remains **MISSING**. Offline / 7-day /
+go-live / paid billing Completes remain **MISSING**. Next CONTINUE: residual
+continuum field-leak (product-prioritized) or staging soak docs.
+
+---
+
 ### Tip — living store-scope RBAC test matrix (2026-09-15)
 
 **As of tip:** `d61c79f194793d0bfdbe8e90546fa2fad19a170e`

@@ -667,7 +667,7 @@ async def get_purchase_request(
         m.PurchaseRequest.tenant_id == tenant_id,
     )
     if for_update:
-        stmt = stmt.with_for_update()
+        stmt = stmt.with_for_update().execution_options(populate_existing=True)
     row = (await db.execute(stmt)).scalar_one_or_none()
     if not row:
         raise HTTPException(status_code=404, detail="Purchase request not found")
@@ -917,90 +917,98 @@ async def approve_purchase_request(
     comment: str | None = None,
     actor_role: str | None = None,
 ) -> m.PurchaseRequest:
+    from app.approval_locks import purchase_request_approval_lock
     from app.expenses import assert_actor_may_act
 
-    pr = await get_purchase_request(db, tenant_id, request_id, for_update=True)
-    if pr.status not in PR_APPROVABLE:
-        raise HTTPException(status_code=409, detail=f"Cannot approve PR in status {pr.status}")
-    if pr.created_by and pr.created_by == user_id and (actor_role or "") not in {"super_admin"}:
-        raise HTTPException(status_code=403, detail="Cannot approve your own purchase request")
+    async with purchase_request_approval_lock(tenant_id, request_id):
+        await db.commit()
+        pr = await get_purchase_request(db, tenant_id, request_id, for_update=True)
+        if pr.status not in PR_APPROVABLE:
+            raise HTTPException(status_code=409, detail=f"Cannot approve PR in status {pr.status}")
+        if pr.created_by and pr.created_by == user_id and (actor_role or "") not in {"super_admin"}:
+            raise HTTPException(status_code=403, detail="Cannot approve your own purchase request")
 
-    step = int(pr.approval_step or 1)
-    required = int(pr.approval_steps_required or 1)
-    settings = await get_pr_approval_settings(db, tenant_id)
-    assert_actor_may_act(levels=settings["levels"], step=step, actor_role=actor_role)
+        step = int(pr.approval_step or 1)
+        required = int(pr.approval_steps_required or 1)
+        settings = await get_pr_approval_settings(db, tenant_id)
+        assert_actor_may_act(levels=settings["levels"], step=step, actor_role=actor_role)
 
-    prior = await list_pr_approval_actions(db, tenant_id, pr.id)
-    if any(a.action == "approve" and a.actor_id == user_id for a in prior):
-        raise HTTPException(
-            status_code=403, detail="You already approved an earlier step on this purchase request"
-        )
+        prior = await list_pr_approval_actions(db, tenant_id, pr.id)
+        if any(a.action == "approve" and a.actor_id == user_id for a in prior):
+            raise HTTPException(
+                status_code=403,
+                detail="You already approved an earlier step on this purchase request",
+            )
 
-    await _record_pr_action(
-        db,
-        tenant_id=tenant_id,
-        request_id=pr.id,
-        step=step,
-        action="approve",
-        actor_id=user_id,
-        comment=comment,
-    )
-
-    if step < required:
-        pr.approval_step = step + 1
-        pr.updated_at = datetime.utcnow()
-        from app.notifications import create_notification
-
-        await create_notification(
+        await _record_pr_action(
             db,
             tenant_id=tenant_id,
-            category="purchase_request",
-            title="Purchase Request Needs Next-Level Approval",
-            message=(
-                f"{pr.request_number} (est. {float(pr.estimated_total or 0):.2f}) passed level {step} "
-                f"and awaits level {step + 1} approval."
-            ),
-            entity_type="purchase_request",
-            entity_id=pr.id,
-            company_id=getattr(pr, "company_id", None),
+            request_id=pr.id,
+            step=step,
+            action="approve",
+            actor_id=user_id,
+            comment=comment,
         )
+
+        if step < required:
+            pr.approval_step = step + 1
+            pr.updated_at = datetime.utcnow()
+            from app.notifications import create_notification
+
+            await create_notification(
+                db,
+                tenant_id=tenant_id,
+                category="purchase_request",
+                title="Purchase Request Needs Next-Level Approval",
+                message=(
+                    f"{pr.request_number} (est. {float(pr.estimated_total or 0):.2f}) passed level {step} "
+                    f"and awaits level {step + 1} approval."
+                ),
+                entity_type="purchase_request",
+                entity_id=pr.id,
+                company_id=getattr(pr, "company_id", None),
+            )
+            from app import audit as audit_svc
+
+            await audit_svc.record_event(
+                db,
+                tenant_id=tenant_id,
+                user_id=user_id,
+                action="pr_level_approved",
+                entity="purchase_request",
+                entity_id=pr.id,
+                details={
+                    "request_number": pr.request_number,
+                    "step": step,
+                    "next_step": step + 1,
+                },
+                module="purchasing",
+            )
+            await db.flush()
+            await db.commit()
+            return pr
+
+        pr.status = "approved"
+        pr.approved_by = user_id
+        pr.approved_at = datetime.utcnow()
+        pr.rejection_reason = None
+        pr.approval_step = required
+        pr.updated_at = datetime.utcnow()
         from app import audit as audit_svc
+
         await audit_svc.record_event(
             db,
             tenant_id=tenant_id,
             user_id=user_id,
-            action="pr_level_approved",
+            action="pr_approved",
             entity="purchase_request",
             entity_id=pr.id,
-            details={
-            "request_number": pr.request_number,
-            "step": step,
-            "next_step": step + 1,
-            },
-            module='purchasing',
+            details={"request_number": pr.request_number, "steps": required},
+            module="purchasing",
         )
         await db.flush()
+        await db.commit()
         return pr
-
-    pr.status = "approved"
-    pr.approved_by = user_id
-    pr.approved_at = datetime.utcnow()
-    pr.rejection_reason = None
-    pr.approval_step = required
-    pr.updated_at = datetime.utcnow()
-    from app import audit as audit_svc
-    await audit_svc.record_event(
-        db,
-        tenant_id=tenant_id,
-        user_id=user_id,
-        action="pr_approved",
-        entity="purchase_request",
-        entity_id=pr.id,
-        details={"request_number": pr.request_number, "steps": required},
-        module='purchasing',
-    )
-    await db.flush()
-    return pr
 
 
 async def reject_purchase_request(
@@ -1012,43 +1020,52 @@ async def reject_purchase_request(
     reason: str | None = None,
     actor_role: str | None = None,
 ) -> m.PurchaseRequest:
+    from app.approval_locks import purchase_request_approval_lock
     from app.expenses import assert_actor_may_act
 
-    pr = await get_purchase_request(db, tenant_id, request_id, for_update=True)
-    if pr.status not in PR_APPROVABLE:
-        raise HTTPException(status_code=409, detail=f"Cannot reject PR in status {pr.status}")
-    if pr.created_by and pr.created_by == user_id and (actor_role or "") not in {"super_admin"}:
-        raise HTTPException(status_code=403, detail="Cannot reject your own purchase request")
+    async with purchase_request_approval_lock(tenant_id, request_id):
+        await db.commit()
+        pr = await get_purchase_request(db, tenant_id, request_id, for_update=True)
+        if pr.status not in PR_APPROVABLE:
+            raise HTTPException(status_code=409, detail=f"Cannot reject PR in status {pr.status}")
+        if pr.created_by and pr.created_by == user_id and (actor_role or "") not in {"super_admin"}:
+            raise HTTPException(status_code=403, detail="Cannot reject your own purchase request")
 
-    step = int(pr.approval_step or 1)
-    settings = await get_pr_approval_settings(db, tenant_id)
-    assert_actor_may_act(levels=settings["levels"], step=step, actor_role=actor_role)
+        step = int(pr.approval_step or 1)
+        settings = await get_pr_approval_settings(db, tenant_id)
+        assert_actor_may_act(levels=settings["levels"], step=step, actor_role=actor_role)
 
-    await _record_pr_action(
-        db,
-        tenant_id=tenant_id,
-        request_id=pr.id,
-        step=step,
-        action="reject",
-        actor_id=user_id,
-        comment=(reason or "").strip() or None,
-    )
-    pr.status = "rejected"
-    pr.rejection_reason = (reason or "").strip() or None
-    pr.updated_at = datetime.utcnow()
-    from app import audit as audit_svc
-    await audit_svc.record_event(
-        db,
-        tenant_id=tenant_id,
-        user_id=user_id,
-        action="pr_rejected",
-        entity="purchase_request",
-        entity_id=pr.id,
-        details={"request_number": pr.request_number, "reason": pr.rejection_reason, "step": step},
-        module='purchasing',
-    )
-    await db.flush()
-    return pr
+        await _record_pr_action(
+            db,
+            tenant_id=tenant_id,
+            request_id=pr.id,
+            step=step,
+            action="reject",
+            actor_id=user_id,
+            comment=(reason or "").strip() or None,
+        )
+        pr.status = "rejected"
+        pr.rejection_reason = (reason or "").strip() or None
+        pr.updated_at = datetime.utcnow()
+        from app import audit as audit_svc
+
+        await audit_svc.record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="pr_rejected",
+            entity="purchase_request",
+            entity_id=pr.id,
+            details={
+                "request_number": pr.request_number,
+                "reason": pr.rejection_reason,
+                "step": step,
+            },
+            module="purchasing",
+        )
+        await db.flush()
+        await db.commit()
+        return pr
 
 
 async def cancel_purchase_request(
@@ -1077,47 +1094,57 @@ async def cancel_purchase_request(
 async def convert_purchase_request_to_po(
     db: AsyncSession, *, tenant_id: str, user_id: str, request_id: str
 ) -> tuple[m.PurchaseRequest, m.PurchaseOrder]:
-    pr = await get_purchase_request(db, tenant_id, request_id)
-    if pr.status not in PR_CONVERTIBLE:
-        raise HTTPException(status_code=409, detail=f"Cannot convert PR in status {pr.status}")
-    items = await list_pr_items(db, tenant_id, pr.id)
-    if not items:
-        raise HTTPException(status_code=400, detail="Cannot convert empty purchase request")
-    po = await create_purchase_order(
-        db,
-        tenant_id=tenant_id,
-        user_id=user_id,
-        supplier_id=pr.supplier_id,
-        warehouse_id=pr.warehouse_id,
-        notes=pr.notes or f"Converted from {pr.request_number}",
-        items=[
-            {
-                "product_id": i.product_id,
-                "quantity": float(i.quantity),
-                "unit_price": float(i.unit_price or 0),
-                "tax_rate": float(i.tax_rate or 0),
-            }
-            for i in items
-        ],
-        purchase_request_id=pr.id,
-        company_id=getattr(pr, "company_id", None),
-    )
-    pr.status = "converted"
-    pr.purchase_order_id = po.id
-    pr.updated_at = datetime.utcnow()
-    from app import audit as audit_svc
-    await audit_svc.record_event(
-        db,
-        tenant_id=tenant_id,
-        user_id=user_id,
-        action="pr_converted",
-        entity="purchase_request",
-        entity_id=pr.id,
-        details={"request_number": pr.request_number, "po_id": po.id, "po_number": po.po_number},
-        module='purchasing',
-    )
-    await db.flush()
-    return pr, po
+    from app.approval_locks import purchase_request_approval_lock
+
+    async with purchase_request_approval_lock(tenant_id, request_id):
+        await db.commit()
+        pr = await get_purchase_request(db, tenant_id, request_id, for_update=True)
+        if pr.status not in PR_CONVERTIBLE:
+            raise HTTPException(status_code=409, detail=f"Cannot convert PR in status {pr.status}")
+        items = await list_pr_items(db, tenant_id, pr.id)
+        if not items:
+            raise HTTPException(status_code=400, detail="Cannot convert empty purchase request")
+        po = await create_purchase_order(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            supplier_id=pr.supplier_id,
+            warehouse_id=pr.warehouse_id,
+            notes=pr.notes or f"Converted from {pr.request_number}",
+            items=[
+                {
+                    "product_id": i.product_id,
+                    "quantity": float(i.quantity),
+                    "unit_price": float(i.unit_price or 0),
+                    "tax_rate": float(i.tax_rate or 0),
+                }
+                for i in items
+            ],
+            purchase_request_id=pr.id,
+            company_id=getattr(pr, "company_id", None),
+        )
+        pr.status = "converted"
+        pr.purchase_order_id = po.id
+        pr.updated_at = datetime.utcnow()
+        from app import audit as audit_svc
+
+        await audit_svc.record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="pr_converted",
+            entity="purchase_request",
+            entity_id=pr.id,
+            details={
+                "request_number": pr.request_number,
+                "po_id": po.id,
+                "po_number": po.po_number,
+            },
+            module="purchasing",
+        )
+        await db.flush()
+        await db.commit()
+        return pr, po
 
 
 async def create_purchase_order(
