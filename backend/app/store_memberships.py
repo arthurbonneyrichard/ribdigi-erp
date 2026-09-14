@@ -7,9 +7,9 @@ is on, ``dashboard_scope.managed_store_ids`` unions membership store IDs for
 store_manager only; cashiers stay ``None`` on that helper and use
 ``store_visibility_ids`` / ``cashier_membership_store_ids`` for POS + store-list
 fail-closed. Optional ``expires_at`` excludes rows from scope once past (temp
-access PARTIAL — elevation / break-glass MISSING). ADR-005 Complete via
-automated soak; Complete ≠ prod default ON. Store-scoped RBAC Complete remains
-MISSING.
+access). Elevation / break-glass is a separate RBAC grant (``rbac_elevations``)
+with required reason + auto-expiry. ADR-005 Complete via automated soak;
+Complete ≠ prod default ON. Store-scoped RBAC Complete remains MISSING.
 """
 
 from __future__ import annotations
@@ -29,9 +29,14 @@ from app.stores import get_store
 ADR005_COMPLETE_CLAIMED = True
 STORE_SCOPED_RBAC_COMPLETE_CLAIMED = False
 SCOPE_WIRED_TO_MEMBERSHIP = True
-# Temp membership expiry is enforced in scope; elevation/break-glass not claimed.
+# Temp membership expiry is enforced in scope.
 TEMP_MEMBERSHIP_EXPIRES_AT_CLAIMED = True
-ELEVATION_BREAK_GLASS_CLAIMED = False
+
+
+def _elevation_claimed() -> bool:
+    from app import rbac_elevations as elev_svc
+
+    return bool(elev_svc.ELEVATION_BREAK_GLASS_CLAIMED)
 
 
 def honesty_payload() -> dict:
@@ -44,7 +49,7 @@ def honesty_payload() -> dict:
         "store_membership_scope_enabled": flag_on,
         "cashier_membership_fail_closed": flag_on,
         "temp_membership_expires_at_claimed": TEMP_MEMBERSHIP_EXPIRES_AT_CLAIMED,
-        "elevation_break_glass_claimed": ELEVATION_BREAK_GLASS_CLAIMED,
+        "elevation_break_glass_claimed": _elevation_claimed(),
         "scaffold_status": "complete",
         "operational_scope": (
             "stores.manager_id ∪ user_store_memberships (+ cashier membership fail-closed on POS/store lists; expires_at enforced)"

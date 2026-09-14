@@ -188,9 +188,10 @@ class UserStoreMembership(Base):
     Assignment rows only. Default operational store scope remains ``stores.manager_id``.
     When ``STORE_MEMBERSHIP_SCOPE_ENABLED`` is true, store_manager ``managed_store_ids``
     unions active membership store IDs (see ``docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md``).
-    Optional ``expires_at`` excludes the row from scope once past (temp access MVP);
-    elevation / break-glass remain MISSING. Table presence alone is not store-scoped
-    RBAC Complete; ADR-005 Complete is flag-gated soak + assignment APIs.
+    Optional ``expires_at`` excludes the row from scope once past (temp access MVP).
+    Elevation / break-glass lives on ``RbacElevation`` (separate time-bounded
+    permission grants). Table presence alone is not store-scoped RBAC Complete;
+    ADR-005 Complete is flag-gated soak + assignment APIs.
     """
 
     __tablename__ = "user_store_memberships"
@@ -204,6 +205,28 @@ class UserStoreMembership(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     # Temp membership: null = no expiry; past UTC now ⇒ excluded from scope resolution.
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class RbacElevation(Base):
+    """Time-bounded elevated permission grant (break-glass MVP).
+
+    Reason required; ``expires_at`` required; past expiry or ``revoked_at`` ⇒
+    grant inactive (deny). Merged into effective permissions at claim resolution.
+    Does not claim overall RBAC Complete or store-scoped RBAC Complete.
+    """
+
+    __tablename__ = "rbac_elevations"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    permissions: Mapped[dict] = mapped_column(JSON, default=dict)
+    reason: Mapped[str] = mapped_column(Text)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    granted_by: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

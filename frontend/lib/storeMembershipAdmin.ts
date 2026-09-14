@@ -92,7 +92,7 @@ export function membershipHonestyBanner(honesty?: Partial<MembershipHonesty> | n
       : '';
   const elevNote =
     honesty?.elevation_break_glass_claimed === true
-      ? ''
+      ? ' Elevation / break-glass MVP is available (time-bounded grants).'
       : ' Elevation / break-glass remains MISSING.';
   return (
     `ADR-005 store membership is ${status.toUpperCase()} — assign/list/revoke + flag-gated scope wire verified. ` +

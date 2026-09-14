@@ -35,6 +35,7 @@ from app import expenses as expenses_svc
 from app import tax as tax_svc
 from app import stores as stores_svc
 from app import store_memberships as store_memberships_svc
+from app import rbac_elevations as rbac_elevations_svc
 from app import billing_provider as billing_provider_svc
 from app import credit as credit_svc
 from app import reports as reports_svc
@@ -4100,6 +4101,175 @@ async def update_user(
     if "role" in changes or "record_scope" in changes:
         await cache_svc.app_cache.invalidate_user_permissions(claims["tenant_id"], user.id)
     return env(serialize_user(user), "User updated")
+
+
+@api.get("/users/{user_id}/elevations")
+async def list_user_rbac_elevations(
+    user_id: str,
+    effective_only: bool = False,
+    claims=Depends(require_permission("users", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """List time-bounded elevation / break-glass grants for a user."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_admin_write_denied(
+        managed,
+        message="Store managers cannot list user RBAC elevations.",
+    )
+    await _get_tenant_user(db, claims["tenant_id"], user_id)
+    rows = await rbac_elevations_svc.list_user_elevations(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=user_id,
+        effective_only=effective_only,
+    )
+    subject = await db.get(m.User, user_id)
+    return env(
+        {
+            "elevations": [
+                rbac_elevations_svc.serialize_elevation(r, subject=subject) for r in rows
+            ],
+            **rbac_elevations_svc.honesty_payload(),
+        },
+        "RBAC elevations listed",
+    )
+
+
+@api.post("/users/{user_id}/elevations")
+async def grant_user_rbac_elevation(
+    user_id: str,
+    payload: dict,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Grant time-bounded elevated permissions (break-glass MVP). Reason + expires_at required."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_admin_write_denied(
+        managed,
+        message="Store managers cannot grant RBAC elevations.",
+    )
+    tenants_svc.assert_writable(claims)
+    body = payload or {}
+    reason = rbac_elevations_svc.parse_required_reason(body.get("reason"))
+    expires_at = rbac_elevations_svc.parse_required_expires_at(body.get("expires_at"))
+    permissions = body.get("permissions")
+    if not isinstance(permissions, dict):
+        raise HTTPException(status_code=400, detail="permissions object is required")
+    grantor_perms = (
+        claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
+    )
+    row = await rbac_elevations_svc.grant_elevation(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=user_id,
+        permissions=permissions,
+        reason=reason,
+        expires_at=expires_at,
+        granted_by=claims["sub"],
+        grantor_permissions=grantor_perms,
+    )
+    subject = await db.get(m.User, user_id)
+    honesty = rbac_elevations_svc.honesty_payload()
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="users",
+        action="rbac_elevation_grant",
+        entity="rbac_elevation",
+        entity_id=row.id,
+        details={
+            "subject_user_id": user_id,
+            "permissions": row.permissions,
+            "reason": row.reason,
+            "expires_at": row.expires_at.isoformat() if row.expires_at else None,
+            "elevation_break_glass_claimed": honesty["elevation_break_glass_claimed"],
+        },
+        company_id=claims.get("company_id"),
+    )
+    await db.commit()
+    return env(
+        rbac_elevations_svc.serialize_elevation(row, subject=subject),
+        "RBAC elevation granted (break-glass MVP)",
+    )
+
+
+@api.post("/users/{user_id}/elevations/{elevation_id}/revoke")
+async def revoke_user_rbac_elevation(
+    user_id: str,
+    elevation_id: str,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Revoke an elevation early (deny immediately)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_admin_write_denied(
+        managed,
+        message="Store managers cannot revoke RBAC elevations.",
+    )
+    tenants_svc.assert_writable(claims)
+    await _get_tenant_user(db, claims["tenant_id"], user_id)
+    row = await rbac_elevations_svc.revoke_elevation(
+        db,
+        tenant_id=claims["tenant_id"],
+        elevation_id=elevation_id,
+        actor_id=claims["sub"],
+    )
+    if row.user_id != user_id:
+        raise HTTPException(status_code=404, detail="Elevation not found")
+    subject = await db.get(m.User, user_id)
+    honesty = rbac_elevations_svc.honesty_payload()
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="users",
+        action="rbac_elevation_revoke",
+        entity="rbac_elevation",
+        entity_id=row.id,
+        details={
+            "subject_user_id": user_id,
+            "revoked_at": row.revoked_at.isoformat() if row.revoked_at else None,
+            "elevation_break_glass_claimed": honesty["elevation_break_glass_claimed"],
+        },
+        company_id=claims.get("company_id"),
+    )
+    await db.commit()
+    return env(
+        rbac_elevations_svc.serialize_elevation(row, subject=subject),
+        "RBAC elevation revoked",
+    )
+
+
+@api.get("/me/elevations")
+async def me_rbac_elevations(
+    effective_only: bool = True,
+    claims=Depends(current_claims),
+    db: AsyncSession = Depends(get_db),
+):
+    """Caller-visible elevations (default: effective only)."""
+    rows = await rbac_elevations_svc.list_user_elevations(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        effective_only=effective_only,
+    )
+    subject = await db.get(m.User, claims["sub"])
+    return env(
+        {
+            "elevations": [
+                rbac_elevations_svc.serialize_elevation(r, subject=subject) for r in rows
+            ],
+            **rbac_elevations_svc.honesty_payload(),
+        },
+        "My RBAC elevations",
+    )
 
 
 @api.post("/users/{user_id}/password-reset-email")

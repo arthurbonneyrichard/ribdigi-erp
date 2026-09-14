@@ -136,34 +136,39 @@ async def resolve_user_permissions(db: AsyncSession, user: m.User) -> dict:
     """Resolve effective permissions with optional Redis/app-cache (Stage 7 C2).
 
     Soft-fails when cache is disabled or Redis is down (same pattern as P2).
+    Active RBAC elevations are overlaid after cache so expiry is always live.
     """
     from app.cache import app_cache
+    from app import rbac_elevations as elev_svc
 
     key = app_cache.permissions_key(user.tenant_id, user.id)
     cached = await app_cache.get_json(key)
     if isinstance(cached, dict):
-        return cached
-
-    if isinstance(user.permissions, dict) and user.permissions:
-        perms = dict(user.permissions)
-    elif user.role in VALID_ROLES:
-        perms = permissions_for_role(user.role)
+        perms = cached
     else:
-        from app import roles as roles_svc
+        if isinstance(user.permissions, dict) and user.permissions:
+            perms = dict(user.permissions)
+        elif user.role in VALID_ROLES:
+            perms = permissions_for_role(user.role)
+        else:
+            from app import roles as roles_svc
 
-        try:
-            perms = await roles_svc.permissions_for_assignment(
-                db, user.tenant_id, user.role
-            )
-        except Exception:
+            try:
+                perms = await roles_svc.permissions_for_assignment(
+                    db, user.tenant_id, user.role
+                )
+            except Exception:
+                perms = {}
+
+        if not isinstance(perms, dict):
             perms = {}
+        await app_cache.set_json(
+            key, perms, ttl_seconds=int(settings.CACHE_PERMISSIONS_TTL_SECONDS)
+        )
 
-    if not isinstance(perms, dict):
-        perms = {}
-    await app_cache.set_json(
-        key, perms, ttl_seconds=int(settings.CACHE_PERMISSIONS_TTL_SECONDS)
+    return await elev_svc.overlay_active_elevations(
+        db, tenant_id=user.tenant_id, user_id=user.id, base=perms
     )
-    return perms
 
 
 async def current_claims(
@@ -340,6 +345,15 @@ async def current_claims(
             # Tenant workspace: strip operational wildcards for non-platform tenant admins
             # by keeping permissions but gating modules in require_permission via workspace.
             data["tenant_admin"] = True
+        # Re-apply elevations after workspace permission refinements (deny after expiry).
+        from app import rbac_elevations as elev_svc
+
+        data["permissions"] = await elev_svc.overlay_active_elevations(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            base=data.get("permissions") if isinstance(data.get("permissions"), dict) else {},
+        )
     else:
         data["workspace_kind"] = "platform"
         data["company_id"] = None

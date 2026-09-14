@@ -11,6 +11,18 @@
 
 ---
 
+### Tip — elevation / break-glass MVP (2026-09-15)
+
+**As of tip:** _(self-fixed after push)_
+Time-bounded RBAC elevation / break-glass MVP: required reason, grantor-subset
+permissions, audit on grant/revoke, ``expires_at`` auto-deny (≤24h), early revoke.
+Reuses membership expiry patterns; no RBAC rebuild. Elevation slice **Complete**.
+Temp membership ``expires_at`` **Complete** (with elevation). Overall RBAC readiness
+remains **PARTIAL**. Store-scoped RBAC Complete remains **MISSING**. Offline /
+7-day / go-live / paid billing Completes remain **MISSING**.
+
+---
+
 ### Tip — export residual closed + temp membership expires_at (2026-09-15)
 
 **As of tip:** `8ac6d3ca138701a959807cdb932d99bdc8174736`
@@ -18,10 +30,10 @@ Closed residual admin/settings/catalog module `export` gates (role-gated admin
 dumps + caller-scoped session/passkey exports retained intentionally). First-class
 `export` / `view_cost` actions marked **Complete** for this engine slice (not
 overall RBAC Complete). Temp membership `expires_at` landed (scope exclusion +
-admin UI + tests) — elevation / break-glass remain **MISSING**. ADR-005 remains
-**Complete** (flag default OFF). Overall RBAC readiness remains **PARTIAL**.
-Store-scoped RBAC Complete remains **MISSING**. Offline / 7-day / go-live /
-paid billing Completes remain **MISSING**.
+admin UI + tests) — elevation / break-glass later **Complete** (see tip above).
+ADR-005 remains **Complete** (flag default OFF). Overall RBAC readiness remains
+**PARTIAL**. Store-scoped RBAC Complete remains **MISSING**. Offline / 7-day /
+go-live / paid billing Completes remain **MISSING**.
 
 ---
 

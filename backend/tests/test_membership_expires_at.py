@@ -1,4 +1,4 @@
-"""Temp store membership expires_at (PARTIAL — elevation/break-glass MISSING)."""
+"""Temp store membership expires_at (Complete with elevation/break-glass MVP)."""
 
 from __future__ import annotations
 
@@ -50,7 +50,7 @@ async def test_assign_membership_with_expires_at(client, db_session):
     assert body["expires_at"] is not None
     assert body["is_expired"] is False
     assert body["temp_membership_expires_at_claimed"] is True
-    assert body["elevation_break_glass_claimed"] is False
+    assert body["elevation_break_glass_claimed"] is True
 
     # Clear expiry → permanent
     cleared = await ac.post(
@@ -163,6 +163,6 @@ async def test_expired_membership_excluded_from_scope(client, db_session, monkey
 def test_honesty_temp_membership_flags():
     payload = store_memberships_svc.honesty_payload()
     assert payload["temp_membership_expires_at_claimed"] is True
-    assert payload["elevation_break_glass_claimed"] is False
+    assert payload["elevation_break_glass_claimed"] is True
     assert payload["adr005_complete_claimed"] is True
     assert payload["store_scoped_rbac_complete_claimed"] is False

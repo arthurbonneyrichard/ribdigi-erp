@@ -50,7 +50,7 @@ function membershipHonestyBanner(honesty) {
       : '';
   const elevNote =
     honesty?.elevation_break_glass_claimed === true
-      ? ''
+      ? ' Elevation / break-glass MVP is available (time-bounded grants).'
       : ' Elevation / break-glass remains MISSING.';
   return (
     `ADR-005 store membership is ${status.toUpperCase()} — assign/list/revoke + flag-gated scope wire verified. ` +
@@ -112,9 +112,9 @@ describe('storeMembershipAdmin helpers', () => {
       store_membership_scope_enabled: false,
       store_scoped_rbac_complete_claimed: false,
       temp_membership_expires_at_claimed: true,
-      elevation_break_glass_claimed: false,
+      elevation_break_glass_claimed: true,
     });
     assert.match(bannerTemp, /expires_at is enforced/);
-    assert.match(bannerTemp, /break-glass remains MISSING/);
+    assert.match(bannerTemp, /break-glass MVP is available/);
   });
 });
