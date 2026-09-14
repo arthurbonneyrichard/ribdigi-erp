@@ -147,7 +147,9 @@ store activation — never frontend-only.
    ops remain) + **product images gallery list GET + CSV export denied**
    (``storage_key`` media dump) + **product primary image binary GET denied**
    (``GET /products/{id}/image``; list/get ``has_image`` + WH stock ops remain;
-   company/tenant logo binary GET stays open) + **product variants CSV export denied**
+   company/tenant logo binary GET stays open) + **product list/get ``image_url``
+   storage key redacted** (``has_image`` remains; admin list/get keep ``image_url``)
+   + **product variants CSV export denied**
    (company roster ``/products/variants/export`` + per-product path
    ``/products/{id}/variants/export``; variants list/get remain for POS/sales), and **stock CSV import denied for store_manager** (company-level
    bulk WH / product.stock_qty seed; template read + per-WH stock-in/out remain),
@@ -299,7 +301,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `52e604871c` — `docs: bump PR #303 tip to f1b60b567b product primary image deny` (feat ancestry `f1b60b567b`).  
+**As of tip:** `9819c1e9f6` — `feat(rbac): redact product image_url for store_manager` (list/get storage_key redact after primary image GET deny).  
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
@@ -323,7 +325,8 @@ early-discount quote matrix fields, and BI company config/cost embeds; product
 images gallery list GET; product variants path CSV export (after roster export
 deny); product catalog CSV export (`GET /products/export`); users list/get
 (company org roster after users CSV export deny); product primary image binary
-GET (`GET /products/{id}/image`). Each slice closes one dump or write path; the
+GET (`GET /products/{id}/image`); product list/get `image_url` storage-key
+redact (`has_image` remains). Each slice closes one dump or write path; the
 continuum as a whole stays **PARTIAL**.
 
 ### Continuum agent contract
