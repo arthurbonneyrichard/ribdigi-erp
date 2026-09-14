@@ -9,13 +9,11 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `de0ddf06b5ea6fc65fe7d4f09ac94533a4f99f8d` — feat redact credit-aging document `exchange_rate` (`abe20b58a4`); leftovers still open |
+| **As of tip** | `TIP_PLACEHOLDER` — feat deny accounting/reports `branch_id` filter (`baf6e4b84b`); leftovers still open |
 | RBAC / store scope | **PARTIAL** only |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
 
-Closed this continuum slice: sales-invoice list/get/export/print `exchange_rate` redact for store_manager (currency already redacted; credit payment exchange_rate already redacted; exchange-rates GET already denied; totals/status/balance remain).
-
-Closed this continuum slice: expenses-summary `category_id` query/export filter denied (`STORE_SCOPE_DENIED`; unfiltered scoped summary remains).
+Closed this continuum slice: accounting/reports P&L + cash-flow + balance-sheet `branch_id` query/export filter denied for store_manager (`STORE_SCOPE_DENIED`; unfiltered store-scoped reports remain; branches list GET + store `branch_id` JSON already denied/redacted; admin may filter).
 
 **Intentionally still open (same list as `AGENTS.md`):** company/tenant **logo binary GET** (workspace chrome; mistaken `b0fc721a15` deny **reverted**); per-user `/auth/sessions` + `/notifications/settings`; ADR-005 user↔store membership **MISSING**; managed-store self-scope `manager_id` may remain.
 
