@@ -1114,6 +1114,37 @@ async def serialize_return(db: AsyncSession, ret: m.SalesReturn) -> dict:
     }
 
 
+async def _returned_qty_by_invoice_line(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    sales_invoice_id: str,
+    exclude_return_id: str | None = None,
+) -> dict[tuple[str, str | None], float]:
+    """Sum return qty per invoice line across draft+posted returns (exclude cancelled).
+
+    Keys are ``(product_id, variant_id)``. Prevents duplicate / over-refunds when
+    multiple returns are created against the same sales invoice.
+    """
+    q = (
+        select(m.SalesReturnItem.product_id, m.SalesReturnItem.variant_id, m.SalesReturnItem.quantity)
+        .join(m.SalesReturn, m.SalesReturn.id == m.SalesReturnItem.sales_return_id)
+        .where(
+            m.SalesReturnItem.tenant_id == tenant_id,
+            m.SalesReturn.sales_invoice_id == sales_invoice_id,
+            m.SalesReturn.status.in_(["draft", "posted"]),
+        )
+    )
+    if exclude_return_id:
+        q = q.where(m.SalesReturn.id != exclude_return_id)
+    rows = (await db.execute(q)).all()
+    totals: dict[tuple[str, str | None], float] = {}
+    for product_id, variant_id, qty in rows:
+        key = (product_id, variant_id)
+        totals[key] = totals.get(key, 0.0) + float(qty or 0)
+    return totals
+
+
 async def create_return(
     db: AsyncSession,
     *,
@@ -1140,6 +1171,9 @@ async def create_return(
     if not items:
         raise HTTPException(status_code=400, detail="Return requires line items")
 
+    already = await _returned_qty_by_invoice_line(
+        db, tenant_id=tenant_id, sales_invoice_id=invoice.id
+    )
     subtotal = 0.0
     tax_total = 0.0
     prepared: list[dict] = []
@@ -1156,8 +1190,22 @@ async def create_return(
         if not src:
             raise HTTPException(status_code=400, detail=f"Product {pid} not on original invoice")
         qty = float(item["quantity"])
-        if qty <= 0 or qty > float(src.quantity) + 1e-9:
-            raise HTTPException(status_code=400, detail="Return quantity exceeds invoice quantity")
+        if qty <= 0:
+            raise HTTPException(status_code=400, detail="Return quantity must be positive")
+        key = (pid, vid)
+        available = float(src.quantity) - already.get(key, 0.0)
+        if qty > available + 1e-9:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "OVER_RETURN",
+                    "message": "Return quantity exceeds remaining invoice quantity",
+                    "product_id": pid,
+                    "variant_id": vid,
+                    "available": available,
+                    "requested": qty,
+                },
+            )
         unit = float(src.unit_price)
         rate = float(src.tax_rate or 0)
         line_net = round(qty * unit, 2)
@@ -1176,6 +1224,7 @@ async def create_return(
                 "condition": item.get("condition") or ("sellable" if restock else "discard"),
             }
         )
+        already[key] = already.get(key, 0.0) + qty
 
     ret = m.SalesReturn(
         tenant_id=tenant_id,
@@ -1216,6 +1265,36 @@ async def post_return(
 
     invoice = await get_invoice(db, tenant_id, ret.sales_invoice_id)
     from app.fx import doc_rate, to_base
+
+    # Defense in depth: re-check remaining qty excluding this draft (race / concurrent drafts).
+    inv_items = {
+        (i.product_id, i.variant_id): i for i in await list_invoice_items(db, tenant_id, invoice.id)
+    }
+    already = await _returned_qty_by_invoice_line(
+        db,
+        tenant_id=tenant_id,
+        sales_invoice_id=invoice.id,
+        exclude_return_id=ret.id,
+    )
+    for item in items:
+        key = (item.product_id, item.variant_id)
+        src = inv_items.get(key)
+        if not src:
+            raise HTTPException(status_code=400, detail="Return line missing from original invoice")
+        available = float(src.quantity) - already.get(key, 0.0)
+        if float(item.quantity) > available + 1e-9:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "OVER_RETURN",
+                    "message": "Return quantity no longer available",
+                    "product_id": item.product_id,
+                    "variant_id": item.variant_id,
+                    "available": available,
+                    "requested": float(item.quantity),
+                },
+            )
+        already[key] = already.get(key, 0.0) + float(item.quantity)
 
     warehouse_id = None
     if invoice.store_id:
