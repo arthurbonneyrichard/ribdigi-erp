@@ -353,8 +353,8 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `5bc19141fb45582a924d37a718d35ec216cff164` — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL**; ADR-005 membership **PARTIAL** (scaffold + admin UI + flag-gated scope wire + cashier POS/store-list fail-closed default OFF — Complete still **MISSING**); paid billing **PARTIAL** (ADR-002 portal + Checkout Session create + signed webhook proof — Complete still **MISSING**); Offline Complete still **MISSING**. Cookie flag default remains OFF (ops enable cutover). Continuum CLE honesty remains **PARTIAL**.
-**Security:** no open Critical/High/Medium. Do not claim go-live Completes. Flag OFF in prod examples is intentional until ops cutover (`docs/sec_m2_staging_soak_checklist.md`).  
+**As of tip:** `9ec4ae5e86d68b9e722e49469c6a148f0d5959a5` — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL**; ADR-005 membership **PARTIAL** (scaffold + admin UI + flag-gated scope wire + cashier fail-closed + automated flag-ON soak; default OFF — Complete still **MISSING**); paid billing **PARTIAL** (ADR-002 portal + Checkout Session create + signed webhook proof — Complete still **MISSING**); Offline Complete still **MISSING**. Cookie + membership-scope flags default remain OFF (ops enable cutover). Continuum CLE honesty remains **PARTIAL**.
+**Security:** no open Critical/High/Medium. Do not claim go-live Completes. Cookie + membership-scope flags OFF in prod examples are intentional until ops cutover (`docs/sec_m2_staging_soak_checklist.md`, `docs/adr005_staging_soak_checklist.md`).  
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
@@ -367,8 +367,9 @@ leave contradictory Complete/PARTIAL wording across those three surfaces.
 1. Company/tenant **logo binary GET** (workspace chrome; branding *writes* already denied). Mistaken close in `b0fc721a15` was **reverted** — leftover restored.
 2. Per-user `/auth/sessions` + `/notifications/settings` (self-service; not company dumps).
 3. **ADR-005** user↔store membership **PARTIAL** (scaffold + admin UI + flag-gated
-   scope wire default OFF — see `docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md`; Complete
-   still **MISSING**; production default still ``stores.manager_id``).
+   scope wire + cashier fail-closed + automated flag-ON soak; default OFF — see
+   `docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md` + `docs/adr005_staging_soak_checklist.md`;
+   Complete still **MISSING**; production default still ``stores.manager_id``).
 4. Managed-store list may still expose self-scope `manager_id` (not peer org graph).
 
 ### Closed continuum themes (summary — still PARTIAL)
