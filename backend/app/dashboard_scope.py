@@ -3512,15 +3512,43 @@ def redact_document_emailed_to(payload: dict) -> dict:
     return out
 
 
+def omit_sales_invoice_currency(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit sales-invoice ``currency``.
+
+    Company profile GET + ``/me``/``/workspace`` switcher already omit company
+    ``currency``; POS receipt JSON already redacts ``currency``. Sales-invoice
+    list/get/export/print JSON must not re-dump company/tenant (or doc) currency
+    after those profile redacts. Totals / status / balance / ``exchange_rate``
+    remain; server-side HTML/PDF/text embeds may retain the code (resolved before
+    JSON redacts on print).
+    """
+    return managed_ids is not None
+
+
+def redact_sales_invoice_currency(payload: dict) -> dict:
+    """Null ``currency`` on a sales-invoice JSON/CSV row (and nested print invoice)."""
+    out = dict(payload)
+    if "currency" in out:
+        out["currency"] = None
+    nested = out.get("invoice")
+    if isinstance(nested, dict) and "currency" in nested:
+        inv = dict(nested)
+        inv["currency"] = None
+        out["invoice"] = inv
+    return out
+
+
 def apply_sales_invoice_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager sales-invoice JSON redacts (credit-override + emailed_to)."""
+    """Apply store_manager sales-invoice JSON redacts (credit-override + emailed_to + currency)."""
     out = payload
     if omit_sales_invoice_credit_override(managed_ids):
         out = redact_sales_invoice_credit_override(out)
     if omit_document_emailed_to(managed_ids):
         out = redact_document_emailed_to(out)
+    if omit_sales_invoice_currency(managed_ids):
+        out = redact_sales_invoice_currency(out)
     return out
 
 

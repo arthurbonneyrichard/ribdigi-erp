@@ -138,11 +138,13 @@ async def export_sales_invoices_csv(
             stmt = stmt.where(m.SalesInvoice.id.is_(None))
     stmt = apply_created_by_scope(stmt, m.SalesInvoice, claims)
     rows = (await db.execute(stmt)).scalars().all()
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=SALES_INVOICE_EXPORT_COLUMNS)
     writer.writeheader()
     for inv in rows:
         data = await sales_svc.serialize_invoice(db, inv)
+        data = dashboard_scope_svc.apply_sales_invoice_manager_redacts(data, managed)
         writer.writerow({k: _cell(data.get(k)) for k in SALES_INVOICE_EXPORT_COLUMNS})
     return buf.getvalue()
 
