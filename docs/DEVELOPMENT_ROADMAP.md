@@ -13,7 +13,7 @@
 
 ### Tip — RBAC approval hardening + ADR-005 Complete (2026-09-15)
 
-**As of tip:** `6bcdc331a42b227e4c38dcaa58ea9a3026c5370c`
+**As of tip:** `10a7c64af691009826e90e15c46d0bd8ed6dfeec`
 
 ADR-005 attested **Complete** via automated flag-ON soak + POS store bind + honesty
 flags. `STORE_MEMBERSHIP_SCOPE_ENABLED` remains **false** by default (ops cutover;
