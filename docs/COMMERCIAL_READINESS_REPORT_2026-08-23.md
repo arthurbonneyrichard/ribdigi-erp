@@ -9,7 +9,7 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `73752ad7e2ef6f815d03a3d3e09e3560008ae043` — print/receipt company_email redact (feat); ancestry invoice print template `5d076753b7` + receipt print template `8d06c785d9` + tax filing TIN `47844e3c4d` + continuum PO emailed_to `9ff88796a1` + security H1–H5 `3cf99a5540`/`caf7d98b55`; leftovers still open |
+| **As of tip** | `e4e95154046e0663139739f4e7824d93c3c73bfa` — docs sync after print/receipt company_email  (feat ancestry); ancestry invoice print template `5d076753b7` + receipt print template `8d06c785d9` + tax filing TIN `47844e3c4d` + continuum PO emailed_to `9ff88796a1` + security H1–H5 `3cf99a5540`/`caf7d98b55`; leftovers still open |
 | RBAC / store scope | **PARTIAL** only |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
 
