@@ -1482,10 +1482,30 @@ def redact_document_invoice_print_template(payload: dict) -> dict:
     return out
 
 
+def omit_receipt_cashier_name(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit POS receipt ``cashier_name``.
+
+    Users list/get already denied (company org roster). Salesperson ``full_name``
+    / stock-movement ``created_by_name`` already redacted. POS receipt JSON must
+    not re-dump staff display name via ``cashier_name``. ``company_name`` +
+    ``has_logo`` + totals remain; server-side text/PDF embeds may retain the
+    name (rendered before JSON redacts).
+    """
+    return managed_ids is not None
+
+
+def redact_receipt_cashier_name(payload: dict) -> dict:
+    """Null ``cashier_name`` on a POS receipt JSON dict."""
+    out = dict(payload)
+    if "cashier_name" in out:
+        out["cashier_name"] = None
+    return out
+
+
 def apply_document_logo_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager document-brand JSON redacts (logo + legal + contact + TIN + header + tpl)."""
+    """Apply store_manager document-brand JSON redacts (logo + legal + contact + TIN + header + tpl + cashier)."""
     out = payload
     if omit_document_logo_data_url(managed_ids):
         out = redact_document_logo_data_url(out)
@@ -1501,6 +1521,8 @@ def apply_document_logo_manager_redacts(
         out = redact_document_receipt_print_template(out)
     if omit_document_invoice_print_template(managed_ids):
         out = redact_document_invoice_print_template(out)
+    if omit_receipt_cashier_name(managed_ids):
+        out = redact_receipt_cashier_name(out)
     return out
 
 
