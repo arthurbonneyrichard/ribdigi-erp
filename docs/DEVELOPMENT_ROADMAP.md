@@ -13,7 +13,7 @@
 
 ### Tip — continuum residual dump NONE (2026-09-15)
 
-**As of tip:** `b5cecc3cb9122011daea44d68941363ea54f7b85`
+**As of tip:** `1f7255beebd19d29cf46faf95763e9035d77b24e`
 Continuum residual dump **NONE** for `store_manager`: no safe SM-visible named
 leftover after scan of audit `details` re-dumps, personal/broadcast notification
 embeds, and omit-sibling surfaces. Credit-limit warning broadcasts
