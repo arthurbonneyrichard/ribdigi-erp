@@ -437,10 +437,32 @@ async def test_inventory_balance_report_cost_redacted_for_store_manager(client, 
 async def test_residual_admin_settings_catalog_export_gates(client, db_session):
     """Admin/settings/catalog CSV paths require module:export (residual closed)."""
     ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    existing = (
+        await db_session.execute(
+            select(m.Store).where(m.Store.tenant_id == tid, m.Store.manager_id == mgr.id)
+        )
+    ).scalars().first()
+    if existing is None:
+        db_session.add(
+            m.Store(
+                tenant_id=tid,
+                company_id=cid,
+                code="MGR-RES-EXP",
+                name="Mgr Residual Export Store",
+                manager_id=mgr.id,
+                is_active=True,
+            )
+        )
+        await db_session.commit()
+
     cash = await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")
     mgr_h = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_h = await _super(ac, seed)
 
-    # Cashier lacks inventory/users/tax export — deny
+    # Cashier lacks inventory/users/tax export — deny on action (not mere read)
     deny_paths = [
         ("/api/v1/catalog/categories/export", "inventory:export"),
         ("/api/v1/catalog/brands/export", "inventory:export"),
@@ -458,17 +480,32 @@ async def test_residual_admin_settings_catalog_export_gates(client, db_session):
         assert res.status_code == 403, f"{path}: {res.text}"
         assert token in res.text, f"{path}: expected {token} in {res.text}"
 
-    # Store manager retains prior read-export behavior via explicit export grants
-    allow_paths = [
+    # Company-level catalog/settings dumps: admin allowed via module:export
+    admin_allow = [
         "/api/v1/catalog/categories/export",
         "/api/v1/catalog/brands/export",
+        "/api/v1/catalog/units/export",
         "/api/v1/branches/export",
         "/api/v1/departments/export",
         "/api/v1/inventory/settings/export",
+        "/api/v1/users/export",
+    ]
+    for path in admin_allow:
+        res = await ac.get(path, headers=admin_h)
+        assert res.status_code == 200, f"{path}: {res.text}"
+        assert "text/csv" in res.headers.get("content-type", ""), path
+
+    # Store manager has export grant but company catalog dump stays scope-denied
+    scoped = await ac.get("/api/v1/catalog/categories/export", headers=mgr_h)
+    assert scoped.status_code == 403, scoped.text
+    assert "STORE_SCOPE_DENIED" in scoped.text
+
+    # Caller-/store-scoped surfaces store_manager may still export
+    mgr_allow = [
         "/api/v1/stores/drawer-settings/export",
         "/api/v1/notifications/settings/export",
     ]
-    for path in allow_paths:
+    for path in mgr_allow:
         res = await ac.get(path, headers=mgr_h)
         assert res.status_code == 200, f"{path}: {res.text}"
         assert "text/csv" in res.headers.get("content-type", ""), path
