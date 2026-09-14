@@ -13,7 +13,7 @@
 
 ### Tip — notification expense approval threshold redact (2026-09-15)
 
-**As of tip:** `a8b40fa7f05bd8e053989963fe3ce5b8311f50a3`
+**As of tip:** `0df5e39b0b4cdfa76a725774b4cbb318838ad78b`
 Expense-approval notification `message` company auto-approve threshold redact for
 `store_manager` (`exceeds approval threshold (N)` stripped on `GET /notifications`
 + export + mark-read/unread; `create_expense` notify source no longer embeds the
