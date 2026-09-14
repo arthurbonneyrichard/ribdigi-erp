@@ -451,7 +451,7 @@ export default function Page() {
             {dailyAll.every((x) => !x.sales) ? (
               <div className="empty">No sales in the last 30 days yet.</div>
             ) : (
-              <TrendLine data={dailyAll} color="#6366f1" />
+              <TrendLine data={dailyAll} color="#4AB012" />
             )}
           </div>
 
@@ -511,7 +511,7 @@ export default function Page() {
                   Out of stock&nbsp;<b>{num(oos)}</b>
                 </Link>
                 <Link className="pill" href={links.expiring || '/inventory'} style={{ textDecoration: 'none', color: 'inherit' }}>
-                  <span className="dot" style={{ background: '#6366f1', width: 12, height: 12, borderRadius: 4 }} />
+                  <span className="dot" style={{ background: '#13612E', width: 12, height: 12, borderRadius: 4 }} />
                   Expiring (30d)&nbsp;<b>{num(expiring)}</b>
                 </Link>
               </div>
@@ -611,7 +611,7 @@ export default function Page() {
                       cy="70"
                       r={r}
                       fill="none"
-                      stroke="#6366f1"
+                      stroke="#13612E"
                       strokeWidth="16"
                       strokeDasharray={suppArc.dash}
                       strokeDashoffset={-custArc.c * custFrac}
@@ -632,7 +632,7 @@ export default function Page() {
                   <span className="dot" style={{ background: '#f59e0b' }} /> Customers · <b>&nbsp;{num(customers)}</b>
                 </span>
                 <span className="li">
-                  <span className="dot" style={{ background: '#6366f1' }} /> Suppliers · <b>&nbsp;{num(suppliers)}</b>
+                  <span className="dot" style={{ background: '#13612E' }} /> Suppliers · <b>&nbsp;{num(suppliers)}</b>
                 </span>
               </div>
             </div>

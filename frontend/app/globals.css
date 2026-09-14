@@ -73,10 +73,10 @@
 .pico.pi-flow{background:var(--success-bg)}
 .pico.pi-mix{background:#fef3c7}
 .pico.pi-health{background:#e0f2fe}
-.pico.pi-trend{background:#ede9fe}
+.pico.pi-trend{background:color-mix(in srgb, var(--forest) 12%, white)}
 .pico.pi-pie{background:var(--success-bg)}
 .pico.pi-daily{background:var(--success-bg)}
-.pico.pi-profit{background:#ede9fe}
+.pico.pi-profit{background:color-mix(in srgb, var(--forest) 12%, white)}
 .vbar-val{font-size:9px;fill:var(--muted);font-weight:700}
 .vbar-label{font-size:11px;fill:var(--muted);font-weight:600}
 
