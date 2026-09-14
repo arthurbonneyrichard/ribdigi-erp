@@ -9,7 +9,7 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `5c152ffefd902b459aa7f4b71b1e47d72d8dd560` — logo binary GET leftover honesty (feat `74189c284b`; mistaken `b0fc721a15` deny reverted) for `store_manager` |
+| **As of tip** | `$(git rev-parse HEAD)` — logo binary GET leftover honesty (feat `74189c284b`; mistaken `b0fc721a15` deny reverted) for `store_manager` |
 | RBAC / store scope | **PARTIAL** only |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
 
