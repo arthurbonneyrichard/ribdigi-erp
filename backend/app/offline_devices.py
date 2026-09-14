@@ -19,6 +19,8 @@ ALLOWED_PLATFORMS = {"web", "android", "ios", "desktop", "other"}
 
 def serialize_device(row: m.OfflineDevice) -> dict[str, Any]:
     envelope = envelope_from_device(row)
+    wipe_status = getattr(row, "wipe_status", None)
+    wipe_pending = wipe_status == "pending"
     return {
         "id": row.id,
         "name": row.name,
@@ -37,6 +39,10 @@ def serialize_device(row: m.OfflineDevice) -> dict[str, Any]:
         "updated_at": row.updated_at,
         "status": "revoked" if row.revoked_at else "active",
         "auth_envelope": envelope,
+        "wipe_status": wipe_status,
+        "wipe_pending": wipe_pending,
+        "wipe_requested_at": getattr(row, "wipe_requested_at", None),
+        "wipe_acked_at": getattr(row, "wipe_acked_at", None),
     }
 
 
@@ -135,8 +141,9 @@ async def get_device(db: AsyncSession, tenant_id: str, device_id: str) -> m.Offl
 async def revoke_device(db: AsyncSession, tenant_id: str, device_id: str) -> m.OfflineDevice:
     """Soft-revoke + soft lockdown: block sync/rebind and expire server envelope.
 
-    Pending queue ops are retained (not deleted or auto-applied). Does not remotely
-    wipe offline IndexedDB — Offline Complete / remote wipe remain deferred.
+    Pending queue ops are retained (not deleted or auto-applied). Soft lockdown alone
+    does not wipe IndexedDB — use ``request_remote_wipe`` for wipe scaffolding.
+    Offline Complete remains deferred.
     """
     row = await get_device(db, tenant_id, device_id)
     if row.revoked_at is None:
@@ -146,6 +153,46 @@ async def revoke_device(db: AsyncSession, tenant_id: str, device_id: str) -> m.O
         row.offline_authorized_until = now
         row.updated_at = now
         await db.flush()
+    return row
+
+
+async def request_remote_wipe(
+    db: AsyncSession,
+    tenant_id: str,
+    device_id: str,
+    *,
+    requested_by: str | None,
+) -> m.OfflineDevice:
+    """Queue a remote IndexedDB wipe + soft lockdown (scaffold).
+
+    Does **not** claim Offline Complete or push-delivery Complete. The client must
+    poll ``wipe_pending`` (or receive a future push) then clear local IndexedDB and
+    POST wipe/ack.
+    """
+    row = await revoke_device(db, tenant_id, device_id)
+    now = datetime.utcnow()
+    row.wipe_requested_at = now
+    row.wipe_requested_by = requested_by
+    row.wipe_acked_at = None
+    row.wipe_status = "pending"
+    row.updated_at = now
+    await db.flush()
+    return row
+
+
+async def ack_remote_wipe(db: AsyncSession, tenant_id: str, device_id: str) -> m.OfflineDevice:
+    """Mark wipe as acknowledged after the client cleared local offline stores."""
+    row = await get_device(db, tenant_id, device_id)
+    if row.wipe_status != "pending":
+        raise HTTPException(
+            status_code=400,
+            detail="No pending remote wipe for this device",
+        )
+    now = datetime.utcnow()
+    row.wipe_acked_at = now
+    row.wipe_status = "acked"
+    row.updated_at = now
+    await db.flush()
     return row
 
 

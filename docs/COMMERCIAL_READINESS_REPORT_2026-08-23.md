@@ -40,7 +40,7 @@ Closed this continuum slice: tax filing `jurisdiction` query/export filter denie
 | POS (online) | **PASS** (MVP) |
 | Offline foundation | **PARTIAL** — queue/catalog/sync MVP; 7-day auth envelope implemented (not VERIFIED) |
 | 7-Day offline | **PARTIAL** (envelope + client gate shipped; physical endurance **NOT RUN**) |
-| Offline recovery / lockdown / owner dashboard | **PARTIAL** — recovery export UI + owner alerts API/UI + soft lockdown (envelope expire on revoke) + critical security-email notify; remote wipe / push / Offline Complete still MISSING |
+| Offline recovery / lockdown / owner dashboard | **PARTIAL** — recovery export UI + owner alerts API/UI + soft lockdown + remote wipe **scaffold** (request/ack + client IndexedDB clear); push delivery / Offline Complete still MISSING |
 | Paid billing | **DEFERRED** (ADR-002) |
 | Backup (logical) | **PASS** (MVP tests) |
 | Restore / PITR / load / pen test (live) | **NOT RUN** (operator/external) |

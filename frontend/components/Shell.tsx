@@ -2187,6 +2187,25 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Remote wipe scaffold — when online, clear local IndexedDB if wipe_pending (not Offline Complete).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let cancelled = false;
+    const run = () => {
+      void import('../lib/offlineRemoteWipe')
+        .then(({ processPendingRemoteWipeIfNeeded }) => processPendingRemoteWipeIfNeeded())
+        .catch(() => {
+          /* wipe poll best-effort */
+        });
+    };
+    if (!cancelled && navigator.onLine) run();
+    window.addEventListener('online', run);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('online', run);
+    };
+  }, []);
+
   useEffect(() => {
     let active = true;
     async function load() {

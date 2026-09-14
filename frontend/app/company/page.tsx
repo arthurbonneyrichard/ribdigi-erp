@@ -10,6 +10,7 @@ import {
   refreshOfflineAuthEnvelope,
 } from '../../lib/offlineAuthEnvelope';
 import { downloadOfflineRecoveryPack, setBoundOfflineDeviceId } from '../../lib/offlineQueue';
+import { processPendingRemoteWipeIfNeeded } from '../../lib/offlineRemoteWipe';
 import { getSelectedStoreId } from '../../lib/storeContext';
 import { getCompanyId, getWorkspaceKind } from '../../lib/workspaceContext';
 
@@ -1009,7 +1010,8 @@ export default function Page() {
           Stage 168: register/bind devices for IndexedDB queue flush and offline catalog pull (4h TTL).
           Revoke soft-locks the device (expires server auth envelope, blocks sync/rebind) and retains
           pending queue ops (not auto-applied). Conflict accept_client never double-posts applied POS.
-          Remote IndexedDB wipe and Offline Complete remain deferred.
+          Remote wipe is a scaffold (request → client clear IndexedDB → ack). Push delivery and Offline
+          Complete remain deferred.
         </p>
         {syncStatus ? (
           <div
@@ -1352,8 +1354,49 @@ export default function Page() {
                           }}
                         >
                           Revoke
+                        </button>{' '}
+                        <button
+                          type="button"
+                          disabled={deviceBusy}
+                          onClick={async () => {
+                            if (
+                              !window.confirm(
+                                'Queue remote IndexedDB wipe for this device? Soft lockdown applies. Push delivery and Offline Complete remain deferred.',
+                              )
+                            ) {
+                              return;
+                            }
+                            setError('');
+                            setDeviceBusy(true);
+                            try {
+                              const r = await api(`/offline/devices/${d.id}/wipe`, {
+                                method: 'POST',
+                              });
+                              if (boundDeviceId === d.id) {
+                                await processPendingRemoteWipeIfNeeded(r.data);
+                                setBoundDeviceId('');
+                              }
+                              setMessage(
+                                r.data?.message ||
+                                  'Remote wipe queued (scaffold — Offline Complete deferred)',
+                              );
+                              await refreshOfflineSync();
+                            } catch (err: any) {
+                              setError(err.message || 'Remote wipe failed');
+                            } finally {
+                              setDeviceBusy(false);
+                            }
+                          }}
+                        >
+                          Remote wipe
                         </button>
                       </>
+                    )}
+                    {d.status === 'revoked' && d.wipe_status === 'pending' && (
+                      <span className="muted"> wipe pending</span>
+                    )}
+                    {d.wipe_status === 'acked' && (
+                      <span className="muted"> wipe acked</span>
                     )}
                   </td>
                 </tr>

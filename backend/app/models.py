@@ -1790,6 +1790,11 @@ class OfflineDevice(Base):
     offline_authorized_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     catalog_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
     app_version: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    # Remote IndexedDB wipe scaffold — Offline Complete / push delivery still MISSING.
+    wipe_requested_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    wipe_requested_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    wipe_acked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    wipe_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

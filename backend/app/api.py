@@ -19050,9 +19050,102 @@ async def offline_devices_revoke(
     data["message"] = (
         "Offline device revoked (soft lockdown). Server auth envelope expired; "
         "pending queue ops were not deleted or auto-applied; push/pull/ack remain blocked. "
-        "Remote IndexedDB wipe and Offline Complete remain deferred."
+        "Use POST /offline/devices/{id}/wipe for remote IndexedDB wipe scaffolding. "
+        "Offline Complete and push delivery remain deferred."
     )
     return env(data, "Offline device revoked")
+
+
+@api.post("/offline/devices/{device_id}/wipe")
+async def offline_devices_request_wipe(
+    device_id: str,
+    request: Request,
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Queue remote IndexedDB wipe + soft lockdown (scaffold — not Offline Complete)."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_offline_devices_write_denied(
+        managed,
+        message="Store managers cannot wipe company offline devices.",
+    )
+    tenants_svc.assert_writable(claims)
+    pending = await sync_engine_svc.device_pending_queue_stats(
+        db, tenant_id=claims["tenant_id"], device_id=device_id
+    )
+    row = await offline_devices_svc.request_remote_wipe(
+        db,
+        claims["tenant_id"],
+        device_id,
+        requested_by=claims.get("sub"),
+    )
+    await offline_alerts_svc.notify_device_soft_lockdown(
+        db,
+        tenant_id=claims["tenant_id"],
+        device=row,
+        pending_queue=pending,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="company",
+        action="offline_device_wipe_requested",
+        entity="offline_device",
+        entity_id=row.id,
+        details={
+            "name": row.name,
+            "device_code": row.device_code,
+            "pending_queue": pending,
+            "wipe_status": row.wipe_status,
+            "soft_lockdown": True,
+        },
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+    data = offline_devices_svc.serialize_device(row)
+    data["pending_queue"] = pending
+    data["soft_lockdown"] = True
+    data["message"] = (
+        "Remote wipe queued (scaffold). Soft lockdown applied; client must clear "
+        "IndexedDB when it sees wipe_pending and POST wipe/ack. "
+        "Push delivery and Offline Complete remain deferred."
+    )
+    return env(data, "Remote wipe queued")
+
+
+@api.post("/offline/devices/{device_id}/wipe/ack")
+async def offline_devices_ack_wipe(
+    device_id: str,
+    request: Request,
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager", "cashier")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Client acknowledges local IndexedDB wipe completed (scaffold)."""
+    tenants_svc.assert_writable(claims)
+    row = await offline_devices_svc.ack_remote_wipe(db, claims["tenant_id"], device_id)
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="company",
+        action="offline_device_wipe_acked",
+        entity="offline_device",
+        entity_id=row.id,
+        details={"wipe_status": row.wipe_status},
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+    data = offline_devices_svc.serialize_device(row)
+    data["message"] = (
+        "Remote wipe acknowledged. Offline Complete / 7-day VERIFIED / push delivery "
+        "remain deferred."
+    )
+    return env(data, "Remote wipe acknowledged")
 
 
 @api.get("/api-keys")
