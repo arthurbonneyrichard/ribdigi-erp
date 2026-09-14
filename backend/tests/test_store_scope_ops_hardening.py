@@ -23950,3 +23950,192 @@ async def test_store_manager_audit_details_department_redacted(client, db_sessio
     assert mgr_csv_details.get("department_id") is None
     assert float(mgr_csv_details.get("amount") or 0) == pytest.approx(18.0)
     assert mgr_csv_details.get("store_id") == store.id
+
+
+@pytest.mark.asyncio
+async def test_store_manager_audit_details_emailed_to_redacted(client, db_session):
+    """Audit list/export nulls send-recipient PII inside details for store_manager.
+
+    Invoice / quotation / PO list/get/send already redact emailed_to and nested
+    delivery.to. Scoped audit JSON/CSV must not re-dump the same party contact
+    via invoice_sent top-level to, po_sent delivery.to, or pos_receipt_sent to.
+    Invoice/PO numbers / totals / mode / channel remain; admin keeps recipients.
+    Plan/limit from/to without send mode/channel stay (not contact PII).
+    FX + CLE + party ledger + department keys already redacted separately;
+    integrity hashes unchanged (redact on read only).
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    other_user = seed["admin1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Audit Emailed-To Redact Store",
+        code="AET-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+
+    inv_recipient = "vip-customer@example.com"
+    po_recipient = "supplier-ap@example.com"
+    pos_recipient = "walkin@example.com"
+    inv_ev = await audit_svc.record_event(
+        db_session,
+        tenant_id=tid,
+        company_id=cid,
+        user_id=other_user.id,
+        module="sales",
+        action="invoice_sent",
+        entity="sales_invoice",
+        entity_id="inv-aet-1",
+        details={
+            "invoice_number": "INV-AET-1",
+            "to": inv_recipient,
+            "mode": "smtp",
+            "store_id": store.id,
+        },
+    )
+    po_ev = await audit_svc.record_event(
+        db_session,
+        tenant_id=tid,
+        company_id=cid,
+        user_id=other_user.id,
+        module="purchasing",
+        action="po_sent",
+        entity="purchase_order",
+        entity_id="po-aet-1",
+        details={
+            "po_number": "PO-AET-1",
+            "delivery": {
+                "to": po_recipient,
+                "mode": "smtp",
+                "sent": True,
+            },
+            "store_id": store.id,
+        },
+    )
+    pos_ev = await audit_svc.record_event(
+        db_session,
+        tenant_id=tid,
+        company_id=cid,
+        user_id=mgr.id,
+        module="pos",
+        action="pos_receipt_sent",
+        entity="pos_sale",
+        entity_id="sale-aet-1",
+        details={
+            "channel": "email",
+            "to": pos_recipient,
+            "mode": "smtp",
+            "reference": "RCPT-AET-1",
+            "total": 42.5,
+            "store_id": store.id,
+        },
+    )
+    # Entitlement-shaped from/to must not be wiped (no send mode/channel).
+    alloc_ev = await audit_svc.record_event(
+        db_session,
+        tenant_id=tid,
+        company_id=cid,
+        user_id=other_user.id,
+        module="companies",
+        action="store_allocation_updated",
+        entity="company",
+        entity_id=cid,
+        details={
+            "company_id": cid,
+            "from": 1,
+            "to": 3,
+            "store_id": store.id,
+        },
+    )
+    await db_session.commit()
+
+    admin_listed = await ac.get(
+        "/api/v1/audit-logs", headers=admin_company, params={"limit": 500}
+    )
+    assert admin_listed.status_code == 200, admin_listed.text
+    admin_by_id = {r["id"]: r for r in admin_listed.json()["data"]}
+    assert (admin_by_id[inv_ev.id].get("details") or {}).get("to") == inv_recipient
+    assert ((admin_by_id[po_ev.id].get("details") or {}).get("delivery") or {}).get(
+        "to"
+    ) == po_recipient
+    assert (admin_by_id[pos_ev.id].get("details") or {}).get("to") == pos_recipient
+    assert (admin_by_id[alloc_ev.id].get("details") or {}).get("to") == 3
+
+    mgr_listed = await ac.get(
+        "/api/v1/audit-logs", headers=headers, params={"limit": 500}
+    )
+    assert mgr_listed.status_code == 200, mgr_listed.text
+    mgr_by_id = {r["id"]: r for r in mgr_listed.json()["data"]}
+    mgr_inv = mgr_by_id[inv_ev.id].get("details") or {}
+    mgr_po = mgr_by_id[po_ev.id].get("details") or {}
+    mgr_pos = mgr_by_id[pos_ev.id].get("details") or {}
+    mgr_alloc = mgr_by_id[alloc_ev.id].get("details") or {}
+    assert mgr_inv.get("to") is None
+    assert mgr_inv.get("invoice_number") == "INV-AET-1"
+    assert mgr_inv.get("mode") == "smtp"
+    assert mgr_inv.get("store_id") == store.id
+    assert (mgr_po.get("delivery") or {}).get("to") is None
+    assert (mgr_po.get("delivery") or {}).get("mode") == "smtp"
+    assert mgr_po.get("po_number") == "PO-AET-1"
+    assert mgr_pos.get("to") is None
+    assert mgr_pos.get("channel") == "email"
+    assert mgr_pos.get("reference") == "RCPT-AET-1"
+    assert float(mgr_pos.get("total") or 0) == pytest.approx(42.5)
+    assert mgr_alloc.get("to") == 3
+    assert mgr_alloc.get("from") == 1
+
+    admin_csv = await ac.get(
+        "/api/v1/audit-logs/export",
+        headers=admin_company,
+        params={"format": "csv"},
+    )
+    assert admin_csv.status_code == 200, admin_csv.text
+    admin_detail_rows = list(csv.DictReader(io.StringIO(admin_csv.text)))
+    admin_csv_inv = next(r for r in admin_detail_rows if r.get("entity_id") == "inv-aet-1")
+    admin_csv_po = next(r for r in admin_detail_rows if r.get("entity_id") == "po-aet-1")
+    assert json.loads(admin_csv_inv["details"]).get("to") == inv_recipient
+    assert json.loads(admin_csv_po["details"]).get("delivery", {}).get("to") == po_recipient
+
+    mgr_csv = await ac.get(
+        "/api/v1/audit-logs/export",
+        headers=headers,
+        params={"format": "csv"},
+    )
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    mgr_detail_rows = list(csv.DictReader(io.StringIO(mgr_csv.text)))
+    mgr_csv_inv = next(r for r in mgr_detail_rows if r.get("entity_id") == "inv-aet-1")
+    mgr_csv_po = next(r for r in mgr_detail_rows if r.get("entity_id") == "po-aet-1")
+    mgr_csv_pos = next(r for r in mgr_detail_rows if r.get("entity_id") == "sale-aet-1")
+    mgr_csv_alloc = next(
+        r for r in mgr_detail_rows if r.get("entity_id") == cid and "store_allocation" in (r.get("action") or "")
+    )
+    mgr_csv_inv_details = json.loads(mgr_csv_inv["details"])
+    mgr_csv_po_details = json.loads(mgr_csv_po["details"])
+    mgr_csv_pos_details = json.loads(mgr_csv_pos["details"])
+    mgr_csv_alloc_details = json.loads(mgr_csv_alloc["details"])
+    assert mgr_csv_inv_details.get("to") is None
+    assert mgr_csv_inv_details.get("invoice_number") == "INV-AET-1"
+    assert (mgr_csv_po_details.get("delivery") or {}).get("to") is None
+    assert mgr_csv_po_details.get("po_number") == "PO-AET-1"
+    assert mgr_csv_pos_details.get("to") is None
+    assert mgr_csv_pos_details.get("reference") == "RCPT-AET-1"
+    assert mgr_csv_alloc_details.get("to") == 3

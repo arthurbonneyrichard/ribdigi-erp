@@ -5640,18 +5640,54 @@ def redact_audit_department_details(details: dict) -> dict:
     return out
 
 
+def omit_audit_emailed_to_details(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit send-recipient PII inside audit ``details``.
+
+    Document list/get/send/export already redact ``emailed_to`` and nested send
+    ``delivery.to`` (party master email also redacted). Scoped ``GET /audit-logs``
+    (+ CSV) must not re-dump the same recipient via ``invoice_sent`` top-level
+    ``to``, ``po_sent`` nested ``delivery.to``, or ``pos_receipt_sent`` ``to``.
+    Invoice numbers / PO numbers / totals / ``mode`` / ``channel`` / ``store_id``
+    remain; admin keeps recipient fields. Plan/limit ``from``/``to`` without send
+    ``mode``/``channel`` are left alone. FX + CLE + party ledger + department
+    keys already handled by sibling omit helpers.
+    """
+    return managed_ids is not None
+
+
+def redact_audit_emailed_to_details(details: dict) -> dict:
+    """Null send-recipient contact keys on an audit ``details`` dict.
+
+    Mirrors ``redact_document_emailed_to`` for nested ``delivery.to`` / ``emailed_to``.
+    Top-level ``to`` is cleared only on send-shaped details (``mode`` or ``channel``)
+    so entitlement/plan ``to`` numeric/code dumps stay intact.
+    """
+    out = dict(details)
+    if "emailed_to" in out:
+        out["emailed_to"] = None
+    delivery = out.get("delivery")
+    if isinstance(delivery, dict) and "to" in delivery:
+        delivery_out = dict(delivery)
+        delivery_out["to"] = None
+        out["delivery"] = delivery_out
+    if "to" in out and ("mode" in out or "channel" in out):
+        out["to"] = None
+    return out
+
+
 def redact_audit_manager_details(details: dict) -> dict:
-    """Compose store_manager audit ``details`` redacts (FX + CLE + party + dept)."""
+    """Compose store_manager audit ``details`` redacts (FX + CLE + party + dept + emailed_to)."""
     out = redact_audit_fx_details(details)
     out = redact_audit_cle_master_details(out)
     out = redact_audit_party_ledger_details(out)
-    return redact_audit_department_details(out)
+    out = redact_audit_department_details(out)
+    return redact_audit_emailed_to_details(out)
 
 
 def apply_audit_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager audit JSON redacts (FX + CLE + party + dept in ``details``)."""
+    """Apply store_manager audit JSON redacts (FX + CLE + party + dept + emailed_to in ``details``)."""
     out = dict(payload)
     if not isinstance(out.get("details"), dict):
         return out
@@ -5664,6 +5700,8 @@ def apply_audit_manager_redacts(
         details = redact_audit_party_ledger_details(details)
     if omit_audit_department_details(managed_ids):
         details = redact_audit_department_details(details)
+    if omit_audit_emailed_to_details(managed_ids):
+        details = redact_audit_emailed_to_details(details)
     out["details"] = details
     return out
 
