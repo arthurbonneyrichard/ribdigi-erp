@@ -9,7 +9,7 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `13f6e56d639d54a11653f62e648a6dfb2842db0e` — feat print/receipt `tax_registration_number` redact (ancestry); leftovers still open |
+| **As of tip** | `667156918b0251e2bed5ebc1e306946c49adbf38` — docs sync after print/receipt TIN `5eb2864692` (feat ancestry); leftovers still open |
 | RBAC / store scope | **PARTIAL** only |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
 
