@@ -71,8 +71,10 @@ async def test_sec_m2_flag_on_sets_httponly_cookies_and_cookie_auth(client, monk
     )
     assert login.status_code == 200, login.text
     body = login.json()["data"]
-    assert body.get("access_token")
+    # Phase C: flag ON nulls JSON tokens; session rides httpOnly cookies.
     assert body.get("cookie_session") is True
+    assert body.get("access_token") is None
+    assert body.get("refresh_token") is None
 
     # httpx stores cookies from Set-Cookie
     assert cookie_svc.ACCESS_COOKIE in ac.cookies
@@ -152,7 +154,9 @@ async def test_sec_m2_bearer_skips_csrf_when_flag_on(client, monkeypatch):
         },
     )
     assert login.status_code == 200, login.text
-    token = login.json()["data"]["access_token"]
+    # Phase C: JSON omits tokens when cookies ON — use httpOnly access cookie for Bearer test.
+    token = ac.cookies.get(cookie_svc.ACCESS_COOKIE)
+    assert token
 
     # Bearer auth must not require CSRF even when cookies are also set.
     r = await ac.post(

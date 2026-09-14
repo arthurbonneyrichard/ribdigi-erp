@@ -108,7 +108,12 @@ def test_sec_m2_phase_b_adr_documents_phase_b_open():
 def test_sec_m2_phase_b_honesty_surfaces_not_fixed():
     audit = (ROOT / "SECURITY_AUDIT.md").read_text(encoding="utf-8")
     assert "SEC-M2" in audit
-    assert "Phase B PARTIAL" in audit or "OPEN (Phase B PARTIAL" in audit
+    assert (
+        "Phase B PARTIAL" in audit
+        or "Phase C PARTIAL" in audit
+        or "OPEN (Phase B PARTIAL" in audit
+        or "OPEN (Phase C PARTIAL" in audit
+    )
     # Inventory table rows must stay OPEN (not FIXED) for M2/M5
     for line in audit.splitlines():
         cells = [c.strip() for c in line.split("|")]
