@@ -214,18 +214,24 @@ async def current_claims(
         raise HTTPException(status_code=403, detail="Cross-tenant access denied")
 
     jti = data.get("jti")
-    if jti:
-        session = (
-            await db.execute(
-                select(m.AuthSession).where(
-                    m.AuthSession.jti == jti,
-                    m.AuthSession.tenant_id == tenant_id,
-                    m.AuthSession.user_id == user_id,
-                )
+    if not jti:
+        raise HTTPException(status_code=401, detail="Invalid token claims")
+    session = (
+        await db.execute(
+            select(m.AuthSession).where(
+                m.AuthSession.jti == jti,
+                m.AuthSession.tenant_id == tenant_id,
+                m.AuthSession.user_id == user_id,
             )
-        ).scalar_one_or_none()
-        if session and session.revoked_at is not None:
-            raise HTTPException(status_code=401, detail="Session revoked")
+        )
+    ).scalar_one_or_none()
+    # SEC-H1 — access tokens must map to a live AuthSession (missing row ≠ allow).
+    if session is None:
+        raise HTTPException(status_code=401, detail="Session revoked")
+    if session.revoked_at is not None:
+        raise HTTPException(status_code=401, detail="Session revoked")
+    if session.expires_at is not None and session.expires_at < datetime.utcnow():
+        raise HTTPException(status_code=401, detail="Session expired")
 
     user = (
         await db.execute(

@@ -401,14 +401,28 @@ async def health_ready(request: Request):
 
 
 @api.get("/metrics")
-async def metrics_endpoint():
-    """Prometheus text exposition (optional; disable with METRICS_ENABLED=false)."""
+async def metrics_endpoint(request: Request):
+    """Prometheus text exposition (optional; disable with METRICS_ENABLED=false).
+
+    SEC-H2 — when METRICS_REQUIRE_AUTH is set (recommended in production), require
+    ``Authorization: Bearer <METRICS_BEARER_TOKEN>``.
+    """
+    import secrets as _secrets
+
     from fastapi.responses import PlainTextResponse
 
     from app import metrics as metrics_svc
 
     if not metrics_svc.metrics_enabled():
         raise HTTPException(status_code=404, detail="Metrics disabled")
+    if settings.METRICS_REQUIRE_AUTH:
+        expected = (settings.METRICS_BEARER_TOKEN or "").strip()
+        auth = (request.headers.get("authorization") or "").strip()
+        provided = ""
+        if auth.lower().startswith("bearer "):
+            provided = auth[7:].strip()
+        if not expected or not provided or not _secrets.compare_digest(provided, expected):
+            raise HTTPException(status_code=401, detail="Metrics authentication required")
     return PlainTextResponse(
         metrics_svc.render_prometheus(),
         media_type="text/plain; version=0.0.4; charset=utf-8",

@@ -48,6 +48,8 @@ cors_kwargs = {
         "X-Tenant-ID",
         "X-API-Key",
         "X-Request-ID",
+        "X-Workspace-Kind",
+        "X-Company-ID",
         "Accept",
         "Origin",
     ],

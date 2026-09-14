@@ -61,6 +61,9 @@ def test_production_env_template_aligned_with_s1_validators():
     assert "JWT_SECRET_KEY=" in text
     assert "REQUEST_LOG_ENABLED=true" in text
     assert "METRICS_ENABLED=true" in text
+    assert "METRICS_REQUIRE_AUTH=true" in text
+    assert "METRICS_BEARER_TOKEN=" in text
+    assert "TRUST_X_FORWARDED_FOR=" in text
     assert "ALLOW_DEVELOPMENT_SEED=false" in text
 
     # Template values must satisfy Settings production validator
@@ -76,10 +79,13 @@ def test_production_env_template_aligned_with_s1_validators():
         SMS_ENABLED=False,
         ALLOW_DEVELOPMENT_SEED=False,
         METRICS_ENABLED=True,
+        METRICS_REQUIRE_AUTH=True,
+        METRICS_BEARER_TOKEN="x" * 16,
         REQUEST_LOG_ENABLED=True,
     )
     assert cfg.RATE_LIMIT_REQUIRE_REDIS is True
     assert cfg.APP_ENV == "production"
+    assert cfg.METRICS_REQUIRE_AUTH is True
 
 
 def test_production_compose_overlay_no_reload_requires_redis_rate_limit():

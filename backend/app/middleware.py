@@ -60,9 +60,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
 
     def _client_ip(self, request: Request) -> str:
-        forwarded = request.headers.get("x-forwarded-for")
-        if forwarded:
-            return forwarded.split(",")[0].strip()
+        # SEC-H4 — ignore client-supplied X-Forwarded-For unless explicitly trusted.
+        if settings.TRUST_X_FORWARDED_FOR:
+            forwarded = request.headers.get("x-forwarded-for")
+            if forwarded:
+                return forwarded.split(",")[0].strip()
         if request.client:
             return request.client.host
         return "unknown"

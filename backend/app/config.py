@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     RABBITMQ_URL: str = "amqp://ribdigi:ribdigi@rabbitmq:5672/"
     CORS_ORIGINS: str = "http://localhost:3000"
     TRUSTED_HOSTS: str = ""
+    # SEC-H4 — only honor X-Forwarded-For when the app sits behind a trusted reverse proxy.
+    TRUST_X_FORWARDED_FOR: bool = False
+    # SEC-H2 — optional Prometheus scrape bearer (required in production when METRICS_REQUIRE_AUTH).
+    METRICS_BEARER_TOKEN: str = ""
+    METRICS_REQUIRE_AUTH: bool = False
     RATE_LIMIT_ENABLED: bool = True
     RATE_LIMIT_PER_MINUTE: int = 120
     RATE_LIMIT_AUTH_PER_MINUTE: int = 20
@@ -187,6 +192,13 @@ class Settings(BaseSettings):
                     raise ValueError(
                         "Production SMS_ENABLED requires TWILIO_ACCOUNT_SID, "
                         "TWILIO_AUTH_TOKEN, and TWILIO_FROM_NUMBER"
+                    )
+            if self.METRICS_ENABLED and self.METRICS_REQUIRE_AUTH:
+                mtok = (self.METRICS_BEARER_TOKEN or "").strip()
+                if len(mtok) < 16:
+                    raise ValueError(
+                        "Production METRICS_REQUIRE_AUTH requires METRICS_BEARER_TOKEN "
+                        "of at least 16 characters"
                     )
         return self
 

@@ -216,9 +216,11 @@ async def _record_pr_action(
     comment: str | None = None,
 ) -> m.PurchaseRequestApprovalAction:
     pr = await db.get(m.PurchaseRequest, request_id)
+    if pr is None or pr.tenant_id != tenant_id:
+        raise HTTPException(status_code=404, detail="Purchase request not found")
     row = m.PurchaseRequestApprovalAction(
         tenant_id=tenant_id,
-        company_id=getattr(pr, "company_id", None) if pr else None,
+        company_id=getattr(pr, "company_id", None),
         purchase_request_id=request_id,
         step=step,
         action=action,
