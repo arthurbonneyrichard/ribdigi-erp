@@ -332,7 +332,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `228c16299380fd0f1abb4df8bc85a69ef2fc5adf` — `docs: sync PR #303 As of tip to receipt cashier_name redact` (feat ancestry POS receipt `cashier_name` `09da411c82` + sales-salesperson `role` `0c56a2c5a0` + `full_name` `e4df69d520` + `email` `a4c2aeb4bf` + stock-movement `created_by_name` `1e3560b847` + `created_by_email` `f6921faffb` + print/receipt TIN `5eb2864692` + company_email `73752ad7e2` + invoice print `template` `5d076753b7` + receipt print template `8d06c785d9` + tax filing TIN `47844e3c4d` + continuum PO `emailed_to` `9ff88796a1` + security H1–H5 `3cf99a5540`/`caf7d98b55`).
+**As of tip:** `51f85f00da177d51cab3233ded63ba6196b24cdf` — `docs: final As of tip align for receipt cashier_name redact` (feat ancestry POS receipt `cashier_name` `09da411c82` + sales-salesperson `role` `0c56a2c5a0` + `full_name` `e4df69d520` + `email` `a4c2aeb4bf` + stock-movement `created_by_name` `1e3560b847` + `created_by_email` `f6921faffb` + print/receipt TIN `5eb2864692` + company_email `73752ad7e2` + invoice print `template` `5d076753b7` + receipt print template `8d06c785d9` + tax filing TIN `47844e3c4d` + continuum PO `emailed_to` `9ff88796a1` + security H1–H5 `3cf99a5540`/`caf7d98b55`).
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
