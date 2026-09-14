@@ -1,7 +1,8 @@
-"""ADR-002 paid billing scaffold (PARTIAL — Complete still MISSING).
+"""ADR-002 paid billing (PARTIAL — Complete still MISSING).
 
 Extends commercial plan metadata (``tenants.plan_code`` / ``PLAN_CATALOG``) with
-provider-shaped tables and APIs. Does **not** charge cards, invent checkout
+provider-shaped tables and APIs. Portal Session create is real when keys are
+configured (or mock mode for CI). Does **not** charge cards, invent checkout
 success, fabricate MRR, or claim paid billing Complete.
 
 See ``docs/ADR_002_PAID_BILLING_SCAFFOLD.md`` and ``docs/PAID_BILLING_PROVIDER_OPS.md``.
@@ -13,8 +14,10 @@ import hashlib
 import hmac
 import json
 import time
+import uuid
 from datetime import datetime
 from typing import Any
+from urllib.parse import urlencode
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -23,7 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 from app.config import settings
 
-# Honesty — never flip these to True from this scaffold alone.
+# Honesty — never flip these to True from this PARTIAL cut alone.
 PAID_BILLING_COMPLETE_CLAIMED = False
 CHECKOUT_SUCCESS_CLAIMED = False
 PAYMENT_PROVIDER_LIVE_CLAIMED = False
@@ -32,11 +35,15 @@ MRR_FABRICATED_CLAIMED = False
 
 DEFAULT_PROVIDER = "stripe"
 
+# Injected in tests (httpx.MockTransport or callable). Production leaves None.
+_http_transport: Any = None
+
 
 def honesty_payload() -> dict[str, Any]:
     """Stable non-claim flags for API responses and tests."""
     gate_on = bool(getattr(settings, "PAID_BILLING_ENTITLEMENT_GATE_ENABLED", False))
     configured = provider_keys_present()
+    mode = resolve_provider_mode()
     return {
         "paid_billing_complete_claimed": PAID_BILLING_COMPLETE_CLAIMED,
         "checkout_success_claimed": CHECKOUT_SUCCESS_CLAIMED,
@@ -45,11 +52,12 @@ def honesty_payload() -> dict[str, Any]:
         "mrr_fabricated_claimed": MRR_FABRICATED_CLAIMED,
         "billing_deferred": True,
         "billing_complete_claimed": False,
-        # Hard non-claim: scaffold never advertises live checkout.
+        # Hard non-claim: PARTIAL never advertises live checkout Complete.
         "checkout_enabled": False,
         "scaffold_status": "partial",
         "paid_billing_entitlement_gate_enabled": gate_on,
         "provider_keys_present": configured,
+        "provider_mode": mode,
         "configured_provider": (getattr(settings, "BILLING_PROVIDER", "") or "").strip()
         or (DEFAULT_PROVIDER if configured else None),
         "operational_gate": (
@@ -68,6 +76,26 @@ def provider_keys_present() -> bool:
 
 def webhook_secret_present() -> bool:
     return bool((getattr(settings, "BILLING_PROVIDER_WEBHOOK_SECRET", "") or "").strip())
+
+
+def resolve_provider_mode() -> str:
+    """Return ``unconfigured`` | ``mock`` | ``live``.
+
+    Explicit ``BILLING_PROVIDER_MODE`` wins when keys are present. Without keys,
+    always ``unconfigured`` (fail-closed for portal create).
+    """
+    if not provider_keys_present():
+        return "unconfigured"
+    raw = (getattr(settings, "BILLING_PROVIDER_MODE", "") or "").strip().lower()
+    if raw in ("mock", "test", "ci"):
+        return "mock"
+    if raw == "live":
+        return "live"
+    secret = (getattr(settings, "BILLING_PROVIDER_SECRET_KEY", "") or "").strip()
+    # Deterministic CI default: mock-prefixed secrets never hit the network.
+    if secret.startswith("sk_test_mock") or secret.startswith("sk_mock_"):
+        return "mock"
+    return "live"
 
 
 def serialize_customer(row: m.TenantBillingCustomer) -> dict[str, Any]:
@@ -123,7 +151,7 @@ async def ensure_billing_customer(
     email: str | None = None,
     provider: str | None = None,
 ) -> m.TenantBillingCustomer:
-    """Local customer row only — does not call the payment provider."""
+    """Local customer row — provider customer create happens in portal path when needed."""
     prov = (provider or DEFAULT_PROVIDER).strip() or DEFAULT_PROVIDER
     row = await get_billing_customer(db, tenant_id=tenant_id, provider=prov)
     if row:
@@ -135,7 +163,7 @@ async def ensure_billing_customer(
         tenant_id=tenant_id,
         provider=prov,
         email=email,
-        metadata_json={"scaffold": True, "live_customer_create_deferred": True},
+        metadata_json={"scaffold": True, "paid_billing_complete_claimed": False},
     )
     db.add(row)
     await db.flush()
@@ -162,6 +190,16 @@ async def billing_status(db: AsyncSession, *, tenant: m.Tenant) -> dict[str, Any
     customer = await get_billing_customer(db, tenant_id=tenant.id)
     subs = await list_subscriptions(db, tenant_id=tenant.id)
     honesty = honesty_payload()
+    mode = honesty["provider_mode"]
+    if mode == "unconfigured":
+        portal_available = False
+        portal_reason = "not_configured"
+    elif mode == "mock":
+        portal_available = True
+        portal_reason = "mock_portal_session_ready"
+    else:
+        portal_available = True
+        portal_reason = "live_portal_session_ready"
     return {
         **honesty,
         "tenant_id": tenant.id,
@@ -171,62 +209,248 @@ async def billing_status(db: AsyncSession, *, tenant: m.Tenant) -> dict[str, Any
         "customer": serialize_customer(customer) if customer else None,
         "subscriptions": [serialize_subscription(s) for s in subs],
         "portal": {
-            "available": False,
-            "reason": (
-                "provider_keys_present_live_portal_call_deferred"
-                if honesty["provider_keys_present"]
-                else "not_configured"
-            ),
+            "available": portal_available,
+            "reason": portal_reason,
         },
         "message": (
-            "Paid billing scaffold is PARTIAL (ADR-002). No checkout success, "
-            "no fabricated MRR, and entitlement gate default remains OFF "
-            "(trial/grace/suspend lifecycle still authoritative)."
+            "Paid billing is PARTIAL (ADR-002). Portal Session create works when "
+            "provider keys are configured (or BILLING_PROVIDER_MODE=mock for CI). "
+            "No checkout success, no fabricated MRR, entitlement gate default OFF "
+            "(trial/grace/suspend lifecycle still authoritative). Complete MISSING."
         ),
     }
 
 
-async def create_portal_session_skeleton(
+def _portal_return_url(return_url: str | None) -> str:
+    configured = (
+        (return_url or "").strip()
+        or (getattr(settings, "BILLING_PROVIDER_PORTAL_RETURN_URL", "") or "").strip()
+    )
+    if not configured:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "return_url required for billing portal session "
+                "(pass return_url or set BILLING_PROVIDER_PORTAL_RETURN_URL)"
+            ),
+        )
+    return configured
+
+
+async def create_portal_session(
     db: AsyncSession, *, tenant: m.Tenant, return_url: str | None = None
 ) -> dict[str, Any]:
-    """Billing portal link skeleton — never invents a charge or payment success.
+    """Create a Billing Portal Session when configured; fail clearly otherwise.
 
-    Live Stripe Billing Portal Session creation remains deferred even when keys
-    are present (no outbound provider call from this scaffold).
+    - ``unconfigured`` → HTTP 503 (no fake success / null URL soft-success)
+    - ``mock`` → deterministic mock ``portal_url`` for CI (not payment success)
+    - ``live`` → Stripe Billing Portal Session API via httpx
+
+    Never returns ``payment_success`` / paid billing Complete.
     """
     honesty = honesty_payload()
+    mode = honesty["provider_mode"]
+    if mode == "unconfigured":
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Billing provider not configured. Set BILLING_PROVIDER and "
+                "BILLING_PROVIDER_SECRET_KEY (see docs/PAID_BILLING_PROVIDER_OPS.md). "
+                "No portal session created; paid billing Complete still MISSING."
+            ),
+        )
+
+    configured_return = _portal_return_url(return_url)
+    prov = (getattr(settings, "BILLING_PROVIDER", "") or "").strip() or DEFAULT_PROVIDER
     customer = await ensure_billing_customer(
         db,
         tenant_id=tenant.id,
         email=getattr(tenant, "email", None),
+        provider=prov,
     )
-    configured_return = (
-        (return_url or "").strip()
-        or (getattr(settings, "BILLING_PROVIDER_PORTAL_RETURN_URL", "") or "").strip()
-        or None
-    )
-    if not honesty["provider_keys_present"]:
-        status = "not_configured"
-        note = (
-            "Billing provider keys unset. Portal session not created. "
-            "Configure BILLING_PROVIDER + BILLING_PROVIDER_SECRET_KEY (ops doc) "
-            "before a live portal cutover — still not paid billing Complete."
+
+    if mode == "mock":
+        portal = await _create_mock_portal_session(
+            db, customer=customer, return_url=configured_return
         )
     else:
-        status = "provider_keys_present_live_call_deferred"
-        note = (
-            "Provider keys are present, but this scaffold does not call the "
-            "provider API or return a live portal URL (ADR-002 honesty)."
+        portal = await _create_live_portal_session(
+            db, customer=customer, return_url=configured_return, tenant=tenant
         )
+
     return {
         **honesty,
-        "status": status,
-        "portal_url": None,
+        "status": portal["status"],
+        "portal_url": portal["portal_url"],
+        "portal_session_id": portal.get("portal_session_id"),
         "return_url": configured_return,
         "customer": serialize_customer(customer),
         "payment_processed": False,
         "payment_success": False,
-        "message": note,
+        "message": portal["message"],
+    }
+
+
+# Back-compat alias used by older imports/tests.
+create_portal_session_skeleton = create_portal_session
+
+
+async def _create_mock_portal_session(
+    db: AsyncSession,
+    *,
+    customer: m.TenantBillingCustomer,
+    return_url: str,
+) -> dict[str, Any]:
+    """CI / deterministic portal URL — not a real charge or Complete claim."""
+    if not customer.provider_customer_id:
+        customer.provider_customer_id = f"cus_mock_{customer.tenant_id[:8]}"
+    meta = dict(customer.metadata_json or {})
+    meta.update(
+        {
+            "scaffold": True,
+            "mock_portal": True,
+            "live_customer_create_deferred": False,
+            "paid_billing_complete_claimed": False,
+        }
+    )
+    customer.metadata_json = meta
+    customer.updated_at = datetime.utcnow()
+    session_id = f"bps_mock_{uuid.uuid4().hex[:16]}"
+    # Clearly non-production host — UI may open it; tests assert shape only.
+    qs = urlencode({"session": session_id, "return_url": return_url})
+    portal_url = f"https://billing.stripe.test/mock/session?{qs}"
+    await db.flush()
+    return {
+        "status": "mock_portal_session_created",
+        "portal_url": portal_url,
+        "portal_session_id": session_id,
+        "message": (
+            "Mock Billing Portal Session created for CI/test "
+            "(BILLING_PROVIDER_MODE=mock). Not payment success; "
+            "paid billing Complete still MISSING."
+        ),
+    }
+
+
+async def _stripe_form_post(
+    *, path: str, data: dict[str, str], secret: str
+) -> dict[str, Any]:
+    import httpx
+
+    base = (getattr(settings, "BILLING_PROVIDER_API_BASE", "") or "").strip().rstrip(
+        "/"
+    ) or "https://api.stripe.com"
+    url = f"{base}{path}"
+    headers = {"Authorization": f"Bearer {secret}"}
+    timeout = 30.0
+    try:
+        async with httpx.AsyncClient(timeout=timeout, transport=_http_transport) as client:
+            resp = await client.post(url, data=data, headers=headers)
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Billing provider request failed: {exc}",
+        ) from exc
+    if resp.status_code >= 400:
+        detail = resp.text[:500] if resp.text else f"HTTP {resp.status_code}"
+        raise HTTPException(
+            status_code=502,
+            detail=f"Billing provider error ({resp.status_code}): {detail}",
+        )
+    try:
+        payload = resp.json()
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=502, detail=f"Billing provider returned invalid JSON: {exc}"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise HTTPException(
+            status_code=502, detail="Billing provider returned non-object JSON"
+        )
+    return payload
+
+
+async def _ensure_provider_customer_live(
+    db: AsyncSession,
+    *,
+    customer: m.TenantBillingCustomer,
+    tenant: m.Tenant,
+    secret: str,
+) -> str:
+    if customer.provider_customer_id:
+        return customer.provider_customer_id
+    email = (customer.email or getattr(tenant, "email", None) or "").strip()
+    form: dict[str, str] = {
+        "metadata[tenant_id]": tenant.id,
+        "metadata[ribdigi_scaffold]": "partial",
+    }
+    if email:
+        form["email"] = email
+    name = (getattr(tenant, "name", None) or "").strip()
+    if name:
+        form["name"] = name
+    payload = await _stripe_form_post(path="/v1/customers", data=form, secret=secret)
+    cus_id = str(payload.get("id") or "").strip()
+    if not cus_id:
+        raise HTTPException(
+            status_code=502,
+            detail="Billing provider customer create returned no id",
+        )
+    customer.provider_customer_id = cus_id
+    meta = dict(customer.metadata_json or {})
+    meta.update(
+        {
+            "scaffold": True,
+            "live_customer_create_deferred": False,
+            "provider_customer_created": True,
+            "paid_billing_complete_claimed": False,
+        }
+    )
+    customer.metadata_json = meta
+    customer.updated_at = datetime.utcnow()
+    await db.flush()
+    return cus_id
+
+
+async def _create_live_portal_session(
+    db: AsyncSession,
+    *,
+    customer: m.TenantBillingCustomer,
+    return_url: str,
+    tenant: m.Tenant,
+) -> dict[str, Any]:
+    secret = (getattr(settings, "BILLING_PROVIDER_SECRET_KEY", "") or "").strip()
+    if not secret:
+        raise HTTPException(
+            status_code=503,
+            detail="BILLING_PROVIDER_SECRET_KEY unset — cannot create portal session",
+        )
+    cus_id = await _ensure_provider_customer_live(
+        db, customer=customer, tenant=tenant, secret=secret
+    )
+    payload = await _stripe_form_post(
+        path="/v1/billing_portal/sessions",
+        data={"customer": cus_id, "return_url": return_url},
+        secret=secret,
+    )
+    portal_url = str(payload.get("url") or "").strip()
+    session_id = str(payload.get("id") or "").strip() or None
+    if not portal_url:
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "Billing provider portal session response missing url "
+                "(no fake success)"
+            ),
+        )
+    return {
+        "status": "live_portal_session_created",
+        "portal_url": portal_url,
+        "portal_session_id": session_id,
+        "message": (
+            "Live Billing Portal Session created. This is not checkout Complete, "
+            "payment success, or paid billing Complete (ADR-002 PARTIAL)."
+        ),
     }
 
 
@@ -239,7 +463,10 @@ def verify_provider_webhook_signature(
         return False
     if not header:
         return False
-    parts = {k.strip(): v.strip() for k, v in (p.split("=", 1) for p in header.split(",") if "=" in p)}
+    parts = {
+        k.strip(): v.strip()
+        for k, v in (p.split("=", 1) for p in header.split(",") if "=" in p)
+    }
     timestamp = parts.get("t")
     signature = parts.get("v1")
     if not timestamp or not signature:
@@ -253,6 +480,14 @@ def verify_provider_webhook_signature(
     signed = f"{timestamp}.".encode("utf-8") + body
     expected = hmac.new(secret.encode("utf-8"), signed, hashlib.sha256).hexdigest()
     return hmac.compare_digest(expected, signature)
+
+
+def sign_provider_webhook_header(*, body: bytes, secret: str, timestamp: int | None = None) -> str:
+    """Helper for tests / ops proof — Stripe-compatible signature header."""
+    ts = int(timestamp if timestamp is not None else time.time())
+    signed = f"{ts}.".encode("utf-8") + body
+    sig = hmac.new(secret.encode("utf-8"), signed, hashlib.sha256).hexdigest()
+    return f"t={ts},v1={sig}"
 
 
 def _extract_event(payload: dict[str, Any]) -> tuple[str, str, dict[str, Any]]:
@@ -285,7 +520,11 @@ async def ingest_provider_webhook(
     Never returns payment_success / checkout Complete. Does not mutate
     ``Tenant.plan_code`` or entitlement caps from this stub.
     """
-    prov = (provider or (getattr(settings, "BILLING_PROVIDER", "") or "").strip() or DEFAULT_PROVIDER)
+    prov = (
+        provider
+        or (getattr(settings, "BILLING_PROVIDER", "") or "").strip()
+        or DEFAULT_PROVIDER
+    )
     sig_ok = verify_provider_webhook_signature(body=body, header=signature_header)
     if webhook_secret_present() and not sig_ok:
         raise HTTPException(status_code=400, detail="Invalid billing webhook signature")
@@ -318,6 +557,7 @@ async def ingest_provider_webhook(
             "event_id": existing.provider_event_id,
             "event_type": existing.event_type,
             "processing_status": existing.processing_status,
+            "signature_valid": bool(existing.signature_valid),
             "payment_success": False,
             "message": "Idempotent replay — event already recorded.",
         }
@@ -333,7 +573,7 @@ async def ingest_provider_webhook(
                 tenant_id = None
 
     note_parts = [
-        "Scaffold ingest only — no checkout success claim.",
+        "PARTIAL ingest only — no checkout success claim.",
         "Tenant.plan_code / entitlement caps not mutated.",
     ]
     if not webhook_secret_present():

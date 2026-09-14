@@ -755,7 +755,10 @@ async def billing_portal_session(
     claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Billing portal link skeleton — never invents payment success (ADR-002)."""
+    """Create Billing Portal Session when provider configured; fail clearly otherwise.
+
+    ADR-002 PARTIAL — never invents payment_success / paid billing Complete.
+    """
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
@@ -773,7 +776,7 @@ async def billing_portal_session(
     except Exception:
         body = {}
     return_url = body.get("return_url") if isinstance(body.get("return_url"), str) else None
-    data = await billing_provider_svc.create_portal_session_skeleton(
+    data = await billing_provider_svc.create_portal_session(
         db, tenant=tenant, return_url=return_url
     )
     await audit_svc.record_event(
@@ -781,18 +784,20 @@ async def billing_portal_session(
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         module="billing",
-        action="portal_session_skeleton",
+        action="portal_session_create",
         entity="tenant",
         entity_id=tenant.id,
         details={
             "status": data.get("status"),
-            "portal_url": None,
+            "portal_url_present": bool(data.get("portal_url")),
+            "provider_mode": data.get("provider_mode"),
             "payment_processed": False,
+            "payment_success": False,
             "paid_billing_complete_claimed": False,
         },
     )
     await db.commit()
-    return env(data, message=data.get("message") or "Billing portal skeleton")
+    return env(data, message=data.get("message") or "Billing portal session")
 
 
 @api.post("/billing/webhooks/provider")

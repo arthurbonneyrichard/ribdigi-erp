@@ -178,6 +178,10 @@ class Settings(BaseSettings):
     BILLING_PROVIDER_SECRET_KEY: str = ""  # never commit real secrets
     BILLING_PROVIDER_WEBHOOK_SECRET: str = ""
     BILLING_PROVIDER_PORTAL_RETURN_URL: str = ""
+    # Portal create mode: "" (auto), "mock" (CI / deterministic URL), "live" (provider API).
+    # Mock never claims payment_success / paid billing Complete.
+    BILLING_PROVIDER_MODE: str = ""
+    BILLING_PROVIDER_API_BASE: str = "https://api.stripe.com"
     # Hard non-claim: scaffold must not enable live checkout success paths.
     BILLING_CHECKOUT_ENABLED: bool = False
 
