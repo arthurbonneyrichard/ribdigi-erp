@@ -188,7 +188,8 @@ and integrations on the **target** environment with real (non-demo) data:
 - [ ] Core ERP smoke on a real staging tenant (inventory → sale → payment path)
 
 Checking these boxes does **not** authorize Offline Complete, paid billing Complete,
-ADR-005 Complete, store-scoped RBAC Complete, 7-day VERIFIED, or go-live attestation.
+store-scoped RBAC Complete, 7-day VERIFIED, or go-live attestation. ADR-005 membership
+is already **Complete** (flag default OFF; enable ≠ reopen).
 
 ---
 
@@ -235,6 +236,6 @@ Offline Complete, and 7-day VERIFIED still need operator evidence:
 6. Do **not** resume continuum company-dump slices unless a new leak is found.
    Intentional ALLOWs (logo binary GET; caller-scoped sessions/notifications)
    stay allowed. Do **not** claim Offline Complete / 7-day VERIFIED / go-live /
-   paid billing Complete / ADR-005 Complete / store-scoped RBAC Complete from
-   this checklist or flag flips alone. Poll-path engineering-ready ≠ Offline Complete.
+   paid billing Complete / store-scoped RBAC Complete from this checklist or flag
+   flips alone. ADR-005 is Complete (flag default OFF). Poll-path ≠ Offline Complete.
    Go-live ready **only** when §5 Completes are all claimed with ops attestation evidence.
