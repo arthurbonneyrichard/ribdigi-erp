@@ -726,12 +726,8 @@
 .product-price-field{display:flex;flex-direction:column;gap:0.22rem}
 .product-price-label{display:block;font-size:0.8rem;font-weight:700;letter-spacing:0.01em;color:var(--forest,#003024)}
 .product-price-field--selling .product-price-label{color:var(--brand,#7FA347)}
-.product-price-hint{font-size:0.72rem;line-height:1.3;color:var(--muted,#5A6B63)}
-.product-price-field--selling .product-price-hint{color:var(--brand,#7FA347);opacity:0.85}
 [data-theme="dark"] .product-price-label{color:var(--mist,#F3F6F1)}
 [data-theme="dark"] .product-price-field--selling .product-price-label{color:var(--brand-light,#C6D9A8)}
-[data-theme="dark"] .product-price-hint{color:var(--muted,#9AADA4)}
-[data-theme="dark"] .product-price-field--selling .product-price-hint{color:var(--brand-light,#C6D9A8);opacity:0.9}
 
 /* ---------- Notification center (BR-4.4 / BR-15.2) ---------- */
 .bell-wrap{position:relative;display:inline-flex;align-items:center}

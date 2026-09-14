@@ -1794,9 +1794,7 @@ export default function Page() {
                         value={editCost}
                         onChange={e => setEditCost(e.target.value)}
                         aria-label="Actual price"
-                        aria-describedby="edit-product-actual-price-hint"
                       />
-                      <span id="edit-product-actual-price-hint" className="product-price-hint">Cost — what you paid</span>
                     </div>
             <div className="product-price-field product-price-field--selling">
                       <label className="product-price-label" htmlFor="edit-product-selling-price">Selling price</label>
@@ -1810,9 +1808,7 @@ export default function Page() {
                         value={editPrice}
                         onChange={e => setEditPrice(e.target.value)}
                         aria-label="Selling price"
-                        aria-describedby="edit-product-selling-price-hint"
                       />
-                      <span id="edit-product-selling-price-hint" className="product-price-hint">Sell — what customers pay</span>
                     </div>
             <label className="muted">Tax supply class</label>
             <select
@@ -2165,9 +2161,7 @@ export default function Page() {
                         value={productCost}
                         onChange={e => setProductCost(e.target.value)}
                         aria-label="Actual price"
-                        aria-describedby="add-product-actual-price-hint"
                       />
-                      <span id="add-product-actual-price-hint" className="product-price-hint">Cost — what you paid</span>
                     </div>
           <div className="product-price-field product-price-field--selling">
                       <label className="product-price-label" htmlFor="add-product-selling-price">Selling price</label>
@@ -2181,9 +2175,7 @@ export default function Page() {
                         value={productPrice}
                         onChange={e => setProductPrice(e.target.value)}
                         aria-label="Selling price"
-                        aria-describedby="add-product-selling-price-hint"
                       />
-                      <span id="add-product-selling-price-hint" className="product-price-hint">Sell — what customers pay</span>
                     </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <input
