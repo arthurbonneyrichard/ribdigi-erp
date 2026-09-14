@@ -5231,8 +5231,9 @@ def omit_credit_limit_exceeded_invoice_total_base(role: str | None) -> bool:
     already redacted. ``CREDIT_LIMIT_EXCEEDED`` (409) ``extra_details`` must not
     re-dump FX-converted base via ``invoice_total_base`` (document total × rate;
     rate-table identity). Operational ``exceeded`` / ``additional_amount`` /
-    ``code`` / ``message`` / ``invoice_total`` / ``invoice_number`` remain; admin
-    keeps ``invoice_total_base``.
+    ``code`` / ``message`` / ``invoice_number`` remain; admin keeps
+    ``invoice_total_base``. ``invoice_total`` is redacted separately (doc-currency
+    amount paired with base ``additional_amount`` still implies the rate).
     """
     from app.dashboard_views import dashboard_view_for_role
 
@@ -5244,6 +5245,29 @@ def redact_credit_limit_exceeded_invoice_total_base(detail: dict) -> dict:
     out = dict(detail)
     if "invoice_total_base" in out:
         out["invoice_total_base"] = None
+    return out
+
+
+def omit_credit_limit_exceeded_invoice_total(role: str | None) -> bool:
+    """True when store_manager must omit ``invoice_total`` on limit-exceeded errors.
+
+    ``invoice_total_base`` already redacted; sales/purchase-invoice currency +
+    exchange_rate + balance_due_base already redacted. ``CREDIT_LIMIT_EXCEEDED``
+    (409) must not re-dump document-currency ``invoice_total`` that, paired with
+    base ``additional_amount``, recovers the company FX rate table. Operational
+    ``exceeded`` / ``additional_amount`` / ``code`` / ``message`` /
+    ``invoice_number`` remain; admin keeps ``invoice_total``.
+    """
+    from app.dashboard_views import dashboard_view_for_role
+
+    return dashboard_view_for_role(role or "") == "store_manager"
+
+
+def redact_credit_limit_exceeded_invoice_total(detail: dict) -> dict:
+    """Null ``invoice_total`` on a CREDIT_LIMIT_EXCEEDED detail dict."""
+    out = dict(detail)
+    if "invoice_total" in out:
+        out["invoice_total"] = None
     return out
 
 
