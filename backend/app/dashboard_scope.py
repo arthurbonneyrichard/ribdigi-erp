@@ -5393,8 +5393,8 @@ def omit_credit_limit_exceeded_master(role: str | None) -> bool:
     (statements also zero party ledger ``balance``). ``CREDIT_LIMIT_EXCEEDED``
     (409) must not re-dump company credit master / AR ledger via ``credit_limit``
     / ``available`` / ``current_balance`` / ``projected_balance``. Operational
-    ``exceeded`` / ``additional_amount`` / ``code`` / ``message`` remain; admin
-    keeps full projection.
+    ``exceeded`` / ``code`` / ``message`` remain; ``additional_amount`` is
+    redacted separately (base FX identity); admin keeps full projection.
     """
     from app.dashboard_views import dashboard_view_for_role
 
@@ -5421,10 +5421,9 @@ def omit_credit_limit_exceeded_invoice_total_base(role: str | None) -> bool:
     Sales-invoice / purchase-invoice / credit-aging document ``balance_due_base``
     already redacted. ``CREDIT_LIMIT_EXCEEDED`` (409) ``extra_details`` must not
     re-dump FX-converted base via ``invoice_total_base`` (document total × rate;
-    rate-table identity). Operational ``exceeded`` / ``additional_amount`` /
-    ``code`` / ``message`` / ``invoice_number`` remain; admin keeps
-    ``invoice_total_base``. ``invoice_total`` is redacted separately (doc-currency
-    amount paired with base ``additional_amount`` still implies the rate).
+    rate-table identity). Operational ``exceeded`` / ``code`` / ``message`` /
+    ``invoice_number`` remain; admin keeps ``invoice_total_base``.
+    ``invoice_total`` and ``additional_amount`` are redacted separately.
     """
     from app.dashboard_views import dashboard_view_for_role
 
@@ -5445,9 +5444,10 @@ def omit_credit_limit_exceeded_invoice_total(role: str | None) -> bool:
     ``invoice_total_base`` already redacted; sales/purchase-invoice currency +
     exchange_rate + balance_due_base already redacted. ``CREDIT_LIMIT_EXCEEDED``
     (409) must not re-dump document-currency ``invoice_total`` that, paired with
-    base ``additional_amount``, recovers the company FX rate table. Operational
-    ``exceeded`` / ``additional_amount`` / ``code`` / ``message`` /
+    base ``additional_amount`` or invoice ``total_amount``, recovers the company
+    FX rate table. Operational ``exceeded`` / ``code`` / ``message`` /
     ``invoice_number`` remain; admin keeps ``invoice_total``.
+    ``additional_amount`` is redacted separately.
     """
     from app.dashboard_views import dashboard_view_for_role
 
@@ -5459,6 +5459,29 @@ def redact_credit_limit_exceeded_invoice_total(detail: dict) -> dict:
     out = dict(detail)
     if "invoice_total" in out:
         out["invoice_total"] = None
+    return out
+
+
+def omit_credit_limit_exceeded_additional_amount(role: str | None) -> bool:
+    """True when store_manager must omit ``additional_amount`` on limit-exceeded errors.
+
+    ``invoice_total`` + ``invoice_total_base`` already redacted; sales-invoice
+    list/get still exposes document ``total_amount``. ``CREDIT_LIMIT_EXCEEDED``
+    (409) must not re-dump base ``additional_amount`` (invoice total × rate) that,
+    paired with scoped invoice ``total_amount``, recovers the company FX rate
+    table. Operational ``exceeded`` / ``code`` / ``message`` / ``invoice_number``
+    remain; admin keeps ``additional_amount``.
+    """
+    from app.dashboard_views import dashboard_view_for_role
+
+    return dashboard_view_for_role(role or "") == "store_manager"
+
+
+def redact_credit_limit_exceeded_additional_amount(detail: dict) -> dict:
+    """Null ``additional_amount`` on a CREDIT_LIMIT_EXCEEDED detail dict."""
+    out = dict(detail)
+    if "additional_amount" in out:
+        out["additional_amount"] = None
     return out
 
 

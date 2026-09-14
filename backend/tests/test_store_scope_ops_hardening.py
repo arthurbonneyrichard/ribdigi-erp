@@ -10816,9 +10816,9 @@ async def test_store_manager_credit_limit_exceeded_master_redacted(client, db_se
     Party list/get + AI + aging + AR statement already redact credit_limit
     (statements zero party balance). Invoice post / POS credit 409 must not
     re-dump company credit master / AR ledger via credit_limit, available,
-    current_balance, or projected_balance. exceeded + code + message +
-    additional_amount remain; admin keeps full projection on the same
-    over-limit post.
+    current_balance, or projected_balance. exceeded + code + message remain;
+    ``additional_amount`` redacted separately; admin keeps full projection on
+    the same over-limit post.
     """
     ac, seed = client
     tid = seed["t1"].id
@@ -10892,7 +10892,8 @@ async def test_store_manager_credit_limit_exceeded_master_redacted(client, db_se
     assert mgr_detail.get("available") is None
     assert mgr_detail.get("current_balance") is None
     assert mgr_detail.get("projected_balance") is None
-    assert float(mgr_detail.get("additional_amount") or 0) == pytest.approx(90.0)
+    # additional_amount redacted separately (see additional_amount test)
+    assert mgr_detail.get("additional_amount") is None
 
     admin_blocked = await ac.post(
         f"/api/v1/sales/invoices/{inv_id}/post",
@@ -10906,6 +10907,7 @@ async def test_store_manager_credit_limit_exceeded_master_redacted(client, db_se
     assert float(admin_detail.get("available") or 0) == pytest.approx(40.0)
     assert float(admin_detail.get("current_balance") or 0) == pytest.approx(0.0)
     assert float(admin_detail.get("projected_balance") or 0) == pytest.approx(90.0)
+    assert float(admin_detail.get("additional_amount") or 0) == pytest.approx(90.0)
 
     await accounting_svc.ensure_default_accounts(db_session, tid, company_id=cid)
     await db_session.commit()
@@ -10935,6 +10937,7 @@ async def test_store_manager_credit_limit_exceeded_master_redacted(client, db_se
     assert pos_detail.get("available") is None
     assert pos_detail.get("current_balance") is None
     assert pos_detail.get("projected_balance") is None
+    assert pos_detail.get("additional_amount") is None
     assert pos_detail.get("exceeded") is True
 
 
@@ -10947,8 +10950,8 @@ async def test_store_manager_credit_limit_exceeded_invoice_total_base_redacted(
     Sales/purchase-invoice + aging document balance_due_base already redacted.
     Invoice post 409 extra_details must not re-dump FX-converted base via
     invoice_total_base (document total × rate). exceeded + code + message +
-    additional_amount + invoice_number remain; admin keeps invoice_total_base.
-    ``invoice_total`` redacted separately.
+    invoice_number remain; ``additional_amount`` + ``invoice_total`` redacted
+    separately; admin keeps invoice_total_base.
     """
     ac, seed = client
     tid = seed["t1"].id
@@ -11031,7 +11034,7 @@ async def test_store_manager_credit_limit_exceeded_invoice_total_base_redacted(
     assert mgr_detail.get("code") == "CREDIT_LIMIT_EXCEEDED"
     assert mgr_detail.get("exceeded") is True
     assert mgr_detail.get("invoice_total_base") is None
-    assert float(mgr_detail.get("additional_amount") or 0) == pytest.approx(100.0)
+    assert mgr_detail.get("additional_amount") is None
     # invoice_total redacted separately (see invoice_total test)
     assert mgr_detail.get("invoice_total") is None
     assert mgr_detail.get("invoice_number") == "INV-CLE-ITB-1"
@@ -11062,8 +11065,9 @@ async def test_store_manager_credit_limit_exceeded_invoice_total_redacted(
     invoice_total_base already redacted; sales/purchase-invoice currency +
     exchange_rate + balance_due_base already redacted. Invoice post 409 must not
     re-dump document-currency invoice_total that, paired with base
-    additional_amount, recovers the company FX rate. exceeded + code + message +
-    additional_amount + invoice_number remain; admin keeps invoice_total.
+    additional_amount or invoice total_amount, recovers the company FX rate.
+    exceeded + code + message + invoice_number remain; ``additional_amount``
+    redacted separately; admin keeps invoice_total.
     """
     ac, seed = client
     tid = seed["t1"].id
@@ -11147,7 +11151,7 @@ async def test_store_manager_credit_limit_exceeded_invoice_total_redacted(
     assert mgr_detail.get("exceeded") is True
     assert mgr_detail.get("invoice_total") is None
     assert mgr_detail.get("invoice_total_base") is None
-    assert float(mgr_detail.get("additional_amount") or 0) == pytest.approx(100.0)
+    assert mgr_detail.get("additional_amount") is None
     assert mgr_detail.get("invoice_number") == "INV-CLE-IT-1"
     assert mgr_detail.get("credit_limit") is None
 
@@ -11162,6 +11166,127 @@ async def test_store_manager_credit_limit_exceeded_invoice_total_redacted(
     assert float(admin_detail.get("invoice_total") or 0) == pytest.approx(80.0)
     assert float(admin_detail.get("invoice_total_base") or 0) == pytest.approx(100.0)
     assert float(admin_detail.get("additional_amount") or 0) == pytest.approx(100.0)
+
+
+@pytest.mark.asyncio
+async def test_store_manager_credit_limit_exceeded_additional_amount_redacted(
+    client, db_session
+):
+    """CREDIT_LIMIT_EXCEEDED 409 nulls additional_amount for store_manager.
+
+    invoice_total + invoice_total_base already redacted; sales-invoice list/get
+    still exposes document total_amount. Invoice post 409 must not re-dump base
+    additional_amount (total × rate) that recovers the company FX rate table.
+    exceeded + code + message + invoice_number remain; admin keeps
+    additional_amount.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    customer = seed["party1"]
+    product = seed["p1"]
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="CLE Additional Amount Store",
+        code="CLE-AA",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+
+    customer.credit_limit = 40
+    customer.balance = 0
+    customer.party_type = "registered"
+    product.selling_price = 80
+    product.stock_qty = 100
+    product.tax_rate_id = None
+
+    invoice = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        customer_id=customer.id,
+        invoice_number="INV-CLE-AA-1",
+        status="draft",
+        subtotal=80,
+        tax_amount=0,
+        discount_amount=0,
+        total_amount=80,
+        paid_amount=0,
+        currency="USD",
+        exchange_rate=1.25,
+        created_by=seed["super"].id,
+    )
+    db_session.add(invoice)
+    await db_session.flush()
+    db_session.add(
+        m.SalesInvoiceItem(
+            tenant_id=tid,
+            company_id=cid,
+            sales_invoice_id=invoice.id,
+            product_id=product.id,
+            quantity=1,
+            unit_price=80,
+            tax_rate=0,
+            discount=0,
+            line_total=80,
+        )
+    )
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    mgr_blocked = await ac.post(
+        f"/api/v1/sales/invoices/{invoice.id}/post",
+        headers=headers,
+        json={},
+    )
+    assert mgr_blocked.status_code == 409, mgr_blocked.text
+    mgr_detail = mgr_blocked.json()["detail"]
+    assert mgr_detail.get("code") == "CREDIT_LIMIT_EXCEEDED"
+    assert mgr_detail.get("exceeded") is True
+    assert mgr_detail.get("additional_amount") is None
+    assert mgr_detail.get("invoice_total") is None
+    assert mgr_detail.get("invoice_total_base") is None
+    assert mgr_detail.get("invoice_number") == "INV-CLE-AA-1"
+    assert mgr_detail.get("credit_limit") is None
+    assert mgr_detail.get("message")
+
+    # Scoped invoice total_amount remains (ops) — must not pair with base add-on.
+    inv_get = await ac.get(
+        f"/api/v1/sales/invoices/{invoice.id}", headers=headers
+    )
+    assert inv_get.status_code == 200, inv_get.text
+    assert float(inv_get.json()["data"].get("total_amount") or 0) == pytest.approx(80.0)
+    assert inv_get.json()["data"].get("currency") is None
+    assert inv_get.json()["data"].get("exchange_rate") is None
+
+    admin_blocked = await ac.post(
+        f"/api/v1/sales/invoices/{invoice.id}/post",
+        headers=admin_company,
+        json={},
+    )
+    assert admin_blocked.status_code == 409, admin_blocked.text
+    admin_detail = admin_blocked.json()["detail"]
+    assert admin_detail.get("code") == "CREDIT_LIMIT_EXCEEDED"
+    assert float(admin_detail.get("additional_amount") or 0) == pytest.approx(100.0)
+    assert float(admin_detail.get("invoice_total") or 0) == pytest.approx(80.0)
+    assert float(admin_detail.get("invoice_total_base") or 0) == pytest.approx(100.0)
 
 
 @pytest.mark.asyncio
