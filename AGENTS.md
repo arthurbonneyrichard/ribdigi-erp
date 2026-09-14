@@ -342,7 +342,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `bd636f38cf0c18633d8d4f1b9d5b7575f36da4aa` — **SEC-M1 + M3 + M4 + L2 FIXED**; **SEC-M2/M5 Phase C** on tip (flag OFF default; flag ON nulls JSON tokens + `cookie_session`; SPA apiFetch/authSession) — still **OPEN/PARTIAL**, not FIXED (staging soak + Phase D remain). Continuum CLE `invoice_total` redact honesty remains **PARTIAL**.  
+**As of tip:** `9ce9f0cef3b1e8623951ca960e19d5b37582c6b1` — **SEC-M1 + M3 + M4 + L2 FIXED**; **SEC-M2/M5 Phase C** on tip (flag OFF default; flag ON nulls JSON tokens + `cookie_session`; SPA apiFetch/authSession) — still **OPEN/PARTIAL**, not FIXED (staging soak + Phase D remain). Continuum CLE `invoice_total` redact honesty remains **PARTIAL**.  
 **Security:** overall still `🟠 SECURITY FIXES REQUIRED BEFORE LAUNCH` — remaining Mediums **SEC-M2** + **SEC-M5** (Phase C PARTIAL only). Do not claim M2 FIXED until staging soak evidence; do not claim M5 FIXED until Phase D (`ribdigi_principal`).  
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
