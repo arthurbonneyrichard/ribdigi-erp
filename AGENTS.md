@@ -342,7 +342,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `6e97449b346b262c94bde9d24e1235eaa6f755d9` — `feat(rbac): redact credit-aging document balance_due_base for store_manager` (feat ancestry aging document `balance_due_base` `15435528c568` + accounting reports branch filter `baf6e4b84b` + credit-aging document `exchange_rate` `abe20b58a4` + purchase-invoice `exchange_rate` `0d97de259c` + sales-invoice `exchange_rate` `877db22150` + credit payment `exchange_rate` `398fe65b2e`).
+**As of tip:** `2979432fcde6798fe1fcf614584b2e8994474e60` — `feat(rbac): redact credit-aging document balance_due_base for store_manager` (feat ancestry aging document `balance_due_base` `15435528c568` + accounting reports branch filter `baf6e4b84b` + credit-aging document `exchange_rate` `abe20b58a4` + purchase-invoice `exchange_rate` `0d97de259c` + sales-invoice `exchange_rate` `877db22150` + credit payment `exchange_rate` `398fe65b2e`).
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
