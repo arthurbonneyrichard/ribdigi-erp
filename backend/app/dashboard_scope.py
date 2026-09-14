@@ -3057,8 +3057,9 @@ def omit_party_code(managed_ids: list[str] | None) -> bool:
     Code assign/clear already denied; customer/supplier list/get/patch must not
     re-dump company party master codes. AI customer insights/assist/export also
     omit ``code`` when ``store_ids`` is set (see ``ai_customers`` /
-    ``redact_ai_customer_party_code``). Name/status and scoped history remain;
-    credit master fields are separately redacted.
+    ``redact_ai_customer_party_code``). Sales-by-customer report/export rows
+    omit ``code`` via ``redact_sales_customers_party_code``. Name/status and
+    scoped history remain; credit master fields are separately redacted.
     """
     return managed_ids is not None
 
@@ -3068,6 +3069,34 @@ def redact_party_code(payload: dict) -> dict:
     out = dict(payload)
     if "code" in out:
         out["code"] = None
+    return out
+
+
+def redact_sales_customers_party_code(payload: dict) -> dict:
+    """Null party ``code`` on sales-by-customer report rows (and nested list).
+
+    Defense-in-depth after party list/get + AI customer ``code`` redacts.
+    Revenue / sale_count / name / customer_id remain for store ops.
+    """
+    out = dict(payload)
+    if "code" in out:
+        out["code"] = None
+    customers = out.get("customers")
+    if isinstance(customers, list):
+        out["customers"] = [
+            redact_sales_customers_party_code(row) if isinstance(row, dict) else row
+            for row in customers
+        ]
+    return out
+
+
+def apply_sales_customers_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager sales-by-customer report redacts (party ``code``)."""
+    out = payload
+    if omit_party_code(managed_ids):
+        out = redact_sales_customers_party_code(out)
     return out
 
 

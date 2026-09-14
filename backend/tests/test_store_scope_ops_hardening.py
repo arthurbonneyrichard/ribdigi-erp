@@ -19193,3 +19193,100 @@ async def test_store_manager_sales_salesperson_role_redacted(client, db_session)
     assert mgr_csv_row.get("email") in (None, "")
     assert float(mgr_csv_row.get("revenue") or 0) == pytest.approx(65.0)
 
+
+@pytest.mark.asyncio
+async def test_store_manager_sales_customers_party_code_redacted(client, db_session):
+    """Sales-by-customer nulls party code for store_manager.
+
+    Party list/get + AI customer code already redacted. Report JSON/CSV must
+    not re-dump company party master codes. Revenue / sale_count / name /
+    customer_id remain; admin JSON/CSV keep code.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    party = seed["party1"]
+    today = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
+
+    party.code = "SC-PARTY-CODE-77"
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="SC Code Store",
+        code="SCC1",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    inv = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="SC-CODE-1",
+        customer_id=party.id,
+        status="posted",
+        subtotal=55,
+        tax_amount=0,
+        total_amount=55,
+        store_id=store.id,
+        posted_at=today,
+        created_by=seed["admin1"].id,
+    )
+    db_session.add(inv)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    admin_rpt = await ac.get(
+        "/api/v1/reports/sales/customers",
+        headers=admin_company,
+    )
+    assert admin_rpt.status_code == 200, admin_rpt.text
+    admin_customers = admin_rpt.json()["data"]["customers"]
+    admin_row = next(r for r in admin_customers if r.get("customer_id") == party.id)
+    assert admin_row.get("code") == "SC-PARTY-CODE-77"
+    assert float(admin_row.get("revenue") or 0) >= 55.0
+
+    mgr_rpt = await ac.get("/api/v1/reports/sales/customers", headers=headers)
+    assert mgr_rpt.status_code == 200, mgr_rpt.text
+    mgr_data = mgr_rpt.json()["data"]
+    assert float(mgr_data["total_revenue"]) == pytest.approx(55.0)
+    mgr_customers = mgr_data["customers"]
+    mgr_row = next(r for r in mgr_customers if r.get("customer_id") == party.id)
+    assert mgr_row.get("code") is None
+    assert mgr_row.get("name") == "Alpha Customer"
+    assert float(mgr_row.get("revenue") or 0) == pytest.approx(55.0)
+
+    admin_csv = await ac.get(
+        "/api/v1/reports/export",
+        headers=admin_company,
+        params={"report_type": "sales_customers", "format": "csv"},
+    )
+    assert admin_csv.status_code == 200, admin_csv.text
+    admin_rows = list(csv.DictReader(io.StringIO(admin_csv.text)))
+    admin_csv_row = next(r for r in admin_rows if r.get("customer_id") == party.id)
+    assert admin_csv_row.get("code") == "SC-PARTY-CODE-77"
+
+    mgr_csv = await ac.get(
+        "/api/v1/reports/export",
+        headers=headers,
+        params={"report_type": "sales_customers", "format": "csv"},
+    )
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    mgr_rows = list(csv.DictReader(io.StringIO(mgr_csv.text)))
+    mgr_csv_row = next(r for r in mgr_rows if r.get("customer_id") == party.id)
+    assert mgr_csv_row.get("code") in (None, "")
+    assert float(mgr_csv_row.get("revenue") or 0) == pytest.approx(55.0)
+

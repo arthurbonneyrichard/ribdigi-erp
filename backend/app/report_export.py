@@ -980,6 +980,12 @@ async def export_report(
         payload = dashboard_scope_svc.apply_tax_filing_manager_redacts(
             payload, kwargs.get("store_ids")
         )
+    if report_type == "sales_customers":
+        from app import dashboard_scope as dashboard_scope_svc
+
+        payload = dashboard_scope_svc.apply_sales_customers_manager_redacts(
+            payload, kwargs.get("store_ids")
+        )
     if report_type == "sales_salesperson":
         from app import dashboard_scope as dashboard_scope_svc
 
