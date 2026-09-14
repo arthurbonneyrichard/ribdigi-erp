@@ -114,6 +114,9 @@ async def export_quotations_csv(
     writer.writeheader()
     for row in rows:
         data = await sales_docs_svc.serialize_quotation(db, row)
+        data = dashboard_scope_svc.apply_quotation_manager_redacts(
+            data, managed_store_ids
+        )
         writer.writerow({k: _cell(data.get(k)) for k in QUOTATION_EXPORT_COLUMNS})
     return buf.getvalue()
 

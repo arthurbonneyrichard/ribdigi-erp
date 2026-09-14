@@ -8621,7 +8621,9 @@ async def list_quotations(
             company_id=claims.get("company_id"),
         )
     rows = (await db.execute(stmt)).scalars().all()
-    return env([await sales_docs_svc.serialize_quotation(db, q) for q in rows])
+    out = [await sales_docs_svc.serialize_quotation(db, q) for q in rows]
+    out = dashboard_scope_svc.apply_quotation_manager_redacts_list(out, managed)
+    return env(out)
 
 
 @api.get("/sales/quotations/export")
@@ -8675,7 +8677,9 @@ async def create_quotation(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    return env(await sales_docs_svc.serialize_quotation(db, quote), "Quotation created")
+    data = await sales_docs_svc.serialize_quotation(db, quote)
+    data = dashboard_scope_svc.apply_quotation_manager_redacts(data, managed)
+    return env(data, "Quotation created")
 
 
 @api.get("/sales/quotations/{quotation_id}")
@@ -8689,8 +8693,11 @@ async def get_quotation(
     quote = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
     workspace_svc.assert_record_company(claims, quote)
     assert_record_access(claims, quote.created_by)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     await dashboard_scope_svc.assert_quotation_in_manager_scope(db, claims, quote)
-    return env(await sales_docs_svc.serialize_quotation(db, quote))
+    data = await sales_docs_svc.serialize_quotation(db, quote)
+    data = dashboard_scope_svc.apply_quotation_manager_redacts(data, managed)
+    return env(data)
 
 
 @api.get("/sales/quotations/{quotation_id}/print")
@@ -8733,6 +8740,7 @@ async def print_sales_quotation(
             detail=f"format must be one of: {sorted(sales_docs_svc.QUOTATION_PRINT_FORMATS)}",
         )
     data = await sales_docs_svc.serialize_quotation(db, quote)
+    data = dashboard_scope_svc.apply_quotation_manager_redacts(data, managed)
     currency = (company.currency if company and company.currency else None) or tenant.currency or "GHS"
     product_ids = [
         str(i.get("product_id")) for i in (data.get("items") or []) if i.get("product_id")
@@ -8808,6 +8816,7 @@ async def send_quotation(
     existing = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     await dashboard_scope_svc.assert_quotation_in_manager_scope(db, claims, existing)
     quote, delivery = await sales_docs_svc.send_quotation(
         db, claims["tenant_id"], quotation_id, to=to
@@ -8825,7 +8834,12 @@ async def send_quotation(
     await db.commit()
     data = await sales_docs_svc.serialize_quotation(db, quote)
     data["delivery"] = delivery
-    return env(data, f"Quotation emailed to {delivery['to']} ({delivery['mode']})")
+    data = dashboard_scope_svc.apply_quotation_manager_redacts(data, managed)
+    if dashboard_scope_svc.omit_document_emailed_to(managed):
+        msg = f"Quotation emailed ({delivery.get('mode') or 'email'})"
+    else:
+        msg = f"Quotation emailed to {delivery['to']} ({delivery['mode']})"
+    return env(data, msg)
 
 
 @api.post("/sales/quotations/{quotation_id}/accept")
@@ -8839,10 +8853,13 @@ async def accept_quotation(
     existing = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     await dashboard_scope_svc.assert_quotation_in_manager_scope(db, claims, existing)
     quote = await sales_docs_svc.accept_quotation(db, claims["tenant_id"], quotation_id)
     await db.commit()
-    return env(await sales_docs_svc.serialize_quotation(db, quote), "Quotation accepted")
+    data = await sales_docs_svc.serialize_quotation(db, quote)
+    data = dashboard_scope_svc.apply_quotation_manager_redacts(data, managed)
+    return env(data, "Quotation accepted")
 
 
 @api.post("/sales/quotations/{quotation_id}/reject")
@@ -8856,10 +8873,13 @@ async def reject_quotation(
     existing = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     await dashboard_scope_svc.assert_quotation_in_manager_scope(db, claims, existing)
     quote = await sales_docs_svc.reject_quotation(db, claims["tenant_id"], quotation_id)
     await db.commit()
-    return env(await sales_docs_svc.serialize_quotation(db, quote), "Quotation rejected")
+    data = await sales_docs_svc.serialize_quotation(db, quote)
+    data = dashboard_scope_svc.apply_quotation_manager_redacts(data, managed)
+    return env(data, "Quotation rejected")
 
 
 @api.post("/sales/quotations/{quotation_id}/convert-order")

@@ -10363,6 +10363,135 @@ async def test_store_manager_sales_invoice_emailed_to_redacted(client, db_sessio
 
 
 @pytest.mark.asyncio
+async def test_store_manager_quotation_emailed_to_redacted(
+    client, db_session, monkeypatch
+):
+    """Quotation list/get/export/print/send nulls emailed_to for store_manager.
+
+    Party master email already redacted; quotation JSON/CSV must not re-dump the
+    recipient address. emailed_at remains as send-status chrome. Admin keeps
+    emailed_to. Purchase-order emailed_to remains a leftover dump.
+    """
+    from app.emailer import clear_dev_outbox
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    customer = seed["party1"]
+    recipient = "vip-quote@example.com"
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Quote Emailed To Redact Store",
+        code="QETR-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+
+    sent_at = datetime.utcnow()
+    quote = m.SalesQuotation(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        customer_id=customer.id,
+        quotation_number="QT-ETR-1",
+        status="sent",
+        subtotal=40,
+        tax_amount=0,
+        discount_amount=0,
+        total_amount=40,
+        created_by=seed["super"].id,
+        emailed_at=sent_at,
+        emailed_to=recipient,
+    )
+    db_session.add(quote)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    admin_got = await ac.get(
+        f"/api/v1/sales/quotations/{quote.id}", headers=admin_headers
+    )
+    assert admin_got.status_code == 200, admin_got.text
+    admin_data = admin_got.json()["data"]
+    assert admin_data.get("emailed_to") == recipient
+    assert admin_data.get("emailed_at") is not None
+
+    mgr_got = await ac.get(f"/api/v1/sales/quotations/{quote.id}", headers=headers)
+    assert mgr_got.status_code == 200, mgr_got.text
+    mgr_data = mgr_got.json()["data"]
+    assert mgr_data.get("emailed_to") is None
+    assert mgr_data.get("emailed_at") is not None
+    assert float(mgr_data.get("total_amount") or 0) == 40.0
+    assert mgr_data.get("status") == "sent"
+
+    listed = await ac.get("/api/v1/sales/quotations", headers=headers)
+    assert listed.status_code == 200, listed.text
+    row = next(r for r in listed.json()["data"] if r["id"] == quote.id)
+    assert row.get("emailed_to") is None
+    assert row.get("emailed_at") is not None
+
+    admin_csv = await ac.get("/api/v1/sales/quotations/export", headers=admin_headers)
+    assert admin_csv.status_code == 200, admin_csv.text
+    admin_csv_row = next(
+        r
+        for r in csv.DictReader(io.StringIO(admin_csv.text))
+        if r.get("quotation_number") == "QT-ETR-1"
+    )
+    assert admin_csv_row.get("emailed_to") == recipient
+
+    mgr_csv = await ac.get("/api/v1/sales/quotations/export", headers=headers)
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    assert recipient not in mgr_csv.text
+    mgr_csv_row = next(
+        r
+        for r in csv.DictReader(io.StringIO(mgr_csv.text))
+        if r.get("quotation_number") == "QT-ETR-1"
+    )
+    assert (mgr_csv_row.get("emailed_to") or "") == ""
+    assert mgr_csv_row.get("emailed_at")
+
+    admin_print = await ac.get(
+        f"/api/v1/sales/quotations/{quote.id}/print", headers=admin_headers
+    )
+    assert admin_print.status_code == 200, admin_print.text
+    assert admin_print.json()["data"]["quotation"].get("emailed_to") == recipient
+
+    mgr_print = await ac.get(
+        f"/api/v1/sales/quotations/{quote.id}/print", headers=headers
+    )
+    assert mgr_print.status_code == 200, mgr_print.text
+    assert mgr_print.json()["data"]["quotation"].get("emailed_to") is None
+    assert recipient not in (mgr_print.json()["data"].get("text") or "")
+
+    clear_dev_outbox()
+    monkeypatch.setattr("app.emailer.settings.EMAIL_ENABLED", True)
+    monkeypatch.setattr("app.emailer.settings.SMTP_HOST", "")
+    monkeypatch.setattr("app.emailer.settings.SMTP_FROM_EMAIL", "noreply@localhost")
+    sent = await ac.post(
+        f"/api/v1/sales/quotations/{quote.id}/send",
+        headers=headers,
+        params={"to": recipient},
+    )
+    assert sent.status_code == 200, sent.text
+    sent_data = sent.json()["data"]
+    assert sent_data.get("emailed_to") is None
+    assert sent_data.get("emailed_at") is not None
+    assert (sent_data.get("delivery") or {}).get("to") is None
+    assert recipient not in (sent.json().get("message") or "")
+
+
+@pytest.mark.asyncio
 async def test_store_manager_branches_departments_writes_denied(client, db_session):
     """Branch/department list GET + create/patch/export denied for store_manager."""
     from app.rbac import permissions_for_role
