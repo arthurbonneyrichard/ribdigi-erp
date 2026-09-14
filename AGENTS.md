@@ -354,7 +354,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `364bec08fdd95cb8bdc47790696ae637955b81a5` — notification expense approval threshold redact (`exceeds approval threshold (N)` stripped on `/notifications` list/export/read; create_expense notify source no longer embeds number; audit details.threshold already redacted; amount / title / level wording remain); audit CLE invoice_total + expense threshold + store manager_id + attachment storage key + emailed_to + department_id + party ledger + CLE master + CLE currency + additional_amount + audit FX landed; concurrent approval stress pack **Complete**; living store-scope matrix landed — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL** (Completes still **MISSING**); ADR-005 membership **Complete** (flag default OFF; store-scoped RBAC Complete still **MISSING** — residual continuum + product ALLOW sign-off + staging soak open — see `docs/STORE_SCOPED_RBAC_COMPLETE_REMAINING.md`); overall RBAC readiness **PARTIAL** (approval hardening + % limits + export/`view_cost` Complete + expires_at + elevation + concurrent approval stress Complete — not RBAC Complete); paid billing **PARTIAL** (ops-blocked); operator go-live pack `docs/GO_LIVE_READINESS_CHECKLIST.md` (Completes still **MISSING**); Offline Complete still **MISSING**. Cookie + membership-scope + entitlement-gate flags default remain OFF (ops enable cutover).
+**As of tip:** `PENDING_TIP_SHA` — continuum residual dump **NONE** (no safe SM-visible named leftover after scan of audit `details` re-dumps, personal/broadcast notification embeds, and omit-sibling surfaces; credit-limit warning broadcasts fail-closed for SM; SMTP audit out of SM scope); prior tip ancestry includes notification expense approval threshold redact + audit CLE invoice_total + expense threshold + store manager_id + attachment storage key + emailed_to + department_id + party ledger + CLE master + CLE currency + additional_amount + audit FX; concurrent approval stress pack **Complete**; living store-scope matrix landed — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL** (Completes still **MISSING**); ADR-005 membership **Complete** (flag default OFF; store-scoped RBAC Complete still **MISSING** — known safe residual dump backlog empty; product ALLOW sign-off + staging soak still open — see `docs/STORE_SCOPED_RBAC_COMPLETE_REMAINING.md`); overall RBAC readiness **PARTIAL** (approval hardening + % limits + export/`view_cost` Complete + expires_at + elevation + concurrent approval stress Complete — not RBAC Complete); paid billing **PARTIAL** (ops-blocked); operator go-live pack `docs/GO_LIVE_READINESS_CHECKLIST.md` (Completes still **MISSING**); Offline Complete still **MISSING**. Cookie + membership-scope + entitlement-gate flags default remain OFF (ops enable cutover).
 
 **Security:** no open Critical/High/Medium. Do not claim go-live Completes. Cookie + membership-scope flags OFF in prod examples are intentional until ops cutover (`docs/sec_m2_staging_soak_checklist.md`, `docs/adr005_staging_soak_checklist.md`). Offline push prod template stays fail-closed until `docs/offline_wipe_push_staging_checklist.md` browser proof. Entitlement gate prod default stays OFF until mirror→access evidence (`docs/PAID_BILLING_PROVIDER_OPS.md`). Operator roll-up: `docs/GO_LIVE_READINESS_CHECKLIST.md`.  
 **Honesty:** never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never store-scoped RBAC Complete, never overall RBAC Complete. ADR-005 membership **is Complete** (flag default OFF intentional).
@@ -379,11 +379,9 @@ leave contradictory Complete/PARTIAL wording across those three surfaces.
 
 ### Closed this continuum slice (still PARTIAL overall)
 
-- Expense-approval notification ``message`` company auto-approve ``threshold`` **redacted** for `store_manager`
-  (``exceeds approval threshold (N)`` stripped on ``GET /notifications`` + export + mark-read/unread;
-  ``create_expense`` notify source no longer embeds the number; audit ``details.threshold`` already
-  redacted; ``DEFAULT_L1_ROLES`` includes ``store_manager``; title / amount / level wording remain;
-  admin keeps the parenthetical).
+- Continuum residual dump **NONE** — no safe non-intentional SM-visible leftover closed this CONTINUE;
+  known named-surface dump backlog empty; next path is product ALLOW sign-off / staging soak (not dump spam).
+  Prior closed: expense-approval notification ``message`` company auto-approve ``threshold`` for `store_manager`.
 
 
 

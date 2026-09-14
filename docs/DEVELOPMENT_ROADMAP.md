@@ -11,6 +11,23 @@
 
 ---
 
+### Tip — continuum residual dump NONE (2026-09-15)
+
+**As of tip:** `PENDING_TIP_SHA`
+Continuum residual dump **NONE** for `store_manager`: no safe SM-visible named
+leftover after scan of audit `details` re-dumps, personal/broadcast notification
+embeds, and omit-sibling surfaces. Credit-limit warning broadcasts
+(`entity_type=customer`) fail-closed for SM inbox; tenant SMTP audit host/from
+remain out of SM scope. Intentional ALLOWs unchanged (logo binary GET;
+`/auth/sessions` + `/notifications/settings`; ADR-005 Complete flag OFF).
+Continuum stays **PARTIAL**. Store-scoped RBAC Complete remains **MISSING**
+(known safe residual dump backlog empty; product ALLOW sign-off + staging soak
+still open). Offline / 7-day / go-live / paid billing Completes remain
+**MISSING**. Next CONTINUE: product ALLOW sign-off / staging soak docs (not dump
+spam).
+
+---
+
 ### Tip — notification expense approval threshold redact (2026-09-15)
 
 **As of tip:** `364bec08fdd95cb8bdc47790696ae637955b81a5`

@@ -67,6 +67,6 @@
     "Claiming live go-live Complete from Stage 26–32 packaging",
     "Implementing deferred ADR-001–006 as Complete"
   ],
-  "continuum_honesty_touched_at": "2026-09-15T09:55:38Z",
-  "continuum_honesty_note": "PARTIAL — notification expense approval threshold redact; store-scoped RBAC Complete still MISSING"
+  "continuum_honesty_touched_at": "2026-09-15T10:09:42Z",
+  "continuum_honesty_note": "PARTIAL — continuum residual dump NONE (no safe SM-visible leftover); store-scoped RBAC Complete still MISSING"
 }

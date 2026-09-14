@@ -18,8 +18,8 @@
     "cross_store_deny": "store_manager cannot read/write foreign-store or null-store commerce rows (STORE_SCOPE_DENIED)",
     "membership_on_soak": "STORE_MEMBERSHIP_SCOPE_ENABLED=true automated soak (ADR-005 Complete evidence; flag default OFF)",
     "cashier_fail_closed": "Flag ON: cashiers without membership get empty visibility + POS denied; with membership foreign POS denied",
-    "manager_union": "Flag ON: store_manager managed_store_ids = manager_id \u222a active memberships; foreign excluded",
-    "intentional_allow": "Product-accepted ALLOWs (logo binary GET; caller-scoped sessions; notification settings) \u2014 not Completes blockers",
+    "manager_union": "Flag ON: store_manager managed_store_ids = manager_id ∪ active memberships; foreign excluded",
+    "intentional_allow": "Product-accepted ALLOWs (logo binary GET; caller-scoped sessions; notification settings) — not Completes blockers",
     "breadth_index": "Indexed deep coverage in ops hardening / soak modules (not re-executed here; files must exist)"
   },
   "cases": [
@@ -46,7 +46,7 @@
     {
       "id": "ss-mgr-union-flag-on",
       "class": "manager_union",
-      "title": "Flag ON manager_id \u222a membership stores on GET /stores; foreign excluded",
+      "title": "Flag ON manager_id ∪ membership stores on GET /stores; foreign excluded",
       "expected": "union",
       "living": true,
       "evidence_tests": [
@@ -187,5 +187,7 @@
     "7-day VERIFIED",
     "go-live",
     "paid billing Complete"
-  ]
+  ],
+  "continuum_honesty_touched_at": "2026-09-15T10:09:42Z",
+  "continuum_honesty_note": "PARTIAL — continuum residual dump NONE (no safe SM-visible leftover); store-scoped RBAC Complete still MISSING"
 }
