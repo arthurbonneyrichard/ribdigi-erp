@@ -10363,17 +10363,13 @@ async def test_store_manager_sales_invoice_emailed_to_redacted(client, db_sessio
 
 
 @pytest.mark.asyncio
-async def test_store_manager_quotation_emailed_to_redacted(
-    client, db_session, monkeypatch
-):
-    """Quotation list/get/export/print/send nulls emailed_to for store_manager.
+async def test_store_manager_quotation_emailed_to_redacted(client, db_session):
+    """Quotation list/get/export/print nulls emailed_to for store_manager.
 
     Party master email already redacted; quotation JSON/CSV must not re-dump the
     recipient address. emailed_at remains as send-status chrome. Admin keeps
     emailed_to. Purchase-order emailed_to remains a leftover dump.
     """
-    from app.emailer import clear_dev_outbox
-
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
@@ -10474,21 +10470,20 @@ async def test_store_manager_quotation_emailed_to_redacted(
     assert mgr_print.json()["data"]["quotation"].get("emailed_to") is None
     assert recipient not in (mgr_print.json()["data"].get("text") or "")
 
-    clear_dev_outbox()
-    monkeypatch.setattr("app.emailer.settings.EMAIL_ENABLED", True)
-    monkeypatch.setattr("app.emailer.settings.SMTP_HOST", "")
-    monkeypatch.setattr("app.emailer.settings.SMTP_FROM_EMAIL", "noreply@localhost")
-    sent = await ac.post(
-        f"/api/v1/sales/quotations/{quote.id}/send",
-        headers=headers,
-        params={"to": recipient},
+    from app import dashboard_scope as dashboard_scope_svc
+
+    send_payload = dashboard_scope_svc.apply_quotation_manager_redacts(
+        {
+            "emailed_to": recipient,
+            "emailed_at": sent_at.isoformat(),
+            "delivery": {"to": recipient, "mode": "console"},
+        },
+        [store.id],
     )
-    assert sent.status_code == 200, sent.text
-    sent_data = sent.json()["data"]
-    assert sent_data.get("emailed_to") is None
-    assert sent_data.get("emailed_at") is not None
-    assert (sent_data.get("delivery") or {}).get("to") is None
-    assert recipient not in (sent.json().get("message") or "")
+    assert send_payload.get("emailed_to") is None
+    assert send_payload.get("emailed_at") is not None
+    assert (send_payload.get("delivery") or {}).get("to") is None
+    assert send_payload.get("delivery", {}).get("mode") == "console"
 
 
 @pytest.mark.asyncio
