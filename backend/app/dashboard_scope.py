@@ -2834,9 +2834,26 @@ def assert_company_level_user_admin_export_denied(
 ) -> None:
     """403 when store_manager exports users/roles/permissions matrix CSVs.
 
-    ``GET /users`` list/get remain with permission matrices redacted; roles catalog/detail
-    are separately denied. Full roster and matrix dumps are company-level admin surfaces
-    (writes already denied).
+    Users list/get also denied (``assert_company_level_user_admin_read_denied``);
+    roles catalog/detail are separately denied. Full roster and matrix dumps are
+    company-level admin surfaces (writes already denied).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_user_admin_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list or read company user roster; "
+        "self profile via /me remains; user writes + CSV export already denied."
+    ),
+) -> None:
+    """403 when store_manager lists/gets ``GET /users`` (company org roster dump).
+
+    Users CSV export + role catalog + membership list already denied; list/get
+    still dumped staff id/name/role/active (PII/org/MFA already redacted). Self
+    profile remains on ``/me`` / ``/workspace``.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
@@ -2845,9 +2862,10 @@ def omit_user_permission_matrix(managed_ids: list[str] | None) -> bool:
     """True when store_manager users list/get must omit permission maps.
 
     Roles catalog/detail already denied; returning full ``permissions`` on
-    ``GET /users`` would re-expose the same company permission matrix. Staff
-    name/role/active remain for operational lookup; contact PII + org assignment
-    + MFA status are redacted via ``redact_user_contact_pii``.
+    ``GET /users`` would re-expose the same company permission matrix. Users
+    list/get are denied via ``assert_company_level_user_admin_read_denied``;
+    this helper remains defense-in-depth if a read path is reopened. Contact
+    PII + org assignment + MFA status are redacted via ``redact_user_contact_pii``.
     """
     return managed_ids is not None
 
@@ -2855,13 +2873,12 @@ def omit_user_permission_matrix(managed_ids: list[str] | None) -> bool:
 def omit_user_contact_pii(managed_ids: list[str] | None) -> bool:
     """True when store_manager users list/get must redact staff contact + org + MFA fields.
 
-    Users CSV export already denied; permission matrices already omitted. Contact
-    fields (email/phone), org assignment (branch_id/department_id), MFA status
-    (``totp_enabled``), and email verification (``email_verified``) on list/get
-    were leftover company dumps (branches/departments list GET already denied;
-    MFA enrollment + verification are security-admin surfaces).
-    Name/role/active remain for operational staff lookup. Own ``/me`` / auth
-    payloads keep ``totp_enabled`` / ``email_verified`` for the signed-in user.
+    Users CSV export already denied; list/get denied via
+    ``assert_company_level_user_admin_read_denied``. Contact fields (email/phone),
+    org assignment (branch_id/department_id), MFA status (``totp_enabled``), and
+    email verification (``email_verified``) remain redacted defense-in-depth.
+    Own ``/me`` / auth payloads keep ``totp_enabled`` / ``email_verified`` for
+    the signed-in user.
     """
     return managed_ids is not None
 

@@ -3415,6 +3415,7 @@ async def users(
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_user_admin_read_denied(managed)
     include_permissions = not dashboard_scope_svc.omit_user_permission_matrix(managed)
     redact_contact = dashboard_scope_svc.omit_user_contact_pii(managed)
 
@@ -3467,6 +3468,7 @@ async def get_user(
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_user_admin_read_denied(managed)
     include_permissions = not dashboard_scope_svc.omit_user_permission_matrix(managed)
     user = await _get_tenant_user(db, claims["tenant_id"], user_id)
     payload = serialize_user(user, include_permissions=include_permissions)

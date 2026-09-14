@@ -80,8 +80,9 @@ function PageInner() {
     if (af === 'true' || af === 'false') params.set('is_active', af);
     const qs = params.toString();
     const [usersRes, rolesRes, meRes, br, dep] = await Promise.all([
-      api(`/users${qs ? `?${qs}` : ''}`),
-      api('/roles'),
+      // Soft-fail store_manager STORE_SCOPE_DENIED (company user roster dump).
+      api(`/users${qs ? `?${qs}` : ''}`).catch(() => ({ data: [] })),
+      api('/roles').catch(() => ({ data: [] })),
       api('/me'),
       api('/branches').catch(() => ({ data: [] })),
       api('/departments').catch(() => ({ data: [] })),

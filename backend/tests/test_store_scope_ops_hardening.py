@@ -9473,7 +9473,7 @@ async def test_store_manager_company_settings_writes_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_user_admin_writes_denied(client, db_session):
-    """User/role admin writes + CSV/KPI exports denied; users list/get remain without permission maps, contact PII, org assignment, MFA, or email_verified."""
+    """User/role admin writes + CSV/KPI exports + users list/get denied; /me remains."""
     from app.rbac import permissions_for_role
 
     ac, seed = client
@@ -9639,36 +9639,19 @@ async def test_store_manager_user_admin_writes_denied(client, db_session):
     assert "user_stats" not in dash_data
     assert "users" not in (dash_data.get("sections") or [])
 
-    # Users list/get remain for staff lookup; permission matrices + contact PII
-    # (email/phone) + org assignment (branch_id/department_id) + MFA status
-    # (totp_enabled) + email_verified redacted (roles catalog/detail + users CSV
-    # + branches/departments list already denied).
-    listed = await ac.get("/api/v1/users", headers=headers)
-    assert listed.status_code == 200, listed.text
-    listed_rows = listed.json()["data"]
-    assert listed_rows
-    assert all("permissions" not in row for row in listed_rows)
-    assert all("record_scope" not in row for row in listed_rows)
-    assert any(row.get("id") == target.id for row in listed_rows)
-    assert all(row.get("email") is None for row in listed_rows)
-    assert all(row.get("phone") is None for row in listed_rows)
-    assert all(row.get("branch_id") is None for row in listed_rows)
-    assert all(row.get("department_id") is None for row in listed_rows)
-    assert all(row.get("totp_enabled") is None for row in listed_rows)
-    assert all(row.get("email_verified") is None for row in listed_rows)
+    # Users list/get are company org roster dumps (CSV export + membership list
+    # already denied). Self profile remains on /me.
+    denied_listed = await ac.get("/api/v1/users", headers=headers)
+    assert denied_listed.status_code == 403, denied_listed.text
+    assert denied_listed.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
-    got = await ac.get(f"/api/v1/users/{target.id}", headers=headers)
-    assert got.status_code == 200, got.text
-    got_body = got.json()["data"]
-    assert got_body.get("id") == target.id
-    assert got_body.get("email") is None
-    assert got_body.get("phone") is None
-    assert got_body.get("branch_id") is None
-    assert got_body.get("department_id") is None
-    assert got_body.get("totp_enabled") is None
-    assert got_body.get("email_verified") is None
-    assert "permissions" not in got_body
-    assert "record_scope" not in got_body
+    denied_got = await ac.get(f"/api/v1/users/{target.id}", headers=headers)
+    assert denied_got.status_code == 403, denied_got.text
+    assert denied_got.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    me = await ac.get("/api/v1/me", headers=headers)
+    assert me.status_code == 200, me.text
+    assert me.json()["data"]["email"] == "mgr@alpha.example.com"
 
     admin_headers = await auth_headers(
         ac,
@@ -9676,6 +9659,10 @@ async def test_store_manager_user_admin_writes_denied(client, db_session):
         tenant_slug="alpha",
         totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
     )
+    admin_listed = await ac.get("/api/v1/users", headers=admin_headers)
+    assert admin_listed.status_code == 200, admin_listed.text
+    assert any(row.get("id") == target.id for row in admin_listed.json()["data"])
+
     admin_got = await ac.get(f"/api/v1/users/{target.id}", headers=admin_headers)
     assert admin_got.status_code == 200, admin_got.text
     admin_body = admin_got.json()["data"]
@@ -9692,6 +9679,61 @@ async def test_store_manager_user_admin_writes_denied(client, db_session):
     denied_role_detail = await ac.get("/api/v1/roles/cashier", headers=headers)
     assert denied_role_detail.status_code == 403, denied_role_detail.text
     assert denied_role_detail.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_users_list_get_denied(client, db_session):
+    """Company user roster list/get denied after users CSV export deny.
+
+    Staff id/name/role roster is a company org dump; self /me remains.
+    """
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    target = seed["u1"]
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["users"] = ["read", "write"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+    await db_session.commit()
+
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_listed = await ac.get("/api/v1/users", headers=admin_headers)
+    assert admin_listed.status_code == 200, admin_listed.text
+    assert any(row.get("id") == target.id for row in admin_listed.json()["data"])
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    denied_list = await ac.get("/api/v1/users", headers=headers)
+    assert denied_list.status_code == 403, denied_list.text
+    assert denied_list.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_get = await ac.get(f"/api/v1/users/{target.id}", headers=headers)
+    assert denied_get.status_code == 403, denied_get.text
+    assert denied_get.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_export = await ac.get("/api/v1/users/export", headers=headers)
+    assert denied_export.status_code == 403, denied_export.text
+    assert denied_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    me = await ac.get("/api/v1/me", headers=headers)
+    assert me.status_code == 200, me.text
+
 
 @pytest.mark.asyncio
 async def test_store_manager_warehouse_company_create_denied(client, db_session):
