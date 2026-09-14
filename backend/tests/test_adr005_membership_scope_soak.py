@@ -122,6 +122,27 @@ def test_adr005_soak_docs_and_checklist_present():
     cl = checklist.lower()
     assert "ops" in cl or "staging" in cl
     assert "default" in cl and "false" in cl
+    # Operator pack spine: assign / fail-closed / union / POS / expiry / elevation
+    assert "fail-closed" in cl or "fail_closed" in cl
+    assert "union" in cl
+    assert "pos" in cl and "bind" in cl
+    assert "expires_at" in checklist
+    assert "elevation" in cl or "break-glass" in cl
+    assert "does not alone claim" in cl or "does **not** alone claim" in cl
+    assert "ADR005_STAGING_SOAK_EVIDENCE_TEMPLATE.md" in checklist
+    assert "STORE_SCOPED_RBAC_COMPLETE_REMAINING.md" in checklist
+    assert "logo" in cl and ("sessions" in cl or "/auth/sessions" in checklist)
+
+    evidence = (ROOT / "docs/ADR005_STAGING_SOAK_EVIDENCE_TEMPLATE.md").read_text(
+        encoding="utf-8"
+    )
+    ev = evidence.lower()
+    assert "STORE_MEMBERSHIP_SCOPE_ENABLED" in evidence
+    assert "store_scoped_rbac_complete_claimed" in evidence
+    assert "does not alone claim" in ev or "does **not** alone claim" in ev
+    assert "logo" in ev
+    assert "expires_at" in evidence
+    assert "elevation" in ev or "break-glass" in ev
 
 
 @pytest.mark.asyncio

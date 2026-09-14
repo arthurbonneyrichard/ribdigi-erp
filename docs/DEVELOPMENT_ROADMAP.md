@@ -23,8 +23,9 @@ remain out of SM scope. Intentional ALLOWs unchanged (logo binary GET;
 Continuum stays **PARTIAL**. Store-scoped RBAC Complete remains **MISSING**
 (known safe residual dump backlog empty; product ALLOW sign-off + staging soak
 still open). Offline / 7-day / go-live / paid billing Completes remain
-**MISSING**. Next CONTINUE: product ALLOW sign-off / staging soak docs (not dump
-spam).
+**MISSING**. Next CONTINUE: product ALLOW sign-off **or** live staging execution of
+`docs/adr005_staging_soak_checklist.md` + `docs/ADR005_STAGING_SOAK_EVIDENCE_TEMPLATE.md`
+(not dump spam; soak alone ≠ store-scoped Complete).
 
 ---
 

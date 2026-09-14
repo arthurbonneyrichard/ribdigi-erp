@@ -1,9 +1,11 @@
 # Store-scoped RBAC Complete — remaining checklist
 
 **Status:** **MISSING** (do not claim)  
-**As of tip ancestry:** ADR-005 membership **Complete** (flag default OFF)  
+**As of tip ancestry:** ADR-005 membership **Complete** (flag default OFF); continuum residual dump **NONE** (safe backlog empty)  
 **Related:** overall RBAC readiness **PARTIAL**  
-**Living matrix:** **landed** — `docs/STORE_SCOPED_RBAC_TEST_MATRIX.md` · `ops/mvp/store-scope-rbac-matrix.json` · `backend/tests/test_store_scope_rbac_matrix.py` (`pytest -m store_scope`)
+**Living matrix:** **landed** — [`STORE_SCOPED_RBAC_TEST_MATRIX.md`](STORE_SCOPED_RBAC_TEST_MATRIX.md) · `ops/mvp/store-scope-rbac-matrix.json` · `backend/tests/test_store_scope_rbac_matrix.py` (`pytest -m store_scope`)  
+**Staging soak (ops):** [`adr005_staging_soak_checklist.md`](adr005_staging_soak_checklist.md) · evidence [`ADR005_STAGING_SOAK_EVIDENCE_TEMPLATE.md`](ADR005_STAGING_SOAK_EVIDENCE_TEMPLATE.md) · go-live [`GO_LIVE_READINESS_CHECKLIST.md`](GO_LIVE_READINESS_CHECKLIST.md) §3C  
+**Intentional ALLOWs (need product sign-off):** logo binary GET · `/auth/sessions` · `/notifications/settings`
 
 ## ADR-005 Complete ≠ store-scoped RBAC Complete
 
@@ -52,32 +54,45 @@ Engineering (closable without ops theater):
 
 Ops / product (required for Completes that stay ops-blocked elsewhere):
 
-6. Product acceptance that remaining intentional ALLOWs are correct (matrix lists them; product sign-off still open).
-7. Staging soak with `STORE_MEMBERSHIP_SCOPE_ENABLED=true` (ops cutover — does **not** reopen ADR-005 Complete; does **not** alone claim store-scoped Complete).
+6. Product acceptance that remaining intentional ALLOWs are correct (matrix lists them; product sign-off still open):
+   - Company/tenant **logo binary GET** (workspace chrome)
+   - Caller-scoped **`/auth/sessions`**
+   - Caller-scoped **`/notifications/settings`**  
+   Track decisions on the soak evidence ALLOW table — do **not** deny without product ticket.
+7. Staging soak with `STORE_MEMBERSHIP_SCOPE_ENABLED=true` (ops cutover — does **not** reopen ADR-005 Complete; does **not** alone claim store-scoped Complete):
+   - Operator runbook: [`adr005_staging_soak_checklist.md`](adr005_staging_soak_checklist.md)
+   - Fillable evidence: [`ADR005_STAGING_SOAK_EVIDENCE_TEMPLATE.md`](ADR005_STAGING_SOAK_EVIDENCE_TEMPLATE.md)
+   - Go-live index: [`GO_LIVE_READINESS_CHECKLIST.md`](GO_LIVE_READINESS_CHECKLIST.md) §3C  
+   Covers assign memberships · cashier fail-closed · manager union · POS bind ·
+   `expires_at` · elevation/break-glass · honesty payload · rollback.
 
 ## Explicit non-claims
 
 Do **not** mark store-scoped RBAC Complete from:
 
 - ADR-005 automated soak alone
+- Operator staging soak PASS alone (necessary ≠ sufficient)
 - Living store-scope test matrix alone (spine evidence ≠ full-surface Complete)
 - Continuum dump redacts without product Complete criteria
 - Overall RBAC approval hardening (owner lockout / grantor subset / % limits / etc.)
 - First-class `export`/`view_cost` engine slice alone
+- Temp membership `expires_at` or elevation/break-glass MVP alone
 
 ## Related Completes still MISSING / PARTIAL
 
 | Claim | Status |
 |-------|--------|
+| Store-scoped RBAC Complete | **MISSING** (ALLOW sign-off + staging soak open; safe dump backlog empty) |
 | Overall RBAC Complete | **MISSING** / readiness **PARTIAL** |
 | Offline Complete + 7-day VERIFIED | **MISSING** (ops) |
 | Paid billing Complete | **PARTIAL** / ops-blocked |
 | Go-live / attestation | **MISSING** |
+| ADR-005 membership Complete | **Complete** (flag default OFF) |
 
 ## Next CONTINUE (recommended)
 
-Prefer engine Completes over continuum dumps:
+**Do not** resume continuum residual dump spam (known safe backlog empty). Prefer:
 
 1. Product sign-off on intentional ALLOWs (logo binary GET; `/auth/sessions` + `/notifications/settings`) when aiming for store-scoped Complete
-2. Staging soak with `STORE_MEMBERSHIP_SCOPE_ENABLED=true` (ops — does not alone claim store-scoped Complete)
-3. Residual continuum field-leak only if a new **named SM-visible** surface is product-prioritized (known safe backlog empty as of this NONE slice)
+2. Live staging execution of [`adr005_staging_soak_checklist.md`](adr005_staging_soak_checklist.md) + filled [`ADR005_STAGING_SOAK_EVIDENCE_TEMPLATE.md`](ADR005_STAGING_SOAK_EVIDENCE_TEMPLATE.md) (ops — does not alone claim store-scoped Complete)
+3. Residual continuum field-leak only if a new **named SM-visible** surface is product-prioritized

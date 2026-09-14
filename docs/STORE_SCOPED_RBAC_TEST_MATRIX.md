@@ -42,6 +42,8 @@ cd backend && PYTHONPATH=. pytest -q -m "security or isolation or store_scope"
 
 ## Related
 
-- Remaining Complete criteria: `docs/STORE_SCOPED_RBAC_COMPLETE_REMAINING.md`
-- ADR-005 soak ops: `docs/adr005_staging_soak_checklist.md`
+- Remaining Complete criteria: [`STORE_SCOPED_RBAC_COMPLETE_REMAINING.md`](STORE_SCOPED_RBAC_COMPLETE_REMAINING.md)
+- ADR-005 soak ops: [`adr005_staging_soak_checklist.md`](adr005_staging_soak_checklist.md)
+- Soak evidence template: [`ADR005_STAGING_SOAK_EVIDENCE_TEMPLATE.md`](ADR005_STAGING_SOAK_EVIDENCE_TEMPLATE.md)
+- Go-live §3C: [`GO_LIVE_READINESS_CHECKLIST.md`](GO_LIVE_READINESS_CHECKLIST.md)
 - Deep continuum: `backend/tests/test_store_scope_ops_hardening.py`
