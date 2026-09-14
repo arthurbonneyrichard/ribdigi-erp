@@ -2974,6 +2974,45 @@ def redact_early_pay_quote(payload: dict) -> dict:
     return out
 
 
+def omit_sales_invoice_credit_override(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit sales-invoice credit-override audit fields.
+
+    Credit-limit override *writes* already denied for store_manager (invoice post +
+    POS). List/get/post JSON must not re-dump finance override audit
+    (``credit_limit_overridden`` / ``credit_override_reason`` / ``credit_override_by``
+    / ``credit_override_at``). Balance/status/totals remain for scoped AR ops.
+    """
+    return managed_ids is not None
+
+
+def redact_sales_invoice_credit_override(payload: dict) -> dict:
+    """Clear credit-override audit fields on a sales invoice / POS sale dict."""
+    out = dict(payload)
+    if "credit_limit_overridden" in out:
+        out["credit_limit_overridden"] = False
+    for key in ("credit_override_reason", "credit_override_by", "credit_override_at"):
+        if key in out:
+            out[key] = None
+    return out
+
+
+def apply_sales_invoice_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager sales-invoice JSON redacts (credit-override audit)."""
+    out = payload
+    if omit_sales_invoice_credit_override(managed_ids):
+        out = redact_sales_invoice_credit_override(out)
+    return out
+
+
+def apply_sales_invoice_manager_redacts_list(
+    rows: list[dict], managed_ids: list[str] | None
+) -> list[dict]:
+    """Map ``apply_sales_invoice_manager_redacts`` across invoice list rows."""
+    return [apply_sales_invoice_manager_redacts(row, managed_ids) for row in rows]
+
+
 def assert_company_level_user_admin_export_denied(
     managed_ids: list[str] | None,
     *,
