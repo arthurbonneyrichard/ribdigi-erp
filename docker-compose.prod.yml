@@ -17,6 +17,7 @@ services:
       RATE_LIMIT_REQUIRE_REDIS: "true"
       CELERY_TASK_ALWAYS_EAGER: "false"
       ALLOW_DEVELOPMENT_SEED: "false"
+      ALLOW_DEMO_TENANT_SEED: "false"
       REQUEST_LOG_ENABLED: "true"
       METRICS_ENABLED: "true"
     # No bind-mount of source; do not enable uvicorn reload in production

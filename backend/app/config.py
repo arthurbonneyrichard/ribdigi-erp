@@ -57,6 +57,8 @@ class Settings(BaseSettings):
     WEBHOOK_RETRY_BASE_SECONDS: int = 60
     CELERY_WEBHOOK_RETRY_INTERVAL_SECONDS: int = 30
     ALLOW_DEVELOPMENT_SEED: bool = False
+    # Opt-in live customer-demo tenant seed (scripts/seed_demo_tenant.py). Fail closed; never production.
+    ALLOW_DEMO_TENANT_SEED: bool = False
     # SEC-M3 — unauthenticated POST /tenants self-service (fail closed; enable explicitly for local/demo).
     ALLOW_PUBLIC_TENANT_SIGNUP: bool = False
     # SEC-M2 / SEC-M5 — httpOnly session cookies + CSRF (dual-mode with Bearer). Default OFF.

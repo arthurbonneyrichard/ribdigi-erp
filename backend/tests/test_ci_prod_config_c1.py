@@ -73,6 +73,7 @@ def test_production_env_template_aligned_with_s1_validators():
     assert "METRICS_BEARER_TOKEN=" in text
     assert "TRUST_X_FORWARDED_FOR=" in text
     assert "ALLOW_DEVELOPMENT_SEED=false" in text
+    assert "ALLOW_DEMO_TENANT_SEED=false" in text
     assert "TOTP_ENCRYPTION_KEY=" in text
     assert "BACKUP_ENCRYPTION_KEY=" in text
     assert "ALLOW_PUBLIC_TENANT_SIGNUP=false" in text
@@ -91,6 +92,7 @@ def test_production_env_template_aligned_with_s1_validators():
         EMAIL_ENABLED=False,
         SMS_ENABLED=False,
         ALLOW_DEVELOPMENT_SEED=False,
+        ALLOW_DEMO_TENANT_SEED=False,
         ALLOW_PUBLIC_TENANT_SIGNUP=False,
         METRICS_ENABLED=True,
         METRICS_REQUIRE_AUTH=True,
