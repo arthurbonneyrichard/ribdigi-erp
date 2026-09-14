@@ -66,7 +66,7 @@ function ResetPasswordForm() {
           <img
             className="login-logo"
             src="/brand/logo-full.png"
-            alt="RIBDIGI ERP — Run your business smarter"
+            alt="RIBDIGI ERP — One System. Total Business Control."
             width={1024}
             height={341}
           />
