@@ -4,6 +4,7 @@ import pytest
 from app.barcodes import (
     detect_symbology,
     ean13_check_digit,
+    label_html,
     looks_like_barcode,
     normalize_barcode,
     render_barcode_png,
@@ -76,3 +77,22 @@ def test_normalize_auto_gtin():
     assert normalize_barcode(ean) == ean
     with pytest.raises(HTTPException):
         normalize_barcode("1234567890123")  # bad check digit
+
+
+def test_label_html_uses_logo_brand_chrome():
+    page = label_html(
+        company_name="Acme",
+        product_name="Widget",
+        sku="W-1",
+        barcode_value="WIDGET1",
+        price=12.5,
+        currency="GHS",
+        png_data_uri="data:image/png;base64,AA==",
+        copies=1,
+        symbology="code128",
+    )
+    assert "background: #003d1f" in page
+    assert "background: #4ab012" in page
+    assert "color: #10211b" in page
+    assert "#0f172a" not in page
+    assert "#0f766e" not in page

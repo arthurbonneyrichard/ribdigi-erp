@@ -310,24 +310,24 @@ def label_html(
   <title>Barcode labels — {html.escape(product_name)}</title>
   <style>
     @page {{ margin: 8mm; }}
-    body {{ font-family: Arial, sans-serif; margin: 0; color: #0f172a; }}
+    body {{ font-family: Arial, sans-serif; margin: 0; color: #10211b; }}
     .sheet {{ display: flex; flex-wrap: wrap; gap: 8mm; padding: 4mm; }}
     .label {{
-      width: 60mm; min-height: 40mm; border: 1px solid #cbd5e1; border-radius: 4mm;
+      width: 60mm; min-height: 40mm; border: 1px solid #d4e5c4; border-radius: 4mm;
       padding: 3mm; box-sizing: border-box; page-break-inside: avoid;
       display: flex; flex-direction: column; align-items: center; gap: 1.5mm;
     }}
-    .co {{ font-size: 9px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .04em; }}
+    .co {{ font-size: 9px; font-weight: 700; color: #4d5d56; text-transform: uppercase; letter-spacing: .04em; }}
     .name {{ font-size: 12px; font-weight: 800; text-align: center; line-height: 1.2; }}
     .price {{ font-size: 14px; font-weight: 800; }}
     img {{ width: 100%; max-width: 54mm; height: auto; }}
-    .meta {{ font-size: 9px; color: #475569; text-align: center; word-break: break-all; }}
+    .meta {{ font-size: 9px; color: #4d5d56; text-align: center; word-break: break-all; }}
     .toolbar {{
-      position: sticky; top: 0; background: #0f172a; color: #fff; padding: 10px 14px;
+      position: sticky; top: 0; background: #003d1f; color: #fff; padding: 10px 14px;
       display: flex; justify-content: space-between; align-items: center; gap: 12px;
     }}
     .toolbar button {{
-      background: #0f766e; color: #fff; border: 0; border-radius: 8px; padding: 10px 14px;
+      background: #4ab012; color: #fff; border: 0; border-radius: 8px; padding: 10px 14px;
       font-weight: 700; cursor: pointer;
     }}
     @media print {{ .toolbar {{ display: none; }} body {{ background: #fff; }} }}
