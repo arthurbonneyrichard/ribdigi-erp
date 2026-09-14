@@ -4657,6 +4657,8 @@ async def products(
         ]
     if dashboard_scope_svc.omit_product_image_url(managed):
         payload = [dashboard_scope_svc.redact_product_image_url(row) for row in payload]
+    if dashboard_scope_svc.omit_product_has_image(managed):
+        payload = [dashboard_scope_svc.redact_product_has_image(row) for row in payload]
     if use_cache:
         await cache_svc.app_cache.set_json(
             products_key, payload, ttl_seconds=int(settings.CACHE_CATALOG_TTL_SECONDS)
@@ -4978,6 +4980,8 @@ async def get_product(
         row = dashboard_scope_svc.redact_product_catalog_assignment(row)
     if dashboard_scope_svc.omit_product_image_url(managed):
         row = dashboard_scope_svc.redact_product_image_url(row)
+    if dashboard_scope_svc.omit_product_has_image(managed):
+        row = dashboard_scope_svc.redact_product_has_image(row)
     return env(row)
 
 
