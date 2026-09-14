@@ -150,6 +150,8 @@ store activation — never frontend-only.
    company/tenant logo binary GET stays open) + **product list/get ``image_url``
    storage key redacted** + **product list/get ``has_image`` forced false**
    (admin list/get keep ``image_url`` + ``has_image``; WH stock ops / POS remain)
+   + **expense list/get/patch ``attachment_url`` storage key redacted**
+   (``has_attachment`` + store-scoped binary download remain; admin keeps key)
    + **product variants CSV export denied**
    (company roster ``/products/variants/export`` + per-product path
    ``/products/{id}/variants/export``; variants list/get remain for POS/sales), and **stock CSV import denied for store_manager** (company-level
@@ -302,7 +304,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `5d9df87386a3` — `docs: bump PR #303 tip to 90e34be7b3 product has_image redact` (feat ancestry `90e34be7b3`).  
+**As of tip:** `9fa66b0ddf` — `feat(rbac): redact expense attachment_url for store_manager` (feat ancestry `9fa66b0ddf`).  
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
@@ -327,7 +329,9 @@ images gallery list GET; product variants path CSV export (after roster export
 deny); product catalog CSV export (`GET /products/export`); users list/get
 (company org roster after users CSV export deny); product primary image binary
 GET (`GET /products/{id}/image`); product list/get `image_url` storage-key
-redact; product list/get `has_image` forced false. Each slice closes one dump or write path; the
+redact; product list/get `has_image` forced false; expense list/get/patch
+`attachment_url` storage-key redact (`has_attachment` + scoped binary download
+remain). Each slice closes one dump or write path; the
 continuum as a whole stays **PARTIAL**.
 
 ### Continuum agent contract
