@@ -5775,8 +5775,40 @@ def redact_audit_expense_threshold_details(details: dict) -> dict:
     return out
 
 
+# Audit detail keys that re-dump CREDIT_LIMIT_EXCEEDED document-currency
+# ``invoice_total`` already redacted on the 409 surface (FX base already closed).
+_AUDIT_CLE_INVOICE_TOTAL_DETAIL_KEYS = ("invoice_total",)
+
+
+def omit_audit_cle_invoice_total_details(
+    managed_ids: list[str] | None,
+) -> bool:
+    """True when store_manager must omit CLE ``invoice_total`` in audit ``details``.
+
+    CREDIT_LIMIT_EXCEEDED 409 already redacts document-currency ``invoice_total``
+    (paired with ``invoice_total_base`` it recovers FX rate-table identity;
+    base / currency / CLE master already closed on audit). Scoped
+    ``GET /audit-logs`` (+ CSV) must not re-dump the same via
+    ``credit_limit_override`` (and sibling) ``details.invoice_total``.
+    ``invoice_number`` / reason / ``store_id`` / ``exceeded`` remain; admin keeps
+    ``invoice_total``. FX + CLE master + party + dept + emailed_to + attachment +
+    store manager_id + expense threshold keys already handled by sibling omit
+    helpers.
+    """
+    return managed_ids is not None
+
+
+def redact_audit_cle_invoice_total_details(details: dict) -> dict:
+    """Null CLE document-currency ``invoice_total`` keys on an audit ``details`` dict."""
+    out = dict(details)
+    for key in _AUDIT_CLE_INVOICE_TOTAL_DETAIL_KEYS:
+        if key in out:
+            out[key] = None
+    return out
+
+
 def redact_audit_manager_details(details: dict) -> dict:
-    """Compose store_manager audit ``details`` redacts (FX + CLE + party + dept + emailed_to + attachment key + store manager_id + expense threshold)."""
+    """Compose store_manager audit ``details`` redacts (FX + CLE + party + dept + emailed_to + attachment key + store manager_id + expense threshold + CLE invoice_total)."""
     out = redact_audit_fx_details(details)
     out = redact_audit_cle_master_details(out)
     out = redact_audit_party_ledger_details(out)
@@ -5784,13 +5816,14 @@ def redact_audit_manager_details(details: dict) -> dict:
     out = redact_audit_emailed_to_details(out)
     out = redact_audit_attachment_storage_details(out)
     out = redact_audit_store_manager_assignment_details(out)
-    return redact_audit_expense_threshold_details(out)
+    out = redact_audit_expense_threshold_details(out)
+    return redact_audit_cle_invoice_total_details(out)
 
 
 def apply_audit_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager audit JSON redacts (FX + CLE + party + dept + emailed_to + attachment key + store manager_id + expense threshold in ``details``)."""
+    """Apply store_manager audit JSON redacts (FX + CLE + party + dept + emailed_to + attachment key + store manager_id + expense threshold + CLE invoice_total in ``details``)."""
     out = dict(payload)
     if not isinstance(out.get("details"), dict):
         return out
@@ -5811,6 +5844,8 @@ def apply_audit_manager_redacts(
         details = redact_audit_store_manager_assignment_details(details)
     if omit_audit_expense_threshold_details(managed_ids):
         details = redact_audit_expense_threshold_details(details)
+    if omit_audit_cle_invoice_total_details(managed_ids):
+        details = redact_audit_cle_invoice_total_details(details)
     out["details"] = details
     return out
 
