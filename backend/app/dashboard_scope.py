@@ -4297,6 +4297,39 @@ def redact_bi_company_config(payload: dict) -> dict:
 
 
 
+def omit_bi_expense_category_id(store_ids: list[str] | None) -> bool:
+    """True when store_manager must omit BI expense ``by_category.category_id``.
+
+    Expense categories list GET + expense list/get ``category_id`` already
+    denied/redacted. BI overview / ``/business-insights/expenses`` must not
+    re-dump company expense-category master FKs via ``expenses.by_category``.
+    Free-text ``name`` + amounts / MoM remain; engine still groups server-side.
+    """
+    return store_ids is not None
+
+
+def redact_bi_expense_category_id(payload: dict) -> dict:
+    """Null ``category_id`` on BI ``expenses.by_category`` rows."""
+    out = dict(payload)
+    expenses = out.get("expenses")
+    if isinstance(expenses, dict):
+        exp = dict(expenses)
+        rows = exp.get("by_category")
+        if isinstance(rows, list):
+            redacted: list = []
+            for row in rows:
+                if isinstance(row, dict):
+                    item = dict(row)
+                    if "category_id" in item:
+                        item["category_id"] = None
+                    redacted.append(item)
+                else:
+                    redacted.append(row)
+            exp["by_category"] = redacted
+        out["expenses"] = exp
+    return out
+
+
 def omit_bi_cost_fields(store_ids: list[str] | None) -> bool:
     """True when store_manager must omit BI COGS / stock valuation fields.
 

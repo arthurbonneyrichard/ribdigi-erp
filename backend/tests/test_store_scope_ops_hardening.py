@@ -14612,6 +14612,93 @@ async def test_store_manager_bi_overview_settings_formulas_redacted(client, db_s
 
 
 @pytest.mark.asyncio
+async def test_store_manager_bi_expense_category_id_redacted(client, db_session):
+    """BI overview/expenses null by_category.category_id for store_manager.
+
+    Expense categories list GET + expense list/get category_id already
+    denied/redacted. BI expenses.by_category must not re-dump company
+    expense-category master FKs. Free-text name + amounts remain; admin keeps
+    category_id.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    today = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
+
+    cat = m.ExpenseCategory(
+        tenant_id=tid,
+        company_id=cid,
+        code="BI-EXP-CAT",
+        name="BI Expense Category Redact",
+        budget_amount=500,
+        is_active=True,
+    )
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="BI Expense Cat Store",
+        code="BI-EXP-ST",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add_all([cat, store])
+    await db_session.flush()
+    expense = m.Expense(
+        tenant_id=tid,
+        company_id=cid,
+        category_id=cat.id,
+        category=cat.name,
+        description="BI expense category redact target",
+        amount=55,
+        store_id=store.id,
+        status="approved",
+        expense_date=today,
+        created_by=mgr.id,
+    )
+    db_session.add(expense)
+    await db_session.commit()
+
+    admin_ov = await ac.get("/api/v1/business-insights/overview", headers=admin_headers)
+    assert admin_ov.status_code == 200, admin_ov.text
+    admin_cats = (admin_ov.json().get("expenses") or {}).get("by_category") or []
+    admin_row = next(
+        (r for r in admin_cats if r.get("category_id") == cat.id),
+        None,
+    )
+    assert admin_row is not None
+    assert admin_row.get("name") == "BI Expense Category Redact"
+    assert float(admin_row.get("amount") or 0) == pytest.approx(55.0)
+
+    mgr_ov = await ac.get("/api/v1/business-insights/overview", headers=headers)
+    assert mgr_ov.status_code == 200, mgr_ov.text
+    mgr_cats = (mgr_ov.json().get("expenses") or {}).get("by_category") or []
+    assert mgr_cats, "expected expense category rows for manager"
+    for row in mgr_cats:
+        assert row.get("category_id") is None
+    mgr_named = next(
+        (r for r in mgr_cats if r.get("name") == "BI Expense Category Redact"),
+        None,
+    )
+    assert mgr_named is not None
+    assert float(mgr_named.get("amount") or 0) == pytest.approx(55.0)
+
+    mgr_exp = await ac.get("/api/v1/business-insights/expenses", headers=headers)
+    assert mgr_exp.status_code == 200, mgr_exp.text
+    exp_cats = (mgr_exp.json().get("expenses") or {}).get("by_category") or []
+    assert exp_cats
+    for row in exp_cats:
+        assert row.get("category_id") is None
+
+
+@pytest.mark.asyncio
 async def test_store_manager_bi_cost_fields_redacted(client, db_session):
     """BI overview profit COGS / stock_value / expiry value_at_risk redacted for store_manager."""
     from datetime import timedelta

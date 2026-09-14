@@ -27,8 +27,10 @@ from app.dashboard_scope import (
     managed_store_ids,
     omit_bi_company_config,
     omit_bi_cost_fields,
+    omit_bi_expense_category_id,
     redact_bi_company_config,
     redact_bi_cost_fields,
+    redact_bi_expense_category_id,
 )
 from app.notifications import create_notification
 from app.rbac import has_permission
@@ -308,6 +310,10 @@ class BusinessIntelligenceService:
         # Catalog/inventory cost already redacted; do not re-dump COGS via BI overview.
         if omit_bi_cost_fields(metrics.store_ids):
             bundle = redact_bi_cost_fields(bundle)
+        # Expense categories list + expense JSON already deny/redact category_id;
+        # do not re-dump master FKs via BI expenses.by_category.
+        if omit_bi_expense_category_id(metrics.store_ids):
+            bundle = redact_bi_expense_category_id(bundle)
         return bundle
 
     async def _persist_important(self, insights: list[dict]) -> None:
