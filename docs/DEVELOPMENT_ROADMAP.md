@@ -11,6 +11,20 @@
 
 ---
 
+### Tip — audit department_id redact (2026-09-15)
+
+**As of tip:** `59b6d3039739ad6da67edb022cfb779551b7396f`
+Scoped audit list/export `details` `department_id` redact for `store_manager`
+(expense/recurring JSON already nulls `department_id`; departments list GET +
+assign/clear already denied; amounts / status / `store_id` remain; admin keeps
+`department_id`). Continuum stays **PARTIAL**. Store-scoped RBAC Complete remains
+**MISSING** (intentional ALLOWs + residual backlog + product sign-off + staging
+soak). Offline / 7-day / go-live / paid billing Completes remain **MISSING**.
+Next CONTINUE: residual continuum field-leak (named surface) or product ALLOW
+sign-off / staging soak docs.
+
+---
+
 ### Tip — audit party ledger balance redact (2026-09-15)
 
 **As of tip:** `fa96911e87952d61dbbd63d9b3b0c85fefd17c43`

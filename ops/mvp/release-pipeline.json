@@ -169,6 +169,6 @@
     "Security-review sign-off Complete",
     "Live go-live / \u00a77 / attestation Complete"
   ],
-  "continuum_honesty_touched_at": "2026-09-15T08:00:53Z",
-  "continuum_honesty_note": "PARTIAL \u2014 audit party ledger balance redact; store-scoped RBAC Complete still MISSING"
+  "continuum_honesty_touched_at": "2026-09-15T08:16:57Z",
+  "continuum_honesty_note": "PARTIAL \u2014 audit department_id redact; store-scoped RBAC Complete still MISSING"
 }
