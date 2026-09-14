@@ -165,9 +165,9 @@ class Settings(BaseSettings):
     OFFLINE_PUSH_VAPID_SUBJECT: str = "mailto:noreply@localhost"
     OFFLINE_PUSH_MAX_ATTEMPTS: int = 3  # sync retries on transient push failures
     OFFLINE_PUSH_RETRY_DELAY_MS: int = 50  # delay between sync retry attempts
-    # ADR-005 — membership table/API scaffold exists; operational scope stays
-    # stores.manager_id until an explicit cutover. Default OFF; enabling alone
-    # does not claim ADR-005 Complete (managed_store_ids still ignores membership).
+    # ADR-005 — when True, store_manager managed_store_ids = manager_id ∪ active
+    # memberships (docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md). Default OFF keeps
+    # legacy manager_id-only scope. Enabling does not claim ADR-005 Complete.
     STORE_MEMBERSHIP_SCOPE_ENABLED: bool = False
 
     model_config = SettingsConfigDict(env_file="../.env", extra="ignore")

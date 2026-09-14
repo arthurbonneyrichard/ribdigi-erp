@@ -1,6 +1,7 @@
 /**
- * ADR-005 store membership admin helpers (PARTIAL scaffold — not Complete).
- * Operational scope remains stores.manager_id; membership rows are assignment-only.
+ * ADR-005 store membership admin helpers (PARTIAL — not Complete).
+ * Default operational scope is stores.manager_id; membership may expand
+ * store_manager scope only when STORE_MEMBERSHIP_SCOPE_ENABLED is on.
  */
 
 export type StoreMembershipRow = {

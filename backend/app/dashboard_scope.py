@@ -2,12 +2,16 @@
 
 Also used for operational list/read hardening (POS sales, sales invoices, expenses,
 transfers, warehouses / inventory movements) and accounting statement reads
-(P&L / TB / cash-flow / balance-sheet) and bank recon unmatched book lines — still
-``stores.manager_id`` only;
-ADR-005 membership tables remain deferred. Warehouse scope maps via
-``Warehouse.store_id`` ∈ managed stores. POS holds scope via
-``PosSession.store_id``; drawer-settings export uses managed store IDs.
-POS sale receipt get/send scopes via ``PosSession.store_id`` (null session fail-closed).
+(P&L / TB / cash-flow / balance-sheet) and bank recon unmatched book lines.
+
+Default operational scope is ``stores.manager_id`` only. When
+``STORE_MEMBERSHIP_SCOPE_ENABLED`` is true, store_manager scope becomes the
+**union** of manager_id stores and active ``user_store_memberships`` (see
+``docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md``). Flag default is false; ADR-005
+Complete remains MISSING. Warehouse scope maps via ``Warehouse.store_id`` ∈
+managed stores. POS holds scope via ``PosSession.store_id``; drawer-settings
+export uses managed store IDs. POS sale receipt get/send scopes via
+``PosSession.store_id`` (null session fail-closed).
 """
 
 from __future__ import annotations
@@ -20,15 +24,20 @@ from sqlalchemy import exists, or_, select, func, and_, false as sql_false
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.config import settings
 from app.dashboard_views import dashboard_view_for_role
 
 
 async def managed_store_ids(db: AsyncSession, claims: dict) -> list[str] | None:
     """Return managed store IDs for store_manager view; None means tenant-wide (no store filter).
 
-    Uses ``stores.manager_id`` only. ADR-005 ``user_store_memberships`` scaffold
-    exists but is intentionally **not** consulted here — membership scope cutover
-    remains deferred (``STORE_MEMBERSHIP_SCOPE_ENABLED`` does not change this path).
+    Legacy (flag OFF, default): ``stores.manager_id`` only.
+
+    Flag ON (``STORE_MEMBERSHIP_SCOPE_ENABLED``): store_manager scope is the
+    **union** of active manager_id stores and active membership store IDs
+    (tenant-isolated; inactive memberships/stores excluded). Admin/executive
+    and cashier views still return ``None`` (unchanged). Enabling the flag
+    does not claim ADR-005 Complete.
     """
     role = (claims.get("role") or "").strip().lower()
     if dashboard_view_for_role(role) != "store_manager":
@@ -46,7 +55,25 @@ async def managed_store_ids(db: AsyncSession, claims: dict) -> list[str] | None:
             )
         )
     ).scalars().all()
-    return [str(sid) for sid in rows]
+    ids = {str(sid) for sid in rows}
+
+    if bool(getattr(settings, "STORE_MEMBERSHIP_SCOPE_ENABLED", False)):
+        mem_rows = (
+            await db.execute(
+                select(m.UserStoreMembership.store_id)
+                .join(m.Store, m.Store.id == m.UserStoreMembership.store_id)
+                .where(
+                    m.UserStoreMembership.tenant_id == tenant_id,
+                    m.UserStoreMembership.user_id == user_id,
+                    m.UserStoreMembership.is_active.is_(True),
+                    m.Store.tenant_id == tenant_id,
+                    m.Store.is_active == True,  # noqa: E712
+                )
+            )
+        ).scalars().all()
+        ids.update(str(sid) for sid in mem_rows)
+
+    return list(ids)
 
 
 def assert_store_membership_admin_denied(

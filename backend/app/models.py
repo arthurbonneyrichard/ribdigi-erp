@@ -185,9 +185,10 @@ class UserCompanyMembership(Base):
 class UserStoreMembership(Base):
     """User ↔ Store membership assignment (ADR-005 scaffold — Complete still MISSING).
 
-    Assignment rows only. Operational store scope remains ``stores.manager_id`` until
-    an explicit membership scope cutover ships. Do not treat presence of this table
-    as ADR-005 Complete or store-scoped RBAC Complete.
+    Assignment rows only. Default operational store scope remains ``stores.manager_id``.
+    When ``STORE_MEMBERSHIP_SCOPE_ENABLED`` is true, store_manager ``managed_store_ids``
+    unions active membership store IDs (see ``docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md``).
+    Do not treat presence of this table as ADR-005 Complete or store-scoped RBAC Complete.
     """
 
     __tablename__ = "user_store_memberships"

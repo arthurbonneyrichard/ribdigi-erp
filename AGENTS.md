@@ -45,9 +45,13 @@ store activation — never frontend-only.
    gates on tenant columns, not fabricated MRR.
 6. **User↔store membership** is intentionally opened as an **ADR-005 scaffold
    PARTIAL** (`user_store_memberships` + assign/list/revoke + `/me/store-memberships`
-   in `backend/app/store_memberships.py` + Company/Admin UI `/stores#memberships`).
-   Operational store scope **still** uses
-   ``stores.manager_id`` via `backend/app/dashboard_scope.py` (`managed_store_ids`,
+   in `backend/app/store_memberships.py` + Company/Admin UI `/stores#memberships`
+   + cutover design `docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md`). Default
+   operational store scope uses ``stores.manager_id``; when
+   ``STORE_MEMBERSHIP_SCOPE_ENABLED`` is true (default **false**), store_manager
+   ``managed_store_ids`` is **manager_id ∪ active memberships**. ADR-005 Complete
+   remains **MISSING**. Scope helpers in `backend/app/dashboard_scope.py`
+   (`managed_store_ids`,
    `constrain_store_query`, `assert_transfer_touches_manager_scope`, `managed_warehouse_ids`,
    `constrain_warehouse_query`, `apply_warehouse_scope_filter`,
    `apply_purchase_invoice_warehouse_scope`, `STORE_SCOPE_DENIED`) — dashboard/BI,
@@ -358,9 +362,9 @@ leave contradictory Complete/PARTIAL wording across those three surfaces.
 
 1. Company/tenant **logo binary GET** (workspace chrome; branding *writes* already denied). Mistaken close in `b0fc721a15` was **reverted** — leftover restored.
 2. Per-user `/auth/sessions` + `/notifications/settings` (self-service; not company dumps).
-3. **ADR-005** user↔store membership **PARTIAL** scaffold (table/API + `/stores#memberships`
-   admin UI; operational
-   scope still ``stores.manager_id`` — Complete still **MISSING**).
+3. **ADR-005** user↔store membership **PARTIAL** (scaffold + admin UI + flag-gated
+   scope wire default OFF — see `docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md`; Complete
+   still **MISSING**; production default still ``stores.manager_id``).
 4. Managed-store list may still expose self-scope `manager_id` (not peer org graph).
 
 ### Closed continuum themes (summary — still PARTIAL)
@@ -466,10 +470,10 @@ after `0107` in deploy order.
    gates on tenant columns, not fabricated MRR.
 6. When `max_users_override` is set, plan changes do not overwrite
    `Tenant.max_users` until the override is cleared.
-7. **User↔store membership** scaffold is **PARTIAL** (ADR-005; `/stores#memberships`
-   admin UI included); operational scope
-   still ``stores.manager_id``. Do not claim membership Complete or wire
-   `managed_store_ids` to membership without an explicit cutover + evidence.
+7. **User↔store membership** is **PARTIAL** (ADR-005; `/stores#memberships`
+   admin UI + flag-gated `managed_store_ids` union when
+   `STORE_MEMBERSHIP_SCOPE_ENABLED`; default OFF = ``stores.manager_id`` only).
+   Do not claim membership Complete or production-default membership scope without evidence.
 
 ### Key modules
 
