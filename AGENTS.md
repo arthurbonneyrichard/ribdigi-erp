@@ -49,9 +49,11 @@ store activation — never frontend-only.
    + cutover design `docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md`). Default
    operational store scope uses ``stores.manager_id``; when
    ``STORE_MEMBERSHIP_SCOPE_ENABLED`` is true (default **false**), store_manager
-   ``managed_store_ids`` is **manager_id ∪ active memberships**. ADR-005 Complete
-   remains **MISSING**. Scope helpers in `backend/app/dashboard_scope.py`
-   (`managed_store_ids`,
+   ``managed_store_ids`` is **manager_id ∪ active memberships**, and cashiers are
+   fail-closed on POS bind + store lists via ``store_visibility_ids`` (cashiers
+   stay ``None`` on ``managed_store_ids`` so continuum manager denies stay intact).
+   ADR-005 Complete remains **MISSING**. Scope helpers in `backend/app/dashboard_scope.py`
+   (`managed_store_ids`, `store_visibility_ids`, `cashier_membership_store_ids`,
    `constrain_store_query`, `assert_transfer_touches_manager_scope`, `managed_warehouse_ids`,
    `constrain_warehouse_query`, `apply_warehouse_scope_filter`,
    `apply_purchase_invoice_warehouse_scope`, `STORE_SCOPE_DENIED`) — dashboard/BI,
@@ -349,7 +351,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `3ae085d92c2c36a183d03af7ce8dd9b3964a9a74` — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL**; ADR-005 membership **PARTIAL** (scaffold + admin UI + flag-gated scope wire default OFF — Complete still **MISSING**); Offline Complete still **MISSING**. Cookie flag default remains OFF (ops enable cutover). Continuum CLE honesty remains **PARTIAL**.
+**As of tip:** `ab62c1fa023c1620ad3c065bb4b04477c8e8081b` — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL**; ADR-005 membership **PARTIAL** (scaffold + admin UI + flag-gated scope wire + cashier POS/store-list fail-closed default OFF — Complete still **MISSING**); Offline Complete still **MISSING**. Cookie flag default remains OFF (ops enable cutover). Continuum CLE honesty remains **PARTIAL**.
 **Security:** no open Critical/High/Medium. Do not claim go-live Completes. Flag OFF in prod examples is intentional until ops cutover (`docs/sec_m2_staging_soak_checklist.md`).  
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
@@ -472,7 +474,8 @@ after `0107` in deploy order.
    `Tenant.max_users` until the override is cleared.
 7. **User↔store membership** is **PARTIAL** (ADR-005; `/stores#memberships`
    admin UI + flag-gated `managed_store_ids` union when
-   `STORE_MEMBERSHIP_SCOPE_ENABLED`; default OFF = ``stores.manager_id`` only).
+   `STORE_MEMBERSHIP_SCOPE_ENABLED`; cashiers fail-closed via `store_visibility_ids`;
+   default OFF = ``stores.manager_id`` only).
    Do not claim membership Complete or production-default membership scope without evidence.
 
 ### Key modules
