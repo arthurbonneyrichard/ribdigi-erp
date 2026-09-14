@@ -9,7 +9,7 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `d62de45b688bdd26316be9dc43f076444f122957` — feat redact sales-invoice `balance_due_base` (`9baec24d88`); leftovers still open |
+| **As of tip** | `38247193fa28e0042084dbd08d11fb4b42169bf6` — feat redact sales-invoice `balance_due_base` (`9baec24d88`); leftovers still open |
 | RBAC / store scope | **PARTIAL** only |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
 
