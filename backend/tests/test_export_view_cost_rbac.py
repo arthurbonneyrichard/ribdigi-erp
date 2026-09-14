@@ -431,3 +431,55 @@ async def test_inventory_balance_report_cost_redacted_for_store_manager(client, 
     adata = admin.json()["data"]
     aprobe = next(r for r in adata.get("items") or [] if r.get("sku") == "BAL-COST-1")
     assert float(aprobe.get("cost_price") or 0) == pytest.approx(11.25)
+
+
+@pytest.mark.asyncio
+async def test_residual_admin_settings_catalog_export_gates(client, db_session):
+    """Admin/settings/catalog CSV paths require module:export (residual closed)."""
+    ac, seed = client
+    cash = await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")
+    mgr_h = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    # Cashier lacks inventory/users/tax export — deny
+    deny_paths = [
+        ("/api/v1/catalog/categories/export", "inventory:export"),
+        ("/api/v1/catalog/brands/export", "inventory:export"),
+        ("/api/v1/catalog/units/export", "inventory:export"),
+        ("/api/v1/users/export", "users:export"),
+        ("/api/v1/tax/rates/export", "tax:export"),
+        ("/api/v1/inventory/settings/export", "inventory:export"),
+        ("/api/v1/purchasing/settings/export", "purchasing:export"),
+        ("/api/v1/expenses/settings/export", "expenses:export"),
+        ("/api/v1/credit/settings/export", "credit:export"),
+        ("/api/v1/audit-logs/export", "audit:export"),
+    ]
+    for path, token in deny_paths:
+        res = await ac.get(path, headers=cash)
+        assert res.status_code == 403, f"{path}: {res.text}"
+        assert token in res.text, f"{path}: expected {token} in {res.text}"
+
+    # Store manager retains prior read-export behavior via explicit export grants
+    allow_paths = [
+        "/api/v1/catalog/categories/export",
+        "/api/v1/catalog/brands/export",
+        "/api/v1/branches/export",
+        "/api/v1/departments/export",
+        "/api/v1/inventory/settings/export",
+        "/api/v1/stores/drawer-settings/export",
+        "/api/v1/notifications/settings/export",
+    ]
+    for path in allow_paths:
+        res = await ac.get(path, headers=mgr_h)
+        assert res.status_code == 200, f"{path}: {res.text}"
+        assert "text/csv" in res.headers.get("content-type", ""), path
+
+
+def test_system_role_grants_users_notifications_audit_export_for_store_manager():
+    sm = permissions_for_role("store_manager")
+    assert "export" in sm["users"]
+    assert "export" in sm["notifications"]
+    assert "export" in sm["audit"]
+    assert "export" in sm["security"]
+    cash = permissions_for_role("cashier")
+    assert "export" in cash["notifications"]
+    assert "export" not in (cash.get("inventory") or [])

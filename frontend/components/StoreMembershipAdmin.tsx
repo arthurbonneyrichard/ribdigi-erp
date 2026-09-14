@@ -46,6 +46,7 @@ export default function StoreMembershipAdmin({
   const [memberships, setMemberships] = useState<StoreMembershipRow[]>([]);
   const [honesty, setHonesty] = useState<Partial<MembershipHonesty> | null>(null);
   const [userId, setUserId] = useState('');
+  const [expiresAtLocal, setExpiresAtLocal] = useState('');
   const [denied, setDenied] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -77,6 +78,8 @@ export default function StoreMembershipAdmin({
         store_scoped_rbac_complete_claimed: data.store_scoped_rbac_complete_claimed,
         scope_wired_to_membership: data.scope_wired_to_membership,
         store_membership_scope_enabled: data.store_membership_scope_enabled,
+        temp_membership_expires_at_claimed: data.temp_membership_expires_at_claimed,
+        elevation_break_glass_claimed: data.elevation_break_glass_claimed,
         scaffold_status: data.scaffold_status,
         operational_scope: data.operational_scope,
       });
@@ -115,12 +118,28 @@ export default function StoreMembershipAdmin({
     setError('');
     setMessage('');
     try {
+      const body: { user_id: string; expires_at?: string | null } = { user_id: userId };
+      if (expiresAtLocal.trim()) {
+        // datetime-local is local wall time; send as ISO without forcing TZ shift issues
+        const asDate = new Date(expiresAtLocal);
+        if (Number.isNaN(asDate.getTime())) {
+          setError('Invalid expires_at datetime');
+          setBusy(false);
+          return;
+        }
+        body.expires_at = asDate.toISOString();
+      } else {
+        body.expires_at = null;
+      }
       await api(`/stores/${storeId}/memberships`, {
         method: 'POST',
-        body: JSON.stringify({ user_id: userId }),
+        body: JSON.stringify(body),
       });
       setUserId('');
-      setMessage('Store membership assigned (ADR-005 Complete — enable STORE_MEMBERSHIP_SCOPE_ENABLED for runtime scope)');
+      setExpiresAtLocal('');
+      setMessage(
+        'Store membership assigned (ADR-005 Complete — enable STORE_MEMBERSHIP_SCOPE_ENABLED for runtime scope; expires_at enforced when set)'
+      );
       await load(storeId);
     } catch (err: unknown) {
       if (err instanceof ApiError && err.status === 403) {
@@ -183,23 +202,35 @@ export default function StoreMembershipAdmin({
         </label>
 
         {canMutate ? (
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            <select
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              aria-label="User to assign to store"
-              style={{ flex: 1, minWidth: 200 }}
-            >
-              <option value="">Select user (cashier / officer…)</option>
-              {assignableUsers.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {(u.full_name || u.email || u.id) + (u.role ? ` · ${u.role}` : '')}
-                </option>
-              ))}
-            </select>
-            <button type="button" onClick={() => void assignMember()} disabled={busy || !userId || !storeId}>
-              Assign
-            </button>
+          <div style={{ display: 'grid', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <select
+                value={userId}
+                onChange={(e) => setUserId(e.target.value)}
+                aria-label="User to assign to store"
+                style={{ flex: 1, minWidth: 200 }}
+              >
+                <option value="">Select user (cashier / officer…)</option>
+                {assignableUsers.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {(u.full_name || u.email || u.id) + (u.role ? ` · ${u.role}` : '')}
+                  </option>
+                ))}
+              </select>
+              <button type="button" onClick={() => void assignMember()} disabled={busy || !userId || !storeId}>
+                Assign
+              </button>
+            </div>
+            <label className="muted">
+              Expires at (optional — leave blank for permanent)
+              <input
+                type="datetime-local"
+                value={expiresAtLocal}
+                onChange={(e) => setExpiresAtLocal(e.target.value)}
+                aria-label="Membership expires at"
+                style={{ display: 'block', width: '100%', maxWidth: 280, marginTop: 4 }}
+              />
+            </label>
           </div>
         ) : (
           <p className="muted">Read-only — stores write permission required to assign or revoke.</p>
@@ -231,6 +262,15 @@ export default function StoreMembershipAdmin({
                     {row.user_email && row.user_full_name ? (
                       <span className="muted">{` · ${row.user_email}`}</span>
                     ) : null}
+                    {row.expires_at ? (
+                      <span className="muted">
+                        {row.is_expired
+                          ? ` · expired ${row.expires_at}`
+                          : ` · expires ${row.expires_at}`}
+                      </span>
+                    ) : (
+                      <span className="muted"> · permanent</span>
+                    )}
                   </span>
                   {canMutate ? (
                     <button

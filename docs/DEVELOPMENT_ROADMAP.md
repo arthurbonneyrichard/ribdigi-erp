@@ -11,6 +11,20 @@
 
 ---
 
+### Tip — export residual closed + temp membership expires_at (2026-09-15)
+
+**As of tip:** `TIP_SHA_PLACEHOLDER`
+Closed residual admin/settings/catalog module `export` gates (role-gated admin
+dumps + caller-scoped session/passkey exports retained intentionally). First-class
+`export` / `view_cost` actions marked **Complete** for this engine slice (not
+overall RBAC Complete). Temp membership `expires_at` landed (scope exclusion +
+admin UI + tests) — elevation / break-glass remain **MISSING**. ADR-005 remains
+**Complete** (flag default OFF). Overall RBAC readiness remains **PARTIAL**.
+Store-scoped RBAC Complete remains **MISSING**. Offline / 7-day / go-live /
+paid billing Completes remain **MISSING**.
+
+---
+
 ### Tip — export / view_cost broaden + unified cost omit (2026-09-15)
 
 **As of tip:** `5d25a914b02afc6db5a57e22e31bdf062e97958c`

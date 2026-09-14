@@ -31,9 +31,9 @@ Honesty flags (`GET /me/store-memberships` etc.):
 Engineering (closable without ops theater):
 
 1. **Residual continuum field leaks** — only as product-prioritized slices (paused as default CONTINUE path; not dump spam). Empty backlog or explicit ALLOW list with product sign-off.
-2. **First-class `export` / `view_cost` actions** — **PARTIAL (stronger)**: engine + system role grants + deps auto-`read`; commerce/dashboard/ops/AI CSV paths gated on module `export` (not mere `read`); report/BI/AI/stock-count cost omit helpers unified on `inventory:view_cost` / `business_insights:view_cost` (legacy managed/WH fallback retained when claims omitted). Residual: a minority of admin/settings/catalog export paths still on `read` or role gates; not overall RBAC Complete.
+2. **First-class `export` / `view_cost` actions** — **Complete** (engine slice for these actions): engine + system role grants + deps auto-`read`; commerce/dashboard/ops/AI **and** admin/settings/catalog CSV paths gated on module `export` (not mere `read`); report/BI/AI/stock-count cost omit helpers unified on `inventory:view_cost` / `business_insights:view_cost` (legacy managed/WH fallback retained when claims omitted). Intentional non-module gates retained: admin `require_roles` dumps (tenant settings/backup/api-keys/webhooks/jobs) and caller-scoped `/auth/sessions` + passkeys exports. Does **not** imply overall RBAC Complete or store-scoped RBAC Complete.
 3. **Living store-scope test matrix** — single indexed suite covering modules claimed Complete (not only `test_store_scope_ops_hardening.py` growth).
-4. **Temp membership / elevation / break-glass** — still **MISSING** (optional for store-scope Complete if product scopes Complete without them; still blocks overall RBAC Complete).
+4. **Temp membership / elevation / break-glass** — temp membership `expires_at` **PARTIAL** (column + scope exclusion + admin UI + tests); elevation / break-glass still **MISSING** (optional for store-scope Complete if product scopes Complete without them; still blocks overall RBAC Complete).
 5. **Concurrent approval stress pack** — still **MISSING** (overall RBAC; not strictly store-scope).
 
 Ops / product (required for Completes that stay ops-blocked elsewhere):
@@ -63,7 +63,7 @@ Do **not** mark store-scoped RBAC Complete from:
 
 Prefer engine Completes over continuum dumps:
 
-1. ~~First-class `export` / `view_cost`~~ ~~broaden export gates + unify report/BI/AI cost omit~~ → residual admin/settings/catalog export gates + living store-scope matrix (or temp membership)
-2. Temporary membership `expires_at` / elevation / break-glass (smallest temp-access MVP)
+1. Living store-scope test matrix (indexed suite)
+2. Elevation / break-glass on top of temp membership `expires_at` (smallest elevation MVP)
 3. Concurrent approval stress pack
 4. Only resume store_manager field-leak continuum when product prioritizes a named surface

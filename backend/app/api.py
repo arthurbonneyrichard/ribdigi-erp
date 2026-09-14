@@ -2557,6 +2557,7 @@ async def me_store_memberships(
         user_id=claims["sub"],
         company_id=claims.get("company_id"),
         active_only=True,
+        effective_only=True,
     )
     visibility = await dashboard_scope_svc.store_visibility_ids(db, claims)
     honesty = store_memberships_svc.honesty_payload()
@@ -3216,7 +3217,7 @@ async def roles_catalog(
 async def roles_export(
     active_only: bool = False,
     is_active: bool | None = None,
-    claims=Depends(require_permission("users", "read")),
+    claims=Depends(require_permission("users", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 124 X1 — custom roles CSV export (system roles excluded)."""
@@ -3244,7 +3245,7 @@ async def roles_export(
 async def roles_permissions_matrix_export(
     active_only: bool = False,
     is_active: bool | None = None,
-    claims=Depends(require_permission("users", "read")),
+    claims=Depends(require_permission("users", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 152 M1 — role×module×action permissions matrix CSV (system + custom)."""
@@ -3483,7 +3484,7 @@ async def list_branches(
 async def branches_export(
     active_only: bool = False,
     is_active: bool | None = None,
-    claims=Depends(require_permission("users", "read")),
+    claims=Depends(require_permission("users", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 122 X1 — branches CSV export."""
@@ -3623,7 +3624,7 @@ async def departments_export(
     branch_id: str | None = None,
     active_only: bool = False,
     is_active: bool | None = None,
-    claims=Depends(require_permission("users", "read")),
+    claims=Depends(require_permission("users", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 122 X1 — departments CSV export."""
@@ -3766,7 +3767,7 @@ async def users(
 
 @api.get("/users/export")
 async def users_export(
-    claims=Depends(require_permission("users", "read")),
+    claims=Depends(require_permission("users", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 120 U1 — users CSV export (import-aligned; never includes passwords)."""
@@ -5511,7 +5512,7 @@ async def catalog_categories(
 async def catalog_categories_export(
     active_only: bool = False,
     is_active: bool | None = None,
-    claims=Depends(require_permission("inventory", "read")),
+    claims=Depends(require_permission("inventory", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 122 X1 — categories CSV export."""
@@ -5657,7 +5658,7 @@ async def catalog_brands(
 async def catalog_brands_export(
     active_only: bool = False,
     is_active: bool | None = None,
-    claims=Depends(require_permission("inventory", "read")),
+    claims=Depends(require_permission("inventory", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 122 X1 — brands CSV export."""
@@ -5889,7 +5890,7 @@ async def catalog_units(
 async def catalog_units_export(
     active_only: bool = False,
     is_active: bool | None = None,
-    claims=Depends(require_permission("inventory", "read")),
+    claims=Depends(require_permission("inventory", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 122 X1 — units CSV export."""
@@ -6127,7 +6128,7 @@ async def product_images_list(
 @api.get("/products/{product_id}/images/export")
 async def product_images_export(
     product_id: str,
-    claims=Depends(require_permission("inventory", "read")),
+    claims=Depends(require_permission("inventory", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 156 G1 — per-product image metadata CSV (no binary payloads)."""
@@ -10016,7 +10017,7 @@ async def get_purchasing_settings(
 
 @api.get("/purchasing/settings/export")
 async def export_purchasing_settings(
-    claims=Depends(require_permission("purchasing", "read")),
+    claims=Depends(require_permission("purchasing", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 138 P1 — purchasing PR approval settings CSV (levels as levels_json)."""
@@ -12153,7 +12154,7 @@ async def expense_settings(
 
 @api.get("/expenses/settings/export")
 async def export_expense_settings(
-    claims=Depends(require_permission("expenses", "read")),
+    claims=Depends(require_permission("expenses", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 138 E1 — expense approval settings CSV (levels as levels_json)."""
@@ -13407,7 +13408,7 @@ async def bank_feed_settings(
 
 @api.get("/settings/bank-feed/export")
 async def bank_feed_settings_export(
-    claims=Depends(require_permission("accounting", "read")),
+    claims=Depends(require_permission("accounting", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 156 F1 — secret-free bank-feed settings CSV (no tokens/credentials)."""
@@ -14545,7 +14546,7 @@ async def get_fiscal_period(
 
 @api.get("/accounting/fiscal-period/export")
 async def export_fiscal_period(
-    claims=Depends(require_permission("accounting", "read")),
+    claims=Depends(require_permission("accounting", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 139 F1 — fiscal period status CSV."""
@@ -15196,7 +15197,7 @@ async def reports_export(
 
 @api.get("/reports/exportable")
 async def reports_exportable(
-    claims=Depends(require_permission("reports", "read")),
+    claims=Depends(require_permission("reports", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     from app import dashboard_scope as dashboard_scope_svc
@@ -16003,7 +16004,7 @@ async def credit_settings(
 
 @api.get("/credit/settings/export")
 async def export_credit_settings(
-    claims=Depends(require_permission("credit", "read")),
+    claims=Depends(require_permission("credit", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 138 C1 — early-pay settings CSV (tenant terms; no secrets)."""
@@ -16074,7 +16075,7 @@ async def list_exchange_rates(
 
 @api.get("/credit/exchange-rates/export")
 async def exchange_rates_export(
-    claims=Depends(require_permission("credit", "read")),
+    claims=Depends(require_permission("credit", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 127 F1 — exchange rates CSV export."""
@@ -16735,7 +16736,7 @@ async def add_tax(
 async def tax_rates_export(
     active_only: bool = False,
     is_active: bool | None = None,
-    claims=Depends(require_permission("tax", "read")),
+    claims=Depends(require_permission("tax", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 121 X1 — tax rates CSV export."""
@@ -17145,7 +17146,7 @@ async def stores_export(
 @api.get("/stores/drawer-settings/export")
 async def stores_drawer_settings_export(
     is_active: bool | None = None,
-    claims=Depends(require_permission("stores", "read")),
+    claims=Depends(require_permission("stores", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 142 C1 — store cash drawer settings CSV (kick bytes never included)."""
@@ -17376,12 +17377,25 @@ async def assign_store_membership(
     user_id = (payload or {}).get("user_id")
     if not user_id:
         raise HTTPException(status_code=400, detail="user_id is required")
+    body = payload or {}
+    # Optional temp membership: omit = leave existing expiry on reactivate;
+    # null/"" = clear expiry (permanent); ISO string = set expires_at.
+    clear_expires_at = False
+    expires_at = None
+    if "expires_at" in body:
+        raw_exp = body.get("expires_at")
+        if raw_exp is None or raw_exp == "":
+            clear_expires_at = True
+        else:
+            expires_at = store_memberships_svc.parse_expires_at(raw_exp)
     row = await store_memberships_svc.assign_store_membership(
         db,
         tenant_id=claims["tenant_id"],
         store_id=store_id,
         user_id=user_id,
         company_id=claims.get("company_id"),
+        expires_at=expires_at,
+        clear_expires_at=clear_expires_at,
     )
     user = await db.get(m.User, user_id)
     store = await stores_svc.get_store(
@@ -17399,8 +17413,12 @@ async def assign_store_membership(
         details={
             "store_id": store_id,
             "member_user_id": user_id,
+            "expires_at": row.expires_at.isoformat() if row.expires_at else None,
             "adr005_complete_claimed": honesty["adr005_complete_claimed"],
             "scope_wired_to_membership": honesty["scope_wired_to_membership"],
+            "temp_membership_expires_at_claimed": honesty[
+                "temp_membership_expires_at_claimed"
+            ],
         },
         company_id=row.company_id,
     )
@@ -17667,7 +17685,7 @@ async def inventory_settings(
 
 @api.get("/inventory/settings/export")
 async def inventory_settings_export(
-    claims=Depends(require_permission("inventory", "read")),
+    claims=Depends(require_permission("inventory", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 144 F1 — inventory FEFO settings CSV."""
@@ -18502,7 +18520,7 @@ async def notifications_export(
     status: str | None = None,
     category: str | None = None,
     group: str | None = None,
-    claims=Depends(require_permission("notifications", "read")),
+    claims=Depends(require_permission("notifications", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 129 N1 — notifications CSV honoring status/group/category filters."""
@@ -18628,7 +18646,7 @@ async def notification_settings(
 
 @api.get("/notifications/settings/export")
 async def export_notification_settings(
-    claims=Depends(require_permission("notifications", "read")),
+    claims=Depends(require_permission("notifications", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 140 N1 — notification channel preferences CSV for the calling user."""
@@ -18842,7 +18860,7 @@ async def audit_logs_export(
     from_date: str | None = None,
     to_date: str | None = None,
     format: str = "csv",
-    claims=Depends(require_permission("audit", "read")),
+    claims=Depends(require_permission("audit", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     from app import dashboard_scope as dashboard_scope_svc
@@ -18926,7 +18944,7 @@ async def audit_logs_archives(
 
 @api.get("/audit-logs/archives/export")
 async def audit_logs_archives_export(
-    claims=Depends(require_permission("audit", "read")),
+    claims=Depends(require_permission("audit", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 144 A1 — cold audit archive manifest CSV (no blob download)."""
@@ -20617,7 +20635,7 @@ async def ai_chat_history(
 @api.get("/ai/chat/history/export")
 async def ai_chat_history_export(
     limit: int = 50,
-    claims=Depends(require_permission("ai", "read")),
+    claims=Depends(require_permission("ai", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 148 C1 — current-user AI chat history CSV."""
@@ -21216,7 +21234,7 @@ async def ai_security_alerts(
 @api.get("/ai/security/alerts/export")
 async def ai_security_alerts_export(
     lookback_hours: int = 72,
-    claims=Depends(require_permission("security", "read")),
+    claims=Depends(require_permission("security", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 145 S1 — AI security alerts CSV."""
@@ -21352,7 +21370,7 @@ async def ai_report_templates_list(
 
 @api.get("/ai/reports/templates/export")
 async def ai_report_templates_export(
-    claims=Depends(require_permission("ai", "read")),
+    claims=Depends(require_permission("ai", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 145 T1 — AI report templates CSV."""
@@ -21588,7 +21606,7 @@ async def ai_documents_analyze(
 async def ai_documents_analyze_export(
     document_type: str = "receipt",
     file: UploadFile = File(...),
-    claims=Depends(require_permission("ai", "read")),
+    claims=Depends(require_permission("ai", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 149 A1 — document analyze multi-section CSV (suggest-only; no raw OCR dump)."""

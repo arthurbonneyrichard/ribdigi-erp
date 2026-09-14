@@ -10,6 +10,8 @@ export type StoreMembershipRow = {
   user_id: string;
   store_id: string;
   is_active: boolean;
+  expires_at?: string | null;
+  is_expired?: boolean;
   user_email?: string | null;
   user_full_name?: string | null;
   user_role?: string | null;
@@ -17,6 +19,8 @@ export type StoreMembershipRow = {
   store_name?: string | null;
   adr005_complete_claimed?: boolean;
   scope_wired_to_membership?: boolean;
+  temp_membership_expires_at_claimed?: boolean;
+  elevation_break_glass_claimed?: boolean;
   scaffold_status?: string;
   operational_scope?: string;
 };
@@ -27,6 +31,8 @@ export type MembershipHonesty = {
   scope_wired_to_membership: boolean;
   store_membership_scope_enabled: boolean;
   cashier_membership_fail_closed?: boolean;
+  temp_membership_expires_at_claimed?: boolean;
+  elevation_break_glass_claimed?: boolean;
   scaffold_status: string;
   operational_scope: string;
   complete_means?: string;
@@ -80,9 +86,17 @@ export function membershipHonestyBanner(honesty?: Partial<MembershipHonesty> | n
     ? 'Membership scope flag is ON for this runtime.'
     : 'Membership scope flag is OFF (ops enable STORE_MEMBERSHIP_SCOPE_ENABLED).';
   const rbacNote = rbac ? '' : ' Store-scoped RBAC Complete is not claimed.';
+  const tempNote =
+    honesty?.temp_membership_expires_at_claimed === true
+      ? ' Temporary membership expires_at is enforced in scope.'
+      : '';
+  const elevNote =
+    honesty?.elevation_break_glass_claimed === true
+      ? ''
+      : ' Elevation / break-glass remains MISSING.';
   return (
     `ADR-005 store membership is ${status.toUpperCase()} — assign/list/revoke + flag-gated scope wire verified. ` +
-    `Operational scope: ${scope}. ${flagNote}${rbacNote}`
+    `Operational scope: ${scope}. ${flagNote}${rbacNote}${tempNote}${elevNote}`
   );
 }
 

@@ -39,7 +39,9 @@ from app.dashboard_views import dashboard_view_for_role
 async def _active_membership_store_ids(
     db: AsyncSession, *, tenant_id: str, user_id: str
 ) -> list[str]:
-    """Active membership store IDs joined to active tenant stores."""
+    """Active, non-expired membership store IDs joined to active tenant stores."""
+    from app import store_memberships as store_memberships_svc
+
     mem_rows = (
         await db.execute(
             select(m.UserStoreMembership.store_id)
@@ -48,6 +50,7 @@ async def _active_membership_store_ids(
                 m.UserStoreMembership.tenant_id == tenant_id,
                 m.UserStoreMembership.user_id == user_id,
                 m.UserStoreMembership.is_active.is_(True),
+                store_memberships_svc.membership_not_expired_clause(),
                 m.Store.tenant_id == tenant_id,
                 m.Store.is_active == True,  # noqa: E712
             )

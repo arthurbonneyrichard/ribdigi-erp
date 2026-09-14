@@ -188,7 +188,9 @@ class UserStoreMembership(Base):
     Assignment rows only. Default operational store scope remains ``stores.manager_id``.
     When ``STORE_MEMBERSHIP_SCOPE_ENABLED`` is true, store_manager ``managed_store_ids``
     unions active membership store IDs (see ``docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md``).
-    Table presence alone is not store-scoped RBAC Complete; ADR-005 Complete is flag-gated soak + assignment APIs.
+    Optional ``expires_at`` excludes the row from scope once past (temp access MVP);
+    elevation / break-glass remain MISSING. Table presence alone is not store-scoped
+    RBAC Complete; ADR-005 Complete is flag-gated soak + assignment APIs.
     """
 
     __tablename__ = "user_store_memberships"
@@ -200,6 +202,8 @@ class UserStoreMembership(Base):
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
     store_id: Mapped[str] = mapped_column(ForeignKey("stores.id"), index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Temp membership: null = no expiry; past UTC now ⇒ excluded from scope resolution.
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

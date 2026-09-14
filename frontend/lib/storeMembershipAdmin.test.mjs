@@ -44,9 +44,17 @@ function membershipHonestyBanner(honesty) {
     ? 'Membership scope flag is ON for this runtime.'
     : 'Membership scope flag is OFF (ops enable STORE_MEMBERSHIP_SCOPE_ENABLED).';
   const rbacNote = rbac ? '' : ' Store-scoped RBAC Complete is not claimed.';
+  const tempNote =
+    honesty?.temp_membership_expires_at_claimed === true
+      ? ' Temporary membership expires_at is enforced in scope.'
+      : '';
+  const elevNote =
+    honesty?.elevation_break_glass_claimed === true
+      ? ''
+      : ' Elevation / break-glass remains MISSING.';
   return (
     `ADR-005 store membership is ${status.toUpperCase()} — assign/list/revoke + flag-gated scope wire verified. ` +
-    `Operational scope: ${scope}. ${flagNote}${rbacNote}`
+    `Operational scope: ${scope}. ${flagNote}${rbacNote}${tempNote}${elevNote}`
   );
 }
 
@@ -98,5 +106,15 @@ describe('storeMembershipAdmin helpers', () => {
     assert.match(banner, /stores\.manager_id/);
     assert.match(banner, /flag is OFF/i);
     assert.match(banner, /Store-scoped RBAC Complete is not claimed/);
+    const bannerTemp = membershipHonestyBanner({
+      scaffold_status: 'complete',
+      operational_scope: 'stores.manager_id',
+      store_membership_scope_enabled: false,
+      store_scoped_rbac_complete_claimed: false,
+      temp_membership_expires_at_claimed: true,
+      elevation_break_glass_claimed: false,
+    });
+    assert.match(bannerTemp, /expires_at is enforced/);
+    assert.match(bannerTemp, /break-glass remains MISSING/);
   });
 });
