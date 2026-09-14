@@ -18743,3 +18743,99 @@ async def test_store_manager_stock_movement_created_by_name_redacted(client, db_
     assert mgr_row.get("quantity") == 5.0
     assert mgr_row.get("created_by") == admin.id
 
+
+@pytest.mark.asyncio
+async def test_store_manager_sales_salesperson_email_redacted(client, db_session):
+    """Sales-by-salesperson nulls staff email for store_manager.
+
+    Users list/get + CSV export already denied (company org roster). Report
+    JSON/CSV must not re-dump staff email after movement created_by redacts.
+    Revenue / sale_count / user_id / full_name remain; admin JSON/CSV keep email.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    admin = seed["admin1"]
+    today = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="SP Email Store",
+        code="SPE1",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    inv = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="SPE-EMAIL-1",
+        customer_id=seed["party1"].id,
+        status="posted",
+        subtotal=40,
+        tax_amount=0,
+        total_amount=40,
+        store_id=store.id,
+        posted_at=today,
+        created_by=admin.id,
+    )
+    db_session.add(inv)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    admin_sp = await ac.get(
+        "/api/v1/reports/sales/salesperson",
+        headers=admin_company,
+    )
+    assert admin_sp.status_code == 200, admin_sp.text
+    admin_people = admin_sp.json()["data"]["salespeople"]
+    admin_row = next(r for r in admin_people if r.get("user_id") == admin.id)
+    assert admin_row.get("email") == "admin@alpha.example.com"
+    assert float(admin_row.get("revenue") or 0) >= 40.0
+
+    mgr_sp = await ac.get("/api/v1/reports/sales/salesperson", headers=headers)
+    assert mgr_sp.status_code == 200, mgr_sp.text
+    mgr_data = mgr_sp.json()["data"]
+    assert float(mgr_data["total_revenue"]) == pytest.approx(40.0)
+    mgr_people = mgr_data["salespeople"]
+    mgr_row = next(r for r in mgr_people if r.get("user_id") == admin.id)
+    assert mgr_row.get("email") is None
+    assert mgr_row.get("full_name") == "Alpha Admin"
+    assert float(mgr_row.get("revenue") or 0) == pytest.approx(40.0)
+
+    admin_csv = await ac.get(
+        "/api/v1/reports/export",
+        headers=admin_company,
+        params={"report_type": "sales_salesperson", "format": "csv"},
+    )
+    assert admin_csv.status_code == 200, admin_csv.text
+    admin_rows = list(csv.DictReader(io.StringIO(admin_csv.text)))
+    admin_csv_row = next(r for r in admin_rows if r.get("user_id") == admin.id)
+    assert admin_csv_row.get("email") == "admin@alpha.example.com"
+
+    mgr_csv = await ac.get(
+        "/api/v1/reports/export",
+        headers=headers,
+        params={"report_type": "sales_salesperson", "format": "csv"},
+    )
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    mgr_rows = list(csv.DictReader(io.StringIO(mgr_csv.text)))
+    mgr_csv_row = next(r for r in mgr_rows if r.get("user_id") == admin.id)
+    assert mgr_csv_row.get("email") in (None, "")
+    assert float(mgr_csv_row.get("revenue") or 0) == pytest.approx(40.0)
+

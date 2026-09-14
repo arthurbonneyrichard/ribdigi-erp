@@ -15091,16 +15091,16 @@ async def report_sales_salesperson(
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
-    return env(
-        await reports_svc.sales_by_salesperson(
-            db,
-            claims["tenant_id"],
-            from_date=reports_svc.parse_date(from_date),
-            to_date=reports_svc.parse_date(to_date, end_of_day=True),
-            company_id=claims.get("company_id"),
-            store_ids=managed,
-        )
+    data = await reports_svc.sales_by_salesperson(
+        db,
+        claims["tenant_id"],
+        from_date=reports_svc.parse_date(from_date),
+        to_date=reports_svc.parse_date(to_date, end_of_day=True),
+        company_id=claims.get("company_id"),
+        store_ids=managed,
     )
+    data = dashboard_scope_svc.apply_sales_salesperson_manager_redacts(data, managed)
+    return env(data)
 
 
 @api.get("/reports/sales/by-store")

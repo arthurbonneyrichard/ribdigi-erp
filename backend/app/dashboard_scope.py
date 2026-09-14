@@ -1888,6 +1888,41 @@ def apply_stock_movement_manager_redacts_list(
     return [apply_stock_movement_manager_redacts(row, managed_ids) for row in rows]
 
 
+def omit_sales_salesperson_email(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit salesperson-report staff ``email``.
+
+    Users list/get + CSV export already denied (company org roster). Sales-by-
+    salesperson JSON/CSV must not re-dump staff email after movement
+    ``created_by_email`` / ``created_by_name`` redacts. Revenue / sale counts /
+    ``user_id`` / ``full_name`` remain for store ops (name is a later slice).
+    """
+    return managed_ids is not None
+
+
+def redact_sales_salesperson_email(payload: dict) -> dict:
+    """Null ``email`` on a salesperson row dict (and nested ``salespeople``)."""
+    out = dict(payload)
+    if "email" in out:
+        out["email"] = None
+    people = out.get("salespeople")
+    if isinstance(people, list):
+        out["salespeople"] = [
+            redact_sales_salesperson_email(row) if isinstance(row, dict) else row
+            for row in people
+        ]
+    return out
+
+
+def apply_sales_salesperson_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager sales-salesperson report redacts (staff email)."""
+    out = payload
+    if omit_sales_salesperson_email(managed_ids):
+        out = redact_sales_salesperson_email(out)
+    return out
+
+
 def assert_store_branch_assignment_write_denied(
     managed_ids: list[str] | None,
     *,
