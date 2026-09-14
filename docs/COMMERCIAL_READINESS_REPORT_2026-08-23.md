@@ -9,7 +9,7 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `d6e3ba7e9431e26d90ae226b1b06d738ef90706d` — SEC-M1/M3/M4 FIXED on tip (merge `927c034e24`); continuum CLE `invoice_total` PARTIAL; leftovers still open |
+| **As of tip** | `2fa707e95e32e173fc4e6d1cf37dca682417e87e` — SEC-M1/M3/M4 FIXED on tip (merge `927c034e24`); continuum CLE `invoice_total` PARTIAL; leftovers still open |
 | RBAC / store scope | **PARTIAL** only |
 | Security Mediums | **M1+M3+M4 FIXED**; **M2+M5 OPEN** (httpOnly session architecture deferred); overall 🟠 |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |

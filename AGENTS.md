@@ -342,7 +342,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `d6e3ba7e9431e26d90ae226b1b06d738ef90706d` — security Mediums **SEC-M1 + M3 + M4 FIXED** on tip ancestry via merge `927c034e24` (upload magic bytes, public `POST /tenants` gate, dedicated TOTP/backup Fernet keys); continuum CLE `invoice_total` redact honesty remains **PARTIAL**.  
+**As of tip:** `2fa707e95e32e173fc4e6d1cf37dca682417e87e` — security Mediums **SEC-M1 + M3 + M4 FIXED** on tip ancestry via merge `927c034e24` (upload magic bytes, public `POST /tenants` gate, dedicated TOTP/backup Fernet keys); continuum CLE `invoice_total` redact honesty remains **PARTIAL**.  
 **Security:** overall still `🟠 SECURITY FIXES REQUIRED BEFORE LAUNCH` — remaining Mediums **SEC-M2** (tokens in `localStorage`) + **SEC-M5** (`ribdigi_principal` UX-only cookie); Low **SEC-L2** open. Session httpOnly migration deferred (architectural; ~33 frontend token sites).  
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
