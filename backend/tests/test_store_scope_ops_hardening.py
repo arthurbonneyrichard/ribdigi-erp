@@ -14359,6 +14359,127 @@ async def test_store_manager_purchase_invoice_exchange_rate_redacted(client, db_
 
 
 @pytest.mark.asyncio
+async def test_store_manager_purchase_invoice_balance_due_base_redacted(
+    client, db_session
+):
+    """Purchase invoice list/get/export nulls balance_due_base for store_manager.
+
+    Exchange-rates GET already denied; purchase-invoice currency + exchange_rate
+    already redacted; sales-invoice + credit-aging document balance_due_base
+    already redacted. Purchase-invoice JSON/CSV must not re-dump FX-converted
+    base (balance_due × rate). Totals/status/balance_due remain; admin keeps
+    balance_due_base.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    co = seed["c1"]
+    co.currency = "USD"
+    await db_session.flush()
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="PI BDB Redact Store",
+        code="PIBDB-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        name="PI BDB Redact WH",
+        code="WH-PI-BDB",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="PI BDB Supplier",
+        kind="supplier",
+        credit_limit=0,
+    )
+    db_session.add_all([wh, supplier])
+    await db_session.flush()
+
+    inv = m.PurchaseInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="PI-BDB-1",
+        supplier_id=supplier.id,
+        warehouse_id=wh.id,
+        status="draft",
+        subtotal=80,
+        tax_amount=0,
+        discount_amount=0,
+        total_amount=80,
+        paid_amount=0,
+        currency="EUR",
+        exchange_rate=1.35,
+        ap_posted=False,
+        created_by=mgr.id,
+    )
+    db_session.add(inv)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    admin_got = await ac.get(
+        f"/api/v1/purchasing/invoices/{inv.id}", headers=admin_company
+    )
+    assert admin_got.status_code == 200, admin_got.text
+    admin_data = admin_got.json()["data"]
+    assert float(admin_data.get("balance_due_base") or 0) == pytest.approx(108.0)
+    assert float(admin_data.get("balance_due") or 0) == pytest.approx(80.0)
+    assert float(admin_data.get("total_amount") or 0) == pytest.approx(80.0)
+
+    mgr_got = await ac.get(f"/api/v1/purchasing/invoices/{inv.id}", headers=headers)
+    assert mgr_got.status_code == 200, mgr_got.text
+    mgr_data = mgr_got.json()["data"]
+    assert mgr_data.get("balance_due_base") is None
+    assert mgr_data.get("exchange_rate") is None
+    assert mgr_data.get("currency") is None
+    assert float(mgr_data.get("balance_due") or 0) == pytest.approx(80.0)
+    assert float(mgr_data.get("total_amount") or 0) == pytest.approx(80.0)
+    assert mgr_data.get("status") == "draft"
+
+    listed = await ac.get("/api/v1/purchasing/invoices", headers=headers)
+    assert listed.status_code == 200, listed.text
+    row = next(r for r in listed.json()["data"] if r["id"] == inv.id)
+    assert row.get("balance_due_base") is None
+    assert float(row.get("balance_due") or 0) == pytest.approx(80.0)
+
+    admin_csv = await ac.get("/api/v1/purchasing/invoices/export", headers=admin_company)
+    assert admin_csv.status_code == 200, admin_csv.text
+    admin_rows = list(csv.DictReader(io.StringIO(admin_csv.text)))
+    admin_csv_row = next(r for r in admin_rows if r.get("invoice_number") == "PI-BDB-1")
+    assert float(admin_csv_row.get("balance_due_base") or 0) == pytest.approx(108.0)
+
+    mgr_csv = await ac.get("/api/v1/purchasing/invoices/export", headers=headers)
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    mgr_rows = list(csv.DictReader(io.StringIO(mgr_csv.text)))
+    mgr_csv_row = next(r for r in mgr_rows if r.get("invoice_number") == "PI-BDB-1")
+    assert mgr_csv_row.get("balance_due_base") in (None, "")
+    assert float(mgr_csv_row.get("balance_due") or 0) == pytest.approx(80.0)
+
+
+@pytest.mark.asyncio
 async def test_store_manager_journal_entry_attachment_url_redacted(client, db_session):
     """Journal list/get nulls attachment_url storage key for store_manager.
 

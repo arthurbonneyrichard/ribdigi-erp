@@ -58,6 +58,7 @@ PURCHASE_INVOICE_EXPORT_COLUMNS = [
     "balance_due",
     "currency",
     "exchange_rate",
+    "balance_due_base",
     "ap_posted",
     "has_attachment",
     "approved_at",
