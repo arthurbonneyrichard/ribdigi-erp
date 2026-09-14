@@ -11,6 +11,20 @@
 
 ---
 
+### Tip — export / view_cost broaden + unified cost omit (2026-09-15)
+
+**As of tip:** *(self-fixed after push)*
+
+Broadened first-class `export` gates across commerce/dashboard/ops/AI CSV
+surfaces; unified report / BI / AI / stock-count cost omit on
+`inventory:view_cost` / `business_insights:view_cost` (legacy fallback retained).
+Status remains **PARTIAL** (residual admin/settings/catalog export paths).
+ADR-005 remains **Complete** (flag default OFF). Overall RBAC readiness remains
+**PARTIAL**. Store-scoped RBAC Complete remains **MISSING**. Offline / 7-day /
+go-live / paid billing Completes remain **MISSING**.
+
+---
+
 ### Tip — first-class export / view_cost RBAC actions (2026-09-15)
 
 **As of tip:** `acd9d6546e28b0e2fae37d1056a9aea98a503b2c`

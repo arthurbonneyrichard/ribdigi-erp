@@ -663,6 +663,7 @@ async def build_report_payload(
     company_id: str | None = None,
     warehouse_ids: list[str] | None = None,
     store_ids: list[str] | None = None,
+    claims: dict | None = None,
 ) -> Any:
     if report_type not in EXPORTABLE:
         raise HTTPException(
@@ -751,7 +752,12 @@ async def build_report_payload(
         )
     if report_type == "inventory_balance":
         return await reports_svc.inventory_balance(
-            db, tenant_id, warehouse_id, company_id=company_id, warehouse_ids=warehouse_ids
+            db,
+            tenant_id,
+            warehouse_id,
+            company_id=company_id,
+            warehouse_ids=warehouse_ids,
+            claims=claims,
         )
     if report_type == "inventory_movements":
         return await reports_svc.inventory_movements(
@@ -774,6 +780,7 @@ async def build_report_payload(
             store_id=store_id,
             company_id=company_id,
             warehouse_ids=warehouse_ids,
+            claims=claims,
         )
     if report_type == "purchases_summary":
         return await reports_svc.purchases_summary(

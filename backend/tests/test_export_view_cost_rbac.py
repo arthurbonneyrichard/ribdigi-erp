@@ -10,7 +10,13 @@ import pytest
 from sqlalchemy import select
 
 from app import models as m
-from app.dashboard_scope import omit_product_cost_price
+from app.dashboard_scope import (
+    omit_ai_dead_stock_cost,
+    omit_bi_cost_fields,
+    omit_inventory_report_cost,
+    omit_product_cost_price,
+    omit_stock_count_variance_cost,
+)
 from app.rbac import (
     ALLOWED_ACTIONS,
     ensure_permission_dependencies,
@@ -272,3 +278,156 @@ async def test_custom_role_save_export_view_cost_via_api(client):
     assert "export" in perms["inventory"]
     assert "view_cost" in perms["inventory"]
     assert "read" in perms["reports"] and "export" in perms["reports"]
+
+
+def test_unified_cost_omit_helpers_use_view_cost_when_claims_present():
+    sm = {
+        "role": "store_manager",
+        "permissions": permissions_for_role("store_manager"),
+    }
+    acct = {
+        "role": "accountant",
+        "permissions": permissions_for_role("accountant"),
+    }
+    admin = {"role": "company_admin", "permissions": {"*": ["*"]}}
+
+    assert omit_inventory_report_cost(["wh-1"], claims=sm) is True
+    assert omit_inventory_report_cost(["wh-1"], claims=acct) is False
+    assert omit_ai_dead_stock_cost(["wh-1"], claims=sm) is True
+    assert omit_ai_dead_stock_cost(["wh-1"], claims=acct) is False
+    assert omit_stock_count_variance_cost(["wh-1"], claims=sm) is True
+    assert omit_stock_count_variance_cost(["wh-1"], claims=admin) is False
+    assert omit_bi_cost_fields(["store-1"], claims=sm) is True
+    assert omit_bi_cost_fields(["store-1"], claims=acct) is False
+    # Legacy fallback when claims omitted
+    assert omit_inventory_report_cost(["wh-1"]) is True
+    assert omit_inventory_report_cost(None) is False
+    assert omit_bi_cost_fields(["store-1"]) is True
+    assert omit_bi_cost_fields(None) is False
+
+
+@pytest.mark.asyncio
+async def test_broadened_export_gates_deny_cashier_allow_store_manager(client, db_session):
+    """Commerce/dashboard/ops CSV paths require module:export (not mere read)."""
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    existing = (
+        await db_session.execute(
+            select(m.Store).where(m.Store.tenant_id == tid, m.Store.manager_id == mgr.id)
+        )
+    ).scalars().first()
+    if existing is None:
+        db_session.add(
+            m.Store(
+                tenant_id=tid,
+                company_id=cid,
+                code="MGR-EXP2",
+                name="Mgr Export Store",
+                manager_id=mgr.id,
+                is_active=True,
+            )
+        )
+        await db_session.commit()
+
+    cash = await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")
+    mgr_h = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    deny_paths = [
+        ("/api/v1/dashboard/export", "dashboard:export"),
+        ("/api/v1/expenses/export", "expenses:export"),
+        ("/api/v1/inventory/movements/export", "inventory:export"),
+        ("/api/v1/sales/orders/export", "sales:export"),
+        ("/api/v1/credit/aging/export?kind=receivable", "credit:export"),
+        ("/api/v1/ai/inventory/dead-stock/export", "ai:export"),
+    ]
+    for path, token in deny_paths:
+        res = await ac.get(path, headers=cash)
+        assert res.status_code == 403, f"{path}: {res.text}"
+        assert token in res.text, f"{path}: expected {token} in {res.text}"
+
+    allow_paths = [
+        "/api/v1/dashboard/export",
+        "/api/v1/expenses/export",
+        "/api/v1/inventory/movements/export",
+        "/api/v1/sales/orders/export",
+        "/api/v1/credit/aging/export?kind=receivable",
+        "/api/v1/stores/transfers/export",
+    ]
+    for path in allow_paths:
+        res = await ac.get(path, headers=mgr_h)
+        assert res.status_code == 200, f"{path}: {res.text}"
+        assert "text/csv" in res.headers.get("content-type", ""), path
+
+
+@pytest.mark.asyncio
+async def test_inventory_balance_report_cost_redacted_for_store_manager(client, db_session):
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    product = m.Product(
+        tenant_id=tid,
+        company_id=cid,
+        sku="BAL-COST-1",
+        name="Balance Cost Probe",
+        selling_price=30,
+        cost_price=11.25,
+        stock_qty=5,
+        is_active=True,
+    )
+    store = (
+        await db_session.execute(
+            select(m.Store).where(m.Store.tenant_id == tid, m.Store.manager_id == mgr.id)
+        )
+    ).scalars().first()
+    if store is None:
+        store = m.Store(
+            tenant_id=tid,
+            company_id=cid,
+            code="MGR-BAL",
+            name="Mgr Balance Store",
+            manager_id=mgr.id,
+            is_active=True,
+        )
+        db_session.add(store)
+        await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        code="MGR-BAL-WH",
+        name="Mgr Balance WH",
+        is_active=True,
+    )
+    db_session.add_all([product, wh])
+    await db_session.flush()
+    db_session.add(
+        m.WarehouseStock(
+            tenant_id=tid,
+            company_id=cid,
+            warehouse_id=wh.id,
+            product_id=product.id,
+            quantity=5,
+        )
+    )
+    await db_session.commit()
+
+    mgr_h = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    res = await ac.get("/api/v1/reports/inventory/balance", headers=mgr_h)
+    assert res.status_code == 200, res.text
+    data = res.json()["data"]
+    assert data.get("total_value") is None
+    items = data.get("items") or []
+    probe = next((r for r in items if r.get("sku") == "BAL-COST-1"), None)
+    assert probe is not None
+    assert probe.get("cost_price") is None
+    assert probe.get("value") is None
+
+    admin_h = await _super(ac, seed)
+    admin = await ac.get("/api/v1/reports/inventory/balance", headers=admin_h)
+    assert admin.status_code == 200, admin.text
+    adata = admin.json()["data"]
+    aprobe = next(r for r in adata.get("items") or [] if r.get("sku") == "BAL-COST-1")
+    assert float(aprobe.get("cost_price") or 0) == pytest.approx(11.25)

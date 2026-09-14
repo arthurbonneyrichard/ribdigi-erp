@@ -308,7 +308,7 @@ class BusinessIntelligenceService:
         if omit_bi_company_config(metrics.store_ids):
             bundle = redact_bi_company_config(bundle)
         # Catalog/inventory cost already redacted; do not re-dump COGS via BI overview.
-        if omit_bi_cost_fields(metrics.store_ids):
+        if omit_bi_cost_fields(metrics.store_ids, claims=self.claims):
             bundle = redact_bi_cost_fields(bundle)
         # Expense categories list + expense JSON already deny/redact category_id;
         # do not re-dump master FKs via BI expenses.by_category.

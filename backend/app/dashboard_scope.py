@@ -4097,14 +4097,24 @@ def redact_product_cost_price(payload: dict) -> dict:
     return out
 
 
-def omit_ai_dead_stock_cost(warehouse_ids: list[str] | None) -> bool:
-    """True when store_manager must omit AI dead-stock COGS / carrying-cost.
+def omit_ai_dead_stock_cost(
+    warehouse_ids: list[str] | None,
+    claims: dict | None = None,
+) -> bool:
+    """True when caller must omit AI dead-stock COGS / carrying-cost.
+
+    First-class ``inventory:view_cost`` is authoritative when ``claims`` is
+    provided. Legacy fallback: ``warehouse_ids is not None`` (store-scoped path).
 
     Catalog ``cost_price`` + low-stock alert cost already redacted; WH-scoped
     dead-stock JSON/CSV must not re-dump ``cost_price`` /
     ``estimated_carrying_cost`` / ``total_carrying_cost``. Qty / days-without-sale
     remain for ops.
     """
+    if claims is not None:
+        from app.rbac import claims_has_permission
+
+        return not claims_has_permission(claims, "inventory", "view_cost")
     return warehouse_ids is not None
 
 
@@ -4129,13 +4139,23 @@ def redact_ai_dead_stock_cost(payload: dict) -> dict:
     return out
 
 
-def omit_inventory_report_cost(warehouse_ids: list[str] | None) -> bool:
-    """True when store_manager must omit inventory report COGS fields.
+def omit_inventory_report_cost(
+    warehouse_ids: list[str] | None,
+    claims: dict | None = None,
+) -> bool:
+    """True when caller must omit inventory report COGS fields.
+
+    First-class ``inventory:view_cost`` is authoritative when ``claims`` is
+    provided. Legacy fallback: ``warehouse_ids is not None`` (store-scoped path).
 
     Catalog ``cost_price`` already redacted; WH-scoped balance/valuation JSON/CSV
     must not re-dump ``cost_price`` / line ``value`` / ``total_value``. Quantity,
     SKU, and warehouse identity remain for ops.
     """
+    if claims is not None:
+        from app.rbac import claims_has_permission
+
+        return not claims_has_permission(claims, "inventory", "view_cost")
     return warehouse_ids is not None
 
 
@@ -4173,14 +4193,24 @@ def redact_inventory_report_cost(payload: dict) -> dict:
     return out
 
 
-def omit_stock_count_variance_cost(warehouse_ids: list[str] | None) -> bool:
-    """True when store_manager must omit stock-count variance COGS fields.
+def omit_stock_count_variance_cost(
+    warehouse_ids: list[str] | None,
+    claims: dict | None = None,
+) -> bool:
+    """True when caller must omit stock-count variance COGS fields.
+
+    First-class ``inventory:view_cost`` is authoritative when ``claims`` is
+    provided. Legacy fallback: ``warehouse_ids is not None`` (store-scoped path).
 
     Catalog ``cost_price`` + inventory balance/valuation cost already redacted;
     WH-scoped variance JSON/CSV/PDF must not re-dump ``unit_cost`` /
     ``variance_value`` / ``total_variance_value`` from ``product.cost_price``.
     Qty variance + SKU/name remain for ops.
     """
+    if claims is not None:
+        from app.rbac import claims_has_permission
+
+        return not claims_has_permission(claims, "inventory", "view_cost")
     return warehouse_ids is not None
 
 
@@ -4715,8 +4745,15 @@ def redact_bi_expense_category_id(payload: dict) -> dict:
     return out
 
 
-def omit_bi_cost_fields(store_ids: list[str] | None) -> bool:
-    """True when store_manager must omit BI COGS / stock valuation fields.
+def omit_bi_cost_fields(
+    store_ids: list[str] | None,
+    claims: dict | None = None,
+) -> bool:
+    """True when caller must omit BI COGS / stock valuation fields.
+
+    First-class ``business_insights:view_cost`` (or ``inventory:view_cost``) is
+    authoritative when ``claims`` is provided. Legacy fallback:
+    ``store_ids is not None`` (store-scoped path).
 
     Catalog ``cost_price`` + inventory report cost already redacted; overview
     profit ``cogs`` / ``gross_profit`` / ``net_profit``, inventory ``stock_value``,
@@ -4724,6 +4761,14 @@ def omit_bi_cost_fields(store_ids: list[str] | None) -> bool:
     COGS. Revenue/expenses/qty counts remain; engine still uses cost server-side
     for health scoring before redaction.
     """
+    if claims is not None:
+        from app.rbac import claims_has_permission
+
+        if claims_has_permission(claims, "business_insights", "view_cost"):
+            return False
+        if claims_has_permission(claims, "inventory", "view_cost"):
+            return False
+        return True
     return store_ids is not None
 
 

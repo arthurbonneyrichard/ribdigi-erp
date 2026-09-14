@@ -4641,7 +4641,7 @@ async def dashboard(claims=Depends(require_permission("dashboard", "read")), db:
 
 @api.get("/dashboard/export")
 async def dashboard_export(
-    claims=Depends(require_permission("dashboard", "read")),
+    claims=Depends(require_permission("dashboard", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 153 B1 — tenant dashboard aggregates CSV (real KPIs; no fabricated MRR)."""
@@ -4685,7 +4685,7 @@ async def dashboard_sales_trend(
 
 @api.get("/dashboard/sales-trend/export")
 async def dashboard_sales_trend_export(
-    claims=Depends(require_permission("dashboard", "read")),
+    claims=Depends(require_permission("dashboard", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 157 S1 — dashboard sales-trend series CSV (distinct from Stage 153 aggregates)."""
@@ -4718,7 +4718,7 @@ async def dashboard_top_products(
 
 @api.get("/dashboard/top-products/export")
 async def dashboard_top_products_export(
-    claims=Depends(require_permission("dashboard", "read")),
+    claims=Depends(require_permission("dashboard", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 157 T1 — dashboard top-products ranking CSV (distinct from Stage 153 aggregates)."""
@@ -4750,7 +4750,7 @@ async def dashboard_expenses(
 
 @api.get("/dashboard/expenses/export")
 async def dashboard_expenses_export(
-    claims=Depends(require_permission("dashboard", "read")),
+    claims=Depends(require_permission("dashboard", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 158 E1 — dashboard expenses-by-category CSV (distinct from Stage 153 aggregates)."""
@@ -4781,7 +4781,7 @@ async def dashboard_credit(
 
 @api.get("/dashboard/credit/export")
 async def dashboard_credit_export(
-    claims=Depends(require_permission("dashboard", "read")),
+    claims=Depends(require_permission("dashboard", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 158 C1 — dashboard AR outstanding CSV (distinct from Stage 153 aggregates)."""
@@ -4812,7 +4812,7 @@ async def dashboard_stock_alerts(
 
 @api.get("/dashboard/stock-alerts/export")
 async def dashboard_stock_alerts_export(
-    claims=Depends(require_permission("dashboard", "read")),
+    claims=Depends(require_permission("dashboard", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 158 A1 — dashboard stock-alerts KPI CSV (distinct from Stage 153 aggregates)."""
@@ -4846,7 +4846,7 @@ async def dashboard_user_stats(
 
 @api.get("/dashboard/user-stats/export")
 async def dashboard_user_stats_export(
-    claims=Depends(require_permission("dashboard", "read")),
+    claims=Depends(require_permission("dashboard", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 159 U1 — dashboard user-stats KPI CSV (distinct from Stage 153/158 slices)."""
@@ -4868,7 +4868,7 @@ async def dashboard_user_stats_export(
 
 @api.get("/dashboard/summary/export")
 async def dashboard_summary_export(
-    claims=Depends(require_permission("dashboard", "read")),
+    claims=Depends(require_permission("dashboard", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 159 M1 — dashboard compact summary KPI CSV (distinct from Stage 153 aggregates)."""
@@ -6421,7 +6421,7 @@ async def export_movements_csv(
     movement_type: str | None = None,
     from_date: str | None = None,
     to_date: str | None = None,
-    claims=Depends(require_permission("inventory", "read")),
+    claims=Depends(require_permission("inventory", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 137 M1 — stock movement CSV honoring list filters."""
@@ -6541,7 +6541,7 @@ async def product_warehouse_stock(
 @api.get("/products/{product_id}/warehouse-stock/export")
 async def export_product_warehouse_stock(
     product_id: str,
-    claims=Depends(require_permission("inventory", "read")),
+    claims=Depends(require_permission("inventory", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 155 W1 — per-product warehouse-stock CSV (distinct from Stage 137 movements)."""
@@ -6597,7 +6597,7 @@ async def list_stock_counts(
 @api.get("/inventory/stock-counts/export")
 async def stock_counts_export(
     status: str | None = None,
-    claims=Depends(require_permission("inventory", "read")),
+    claims=Depends(require_permission("inventory", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 130 S1 — stock-count list CSV (header metadata; not variance lines)."""
@@ -6693,7 +6693,7 @@ async def stock_count_variance_report(
         db, tenant_id=claims["tenant_id"], count_id=count_id,
         company_id=claims.get("company_id"),
     )
-    if dashboard_scope_svc.omit_stock_count_variance_cost(managed_wh):
+    if dashboard_scope_svc.omit_stock_count_variance_cost(managed_wh, claims=claims):
         report = dashboard_scope_svc.redact_stock_count_variance_cost(report)
     fmt = (format or "csv").strip().lower()
     safe_num = "".join(c if c.isalnum() or c in "-_" else "_" for c in report["count_number"])
@@ -7428,7 +7428,7 @@ async def list_product_batches(
 @api.get("/products/{product_id}/batches/export")
 async def export_product_batches(
     product_id: str,
-    claims=Depends(require_permission("inventory", "read")),
+    claims=Depends(require_permission("inventory", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 154 K1 — per-product batches CSV (distinct from Stage 137 expiring export)."""
@@ -7482,7 +7482,7 @@ async def inventory_batches_expiring(
 @api.get("/inventory/batches/expiring/export")
 async def export_expiring_batches_csv(
     days: int = 30,
-    claims=Depends(require_permission("inventory", "read")),
+    claims=Depends(require_permission("inventory", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 137 E1 — expiring batches CSV; store_manager WH-scoped."""
@@ -7598,7 +7598,7 @@ async def list_customer_groups(
 async def customer_groups_export(
     active_only: bool = False,
     is_active: bool | None = None,
-    claims=Depends(require_permission("sales", "read")),
+    claims=Depends(require_permission("sales", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 123 X1 — customer groups CSV export."""
@@ -7772,7 +7772,7 @@ async def customers(
 
 @api.get("/customers/export")
 async def customers_export(
-    claims=Depends(require_permission("sales", "read")),
+    claims=Depends(require_permission("sales", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 119 E1 — customers CSV export."""
@@ -8081,7 +8081,7 @@ async def customer_history(
 @api.get("/customers/{customer_id}/history/export")
 async def customer_history_export(
     customer_id: str,
-    claims=Depends(require_permission("sales", "read")),
+    claims=Depends(require_permission("sales", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 153 C1 — customer sales history CSV (distinct from Stage 119 roster export)."""
@@ -8159,7 +8159,7 @@ async def suppliers(
 
 @api.get("/suppliers/export")
 async def suppliers_export(
-    claims=Depends(require_permission("purchasing", "read")),
+    claims=Depends(require_permission("purchasing", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 119 E1 — suppliers CSV export."""
@@ -8456,7 +8456,7 @@ async def supplier_history(
 @api.get("/suppliers/{supplier_id}/history/export")
 async def supplier_history_export(
     supplier_id: str,
-    claims=Depends(require_permission("purchasing", "read")),
+    claims=Depends(require_permission("purchasing", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 153 S1 — supplier purchase history CSV (distinct from Stage 119 roster export)."""
@@ -8990,7 +8990,7 @@ async def list_quotations(
 @api.get("/sales/quotations/export")
 async def export_sales_quotations_csv(
     status: str | None = None,
-    claims=Depends(require_permission("sales", "read")),
+    claims=Depends(require_permission("sales", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 133 Q1 — sales quotation header CSV (no line dump)."""
@@ -9356,7 +9356,7 @@ async def list_sales_orders(
 async def export_sales_orders_csv(
     status: str | None = None,
     store_id: str | None = None,
-    claims=Depends(require_permission("sales", "read")),
+    claims=Depends(require_permission("sales", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 133 O1 — sales order header CSV (no line dump); store_manager scoped."""
@@ -9659,7 +9659,7 @@ async def list_sales_returns(
 @api.get("/sales/returns/export")
 async def export_sales_returns_csv(
     status: str | None = None,
-    claims=Depends(require_permission("sales", "read")),
+    claims=Depends(require_permission("sales", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 133 R1 — sales return header CSV (no line dump)."""
@@ -9986,7 +9986,7 @@ async def list_purchase_requests(
 @api.get("/purchasing/requests/export")
 async def export_purchase_requests_csv(
     status: str | None = None,
-    claims=Depends(require_permission("purchasing", "read")),
+    claims=Depends(require_permission("purchasing", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 134 R1 — purchase request header CSV (no line dump)."""
@@ -10318,7 +10318,7 @@ async def list_purchase_orders(
 @api.get("/purchasing/orders/export")
 async def export_purchase_orders_csv(
     status: str | None = None,
-    claims=Depends(require_permission("purchasing", "read")),
+    claims=Depends(require_permission("purchasing", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 134 O1 — purchase order header CSV (no line dump)."""
@@ -10496,7 +10496,7 @@ async def list_purchase_order_amendments(
 @api.get("/purchasing/orders/{po_id}/amendments/export")
 async def export_purchase_order_amendments(
     po_id: str,
-    claims=Depends(require_permission("purchasing", "read")),
+    claims=Depends(require_permission("purchasing", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 154 A1 — purchase order amendment history CSV."""
@@ -10643,7 +10643,7 @@ async def list_grns(
 @api.get("/purchasing/grn/export")
 async def export_grns_csv(
     status: str | None = None,
-    claims=Depends(require_permission("purchasing", "read")),
+    claims=Depends(require_permission("purchasing", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 134 G1 — GRN header CSV (no line dump)."""
@@ -10733,7 +10733,7 @@ async def list_purchase_returns(
 @api.get("/purchasing/returns/export")
 async def export_purchase_returns_csv(
     status: str | None = None,
-    claims=Depends(require_permission("purchasing", "read")),
+    claims=Depends(require_permission("purchasing", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 135 R1 — purchase return header CSV (no line dump)."""
@@ -10912,7 +10912,7 @@ async def list_purchase_invoices(
 @api.get("/purchasing/invoices/export")
 async def export_purchase_invoices_csv(
     status: str | None = None,
-    claims=Depends(require_permission("purchasing", "read")),
+    claims=Depends(require_permission("purchasing", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 132 P1 — purchase invoice header CSV (no line dump)."""
@@ -11341,7 +11341,7 @@ async def pos_list_sessions(
 async def pos_sessions_export(
     status: str | None = None,
     store_id: str | None = None,
-    claims=Depends(require_permission("pos", "read")),
+    claims=Depends(require_permission("pos", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 130 P1 — POS session inventory CSV; manager + flag-ON cashier scoped."""
@@ -11481,7 +11481,7 @@ async def pos_session_report(
 @api.get("/pos/sessions/{session_id}/report/export")
 async def pos_session_report_export(
     session_id: str,
-    claims=Depends(require_permission("pos", "read")),
+    claims=Depends(require_permission("pos", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 142 Z1 — POS session Z-report CSV (summary + sale lines)."""
@@ -11543,7 +11543,7 @@ async def pos_sales_export(
     store_id: str | None = None,
     from_date: str | None = None,
     to_date: str | None = None,
-    claims=Depends(require_permission("pos", "read")),
+    claims=Depends(require_permission("pos", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 142 S1 — POS sales register CSV (store_manager scoped via manager_id)."""
@@ -11980,7 +11980,7 @@ async def list_expense_categories(
 async def expense_categories_export(
     active_only: bool = False,
     is_active: bool | None = None,
-    claims=Depends(require_permission("expenses", "read")),
+    claims=Depends(require_permission("expenses", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 123 X1 — expense categories CSV export."""
@@ -12114,7 +12114,7 @@ async def expense_category_budgets(
 async def export_expense_budgets(
     from_date: str | None = None,
     to_date: str | None = None,
-    claims=Depends(require_permission("expenses", "read")),
+    claims=Depends(require_permission("expenses", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 139 B1 — category budget variance CSV; store_manager spent scoped."""
@@ -12236,7 +12236,7 @@ async def list_recurring_expenses(
 async def expenses_recurring_export(
     active_only: bool = False,
     is_active: bool | None = None,
-    claims=Depends(require_permission("expenses", "read")),
+    claims=Depends(require_permission("expenses", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 125 X1 — recurring expenses CSV export; store_manager scoped."""
@@ -12409,7 +12409,7 @@ async def expenses_export(
     store_id: str | None = None,
     department_id: str | None = None,
     status: str | None = None,
-    claims=Depends(require_permission("expenses", "read")),
+    claims=Depends(require_permission("expenses", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 120 X1 — expenses CSV export (record-scope + store_manager aware)."""
@@ -12934,7 +12934,7 @@ async def accounts(
 async def accounts_export(
     active_only: bool = False,
     is_active: bool | None = None,
-    claims=Depends(require_permission("accounting", "read")),
+    claims=Depends(require_permission("accounting", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 123 X1 — COA accounts CSV export."""
@@ -13029,7 +13029,7 @@ async def export_account_transactions(
     to_date: str | None = None,
     include_unposted: bool = False,
     store_id: str | None = None,
-    claims=Depends(require_permission("accounting", "read")),
+    claims=Depends(require_permission("accounting", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 139 A1 — COA account ledger lines CSV; store_manager scoped."""
@@ -13219,7 +13219,7 @@ async def liquid_accounts(
 async def liquid_accounts_export(
     active_only: bool = False,
     is_active: bool | None = None,
-    claims=Depends(require_permission("accounting", "read")),
+    claims=Depends(require_permission("accounting", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 125 X1 — liquid cash/bank accounts CSV export (includes bank details)."""
@@ -13465,7 +13465,7 @@ async def list_bank_connections(
 async def bank_connections_export(
     active_only: bool = False,
     is_active: bool | None = None,
-    claims=Depends(require_permission("accounting", "read")),
+    claims=Depends(require_permission("accounting", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 126 X1 — bank connections CSV export (no credentials)."""
@@ -13753,7 +13753,7 @@ async def list_bank_statements(
 @api.get("/accounting/bank-statements/export")
 async def bank_statements_export(
     status: str | None = None,
-    claims=Depends(require_permission("accounting", "read")),
+    claims=Depends(require_permission("accounting", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 131 B1 — bank statement header CSV (line details omitted)."""
@@ -14235,7 +14235,7 @@ async def list_cheques(
 async def cheques_export(
     direction: str | None = None,
     status: str | None = None,
-    claims=Depends(require_permission("accounting", "read")),
+    claims=Depends(require_permission("accounting", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 130 C1 — cheques CSV honoring direction/status filters; store_manager scoped."""
@@ -14435,7 +14435,7 @@ async def list_journals(
 async def export_journal_entries_csv(
     store_id: str | None = None,
     status: str | None = None,
-    claims=Depends(require_permission("accounting", "read")),
+    claims=Depends(require_permission("accounting", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 131 J1 — journal entry header CSV (no line dump)."""
@@ -14799,7 +14799,7 @@ async def get_trial_balance(
 @api.get("/accounting/trial-balance/export")
 async def accounting_trial_balance_export(
     as_of_date: str | None = None,
-    claims=Depends(require_permission("accounting", "read")),
+    claims=Depends(require_permission("accounting", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 159 B1 — accounting trial-balance CSV (path-scoped; distinct from /reports/export)."""
@@ -14866,7 +14866,7 @@ async def accounting_profit_loss_export(
     to_date: str | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
-    claims=Depends(require_permission("accounting", "read")),
+    claims=Depends(require_permission("accounting", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 160 P1 — accounting profit-loss CSV (path-scoped; distinct from /reports/export)."""
@@ -14917,7 +14917,7 @@ async def reports_profit_loss_export(
     to_date: str | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
-    claims=Depends(require_permission("reports", "read")),
+    claims=Depends(require_permission("reports", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 161 L1 — reports profit-loss path CSV (distinct from /accounting/... and /reports/export)."""
@@ -14959,7 +14959,7 @@ async def report_trial_balance(
 @api.get("/reports/trial-balance/export")
 async def reports_trial_balance_export(
     as_of_date: str | None = None,
-    claims=Depends(require_permission("reports", "read")),
+    claims=Depends(require_permission("reports", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 161 B1 — reports trial-balance path CSV (distinct from /accounting/... and /reports/export)."""
@@ -15021,7 +15021,7 @@ async def reports_cash_flow_export(
     to_date: str | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
-    claims=Depends(require_permission("reports", "read")),
+    claims=Depends(require_permission("reports", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 160 C1 — reports cash-flow path CSV (distinct from generic /reports/export)."""
@@ -15086,7 +15086,7 @@ async def reports_balance_sheet_export(
     as_of_date: str | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
-    claims=Depends(require_permission("reports", "read")),
+    claims=Depends(require_permission("reports", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 160 S1 — reports balance-sheet path CSV (distinct from generic /reports/export)."""
@@ -15185,6 +15185,7 @@ async def reports_export(
         company_id=claims.get("company_id"),
         warehouse_ids=managed_wh,
         store_ids=managed,
+        claims=claims,
     )
     return Response(
         content=content,
@@ -15562,6 +15563,7 @@ async def report_inventory_balance(
             warehouse_id,
             company_id=claims.get("company_id"),
             warehouse_ids=managed_wh,
+            claims=claims,
         )
     )
 
@@ -15589,6 +15591,7 @@ async def report_inventory_valuation(
             store_id=single or store_id,
             company_id=claims.get("company_id"),
             warehouse_ids=managed_wh,
+            claims=claims,
         )
     )
 
@@ -15860,7 +15863,7 @@ async def credit_aging(
 @api.get("/credit/aging/export")
 async def credit_aging_export(
     kind: str = "receivable",
-    claims=Depends(require_permission("credit", "read")),
+    claims=Depends(require_permission("credit", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 136 A1 — aging document CSV (party/totals omitted; document rows only)."""
@@ -15914,7 +15917,7 @@ async def list_credit_customer_payments(
 async def export_credit_customer_payments(
     customer_id: str | None = None,
     payment_method: str | None = None,
-    claims=Depends(require_permission("credit", "read")),
+    claims=Depends(require_permission("credit", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 136 C1 — customer payment header CSV."""
@@ -15965,7 +15968,7 @@ async def list_credit_supplier_payments(
 async def export_credit_supplier_payments(
     supplier_id: str | None = None,
     payment_method: str | None = None,
-    claims=Depends(require_permission("credit", "read")),
+    claims=Depends(require_permission("credit", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 136 S1 — supplier payment header CSV."""
@@ -16269,7 +16272,7 @@ async def customer_credit_statement(
 @api.get("/credit/customers/{customer_id}/statement/export")
 async def export_customer_credit_statement(
     customer_id: str,
-    claims=Depends(require_permission("credit", "read")),
+    claims=Depends(require_permission("credit", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 141 T1 — customer statement lines CSV."""
@@ -16315,7 +16318,7 @@ async def supplier_credit_statement(
 @api.get("/credit/suppliers/{supplier_id}/statement/export")
 async def export_supplier_credit_statement(
     supplier_id: str,
-    claims=Depends(require_permission("credit", "read")),
+    claims=Depends(require_permission("credit", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 141 T1 — supplier statement lines CSV."""
@@ -16396,7 +16399,7 @@ async def customer_outstanding(
 @api.get("/customers/{customer_id}/outstanding/export")
 async def export_customer_outstanding(
     customer_id: str,
-    claims=Depends(require_permission("credit", "read")),
+    claims=Depends(require_permission("credit", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 141 O1 — customer outstanding bills CSV."""
@@ -16523,7 +16526,7 @@ async def supplier_outstanding(
 @api.get("/suppliers/{supplier_id}/outstanding/export")
 async def export_supplier_outstanding(
     supplier_id: str,
-    claims=Depends(require_permission("credit", "read")),
+    claims=Depends(require_permission("credit", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 141 O1 — supplier outstanding bills CSV."""
@@ -16571,7 +16574,7 @@ async def supplier_payment_schedule(
 async def export_supplier_payment_schedule(
     supplier_id: str,
     schedule_bucket: str | None = None,
-    claims=Depends(require_permission("credit", "read")),
+    claims=Depends(require_permission("credit", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 141 P1 — supplier payment schedule CSV (optional schedule_bucket)."""
@@ -16932,7 +16935,7 @@ async def reports_tax_export(
     year: int | None = None,
     month: int | None = None,
     quarter: int | None = None,
-    claims=Depends(require_permission("reports", "read")),
+    claims=Depends(require_permission("reports", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 161 X1 — reports tax path CSV (distinct from generic /reports/export)."""
@@ -17114,7 +17117,7 @@ async def stores(
 async def stores_export(
     active_only: bool = False,
     is_active: bool | None = None,
-    claims=Depends(require_permission("stores", "read")),
+    claims=Depends(require_permission("stores", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 121 X1 — stores CSV export (manager + flag-ON cashier visibility)."""
@@ -17528,7 +17531,7 @@ async def store_inventory(
 async def store_inventory_export(
     store_id: str,
     include_zero: bool = False,
-    claims=Depends(require_permission("stores", "read")),
+    claims=Depends(require_permission("stores", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 155 I1 — store inventory / reorder CSV."""
@@ -17586,7 +17589,7 @@ async def store_sales_export(
     from_date: str | None = None,
     to_date: str | None = None,
     recent_limit: int = 50,
-    claims=Depends(require_permission("stores", "read")),
+    claims=Depends(require_permission("stores", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 155 S1 — store sales summary + recent lines CSV."""
@@ -17750,7 +17753,7 @@ async def export_stores_transfers_csv(
     status: str | None = None,
     store_id: str | None = None,
     scope: str = "all",
-    claims=Depends(require_permission("stores", "read")),
+    claims=Depends(require_permission("stores", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 135 T1 — stores-permission inter-store transfer header CSV (no line dump)."""
@@ -17988,7 +17991,7 @@ async def warehouses(
 async def warehouses_export(
     active_only: bool = False,
     is_active: bool | None = None,
-    claims=Depends(require_permission("inventory", "read")),
+    claims=Depends(require_permission("inventory", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 121 X1 — warehouses CSV export."""
@@ -18221,7 +18224,7 @@ async def export_inventory_stock_transfers_csv(
     status: str | None = None,
     store_id: str | None = None,
     scope: str = "all",
-    claims=Depends(require_permission("inventory", "read")),
+    claims=Depends(require_permission("inventory", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 132 T1 — stock-transfer header CSV (no line dump)."""
@@ -20665,7 +20668,7 @@ async def insights(claims=Depends(require_permission("ai", "read")), db: AsyncSe
 
 @api.get("/ai/insights/export")
 async def insights_export(
-    claims=Depends(require_permission("ai", "read")),
+    claims=Depends(require_permission("ai", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 145 I1 — business insight cards CSV; store_manager scoped."""
@@ -20724,7 +20727,7 @@ async def ai_low_stock_prediction_export(
     horizon_days: int = 14,
     lead_time_days: int = 7,
     at_risk_only: bool = False,
-    claims=Depends(require_permission("ai", "read")),
+    claims=Depends(require_permission("ai", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 146 L1 — low-stock prediction CSV; store_manager WH/store scoped."""
@@ -20784,7 +20787,7 @@ async def ai_demand_forecast_export(
     lookback_days: int = 30,
     lead_time_days: int = 7,
     product_id: str | None = None,
-    claims=Depends(require_permission("ai", "read")),
+    claims=Depends(require_permission("ai", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 146 F1 — demand forecast CSV; store_manager scoped."""
@@ -20833,7 +20836,7 @@ async def ai_dead_stock(
         store_ids=managed_stores,
         warehouse_ids=managed_wh,
     )
-    if dashboard_scope_svc.omit_ai_dead_stock_cost(managed_wh):
+    if dashboard_scope_svc.omit_ai_dead_stock_cost(managed_wh, claims=claims):
         data = dashboard_scope_svc.redact_ai_dead_stock_cost(data)
     return env(data)
 
@@ -20842,7 +20845,7 @@ async def ai_dead_stock(
 async def ai_dead_stock_export(
     lookback_days: int = 90,
     min_stock: float = 0,
-    claims=Depends(require_permission("ai", "read")),
+    claims=Depends(require_permission("ai", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 146 K1 — dead-stock items CSV; store_manager scoped."""
@@ -20858,7 +20861,7 @@ async def ai_dead_stock_export(
         company_id=claims.get("company_id"),
         store_ids=managed_stores,
         warehouse_ids=managed_wh,
-        omit_cost=dashboard_scope_svc.omit_ai_dead_stock_cost(managed_wh),
+        omit_cost=dashboard_scope_svc.omit_ai_dead_stock_cost(managed_wh, claims=claims),
     )
     return Response(
         content=text,
@@ -20925,7 +20928,7 @@ async def ai_inventory_predictions_export(
     lookback_days: int = 30,
     horizon_days: int = 14,
     lead_time_days: int = 7,
-    claims=Depends(require_permission("ai", "read")),
+    claims=Depends(require_permission("ai", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 157 P1 — combined inventory predictions CSV; store_manager scoped."""
@@ -20982,7 +20985,7 @@ async def ai_sales_analysis_export(
     from_date: str | None = None,
     to_date: str | None = None,
     lookback_days: int = 90,
-    claims=Depends(require_permission("ai", "read")),
+    claims=Depends(require_permission("ai", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 147 S1 — sales analysis CSV; store_manager scoped."""
@@ -21038,7 +21041,7 @@ async def ai_expenses_analysis(
 async def ai_expenses_analysis_export(
     from_date: str | None = None,
     to_date: str | None = None,
-    claims=Depends(require_permission("ai", "read")),
+    claims=Depends(require_permission("ai", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 147 E1 — expense analysis CSV; store_manager scoped."""
@@ -21092,7 +21095,7 @@ async def ai_purchases_analysis_export(
     from_date: str | None = None,
     to_date: str | None = None,
     lookback_days: int = 90,
-    claims=Depends(require_permission("ai", "read")),
+    claims=Depends(require_permission("ai", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 147 P1 — purchases analysis CSV; store_manager WH scoped."""
@@ -21149,7 +21152,7 @@ async def ai_cross_domain_analysis_export(
     from_date: str | None = None,
     to_date: str | None = None,
     lookback_days: int = 90,
-    claims=Depends(require_permission("ai", "read")),
+    claims=Depends(require_permission("ai", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 148 X1 — cross-domain analysis CSV; store_manager scoped."""
@@ -21515,7 +21518,7 @@ async def ai_customers_insights(
 @api.get("/ai/customers/insights/export")
 async def ai_customers_insights_export(
     lookback_days: int = 180,
-    claims=Depends(require_permission("ai", "read")),
+    claims=Depends(require_permission("ai", "export")),
     db: AsyncSession = Depends(get_db),
 ):
     """Stage 148 I1 — customer insights CSV; store_manager scoped."""

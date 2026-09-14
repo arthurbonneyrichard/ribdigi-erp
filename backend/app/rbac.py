@@ -61,7 +61,7 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "accounting": ["read", "export"],
         "credit": ["read", "write", "approve", "export"],
         "tax": ["read", "export"],
-        "stores": ["read", "write"],
+        "stores": ["read", "write", "export"],
         "reports": ["read", "export"],
         "notifications": ["read", "write"],
         "users": ["read"],

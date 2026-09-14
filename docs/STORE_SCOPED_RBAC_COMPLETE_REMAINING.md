@@ -31,7 +31,7 @@ Honesty flags (`GET /me/store-memberships` etc.):
 Engineering (closable without ops theater):
 
 1. **Residual continuum field leaks** — only as product-prioritized slices (paused as default CONTINUE path; not dump spam). Empty backlog or explicit ALLOW list with product sign-off.
-2. **First-class `export` / `view_cost` actions** — **PARTIAL (engine landed)**: `ALLOWED_ACTIONS` includes `export`/`view_cost`; system roles granted appropriately (`store_manager` has scoped `export`, no `view_cost`); deps auto-add `read`; key backends wired (`/products/export`, variants exports, `/inventory/low-stock/export`, `/sales/invoices/export`, `/reports/export` + product cost redact via `inventory:view_cost`). Remaining: broader export path coverage + report/BI/AI cost omit helpers still dual-path (permission + legacy managed/WH heuristics).
+2. **First-class `export` / `view_cost` actions** — **PARTIAL (stronger)**: engine + system role grants + deps auto-`read`; commerce/dashboard/ops/AI CSV paths gated on module `export` (not mere `read`); report/BI/AI/stock-count cost omit helpers unified on `inventory:view_cost` / `business_insights:view_cost` (legacy managed/WH fallback retained when claims omitted). Residual: a minority of admin/settings/catalog export paths still on `read` or role gates; not overall RBAC Complete.
 3. **Living store-scope test matrix** — single indexed suite covering modules claimed Complete (not only `test_store_scope_ops_hardening.py` growth).
 4. **Temp membership / elevation / break-glass** — still **MISSING** (optional for store-scope Complete if product scopes Complete without them; still blocks overall RBAC Complete).
 5. **Concurrent approval stress pack** — still **MISSING** (overall RBAC; not strictly store-scope).
@@ -63,7 +63,7 @@ Do **not** mark store-scoped RBAC Complete from:
 
 Prefer engine Completes over continuum dumps:
 
-1. ~~First-class `export` / `view_cost`~~ → broaden export gates + unify report/BI/AI cost omit on `view_cost` (finish PARTIAL)
+1. ~~First-class `export` / `view_cost`~~ ~~broaden export gates + unify report/BI/AI cost omit~~ → residual admin/settings/catalog export gates + living store-scope matrix (or temp membership)
 2. Temporary membership `expires_at` / elevation / break-glass (smallest temp-access MVP)
 3. Concurrent approval stress pack
 4. Only resume store_manager field-leak continuum when product prioritizes a named surface

@@ -1144,6 +1144,7 @@ async def inventory_balance(
     *,
     company_id: str | None = None,
     warehouse_ids: list[str] | None = None,
+    claims: dict | None = None,
 ) -> dict:
     """Inventory balance.
 
@@ -1159,7 +1160,7 @@ async def inventory_balance(
             "total_quantity": 0.0,
             "total_value": 0.0,
         }
-        if dashboard_scope_svc.omit_inventory_report_cost(warehouse_ids):
+        if dashboard_scope_svc.omit_inventory_report_cost(warehouse_ids, claims=claims):
             return dashboard_scope_svc.redact_inventory_report_cost(empty)
         return empty
 
@@ -1213,7 +1214,7 @@ async def inventory_balance(
         "total_quantity": round(sum(i["quantity"] for i in items), 3),
         "total_value": round(sum(i["value"] for i in items), 2),
     }
-    if dashboard_scope_svc.omit_inventory_report_cost(warehouse_ids):
+    if dashboard_scope_svc.omit_inventory_report_cost(warehouse_ids, claims=claims):
         return dashboard_scope_svc.redact_inventory_report_cost(result)
     return result
 
@@ -1226,6 +1227,7 @@ async def inventory_valuation(
     store_id: str | None = None,
     company_id: str | None = None,
     warehouse_ids: list[str] | None = None,
+    claims: dict | None = None,
 ) -> dict:
     """Stock valuation at standard cost: quantity × product.cost_price (Stage 9 R2).
 
@@ -1263,7 +1265,7 @@ async def inventory_valuation(
         }
         from app import dashboard_scope as dashboard_scope_svc
 
-        if dashboard_scope_svc.omit_inventory_report_cost(warehouse_ids):
+        if dashboard_scope_svc.omit_inventory_report_cost(warehouse_ids, claims=claims):
             return dashboard_scope_svc.redact_inventory_report_cost(empty)
         return empty
 
@@ -1364,7 +1366,7 @@ async def inventory_valuation(
     }
     from app import dashboard_scope as dashboard_scope_svc
 
-    if dashboard_scope_svc.omit_inventory_report_cost(warehouse_ids):
+    if dashboard_scope_svc.omit_inventory_report_cost(warehouse_ids, claims=claims):
         return dashboard_scope_svc.redact_inventory_report_cost(result)
     return result
 

@@ -7,7 +7,7 @@ offline wipe-via-push automation (see `AGENTS.md` tip SHA after merge).
 
 **Engineering → Complete path: ops-blocked.** Landed code + automated suites do
 **not** advance Offline / push-delivery / 7-day VERIFIED / go-live / paid billing /
-store-scoped RBAC Completes. ADR-005 membership is **Complete** (flag default OFF). First-class `export`/`view_cost` RBAC actions are **PARTIAL** (engine + key surfaces; not overall RBAC Complete). Cloud-agent Chrome could not finish
+store-scoped RBAC Completes. ADR-005 membership is **Complete** (flag default OFF). First-class `export`/`view_cost` RBAC actions are **PARTIAL** (broadened commerce/dashboard/ops/AI export gates + unified cost omit; residual admin/settings paths; not overall RBAC Complete). Cloud-agent Chrome could not finish
 `PushManager.subscribe` (no FCM endpoint) — that attempt is a **blocker note**,
 not proof. Remaining Completes work is **ops attestation + product sign-off**
 (staging keys, real till browser, soaks, physical matrix). ADR-005 Complete already attested (flag default OFF).
