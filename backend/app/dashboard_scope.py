@@ -5775,6 +5775,54 @@ def redact_audit_expense_threshold_details(details: dict) -> dict:
     return out
 
 
+# Historical expense-approval notifications embedded ``(threshold)`` after
+# "exceeds approval threshold"; strip on read for store_manager (source fixed).
+_NOTIF_EXPENSE_THRESHOLD_PAREN_RE = re.compile(
+    r"(exceeds approval threshold)\s*\([^)]*\)",
+    re.IGNORECASE,
+)
+
+
+def omit_notification_expense_threshold(
+    managed_ids: list[str] | None,
+) -> bool:
+    """True when store_manager must omit expense approval threshold in notification ``message``.
+
+    Expense settings GET/PATCH/export already denied; audit ``details.threshold``
+    already redacted. ``DEFAULT_L1_ROLES`` includes ``store_manager``, so
+    ``expense_approval`` inbox/export must not re-dump the company auto-approve
+    threshold via message text ``exceeds approval threshold (N)``. Title /
+    category / amount / level wording remain; admin keeps the parenthetical.
+    """
+    return managed_ids is not None
+
+
+def redact_notification_expense_threshold(payload: dict) -> dict:
+    """Strip embedded expense approval threshold parenthetical from ``message``."""
+    out = dict(payload)
+    msg = out.get("message")
+    if isinstance(msg, str) and msg:
+        out["message"] = _NOTIF_EXPENSE_THRESHOLD_PAREN_RE.sub(r"\1", msg)
+    return out
+
+
+def apply_notification_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager notification JSON redacts (expense approval threshold in ``message``)."""
+    out = dict(payload)
+    if omit_notification_expense_threshold(managed_ids):
+        out = redact_notification_expense_threshold(out)
+    return out
+
+
+def apply_notification_manager_redacts_list(
+    rows: list[dict], managed_ids: list[str] | None
+) -> list[dict]:
+    """Map ``apply_notification_manager_redacts`` across notification list rows."""
+    return [apply_notification_manager_redacts(row, managed_ids) for row in rows]
+
+
 # Audit detail keys that re-dump CREDIT_LIMIT_EXCEEDED document-currency
 # ``invoice_total`` already redacted on the 409 surface (FX base already closed).
 _AUDIT_CLE_INVOICE_TOTAL_DETAIL_KEYS = ("invoice_total",)

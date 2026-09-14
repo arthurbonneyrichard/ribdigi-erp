@@ -903,8 +903,11 @@ async def create_expense(
             step=1,
             title="Expense Approval Required",
             message=(
+                # Do not embed company auto-approve threshold — expense settings
+                # GET/PATCH/export already denied; audit details.threshold already
+                # redacted for store_manager (DEFAULT_L1_ROLES includes store_manager).
                 f"Expense {cat_name} of {expense.amount:.2f} exceeds approval threshold "
-                f"({auto_t:.2f}) and awaits level-1 review"
+                f"and awaits level-1 review"
                 + (f" (of {steps} levels)." if steps > 1 else ".")
             ),
             exclude_user_ids={user_id},

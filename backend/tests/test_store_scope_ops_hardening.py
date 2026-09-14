@@ -24738,3 +24738,159 @@ async def test_store_manager_audit_details_cle_invoice_total_redacted(
     assert mgr_csv_details.get("invoice_number") == "INV-ACIT-1"
     assert mgr_csv_details.get("store_id") == store.id
     assert mgr_csv_details.get("reason") == "finance override known payer"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_notification_expense_threshold_redacted(
+    client, db_session
+):
+    """Notification list/export strip expense approval threshold from message.
+
+    Expense settings GET/PATCH/export already denied; audit details.threshold
+    already redacted. DEFAULT_L1_ROLES includes store_manager, so
+    expense_approval inbox/export must not re-dump company auto-approve
+    threshold via ``exceeds approval threshold (N)``. Title / amount / level
+    wording remain; admin keeps the parenthetical. Source create_expense no
+    longer embeds the number; read-time redact covers historical rows.
+    """
+    from app import notifications as notifications_svc
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    admin = seed["super"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+    mgr_company = {
+        **headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    secret_threshold = 654.32
+    secret_token = f"({secret_threshold:.2f})"
+    legacy_msg = (
+        f"Expense Travel of 1200.00 exceeds approval threshold {secret_token} "
+        f"and awaits level-1 review"
+    )
+
+    mgr_note = await notifications_svc.create_notification(
+        db_session,
+        tenant_id=tid,
+        user_id=mgr.id,
+        category="expense_approval",
+        title="Expense Approval Required",
+        message=legacy_msg,
+        entity_type="expense",
+        entity_id="exp-net-1",
+        company_id=cid,
+    )
+    admin_note = await notifications_svc.create_notification(
+        db_session,
+        tenant_id=tid,
+        user_id=admin.id,
+        category="expense_approval",
+        title="Expense Approval Required",
+        message=legacy_msg,
+        entity_type="expense",
+        entity_id="exp-net-1",
+        company_id=cid,
+    )
+    assert mgr_note is not None
+    assert admin_note is not None
+    await db_session.commit()
+
+    admin_listed = await ac.get("/api/v1/notifications", headers=admin_company)
+    assert admin_listed.status_code == 200, admin_listed.text
+    admin_by_id = {r["id"]: r for r in admin_listed.json()["data"]}
+    assert secret_token in (admin_by_id[admin_note.id].get("message") or "")
+
+    mgr_listed = await ac.get("/api/v1/notifications", headers=mgr_company)
+    assert mgr_listed.status_code == 200, mgr_listed.text
+    mgr_by_id = {r["id"]: r for r in mgr_listed.json()["data"]}
+    mgr_msg = mgr_by_id[mgr_note.id].get("message") or ""
+    assert secret_token not in mgr_msg
+    assert f"{secret_threshold:.2f}" not in mgr_msg
+    assert "exceeds approval threshold" in mgr_msg
+    assert "awaits level-1 review" in mgr_msg
+    assert "1200.00" in mgr_msg
+    assert mgr_by_id[mgr_note.id].get("title") == "Expense Approval Required"
+    assert mgr_by_id[mgr_note.id].get("category") == "expense_approval"
+
+    mgr_csv = await ac.get(
+        "/api/v1/notifications/export",
+        headers=mgr_company,
+        params={"format": "csv"},
+    )
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    mgr_rows = list(csv.DictReader(io.StringIO(mgr_csv.text)))
+    mgr_csv_row = next(r for r in mgr_rows if r.get("entity_id") == "exp-net-1")
+    assert secret_token not in (mgr_csv_row.get("message") or "")
+    assert "exceeds approval threshold" in (mgr_csv_row.get("message") or "")
+    assert "1200.00" in (mgr_csv_row.get("message") or "")
+
+    admin_csv = await ac.get(
+        "/api/v1/notifications/export",
+        headers=admin_company,
+        params={"format": "csv"},
+    )
+    assert admin_csv.status_code == 200, admin_csv.text
+    admin_rows = list(csv.DictReader(io.StringIO(admin_csv.text)))
+    admin_csv_row = next(r for r in admin_rows if r.get("entity_id") == "exp-net-1")
+    assert secret_token in (admin_csv_row.get("message") or "")
+
+    # Source path: newly submitted expense must not embed threshold in message.
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Notif Expense Threshold Store",
+        code="NET-SRC",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    tenant = await db_session.get(m.Tenant, tid)
+    tenant.expense_approval_threshold = secret_threshold
+    await db_session.flush()
+
+    from app import expenses as expenses_svc
+
+    expense = await expenses_svc.create_expense(
+        db_session,
+        tenant_id=tid,
+        user_id=admin.id,
+        amount=secret_threshold + 50.0,
+        category="Travel",
+        store_id=store.id,
+        company_id=cid,
+    )
+    await db_session.commit()
+    assert expense.status == "pending"
+
+    notes = (
+        await db_session.execute(
+            select(m.Notification).where(
+                m.Notification.tenant_id == tid,
+                m.Notification.category == "expense_approval",
+                m.Notification.entity_id == expense.id,
+            )
+        )
+    ).scalars().all()
+    assert notes, "expected approval notifications for L1 roles"
+    for note in notes:
+        assert secret_token not in (note.message or "")
+        assert f"({secret_threshold:.2f})" not in (note.message or "")
+        assert "exceeds approval threshold" in (note.message or "")
+        assert "awaits level-1 review" in (note.message or "")
+

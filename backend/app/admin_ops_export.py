@@ -172,6 +172,12 @@ async def export_notifications_csv(
     writer.writeheader()
     for row in rows:
         data = notifications_svc.serialize_notification(row)
+        if managed_store_ids is not None:
+            from app import dashboard_scope as dashboard_scope_svc
+
+            data = dashboard_scope_svc.apply_notification_manager_redacts(
+                data, managed_store_ids
+            )
         writer.writerow(
             {
                 "created_at": _cell(data.get("created_at")),

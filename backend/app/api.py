@@ -18682,7 +18682,9 @@ async def notifications(
         managed_warehouse_ids=managed_wh,
     )
     # Array payload preserved for existing clients; history window is HISTORY_DAYS (BR-4.4).
-    return env([notifications_svc.serialize_notification(n) for n in rows])
+    out = [notifications_svc.serialize_notification(n) for n in rows]
+    out = dashboard_scope_svc.apply_notification_manager_redacts_list(out, managed)
+    return env(out)
 
 
 @api.get("/notifications/export")
@@ -18758,7 +18760,9 @@ async def notification_read(
         managed_warehouse_ids=managed_wh,
     )
     await db.commit()
-    return env(notifications_svc.serialize_notification(note), "Marked read")
+    payload = notifications_svc.serialize_notification(note)
+    payload = dashboard_scope_svc.apply_notification_manager_redacts(payload, managed)
+    return env(payload, "Marked read")
 
 
 @api.patch("/notifications/{nid}/unread")
@@ -18781,7 +18785,9 @@ async def notification_unread(
         managed_warehouse_ids=managed_wh,
     )
     await db.commit()
-    return env(notifications_svc.serialize_notification(note), "Marked unread")
+    payload = notifications_svc.serialize_notification(note)
+    payload = dashboard_scope_svc.apply_notification_manager_redacts(payload, managed)
+    return env(payload, "Marked unread")
 
 
 @api.post("/notifications/read-all")
