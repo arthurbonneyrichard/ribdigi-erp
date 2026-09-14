@@ -9,7 +9,7 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `b3d6821cde7b05b81c96538c8d0b2fe463f8a58f` — SEC-M1/M3/M4/L2 FIXED; SEC-M2/M5 Phase A+B remainder on tip (flag OFF; SPA apiFetch; PARTIAL not FIXED); leftovers still open |
+| **As of tip** | `41cccbe699a53df9b27c0578e4c5836d747998f0` — SEC-M1/M3/M4/L2 FIXED; SEC-M2/M5 Phase A+B remainder on tip (flag OFF; SPA apiFetch; PARTIAL not FIXED); leftovers still open |
 | RBAC / store scope | **PARTIAL** only |
 | Security Mediums | **M1+M3+M4 FIXED**; **M2+M5 OPEN** (Phase A+B PARTIAL — flag OFF; not FIXED); **L2 FIXED**; overall 🟠 |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
