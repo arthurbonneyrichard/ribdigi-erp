@@ -9,7 +9,7 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `ea64f28951ca96c7c997d0e8e4f1e1f2c6f92c42` — feat redact CREDIT_LIMIT_EXCEEDED `invoice_total` (`72d1365af5ca`); leftovers still open |
+| **As of tip** | `7b4b9dd14e047ac20e7d76955725ff0b36d1282b` — feat redact CREDIT_LIMIT_EXCEEDED `invoice_total` (`72d1365af5ca`); leftovers still open |
 | RBAC / store scope | **PARTIAL** only |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
 
