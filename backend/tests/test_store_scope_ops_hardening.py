@@ -14024,7 +14024,8 @@ async def test_store_manager_purchase_invoice_currency_redacted(client, db_sessi
     Company profile GET + /me + /workspace switcher already omit company
     currency; POS receipt + sales-invoice JSON already redact currency.
     Purchase-invoice JSON/CSV must not re-dump company/tenant currency.
-    Totals/status/balance/exchange_rate remain; admin keeps currency.
+    Totals/status/balance remain; admin keeps currency. ``exchange_rate``
+    redacted separately.
     """
     ac, seed = client
     tid = seed["t1"].id
@@ -14110,7 +14111,7 @@ async def test_store_manager_purchase_invoice_currency_redacted(client, db_sessi
     assert mgr_data.get("currency") is None
     assert float(mgr_data.get("total_amount") or 0) == 75.0
     assert mgr_data.get("status") == "draft"
-    assert float(mgr_data.get("exchange_rate") or 0) == pytest.approx(1.0)
+    assert mgr_data.get("exchange_rate") is None
 
     listed = await ac.get("/api/v1/purchasing/invoices", headers=headers)
     assert listed.status_code == 200, listed.text
@@ -14132,7 +14133,122 @@ async def test_store_manager_purchase_invoice_currency_redacted(client, db_sessi
     assert float(mgr_csv_row.get("total_amount") or 0) == pytest.approx(75.0)
 
 
+@pytest.mark.asyncio
+async def test_store_manager_purchase_invoice_exchange_rate_redacted(client, db_session):
+    """Purchase invoice list/get/export nulls exchange_rate for store_manager.
 
+    Exchange-rates GET already denied; purchase-invoice currency already
+    redacted; sales-invoice + credit-payment exchange_rate already redacted.
+    Purchase-invoice JSON/CSV must not re-dump FX conversion rate. Totals /
+    status / balance remain; admin keeps exchange_rate.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    co = seed["c1"]
+    co.currency = "USD"
+    await db_session.flush()
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="PI XR Redact Store",
+        code="PIXR-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        name="PI XR Redact WH",
+        code="WH-PI-XR",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="PI XR Supplier",
+        kind="supplier",
+        credit_limit=0,
+    )
+    db_session.add_all([wh, supplier])
+    await db_session.flush()
+
+    inv = m.PurchaseInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="PI-XR-1",
+        supplier_id=supplier.id,
+        warehouse_id=wh.id,
+        status="draft",
+        subtotal=80,
+        tax_amount=0,
+        discount_amount=0,
+        total_amount=80,
+        paid_amount=0,
+        currency="EUR",
+        exchange_rate=1.35,
+        ap_posted=False,
+        created_by=mgr.id,
+    )
+    db_session.add(inv)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    admin_got = await ac.get(
+        f"/api/v1/purchasing/invoices/{inv.id}", headers=admin_company
+    )
+    assert admin_got.status_code == 200, admin_got.text
+    admin_data = admin_got.json()["data"]
+    assert float(admin_data.get("exchange_rate") or 0) == pytest.approx(1.35)
+    assert admin_data.get("currency") == "EUR"
+
+    mgr_got = await ac.get(f"/api/v1/purchasing/invoices/{inv.id}", headers=headers)
+    assert mgr_got.status_code == 200, mgr_got.text
+    mgr_data = mgr_got.json()["data"]
+    assert mgr_data.get("exchange_rate") is None
+    assert mgr_data.get("currency") is None
+    assert float(mgr_data.get("total_amount") or 0) == pytest.approx(80.0)
+    assert mgr_data.get("status") == "draft"
+
+    listed = await ac.get("/api/v1/purchasing/invoices", headers=headers)
+    assert listed.status_code == 200, listed.text
+    row = next(r for r in listed.json()["data"] if r["id"] == inv.id)
+    assert row.get("exchange_rate") is None
+    assert float(row.get("total_amount") or 0) == pytest.approx(80.0)
+
+    admin_csv = await ac.get("/api/v1/purchasing/invoices/export", headers=admin_company)
+    assert admin_csv.status_code == 200, admin_csv.text
+    admin_rows = list(csv.DictReader(io.StringIO(admin_csv.text)))
+    admin_csv_row = next(r for r in admin_rows if r.get("invoice_number") == "PI-XR-1")
+    assert float(admin_csv_row.get("exchange_rate") or 0) == pytest.approx(1.35)
+
+    mgr_csv = await ac.get("/api/v1/purchasing/invoices/export", headers=headers)
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    mgr_rows = list(csv.DictReader(io.StringIO(mgr_csv.text)))
+    mgr_csv_row = next(r for r in mgr_rows if r.get("invoice_number") == "PI-XR-1")
+    assert mgr_csv_row.get("exchange_rate") in (None, "")
+    assert float(mgr_csv_row.get("total_amount") or 0) == pytest.approx(80.0)
+
+
+@pytest.mark.asyncio
 async def test_store_manager_journal_entry_attachment_url_redacted(client, db_session):
     """Journal list/get nulls attachment_url storage key for store_manager.
 

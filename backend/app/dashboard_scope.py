@@ -2294,8 +2294,9 @@ def omit_purchase_invoice_currency(managed_wh_ids: list[str] | None) -> bool:
     ``currency``; POS receipt + sales-invoice JSON already redact ``currency``.
     Purchase-invoice list/get/export JSON must not re-dump company/tenant (or
     doc) currency after those profile redacts. Totals / status / balance /
-    ``exchange_rate`` / ``has_attachment`` remain; AP payment apply still
-    resolves currency server-side.
+    ``has_attachment`` remain; ``exchange_rate`` redacted separately via
+    ``omit_purchase_invoice_exchange_rate``; AP payment apply still resolves
+    currency server-side.
     """
     return managed_wh_ids is not None
 
@@ -2308,15 +2309,37 @@ def redact_purchase_invoice_currency(payload: dict) -> dict:
     return out
 
 
+def omit_purchase_invoice_exchange_rate(managed_wh_ids: list[str] | None) -> bool:
+    """True when store_manager must omit purchase-invoice ``exchange_rate``.
+
+    Exchange-rates GET already denied; purchase-invoice ``currency`` already
+    redacted; sales-invoice + credit-payment ``exchange_rate`` already redacted.
+    Purchase-invoice list/get/export JSON must not re-dump company FX rate-table
+    identity. Totals / status / balance / ``has_attachment`` remain; admin keeps
+    ``exchange_rate``; AP payment apply still resolves rates server-side.
+    """
+    return managed_wh_ids is not None
+
+
+def redact_purchase_invoice_exchange_rate(payload: dict) -> dict:
+    """Null ``exchange_rate`` on a purchase-invoice JSON/CSV row."""
+    out = dict(payload)
+    if "exchange_rate" in out:
+        out["exchange_rate"] = None
+    return out
+
+
 def apply_purchase_invoice_manager_redacts(
     payload: dict, managed_wh_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager purchase-invoice JSON redacts (attachment_url + currency)."""
+    """Apply store_manager purchase-invoice JSON redacts (attachment + currency + rate)."""
     out = payload
     if omit_purchase_invoice_attachment_url(managed_wh_ids):
         out = redact_purchase_invoice_attachment_url(out)
     if omit_purchase_invoice_currency(managed_wh_ids):
         out = redact_purchase_invoice_currency(out)
+    if omit_purchase_invoice_exchange_rate(managed_wh_ids):
+        out = redact_purchase_invoice_exchange_rate(out)
     return out
 
 
