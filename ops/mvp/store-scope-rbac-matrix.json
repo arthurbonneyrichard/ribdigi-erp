@@ -176,7 +176,7 @@
     }
   ],
   "complete_criteria_not_met": [
-    "Residual continuum field-leak backlog empty or product-signed ALLOW list (audit expense approval threshold + store manager_id + attachment storage key + emailed_to + department_id + party ledger + CLE master + CLE currency + additional_amount + audit details FX closed; further named leaks if found)",
+    "Residual continuum field-leak backlog empty or product-signed ALLOW list (audit CLE invoice_total + expense approval threshold + store manager_id + attachment storage key + emailed_to + department_id + party ledger + CLE master + CLE currency + additional_amount + audit details FX closed; further named leaks if found)",
     "Product acceptance of intentional ALLOWs as Complete-criteria closed",
     "Staging soak with STORE_MEMBERSHIP_SCOPE_ENABLED=true (ops cutover; not alone Complete)"
   ],

@@ -11,6 +11,21 @@
 
 ---
 
+### Tip — audit CLE invoice_total redact (2026-09-15)
+
+**As of tip:** `5d95e251f8636e637520c445c90657dca4374426`
+Scoped audit list/export `details` CLE `invoice_total` redact for
+`store_manager` (`credit_limit_override` on `GET /audit-logs` + CSV;
+CREDIT_LIMIT_EXCEEDED 409 already redacts document-currency `invoice_total`;
+`invoice_number` / reason / `store_id` / `exceeded` remain; admin keeps
+`invoice_total`). Continuum stays **PARTIAL**. Store-scoped RBAC Complete
+remains **MISSING** (intentional ALLOWs + residual backlog + product sign-off +
+staging soak). Offline / 7-day / go-live / paid billing Completes remain
+**MISSING**. Next CONTINUE: residual continuum field-leak (named surface) or
+product ALLOW sign-off / staging soak docs.
+
+---
+
 ### Tip — audit expense approval threshold redact (2026-09-15)
 
 **As of tip:** `bdec62fed75cf5ff8b759e3ee4225ce5125c5354`

@@ -354,7 +354,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `bdec62fed75cf5ff8b759e3ee4225ce5125c5354` — audit details expense approval threshold redact (`threshold` on `expense_submitted` / `expense_auto_approved` on scoped `/audit-logs` JSON+CSV; expense settings GET already denied; amount / category / steps / reason / store_id remain); audit store manager_id + attachment storage key + emailed_to + department_id + party ledger + CLE master + CLE currency + additional_amount + audit FX landed; concurrent approval stress pack **Complete**; living store-scope matrix landed — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL** (Completes still **MISSING**); ADR-005 membership **Complete** (flag default OFF; store-scoped RBAC Complete still **MISSING** — residual continuum + product ALLOW sign-off + staging soak open — see `docs/STORE_SCOPED_RBAC_COMPLETE_REMAINING.md`); overall RBAC readiness **PARTIAL** (approval hardening + % limits + export/`view_cost` Complete + expires_at + elevation + concurrent approval stress Complete — not RBAC Complete); paid billing **PARTIAL** (ops-blocked); operator go-live pack `docs/GO_LIVE_READINESS_CHECKLIST.md` (Completes still **MISSING**); Offline Complete still **MISSING**. Cookie + membership-scope + entitlement-gate flags default remain OFF (ops enable cutover).
+**As of tip:** `5d95e251f8636e637520c445c90657dca4374426` — audit details CLE `invoice_total` redact (`invoice_total` on `credit_limit_override` on scoped `/audit-logs` JSON+CSV; CLE 409 already redacts invoice_total; invoice_number / reason / store_id / exceeded remain); audit expense approval threshold + store manager_id + attachment storage key + emailed_to + department_id + party ledger + CLE master + CLE currency + additional_amount + audit FX landed; concurrent approval stress pack **Complete**; living store-scope matrix landed — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL** (Completes still **MISSING**); ADR-005 membership **Complete** (flag default OFF; store-scoped RBAC Complete still **MISSING** — residual continuum + product ALLOW sign-off + staging soak open — see `docs/STORE_SCOPED_RBAC_COMPLETE_REMAINING.md`); overall RBAC readiness **PARTIAL** (approval hardening + % limits + export/`view_cost` Complete + expires_at + elevation + concurrent approval stress Complete — not RBAC Complete); paid billing **PARTIAL** (ops-blocked); operator go-live pack `docs/GO_LIVE_READINESS_CHECKLIST.md` (Completes still **MISSING**); Offline Complete still **MISSING**. Cookie + membership-scope + entitlement-gate flags default remain OFF (ops enable cutover).
 
 **Security:** no open Critical/High/Medium. Do not claim go-live Completes. Cookie + membership-scope flags OFF in prod examples are intentional until ops cutover (`docs/sec_m2_staging_soak_checklist.md`, `docs/adr005_staging_soak_checklist.md`). Offline push prod template stays fail-closed until `docs/offline_wipe_push_staging_checklist.md` browser proof. Entitlement gate prod default stays OFF until mirror→access evidence (`docs/PAID_BILLING_PROVIDER_OPS.md`). Operator roll-up: `docs/GO_LIVE_READINESS_CHECKLIST.md`.  
 **Honesty:** never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never store-scoped RBAC Complete, never overall RBAC Complete. ADR-005 membership **is Complete** (flag default OFF intentional).
@@ -379,12 +379,11 @@ leave contradictory Complete/PARTIAL wording across those three surfaces.
 
 ### Closed this continuum slice (still PARTIAL overall)
 
-- Scoped audit list/export ``details`` expense approval ``threshold`` **redacted** for `store_manager`
-  (``expense_submitted`` / ``expense_auto_approved`` on ``GET /audit-logs`` + CSV;
-  expense settings GET/PATCH/export already denied; amount / category /
-  ``approval_steps_required`` / reason / ``store_id`` remain; admin keeps
-  ``threshold``). Tenant SMTP audit ``smtp_host`` / ``smtp_from_email`` verified
-  out of SM scope (no ``store_id``; not SM-authored).
+- Scoped audit list/export ``details`` CLE ``invoice_total`` **redacted** for `store_manager`
+  (``credit_limit_override`` on ``GET /audit-logs`` + CSV; CREDIT_LIMIT_EXCEEDED
+  409 already redacts document-currency ``invoice_total``; ``invoice_number`` /
+  reason / ``store_id`` / ``exceeded`` remain; admin keeps ``invoice_total``).
+  Expense threshold + FX + CLE master already redacted.
 
 
 
