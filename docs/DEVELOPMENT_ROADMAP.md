@@ -13,7 +13,7 @@
 
 ### Tip — audit party ledger balance redact (2026-09-15)
 
-**As of tip:** `ab8dd05c4557c022570daaec526004a2f9ae3dc1`
+**As of tip:** `fa96911e87952d61dbbd63d9b3b0c85fefd17c43`
 Scoped audit list/export `details` party ledger balance redact for `store_manager`
 (`customer_balance` / `supplier_balance_before` / `supplier_balance_after` on
 `GET /audit-logs` + CSV; FX + CLE master already redacted; amounts /
