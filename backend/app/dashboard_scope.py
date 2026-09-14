@@ -5198,6 +5198,29 @@ def redact_credit_limit_exceeded_master(detail: dict) -> dict:
     return out
 
 
+def omit_credit_limit_exceeded_invoice_total_base(role: str | None) -> bool:
+    """True when store_manager must omit ``invoice_total_base`` on limit-exceeded errors.
+
+    Sales-invoice / purchase-invoice / credit-aging document ``balance_due_base``
+    already redacted. ``CREDIT_LIMIT_EXCEEDED`` (409) ``extra_details`` must not
+    re-dump FX-converted base via ``invoice_total_base`` (document total × rate;
+    rate-table identity). Operational ``exceeded`` / ``additional_amount`` /
+    ``code`` / ``message`` / ``invoice_total`` / ``invoice_number`` remain; admin
+    keeps ``invoice_total_base``.
+    """
+    from app.dashboard_views import dashboard_view_for_role
+
+    return dashboard_view_for_role(role or "") == "store_manager"
+
+
+def redact_credit_limit_exceeded_invoice_total_base(detail: dict) -> dict:
+    """Null ``invoice_total_base`` on a CREDIT_LIMIT_EXCEEDED detail dict."""
+    out = dict(detail)
+    if "invoice_total_base" in out:
+        out["invoice_total_base"] = None
+    return out
+
+
 def redact_ai_customer_credit(payload: dict) -> dict:
     """Null ``credit_limit`` on AI customer insights/assist nested customer rows.
 

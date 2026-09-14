@@ -10886,6 +10886,119 @@ async def test_store_manager_credit_limit_exceeded_master_redacted(client, db_se
 
 
 @pytest.mark.asyncio
+async def test_store_manager_credit_limit_exceeded_invoice_total_base_redacted(
+    client, db_session
+):
+    """CREDIT_LIMIT_EXCEEDED 409 nulls invoice_total_base for store_manager.
+
+    Sales/purchase-invoice + aging document balance_due_base already redacted.
+    Invoice post 409 extra_details must not re-dump FX-converted base via
+    invoice_total_base (document total × rate). exceeded + code + message +
+    additional_amount + invoice_total remain; admin keeps invoice_total_base.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    customer = seed["party1"]
+    product = seed["p1"]
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="CLE Invoice Total Base Store",
+        code="CLE-ITB",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+
+    customer.credit_limit = 40
+    customer.balance = 0
+    customer.party_type = "registered"
+    product.selling_price = 80
+    product.stock_qty = 100
+    product.tax_rate_id = None
+
+    invoice = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        customer_id=customer.id,
+        invoice_number="INV-CLE-ITB-1",
+        status="draft",
+        subtotal=80,
+        tax_amount=0,
+        discount_amount=0,
+        total_amount=80,
+        paid_amount=0,
+        currency="USD",
+        exchange_rate=1.25,
+        created_by=seed["super"].id,
+    )
+    db_session.add(invoice)
+    await db_session.flush()
+    db_session.add(
+        m.SalesInvoiceItem(
+            tenant_id=tid,
+            company_id=cid,
+            sales_invoice_id=invoice.id,
+            product_id=product.id,
+            quantity=1,
+            unit_price=80,
+            tax_rate=0,
+            discount=0,
+            line_total=80,
+        )
+    )
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    mgr_blocked = await ac.post(
+        f"/api/v1/sales/invoices/{invoice.id}/post",
+        headers=headers,
+        json={},
+    )
+    assert mgr_blocked.status_code == 409, mgr_blocked.text
+    mgr_detail = mgr_blocked.json()["detail"]
+    assert mgr_detail.get("code") == "CREDIT_LIMIT_EXCEEDED"
+    assert mgr_detail.get("exceeded") is True
+    assert mgr_detail.get("invoice_total_base") is None
+    assert float(mgr_detail.get("additional_amount") or 0) == pytest.approx(100.0)
+    assert float(mgr_detail.get("invoice_total") or 0) == pytest.approx(80.0)
+    assert mgr_detail.get("invoice_number") == "INV-CLE-ITB-1"
+    # Master fields remain redacted (separate closed theme)
+    assert mgr_detail.get("credit_limit") is None
+    assert mgr_detail.get("available") is None
+
+    admin_blocked = await ac.post(
+        f"/api/v1/sales/invoices/{invoice.id}/post",
+        headers=admin_company,
+        json={},
+    )
+    assert admin_blocked.status_code == 409, admin_blocked.text
+    admin_detail = admin_blocked.json()["detail"]
+    assert admin_detail.get("code") == "CREDIT_LIMIT_EXCEEDED"
+    assert float(admin_detail.get("invoice_total_base") or 0) == pytest.approx(100.0)
+    assert float(admin_detail.get("additional_amount") or 0) == pytest.approx(100.0)
+    assert float(admin_detail.get("invoice_total") or 0) == pytest.approx(80.0)
+    assert float(admin_detail.get("credit_limit") or 0) == pytest.approx(40.0)
+
+
+@pytest.mark.asyncio
 async def test_store_manager_sales_invoice_credit_override_redacted(client, db_session):
     """Sales invoice list/get nulls credit-override audit for store_manager.
 

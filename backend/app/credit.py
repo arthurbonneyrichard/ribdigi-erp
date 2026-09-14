@@ -980,6 +980,12 @@ async def enforce_credit_limit(
     # for store_manager.
     if dashboard_scope_svc.omit_credit_limit_exceeded_master(role):
         detail = dashboard_scope_svc.redact_credit_limit_exceeded_master(detail)
+    # Sales/purchase invoice + aging balance_due_base already redacted; 409
+    # extra_details must not re-dump FX-converted invoice_total_base.
+    if dashboard_scope_svc.omit_credit_limit_exceeded_invoice_total_base(role):
+        detail = dashboard_scope_svc.redact_credit_limit_exceeded_invoice_total_base(
+            detail
+        )
 
     if not override:
         raise HTTPException(status_code=409, detail=detail)
