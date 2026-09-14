@@ -9,8 +9,9 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `8219224dbada95522133a8191a51bf2f50724507` — feat redact CREDIT_LIMIT_EXCEEDED `invoice_total` (`72d1365af5ca`); leftovers still open |
+| **As of tip** | `d6e3ba7e9431e26d90ae226b1b06d738ef90706d` — SEC-M1/M3/M4 FIXED on tip (merge `927c034e24`); continuum CLE `invoice_total` PARTIAL; leftovers still open |
 | RBAC / store scope | **PARTIAL** only |
+| Security Mediums | **M1+M3+M4 FIXED**; **M2+M5 OPEN** (httpOnly session architecture deferred); overall 🟠 |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
 
 Closed this continuum slice: CREDIT_LIMIT_EXCEEDED 409 `invoice_total_base` redact for store_manager (FX-converted invoice post extra_details; `additional_amount`/`invoice_total`/status codes remain; sales/purchase-invoice + aging `balance_due_base` already redacted; master credit fields already redacted; admin keeps base).
