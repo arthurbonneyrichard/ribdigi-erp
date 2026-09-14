@@ -1305,7 +1305,8 @@ def assert_company_level_company_logo_read_denied(
 
     Profile/logo writes + company list/detail GET already denied; binary logo GET
     was the leftover company branding asset dump (same class as catalog brand logo
-    / product primary image). Server-side print embeds still load logos from storage.
+    / product primary image). Server-side print/receipt HTML+PDF embeds still load
+    logos from storage; JSON ``logo_data_url`` redacted separately.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
@@ -1322,9 +1323,38 @@ def assert_company_level_tenant_logo_read_denied(
 
     Tenant logo writes already denied; binary GET was the leftover tenant branding
     asset dump alongside company logo GET. Switcher ``tenant_has_logo`` / initials
-    chrome remain; print embeds load logos server-side.
+    chrome remain; print/receipt HTML+PDF embeds load logos server-side. JSON
+    ``logo_data_url`` redacted separately via ``redact_document_logo_data_url``.
     """
     assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_document_logo_data_url(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit print/receipt ``logo_data_url``.
+
+    Company/tenant logo binary GET already denied. Invoice/quotation/credit-note
+    print JSON + POS receipt JSON still re-dumped the base64 data URI (same class
+    as binary GET). ``has_logo`` + server-side HTML/PDF embeds remain.
+    """
+    return managed_ids is not None
+
+
+def redact_document_logo_data_url(payload: dict) -> dict:
+    """Null ``logo_data_url`` on a print/receipt JSON dict."""
+    out = dict(payload)
+    if "logo_data_url" in out:
+        out["logo_data_url"] = None
+    return out
+
+
+def apply_document_logo_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager document-brand JSON redacts (logo_data_url)."""
+    out = payload
+    if omit_document_logo_data_url(managed_ids):
+        out = redact_document_logo_data_url(out)
+    return out
 
 
 def assert_company_level_company_profile_read_denied(
