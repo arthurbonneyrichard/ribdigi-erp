@@ -19069,9 +19069,11 @@ async def audit_logs_export(
     if fmt != "csv":
         raise HTTPException(status_code=400, detail="format must be csv or pdf")
     details_redactor = None
-    if dashboard_scope_svc.omit_audit_fx_details(
-        managed
-    ) or dashboard_scope_svc.omit_audit_cle_master_details(managed):
+    if (
+        dashboard_scope_svc.omit_audit_fx_details(managed)
+        or dashboard_scope_svc.omit_audit_cle_master_details(managed)
+        or dashboard_scope_svc.omit_audit_party_ledger_details(managed)
+    ):
         details_redactor = dashboard_scope_svc.redact_audit_manager_details
     csv_text = audit_svc.to_csv(chronological, details_redactor=details_redactor)
     return PlainTextResponse(

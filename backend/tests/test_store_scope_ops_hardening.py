@@ -23688,3 +23688,163 @@ async def test_store_manager_audit_details_cle_master_redacted(client, db_sessio
     assert mgr_csv_details.get("currency") is None
     assert float(mgr_csv_details.get("invoice_total") or 0) == pytest.approx(80.0)
     assert mgr_csv_details.get("invoice_number") == "INV-ACM-1"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_audit_details_party_ledger_redacted(client, db_session):
+    """Audit list/export nulls party ledger balance inside details for store_manager.
+
+    CREDIT_LIMIT_EXCEEDED 409 already redacts current_balance / projected_balance;
+    credit statements / aging / AI customer scope zero party ledger balance.
+    Scoped audit JSON/CSV must not re-dump company-wide AR/AP ledger via
+    invoice_posted / GRN payment customer_balance / supplier_balance_* details.
+    Operational amounts / invoice_number / store_id remain; admin keeps party
+    ledger fields. FX + CLE master keys already redacted separately; integrity
+    hashes unchanged (redact on read only).
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    other_user = seed["admin1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Audit Party Ledger Store",
+        code="APL-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+
+    inv_ev = await audit_svc.record_event(
+        db_session,
+        tenant_id=tid,
+        company_id=cid,
+        user_id=other_user.id,
+        module="sales",
+        action="invoice_posted",
+        entity="sales_invoice",
+        entity_id="inv-apl-1",
+        details={
+            "invoice_number": "INV-APL-1",
+            "total": 80.0,
+            "total_base": 100.0,
+            "currency": "USD",
+            "exchange_rate": 1.25,
+            "customer_balance": 420.0,
+            "store_id": store.id,
+        },
+    )
+    pay_ev = await audit_svc.record_event(
+        db_session,
+        tenant_id=tid,
+        company_id=cid,
+        user_id=other_user.id,
+        module="purchasing",
+        action="supplier_payment_recorded",
+        entity="supplier_payment",
+        entity_id="pay-apl-1",
+        details={
+            "payment_number": "PAY-APL-1",
+            "amount": 50.0,
+            "supplier_balance_before": 300.0,
+            "supplier_balance_after": 250.0,
+            "settlement_base": 50.0,
+            "store_id": store.id,
+        },
+    )
+    await db_session.commit()
+
+    admin_listed = await ac.get(
+        "/api/v1/audit-logs", headers=admin_company, params={"limit": 500}
+    )
+    assert admin_listed.status_code == 200, admin_listed.text
+    admin_inv = next(r for r in admin_listed.json()["data"] if r["id"] == inv_ev.id)
+    admin_pay = next(r for r in admin_listed.json()["data"] if r["id"] == pay_ev.id)
+    assert float((admin_inv.get("details") or {}).get("customer_balance") or 0) == pytest.approx(
+        420.0
+    )
+    assert float(
+        (admin_pay.get("details") or {}).get("supplier_balance_before") or 0
+    ) == pytest.approx(300.0)
+    assert float(
+        (admin_pay.get("details") or {}).get("supplier_balance_after") or 0
+    ) == pytest.approx(250.0)
+
+    mgr_listed = await ac.get(
+        "/api/v1/audit-logs", headers=headers, params={"limit": 500}
+    )
+    assert mgr_listed.status_code == 200, mgr_listed.text
+    mgr_inv = next(r for r in mgr_listed.json()["data"] if r["id"] == inv_ev.id)
+    mgr_pay = next(r for r in mgr_listed.json()["data"] if r["id"] == pay_ev.id)
+    mgr_inv_details = mgr_inv.get("details") or {}
+    mgr_pay_details = mgr_pay.get("details") or {}
+    assert mgr_inv_details.get("customer_balance") is None
+    assert mgr_pay_details.get("supplier_balance_before") is None
+    assert mgr_pay_details.get("supplier_balance_after") is None
+    # sibling redacts still apply
+    assert mgr_inv_details.get("currency") is None
+    assert mgr_inv_details.get("total_base") is None
+    assert mgr_pay_details.get("settlement_base") is None
+    assert float(mgr_inv_details.get("total") or 0) == pytest.approx(80.0)
+    assert mgr_inv_details.get("invoice_number") == "INV-APL-1"
+    assert mgr_inv_details.get("store_id") == store.id
+    assert float(mgr_pay_details.get("amount") or 0) == pytest.approx(50.0)
+    assert mgr_pay_details.get("payment_number") == "PAY-APL-1"
+
+    admin_csv = await ac.get(
+        "/api/v1/audit-logs/export",
+        headers=admin_company,
+        params={"format": "csv"},
+    )
+    assert admin_csv.status_code == 200, admin_csv.text
+    admin_detail_rows = list(csv.DictReader(io.StringIO(admin_csv.text)))
+    admin_csv_inv = next(
+        r for r in admin_detail_rows if "INV-APL-1" in (r.get("details") or "")
+    )
+    admin_csv_pay = next(
+        r for r in admin_detail_rows if "PAY-APL-1" in (r.get("details") or "")
+    )
+    assert float(json.loads(admin_csv_inv["details"]).get("customer_balance") or 0) == pytest.approx(
+        420.0
+    )
+    assert float(
+        json.loads(admin_csv_pay["details"]).get("supplier_balance_after") or 0
+    ) == pytest.approx(250.0)
+
+    mgr_csv = await ac.get(
+        "/api/v1/audit-logs/export",
+        headers=headers,
+        params={"format": "csv"},
+    )
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    mgr_detail_rows = list(csv.DictReader(io.StringIO(mgr_csv.text)))
+    mgr_csv_inv = next(
+        r for r in mgr_detail_rows if "INV-APL-1" in (r.get("details") or "")
+    )
+    mgr_csv_pay = next(
+        r for r in mgr_detail_rows if "PAY-APL-1" in (r.get("details") or "")
+    )
+    mgr_csv_inv_details = json.loads(mgr_csv_inv["details"])
+    mgr_csv_pay_details = json.loads(mgr_csv_pay["details"])
+    assert mgr_csv_inv_details.get("customer_balance") is None
+    assert mgr_csv_pay_details.get("supplier_balance_before") is None
+    assert mgr_csv_pay_details.get("supplier_balance_after") is None
+    assert float(mgr_csv_inv_details.get("total") or 0) == pytest.approx(80.0)
+    assert mgr_csv_inv_details.get("invoice_number") == "INV-APL-1"
+    assert float(mgr_csv_pay_details.get("amount") or 0) == pytest.approx(50.0)

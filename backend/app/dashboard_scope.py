@@ -5578,16 +5578,51 @@ def redact_audit_cle_master_details(details: dict) -> dict:
     return out
 
 
+# Audit detail keys that re-dump company-wide party AR/AP ledger balance already
+# redacted as CLE ``current_balance`` / zeroed on scoped statements + AI.
+_AUDIT_PARTY_LEDGER_DETAIL_KEYS = (
+    "customer_balance",
+    "supplier_balance_before",
+    "supplier_balance_after",
+)
+
+
+def omit_audit_party_ledger_details(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit party ledger balance inside audit ``details``.
+
+    CREDIT_LIMIT_EXCEEDED 409 already redacts ``current_balance`` /
+    ``projected_balance``; credit statements / aging / AI customer scope zero
+    party ledger ``balance``. Scoped ``GET /audit-logs`` (+ CSV) must not
+    re-dump the same company-wide AR/AP ledger via ``invoice_posted`` /
+    credit-note / GRN / payment audit ``customer_balance`` /
+    ``supplier_balance_before`` / ``supplier_balance_after``. Operational
+    document amounts / invoice numbers / ``store_id`` / reason remain; admin
+    keeps party ledger fields in details. FX + CLE master keys already handled
+    by sibling omit helpers.
+    """
+    return managed_ids is not None
+
+
+def redact_audit_party_ledger_details(details: dict) -> dict:
+    """Null party AR/AP ledger balance keys on an audit ``details`` dict."""
+    out = dict(details)
+    for key in _AUDIT_PARTY_LEDGER_DETAIL_KEYS:
+        if key in out:
+            out[key] = None
+    return out
+
+
 def redact_audit_manager_details(details: dict) -> dict:
-    """Compose store_manager audit ``details`` redacts (FX + CLE master)."""
+    """Compose store_manager audit ``details`` redacts (FX + CLE + party ledger)."""
     out = redact_audit_fx_details(details)
-    return redact_audit_cle_master_details(out)
+    out = redact_audit_cle_master_details(out)
+    return redact_audit_party_ledger_details(out)
 
 
 def apply_audit_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager audit JSON redacts (FX + CLE master inside ``details``)."""
+    """Apply store_manager audit JSON redacts (FX + CLE + party ledger in ``details``)."""
     out = dict(payload)
     if not isinstance(out.get("details"), dict):
         return out
@@ -5596,6 +5631,8 @@ def apply_audit_manager_redacts(
         details = redact_audit_fx_details(details)
     if omit_audit_cle_master_details(managed_ids):
         details = redact_audit_cle_master_details(details)
+    if omit_audit_party_ledger_details(managed_ids):
+        details = redact_audit_party_ledger_details(details)
     out["details"] = details
     return out
 
