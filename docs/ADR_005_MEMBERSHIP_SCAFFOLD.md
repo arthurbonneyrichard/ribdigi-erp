@@ -14,8 +14,9 @@ Engineering scaffold toward multi-store user assignment:
 | Model | `UserStoreMembership` |
 | Service | `backend/app/store_memberships.py` |
 | APIs | `GET/POST/DELETE /stores/{id}/memberships`, `GET /me/store-memberships` |
+| Admin UI | `/stores#memberships` — Company/Admin list/assign/remove (`StoreMembershipAdmin`; hidden for `store_manager` / API 403) |
 | Flag | `STORE_MEMBERSHIP_SCOPE_ENABLED` default **false** (documented; not wired into scope) |
-| Tests | `backend/tests/test_store_membership_scaffold.py` |
+| Tests | `backend/tests/test_store_membership_scaffold.py`; `frontend/lib/storeMembershipAdmin.test.mjs` |
 
 ## What did **not** land
 
@@ -39,9 +40,8 @@ Platform evidence `user_store_membership_claimed` remains **false**.
 
 ## Next cutover steps (separate Completes)
 
-1. Optional admin UI to assign cashiers to stores
-2. Explicit `managed_store_ids` cutover design (manager ∪ membership, or role-specific)
-3. POS/session store lists from memberships where product requires it
-4. Evidence pack + attestation before flipping any Complete flags
+1. Explicit `managed_store_ids` cutover design (manager ∪ membership, or role-specific)
+2. POS/session store lists from memberships where product requires it
+3. Evidence pack + attestation before flipping any Complete flags
 
 Offline Complete / 7-day VERIFIED / go-live / paid billing Completes remain **MISSING**.

@@ -1173,7 +1173,7 @@ Consolidated inter-store + warehouse transfer history (same `StockTransfer` reco
 
 **User↔store membership (ADR-005 scaffold — PARTIAL, not Complete):**  
 `GET/POST /stores/{store_id}/memberships` · `DELETE /stores/{store_id}/memberships/{user_id}` · `GET /me/store-memberships`  
-Assignment bookkeeping only; operational scope remains `stores.manager_id`. Honesty flags in payloads stay false (`adr005_complete_claimed`, `scope_wired_to_membership`). Evidence: `test_store_membership_scaffold.py`.
+Assignment bookkeeping only; operational scope remains `stores.manager_id`. Company/Admin UI: `/stores#memberships` (`StoreMembershipAdmin`; `store_manager` denied). Honesty flags in payloads stay false (`adr005_complete_claimed`, `scope_wired_to_membership`). Evidence: `test_store_membership_scaffold.py`, `storeMembershipAdmin.test.mjs`.
 
 **Create Store:**
 ```json
