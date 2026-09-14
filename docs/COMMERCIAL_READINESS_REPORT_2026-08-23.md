@@ -9,7 +9,7 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `383f8561d0c58a5ac65450d128ce7b848f013e97` — feat redact cheque `bank_name` (`d2ce109255`); leftovers still open |
+| **As of tip** | `cd31932b5109f5606aec704101be70b55866ea10` — feat redact cheque `bank_name` (`d2ce109255`); leftovers still open |
 | RBAC / store scope | **PARTIAL** only |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
 
