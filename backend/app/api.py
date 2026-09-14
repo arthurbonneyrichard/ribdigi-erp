@@ -2236,43 +2236,45 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
         from app import store_entitlements as store_ent_svc
 
         company_entitlement = await store_ent_svc.get_tenant_company_entitlement(db, tenant)
-    return env(
-        {
-            "id": user.id,
-            "email": user.email,
-            "full_name": user.full_name,
-            "phone": user.phone,
-            "role": user.role,
-            "tenant_id": user.tenant_id,
-            "tenant_name": tenant.company_name if tenant else None,
-            "tenant_has_logo": bool(getattr(tenant, "logo_url", None)) if tenant else False,
-            "email_verified": user.email_verified,
-            "principal": principal,
-            "redirect_path": home_path_for_principal(principal),
-            "workspace_kind": claims.get("workspace_kind") or "tenant",
-            "company_id": claims.get("company_id"),
-            "company": company_payload,
-            "company_memberships": memberships,
-            "tenant_admin": workspace_svc.is_tenant_admin_role(user.role),
-            "company_entitlement": company_entitlement,
-            "permissions": perms,
-            "record_scope": record_scope_from_permissions(user.role, perms if isinstance(perms, dict) else None),
-            "inactivity_timeout_minutes": int(
-                getattr(tenant, "inactivity_timeout_minutes", None) or 30
-            )
-            if tenant
-            else 30,
-            "date_format": (getattr(tenant, "date_format", None) or "DD/MM/YYYY") if tenant else "DD/MM/YYYY",
-            "number_format": (getattr(tenant, "number_format", None) or "1,234.56") if tenant else "1,234.56",
-            "time_format": (getattr(tenant, "time_format", None) or "24h") if tenant else "24h",
-            "timezone": (getattr(tenant, "timezone", None) or "Africa/Accra") if tenant else "Africa/Accra",
-            # ADR-006 / BR-2.7 — English MVP; i18n scaffold on frontend
-            "locale": "en",
-            "preferred_language": "en",
-            "supported_locales": ["en"],
-            **totp_svc.status_payload(user),
-        }
-    )
+    me_payload = {
+        "id": user.id,
+        "email": user.email,
+        "full_name": user.full_name,
+        "phone": user.phone,
+        "role": user.role,
+        "tenant_id": user.tenant_id,
+        "tenant_name": tenant.company_name if tenant else None,
+        "tenant_has_logo": bool(getattr(tenant, "logo_url", None)) if tenant else False,
+        "email_verified": user.email_verified,
+        "principal": principal,
+        "redirect_path": home_path_for_principal(principal),
+        "workspace_kind": claims.get("workspace_kind") or "tenant",
+        "company_id": claims.get("company_id"),
+        "company": company_payload,
+        "company_memberships": memberships,
+        "tenant_admin": workspace_svc.is_tenant_admin_role(user.role),
+        "company_entitlement": company_entitlement,
+        "permissions": perms,
+        "record_scope": record_scope_from_permissions(user.role, perms if isinstance(perms, dict) else None),
+        "inactivity_timeout_minutes": int(
+            getattr(tenant, "inactivity_timeout_minutes", None) or 30
+        )
+        if tenant
+        else 30,
+        "date_format": (getattr(tenant, "date_format", None) or "DD/MM/YYYY") if tenant else "DD/MM/YYYY",
+        "number_format": (getattr(tenant, "number_format", None) or "1,234.56") if tenant else "1,234.56",
+        "time_format": (getattr(tenant, "time_format", None) or "24h") if tenant else "24h",
+        "timezone": (getattr(tenant, "timezone", None) or "Africa/Accra") if tenant else "Africa/Accra",
+        # ADR-006 / BR-2.7 — English MVP; i18n scaffold on frontend
+        "locale": "en",
+        "preferred_language": "en",
+        "supported_locales": ["en"],
+        **totp_svc.status_payload(user),
+    }
+    # GET /tenants/me already denied — do not re-dump tenant preference settings.
+    if dashboard_scope_svc.omit_me_tenant_preference_settings(managed):
+        me_payload = dashboard_scope_svc.redact_me_tenant_preference_settings(me_payload)
+    return env(me_payload)
 
 
 @api.get("/workspace")

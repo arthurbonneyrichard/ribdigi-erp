@@ -15866,6 +15866,56 @@ async def test_store_manager_me_workspace_company_profile_redacted(client, db_se
 
 
 @pytest.mark.asyncio
+async def test_store_manager_me_tenant_preference_settings_redacted(client, db_session):
+    """GET /me nulls tenant preference settings for store_manager.
+
+    GET /tenants/me already denied (timezone/date/number/time formats +
+    inactivity_timeout dump). Session /me must not re-dump those preference
+    fields. Role/company switcher chrome remain; admin /me keeps values;
+    hardcoded locale scaffold (en) remains.
+    """
+    ac, seed = client
+    tenant = seed["t1"]
+    tenant.timezone = "Africa/Lagos"
+    tenant.date_format = "MM/DD/YYYY"
+    tenant.number_format = "1.234,56"
+    tenant.time_format = "12h"
+    tenant.inactivity_timeout_minutes = 17
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    admin_me = await ac.get("/api/v1/me", headers=admin_headers)
+    assert admin_me.status_code == 200, admin_me.text
+    admin_data = admin_me.json()["data"]
+    assert admin_data.get("timezone") == "Africa/Lagos"
+    assert admin_data.get("date_format") == "MM/DD/YYYY"
+    assert admin_data.get("number_format") == "1.234,56"
+    assert admin_data.get("time_format") == "12h"
+    assert admin_data.get("inactivity_timeout_minutes") == 17
+
+    mgr_me = await ac.get("/api/v1/me", headers=headers)
+    assert mgr_me.status_code == 200, mgr_me.text
+    mgr_data = mgr_me.json()["data"]
+    assert mgr_data.get("role") == "store_manager"
+    assert mgr_data.get("company") is not None
+    assert mgr_data.get("timezone") is None
+    assert mgr_data.get("date_format") is None
+    assert mgr_data.get("number_format") is None
+    assert mgr_data.get("time_format") is None
+    assert mgr_data.get("inactivity_timeout_minutes") is None
+    # Hardcoded ADR-006 scaffold — not tenant-sourced preference dump.
+    assert mgr_data.get("locale") == "en"
+    assert mgr_data.get("preferred_language") == "en"
+
+
+@pytest.mark.asyncio
 async def test_store_manager_document_settings_writes_denied(client, db_session):
     """Document numbering/print PATCH + settings/profile CSV exports + preview denied for store_manager."""
     ac, seed = client

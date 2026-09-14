@@ -1667,6 +1667,33 @@ def omit_company_entitlement(managed_ids: list[str] | None) -> bool:
     return managed_ids is not None
 
 
+def omit_me_tenant_preference_settings(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit tenant preference settings on ``GET /me``.
+
+    ``GET /tenants/me`` already denied (company/tenant profile dump including
+    ``timezone`` / ``date_format`` / ``number_format`` / ``time_format`` /
+    ``inactivity_timeout_minutes``). Session ``/me`` must not re-dump those
+    preference fields. Role/permissions/switcher chrome remain; hardcoded
+    locale scaffold (``en``) is not tenant-sourced and stays.
+    """
+    return managed_ids is not None
+
+
+def redact_me_tenant_preference_settings(payload: dict) -> dict:
+    """Null tenant preference settings on a ``GET /me`` session payload."""
+    out = dict(payload)
+    for key in (
+        "inactivity_timeout_minutes",
+        "date_format",
+        "number_format",
+        "time_format",
+        "timezone",
+    ):
+        if key in out:
+            out[key] = None
+    return out
+
+
 def assert_company_level_document_settings_write_denied(
     managed_ids: list[str] | None,
     *,
