@@ -329,9 +329,11 @@ store activation — never frontend-only.
    `offline_authorized_until` and blocks sync; critical alerts can email via
    security notifications (`POST /offline/alerts/notify`). Remote IndexedDB wipe
    request/ack + Web Push delivery are **PARTIAL** (VAPID + subscription required
-   for push; online poll remains; automated wipe-via-push evidence in
-   `test_offline_wipe_push_vapid_evidence.py` + operator checklist
-   `docs/offline_wipe_push_staging_checklist.md` — browser proof still required).
+   for push; online poll remains **engineering-ready**; automated wipe-via-push evidence in
+   `test_offline_wipe_push_vapid_evidence.py` + poll-path evidence
+   `test_offline_wipe_poll_path_evidence.py` + operator checklist
+   `docs/offline_wipe_push_staging_checklist.md` / `docs/OFFLINE_WIPE_POLL_LOCAL_ALTERNATIVE.md`
+   — browser FCM proof still required for push Complete).
    Offline Complete and 7-day VERIFIED remain **MISSING**.
 
 ### Key modules
@@ -355,7 +357,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `d68bb08b3853784a472fb630b5e001e97322a6a0` — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL** (automated VAPID wipe-via-push evidence + staging checklist; local Chrome subscribe blocked in cloud agent (PushManager timeout — not Complete); Complete still **MISSING**); ADR-005 membership **PARTIAL** (scaffold + admin UI + flag-gated scope wire + cashier fail-closed + automated flag-ON soak; default OFF — Complete still **MISSING**); paid billing **PARTIAL** (ADR-002 portal + Checkout Session create + signed webhook proof + entitlement gate for gated routes when flag ON — Complete still **MISSING**; `PAID_BILLING_ENTITLEMENT_GATE_ENABLED` default **OFF**); operator go-live readiness pack `docs/GO_LIVE_READINESS_CHECKLIST.md` (FIXED/PARTIAL/MISSING + staging soaks; Completes still **MISSING**); Offline Complete still **MISSING**. Cookie + membership-scope + entitlement-gate flags default remain OFF (ops enable cutover). Closed continuum slice: managed-store `manager_id` redact (`818091d7d128`). Continuum CLE honesty remains **PARTIAL**.
+**As of tip:** `918e57dc14242e19ed63f88d09b9c8d138b9715c` — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL** (poll-path **engineering-ready**; automated VAPID wipe-via-push evidence + staging checklist + FCM-blocked local alternative docs/OFFLINE_WIPE_POLL_LOCAL_ALTERNATIVE.md; Cloud Chrome PushManager timeout — not push Complete); 7-day VERIFIED **MISSING** (operator evidence template docs/OFFLINE_7DAY_EVIDENCE_TEMPLATE.md — not run); ADR-005 membership **PARTIAL** (scaffold + admin UI + flag-gated scope wire + cashier fail-closed + automated flag-ON soak; default OFF — Complete still **MISSING**); paid billing **PARTIAL** (ADR-002 portal + Checkout Session create + signed webhook proof + entitlement gate for gated routes when flag ON — Complete still **MISSING**; PAID_BILLING_ENTITLEMENT_GATE_ENABLED default **OFF**); operator go-live readiness pack docs/GO_LIVE_READINESS_CHECKLIST.md (FIXED/PARTIAL/MISSING + staging soaks; Completes still **MISSING**); Offline Complete still **MISSING**. Cookie + membership-scope + entitlement-gate flags default remain OFF (ops enable cutover). 
 **Security:** no open Critical/High/Medium. Do not claim go-live Completes. Cookie + membership-scope flags OFF in prod examples are intentional until ops cutover (`docs/sec_m2_staging_soak_checklist.md`, `docs/adr005_staging_soak_checklist.md`). Offline push prod template stays fail-closed until `docs/offline_wipe_push_staging_checklist.md` browser proof. Entitlement gate prod default stays OFF until mirror→access evidence (`docs/PAID_BILLING_PROVIDER_OPS.md`). Operator roll-up: `docs/GO_LIVE_READINESS_CHECKLIST.md`.  
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
