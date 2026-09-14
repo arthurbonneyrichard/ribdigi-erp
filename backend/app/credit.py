@@ -205,7 +205,13 @@ async def ar_aging(
             {
                 "party_id": inv.customer_id,
                 "name": cust.name if cust else inv.customer_id,
-                "credit_limit": float(cust.credit_limit or 0) if cust else 0,
+                # Party list/get + AI already redact credit_limit; aging must not
+                # re-dump company credit master under store_manager scope.
+                "credit_limit": (
+                    None
+                    if manager_scope
+                    else (float(cust.credit_limit or 0) if cust else 0)
+                ),
                 "balance": 0.0 if manager_scope else (float(cust.balance or 0) if cust else 0),
                 "total_due": 0.0,
                 **empty_buckets(),
@@ -311,7 +317,13 @@ async def ap_aging(
             {
                 "party_id": supplier_id,
                 "name": sup.name if sup else supplier_id,
-                "credit_limit": float(sup.credit_limit or 0) if sup else 0,
+                # Party list/get already redact credit_limit; AP aging must not
+                # re-dump company credit master under store_manager WH scope.
+                "credit_limit": (
+                    None
+                    if manager_scope
+                    else (float(sup.credit_limit or 0) if sup else 0)
+                ),
                 "balance": 0.0 if manager_scope else (float(sup.balance or 0) if sup else 0),
                 "total_due": 0.0,
                 **empty_buckets(),

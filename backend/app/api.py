@@ -15417,22 +15417,26 @@ async def credit_aging(
     managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
     managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     if kind == "payable":
-        return env(
-            await credit_svc.ap_aging(
-                db,
-                claims["tenant_id"],
-                company_id=claims.get("company_id"),
-                warehouse_ids=managed_wh,
-            )
-        )
-    return env(
-        await credit_svc.ar_aging(
+        data = await credit_svc.ap_aging(
             db,
             claims["tenant_id"],
             company_id=claims.get("company_id"),
-            store_ids=managed_stores,
+            warehouse_ids=managed_wh,
         )
+        data = dashboard_scope_svc.apply_credit_aging_manager_redacts(
+            data, managed_wh
+        )
+        return env(data)
+    data = await credit_svc.ar_aging(
+        db,
+        claims["tenant_id"],
+        company_id=claims.get("company_id"),
+        store_ids=managed_stores,
     )
+    data = dashboard_scope_svc.apply_credit_aging_manager_redacts(
+        data, managed_stores
+    )
+    return env(data)
 
 
 @api.get("/credit/aging/export")

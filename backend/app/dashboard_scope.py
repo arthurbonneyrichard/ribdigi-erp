@@ -4392,8 +4392,10 @@ def omit_party_credit_master(managed_ids: list[str] | None) -> bool:
     customer/supplier list/get/patch must not re-dump company credit master.
     AI customer insights/assist/export also omit ``credit_limit`` when
     ``store_ids`` is set (see ``ai_customers`` / ``redact_ai_customer_credit``).
-    Name/status/balance and scoped history remain; POS credit checks stay
-    server-side on DB ``party.credit_limit``.
+    Credit AR/AP aging party rows omit ``credit_limit`` via
+    ``redact_credit_aging_party_credit_limit`` (source also nulls under
+    manager_scope). Name/status/balance and scoped history remain; POS credit
+    checks stay server-side on DB ``party.credit_limit``.
     """
     return managed_ids is not None
 
@@ -4404,6 +4406,45 @@ def redact_party_credit_master(payload: dict) -> dict:
     for key in PARTY_CREDIT_MASTER_FIELDS:
         if key in out:
             out[key] = None
+    return out
+
+
+def omit_credit_aging_party_credit_limit(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit aging party ``credit_limit``.
+
+    Party list/get + AI customer ``credit_limit`` already redacted. Credit AR/AP
+    aging JSON must not re-dump company credit master on party rows. Scoped
+    ``total_due`` / buckets / document lines / ``name`` remain; admin keeps
+    ``credit_limit``. Statements may still expose ``credit_limit`` (separate slice).
+    """
+    return managed_ids is not None
+
+
+def redact_credit_aging_party_credit_limit(payload: dict) -> dict:
+    """Null ``credit_limit`` on credit-aging payload party rows."""
+    out = dict(payload)
+    parties = out.get("parties")
+    if isinstance(parties, list):
+        redacted = []
+        for row in parties:
+            if isinstance(row, dict):
+                item = dict(row)
+                if "credit_limit" in item:
+                    item["credit_limit"] = None
+                redacted.append(item)
+            else:
+                redacted.append(row)
+        out["parties"] = redacted
+    return out
+
+
+def apply_credit_aging_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager credit-aging redacts (party ``credit_limit``)."""
+    out = payload
+    if omit_credit_aging_party_credit_limit(managed_ids):
+        out = redact_credit_aging_party_credit_limit(out)
     return out
 
 

@@ -19290,3 +19290,154 @@ async def test_store_manager_sales_customers_party_code_redacted(client, db_sess
     assert mgr_csv_row.get("code") in (None, "")
     assert float(mgr_csv_row.get("revenue") or 0) == pytest.approx(55.0)
 
+
+@pytest.mark.asyncio
+async def test_store_manager_credit_aging_party_credit_limit_redacted(
+    client, db_session
+):
+    """AR/AP aging nulls party credit_limit for store_manager.
+
+    Party list/get + AI customer credit_limit already redacted. Aging party rows
+    must not re-dump company credit master. Scoped total_due / buckets / name /
+    documents remain; admin JSON keeps credit_limit. Statements may still expose
+    credit_limit (separate continuum leftover).
+    """
+    from datetime import timedelta
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    today = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Aging CL Store",
+        code="AGE-CL-S",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        name="Aging CL WH",
+        code="AGE-CL-WH",
+    )
+    db_session.add(wh)
+    await db_session.flush()
+
+    cust = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Aging CL Customer",
+        kind="customer",
+        status="active",
+        credit_limit=8888.0,
+        balance=100,
+    )
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Aging CL Supplier",
+        kind="supplier",
+        status="active",
+        credit_limit=7777.0,
+        balance=50,
+    )
+    db_session.add_all([cust, supplier])
+    await db_session.flush()
+
+    db_session.add(
+        m.SalesInvoice(
+            tenant_id=tid,
+            company_id=cid,
+            store_id=store.id,
+            invoice_number="INV-AGE-CL-1",
+            customer_id=cust.id,
+            status="posted",
+            subtotal=40,
+            total_amount=40,
+            paid_amount=0,
+            due_date=today - timedelta(days=2),
+            posted_at=today - timedelta(days=2),
+            created_at=today - timedelta(days=2),
+        )
+    )
+    db_session.add(
+        m.PurchaseInvoice(
+            tenant_id=tid,
+            company_id=cid,
+            invoice_number="PI-AGE-CL-1",
+            supplier_id=supplier.id,
+            warehouse_id=wh.id,
+            status="unpaid",
+            subtotal=25,
+            total_amount=25,
+            paid_amount=0,
+            invoice_date=today - timedelta(days=2),
+            due_date=today - timedelta(days=1),
+            created_at=today - timedelta(days=2),
+        )
+    )
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    admin_ar = await ac.get(
+        "/api/v1/credit/aging?kind=receivable", headers=admin_company
+    )
+    assert admin_ar.status_code == 200, admin_ar.text
+    admin_ar_parties = admin_ar.json()["data"]["parties"]
+    admin_ar_row = next(p for p in admin_ar_parties if p.get("party_id") == cust.id)
+    assert float(admin_ar_row.get("credit_limit") or 0) == pytest.approx(8888.0)
+
+    mgr_ar = await ac.get("/api/v1/credit/aging?kind=receivable", headers=headers)
+    assert mgr_ar.status_code == 200, mgr_ar.text
+    mgr_ar_body = mgr_ar.json()["data"]
+    assert mgr_ar_body.get("scope") == "store_manager"
+    assert float(mgr_ar_body["total_due"]) == pytest.approx(40.0)
+    mgr_ar_row = next(
+        p for p in mgr_ar_body["parties"] if p.get("party_id") == cust.id
+    )
+    assert mgr_ar_row.get("credit_limit") is None
+    assert mgr_ar_row.get("name") == "Aging CL Customer"
+    assert float(mgr_ar_row.get("total_due") or 0) == pytest.approx(40.0)
+    assert float(mgr_ar_row.get("balance") or 0) == 0
+
+    admin_ap = await ac.get(
+        "/api/v1/credit/aging?kind=payable", headers=admin_company
+    )
+    assert admin_ap.status_code == 200, admin_ap.text
+    admin_ap_row = next(
+        p
+        for p in admin_ap.json()["data"]["parties"]
+        if p.get("party_id") == supplier.id
+    )
+    assert float(admin_ap_row.get("credit_limit") or 0) == pytest.approx(7777.0)
+
+    mgr_ap = await ac.get("/api/v1/credit/aging?kind=payable", headers=headers)
+    assert mgr_ap.status_code == 200, mgr_ap.text
+    mgr_ap_body = mgr_ap.json()["data"]
+    assert float(mgr_ap_body["total_due"]) == pytest.approx(25.0)
+    mgr_ap_row = next(
+        p for p in mgr_ap_body["parties"] if p.get("party_id") == supplier.id
+    )
+    assert mgr_ap_row.get("credit_limit") is None
+    assert mgr_ap_row.get("name") == "Aging CL Supplier"
+    assert float(mgr_ap_row.get("total_due") or 0) == pytest.approx(25.0)
+
