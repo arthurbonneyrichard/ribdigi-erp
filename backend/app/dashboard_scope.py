@@ -1340,15 +1340,37 @@ def redact_document_legal_trading_names(payload: dict) -> dict:
     return out
 
 
+def omit_document_company_contact(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit receipt ``company_address`` / ``company_phone``.
+
+    Company profile GET + ``/me`` / ``/workspace`` already omit address/phone.
+    POS receipt JSON must not re-dump company contact fields. ``company_name`` +
+    ``has_logo`` + server-side HTML/PDF/text embeds remain.
+    """
+    return managed_ids is not None
+
+
+def redact_document_company_contact(payload: dict) -> dict:
+    """Null ``company_address`` / ``company_phone`` on a receipt/print JSON dict."""
+    out = dict(payload)
+    if "company_address" in out:
+        out["company_address"] = None
+    if "company_phone" in out:
+        out["company_phone"] = None
+    return out
+
+
 def apply_document_logo_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager document-brand JSON redacts (logo + legal/trading names)."""
+    """Apply store_manager document-brand JSON redacts (logo + legal + contact)."""
     out = payload
     if omit_document_logo_data_url(managed_ids):
         out = redact_document_logo_data_url(out)
     if omit_document_legal_trading_names(managed_ids):
         out = redact_document_legal_trading_names(out)
+    if omit_document_company_contact(managed_ids):
+        out = redact_document_company_contact(out)
     return out
 
 
