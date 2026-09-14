@@ -1098,10 +1098,37 @@ def redact_tax_filing_company_prefs(payload: dict) -> dict:
     return out
 
 
+def omit_tax_filing_jurisdiction(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit tax-filing jurisdiction selection fields.
+
+    ``GET /tenants/me`` already denied (``tax_jurisdiction``). Tax filing period /
+    currency / timezone prefs + TIN already redacted. Filing JSON/CSV must not
+    re-dump tenant jurisdiction selection via top-level ``jurisdiction`` /
+    ``supported_jurisdictions`` or ``government.jurisdiction``. Amounts /
+    schedules / ``taxpayer_name`` / ``tin_missing`` remain.
+    """
+    return managed_ids is not None
+
+
+def redact_tax_filing_jurisdiction(payload: dict) -> dict:
+    """Null jurisdiction selection fields on a tax-filing JSON dict (+ government)."""
+    out = dict(payload)
+    if "jurisdiction" in out:
+        out["jurisdiction"] = None
+    if "supported_jurisdictions" in out:
+        out["supported_jurisdictions"] = []
+    gov = out.get("government")
+    if isinstance(gov, dict) and "jurisdiction" in gov:
+        gov_out = dict(gov)
+        gov_out["jurisdiction"] = None
+        out["government"] = gov_out
+    return out
+
+
 def apply_tax_filing_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager tax-filing JSON redacts (TIN + company prefs)."""
+    """Apply store_manager tax-filing JSON redacts (TIN + prefs + jurisdiction)."""
     if not isinstance(payload, dict):
         return payload
     out = payload
@@ -1109,6 +1136,8 @@ def apply_tax_filing_manager_redacts(
         out = redact_tax_filing_tin(out)
     if omit_tax_filing_company_prefs(managed_ids):
         out = redact_tax_filing_company_prefs(out)
+    if omit_tax_filing_jurisdiction(managed_ids):
+        out = redact_tax_filing_jurisdiction(out)
     return out
 
 

@@ -5703,6 +5703,77 @@ async def test_store_manager_tax_filing_company_prefs_redacted(client, db_sessio
 
 
 @pytest.mark.asyncio
+async def test_store_manager_tax_filing_jurisdiction_redacted(client, db_session):
+    """Tax filing omits jurisdiction / supported_jurisdictions for store_manager.
+
+    GET /tenants/me already denied (tax_jurisdiction). Filing period prefs + TIN
+    already redacted. Filing pack must not re-dump tenant jurisdiction selection
+    via jurisdiction / supported_jurisdictions / government.jurisdiction.
+    Amounts/schedules and taxpayer_name remain; admin JSON keeps jurisdiction.
+    """
+    ac, seed = client
+    tenant = seed["t1"]
+    tenant.tax_jurisdiction = "NG"
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    admin_filing = await ac.get("/api/v1/reports/tax/filing", headers=admin_headers)
+    assert admin_filing.status_code == 200, admin_filing.text
+    admin_data = admin_filing.json()["data"]
+    assert admin_data.get("jurisdiction") == "NG"
+    assert isinstance(admin_data.get("supported_jurisdictions"), list)
+    assert any(
+        (row or {}).get("jurisdiction") == "NG"
+        for row in (admin_data.get("supported_jurisdictions") or [])
+    )
+    admin_gov = admin_data.get("government") or {}
+    assert admin_gov.get("jurisdiction") == "NG"
+    assert "output_tax" in admin_data or "filing_boxes" in admin_data or admin_gov.get("boxes")
+
+    mgr_filing = await ac.get("/api/v1/reports/tax/filing", headers=headers)
+    assert mgr_filing.status_code == 200, mgr_filing.text
+    mgr_data = mgr_filing.json()["data"]
+    assert mgr_data.get("jurisdiction") is None
+    assert mgr_data.get("supported_jurisdictions") == []
+    mgr_gov = mgr_data.get("government") or {}
+    assert mgr_gov.get("jurisdiction") is None
+    # Amounts / company chrome remain.
+    assert "output_tax" in mgr_data or "filing_boxes" in mgr_data or mgr_gov.get("boxes")
+    assert (mgr_gov.get("header") or {}).get("taxpayer_name")
+
+    # Government export builds the same pack; ensure jurisdiction stays redacted
+    # on the JSON path used before CSV/XLSX packaging (export applies the same
+    # apply_tax_filing_manager_redacts helper).
+    mgr_ng = await ac.get(
+        "/api/v1/reports/tax/filing",
+        headers=headers,
+        params={"jurisdiction": "NG"},
+    )
+    assert mgr_ng.status_code == 200, mgr_ng.text
+    mgr_ng_data = mgr_ng.json()["data"]
+    assert mgr_ng_data.get("jurisdiction") is None
+    assert mgr_ng_data.get("supported_jurisdictions") == []
+    assert (mgr_ng_data.get("government") or {}).get("jurisdiction") is None
+
+    mgr_csv = await ac.get(
+        "/api/v1/reports/export",
+        headers=headers,
+        params={"report_type": "tax_filing", "format": "csv"},
+    )
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    # Neutral pack CSV body must not re-dump tenant jurisdiction selection.
+    assert "jurisdiction: NG" not in mgr_csv.text
+    assert "supported_jurisdictions" not in mgr_csv.text.lower()
+
+
+@pytest.mark.asyncio
 async def test_store_manager_tax_rate_writes_denied(client, db_session):
     """Tax rate list/detail/create/patch/default/export denied for store_manager (company-level)."""
     from app.rbac import permissions_for_role
