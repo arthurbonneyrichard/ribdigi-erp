@@ -44,6 +44,8 @@ async def test_offline_remote_wipe_request_and_ack(client, db_session):
     assert body.get("soft_lockdown") is True
     assert body.get("wipe_pending") is True
     assert body.get("wipe_status") == "pending"
+    assert body.get("push_delivery") is not None
+    assert body["push_delivery"].get("offline_complete_claimed") is False
     assert "Offline Complete" in body.get("message", "") or "deferred" in body.get("message", "")
 
     row = (
@@ -94,6 +96,8 @@ def test_offline_remote_wipe_client_scaffold_exists():
     assert "processPendingRemoteWipeIfNeeded" in src
     assert "offlineCompleteClaimed: false" in src
     assert "pushDelivery: false" in src
+    assert "pushDeliveryPartial: true" in src
+    assert "pushDeliveryCompleteClaimed: false" in src
     assert "ribdigi-offline-queue" in src
 
 

@@ -1790,13 +1790,60 @@ class OfflineDevice(Base):
     offline_authorized_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     catalog_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
     app_version: Mapped[str | None] = mapped_column(String(40), nullable=True)
-    # Remote IndexedDB wipe scaffold — Offline Complete / push delivery still MISSING.
+    # Remote IndexedDB wipe scaffold — Offline Complete still MISSING; wipe push PARTIAL.
     wipe_requested_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     wipe_requested_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     wipe_acked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     wipe_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class OfflinePushSubscription(Base):
+    """Web Push subscription bound to an offline device (wipe delivery PARTIAL).
+
+    Does not claim Offline Complete or push-delivery Complete.
+    """
+
+    __tablename__ = "offline_push_subscriptions"
+    __table_args__ = (UniqueConstraint("tenant_id", "device_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    device_id: Mapped[str] = mapped_column(
+        ForeignKey("offline_devices.id"), index=True
+    )
+    endpoint: Mapped[str] = mapped_column(String(2000))
+    p256dh: Mapped[str] = mapped_column(String(255))
+    auth: Mapped[str] = mapped_column(String(255))
+    user_agent: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    last_success_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class OfflinePushDelivery(Base):
+    """Outbound Web Push attempt log (remote_wipe etc.). Honesty: PARTIAL only."""
+
+    __tablename__ = "offline_push_deliveries"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    device_id: Mapped[str] = mapped_column(
+        ForeignKey("offline_devices.id"), index=True
+    )
+    subscription_id: Mapped[str | None] = mapped_column(
+        ForeignKey("offline_push_subscriptions.id"), nullable=True, index=True
+    )
+    event_type: Mapped[str] = mapped_column(String(40), index=True)
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(40), default="pending", index=True)
+    attempt_count: Mapped[int] = mapped_column(Integer, default=0)
+    response_status: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class SyncQueueItem(Base):

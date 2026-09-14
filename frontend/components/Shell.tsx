@@ -2187,7 +2187,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Remote wipe scaffold — when online, clear local IndexedDB if wipe_pending (not Offline Complete).
+  // Remote wipe PARTIAL — online poll fallback; Web Push is best-effort (not Offline Complete).
   useEffect(() => {
     if (typeof window === 'undefined') return;
     let cancelled = false;

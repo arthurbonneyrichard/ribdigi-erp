@@ -88,6 +88,7 @@ from app import ai_guard as ai_guard_svc
 from app import api_keys as api_keys_svc
 from app import offline_devices as offline_devices_svc
 from app import offline_alerts as offline_alerts_svc
+from app import offline_push as offline_push_svc
 from app import sync_engine as sync_engine_svc
 from app import pos_holds as pos_holds_svc
 from app import webhooks as webhooks_svc
@@ -18813,6 +18814,106 @@ async def offline_devices_list(
     return env([offline_devices_svc.serialize_device(r) for r in rows])
 
 
+@api.get("/offline/push/vapid-public-key")
+async def offline_push_vapid_public_key(
+    claims=Depends(
+        require_roles(
+            "company_admin",
+            "super_admin",
+            "tenant_admin",
+            "tenant_owner",
+            "store_manager",
+            "cashier",
+        )
+    ),
+):
+    """Return VAPID applicationServerKey for PushManager.subscribe (PARTIAL)."""
+    return env(offline_push_svc.vapid_public_key_payload())
+
+
+@api.put("/offline/devices/{device_id}/push-subscription")
+async def offline_devices_upsert_push_subscription(
+    device_id: str,
+    request: Request,
+    payload: dict | None = None,
+    claims=Depends(require_permission("pos", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Register / refresh Web Push subscription for an offline device (PARTIAL)."""
+    tenants_svc.assert_writable(claims)
+    body = payload or {}
+    keys = body.get("keys") if isinstance(body.get("keys"), dict) else {}
+    row = await offline_push_svc.upsert_subscription(
+        db,
+        tenant_id=claims["tenant_id"],
+        device_id=device_id,
+        endpoint=str(body.get("endpoint") or ""),
+        p256dh=str(keys.get("p256dh") or body.get("p256dh") or ""),
+        auth=str(keys.get("auth") or body.get("auth") or ""),
+        user_agent=request.headers.get("user-agent"),
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="pos",
+        action="offline_push_subscription_upsert",
+        entity="offline_push_subscription",
+        entity_id=row.id,
+        details={
+            "device_id": device_id,
+            "endpoint_host": offline_push_svc.serialize_subscription(row).get(
+                "endpoint_host"
+            ),
+        },
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+    data = offline_push_svc.serialize_subscription(row)
+    data["push_delivery_partial"] = True
+    data["push_delivery_complete_claimed"] = False
+    data["offline_complete_claimed"] = False
+    data["message"] = (
+        "Web Push subscription saved (PARTIAL). Wipe push may deliver when VAPID "
+        "configured. Offline Complete remains deferred."
+    )
+    return env(data, "Push subscription saved")
+
+
+@api.delete("/offline/devices/{device_id}/push-subscription")
+async def offline_devices_delete_push_subscription(
+    device_id: str,
+    request: Request,
+    claims=Depends(require_permission("pos", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Revoke Web Push subscription for an offline device."""
+    tenants_svc.assert_writable(claims)
+    row = await offline_push_svc.revoke_subscription(
+        db, claims["tenant_id"], device_id
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Push subscription not found")
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims.get("sub"),
+        module="pos",
+        action="offline_push_subscription_revoke",
+        entity="offline_push_subscription",
+        entity_id=row.id,
+        details={"device_id": device_id},
+        ip_address=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
+    await db.commit()
+    return env(
+        offline_push_svc.serialize_subscription(row),
+        "Push subscription revoked",
+    )
+
+
 @api.get("/offline/alerts")
 async def offline_alerts_list(
     claims=Depends(
@@ -19081,6 +19182,11 @@ async def offline_devices_request_wipe(
         device_id,
         requested_by=claims.get("sub"),
     )
+    push_result = await offline_push_svc.deliver_remote_wipe_push(
+        db,
+        tenant_id=claims["tenant_id"],
+        device=row,
+    )
     await offline_alerts_svc.notify_device_soft_lockdown(
         db,
         tenant_id=claims["tenant_id"],
@@ -19101,6 +19207,8 @@ async def offline_devices_request_wipe(
             "pending_queue": pending,
             "wipe_status": row.wipe_status,
             "soft_lockdown": True,
+            "push_delivery_status": push_result.get("status"),
+            "push_delivery_id": push_result.get("id"),
         },
         ip_address=request.client.host if request.client else None,
         user_agent=request.headers.get("user-agent"),
@@ -19109,10 +19217,11 @@ async def offline_devices_request_wipe(
     data = offline_devices_svc.serialize_device(row)
     data["pending_queue"] = pending
     data["soft_lockdown"] = True
+    data["push_delivery"] = push_result
     data["message"] = (
-        "Remote wipe queued (scaffold). Soft lockdown applied; client must clear "
-        "IndexedDB when it sees wipe_pending and POST wipe/ack. "
-        "Push delivery and Offline Complete remain deferred."
+        "Remote wipe queued (PARTIAL). Soft lockdown applied; Web Push attempted when "
+        "configured + subscribed; otherwise client polls wipe_pending and POST wipe/ack. "
+        "Offline Complete / push-delivery Complete / 7-day VERIFIED remain deferred."
     )
     return env(data, "Remote wipe queued")
 
@@ -19142,8 +19251,8 @@ async def offline_devices_ack_wipe(
     await db.commit()
     data = offline_devices_svc.serialize_device(row)
     data["message"] = (
-        "Remote wipe acknowledged. Offline Complete / 7-day VERIFIED / push delivery "
-        "remain deferred."
+        "Remote wipe acknowledged. Offline Complete / 7-day VERIFIED remain deferred. "
+        "Push delivery is PARTIAL (not Complete)."
     )
     return env(data, "Remote wipe acknowledged")
 

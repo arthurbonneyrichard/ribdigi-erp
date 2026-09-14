@@ -43,6 +43,8 @@ def serialize_device(row: m.OfflineDevice) -> dict[str, Any]:
         "wipe_pending": wipe_pending,
         "wipe_requested_at": getattr(row, "wipe_requested_at", None),
         "wipe_acked_at": getattr(row, "wipe_acked_at", None),
+        # Push subscription presence filled by API when loaded with push context.
+        "push_subscribed": None,
     }
 
 
@@ -166,8 +168,8 @@ async def request_remote_wipe(
     """Queue a remote IndexedDB wipe + soft lockdown (scaffold).
 
     Does **not** claim Offline Complete or push-delivery Complete. The client must
-    poll ``wipe_pending`` (or receive a future push) then clear local IndexedDB and
-    POST wipe/ack.
+    poll ``wipe_pending`` (or receive Web Push when configured) then clear local
+    IndexedDB and POST wipe/ack. Push delivery remains PARTIAL.
     """
     row = await revoke_device(db, tenant_id, device_id)
     now = datetime.utcnow()
