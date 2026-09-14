@@ -13,7 +13,7 @@
 
 ### Tip — first-class export / view_cost RBAC actions (2026-09-15)
 
-**As of tip:** _(updated after commit)_
+**As of tip:** 
 
 First-class `export` and `view_cost` actions landed in the RBAC engine
 (`ALLOWED_ACTIONS` + system role grants + dependency auto-`read`). Backend
@@ -28,7 +28,7 @@ billing Completes remain **MISSING**.
 
 ### Tip — % approval limits + store-scoped RBAC remaining checklist (2026-09-15)
 
-**As of tip:** `55f325010052768e9881d90e9b7f9f68c9ab1d60`
+**As of tip:** `8ce195a4cb64e173c9393bec949546cc6175101f`
 
 Percentage approval limits landed on expense/PR matrices (`min_percent` + expense
 category budget percent basis). ADR-005 remains **Complete** (flag default OFF).
@@ -41,7 +41,7 @@ where noted). Do not resume continuum dump spam as the default CONTINUE path.
 
 ### Tip — RBAC approval hardening + ADR-005 Complete (2026-09-15)
 
-**As of tip:** `55f325010052768e9881d90e9b7f9f68c9ab1d60`
+**As of tip:** `8ce195a4cb64e173c9393bec949546cc6175101f`
 
 ADR-005 attested **Complete** via automated flag-ON soak + POS store bind + honesty
 flags. `STORE_MEMBERSHIP_SCOPE_ENABLED` remains **false** by default (ops cutover;
