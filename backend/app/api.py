@@ -17055,6 +17055,7 @@ async def stores(
         stmt = stmt.where(m.Store.is_active.is_(True))
     rows = (await db.execute(stmt)).scalars().all()
     omit_branch = dashboard_scope_svc.omit_store_branch_assignment(managed)
+    omit_manager = dashboard_scope_svc.omit_store_manager_assignment(managed)
     out = []
     for s in rows:
         detail = await stores_svc.serialize_store_detail(db, s)
@@ -17067,6 +17068,8 @@ async def stores(
         )
         if omit_branch:
             detail = dashboard_scope_svc.redact_store_branch_assignment(detail)
+        if omit_manager:
+            detail = dashboard_scope_svc.redact_store_manager_assignment(detail)
         out.append(detail)
     return env(out)
 
@@ -17091,6 +17094,7 @@ async def stores_export(
         company_id=claims.get("company_id"),
         store_ids=scoped,
         omit_branch_id=dashboard_scope_svc.omit_store_branch_assignment(managed),
+        omit_manager_id=dashboard_scope_svc.omit_store_manager_assignment(managed),
     )
     return Response(
         content=text,
@@ -17283,6 +17287,8 @@ async def update_store(
     serialized = await stores_svc.serialize_store_detail(db, store)
     if dashboard_scope_svc.omit_store_branch_assignment(managed):
         serialized = dashboard_scope_svc.redact_store_branch_assignment(serialized)
+    if dashboard_scope_svc.omit_store_manager_assignment(managed):
+        serialized = dashboard_scope_svc.redact_store_manager_assignment(serialized)
     return env(serialized, "Store updated")
 
 

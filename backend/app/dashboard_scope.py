@@ -2035,20 +2035,43 @@ def assert_store_manager_assignment_write_denied(
     changing_manager: bool,
     message: str = "Store managers cannot assign or clear store managers.",
 ) -> None:
-    """403 when store_manager attempts company-level store manager_id assignment."""
+    """403 when store_manager attempts company-level store manager_id assignment.
+
+    List/export/patch JSON redacts ``manager_id`` via
+    ``redact_store_manager_assignment`` (same class as warehouse manager_id).
+    """
     if not changing_manager:
         return
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def omit_store_manager_assignment(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit store ``manager_id`` on JSON/CSV.
+
+    Manager assign/clear writes already denied. Managed-store list/export/patch
+    must not re-dump the company store-manager org assignment (including the
+    caller's own self-scope ``manager_id``). Name/phone/address/operating_hours
+    and scoped store ops remain.
+    """
+    return managed_ids is not None
+
+
+def redact_store_manager_assignment(payload: dict) -> dict:
+    """Null ``manager_id`` on a serialized store dict for store_manager."""
+    out = dict(payload)
+    if "manager_id" in out:
+        out["manager_id"] = None
+    return out
+
+
 def omit_stock_transfer_store_manager_assignment(managed_ids: list[str] | None) -> bool:
     """True when store_manager must omit transfer from/to store manager_ids.
 
-    Store ``manager_id`` assign/clear already denied; warehouse ``manager_id``
-    already redacted on WH JSON. Stock-transfer list/get/lifecycle + transfer
-    history must not re-dump the company store-manager org graph (including peer
-    stores on inbound/outbound transfers). Store/WH ids, qty, and status remain
-    for ops. Managed-store ``manager_id`` on store list/get remains (self-scope).
+    Store ``manager_id`` assign/clear already denied; store + warehouse
+    ``manager_id`` already redacted on list/get JSON. Stock-transfer
+    list/get/lifecycle + transfer history must not re-dump the company
+    store-manager org graph (including peer stores on inbound/outbound
+    transfers). Store/WH ids, qty, and status remain for ops.
     """
     return managed_ids is not None
 
@@ -2238,7 +2261,8 @@ def omit_store_branch_assignment(managed_ids: list[str] | None) -> bool:
 
     Branch assign/clear writes already denied; branches list GET already denied.
     List/export/patch must not re-dump the company store↔branch org link.
-    Name/phone/address/operating_hours/manager_id/is_active remain for managed-store ops.
+    Name/phone/address/operating_hours remain for managed-store ops
+    (``manager_id`` redacted separately via ``omit_store_manager_assignment``).
     """
     return managed_ids is not None
 

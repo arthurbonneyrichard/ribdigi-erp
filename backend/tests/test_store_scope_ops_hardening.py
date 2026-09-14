@@ -18152,6 +18152,86 @@ async def test_store_manager_tenant_sessions_read_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_own_sessions_and_notification_settings_allowed(
+    client, db_session
+):
+    """Per-user /auth/sessions + /notifications/settings remain for store_manager.
+
+    Intentional product ALLOW (not company dumps): caller-scoped self-service.
+    Tenant-wide session inventory stays denied. Prefs GET/PATCH/export bind to
+    claims.sub only — not Completes blockers for continuum dump closure.
+    """
+    ac, seed = client
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    login2 = await ac.post(
+        "/api/v1/auth/login",
+        json={
+            "email": "mgr@alpha.example.com",
+            "password": "SecurePass123!",
+            "tenant_id": "alpha",
+        },
+    )
+    assert login2.status_code == 200, login2.text
+
+    sessions = await ac.get("/api/v1/auth/sessions?status=active", headers=headers)
+    assert sessions.status_code == 200, sessions.text
+    rows = sessions.json()["data"]
+    assert len(rows) >= 1
+    for row in rows:
+        assert "user_email" not in row
+        assert "user_id" not in row
+        assert row.get("status") == "active"
+
+    exported = await ac.get("/api/v1/auth/sessions/export?status=active", headers=headers)
+    assert exported.status_code == 200, exported.text
+    assert "text/csv" in exported.headers.get("content-type", "")
+    assert "user_email" not in exported.text.splitlines()[0]
+    assert "user_id" not in exported.text.splitlines()[0]
+
+    denied_tenant = await ac.get("/api/v1/auth/tenant-sessions", headers=headers)
+    assert denied_tenant.status_code == 403, denied_tenant.text
+    assert denied_tenant.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    prefs = await ac.get("/api/v1/notifications/settings", headers=headers)
+    assert prefs.status_code == 200, prefs.text
+    prefs_data = prefs.json()["data"]
+    assert isinstance(prefs_data, dict)
+    assert prefs_data
+
+    patched = await ac.patch(
+        "/api/v1/notifications/settings",
+        headers=headers,
+        json={
+            "preferences": {
+                "system": {"dashboard": True, "email": False, "sms": False}
+            }
+        },
+    )
+    assert patched.status_code == 200, patched.text
+    assert patched.json()["data"]["system"]["email"] is False
+
+    prefs_export = await ac.get(
+        "/api/v1/notifications/settings/export", headers=headers
+    )
+    assert prefs_export.status_code == 200, prefs_export.text
+    assert "text/csv" in prefs_export.headers.get("content-type", "")
+    assert "system" in prefs_export.text
+
+    row = (
+        await db_session.execute(
+            select(m.NotificationPreference).where(
+                m.NotificationPreference.tenant_id == seed["t1"].id,
+                m.NotificationPreference.user_id == mgr.id,
+            )
+        )
+    ).scalar_one_or_none()
+    assert row is not None
+    assert row.preferences.get("system", {}).get("email") is False
+
+
+@pytest.mark.asyncio
 async def test_store_manager_jobs_catalog_read_denied(client, db_session):
     """GET /jobs + CSV export denied for store_manager; admin remains."""
     ac, seed = client
@@ -18794,13 +18874,19 @@ async def test_store_manager_tenant_dashboard_read_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_store_manager_assignment_denied(client, db_session):
-    """store_manager cannot assign/clear manager_id; other managed-store patches remain."""
+    """store_manager cannot assign/clear manager_id; list/export/patch redact it."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
     mgr = seed["mgr1"]
     admin = seed["admin1"]
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
 
     store = m.Store(
         tenant_id=tid,
@@ -18829,12 +18915,48 @@ async def test_store_manager_store_manager_assignment_denied(client, db_session)
     assert denied_clear.status_code == 403, denied_clear.text
     assert denied_clear.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
+    listed = await ac.get("/api/v1/stores", headers=headers)
+    assert listed.status_code == 200, listed.text
+    mine = next(r for r in listed.json()["data"] if r["id"] == store.id)
+    assert mine.get("manager_id") is None
+    assert mine["name"] == "Mgr Assign Deny Store"
+
+    admin_listed = await ac.get("/api/v1/stores", headers=admin_headers)
+    assert admin_listed.status_code == 200, admin_listed.text
+    admin_mine = next(r for r in admin_listed.json()["data"] if r["id"] == store.id)
+    assert admin_mine.get("manager_id") == mgr.id
+
+    exported = await ac.get("/api/v1/stores/export", headers=headers)
+    assert exported.status_code == 200, exported.text
+    assert "MGR-ASSIGN-DENY" in exported.text
+    sm_line = next(
+        line
+        for line in exported.text.splitlines()
+        if "MGR-ASSIGN-DENY" in line and "Mgr Assign Deny Store" in line
+    )
+    # code,name,address,phone,manager_id,branch_id,is_active
+    cols = next(csv.reader([sm_line]))
+    assert cols[0] == "MGR-ASSIGN-DENY"
+    assert cols[4] == ""
+
+    admin_exported = await ac.get("/api/v1/stores/export", headers=admin_headers)
+    assert admin_exported.status_code == 200, admin_exported.text
+    admin_line = next(
+        line
+        for line in admin_exported.text.splitlines()
+        if "MGR-ASSIGN-DENY" in line and "Mgr Assign Deny Store" in line
+    )
+    admin_cols = next(csv.reader([admin_line]))
+    assert admin_cols[4] == mgr.id
+
     ok_phone = await ac.patch(
         f"/api/v1/stores/{store.id}",
         headers=headers,
         json={"phone": "555-0142"},
     )
     assert ok_phone.status_code == 200, ok_phone.text
+    assert ok_phone.json()["data"].get("manager_id") is None
+    assert ok_phone.json()["data"]["phone"] == "555-0142"
 
     await db_session.refresh(store)
     assert store.manager_id == mgr.id
@@ -18895,7 +19017,7 @@ async def test_store_manager_store_branch_assignment_denied(client, db_session):
     mine = next(r for r in listed.json()["data"] if r["id"] == store.id)
     assert mine["name"] == "Mgr Branch Assign Deny Store"
     assert mine.get("branch_id") is None
-    assert mine.get("manager_id") == mgr.id
+    assert mine.get("manager_id") is None
 
     admin_listed = await ac.get("/api/v1/stores", headers=admin_headers)
     assert admin_listed.status_code == 200, admin_listed.text
@@ -18915,6 +19037,7 @@ async def test_store_manager_store_branch_assignment_denied(client, db_session):
     cols = next(csv.reader([sm_line]))
     assert cols[0] == "MGR-BR-ASSIGN"
     assert cols[1] == "Mgr Branch Assign Deny Store"
+    assert cols[4] == ""
     assert cols[5] == ""
 
     admin_exported = await ac.get("/api/v1/stores/export", headers=admin_headers)
@@ -18944,6 +19067,7 @@ async def test_store_manager_store_branch_assignment_denied(client, db_session):
     ok_body = ok_name.json()["data"]
     assert ok_body["name"] == "Mgr Branch Assign Deny Store Updated"
     assert ok_body.get("branch_id") is None
+    assert ok_body.get("manager_id") is None
 
     await db_session.refresh(store)
     assert store.branch_id == branch.id
@@ -20487,11 +20611,12 @@ async def test_store_manager_stock_transfer_store_manager_ids_redacted(client, d
     assert hist_row.get("from_store_manager_id") is None
     assert hist_row.get("to_store_manager_id") is None
 
-    # Managed-store list still exposes self-scope manager_id (intentionally open).
+    # Managed-store list redacts manager_id (self-scope no longer dumped).
     stores = await ac.get("/api/v1/stores", headers=headers)
     assert stores.status_code == 200, stores.text
     store_row = next(r for r in stores.json()["data"] if r["id"] == mine.id)
-    assert store_row.get("manager_id") == mgr.id
+    assert store_row.get("manager_id") is None
+    assert store_row["name"] == "Xfer Mgr From"
 
 
 @pytest.mark.asyncio
