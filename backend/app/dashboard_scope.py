@@ -1894,7 +1894,7 @@ def omit_sales_salesperson_email(managed_ids: list[str] | None) -> bool:
     Users list/get + CSV export already denied (company org roster). Sales-by-
     salesperson JSON/CSV must not re-dump staff email after movement
     ``created_by_email`` / ``created_by_name`` redacts. Revenue / sale counts /
-    ``user_id`` / ``full_name`` remain for store ops (name is a later slice).
+    ``user_id`` remain for store ops; ``full_name`` is redacted separately.
     """
     return managed_ids is not None
 
@@ -1913,13 +1913,39 @@ def redact_sales_salesperson_email(payload: dict) -> dict:
     return out
 
 
+def omit_sales_salesperson_full_name(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit salesperson-report staff ``full_name``.
+
+    Users list/get already denied; salesperson ``email`` already redacted.
+    Sales-by-salesperson JSON/CSV must not re-dump org roster display names.
+    Revenue / sale counts / ``user_id`` remain for store ops (``role`` later).
+    """
+    return managed_ids is not None
+
+
+def redact_sales_salesperson_full_name(payload: dict) -> dict:
+    """Null ``full_name`` on a salesperson row dict (and nested ``salespeople``)."""
+    out = dict(payload)
+    if "full_name" in out:
+        out["full_name"] = None
+    people = out.get("salespeople")
+    if isinstance(people, list):
+        out["salespeople"] = [
+            redact_sales_salesperson_full_name(row) if isinstance(row, dict) else row
+            for row in people
+        ]
+    return out
+
+
 def apply_sales_salesperson_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager sales-salesperson report redacts (staff email)."""
+    """Apply store_manager sales-salesperson report redacts (email + full_name)."""
     out = payload
     if omit_sales_salesperson_email(managed_ids):
         out = redact_sales_salesperson_email(out)
+    if omit_sales_salesperson_full_name(managed_ids):
+        out = redact_sales_salesperson_full_name(out)
     return out
 
 
