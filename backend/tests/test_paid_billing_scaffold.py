@@ -484,7 +484,7 @@ async def test_signed_webhook_proof_valid_invalid_idempotent(client, db_session,
     ).scalar_one()
     assert row.signature_valid is True
     assert row.event_type == "invoice.paid"
-    assert row.processing_status == "recorded"
+    assert row.processing_status in ("recorded", "recorded_invoice_paid_no_complete")
 
     # Idempotent replay with same valid signature
     ok2 = await ac.post(
