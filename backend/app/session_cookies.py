@@ -12,6 +12,10 @@ When on:
 
 This module alone does **not** close SEC-M2/M5: frontend must stop storing
 tokens in ``localStorage`` and rely on cookies end-to-end.
+
+Phase C: when the flag is ON, login/2FA/refresh JSON responses null out
+``access_token`` / ``refresh_token`` so clients cannot keep writing Bearer
+tokens to storage. Flag OFF keeps returning JWTs in JSON (backward compat).
 """
 
 from __future__ import annotations
@@ -34,6 +38,26 @@ _UNSAFE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 
 def cookies_enabled() -> bool:
     return bool(getattr(settings, "AUTH_HTTPONLY_COOKIES_ENABLED", False))
+
+
+def json_auth_tokens(*, access_token: str, refresh_token: str) -> dict[str, Any]:
+    """Fields for auth JSON bodies under dual-mode.
+
+    Flag OFF: return Bearer tokens in the body (legacy localStorage clients).
+    Flag ON (Phase C): return null tokens — session rides httpOnly cookies only.
+    Callers still pass real JWTs into ``attach_auth_cookies_if_enabled``.
+    """
+    if cookies_enabled():
+        return {
+            "access_token": None,
+            "refresh_token": None,
+            "cookie_session": True,
+        }
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "cookie_session": False,
+    }
 
 
 def cookie_secure() -> bool:

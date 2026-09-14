@@ -1,13 +1,14 @@
 /**
- * SEC-M2 / SEC-M5 Phase B — dual-mode session helpers.
+ * SEC-M2 / SEC-M5 Phase B/C — dual-mode session helpers.
  *
  * When the server returns `cookie_session: true` (flag ON), the SPA must not
  * persist access/refresh JWTs in localStorage. Most traffic should ride
  * httpOnly cookies via `credentials: 'include'` + CSRF.
  *
- * Flag default remains OFF on the server; Bearer dual-mode stays supported via
- * `getBearerToken()` until Phase C staging soak stops relying on JSON token
- * return + localStorage when cookies are enabled.
+ * Phase C (backend): when the flag is ON, login/2FA/refresh JSON returns null
+ * access/refresh tokens so clients cannot keep writing Bearer tokens.
+ * Flag default remains OFF; Bearer dual-mode via `getBearerToken()` remains
+ * for backward compat until staging soak flips the flag with evidence.
  */
 
 export const COOKIE_SESSION_MARKER = 'ribdigi_cookie_session';

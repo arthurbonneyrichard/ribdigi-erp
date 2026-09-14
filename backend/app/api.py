@@ -1348,15 +1348,13 @@ async def login(
     )
     return env(
         {
-            "access_token": access,
-            "refresh_token": refresh,
+            **cookie_svc.json_auth_tokens(access_token=access, refresh_token=refresh),
             "token_type": "Bearer",
             "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             "must_enroll_2fa": totp_svc.role_requires_2fa(user.role) and not has_mfa,
             "principal": principal,
             "redirect_path": home_path_for_principal(principal),
             "user": _auth_user_payload(user, extra={"webauthn_enabled": has_webauthn}),
-            "cookie_session": cookie_svc.cookies_enabled(),
         }
     )
 
@@ -1415,15 +1413,13 @@ async def auth_2fa_verify(
     )
     return env(
         {
-            "access_token": access,
-            "refresh_token": refresh,
+            **cookie_svc.json_auth_tokens(access_token=access, refresh_token=refresh),
             "token_type": "Bearer",
             "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             "must_enroll_2fa": False,
             "principal": principal,
             "redirect_path": home_path_for_principal(principal),
             "user": _auth_user_payload(user, extra={"totp_enabled": True}),
-            "cookie_session": cookie_svc.cookies_enabled(),
         }
     )
 
@@ -1594,8 +1590,7 @@ async def webauthn_login_verify(
     )
     return env(
         {
-            "access_token": access,
-            "refresh_token": refresh,
+            **cookie_svc.json_auth_tokens(access_token=access, refresh_token=refresh),
             "token_type": "Bearer",
             "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             "must_enroll_2fa": False,
@@ -1604,7 +1599,6 @@ async def webauthn_login_verify(
             "user": _auth_user_payload(
                 user, extra={"totp_enabled": bool(user.totp_enabled), "webauthn_enabled": True}
             ),
-            "cookie_session": cookie_svc.cookies_enabled(),
         }
     )
 
@@ -1743,11 +1737,9 @@ async def refresh(
     )
     return env(
         {
-            "access_token": access,
-            "refresh_token": refresh_raw,
+            **cookie_svc.json_auth_tokens(access_token=access, refresh_token=refresh_raw),
             "token_type": "Bearer",
             "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-            "cookie_session": cookie_svc.cookies_enabled(),
         }
     )
 
