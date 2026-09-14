@@ -317,7 +317,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `dee632b5da4ec37ae6f3311941fa29d086619d4e` — `docs: bump PR #303 tip to print legal_name/trading_name redact honesty` (feat ancestry `6f0e6f351b`).
+**As of tip:** `7c5518992d77b4d8ed40213dce528e96ee37b0bd` — `docs: align PR #303 As of tip to print legal_name/trading_name redact honesty HEAD` (feat ancestry `6f0e6f351b`).
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
