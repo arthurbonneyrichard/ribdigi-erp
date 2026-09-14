@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api, authHeaders } from '../../lib/api';
+import { clearLoginSession } from '../../lib/authSession';
 import { formatDate } from '../../lib/format';
 import {
   clearOfflineAuthEnvelope,
@@ -308,8 +309,7 @@ export default function Page() {
       });
       setTenant(r.data);
       setMessage(r.message || 'Suspended');
-      localStorage.removeItem('token');
-      localStorage.removeItem('refresh_token');
+      clearLoginSession();
     } catch (err: any) {
       setError(err.message);
     }

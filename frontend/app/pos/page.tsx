@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import BarcodeCameraScanner from '../../components/BarcodeCameraScanner';
 import Shell from '../../components/Shell';
-import { api, authHeaders } from '../../lib/api';
+import { api, apiFetch } from '../../lib/api';
 import {
   DEFAULT_CATALOG_TTL_MS,
   getOfflineCatalogFreshness,
@@ -76,14 +76,8 @@ type Session = {
   variance?: number | null;
 };
 
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-
 async function downloadReceiptPdf(saleId: string, paper: string) {
-  const token = localStorage.getItem('token');
-  const tenant = localStorage.getItem('tenant');
-  const res = await fetch(`${apiBase}/pos/sales/${saleId}/receipt?format=pdf&paper=${paper}`, {
-    headers: authHeaders(),
-  });
+  const res = await apiFetch(`/pos/sales/${saleId}/receipt?format=pdf&paper=${paper}`);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.detail || body.message || 'PDF download failed');
@@ -261,11 +255,7 @@ export default function Page() {
   async function downloadPosCsv(path: string, filename: string) {
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}${path}`, {
-        headers: authHeaders(),
-      });
+      const res = await apiFetch(path);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.detail || body.message || `${filename} export failed`);
@@ -967,15 +957,11 @@ export default function Page() {
           <button
             type="button"
             onClick={async () => {
-              const token = localStorage.getItem('token') || '';
-              const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
               const qs =
                 posSessionStatusFilter === 'open' || posSessionStatusFilter === 'closed'
                   ? `?status=${posSessionStatusFilter}`
                   : '';
-              const res = await fetch(`${apiBase}/pos/sessions/export${qs}`, {
-                headers: { Authorization: `Bearer ${token}` },
-              });
+              const res = await apiFetch(`/pos/sessions/export${qs}`);
               if (!res.ok) {
                 setError(await res.text());
                 return;

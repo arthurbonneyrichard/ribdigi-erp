@@ -1,3 +1,10 @@
+import {
+  getBearerToken,
+  prefersCookieSession,
+  readBrowserCookie,
+  CSRF_COOKIE_NAME,
+} from './authSession';
+
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 export class ApiError extends Error {
@@ -12,31 +19,40 @@ export class ApiError extends Error {
   }
 }
 
-function readCookie(name: string): string | null {
-  if (typeof document === 'undefined') return null;
-  const prefix = `${name}=`;
-  const hit = document.cookie.split('; ').find((row) => row.startsWith(prefix));
-  if (!hit) return null;
-  return decodeURIComponent(hit.slice(prefix.length));
-}
-
 /** Auth + workspace headers for raw fetch/download calls (mirrors `api()`). */
 export function authHeaders(extra?: Record<string, string>): Record<string, string> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const token = getBearerToken();
   const tenant = typeof window !== 'undefined' ? localStorage.getItem('tenant') : null;
   const workspaceKind =
     typeof window !== 'undefined' ? localStorage.getItem('workspace_kind') : null;
   const companyId = typeof window !== 'undefined' ? localStorage.getItem('company_id') : null;
   const headers: Record<string, string> = { ...(extra || {}) };
-  // Dual-mode (SEC-M2 foundation): Bearer from localStorage remains primary until
-  // httpOnly cookie migration completes; CSRF header is sent when cookie present.
+  // Phase B: prefer cookie session — omit Bearer when marker/CSRF indicates cookies.
+  // Dual-mode: Bearer still sent when localStorage token exists and cookie mode is off.
   if (token) headers.Authorization = `Bearer ${token}`;
   if (tenant) headers['X-Tenant-ID'] = tenant;
   if (workspaceKind) headers['X-Workspace-Kind'] = workspaceKind;
   if (companyId && workspaceKind === 'company') headers['X-Company-ID'] = companyId;
-  const csrf = readCookie('ribdigi_csrf');
+  const csrf = readBrowserCookie(CSRF_COOKIE_NAME);
   if (csrf) headers['X-CSRF-Token'] = csrf;
   return headers;
+}
+
+/**
+ * Authenticated fetch with credentials + auth headers.
+ * Prefer this (or `api()`) over raw `localStorage.getItem('token')` + Bearer.
+ */
+export async function apiFetch(path: string, opts: RequestInit = {}): Promise<Response> {
+  const headers: Record<string, string> = {
+    ...authHeaders(opts.headers as Record<string, string> | undefined),
+  };
+  const url = path.startsWith('http') ? path : base + path;
+  return fetch(url, {
+    ...opts,
+    headers,
+    cache: opts.cache ?? 'no-store',
+    credentials: 'include',
+  });
 }
 
 export async function api<T = any>(path: string, opts: RequestInit = {}): Promise<T> {
@@ -65,3 +81,5 @@ export async function api<T = any>(path: string, opts: RequestInit = {}): Promis
   }
   return body as T;
 }
+
+export { prefersCookieSession, getBearerToken };

@@ -67,10 +67,10 @@ Ribdigi ERP is a multi-tenant FastAPI + Next.js SaaS with shared-schema `tenant_
 | SEC-H4 | High | Rate limit trusts client `X-Forwarded-For` | FIXED |
 | SEC-H5 | High | CORS omits `X-Workspace-Kind` / `X-Company-ID` | FIXED |
 | SEC-M1 | Medium | Upload trusts `Content-Type` only | FIXED |
-| SEC-M2 | Medium | Tokens in `localStorage` | OPEN (foundation PARTIAL — flag OFF) |
+| SEC-M2 | Medium | Tokens in `localStorage` | OPEN (Phase B PARTIAL — flag OFF; login skips LS when cookie_session) |
 | SEC-M3 | Medium | Open `POST /tenants` self-service | FIXED |
 | SEC-M4 | Medium | TOTP/backup Fernet JWT fallback + static salt | FIXED |
-| SEC-M5 | Medium | `ribdigi_principal` cookie is UX boundary only | OPEN (foundation PARTIAL — flag OFF) |
+| SEC-M5 | Medium | `ribdigi_principal` cookie is UX boundary only | OPEN (Phase B PARTIAL — flag OFF; principal still UX-only) |
 | SEC-L1 | Low | Dev default `JWT_SECRET_KEY=change-me` | Accepted with prod gate |
 | SEC-L2 | Low | Unauthenticated deep health posture | OPEN |
 | SEC-L3 | Low | Example local credentials in `.env.example` | Accepted |
@@ -147,6 +147,7 @@ See Phase 1 artifact for SEC-M1…M5 and SEC-L1…L3 (uploads magic bytes, local
 | 3b | M4 | Production requires dedicated TOTP/backup Fernet keys; runtime fail-closed | `test_sec_m4_fernet_keys.py` | Implemented |
 | 3c | M3 | Gate `POST /tenants` behind `ALLOW_PUBLIC_TENANT_SIGNUP` (prod default false) | `test_sec_m3_tenant_signup_gate.py` | Implemented |
 | 3d | M2/M5 | Dual-mode httpOnly cookie + CSRF foundation (`AUTH_HTTPONLY_COOKIES_ENABLED` default **false**); ADR + cookie auth path + `credentials: 'include'` scaffold | `test_sec_m2_m5_cookie_session.py`, `docs/ADR_SESSION_COOKIE_DUAL_MODE.md` | **PARTIAL** — M2/M5 still OPEN |
+| 3e | M2/M5 | Phase B: `authSession` helpers; login skips LS tokens when `cookie_session`; central `api`/`apiFetch` prefer cookies; high-traffic downloads migrated | `test_sec_m2_m5_cookie_phase_b.py`, `frontend/lib/authSession.ts` | **PARTIAL** — M2/M5 still OPEN |
 
 ---
 
@@ -167,7 +168,7 @@ See Phase 1 artifact for SEC-M1…M5 and SEC-L1…L3 (uploads magic bytes, local
 - Phase 3 Mediums (M1/M3/M4) tip merge: `/opt/cursor/artifacts/sec_m1_m3_m4_tip_merge_pytest.log` (**49 passed**) — merge commit `927c034e24` on PR #303 tip
 - Existing suites: `pytest -m "security or isolation"`
 
-**Deferred (not FIXED):** SEC-M2 / SEC-M5 require httpOnly session cookies + CSRF + frontend `credentials` migration across ~33 token `localStorage` call sites — too large for a safe single slice; remain OPEN under 🟠.
+**Deferred (not FIXED):** SEC-M2 / SEC-M5 Phase B landed client helpers + login skip + central `apiFetch`, but remaining raw `localStorage.getItem('token')` sites and `ribdigi_principal` UX cookie keep both OPEN under 🟠.
 
 ---
 
@@ -182,11 +183,11 @@ Allowed engagement shorthand: ✅ HARDENED · ⚠️ HIGH REMAINING · 🛑 CRIT
 
 🟠 SECURITY FIXES REQUIRED BEFORE LAUNCH
 
-**Rationale:** No Critical and no unresolved High remain after Phase 2 (SEC-H1…H5 fixed; phase2 suites green). **SEC-M1**, **SEC-M3**, and **SEC-M4** are **FIXED**. Two Medium findings remain open (browser session architecture). Phase 3d landed a **dual-mode httpOnly cookie + CSRF foundation** behind `AUTH_HTTPONLY_COOKIES_ENABLED` (default **false**) — see `docs/ADR_SESSION_COOKIE_DUAL_MODE.md`. This does **not** close M2/M5: tokens still live in `localStorage` and `ribdigi_principal` remains UX-only.
+**Rationale:** No Critical and no unresolved High remain after Phase 2 (SEC-H1…H5 fixed; phase2 suites green). **SEC-M1**, **SEC-M3**, and **SEC-M4** are **FIXED**. Two Medium findings remain open (browser session architecture). Phase 3d–3e landed dual-mode httpOnly cookie foundation + Phase B client migration (`AUTH_HTTPONLY_COOKIES_ENABLED` default **false**) — see `docs/ADR_SESSION_COOKIE_DUAL_MODE.md`. This does **not** close M2/M5: remaining raw token `localStorage` call sites exist and `ribdigi_principal` remains UX-only.
 
 | ID | Why it blocks a 🟡/🟢 claim |
 |----|-----------------------------|
-| SEC-M2 | Access/refresh tokens in `localStorage` — XSS session theft exposure (cookie path scaffold only) |
+| SEC-M2 | Access/refresh tokens still writable to `localStorage` on Bearer path; remaining raw fetch sites (cookie path scaffold + Phase B helpers only) |
 | SEC-M5 | `ribdigi_principal` UX-only; not an httpOnly auth boundary |
 | SEC-L2 | Deep health posture — supporting Low residual |
 

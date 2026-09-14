@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { api } from '../lib/api';
+import { api, apiFetch } from '../lib/api';
+import { clearLoginSession, hasAuthSession } from '../lib/authSession';
 import { canReadModule } from '../lib/rbac';
 import {
   getSelectedStoreId,
@@ -2399,8 +2400,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const token = localStorage.getItem('token');
-    if (!token) return;
+    if (!hasAuthSession()) return;
     const timeoutMs = Math.max(5, idleMinutes) * 60 * 1000;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let loggingOut = false;
@@ -2413,8 +2413,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       } catch {
         // Still clear local credentials if the server call fails (expired token, etc.)
       }
-      localStorage.removeItem('token');
-      localStorage.removeItem('refresh_token');
+      clearLoginSession();
       clearWorkspaceContext();
       window.location.href = '/';
     }
@@ -2440,8 +2439,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     } catch {
       // clear local session anyway
     }
-    localStorage.removeItem('token');
-    localStorage.removeItem('refresh_token');
+    clearLoginSession();
     clearWorkspaceContext();
     window.location.href = '/';
   }
@@ -2846,12 +2844,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                     onClick={async () => {
                       // Stage 143 O1 — onboarding checklist CSV
                       try {
-                        const token = localStorage.getItem('token') || '';
-                        const apiBase =
-                          process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-                        const res = await fetch(`${apiBase}/onboarding/checklist/export`, {
-                          headers: { Authorization: `Bearer ${token}` },
-                        });
+                        const res = await apiFetch('/onboarding/checklist/export');
                         if (!res.ok) return;
                         const blob = await res.blob();
                         const a = document.createElement('a');
