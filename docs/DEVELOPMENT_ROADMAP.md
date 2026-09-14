@@ -11,6 +11,23 @@
 
 ---
 
+### Tip — audit expense approval threshold redact (2026-09-15)
+
+**As of tip:** `70c26e4252c11c68dbd241789512528ca2907aea`
+Scoped audit list/export `details` expense approval `threshold` redact for
+`store_manager` (`expense_submitted` / `expense_auto_approved` on
+`GET /audit-logs` + CSV; expense settings GET/PATCH/export already denied;
+amount / category / `approval_steps_required` / reason / `store_id` remain;
+admin keeps `threshold`). Tenant SMTP audit `smtp_host` / `smtp_from_email`
+verified **out of SM scope** (no `store_id`; not SM-authored). Continuum stays
+**PARTIAL**. Store-scoped RBAC Complete remains **MISSING** (intentional ALLOWs
++ residual backlog + product sign-off + staging soak). Offline / 7-day /
+go-live / paid billing Completes remain **MISSING**. Next CONTINUE: residual
+continuum field-leak (named surface) or product ALLOW sign-off / staging soak
+docs.
+
+---
+
 ### Tip — audit store manager_id redact (2026-09-15)
 
 **As of tip:** `238614c638b8e0c51ef9662b3faf254d02f8821e`

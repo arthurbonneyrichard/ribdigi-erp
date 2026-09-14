@@ -34,6 +34,7 @@ Honesty flags (`GET /me/store-memberships` etc.):
 - Scoped audit `details` emailed_to / send-recipient re-dump **closed** (`to` on `invoice_sent`/`pos_receipt_sent`; nested `delivery.to` on `po_sent` on `/audit-logs` JSON+CSV; document `emailed_to` already redacted)
 - Scoped audit `details` CLE master re-dump **closed** (`credit_limit` / `available` / `current_balance` / `projected_balance` / `additional_amount` on `/audit-logs` JSON+CSV; FX already closed)
 - Scoped audit `details` store manager_id re-dump **closed** (`expected_manager_id` on `transfer_manager_override`; sibling `manager_id` / `from_store_manager_id` / `to_store_manager_id` on `/audit-logs` JSON+CSV; store/WH/transfer manager ids already redacted)
+- Scoped audit `details` expense approval threshold re-dump **closed** (`threshold` on `expense_submitted` / `expense_auto_approved` on `/audit-logs` JSON+CSV; expense settings GET already denied; tenant SMTP audit host/from verified out of SM scope)
 - Intentional product ALLOWs retained: company/tenant logo binary GET; caller-scoped `/auth/sessions` + `/notifications/settings`
 - **Living store-scope test matrix** (indexed suite + CI `store_scope` marker) covering cross-store deny, membership-on soak, cashier fail-closed, manager union, intentional ALLOWs, plus breadth index into deep modules
 
@@ -41,7 +42,7 @@ Honesty flags (`GET /me/store-memberships` etc.):
 
 Engineering (closable without ops theater):
 
-1. **Residual continuum field leaks** — only as product-prioritized slices (paused as default CONTINUE path; not dump spam). Empty backlog or explicit ALLOW list with product sign-off. Latest closed: audit store manager_id.
+1. **Residual continuum field leaks** — only as product-prioritized slices (paused as default CONTINUE path; not dump spam). Empty backlog or explicit ALLOW list with product sign-off. Latest closed: audit expense approval threshold (SMTP host/from out of SM scope).
 2. **First-class `export` / `view_cost` actions** — **Complete** (engine slice for these actions): engine + system role grants + deps auto-`read`; commerce/dashboard/ops/AI **and** admin/settings/catalog CSV paths gated on module `export` (not mere `read`); report/BI/AI/stock-count cost omit helpers unified on `inventory:view_cost` / `business_insights:view_cost` (legacy managed/WH fallback retained when claims omitted). Intentional non-module gates retained: admin `require_roles` dumps (tenant settings/backup/api-keys/webhooks/jobs) and caller-scoped `/auth/sessions` + passkeys exports. Does **not** imply overall RBAC Complete or store-scoped RBAC Complete.
 3. **Living store-scope test matrix** — **landed** (`ops/mvp/store-scope-rbac-matrix.json` + `test_store_scope_rbac_matrix.py` + CI `-m store_scope`). Documents/enforces cross-store deny, membership soak, cashier fail-closed, manager union, intentional ALLOWs; indexes deep continuum modules. **Not** store-scoped RBAC Complete by itself.
 4. **Temp membership / elevation / break-glass** — temp membership `expires_at` **Complete** (column + scope exclusion + admin UI + tests); elevation / break-glass MVP **Complete** (time-bounded grant, required reason, grantor subset, audit, auto-expiry ≤24h, early revoke, deny after expiry — not overall RBAC Complete).
