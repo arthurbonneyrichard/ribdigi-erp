@@ -3659,7 +3659,8 @@ def omit_sales_invoice_exchange_rate(managed_ids: list[str] | None) -> bool:
     Exchange-rates GET already denied; sales-invoice ``currency`` already
     redacted; credit payment ``exchange_rate`` already redacted. Sales-invoice
     list/get/export/print JSON must not re-dump company FX rate-table identity.
-    Totals / status / balance remain; admin keeps ``exchange_rate``; server-side
+    Totals / status / balance remain; admin keeps ``exchange_rate``;
+    ``balance_due_base`` is redacted separately (FX-base identity); server-side
     HTML/PDF/text embeds may retain the rate (resolved before JSON redacts).
     """
     return managed_ids is not None
