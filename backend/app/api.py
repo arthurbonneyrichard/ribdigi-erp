@@ -14819,6 +14819,10 @@ async def reports_export(
         dashboard_scope_svc.assert_accounting_reports_branch_filter_denied(
             managed, branch_id=branch_id
         )
+    if report_type == "tax_filing":
+        dashboard_scope_svc.assert_tax_filing_jurisdiction_filter_denied(
+            managed, jurisdiction=jurisdiction
+        )
     single, _multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     if warehouse_id:
@@ -16642,6 +16646,9 @@ async def reports_tax_filing(
     company_id = claims.get("company_id")
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
+    dashboard_scope_svc.assert_tax_filing_jurisdiction_filter_denied(
+        managed, jurisdiction=jurisdiction
+    )
     fd, td, meta = reports_svc.resolve_report_period(
         period=period,
         year=year,

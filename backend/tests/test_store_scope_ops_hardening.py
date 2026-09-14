@@ -5836,19 +5836,8 @@ async def test_store_manager_tax_filing_jurisdiction_redacted(client, db_session
     assert "output_tax" in mgr_data or "filing_boxes" in mgr_data or mgr_gov.get("boxes")
     assert (mgr_gov.get("header") or {}).get("taxpayer_name")
 
-    # Government export builds the same pack; ensure jurisdiction stays redacted
-    # on the JSON path used before CSV/XLSX packaging (export applies the same
-    # apply_tax_filing_manager_redacts helper).
-    mgr_ng = await ac.get(
-        "/api/v1/reports/tax/filing",
-        headers=headers,
-        params={"jurisdiction": "NG"},
-    )
-    assert mgr_ng.status_code == 200, mgr_ng.text
-    mgr_ng_data = mgr_ng.json()["data"]
-    assert mgr_ng_data.get("jurisdiction") is None
-    assert mgr_ng_data.get("supported_jurisdictions") == []
-    assert (mgr_ng_data.get("government") or {}).get("jurisdiction") is None
+    # Explicit jurisdiction query is denied separately (company jurisdiction probe);
+    # see test_store_manager_tax_filing_jurisdiction_filter_denied.
 
     mgr_csv = await ac.get(
         "/api/v1/reports/export",
@@ -5859,6 +5848,69 @@ async def test_store_manager_tax_filing_jurisdiction_redacted(client, db_session
     # Neutral pack CSV body must not re-dump tenant jurisdiction selection.
     assert "jurisdiction: NG" not in mgr_csv.text
     assert "supported_jurisdictions" not in mgr_csv.text.lower()
+
+
+@pytest.mark.asyncio
+async def test_store_manager_tax_filing_jurisdiction_filter_denied(client, db_session):
+    """Tax filing jurisdiction query/export filter denied for store_manager.
+
+    GET /tenants/me already denied; filing JSON already redacts jurisdiction /
+    supported_jurisdictions / government.jurisdiction. Query jurisdiction on
+    /reports/tax/filing (+ reports/export tax_filing) must not probe company
+    jurisdiction selection. Unfiltered default scoped filing remains; admin
+    may filter.
+    """
+    ac, seed = client
+    tenant = seed["t1"]
+    tenant.tax_jurisdiction = "NG"
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    ok = await ac.get("/api/v1/reports/tax/filing", headers=headers)
+    assert ok.status_code == 200, ok.text
+    assert ok.json()["data"].get("jurisdiction") is None
+
+    denied = await ac.get(
+        "/api/v1/reports/tax/filing",
+        headers=headers,
+        params={"jurisdiction": "NG"},
+    )
+    assert denied.status_code == 403, denied.text
+    body = denied.json()
+    detail = body.get("detail") or body
+    if isinstance(detail, dict):
+        assert detail.get("code") == "STORE_SCOPE_DENIED"
+    else:
+        assert "STORE_SCOPE_DENIED" in str(detail) or "jurisdiction" in str(detail).lower()
+
+    denied_alt = await ac.get(
+        "/api/v1/reports/tax/filing",
+        headers=headers,
+        params={"jurisdiction": "GH"},
+    )
+    assert denied_alt.status_code == 403, denied_alt.text
+
+    denied_export = await ac.get(
+        "/api/v1/reports/export",
+        headers=headers,
+        params={"report_type": "tax_filing", "format": "csv", "jurisdiction": "NG"},
+    )
+    assert denied_export.status_code == 403, denied_export.text
+
+    admin_ok = await ac.get(
+        "/api/v1/reports/tax/filing",
+        headers=admin_headers,
+        params={"jurisdiction": "NG"},
+    )
+    assert admin_ok.status_code == 200, admin_ok.text
+    assert admin_ok.json()["data"].get("jurisdiction") == "NG"
 
 
 @pytest.mark.asyncio

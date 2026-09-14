@@ -4216,6 +4216,32 @@ def assert_accounting_reports_branch_filter_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_tax_filing_jurisdiction_filter_denied(
+    managed_ids: list[str] | None,
+    *,
+    jurisdiction: str | None,
+    message: str = (
+        "Store managers cannot filter tax filing by jurisdiction; "
+        "omit jurisdiction, or use the default scoped filing pack "
+        "without jurisdiction master probe."
+    ),
+) -> None:
+    """403 when store_manager passes ``jurisdiction`` on tax filing / export.
+
+    ``GET /tenants/me`` already denied (``tax_jurisdiction``); filing JSON/CSV
+    already redact ``jurisdiction`` / ``supported_jurisdictions`` /
+    ``government.jurisdiction``. Query ``jurisdiction`` on
+    ``GET /reports/tax/filing`` (+ ``/reports/export`` ``tax_filing``) still
+    probes company jurisdiction selection (and selects alternate government
+    packs). Unfiltered default scoped filing remains; admin may filter.
+    """
+    if managed_ids is None:
+        return
+    if not (jurisdiction or "").strip():
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_product_variants_export_denied(
     managed_ids: list[str] | None,
     *,
