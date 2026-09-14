@@ -342,7 +342,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `4afc9b86e4dd1fd3d62d5d577c55859a5c605a76` — `feat(rbac): redact sales-invoice balance_due_base for store_manager` (feat ancestry sales-invoice `balance_due_base` `9baec24d88` + aging document `balance_due_base` `843f16dafa` + accounting reports branch filter `baf6e4b84b` + credit-aging document `exchange_rate` `abe20b58a4` + purchase-invoice `exchange_rate` `0d97de259c` + sales-invoice `exchange_rate` `877db22150` + credit payment `exchange_rate` `398fe65b2e` + expenses department filter `1383d106c2` + expenses-summary category filter `cd81d2f267` + AI document `category_id` `2116d84288`).
+**As of tip:** `6792349b000de7888c3eb458245d529137a1f99f` — `feat(rbac): redact sales-invoice balance_due_base for store_manager` (feat ancestry sales-invoice `balance_due_base` `9baec24d88` + aging document `balance_due_base` `843f16dafa` + accounting reports branch filter `baf6e4b84b` + credit-aging document `exchange_rate` `abe20b58a4` + purchase-invoice `exchange_rate` `0d97de259c` + sales-invoice `exchange_rate` `877db22150` + credit payment `exchange_rate` `398fe65b2e` + expenses department filter `1383d106c2` + expenses-summary category filter `cd81d2f267` + AI document `category_id` `2116d84288`).
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
