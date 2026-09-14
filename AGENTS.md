@@ -353,7 +353,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `12a6c3f6c354fa59bd5cc677c9170612021452d3` — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL**; ADR-005 membership **PARTIAL** (scaffold + admin UI + flag-gated scope wire + cashier POS/store-list fail-closed default OFF — Complete still **MISSING**); paid billing **PARTIAL** (ADR-002 portal session create + signed webhook proof — Complete still **MISSING**); Offline Complete still **MISSING**. Cookie flag default remains OFF (ops enable cutover). Continuum CLE honesty remains **PARTIAL**.
+**As of tip:** `25a5460e1f363c90b16758d397bbd9a531627cd4` — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL**; ADR-005 membership **PARTIAL** (scaffold + admin UI + flag-gated scope wire + cashier POS/store-list fail-closed default OFF — Complete still **MISSING**); paid billing **PARTIAL** (ADR-002 portal session create + signed webhook proof — Complete still **MISSING**); Offline Complete still **MISSING**. Cookie flag default remains OFF (ops enable cutover). Continuum CLE honesty remains **PARTIAL**.
 **Security:** no open Critical/High/Medium. Do not claim go-live Completes. Flag OFF in prod examples is intentional until ops cutover (`docs/sec_m2_staging_soak_checklist.md`).  
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
