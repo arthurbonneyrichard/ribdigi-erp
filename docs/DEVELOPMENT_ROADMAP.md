@@ -11,6 +11,22 @@
 
 ---
 
+### Tip — audit details FX redact (2026-09-15)
+
+**As of tip:** `60c5e751410d0cd1e1c2778663ea7008830800cc`
+Scoped audit list/export `details` FX redact for `store_manager`
+(`currency` / `exchange_rate` / `total_base` / `invoice_total_base` /
+`balance_due_base` / `fx_gain_loss` / `settlement_base` on `GET /audit-logs`
++ CSV; amounts / invoice numbers / `store_id` remain). Invoice/payment/aging/CLE
+surfaces already redacted; admin keeps FX in details. Continuum stays
+**PARTIAL**. Store-scoped RBAC Complete remains **MISSING** (intentional ALLOWs
++ residual backlog + product sign-off + staging soak). Offline / 7-day /
+go-live / paid billing Completes remain **MISSING**. Next CONTINUE: residual
+continuum field-leak (named surface) or product ALLOW sign-off / staging soak
+docs.
+
+---
+
 ### Tip — concurrent approval stress pack (2026-09-15)
 
 **As of tip:** `4911f37e0144e80d72b105f5308d09e7578872f7`
