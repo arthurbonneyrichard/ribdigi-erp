@@ -1308,7 +1308,11 @@ export default function Page() {
             </option>
           ))}
         </select>
-        {selected?.has_image && <p className="muted">Has primary image</p>}
+        {selected?.has_image && (
+          <p className="muted">
+            Has primary image (binary GET admin-only for store_manager)
+          </p>
+        )}
         <label className="muted">Add gallery image (max 5)</label>
         <input
           type="file"
