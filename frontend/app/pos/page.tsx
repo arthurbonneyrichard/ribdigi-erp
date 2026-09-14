@@ -135,6 +135,10 @@ export default function Page() {
   const [userRole, setUserRole] = useState('cashier');
   const [userPermissions, setUserPermissions] = useState<Record<string, string[]> | null>(null);
   const [offlineAuth, setOfflineAuth] = useState<OfflineAuthStatus | null>(null);
+  const [posStoreOptions, setPosStoreOptions] = useState<PosStoreOption[]>([]);
+  const [posStoreId, setPosStoreId] = useState('');
+  const [posVisibilityIds, setPosVisibilityIds] = useState<string[] | null>(null);
+  const [membershipHonesty, setMembershipHonesty] = useState<Partial<MembershipHonesty> | null>(null);
   const [meContext, setMeContext] = useState<{
     tenant_id: string;
     company_id: string | null;
@@ -308,6 +312,59 @@ export default function Page() {
         }
       })
       .catch(() => undefined);
+
+    // ADR-005: POS store bind from memberships + optional GET /stores (scoped).
+    void (async () => {
+      let visibility: string[] | null = null;
+      let options: PosStoreOption[] = [];
+      try {
+        const mine = await api<{
+          data: {
+            memberships?: Array<{
+              store_id: string;
+              store_code?: string | null;
+              store_name?: string | null;
+              is_active?: boolean;
+            }>;
+            store_visibility_ids?: string[] | null;
+            pos_store_bind_required?: boolean;
+          } & Partial<MembershipHonesty>;
+        }>('/me/store-memberships');
+        const data = mine.data || ({} as any);
+        visibility =
+          data.store_visibility_ids === undefined ? null : data.store_visibility_ids;
+        setMembershipHonesty({
+          adr005_complete_claimed: data.adr005_complete_claimed,
+          store_scoped_rbac_complete_claimed: data.store_scoped_rbac_complete_claimed,
+          scope_wired_to_membership: data.scope_wired_to_membership,
+          store_membership_scope_enabled: data.store_membership_scope_enabled,
+          scaffold_status: data.scaffold_status,
+          operational_scope: data.operational_scope,
+        });
+        options = membershipRowsToStoreOptions(data.memberships || []);
+      } catch {
+        /* memberships optional when flag OFF / unauthenticated race */
+      }
+      try {
+        const listed = await api<{ data?: PosStoreOption[] }>('/stores');
+        const rows = (listed.data || []).filter((s) => s.id);
+        if (rows.length) {
+          options = rows.map((s) => ({
+            id: s.id,
+            code: s.code,
+            name: s.name || s.code || s.id,
+          }));
+          if (visibility !== null) {
+            options = options.filter((s) => visibility!.includes(s.id));
+          }
+        }
+      } catch {
+        /* cashiers without stores:read keep membership options */
+      }
+      setPosVisibilityIds(visibility);
+      setPosStoreOptions(options);
+      setPosStoreId(defaultPosPickerStoreId(options, getSelectedStoreId(), visibility));
+    })();
   }, []);
 
   useEffect(() => {
@@ -353,9 +410,24 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
+      const bind = resolvePosOpenStoreId({
+        selectedStoreId: getSelectedStoreId(),
+        pickerStoreId: posStoreId,
+        storeMembershipScopeEnabled:
+          membershipHonesty?.store_membership_scope_enabled === true,
+        storeVisibilityIds: posVisibilityIds,
+        availableStores: posStoreOptions,
+      });
+      if (bind.blocked_reason) {
+        setError(posStoreBindBlockedMessage(bind.blocked_reason));
+        return;
+      }
       const r = await api('/pos/sessions/open', {
         method: 'POST',
-        body: JSON.stringify({ opening_cash: Number(openingCash) || 0 }),
+        body: JSON.stringify({
+          opening_cash: Number(openingCash) || 0,
+          store_id: bind.store_id,
+        }),
       });
       setSession(r.data);
       setMessage(`Shift opened: ${r.data.session_number}`);
@@ -882,6 +954,26 @@ export default function Page() {
         <h3>Shift</h3>
         {!session ? (
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            {(posStoreBindRequired(posVisibilityIds) || posStoreOptions.length > 0) && (
+              <label className="muted" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                Store
+                <select
+                  value={posStoreId}
+                  onChange={(e) => setPosStoreId(e.target.value)}
+                  aria-label="POS shift store"
+                  style={{ padding: 10, minWidth: 200 }}
+                >
+                  <option value="">
+                    {posStoreBindRequired(posVisibilityIds) ? 'Select store…' : 'Optional store'}
+                  </option>
+                  {posStoreOptions.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.code ? `${s.code} — ${s.name}` : s.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <input
               value={openingCash}
               onChange={(e) => setOpeningCash(e.target.value)}
@@ -889,6 +981,11 @@ export default function Page() {
               style={{ padding: 10, width: 140 }}
             />
             <button onClick={openShift}>Open shift</button>
+            {membershipHonesty?.store_membership_scope_enabled ? (
+              <span className="muted" style={{ fontSize: 12 }}>
+                Membership scope ON — store bind required for cashiers / managers
+              </span>
+            ) : null}
           </div>
         ) : (
           <div>

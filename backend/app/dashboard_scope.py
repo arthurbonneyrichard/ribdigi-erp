@@ -7,8 +7,9 @@ transfers, warehouses / inventory movements) and accounting statement reads
 Default operational scope is ``stores.manager_id`` only. When
 ``STORE_MEMBERSHIP_SCOPE_ENABLED`` is true, store_manager scope becomes the
 **union** of manager_id stores and active ``user_store_memberships`` (see
-``docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md``). Flag default is false; ADR-005
-Complete remains MISSING.
+``docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md``). Flag default is false (ops
+cutover). ADR-005 is **Complete** via automated flag-ON soak — Complete ≠
+production default ON. Store-scoped RBAC Complete remains MISSING.
 
 Cashier membership fail-closed (flag ON) uses ``store_visibility_ids`` for
 POS bind + store list surfaces only — ``managed_store_ids`` stays ``None`` for
@@ -65,7 +66,8 @@ async def managed_store_ids(db: AsyncSession, claims: dict) -> list[str] | None:
     (tenant-isolated; inactive memberships/stores excluded). Admin/executive
     and cashier views still return ``None`` here — cashiers use
     ``store_visibility_ids`` / ``cashier_membership_store_ids`` for POS +
-    store-list fail-closed. Enabling the flag does not claim ADR-005 Complete.
+    store-list fail-closed. Enabling the flag is ops cutover; ADR-005 Complete
+    is claimed from automated soak with default still OFF.
     """
     role = (claims.get("role") or "").strip().lower()
     if dashboard_view_for_role(role) != "store_manager":

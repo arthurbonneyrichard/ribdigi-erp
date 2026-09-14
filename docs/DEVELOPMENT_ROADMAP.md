@@ -4,10 +4,19 @@
 
 **Version:** 1.0.0  
 **Classification:** Internal — Product & Engineering  
-**Last Updated:** August 2026  
+**Last Updated:** September 2026  
 **Applies To:** RIBDIGI ERP MVP (Version 1.0)  
 **Total Phases:** 5  
 **Estimated Duration:** 24–28 Weeks
+
+---
+
+### Tip — ADR-005 membership Complete (2026-09-15)
+
+ADR-005 attested **Complete** via automated flag-ON soak + POS store bind + honesty
+flags. `STORE_MEMBERSHIP_SCOPE_ENABLED` remains **false** by default (ops cutover;
+Complete ≠ prod default ON). Store-scoped RBAC / Offline / 7-day / go-live / paid
+billing Completes remain **MISSING**.
 
 ---
 

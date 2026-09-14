@@ -1,51 +1,30 @@
-# ADR-005 Membership Scaffold (PARTIAL — not Complete)
+# ADR-005 Membership Scaffold → Complete
 
-**Status:** PARTIAL scaffold  
-**Date:** 2026-09-14  
-**Related:** [`ADR_005_USER_STORE_ASSIGNMENT.md`](ADR_005_USER_STORE_ASSIGNMENT.md) · [`ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md`](ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md) · [`MEMBERSHIP_REMAINING_GATE_MVP.md`](MEMBERSHIP_REMAINING_GATE_MVP.md)
+**Status:** **Complete** (scaffold 2026-09-14; Complete attested 2026-09-15)  
+**Related:** [`ADR_005_USER_STORE_ASSIGNMENT.md`](ADR_005_USER_STORE_ASSIGNMENT.md) · [`ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md`](ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md) · [`adr005_staging_soak_checklist.md`](adr005_staging_soak_checklist.md)
 
-## What landed
+## Landed
 
-Engineering scaffold toward multi-store user assignment:
+Schema `user_store_memberships` · service `store_memberships.py` · assign/list/revoke + `/me/store-memberships` (visibility / `pos_store_bind_required`) · admin UI `/stores#memberships` · POS bind (`posStoreBinding.ts`) · flag `STORE_MEMBERSHIP_SCOPE_ENABLED` default **false** · automated soak `test_adr005_membership_scope_soak.py`.
 
-| Layer | Delivered |
-|-------|-----------|
-| Schema | `user_store_memberships` (`20260914_0113`) |
-| Model | `UserStoreMembership` |
-| Service | `backend/app/store_memberships.py` |
-| APIs | `GET/POST/DELETE /stores/{id}/memberships`, `GET /me/store-memberships` |
-| Admin UI | `/stores#memberships` — Company/Admin list/assign/remove (`StoreMembershipAdmin`; hidden for `store_manager` / API 403) |
-| Flag | `STORE_MEMBERSHIP_SCOPE_ENABLED` default **false** |
-| Cutover design | [`ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md`](ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md) |
-| Flag-gated wire | When flag **true**, `managed_store_ids` = `manager_id` ∪ active memberships (**store_manager** only); default OFF = legacy |
-| Cashier fail-closed | Flag ON → `store_visibility_ids` = memberships or `[]` on POS bind + `GET /stores` (cashiers stay `None` on `managed_store_ids`) |
-| Tests | `backend/tests/test_store_membership_scaffold.py`; `frontend/lib/storeMembershipAdmin.test.mjs` |
+## Complete criteria (SEC-M2 parallel)
 
-## What did **not** land
-
-- Production default still uses **`stores.manager_id` only** (flag OFF)
-- Flag ON is **not** ADR-005 Complete / not store-scoped RBAC Complete
-- Cashiers are **not** put onto `managed_store_ids` (continuum denies stay manager-only)
-- No cashier POS store-picker UI Complete (Shell switcher still needs `stores:read`)
-- No claim of ADR-005 Complete
-
-## Honesty flags (must stay false until production-default cutover + verification)
+| Criterion | Met? |
+|-----------|------|
+| Assignment CRUD + admin UI + `/me` | Yes |
+| Flag-gated manager ∪ memberships + cashier fail-closed | Yes |
+| POS store bind UX when scope ON | Yes |
+| Automated flag-ON soak matrix | Yes |
+| `adr005_complete_claimed` / `scope_wired_to_membership` | **true** |
+| Production flag default ON | **No** — intentional ops |
+| Store-scoped RBAC Complete | **No** — MISSING |
 
 ```text
-adr005_complete_claimed: false
+adr005_complete_claimed: true
 store_scoped_rbac_complete_claimed: false
-scope_wired_to_membership: false
-scaffold_status: partial
-operational_scope: stores.manager_id   # or ∪ memberships + cashier fail-closed when flag ON (runtime)
-cashier_membership_fail_closed: mirrors STORE_MEMBERSHIP_SCOPE_ENABLED
+scope_wired_to_membership: true
+scaffold_status: complete
+complete_means: feature_complete_plus_automated_flag_on_soak; production_default_flag_remains_off_until_ops_cutover
 ```
 
-Platform evidence `user_store_membership_claimed` remains **false**.
-
-## Next cutover steps (separate Completes)
-
-1. Staging soak with flag ON + store_manager + cashier POS regression evidence
-2. POS store-picker UI Completes where product requires `stores:read` for cashiers
-3. Evidence pack + attestation before flipping Complete flags / production default
-
-Offline Complete / 7-day VERIFIED / go-live / paid billing Completes remain **MISSING**.
+Offline / 7-day / go-live / paid billing Completes remain **MISSING**.

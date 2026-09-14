@@ -1,4 +1,4 @@
-"""ADR-005 user↔store membership scaffold — Complete still MISSING."""
+"""ADR-005 user↔store membership — Complete via automated soak; flag default OFF."""
 
 from __future__ import annotations
 
@@ -52,22 +52,26 @@ async def test_store_membership_assign_list_revoke_and_me(client, db_session):
     assert body["user_id"] == cashier.id
     assert body["store_id"] == store.id
     assert body["is_active"] is True
-    assert body["adr005_complete_claimed"] is False
-    assert body["scope_wired_to_membership"] is False
-    assert body["scaffold_status"] == "partial"
+    assert body["adr005_complete_claimed"] is True
+    assert body["scope_wired_to_membership"] is True
+    assert body["scaffold_status"] == "complete"
 
     listed = await ac.get(f"/api/v1/stores/{store.id}/memberships", headers=headers)
     assert listed.status_code == 200, listed.text
     lbody = listed.json()["data"]
-    assert lbody["adr005_complete_claimed"] is False
+    assert lbody["adr005_complete_claimed"] is True
     assert any(r["user_id"] == cashier.id for r in lbody["memberships"])
 
     cash_headers = await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")
     mine = await ac.get("/api/v1/me/store-memberships", headers=cash_headers)
     assert mine.status_code == 200, mine.text
     mbody = mine.json()["data"]
-    assert mbody["adr005_complete_claimed"] is False
-    assert mbody["operational_scope"] == "stores.manager_id"
+    assert mbody["adr005_complete_claimed"] is True
+    assert mbody["operational_scope"].startswith("stores.manager_id")
+    assert mbody["scope_wired_to_membership"] is True
+    assert mbody["scaffold_status"] == "complete"
+    assert mbody["store_visibility_ids"] is None
+    assert mbody["pos_store_bind_required"] is False
     assert any(r["store_id"] == store.id for r in mbody["memberships"])
 
     revoked = await ac.delete(
@@ -167,7 +171,9 @@ async def test_membership_does_not_expand_managed_store_ids(client, db_session):
     assert store_memberships_svc.SCOPE_WIRED_TO_MEMBERSHIP is False
     honesty = store_memberships_svc.honesty_payload()
     assert honesty["store_membership_scope_enabled"] is False
-    assert honesty["operational_scope"] == "stores.manager_id"
+    assert honesty["operational_scope"].startswith("stores.manager_id")
+    assert honesty["adr005_complete_claimed"] is True
+    assert honesty["scope_wired_to_membership"] is True
 
 
 @pytest.mark.asyncio
@@ -265,8 +271,8 @@ async def test_membership_expands_managed_store_ids_when_flag_on(
     assert honesty["store_membership_scope_enabled"] is True
     assert "user_store_memberships" in honesty["operational_scope"]
     assert honesty["cashier_membership_fail_closed"] is True
-    assert honesty["adr005_complete_claimed"] is False
-    assert honesty["scope_wired_to_membership"] is False
+    assert honesty["adr005_complete_claimed"] is True
+    assert honesty["scope_wired_to_membership"] is True
     assert honesty["store_scoped_rbac_complete_claimed"] is False
 
 
@@ -484,28 +490,28 @@ async def test_cashier_membership_failclosed_flag_on_off(client, db_session, mon
 
     honesty = store_memberships_svc.honesty_payload()
     assert honesty["cashier_membership_fail_closed"] is True
-    assert honesty["adr005_complete_claimed"] is False
-    assert honesty["scope_wired_to_membership"] is False
+    assert honesty["adr005_complete_claimed"] is True
+    assert honesty["scope_wired_to_membership"] is True
 
 
 def test_adr005_scaffold_docs_and_honesty_flags():
     adr = (ROOT / "docs/ADR_005_USER_STORE_ASSIGNMENT.md").read_text(encoding="utf-8")
-    assert "scaffold" in adr.lower() or "PARTIAL" in adr
     assert "Complete" in adr
+    assert "STORE_MEMBERSHIP_SCOPE_ENABLED" in adr
     scaffold = (ROOT / "docs/ADR_005_MEMBERSHIP_SCAFFOLD.md").read_text(encoding="utf-8")
-    assert "PARTIAL" in scaffold
-    assert "adr005_complete_claimed" in scaffold.lower() or "Complete still MISSING" in scaffold
+    assert "Complete" in scaffold
+    assert "adr005_complete_claimed" in scaffold.lower()
     assert "manager_id" in scaffold
     cutover = (ROOT / "docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md").read_text(encoding="utf-8")
     assert "STORE_MEMBERSHIP_SCOPE_ENABLED" in cutover
     assert "union" in cutover.lower()
-    assert "PARTIAL" in cutover
     assert "Complete" in cutover
     assert "cashier" in cutover.lower()
     assert "fail-closed" in cutover.lower() or "fail_closed" in cutover.lower()
+    assert "production default" in cutover.lower() or "prod default" in cutover.lower()
     honesty = store_memberships_svc.honesty_payload()
-    assert honesty["adr005_complete_claimed"] is False
+    assert honesty["adr005_complete_claimed"] is True
     assert honesty["store_scoped_rbac_complete_claimed"] is False
-    assert honesty["scope_wired_to_membership"] is False
-    assert honesty["scaffold_status"] == "partial"
+    assert honesty["scope_wired_to_membership"] is True
+    assert honesty["scaffold_status"] == "complete"
     assert "cashier_membership_fail_closed" in honesty

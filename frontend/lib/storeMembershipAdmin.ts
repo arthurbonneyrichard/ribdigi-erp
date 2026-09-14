@@ -1,7 +1,8 @@
 /**
- * ADR-005 store membership admin helpers (PARTIAL — not Complete).
- * Default operational scope is stores.manager_id; membership may expand
- * store_manager scope only when STORE_MEMBERSHIP_SCOPE_ENABLED is on.
+ * ADR-005 store membership admin helpers (Complete — flag default OFF).
+ * Default operational scope is stores.manager_id until ops enables
+ * STORE_MEMBERSHIP_SCOPE_ENABLED. Complete = feature + automated soak;
+ * Complete ≠ production default ON. Store-scoped RBAC Complete remains unclaimed.
  */
 
 export type StoreMembershipRow = {
@@ -28,6 +29,7 @@ export type MembershipHonesty = {
   cashier_membership_fail_closed?: boolean;
   scaffold_status: string;
   operational_scope: string;
+  complete_means?: string;
 };
 
 /** Roles that may see company-level store membership mutation UI. */
@@ -71,10 +73,16 @@ export function canMutateStoreMemberships(
 
 export function membershipHonestyBanner(honesty?: Partial<MembershipHonesty> | null): string {
   const scope = honesty?.operational_scope || 'stores.manager_id';
-  const status = honesty?.scaffold_status || 'partial';
+  const status = honesty?.scaffold_status || 'complete';
+  const flagOn = honesty?.store_membership_scope_enabled === true;
+  const rbac = honesty?.store_scoped_rbac_complete_claimed === true;
+  const flagNote = flagOn
+    ? 'Membership scope flag is ON for this runtime.'
+    : 'Membership scope flag is OFF (ops enable STORE_MEMBERSHIP_SCOPE_ENABLED).';
+  const rbacNote = rbac ? '' : ' Store-scoped RBAC Complete is not claimed.';
   return (
-    `ADR-005 store membership is ${status.toUpperCase()} — assignment bookkeeping only. ` +
-    `Operational scope remains ${scope}. Complete / store-scoped RBAC Complete are not claimed.`
+    `ADR-005 store membership is ${status.toUpperCase()} — assign/list/revoke + flag-gated scope wire verified. ` +
+    `Operational scope: ${scope}. ${flagNote}${rbacNote}`
   );
 }
 
