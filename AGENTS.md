@@ -329,8 +329,10 @@ store activation — never frontend-only.
    `offline_authorized_until` and blocks sync; critical alerts can email via
    security notifications (`POST /offline/alerts/notify`). Remote IndexedDB wipe
    request/ack + Web Push delivery are **PARTIAL** (VAPID + subscription required
-   for push; online poll remains). Offline Complete and 7-day VERIFIED remain
-   **MISSING**.
+   for push; online poll remains; automated wipe-via-push evidence in
+   `test_offline_wipe_push_vapid_evidence.py` + operator checklist
+   `docs/offline_wipe_push_staging_checklist.md` — browser proof still required).
+   Offline Complete and 7-day VERIFIED remain **MISSING**.
 
 ### Key modules
 
@@ -353,8 +355,8 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `6fd66e496b54c1b500600f8e4b386909b74bd419` — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL**; ADR-005 membership **PARTIAL** (scaffold + admin UI + flag-gated scope wire + cashier fail-closed + automated flag-ON soak; default OFF — Complete still **MISSING**); paid billing **PARTIAL** (ADR-002 portal + Checkout Session create + signed webhook proof — Complete still **MISSING**); Offline Complete still **MISSING**. Cookie + membership-scope flags default remain OFF (ops enable cutover). Continuum CLE honesty remains **PARTIAL**.
-**Security:** no open Critical/High/Medium. Do not claim go-live Completes. Cookie + membership-scope flags OFF in prod examples are intentional until ops cutover (`docs/sec_m2_staging_soak_checklist.md`, `docs/adr005_staging_soak_checklist.md`).  
+**As of tip:** `73846639407bb06d228a14bebffa74d1d89f0daa` — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL** (automated VAPID wipe-via-push evidence + staging checklist; Complete still **MISSING**); ADR-005 membership **PARTIAL** (scaffold + admin UI + flag-gated scope wire + cashier fail-closed + automated flag-ON soak; default OFF — Complete still **MISSING**); paid billing **PARTIAL** (ADR-002 portal + Checkout Session create + signed webhook proof — Complete still **MISSING**); Offline Complete still **MISSING**. Cookie + membership-scope flags default remain OFF (ops enable cutover). Continuum CLE honesty remains **PARTIAL**.
+**Security:** no open Critical/High/Medium. Do not claim go-live Completes. Cookie + membership-scope flags OFF in prod examples are intentional until ops cutover (`docs/sec_m2_staging_soak_checklist.md`, `docs/adr005_staging_soak_checklist.md`). Offline push prod template stays fail-closed until `docs/offline_wipe_push_staging_checklist.md` browser proof.  
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
