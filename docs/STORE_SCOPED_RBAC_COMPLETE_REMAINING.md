@@ -28,6 +28,7 @@ Honesty flags (`GET /me/store-memberships` etc.):
 - Scoped audit `details` FX re-dump **closed** (`currency` / `exchange_rate` / `*_base` / `fx_gain_loss` / `settlement_base` on `/audit-logs` JSON+CSV)
 - CREDIT_LIMIT_EXCEEDED 409 `additional_amount` FX re-dump **closed** (base settlement; `invoice_total`/`invoice_total_base`/master already closed)
 - CREDIT_LIMIT_EXCEEDED 409 `currency` FX re-dump **closed** (document FX identity in `extra_details`; sales-invoice currency already closed)
+- Scoped audit `details` party ledger balance re-dump **closed** (`customer_balance` / `supplier_balance_*` on `/audit-logs` JSON+CSV)
 - Scoped audit `details` CLE master re-dump **closed** (`credit_limit` / `available` / `current_balance` / `projected_balance` / `additional_amount` on `/audit-logs` JSON+CSV; FX already closed)
 - Intentional product ALLOWs retained: company/tenant logo binary GET; caller-scoped `/auth/sessions` + `/notifications/settings`
 - **Living store-scope test matrix** (indexed suite + CI `store_scope` marker) covering cross-store deny, membership-on soak, cashier fail-closed, manager union, intentional ALLOWs, plus breadth index into deep modules

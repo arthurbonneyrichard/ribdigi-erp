@@ -11,6 +11,21 @@
 
 ---
 
+### Tip — audit party ledger balance redact (2026-09-15)
+
+**As of tip:** `769cf3e30854da0f4890da9e53f724f26ff1f393`
+Scoped audit list/export `details` party ledger balance redact for `store_manager`
+(`customer_balance` / `supplier_balance_before` / `supplier_balance_after` on
+`GET /audit-logs` + CSV; FX + CLE master already redacted; amounts /
+`invoice_number` / `store_id` remain; admin keeps party ledger fields).
+Continuum stays **PARTIAL**. Store-scoped RBAC Complete remains **MISSING**
+(intentional ALLOWs + residual backlog + product sign-off + staging soak).
+Offline / 7-day / go-live / paid billing Completes remain **MISSING**. Next
+CONTINUE: residual continuum field-leak (named surface) or product ALLOW
+sign-off / staging soak docs.
+
+---
+
 ### Tip — audit CLE master redact (2026-09-15)
 
 **As of tip:** `d5656990a95dc33deeb8fd1e92b96c741fe282bb`
