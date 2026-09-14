@@ -2256,13 +2256,36 @@ def redact_purchase_invoice_attachment_url(payload: dict) -> dict:
     return redact_attachment_url_storage_key(payload)
 
 
+def omit_purchase_invoice_currency(managed_wh_ids: list[str] | None) -> bool:
+    """True when store_manager must omit purchase-invoice ``currency``.
+
+    Company profile GET + ``/me``/``/workspace`` switcher already omit company
+    ``currency``; POS receipt + sales-invoice JSON already redact ``currency``.
+    Purchase-invoice list/get/export JSON must not re-dump company/tenant (or
+    doc) currency after those profile redacts. Totals / status / balance /
+    ``exchange_rate`` / ``has_attachment`` remain; AP payment apply still
+    resolves currency server-side.
+    """
+    return managed_wh_ids is not None
+
+
+def redact_purchase_invoice_currency(payload: dict) -> dict:
+    """Null ``currency`` on a purchase-invoice JSON/CSV row."""
+    out = dict(payload)
+    if "currency" in out:
+        out["currency"] = None
+    return out
+
+
 def apply_purchase_invoice_manager_redacts(
     payload: dict, managed_wh_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager purchase-invoice JSON redacts (attachment_url)."""
+    """Apply store_manager purchase-invoice JSON redacts (attachment_url + currency)."""
     out = payload
     if omit_purchase_invoice_attachment_url(managed_wh_ids):
         out = redact_purchase_invoice_attachment_url(out)
+    if omit_purchase_invoice_currency(managed_wh_ids):
+        out = redact_purchase_invoice_currency(out)
     return out
 
 

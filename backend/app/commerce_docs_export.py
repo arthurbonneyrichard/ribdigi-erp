@@ -186,6 +186,9 @@ async def export_purchase_invoices_csv(
     writer.writeheader()
     for inv in rows:
         data = await purchasing_svc.serialize_purchase_invoice(db, inv)
+        data = dashboard_scope_svc.apply_purchase_invoice_manager_redacts(
+            data, managed_wh
+        )
         writer.writerow({k: _cell(data.get(k)) for k in PURCHASE_INVOICE_EXPORT_COLUMNS})
     return buf.getvalue()
 
