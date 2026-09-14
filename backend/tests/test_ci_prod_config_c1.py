@@ -166,11 +166,13 @@ def test_production_rejects_wildcard_cors_and_weak_jwt():
     assert "JWT" in str(exc_jwt.value)
 
 
-def test_health_still_exposes_security_posture_under_c1():
+def test_health_omits_security_posture_under_c1():
+    """SEC-L2 — C1 prod-config hardening must not reintroduce public posture."""
     rate_limiter.reset_for_tests()
     client = TestClient(app)
     response = client.get("/api/v1/health")
     assert response.status_code == 200
-    security = response.json()["data"]["security"]
-    assert security["rate_limit_enabled"] is True
-    assert security["cors_allows_wildcard"] is False
+    data = response.json()["data"]
+    assert "security" not in data
+    assert "env" not in data
+    assert data["status"] == "ok"

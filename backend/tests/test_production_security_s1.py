@@ -70,17 +70,16 @@ def test_openapi_disabled_when_production(monkeypatch):
     assert posture["security"]["cors_allows_wildcard"] is False
 
 
-def test_health_exposes_security_posture_and_headers():
+def test_health_omits_security_posture_keeps_headers():
+    """SEC-L2 — public /health must not dump posture; security headers remain."""
     rate_limiter.reset_for_tests()
     client = TestClient(app)
     response = client.get("/api/v1/health")
     assert response.status_code == 200
     body = response.json()["data"]
     assert body["status"] == "ok"
-    assert body["security"]["rate_limit_enabled"] is True
-    assert "rate_limit_backend" in body["security"]
-    assert "openapi_enabled" in body["security"]
-    assert body["security"]["cors_allows_wildcard"] is False
+    assert "security" not in body
+    assert "env" not in body
 
     assert response.headers.get("X-Content-Type-Options") == "nosniff"
     assert response.headers.get("X-Frame-Options") == "DENY"

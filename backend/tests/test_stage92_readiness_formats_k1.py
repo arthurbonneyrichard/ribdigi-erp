@@ -83,12 +83,12 @@ async def test_house_formats_cors_detail_and_db_required(client, db_engine):
 
     public = await ac.get("/api/v1/health")
     assert public.status_code == 200
-    public_sec = public.json().get("security") or public.json().get("data", {}).get("security") or {}
-    # Public posture must not expose the allowlist array.
-    if isinstance(public_sec, dict):
-        assert "cors_origins" not in public_sec or not isinstance(
-            public_sec.get("cors_origins"), list
-        )
+    public_body = public.json()
+    public_data = public_body.get("data") if isinstance(public_body.get("data"), dict) else {}
+    # SEC-L2 — public posture object removed entirely (not only cors_origins).
+    assert "security" not in public_body
+    assert "security" not in public_data
+    assert "env" not in public_data
 
     evidence = await ac.get("/api/v1/platform/evidence", headers=headers)
     assert evidence.status_code == 200, evidence.text

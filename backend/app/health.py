@@ -134,14 +134,22 @@ async def assemble_health(
     *,
     deep: bool,
     session_factory: async_sessionmaker[AsyncSession] | None = None,
+    include_security_posture: bool = False,
 ) -> tuple[dict[str, Any], int]:
-    """Build health payload. Returns (body, http_status)."""
+    """Build health payload. Returns (body, http_status).
+
+    SEC-L2 — public ``/health`` and ``/health/ready`` must not dump
+    ``security_posture()`` (rate-limit backend, debug/OpenAPI flags, CORS
+    wildcard bit, ``env``, …). Authenticated House ``/platform/health``
+    may pass ``include_security_posture=True`` (and/or overwrite ``security``).
+    """
     body: dict[str, Any] = {
         "status": "ok",
         "service": "ribdigi-erp",
         "deep": bool(deep),
-        **security_posture(),
     }
+    if include_security_posture:
+        body.update(security_posture())
     if not deep:
         return body, 200
 
