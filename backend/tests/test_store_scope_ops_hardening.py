@@ -14774,7 +14774,7 @@ async def test_store_manager_document_legal_trading_names_redacted(client, db_se
     admin_print = await ac.get(
         f"/api/v1/sales/invoices/{invoice.id}/print",
         headers=admin_company,
-        params={"format": "json"},
+        params={"format": "text"},
     )
     assert admin_print.status_code == 200, admin_print.text
     admin_print_data = admin_print.json()["data"]
@@ -14785,7 +14785,7 @@ async def test_store_manager_document_legal_trading_names_redacted(client, db_se
     mgr_print = await ac.get(
         f"/api/v1/sales/invoices/{invoice.id}/print",
         headers=headers,
-        params={"format": "json"},
+        params={"format": "text"},
     )
     assert mgr_print.status_code == 200, mgr_print.text
     mgr_print_data = mgr_print.json()["data"]
