@@ -13,7 +13,7 @@
 
 ### Tip — audit expense approval threshold redact (2026-09-15)
 
-**As of tip:** `70c26e4252c11c68dbd241789512528ca2907aea`
+**As of tip:** `153552338fadccc72979fe20f6148a6753a1f61a`
 Scoped audit list/export `details` expense approval `threshold` redact for
 `store_manager` (`expense_submitted` / `expense_auto_approved` on
 `GET /audit-logs` + CSV; expense settings GET/PATCH/export already denied;
