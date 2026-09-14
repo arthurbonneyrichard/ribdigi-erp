@@ -10259,6 +10259,127 @@ async def test_store_manager_credit_limit_override_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_credit_limit_exceeded_master_redacted(client, db_session):
+    """CREDIT_LIMIT_EXCEEDED 409 nulls credit_limit/available for store_manager.
+
+    Party list/get + AI + aging + AR statement already redact credit_limit.
+    Invoice post / POS credit 409 must not re-dump company credit master via
+    credit_limit or available. exceeded + code + message remain; admin keeps
+    full projection on the same over-limit post.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    customer = seed["party1"]
+    product = seed["p1"]
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Credit Exceeded Redact Store",
+        code="CRE-RD",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+
+    customer.credit_limit = 40
+    customer.balance = 0
+    customer.party_type = "registered"
+    product.selling_price = 90
+    product.stock_qty = 100
+    product.tax_rate_id = None
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    created = await ac.post(
+        "/api/v1/sales/invoices",
+        headers=headers,
+        json={
+            "customer_id": customer.id,
+            "store_id": store.id,
+            "items": [
+                {
+                    "product_id": product.id,
+                    "quantity": 1,
+                    "unit_price": 90,
+                    "tax_rate": 0,
+                    "discount": 0,
+                }
+            ],
+        },
+    )
+    assert created.status_code == 200, created.text
+    inv_id = created.json()["data"]["id"]
+
+    mgr_blocked = await ac.post(
+        f"/api/v1/sales/invoices/{inv_id}/post",
+        headers=headers,
+        json={},
+    )
+    assert mgr_blocked.status_code == 409, mgr_blocked.text
+    mgr_detail = mgr_blocked.json()["detail"]
+    assert mgr_detail.get("code") == "CREDIT_LIMIT_EXCEEDED"
+    assert mgr_detail.get("exceeded") is True
+    assert mgr_detail.get("credit_limit") is None
+    assert mgr_detail.get("available") is None
+    assert float(mgr_detail.get("additional_amount") or 0) == pytest.approx(90.0)
+
+    admin_blocked = await ac.post(
+        f"/api/v1/sales/invoices/{inv_id}/post",
+        headers=admin_company,
+        json={},
+    )
+    assert admin_blocked.status_code == 409, admin_blocked.text
+    admin_detail = admin_blocked.json()["detail"]
+    assert admin_detail.get("code") == "CREDIT_LIMIT_EXCEEDED"
+    assert float(admin_detail.get("credit_limit") or 0) == pytest.approx(40.0)
+    assert float(admin_detail.get("available") or 0) == pytest.approx(40.0)
+
+    await accounting_svc.ensure_default_accounts(db_session, tid, company_id=cid)
+    await db_session.commit()
+
+    opened = await ac.post(
+        "/api/v1/pos/sessions/open",
+        headers=headers,
+        json={"opening_cash": 10, "store_id": store.id},
+    )
+    assert opened.status_code == 200, opened.text
+    sid = opened.json()["data"]["session_id"]
+
+    pos_blocked = await ac.post(
+        "/api/v1/pos/sales",
+        headers=headers,
+        json={
+            "session_id": sid,
+            "party_id": customer.id,
+            "payment_method": "credit",
+            "items": [{"product_id": product.id, "quantity": 1, "unit_price": 90}],
+        },
+    )
+    assert pos_blocked.status_code == 409, pos_blocked.text
+    pos_detail = pos_blocked.json()["detail"]
+    assert pos_detail.get("code") == "CREDIT_LIMIT_EXCEEDED"
+    assert pos_detail.get("credit_limit") is None
+    assert pos_detail.get("available") is None
+    assert pos_detail.get("exceeded") is True
+
+
+@pytest.mark.asyncio
 async def test_store_manager_sales_invoice_credit_override_redacted(client, db_session):
     """Sales invoice list/get nulls credit-override audit for store_manager.
 

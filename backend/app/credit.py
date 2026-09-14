@@ -954,6 +954,9 @@ async def enforce_credit_limit(
     from app.rbac import has_permission
     from app import audit as audit_svc
 
+    from app.dashboard_views import dashboard_view_for_role
+    from app import dashboard_scope as dashboard_scope_svc
+
     projection = credit_limit_projection(customer, additional_amount)
     if not projection["exceeded"]:
         return {**projection, "overridden": False}
@@ -964,14 +967,16 @@ async def enforce_credit_limit(
         **projection,
         **(extra_details or {}),
     }
+    # Party list/get + AI + aging + statement already redact credit_limit;
+    # 409 detail must not re-dump company credit master for store_manager.
+    if dashboard_scope_svc.omit_credit_limit_exceeded_master(role):
+        detail = dashboard_scope_svc.redact_credit_limit_exceeded_master(detail)
 
     if not override:
         raise HTTPException(status_code=409, detail=detail)
 
     # store_manager default role includes credit:approve for operational credit reads/writes,
     # but company-level limit override remains tenant/finance admin (not store-scoped).
-    from app.dashboard_views import dashboard_view_for_role
-
     if dashboard_view_for_role(role) == "store_manager":
         raise HTTPException(
             status_code=403,
