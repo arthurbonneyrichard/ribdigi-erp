@@ -225,10 +225,10 @@ def escpos_drawer_kick() -> bytes:
 
 def to_thermal_pdf(receipt: dict[str, Any], *, paper: str = "80mm") -> bytes:
     """Narrow receipt PDF suitable for 58/80mm thermal printers (or browser print)."""
-    from app.print_branding import build_text_pdf, load_logo_jpeg
+    from app.print_branding import build_text_pdf, load_logo_jpeg, style_powered_by_line
 
     text = render_thermal_text(receipt, paper=paper)
-    lines = [(line, 8) for line in (text.splitlines() or [""])]
+    lines = [style_powered_by_line(line, 8) for line in (text.splitlines() or [""])]
     page_width = 226 if paper == "80mm" else 164
     line_height = 11
     top = 20

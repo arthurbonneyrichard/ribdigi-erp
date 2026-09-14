@@ -14,6 +14,22 @@ DEFAULT_INVOICE_TEMPLATE = "a4"
 DEFAULT_RECEIPT_PAPER = "80mm"
 DEFAULT_FOOTER_INVOICE = "Thank you for your business."
 DEFAULT_FOOTER_RECEIPT = "Thank you"
+# Logo leaf / CSS --brand (#4AB012) as PDF device RGB (0–1).
+BRAND_GREEN_RGB: tuple[float, float, float] = (0.290, 0.690, 0.071)
+POWERED_BY_RIBDIGI = "Powered by RIBDIGI"
+
+
+def style_powered_by_line(
+    text: str,
+    size: int = 8,
+) -> tuple[str, int] | tuple[str, int, tuple[float, float, float]]:
+    """Paint the shared 'Powered by RIBDIGI' footer in brand green when matched."""
+    raw = (text or "").strip()
+    if raw == POWERED_BY_RIBDIGI:
+        return (POWERED_BY_RIBDIGI, size, BRAND_GREEN_RGB)
+    return (text, size)
+
+
 INVOICE_TEMPLATES = frozenset({"a4", "thermal"})
 RECEIPT_PAPERS = frozenset({"58mm", "80mm"})
 
@@ -131,7 +147,7 @@ def load_logo_jpeg(
 
 
 def build_text_pdf(
-    lines: list[tuple[str, int]],
+    lines: list[tuple[str, int] | tuple[str, int, tuple[float, float, float]]],
     *,
     page_width: float,
     page_height: float,
@@ -140,7 +156,11 @@ def build_text_pdf(
     logo: tuple[bytes, int, int] | None = None,
     logo_max_pt: float = 80,
 ) -> bytes:
-    """Minimal single-page PDF with optional JPEG logo and Helvetica/Courier text."""
+    """Minimal single-page PDF with optional JPEG logo and Helvetica/Courier text.
+
+    Each line is ``(text, font_size)`` or ``(text, font_size, rgb)`` where ``rgb`` is
+    0–1 floats (e.g. brand green for the Powered-by footer).
+    """
     from app.report_export import _pdf_escape
 
     content: list[str] = []
@@ -158,106 +178,99 @@ def build_text_pdf(
         )
         y = y_img - 10
 
-    for text, size in lines:
-        font = "F2" if (not mono and size >= 12) else "F1"
-        content.append(
-            f"BT /{font} {size} Tf {x_text:.2f} {y:.2f} Td ({_pdf_escape(text[:110])}) Tj ET"
-        )
-        y -= size + (3 if mono else 4)
-        if y < margin:
+    for entry in lines:
+        text_line = entry[0]
+        size = int(entry[1])
+        rgb = entry[2] if len(entry) >= 3 else None
+        if y < margin + size:
             break
+        if text_line:
+            font = "/F1" if mono else ("/F2" if size >= 14 else "/F1")
+            escaped = _pdf_escape(text_line)
+            if rgb is not None:
+                r, g, b = float(rgb[0]), float(rgb[1]), float(rgb[2])
+                content.append(
+                    f"BT {font} {size} Tf {r:.3f} {g:.3f} {b:.3f} rg "
+                    f"{x_text:.1f} {y - size:.1f} Td ({escaped}) Tj 0 0 0 rg ET"
+                )
+            else:
+                content.append(
+                    f"BT {font} {size} Tf {x_text:.1f} {y - size:.1f} Td ({escaped}) Tj ET"
+                )
+        y -= size + 4
 
     stream = "\n".join(content).encode("latin-1", errors="replace")
     objects: list[bytes] = []
-    objects.append(b"1 0 obj<< /Type /Catalog /Pages 2 0 R >>endobj\n")
-    objects.append(b"2 0 obj<< /Type /Pages /Kids [3 0 R] /Count 1 >>endobj\n")
+
+    def obj(n: int, body: bytes) -> None:
+        objects.append(f"{n} 0 obj\n".encode() + body + b"\nendobj\n")
 
     if logo:
-        jpeg, px_w, px_h = logo
-        resources = (
-            f"/Font << /F1 5 0 R /F2 6 0 R >> /XObject << /Im1 7 0 R >>"
-            if not mono
-            else f"/Font << /F1 5 0 R >> /XObject << /Im1 6 0 R >>"
+        jpeg, _, _ = logo
+        obj(
+            1,
+            b"<< /Type /Catalog /Pages 2 0 R >>",
         )
-        objects.append(
+        obj(
+            2,
+            b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        )
+        obj(
+            3,
             (
-                f"3 0 obj<< /Type /Page /Parent 2 0 R "
-                f"/MediaBox [0 0 {page_width} {page_height}] "
-                f"/Contents 4 0 R /Resources << {resources} >> >>endobj\n"
-            ).encode("ascii")
+                f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {page_width} {page_height}] "
+                f"/Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> "
+                f"/XObject << /Im1 7 0 R >> >> >>"
+            ).encode(),
         )
-        objects.append(
-            f"4 0 obj<< /Length {len(stream)} >>stream\n".encode("ascii")
-            + stream
-            + b"\nendstream\nendobj\n"
-        )
+        obj(4, f"<< /Length {len(stream)} >>\nstream\n".encode() + stream + b"\nendstream")
         if mono:
-            objects.append(b"5 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>endobj\n")
-            objects.append(
-                f"6 0 obj<< /Type /XObject /Subtype /Image /Width {px_w} /Height {px_h} "
-                f"/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode "
-                f"/Length {len(jpeg)} >>stream\n".encode("ascii")
-                + jpeg
-                + b"\nendstream\nendobj\n"
-            )
+            obj(5, b"<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>")
+            obj(6, b"<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold >>")
         else:
-            objects.append(b"5 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>endobj\n")
-            objects.append(
-                b"6 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>endobj\n"
-            )
-            objects.append(
-                f"7 0 obj<< /Type /XObject /Subtype /Image /Width {px_w} /Height {px_h} "
+            obj(5, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
+            obj(6, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>")
+        obj(
+            7,
+            (
+                f"<< /Type /XObject /Subtype /Image /Width {logo[1]} /Height {logo[2]} "
                 f"/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode "
-                f"/Length {len(jpeg)} >>stream\n".encode("ascii")
-                + jpeg
-                + b"\nendstream\nendobj\n"
-            )
+                f"/Length {len(jpeg)} >>\nstream\n"
+            ).encode()
+            + jpeg
+            + b"\nendstream",
+        )
+        n_objs = 7
     else:
+        obj(1, b"<< /Type /Catalog /Pages 2 0 R >>")
+        obj(2, b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+        obj(
+            3,
+            (
+                f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {page_width} {page_height}] "
+                f"/Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>"
+            ).encode(),
+        )
+        obj(4, f"<< /Length {len(stream)} >>\nstream\n".encode() + stream + b"\nendstream")
         if mono:
-            objects.append(
-                (
-                    f"3 0 obj<< /Type /Page /Parent 2 0 R "
-                    f"/MediaBox [0 0 {page_width} {page_height}] "
-                    f"/Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>endobj\n"
-                ).encode("ascii")
-            )
-            objects.append(
-                f"4 0 obj<< /Length {len(stream)} >>stream\n".encode("ascii")
-                + stream
-                + b"\nendstream\nendobj\n"
-            )
-            objects.append(b"5 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>endobj\n")
+            obj(5, b"<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>")
+            obj(6, b"<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold >>")
         else:
-            objects.append(
-                (
-                    f"3 0 obj<< /Type /Page /Parent 2 0 R "
-                    f"/MediaBox [0 0 {page_width} {page_height}] "
-                    f"/Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>endobj\n"
-                ).encode("ascii")
-            )
-            objects.append(
-                f"4 0 obj<< /Length {len(stream)} >>stream\n".encode("ascii")
-                + stream
-                + b"\nendstream\nendobj\n"
-            )
-            objects.append(b"5 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>endobj\n")
-            objects.append(
-                b"6 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>endobj\n"
-            )
+            obj(5, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
+            obj(6, b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>")
+        n_objs = 6
 
     out = bytearray(b"%PDF-1.4\n")
     offsets = [0]
-    for obj in objects:
+    for i, o in enumerate(objects, start=1):
         offsets.append(len(out))
-        out.extend(obj)
+        out.extend(o)
     xref_pos = len(out)
-    out.extend(f"xref\n0 {len(objects) + 1}\n".encode("ascii"))
+    out.extend(f"xref\n0 {n_objs + 1}\n".encode())
     out.extend(b"0000000000 65535 f \n")
     for off in offsets[1:]:
-        out.extend(f"{off:010d} 00000 n \n".encode("ascii"))
+        out.extend(f"{off:010d} 00000 n \n".encode())
     out.extend(
-        f"trailer<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref_pos}\n%%EOF\n".encode(
-            "ascii"
-        )
+        f"trailer\n<< /Size {n_objs + 1} /Root 1 0 R >>\nstartxref\n{xref_pos}\n%%EOF\n".encode()
     )
     return bytes(out)

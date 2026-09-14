@@ -207,10 +207,10 @@ def render_invoice_thermal_text(payload: dict[str, Any], *, paper: str = "80mm")
 
 
 def to_invoice_thermal_pdf(payload: dict[str, Any], *, paper: str = "80mm") -> bytes:
-    from app.print_branding import build_text_pdf, load_logo_jpeg
+    from app.print_branding import build_text_pdf, load_logo_jpeg, style_powered_by_line
 
     text = render_invoice_thermal_text(payload, paper=paper)
-    lines = [(line, 8) for line in (text.splitlines() or [""])]
+    lines = [style_powered_by_line(line, 8) for line in (text.splitlines() or [""])]
     page_width = 226 if paper == "80mm" else 164
     line_height = 11
     top = 20
@@ -241,14 +241,15 @@ def to_invoice_a4_pdf(payload: dict[str, Any]) -> bytes:
         DEFAULT_FOOTER_INVOICE,
         build_text_pdf,
         load_logo_jpeg,
+        style_powered_by_line,
     )
 
     page_width, page_height = 595, 842
     margin = 40
-    lines: list[tuple[str, int]] = []
+    lines: list[tuple] = []
 
     def add(text: str, size: int = 10) -> None:
-        lines.append((text, size))
+        lines.append(style_powered_by_line(text, size))
 
     add(str(payload.get("company_name") or "RIBDIGI ERP"), 16)
     if payload.get("company_address"):
