@@ -18,7 +18,7 @@ See [`ADR_002_PAID_BILLING_SCAFFOLD.md`](ADR_002_PAID_BILLING_SCAFFOLD.md).
 | `BILLING_PROVIDER_MODE` | empty | `mock` (CI), `live` (provider API), or empty (auto: mock if secret starts with `sk_test_mock` / `sk_mock_`, else live) |
 | `BILLING_PROVIDER_API_BASE` | `https://api.stripe.com` | Override for tests / proxies |
 | `BILLING_CHECKOUT_ENABLED` | `false` | Honesty Complete non-claim; session create still follows provider keys |
-| `PAID_BILLING_ENTITLEMENT_GATE_ENABLED` | `false` | Arms future entitlement sync; **legacy trial/grace/suspend remains authoritative** |
+| `PAID_BILLING_ENTITLEMENT_GATE_ENABLED` | `false` | When **true**, provider subscription mirror status is authoritative for the **documented gated routes only** (`POST /sales`, `PATCH /companies/{id}`). Allow statuses: `active`, `trialing`. Deny: missing / `past_due` / `canceled` / other. When **false** (prod default), legacy trial/grace/suspend remains authoritative. Enabling does **not** claim paid billing Complete. |
 
 ## Fail-closed behavior
 
@@ -40,8 +40,9 @@ See [`ADR_002_PAID_BILLING_SCAFFOLD.md`](ADR_002_PAID_BILLING_SCAFFOLD.md).
 7. Confirm `POST /api/v1/billing/checkout-session` returns a real `checkout_url` and Company UI navigates to it.
 8. Confirm Checkout / `invoice.paid` does **not** mutate `Tenant.plan_code`.
 9. Confirm `GET /api/v1/billing/status` still reports `paid_billing_complete_claimed=false` and `checkout_enabled=false`.
-10. Do **not** enable `PAID_BILLING_ENTITLEMENT_GATE_ENABLED` in production until mirror→access evidence exists.
-11. Do **not** claim paid billing Complete from this checklist alone.
+10. Do **not** enable `PAID_BILLING_ENTITLEMENT_GATE_ENABLED` in production until mirror→access evidence exists on the gated allowlist (`POST /sales`, `PATCH /companies/{id}`).
+11. With gate ON in staging: confirm `active`/`trialing` allows gated writes; `past_due`/`canceled`/missing returns `403 PAID_BILLING_ENTITLEMENT_DENIED`.
+12. Do **not** claim paid billing Complete from this checklist alone.
 
 ## CI / mock
 

@@ -2709,6 +2709,12 @@ async def patch_company(
 ):
     from app import dashboard_scope as dashboard_scope_svc
 
+    # ADR-002 entitlement gate allowlist: PATCH /api/v1/companies/{company_id}
+    await billing_provider_svc.assert_paid_billing_entitlement(
+        db,
+        tenant_id=claims["tenant_id"],
+        route="PATCH /api/v1/companies/{company_id}",
+    )
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     dashboard_scope_svc.assert_company_level_company_branding_write_denied(
         managed,
@@ -8556,6 +8562,12 @@ async def sale(
 ):
     from app import dashboard_scope as dashboard_scope_svc
 
+    # ADR-002 entitlement gate allowlist: POST /api/v1/sales
+    await billing_provider_svc.assert_paid_billing_entitlement(
+        db,
+        tenant_id=claims["tenant_id"],
+        route="POST /api/v1/sales",
+    )
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     dashboard_scope_svc.assert_company_level_legacy_transaction_write_denied(
         managed,

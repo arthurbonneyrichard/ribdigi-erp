@@ -541,21 +541,204 @@ async def test_webhook_rejects_bad_signature_when_secret_set(client, monkeypatch
 
 
 @pytest.mark.asyncio
-async def test_entitlement_gate_flag_default_off_and_armed_non_authoritative(
+async def test_entitlement_gate_flag_default_off_and_on_operational_gate(
     client, monkeypatch
 ):
     ac, seed = client
     headers = await _super(ac, seed)
     status = await ac.get("/api/v1/billing/status", headers=headers)
-    assert status.json()["data"]["paid_billing_entitlement_gate_enabled"] is False
-    assert status.json()["data"]["operational_gate"] == "trial_grace_suspend_lifecycle"
+    body = status.json()["data"]
+    assert body["paid_billing_entitlement_gate_enabled"] is False
+    assert body["operational_gate"] == "trial_grace_suspend_lifecycle"
+    assert body["entitlement_gated_routes"] == [
+        "POST /api/v1/sales",
+        "PATCH /api/v1/companies/{company_id}",
+    ]
+    assert body["entitlement_gate"]["enabled"] is False
+    assert body["entitlement_gate"]["applied_to_routes"] == []
+    assert body["entitlement_gate"]["legacy_trial_authoritative_when_off"] is True
 
     _patch_billing(monkeypatch, PAID_BILLING_ENTITLEMENT_GATE_ENABLED=True)
     status2 = await ac.get("/api/v1/billing/status", headers=headers)
-    body = status2.json()["data"]
-    assert body["paid_billing_entitlement_gate_enabled"] is True
-    assert "legacy_trial_still_authoritative" in body["operational_gate"]
-    assert body["paid_billing_complete_claimed"] is False
+    body2 = status2.json()["data"]
+    assert body2["paid_billing_entitlement_gate_enabled"] is True
+    assert (
+        body2["operational_gate"]
+        == "provider_subscription_mirror_authoritative_for_gated_routes"
+    )
+    assert body2["entitlement_gate"]["enabled"] is True
+    assert body2["entitlement_gate"]["applied_to_routes"] == [
+        "POST /api/v1/sales",
+        "PATCH /api/v1/companies/{company_id}",
+    ]
+    assert body2["paid_billing_complete_claimed"] is False
+    assert body2["checkout_enabled"] is False
+
+
+async def _seed_subscription(db_session, *, tenant_id: str, status: str):
+    customer = await billing_svc.ensure_billing_customer(
+        db_session, tenant_id=tenant_id, email="billing@alpha.example.com"
+    )
+    row = m.TenantBillingSubscription(
+        tenant_id=tenant_id,
+        billing_customer_id=customer.id,
+        provider="stripe",
+        provider_subscription_id=f"sub_test_{status}_{tenant_id[:8]}",
+        status=status,
+        raw_status=status,
+        metadata_json={"scaffold_mirror": True, "payment_success": False},
+    )
+    db_session.add(row)
+    await db_session.commit()
+    return row
+
+
+def _company_headers(headers, seed):
+    out = dict(headers)
+    out["X-Workspace-Kind"] = "company"
+    out["X-Company-ID"] = seed["c1"].id
+    return out
+
+
+@pytest.mark.asyncio
+async def test_entitlement_gate_off_legacy_allows_sale_and_company_patch_without_sub(
+    client, db_session, monkeypatch
+):
+    """Flag OFF: gated routes behave as today (trial lifecycle), no subscription needed."""
+    ac, seed = client
+    headers = await _super(ac, seed)
+    _patch_billing(monkeypatch, PAID_BILLING_ENTITLEMENT_GATE_ENABLED=False)
+
+    sale = await ac.post(
+        "/api/v1/sales",
+        headers=_company_headers(headers, seed),
+        json={
+            "party_id": seed["party1"].id,
+            "subtotal": 5,
+            "tax": 0,
+            "total": 5,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1}],
+        },
+    )
+    assert sale.status_code == 200, sale.text
+
+    patch = await ac.patch(
+        f"/api/v1/companies/{seed['c1'].id}",
+        headers=headers,
+        json={"name": "Alpha Co Gate Off"},
+    )
+    assert patch.status_code == 200, patch.text
+    assert patch.json()["data"]["name"] == "Alpha Co Gate Off"
+
+
+@pytest.mark.asyncio
+async def test_entitlement_gate_on_active_allows_gated_routes(
+    client, db_session, monkeypatch
+):
+    ac, seed = client
+    headers = await _super(ac, seed)
+    _patch_billing(monkeypatch, PAID_BILLING_ENTITLEMENT_GATE_ENABLED=True)
+    await _seed_subscription(db_session, tenant_id=seed["t1"].id, status="active")
+
+    sale = await ac.post(
+        "/api/v1/sales",
+        headers=_company_headers(headers, seed),
+        json={
+            "party_id": seed["party1"].id,
+            "subtotal": 6,
+            "tax": 0,
+            "total": 6,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1}],
+        },
+    )
+    assert sale.status_code == 200, sale.text
+
+    patch = await ac.patch(
+        f"/api/v1/companies/{seed['c1'].id}",
+        headers=headers,
+        json={"name": "Alpha Co Active Sub"},
+    )
+    assert patch.status_code == 200, patch.text
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("bad_status", ["past_due", "canceled", "cancelled"])
+async def test_entitlement_gate_on_deny_statuses_block_gated_routes(
+    client, db_session, monkeypatch, bad_status
+):
+    ac, seed = client
+    headers = await _super(ac, seed)
+    _patch_billing(monkeypatch, PAID_BILLING_ENTITLEMENT_GATE_ENABLED=True)
+    await _seed_subscription(db_session, tenant_id=seed["t1"].id, status=bad_status)
+
+    sale = await ac.post(
+        "/api/v1/sales",
+        headers=_company_headers(headers, seed),
+        json={
+            "party_id": seed["party1"].id,
+            "subtotal": 7,
+            "tax": 0,
+            "total": 7,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1}],
+        },
+    )
+    assert sale.status_code == 403, sale.text
+    detail = sale.json()["detail"]
+    assert detail["code"] == "PAID_BILLING_ENTITLEMENT_DENIED"
+    assert detail["deny_reason"] == "subscription_status_denied"
+    assert detail["paid_billing_complete_claimed"] is False
+    assert detail["payment_success"] is False
+
+    patch = await ac.patch(
+        f"/api/v1/companies/{seed['c1'].id}",
+        headers=headers,
+        json={"name": f"Blocked {bad_status}"},
+    )
+    assert patch.status_code == 403, patch.text
+    assert patch.json()["detail"]["code"] == "PAID_BILLING_ENTITLEMENT_DENIED"
+
+
+@pytest.mark.asyncio
+async def test_entitlement_gate_on_missing_subscription_denies(
+    client, db_session, monkeypatch
+):
+    ac, seed = client
+    headers = await _super(ac, seed)
+    _patch_billing(monkeypatch, PAID_BILLING_ENTITLEMENT_GATE_ENABLED=True)
+    # No subscription row seeded.
+
+    sale = await ac.post(
+        "/api/v1/sales",
+        headers=_company_headers(headers, seed),
+        json={
+            "party_id": seed["party1"].id,
+            "subtotal": 4,
+            "tax": 0,
+            "total": 4,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1}],
+        },
+    )
+    assert sale.status_code == 403, sale.text
+    detail = sale.json()["detail"]
+    assert detail["code"] == "PAID_BILLING_ENTITLEMENT_DENIED"
+    assert detail["deny_reason"] == "subscription_missing"
+    assert detail["subscription_status"] is None
+
+    patch = await ac.patch(
+        f"/api/v1/companies/{seed['c1'].id}",
+        headers=headers,
+        json={"name": "Blocked Missing"},
+    )
+    assert patch.status_code == 403, patch.text
+
+
+def test_subscription_status_allows_access_unit():
+    assert billing_svc.subscription_status_allows_access("active") is True
+    assert billing_svc.subscription_status_allows_access("trialing") is True
+    assert billing_svc.subscription_status_allows_access("past_due") is False
+    assert billing_svc.subscription_status_allows_access("canceled") is False
+    assert billing_svc.subscription_status_allows_access(None) is False
+    assert billing_svc.subscription_status_allows_access("") is False
 
 
 @pytest.mark.asyncio
@@ -575,6 +758,7 @@ def test_platform_billing_honesty_payload_shape():
     assert honesty["paid_billing_complete_claimed"] is False
     assert honesty["checkout_enabled"] is False
     assert honesty["mrr_fabricated_claimed"] is False
+    assert honesty["entitlement_gated_routes"] == list(billing_svc.GATED_ROUTE_ALLOWLIST)
 
 
 def test_company_ui_opens_portal_and_checkout_urls_when_present():

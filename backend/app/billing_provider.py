@@ -40,6 +40,31 @@ DEFAULT_PROVIDER = "stripe"
 _http_transport: Any = None
 
 
+# Documented allowlist of routes that enforce the provider subscription mirror
+# when PAID_BILLING_ENTITLEMENT_GATE_ENABLED is True. Keep this set small and
+# explicit — expanding it is a separate product decision (still not Complete).
+GATED_ROUTE_ALLOWLIST: tuple[str, ...] = (
+    "POST /api/v1/sales",
+    "PATCH /api/v1/companies/{company_id}",
+)
+
+# Stripe-shaped statuses that allow gated writes when the flag is ON.
+ENTITLEMENT_ALLOW_STATUSES: frozenset[str] = frozenset({"active", "trialing"})
+
+# Explicit deny statuses (missing / unknown also deny when flag ON).
+ENTITLEMENT_DENY_STATUSES: frozenset[str] = frozenset(
+    {
+        "past_due",
+        "canceled",
+        "cancelled",
+        "unpaid",
+        "incomplete",
+        "incomplete_expired",
+        "paused",
+    }
+)
+
+
 def honesty_payload() -> dict[str, Any]:
     """Stable non-claim flags for API responses and tests."""
     gate_on = bool(getattr(settings, "PAID_BILLING_ENTITLEMENT_GATE_ENABLED", False))
@@ -57,12 +82,17 @@ def honesty_payload() -> dict[str, Any]:
         "checkout_enabled": False,
         "scaffold_status": "partial",
         "paid_billing_entitlement_gate_enabled": gate_on,
+        "entitlement_gated_routes": list(GATED_ROUTE_ALLOWLIST),
+        "entitlement_allow_statuses": sorted(ENTITLEMENT_ALLOW_STATUSES),
         "provider_keys_present": configured,
         "provider_mode": mode,
         "configured_provider": (getattr(settings, "BILLING_PROVIDER", "") or "").strip()
         or (DEFAULT_PROVIDER if configured else None),
+        # Flag OFF → trial/grace/suspend remains the commercial access gate.
+        # Flag ON → provider subscription mirror is authoritative *only* for
+        # GATED_ROUTE_ALLOWLIST (not paid billing Complete / go-live).
         "operational_gate": (
-            "provider_subscription_mirror_armed_legacy_trial_still_authoritative"
+            "provider_subscription_mirror_authoritative_for_gated_routes"
             if gate_on
             else "trial_grace_suspend_lifecycle"
         ),
@@ -187,11 +217,98 @@ async def list_subscriptions(
     )
 
 
+def subscription_status_allows_access(status: str | None) -> bool:
+    """Map provider subscription status → allow for gated routes (flag ON only)."""
+    if not status:
+        return False
+    key = str(status).strip().lower()
+    return key in ENTITLEMENT_ALLOW_STATUSES
+
+
+async def primary_subscription_mirror(
+    db: AsyncSession, *, tenant_id: str
+) -> m.TenantBillingSubscription | None:
+    """Newest local subscription mirror row for the tenant (may be None)."""
+    subs = await list_subscriptions(db, tenant_id=tenant_id)
+    return subs[0] if subs else None
+
+
+def entitlement_gate_enabled() -> bool:
+    return bool(getattr(settings, "PAID_BILLING_ENTITLEMENT_GATE_ENABLED", False))
+
+
+async def assert_paid_billing_entitlement(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    route: str | None = None,
+) -> dict[str, Any]:
+    """Enforce provider subscription mirror on gated routes when flag is ON.
+
+    Flag OFF → no-op (legacy trial/grace/suspend remains authoritative).
+    Flag ON → require a local subscription mirror with status in
+    ``ENTITLEMENT_ALLOW_STATUSES``. Missing / past_due / canceled / other
+    deny statuses → HTTP 403. Does **not** claim paid billing Complete,
+    payment success, or mutate ``Tenant.plan_code``.
+    """
+    if not entitlement_gate_enabled():
+        return {
+            "applied": False,
+            "allowed": True,
+            "reason": "gate_disabled_legacy_trial_grace_suspend",
+            "route": route,
+        }
+
+    from app.platform_const import is_platform_tenant_id
+
+    if is_platform_tenant_id(tenant_id):
+        return {
+            "applied": True,
+            "allowed": True,
+            "reason": "platform_tenant_exempt",
+            "route": route,
+        }
+
+    sub = await primary_subscription_mirror(db, tenant_id=tenant_id)
+    status = (sub.status if sub else None) or None
+    if subscription_status_allows_access(status):
+        return {
+            "applied": True,
+            "allowed": True,
+            "reason": "subscription_status_allowed",
+            "status": status,
+            "route": route,
+            "subscription_id": sub.id if sub else None,
+        }
+
+    deny_reason = "subscription_missing" if sub is None else "subscription_status_denied"
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "PAID_BILLING_ENTITLEMENT_DENIED",
+            "message": (
+                "Paid billing entitlement gate denied this mutation. "
+                "An active or trialing provider subscription mirror is required "
+                "when PAID_BILLING_ENTITLEMENT_GATE_ENABLED is true. "
+                "Paid billing Complete remains MISSING."
+            ),
+            "subscription_status": status,
+            "deny_reason": deny_reason,
+            "allow_statuses": sorted(ENTITLEMENT_ALLOW_STATUSES),
+            "route": route,
+            "paid_billing_complete_claimed": False,
+            "payment_success": False,
+            "gated_routes": list(GATED_ROUTE_ALLOWLIST),
+        },
+    )
+
+
 async def billing_status(db: AsyncSession, *, tenant: m.Tenant) -> dict[str, Any]:
     customer = await get_billing_customer(db, tenant_id=tenant.id)
     subs = await list_subscriptions(db, tenant_id=tenant.id)
     honesty = honesty_payload()
     mode = honesty["provider_mode"]
+    gate_on = bool(honesty["paid_billing_entitlement_gate_enabled"])
     if mode == "unconfigured":
         portal_available = False
         portal_reason = "not_configured"
@@ -207,6 +324,10 @@ async def billing_status(db: AsyncSession, *, tenant: m.Tenant) -> dict[str, Any
         portal_reason = "live_portal_session_ready"
         checkout_available = True
         checkout_reason = "live_checkout_session_ready"
+    primary = subs[0] if subs else None
+    mirror_allows = subscription_status_allows_access(
+        primary.status if primary else None
+    )
     return {
         **honesty,
         "tenant_id": tenant.id,
@@ -215,6 +336,14 @@ async def billing_status(db: AsyncSession, *, tenant: m.Tenant) -> dict[str, Any
         "billing_provider": None,  # keep ADR-002 serialize honesty until Complete
         "customer": serialize_customer(customer) if customer else None,
         "subscriptions": [serialize_subscription(s) for s in subs],
+        "entitlement_gate": {
+            "enabled": gate_on,
+            "applied_to_routes": list(GATED_ROUTE_ALLOWLIST) if gate_on else [],
+            "allow_statuses": sorted(ENTITLEMENT_ALLOW_STATUSES),
+            "mirror_status": primary.status if primary else None,
+            "mirror_allows_gated_writes": bool(mirror_allows) if gate_on else None,
+            "legacy_trial_authoritative_when_off": True,
+        },
         "portal": {
             "available": portal_available,
             "reason": portal_reason,
@@ -229,9 +358,15 @@ async def billing_status(db: AsyncSession, *, tenant: m.Tenant) -> dict[str, Any
         "message": (
             "Paid billing is PARTIAL (ADR-002). Portal / Checkout Session create "
             "work when provider keys are configured (or BILLING_PROVIDER_MODE=mock "
-            "for CI). No payment success, no auto plan upgrade, no fabricated MRR, "
-            "entitlement gate default OFF (trial/grace/suspend lifecycle still "
-            "authoritative). Complete MISSING."
+            "for CI). No payment success, no auto plan upgrade, no fabricated MRR. "
+            + (
+                "Entitlement gate ON — provider subscription mirror is authoritative "
+                "only for documented gated routes (not paid billing Complete)."
+                if gate_on
+                else "Entitlement gate default OFF (trial/grace/suspend lifecycle still "
+                "authoritative)."
+            )
+            + " Complete MISSING."
         ),
     }
 
@@ -918,11 +1053,14 @@ async def ingest_provider_webhook(
         "processing_status": row.processing_status,
         "entitlement_gate_applied": False,
         "entitlement_gate_armed": gate_on,
+        "entitlement_gated_routes": list(GATED_ROUTE_ALLOWLIST),
         "payment_success": False,
         "payment_processed": False,
         "message": (
-            "Webhook recorded. Entitlement gate remains non-authoritative "
-            "(legacy trial lifecycle). Paid billing Complete still MISSING."
+            "Webhook recorded. Subscription mirror may update locally; entitlement "
+            "gate (when enabled) evaluates mirror status on gated routes only. "
+            "Legacy trial lifecycle remains authoritative when gate is OFF. "
+            "Paid billing Complete still MISSING."
         ),
     }
 

@@ -18,15 +18,33 @@ Engineering toward paid billing, extending existing `plan_code` / `PLAN_CATALOG`
 | Checkout | Live Stripe Checkout Session create when keys + price; **mock for CI**; **503 when unconfigured**; never auto-upgrades `Tenant.plan_code` |
 | Platform | `GET /platform/billing` includes honesty flags |
 | Flag | `PAID_BILLING_ENTITLEMENT_GATE_ENABLED` default **false** |
+| Entitlement gate (when ON) | Provider subscription mirror authoritative **only** for documented gated routes (see below) |
 | Ops | [`PAID_BILLING_PROVIDER_OPS.md`](PAID_BILLING_PROVIDER_OPS.md) |
-| Tests | `backend/tests/test_paid_billing_scaffold.py` (portal + checkout + signed webhook proof) |
+| Tests | `backend/tests/test_paid_billing_scaffold.py` (portal + checkout + signed webhook + entitlement gate) |
+
+## Entitlement gate allowlist (flag ON only)
+
+When `PAID_BILLING_ENTITLEMENT_GATE_ENABLED=true`, these mutations require a local
+subscription mirror with status in `{active, trialing}`:
+
+| Method + path | Notes |
+|---------------|-------|
+| `POST /api/v1/sales` | Legacy create-sale write |
+| `PATCH /api/v1/companies/{company_id}` | Company admin profile mutation |
+
+Deny (HTTP 403 `PAID_BILLING_ENTITLEMENT_DENIED`) when mirror is missing or status is
+`past_due` / `canceled` / `cancelled` / other non-allow statuses.
+
+Flag **OFF** (production default): gate is a no-op; trial/grace/suspend lifecycle
+remains authoritative for write access. Enabling the flag does **not** claim paid
+billing Complete.
 
 ## What did **not** land
 
 - Payment success Complete / fabricated `payment_success` responses
 - Auto mutation of `Tenant.plan_code` / entitlement caps from Checkout or webhooks (including `invoice.paid`)
 - Fabricated MRR / live subscriptions Completes
-- Entitlement gate applying provider status as authoritative access control
+- Global entitlement enforcement on all ERP writes (only the allowlist above)
 - Paid billing Complete / go-live Complete
 
 ## Honesty flags (must stay false until live provider + verification)
@@ -40,7 +58,9 @@ mrr_fabricated_claimed: false
 billing_deferred: true
 checkout_enabled: false          # Complete non-claim (session create ≠ Complete)
 scaffold_status: partial
-operational_gate: trial_grace_suspend_lifecycle   # unless gate flag ON (still non-authoritative)
+operational_gate: trial_grace_suspend_lifecycle
+  # when gate flag ON:
+  #   provider_subscription_mirror_authoritative_for_gated_routes
 ```
 
 `serialize_tenant` still returns `billing_deferred: true` and `billing_provider: null`.
@@ -66,7 +86,7 @@ Creating a Checkout Session URL is **not** payment success, does **not** auto-up
 ## Next cutover steps (separate Completes)
 
 1. Staging: real provider keys + price map + signed webhook soak evidence pack
-2. Wire entitlement gate ON only after mirror→access evidence (do not claim Complete from flag alone)
+2. Enable entitlement gate ON in staging only after mirror→access evidence on the allowlist (do not claim Complete from flag alone)
 3. Evidence pack before flipping Complete flags
 
 Offline Complete / 7-day VERIFIED / go-live / ADR-005 Complete remain **MISSING**.  
