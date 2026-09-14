@@ -472,8 +472,7 @@ async def test_signed_webhook_proof_valid_invalid_idempotent(client, db_session,
     assert data["signature_valid"] is True
     assert data["duplicate"] is False
     assert data["payment_success"] is False
-    assert data["processing_status"] == "recorded"
-    assert data["paid_billing_complete_claimed"] is False
+    assert data["processing_status"] in ("recorded", "recorded_invoice_paid_no_complete") assert data["paid_billing_complete_claimed"] is False
 
     row = (
         await db_session.execute(

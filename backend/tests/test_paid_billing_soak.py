@@ -29,8 +29,6 @@ from app import models as m
 from app.config import Settings, settings
 from tests.conftest import auth_headers
 
-pytestmark = pytest.mark.asyncio
-
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -114,6 +112,7 @@ def test_soak_flag_and_complete_still_default_off_ops_blocked():
     assert (ROOT / "docs/ADR_002_PAID_BILLING_SCAFFOLD.md").is_file()
 
 
+@pytest.mark.asyncio
 async def test_soak_portal_checkout_mock_and_status(client, monkeypatch):
     ac, seed = client
     headers = await _super(ac, seed)
@@ -166,6 +165,7 @@ async def test_soak_portal_checkout_mock_and_status(client, monkeypatch):
     assert plan_after in ("trial", "starter", "growth", "enterprise")
 
 
+@pytest.mark.asyncio
 async def test_soak_subscription_lifecycle_and_gate_on(client, db_session, monkeypatch):
     """Signed webhooks drive mirror lifecycle; gate ON enforces allowlist."""
     ac, seed = client
@@ -324,6 +324,7 @@ async def test_soak_subscription_lifecycle_and_gate_on(client, db_session, monke
     assert all(s.get("payment_success") is False for s in subs)
 
 
+@pytest.mark.asyncio
 async def test_soak_checkout_completed_and_invoice_paid_no_completes(
     client, db_session, monkeypatch
 ):
@@ -412,6 +413,7 @@ async def test_soak_checkout_completed_and_invoice_paid_no_completes(
     assert billing_svc.serialize_subscription(row)["payment_success"] is False
 
 
+@pytest.mark.asyncio
 async def test_soak_idempotent_signed_webhook_replay(client, monkeypatch):
     ac, seed = client
     await _super(ac, seed)
