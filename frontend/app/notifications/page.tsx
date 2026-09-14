@@ -135,7 +135,7 @@ export default function Page() {
         history. Channel preferences for dashboard / email / SMS per type.
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: '#047857' }}>{message}</p>}
+      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
         <button

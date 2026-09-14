@@ -413,7 +413,7 @@ export default function Page() {
         accounts (BR-3.1). Soft-deactivate custom roles without deleting assignees (BR-3.2).
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: '#047857' }}>{message}</p>}
+      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 
       {canWrite && (
         <form onSubmit={createCustomRole} className="card" style={{ margin: '20px 0', display: 'grid', gap: 8 }}>
@@ -575,7 +575,7 @@ export default function Page() {
                       <td>{r.email || '—'}</td>
                       <td>{r.full_name || '—'}</td>
                       <td>{r.role || '—'}</td>
-                      <td style={{ color: r.ok ? '#047857' : '#b91c1c' }}>{r.ok ? 'OK' : 'Error'}</td>
+                      <td style={{ color: r.ok ? 'var(--brand, #4AB012)' : '#b91c1c' }}>{r.ok ? 'OK' : 'Error'}</td>
                       <td>{r.errors?.length ? r.errors.join('; ') : '—'}</td>
                     </tr>
                   ))}

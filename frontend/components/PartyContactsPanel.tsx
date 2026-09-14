@@ -122,7 +122,7 @@ export default function PartyContactsPanel({ kind, partyId, partyLabel }: Props)
         party phone/email used for documents.
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: '#047857' }}>{message}</p>}
+      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
       <table className="table">
         <thead>
           <tr>

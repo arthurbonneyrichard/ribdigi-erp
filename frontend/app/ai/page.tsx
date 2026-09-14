@@ -900,7 +900,7 @@ export default function Page() {
           <Link href="/expenses">Expenses</Link> to review (requires expenses write).
         </p>
         {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-        {message && <p style={{ color: '#166534' }}>{message}</p>}
+        {message && <p style={{ color: 'var(--deep-green, #006B2E)' }}>{message}</p>}
         {a && <pre style={{ whiteSpace: 'pre-wrap' }}>{a}</pre>}
         {alerts.length > 0 && (
           <ul>

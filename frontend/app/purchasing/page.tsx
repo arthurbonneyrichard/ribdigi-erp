@@ -1256,7 +1256,7 @@ export default function Page() {
       <h1>Purchasing</h1>
       <p className="muted">Requests → purchase orders → GRN → invoices → returns</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: '#047857' }}>{message}</p>}
+      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         {(
@@ -2133,7 +2133,7 @@ export default function Page() {
                 </p>
               )}
               {selected.emailed_to && (
-                <p style={{ marginTop: 0, color: '#475569', fontSize: 14 }}>
+                <p style={{ marginTop: 0, color: 'var(--muted, #4D5D56)', fontSize: 14 }}>
                   Last emailed to {selected.emailed_to}
                   {selected.emailed_at ? ` · ${String(selected.emailed_at).slice(0, 19)}` : ''}
                 </p>

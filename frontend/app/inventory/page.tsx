@@ -1528,7 +1528,7 @@ export default function Page() {
         counts, movements &amp; adjustments
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: '#047857' }}>{message}</p>}
+      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         {(
@@ -2089,7 +2089,7 @@ export default function Page() {
                       <td>{r.line}</td>
                       <td>{r.sku || '—'}</td>
                       <td>{r.name || '—'}</td>
-                      <td style={{ color: r.ok ? '#047857' : '#b91c1c' }}>{r.ok ? 'OK' : 'Error'}</td>
+                      <td style={{ color: r.ok ? 'var(--brand, #4AB012)' : '#b91c1c' }}>{r.ok ? 'OK' : 'Error'}</td>
                       <td>{r.errors?.length ? r.errors.join('; ') : '—'}</td>
                     </tr>
                   ))}

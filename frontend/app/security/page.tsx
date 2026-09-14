@@ -249,7 +249,7 @@ export default function Page() {
       <h1>Security / 2FA</h1>
       <p className="muted">TOTP authenticator, passkeys, recovery codes, and active sessions</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: '#047857' }}>{message}</p>}
+      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 
       {status && (
         <div className="card" style={{ marginBottom: 16 }}>

@@ -794,7 +794,7 @@ export default function Page() {
         {levels.length > 1 ? `; ${levels.length} approval levels above that` : ''}. Receipts supported.
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: '#047857' }}>{message}</p>}
+      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 
       <div className="erp-split">
       <div className="card" style={{ display: 'grid', gap: 8 }}>
@@ -1067,7 +1067,7 @@ export default function Page() {
           , not the template description).
         </p>
         {recEditId ? (
-          <p style={{ color: '#166534', marginTop: 0 }}>
+          <p style={{ color: 'var(--deep-green, #006B2E)', marginTop: 0 }}>
             Editing schedule — change fields below, then Save schedule (or Cancel).
           </p>
         ) : null}

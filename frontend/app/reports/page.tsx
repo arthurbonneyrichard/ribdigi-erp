@@ -510,7 +510,7 @@ export default function Page() {
       <h1>Reports & Analytics</h1>
       <p className="muted">Sales, inventory, purchases, expenses, cash flow, and balance sheet</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: '#047857' }}>{message}</p>}
+      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
         {(

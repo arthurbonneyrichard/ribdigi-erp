@@ -136,7 +136,7 @@ export default function Page() {
         Backup failed alert for admins (see Notifications).
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: '#047857' }}>{message}</p>}
+      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h2>Schedule</h2>

@@ -885,7 +885,7 @@ export default function Page() {
       <h1>Accounting</h1>
       <p className="muted">Chart of accounts, journals, trial balance, P&amp;L, bank reconciliation, and cheques</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: '#047857' }}>{message}</p>}
+      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         <button
@@ -1174,7 +1174,7 @@ export default function Page() {
               equity &amp; income credit. Unbalanced residual plugs to Owner&apos;s Equity (3000).
             </p>
             {coaOpenStatus?.posted ? (
-              <p style={{ color: '#047857', margin: 0 }}>
+              <p style={{ color: 'var(--brand, #4AB012)', margin: 0 }}>
                 Already posted: {coaOpenStatus.journal_number}
                 {coaOpenStatus.reference ? ` (${coaOpenStatus.reference})` : ''}
               </p>

@@ -231,7 +231,7 @@ export default function Page() {
       <h1>Tax</h1>
       <p className="muted">Rates, calculator, period summary, and filing export pack</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: '#047857' }}>{message}</p>}
+      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Period</h3>

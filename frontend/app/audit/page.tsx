@@ -197,7 +197,7 @@ export default function Page() {
         Append-only activity trail with integrity verification and 7-year retention (BR-17.2).
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: '#047857' }}>{message}</p>}
+      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 
       {retention && (
         <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }} data-testid="audit-retention">
