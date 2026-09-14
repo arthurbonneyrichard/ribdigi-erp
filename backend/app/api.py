@@ -13886,7 +13886,9 @@ async def list_cheques(
         store_ids=managed,
         warehouse_ids=managed_wh,
     )
-    return env([cheques_svc.serialize_cheque(r) for r in rows])
+    out = [cheques_svc.serialize_cheque(r) for r in rows]
+    out = dashboard_scope_svc.apply_cheque_manager_redacts_list(out, managed)
+    return env(out)
 
 
 @api.get("/accounting/cheques/export")
@@ -13923,11 +13925,17 @@ async def get_cheque_detail(
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     row = await cheques_svc.get_cheque(
         db, claims["tenant_id"], cheque_id, company_id=claims.get("company_id")
     )
     await cheques_svc.assert_cheque_in_manager_scope(db, claims, row)
-    return env(cheques_svc.serialize_cheque(row))
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    out = dashboard_scope_svc.apply_cheque_manager_redacts(
+        cheques_svc.serialize_cheque(row), managed
+    )
+    return env(out)
 
 
 @api.post("/accounting/cheques/{cheque_id}/deposit")
@@ -13936,6 +13944,8 @@ async def deposit_cheque_api(
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await cheques_svc.get_cheque(
         db, claims["tenant_id"], cheque_id, company_id=claims.get("company_id")
     )
@@ -13948,7 +13958,11 @@ async def deposit_cheque_api(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    return env(cheques_svc.serialize_cheque(row), "Cheque deposited to bank")
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    out = dashboard_scope_svc.apply_cheque_manager_redacts(
+        cheques_svc.serialize_cheque(row), managed
+    )
+    return env(out, "Cheque deposited to bank")
 
 
 @api.post("/accounting/cheques/{cheque_id}/clear")
@@ -13957,6 +13971,8 @@ async def clear_cheque_api(
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await cheques_svc.get_cheque(
         db, claims["tenant_id"], cheque_id, company_id=claims.get("company_id")
     )
@@ -13969,7 +13985,11 @@ async def clear_cheque_api(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    return env(cheques_svc.serialize_cheque(row), "Cheque cleared")
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    out = dashboard_scope_svc.apply_cheque_manager_redacts(
+        cheques_svc.serialize_cheque(row), managed
+    )
+    return env(out, "Cheque cleared")
 
 
 @api.post("/accounting/cheques/{cheque_id}/bounce")
@@ -13979,6 +13999,8 @@ async def bounce_cheque_api(
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await cheques_svc.get_cheque(
         db, claims["tenant_id"], cheque_id, company_id=claims.get("company_id")
     )
@@ -13992,7 +14014,11 @@ async def bounce_cheque_api(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    return env(cheques_svc.serialize_cheque(row), "Cheque bounced")
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    out = dashboard_scope_svc.apply_cheque_manager_redacts(
+        cheques_svc.serialize_cheque(row), managed
+    )
+    return env(out, "Cheque bounced")
 
 
 @api.post("/accounting/cheques/{cheque_id}/cancel")
@@ -14002,6 +14028,8 @@ async def cancel_cheque_api(
     claims=Depends(require_permission("accounting", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
     existing = await cheques_svc.get_cheque(
         db, claims["tenant_id"], cheque_id, company_id=claims.get("company_id")
     )
@@ -14015,7 +14043,11 @@ async def cancel_cheque_api(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    return env(cheques_svc.serialize_cheque(row), "Cheque cancelled")
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    out = dashboard_scope_svc.apply_cheque_manager_redacts(
+        cheques_svc.serialize_cheque(row), managed
+    )
+    return env(out, "Cheque cancelled")
 
 
 @api.get("/accounting/journal-entries")

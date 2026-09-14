@@ -72,6 +72,8 @@ async def export_cheques_csv(
     store_ids: list[str] | None = None,
     warehouse_ids: list[str] | None = None,
 ) -> str:
+    from app import dashboard_scope as dashboard_scope_svc
+
     rows = await cheques_svc.list_cheques(
         db,
         tenant_id,
@@ -86,6 +88,7 @@ async def export_cheques_csv(
     writer.writeheader()
     for row in rows:
         data = cheques_svc.serialize_cheque(row)
+        data = dashboard_scope_svc.apply_cheque_manager_redacts(data, store_ids)
         writer.writerow({k: _cell(data.get(k)) for k in CHEQUE_EXPORT_COLUMNS})
     return buf.getvalue()
 

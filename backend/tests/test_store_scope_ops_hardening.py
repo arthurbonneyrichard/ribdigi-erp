@@ -8900,6 +8900,139 @@ async def test_store_manager_cheques_store_wh_scoped(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_cheque_bank_name_redacted(client, db_session):
+    """Cheque list/get/export nulls bank_name for store_manager.
+
+    Liquid-account JSON already redacts bank_name/account_number/bank_branch.
+    Cheque JSON/CSV must not re-dump paying-bank identity. Amount /
+    cheque_number / status remain; admin keeps bank_name.
+    """
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["accounting"] = ["read", "write"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Cheque Bank Redact Store",
+        code="CHQ-BNK-RD",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    cust = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Cheque Bank Redact Customer",
+        kind="customer",
+        status="active",
+    )
+    db_session.add(cust)
+    await db_session.flush()
+
+    inv = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        invoice_number="INV-CHQ-BNK-1",
+        customer_id=cust.id,
+        status="posted",
+        subtotal=100,
+        total_amount=100,
+        paid_amount=40,
+        currency="USD",
+        exchange_rate=1,
+        created_by=mgr.id,
+    )
+    db_session.add(inv)
+    await db_session.flush()
+
+    pay = m.CustomerPayment(
+        tenant_id=tid,
+        company_id=cid,
+        payment_number="CPAY-CHQ-BNK-1",
+        customer_id=cust.id,
+        sales_invoice_id=inv.id,
+        amount=40,
+        payment_method="cheque",
+        currency="USD",
+        exchange_rate=1,
+        created_by=mgr.id,
+    )
+    db_session.add(pay)
+    await db_session.flush()
+
+    bank_secret = "Secret Paying Bank Plc"
+    chq = m.Cheque(
+        tenant_id=tid,
+        company_id=cid,
+        direction="received",
+        status="pending",
+        cheque_number="CHQ-BNK-RD-1",
+        amount=40,
+        bank_name=bank_secret,
+        party_id=cust.id,
+        customer_payment_id=pay.id,
+    )
+    db_session.add(chq)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    admin_get = await ac.get(
+        f"/api/v1/accounting/cheques/{chq.id}", headers=admin_headers
+    )
+    assert admin_get.status_code == 200, admin_get.text
+    assert admin_get.json()["data"].get("bank_name") == bank_secret
+
+    mgr_get = await ac.get(f"/api/v1/accounting/cheques/{chq.id}", headers=headers)
+    assert mgr_get.status_code == 200, mgr_get.text
+    mgr_data = mgr_get.json()["data"]
+    assert mgr_data.get("bank_name") is None
+    assert float(mgr_data.get("amount") or 0) == 40
+    assert mgr_data.get("cheque_number") == "CHQ-BNK-RD-1"
+
+    mgr_list = await ac.get("/api/v1/accounting/cheques", headers=headers)
+    assert mgr_list.status_code == 200, mgr_list.text
+    row = next(r for r in mgr_list.json()["data"] if r["id"] == chq.id)
+    assert row.get("bank_name") is None
+
+    admin_csv = await ac.get(
+        "/api/v1/accounting/cheques/export", headers=admin_headers
+    )
+    assert admin_csv.status_code == 200, admin_csv.text
+    assert bank_secret in admin_csv.text
+
+    mgr_csv = await ac.get("/api/v1/accounting/cheques/export", headers=headers)
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    assert bank_secret not in mgr_csv.text
+    assert "CHQ-BNK-RD-1" in mgr_csv.text
+
+
+@pytest.mark.asyncio
 async def test_store_manager_pos_holds_and_drawer_export_scoped(client, db_session):
     """POS holds follow PosSession.store_id; drawer-settings export is store scoped."""
     ac, seed = client

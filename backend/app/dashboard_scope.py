@@ -2629,6 +2629,43 @@ def redact_liquid_account_bank_details(payload: dict) -> dict:
     return out
 
 
+def omit_cheque_bank_name(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit cheque ``bank_name``.
+
+    Liquid-account JSON already redacts ``bank_name`` / account_number /
+    bank_branch. Cheque list/get/export (+ lifecycle responses) must not
+    re-dump paying-bank identity after those liquid redacts. Amount /
+    ``cheque_number`` / status / dates / party refs remain; admin keeps
+    ``bank_name``.
+    """
+    return managed_ids is not None
+
+
+def redact_cheque_bank_name(payload: dict) -> dict:
+    """Null ``bank_name`` on a serialized cheque JSON/CSV row."""
+    out = dict(payload)
+    if "bank_name" in out:
+        out["bank_name"] = None
+    return out
+
+
+def apply_cheque_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager cheque JSON redacts (bank_name)."""
+    out = payload
+    if omit_cheque_bank_name(managed_ids):
+        out = redact_cheque_bank_name(out)
+    return out
+
+
+def apply_cheque_manager_redacts_list(
+    rows: list[dict], managed_ids: list[str] | None
+) -> list[dict]:
+    """Map ``apply_cheque_manager_redacts`` across cheque list rows."""
+    return [apply_cheque_manager_redacts(row, managed_ids) for row in rows]
+
+
 def assert_company_level_bank_connection_write_denied(
     managed_ids: list[str] | None,
     *,
