@@ -3811,7 +3811,9 @@ def omit_product_catalog_assignment(managed_ids: list[str] | None) -> bool:
     Categories/brands/units list GET + tax rates list/detail already denied; product
     master writes already denied. List/get/export must not re-dump
     ``category_id`` / ``brand_id`` / ``unit_id`` / ``tax_rate_id`` (or CSV
-    ``category_code`` / ``brand_code`` / ``unit_code``). Name / ``category`` string /
+    ``category_code`` / ``brand_code`` / ``unit_code``). Sales-by-product
+    report/export also omits ``category_id`` via
+    ``redact_sales_products_category_id``. Name / ``category`` string /
     selling price / WH stock / ``tax_exempt`` remain; tax apply stays server-side.
     """
     return managed_ids is not None
@@ -3823,6 +3825,41 @@ def redact_product_catalog_assignment(payload: dict) -> dict:
     for key in ("category_id", "brand_id", "unit_id", "tax_rate_id"):
         if key in out:
             out[key] = None
+    return out
+
+
+def redact_sales_products_category_id(payload: dict) -> dict:
+    """Null ``category_id`` on sales-by-product report rows (and nested list).
+
+    Defense-in-depth after product list/get catalog-assignment redacts and
+    categories list GET deny. Revenue / quantity / name / product_id / sku remain
+    for store ops.
+    """
+    out = dict(payload)
+    if "category_id" in out:
+        out["category_id"] = None
+    products = out.get("products")
+    if isinstance(products, list):
+        out["products"] = [
+            redact_sales_products_category_id(row) if isinstance(row, dict) else row
+            for row in products
+        ]
+    items = out.get("items")
+    if isinstance(items, list):
+        out["items"] = [
+            redact_sales_products_category_id(row) if isinstance(row, dict) else row
+            for row in items
+        ]
+    return out
+
+
+def apply_sales_products_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager sales-by-product report redacts (``category_id``)."""
+    out = payload
+    if omit_product_catalog_assignment(managed_ids):
+        out = redact_sales_products_category_id(out)
     return out
 
 

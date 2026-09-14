@@ -19592,6 +19592,132 @@ async def test_store_manager_sales_salesperson_role_redacted(client, db_session)
 
 
 @pytest.mark.asyncio
+async def test_store_manager_sales_products_category_id_redacted(client, db_session):
+    """Sales-by-product nulls category_id for store_manager.
+
+    Product list/get catalog assignment already redacted; categories list GET
+    denied. Report JSON/CSV must not re-dump company catalog category_id.
+    Revenue / quantity / name / product_id / sku remain; admin keeps category_id.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    today = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
+
+    cat = m.ProductCategory(
+        tenant_id=tid,
+        company_id=cid,
+        code="SPCAT1",
+        name="SP Cat Dump",
+        is_active=True,
+    )
+    db_session.add(cat)
+    await db_session.flush()
+    product = m.Product(
+        tenant_id=tid,
+        company_id=cid,
+        name="SP Cat Product",
+        sku="SP-CAT-SKU-1",
+        selling_price=12,
+        cost_price=4,
+        stock_qty=0,
+        category_id=cat.id,
+        is_active=True,
+    )
+    db_session.add(product)
+    await db_session.flush()
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="SP Cat Store",
+        code="SPC1",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    inv = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="SP-CAT-1",
+        customer_id=seed["party1"].id,
+        status="posted",
+        subtotal=12,
+        tax_amount=0,
+        total_amount=12,
+        store_id=store.id,
+        posted_at=today,
+        created_by=seed["admin1"].id,
+    )
+    db_session.add(inv)
+    await db_session.flush()
+    db_session.add(
+        m.SalesInvoiceItem(
+            tenant_id=tid,
+            sales_invoice_id=inv.id,
+            product_id=product.id,
+            quantity=1,
+            unit_price=12,
+            line_total=12,
+        )
+    )
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    admin_rpt = await ac.get("/api/v1/reports/sales/products", headers=admin_company)
+    assert admin_rpt.status_code == 200, admin_rpt.text
+    admin_products = admin_rpt.json()["data"]["products"]
+    admin_row = next(r for r in admin_products if r.get("product_id") == product.id)
+    assert admin_row.get("category_id") == cat.id
+    assert float(admin_row.get("revenue") or 0) >= 12.0
+
+    mgr_rpt = await ac.get("/api/v1/reports/sales/products", headers=headers)
+    assert mgr_rpt.status_code == 200, mgr_rpt.text
+    mgr_data = mgr_rpt.json()["data"]
+    assert float(mgr_data["total_revenue"]) == pytest.approx(12.0)
+    mgr_products = mgr_data["products"]
+    mgr_row = next(r for r in mgr_products if r.get("product_id") == product.id)
+    assert mgr_row.get("category_id") is None
+    assert mgr_row.get("sku") == "SP-CAT-SKU-1"
+    assert mgr_row.get("name") == "SP Cat Product"
+    assert float(mgr_row.get("revenue") or 0) == pytest.approx(12.0)
+
+    admin_csv = await ac.get(
+        "/api/v1/reports/export",
+        headers=admin_company,
+        params={"report_type": "sales_products", "format": "csv"},
+    )
+    assert admin_csv.status_code == 200, admin_csv.text
+    admin_rows = list(csv.DictReader(io.StringIO(admin_csv.text)))
+    admin_csv_row = next(r for r in admin_rows if r.get("product_id") == product.id)
+    assert admin_csv_row.get("category_id") == cat.id
+
+    mgr_csv = await ac.get(
+        "/api/v1/reports/export",
+        headers=headers,
+        params={"report_type": "sales_products", "format": "csv"},
+    )
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    mgr_rows = list(csv.DictReader(io.StringIO(mgr_csv.text)))
+    mgr_csv_row = next(r for r in mgr_rows if r.get("product_id") == product.id)
+    assert mgr_csv_row.get("category_id") in (None, "")
+    assert float(mgr_csv_row.get("revenue") or 0) == pytest.approx(12.0)
+
+
+@pytest.mark.asyncio
 async def test_store_manager_sales_customers_party_code_redacted(client, db_session):
     """Sales-by-customer nulls party code for store_manager.
 

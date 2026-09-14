@@ -15045,18 +15045,18 @@ async def report_sales_products(
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
-    return env(
-        await reports_svc.sales_by_product(
-            db,
-            claims["tenant_id"],
-            from_date=reports_svc.parse_date(from_date),
-            to_date=reports_svc.parse_date(to_date, end_of_day=True),
-            store_id=single,
-            category_id=category_id,
-            company_id=claims.get("company_id"),
-            store_ids=multi,
-        )
+    data = await reports_svc.sales_by_product(
+        db,
+        claims["tenant_id"],
+        from_date=reports_svc.parse_date(from_date),
+        to_date=reports_svc.parse_date(to_date, end_of_day=True),
+        store_id=single,
+        category_id=category_id,
+        company_id=claims.get("company_id"),
+        store_ids=multi,
     )
+    data = dashboard_scope_svc.apply_sales_products_manager_redacts(data, managed)
+    return env(data)
 
 
 @api.get("/reports/sales/customers")
