@@ -23555,3 +23555,136 @@ async def test_store_manager_audit_details_fx_redacted(client, db_session):
     assert mgr_csv_details.get("settlement_base") is None
     assert float(mgr_csv_details.get("total") or 0) == pytest.approx(80.0)
     assert mgr_csv_details.get("invoice_number") == "INV-AFX-1"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_audit_details_cle_master_redacted(client, db_session):
+    """Audit list/export nulls CLE master fields inside details for store_manager.
+
+    CREDIT_LIMIT_EXCEEDED 409 already redacts credit_limit / available /
+    current_balance / projected_balance / additional_amount. Scoped audit
+    JSON/CSV must not re-dump company credit master / base projection via
+    credit_limit_override details. Operational amount / invoice_number /
+    store_id / reason remain; admin keeps CLE master fields. FX keys already
+    redacted separately; integrity hashes unchanged (redact on read only).
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    other_user = seed["admin1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Audit CLE Master Store",
+        code="ACM-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+
+    cle_ev = await audit_svc.record_event(
+        db_session,
+        tenant_id=tid,
+        company_id=cid,
+        user_id=other_user.id,
+        module="sales",
+        action="credit_limit_override",
+        entity="sales_invoice",
+        entity_id="inv-acm-1",
+        details={
+            "invoice_number": "INV-ACM-1",
+            "customer_id": "cust-acm-1",
+            "customer_name": "ACM Customer",
+            "reason": "finance override for known good customer",
+            "credit_limit": 100.0,
+            "available": 20.0,
+            "current_balance": 80.0,
+            "projected_balance": 180.0,
+            "additional_amount": 100.0,
+            "invoice_total": 80.0,
+            "invoice_total_base": 100.0,
+            "currency": "USD",
+            "exceeded": True,
+            "store_id": store.id,
+        },
+    )
+    await db_session.commit()
+
+    admin_listed = await ac.get(
+        "/api/v1/audit-logs", headers=admin_company, params={"limit": 500}
+    )
+    assert admin_listed.status_code == 200, admin_listed.text
+    admin_row = next(r for r in admin_listed.json()["data"] if r["id"] == cle_ev.id)
+    admin_details = admin_row.get("details") or {}
+    assert float(admin_details.get("credit_limit") or 0) == pytest.approx(100.0)
+    assert float(admin_details.get("available") or 0) == pytest.approx(20.0)
+    assert float(admin_details.get("current_balance") or 0) == pytest.approx(80.0)
+    assert float(admin_details.get("projected_balance") or 0) == pytest.approx(180.0)
+    assert float(admin_details.get("additional_amount") or 0) == pytest.approx(100.0)
+    assert admin_details.get("currency") == "USD"
+    assert float(admin_details.get("invoice_total_base") or 0) == pytest.approx(100.0)
+
+    mgr_listed = await ac.get(
+        "/api/v1/audit-logs", headers=headers, params={"limit": 500}
+    )
+    assert mgr_listed.status_code == 200, mgr_listed.text
+    mgr_row = next(r for r in mgr_listed.json()["data"] if r["id"] == cle_ev.id)
+    mgr_details = mgr_row.get("details") or {}
+    assert mgr_details.get("credit_limit") is None
+    assert mgr_details.get("available") is None
+    assert mgr_details.get("current_balance") is None
+    assert mgr_details.get("projected_balance") is None
+    assert mgr_details.get("additional_amount") is None
+    # FX keys already redacted by audit FX slice
+    assert mgr_details.get("currency") is None
+    assert mgr_details.get("invoice_total_base") is None
+    assert float(mgr_details.get("invoice_total") or 0) == pytest.approx(80.0)
+    assert mgr_details.get("invoice_number") == "INV-ACM-1"
+    assert mgr_details.get("store_id") == store.id
+    assert mgr_details.get("reason") == "finance override for known good customer"
+    assert mgr_details.get("exceeded") is True
+
+    admin_csv = await ac.get(
+        "/api/v1/audit-logs/export",
+        headers=admin_company,
+        params={"format": "csv"},
+    )
+    assert admin_csv.status_code == 200, admin_csv.text
+    admin_detail_rows = list(csv.DictReader(io.StringIO(admin_csv.text)))
+    admin_csv_row = next(r for r in admin_detail_rows if "INV-ACM-1" in (r.get("details") or ""))
+    admin_csv_details = json.loads(admin_csv_row["details"])
+    assert float(admin_csv_details.get("credit_limit") or 0) == pytest.approx(100.0)
+    assert float(admin_csv_details.get("additional_amount") or 0) == pytest.approx(100.0)
+
+    mgr_csv = await ac.get(
+        "/api/v1/audit-logs/export",
+        headers=headers,
+        params={"format": "csv"},
+    )
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    mgr_detail_rows = list(csv.DictReader(io.StringIO(mgr_csv.text)))
+    mgr_csv_row = next(r for r in mgr_detail_rows if "INV-ACM-1" in (r.get("details") or ""))
+    mgr_csv_details = json.loads(mgr_csv_row["details"])
+    assert mgr_csv_details.get("credit_limit") is None
+    assert mgr_csv_details.get("available") is None
+    assert mgr_csv_details.get("current_balance") is None
+    assert mgr_csv_details.get("projected_balance") is None
+    assert mgr_csv_details.get("additional_amount") is None
+    assert mgr_csv_details.get("currency") is None
+    assert float(mgr_csv_details.get("invoice_total") or 0) == pytest.approx(80.0)
+    assert mgr_csv_details.get("invoice_number") == "INV-ACM-1"

@@ -5544,13 +5544,59 @@ def redact_audit_fx_details(details: dict) -> dict:
     return out
 
 
+# Audit detail keys that re-dump CREDIT_LIMIT_EXCEEDED master / base projection
+# already redacted on the 409 surface (and statement/aging credit_limit).
+_AUDIT_CLE_MASTER_DETAIL_KEYS = (
+    "credit_limit",
+    "available",
+    "current_balance",
+    "projected_balance",
+    "additional_amount",
+)
+
+
+def omit_audit_cle_master_details(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit CLE master fields inside audit ``details``.
+
+    CREDIT_LIMIT_EXCEEDED 409 already redacts ``credit_limit`` / ``available`` /
+    ``current_balance`` / ``projected_balance`` / ``additional_amount``. Scoped
+    ``GET /audit-logs`` (+ CSV) must not re-dump the same company credit master
+    / base projection via ``credit_limit_override`` (and sibling) audit
+    ``details``. Operational amounts / invoice numbers / store_id / reason remain;
+    admin keeps CLE master fields in details. FX keys already handled by
+    ``omit_audit_fx_details``.
+    """
+    return managed_ids is not None
+
+
+def redact_audit_cle_master_details(details: dict) -> dict:
+    """Null CLE master / base projection keys on an audit ``details`` dict."""
+    out = dict(details)
+    for key in _AUDIT_CLE_MASTER_DETAIL_KEYS:
+        if key in out:
+            out[key] = None
+    return out
+
+
+def redact_audit_manager_details(details: dict) -> dict:
+    """Compose store_manager audit ``details`` redacts (FX + CLE master)."""
+    out = redact_audit_fx_details(details)
+    return redact_audit_cle_master_details(out)
+
+
 def apply_audit_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager audit JSON redacts (FX fields inside ``details``)."""
+    """Apply store_manager audit JSON redacts (FX + CLE master inside ``details``)."""
     out = dict(payload)
-    if omit_audit_fx_details(managed_ids) and isinstance(out.get("details"), dict):
-        out["details"] = redact_audit_fx_details(out["details"])
+    if not isinstance(out.get("details"), dict):
+        return out
+    details = out["details"]
+    if omit_audit_fx_details(managed_ids):
+        details = redact_audit_fx_details(details)
+    if omit_audit_cle_master_details(managed_ids):
+        details = redact_audit_cle_master_details(details)
+    out["details"] = details
     return out
 
 
