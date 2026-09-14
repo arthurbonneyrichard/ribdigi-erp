@@ -95,6 +95,8 @@ def test_offline_remote_wipe_client_scaffold_exists():
     assert "clearOfflineIndexedDatabases" in src
     assert "processPendingRemoteWipeIfNeeded" in src
     assert "offlineCompleteClaimed: false" in src
+    assert "sevenDayVerifiedClaimed: false" in src
+    assert "wipePollPathEngineeringReady: true" in src
     assert "pushDelivery: false" in src
     assert "pushDeliveryPartial: true" in src
     assert "pushDeliveryCompleteClaimed: false" in src

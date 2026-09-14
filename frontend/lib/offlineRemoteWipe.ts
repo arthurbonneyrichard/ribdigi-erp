@@ -20,7 +20,13 @@ export const OFFLINE_REMOTE_WIPE_CONTRACT = {
   pushDeliveryCompleteClaimed: false,
   /** @deprecated use pushDeliveryCompleteClaimed — kept false for honesty tests */
   pushDelivery: false,
+  /**
+   * Poll-path contracts (wipe → GET wipe_pending → clear IndexedDB → ack) are
+   * engineering-ready without FCM. This is NOT Offline Complete / 7-day VERIFIED.
+   */
+  wipePollPathEngineeringReady: true,
   offlineCompleteClaimed: false,
+  sevenDayVerifiedClaimed: false,
 } as const;
 
 /** Known offline IndexedDB database names used by the SPA. */

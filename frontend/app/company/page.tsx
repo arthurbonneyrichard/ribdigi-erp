@@ -1395,6 +1395,15 @@ export default function Page() {
                                 } else if (push.reason === 'vapid_unconfigured') {
                                   pushNote =
                                     'Web Push skipped — VAPID unconfigured (fail-closed; wipe poll remains).';
+                                } else if (push.reason === 'subscribe_timeout') {
+                                  pushNote =
+                                    'Web Push subscribe timed out (no FCM/push endpoint) — wipe poll remains source of truth.';
+                                } else if (push.reason === 'subscribe_failed') {
+                                  pushNote =
+                                    'Web Push subscribe failed — wipe poll remains source of truth.';
+                                } else if (push.reason === 'push_unsupported') {
+                                  pushNote =
+                                    'Web Push unsupported in this browser — wipe poll remains source of truth.';
                                 }
                               } catch {
                                 /* push optional — wipe poll remains */
