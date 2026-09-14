@@ -14747,6 +14747,10 @@ async def reports_export(
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    if report_type == "sales_products":
+        dashboard_scope_svc.assert_sales_products_category_filter_denied(
+            managed, category_id=category_id
+        )
     single, _multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     if warehouse_id:
@@ -15044,6 +15048,9 @@ async def report_sales_products(
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_sales_products_category_filter_denied(
+        managed, category_id=category_id
+    )
     single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     data = await reports_svc.sales_by_product(
         db,

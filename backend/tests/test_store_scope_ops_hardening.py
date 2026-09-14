@@ -19784,6 +19784,140 @@ async def test_store_manager_sales_products_category_id_redacted(client, db_sess
 
 
 @pytest.mark.asyncio
+async def test_store_manager_sales_products_category_filter_denied(client, db_session):
+    """Sales-by-product category_id query/export denied for store_manager.
+
+    Catalog categories list GET already denied; product + report rows already
+    redact category_id. Query/export category_id must not resolve company
+    catalog masters via get_category. Unfiltered sales-by-product remains;
+    admin may filter by category_id.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    today = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
+
+    cat = m.ProductCategory(
+        tenant_id=tid,
+        company_id=cid,
+        code="SPFILT1",
+        name="SP Filter Cat",
+        is_active=True,
+    )
+    db_session.add(cat)
+    await db_session.flush()
+    product = m.Product(
+        tenant_id=tid,
+        company_id=cid,
+        name="SP Filter Product",
+        sku="SP-FILT-SKU-1",
+        selling_price=18,
+        cost_price=5,
+        stock_qty=0,
+        category_id=cat.id,
+        is_active=True,
+    )
+    db_session.add(product)
+    await db_session.flush()
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="SP Filter Store",
+        code="SPF1",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    inv = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="SP-FILT-1",
+        customer_id=seed["party1"].id,
+        status="posted",
+        subtotal=18,
+        tax_amount=0,
+        total_amount=18,
+        store_id=store.id,
+        posted_at=today,
+        created_by=seed["admin1"].id,
+    )
+    db_session.add(inv)
+    await db_session.flush()
+    db_session.add(
+        m.SalesInvoiceItem(
+            tenant_id=tid,
+            sales_invoice_id=inv.id,
+            product_id=product.id,
+            quantity=1,
+            unit_price=18,
+            line_total=18,
+        )
+    )
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    admin_ok = await ac.get(
+        "/api/v1/reports/sales/products",
+        headers=admin_company,
+        params={"category_id": cat.id},
+    )
+    assert admin_ok.status_code == 200, admin_ok.text
+    admin_products = admin_ok.json()["data"]["products"]
+    assert any(r.get("product_id") == product.id for r in admin_products)
+
+    mgr_unfiltered = await ac.get("/api/v1/reports/sales/products", headers=headers)
+    assert mgr_unfiltered.status_code == 200, mgr_unfiltered.text
+    assert float(mgr_unfiltered.json()["data"]["total_revenue"]) == pytest.approx(18.0)
+
+    denied = await ac.get(
+        "/api/v1/reports/sales/products",
+        headers=headers,
+        params={"category_id": cat.id},
+    )
+    assert denied.status_code == 403, denied.text
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_csv = await ac.get(
+        "/api/v1/reports/export",
+        headers=headers,
+        params={
+            "report_type": "sales_products",
+            "format": "csv",
+            "category_id": cat.id,
+        },
+    )
+    assert denied_csv.status_code == 403, denied_csv.text
+    assert denied_csv.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    admin_csv = await ac.get(
+        "/api/v1/reports/export",
+        headers=admin_company,
+        params={
+            "report_type": "sales_products",
+            "format": "csv",
+            "category_id": cat.id,
+        },
+    )
+    assert admin_csv.status_code == 200, admin_csv.text
+    admin_rows = list(csv.DictReader(io.StringIO(admin_csv.text)))
+    assert any(r.get("product_id") == product.id for r in admin_rows)
+
+
+@pytest.mark.asyncio
 async def test_store_manager_sales_customers_party_code_redacted(client, db_session):
     """Sales-by-customer nulls party code for store_manager.
 

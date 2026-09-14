@@ -3897,6 +3897,29 @@ def apply_sales_products_manager_redacts(
     return out
 
 
+def assert_sales_products_category_filter_denied(
+    managed_ids: list[str] | None,
+    *,
+    category_id: str | None,
+    message: str = (
+        "Store managers cannot filter sales-by-product by company catalog category; "
+        "omit category_id, or use scoped product revenue without catalog resolve."
+    ),
+) -> None:
+    """403 when store_manager passes ``category_id`` on sales-by-product report/export.
+
+    Catalog categories list/export/writes already denied; product list/get +
+    sales-by-product rows already redact ``category_id``. Query/export
+    ``category_id`` still called ``get_category`` (company catalog master
+    resolve / existence probe). Unfiltered sales-by-product remains.
+    """
+    if managed_ids is None:
+        return
+    if not (category_id or "").strip():
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_product_variants_export_denied(
     managed_ids: list[str] | None,
     *,
