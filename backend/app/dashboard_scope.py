@@ -1752,6 +1752,53 @@ def redact_expense_category_assignment(payload: dict) -> dict:
     return out
 
 
+
+def omit_expense_attachment_url(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit expense ``attachment_url`` storage keys.
+
+    Binary download remains store-scoped via attachment GET. List/get/patch JSON
+    must not re-dump ``attachment_url`` (storage_key / external URL). ``has_attachment``
+    remains for chrome. Same class as product ``image_url`` redact.
+    """
+    return managed_ids is not None
+
+
+def redact_expense_attachment_url(payload: dict) -> dict:
+    """Null ``attachment_url`` on a serialized expense dict (+ upload key echo)."""
+    out = dict(payload)
+    if "attachment_url" in out:
+        out["attachment_url"] = None
+    uploaded = out.get("uploaded")
+    if isinstance(uploaded, dict) and "key" in uploaded:
+        up = dict(uploaded)
+        up["key"] = None
+        out["uploaded"] = up
+    return out
+
+
+def apply_expense_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager expense JSON redacts (dept/category/roles/attachment)."""
+    out = payload
+    if omit_expense_department_assignment(managed_ids):
+        out = redact_expense_department_assignment(out)
+    if omit_expense_category_assignment(managed_ids):
+        out = redact_expense_category_assignment(out)
+    if omit_approval_matrix_roles(managed_ids):
+        out = redact_approval_matrix_roles(out)
+    if omit_expense_attachment_url(managed_ids):
+        out = redact_expense_attachment_url(out)
+    return out
+
+
+def apply_expense_manager_redacts_list(
+    rows: list[dict], managed_ids: list[str] | None
+) -> list[dict]:
+    """Map ``apply_expense_manager_redacts`` across expense/recurring list rows."""
+    return [apply_expense_manager_redacts(row, managed_ids) for row in rows]
+
+
 def assert_expense_store_clear_write_denied(
     managed_ids: list[str] | None,
     *,
