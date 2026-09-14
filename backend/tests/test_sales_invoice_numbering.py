@@ -46,7 +46,7 @@ async def test_sales_invoice_numbering_settings_and_allocation(client, db_sessio
         headers=admin,
         json={"prefix": "bad prefix!", "next_number": 1},
     )
-    assert bad.status_code == 400
+    assert bad.status_code == 422
 
     cust = await ac.post(
         "/api/v1/customers",

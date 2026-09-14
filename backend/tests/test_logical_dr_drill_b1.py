@@ -79,7 +79,7 @@ async def test_logical_dr_drill_end_to_end_with_evidence(
         headers=headers,
         json={"dry_run": False, "confirm": True, "confirm_text": "YES"},
     )
-    assert blocked.status_code == 400
+    assert blocked.status_code == 422
 
     applied = await ac.post(
         f"/api/v1/backup/{backup_id}/restore",

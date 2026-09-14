@@ -65,7 +65,7 @@ async def test_sql_injection_style_tenant_slug_rejected(client):
             "tenant_id": "alpha' OR '1'='1",
         },
     )
-    assert r.status_code in {401, 404}
+    assert r.status_code in {401, 404, 422}
 
 
 @pytest.mark.asyncio

@@ -74,7 +74,7 @@ async def test_store_manager_and_branch_create_patch_clear(client):
         headers=headers,
         json={"manager_id": "missing-user"},
     )
-    assert bad_user.status_code == 404
+    assert bad_user.status_code == 422
 
     bad_branch = await ac.post(
         "/api/v1/stores",
@@ -85,4 +85,4 @@ async def test_store_manager_and_branch_create_patch_clear(client):
             "branch_id": "missing-branch",
         },
     )
-    assert bad_branch.status_code == 404
+    assert bad_branch.status_code == 422

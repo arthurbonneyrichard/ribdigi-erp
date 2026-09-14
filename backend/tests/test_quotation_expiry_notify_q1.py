@@ -113,7 +113,11 @@ async def test_scan_quotation_expiry_notifies_and_dedupes(client, db_session):
     assert "Quotation expired" in titles
 
     # Reject of already-expired → 409
-    rejected = await ac.post(f"/api/v1/sales/quotations/{qid2}/reject", headers=headers)
+    rejected = await ac.post(
+        f"/api/v1/sales/quotations/{qid2}/reject",
+        headers=headers,
+        json={"reason": "Customer withdrew interest"},
+    )
     assert rejected.status_code == 409
 
     settings = await ac.get("/api/v1/notifications/settings", headers=headers)
