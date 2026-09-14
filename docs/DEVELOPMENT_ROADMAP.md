@@ -13,7 +13,7 @@
 
 ### Tip — concurrent approval stress pack (2026-09-15)
 
-**As of tip:** `TIP_SHA_PLACEHOLDER`
+**As of tip:** `4911f37e0144e80d72b105f5308d09e7578872f7`
 Concurrent approval stress pack **Complete**: expense + purchase-request
 double-approve / approve-vs-reject / PR→PO double-convert races covered by
 `backend/tests/test_concurrent_approval_stress.py`. Process locks +
