@@ -153,12 +153,24 @@ remain **PARTIAL**; Completes stay **MISSING**.
 
 ### 3E. Seven-day physical offline matrix (MISSING / NOT RUN)
 
-Follow [`OFFLINE_PHYSICAL_TEST_RUNBOOK_2026-08-23.md`](OFFLINE_PHYSICAL_TEST_RUNBOOK_2026-08-23.md):
+Follow [`OFFLINE_PHYSICAL_TEST_RUNBOOK_2026-08-23.md`](OFFLINE_PHYSICAL_TEST_RUNBOOK_2026-08-23.md)
+and fill [`OFFLINE_7DAY_EVIDENCE_TEMPLATE.md`](OFFLINE_7DAY_EVIDENCE_TEMPLATE.md):
 
-1. Fill platform matrix rows (Windows / Android / iPad / macOS) — currently unchecked.
-2. Day 0 bind + catalog; Days 1–6 offline sales with envelope gate; Day 7 renew + sync flush.
-3. Record Pass/Fail + evidence links per platform.
-4. Passing the matrix is required before any **7-day VERIFIED** claim; Offline Complete remains a separate attestation.
+1. Copy the evidence template into the ops evidence folder for this run.
+2. Fill platform matrix rows (Windows / Android / iPad / macOS) — currently unchecked.
+3. Day 0 bind + catalog; Days 1–6 offline sales with envelope gate; Day 7 renew + sync flush.
+4. Record Pass/Fail + evidence links per platform; complete template sign-off.
+5. Passing the matrix is required before any **7-day VERIFIED** claim; Offline Complete remains a separate attestation.
+6. Cloud Agents / CI **cannot** claim 7-day VERIFIED in one session.
+
+### 3F. Wipe poll-path local alternative (engineering-ready; Completes MISSING)
+
+When FCM / `PushManager.subscribe` is blocked, follow
+[`OFFLINE_WIPE_POLL_LOCAL_ALTERNATIVE.md`](OFFLINE_WIPE_POLL_LOCAL_ALTERNATIVE.md):
+
+- Prove wipe → poll `wipe_pending` → IndexedDB clear → ack without Web Push.
+- Automated: `tests/test_offline_wipe_poll_path_evidence.py`.
+- Label: **poll-path engineering-ready** — still **not** Offline Complete / push Complete / 7-day VERIFIED.
 
 ---
 
@@ -196,14 +208,17 @@ ADR-005 Complete, store-scoped RBAC Complete, 7-day VERIFIED, or go-live attesta
 
 ## 6. Remaining ops-only next steps (Completes path)
 
-No further engineering slices are required to unlock Completes for these gates —
-only operator evidence on staging/real tills:
+Engineering for wipe **poll-path** is ready (FCM-independent). Wipe-via-push,
+Offline Complete, and 7-day VERIFIED still need operator evidence:
 
 1. Staging VAPID secrets + **real till browser** wipe-via-push proof
    (`offline_wipe_push_staging_checklist.md`, `OFFLINE_WEB_PUSH_VAPID_OPS.md`).
-   Do **not** re-attempt in cloud-agent Chrome (PushManager/FCM blocked).
-2. Operator 7-day physical offline matrix
-   (`OFFLINE_PHYSICAL_TEST_RUNBOOK_2026-08-23.md`) — required before any
+   Do **not** re-attempt in cloud-agent Chrome (PushManager/FCM blocked) for push
+   Complete — use poll alternative for local proof only
+   (`OFFLINE_WIPE_POLL_LOCAL_ALTERNATIVE.md`).
+2. Operator 7-day physical offline matrix + filled evidence template
+   (`OFFLINE_PHYSICAL_TEST_RUNBOOK_2026-08-23.md`,
+   `OFFLINE_7DAY_EVIDENCE_TEMPLATE.md`) — required before any
    **7-day VERIFIED** claim; Offline Complete remains a separate attestation.
 3. Staging: real billing provider keys + price map + signed webhook soak
    (`PAID_BILLING_PROVIDER_OPS.md`); entitlement gate ON only after
@@ -216,5 +231,5 @@ only operator evidence on staging/real tills:
    Intentional ALLOWs (logo binary GET; caller-scoped sessions/notifications)
    stay allowed. Do **not** claim Offline Complete / 7-day VERIFIED / go-live /
    paid billing Complete / ADR-005 Complete / store-scoped RBAC Complete from
-   this checklist or flag flips alone. Go-live ready **only** when §5 Completes
-   are all claimed with ops attestation evidence.
+   this checklist or flag flips alone. Poll-path engineering-ready ≠ Offline Complete.
+   Go-live ready **only** when §5 Completes are all claimed with ops attestation evidence.

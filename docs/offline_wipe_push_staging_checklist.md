@@ -8,6 +8,9 @@ This checklist is the **operator** real-browser / staging proof step.
 is required before any push-delivery Complete claim — and even then Offline
 Complete / 7-day VERIFIED remain separate gates.
 
+**Honesty labels:** Wipe **poll-path engineering-ready** (no FCM) ≠ push-delivery
+Complete ≠ Offline Complete. See `docs/OFFLINE_WIPE_POLL_LOCAL_ALTERNATIVE.md`.
+
 **Not claimed:** Offline Complete · push-delivery Complete · 7-day VERIFIED ·
 go-live · paid billing Complete · ADR-005 Complete · store-scoped RBAC Complete.
 
@@ -26,6 +29,7 @@ Operator roll-up: [`GO_LIVE_READINESS_CHECKLIST.md`](GO_LIVE_READINESS_CHECKLIST
 | Delivered push ≠ wipe complete (ack still required) | `test_evidence_wipe_ack_after_delivered_push` |
 | SW + client honesty contracts | `test_evidence_sw_and_client_contracts_for_payload` |
 | Ops + this checklist present | `test_evidence_staging_checklist_and_ops_docs_present` |
+| **Poll path without push/VAPID** (FCM alternative) | `test_offline_wipe_poll_path_evidence.py` |
 
 Related delivery unit coverage: `backend/tests/test_offline_push_delivery.py`,
 `backend/tests/test_offline_remote_wipe.py`.
@@ -35,6 +39,7 @@ Run:
 ```bash
 cd backend && .venv/bin/pytest \
   tests/test_offline_wipe_push_vapid_evidence.py \
+  tests/test_offline_wipe_poll_path_evidence.py \
   tests/test_offline_push_delivery.py \
   tests/test_offline_remote_wipe.py \
   -q
@@ -85,12 +90,20 @@ Evidence: `/opt/cursor/artifacts/local_vapid_wipe_browser_proof_blocker.md`.
 **Do not check** the operator boxes above from that attempt. Offline / push remain
 **PARTIAL**.
 
+### Local alternative when FCM blocked
+
+Use [`OFFLINE_WIPE_POLL_LOCAL_ALTERNATIVE.md`](OFFLINE_WIPE_POLL_LOCAL_ALTERNATIVE.md)
+to prove wipe → poll → ack without PushManager. That path is **engineering-ready**
+and keeps push-delivery Complete / Offline Complete / 7-day VERIFIED **MISSING**.
+
 ## Honesty
 
 - Automated VAPID wipe-via-push evidence keeps delivery **PARTIAL**.
+- Poll-path engineering-ready ≠ push-delivery Complete ≠ Offline Complete.
 - Real-browser staging proof is a prerequisite for any future push-delivery
   Complete claim — **not** for Offline Complete (IndexedDB endurance, 7-day
   matrix, owner-alert push channel, attestation remain separate).
 - Leaving `OFFLINE_PUSH_ENABLED=false` in production examples is intentional
   until ops completes this checklist with evidence.
 - Design / ops: `docs/OFFLINE_WEB_PUSH_VAPID_OPS.md`
+- 7-day evidence pack: `docs/OFFLINE_7DAY_EVIDENCE_TEMPLATE.md`

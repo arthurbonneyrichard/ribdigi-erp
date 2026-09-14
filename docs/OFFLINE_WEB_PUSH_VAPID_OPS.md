@@ -98,9 +98,15 @@ usable FCM endpoint in that desktop). That attempt is documented as a **blocker*
 not proof — do not treat it as push-delivery Complete. Retry on a normal staging
 till browser per `docs/offline_wipe_push_staging_checklist.md`.
 
+**Local alternative:** When FCM is blocked, prove wipe via the poll path
+(`docs/OFFLINE_WIPE_POLL_LOCAL_ALTERNATIVE.md`) — engineering-ready, Completes still
+MISSING. Client bind now times out subscribe (`subscribe_timeout`) and Shell polls
+wipe every ~45s while online.
+
 ## Honesty
 
-- Remote wipe = **PARTIAL**
+- Remote wipe = **PARTIAL** (poll-path **engineering-ready**; push still PARTIAL)
 - Push delivery = **PARTIAL** (ops VAPID + browser proof still required for Complete)
 - Offline Complete / 7-day VERIFIED = **MISSING**
 - Owner-alert push channel remains deferred (email/dashboard only)
+- 7-day evidence template: `docs/OFFLINE_7DAY_EVIDENCE_TEMPLATE.md`

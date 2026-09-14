@@ -5,7 +5,9 @@
 
 **Related code:** `offlineAuthEnvelope.ts`, `offlineQueue.ts`, `offlineReceiptNumber.ts`,
 `offlinePush.ts`, `POST /offline/devices/{id}/bind`, `GET /offline/alerts`, recovery export UI,
-`docs/OFFLINE_WEB_PUSH_VAPID_OPS.md` (VAPID enable path — push delivery still PARTIAL).
+`docs/OFFLINE_WEB_PUSH_VAPID_OPS.md` (VAPID enable path — push delivery still PARTIAL),
+`docs/OFFLINE_WIPE_POLL_LOCAL_ALTERNATIVE.md` (FCM-blocked poll path),
+`docs/OFFLINE_7DAY_EVIDENCE_TEMPLATE.md` (**fillable evidence pack — required before VERIFIED**).
 
 ## Prerequisites
 
@@ -13,6 +15,8 @@
 - Company admin can register/bind offline devices
 - Browser/PWA or target shell; printer/cash drawer optional
 - Bound device + fresh envelope before going offline
+- Copy [`OFFLINE_7DAY_EVIDENCE_TEMPLATE.md`](OFFLINE_7DAY_EVIDENCE_TEMPLATE.md) into the ops
+  evidence folder for this run; fill day log + platform matrix there
 
 ## Platform matrix (unchecked until executed)
 
@@ -27,10 +31,11 @@
 
 1. Register device on Company → Offline sync; Bind; confirm IndexedDB envelope.
 2. If staging has VAPID configured (`docs/OFFLINE_WEB_PUSH_VAPID_OPS.md`), confirm bind
-   message notes Web Push registered/rebound; otherwise expect fail-closed skip (poll remains).
+   message notes Web Push registered/rebound; otherwise expect fail-closed skip / subscribe timeout (poll remains — `docs/OFFLINE_WIPE_POLL_LOCAL_ALTERNATIVE.md`).
 3. Pull offline catalog while online.
 4. Open POS shift; note `session_id`.
 5. Capture screenshot of bound device + `offline_valid_until`.
+6. Start the Day log in `OFFLINE_7DAY_EVIDENCE_TEMPLATE.md`.
 
 ## Days 1–6 — offline operations
 
@@ -39,7 +44,7 @@
 3. Confirm unsafe card/wallet without supervisor ack is blocked.
 4. Confirm pending queue grows; Shell connectivity badge reflects pending.
 5. Do **not** clear browser storage; if needed, **Export offline recovery pack** only.
-6. Log: date, sale count, last receipt number, envelope days remaining.
+6. Log: date, sale count, last receipt number, envelope days remaining (template Day log).
 
 ## Envelope near-expiry / expired
 
@@ -57,6 +62,8 @@
 
 ## Evidence to retain
 
+Use the inventory table in [`OFFLINE_7DAY_EVIDENCE_TEMPLATE.md`](OFFLINE_7DAY_EVIDENCE_TEMPLATE.md):
+
 - Screenshots: bind, offline sale, expired gate, alerts card, flush result
 - Recovery JSON sample (redact nothing sensitive — pack already strips tokens)
 - `/sync/status` and `/offline/alerts` JSON
@@ -64,4 +71,6 @@
 
 ## Sign-off
 
-Physical 7-day VERIFIED and Offline Complete remain **MISSING** until a human completes this runbook **and** signs LAUNCH §7 with evidence. Do not flip attestation flags from CI.
+Physical 7-day VERIFIED and Offline Complete remain **MISSING** until a human completes this runbook
+**and** the evidence template sign-off **and** signs LAUNCH §7 with evidence.
+Do not flip attestation flags from CI. Engineering-ready wipe poll ≠ 7-day VERIFIED.
