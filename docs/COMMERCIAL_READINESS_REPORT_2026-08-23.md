@@ -14,7 +14,7 @@ store-scoped RBAC Complete.
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `TIP_SHA_PLACEHOLDER` — store-scoped RBAC **Complete** (residual NONE + product-accepted ALLOWs + living matrix + automated/local soak; flag default OFF); SEC-M1…M5/L2 FIXED; overall ✅ HARDENED; ADR-005 Complete (flag OFF); overall RBAC readiness PARTIAL; offline remote-wipe + Web Push PARTIAL (Completes MISSING); paid billing PARTIAL (ops-blocked); go-live Completes MISSING; commercial MVP **market-ready with conditions** (`docs/MARKET_READY_LAUNCH.md`); Offline Complete MISSING. Cookie + membership-scope + entitlement-gate flags default remain OFF. |
+| **As of tip** | `6136f6d90b537284473358793e3f3d7d6043fba4` — store-scoped RBAC **Complete** (residual NONE + product-accepted ALLOWs + living matrix + automated/local soak; flag default OFF); SEC-M1…M5/L2 FIXED; overall ✅ HARDENED; ADR-005 Complete (flag OFF); overall RBAC readiness PARTIAL; offline remote-wipe + Web Push PARTIAL (Completes MISSING); paid billing PARTIAL (ops-blocked); go-live Completes MISSING; commercial MVP **market-ready with conditions** (`docs/MARKET_READY_LAUNCH.md`); Offline Complete MISSING. Cookie + membership-scope + entitlement-gate flags default remain OFF. |
 | RBAC / store scope | **Complete** for store-scoped claim (flag OFF); overall RBAC still **PARTIAL** |
 | Security Mediums | **M1–M5 FIXED**; **L2 FIXED**; overall ✅ HARDENED (flag OFF = ops cutover, not open finding) |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · overall RBAC Complete |
