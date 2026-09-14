@@ -145,8 +145,9 @@ store activation — never frontend-only.
    master writes denied for store_manager** (create/patch + variants + barcode
    assign + image writes; list/get/lookup/POS search reads + WH stock
    ops remain) + **product images gallery list GET + CSV export denied**
-   (``storage_key`` media dump; primary ``/products/{id}/image`` binary GET
-   remains for POS/chrome) + **product variants CSV export denied**
+   (``storage_key`` media dump) + **product primary image binary GET denied**
+   (``GET /products/{id}/image``; list/get ``has_image`` + WH stock ops remain;
+   company/tenant logo binary GET stays open) + **product variants CSV export denied**
    (company roster ``/products/variants/export`` + per-product path
    ``/products/{id}/variants/export``; variants list/get remain for POS/sales), and **stock CSV import denied for store_manager** (company-level
    bulk WH / product.stock_qty seed; template read + per-WH stock-in/out remain),
@@ -298,7 +299,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `e993538f93` — `feat(rbac): deny users list/get for store_manager`.  
+**As of tip:** `f1b60b567b` — `feat(rbac): deny product primary image GET for store_manager`.  
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
@@ -321,8 +322,9 @@ denies; JSON/CSV redacts for cost, PII, org links, approval-matrix `awaiting_rol
 early-discount quote matrix fields, and BI company config/cost embeds; product
 images gallery list GET; product variants path CSV export (after roster export
 deny); product catalog CSV export (`GET /products/export`); users list/get
-(company org roster after users CSV export deny). Each slice closes one dump or
-write path; the continuum as a whole stays **PARTIAL**.
+(company org roster after users CSV export deny); product primary image binary
+GET (`GET /products/{id}/image`). Each slice closes one dump or write path; the
+continuum as a whole stays **PARTIAL**.
 
 ### Continuum agent contract
 
