@@ -13,8 +13,7 @@
 
 ### Tip — export / view_cost broaden + unified cost omit (2026-09-15)
 
-**As of tip:** 
-
+**As of tip:** `c6d7377d9df64bc24d5de12f4541037c259f5148`
 Broadened first-class `export` gates across commerce/dashboard/ops/AI CSV
 surfaces; unified report / BI / AI / stock-count cost omit on
 `inventory:view_cost` / `business_insights:view_cost` (legacy fallback retained).
@@ -27,7 +26,7 @@ go-live / paid billing Completes remain **MISSING**.
 
 ### Tip — first-class export / view_cost RBAC actions (2026-09-15)
 
-**As of tip:** `8be9cbdd683eee142176614043f469f60a41c2a9`
+**As of tip:** `c6d7377d9df64bc24d5de12f4541037c259f5148`
 
 First-class `export` and `view_cost` actions landed in the RBAC engine
 (`ALLOWED_ACTIONS` + system role grants + dependency auto-`read`). Backend
@@ -42,7 +41,7 @@ billing Completes remain **MISSING**.
 
 ### Tip — % approval limits + store-scoped RBAC remaining checklist (2026-09-15)
 
-**As of tip:** `8be9cbdd683eee142176614043f469f60a41c2a9`
+**As of tip:** `c6d7377d9df64bc24d5de12f4541037c259f5148`
 
 Percentage approval limits landed on expense/PR matrices (`min_percent` + expense
 category budget percent basis). ADR-005 remains **Complete** (flag default OFF).
@@ -55,7 +54,7 @@ where noted). Do not resume continuum dump spam as the default CONTINUE path.
 
 ### Tip — RBAC approval hardening + ADR-005 Complete (2026-09-15)
 
-**As of tip:** `8be9cbdd683eee142176614043f469f60a41c2a9`
+**As of tip:** `c6d7377d9df64bc24d5de12f4541037c259f5148`
 
 ADR-005 attested **Complete** via automated flag-ON soak + POS store bind + honesty
 flags. `STORE_MEMBERSHIP_SCOPE_ENABLED` remains **false** by default (ops cutover;
