@@ -147,9 +147,10 @@ export default function WorkspaceBrand({
     if (!brand.logoPath) {
       return () => undefined;
     }
+    const logoPath = brand.logoPath;
     (async () => {
       try {
-        const res = await apiFetch(brand.logoPath, {
+        const res = await apiFetch(logoPath, {
           cache: 'no-store',
         });
         if (!res.ok) throw new Error('logo missing');
