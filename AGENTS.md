@@ -314,7 +314,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `caf7d98b5519a0573f1a62eed70e9c8c78cffaa6` — `test(security): align OWASP users secret-field smoke with continuum RBAC` (contains continuum PO `emailed_to` `9ff88796a1` + security H1–H5 `3cf99a5540`; feat ancestry `6cd9633488`).
+**As of tip:** `c01b1e18b5308379d7f2798f6e3409a457ddbb18` — `docs: sync PR #303 honesty tip after dual-lineage security merge` (contains continuum PO `emailed_to` `9ff88796a1` + security H1–H5 `3cf99a5540`/`caf7d98b55`; feat ancestry `6cd9633488`).
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
