@@ -11,14 +11,16 @@
 
 ---
 
-### Tip — ADR-005 membership Complete (2026-09-15)
+### Tip — RBAC approval hardening + ADR-005 Complete (2026-09-15)
 
-**As of tip:** `650e899c25a8bb4be316ad346306ad962abdf43e`
+**As of tip:** `a9ac8ec99a8541f21298fe2bd742e8cc556f2f24`
 
 ADR-005 attested **Complete** via automated flag-ON soak + POS store bind + honesty
 flags. `STORE_MEMBERSHIP_SCOPE_ENABLED` remains **false** by default (ops cutover;
-Complete ≠ prod default ON). Store-scoped RBAC / Offline / 7-day / go-live / paid
-billing Completes remain **MISSING**.
+Complete ≠ prod default ON). RBAC approval hardening landed (owner lockout, grantor
+subset, permission deps, dangerous-permission warnings, concurrent approval
+`FOR UPDATE`) — overall RBAC readiness remains **PARTIAL**. Store-scoped RBAC /
+Offline / 7-day / go-live / paid billing Completes remain **MISSING**.
 
 ---
 

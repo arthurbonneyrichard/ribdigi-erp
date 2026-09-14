@@ -14,10 +14,10 @@ store-scoped RBAC Complete.
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `650e899c25a8bb4be316ad346306ad962abdf43e` — SEC-M1…M5/L2 FIXED; overall ✅ HARDENED; cookie + membership-scope + entitlement-gate flags default OFF; offline remote-wipe + Web Push delivery **PARTIAL** (automated VAPID wipe-via-push evidence + staging checklist; Completes still MISSING); ADR-005 membership **Complete** (flag default OFF — Complete ≠ prod default ON; store-scoped RBAC Complete still MISSING); paid billing **PARTIAL** (ADR-002 Phase E mock soak ready; Complete still MISSING / ops-blocked on live Stripe; `PAID_BILLING_ENTITLEMENT_GATE_ENABLED` default **OFF**; `engineering_mock_soak_ready=true`); go-live pack Completes still MISSING; Offline Complete still MISSING |
-| RBAC / store scope | **PARTIAL** only |
+| **As of tip** | `a9ac8ec99a8541f21298fe2bd742e8cc556f2f24` — SEC-M1…M5/L2 FIXED; overall ✅ HARDENED; cookie + membership-scope + entitlement-gate flags default OFF; offline remote-wipe + Web Push delivery **PARTIAL** (automated VAPID wipe-via-push evidence + staging checklist; Completes still MISSING); ADR-005 membership **Complete** (flag default OFF — Complete ≠ prod default ON; store-scoped RBAC Complete still MISSING); overall RBAC readiness **PARTIAL** (approval hardening: owner lockout / grantor subset / permission deps / dangerous warnings / approval `FOR UPDATE`); paid billing **PARTIAL** (ADR-002 Phase E mock soak ready; Complete still MISSING / ops-blocked on live Stripe; `PAID_BILLING_ENTITLEMENT_GATE_ENABLED` default **OFF**; `engineering_mock_soak_ready=true`); go-live pack Completes still MISSING; Offline Complete still MISSING |
+| RBAC / store scope | **PARTIAL** only (hardening ≠ Complete) |
 | Security Mediums | **M1–M5 FIXED**; **L2 FIXED**; overall ✅ HARDENED (flag OFF = ops cutover, not open finding) |
-| Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · store-scoped RBAC Complete |
+| Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · store-scoped RBAC Complete · overall RBAC Complete |
 
 Closed this continuum slice: CREDIT_LIMIT_EXCEEDED 409 `invoice_total_base` redact for store_manager (FX-converted invoice post extra_details; `additional_amount`/`invoice_total`/status codes remain; sales/purchase-invoice + aging `balance_due_base` already redacted; master credit fields already redacted; admin keeps base).
 

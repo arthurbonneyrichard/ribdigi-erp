@@ -354,9 +354,9 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `650e899c25a8bb4be316ad346306ad962abdf43e` — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL** (automated VAPID wipe-via-push evidence + staging checklist; Completes still **MISSING**); ADR-005 membership **Complete** (flag default OFF — Complete ≠ prod default ON; store-scoped RBAC Complete still **MISSING**); paid billing **PARTIAL** (ADR-002 Phase E mock soak ready: portal + Checkout Session + signed webhook lifecycle + entitlement gate-ON allowlist evidence — Complete still **MISSING** / **ops-blocked** on live Stripe keys + staging soak; `PAID_BILLING_ENTITLEMENT_GATE_ENABLED` default **OFF**; `engineering_mock_soak_ready=true`; `paid_billing_complete_ops_blocked=true`); operator go-live readiness pack `docs/GO_LIVE_READINESS_CHECKLIST.md` (Completes still **MISSING**); Offline Complete still **MISSING**. Cookie + membership-scope + entitlement-gate flags default remain OFF (ops enable cutover).
+**As of tip:** `a9ac8ec99a8541f21298fe2bd742e8cc556f2f24` — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL** (automated VAPID wipe-via-push evidence + staging checklist; Completes still **MISSING**); ADR-005 membership **Complete** (flag default OFF — Complete ≠ prod default ON; store-scoped RBAC Complete still **MISSING**); overall RBAC readiness **PARTIAL** (approval hardening landed: owner lockout, grantor subset, permission deps, dangerous-permission warnings, concurrent approval `FOR UPDATE` — not RBAC Complete); paid billing **PARTIAL** (ADR-002 Phase E mock soak ready: portal + Checkout Session + signed webhook lifecycle + entitlement gate-ON allowlist evidence — Complete still **MISSING** / **ops-blocked** on live Stripe keys + staging soak; `PAID_BILLING_ENTITLEMENT_GATE_ENABLED` default **OFF**; `engineering_mock_soak_ready=true`; `paid_billing_complete_ops_blocked=true`); operator go-live readiness pack `docs/GO_LIVE_READINESS_CHECKLIST.md` (Completes still **MISSING**); Offline Complete still **MISSING**. Cookie + membership-scope + entitlement-gate flags default remain OFF (ops enable cutover).
 **Security:** no open Critical/High/Medium. Do not claim go-live Completes. Cookie + membership-scope flags OFF in prod examples are intentional until ops cutover (`docs/sec_m2_staging_soak_checklist.md`, `docs/adr005_staging_soak_checklist.md`). Offline push prod template stays fail-closed until `docs/offline_wipe_push_staging_checklist.md` browser proof. Entitlement gate prod default stays OFF until mirror→access evidence (`docs/PAID_BILLING_PROVIDER_OPS.md`). Operator roll-up: `docs/GO_LIVE_READINESS_CHECKLIST.md`.  
-**Honesty:** never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never store-scoped RBAC Complete. ADR-005 membership **is Complete** (flag default OFF intentional).
+**Honesty:** never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never store-scoped RBAC Complete, never overall RBAC Complete. ADR-005 membership **is Complete** (flag default OFF intentional).
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
 `/opt/cursor/artifacts/pr303_body_update.md` synchronized on the same tip SHA and
@@ -414,7 +414,8 @@ one dump or write path; the continuum as a whole stays **PARTIAL**.
 4. **PR body:** try `gh pr edit 303 --body-file …`; on failure, always refresh
    `/opt/cursor/artifacts/pr303_body_update.md` so the next agent has the intended body.
 5. **Do not** claim Offline Complete, 7-day VERIFIED, go-live, paid billing Complete,
-   or ADR-005 Complete. **Do not** rewrite unrelated leftovers as closed.
+   store-scoped RBAC Complete, or overall RBAC Complete. ADR-005 membership **is
+   Complete** (flag default OFF). **Do not** rewrite unrelated leftovers as closed.
 
 ## Subscription Company Entitlement
 
