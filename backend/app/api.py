@@ -15817,15 +15817,17 @@ async def customer_credit_statement(
     from app import dashboard_scope as dashboard_scope_svc
 
     managed_stores = await dashboard_scope_svc.managed_store_ids(db, claims)
-    return env(
-        await credit_svc.customer_statement(
-            db,
-            claims["tenant_id"],
-            customer_id,
-            company_id=claims.get("company_id"),
-            store_ids=managed_stores,
-        )
+    data = await credit_svc.customer_statement(
+        db,
+        claims["tenant_id"],
+        customer_id,
+        company_id=claims.get("company_id"),
+        store_ids=managed_stores,
     )
+    data = dashboard_scope_svc.apply_credit_statement_manager_redacts(
+        data, managed_stores
+    )
+    return env(data)
 
 
 @api.get("/credit/customers/{customer_id}/statement/export")

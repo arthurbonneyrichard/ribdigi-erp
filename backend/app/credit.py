@@ -500,7 +500,9 @@ async def customer_statement(
             "customer": {
                 "id": customer.id,
                 "name": customer.name,
-                "credit_limit": float(customer.credit_limit or 0),
+                # Party list/get + aging already redact credit_limit; statement
+                # must not re-dump company credit master under store_manager scope.
+                "credit_limit": None,
                 "balance": 0.0,
             },
             "lines": [],
@@ -576,7 +578,11 @@ async def customer_statement(
         "customer": {
             "id": customer.id,
             "name": customer.name,
-            "credit_limit": float(customer.credit_limit or 0),
+            # Party list/get + aging already redact credit_limit; statement
+            # must not re-dump company credit master under store_manager scope.
+            "credit_limit": (
+                None if manager_scope else float(customer.credit_limit or 0)
+            ),
             "balance": 0.0 if manager_scope else float(customer.balance or 0),
         },
         "lines": lines,

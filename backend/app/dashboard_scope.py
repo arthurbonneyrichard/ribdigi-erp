@@ -4415,7 +4415,8 @@ def omit_credit_aging_party_credit_limit(managed_ids: list[str] | None) -> bool:
     Party list/get + AI customer ``credit_limit`` already redacted. Credit AR/AP
     aging JSON must not re-dump company credit master on party rows. Scoped
     ``total_due`` / buckets / document lines / ``name`` remain; admin keeps
-    ``credit_limit``. Statements may still expose ``credit_limit`` (separate slice).
+    ``credit_limit``. Customer statement JSON/CSV also omit ``credit_limit`` via
+    ``omit_credit_statement_party_credit_limit``.
     """
     return managed_ids is not None
 
@@ -4445,6 +4446,40 @@ def apply_credit_aging_manager_redacts(
     out = payload
     if omit_credit_aging_party_credit_limit(managed_ids):
         out = redact_credit_aging_party_credit_limit(out)
+    return out
+
+
+def omit_credit_statement_party_credit_limit(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit statement party ``credit_limit``.
+
+    Party list/get + AI + credit aging already redact ``credit_limit``. Customer
+    AR statement JSON/CSV must not re-dump company credit master on the nested
+    ``customer`` object. Scoped lines / ``name`` / zeroed ledger ``balance`` /
+    ``scoped_open_due`` remain; admin keeps ``credit_limit``. Supplier statements
+    do not expose ``credit_limit``.
+    """
+    return managed_ids is not None
+
+
+def redact_credit_statement_party_credit_limit(payload: dict) -> dict:
+    """Null ``credit_limit`` on credit-statement nested customer/supplier dicts."""
+    out = dict(payload)
+    for key in ("customer", "supplier"):
+        party = out.get(key)
+        if isinstance(party, dict) and "credit_limit" in party:
+            item = dict(party)
+            item["credit_limit"] = None
+            out[key] = item
+    return out
+
+
+def apply_credit_statement_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager credit-statement redacts (party ``credit_limit``)."""
+    out = payload
+    if omit_credit_statement_party_credit_limit(managed_ids):
+        out = redact_credit_statement_party_credit_limit(out)
     return out
 
 

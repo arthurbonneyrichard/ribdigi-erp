@@ -19299,8 +19299,8 @@ async def test_store_manager_credit_aging_party_credit_limit_redacted(
 
     Party list/get + AI customer credit_limit already redacted. Aging party rows
     must not re-dump company credit master. Scoped total_due / buckets / name /
-    documents remain; admin JSON keeps credit_limit. Statements may still expose
-    credit_limit (separate continuum leftover).
+    documents remain; admin JSON keeps credit_limit. Customer statement
+    credit_limit omit is covered by a separate hardening test.
     """
     from datetime import timedelta
 
@@ -19440,4 +19440,113 @@ async def test_store_manager_credit_aging_party_credit_limit_redacted(
     assert mgr_ap_row.get("credit_limit") is None
     assert mgr_ap_row.get("name") == "Aging CL Supplier"
     assert float(mgr_ap_row.get("total_due") or 0) == pytest.approx(25.0)
+
+@pytest.mark.asyncio
+async def test_store_manager_credit_statement_party_credit_limit_redacted(
+    client, db_session
+):
+    """Customer statement nulls party credit_limit for store_manager.
+
+    Party list/get + AI + aging credit_limit already redacted. Statement JSON/CSV
+    must not re-dump company credit master on nested customer. Scoped lines /
+    name / zeroed balance remain; admin JSON/CSV keep credit_limit.
+    """
+    from datetime import timedelta
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    today = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Stmt CL Store",
+        code="STMT-CL-S",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+
+    cust = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Stmt CL Customer",
+        kind="customer",
+        status="active",
+        credit_limit=6543.0,
+        balance=200,
+    )
+    db_session.add(cust)
+    await db_session.flush()
+
+    db_session.add(
+        m.SalesInvoice(
+            tenant_id=tid,
+            company_id=cid,
+            store_id=store.id,
+            invoice_number="INV-STMT-CL-1",
+            customer_id=cust.id,
+            status="posted",
+            subtotal=55,
+            total_amount=55,
+            paid_amount=0,
+            due_date=today - timedelta(days=1),
+            posted_at=today - timedelta(days=1),
+            created_at=today - timedelta(days=1),
+        )
+    )
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    admin_stmt = await ac.get(
+        f"/api/v1/credit/customers/{cust.id}/statement", headers=admin_company
+    )
+    assert admin_stmt.status_code == 200, admin_stmt.text
+    admin_cust = admin_stmt.json()["data"]["customer"]
+    assert float(admin_cust.get("credit_limit") or 0) == pytest.approx(6543.0)
+    assert admin_cust.get("name") == "Stmt CL Customer"
+
+    mgr_stmt = await ac.get(
+        f"/api/v1/credit/customers/{cust.id}/statement", headers=headers
+    )
+    assert mgr_stmt.status_code == 200, mgr_stmt.text
+    mgr_body = mgr_stmt.json()["data"]
+    assert mgr_body.get("scope") == "store_manager"
+    mgr_cust = mgr_body["customer"]
+    assert mgr_cust.get("credit_limit") is None
+    assert mgr_cust.get("name") == "Stmt CL Customer"
+    assert float(mgr_cust.get("balance") or 0) == 0
+    refs = {ln["reference"] for ln in mgr_body["lines"]}
+    assert "INV-STMT-CL-1" in refs
+
+    admin_csv = await ac.get(
+        f"/api/v1/credit/customers/{cust.id}/statement/export",
+        headers=admin_company,
+    )
+    assert admin_csv.status_code == 200, admin_csv.text
+    assert "6543" in admin_csv.text
+
+    mgr_csv = await ac.get(
+        f"/api/v1/credit/customers/{cust.id}/statement/export",
+        headers=headers,
+    )
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    assert "6543" not in mgr_csv.text
+    assert "Stmt CL Customer" in mgr_csv.text
+    assert "INV-STMT-CL-1" in mgr_csv.text
 
