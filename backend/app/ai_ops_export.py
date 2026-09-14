@@ -1282,6 +1282,8 @@ async def export_document_analyze_csv(
     warehouse_ids: list[str] | None = None,
 ) -> str:
     """Stage 149 A1 — document analyze result CSV."""
+    from app import dashboard_scope as dashboard_scope_svc
+
     data = await ai_documents_svc.analyze_document(
         db,
         tenant_id,
@@ -1291,4 +1293,7 @@ async def export_document_analyze_csv(
         store_ids=store_ids,
         warehouse_ids=warehouse_ids,
     )
+    # Same category_id redact as JSON analyze (expense category master FK).
+    if dashboard_scope_svc.omit_expense_category_assignment(store_ids):
+        data = dashboard_scope_svc.redact_expense_category_assignment(data)
     return document_analyze_result_to_csv(data)

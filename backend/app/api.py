@@ -20850,6 +20850,10 @@ async def ai_documents_analyze(
         store_ids=managed_stores,
         warehouse_ids=managed_wh,
     )
+    # Expense categories list + expense/AI analysis already deny/redact
+    # category_id; document analyze extracted_fields must not re-dump master FKs.
+    if dashboard_scope_svc.omit_expense_category_assignment(managed_stores):
+        data = dashboard_scope_svc.redact_expense_category_assignment(data)
     filename = getattr(file, "filename", None) or ""
     await ai_guard_svc.audit_ai_event(
         db,

@@ -2189,10 +2189,11 @@ def omit_expense_category_assignment(managed_ids: list[str] | None) -> bool:
     """True when store_manager must omit expense ``category_id`` on JSON.
 
     Expense categories list/export already denied (company budget master dump).
-    Expense + recurring list/get/patch/OCR/AI embeds must not re-dump the company
-    expense↔category master FK. Free-text ``category`` name, amount, store, and
-    status remain for managed-store ops. Budget row identity (id/code/account)
-    is redacted via ``redact_expense_budget_limits``.
+    Expense + recurring list/get/patch/OCR/AI embeds + AI document analyze
+    ``extracted_fields`` must not re-dump the company expense↔category master FK.
+    Free-text ``category`` name, amount, store, and status remain for
+    managed-store ops. Budget row identity (id/code/account) is redacted via
+    ``redact_expense_budget_limits``.
     """
     return managed_ids is not None
 
@@ -2201,8 +2202,9 @@ def redact_expense_category_assignment(payload: dict) -> dict:
     """Null expense category master FKs on expense / recurring / AI / OCR payloads.
 
     Clears ``category_id`` / ``suggested_category_id`` and walks common nested
-    lists/objects used by AI analysis and OCR suggestion envelopes. Free-text
-    ``category`` / ``suggested_category`` names remain.
+    lists/objects used by AI analysis, OCR suggestion envelopes, and AI
+    document-analyze ``extracted_fields``. Free-text ``category`` /
+    ``suggested_category`` names remain.
     """
     out = dict(payload)
     for key in ("category_id", "suggested_category_id"):
@@ -2234,7 +2236,7 @@ def redact_expense_category_assignment(payload: dict) -> dict:
                 else row
                 for row in nested
             ]
-    for nest_key in ("categorization", "budget_variance"):
+    for nest_key in ("categorization", "budget_variance", "extracted_fields"):
         nested = out.get(nest_key)
         if isinstance(nested, dict):
             out[nest_key] = redact_expense_category_assignment(nested)
