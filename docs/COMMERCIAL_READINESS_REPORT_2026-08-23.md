@@ -9,7 +9,7 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `a043fba1842ef7e9e4340e913905d2c4110e7924` — purchase-order emailed_to redact honesty HEAD (feat `6cd9633488`) for `store_manager` |
+| **As of tip** | `caf7d98b5519a0573f1a62eed70e9c8c78cffaa6` — dual lineage: continuum PO emailed_to (`9ff88796a1`) + security H1–H5 (`3cf99a5540`/`caf7d98b55`); feat `6cd9633488`; leftovers still open |
 | RBAC / store scope | **PARTIAL** only |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
 
