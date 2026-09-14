@@ -11,6 +11,22 @@
 
 ---
 
+### Tip — CLE currency redact (2026-09-15)
+
+**As of tip:** `127dccec61030a4875dee3d9aa2adf4aa623d124`
+CREDIT_LIMIT_EXCEEDED 409 `currency` redact for `store_manager`
+(document FX / rate-table identity in `extra_details`; sales-invoice list/get
+already nulls `currency`; `invoice_total` / `invoice_total_base` /
+`additional_amount` / master credit fields already redacted; `exceeded` /
+`code` / `message` / `invoice_number` remain; admin keeps `currency`).
+Continuum stays **PARTIAL**. Store-scoped RBAC Complete remains **MISSING**
+(intentional ALLOWs + residual backlog + product sign-off + staging soak).
+Offline / 7-day / go-live / paid billing Completes remain **MISSING**. Next
+CONTINUE: residual continuum field-leak (named surface) or product ALLOW
+sign-off / staging soak docs.
+
+---
+
 ### Tip — CLE additional_amount redact (2026-09-15)
 
 **As of tip:** `c44078e499dbc5028ead2550c3247b400b0beadf`
