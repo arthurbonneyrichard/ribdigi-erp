@@ -20619,6 +20619,107 @@ async def test_store_manager_expenses_summary_category_filter_denied(client, db_
     assert ok_export.status_code == 200, ok_export.text
 
 
+@pytest.mark.asyncio
+async def test_store_manager_expenses_department_filter_denied(client, db_session):
+    """Expense list/export department_id filter denied for store_manager.
+
+    Departments list GET already denied; expense JSON/CSV already redact
+    department_id; assign/clear writes already denied. Query/export
+    department_id must not probe company department org-unit master.
+    Unfiltered scoped list/export remains.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    branch = m.Branch(
+        tenant_id=tid,
+        company_id=cid,
+        code="EXP-DF-BR",
+        name="Expense Dept Filter Branch",
+        is_active=True,
+    )
+    db_session.add(branch)
+    await db_session.flush()
+    dept = m.Department(
+        tenant_id=tid,
+        company_id=cid,
+        branch_id=branch.id,
+        code="EXP-DF-DEPT",
+        name="Expense Dept Filter Target",
+        is_active=True,
+    )
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Expense Dept Filter Store",
+        code="EXP-DF-ST",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    expense = m.Expense(
+        tenant_id=tid,
+        company_id=cid,
+        category="Travel",
+        description="Dept filter target",
+        amount=42,
+        store_id=None,
+        department_id=None,
+        status="approved",
+        created_by=mgr.id,
+    )
+    db_session.add_all([dept, store, expense])
+    await db_session.flush()
+    expense.store_id = store.id
+    expense.department_id = dept.id
+    await db_session.commit()
+
+    ok = await ac.get("/api/v1/expenses", headers=headers)
+    assert ok.status_code == 200, ok.text
+    assert any(r["id"] == expense.id for r in ok.json()["data"])
+
+    denied = await ac.get(
+        f"/api/v1/expenses?department_id={dept.id}",
+        headers=headers,
+    )
+    assert denied.status_code == 403, denied.text
+    body = denied.json()
+    detail = body.get("detail") or body
+    if isinstance(detail, dict):
+        assert detail.get("code") == "STORE_SCOPE_DENIED"
+    else:
+        assert "STORE_SCOPE_DENIED" in str(detail) or "department" in str(detail).lower()
+
+    admin_ok = await ac.get(
+        f"/api/v1/expenses?department_id={dept.id}",
+        headers=admin_company,
+    )
+    assert admin_ok.status_code == 200, admin_ok.text
+    assert any(r["id"] == expense.id for r in admin_ok.json()["data"])
+
+    denied_export = await ac.get(
+        f"/api/v1/expenses/export?department_id={dept.id}",
+        headers=headers,
+    )
+    assert denied_export.status_code == 403, denied_export.text
+
+    ok_export = await ac.get("/api/v1/expenses/export", headers=headers)
+    assert ok_export.status_code == 200, ok_export.text
+
+
 async def test_store_manager_sales_customers_party_code_redacted(client, db_session):
     """Sales-by-customer nulls party code for store_manager.
 

@@ -12043,6 +12043,9 @@ async def expenses(
                 detail="status must be pending, approved, or rejected",
             )
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_expenses_department_filter_denied(
+        managed, department_id=department_id
+    )
     single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     stmt = (
         select(m.Expense)
@@ -12079,6 +12082,9 @@ async def expenses_export(
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_expenses_department_filter_denied(
+        managed, department_id=department_id
+    )
     single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     text = await expense_export_svc.export_expenses_csv(
         db,

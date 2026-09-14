@@ -4063,6 +4063,28 @@ def assert_expenses_summary_category_filter_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_expenses_department_filter_denied(
+    managed_ids: list[str] | None,
+    *,
+    department_id: str | None,
+    message: str = (
+        "Store managers cannot filter expenses by company department; "
+        "omit department_id, or use scoped expense lists without org-unit master filter."
+    ),
+) -> None:
+    """403 when store_manager passes ``department_id`` on expense list/export.
+
+    Departments list/export/writes already denied; expense JSON/CSV already
+    redact ``department_id``; assign/clear writes already denied. Query/export
+    ``department_id`` on ``GET /expenses`` (+ ``/expenses/export``) still
+    filters by company department org-unit UUID. Unfiltered scoped list remains.
+    """
+    if managed_ids is None:
+        return
+    if not (department_id or "").strip():
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
 
 def assert_company_level_product_variants_export_denied(
     managed_ids: list[str] | None,
