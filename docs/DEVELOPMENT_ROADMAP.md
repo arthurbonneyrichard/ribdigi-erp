@@ -13,7 +13,7 @@
 
 ### Tip — audit store manager_id redact (2026-09-15)
 
-**As of tip:** `b3c8eed306d4de52eeffc28019fe389d313121b4`
+**As of tip:** `238614c638b8e0c51ef9662b3faf254d02f8821e`
 Scoped audit list/export `details` store manager_id redact for `store_manager`
 (`expected_manager_id` on `transfer_manager_override`; sibling `manager_id` /
 `from_store_manager_id` / `to_store_manager_id` on `GET /audit-logs` + CSV;
