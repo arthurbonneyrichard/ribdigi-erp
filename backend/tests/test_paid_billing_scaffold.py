@@ -771,3 +771,43 @@ def test_company_ui_opens_portal_and_checkout_urls_when_present():
     assert "window.location.assign(data.checkout_url)" in page
     assert "paid billing Complete" in page.lower() or "Complete remains MISSING" in page
     assert "auto-upgrade" in page.lower() or "does not auto-upgrade" in page.lower()
+
+
+def test_entitlement_gate_prod_example_defaults_off_and_go_live_pack_present():
+    """Ops readiness: prod template stays fail-closed; operator go-live pack exists."""
+    example = (ROOT / ".env.example").read_text(encoding="utf-8")
+    assert "PAID_BILLING_ENTITLEMENT_GATE_ENABLED=false" in example
+    assert "BILLING_PROVIDER=" in example
+    assert "BILLING_CHECKOUT_ENABLED=false" in example
+
+    prod = (ROOT / ".env.production.example").read_text(encoding="utf-8")
+    assert "PAID_BILLING_ENTITLEMENT_GATE_ENABLED=false" in prod
+    assert "BILLING_PROVIDER=" in prod
+    assert "BILLING_PROVIDER_SECRET_KEY=" in prod
+    assert "BILLING_PROVIDER_WEBHOOK_SECRET=" in prod
+    assert "BILLING_CHECKOUT_ENABLED=false" in prod
+    # Must not flip production template ON from engineering soak alone.
+    assert "PAID_BILLING_ENTITLEMENT_GATE_ENABLED=true" not in prod
+
+    pack = (ROOT / "docs/GO_LIVE_READINESS_CHECKLIST.md").read_text(encoding="utf-8")
+    assert "PAID_BILLING_ENTITLEMENT_GATE_ENABLED" in pack
+    assert "STORE_MEMBERSHIP_SCOPE_ENABLED" in pack
+    assert "OFFLINE_PUSH_ENABLED" in pack
+    assert "offline_wipe_push_staging_checklist.md" in pack
+    assert "adr005_staging_soak_checklist.md" in pack
+    assert "OFFLINE_PHYSICAL_TEST_RUNBOOK_2026-08-23.md" in pack
+    assert "PAID_BILLING_PROVIDER_OPS.md" in pack
+    cl = pack.lower()
+    for forbidden_complete in (
+        "offline complete",
+        "7-day",
+        "go-live",
+        "paid billing complete",
+        "adr-005 complete",
+        "store-scoped rbac complete",
+    ):
+        assert forbidden_complete in cl
+    assert "missing" in cl
+    assert "partial" in cl
+    # Must not claim Completes from the pack alone
+    assert "do not claim" in cl or "do **not** claim" in pack.lower() or "not claim" in cl

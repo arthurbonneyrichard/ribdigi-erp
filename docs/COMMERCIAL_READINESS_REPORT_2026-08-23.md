@@ -4,6 +4,11 @@
 
 **Authoritative audit spines:** `PRODUCTION_READINESS.md`, `docs/CHANGE_IMPACT_MVP_UPDATE_2026-08-14.md`, `docs/LAUNCH_CHECKLIST.md` + `ops/launch/checklist-map.json`.
 
+**Operator go-live pack (FIXED / PARTIAL / MISSING + staging soaks):**
+[`GO_LIVE_READINESS_CHECKLIST.md`](GO_LIVE_READINESS_CHECKLIST.md) — does **not** claim
+Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete ·
+store-scoped RBAC Complete.
+
 ### PR #303 continuum tip honesty (aligned with `AGENTS.md`)
 
 | Field | Value |

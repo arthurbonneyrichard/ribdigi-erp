@@ -11,6 +11,8 @@ Complete / 7-day VERIFIED remain separate gates.
 **Not claimed:** Offline Complete · push-delivery Complete · 7-day VERIFIED ·
 go-live · paid billing Complete · ADR-005 Complete · store-scoped RBAC Complete.
 
+Operator roll-up: [`GO_LIVE_READINESS_CHECKLIST.md`](GO_LIVE_READINESS_CHECKLIST.md).
+
 ## Automated evidence (already landed)
 
 | Check | Coverage |

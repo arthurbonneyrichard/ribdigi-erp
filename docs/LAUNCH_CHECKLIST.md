@@ -6,6 +6,12 @@
 
 This is the **operator go-live checklist** for a commercial MVP launch. It is **not** a claim that deferred infra (hosted Grafana/PagerDuty, vendor pen test, certified 1000-VU soak, live GHA→prod cutover) is Complete. K8s/WAL/PgBouncer packaging are Complete (MVP) under Stages 26–27 with honest Remaining.
 
+**Commercial residual honesty pack:** for FIXED vs PARTIAL vs MISSING on Offline /
+ADR-005 / paid billing / security flags and the exact staging soak steps, use
+[`GO_LIVE_READINESS_CHECKLIST.md`](GO_LIVE_READINESS_CHECKLIST.md). That pack does
+**not** claim Offline Complete, 7-day VERIFIED, go-live, paid billing Complete,
+ADR-005 Complete, or store-scoped RBAC Complete.
+
 Use this list before promoting a staging build to production. Check items only when verified in the target environment — never on demo data or fake success.
 
 ## 1. Configuration & secrets

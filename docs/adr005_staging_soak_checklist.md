@@ -9,6 +9,8 @@
 **Not claimed:** ADR-005 Complete · store-scoped RBAC Complete · Offline
 Complete · 7-day VERIFIED · go-live · paid billing Complete.
 
+Operator roll-up: [`GO_LIVE_READINESS_CHECKLIST.md`](GO_LIVE_READINESS_CHECKLIST.md).
+
 Automated soak **≠** Complete. Do not flip production default to ON from this
 checklist alone.
 
