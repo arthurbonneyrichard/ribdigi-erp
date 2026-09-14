@@ -1763,8 +1763,8 @@ def omit_expense_attachment_url(managed_ids: list[str] | None) -> bool:
     return managed_ids is not None
 
 
-def redact_expense_attachment_url(payload: dict) -> dict:
-    """Null ``attachment_url`` on a serialized expense dict (+ upload key echo)."""
+def redact_attachment_url_storage_key(payload: dict) -> dict:
+    """Null ``attachment_url`` on a serialized dict (+ upload key echo)."""
     out = dict(payload)
     if "attachment_url" in out:
         out["attachment_url"] = None
@@ -1774,6 +1774,45 @@ def redact_expense_attachment_url(payload: dict) -> dict:
         up["key"] = None
         out["uploaded"] = up
     return out
+
+
+def redact_expense_attachment_url(payload: dict) -> dict:
+    """Null ``attachment_url`` on a serialized expense dict (+ upload key echo)."""
+    return redact_attachment_url_storage_key(payload)
+
+
+def omit_purchase_invoice_attachment_url(managed_wh_ids: list[str] | None) -> bool:
+    """True when store_manager must omit purchase-invoice ``attachment_url`` keys.
+
+    Binary download remains WH-scoped via attachment GET. List/get/patch/upload
+    JSON must not re-dump ``attachment_url`` (storage_key / external URL).
+    ``has_attachment`` remains for chrome. Same class as expense attachment_url.
+    """
+    return managed_wh_ids is not None
+
+
+def redact_purchase_invoice_attachment_url(payload: dict) -> dict:
+    """Null ``attachment_url`` on a serialized purchase invoice (+ upload key)."""
+    return redact_attachment_url_storage_key(payload)
+
+
+def apply_purchase_invoice_manager_redacts(
+    payload: dict, managed_wh_ids: list[str] | None
+) -> dict:
+    """Apply store_manager purchase-invoice JSON redacts (attachment_url)."""
+    out = payload
+    if omit_purchase_invoice_attachment_url(managed_wh_ids):
+        out = redact_purchase_invoice_attachment_url(out)
+    return out
+
+
+def apply_purchase_invoice_manager_redacts_list(
+    rows: list[dict], managed_wh_ids: list[str] | None
+) -> list[dict]:
+    """Map ``apply_purchase_invoice_manager_redacts`` across invoice list rows."""
+    return [
+        apply_purchase_invoice_manager_redacts(row, managed_wh_ids) for row in rows
+    ]
 
 
 def apply_expense_manager_redacts(
