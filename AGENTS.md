@@ -151,7 +151,10 @@ store activation — never frontend-only.
    (``GET /products/{id}/image``; WH stock ops remain;
    company/tenant logo binary GET stays open) + **print/receipt JSON
    ``logo_data_url`` redacted** (invoice/quotation/credit-note print + POS
-   receipt; ``has_logo`` + server-side HTML/PDF embeds remain) + **product
+   receipt; ``has_logo`` + server-side HTML/PDF embeds remain) + **print/receipt JSON
+   ``legal_name`` / ``trading_name`` redacted** (invoice/quotation/credit-note print
+   + POS receipt; ``company_name`` falls back to trading switcher when distinct;
+   ``has_logo`` + server-side HTML/PDF/text embeds remain) + **product
    list/get ``image_url``
    storage key redacted** + **product list/get ``has_image`` forced false**
    (admin list/get keep ``image_url`` + ``has_image``; WH stock ops / POS remain)
@@ -314,7 +317,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `c01b1e18b5308379d7f2798f6e3409a457ddbb18` — `docs: sync PR #303 honesty tip after dual-lineage security merge` (contains continuum PO `emailed_to` `9ff88796a1` + security H1–H5 `3cf99a5540`/`caf7d98b55`; feat ancestry `6cd9633488`).
+**As of tip:** `6f0e6f351b74faccf6a4330871ce2d4f2eeb14c6` — `feat(rbac): redact print/receipt legal_name/trading_name for store_manager`.
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
@@ -346,7 +349,7 @@ redact (`has_attachment` + WH-scoped binary download remain); journal-entry
 list/get/create/unpost/upload/delete `attachment_url` storage-key redact
 (`has_attachment` + store-scoped binary download remain); print/receipt JSON
 `logo_data_url` redact (invoice/quotation/credit-note print + POS receipt;
-`has_logo` + server-side HTML/PDF embeds remain); sales-invoice credit-override audit redact (`credit_limit_overridden` / `credit_override_reason` / `by` / `at`; balance/status remain); sales-invoice `emailed_to` redact (`delivery.to` on send; `emailed_at` remains); quotation `emailed_to` redact (list/get/send/print/export + `delivery.to`; `emailed_at` remains); purchase-order `emailed_to` redact (list/get/create/patch/amend/send/print/cancel/export + convert/low-stock + `delivery.to`; `sent_at` remains). Each slice closes
+`has_logo` + server-side HTML/PDF embeds remain); print/receipt JSON `legal_name` / `trading_name` redact (invoice/quotation/credit-note print + POS receipt; `company_name` falls back to trading switcher when distinct; `has_logo` + server-side HTML/PDF/text embeds remain); sales-invoice credit-override audit redact (`credit_limit_overridden` / `credit_override_reason` / `by` / `at`; balance/status remain); sales-invoice `emailed_to` redact (`delivery.to` on send; `emailed_at` remains); quotation `emailed_to` redact (list/get/send/print/export + `delivery.to`; `emailed_at` remains); purchase-order `emailed_to` redact (list/get/create/patch/amend/send/print/cancel/export + convert/low-stock + `delivery.to`; `sent_at` remains). Each slice closes
 one dump or write path; the continuum as a whole stays **PARTIAL**.
 
 ### Continuum agent contract
