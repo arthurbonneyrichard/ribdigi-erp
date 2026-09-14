@@ -1502,10 +1502,30 @@ def redact_receipt_cashier_name(payload: dict) -> dict:
     return out
 
 
+def omit_receipt_currency(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit POS receipt ``currency``.
+
+    Company profile GET + ``/me``/``/workspace`` switcher already omit company
+    ``currency``. POS receipt JSON must not re-dump company/tenant currency
+    after those profile redacts. ``company_name`` + ``has_logo`` + totals remain;
+    server-side text/PDF embeds may retain the currency code (rendered before
+    JSON redacts).
+    """
+    return managed_ids is not None
+
+
+def redact_receipt_currency(payload: dict) -> dict:
+    """Null ``currency`` on a POS receipt JSON dict."""
+    out = dict(payload)
+    if "currency" in out:
+        out["currency"] = None
+    return out
+
+
 def apply_document_logo_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager document-brand JSON redacts (logo + legal + contact + TIN + header + tpl + cashier)."""
+    """Apply store_manager document-brand JSON redacts (logo + legal + contact + TIN + header + tpl + cashier + currency)."""
     out = payload
     if omit_document_logo_data_url(managed_ids):
         out = redact_document_logo_data_url(out)
@@ -1523,6 +1543,8 @@ def apply_document_logo_manager_redacts(
         out = redact_document_invoice_print_template(out)
     if omit_receipt_cashier_name(managed_ids):
         out = redact_receipt_cashier_name(out)
+    if omit_receipt_currency(managed_ids):
+        out = redact_receipt_currency(out)
     return out
 
 
