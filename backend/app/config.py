@@ -178,11 +178,17 @@ class Settings(BaseSettings):
     BILLING_PROVIDER_SECRET_KEY: str = ""  # never commit real secrets
     BILLING_PROVIDER_WEBHOOK_SECRET: str = ""
     BILLING_PROVIDER_PORTAL_RETURN_URL: str = ""
-    # Portal create mode: "" (auto), "mock" (CI / deterministic URL), "live" (provider API).
+    BILLING_PROVIDER_CHECKOUT_SUCCESS_URL: str = ""
+    BILLING_PROVIDER_CHECKOUT_CANCEL_URL: str = ""
+    # JSON map plan_code → Stripe price id, e.g. {"starter":"price_…","growth":"price_…"}.
+    # Live Checkout Session create requires a price (body price_id or this map).
+    BILLING_PROVIDER_PRICE_IDS: str = ""
+    # Portal/checkout create mode: "" (auto), "mock" (CI / deterministic URL), "live".
     # Mock never claims payment_success / paid billing Complete.
     BILLING_PROVIDER_MODE: str = ""
     BILLING_PROVIDER_API_BASE: str = "https://api.stripe.com"
-    # Hard non-claim: scaffold must not enable live checkout success paths.
+    # Hard non-claim: honesty payload never advertises checkout Complete.
+    # Session create itself follows provider keys (like portal) — not this flag.
     BILLING_CHECKOUT_ENABLED: bool = False
 
     model_config = SettingsConfigDict(env_file="../.env", extra="ignore")

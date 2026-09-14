@@ -550,9 +550,42 @@ export default function Page() {
           >
             Open billing portal
           </button>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                setError('');
+                setMessage('');
+                const origin = typeof window !== 'undefined' ? window.location.origin : '';
+                const res = await api('/billing/checkout-session', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    success_url: origin ? `${origin}/company?billing=checkout_return` : undefined,
+                    cancel_url: origin ? `${origin}/company?billing=checkout_cancel` : undefined,
+                    plan_code: tenant.plan_code && tenant.plan_code !== 'trial' ? tenant.plan_code : 'starter',
+                  }),
+                });
+                const data = res.data || {};
+                if (data.checkout_url) {
+                  window.location.assign(data.checkout_url);
+                  return;
+                }
+                setError(
+                  data.message ||
+                    `Billing checkout unavailable (${data.status || 'unknown'}). Provider keys may be unset.`
+                );
+              } catch (err: any) {
+                setError(err.message || 'Billing checkout request failed');
+              }
+            }}
+          >
+            Start checkout
+          </button>
           <span className="muted">
-            Opens provider portal when configured (portal_url present). Unconfigured returns a clear
-            error — not payment success. Paid billing Complete still MISSING (ADR-002).
+            Opens provider portal or Checkout Session when configured (`portal_url` /
+            `checkout_url`). Unconfigured returns a clear error — not payment success.
+            Checkout does not auto-upgrade plan. Paid billing Complete still MISSING
+            (ADR-002).
           </span>
         </div>
         <select

@@ -1,9 +1,7 @@
-"""ADR-002 paid billing PARTIAL — portal session + webhook proof (Complete MISSING)."""
+"""ADR-002 paid billing PARTIAL — portal/checkout session + webhook proof (Complete MISSING)."""
 
 from __future__ import annotations
 
-import hashlib
-import hmac
 import json
 import time
 from pathlib import Path
@@ -67,6 +65,9 @@ async def test_billing_status_and_portal_unconfigured_fails_clearly(client, db_s
     assert body["checkout_enabled"] is False
     assert body["portal"]["available"] is False
     assert body["portal"]["reason"] == "not_configured"
+    assert body["checkout"]["available"] is False
+    assert body["checkout"]["reason"] == "not_configured"
+    assert body["checkout"]["auto_plan_upgrade"] is False
     assert body["provider_mode"] == "unconfigured"
 
     portal = await ac.post(
@@ -77,6 +78,19 @@ async def test_billing_status_and_portal_unconfigured_fails_clearly(client, db_s
     assert portal.status_code == 503, portal.text
     detail = portal.json()["detail"]
     assert "not configured" in str(detail).lower() or "BILLING_PROVIDER" in str(detail)
+
+    checkout = await ac.post(
+        "/api/v1/billing/checkout-session",
+        headers=headers,
+        json={
+            "success_url": "https://example.test/company?ok=1",
+            "cancel_url": "https://example.test/company?cancel=1",
+            "plan_code": "starter",
+        },
+    )
+    assert checkout.status_code == 503, checkout.text
+    cdetail = checkout.json()["detail"]
+    assert "not configured" in str(cdetail).lower() or "BILLING_PROVIDER" in str(cdetail)
 
 
 @pytest.mark.asyncio
@@ -97,6 +111,8 @@ async def test_portal_mock_mode_returns_portal_url(client, db_session, monkeypat
     assert sbody["provider_mode"] == "mock"
     assert sbody["portal"]["available"] is True
     assert sbody["portal"]["reason"] == "mock_portal_session_ready"
+    assert sbody["checkout"]["available"] is True
+    assert sbody["checkout"]["reason"] == "mock_checkout_session_ready"
     assert sbody["paid_billing_complete_claimed"] is False
 
     portal = await ac.post(
@@ -124,6 +140,57 @@ async def test_portal_mock_mode_returns_portal_url(client, db_session, monkeypat
     ).scalar_one()
     assert row.provider_customer_id.startswith("cus_mock_")
     assert (row.metadata_json or {}).get("mock_portal") is True
+
+
+@pytest.mark.asyncio
+async def test_checkout_mock_mode_returns_checkout_url(client, db_session, monkeypatch):
+    ac, seed = client
+    headers = await _super(ac, seed)
+    plan_before = seed["t1"].plan_code
+    _patch_billing(
+        monkeypatch,
+        BILLING_PROVIDER="stripe",
+        BILLING_PROVIDER_SECRET_KEY="sk_test_mock_ci",
+        BILLING_PROVIDER_MODE="mock",
+        BILLING_PROVIDER_CHECKOUT_SUCCESS_URL="https://example.test/company?ok=1",
+        BILLING_PROVIDER_CHECKOUT_CANCEL_URL="https://example.test/company?cancel=1",
+    )
+
+    checkout = await ac.post(
+        "/api/v1/billing/checkout-session",
+        headers=headers,
+        json={
+            "success_url": "https://example.test/company?ok=1",
+            "cancel_url": "https://example.test/company?cancel=1",
+            "plan_code": "starter",
+        },
+    )
+    assert checkout.status_code == 200, checkout.text
+    data = checkout.json()["data"]
+    assert data["status"] == "mock_checkout_session_created"
+    assert data["checkout_url"]
+    assert data["checkout_url"].startswith("https://checkout.stripe.test/mock/session")
+    assert data["payment_success"] is False
+    assert data["payment_processed"] is False
+    assert data["auto_plan_upgrade"] is False
+    assert data["tenant_plan_code_unchanged"] is True
+    assert data["paid_billing_complete_claimed"] is False
+    assert data["checkout_success_claimed"] is False
+    assert data["checkout_enabled"] is False
+    assert data["plan_code"] == "starter"
+    assert data["customer"]["provider_customer_id"].startswith("cus_mock_")
+
+    tenant = await db_session.get(m.Tenant, seed["t1"].id)
+    assert tenant.plan_code == plan_before
+
+    row = (
+        await db_session.execute(
+            select(m.TenantBillingCustomer).where(
+                m.TenantBillingCustomer.tenant_id == seed["t1"].id
+            )
+        )
+    ).scalar_one()
+    assert (row.metadata_json or {}).get("mock_checkout") is True
 
 
 @pytest.mark.asyncio
@@ -183,6 +250,61 @@ async def test_portal_live_mode_with_httpx_mock(client, db_session, monkeypatch)
 
 
 @pytest.mark.asyncio
+async def test_checkout_live_mode_with_httpx_mock(client, db_session, monkeypatch):
+    ac, seed = client
+    headers = await _super(ac, seed)
+    plan_before = seed["t1"].plan_code
+    _patch_billing(
+        monkeypatch,
+        BILLING_PROVIDER="stripe",
+        BILLING_PROVIDER_SECRET_KEY="sk_test_live_path",
+        BILLING_PROVIDER_MODE="live",
+        BILLING_PROVIDER_API_BASE="https://api.stripe.test",
+        BILLING_PROVIDER_PRICE_IDS=json.dumps({"starter": "price_live_starter"}),
+    )
+
+    calls: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(str(request.url.path))
+        if request.url.path.endswith("/v1/customers"):
+            return httpx.Response(200, json={"id": "cus_live_checkout_1", "object": "customer"})
+        if request.url.path.endswith("/v1/checkout/sessions"):
+            return httpx.Response(
+                200,
+                json={
+                    "id": "cs_live_test_1",
+                    "object": "checkout.session",
+                    "url": "https://checkout.stripe.com/c/pay/test_live_checkout",
+                },
+            )
+        return httpx.Response(404, json={"error": {"message": "not found"}})
+
+    with patch.object(billing_svc, "_http_transport", httpx.MockTransport(handler)):
+        checkout = await ac.post(
+            "/api/v1/billing/checkout-session",
+            headers=headers,
+            json={
+                "success_url": "https://example.test/company?ok=1",
+                "cancel_url": "https://example.test/company?cancel=1",
+                "plan_code": "starter",
+            },
+        )
+    assert checkout.status_code == 200, checkout.text
+    data = checkout.json()["data"]
+    assert data["status"] == "live_checkout_session_created"
+    assert data["checkout_url"] == "https://checkout.stripe.com/c/pay/test_live_checkout"
+    assert data["checkout_session_id"] == "cs_live_test_1"
+    assert data["payment_success"] is False
+    assert data["auto_plan_upgrade"] is False
+    assert data["paid_billing_complete_claimed"] is False
+    assert any(c.endswith("/v1/checkout/sessions") for c in calls)
+
+    tenant = await db_session.get(m.Tenant, seed["t1"].id)
+    assert tenant.plan_code == plan_before
+
+
+@pytest.mark.asyncio
 async def test_portal_live_provider_failure_no_fake_success(client, monkeypatch):
     ac, seed = client
     headers = await _super(ac, seed)
@@ -205,6 +327,31 @@ async def test_portal_live_provider_failure_no_fake_success(client, monkeypatch)
         )
     assert portal.status_code == 502, portal.text
     assert "payment_success" not in portal.text.lower() or "false" in portal.text.lower()
+
+
+@pytest.mark.asyncio
+async def test_checkout_live_missing_price_fails_clearly(client, monkeypatch):
+    ac, seed = client
+    headers = await _super(ac, seed)
+    _patch_billing(
+        monkeypatch,
+        BILLING_PROVIDER="stripe",
+        BILLING_PROVIDER_SECRET_KEY="sk_test_live_path",
+        BILLING_PROVIDER_MODE="live",
+        BILLING_PROVIDER_API_BASE="https://api.stripe.test",
+        BILLING_PROVIDER_PRICE_IDS="",
+    )
+    checkout = await ac.post(
+        "/api/v1/billing/checkout-session",
+        headers=headers,
+        json={
+            "success_url": "https://example.test/company?ok=1",
+            "cancel_url": "https://example.test/company?cancel=1",
+            "plan_code": "starter",
+        },
+    )
+    assert checkout.status_code == 400, checkout.text
+    assert "price_id" in str(checkout.json()["detail"]).lower()
 
 
 @pytest.mark.asyncio
@@ -430,9 +577,13 @@ def test_platform_billing_honesty_payload_shape():
     assert honesty["mrr_fabricated_claimed"] is False
 
 
-def test_company_ui_opens_portal_url_when_present():
+def test_company_ui_opens_portal_and_checkout_urls_when_present():
     page = (ROOT / "frontend/app/company/page.tsx").read_text(encoding="utf-8")
     assert "/billing/portal-session" in page
     assert "portal_url" in page
     assert "window.location.assign(data.portal_url)" in page
+    assert "/billing/checkout-session" in page
+    assert "checkout_url" in page
+    assert "window.location.assign(data.checkout_url)" in page
     assert "paid billing Complete" in page.lower() or "Complete remains MISSING" in page
+    assert "auto-upgrade" in page.lower() or "does not auto-upgrade" in page.lower()

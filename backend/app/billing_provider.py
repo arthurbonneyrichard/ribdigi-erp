@@ -1,9 +1,10 @@
 """ADR-002 paid billing (PARTIAL — Complete still MISSING).
 
 Extends commercial plan metadata (``tenants.plan_code`` / ``PLAN_CATALOG``) with
-provider-shaped tables and APIs. Portal Session create is real when keys are
-configured (or mock mode for CI). Does **not** charge cards, invent checkout
-success, fabricate MRR, or claim paid billing Complete.
+provider-shaped tables and APIs. Portal Session and Checkout Session create are
+real when keys are configured (or mock mode for CI). Does **not** invent
+payment success, auto-upgrade ``Tenant.plan_code``, fabricate MRR, or claim
+paid billing Complete.
 
 See ``docs/ADR_002_PAID_BILLING_SCAFFOLD.md`` and ``docs/PAID_BILLING_PROVIDER_OPS.md``.
 """
@@ -194,12 +195,18 @@ async def billing_status(db: AsyncSession, *, tenant: m.Tenant) -> dict[str, Any
     if mode == "unconfigured":
         portal_available = False
         portal_reason = "not_configured"
+        checkout_available = False
+        checkout_reason = "not_configured"
     elif mode == "mock":
         portal_available = True
         portal_reason = "mock_portal_session_ready"
+        checkout_available = True
+        checkout_reason = "mock_checkout_session_ready"
     else:
         portal_available = True
         portal_reason = "live_portal_session_ready"
+        checkout_available = True
+        checkout_reason = "live_checkout_session_ready"
     return {
         **honesty,
         "tenant_id": tenant.id,
@@ -212,11 +219,19 @@ async def billing_status(db: AsyncSession, *, tenant: m.Tenant) -> dict[str, Any
             "available": portal_available,
             "reason": portal_reason,
         },
+        "checkout": {
+            "available": checkout_available,
+            "reason": checkout_reason,
+            # Creating a Checkout Session ≠ payment success / Complete.
+            "session_create_partial": True,
+            "auto_plan_upgrade": False,
+        },
         "message": (
-            "Paid billing is PARTIAL (ADR-002). Portal Session create works when "
-            "provider keys are configured (or BILLING_PROVIDER_MODE=mock for CI). "
-            "No checkout success, no fabricated MRR, entitlement gate default OFF "
-            "(trial/grace/suspend lifecycle still authoritative). Complete MISSING."
+            "Paid billing is PARTIAL (ADR-002). Portal / Checkout Session create "
+            "work when provider keys are configured (or BILLING_PROVIDER_MODE=mock "
+            "for CI). No payment success, no auto plan upgrade, no fabricated MRR, "
+            "entitlement gate default OFF (trial/grace/suspend lifecycle still "
+            "authoritative). Complete MISSING."
         ),
     }
 
@@ -450,6 +465,290 @@ async def _create_live_portal_session(
         "message": (
             "Live Billing Portal Session created. This is not checkout Complete, "
             "payment success, or paid billing Complete (ADR-002 PARTIAL)."
+        ),
+    }
+
+
+_PAID_CHECKOUT_PLAN_CODES = frozenset({"starter", "growth", "enterprise"})
+
+
+def _checkout_urls(
+    *, success_url: str | None, cancel_url: str | None
+) -> tuple[str, str]:
+    success = (
+        (success_url or "").strip()
+        or (getattr(settings, "BILLING_PROVIDER_CHECKOUT_SUCCESS_URL", "") or "").strip()
+        or (getattr(settings, "BILLING_PROVIDER_PORTAL_RETURN_URL", "") or "").strip()
+    )
+    cancel = (
+        (cancel_url or "").strip()
+        or (getattr(settings, "BILLING_PROVIDER_CHECKOUT_CANCEL_URL", "") or "").strip()
+        or success
+    )
+    if not success:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "success_url required for billing checkout session "
+                "(pass success_url or set BILLING_PROVIDER_CHECKOUT_SUCCESS_URL)"
+            ),
+        )
+    if not cancel:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "cancel_url required for billing checkout session "
+                "(pass cancel_url or set BILLING_PROVIDER_CHECKOUT_CANCEL_URL)"
+            ),
+        )
+    return success, cancel
+
+
+def _resolve_checkout_price_id(
+    *, plan_code: str | None, price_id: str | None
+) -> tuple[str | None, str | None]:
+    """Return (price_id, plan_code). Mock may omit price; live requires one."""
+    explicit = (price_id or "").strip() or None
+    plan = (plan_code or "").strip().lower() or None
+    if plan == "trial":
+        raise HTTPException(
+            status_code=400,
+            detail="plan_code=trial is not a paid Checkout Session target",
+        )
+    if plan and plan not in _PAID_CHECKOUT_PLAN_CODES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported plan_code for checkout: {plan}",
+        )
+    if explicit:
+        return explicit, plan
+    raw_map = (getattr(settings, "BILLING_PROVIDER_PRICE_IDS", "") or "").strip()
+    if raw_map and plan:
+        try:
+            mapping = json.loads(raw_map)
+        except json.JSONDecodeError as exc:
+            raise HTTPException(
+                status_code=500,
+                detail=f"BILLING_PROVIDER_PRICE_IDS is not valid JSON: {exc}",
+            ) from exc
+        if isinstance(mapping, dict) and mapping.get(plan):
+            return str(mapping[plan]).strip() or None, plan
+    return None, plan
+
+
+async def create_checkout_session(
+    db: AsyncSession,
+    *,
+    tenant: m.Tenant,
+    success_url: str | None = None,
+    cancel_url: str | None = None,
+    plan_code: str | None = None,
+    price_id: str | None = None,
+) -> dict[str, Any]:
+    """Create a Checkout Session when configured; fail clearly otherwise.
+
+    - ``unconfigured`` → HTTP 503 (no fake success / null URL soft-success)
+    - ``mock`` → deterministic mock ``checkout_url`` for CI (not payment success)
+    - ``live`` → Stripe Checkout Session API via httpx
+
+    Never returns ``payment_success`` / paid billing Complete.
+    Never mutates ``Tenant.plan_code``.
+    """
+    honesty = honesty_payload()
+    mode = honesty["provider_mode"]
+    if mode == "unconfigured":
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "Billing provider not configured. Set BILLING_PROVIDER and "
+                "BILLING_PROVIDER_SECRET_KEY (see docs/PAID_BILLING_PROVIDER_OPS.md). "
+                "No checkout session created; paid billing Complete still MISSING."
+            ),
+        )
+
+    configured_success, configured_cancel = _checkout_urls(
+        success_url=success_url, cancel_url=cancel_url
+    )
+    resolved_price, resolved_plan = _resolve_checkout_price_id(
+        plan_code=plan_code, price_id=price_id
+    )
+    # Default plan hint from tenant when caller omits (metadata only — no mutation).
+    if not resolved_plan:
+        tenant_plan = (getattr(tenant, "plan_code", None) or "").strip().lower()
+        if tenant_plan in _PAID_CHECKOUT_PLAN_CODES:
+            resolved_plan = tenant_plan
+            if not resolved_price:
+                resolved_price, resolved_plan = _resolve_checkout_price_id(
+                    plan_code=resolved_plan, price_id=None
+                )
+
+    prov = (getattr(settings, "BILLING_PROVIDER", "") or "").strip() or DEFAULT_PROVIDER
+    customer = await ensure_billing_customer(
+        db,
+        tenant_id=tenant.id,
+        email=getattr(tenant, "email", None),
+        provider=prov,
+    )
+
+    plan_before = getattr(tenant, "plan_code", None)
+
+    if mode == "mock":
+        checkout = await _create_mock_checkout_session(
+            db,
+            customer=customer,
+            success_url=configured_success,
+            cancel_url=configured_cancel,
+            plan_code=resolved_plan,
+            price_id=resolved_price,
+        )
+    else:
+        if not resolved_price:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "price_id required for live Checkout Session "
+                    "(pass price_id or set BILLING_PROVIDER_PRICE_IDS for plan_code)"
+                ),
+            )
+        checkout = await _create_live_checkout_session(
+            db,
+            customer=customer,
+            tenant=tenant,
+            success_url=configured_success,
+            cancel_url=configured_cancel,
+            plan_code=resolved_plan,
+            price_id=resolved_price,
+        )
+
+    # Integrity: create path must never mutate commercial plan metadata.
+    if getattr(tenant, "plan_code", None) != plan_before:
+        raise HTTPException(
+            status_code=500,
+            detail="Checkout Session create must not mutate Tenant.plan_code",
+        )
+
+    return {
+        **honesty,
+        "status": checkout["status"],
+        "checkout_url": checkout["checkout_url"],
+        "checkout_session_id": checkout.get("checkout_session_id"),
+        "success_url": configured_success,
+        "cancel_url": configured_cancel,
+        "plan_code": resolved_plan,
+        "price_id": resolved_price,
+        "customer": serialize_customer(customer),
+        "payment_processed": False,
+        "payment_success": False,
+        "auto_plan_upgrade": False,
+        "tenant_plan_code_unchanged": True,
+        "message": checkout["message"],
+    }
+
+
+async def _create_mock_checkout_session(
+    db: AsyncSession,
+    *,
+    customer: m.TenantBillingCustomer,
+    success_url: str,
+    cancel_url: str,
+    plan_code: str | None,
+    price_id: str | None,
+) -> dict[str, Any]:
+    """CI / deterministic checkout URL — not a real charge or Complete claim."""
+    if not customer.provider_customer_id:
+        customer.provider_customer_id = f"cus_mock_{customer.tenant_id[:8]}"
+    meta = dict(customer.metadata_json or {})
+    meta.update(
+        {
+            "scaffold": True,
+            "mock_checkout": True,
+            "live_customer_create_deferred": False,
+            "paid_billing_complete_claimed": False,
+            "checkout_success_claimed": False,
+        }
+    )
+    customer.metadata_json = meta
+    customer.updated_at = datetime.utcnow()
+    session_id = f"cs_mock_{uuid.uuid4().hex[:16]}"
+    qs = urlencode(
+        {
+            "session": session_id,
+            "success_url": success_url,
+            "cancel_url": cancel_url,
+            **({"plan_code": plan_code} if plan_code else {}),
+            **({"price_id": price_id} if price_id else {}),
+        }
+    )
+    checkout_url = f"https://checkout.stripe.test/mock/session?{qs}"
+    await db.flush()
+    return {
+        "status": "mock_checkout_session_created",
+        "checkout_url": checkout_url,
+        "checkout_session_id": session_id,
+        "message": (
+            "Mock Checkout Session created for CI/test "
+            "(BILLING_PROVIDER_MODE=mock). Not payment success; "
+            "no auto plan upgrade; paid billing Complete still MISSING."
+        ),
+    }
+
+
+async def _create_live_checkout_session(
+    db: AsyncSession,
+    *,
+    customer: m.TenantBillingCustomer,
+    tenant: m.Tenant,
+    success_url: str,
+    cancel_url: str,
+    plan_code: str | None,
+    price_id: str,
+) -> dict[str, Any]:
+    secret = (getattr(settings, "BILLING_PROVIDER_SECRET_KEY", "") or "").strip()
+    if not secret:
+        raise HTTPException(
+            status_code=503,
+            detail="BILLING_PROVIDER_SECRET_KEY unset — cannot create checkout session",
+        )
+    cus_id = await _ensure_provider_customer_live(
+        db, customer=customer, tenant=tenant, secret=secret
+    )
+    form: dict[str, str] = {
+        "mode": "subscription",
+        "customer": cus_id,
+        "success_url": success_url,
+        "cancel_url": cancel_url,
+        "line_items[0][price]": price_id,
+        "line_items[0][quantity]": "1",
+        "metadata[tenant_id]": tenant.id,
+        "metadata[ribdigi_scaffold]": "partial",
+        "subscription_data[metadata][tenant_id]": tenant.id,
+        "subscription_data[metadata][ribdigi_scaffold]": "partial",
+    }
+    if plan_code:
+        form["metadata[plan_code]"] = plan_code
+        form["subscription_data[metadata][plan_code]"] = plan_code
+    payload = await _stripe_form_post(
+        path="/v1/checkout/sessions",
+        data=form,
+        secret=secret,
+    )
+    checkout_url = str(payload.get("url") or "").strip()
+    session_id = str(payload.get("id") or "").strip() or None
+    if not checkout_url:
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "Billing provider checkout session response missing url "
+                "(no fake success)"
+            ),
+        )
+    return {
+        "status": "live_checkout_session_created",
+        "checkout_url": checkout_url,
+        "checkout_session_id": session_id,
+        "message": (
+            "Live Checkout Session created. This is not payment success, "
+            "auto plan upgrade, or paid billing Complete (ADR-002 PARTIAL)."
         ),
     }
 

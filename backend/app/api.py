@@ -800,6 +800,77 @@ async def billing_portal_session(
     return env(data, message=data.get("message") or "Billing portal session")
 
 
+@api.post("/billing/checkout-session")
+async def billing_checkout_session(
+    request: Request,
+    claims=Depends(require_roles("company_admin", "super_admin", "store_manager")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create Checkout Session when provider configured; fail clearly otherwise.
+
+    ADR-002 PARTIAL — never invents payment_success / auto plan upgrade /
+    paid billing Complete.
+    """
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_tenant_lifecycle_write_denied(
+        managed,
+        message="Store managers cannot open tenant billing checkout.",
+    )
+    tenants_svc.assert_writable(claims)
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    body: dict = {}
+    try:
+        raw = await request.json()
+        if isinstance(raw, dict):
+            body = raw
+    except Exception:
+        body = {}
+
+    def _opt_str(key: str) -> str | None:
+        val = body.get(key)
+        return val if isinstance(val, str) else None
+
+    plan_before = getattr(tenant, "plan_code", None)
+    data = await billing_provider_svc.create_checkout_session(
+        db,
+        tenant=tenant,
+        success_url=_opt_str("success_url") or _opt_str("return_url"),
+        cancel_url=_opt_str("cancel_url"),
+        plan_code=_opt_str("plan_code"),
+        price_id=_opt_str("price_id"),
+    )
+    # Defense-in-depth: API layer also asserts no plan mutation.
+    await db.refresh(tenant)
+    if getattr(tenant, "plan_code", None) != plan_before:
+        raise HTTPException(
+            status_code=500,
+            detail="Checkout Session create must not mutate Tenant.plan_code",
+        )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="billing",
+        action="checkout_session_create",
+        entity="tenant",
+        entity_id=tenant.id,
+        details={
+            "status": data.get("status"),
+            "checkout_url_present": bool(data.get("checkout_url")),
+            "provider_mode": data.get("provider_mode"),
+            "plan_code": data.get("plan_code"),
+            "payment_processed": False,
+            "payment_success": False,
+            "auto_plan_upgrade": False,
+            "paid_billing_complete_claimed": False,
+        },
+    )
+    await db.commit()
+    return env(data, message=data.get("message") or "Billing checkout session")
+
+
 @api.post("/billing/webhooks/provider")
 async def billing_provider_webhook(
     request: Request,
