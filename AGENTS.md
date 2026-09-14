@@ -342,8 +342,8 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `937fcfcd06e2b2dc79b018bb1709de13d3d4c93a` — **SEC-M1 + M3 + M4 + L2 FIXED**; **SEC-M2/M5 Phase A+B remainder** on tip (flag OFF; SPA pages use `apiFetch`; dual-mode helpers remain) — still **OPEN/PARTIAL**, not FIXED. Continuum CLE `invoice_total` redact honesty remains **PARTIAL**.  
-**Security:** overall still `🟠 SECURITY FIXES REQUIRED BEFORE LAUNCH` — remaining Mediums **SEC-M2** + **SEC-M5** (Phase B PARTIAL only). Do not claim M2/M5 FIXED until Phase C/D.  
+**As of tip:** `680a93c6207035614480e2c998b7e46abee951ae` — **SEC-M1 + M3 + M4 + L2 FIXED**; **SEC-M2/M5 Phase C** on tip (flag OFF default; flag ON nulls JSON tokens + `cookie_session`; SPA apiFetch/authSession) — still **OPEN/PARTIAL**, not FIXED (staging soak + Phase D remain). Continuum CLE `invoice_total` redact honesty remains **PARTIAL**.  
+**Security:** overall still `🟠 SECURITY FIXES REQUIRED BEFORE LAUNCH` — remaining Mediums **SEC-M2** + **SEC-M5** (Phase C PARTIAL only). Do not claim M2 FIXED until staging soak evidence; do not claim M5 FIXED until Phase D (`ribdigi_principal`).  
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
