@@ -693,15 +693,16 @@ async def resolve_org_dimensions(
     return resolved_store, resolved_dept
 
 
-async def get_expense(db: AsyncSession, tenant_id: str, expense_id: str) -> m.Expense:
-    expense = (
-        await db.execute(
-            select(m.Expense).where(
-                m.Expense.id == expense_id,
-                m.Expense.tenant_id == tenant_id,
-            )
-        )
-    ).scalar_one_or_none()
+async def get_expense(
+    db: AsyncSession, tenant_id: str, expense_id: str, *, for_update: bool = False
+) -> m.Expense:
+    stmt = select(m.Expense).where(
+        m.Expense.id == expense_id,
+        m.Expense.tenant_id == tenant_id,
+    )
+    if for_update:
+        stmt = stmt.with_for_update()
+    expense = (await db.execute(stmt)).scalar_one_or_none()
     if not expense:
         raise HTTPException(status_code=404, detail="Expense not found")
     return expense
@@ -879,7 +880,7 @@ async def approve_expense(
     comment: str | None = None,
     actor_role: str | None = None,
 ) -> m.Expense:
-    expense = await get_expense(db, tenant_id, expense_id)
+    expense = await get_expense(db, tenant_id, expense_id, for_update=True)
     if expense.status == "approved":
         raise HTTPException(status_code=409, detail="Expense already approved")
     if expense.status == "rejected":
@@ -988,7 +989,7 @@ async def reject_expense(
 ) -> m.Expense:
     if not (reason or "").strip():
         raise HTTPException(status_code=400, detail="rejection reason is required")
-    expense = await get_expense(db, tenant_id, expense_id)
+    expense = await get_expense(db, tenant_id, expense_id, for_update=True)
     if expense.status != "pending":
         raise HTTPException(status_code=409, detail="Only pending expenses can be rejected")
 

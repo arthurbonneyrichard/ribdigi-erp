@@ -3283,7 +3283,7 @@ async def role_detail(
     if role in VALID_ROLES:
         return env(roles_svc.role_detail_payload(role))
     custom = await roles_svc.get_custom_role(db, claims["tenant_id"], role)
-    return env(roles_svc.serialize_custom_role(custom))
+    return env(roles_svc.role_payload_with_hardening(custom))
 
 
 @api.post("/roles")

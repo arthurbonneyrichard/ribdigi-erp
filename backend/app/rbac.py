@@ -530,3 +530,170 @@ def has_permission(
     if action == "read" and "write" in module_perms:
         return True
     return False
+
+
+# --- RBAC hardening helpers (extend existing engine; do not replace) ---
+
+# Roles whose last active holder must not be deactivated/demoted (owner lockout).
+PROTECTED_OWNER_ROLES = frozenset({"super_admin", "tenant_owner"})
+# When no protected owner remains, last active company_admin is also protected.
+FALLBACK_ADMIN_ROLES = frozenset({"company_admin"})
+
+# Modules that warrant an admin-UI / API warning when granted on custom roles.
+DANGEROUS_PERMISSION_MODULES = frozenset(
+    {
+        "users",
+        "backup",
+        "audit",
+        "accounting",
+        "credit",
+        "security",
+        "companies",
+        "subscription",
+        "platform_tenants",
+        "platform_users",
+        "platform_plans",
+        "platform_billing",
+        "platform_settings",
+        "platform_audit",
+    }
+)
+
+_DANGEROUS_MODULE_REASONS: dict[str, str] = {
+    "users": "Can create users, assign roles, and escalate privileges.",
+    "backup": "Can export or restore tenant data backups.",
+    "audit": "Can read sensitive security/audit trails.",
+    "accounting": "Can view or alter financial ledgers and journals.",
+    "credit": "Can change credit limits and approve credit risk actions.",
+    "security": "Can manage MFA/session security settings.",
+    "companies": "Can create/alter companies and store allocations.",
+    "subscription": "Can alter tenant subscription entitlements.",
+    "platform_tenants": "Platform-wide tenant administration.",
+    "platform_users": "Platform-wide user administration.",
+    "platform_plans": "Platform plan catalog administration.",
+    "platform_billing": "Platform billing administration.",
+    "platform_settings": "Platform settings administration.",
+    "platform_audit": "Platform audit trail access.",
+}
+
+
+def is_wildcard_admin(permissions: dict | None) -> bool:
+    if not isinstance(permissions, dict):
+        return False
+    star = permissions.get("*") or []
+    if isinstance(star, str):
+        star = [star]
+    return star == ["*"] or "*" in list(star)
+
+
+def ensure_permission_dependencies(
+    raw: dict | None,
+    *,
+    allow_wildcard: bool = False,
+    allow_platform_modules: bool = False,
+) -> dict[str, list[str]]:
+    """Normalize map and ensure write/approve imply stored ``read``.
+
+    Raises ValueError on invalid input (via normalize_permissions_map).
+    """
+    perms = normalize_permissions_map(
+        raw,
+        allow_wildcard=allow_wildcard,
+        allow_platform_modules=allow_platform_modules,
+    )
+    if is_wildcard_admin(perms):
+        return perms
+    out: dict[str, list[str]] = {}
+    for module, actions in perms.items():
+        acts = [canonicalize_action(a) for a in (actions or [])]
+        cleaned: list[str] = []
+        for a in acts:
+            if a not in cleaned:
+                cleaned.append(a)
+        if ("write" in cleaned or "approve" in cleaned or "*" in cleaned) and "read" not in cleaned:
+            cleaned.insert(0, "read")
+        if cleaned:
+            out[module] = cleaned
+    return out
+
+
+def validate_permission_dependencies(raw: dict | None) -> list[str]:
+    """Return human-readable dependency issues without mutating (pre-check)."""
+    if not isinstance(raw, dict):
+        return []
+    issues: list[str] = []
+    for key, actions in raw.items():
+        module, dotted = _split_permission_key(str(key or ""))
+        if not module or module == RECORD_SCOPE_KEY or module == "*":
+            continue
+        if isinstance(actions, str):
+            acts = [canonicalize_action(actions)]
+        elif isinstance(actions, list):
+            acts = [canonicalize_action(a) for a in actions if str(a).strip()]
+        else:
+            acts = []
+        if dotted:
+            acts = list(dotted) + acts
+        if ("write" in acts or "approve" in acts or "*" in acts) and "read" not in acts:
+            issues.append(
+                f"Module '{module}': write/approve requires read (will be auto-added on save)"
+            )
+    return issues
+
+
+def permissions_within_grantor(
+    candidate: dict | None,
+    grantor: dict | None,
+) -> list[str]:
+    """Return modules/actions in candidate not held by grantor.
+
+    Wildcard grantors (`*:*`) may grant any non-platform-blocked module already
+    accepted by ``normalize_permissions_map``.
+    """
+    if is_wildcard_admin(grantor):
+        return []
+    cand = expand_permission_aliases(candidate or {})
+    grant = expand_permission_aliases(grantor or {})
+    missing: list[str] = []
+    for module, actions in cand.items():
+        if module == RECORD_SCOPE_KEY:
+            continue
+        for action in actions or []:
+            action = canonicalize_action(action)
+            if not has_permission("cashier", module, action, overrides=grant):
+                missing.append(f"{module}:{action}")
+    return missing
+
+
+def assert_permissions_within_grantor(candidate: dict | None, grantor: dict | None) -> None:
+    missing = permissions_within_grantor(candidate, grantor)
+    if missing:
+        raise ValueError(
+            "Cannot grant permissions beyond your authority: " + ", ".join(sorted(missing))
+        )
+
+
+def dangerous_permission_warnings(raw: dict | None) -> list[dict]:
+    """Structured warnings for dangerous modules present in a permission map."""
+    if not isinstance(raw, dict):
+        return []
+    expanded = expand_permission_aliases(raw)
+    warnings: list[dict] = []
+    for module in sorted(expanded.keys()):
+        if module not in DANGEROUS_PERMISSION_MODULES:
+            continue
+        actions = expanded.get(module) or []
+        if not actions:
+            continue
+        warnings.append(
+            {
+                "module": module,
+                "actions": list(actions),
+                "severity": "high" if module in {"users", "backup", "subscription"} else "elevated",
+                "message": _DANGEROUS_MODULE_REASONS.get(
+                    module, f"Sensitive module '{module}' granted."
+                ),
+            }
+        )
+    return warnings
+
