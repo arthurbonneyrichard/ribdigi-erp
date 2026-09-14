@@ -5393,8 +5393,9 @@ def omit_credit_limit_exceeded_master(role: str | None) -> bool:
     (statements also zero party ledger ``balance``). ``CREDIT_LIMIT_EXCEEDED``
     (409) must not re-dump company credit master / AR ledger via ``credit_limit``
     / ``available`` / ``current_balance`` / ``projected_balance``. Operational
-    ``exceeded`` / ``code`` / ``message`` remain; ``additional_amount`` is
-    redacted separately (base FX identity); admin keeps full projection.
+    ``exceeded`` / ``code`` / ``message`` remain; ``additional_amount`` and
+    ``currency`` are redacted separately (base FX / rate-table identity);
+    admin keeps full projection.
     """
     from app.dashboard_views import dashboard_view_for_role
 
@@ -5482,6 +5483,29 @@ def redact_credit_limit_exceeded_additional_amount(detail: dict) -> dict:
     out = dict(detail)
     if "additional_amount" in out:
         out["additional_amount"] = None
+    return out
+
+
+def omit_credit_limit_exceeded_currency(role: str | None) -> bool:
+    """True when store_manager must omit ``currency`` on limit-exceeded errors.
+
+    Sales/purchase-invoice + credit-payment + aging + POS receipt already redact
+    ``currency``. ``CREDIT_LIMIT_EXCEEDED`` (409) ``extra_details`` must not
+    re-dump document ``currency`` (company FX / rate-table identity) after
+    ``invoice_total`` / ``invoice_total_base`` / ``additional_amount`` redacts.
+    Operational ``exceeded`` / ``code`` / ``message`` / ``invoice_number`` remain;
+    admin keeps ``currency``.
+    """
+    from app.dashboard_views import dashboard_view_for_role
+
+    return dashboard_view_for_role(role or "") == "store_manager"
+
+
+def redact_credit_limit_exceeded_currency(detail: dict) -> dict:
+    """Null ``currency`` on a CREDIT_LIMIT_EXCEEDED detail dict."""
+    out = dict(detail)
+    if "currency" in out:
+        out["currency"] = None
     return out
 
 

@@ -994,6 +994,10 @@ async def enforce_credit_limit(
         detail = dashboard_scope_svc.redact_credit_limit_exceeded_additional_amount(
             detail
         )
+    # sales/purchase-invoice + payment/aging/receipt already redact currency;
+    # 409 extra_details must not re-dump document currency (FX identity).
+    if dashboard_scope_svc.omit_credit_limit_exceeded_currency(role):
+        detail = dashboard_scope_svc.redact_credit_limit_exceeded_currency(detail)
 
     if not override:
         raise HTTPException(status_code=409, detail=detail)
