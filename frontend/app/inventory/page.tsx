@@ -2302,7 +2302,7 @@ export default function Page() {
                 <th>Category</th>
                 <th>Stock</th>
                 <th>Batches?</th>
-                <th>Price</th>
+                <th>Prices</th>
                 <th>Active</th>
                 <th>Image</th>
               </tr>
@@ -2327,7 +2327,20 @@ export default function Page() {
                     <StockStatusBadge product={p} />
                   </td>
                   <td>{p.tracks_batches ? 'yes' : 'no'}</td>
-                  <td>{p.selling_price}</td>
+                  <td>
+                    <div className="inv-price-pair">
+                      {Number.isFinite(Number(p.cost_price)) ? (
+                        <span className="inv-price-actual">
+                          <span className="inv-price-label">Actual</span>
+                          <span className="inv-price-value">{Number(p.cost_price).toFixed(2)}</span>
+                        </span>
+                      ) : null}
+                      <span className="inv-price-selling">
+                        <span className="inv-price-label">Selling</span>
+                        <span className="inv-price-value">{Number(p.selling_price).toFixed(2)}</span>
+                      </span>
+                    </div>
+                  </td>
                   <td>{p.is_active === false ? 'no' : 'yes'}</td>
                   <td>{p.has_image ? 'yes' : '—'}</td>
                 </tr>

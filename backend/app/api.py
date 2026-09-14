@@ -7577,6 +7577,7 @@ async def pos_search(
             "name": p.name,
             "sku": p.sku,
             "barcode": p.barcode,
+            "cost_price": money_json(p.cost_price or 0),
             "selling_price": money_json(p.selling_price or 0),
             "stock_qty": money_json(p.stock_qty or 0),
             "kind": "product",
@@ -7628,6 +7629,11 @@ async def pos_search(
                 "name": v.name,
                 "sku": v.sku,
                 "barcode": v.barcode,
+                "cost_price": money_json(
+                    v.cost_price
+                    if v.cost_price is not None
+                    else (parent.cost_price if parent is not None and parent.cost_price is not None else 0)
+                ),
                 "selling_price": money_json(v.selling_price or 0),
                 "stock_qty": money_json(v.stock_qty or 0),
                 "kind": "variant",

@@ -20,6 +20,7 @@ type Product = {
   sku: string;
   barcode?: string | null;
   selling_price: number;
+  cost_price?: number | null;
   stock_qty: number;
   kind?: string;
   has_image?: boolean;
@@ -1303,7 +1304,18 @@ export default function Page() {
                         {r.kind === 'variant' ? ' · variant' : ''}
                       </span>
                       <div className="tpos-tile-foot">
-                        <span className="tpos-price">{money(Number(r.selling_price))}</span>
+                        <div className="tpos-price-pair">
+                          {r.cost_price != null && Number.isFinite(Number(r.cost_price)) ? (
+                            <span className="tpos-price-actual">
+                              <span className="tpos-price-label">Actual</span>
+                              <span className="tpos-price-value">{money(Number(r.cost_price))}</span>
+                            </span>
+                          ) : null}
+                          <span className="tpos-price-selling">
+                            <span className="tpos-price-label">Selling</span>
+                            <span className="tpos-price-value">{money(Number(r.selling_price))}</span>
+                          </span>
+                        </div>
                         <span className="tpos-stock">{r.stock_qty} in stock</span>
                       </div>
                     </div>
@@ -1345,6 +1357,16 @@ export default function Page() {
                     </div>
                     <div className="tpos-cart-info">
                       <strong>{c.name}</strong>
+                      <div className="tpos-cart-prices">
+                        {c.cost_price != null && Number.isFinite(Number(c.cost_price)) ? (
+                          <span className="tpos-cart-price-actual">
+                            <span className="tpos-price-label">Act</span> {money(Number(c.cost_price))}
+                          </span>
+                        ) : null}
+                        <span className="tpos-cart-price-selling">
+                          <span className="tpos-price-label">Sell</span> {money(Number(c.selling_price))}
+                        </span>
+                      </div>
                       <span>
                         {money(unit)} each
                         {groupDiscountPct > 0 ? ` (−${groupDiscountPct}% group)` : ''}

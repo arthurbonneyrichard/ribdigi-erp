@@ -541,6 +541,21 @@
 .tpos-sku{font-size:11px;color:var(--muted);font-weight:600}
 .tpos-tile-foot{display:flex;justify-content:space-between;gap:6px;align-items:baseline;margin-top:auto}
 .tpos-price{font-size:18px;font-weight:800;color:var(--ink)}
+.tpos-price-pair{display:flex;flex-direction:column;gap:4px;align-items:flex-start;min-width:0}
+.tpos-price-actual,.tpos-price-selling{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;line-height:1.25}
+.tpos-price-label{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.tpos-price-value{font-variant-numeric:tabular-nums}
+.tpos-price-actual .tpos-price-value{font-size:12px;font-weight:600;color:var(--muted)}
+.tpos-price-selling .tpos-price-value{font-size:17px;font-weight:800;color:var(--nature-700)}
+.tpos-cart-prices{display:flex;flex-wrap:wrap;gap:8px 12px;margin-top:2px;font-size:11px;line-height:1.35;color:var(--muted)}
+.tpos-cart-price-actual,.tpos-cart-price-selling{display:inline-flex;align-items:baseline;gap:4px}
+.tpos-cart-price-actual strong,.tpos-cart-price-selling strong{font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink)}
+.tpos-cart-price-selling strong{color:var(--nature-700)}
+.inv-price-pair{display:flex;flex-direction:column;gap:2px;align-items:flex-start;font-variant-numeric:tabular-nums}
+.inv-price-actual{font-size:11px;color:var(--muted)}
+.inv-price-selling{font-size:13px;font-weight:700;color:var(--nature-700)}
+.inv-price-pair .inv-price-label{font-weight:600;margin-right:4px;text-transform:uppercase;letter-spacing:.03em;font-size:10px}
+
 .tpos-stock{font-size:11px;color:var(--muted);font-weight:600}
 .tpos-empty{padding:40px 16px;text-align:center;color:var(--muted);font-weight:600}
 .tpos-cart{
@@ -633,6 +648,15 @@
 [data-theme="dark"] .tpos-catalog{background:var(--forest);border-color:#0a3d30;box-shadow:0 8px 22px #00000040}
 [data-theme="dark"] .tpos-tile{background:var(--forest-deep);border-color:#0a3d30}
 [data-theme="dark"] .tpos-tile-body strong,[data-theme="dark"] .tpos-price{color:var(--white)}
+[data-theme="dark"] .tpos-price-label{color:rgba(255,255,255,.72)}
+[data-theme="dark"] .tpos-price-actual .tpos-price-value{color:rgba(255,255,255,.88)}
+[data-theme="dark"] .tpos-price-selling .tpos-price-value{color:#c6d9a8}
+[data-theme="dark"] .tpos-cart-prices{color:rgba(255,255,255,.78)}
+[data-theme="dark"] .tpos-cart-price-actual strong,[data-theme="dark"] .tpos-cart-price-selling strong{color:rgba(255,255,255,.92)}
+[data-theme="dark"] .tpos-cart-price-selling strong{color:#c6d9a8}
+[data-theme="dark"] .inv-price-actual{color:var(--muted)}
+[data-theme="dark"] .inv-price-selling{color:var(--nature-300)}
+
 [data-theme="dark"] .tpos-sku,[data-theme="dark"] .tpos-stock,[data-theme="dark"] .tpos-empty{color:var(--muted-on-dark)}
 [data-theme="dark"] .tpos-input,[data-theme="dark"] .tpos-search-input,[data-theme="dark"] .tpos-btn{
   background:var(--forest-deep);border-color:#0a3d30;color:var(--white)
