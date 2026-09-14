@@ -9,7 +9,7 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `358bbb09e3979ed94e63cf8c0dc88a389b4405a6` — sales invoice credit-override audit redact (feat `922becff58`) for `store_manager` |
+| **As of tip** | `19796833dee912227b9512a47d4b298b7d350d26` — sales invoice credit-override audit redact (feat `922becff58`) for `store_manager` |
 | RBAC / store scope | **PARTIAL** only |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
 
