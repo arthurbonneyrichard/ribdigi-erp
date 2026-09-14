@@ -9,7 +9,7 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `7a1dc6e856b3efa765463356ffc5361ddf0e924e` — feat redact supplier payment-schedule `early_pay` (`65804e2e17`); leftovers still open |
+| **As of tip** | `1b2f4d6819a758b4ff8d39fbc96a026074790fc0` — feat redact supplier payment-schedule `early_pay` (`65804e2e17`); leftovers still open |
 | RBAC / store scope | **PARTIAL** only |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
 
