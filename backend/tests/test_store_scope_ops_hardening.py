@@ -4088,6 +4088,94 @@ async def test_store_manager_ai_documents_analyze_matches_store_scoped(client, d
 
 
 @pytest.mark.asyncio
+async def test_store_manager_ai_documents_category_id_redacted(client, db_session):
+    """AI document analyze nulls extracted_fields.category_id for store_manager.
+
+    Expense categories list GET + expense/AI analysis already deny/redact
+    category_id. Document analyze must not re-dump company expense-category
+    master FKs via extracted_fields. Free-text category name remains; admin
+    keeps category_id. CSV export applies the same redact.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="AI Doc Cat Store",
+        code="AI-DOC-CAT",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    cat = m.ExpenseCategory(
+        tenant_id=tid,
+        company_id=cid,
+        code="AI-DOC-SUP",
+        name="Supplies",
+        budget_amount=1000,
+        is_active=True,
+    )
+    db_session.add_all([store, cat])
+    await db_session.commit()
+
+    receipt_text = (
+        "Payee: Office Depot\n"
+        "Stationery and office paper supplies\n"
+        "Total: 42.00\n"
+        "Date: 2026-08-20\n"
+    )
+    files = {"file": ("supplies.txt", receipt_text.encode("utf-8"), "text/plain")}
+
+    admin = await ac.post(
+        "/api/v1/ai/documents/analyze?document_type=receipt",
+        headers=admin_headers,
+        files=files,
+    )
+    assert admin.status_code == 200, admin.text
+    admin_fields = admin.json()["data"]["extracted_fields"]
+    assert admin_fields.get("category") == "Supplies"
+    assert admin_fields.get("category_id") == cat.id
+
+    mgr_resp = await ac.post(
+        "/api/v1/ai/documents/analyze?document_type=receipt",
+        headers=headers,
+        files={"file": ("supplies.txt", receipt_text.encode("utf-8"), "text/plain")},
+    )
+    assert mgr_resp.status_code == 200, mgr_resp.text
+    mgr_body = mgr_resp.json()["data"]
+    assert mgr_body.get("scope") == "store_manager"
+    mgr_fields = mgr_body["extracted_fields"]
+    assert mgr_fields.get("category") == "Supplies"
+    assert mgr_fields.get("category_id") is None
+
+    mgr_csv = await ac.post(
+        "/api/v1/ai/documents/analyze/export?document_type=receipt",
+        headers=headers,
+        files={"file": ("supplies.txt", receipt_text.encode("utf-8"), "text/plain")},
+    )
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    assert cat.id not in mgr_csv.text
+    assert "Supplies" in mgr_csv.text
+
+    admin_csv = await ac.post(
+        "/api/v1/ai/documents/analyze/export?document_type=receipt",
+        headers=admin_headers,
+        files={"file": ("supplies.txt", receipt_text.encode("utf-8"), "text/plain")},
+    )
+    assert admin_csv.status_code == 200, admin_csv.text
+    assert cat.id in admin_csv.text
+
+
+@pytest.mark.asyncio
 async def test_store_manager_credit_aging_store_wh_scoped(client, db_session):
     """AR aging uses managed-store invoices; AP aging uses managed-WH bills."""
     from datetime import timedelta
