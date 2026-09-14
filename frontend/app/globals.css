@@ -697,6 +697,16 @@
   .erp-form-grid{grid-template-columns:1fr}
 }
 
+
+/* Product form: Actual vs Selling price clarity */
+.product-price-field{display:flex;flex-direction:column;gap:0.22rem}
+.product-price-label{display:block;font-size:0.8rem;font-weight:700;letter-spacing:0.01em;color:var(--forest,#003024)}
+.product-price-field--selling .product-price-label{color:var(--brand,#7FA347)}
+.product-price-hint{display:block;font-size:0.72rem;line-height:1.3;font-weight:500;color:var(--muted,#4D5D56);margin:-0.05rem 0 0.05rem}
+[data-theme="dark"] .product-price-label{color:var(--mist,#F3F6F1)}
+[data-theme="dark"] .product-price-field--selling .product-price-label{color:var(--brand-light,#C6D9A8)}
+[data-theme="dark"] .product-price-hint{color:var(--muted,#9AABA3)}
+
 /* ---------- Notification center (BR-4.4 / BR-15.2) ---------- */
 .bell-wrap{position:relative;display:inline-flex;align-items:center}
 .bell{position:relative;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:8px;border:1px solid transparent;background:var(--line);color:var(--ink);font-size:14px;font-weight:600;cursor:pointer}

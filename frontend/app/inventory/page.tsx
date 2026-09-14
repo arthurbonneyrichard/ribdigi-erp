@@ -1782,18 +1782,38 @@ export default function Page() {
               onChange={(e) => setEditReorder(e.target.value)}
               aria-label="Edit product reorder level"
             />
-            <label className="muted">Cost price</label>
-            <input
-              value={editCost}
-              onChange={(e) => setEditCost(e.target.value)}
-              aria-label="Edit product cost price"
-            />
-            <label className="muted">Selling price</label>
-            <input
-              value={editPrice}
-              onChange={(e) => setEditPrice(e.target.value)}
-              aria-label="Edit product selling price"
-            />
+            <div className="product-price-field">
+              <label className="product-price-label" htmlFor="edit-product-actual-price">
+                Actual price
+              </label>
+              <input
+                id="edit-product-actual-price"
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                value={editCost}
+                onChange={(e) => setEditCost(e.target.value)}
+                placeholder="0.00"
+                aria-label="Edit product actual price (cost)"
+              />
+            </div>
+            <div className="product-price-field">
+              <label className="product-price-label" htmlFor="edit-product-selling-price">
+                Selling price
+              </label>
+              <input
+                id="edit-product-selling-price"
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                value={editPrice}
+                onChange={(e) => setEditPrice(e.target.value)}
+                placeholder="0.00"
+                aria-label="Edit product selling price"
+              />
+            </div>
             <label className="muted">Tax supply class</label>
             <select
               value={editSupplyClass}
@@ -2133,18 +2153,38 @@ export default function Page() {
               title="Optional description (1–500 chars; letters/digits required)"
               rows={2}
             />
+          <div className="product-price-field">
+            <label className="product-price-label" htmlFor="add-product-actual-price">
+              Actual price
+            </label>
             <input
+              id="add-product-actual-price"
+              type="number"
+              min="0"
+              step="0.01"
+              inputMode="decimal"
               value={productCost}
               onChange={(e) => setProductCost(e.target.value)}
-              placeholder="Cost price"
-              aria-label="Product cost price"
+              placeholder="0.00"
+              aria-label="Product actual price (cost)"
             />
+          </div>
+          <div className="product-price-field">
+            <label className="product-price-label" htmlFor="add-product-selling-price">
+              Selling price
+            </label>
             <input
+              id="add-product-selling-price"
+              type="number"
+              min="0"
+              step="0.01"
+              inputMode="decimal"
               value={productPrice}
               onChange={(e) => setProductPrice(e.target.value)}
-              placeholder="Selling price"
+              placeholder="0.00"
               aria-label="Product selling price"
             />
+          </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <input
                 value={productWeight}
