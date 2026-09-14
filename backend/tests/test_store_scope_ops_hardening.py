@@ -24339,3 +24339,125 @@ async def test_store_manager_audit_details_attachment_storage_redacted(client, d
     assert mgr_csv_cold_details.get("storage_key") is None
     assert int(mgr_csv_cold_details.get("event_count") or 0) == 12
     assert mgr_csv_api_details.get("key_prefix") == "rdg_live_aak"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_audit_details_store_manager_id_redacted(
+    client, db_session
+):
+    """Audit list/export nulls store-manager ids inside details for store_manager.
+
+    Store / warehouse manager_id list/export/patch + stock-transfer
+    from_store_manager_id / to_store_manager_id already redacted; assign/clear
+    writes denied. Scoped audit JSON/CSV must not re-dump the company store-
+    manager org graph via transfer_manager_override expected_manager_id (or
+    sibling manager_id / transfer manager keys). Transfer number / store_id /
+    transfer_action / store_code remain; admin keeps manager ids. FX + CLE +
+    party + dept + emailed_to + attachment keys already redacted separately;
+    integrity hashes unchanged (redact on read only).
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    peer = seed["admin1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Audit Mgr-Id Redact Store",
+        code="AMI-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+
+    expected_mgr = peer.id
+    override_ev = await audit_svc.record_event(
+        db_session,
+        tenant_id=tid,
+        company_id=cid,
+        user_id=peer.id,
+        module="stores",
+        action="transfer_manager_override",
+        entity="stock_transfer",
+        entity_id="xfer-ami-1",
+        details={
+            "transfer_action": "ship",
+            "store_id": store.id,
+            "store_code": store.code,
+            "expected_manager_id": expected_mgr,
+            "manager_id": expected_mgr,
+            "from_store_manager_id": expected_mgr,
+            "to_store_manager_id": mgr.id,
+            "transfer_number": "ST-AMI-1",
+        },
+    )
+    await db_session.commit()
+
+    admin_listed = await ac.get(
+        "/api/v1/audit-logs", headers=admin_company, params={"limit": 500}
+    )
+    assert admin_listed.status_code == 200, admin_listed.text
+    admin_row = next(r for r in admin_listed.json()["data"] if r["id"] == override_ev.id)
+    admin_details = admin_row.get("details") or {}
+    assert admin_details.get("expected_manager_id") == expected_mgr
+    assert admin_details.get("manager_id") == expected_mgr
+    assert admin_details.get("from_store_manager_id") == expected_mgr
+    assert admin_details.get("to_store_manager_id") == mgr.id
+    assert admin_details.get("transfer_number") == "ST-AMI-1"
+    assert admin_details.get("store_code") == "AMI-MGR"
+
+    mgr_listed = await ac.get(
+        "/api/v1/audit-logs", headers=headers, params={"limit": 500}
+    )
+    assert mgr_listed.status_code == 200, mgr_listed.text
+    mgr_row = next(r for r in mgr_listed.json()["data"] if r["id"] == override_ev.id)
+    mgr_details = mgr_row.get("details") or {}
+    assert mgr_details.get("expected_manager_id") is None
+    assert mgr_details.get("manager_id") is None
+    assert mgr_details.get("from_store_manager_id") is None
+    assert mgr_details.get("to_store_manager_id") is None
+    assert mgr_details.get("transfer_number") == "ST-AMI-1"
+    assert mgr_details.get("transfer_action") == "ship"
+    assert mgr_details.get("store_id") == store.id
+    assert mgr_details.get("store_code") == "AMI-MGR"
+
+    admin_csv = await ac.get(
+        "/api/v1/audit-logs/export",
+        headers=admin_company,
+        params={"format": "csv"},
+    )
+    assert admin_csv.status_code == 200, admin_csv.text
+    admin_detail_rows = list(csv.DictReader(io.StringIO(admin_csv.text)))
+    admin_csv_row = next(r for r in admin_detail_rows if r.get("entity_id") == "xfer-ami-1")
+    assert json.loads(admin_csv_row["details"]).get("expected_manager_id") == expected_mgr
+
+    mgr_csv = await ac.get(
+        "/api/v1/audit-logs/export",
+        headers=headers,
+        params={"format": "csv"},
+    )
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    mgr_detail_rows = list(csv.DictReader(io.StringIO(mgr_csv.text)))
+    mgr_csv_row = next(r for r in mgr_detail_rows if r.get("entity_id") == "xfer-ami-1")
+    mgr_csv_details = json.loads(mgr_csv_row["details"])
+    assert mgr_csv_details.get("expected_manager_id") is None
+    assert mgr_csv_details.get("manager_id") is None
+    assert mgr_csv_details.get("from_store_manager_id") is None
+    assert mgr_csv_details.get("to_store_manager_id") is None
+    assert mgr_csv_details.get("transfer_number") == "ST-AMI-1"
+    assert mgr_csv_details.get("store_id") == store.id

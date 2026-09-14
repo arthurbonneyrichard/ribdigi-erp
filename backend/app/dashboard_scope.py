@@ -5708,20 +5708,57 @@ def redact_audit_attachment_storage_details(details: dict) -> dict:
     return out
 
 
+# Audit detail keys that re-dump company store-manager org assignment already
+# redacted on store / warehouse / stock-transfer JSON surfaces.
+_AUDIT_STORE_MANAGER_DETAIL_KEYS = (
+    "expected_manager_id",
+    "manager_id",
+    "from_store_manager_id",
+    "to_store_manager_id",
+)
+
+
+def omit_audit_store_manager_assignment_details(
+    managed_ids: list[str] | None,
+) -> bool:
+    """True when store_manager must omit store-manager ids inside audit ``details``.
+
+    Store / warehouse ``manager_id`` assign/clear already denied; list/export/patch
+    + stock-transfer ``from_store_manager_id`` / ``to_store_manager_id`` already
+    redacted. Scoped ``GET /audit-logs`` (+ CSV) must not re-dump the same org
+    graph via ``transfer_manager_override`` ``expected_manager_id`` (or sibling
+    ``manager_id`` / transfer manager keys). Transfer numbers / store_id /
+    ``transfer_action`` / ``store_code`` remain; admin keeps manager ids. FX +
+    CLE + party ledger + department + emailed_to + attachment keys already
+    handled by sibling omit helpers.
+    """
+    return managed_ids is not None
+
+
+def redact_audit_store_manager_assignment_details(details: dict) -> dict:
+    """Null store-manager org-assignment keys on an audit ``details`` dict."""
+    out = dict(details)
+    for key in _AUDIT_STORE_MANAGER_DETAIL_KEYS:
+        if key in out:
+            out[key] = None
+    return out
+
+
 def redact_audit_manager_details(details: dict) -> dict:
-    """Compose store_manager audit ``details`` redacts (FX + CLE + party + dept + emailed_to + attachment key)."""
+    """Compose store_manager audit ``details`` redacts (FX + CLE + party + dept + emailed_to + attachment key + store manager_id)."""
     out = redact_audit_fx_details(details)
     out = redact_audit_cle_master_details(out)
     out = redact_audit_party_ledger_details(out)
     out = redact_audit_department_details(out)
     out = redact_audit_emailed_to_details(out)
-    return redact_audit_attachment_storage_details(out)
+    out = redact_audit_attachment_storage_details(out)
+    return redact_audit_store_manager_assignment_details(out)
 
 
 def apply_audit_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager audit JSON redacts (FX + CLE + party + dept + emailed_to + attachment key in ``details``)."""
+    """Apply store_manager audit JSON redacts (FX + CLE + party + dept + emailed_to + attachment key + store manager_id in ``details``)."""
     out = dict(payload)
     if not isinstance(out.get("details"), dict):
         return out
@@ -5738,6 +5775,8 @@ def apply_audit_manager_redacts(
         details = redact_audit_emailed_to_details(details)
     if omit_audit_attachment_storage_details(managed_ids):
         details = redact_audit_attachment_storage_details(details)
+    if omit_audit_store_manager_assignment_details(managed_ids):
+        details = redact_audit_store_manager_assignment_details(details)
     out["details"] = details
     return out
 

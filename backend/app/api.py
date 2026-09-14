@@ -19076,6 +19076,7 @@ async def audit_logs_export(
         or dashboard_scope_svc.omit_audit_department_details(managed)
         or dashboard_scope_svc.omit_audit_emailed_to_details(managed)
         or dashboard_scope_svc.omit_audit_attachment_storage_details(managed)
+        or dashboard_scope_svc.omit_audit_store_manager_assignment_details(managed)
     ):
         details_redactor = dashboard_scope_svc.redact_audit_manager_details
     csv_text = audit_svc.to_csv(chronological, details_redactor=details_redactor)
