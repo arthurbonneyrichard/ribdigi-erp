@@ -13,7 +13,7 @@
 
 ### Tip — audit emailed_to redact (2026-09-15)
 
-**As of tip:** `b1c0dfaad4f01e0b68790aea7ee969a2f9c2c7b6`
+**As of tip:** `511634ec0dbdf1507c86f9815c9679ccba7acfd8`
 Scoped audit list/export `details` send-recipient / `emailed_to` redact for `store_manager`
 (`to` on `invoice_sent` / `pos_receipt_sent`; nested `delivery.to` on `po_sent` on
 `GET /audit-logs` + CSV; document `emailed_to` already redacted; invoice/PO numbers /
