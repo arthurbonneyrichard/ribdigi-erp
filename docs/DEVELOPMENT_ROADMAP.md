@@ -13,7 +13,7 @@
 
 ### Tip — audit department_id redact (2026-09-15)
 
-**As of tip:** `59b6d3039739ad6da67edb022cfb779551b7396f`
+**As of tip:** `eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee`
 Scoped audit list/export `details` `department_id` redact for `store_manager`
 (expense/recurring JSON already nulls `department_id`; departments list GET +
 assign/clear already denied; amounts / status / `store_id` remain; admin keeps
