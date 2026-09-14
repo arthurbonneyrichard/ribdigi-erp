@@ -1850,13 +1850,34 @@ def redact_stock_movement_created_by_email(payload: dict) -> dict:
     return out
 
 
+def omit_stock_movement_created_by_name(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit stock-movement ``created_by_name``.
+
+    Users list/get + CSV export already denied (company org roster). Movement
+    list JSON must not re-dump staff display name via ``created_by_name`` after
+    ``created_by_email`` redacts. Quantity / type / notes / ``created_at`` /
+    ``created_by`` id remain for ops. CSV export columns do not include name.
+    """
+    return managed_ids is not None
+
+
+def redact_stock_movement_created_by_name(payload: dict) -> dict:
+    """Null ``created_by_name`` on a stock-movement JSON row dict."""
+    out = dict(payload)
+    if "created_by_name" in out:
+        out["created_by_name"] = None
+    return out
+
+
 def apply_stock_movement_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager stock-movement JSON redacts (created_by_email)."""
+    """Apply store_manager stock-movement JSON redacts (email + name)."""
     out = payload
     if omit_stock_movement_created_by_email(managed_ids):
         out = redact_stock_movement_created_by_email(out)
+    if omit_stock_movement_created_by_name(managed_ids):
+        out = redact_stock_movement_created_by_name(out)
     return out
 
 

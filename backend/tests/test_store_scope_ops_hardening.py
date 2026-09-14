@@ -18648,3 +18648,98 @@ async def test_store_manager_stock_movement_created_by_email_redacted(client, db
     assert mgr_csv_row.get("created_by_email") in (None, "")
     assert mgr_csv_row.get("notes") == "created-by-email-redact"
 
+
+@pytest.mark.asyncio
+async def test_store_manager_stock_movement_created_by_name_redacted(client, db_session):
+    """Stock movement list nulls created_by_name for store_manager.
+
+    Users list/get + CSV export already denied (company org roster). Movement
+    JSON must not re-dump staff display name via created_by_name after email
+    redacts. Qty/type/notes + created_at + created_by id remain; admin JSON
+    keeps the name. CSV export columns do not include created_by_name.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    admin = seed["admin1"]
+    product = seed["p1"]
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Mov Name Store",
+        code="MNS1",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        name="Mov Name WH",
+        code="WH-MNS1",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    db_session.add(wh)
+    await db_session.flush()
+    movement = m.StockMovement(
+        tenant_id=tid,
+        company_id=cid,
+        product_id=product.id,
+        warehouse_id=wh.id,
+        movement_type="stock_in",
+        quantity=5,
+        quantity_before=0,
+        quantity_after=5,
+        notes="created-by-name-redact",
+        created_by=admin.id,
+    )
+    db_session.add(movement)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    admin_list = await ac.get(
+        "/api/v1/inventory/movements",
+        headers=admin_company,
+        params={"warehouse_id": wh.id},
+    )
+    assert admin_list.status_code == 200, admin_list.text
+    admin_row = next(
+        r for r in admin_list.json()["data"] if r.get("notes") == "created-by-name-redact"
+    )
+    assert admin_row.get("created_by_name") == "Alpha Admin"
+    assert admin_row.get("created_by_email") == "admin@alpha.example.com"
+    assert admin_row.get("notes") == "created-by-name-redact"
+    assert admin_row.get("created_by") == admin.id
+
+    mgr_list = await ac.get(
+        "/api/v1/inventory/movements",
+        headers=headers,
+        params={"warehouse_id": wh.id},
+    )
+    assert mgr_list.status_code == 200, mgr_list.text
+    mgr_row = next(
+        r for r in mgr_list.json()["data"] if r.get("notes") == "created-by-name-redact"
+    )
+    assert mgr_row.get("created_by_name") is None
+    assert mgr_row.get("created_by_email") is None
+    assert mgr_row.get("notes") == "created-by-name-redact"
+    assert mgr_row.get("quantity") == 5.0
+    assert mgr_row.get("created_by") == admin.id
+
