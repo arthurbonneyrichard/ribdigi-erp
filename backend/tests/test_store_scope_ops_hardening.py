@@ -14673,6 +14673,129 @@ async def test_store_manager_document_logo_data_url_redacted(
 
 
 @pytest.mark.asyncio
+async def test_store_manager_document_legal_trading_names_redacted(client, db_session):
+    """Print/receipt JSON nulls legal_name/trading_name for store_manager.
+
+    Company profile GET + /me already omit legal dumps; print/receipt JSON must
+    not re-dump legal_name/trading_name. company_name falls back to trading
+    switcher label; has_logo remains; admin JSON keeps legal/trading.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    customer = seed["party1"]
+    co = seed["c1"]
+    co.legal_name = "Alpha Legal Holdings Ltd"
+    co.name = "Alpha Trading Co"
+    await db_session.commit()
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Legal Trading Print Store",
+        code="LTP1",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    sess = m.PosSession(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        user_id=mgr.id,
+        session_number="S-LTP-1",
+        status="open",
+        opening_cash=0,
+    )
+    db_session.add(sess)
+    await db_session.flush()
+    sale = m.Transaction(
+        tenant_id=tid,
+        company_id=cid,
+        tx_type="pos_sale",
+        reference="POS-LTP-REF",
+        session_id=sess.id,
+        subtotal=5,
+        tax=0,
+        total=5,
+        status="completed",
+        payload={"items": [{"name": "Item", "quantity": 1, "unit_price": 5}]},
+    )
+    invoice = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        customer_id=customer.id,
+        invoice_number="INV-LTP-1",
+        status="posted",
+        subtotal=10,
+        tax_amount=0,
+        discount_amount=0,
+        total_amount=10,
+        paid_amount=0,
+        created_by=mgr.id,
+    )
+    db_session.add_all([sale, invoice])
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    admin_receipt = await ac.get(
+        f"/api/v1/pos/sales/{sale.id}/receipt", headers=admin_company
+    )
+    assert admin_receipt.status_code == 200, admin_receipt.text
+    admin_data = admin_receipt.json()["data"]
+    # document_company_name prefers legal when set.
+    assert admin_data.get("company_name") == "Alpha Legal Holdings Ltd"
+    assert admin_data.get("legal_name") == "Alpha Legal Holdings Ltd"
+    assert admin_data.get("trading_name") == "Alpha Trading Co"
+
+    mgr_receipt = await ac.get(f"/api/v1/pos/sales/{sale.id}/receipt", headers=headers)
+    assert mgr_receipt.status_code == 200, mgr_receipt.text
+    mgr_data = mgr_receipt.json()["data"]
+    assert mgr_data.get("company_name") == "Alpha Trading Co"
+    assert mgr_data.get("legal_name") is None
+    assert mgr_data.get("trading_name") is None
+    assert "has_logo" in mgr_data
+
+    admin_print = await ac.get(
+        f"/api/v1/sales/invoices/{invoice.id}/print",
+        headers=admin_company,
+        params={"format": "json"},
+    )
+    assert admin_print.status_code == 200, admin_print.text
+    admin_print_data = admin_print.json()["data"]
+    assert admin_print_data.get("legal_name") == "Alpha Legal Holdings Ltd"
+    assert admin_print_data.get("trading_name") == "Alpha Trading Co"
+    assert admin_print_data.get("company_name") == "Alpha Legal Holdings Ltd"
+
+    mgr_print = await ac.get(
+        f"/api/v1/sales/invoices/{invoice.id}/print",
+        headers=headers,
+        params={"format": "json"},
+    )
+    assert mgr_print.status_code == 200, mgr_print.text
+    mgr_print_data = mgr_print.json()["data"]
+    assert mgr_print_data.get("company_name") == "Alpha Trading Co"
+    assert mgr_print_data.get("legal_name") is None
+    assert mgr_print_data.get("trading_name") is None
+    assert "has_logo" in mgr_print_data
+
+
+@pytest.mark.asyncio
 async def test_store_manager_me_workspace_company_profile_redacted(client, db_session):
     """GET /me + /workspace redact company legal/tax dump + company_entitlement for store_manager."""
     ac, seed = client

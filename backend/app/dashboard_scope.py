@@ -1311,13 +1311,44 @@ def redact_document_logo_data_url(payload: dict) -> dict:
     return out
 
 
+def omit_document_legal_trading_names(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit print/receipt ``legal_name`` / ``trading_name``.
+
+    Company profile GET + ``/me`` / ``/workspace`` already omit legal/tax/address
+    dumps. Invoice/quotation/credit-note print JSON + POS receipt JSON must not
+    re-dump ``legal_name`` / ``trading_name``. ``company_name`` + ``has_logo`` +
+    server-side HTML/PDF/text embeds remain.
+    """
+    return managed_ids is not None
+
+
+def redact_document_legal_trading_names(payload: dict) -> dict:
+    """Null ``legal_name`` / ``trading_name`` on a print/receipt JSON dict.
+
+    When ``trading_name`` is present (distinct from legal), rewrite ``company_name``
+    to that trading/switcher label so ``document_company_name`` (legal-preferring)
+    does not keep dumping the legal headline after legal_name is nulled.
+    """
+    out = dict(payload)
+    trading = out.get("trading_name")
+    if trading:
+        out["company_name"] = trading
+    if "legal_name" in out:
+        out["legal_name"] = None
+    if "trading_name" in out:
+        out["trading_name"] = None
+    return out
+
+
 def apply_document_logo_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager document-brand JSON redacts (logo_data_url)."""
+    """Apply store_manager document-brand JSON redacts (logo + legal/trading names)."""
     out = payload
     if omit_document_logo_data_url(managed_ids):
         out = redact_document_logo_data_url(out)
+    if omit_document_legal_trading_names(managed_ids):
+        out = redact_document_legal_trading_names(out)
     return out
 
 
