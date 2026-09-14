@@ -9,7 +9,7 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `9819c1e9f6` — product list/get `image_url` storage-key redact for `store_manager` (after primary image GET deny) |
+| **As of tip** | `a288ea10b6` — product image_url redact honesty (feat `9819c1e9f6`) for `store_manager` |
 | RBAC / store scope | **PARTIAL** only |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
 
