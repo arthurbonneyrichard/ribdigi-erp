@@ -1951,7 +1951,7 @@ export default function Page() {
             </thead>
             <tbody>
               {lookupHits.map((p) => (
-                <tr key={p.id} style={{ background: p.id === selectedId ? '#eff6ff' : undefined }}>
+                <tr key={p.id} style={{ background: p.id === selectedId ? '#eaf8d8' : undefined }}>
                   <td>{p.sku}</td>
                   <td>{p.name}</td>
                   <td>{p.barcode || '—'}</td>
@@ -2273,7 +2273,7 @@ export default function Page() {
                   <td>
                     <button
                       onClick={() => setSelectedId(p.id)}
-                      style={{ background: 'none', border: 0, color: '#1d4ed8', cursor: 'pointer' }}
+                      style={{ background: 'none', border: 0, color: 'var(--deep-green, #006B2E)', cursor: 'pointer' }}
                       aria-label={`Select inventory product ${p.id}`}
                     >
                       {p.name}

@@ -2044,7 +2044,7 @@ export default function Page() {
                   <td>
                     <button
                       onClick={() => openAmend(o)}
-                      style={{ background: 'none', border: 0, color: '#1d4ed8', cursor: 'pointer' }}
+                      style={{ background: 'none', border: 0, color: 'var(--deep-green, #006B2E)', cursor: 'pointer' }}
                       aria-label="GRN purchase order"
                     >
                       {o.po_number}
@@ -2841,7 +2841,7 @@ export default function Page() {
                         setError(err.message);
                       }
                     }}
-                    style={{ background: 'none', border: 0, color: '#1d4ed8', cursor: 'pointer' }}
+                    style={{ background: 'none', border: 0, color: 'var(--deep-green, #006B2E)', cursor: 'pointer' }}
                     aria-label={`View purchase invoice ${inv.id}`}
                   >
                     {inv.invoice_number}

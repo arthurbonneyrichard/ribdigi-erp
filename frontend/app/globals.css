@@ -701,7 +701,7 @@
 [data-theme="dark"] .bell-item-title{color:var(--line)}
 [data-theme="dark"] .bell-item-action,[data-theme="dark"] .bell-panel-foot button{background:var(--brand);border-color:var(--muted);color:var(--line)}
 [data-theme="dark"] .notif-chip{background:var(--ink);border-color:var(--muted);color:var(--line)}
-[data-theme="dark"] .notif-chip.active,[data-theme="dark"] .notif-chip:hover{background:#1e1b4b;border-color:var(--brand);color:#c7d2fe}
+[data-theme="dark"] .notif-chip.active,[data-theme="dark"] .notif-chip:hover{background:#06351c;border-color:var(--brand);color:var(--brand-light)}
 
 /* ---------- Responsive: phone ≤900 · tablet 901–1200 · laptop ≥1201 ---------- */
 
