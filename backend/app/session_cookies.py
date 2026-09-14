@@ -10,12 +10,15 @@ When on:
 - Authorization Bearer remains accepted (migration dual-mode). Bearer-auth
   requests do not require CSRF.
 
-This module alone does **not** close SEC-M2/M5: frontend must stop storing
-tokens in ``localStorage`` and rely on cookies end-to-end.
+This module alone does **not** close SEC-M2: frontend must stop storing tokens
+in ``localStorage`` and rely on cookies end-to-end (staging soak).
 
 Phase C: when the flag is ON, login/2FA/refresh JSON responses null out
 ``access_token`` / ``refresh_token`` so clients cannot keep writing Bearer
 tokens to storage. Flag OFF keeps returning JWTs in JSON (backward compat).
+
+Phase D (SEC-M5 FIXED) lives in the SPA: principal from ``/me`` in memory —
+not this module's cookies.
 """
 
 from __future__ import annotations

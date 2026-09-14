@@ -111,10 +111,11 @@ def test_sec_m2_phase_b_honesty_surfaces_not_fixed():
     assert (
         "Phase B PARTIAL" in audit
         or "Phase C PARTIAL" in audit
+        or "Phase D" in audit
         or "OPEN (Phase B PARTIAL" in audit
         or "OPEN (Phase C PARTIAL" in audit
     )
-    # Inventory table rows must stay OPEN (not FIXED) for M2/M5
+    # Inventory table: M2 stays OPEN until staging soak; M5 may be FIXED after Phase D
     for line in audit.splitlines():
         cells = [c.strip() for c in line.split("|")]
         if len(cells) < 5:
@@ -122,8 +123,5 @@ def test_sec_m2_phase_b_honesty_surfaces_not_fixed():
         finding_id = cells[1] if len(cells) > 1 else ""
         status_cell = cells[4] if len(cells) > 4 else ""
         if finding_id == "SEC-M2":
-            assert "OPEN" in status_cell
-            assert "FIXED" not in status_cell
-        if finding_id == "SEC-M5":
             assert "OPEN" in status_cell
             assert "FIXED" not in status_cell

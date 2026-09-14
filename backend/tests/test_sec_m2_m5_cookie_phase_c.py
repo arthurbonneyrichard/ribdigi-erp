@@ -167,7 +167,7 @@ def test_sec_m2_phase_c_adr_and_honesty_still_open():
 
     audit = (ROOT / "SECURITY_AUDIT.md").read_text(encoding="utf-8")
     assert "SEC-M2" in audit
-    assert "Phase C" in audit or "PARTIAL" in audit
+    assert "Phase C" in audit or "PARTIAL" in audit or "Phase D" in audit
     for line in audit.splitlines():
         cells = [c.strip() for c in line.split("|")]
         if len(cells) < 5:
@@ -175,8 +175,5 @@ def test_sec_m2_phase_c_adr_and_honesty_still_open():
         finding_id = cells[1] if len(cells) > 1 else ""
         status_cell = cells[4] if len(cells) > 4 else ""
         if finding_id == "SEC-M2":
-            assert "OPEN" in status_cell
-            assert "FIXED" not in status_cell
-        if finding_id == "SEC-M5":
             assert "OPEN" in status_cell
             assert "FIXED" not in status_cell

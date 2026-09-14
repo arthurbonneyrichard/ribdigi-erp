@@ -1,6 +1,6 @@
 # ADR: Dual-mode httpOnly session cookies (SEC-M2 / SEC-M5)
 
-**Status:** Accepted (Phase A–C landed; M2/M5 still OPEN — staging soak + Phase D remain)  
+**Status:** Accepted (Phase A–D landed; **SEC-M5 FIXED**; **SEC-M2 OPEN** — staging soak remain)  
 **Date:** 2026-09-14  
 **Related:** `SECURITY_AUDIT.md` SEC-M2, SEC-M5 · `backend/app/session_cookies.py` · `frontend/lib/authSession.ts`
 
@@ -8,8 +8,9 @@
 
 Browser sessions historically store access and refresh JWTs in `localStorage` and
 send `Authorization: Bearer …`. XSS can exfiltrate those tokens. A separate
-`ribdigi_principal` cookie is set from JavaScript for Next.js middleware console
-routing only — it is **not** an authentication boundary (SEC-M5).
+`ribdigi_principal` cookie was historically set from JavaScript for Next.js
+middleware console routing only — it was **not** an authentication boundary
+(SEC-M5). Phase D removes that anti-pattern.
 
 Moving off `localStorage` JWTs to httpOnly cookies + CSRF is a multi-PR epic.
 Flipping everything in one tip risks breaking auth across the ERP. This ADR
@@ -44,14 +45,19 @@ defines a **safe dual-mode** migration.
    `localStorage.getItem('token')` directly** — they use `apiFetch` /
    `authHeaders` / `authSession` (helpers still read the token for dual-mode
    Bearer when the flag is OFF).
-8. `ribdigi_principal` remains a UX/routing cookie until a later slice replaces
-   console-boundary checks with a server-readable session signal.
+8. **Phase D (SEC-M5 FIXED):** Principal is held **in memory** from login JSON
+   and refreshed from authenticated `GET /me` (`applyPrincipalFromMe`). The SPA
+   **never** treats `localStorage.principal` or the legacy JS-writable
+   `ribdigi_principal` cookie as authentication. `persistLoginSession` /
+   `clearLoginSession` clear any legacy LS principal blob and expire the
+   principal cookie. Next middleware **no longer redirects** based on that
+   cookie (it only clears stale values). Console boundary = Shell /
+   PlatformShell `/me` redirects + backend platform-vs-tenant enforcement.
 
-## Non-goals (Phases A–C)
+## Non-goals
 
-- Claiming SEC-M2 or SEC-M5 **FIXED** (staging soak + evidence still required for M2;
-  Phase D required for M5)
-- Replacing `ribdigi_principal` with a secure session principal (Phase D)
+- Claiming SEC-M2 **FIXED** (staging soak + evidence that Bearer/`localStorage`
+  path is unused with flag ON still required)
 - Enabling the flag by default in production examples
 - Offline Complete / go-live / ADR-005 / paid billing Completes
 
@@ -61,26 +67,27 @@ defines a **safe dual-mode** migration.
 |-------|------|--------|
 | **A** | Flag OFF by default; cookie issuance + cookie auth + CSRF scaffold + tests + `credentials: 'include'` | Foundation only |
 | **B** | Client helpers; stop writing tokens on login when `cookie_session`; central `api`/`apiFetch`; migrate remaining SPA raw token fetch sites | Partial M2 (still OPEN) |
-| **C (this slice)** | When flag ON, null JSON `access_token`/`refresh_token` on login/2FA/refresh; keep JSON tokens when flag OFF; tests | Partial M2 (still OPEN — staging soak required before FIXED) |
-| D | Replace `ribdigi_principal` UX cookie with derived session/principal from httpOnly path | M5 FIXED |
+| **C** | When flag ON, null JSON `access_token`/`refresh_token` on login/2FA/refresh; keep JSON tokens when flag OFF; tests | Partial M2 (still OPEN — staging soak required before FIXED) |
+| **D (this slice)** | Replace `ribdigi_principal` UX cookie / LS principal with in-memory principal from login + `/me`; clear on logout; middleware stops trusting forgeable cookie | **SEC-M5 FIXED** |
 
-Phase C alone does **not** mark M2 FIXED: production default remains flag OFF,
+Phase C/D alone do **not** mark M2 FIXED: production default remains flag OFF,
 Bearer/`localStorage` dual-mode still exists when OFF, and staging soak with
 flag ON + evidence that the LS path is unused is still required.
 
 ## Consequences
 
 - Tip stays safe with flag default OFF.
-- Enabling the flag without staging soak evidence still leaves residual risk —
+- Enabling the flag without staging soak evidence still leaves residual M2 risk —
   do **not** mark M2 FIXED until cookies are the auth boundary end-to-end with
   evidence.
 - CSRF is mandatory only for cookie auth; existing Bearer clients unchanged when
   flag OFF.
 - CORS already allows credentials; `X-CSRF-Token` is on the allowlist.
+- Console soft-routing no longer depends on a forgeable client cookie.
 
 ## Honesty
 
-SEC-M2 and SEC-M5 remain **OPEN** (Phase C PARTIAL progress on M2; Phase D not
-started for M5). Overall security status stays
-`🟠 SECURITY FIXES REQUIRED BEFORE LAUNCH` until Phase C staging soak + Phase D
-land with evidence. Do **not** mark M2 FIXED on this slice alone.
+**SEC-M5** is **FIXED** (Phase D). **SEC-M2** remains **OPEN** (Phase C PARTIAL;
+staging soak outstanding). Overall security status stays
+`🟠 SECURITY FIXES REQUIRED BEFORE LAUNCH` while M2 is open. Do **not** mark
+M2 FIXED on this slice.
