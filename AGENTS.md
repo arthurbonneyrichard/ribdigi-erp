@@ -108,7 +108,7 @@ store activation — never frontend-only.
    denied), and sales invoice create/post/send/cancel + CSV export (+ get/print
    null-store fail-closed) store scoped + **credit_limit_override denied for
    store_manager on invoice post / POS credit** (default role has credit:approve;
-   override remains company/finance admin), and recurring expense list/export/
+   override remains company/finance admin) + **sales invoice credit-override audit redacted** (``credit_limit_overridden`` / ``credit_override_reason`` / ``by`` / ``at``; balance/status remain), and recurring expense list/export/
    patch/generate residual store scoped (null-store fail-closed), and COA
    account ledger (+ export) from managed-store journals (null-store
    fail-closed), and bank statements list/export/get/reconcile writes
@@ -313,7 +313,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `ef817625b312f83d14cc4cf16e1842a2eefa8aef` — `docs: bump PR #303 tip to 5c152ffefd logo binary GET leftover honesty` (feat ancestry `74189c284b`).
+**As of tip:** `28408db8ac098ebb71eefdd660356bec4f7ffa06` — `feat(rbac): redact sales invoice credit-override audit for store_manager` (feat ancestry `922becff58`).
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
@@ -345,7 +345,7 @@ redact (`has_attachment` + WH-scoped binary download remain); journal-entry
 list/get/create/unpost/upload/delete `attachment_url` storage-key redact
 (`has_attachment` + store-scoped binary download remain); print/receipt JSON
 `logo_data_url` redact (invoice/quotation/credit-note print + POS receipt;
-`has_logo` + server-side HTML/PDF embeds remain). Each slice closes
+`has_logo` + server-side HTML/PDF embeds remain); sales-invoice credit-override audit redact (`credit_limit_overridden` / `credit_override_reason` / `by` / `at`; balance/status remain). Each slice closes
 one dump or write path; the continuum as a whole stays **PARTIAL**.
 
 ### Continuum agent contract

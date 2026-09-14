@@ -10203,6 +10203,90 @@ async def test_store_manager_credit_limit_override_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_sales_invoice_credit_override_redacted(client, db_session):
+    """Sales invoice list/get nulls credit-override audit for store_manager.
+
+    Override *writes* already denied; list/get must not re-dump finance override
+    reason/by/at (or credit_limit_overridden). Admin keeps audit fields.
+    Balance/status remain for scoped AR ops.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    customer = seed["party1"]
+    product = seed["p1"]
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Credit Override Redact Store",
+        code="COR-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+
+    invoice = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        customer_id=customer.id,
+        invoice_number="INV-COR-1",
+        status="posted",
+        subtotal=100,
+        tax_amount=0,
+        discount_amount=0,
+        total_amount=100,
+        paid_amount=0,
+        created_by=seed["super"].id,
+        credit_limit_overridden=True,
+        credit_override_reason="Finance VIP exception approved",
+        credit_override_by=seed["super"].id,
+        credit_override_at=__import__("datetime").datetime.utcnow(),
+    )
+    db_session.add(invoice)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    admin_got = await ac.get(
+        f"/api/v1/sales/invoices/{invoice.id}", headers=admin_headers
+    )
+    assert admin_got.status_code == 200, admin_got.text
+    admin_data = admin_got.json()["data"]
+    assert admin_data.get("credit_limit_overridden") is True
+    assert "VIP" in (admin_data.get("credit_override_reason") or "")
+    assert admin_data.get("credit_override_by") == seed["super"].id
+    assert admin_data.get("credit_override_at") is not None
+
+    mgr_got = await ac.get(f"/api/v1/sales/invoices/{invoice.id}", headers=headers)
+    assert mgr_got.status_code == 200, mgr_got.text
+    mgr_data = mgr_got.json()["data"]
+    assert mgr_data.get("credit_limit_overridden") is False
+    assert mgr_data.get("credit_override_reason") is None
+    assert mgr_data.get("credit_override_by") is None
+    assert mgr_data.get("credit_override_at") is None
+    assert float(mgr_data.get("total_amount") or 0) == 100.0
+    assert mgr_data.get("status") == "posted"
+
+    listed = await ac.get("/api/v1/sales/invoices", headers=headers)
+    assert listed.status_code == 200, listed.text
+    row = next(r for r in listed.json()["data"] if r["id"] == invoice.id)
+    assert row.get("credit_limit_overridden") is False
+    assert row.get("credit_override_reason") is None
+    assert row.get("credit_override_by") is None
+    assert row.get("credit_override_at") is None
+
+
+@pytest.mark.asyncio
 async def test_store_manager_branches_departments_writes_denied(client, db_session):
     """Branch/department list GET + create/patch/export denied for store_manager."""
     from app.rbac import permissions_for_role

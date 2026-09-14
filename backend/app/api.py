@@ -8291,6 +8291,7 @@ async def list_sales_invoices(
     stmt = apply_created_by_scope(stmt, m.SalesInvoice, claims)
     rows = (await db.execute(stmt)).scalars().all()
     out = [await sales_svc.serialize_invoice(db, inv) for inv in rows]
+    out = dashboard_scope_svc.apply_sales_invoice_manager_redacts_list(out, managed)
     await db.commit()  # persist any overdue status refreshes from serialize
     return env(out)
 
@@ -8351,7 +8352,9 @@ async def create_sales_invoice(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    return env(await sales_svc.serialize_invoice(db, invoice), "Sales invoice created as draft")
+    data = await sales_svc.serialize_invoice(db, invoice)
+    data = dashboard_scope_svc.apply_sales_invoice_manager_redacts(data, managed)
+    return env(data, "Sales invoice created as draft")
 
 
 @api.get("/sales/invoices/{invoice_id}")
@@ -8370,6 +8373,7 @@ async def get_sales_invoice(
         managed, getattr(invoice, "store_id", None), allow_unset=False
     )
     data = await sales_svc.serialize_invoice(db, invoice)
+    data = dashboard_scope_svc.apply_sales_invoice_manager_redacts(data, managed)
     await db.commit()
     return env(data)
 
@@ -8416,6 +8420,7 @@ async def print_sales_invoice(
             detail=f"format must be one of: {sorted(sales_svc.INVOICE_PRINT_FORMATS)}",
         )
     data = await sales_svc.serialize_invoice(db, invoice)
+    data = dashboard_scope_svc.apply_sales_invoice_manager_redacts(data, managed)
     currency = data.get("currency") or tenant.currency or "GHS"
     product_ids = [str(i.get("product_id")) for i in (data.get("items") or []) if i.get("product_id")]
     item_labels: dict[str, str] = {}
@@ -8500,6 +8505,7 @@ async def send_sales_invoice(
     )
     await db.commit()
     data = await sales_svc.serialize_invoice(db, invoice)
+    data = dashboard_scope_svc.apply_sales_invoice_manager_redacts(data, managed)
     data["delivery"] = delivery
     return env(data, f"Invoice emailed to {delivery['to']} ({delivery['mode']})")
 
@@ -8548,7 +8554,9 @@ async def post_sales_invoice(
     )
     await db.commit()
     await cache_svc.app_cache.invalidate_tenant(claims["tenant_id"], company_id=claims.get("company_id"))
-    return env(await sales_svc.serialize_invoice(db, invoice), "Invoice posted; stock and AR updated")
+    data = await sales_svc.serialize_invoice(db, invoice)
+    data = dashboard_scope_svc.apply_sales_invoice_manager_redacts(data, managed)
+    return env(data, "Invoice posted; stock and AR updated")
 
 
 @api.post("/sales/invoices/{invoice_id}/cancel")
@@ -8570,7 +8578,9 @@ async def cancel_sales_invoice(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], invoice_id=invoice_id
     )
     await db.commit()
-    return env(await sales_svc.serialize_invoice(db, invoice), "Draft invoice cancelled")
+    data = await sales_svc.serialize_invoice(db, invoice)
+    data = dashboard_scope_svc.apply_sales_invoice_manager_redacts(data, managed)
+    return env(data, "Draft invoice cancelled")
 
 
 @api.get("/sales/quotations")
@@ -8910,8 +8920,10 @@ async def convert_quotation_invoice(
     )
     await db.commit()
     # Stage 97 S1 — honesty: convert creates draft; Post required before AR recognition
+    data = await sales_svc.serialize_invoice(db, invoice)
+    data = dashboard_scope_svc.apply_sales_invoice_manager_redacts(data, managed)
     return env(
-        await sales_svc.serialize_invoice(db, invoice),
+        data,
         "Converted to draft invoice — Post required before AR",
     )
 
@@ -9221,7 +9233,9 @@ async def convert_order_invoice(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], order_id=order_id
     )
     await db.commit()
-    return env(await sales_svc.serialize_invoice(db, invoice), "Converted to draft invoice")
+    data = await sales_svc.serialize_invoice(db, invoice)
+    data = dashboard_scope_svc.apply_sales_invoice_manager_redacts(data, managed)
+    return env(data, "Converted to draft invoice")
 
 
 @api.get("/sales/returns")
@@ -11152,6 +11166,7 @@ async def pos_sale(
         managed, override=bool(payload.credit_limit_override)
     )
     data = await record_pos_sale(db, claims=claims, payload=payload, commit=True)
+    data = dashboard_scope_svc.apply_sales_invoice_manager_redacts(data, managed)
     msg = "POS sale recorded (idempotent replay)" if data.get("replayed") else "POS sale recorded"
     return env(data, msg)
 
