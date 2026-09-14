@@ -9,7 +9,7 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `6cd96334886dc2477bf183ec560f9ecff2b42adb` — purchase-order emailed_to redact (feat) for `store_manager` |
+| **As of tip** | `14ffab6553f33d56c2a7441b9875547c5ba0b554` — purchase-order emailed_to redact honesty HEAD (feat `6cd9633488`) for `store_manager` |
 | RBAC / store scope | **PARTIAL** only |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
 
