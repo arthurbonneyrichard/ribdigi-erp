@@ -316,10 +316,12 @@ store activation — never frontend-only.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is
    extended project-wide.
-8. **Offline soft lockdown is PARTIAL:** revoke expires server `offline_authorized_until`
-   and blocks sync; critical alerts can email via security notifications
-   (`POST /offline/alerts/notify`). Remote IndexedDB wipe, push delivery, Offline
-   Complete, and 7-day VERIFIED remain MISSING.
+8. **Offline soft lockdown / remote wipe is PARTIAL:** revoke expires server
+   `offline_authorized_until` and blocks sync; critical alerts can email via
+   security notifications (`POST /offline/alerts/notify`). Remote IndexedDB wipe
+   request/ack + Web Push delivery are **PARTIAL** (VAPID + subscription required
+   for push; online poll remains). Offline Complete and 7-day VERIFIED remain
+   **MISSING**.
 
 ### Key modules
 
@@ -342,7 +344,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `02b00392fc9cc08113c7a32b99801788aeeaa378` — Phase E soak + offline remote-wipe scaffold — **SEC-M1…M5 + L2 FIXED**; overall `✅ HARDENED`. Cookie flag default remains OFF (ops enable cutover). Remote wipe **PARTIAL** (scaffold); Offline Complete / push delivery still **MISSING**. Continuum CLE honesty remains **PARTIAL**.  
+**As of tip:** `f9dfbe75e57102f7fb4fa218b0f6df8d0b96034f` — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL**; Offline Complete still **MISSING**. Cookie flag default remains OFF (ops enable cutover). Continuum CLE honesty remains **PARTIAL**.  
 **Security:** no open Critical/High/Medium. Do not claim go-live Completes. Flag OFF in prod examples is intentional until ops cutover (`docs/sec_m2_staging_soak_checklist.md`).  
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
