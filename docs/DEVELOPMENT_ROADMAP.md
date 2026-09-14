@@ -11,6 +11,21 @@
 
 ---
 
+### Tip — audit CLE master redact (2026-09-15)
+
+**As of tip:** `148b61b757662f065b68c96b3d9b920fac6773e1`
+Scoped audit list/export `details` CLE master redact for `store_manager`
+(`credit_limit` / `available` / `current_balance` / `projected_balance` /
+`additional_amount` on `GET /audit-logs` + CSV; FX keys already redacted;
+`invoice_number` / reason / amounts / `store_id` remain; admin keeps CLE
+master fields). Continuum stays **PARTIAL**. Store-scoped RBAC Complete remains
+**MISSING** (intentional ALLOWs + residual backlog + product sign-off + staging
+soak). Offline / 7-day / go-live / paid billing Completes remain **MISSING**.
+Next CONTINUE: residual continuum field-leak (named surface) or product ALLOW
+sign-off / staging soak docs.
+
+---
+
 ### Tip — CLE currency redact (2026-09-15)
 
 **As of tip:** `86b7397bd62c38c5be9bb47fd3d33029791ad0fa`
