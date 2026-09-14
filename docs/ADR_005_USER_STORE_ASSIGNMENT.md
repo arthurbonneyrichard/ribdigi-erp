@@ -21,7 +21,7 @@ For Stage 1 / Commercial MVP operational scope:
 1. **Operational store scope** remains **`stores.manager_id`** (and warehouse manager where set) via `dashboard_scope.managed_store_ids`.
 2. Record scoping for users continues via **branch / department / own / all** (existing record_scope).
 3. POS/sales store context remains **session/document `store_id`**, not a permanent user home store.
-4. **Scaffold opened (PARTIAL):** `user_store_memberships` table + admin assign/list/revoke APIs + `GET /me/store-memberships` exist for assignment bookkeeping. These do **not** drive operational scope and do **not** equal ADR-005 Complete.
+4. **Scaffold opened (PARTIAL):** `user_store_memberships` table + admin assign/list/revoke APIs + `GET /me/store-memberships` + Company/Admin UI at `/stores#memberships` exist for assignment bookkeeping. These do **not** drive operational scope and do **not** equal ADR-005 Complete.
 5. Multi-store membership scope cutover (membership-driven dashboards / cashier store lists wired into RBAC) remains **post-scaffold** until explicitly verified.
 
 ## Consequences

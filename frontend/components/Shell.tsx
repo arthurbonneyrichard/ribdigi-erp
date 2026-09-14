@@ -1194,6 +1194,12 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Store Memberships',
+    href: '/stores#memberships',
+    modules: ['stores'],
+  },
+  {
+    kind: 'link',
     label: 'Inter-store Transfers',
     href: '/stores#transfers',
     modules: ['stores'],

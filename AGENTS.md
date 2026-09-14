@@ -45,7 +45,8 @@ store activation — never frontend-only.
    gates on tenant columns, not fabricated MRR.
 6. **User↔store membership** is intentionally opened as an **ADR-005 scaffold
    PARTIAL** (`user_store_memberships` + assign/list/revoke + `/me/store-memberships`
-   in `backend/app/store_memberships.py`). Operational store scope **still** uses
+   in `backend/app/store_memberships.py` + Company/Admin UI `/stores#memberships`).
+   Operational store scope **still** uses
    ``stores.manager_id`` via `backend/app/dashboard_scope.py` (`managed_store_ids`,
    `constrain_store_query`, `assert_transfer_touches_manager_scope`, `managed_warehouse_ids`,
    `constrain_warehouse_query`, `apply_warehouse_scope_filter`,
@@ -344,7 +345,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `4eeabb25b4d10b3faad14f2301c093e0f3b6409c` — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL**; ADR-005 membership **PARTIAL** scaffold (table/API; `manager_id` scope remains — Complete still **MISSING**); Offline Complete still **MISSING**. Cookie flag default remains OFF (ops enable cutover). Continuum CLE honesty remains **PARTIAL**.  
+**As of tip:** `4eeabb25b4d10b3faad14f2301c093e0f3b6409c` — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL**; ADR-005 membership **PARTIAL** scaffold (table/API + `/stores#memberships` admin UI; `manager_id` scope remains — Complete still **MISSING**); Offline Complete still **MISSING**. Cookie flag default remains OFF (ops enable cutover). Continuum CLE honesty remains **PARTIAL**.  
 **Security:** no open Critical/High/Medium. Do not claim go-live Completes. Flag OFF in prod examples is intentional until ops cutover (`docs/sec_m2_staging_soak_checklist.md`).  
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
@@ -357,7 +358,8 @@ leave contradictory Complete/PARTIAL wording across those three surfaces.
 
 1. Company/tenant **logo binary GET** (workspace chrome; branding *writes* already denied). Mistaken close in `b0fc721a15` was **reverted** — leftover restored.
 2. Per-user `/auth/sessions` + `/notifications/settings` (self-service; not company dumps).
-3. **ADR-005** user↔store membership **PARTIAL** scaffold (table/API; operational
+3. **ADR-005** user↔store membership **PARTIAL** scaffold (table/API + `/stores#memberships`
+   admin UI; operational
    scope still ``stores.manager_id`` — Complete still **MISSING**).
 4. Managed-store list may still expose self-scope `manager_id` (not peer org graph).
 
@@ -464,7 +466,8 @@ after `0107` in deploy order.
    gates on tenant columns, not fabricated MRR.
 6. When `max_users_override` is set, plan changes do not overwrite
    `Tenant.max_users` until the override is cleared.
-7. **User↔store membership** scaffold is **PARTIAL** (ADR-005); operational scope
+7. **User↔store membership** scaffold is **PARTIAL** (ADR-005; `/stores#memberships`
+   admin UI included); operational scope
    still ``stores.manager_id``. Do not claim membership Complete or wire
    `managed_store_ids` to membership without an explicit cutover + evidence.
 

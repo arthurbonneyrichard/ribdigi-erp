@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
+import StoreMembershipAdmin from '../../components/StoreMembershipAdmin';
 import { api, apiFetch } from '../../lib/api';
 import {
   getSelectedStoreId,
@@ -40,7 +41,11 @@ type Transfer = {
   items: { product_id: string; quantity: number }[];
 };
 
-type Me = { id: string; role?: string };
+type Me = {
+  id: string;
+  role?: string;
+  permissions?: Record<string, string[]>;
+};
 
 const WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 const WEEKDAY_LABELS: Record<(typeof WEEKDAYS)[number], string> = {
@@ -85,7 +90,9 @@ export default function Page() {
     can_create_store?: boolean;
   } | null>(null);
   const [branches, setBranches] = useState<{ id: string; code: string; name: string }[]>([]);
-  const [users, setUsers] = useState<{ id: string; full_name?: string; email?: string }[]>([]);
+  const [users, setUsers] = useState<
+    { id: string; full_name?: string; email?: string; role?: string; is_active?: boolean }[]
+  >([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [inventory, setInventory] = useState<any[]>([]);
@@ -269,7 +276,7 @@ export default function Page() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Stage 102 T1 / Stage 105 S1 / Stage 112 S1 — honor Shell #transfers / #warehouses / #fefo / #reorder / #cash-drawer
+  // Stage 102 T1 / Stage 105 S1 / Stage 112 S1 — honor Shell #transfers / #warehouses / #fefo / #reorder / #cash-drawer / #memberships
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const hash = (window.location.hash || '').replace(/^#/, '');
@@ -516,6 +523,14 @@ export default function Page() {
       )}
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
+
+      <StoreMembershipAdmin
+        stores={stores}
+        users={users}
+        meRole={me?.role}
+        mePermissions={me?.permissions}
+        initialStoreId={editStoreId || drawerStoreId || stores[0]?.id}
+      />
 
       <div className="card" style={{ marginBottom: 16 }} id="fefo">
         <label className="muted">
