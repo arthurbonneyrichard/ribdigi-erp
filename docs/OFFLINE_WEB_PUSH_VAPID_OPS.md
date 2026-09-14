@@ -81,6 +81,17 @@ Store the private key in your secret manager / compose secrets — **never commi
 - Client always re-PUTs the current PushManager subscription on bind (rebind); `forceResubscribe`
   is available after key rotation / gone endpoints.
 
+## Automated evidence vs operator proof
+
+| Layer | Where | Marks Complete? |
+|-------|--------|-----------------|
+| Automated wipe-via-push evidence (generated VAPID, subscribe, wipe payload, 410, mock `pywebpush`) | `backend/tests/test_offline_wipe_push_vapid_evidence.py` | **No** — keeps PARTIAL |
+| Related delivery / wipe unit tests | `test_offline_push_delivery.py`, `test_offline_remote_wipe.py` | **No** |
+| Operator real-browser staging checklist | `docs/offline_wipe_push_staging_checklist.md` | **No** alone — required before any push-delivery Complete claim; Offline Complete still separate |
+
+Automated evidence ≠ push-delivery Complete. Physical/browser ops cannot be
+skipped for Complete.
+
 ## Honesty
 
 - Remote wipe = **PARTIAL**
