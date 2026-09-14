@@ -1,5 +1,10 @@
 # Agent notes
 
+## Tip / brand stream status (PR #300)
+- **OpenAPI honesty tips:** exhausted at **#1884–#1894** on `cursor/tenant-status-query-openapi-dd71`. No further non-trivial Values / `money_json` / FE aria tips without inventing thin work. Intentional OOS: health/request-log ms, onboarding %, AI display "N%", coded enums, system backup notify strips.
+- **Brand refresh:** logo wordmark + logo greens (CSS/email/print/PDF/PWA/OG) shipped; interim favicon from green R mark — replace when a dedicated favicon file is supplied.
+- **CI:** backend + frontend green on tip after honesty 422 / email-verify / jobs DB fixture repairs. PR ready for human review/merge.
+
 ## Cursor Cloud specific instructions
 
 ### Services
