@@ -24461,3 +24461,148 @@ async def test_store_manager_audit_details_store_manager_id_redacted(
     assert mgr_csv_details.get("to_store_manager_id") is None
     assert mgr_csv_details.get("transfer_number") == "ST-AMI-1"
     assert mgr_csv_details.get("store_id") == store.id
+
+
+@pytest.mark.asyncio
+async def test_store_manager_audit_details_expense_threshold_redacted(
+    client, db_session
+):
+    """Audit list/export nulls expense approval threshold in details for store_manager.
+
+    Expense settings GET/PATCH/export already denied (company thresholds/levels/
+    roles). Scoped audit JSON/CSV must not re-dump the same auto-approve
+    threshold via expense_submitted / expense_auto_approved details.threshold.
+    Amount / category / approval_steps_required / reason / store_id remain;
+    admin keeps threshold. FX + CLE + party + dept + emailed_to + attachment +
+    store manager_id keys already redacted separately; integrity hashes
+    unchanged (redact on read only).
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    peer = seed["admin1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Audit Expense Threshold Store",
+        code="AET-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+
+    secret_threshold = 777.0
+    submitted_ev = await audit_svc.record_event(
+        db_session,
+        tenant_id=tid,
+        company_id=cid,
+        user_id=peer.id,
+        module="expenses",
+        action="expense_submitted",
+        entity="expense",
+        entity_id="exp-aet-1",
+        details={
+            "category": "Travel",
+            "amount": 1200.0,
+            "threshold": secret_threshold,
+            "approval_steps_required": 1,
+            "store_id": store.id,
+        },
+    )
+    auto_ev = await audit_svc.record_event(
+        db_session,
+        tenant_id=tid,
+        company_id=cid,
+        user_id=peer.id,
+        module="expenses",
+        action="expense_auto_approved",
+        entity="expense",
+        entity_id="exp-aet-2",
+        details={
+            "category": "Office",
+            "amount": 40.0,
+            "threshold": secret_threshold,
+            "reason": "under_threshold",
+            "store_id": store.id,
+        },
+    )
+    await db_session.commit()
+
+    admin_listed = await ac.get(
+        "/api/v1/audit-logs", headers=admin_company, params={"limit": 500}
+    )
+    assert admin_listed.status_code == 200, admin_listed.text
+    admin_by_id = {r["id"]: r for r in admin_listed.json()["data"]}
+    assert float(
+        (admin_by_id[submitted_ev.id].get("details") or {}).get("threshold")
+    ) == pytest.approx(secret_threshold)
+    assert float(
+        (admin_by_id[auto_ev.id].get("details") or {}).get("threshold")
+    ) == pytest.approx(secret_threshold)
+
+    mgr_listed = await ac.get(
+        "/api/v1/audit-logs", headers=headers, params={"limit": 500}
+    )
+    assert mgr_listed.status_code == 200, mgr_listed.text
+    mgr_by_id = {r["id"]: r for r in mgr_listed.json()["data"]}
+    mgr_sub = mgr_by_id[submitted_ev.id].get("details") or {}
+    mgr_auto = mgr_by_id[auto_ev.id].get("details") or {}
+    assert mgr_sub.get("threshold") is None
+    assert mgr_sub.get("amount") == pytest.approx(1200.0)
+    assert mgr_sub.get("category") == "Travel"
+    assert mgr_sub.get("approval_steps_required") == 1
+    assert mgr_sub.get("store_id") == store.id
+    assert mgr_auto.get("threshold") is None
+    assert mgr_auto.get("amount") == pytest.approx(40.0)
+    assert mgr_auto.get("reason") == "under_threshold"
+    assert mgr_auto.get("store_id") == store.id
+
+    admin_csv = await ac.get(
+        "/api/v1/audit-logs/export",
+        headers=admin_company,
+        params={"format": "csv"},
+    )
+    assert admin_csv.status_code == 200, admin_csv.text
+    admin_detail_rows = list(csv.DictReader(io.StringIO(admin_csv.text)))
+    admin_csv_sub = next(
+        r for r in admin_detail_rows if r.get("entity_id") == "exp-aet-1"
+    )
+    assert float(json.loads(admin_csv_sub["details"]).get("threshold")) == pytest.approx(
+        secret_threshold
+    )
+
+    mgr_csv = await ac.get(
+        "/api/v1/audit-logs/export",
+        headers=headers,
+        params={"format": "csv"},
+    )
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    mgr_detail_rows = list(csv.DictReader(io.StringIO(mgr_csv.text)))
+    mgr_csv_sub = next(
+        r for r in mgr_detail_rows if r.get("entity_id") == "exp-aet-1"
+    )
+    mgr_csv_auto = next(
+        r for r in mgr_detail_rows if r.get("entity_id") == "exp-aet-2"
+    )
+    mgr_csv_sub_details = json.loads(mgr_csv_sub["details"])
+    mgr_csv_auto_details = json.loads(mgr_csv_auto["details"])
+    assert mgr_csv_sub_details.get("threshold") is None
+    assert mgr_csv_sub_details.get("amount") == pytest.approx(1200.0)
+    assert mgr_csv_sub_details.get("store_id") == store.id
+    assert mgr_csv_auto_details.get("threshold") is None
+    assert mgr_csv_auto_details.get("reason") == "under_threshold"

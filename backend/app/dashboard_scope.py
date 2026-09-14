@@ -5744,21 +5744,53 @@ def redact_audit_store_manager_assignment_details(details: dict) -> dict:
     return out
 
 
+# Audit detail keys that re-dump company expense approval threshold already
+# denied on expense settings GET/PATCH/export.
+_AUDIT_EXPENSE_THRESHOLD_DETAIL_KEYS = ("threshold",)
+
+
+def omit_audit_expense_threshold_details(
+    managed_ids: list[str] | None,
+) -> bool:
+    """True when store_manager must omit expense approval ``threshold`` in audit ``details``.
+
+    Expense approval settings GET/PATCH/export already denied (company thresholds /
+    levels / roles). Scoped ``GET /audit-logs`` (+ CSV) must not re-dump the same
+    company auto-approve threshold via ``expense_submitted`` /
+    ``expense_auto_approved`` ``details.threshold`` (self-authored or
+    store-scoped). Amount / category / status / ``store_id`` /
+    ``approval_steps_required`` / reason remain; admin keeps ``threshold``. FX +
+    CLE + party ledger + department + emailed_to + attachment + store manager_id
+    keys already handled by sibling omit helpers.
+    """
+    return managed_ids is not None
+
+
+def redact_audit_expense_threshold_details(details: dict) -> dict:
+    """Null expense approval threshold keys on an audit ``details`` dict."""
+    out = dict(details)
+    for key in _AUDIT_EXPENSE_THRESHOLD_DETAIL_KEYS:
+        if key in out:
+            out[key] = None
+    return out
+
+
 def redact_audit_manager_details(details: dict) -> dict:
-    """Compose store_manager audit ``details`` redacts (FX + CLE + party + dept + emailed_to + attachment key + store manager_id)."""
+    """Compose store_manager audit ``details`` redacts (FX + CLE + party + dept + emailed_to + attachment key + store manager_id + expense threshold)."""
     out = redact_audit_fx_details(details)
     out = redact_audit_cle_master_details(out)
     out = redact_audit_party_ledger_details(out)
     out = redact_audit_department_details(out)
     out = redact_audit_emailed_to_details(out)
     out = redact_audit_attachment_storage_details(out)
-    return redact_audit_store_manager_assignment_details(out)
+    out = redact_audit_store_manager_assignment_details(out)
+    return redact_audit_expense_threshold_details(out)
 
 
 def apply_audit_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager audit JSON redacts (FX + CLE + party + dept + emailed_to + attachment key + store manager_id in ``details``)."""
+    """Apply store_manager audit JSON redacts (FX + CLE + party + dept + emailed_to + attachment key + store manager_id + expense threshold in ``details``)."""
     out = dict(payload)
     if not isinstance(out.get("details"), dict):
         return out
@@ -5777,6 +5809,8 @@ def apply_audit_manager_redacts(
         details = redact_audit_attachment_storage_details(details)
     if omit_audit_store_manager_assignment_details(managed_ids):
         details = redact_audit_store_manager_assignment_details(details)
+    if omit_audit_expense_threshold_details(managed_ids):
+        details = redact_audit_expense_threshold_details(details)
     out["details"] = details
     return out
 
