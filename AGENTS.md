@@ -354,7 +354,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `e6bf2f71a58cf0f6bbc596e1da5b69f9aa16ac6d` — audit details attachment storage key redact (`key` on expense/invoice/journal attachment_upload; `storage_key` on cold archive on scoped `/audit-logs` JSON+CSV; attachment_url / uploaded.key already redacted; size / content_type / event_count remain; API-key `key_prefix` stays); audit emailed_to + department_id + party ledger + CLE master + CLE currency + additional_amount + audit FX landed; concurrent approval stress pack **Complete**; living store-scope matrix landed — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL** (Completes still **MISSING**); ADR-005 membership **Complete** (flag default OFF; store-scoped RBAC Complete still **MISSING** — residual continuum + product ALLOW sign-off + staging soak open — see `docs/STORE_SCOPED_RBAC_COMPLETE_REMAINING.md`); overall RBAC readiness **PARTIAL** (approval hardening + % limits + export/`view_cost` Complete + expires_at + elevation + concurrent approval stress Complete — not RBAC Complete); paid billing **PARTIAL** (ops-blocked); operator go-live pack `docs/GO_LIVE_READINESS_CHECKLIST.md` (Completes still **MISSING**); Offline Complete still **MISSING**. Cookie + membership-scope + entitlement-gate flags default remain OFF (ops enable cutover).
+**As of tip:** `d2e008a141c4c6446cce6eb04f464c68cb082741` — audit details store manager_id redact (`expected_manager_id` on `transfer_manager_override`; sibling `manager_id` / `from_store_manager_id` / `to_store_manager_id` on scoped `/audit-logs` JSON+CSV; store/WH/transfer manager ids already redacted; transfer number / store_id / action / store_code remain); audit attachment storage key + emailed_to + department_id + party ledger + CLE master + CLE currency + additional_amount + audit FX landed; concurrent approval stress pack **Complete**; living store-scope matrix landed — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL** (Completes still **MISSING**); ADR-005 membership **Complete** (flag default OFF; store-scoped RBAC Complete still **MISSING** — residual continuum + product ALLOW sign-off + staging soak open — see `docs/STORE_SCOPED_RBAC_COMPLETE_REMAINING.md`); overall RBAC readiness **PARTIAL** (approval hardening + % limits + export/`view_cost` Complete + expires_at + elevation + concurrent approval stress Complete — not RBAC Complete); paid billing **PARTIAL** (ops-blocked); operator go-live pack `docs/GO_LIVE_READINESS_CHECKLIST.md` (Completes still **MISSING**); Offline Complete still **MISSING**. Cookie + membership-scope + entitlement-gate flags default remain OFF (ops enable cutover).
 
 **Security:** no open Critical/High/Medium. Do not claim go-live Completes. Cookie + membership-scope flags OFF in prod examples are intentional until ops cutover (`docs/sec_m2_staging_soak_checklist.md`, `docs/adr005_staging_soak_checklist.md`). Offline push prod template stays fail-closed until `docs/offline_wipe_push_staging_checklist.md` browser proof. Entitlement gate prod default stays OFF until mirror→access evidence (`docs/PAID_BILLING_PROVIDER_OPS.md`). Operator roll-up: `docs/GO_LIVE_READINESS_CHECKLIST.md`.  
 **Honesty:** never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never store-scoped RBAC Complete, never overall RBAC Complete. ADR-005 membership **is Complete** (flag default OFF intentional).
@@ -379,11 +379,12 @@ leave contradictory Complete/PARTIAL wording across those three surfaces.
 
 ### Closed this continuum slice (still PARTIAL overall)
 
-- Scoped audit list/export ``details`` attachment storage keys **redacted** for `store_manager`
-  (``key`` on ``expense_attachment_upload`` / ``invoice_attachment_upload`` /
-  ``journal_attachment_upload``; ``storage_key`` on cold archive on ``GET /audit-logs`` + CSV;
-  expense/PI/journal ``attachment_url`` + upload ``uploaded.key`` already redacted; size /
-  content_type / event_count remain; API-key ``key_prefix`` stays; admin keeps storage keys).
+- Scoped audit list/export ``details`` store-manager ids **redacted** for `store_manager`
+  (``expected_manager_id`` on ``transfer_manager_override``; sibling ``manager_id`` /
+  ``from_store_manager_id`` / ``to_store_manager_id`` on ``GET /audit-logs`` + CSV;
+  store/WH list/export/patch + stock-transfer manager ids already redacted; transfer
+  number / ``store_id`` / ``transfer_action`` / ``store_code`` remain; admin keeps
+  manager ids in details).
 
 
 

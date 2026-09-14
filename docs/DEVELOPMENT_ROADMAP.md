@@ -11,6 +11,22 @@
 
 ---
 
+### Tip — audit store manager_id redact (2026-09-15)
+
+**As of tip:** `d2e008a141c4c6446cce6eb04f464c68cb082741`
+Scoped audit list/export `details` store manager_id redact for `store_manager`
+(`expected_manager_id` on `transfer_manager_override`; sibling `manager_id` /
+`from_store_manager_id` / `to_store_manager_id` on `GET /audit-logs` + CSV;
+store/WH list/export/patch + stock-transfer manager ids already redacted;
+transfer number / `store_id` / `transfer_action` / `store_code` remain; admin
+keeps manager ids). Continuum stays **PARTIAL**. Store-scoped RBAC Complete
+remains **MISSING** (intentional ALLOWs + residual backlog + product sign-off +
+staging soak). Offline / 7-day / go-live / paid billing Completes remain
+**MISSING**. Next CONTINUE: residual continuum field-leak (named surface) or
+product ALLOW sign-off / staging soak docs.
+
+---
+
 ### Tip — audit attachment storage key redact (2026-09-15)
 
 **As of tip:** `e6bf2f71a58cf0f6bbc596e1da5b69f9aa16ac6d`

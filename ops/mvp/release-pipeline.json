@@ -169,6 +169,6 @@
     "Security-review sign-off Complete",
     "Live go-live / \u00a77 / attestation Complete"
   ],
-  "continuum_honesty_touched_at": "2026-09-15T08:43:50Z",
-  "continuum_honesty_note": "PARTIAL \u2014 audit attachment storage key redact; store-scoped RBAC Complete still MISSING"
+  "continuum_honesty_touched_at": "2026-09-15T08:56:29Z",
+  "continuum_honesty_note": "PARTIAL \u2014 audit store manager_id redact; store-scoped RBAC Complete still MISSING"
 }
