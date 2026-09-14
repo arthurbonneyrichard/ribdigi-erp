@@ -3153,7 +3153,7 @@ def assert_company_level_product_images_read_denied(
     ``storage_key`` / filename / sort_order (company catalog media inventory).
     Primary ``GET /products/{id}/image`` binary denied separately via
     ``assert_company_level_product_primary_image_read_denied``. Product list/get +
-    WH stock ops remain (``has_image`` flag stays for chrome).
+    WH stock ops remain (``image_url`` / ``has_image`` redacted separately).
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
@@ -3163,17 +3163,17 @@ def assert_company_level_product_primary_image_read_denied(
     *,
     message: str = (
         "Store managers cannot download company catalog primary product images; "
-        "product list/get (has_image) + WH stock ops remain."
+        "product list/get + WH stock ops remain."
     ),
 ) -> None:
     """403 when store_manager GETs ``/products/{id}/image`` (catalog primary binary).
 
     Gallery list/export + image writes already denied; primary binary GET was a
     leftover company catalog media asset dump (same class as brand logo binary).
-    Product list/get + ``has_image`` + WH stock ops / POS lookup remain;
-    ``image_url`` / storage key on list/get is redacted separately via
-    ``redact_product_image_url``. Company/tenant workspace logo binary GET
-    remains intentionally open.
+    Product list/get + WH stock ops / POS lookup remain; ``image_url`` and
+    ``has_image`` on list/get are redacted separately via
+    ``redact_product_image_url`` / ``redact_product_has_image``. Company/tenant
+    workspace logo binary GET remains intentionally open.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
@@ -3182,19 +3182,37 @@ def omit_product_image_url(managed_ids: list[str] | None) -> bool:
     """True when store_manager must omit catalog ``image_url`` storage keys.
 
     Primary image binary GET + gallery list/export already denied; list/get must
-    not re-dump ``image_url`` (storage_key). ``has_image`` remains for chrome;
-    WH stock ops / POS lookup remain. Company/tenant logo binary GET stays open.
+    not re-dump ``image_url`` (storage_key). ``has_image`` is redacted separately
+    via ``redact_product_has_image``. WH stock ops / POS lookup remain.
+    Company/tenant logo binary GET stays open.
     """
     return managed_ids is not None
 
 
 def redact_product_image_url(payload: dict) -> dict:
-    """Null ``image_url`` on a serialized product dict; keep ``has_image``."""
+    """Null ``image_url`` on a serialized product dict."""
     out = dict(payload)
     if "image_url" in out:
         out["image_url"] = None
     return out
 
+
+def omit_product_has_image(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit catalog ``has_image`` media inventory.
+
+    Primary image binary GET + gallery list/export + ``image_url`` redact already
+    landed; list/get must not re-signal whether catalog media exists.
+    WH stock ops / POS lookup remain. Company/tenant logo binary GET stays open.
+    """
+    return managed_ids is not None
+
+
+def redact_product_has_image(payload: dict) -> dict:
+    """Force ``has_image`` false on a serialized product dict."""
+    out = dict(payload)
+    if "has_image" in out:
+        out["has_image"] = False
+    return out
 
 def assert_company_level_product_images_export_denied(
     managed_ids: list[str] | None,

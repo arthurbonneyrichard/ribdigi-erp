@@ -12425,8 +12425,9 @@ async def test_store_manager_product_primary_image_get_denied(client, db_session
     """Primary product image binary GET denied after gallery list/export deny.
 
     Catalog primary media asset dump (same class as brand logo binary); gallery
-    list/export + image writes already denied. Product list/get (has_image) +
-    WH stock ops remain. Company/tenant logo binary GET stays intentionally open.
+    list/export + image writes already denied. Product list/get + WH stock ops
+    remain (``image_url`` / ``has_image`` redacted). Company/tenant logo binary
+    GET stays intentionally open.
 
     Skip admin binary fetch — media keys need writable storage roots; assert
     store_manager deny + list/get remain instead.
@@ -12444,22 +12445,23 @@ async def test_store_manager_product_primary_image_get_denied(client, db_session
     listed = await ac.get("/api/v1/products", headers=headers)
     assert listed.status_code == 200, listed.text
     row = next(r for r in listed.json()["data"] if r["id"] == product.id)
-    assert row.get("has_image") is True
+    assert row.get("has_image") is False
     assert row.get("image_url") is None
 
     got = await ac.get(f"/api/v1/products/{product.id}", headers=headers)
     assert got.status_code == 200, got.text
     assert got.json()["data"]["sku"] == product.sku
-    assert got.json()["data"].get("has_image") is True
+    assert got.json()["data"].get("has_image") is False
     assert got.json()["data"].get("image_url") is None
 
 
 @pytest.mark.asyncio
 async def test_store_manager_product_image_url_redacted(client, db_session):
-    """Product list/get nulls image_url storage key for store_manager; has_image remains.
+    """Product list/get nulls image_url storage key for store_manager.
 
     Primary binary GET + gallery list/export already denied; list/get must not
-    re-dump image_url (storage_key). Admin list/get keep image_url.
+    re-dump image_url (storage_key). ``has_image`` also redacted (separate helper).
+    Admin list/get keep image_url + has_image.
     """
     ac, seed = client
     product = seed["p1"]
@@ -12483,17 +12485,127 @@ async def test_store_manager_product_image_url_redacted(client, db_session):
     listed = await ac.get("/api/v1/products", headers=headers)
     assert listed.status_code == 200, listed.text
     row = next(r for r in listed.json()["data"] if r["id"] == product.id)
-    assert row.get("has_image") is True
+    assert row.get("has_image") is False
     assert row.get("image_url") is None
 
     got = await ac.get(f"/api/v1/products/{product.id}", headers=headers)
     assert got.status_code == 200, got.text
-    assert got.json()["data"].get("has_image") is True
+    assert got.json()["data"].get("has_image") is False
     assert got.json()["data"].get("image_url") is None
 
     denied_binary = await ac.get(f"/api/v1/products/{product.id}/image", headers=headers)
     assert denied_binary.status_code == 403, denied_binary.text
     assert denied_binary.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_product_has_image_redacted(client, db_session):
+    """Product list/get forces has_image false for store_manager after image_url redact.
+
+    Primary binary GET + gallery list/export + image_url already closed; has_image
+    was a leftover catalog media inventory signal. Admin keeps has_image true.
+    WH stock ops / POS lookup remain; company/tenant logo binary GET stays open.
+    """
+    ac, seed = client
+    product = seed["p1"]
+    storage_key = f"{seed['t1'].id}/product_images/has-image-dump.png"
+    product.image_url = storage_key
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    admin_got = await ac.get(f"/api/v1/products/{product.id}", headers=admin_headers)
+    assert admin_got.status_code == 200, admin_got.text
+    assert admin_got.json()["data"].get("has_image") is True
+    assert admin_got.json()["data"].get("image_url") == storage_key
+
+    listed = await ac.get("/api/v1/products", headers=headers)
+    assert listed.status_code == 200, listed.text
+    row = next(r for r in listed.json()["data"] if r["id"] == product.id)
+    assert row.get("has_image") is False
+    assert row.get("image_url") is None
+    assert row.get("sku") == product.sku
+
+    got = await ac.get(f"/api/v1/products/{product.id}", headers=headers)
+    assert got.status_code == 200, got.text
+    assert got.json()["data"].get("has_image") is False
+    assert got.json()["data"].get("image_url") is None
+    assert got.json()["data"]["sku"] == product.sku
+
+    denied_binary = await ac.get(f"/api/v1/products/{product.id}/image", headers=headers)
+    assert denied_binary.status_code == 403, denied_binary.text
+    assert denied_binary.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_gallery = await ac.get(f"/api/v1/products/{product.id}/images", headers=headers)
+    assert denied_gallery.status_code == 403, denied_gallery.text
+    assert denied_gallery.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_expense_attachment_url_redacted(client, db_session):
+    """Expense list/get nulls attachment_url storage key for store_manager.
+
+    Binary download remains store-scoped; has_attachment remains for chrome.
+    Admin list/get keep attachment_url.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Attach URL Store",
+        code="AUS1",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    storage_key = f"{tid}/expense_attachments/url-redact-dump.pdf"
+    expense = m.Expense(
+        tenant_id=tid,
+        company_id=cid,
+        category="Travel",
+        description="Attachment url redact",
+        amount=12,
+        store_id=store.id,
+        status="pending",
+        created_by=mgr.id,
+        attachment_url=storage_key,
+    )
+    db_session.add(expense)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    admin_got = await ac.get(f"/api/v1/expenses/{expense.id}", headers=admin_headers)
+    assert admin_got.status_code == 200, admin_got.text
+    assert admin_got.json()["data"].get("attachment_url") == storage_key
+    assert admin_got.json()["data"].get("has_attachment") is True
+
+    listed = await ac.get("/api/v1/expenses", headers=headers)
+    assert listed.status_code == 200, listed.text
+    row = next(r for r in listed.json()["data"] if r["id"] == expense.id)
+    assert row.get("has_attachment") is True
+    assert row.get("attachment_url") is None
+
+    got = await ac.get(f"/api/v1/expenses/{expense.id}", headers=headers)
+    assert got.status_code == 200, got.text
+    assert got.json()["data"].get("has_attachment") is True
+    assert got.json()["data"].get("attachment_url") is None
 
 
 @pytest.mark.asyncio
