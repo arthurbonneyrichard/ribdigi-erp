@@ -5637,6 +5637,72 @@ async def test_store_manager_tax_filing_tin_redacted(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_tax_filing_company_prefs_redacted(client, db_session):
+    """Tax filing omits currency/timezone/filing_period for store_manager.
+
+    GET /tenants/me already denied; /me tenant prefs + POS receipt currency
+    already redacted. Filing pack must not re-dump tax_filing_period or
+    government header currency/timezone/filing_period. Amounts/schedules and
+    taxpayer_name remain; admin JSON/CSV keep preference fields.
+    """
+    ac, seed = client
+    tenant = seed["t1"]
+    tenant.currency = "USD"
+    tenant.timezone = "Africa/Lagos"
+    tenant.tax_filing_period = "quarterly"
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    admin_filing = await ac.get("/api/v1/reports/tax/filing", headers=admin_headers)
+    assert admin_filing.status_code == 200, admin_filing.text
+    admin_data = admin_filing.json()["data"]
+    assert admin_data.get("tax_filing_period") == "quarterly"
+    admin_header = (admin_data.get("government") or {}).get("header") or {}
+    assert admin_header.get("currency") == "USD"
+    assert admin_header.get("timezone") == "Africa/Lagos"
+    assert admin_header.get("filing_period") == "quarterly"
+    assert "output_tax" in admin_data
+
+    mgr_filing = await ac.get("/api/v1/reports/tax/filing", headers=headers)
+    assert mgr_filing.status_code == 200, mgr_filing.text
+    mgr_data = mgr_filing.json()["data"]
+    assert mgr_data.get("tax_filing_period") is None
+    mgr_header = (mgr_data.get("government") or {}).get("header") or {}
+    assert mgr_header.get("currency") is None
+    assert mgr_header.get("timezone") is None
+    assert mgr_header.get("filing_period") is None
+    assert "output_tax" in mgr_data
+    # Company chrome name may remain (same class as receipt company_name).
+    assert mgr_header.get("taxpayer_name")
+
+    admin_csv = await ac.get(
+        "/api/v1/reports/export",
+        headers=admin_headers,
+        params={"report_type": "tax_filing_gh", "format": "csv"},
+    )
+    assert admin_csv.status_code == 200, admin_csv.text
+    assert "USD" in admin_csv.text
+    assert "Africa/Lagos" in admin_csv.text or "quarterly" in admin_csv.text
+
+    mgr_csv = await ac.get(
+        "/api/v1/reports/export",
+        headers=headers,
+        params={"report_type": "tax_filing_gh", "format": "csv"},
+    )
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    # Header currency line should not embed the company currency code.
+    assert "Currency: USD" not in mgr_csv.text
+    assert "Africa/Lagos" not in mgr_csv.text
+
+
+@pytest.mark.asyncio
 async def test_store_manager_tax_rate_writes_denied(client, db_session):
     """Tax rate list/detail/create/patch/default/export denied for store_manager (company-level)."""
     from app.rbac import permissions_for_role

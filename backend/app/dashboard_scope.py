@@ -1067,15 +1067,49 @@ def redact_tax_filing_tin(payload: dict) -> dict:
     return out
 
 
+def omit_tax_filing_company_prefs(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit tax-filing company preference fields.
+
+    ``GET /tenants/me`` already denied; ``/me`` already redacts tenant
+    ``timezone`` / format prefs; POS receipt already redacts ``currency``.
+    Tax filing JSON/CSV must not re-dump ``tax_filing_period`` or government
+    header ``currency`` / ``timezone`` / ``filing_period``. Amounts / schedules
+    / ``taxpayer_name`` (company chrome) / ``tin_missing`` remain.
+    """
+    return managed_ids is not None
+
+
+def redact_tax_filing_company_prefs(payload: dict) -> dict:
+    """Null company preference fields on a tax-filing JSON dict (+ gov header)."""
+    out = dict(payload)
+    if "tax_filing_period" in out:
+        out["tax_filing_period"] = None
+    gov = out.get("government")
+    if isinstance(gov, dict):
+        gov_out = dict(gov)
+        header = gov_out.get("header")
+        if isinstance(header, dict):
+            header = dict(header)
+            for key in ("currency", "timezone", "filing_period"):
+                if key in header:
+                    header[key] = None
+            gov_out["header"] = header
+        out["government"] = gov_out
+    return out
+
+
 def apply_tax_filing_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager tax-filing JSON redacts (TIN)."""
+    """Apply store_manager tax-filing JSON redacts (TIN + company prefs)."""
     if not isinstance(payload, dict):
         return payload
+    out = payload
     if omit_tax_filing_tin(managed_ids):
-        return redact_tax_filing_tin(payload)
-    return payload
+        out = redact_tax_filing_tin(out)
+    if omit_tax_filing_company_prefs(managed_ids):
+        out = redact_tax_filing_company_prefs(out)
+    return out
 
 
 def assert_company_level_settings_write_denied(
