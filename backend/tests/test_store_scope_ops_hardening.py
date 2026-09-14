@@ -12086,7 +12086,7 @@ async def test_store_manager_product_import_denied(client, db_session):
 
 @pytest.mark.asyncio
 async def test_store_manager_product_master_writes_denied(client, db_session):
-    """Product create/patch/variants/barcode/image writes + gallery/variants/catalog CSV denied; reads remain."""
+    """Product create/patch/variants/barcode/image writes + gallery/primary/variants/catalog CSV denied; reads remain."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
@@ -12236,8 +12236,13 @@ async def test_store_manager_product_master_writes_denied(client, db_session):
     assert denied_images_export.status_code == 403, denied_images_export.text
     assert denied_images_export.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
-    # Primary image binary GET remains for POS/chrome (gallery metadata dump closed).
-    # Skip fetching binary here — media keys require tenant-prefixed storage objects.
+    # Primary image binary GET denied (company catalog media asset; gallery dump closed).
+    denied_primary_image = await ac.get(
+        f"/api/v1/products/{product.id}/image",
+        headers=headers,
+    )
+    assert denied_primary_image.status_code == 403, denied_primary_image.text
+    assert denied_primary_image.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
     listed = await ac.get("/api/v1/products", headers=headers)
     assert listed.status_code == 200, listed.text
@@ -12366,7 +12371,7 @@ async def test_store_manager_product_images_list_denied(client, db_session):
     """Product gallery list GET denied for store_manager after images CSV export deny.
 
     storage_key / filename roster is a company catalog media dump; primary image
-    binary GET remains for POS/chrome. Product list/get + WH stock ops remain.
+    binary GET denied separately. Product list/get + WH stock ops remain.
     """
     ac, seed = client
     tid = seed["t1"].id
@@ -12413,6 +12418,45 @@ async def test_store_manager_product_images_list_denied(client, db_session):
     got = await ac.get(f"/api/v1/products/{product.id}", headers=headers)
     assert got.status_code == 200, got.text
     assert got.json()["data"]["sku"] == "A-1"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_product_primary_image_get_denied(client, db_session):
+    """Primary product image binary GET denied after gallery list/export deny.
+
+    Catalog primary media asset dump (same class as brand logo binary); gallery
+    list/export + image writes already denied. Product list/get (has_image) +
+    WH stock ops remain. Company/tenant logo binary GET stays intentionally open.
+    """
+    ac, seed = client
+    product = seed["p1"]
+    product.image_url = f"{seed['t1'].id}/product_images/primary-dump.png"
+    await db_session.commit()
+
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    # Admin may 404 if the storage object is absent; must not be STORE_SCOPE_DENIED.
+    admin_get = await ac.get(f"/api/v1/products/{product.id}/image", headers=admin_headers)
+    assert admin_get.status_code in (200, 404), admin_get.text
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    denied = await ac.get(f"/api/v1/products/{product.id}/image", headers=headers)
+    assert denied.status_code == 403, denied.text
+    assert denied.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    listed = await ac.get("/api/v1/products", headers=headers)
+    assert listed.status_code == 200, listed.text
+    row = next(r for r in listed.json()["data"] if r["id"] == product.id)
+    assert row.get("has_image") is True
+
+    got = await ac.get(f"/api/v1/products/{product.id}", headers=headers)
+    assert got.status_code == 200, got.text
+    assert got.json()["data"]["sku"] == product.sku
+    assert got.json()["data"].get("has_image") is True
 
 
 @pytest.mark.asyncio

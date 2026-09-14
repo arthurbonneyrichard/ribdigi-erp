@@ -3144,15 +3144,34 @@ def assert_company_level_product_images_read_denied(
     *,
     message: str = (
         "Store managers cannot list company product image gallery metadata; "
-        "primary image binary GET + product reads + WH stock ops remain."
+        "product list/get + WH stock ops remain."
     ),
 ) -> None:
     """403 when store_manager lists ``GET /products/{id}/images`` (catalog gallery dump).
 
     Image upload/patch/delete + CSV export already denied; gallery list still dumped
     ``storage_key`` / filename / sort_order (company catalog media inventory).
-    Primary ``GET /products/{id}/image`` binary remains for POS/chrome; product
-    list/get + WH stock ops remain.
+    Primary ``GET /products/{id}/image`` binary denied separately via
+    ``assert_company_level_product_primary_image_read_denied``. Product list/get +
+    WH stock ops remain (``has_image`` flag stays for chrome).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_product_primary_image_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot download company catalog primary product images; "
+        "product list/get (has_image) + WH stock ops remain."
+    ),
+) -> None:
+    """403 when store_manager GETs ``/products/{id}/image`` (catalog primary binary).
+
+    Gallery list/export + image writes already denied; primary binary GET was a
+    leftover company catalog media asset dump (same class as brand logo binary).
+    Product list/get + ``has_image`` + WH stock ops / POS lookup remain.
+    Company/tenant workspace logo binary GET remains intentionally open.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
@@ -3166,7 +3185,8 @@ def assert_company_level_product_images_export_denied(
 
     Gallery list GET also denied (``assert_company_level_product_images_read_denied``);
     CSV dump is the same company-level administration surface (image writes already
-    denied). Primary product image binary GET remains for POS/chrome.
+    denied). Primary product image binary GET denied separately via
+    ``assert_company_level_product_primary_image_read_denied``.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
