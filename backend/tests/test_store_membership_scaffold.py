@@ -112,7 +112,7 @@ async def test_store_manager_denied_membership_admin_apis(client, db_session):
 
 @pytest.mark.asyncio
 async def test_membership_does_not_expand_managed_store_ids(client, db_session):
-    """Scaffold rows must not change store_manager operational scope."""
+    """Flag OFF (default): scaffold rows must not change store_manager operational scope."""
     ac, seed = client
     tid = seed["t1"].id
     cid = seed["c1"].id
@@ -164,6 +164,161 @@ async def test_membership_does_not_expand_managed_store_ids(client, db_session):
     assert membership_only.id in mem_ids
     assert store_memberships_svc.ADR005_COMPLETE_CLAIMED is False
     assert store_memberships_svc.SCOPE_WIRED_TO_MEMBERSHIP is False
+    honesty = store_memberships_svc.honesty_payload()
+    assert honesty["store_membership_scope_enabled"] is False
+    assert honesty["operational_scope"] == "stores.manager_id"
+
+
+@pytest.mark.asyncio
+async def test_membership_expands_managed_store_ids_when_flag_on(
+    client, db_session, monkeypatch
+):
+    """Flag ON: store_manager scope = manager_id ∪ active memberships."""
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "STORE_MEMBERSHIP_SCOPE_ENABLED", True)
+    monkeypatch.setattr(dashboard_scope_svc.settings, "STORE_MEMBERSHIP_SCOPE_ENABLED", True)
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+
+    managed_store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Managed Via Manager Id Flag On",
+        code="MEM-MGR-ON-1",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    membership_only = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Membership Only Flag On",
+        code="MEM-ONLY-ON-1",
+        manager_id=None,
+        is_active=True,
+    )
+    inactive_mem_store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Inactive Membership Store",
+        code="MEM-INACT-1",
+        manager_id=None,
+        is_active=True,
+    )
+    inactive_store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Inactive Store With Membership",
+        code="MEM-ST-OFF-1",
+        manager_id=None,
+        is_active=False,
+    )
+    db_session.add_all(
+        [managed_store, membership_only, inactive_mem_store, inactive_store]
+    )
+    await db_session.flush()
+    db_session.add_all(
+        [
+            m.UserStoreMembership(
+                tenant_id=tid,
+                company_id=cid,
+                user_id=mgr.id,
+                store_id=membership_only.id,
+                is_active=True,
+            ),
+            m.UserStoreMembership(
+                tenant_id=tid,
+                company_id=cid,
+                user_id=mgr.id,
+                store_id=inactive_mem_store.id,
+                is_active=False,
+            ),
+            m.UserStoreMembership(
+                tenant_id=tid,
+                company_id=cid,
+                user_id=mgr.id,
+                store_id=inactive_store.id,
+                is_active=True,
+            ),
+        ]
+    )
+    await db_session.commit()
+
+    claims = {
+        "sub": mgr.id,
+        "tenant_id": tid,
+        "role": "store_manager",
+        "company_id": cid,
+    }
+    managed = await dashboard_scope_svc.managed_store_ids(db_session, claims)
+    assert managed is not None
+    assert managed_store.id in managed
+    assert membership_only.id in managed
+    assert inactive_mem_store.id not in managed
+    assert inactive_store.id not in managed
+
+    honesty = store_memberships_svc.honesty_payload()
+    assert honesty["store_membership_scope_enabled"] is True
+    assert honesty["operational_scope"] == "stores.manager_id ∪ user_store_memberships"
+    assert honesty["adr005_complete_claimed"] is False
+    assert honesty["scope_wired_to_membership"] is False
+    assert honesty["store_scoped_rbac_complete_claimed"] is False
+
+
+@pytest.mark.asyncio
+async def test_flag_on_admin_and_cashier_bypass_unchanged(
+    client, db_session, monkeypatch
+):
+    """Flag ON must not weaken admin bypass or cashier managed_store_ids=None."""
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "STORE_MEMBERSHIP_SCOPE_ENABLED", True)
+    monkeypatch.setattr(dashboard_scope_svc.settings, "STORE_MEMBERSHIP_SCOPE_ENABLED", True)
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    cashier = seed["u1"]
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Cashier Membership Store",
+        code="MEM-CASH-1",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    db_session.add(
+        m.UserStoreMembership(
+            tenant_id=tid,
+            company_id=cid,
+            user_id=cashier.id,
+            store_id=store.id,
+            is_active=True,
+        )
+    )
+    await db_session.commit()
+
+    admin_claims = {
+        "sub": seed["super"].id,
+        "tenant_id": tid,
+        "role": "company_admin",
+        "company_id": cid,
+    }
+    assert await dashboard_scope_svc.managed_store_ids(db_session, admin_claims) is None
+
+    cash_claims = {
+        "sub": cashier.id,
+        "tenant_id": tid,
+        "role": "cashier",
+        "company_id": cid,
+    }
+    assert await dashboard_scope_svc.managed_store_ids(db_session, cash_claims) is None
 
 
 def test_adr005_scaffold_docs_and_honesty_flags():
@@ -174,6 +329,11 @@ def test_adr005_scaffold_docs_and_honesty_flags():
     assert "PARTIAL" in scaffold
     assert "adr005_complete_claimed" in scaffold.lower() or "Complete still MISSING" in scaffold
     assert "manager_id" in scaffold
+    cutover = (ROOT / "docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md").read_text(encoding="utf-8")
+    assert "STORE_MEMBERSHIP_SCOPE_ENABLED" in cutover
+    assert "union" in cutover.lower()
+    assert "PARTIAL" in cutover
+    assert "Complete" in cutover
     honesty = store_memberships_svc.honesty_payload()
     assert honesty["adr005_complete_claimed"] is False
     assert honesty["store_scoped_rbac_complete_claimed"] is False

@@ -1,8 +1,10 @@
 """ADR-005 user↔store membership scaffold.
 
-Assignment CRUD only. Operational store scope remains ``stores.manager_id`` via
-``dashboard_scope.managed_store_ids`` until an explicit scope cutover ships.
-ADR-005 Complete / store-scoped RBAC Complete remain MISSING.
+Assignment CRUD plus optional flag-gated scope expansion documented in
+``docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md``. Default operational scope remains
+``stores.manager_id`` (``STORE_MEMBERSHIP_SCOPE_ENABLED`` false). When the flag
+is on, ``dashboard_scope.managed_store_ids`` unions membership store IDs for
+store_manager only. ADR-005 Complete / store-scoped RBAC Complete remain MISSING.
 """
 
 from __future__ import annotations
@@ -18,6 +20,8 @@ from app.config import settings
 from app.stores import get_store
 
 # Honesty — never flip these to True from this scaffold module alone.
+# scope_wired_to_membership stays False until production-default cutover + evidence
+# (flag-gated wire ≠ Complete).
 ADR005_COMPLETE_CLAIMED = False
 STORE_SCOPED_RBAC_COMPLETE_CLAIMED = False
 SCOPE_WIRED_TO_MEMBERSHIP = False
@@ -25,15 +29,18 @@ SCOPE_WIRED_TO_MEMBERSHIP = False
 
 def honesty_payload() -> dict:
     """Stable non-claim flags for API responses and tests."""
+    flag_on = bool(getattr(settings, "STORE_MEMBERSHIP_SCOPE_ENABLED", False))
     return {
         "adr005_complete_claimed": ADR005_COMPLETE_CLAIMED,
         "store_scoped_rbac_complete_claimed": STORE_SCOPED_RBAC_COMPLETE_CLAIMED,
         "scope_wired_to_membership": SCOPE_WIRED_TO_MEMBERSHIP,
-        "store_membership_scope_enabled": bool(
-            getattr(settings, "STORE_MEMBERSHIP_SCOPE_ENABLED", False)
-        ),
+        "store_membership_scope_enabled": flag_on,
         "scaffold_status": "partial",
-        "operational_scope": "stores.manager_id",
+        "operational_scope": (
+            "stores.manager_id ∪ user_store_memberships"
+            if flag_on
+            else "stores.manager_id"
+        ),
     }
 
 
@@ -121,7 +128,11 @@ async def membership_store_ids(
     user_id: str,
     company_id: str | None = None,
 ) -> list[str]:
-    """Active membership store IDs — scaffold helper; not used by managed_store_ids."""
+    """Active membership store IDs (assignment helper).
+
+    ``managed_store_ids`` consults the same active rows only when
+    ``STORE_MEMBERSHIP_SCOPE_ENABLED`` is true (union with manager_id).
+    """
     stmt = select(m.UserStoreMembership.store_id).where(
         m.UserStoreMembership.tenant_id == tenant_id,
         m.UserStoreMembership.user_id == user_id,

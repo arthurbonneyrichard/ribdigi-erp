@@ -120,7 +120,7 @@ export default function StoreMembershipAdmin({
         body: JSON.stringify({ user_id: userId }),
       });
       setUserId('');
-      setMessage('Store membership assigned (scaffold — scope still manager_id)');
+      setMessage('Store membership assigned (PARTIAL — default scope manager_id; flag may expand)');
       await load(storeId);
     } catch (err: unknown) {
       if (err instanceof ApiError && err.status === 403) {
@@ -141,7 +141,7 @@ export default function StoreMembershipAdmin({
     setMessage('');
     try {
       await api(`/stores/${storeId}/memberships/${memberUserId}`, { method: 'DELETE' });
-      setMessage('Store membership revoked (scaffold — scope still manager_id)');
+      setMessage('Store membership revoked (PARTIAL — default scope manager_id; flag may expand)');
       await load(storeId);
     } catch (err: unknown) {
       if (err instanceof ApiError && err.status === 403) {
