@@ -1783,37 +1783,37 @@ export default function Page() {
               aria-label="Edit product reorder level"
             />
             <div className="product-price-field">
-              <label className="product-price-label" htmlFor="edit-product-actual-price">
-                Actual price
-              </label>
-              <input
-                id="edit-product-actual-price"
-                type="number"
-                min="0"
-                step="0.01"
-                inputMode="decimal"
-                value={editCost}
-                onChange={(e) => setEditCost(e.target.value)}
-                placeholder="0.00"
-                aria-label="Edit product cost price"
-              />
-            </div>
-            <div className="product-price-field">
-              <label className="product-price-label" htmlFor="edit-product-selling-price">
-                Selling price
-              </label>
-              <input
-                id="edit-product-selling-price"
-                type="number"
-                min="0"
-                step="0.01"
-                inputMode="decimal"
-                value={editPrice}
-                onChange={(e) => setEditPrice(e.target.value)}
-                placeholder="0.00"
-                aria-label="Edit product selling price"
-              />
-            </div>
+                      <label className="product-price-label" htmlFor="edit-product-actual-price">Actual price</label>
+                      <input
+                        id="edit-product-actual-price"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        inputMode="decimal"
+                        placeholder="0.00"
+                        value={editCost}
+                        onChange={e => setEditCost(e.target.value)}
+                        aria-label="Actual price"
+                        aria-describedby="edit-product-actual-price-hint"
+                      />
+                      <span id="edit-product-actual-price-hint" className="product-price-hint">Cost — what you paid</span>
+                    </div>
+            <div className="product-price-field product-price-field--selling">
+                      <label className="product-price-label" htmlFor="edit-product-selling-price">Selling price</label>
+                      <input
+                        id="edit-product-selling-price"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        inputMode="decimal"
+                        placeholder="0.00"
+                        value={editPrice}
+                        onChange={e => setEditPrice(e.target.value)}
+                        aria-label="Selling price"
+                        aria-describedby="edit-product-selling-price-hint"
+                      />
+                      <span id="edit-product-selling-price-hint" className="product-price-hint">Sell — what customers pay</span>
+                    </div>
             <label className="muted">Tax supply class</label>
             <select
               value={editSupplyClass}
@@ -2154,37 +2154,37 @@ export default function Page() {
               rows={2}
             />
           <div className="product-price-field">
-            <label className="product-price-label" htmlFor="add-product-actual-price">
-              Actual price
-            </label>
-            <input
-              id="add-product-actual-price"
-              type="number"
-              min="0"
-              step="0.01"
-              inputMode="decimal"
-              value={productCost}
-              onChange={(e) => setProductCost(e.target.value)}
-              placeholder="0.00"
-              aria-label="Product cost price"
-            />
-          </div>
-          <div className="product-price-field">
-            <label className="product-price-label" htmlFor="add-product-selling-price">
-              Selling price
-            </label>
-            <input
-              id="add-product-selling-price"
-              type="number"
-              min="0"
-              step="0.01"
-              inputMode="decimal"
-              value={productPrice}
-              onChange={(e) => setProductPrice(e.target.value)}
-              placeholder="0.00"
-              aria-label="Product selling price"
-            />
-          </div>
+                      <label className="product-price-label" htmlFor="add-product-actual-price">Actual price</label>
+                      <input
+                        id="add-product-actual-price"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        inputMode="decimal"
+                        placeholder="0.00"
+                        value={productCost}
+                        onChange={e => setProductCost(e.target.value)}
+                        aria-label="Actual price"
+                        aria-describedby="add-product-actual-price-hint"
+                      />
+                      <span id="add-product-actual-price-hint" className="product-price-hint">Cost — what you paid</span>
+                    </div>
+          <div className="product-price-field product-price-field--selling">
+                      <label className="product-price-label" htmlFor="add-product-selling-price">Selling price</label>
+                      <input
+                        id="add-product-selling-price"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        inputMode="decimal"
+                        placeholder="0.00"
+                        value={productPrice}
+                        onChange={e => setProductPrice(e.target.value)}
+                        aria-label="Selling price"
+                        aria-describedby="add-product-selling-price-hint"
+                      />
+                      <span id="add-product-selling-price-hint" className="product-price-hint">Sell — what customers pay</span>
+                    </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <input
                 value={productWeight}
