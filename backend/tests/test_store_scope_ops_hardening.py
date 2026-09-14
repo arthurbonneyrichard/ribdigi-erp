@@ -20616,7 +20616,7 @@ async def test_store_manager_stock_transfer_store_manager_ids_redacted(client, d
     assert stores.status_code == 200, stores.text
     store_row = next(r for r in stores.json()["data"] if r["id"] == mine.id)
     assert store_row.get("manager_id") is None
-    assert store_row["name"] == "Xfer Mgr From"
+    assert store_row["name"] == "Xfer Redact Mine"
 
 
 @pytest.mark.asyncio
