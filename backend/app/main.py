@@ -50,6 +50,7 @@ cors_kwargs = {
         "X-Request-ID",
         "X-Workspace-Kind",
         "X-Company-ID",
+        "X-CSRF-Token",
         "Accept",
         "Origin",
     ],

@@ -1179,7 +1179,12 @@ async def settings_sms_test(
 
 
 @api.post("/auth/login")
-async def login(payload: Login, request: Request, db: AsyncSession = Depends(get_db)):
+async def login(
+    payload: Login,
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+):
     tenant = await tenants_svc.resolve_tenant(db, payload.tenant_id)
     tenant = await tenants_svc.ensure_trial_state(db, tenant)
     tenants_svc.assert_tenant_active_for_login(tenant)
@@ -1322,6 +1327,11 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
     from app.platform_const import home_path_for_principal, principal_for
 
     principal = principal_for(tenant_id=user.tenant_id, role=user.role)
+    from app import session_cookies as cookie_svc
+
+    cookie_svc.attach_auth_cookies_if_enabled(
+        response, access_token=access, refresh_token=refresh
+    )
     return env(
         {
             "access_token": access,
@@ -1332,12 +1342,18 @@ async def login(payload: Login, request: Request, db: AsyncSession = Depends(get
             "principal": principal,
             "redirect_path": home_path_for_principal(principal),
             "user": _auth_user_payload(user, extra={"webauthn_enabled": has_webauthn}),
+            "cookie_session": cookie_svc.cookies_enabled(),
         }
     )
 
 
 @api.post("/auth/2fa/verify")
-async def auth_2fa_verify(payload: TwoFactorVerify, request: Request, db: AsyncSession = Depends(get_db)):
+async def auth_2fa_verify(
+    payload: TwoFactorVerify,
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+):
     claims = totp_svc.decode_challenge_token(payload.challenge_token)
     user = await db.get(m.User, claims["sub"])
     if not user or not user.is_active or user.tenant_id != claims["tenant_id"]:
@@ -1378,6 +1394,11 @@ async def auth_2fa_verify(payload: TwoFactorVerify, request: Request, db: AsyncS
     from app.platform_const import home_path_for_principal, principal_for
 
     principal = principal_for(tenant_id=user.tenant_id, role=user.role)
+    from app import session_cookies as cookie_svc
+
+    cookie_svc.attach_auth_cookies_if_enabled(
+        response, access_token=access, refresh_token=refresh
+    )
     return env(
         {
             "access_token": access,
@@ -1388,6 +1409,7 @@ async def auth_2fa_verify(payload: TwoFactorVerify, request: Request, db: AsyncS
             "principal": principal,
             "redirect_path": home_path_for_principal(principal),
             "user": _auth_user_payload(user, extra={"totp_enabled": True}),
+            "cookie_session": cookie_svc.cookies_enabled(),
         }
     )
 
@@ -1521,7 +1543,10 @@ async def webauthn_login_options(payload: WebAuthnLoginOptions, db: AsyncSession
 
 @api.post("/auth/webauthn/login/verify")
 async def webauthn_login_verify(
-    payload: WebAuthnLoginVerify, request: Request, db: AsyncSession = Depends(get_db)
+    payload: WebAuthnLoginVerify,
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
 ):
     from app import webauthn_svc as webauthn
 
@@ -1548,6 +1573,11 @@ async def webauthn_login_verify(
     from app.platform_const import home_path_for_principal, principal_for
 
     principal = principal_for(tenant_id=user.tenant_id, role=user.role)
+    from app import session_cookies as cookie_svc
+
+    cookie_svc.attach_auth_cookies_if_enabled(
+        response, access_token=access, refresh_token=refresh
+    )
     return env(
         {
             "access_token": access,
@@ -1560,6 +1590,7 @@ async def webauthn_login_verify(
             "user": _auth_user_payload(
                 user, extra={"totp_enabled": bool(user.totp_enabled), "webauthn_enabled": True}
             ),
+            "cookie_session": cookie_svc.cookies_enabled(),
         }
     )
 
@@ -1666,8 +1697,20 @@ async def auth_2fa_disable(
 
 
 @api.post("/auth/refresh")
-async def refresh(payload: RefreshRequest, request: Request, db: AsyncSession = Depends(get_db)):
-    token_hash = hash_token(payload.refresh_token)
+async def refresh(
+    payload: RefreshRequest,
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+):
+    from app import session_cookies as cookie_svc
+
+    raw_refresh = (payload.refresh_token or "").strip() or (
+        cookie_svc.refresh_token_from_request(request) or ""
+    )
+    if not raw_refresh:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
+    token_hash = hash_token(raw_refresh)
     session = (
         await db.execute(select(m.AuthSession).where(m.AuthSession.refresh_token_hash == token_hash))
     ).scalar_one_or_none()
@@ -1681,18 +1724,54 @@ async def refresh(payload: RefreshRequest, request: Request, db: AsyncSession = 
     session.revoked_at = datetime.utcnow()
     access, refresh_raw = await create_session(db, user=user, request=request)
     await db.commit()
+    cookie_svc.attach_auth_cookies_if_enabled(
+        response, access_token=access, refresh_token=refresh_raw
+    )
     return env(
         {
             "access_token": access,
             "refresh_token": refresh_raw,
             "token_type": "Bearer",
             "expires_in": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            "cookie_session": cookie_svc.cookies_enabled(),
         }
     )
 
 
+@api.get("/auth/csrf")
+async def auth_csrf(response: Response):
+    """Issue/rotate CSRF cookie when httpOnly cookie sessions are enabled (SEC-M2 scaffold)."""
+    from app import session_cookies as cookie_svc
+
+    if not cookie_svc.cookies_enabled():
+        return env(
+            {
+                "enabled": False,
+                "csrf_token": None,
+                "header": cookie_svc.CSRF_HEADER,
+            },
+            "Cookie sessions disabled",
+        )
+    csrf = cookie_svc.issue_csrf_token()
+    # Rotate CSRF only; do not clear access/refresh.
+    cookie_svc.set_csrf_cookie(response, csrf)
+    return env(
+        {
+            "enabled": True,
+            "csrf_token": csrf,
+            "header": cookie_svc.CSRF_HEADER,
+        },
+        "CSRF token issued",
+    )
+
+
 @api.post("/auth/logout")
-async def logout(request: Request, claims=Depends(current_claims), db: AsyncSession = Depends(get_db)):
+async def logout(
+    request: Request,
+    response: Response,
+    claims=Depends(current_claims),
+    db: AsyncSession = Depends(get_db),
+):
     jti = claims.get("jti")
     if jti:
         session = (
@@ -1717,12 +1796,16 @@ async def logout(request: Request, claims=Depends(current_claims), db: AsyncSess
         user_agent=request.headers.get("user-agent"),
     )
     await db.commit()
+    from app import session_cookies as cookie_svc
+
+    cookie_svc.clear_auth_cookies_if_enabled(response)
     return env({"revoked": True})
 
 
 @api.post("/auth/idle-logout")
 async def idle_logout(
     request: Request,
+    response: Response,
     claims=Depends(current_claims),
     db: AsyncSession = Depends(get_db),
 ):
@@ -1757,6 +1840,9 @@ async def idle_logout(
         user_agent=request.headers.get("user-agent"),
     )
     await db.commit()
+    from app import session_cookies as cookie_svc
+
+    cookie_svc.clear_auth_cookies_if_enabled(response)
     return env({"revoked": revoked}, "Session ended due to inactivity")
 
 

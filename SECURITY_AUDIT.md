@@ -67,10 +67,10 @@ Ribdigi ERP is a multi-tenant FastAPI + Next.js SaaS with shared-schema `tenant_
 | SEC-H4 | High | Rate limit trusts client `X-Forwarded-For` | FIXED |
 | SEC-H5 | High | CORS omits `X-Workspace-Kind` / `X-Company-ID` | FIXED |
 | SEC-M1 | Medium | Upload trusts `Content-Type` only | FIXED |
-| SEC-M2 | Medium | Tokens in `localStorage` | OPEN |
+| SEC-M2 | Medium | Tokens in `localStorage` | OPEN (foundation PARTIAL — flag OFF) |
 | SEC-M3 | Medium | Open `POST /tenants` self-service | FIXED |
 | SEC-M4 | Medium | TOTP/backup Fernet JWT fallback + static salt | FIXED |
-| SEC-M5 | Medium | `ribdigi_principal` cookie is UX boundary only | OPEN |
+| SEC-M5 | Medium | `ribdigi_principal` cookie is UX boundary only | OPEN (foundation PARTIAL — flag OFF) |
 | SEC-L1 | Low | Dev default `JWT_SECRET_KEY=change-me` | Accepted with prod gate |
 | SEC-L2 | Low | Unauthenticated deep health posture | OPEN |
 | SEC-L3 | Low | Example local credentials in `.env.example` | Accepted |
@@ -146,6 +146,7 @@ See Phase 1 artifact for SEC-M1…M5 and SEC-L1…L3 (uploads magic bytes, local
 | 3a | M1 | Upload magic-byte sniff must match declared Content-Type + allowlist | `test_storage.py` | Implemented |
 | 3b | M4 | Production requires dedicated TOTP/backup Fernet keys; runtime fail-closed | `test_sec_m4_fernet_keys.py` | Implemented |
 | 3c | M3 | Gate `POST /tenants` behind `ALLOW_PUBLIC_TENANT_SIGNUP` (prod default false) | `test_sec_m3_tenant_signup_gate.py` | Implemented |
+| 3d | M2/M5 | Dual-mode httpOnly cookie + CSRF foundation (`AUTH_HTTPONLY_COOKIES_ENABLED` default **false**); ADR + cookie auth path + `credentials: 'include'` scaffold | `test_sec_m2_m5_cookie_session.py`, `docs/ADR_SESSION_COOKIE_DUAL_MODE.md` | **PARTIAL** — M2/M5 still OPEN |
 
 ---
 
@@ -181,11 +182,12 @@ Allowed engagement shorthand: ✅ HARDENED · ⚠️ HIGH REMAINING · 🛑 CRIT
 
 🟠 SECURITY FIXES REQUIRED BEFORE LAUNCH
 
-**Rationale:** No Critical and no unresolved High remain after Phase 2 (SEC-H1…H5 fixed; phase2 suites green). **SEC-M1**, **SEC-M3**, and **SEC-M4** are **FIXED**. Two Medium findings remain open (browser session architecture):
+**Rationale:** No Critical and no unresolved High remain after Phase 2 (SEC-H1…H5 fixed; phase2 suites green). **SEC-M1**, **SEC-M3**, and **SEC-M4** are **FIXED**. Two Medium findings remain open (browser session architecture). Phase 3d landed a **dual-mode httpOnly cookie + CSRF foundation** behind `AUTH_HTTPONLY_COOKIES_ENABLED` (default **false**) — see `docs/ADR_SESSION_COOKIE_DUAL_MODE.md`. This does **not** close M2/M5: tokens still live in `localStorage` and `ribdigi_principal` remains UX-only.
 
 | ID | Why it blocks a 🟡/🟢 claim |
 |----|-----------------------------|
-| SEC-M2 | Access/refresh tokens in `localStorage` — XSS session theft exposure |
-| SEC-L2 / SEC-M5 | Deep health posture + principal cookie UX-only boundary — supporting residuals |
+| SEC-M2 | Access/refresh tokens in `localStorage` — XSS session theft exposure (cookie path scaffold only) |
+| SEC-M5 | `ribdigi_principal` UX-only; not an httpOnly auth boundary |
+| SEC-L2 | Deep health posture — supporting Low residual |
 
 Prefer 🟠 over 🟡 while SEC-M2 (localStorage tokens) remains open. Do **not** claim 🟢. Continuum leftovers (logo binary GET, `/auth/sessions`, `/notifications/settings`, ADR-005) stay intentional **PARTIAL**, not security Completes.

@@ -195,10 +195,20 @@ async def current_claims(
         request.state.company_id = claims.get("company_id")
         return claims
 
-    if not creds:
+    # Dual-mode (SEC-M2 foundation): Bearer preferred; httpOnly cookie when flag enabled.
+    from app import session_cookies as cookie_svc
+
+    raw_token = (creds.credentials if creds else "") or ""
+    auth_via_cookie = False
+    if not raw_token and cookie_svc.cookies_enabled():
+        raw_token = cookie_svc.access_token_from_request(request) or ""
+        auth_via_cookie = bool(raw_token)
+    if not raw_token:
         raise HTTPException(status_code=401, detail="Authentication required")
+    if auth_via_cookie:
+        cookie_svc.assert_csrf_for_cookie_auth(request)
     try:
-        data = jwt.decode(creds.credentials, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        data = jwt.decode(raw_token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
     except JWTError as exc:
         raise HTTPException(status_code=401, detail="Invalid or expired token") from exc
 
@@ -270,7 +280,7 @@ async def current_claims(
     data["read_only"] = tenants_svc.is_read_only(tenant)
     data["branch_id"] = getattr(user, "branch_id", None)
     data["department_id"] = getattr(user, "department_id", None)
-    data["auth_method"] = "jwt"
+    data["auth_method"] = "jwt_cookie" if auth_via_cookie else "jwt"
     data["principal"] = live_principal
     data["role"] = user.role
     if live_principal == "platform" and not path_allowed_for_platform_principal(request.url.path):

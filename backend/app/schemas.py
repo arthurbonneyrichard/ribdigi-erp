@@ -58,7 +58,8 @@ class ProfileUpdate(BaseModel):
 
 
 class RefreshRequest(BaseModel):
-    refresh_token: str
+    # Optional when AUTH_HTTPONLY_COOKIES_ENABLED and refresh cookie is present.
+    refresh_token: str | None = None
 
 
 class TenantCreate(BaseModel):

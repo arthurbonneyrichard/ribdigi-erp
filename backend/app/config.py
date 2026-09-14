@@ -59,6 +59,14 @@ class Settings(BaseSettings):
     ALLOW_DEVELOPMENT_SEED: bool = False
     # SEC-M3 — unauthenticated POST /tenants self-service (fail closed; enable explicitly for local/demo).
     ALLOW_PUBLIC_TENANT_SIGNUP: bool = False
+    # SEC-M2 / SEC-M5 — httpOnly session cookies + CSRF (dual-mode with Bearer). Default OFF.
+    # Enabling alone does not close M2/M5; frontend must stop using localStorage tokens.
+    AUTH_HTTPONLY_COOKIES_ENABLED: bool = False
+    # None = Secure when APP_ENV=production; set True/False to override.
+    AUTH_COOKIE_SECURE: bool | None = None
+    AUTH_COOKIE_SAMESITE: str = "lax"  # lax | strict | none
+    AUTH_COOKIE_DOMAIN: str = ""  # empty = host-only
+    AUTH_CSRF_HEADER: str = "X-CSRF-Token"
     BACKUP_DIR: str = "/data/backups"
     MEDIA_DIR: str = "/data/media"
     MEDIA_MAX_LOGO_BYTES: int = 2_000_000
