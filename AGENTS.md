@@ -147,13 +147,11 @@ store activation — never frontend-only.
    assign + image writes; list/get/lookup/POS search reads + WH stock
    ops remain) + **product images gallery list GET + CSV export denied**
    (``storage_key`` media dump) + **product primary image binary GET denied**
-   (``GET /products/{id}/image``; WH stock ops remain)
-   + **company/tenant logo binary GET denied**
-   (``GET /companies/{id}/logo`` + ``GET /tenants/me/logo``; switcher
-   ``has_logo`` / ``tenant_has_logo`` + initials chrome remain)
-   + **print/receipt JSON ``logo_data_url`` redacted** (invoice/quotation/
-   credit-note print + POS receipt; ``has_logo`` + server-side HTML/PDF
-   embeds remain) + **product list/get ``image_url``
+   (``GET /products/{id}/image``; WH stock ops remain;
+   company/tenant logo binary GET stays open) + **print/receipt JSON
+   ``logo_data_url`` redacted** (invoice/quotation/credit-note print + POS
+   receipt; ``has_logo`` + server-side HTML/PDF embeds remain) + **product
+   list/get ``image_url``
    storage key redacted** + **product list/get ``has_image`` forced false**
    (admin list/get keep ``image_url`` + ``has_image``; WH stock ops / POS remain)
    + **expense list/get/patch ``attachment_url`` storage key redacted**
@@ -315,7 +313,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `bce986e3ec5c4eb28548704a27ad3460f35f5644` — `docs: bump PR #303 tip to 64579de8c0 print/receipt logo_data_url redact` (feat ancestry `64579de8c0`).  
+**As of tip:** `74189c284b05e08418e985c02ccf6d11901e003e` — `feat(rbac): restore company/tenant logo binary GET for store_manager` (feat ancestry `74189c284b`).  
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
@@ -325,9 +323,10 @@ leave contradictory Complete/PARTIAL wording across those three surfaces.
 
 ### Intentionally still open (do not rewrite as closed)
 
-1. Per-user `/auth/sessions` + `/notifications/settings` (self-service; not company dumps).
-2. **ADR-005** user↔store membership **MISSING** (`stores.manager_id` scope remains).
-3. Managed-store list may still expose self-scope `manager_id` (not peer org graph).
+1. Company/tenant **logo binary GET** (workspace chrome; branding *writes* already denied). Mistaken close in `b0fc721a15` was **reverted** — leftover restored.
+2. Per-user `/auth/sessions` + `/notifications/settings` (self-service; not company dumps).
+3. **ADR-005** user↔store membership **MISSING** (`stores.manager_id` scope remains).
+4. Managed-store list may still expose self-scope `manager_id` (not peer org graph).
 
 ### Closed continuum themes (summary — still PARTIAL)
 
@@ -344,9 +343,7 @@ redact; product list/get `has_image` forced false; expense list/get/patch
 remain); purchase-invoice list/get/patch/upload `attachment_url` storage-key
 redact (`has_attachment` + WH-scoped binary download remain); journal-entry
 list/get/create/unpost/upload/delete `attachment_url` storage-key redact
-(`has_attachment` + store-scoped binary download remain); company/tenant logo
-binary GET deny (`GET /companies/{id}/logo` + `GET /tenants/me/logo`; switcher
-`has_logo` / `tenant_has_logo` + initials chrome remain); print/receipt JSON
+(`has_attachment` + store-scoped binary download remain); print/receipt JSON
 `logo_data_url` redact (invoice/quotation/credit-note print + POS receipt;
 `has_logo` + server-side HTML/PDF embeds remain). Each slice closes
 one dump or write path; the continuum as a whole stays **PARTIAL**.
