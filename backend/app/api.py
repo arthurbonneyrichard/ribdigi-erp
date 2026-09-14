@@ -16538,9 +16538,14 @@ async def reports_tax_filing(
         pack["period_quarter"] = meta.get("quarter")
         return pack
 
+    def _scoped_filing(pack: dict) -> dict:
+        return dashboard_scope_svc.apply_tax_filing_manager_redacts(
+            _with_period(pack), managed
+        )
+
     if jurisdiction:
         return env(
-            _with_period(
+            _scoped_filing(
                 await tax_filings_svc.government_filing_pack(
                     db,
                     claims["tenant_id"],
@@ -16558,7 +16563,7 @@ async def reports_tax_filing(
     juris = (getattr(tenant, "tax_jurisdiction", None) or "GH").upper() if tenant else "GH"
     try:
         return env(
-            _with_period(
+            _scoped_filing(
                 await tax_filings_svc.government_filing_pack(
                     db,
                     claims["tenant_id"],
@@ -16585,7 +16590,7 @@ async def reports_tax_filing(
             pack["jurisdiction"] = juris
             pack["government"] = None
             pack["supported_jurisdictions"] = tax_filings_svc.list_supported()
-            return env(_with_period(pack))
+            return env(_scoped_filing(pack))
         raise
 
 

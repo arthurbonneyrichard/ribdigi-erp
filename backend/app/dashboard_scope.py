@@ -1040,6 +1040,44 @@ def assert_company_level_tax_calculate_master_resolve_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def omit_tax_filing_tin(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit tax-filing ``tax_registration_number``.
+
+    Company profile GET + ``/me`` / ``/workspace`` already omit TIN. Tax filing
+    JSON/CSV/XLSX/PDF must not re-dump the company TIN. Filing amounts /
+    schedules remain store+WH scoped. ``tin_missing`` stays (not the TIN value).
+    """
+    return managed_ids is not None
+
+
+def redact_tax_filing_tin(payload: dict) -> dict:
+    """Null ``tax_registration_number`` on a tax-filing JSON dict (+ government header)."""
+    out = dict(payload)
+    if "tax_registration_number" in out:
+        out["tax_registration_number"] = None
+    gov = out.get("government")
+    if isinstance(gov, dict):
+        gov_out = dict(gov)
+        header = gov_out.get("header")
+        if isinstance(header, dict) and "tax_registration_number" in header:
+            header = dict(header)
+            header["tax_registration_number"] = None
+            gov_out["header"] = header
+        out["government"] = gov_out
+    return out
+
+
+def apply_tax_filing_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager tax-filing JSON redacts (TIN)."""
+    if not isinstance(payload, dict):
+        return payload
+    if omit_tax_filing_tin(managed_ids):
+        return redact_tax_filing_tin(payload)
+    return payload
+
+
 def assert_company_level_settings_write_denied(
     managed_ids: list[str] | None,
     *,

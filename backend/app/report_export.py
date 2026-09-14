@@ -545,13 +545,22 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
             *[{"section": "output", **r} for r in out_sched],
             *[{"section": "input", **r} for r in in_sched],
         ]
+        tin = header.get("tax_registration_number")
+        tin_line = f"TIN: {tin}" if tin else (
+            "TIN: (missing)" if header.get("tin_missing") else None
+        )
         lines = [
             f"Template: {gov.get('template_name') or gov.get('template')}",
             f"Taxpayer: {header.get('taxpayer_name')}",
-            f"TIN: {header.get('tax_registration_number') or '(missing)'}",
-            f"Currency: {header.get('currency')}",
-            f"Period: {header.get('period_from')} → {header.get('period_to')}",
         ]
+        if tin_line:
+            lines.append(tin_line)
+        lines.extend(
+            [
+                f"Currency: {header.get('currency')}",
+                f"Period: {header.get('period_from')} → {header.get('period_to')}",
+            ]
+        )
         for w in gov.get("warnings") or []:
             lines.append(f"WARNING: {w}")
         label = f"{juris.upper()} VAT BOXES"
@@ -965,6 +974,12 @@ async def export_report(
             detail=f"format must be one of {sorted(EXPORT_FORMATS)}",
         )
     payload = await build_report_payload(db, tenant_id, report_type, **kwargs)
+    if report_type in {"tax_filing", "tax_filing_gh", "tax_filing_ke", "tax_filing_ng"}:
+        from app import dashboard_scope as dashboard_scope_svc
+
+        payload = dashboard_scope_svc.apply_tax_filing_manager_redacts(
+            payload, kwargs.get("store_ids")
+        )
     rows, pdf_lines, title = flatten_report(report_type, payload)
     stamp = datetime.utcnow().strftime("%Y%m%d")
     if fmt == "csv":

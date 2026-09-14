@@ -5441,6 +5441,62 @@ async def test_store_manager_tax_reports_store_wh_scoped(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_tax_filing_tin_redacted(client, db_session):
+    """Tax filing JSON/CSV omit tax_registration_number for store_manager.
+
+    Company profile GET + /me already omit TIN; filing pack must not re-dump it.
+    Filing amounts/schedules remain; admin JSON/CSV keep TIN.
+    """
+    ac, seed = client
+    tenant = seed["t1"]
+    tin = "C000SECRET99"
+    tenant.tax_registration_number = tin
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    admin_filing = await ac.get("/api/v1/reports/tax/filing", headers=admin_headers)
+    assert admin_filing.status_code == 200, admin_filing.text
+    admin_data = admin_filing.json()["data"]
+    assert admin_data.get("tax_registration_number") == tin
+    admin_gov = admin_data.get("government") or {}
+    assert (admin_gov.get("header") or {}).get("tax_registration_number") == tin
+    assert "output_tax" in admin_data
+
+    mgr_filing = await ac.get("/api/v1/reports/tax/filing", headers=headers)
+    assert mgr_filing.status_code == 200, mgr_filing.text
+    mgr_data = mgr_filing.json()["data"]
+    assert mgr_data.get("tax_registration_number") is None
+    mgr_gov = mgr_data.get("government") or {}
+    mgr_header = mgr_gov.get("header") or {}
+    assert mgr_header.get("tax_registration_number") is None
+    assert "output_tax" in mgr_data
+    assert tin not in mgr_filing.text
+
+    admin_csv = await ac.get(
+        "/api/v1/reports/export",
+        headers=admin_headers,
+        params={"report_type": "tax_filing_gh", "format": "csv"},
+    )
+    assert admin_csv.status_code == 200, admin_csv.text
+    assert tin in admin_csv.text
+
+    mgr_csv = await ac.get(
+        "/api/v1/reports/export",
+        headers=headers,
+        params={"report_type": "tax_filing_gh", "format": "csv"},
+    )
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    assert tin not in mgr_csv.text
+
+
+@pytest.mark.asyncio
 async def test_store_manager_tax_rate_writes_denied(client, db_session):
     """Tax rate list/detail/create/patch/default/export denied for store_manager (company-level)."""
     from app.rbac import permissions_for_role
