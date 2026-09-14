@@ -23,7 +23,8 @@ Infrastructure PITR targets are documented under Stage 26 W1 (`docs/DR_WAL_PITR_
 ## Preconditions
 
 1. Operator has `company_admin` or `super_admin`.
-2. `BACKUP_DIR` is writable; `BACKUP_ENCRYPTION_KEY` (or JWT-derived key) matches the key used to create the archive.
+2. `BACKUP_DIR` is writable; `BACKUP_ENCRYPTION_KEY` matches the key used to create the archive.
+   Production requires a dedicated Fernet `BACKUP_ENCRYPTION_KEY` (SEC-M4; JWT-derived fallback is fail-closed).
 3. Maintenance window: notify users, close POS sessions, pause scheduled jobs when possible.
 4. Prefer creating a **fresh safety backup** of the current (broken) state before applying restore.
 

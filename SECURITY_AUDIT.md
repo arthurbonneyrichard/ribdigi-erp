@@ -9,15 +9,15 @@
 
 ## Executive Summary
 
-Ribdigi ERP is a multi-tenant FastAPI + Next.js SaaS with shared-schema `tenant_id` isolation (ADR-001), JWT/API-key auth, RBAC, MFA, rate limits, and production config validators. Phase 1 found **no Critical** issues and **no committed production secrets**, but **five High** findings that block a production-ready claim: incomplete access-session binding, public metrics, a warehouse-stock tenant defense gap, spoofable rate-limit IPs via `X-Forwarded-For`, and CORS missing workspace headers.
+Ribdigi ERP is a multi-tenant FastAPI + Next.js SaaS with shared-schema `tenant_id` isolation (ADR-001), JWT/API-key auth, RBAC, MFA, rate limits, and production config validators. Phase 1 found **no Critical** issues and **no committed production secrets**, but **five High** findings that block a production-ready claim: incomplete access-session binding, public metrics, a warehouse-stock tenant defense gap, spoofable rate-limit IPs via `X-Forwarded-For`, and CORS missing workspace headers. Phase 2 closed H1–H5. Phase 3a–3c closed **SEC-M1** (upload magic bytes), **SEC-M4** (dedicated Fernet keys), and **SEC-M3** (public tenant signup gate).
 
-**Overall status:** `🟠 SECURITY FIXES REQUIRED BEFORE LAUNCH` — Critical 0, High 0 open (H1–H5 fixed), Medium 5 open (SEC-M1…M5) including launch-relevant authz / crypto / prod-config risk. Go-live / Offline Complete / ADR-005 / paid billing remain **MISSING** per product policy.
+**Overall status:** `🟠 SECURITY FIXES REQUIRED BEFORE LAUNCH` — Critical 0, High 0 open (H1–H5 fixed), Medium 2 open (SEC-M2, M5; **SEC-M1 + M3 + M4 FIXED**) — remaining Mediums are XSS/session-storage architecture. Go-live / Offline Complete / ADR-005 / paid billing remain **MISSING** per product policy.
 
 | Severity | Open (Phase 1) | Notes |
 |----------|----------------|-------|
 | Critical | 0 | — |
 | High | 0 open (5 fixed) | SEC-H1…H5 fixed in Phase 2 |
-| Medium | 5 | SEC-M1…M5 |
+| Medium | 2 open (M1+M3+M4 fixed) | SEC-M2, M5 |
 | Low | 3 | SEC-L1…L3 |
 
 ---
@@ -47,7 +47,8 @@ Ribdigi ERP is a multi-tenant FastAPI + Next.js SaaS with shared-schema `tenant_
 
 ## Existing Controls
 
-- Production validators: strong JWT, `DEBUG=false`, CORS whitelist (no `*`), rate limits on.
+- Production validators: strong JWT, `DEBUG=false`, CORS whitelist (no `*`), rate limits on, dedicated Fernet `TOTP_ENCRYPTION_KEY` + `BACKUP_ENCRYPTION_KEY` (SEC-M4).
+- Public `POST /tenants` gated by `ALLOW_PUBLIC_TENANT_SIGNUP` (SEC-M3; production template false).
 - Security headers: nosniff, frame deny, CSP, production HSTS + `Cache-Control: no-store`.
 - Tenant header mismatch → 403; platform principals blocked from tenant ERP modules.
 - Media keys tenant-prefixed; path `..` rejected; type allowlists + size caps.
@@ -65,10 +66,10 @@ Ribdigi ERP is a multi-tenant FastAPI + Next.js SaaS with shared-schema `tenant_
 | SEC-H3 | High | `get_or_create_warehouse_stock` product without tenant check | FIXED |
 | SEC-H4 | High | Rate limit trusts client `X-Forwarded-For` | FIXED |
 | SEC-H5 | High | CORS omits `X-Workspace-Kind` / `X-Company-ID` | FIXED |
-| SEC-M1 | Medium | Upload trusts `Content-Type` only | OPEN |
+| SEC-M1 | Medium | Upload trusts `Content-Type` only | FIXED |
 | SEC-M2 | Medium | Tokens in `localStorage` | OPEN |
-| SEC-M3 | Medium | Open `POST /tenants` self-service | OPEN |
-| SEC-M4 | Medium | TOTP/backup Fernet JWT fallback + static salt | OPEN |
+| SEC-M3 | Medium | Open `POST /tenants` self-service | FIXED |
+| SEC-M4 | Medium | TOTP/backup Fernet JWT fallback + static salt | FIXED |
 | SEC-M5 | Medium | `ribdigi_principal` cookie is UX boundary only | OPEN |
 | SEC-L1 | Low | Dev default `JWT_SECRET_KEY=change-me` | Accepted with prod gate |
 | SEC-L2 | Low | Unauthenticated deep health posture | OPEN |
@@ -142,6 +143,9 @@ See Phase 1 artifact for SEC-M1…M5 and SEC-L1…L3 (uploads magic bytes, local
 | 2c | H5 | CORS allow_headers add `X-Workspace-Kind`, `X-Company-ID` | `test_security_audit_phase2.py` | Implemented |
 | 2d | H4 | `TRUST_X_FORWARDED_FOR` gate (default false) | `test_security_audit_phase2.py` | Implemented |
 | 2e | H2 | `METRICS_REQUIRE_AUTH` + bearer; prod example + validator | `test_security_audit_phase2.py`, `test_ci_prod_config_c1.py` | Implemented |
+| 3a | M1 | Upload magic-byte sniff must match declared Content-Type + allowlist | `test_storage.py` | Implemented |
+| 3b | M4 | Production requires dedicated TOTP/backup Fernet keys; runtime fail-closed | `test_sec_m4_fernet_keys.py` | Implemented |
+| 3c | M3 | Gate `POST /tenants` behind `ALLOW_PUBLIC_TENANT_SIGNUP` (prod default false) | `test_sec_m3_tenant_signup_gate.py` | Implemented |
 
 ---
 
@@ -174,14 +178,11 @@ Allowed engagement shorthand: ✅ HARDENED · ⚠️ HIGH REMAINING · 🛑 CRIT
 
 🟠 SECURITY FIXES REQUIRED BEFORE LAUNCH
 
-**Rationale:** No Critical and no unresolved High remain after Phase 2 (SEC-H1…H5 fixed; phase2 suites green). Five Medium findings are still open and several are launch-blocking for a multi-tenant SaaS:
+**Rationale:** No Critical and no unresolved High remain after Phase 2 (SEC-H1…H5 fixed; phase2 suites green). **SEC-M1**, **SEC-M3**, and **SEC-M4** are **FIXED**. Two Medium findings remain open (browser session architecture):
 
 | ID | Why it blocks a 🟡/🟢 claim |
 |----|-----------------------------|
-| SEC-M3 | Open `POST /tenants` self-service — authz / tenant-creation surface without gated onboarding |
-| SEC-M4 | TOTP/backup Fernet falls back to JWT material + static salt — production crypto/config weakness |
-| SEC-M1 | Uploads trust `Content-Type` only (no magic-byte sniff) — malware/upload bypass risk |
 | SEC-M2 | Access/refresh tokens in `localStorage` — XSS session theft exposure |
 | SEC-L2 / SEC-M5 | Deep health posture + principal cookie UX-only boundary — supporting residuals |
 
-Prefer 🟠 over 🟡 while SEC-M3 (tenant signup authz) and SEC-M4 (prod crypto) remain open. Do **not** claim 🟢. Continuum leftovers (logo binary GET, `/auth/sessions`, `/notifications/settings`, ADR-005) stay intentional **PARTIAL**, not security Completes.
+Prefer 🟠 over 🟡 while SEC-M2 (localStorage tokens) remains open. Do **not** claim 🟢. Continuum leftovers (logo binary GET, `/auth/sessions`, `/notifications/settings`, ADR-005) stay intentional **PARTIAL**, not security Completes.

@@ -30,12 +30,19 @@ ISSUER = "RIBDIGI ERP"
 
 
 def _fernet() -> Fernet:
+    """Fernet for TOTP secrets. Production requires a dedicated key (SEC-M4)."""
     raw = (settings.TOTP_ENCRYPTION_KEY or settings.BACKUP_ENCRYPTION_KEY or "").strip()
     if raw:
         try:
             return Fernet(raw.encode("utf-8"))
         except Exception as exc:
             raise HTTPException(status_code=500, detail=f"Invalid TOTP encryption key: {exc}") from exc
+    if settings.APP_ENV.lower() == "production":
+        raise HTTPException(
+            status_code=500,
+            detail="TOTP_ENCRYPTION_KEY (or BACKUP_ENCRYPTION_KEY) required in production",
+        )
+    # Development-only fallback — never used when APP_ENV=production (fail closed).
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,

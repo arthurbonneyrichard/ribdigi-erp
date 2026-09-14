@@ -92,6 +92,51 @@ def _normalize_content_type(content_type: str | None) -> str:
     return ct
 
 
+def sniff_content_type(data: bytes) -> str | None:
+    """Detect media type from magic bytes (SEC-M1). Returns None when unrecognized."""
+    if not data:
+        return None
+    if data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if data.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if data.startswith((b"GIF87a", b"GIF89a")):
+        return "image/gif"
+    if len(data) >= 12 and data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "image/webp"
+    if data.startswith(b"%PDF"):
+        return "application/pdf"
+    return None
+
+
+def assert_content_matches_declared(
+    data: bytes,
+    declared: str,
+    *,
+    allowed_types: frozenset[str],
+) -> str:
+    """Require magic-byte sniff to match declared Content-Type and allowlist (SEC-M1)."""
+    sniffed = sniff_content_type(data)
+    if sniffed is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Unrecognized file content; magic-byte sniff failed",
+        )
+    if sniffed not in allowed_types:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported file content {sniffed}. Allowed: {sorted(allowed_types)}",
+        )
+    if sniffed != declared:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Content-Type {declared} does not match file content ({sniffed})"
+            ),
+        )
+    return sniffed
+
+
 def content_type_for_key(key: str) -> str:
     suffix = Path(key).suffix.lower()
     return CONTENT_TYPE_FOR_EXT.get(suffix, "application/octet-stream")
@@ -259,6 +304,10 @@ async def save_upload(
             status_code=400,
             detail=f"File exceeds maximum size of {max_bytes} bytes",
         )
+    # SEC-M1 — do not trust client Content-Type alone; require magic-byte match.
+    content_type = assert_content_matches_declared(
+        data, content_type, allowed_types=allowed_types
+    )
     original = sanitize_filename(upload.filename)
     key = build_key(tenant_id, category, content_type, original)
     validate_key(key, tenant_id=tenant_id)

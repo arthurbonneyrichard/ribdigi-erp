@@ -1,5 +1,20 @@
+from cryptography.fernet import Fernet
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import model_validator
+
+
+def validate_fernet_key(name: str, value: str) -> str:
+    """Return a stripped Fernet key or raise ValueError if missing/invalid."""
+    raw = (value or "").strip()
+    if not raw:
+        raise ValueError(
+            f"Production requires {name} (url-safe Fernet key from Fernet.generate_key())"
+        )
+    try:
+        Fernet(raw.encode("utf-8"))
+    except Exception as exc:
+        raise ValueError(f"Production {name} must be a valid Fernet key") from exc
+    return raw
 
 
 class Settings(BaseSettings):
@@ -42,6 +57,8 @@ class Settings(BaseSettings):
     WEBHOOK_RETRY_BASE_SECONDS: int = 60
     CELERY_WEBHOOK_RETRY_INTERVAL_SECONDS: int = 30
     ALLOW_DEVELOPMENT_SEED: bool = False
+    # SEC-M3 — unauthenticated POST /tenants self-service (fail closed; enable explicitly for local/demo).
+    ALLOW_PUBLIC_TENANT_SIGNUP: bool = False
     BACKUP_DIR: str = "/data/backups"
     MEDIA_DIR: str = "/data/media"
     MEDIA_MAX_LOGO_BYTES: int = 2_000_000
@@ -200,6 +217,9 @@ class Settings(BaseSettings):
                         "Production METRICS_REQUIRE_AUTH requires METRICS_BEARER_TOKEN "
                         "of at least 16 characters"
                     )
+            # SEC-M4 — dedicated Fernet keys; never fall back to JWT+static-salt in production.
+            validate_fernet_key("TOTP_ENCRYPTION_KEY", self.TOTP_ENCRYPTION_KEY)
+            validate_fernet_key("BACKUP_ENCRYPTION_KEY", self.BACKUP_ENCRYPTION_KEY)
         return self
 
 
