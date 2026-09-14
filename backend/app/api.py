@@ -12718,10 +12718,9 @@ async def post_opening_balance(
         store_id=payload.store_id,
     )
     await db.commit()
-    return env(
-        await accounting_svc.serialize_journal(db, entry),
-        "Opening balance posted",
-    )
+    data = await accounting_svc.serialize_journal(db, entry)
+    data = dashboard_scope_svc.apply_journal_entry_manager_redacts(data, managed)
+    return env(data, "Opening balance posted")
 
 
 @api.get("/accounting/liquid-accounts")
@@ -12942,7 +12941,9 @@ async def create_liquid_transfer(
         store_id=payload.store_id,
     )
     await db.commit()
-    return env(await accounting_svc.serialize_journal(db, entry), "Liquid transfer posted")
+    data = await accounting_svc.serialize_journal(db, entry)
+    data = dashboard_scope_svc.apply_journal_entry_manager_redacts(data, managed)
+    return env(data, "Liquid transfer posted")
 
 
 @api.get("/settings/bank-feed")
@@ -13947,7 +13948,9 @@ async def list_journals(
     if status_filter and status_filter != "all":
         stmt = stmt.where(m.JournalEntry.status == status_filter)
     rows = (await db.execute(stmt)).scalars().all()
-    return env([await accounting_svc.serialize_journal(db, e) for e in rows])
+    out = [await accounting_svc.serialize_journal(db, e) for e in rows]
+    out = dashboard_scope_svc.apply_journal_entry_manager_redacts_list(out, managed)
+    return env(out)
 
 
 @api.get("/accounting/journal-entries/export")
@@ -14009,7 +14012,9 @@ async def get_journal(
     dashboard_scope_svc.assert_store_in_manager_scope(
         managed, getattr(entry, "store_id", None), allow_unset=False
     )
-    return env(await accounting_svc.serialize_journal(db, entry))
+    data = await accounting_svc.serialize_journal(db, entry)
+    data = dashboard_scope_svc.apply_journal_entry_manager_redacts(data, managed)
+    return env(data)
 
 
 @api.post("/accounting/journal-entries")
@@ -14036,7 +14041,9 @@ async def create_journal(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    return env(await accounting_svc.serialize_journal(db, entry), "Journal entry posted")
+    data = await accounting_svc.serialize_journal(db, entry)
+    data = dashboard_scope_svc.apply_journal_entry_manager_redacts(data, managed)
+    return env(data, "Journal entry posted")
 
 
 @api.get("/accounting/fiscal-period")
@@ -14146,7 +14153,9 @@ async def unpost_journal(
         entry_id=entry_id,
     )
     await db.commit()
-    return env(await accounting_svc.serialize_journal(db, entry), "Journal entry unposted")
+    data = await accounting_svc.serialize_journal(db, entry)
+    data = dashboard_scope_svc.apply_journal_entry_manager_redacts(data, managed)
+    return env(data, "Journal entry unposted")
 
 
 async def _get_journal_entry_or_404(
@@ -14212,6 +14221,7 @@ async def upload_journal_attachment(
         "content_type": stored.content_type,
         "filename": stored.original_filename,
     }
+    data = dashboard_scope_svc.apply_journal_entry_manager_redacts(data, managed)
     return env(data, "Attachment uploaded")
 
 
@@ -14277,7 +14287,9 @@ async def delete_journal_attachment(
         entity_id=entry.id,
     )
     await db.commit()
-    return env(await accounting_svc.serialize_journal(db, entry), "Attachment removed")
+    data = await accounting_svc.serialize_journal(db, entry)
+    data = dashboard_scope_svc.apply_journal_entry_manager_redacts(data, managed)
+    return env(data, "Attachment removed")
 
 
 @api.get("/accounting/trial-balance")
