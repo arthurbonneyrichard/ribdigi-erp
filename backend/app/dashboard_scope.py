@@ -3678,10 +3678,35 @@ def redact_sales_invoice_exchange_rate(payload: dict) -> dict:
     return out
 
 
+def omit_sales_invoice_balance_due_base(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit sales-invoice ``balance_due_base``.
+
+    Exchange-rates GET already denied; sales-invoice ``currency`` +
+    ``exchange_rate`` already redacted; credit-aging document
+    ``balance_due_base`` already redacted. Invoice JSON/CSV/print must not
+    re-dump FX-converted base via ``balance_due`` × rate (rate-table identity).
+    Totals / status / ``balance_due`` remain; admin keeps ``balance_due_base``.
+    """
+    return managed_ids is not None
+
+
+def redact_sales_invoice_balance_due_base(payload: dict) -> dict:
+    """Null ``balance_due_base`` on a sales-invoice JSON/CSV row (+ nested print)."""
+    out = dict(payload)
+    if "balance_due_base" in out:
+        out["balance_due_base"] = None
+    nested = out.get("invoice")
+    if isinstance(nested, dict) and "balance_due_base" in nested:
+        inv = dict(nested)
+        inv["balance_due_base"] = None
+        out["invoice"] = inv
+    return out
+
+
 def apply_sales_invoice_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager sales-invoice JSON redacts (credit-override + emailed_to + currency + exchange_rate)."""
+    """Apply store_manager sales-invoice JSON redacts (credit-override + emailed_to + currency + exchange_rate + balance_due_base)."""
     out = payload
     if omit_sales_invoice_credit_override(managed_ids):
         out = redact_sales_invoice_credit_override(out)
@@ -3691,6 +3716,8 @@ def apply_sales_invoice_manager_redacts(
         out = redact_sales_invoice_currency(out)
     if omit_sales_invoice_exchange_rate(managed_ids):
         out = redact_sales_invoice_exchange_rate(out)
+    if omit_sales_invoice_balance_due_base(managed_ids):
+        out = redact_sales_invoice_balance_due_base(out)
     return out
 
 
