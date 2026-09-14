@@ -57,6 +57,8 @@ class Settings(BaseSettings):
     WEBHOOK_RETRY_BASE_SECONDS: int = 60
     CELERY_WEBHOOK_RETRY_INTERVAL_SECONDS: int = 30
     ALLOW_DEVELOPMENT_SEED: bool = False
+    # SEC-M3 — unauthenticated POST /tenants self-service (fail closed; enable explicitly for local/demo).
+    ALLOW_PUBLIC_TENANT_SIGNUP: bool = False
     BACKUP_DIR: str = "/data/backups"
     MEDIA_DIR: str = "/data/media"
     MEDIA_MAX_LOGO_BYTES: int = 2_000_000

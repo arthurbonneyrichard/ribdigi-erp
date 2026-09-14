@@ -433,6 +433,13 @@ async def metrics_endpoint(request: Request):
 async def create_tenant(payload: TenantCreate, db: AsyncSession = Depends(get_db)):
     from app import platform as platform_svc
 
+    # SEC-M3 — public self-service signup is opt-in (production template leaves this false).
+    if not settings.ALLOW_PUBLIC_TENANT_SIGNUP:
+        raise HTTPException(
+            status_code=403,
+            detail="PUBLIC_TENANT_SIGNUP_DISABLED",
+        )
+
     tenant, _admin, raw = await platform_svc.provision_customer_tenant(
         db,
         slug=payload.slug,
