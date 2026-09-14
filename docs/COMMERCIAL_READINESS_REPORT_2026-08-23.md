@@ -9,7 +9,7 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `824aea64f3f862076942f6a1ab67dbc38d503dac` — SEC-M1…M5/L2 FIXED; overall ✅ HARDENED; cookie + membership-scope flags default OFF; offline remote-wipe + Web Push delivery PARTIAL; ADR-005 membership **PARTIAL** (scaffold + admin UI + flag-gated scope wire + cashier fail-closed + automated flag-ON soak; default OFF; Complete still MISSING); paid billing **PARTIAL** (ADR-002 portal + Checkout Session create + signed webhook proof; Complete still MISSING); Offline Complete still MISSING; leftovers still open |
+| **As of tip** | `6fd66e496b54c1b500600f8e4b386909b74bd419` — SEC-M1…M5/L2 FIXED; overall ✅ HARDENED; cookie + membership-scope flags default OFF; offline remote-wipe + Web Push delivery PARTIAL; ADR-005 membership **PARTIAL** (scaffold + admin UI + flag-gated scope wire + cashier fail-closed + automated flag-ON soak; default OFF; Complete still MISSING); paid billing **PARTIAL** (ADR-002 portal + Checkout Session create + signed webhook proof; Complete still MISSING); Offline Complete still MISSING; leftovers still open |
 | RBAC / store scope | **PARTIAL** only |
 | Security Mediums | **M1–M5 FIXED**; **L2 FIXED**; overall ✅ HARDENED (flag OFF = ops cutover, not open finding) |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
