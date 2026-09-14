@@ -986,6 +986,9 @@ async def enforce_credit_limit(
         detail = dashboard_scope_svc.redact_credit_limit_exceeded_invoice_total_base(
             detail
         )
+    # invoice_total (doc currency) + additional_amount (base) would recover FX rate.
+    if dashboard_scope_svc.omit_credit_limit_exceeded_invoice_total(role):
+        detail = dashboard_scope_svc.redact_credit_limit_exceeded_invoice_total(detail)
 
     if not override:
         raise HTTPException(status_code=409, detail=detail)
