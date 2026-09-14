@@ -4869,8 +4869,8 @@ def omit_credit_aging_document_currency(managed_ids: list[str] | None) -> bool:
     Exchange-rates GET already denied; POS receipt + sales/purchase-invoice JSON
     already redact ``currency``. Credit AR/AP aging JSON/CSV must not re-dump
     company currency prefs on document rows. Scoped ``balance_due`` /
-    ``balance_due_base`` / ``exchange_rate`` / buckets / party name remain;
-    admin keeps ``currency``.
+    ``balance_due_base`` / buckets / party name remain; admin keeps ``currency``.
+    ``exchange_rate`` is redacted separately (rate-table identity).
     """
     return managed_ids is not None
 
@@ -4893,15 +4893,47 @@ def redact_credit_aging_document_currency(payload: dict) -> dict:
     return out
 
 
+def omit_credit_aging_document_exchange_rate(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit aging document ``exchange_rate``.
+
+    Exchange-rates GET already denied; aging document ``currency`` already
+    redacted; sales/purchase-invoice + credit-payment ``exchange_rate`` already
+    redacted. Credit AR/AP aging JSON/CSV must not re-dump company FX rate-table
+    identity on document rows. Scoped ``balance_due`` / ``balance_due_base`` /
+    buckets / party name remain; admin keeps ``exchange_rate``.
+    """
+    return managed_ids is not None
+
+
+def redact_credit_aging_document_exchange_rate(payload: dict) -> dict:
+    """Null ``exchange_rate`` on credit-aging document rows."""
+    out = dict(payload)
+    documents = out.get("documents")
+    if isinstance(documents, list):
+        redacted = []
+        for row in documents:
+            if isinstance(row, dict):
+                item = dict(row)
+                if "exchange_rate" in item:
+                    item["exchange_rate"] = None
+                redacted.append(item)
+            else:
+                redacted.append(row)
+        out["documents"] = redacted
+    return out
+
+
 def apply_credit_aging_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager credit-aging redacts (party credit_limit + doc currency)."""
+    """Apply store_manager credit-aging redacts (credit_limit + currency + rate)."""
     out = payload
     if omit_credit_aging_party_credit_limit(managed_ids):
         out = redact_credit_aging_party_credit_limit(out)
     if omit_credit_aging_document_currency(managed_ids):
         out = redact_credit_aging_document_currency(out)
+    if omit_credit_aging_document_exchange_rate(managed_ids):
+        out = redact_credit_aging_document_exchange_rate(out)
     return out
 
 

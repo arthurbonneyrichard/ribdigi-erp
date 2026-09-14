@@ -21196,8 +21196,8 @@ async def test_store_manager_credit_aging_document_currency_redacted(
 
     Exchange-rates GET already denied; POS receipt + sales/purchase-invoice
     currency already redacted. Aging JSON/CSV must not re-dump company currency
-    on documents. balance_due / exchange_rate / buckets / party name remain;
-    admin keeps currency.
+    on documents. balance_due / balance_due_base / buckets / party name remain;
+    admin keeps currency. ``exchange_rate`` redacted separately.
     """
     from datetime import timedelta
 
@@ -21323,7 +21323,7 @@ async def test_store_manager_credit_aging_document_currency_redacted(
         if d.get("document_number") == "INV-AGE-FX-1"
     )
     assert mgr_ar_doc.get("currency") is None
-    assert float(mgr_ar_doc.get("exchange_rate") or 0) == pytest.approx(12.5)
+    assert mgr_ar_doc.get("exchange_rate") is None
     assert float(mgr_ar_doc.get("balance_due") or 0) == pytest.approx(55.0)
     assert float(mgr_ar_doc.get("balance_due_base") or 0) == pytest.approx(687.5)
 
@@ -21348,7 +21348,7 @@ async def test_store_manager_credit_aging_document_currency_redacted(
         if d.get("document_number") == "PI-AGE-FX-1"
     )
     assert mgr_ap_doc.get("currency") is None
-    assert float(mgr_ap_doc.get("exchange_rate") or 0) == pytest.approx(11.0)
+    assert mgr_ap_doc.get("exchange_rate") is None
     assert float(mgr_ap_doc.get("balance_due") or 0) == pytest.approx(33.0)
 
     admin_csv = await ac.get(
@@ -21371,7 +21371,192 @@ async def test_store_manager_credit_aging_document_currency_redacted(
     )
     assert mgr_csv_row.get("currency") in (None, "")
     assert float(mgr_csv_row.get("balance_due") or 0) == pytest.approx(55.0)
-    assert float(mgr_csv_row.get("exchange_rate") or 0) == pytest.approx(12.5)
+    assert mgr_csv_row.get("exchange_rate") in (None, "")
+
+
+@pytest.mark.asyncio
+async def test_store_manager_credit_aging_document_exchange_rate_redacted(
+    client, db_session
+):
+    """AR/AP aging nulls document exchange_rate for store_manager.
+
+    Exchange-rates GET already denied; aging document currency already redacted;
+    sales/purchase-invoice + credit-payment exchange_rate already redacted.
+    Aging JSON/CSV must not re-dump company FX rate-table identity on documents.
+    balance_due / balance_due_base / buckets / party name remain; admin keeps
+    exchange_rate.
+    """
+    from datetime import timedelta
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    today = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Aging XR Store",
+        code="AGE-XR-S",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        name="Aging XR WH",
+        code="AGE-XR-WH",
+    )
+    db_session.add(wh)
+    await db_session.flush()
+
+    cust = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Aging XR Customer",
+        kind="customer",
+        status="active",
+        credit_limit=5000.0,
+        balance=0,
+    )
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Aging XR Supplier",
+        kind="supplier",
+        status="active",
+        credit_limit=4000.0,
+        balance=0,
+    )
+    db_session.add_all([cust, supplier])
+    await db_session.flush()
+
+    db_session.add(
+        m.SalesInvoice(
+            tenant_id=tid,
+            company_id=cid,
+            store_id=store.id,
+            invoice_number="INV-AGE-XR-1",
+            customer_id=cust.id,
+            status="posted",
+            subtotal=55,
+            total_amount=55,
+            paid_amount=0,
+            currency="USD",
+            exchange_rate=12.5,
+            due_date=today - timedelta(days=3),
+            posted_at=today - timedelta(days=3),
+            created_at=today - timedelta(days=3),
+        )
+    )
+    db_session.add(
+        m.PurchaseInvoice(
+            tenant_id=tid,
+            company_id=cid,
+            invoice_number="PI-AGE-XR-1",
+            supplier_id=supplier.id,
+            warehouse_id=wh.id,
+            status="unpaid",
+            subtotal=33,
+            total_amount=33,
+            paid_amount=0,
+            currency="EUR",
+            exchange_rate=11.0,
+            invoice_date=today - timedelta(days=3),
+            due_date=today - timedelta(days=2),
+            created_at=today - timedelta(days=3),
+        )
+    )
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    admin_ar = await ac.get(
+        "/api/v1/credit/aging?kind=receivable", headers=admin_company
+    )
+    assert admin_ar.status_code == 200, admin_ar.text
+    admin_ar_doc = next(
+        d
+        for d in admin_ar.json()["data"]["documents"]
+        if d.get("document_number") == "INV-AGE-XR-1"
+    )
+    assert float(admin_ar_doc.get("exchange_rate") or 0) == pytest.approx(12.5)
+    assert float(admin_ar_doc.get("balance_due") or 0) == pytest.approx(55.0)
+
+    mgr_ar = await ac.get("/api/v1/credit/aging?kind=receivable", headers=headers)
+    assert mgr_ar.status_code == 200, mgr_ar.text
+    mgr_ar_body = mgr_ar.json()["data"]
+    assert mgr_ar_body.get("scope") == "store_manager"
+    assert float(mgr_ar_body["total_due"]) == pytest.approx(55.0)
+    mgr_ar_doc = next(
+        d
+        for d in mgr_ar_body["documents"]
+        if d.get("document_number") == "INV-AGE-XR-1"
+    )
+    assert mgr_ar_doc.get("exchange_rate") is None
+    assert mgr_ar_doc.get("currency") is None
+    assert float(mgr_ar_doc.get("balance_due") or 0) == pytest.approx(55.0)
+    assert float(mgr_ar_doc.get("balance_due_base") or 0) == pytest.approx(687.5)
+
+    admin_ap = await ac.get(
+        "/api/v1/credit/aging?kind=payable", headers=admin_company
+    )
+    assert admin_ap.status_code == 200, admin_ap.text
+    admin_ap_doc = next(
+        d
+        for d in admin_ap.json()["data"]["documents"]
+        if d.get("document_number") == "PI-AGE-XR-1"
+    )
+    assert float(admin_ap_doc.get("exchange_rate") or 0) == pytest.approx(11.0)
+
+    mgr_ap = await ac.get("/api/v1/credit/aging?kind=payable", headers=headers)
+    assert mgr_ap.status_code == 200, mgr_ap.text
+    mgr_ap_body = mgr_ap.json()["data"]
+    assert float(mgr_ap_body["total_due"]) == pytest.approx(33.0)
+    mgr_ap_doc = next(
+        d
+        for d in mgr_ap_body["documents"]
+        if d.get("document_number") == "PI-AGE-XR-1"
+    )
+    assert mgr_ap_doc.get("exchange_rate") is None
+    assert float(mgr_ap_doc.get("balance_due") or 0) == pytest.approx(33.0)
+
+    admin_csv = await ac.get(
+        "/api/v1/credit/aging/export?kind=receivable", headers=admin_company
+    )
+    assert admin_csv.status_code == 200, admin_csv.text
+    admin_rows = list(csv.DictReader(io.StringIO(admin_csv.text)))
+    admin_csv_row = next(
+        r for r in admin_rows if r.get("document_number") == "INV-AGE-XR-1"
+    )
+    assert float(admin_csv_row.get("exchange_rate") or 0) == pytest.approx(12.5)
+
+    mgr_csv = await ac.get(
+        "/api/v1/credit/aging/export?kind=receivable", headers=headers
+    )
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    mgr_rows = list(csv.DictReader(io.StringIO(mgr_csv.text)))
+    mgr_csv_row = next(
+        r for r in mgr_rows if r.get("document_number") == "INV-AGE-XR-1"
+    )
+    assert mgr_csv_row.get("exchange_rate") in (None, "")
+    assert float(mgr_csv_row.get("balance_due") or 0) == pytest.approx(55.0)
+    assert float(mgr_csv_row.get("balance_due_base") or 0) == pytest.approx(687.5)
 
 
 @pytest.mark.asyncio
