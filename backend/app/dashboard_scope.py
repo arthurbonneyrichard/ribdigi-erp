@@ -1282,13 +1282,47 @@ def assert_company_level_tenant_logo_write_denied(
     *,
     message: str = (
         "Store managers cannot upload or delete tenant logo branding; "
-        "logo binary GET remains."
+        "managed store ops remain."
     ),
 ) -> None:
     """403 when store_manager POSTs/DELETEs /tenants/me/logo.
 
     Company logo writes already denied; tenant logo is company branding admin.
-    Binary GET remains for workspace chrome.
+    Binary GET denied via ``assert_company_level_tenant_logo_read_denied``.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_company_logo_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot download company logo branding; "
+        "workspace switcher chrome (name/has_logo) + managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager GETs ``/companies/{id}/logo``.
+
+    Profile/logo writes + company list/detail GET already denied; binary logo GET
+    was the leftover company branding asset dump (same class as catalog brand logo
+    / product primary image). Server-side print embeds still load logos from storage.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_tenant_logo_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot download tenant logo branding; "
+        "workspace switcher chrome (name/tenant_has_logo) + managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager GETs ``/tenants/me/logo``.
+
+    Tenant logo writes already denied; binary GET was the leftover tenant branding
+    asset dump alongside company logo GET. Switcher ``tenant_has_logo`` / initials
+    chrome remain; print embeds load logos server-side.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
@@ -1304,7 +1338,7 @@ def assert_company_level_company_profile_read_denied(
     """403 when store_manager reads company profile (branding/legal dump).
 
     Profile/logo writes already denied; GET ``/companies/{id}`` dumped name/tax/address
-    branding fields. Company logo binary GET remains for workspace chrome.
+    branding fields. Company logo binary GET denied separately.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
@@ -1314,7 +1348,7 @@ def assert_company_level_company_profile_export_denied(
     *,
     message: str = (
         "Store managers cannot export company profile CSV; "
-        "workspace switcher + logo binary GET remain for chrome."
+        "workspace switcher chrome remains."
     ),
 ) -> None:
     """403 when store_manager exports company profile CSV (legal/tax/branding dump).
@@ -1330,14 +1364,14 @@ def assert_company_level_tenant_me_read_denied(
     *,
     message: str = (
         "Store managers cannot read GET /tenants/me company/tenant profile; "
-        "workspace switcher + logo binary GET remain for chrome."
+        "workspace switcher chrome remains."
     ),
 ) -> None:
     """403 when store_manager reads GET /tenants/me (tenant+company profile dump).
 
     Company list/detail GET + profile CSV export already denied or redacted;
     ``GET /tenants/me`` serializes the same legal/tax/branding/document pack.
-    Logo binary GET + ``/me`` + ``/workspace`` switcher-only remain.
+    ``/me`` + ``/workspace`` switcher-only remain; logo binary GET denied separately.
     Lifecycle suspend/activate uses ``assert_company_level_tenant_lifecycle_write_denied``.
     """
     assert_company_level_write_denied(managed_ids, message=message)
@@ -2510,7 +2544,7 @@ def assert_company_level_catalog_brand_logo_read_denied(
     """403 when store_manager GETs ``/catalog/brands/{id}/logo``.
 
     Brand list/write/export already denied; binary logo GET was a leftover catalog
-    master asset dump. Company/tenant workspace logo binary GET remains.
+    master asset dump. Company/tenant workspace logo binary GET also denied.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
@@ -3294,7 +3328,7 @@ def assert_company_level_product_primary_image_read_denied(
     Product list/get + WH stock ops / POS lookup remain; ``image_url`` and
     ``has_image`` on list/get are redacted separately via
     ``redact_product_image_url`` / ``redact_product_has_image``. Company/tenant
-    workspace logo binary GET remains intentionally open.
+    workspace logo binary GET also denied.
     """
     assert_company_level_write_denied(managed_ids, message=message)
 
@@ -3305,7 +3339,6 @@ def omit_product_image_url(managed_ids: list[str] | None) -> bool:
     Primary image binary GET + gallery list/export already denied; list/get must
     not re-dump ``image_url`` (storage_key). ``has_image`` is redacted separately
     via ``redact_product_has_image``. WH stock ops / POS lookup remain.
-    Company/tenant logo binary GET stays open.
     """
     return managed_ids is not None
 
@@ -3323,7 +3356,7 @@ def omit_product_has_image(managed_ids: list[str] | None) -> bool:
 
     Primary image binary GET + gallery list/export + ``image_url`` redact already
     landed; list/get must not re-signal whether catalog media exists.
-    WH stock ops / POS lookup remain. Company/tenant logo binary GET stays open.
+    WH stock ops / POS lookup remain.
     """
     return managed_ids is not None
 

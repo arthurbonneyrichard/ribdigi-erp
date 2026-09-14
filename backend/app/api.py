@@ -811,6 +811,10 @@ async def tenant_me_logo_get(
     claims=Depends(current_claims),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_tenant_logo_read_denied(managed)
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     if not tenant.logo_url:
         raise HTTPException(status_code=404, detail="No logo uploaded")
@@ -2613,6 +2617,10 @@ async def company_logo_get(
     claims=Depends(current_claims),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_company_logo_read_denied(managed)
     co = await companies_svc.get_company(
         db, tenant_id=claims["tenant_id"], company_id=company_id
     )

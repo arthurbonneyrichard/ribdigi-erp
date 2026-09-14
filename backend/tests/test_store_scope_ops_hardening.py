@@ -12427,7 +12427,7 @@ async def test_store_manager_product_primary_image_get_denied(client, db_session
     Catalog primary media asset dump (same class as brand logo binary); gallery
     list/export + image writes already denied. Product list/get + WH stock ops
     remain (``image_url`` / ``has_image`` redacted). Company/tenant logo binary
-    GET stays intentionally open.
+    GET denied separately.
 
     Skip admin binary fetch — media keys need writable storage roots; assert
     store_manager deny + list/get remain instead.
@@ -12504,7 +12504,7 @@ async def test_store_manager_product_has_image_redacted(client, db_session):
 
     Primary binary GET + gallery list/export + image_url already closed; has_image
     was a leftover catalog media inventory signal. Admin keeps has_image true.
-    WH stock ops / POS lookup remain; company/tenant logo binary GET stays open.
+    WH stock ops / POS lookup remain; company/tenant logo binary GET denied separately.
     """
     ac, seed = client
     product = seed["p1"]
@@ -14093,6 +14093,70 @@ async def test_store_manager_tenant_logo_writes_denied(client, db_session, tmp_p
     assert ok_upload.status_code == 200, ok_upload.text
     ok_delete = await ac.delete("/api/v1/tenants/me/logo", headers=admin_headers)
     assert ok_delete.status_code == 200, ok_delete.text
+
+
+@pytest.mark.asyncio
+async def test_store_manager_company_tenant_logo_binary_get_denied(
+    client, db_session, tmp_path, monkeypatch
+):
+    """Company + tenant logo binary GET denied after branding write denies.
+
+    Leftover company/tenant branding asset dump (same class as catalog brand logo
+    / product primary image). Writes already denied; switcher name/has_logo chrome
+    + managed store ops remain; WorkspaceBrand soft-fails to initials.
+    Admin binary GET remains.
+    """
+    from app import storage as storage_svc
+
+    monkeypatch.setattr(storage_svc.settings, "MEDIA_DIR", str(tmp_path))
+    monkeypatch.setattr(storage_svc.settings, "STORAGE_BACKEND", "local")
+
+    ac, seed = client
+    cid = seed["c1"].id
+    png = b"\x89PNG\r\n\x1a\n" + b"logo-binary-dump"
+
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_headers["X-Workspace-Kind"] = "tenant"
+
+    ok_co = await ac.post(
+        f"/api/v1/companies/{cid}/logo",
+        headers=admin_headers,
+        files={"file": ("co.png", io.BytesIO(png), "image/png")},
+    )
+    assert ok_co.status_code == 200, ok_co.text
+
+    ok_tenant = await ac.post(
+        "/api/v1/tenants/me/logo",
+        headers=admin_headers,
+        files={"file": ("tenant.png", io.BytesIO(png), "image/png")},
+    )
+    assert ok_tenant.status_code == 200, ok_tenant.text
+
+    admin_co_get = await ac.get(f"/api/v1/companies/{cid}/logo", headers=admin_headers)
+    assert admin_co_get.status_code == 200, admin_co_get.text
+    admin_tenant_get = await ac.get("/api/v1/tenants/me/logo", headers=admin_headers)
+    assert admin_tenant_get.status_code == 200, admin_tenant_get.text
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    denied_co = await ac.get(f"/api/v1/companies/{cid}/logo", headers=headers)
+    assert denied_co.status_code == 403, denied_co.text
+    assert denied_co.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    denied_tenant = await ac.get("/api/v1/tenants/me/logo", headers=headers)
+    assert denied_tenant.status_code == 403, denied_tenant.text
+    assert denied_tenant.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+
+    # Switcher chrome fields still present on /me (has_logo / tenant_has_logo).
+    me = await ac.get("/api/v1/me", headers=headers)
+    assert me.status_code == 200, me.text
+    me_data = me.json()["data"]
+    assert "tenant_has_logo" in me_data
+    assert me_data.get("company") is None or "has_logo" in (me_data.get("company") or {})
 
 
 @pytest.mark.asyncio
