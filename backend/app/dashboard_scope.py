@@ -4137,6 +4137,32 @@ def assert_expenses_department_filter_denied(
     assert_company_level_write_denied(managed_ids, message=message)
 
 
+def assert_accounting_reports_branch_filter_denied(
+    managed_ids: list[str] | None,
+    *,
+    branch_id: str | None,
+    message: str = (
+        "Store managers cannot filter accounting reports by company branch; "
+        "omit branch_id, or use store-scoped P&L / cash-flow / balance-sheet "
+        "without org-unit master filter."
+    ),
+) -> None:
+    """403 when store_manager passes ``branch_id`` on P&L / cash-flow / BS.
+
+    Branches list/export/writes already denied; store ``branch_id`` JSON/CSV
+    already redacted; store↔branch assign/clear already denied. Query/export
+    ``branch_id`` on accounting/reports profit-loss, cash-flow, and
+    balance-sheet (+ ``/reports/export`` for those types) still filters by
+    company branch org-unit UUID (and echoes ``branch_id`` on the payload).
+    Unfiltered store-scoped reports remain.
+    """
+    if managed_ids is None:
+        return
+    if not (branch_id or "").strip():
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
 def assert_company_level_product_variants_export_denied(
     managed_ids: list[str] | None,
     *,

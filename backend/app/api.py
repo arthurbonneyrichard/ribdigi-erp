@@ -14507,6 +14507,9 @@ async def get_profit_loss(
     )
     await db.commit()
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_accounting_reports_branch_filter_denied(
+        managed, branch_id=branch_id
+    )
     single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     return env(
         await reports_svc.profit_loss_with_optional_compare(
@@ -14536,6 +14539,9 @@ async def accounting_profit_loss_export(
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_accounting_reports_branch_filter_denied(
+        managed, branch_id=branch_id
+    )
     single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     text = await finance_ops_export_svc.export_profit_loss_csv(
         db,
@@ -14584,6 +14590,9 @@ async def reports_profit_loss_export(
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_accounting_reports_branch_filter_denied(
+        managed, branch_id=branch_id
+    )
     single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     text = await finance_ops_export_svc.export_profit_loss_csv(
         db,
@@ -14653,6 +14662,9 @@ async def report_cash_flow(
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_accounting_reports_branch_filter_denied(
+        managed, branch_id=branch_id
+    )
     single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     return env(
         await reports_svc.cash_flow_with_optional_compare(
@@ -14682,6 +14694,9 @@ async def reports_cash_flow_export(
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_accounting_reports_branch_filter_denied(
+        managed, branch_id=branch_id
+    )
     single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     text = await finance_ops_export_svc.export_cash_flow_csv(
         db,
@@ -14714,6 +14729,9 @@ async def report_balance_sheet(
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_accounting_reports_branch_filter_denied(
+        managed, branch_id=branch_id
+    )
     single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     return env(
         await reports_svc.balance_sheet_with_optional_compare(
@@ -14741,6 +14759,9 @@ async def reports_balance_sheet_export(
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_accounting_reports_branch_filter_denied(
+        managed, branch_id=branch_id
+    )
     single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     text = await finance_ops_export_svc.export_balance_sheet_csv(
         db,
@@ -14793,6 +14814,10 @@ async def reports_export(
     if report_type == "expenses_summary":
         dashboard_scope_svc.assert_expenses_summary_category_filter_denied(
             managed, category_id=category_id
+        )
+    if report_type in {"profit_loss", "cash_flow", "balance_sheet"}:
+        dashboard_scope_svc.assert_accounting_reports_branch_filter_denied(
+            managed, branch_id=branch_id
         )
     single, _multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
