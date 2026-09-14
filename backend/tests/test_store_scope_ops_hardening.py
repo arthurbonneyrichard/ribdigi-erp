@@ -20941,6 +20941,105 @@ async def test_store_manager_expenses_department_filter_denied(client, db_sessio
     assert ok_export.status_code == 200, ok_export.text
 
 
+@pytest.mark.asyncio
+async def test_store_manager_accounting_reports_branch_filter_denied(client, db_session):
+    """P&L / cash-flow / BS branch_id filter denied for store_manager.
+
+    Branches list GET already denied; store branch_id JSON already redacted;
+    store↔branch assign/clear already denied. Query/export branch_id on
+    accounting/reports profit-loss, cash-flow, balance-sheet (+ reports/export)
+    must not probe company branch org-unit master. Unfiltered store-scoped
+    reports remain; admin may filter.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    branch = m.Branch(
+        tenant_id=tid,
+        company_id=cid,
+        code="PL-BR-FILT",
+        name="P&L Branch Filter Target",
+        is_active=True,
+    )
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="P&L Branch Filter Store",
+        code="PL-BR-ST",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add_all([branch, store])
+    await db_session.flush()
+    store.branch_id = branch.id
+    await db_session.commit()
+
+    ok = await ac.get("/api/v1/reports/profit-loss", headers=headers)
+    assert ok.status_code == 200, ok.text
+    assert ok.json()["data"].get("branch_id") in (None, "")
+
+    denied = await ac.get(
+        f"/api/v1/reports/profit-loss?branch_id={branch.id}",
+        headers=headers,
+    )
+    assert denied.status_code == 403, denied.text
+    body = denied.json()
+    detail = body.get("detail") or body
+    if isinstance(detail, dict):
+        assert detail.get("code") == "STORE_SCOPE_DENIED"
+    else:
+        assert "STORE_SCOPE_DENIED" in str(detail) or "branch" in str(detail).lower()
+
+    denied_acct = await ac.get(
+        f"/api/v1/accounting/profit-loss?branch_id={branch.id}",
+        headers=headers,
+    )
+    assert denied_acct.status_code == 403, denied_acct.text
+
+    denied_cf = await ac.get(
+        f"/api/v1/reports/cash-flow?branch_id={branch.id}",
+        headers=headers,
+    )
+    assert denied_cf.status_code == 403, denied_cf.text
+
+    denied_bs = await ac.get(
+        f"/api/v1/reports/balance-sheet?branch_id={branch.id}",
+        headers=headers,
+    )
+    assert denied_bs.status_code == 403, denied_bs.text
+
+    admin_ok = await ac.get(
+        f"/api/v1/reports/profit-loss?branch_id={branch.id}",
+        headers=admin_headers,
+    )
+    assert admin_ok.status_code == 200, admin_ok.text
+    assert admin_ok.json()["data"].get("branch_id") == branch.id
+
+    denied_export = await ac.get(
+        f"/api/v1/reports/export?report_type=profit_loss&format=csv&branch_id={branch.id}",
+        headers=headers,
+    )
+    assert denied_export.status_code == 403, denied_export.text
+
+    denied_path_export = await ac.get(
+        f"/api/v1/reports/profit-loss/export?branch_id={branch.id}",
+        headers=headers,
+    )
+    assert denied_path_export.status_code == 403, denied_path_export.text
+
+    ok_export = await ac.get("/api/v1/reports/profit-loss/export", headers=headers)
+    assert ok_export.status_code == 200, ok_export.text
+
+
 async def test_store_manager_sales_customers_party_code_redacted(client, db_session):
     """Sales-by-customer nulls party code for store_manager.
 
