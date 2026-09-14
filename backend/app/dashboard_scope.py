@@ -8,10 +8,17 @@ Default operational scope is ``stores.manager_id`` only. When
 ``STORE_MEMBERSHIP_SCOPE_ENABLED`` is true, store_manager scope becomes the
 **union** of manager_id stores and active ``user_store_memberships`` (see
 ``docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md``). Flag default is false; ADR-005
-Complete remains MISSING. Warehouse scope maps via ``Warehouse.store_id`` ∈
-managed stores. POS holds scope via ``PosSession.store_id``; drawer-settings
-export uses managed store IDs. POS sale receipt get/send scopes via
-``PosSession.store_id`` (null session fail-closed).
+Complete remains MISSING.
+
+Cashier membership fail-closed (flag ON) uses ``store_visibility_ids`` for
+POS bind + store list surfaces only — ``managed_store_ids`` stays ``None`` for
+cashiers so continuum company-level denies/redacts (keyed off
+``managed_ids is not None``) do not treat cashiers as store_managers.
+
+Warehouse scope maps via ``Warehouse.store_id`` ∈ managed stores. POS holds
+scope via ``PosSession.store_id``; drawer-settings export uses visibility
+store IDs. POS sale receipt get/send scopes via ``PosSession.store_id``
+(null session fail-closed).
 """
 
 from __future__ import annotations
@@ -28,6 +35,26 @@ from app.config import settings
 from app.dashboard_views import dashboard_view_for_role
 
 
+async def _active_membership_store_ids(
+    db: AsyncSession, *, tenant_id: str, user_id: str
+) -> list[str]:
+    """Active membership store IDs joined to active tenant stores."""
+    mem_rows = (
+        await db.execute(
+            select(m.UserStoreMembership.store_id)
+            .join(m.Store, m.Store.id == m.UserStoreMembership.store_id)
+            .where(
+                m.UserStoreMembership.tenant_id == tenant_id,
+                m.UserStoreMembership.user_id == user_id,
+                m.UserStoreMembership.is_active.is_(True),
+                m.Store.tenant_id == tenant_id,
+                m.Store.is_active == True,  # noqa: E712
+            )
+        )
+    ).scalars().all()
+    return [str(sid) for sid in mem_rows]
+
+
 async def managed_store_ids(db: AsyncSession, claims: dict) -> list[str] | None:
     """Return managed store IDs for store_manager view; None means tenant-wide (no store filter).
 
@@ -36,8 +63,9 @@ async def managed_store_ids(db: AsyncSession, claims: dict) -> list[str] | None:
     Flag ON (``STORE_MEMBERSHIP_SCOPE_ENABLED``): store_manager scope is the
     **union** of active manager_id stores and active membership store IDs
     (tenant-isolated; inactive memberships/stores excluded). Admin/executive
-    and cashier views still return ``None`` (unchanged). Enabling the flag
-    does not claim ADR-005 Complete.
+    and cashier views still return ``None`` here — cashiers use
+    ``store_visibility_ids`` / ``cashier_membership_store_ids`` for POS +
+    store-list fail-closed. Enabling the flag does not claim ADR-005 Complete.
     """
     role = (claims.get("role") or "").strip().lower()
     if dashboard_view_for_role(role) != "store_manager":
@@ -58,22 +86,56 @@ async def managed_store_ids(db: AsyncSession, claims: dict) -> list[str] | None:
     ids = {str(sid) for sid in rows}
 
     if bool(getattr(settings, "STORE_MEMBERSHIP_SCOPE_ENABLED", False)):
-        mem_rows = (
-            await db.execute(
-                select(m.UserStoreMembership.store_id)
-                .join(m.Store, m.Store.id == m.UserStoreMembership.store_id)
-                .where(
-                    m.UserStoreMembership.tenant_id == tenant_id,
-                    m.UserStoreMembership.user_id == user_id,
-                    m.UserStoreMembership.is_active.is_(True),
-                    m.Store.tenant_id == tenant_id,
-                    m.Store.is_active == True,  # noqa: E712
-                )
+        ids.update(
+            await _active_membership_store_ids(
+                db, tenant_id=tenant_id, user_id=user_id
             )
-        ).scalars().all()
-        ids.update(str(sid) for sid in mem_rows)
+        )
 
     return list(ids)
+
+
+async def cashier_membership_store_ids(
+    db: AsyncSession, claims: dict
+) -> list[str] | None:
+    """Cashier POS/store-list scope when membership flag is ON.
+
+    Returns:
+      - ``None`` — flag OFF or non-cashier (legacy: do not filter via this helper)
+      - ``[]`` — flag ON cashier with no active memberships (fail-closed)
+      - ``[store_id, ...]`` — flag ON cashier with active memberships
+
+    Intentionally separate from ``managed_store_ids`` so continuum
+    ``managed_ids is not None`` company denies/redacts stay store_manager-only.
+    """
+    role = (claims.get("role") or "").strip().lower()
+    if dashboard_view_for_role(role) != "cashier":
+        return None
+    if not bool(getattr(settings, "STORE_MEMBERSHIP_SCOPE_ENABLED", False)):
+        return None
+    user_id = claims.get("sub")
+    tenant_id = claims.get("tenant_id")
+    if not user_id or not tenant_id:
+        return []
+    return await _active_membership_store_ids(
+        db, tenant_id=tenant_id, user_id=user_id
+    )
+
+
+async def store_visibility_ids(db: AsyncSession, claims: dict) -> list[str] | None:
+    """Store IDs for store lists and POS bind/session scope.
+
+    Uses ``managed_store_ids`` for store_manager (incl. flag-ON union). When that
+    is ``None``, applies ``cashier_membership_store_ids`` (flag-ON fail-closed).
+    Otherwise ``None`` = tenant-wide (admins, flag-OFF cashiers).
+
+    Do **not** pass this into continuum company-level deny/redact helpers — those
+    must keep using ``managed_store_ids`` so cashiers are never treated as managers.
+    """
+    managed = await managed_store_ids(db, claims)
+    if managed is not None:
+        return managed
+    return await cashier_membership_store_ids(db, claims)
 
 
 def assert_store_membership_admin_denied(
@@ -258,17 +320,19 @@ async def assert_pos_session_store_in_manager_scope(
     *,
     require_session: bool = False,
 ) -> None:
-    """403 when a store_manager references a POS session outside managed stores.
+    """403 when scoped actors reference a POS session outside visibility stores.
 
-    Held carts have no ``store_id``; scope follows ``PosSession.store_id``.
-    When ``require_session`` is True, missing ``session_id`` is denied.
+    Applies to store_manager (managed stores) and flag-ON cashiers (membership
+    fail-closed via ``store_visibility_ids``). Held carts have no ``store_id``;
+    scope follows ``PosSession.store_id``. When ``require_session`` is True,
+    missing ``session_id`` is denied.
     """
-    managed = await managed_store_ids(db, claims)
-    if managed is None:
+    scoped = await store_visibility_ids(db, claims)
+    if scoped is None:
         return
     sid = (session_id or "").strip() or None
     if not sid:
-        assert_store_in_manager_scope(managed, None, allow_unset=not require_session)
+        assert_store_in_manager_scope(scoped, None, allow_unset=not require_session)
         return
     session = await db.get(m.PosSession, sid)
     if not session or session.tenant_id != claims.get("tenant_id"):
@@ -277,7 +341,7 @@ async def assert_pos_session_store_in_manager_scope(
     if company_id and session.company_id and session.company_id != company_id:
         raise HTTPException(status_code=404, detail="POS session not found")
     assert_store_in_manager_scope(
-        managed, getattr(session, "store_id", None), allow_unset=False
+        scoped, getattr(session, "store_id", None), allow_unset=False
     )
 
 
@@ -286,13 +350,14 @@ async def assert_pos_sale_in_manager_scope(
     claims: dict,
     sale_id: str,
 ) -> None:
-    """403 when a store_manager reads or sends a receipt for a POS sale outside managed stores.
+    """403 when scoped actors read/send a POS receipt outside visibility stores.
 
-    Scope follows ``PosSession.store_id`` via ``Transaction.session_id``; null session
-    fail-closed (same as POS holds).
+    Applies to store_manager and flag-ON cashiers (membership fail-closed).
+    Scope follows ``PosSession.store_id`` via ``Transaction.session_id``; null
+    session fail-closed (same as POS holds).
     """
-    managed = await managed_store_ids(db, claims)
-    if managed is None:
+    scoped = await store_visibility_ids(db, claims)
+    if scoped is None:
         return
     sid = (sale_id or "").strip()
     if not sid:
@@ -319,7 +384,7 @@ async def assert_pos_sale_in_manager_scope(
         if company_id and session.company_id and session.company_id != company_id:
             raise HTTPException(status_code=404, detail="POS sale not found")
     assert_store_in_manager_scope(
-        managed,
+        scoped,
         getattr(session, "store_id", None) if session else None,
         allow_unset=False,
     )

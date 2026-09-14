@@ -25,6 +25,7 @@ export type MembershipHonesty = {
   store_scoped_rbac_complete_claimed: boolean;
   scope_wired_to_membership: boolean;
   store_membership_scope_enabled: boolean;
+  cashier_membership_fail_closed?: boolean;
   scaffold_status: string;
   operational_scope: string;
 };

@@ -11068,10 +11068,11 @@ async def pos_open_session(
 ):
     from app import dashboard_scope as dashboard_scope_svc
 
-    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
-    # store_manager: require managed store_id (null-store sessions fail-closed elsewhere).
+    # store_manager: managed stores; flag-ON cashier: membership fail-closed.
+    # Continuum denies still use managed_store_ids (cashiers stay None there).
+    scoped = await dashboard_scope_svc.store_visibility_ids(db, claims)
     dashboard_scope_svc.assert_store_in_manager_scope(
-        managed, payload.store_id, allow_unset=False
+        scoped, payload.store_id, allow_unset=False
     )
     session = await pos_svc.open_session(
         db,
@@ -11110,14 +11111,14 @@ async def pos_list_sessions(
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 130 P1 — optional status=open|closed; store_manager scoped via manager_id."""
+    """Stage 130 P1 — optional status=open|closed; manager + flag-ON cashier scoped."""
     from app import dashboard_scope as dashboard_scope_svc
 
     status_n = (status or "").strip().lower() or None
     if status_n and status_n not in {"open", "closed"}:
         raise HTTPException(status_code=400, detail="status must be open or closed")
-    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
-    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
+    scoped = await dashboard_scope_svc.store_visibility_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(scoped, store_id)
     rows = await ops_lifecycle_export_svc.list_pos_sessions(
         db,
         tenant_id=claims["tenant_id"],
@@ -11136,14 +11137,14 @@ async def pos_sessions_export(
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 130 P1 — POS session inventory CSV; store_manager scoped."""
+    """Stage 130 P1 — POS session inventory CSV; manager + flag-ON cashier scoped."""
     from app import dashboard_scope as dashboard_scope_svc
 
     status_n = (status or "").strip().lower() or None
     if status_n and status_n not in {"open", "closed"}:
         raise HTTPException(status_code=400, detail="status must be open or closed")
-    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
-    single, multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
+    scoped = await dashboard_scope_svc.store_visibility_ids(db, claims)
+    single, multi = dashboard_scope_svc.constrain_store_query(scoped, store_id)
     text = await ops_lifecycle_export_svc.export_pos_sessions_csv(
         db,
         tenant_id=claims["tenant_id"],
@@ -16864,16 +16865,19 @@ async def stores(
     claims=Depends(require_permission("stores", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 121 S1 — active_only / is_active; store_manager sees managed stores only."""
+    """Stage 121 S1 — active_only / is_active; manager + flag-ON cashier visibility."""
     from app import cash_drawer as cash_drawer_svc
     from app import dashboard_scope as dashboard_scope_svc
 
+    # Visibility scope (manager managed / cashier membership). Continuum redacts
+    # still key off managed_store_ids so cashiers are not treated as managers.
+    scoped = await dashboard_scope_svc.store_visibility_ids(db, claims)
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     stmt = select(m.Store).where(*workspace_svc.company_scope_filter(m.Store, claims))
-    if managed is not None:
-        if not managed:
+    if scoped is not None:
+        if not scoped:
             return env([])
-        stmt = stmt.where(m.Store.id.in_(managed))
+        stmt = stmt.where(m.Store.id.in_(scoped))
     if is_active is not None:
         stmt = stmt.where(m.Store.is_active.is_(bool(is_active)))
     elif active_only:
@@ -16903,9 +16907,10 @@ async def stores_export(
     claims=Depends(require_permission("stores", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Stage 121 X1 — stores CSV export (store_manager: managed stores only)."""
+    """Stage 121 X1 — stores CSV export (manager + flag-ON cashier visibility)."""
     from app import dashboard_scope as dashboard_scope_svc
 
+    scoped = await dashboard_scope_svc.store_visibility_ids(db, claims)
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     text = await location_export_svc.export_stores_csv(
         db,
@@ -16913,7 +16918,7 @@ async def stores_export(
         is_active=is_active,
         active_only=active_only,
         company_id=claims.get("company_id"),
-        store_ids=managed,
+        store_ids=scoped,
         omit_branch_id=dashboard_scope_svc.omit_store_branch_assignment(managed),
     )
     return Response(
@@ -16932,7 +16937,7 @@ async def stores_drawer_settings_export(
     """Stage 142 C1 — store cash drawer settings CSV (kick bytes never included)."""
     from app import dashboard_scope as dashboard_scope_svc
 
-    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    managed = await dashboard_scope_svc.store_visibility_ids(db, claims)
     text = await location_export_svc.export_drawer_settings_csv(
         db,
         tenant_id=claims["tenant_id"],

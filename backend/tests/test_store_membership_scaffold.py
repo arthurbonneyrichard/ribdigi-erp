@@ -10,6 +10,7 @@ import pytest
 from app import dashboard_scope as dashboard_scope_svc
 from app import models as m
 from app import store_memberships as store_memberships_svc
+from sqlalchemy import select
 from tests.conftest import auth_headers
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -262,17 +263,18 @@ async def test_membership_expands_managed_store_ids_when_flag_on(
 
     honesty = store_memberships_svc.honesty_payload()
     assert honesty["store_membership_scope_enabled"] is True
-    assert honesty["operational_scope"] == "stores.manager_id ∪ user_store_memberships"
+    assert "user_store_memberships" in honesty["operational_scope"]
+    assert honesty["cashier_membership_fail_closed"] is True
     assert honesty["adr005_complete_claimed"] is False
     assert honesty["scope_wired_to_membership"] is False
     assert honesty["store_scoped_rbac_complete_claimed"] is False
 
 
 @pytest.mark.asyncio
-async def test_flag_on_admin_and_cashier_bypass_unchanged(
+async def test_flag_on_admin_bypass_cashier_managed_none_visibility_failclosed(
     client, db_session, monkeypatch
 ):
-    """Flag ON must not weaken admin bypass or cashier managed_store_ids=None."""
+    """Flag ON: admin bypass; cashier managed_store_ids stays None; visibility fail-closed."""
     from app.config import settings
 
     monkeypatch.setattr(settings, "STORE_MEMBERSHIP_SCOPE_ENABLED", True)
@@ -291,7 +293,15 @@ async def test_flag_on_admin_and_cashier_bypass_unchanged(
         manager_id=None,
         is_active=True,
     )
-    db_session.add(store)
+    foreign = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Cashier Foreign Store",
+        code="MEM-CASH-X",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([store, foreign])
     await db_session.flush()
     db_session.add(
         m.UserStoreMembership(
@@ -311,6 +321,7 @@ async def test_flag_on_admin_and_cashier_bypass_unchanged(
         "company_id": cid,
     }
     assert await dashboard_scope_svc.managed_store_ids(db_session, admin_claims) is None
+    assert await dashboard_scope_svc.store_visibility_ids(db_session, admin_claims) is None
 
     cash_claims = {
         "sub": cashier.id,
@@ -318,7 +329,163 @@ async def test_flag_on_admin_and_cashier_bypass_unchanged(
         "role": "cashier",
         "company_id": cid,
     }
+    # Continuum path unchanged — cashiers must not inherit managed_ids is not None denies.
     assert await dashboard_scope_svc.managed_store_ids(db_session, cash_claims) is None
+    visible = await dashboard_scope_svc.store_visibility_ids(db_session, cash_claims)
+    assert visible is not None
+    assert set(visible) == {store.id}
+    assert foreign.id not in visible
+
+
+@pytest.mark.asyncio
+async def test_cashier_membership_failclosed_flag_on_off(client, db_session, monkeypatch):
+    """Cashier POS open + store list: flag OFF legacy; flag ON membership fail-closed."""
+    from app.config import settings
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    cashier = seed["u1"]
+
+    mine = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Cashier Mine",
+        code="CASH-FC-MINE",
+        manager_id=None,
+        is_active=True,
+    )
+    other = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Cashier Other",
+        code="CASH-FC-OTHER",
+        manager_id=None,
+        is_active=True,
+    )
+    db_session.add_all([mine, other])
+    await db_session.commit()
+
+    cash_headers = await auth_headers(
+        ac, email="cashier@alpha.example.com", tenant_slug="alpha"
+    )
+    cash_claims = {
+        "sub": cashier.id,
+        "tenant_id": tid,
+        "role": "cashier",
+        "company_id": cid,
+    }
+
+    # --- Flag OFF: legacy (no membership filter) ---
+    monkeypatch.setattr(settings, "STORE_MEMBERSHIP_SCOPE_ENABLED", False)
+    monkeypatch.setattr(dashboard_scope_svc.settings, "STORE_MEMBERSHIP_SCOPE_ENABLED", False)
+    assert await dashboard_scope_svc.cashier_membership_store_ids(db_session, cash_claims) is None
+    assert await dashboard_scope_svc.store_visibility_ids(db_session, cash_claims) is None
+
+    open_off = await ac.post(
+        "/api/v1/pos/sessions/open",
+        headers=cash_headers,
+        json={"store_id": other.id, "opening_cash": 10},
+    )
+    assert open_off.status_code == 200, open_off.text
+    sess_off_id = open_off.json()["data"]["session_id"]
+    closed = await ac.post(
+        f"/api/v1/pos/sessions/{sess_off_id}/close",
+        headers=cash_headers,
+        json={"actual_cash": 10},
+    )
+    assert closed.status_code == 200, closed.text
+
+    # Grant stores:read on user + company membership (workspace overrides user.permissions).
+    perms = dict(permissions_for_role("cashier"))
+    perms["stores"] = ["read"]
+    user_row = await db_session.get(m.User, cashier.id)
+    assert user_row is not None
+    user_row.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == cashier.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+    await db_session.commit()
+    cash_headers = await auth_headers(
+        ac, email="cashier@alpha.example.com", tenant_slug="alpha"
+    )
+
+    listed_off = await ac.get("/api/v1/stores", headers=cash_headers)
+    assert listed_off.status_code == 200, listed_off.text
+    off_ids = {row["id"] for row in listed_off.json()["data"]}
+    assert mine.id in off_ids and other.id in off_ids
+
+    # --- Flag ON, no membership: empty visibility + POS denied ---
+    monkeypatch.setattr(settings, "STORE_MEMBERSHIP_SCOPE_ENABLED", True)
+    monkeypatch.setattr(dashboard_scope_svc.settings, "STORE_MEMBERSHIP_SCOPE_ENABLED", True)
+    assert await dashboard_scope_svc.managed_store_ids(db_session, cash_claims) is None
+    assert await dashboard_scope_svc.store_visibility_ids(db_session, cash_claims) == []
+
+    listed_empty = await ac.get("/api/v1/stores", headers=cash_headers)
+    assert listed_empty.status_code == 200
+    assert listed_empty.json()["data"] == []
+
+    denied = await ac.post(
+        "/api/v1/pos/sessions/open",
+        headers=cash_headers,
+        json={"store_id": other.id, "opening_cash": 10},
+    )
+    assert denied.status_code == 403, denied.text
+    detail = denied.json().get("detail") or {}
+    if isinstance(detail, dict):
+        assert detail.get("code") == "STORE_SCOPE_DENIED"
+
+    # --- Flag ON + membership: only assigned store ---
+    db_session.add(
+        m.UserStoreMembership(
+            tenant_id=tid,
+            company_id=cid,
+            user_id=cashier.id,
+            store_id=mine.id,
+            is_active=True,
+        )
+    )
+    await db_session.commit()
+
+    visible = await dashboard_scope_svc.store_visibility_ids(db_session, cash_claims)
+    assert set(visible or []) == {mine.id}
+
+    listed_on = await ac.get("/api/v1/stores", headers=cash_headers)
+    assert listed_on.status_code == 200
+    on_ids = {row["id"] for row in listed_on.json()["data"]}
+    assert on_ids == {mine.id}
+
+    ok = await ac.post(
+        "/api/v1/pos/sessions/open",
+        headers=cash_headers,
+        json={"store_id": mine.id, "opening_cash": 25},
+    )
+    assert ok.status_code == 200, ok.text
+    # Close before foreign attempt so 403 is STORE_SCOPE_DENIED (not 409 open shift).
+    await ac.post(
+        f"/api/v1/pos/sessions/{ok.json()['data']['session_id']}/close",
+        headers=cash_headers,
+        json={"actual_cash": 25},
+    )
+
+    foreign = await ac.post(
+        "/api/v1/pos/sessions/open",
+        headers=cash_headers,
+        json={"store_id": other.id, "opening_cash": 10},
+    )
+    assert foreign.status_code == 403, foreign.text
+
+    honesty = store_memberships_svc.honesty_payload()
+    assert honesty["cashier_membership_fail_closed"] is True
+    assert honesty["adr005_complete_claimed"] is False
+    assert honesty["scope_wired_to_membership"] is False
 
 
 def test_adr005_scaffold_docs_and_honesty_flags():
@@ -334,8 +501,11 @@ def test_adr005_scaffold_docs_and_honesty_flags():
     assert "union" in cutover.lower()
     assert "PARTIAL" in cutover
     assert "Complete" in cutover
+    assert "cashier" in cutover.lower()
+    assert "fail-closed" in cutover.lower() or "fail_closed" in cutover.lower()
     honesty = store_memberships_svc.honesty_payload()
     assert honesty["adr005_complete_claimed"] is False
     assert honesty["store_scoped_rbac_complete_claimed"] is False
     assert honesty["scope_wired_to_membership"] is False
     assert honesty["scaffold_status"] == "partial"
+    assert "cashier_membership_fail_closed" in honesty
