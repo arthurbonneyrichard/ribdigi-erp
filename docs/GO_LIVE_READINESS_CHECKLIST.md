@@ -9,8 +9,12 @@ offline wipe-via-push automation (see `AGENTS.md` tip SHA after merge).
 **not** advance Offline / push-delivery / 7-day VERIFIED / go-live / paid billing /
 ADR-005 / store-scoped RBAC Completes. Cloud-agent Chrome could not finish
 `PushManager.subscribe` (no FCM endpoint) — that attempt is a **blocker note**,
-not proof. Remaining work is **ops-only** (staging keys, real till browser,
-soaks, physical matrix). Do **not** resume continuum RBAC dumps.
+not proof. Remaining Completes work is **ops attestation + product sign-off**
+(staging keys, real till browser, soaks, physical matrix) plus ADR-005 Complete.
+Continuum company-level dump slices are paused; intentional product ALLOWs
+(logo binary GET; caller-scoped `/auth/sessions` + `/notifications/settings`)
+must stay allowed. Managed-store `manager_id` self-scope dump is **closed**
+(redacted). **Do not mark go-live ready unless every gate below is Complete.**
 
 **Honesty — do not claim from this document alone:**
 
@@ -49,7 +53,7 @@ Related deep runbooks (do not duplicate dumps here):
 | Offline Complete attestation | **MISSING** | Explicitly not claimed (`OFFLINE_COMPLETE_ATTESTATION.md`) | Product attestation after endurance + push Complete |
 | 7-day offline physical VERIFIED | **MISSING** | Envelope + client gate shipped only | Execute platform matrix runbook (unchecked) |
 | ADR-005 membership scaffold + UI + flag scope | **PARTIAL** | Assign/list/revoke; flag-gated union scope; cashier fail-closed; automated flag-ON soak | Staging `STORE_MEMBERSHIP_SCOPE_ENABLED=true` soak |
-| ADR-005 Complete / store-scoped RBAC Complete | **MISSING** | Flag default **OFF** in prod examples | Product sign-off after soak; do **not** flip prod default from soak alone |
+| ADR-005 Complete / store-scoped RBAC Complete | **MISSING** | Flag default **OFF**; continuum manager_id self-scope dump closed; logo/sessions/notifications are intentional ALLOWs | ADR-005 product sign-off after soak; do **not** flip prod default from soak alone; continuum dumps are not the remaining Complete gate |
 | Paid billing scaffold (portal/checkout/webhooks) | **PARTIAL** | ADR-002 tables; HMAC webhooks; portal + checkout create (503 unconfigured; mock CI) | Live provider keys + price map + signed webhook soak |
 | Paid billing entitlement gate | **PARTIAL** | `PAID_BILLING_ENTITLEMENT_GATE_ENABLED` default **OFF**; when ON gates only `POST /sales` + `PATCH /companies/{id}` | Staging mirror→access evidence before any prod enable |
 | Paid billing Complete / go-live | **MISSING** | No `Tenant.plan_code` mutation from Checkout/webhooks; no fabricated MRR | Live cutover + commercial acceptance |
@@ -174,15 +178,19 @@ ADR-005 Complete, store-scoped RBAC Complete, 7-day VERIFIED, or go-live attesta
 
 ## 5. Sign-off table (leave blank until ops evidence exists)
 
+**Go-live / attestation Complete requires every row below to claim Complete
+(or N/A for FIXED-only). Partial soaks do not authorize go-live.**
+
 | Gate | Owner | Staging evidence link | Prod enable approved? | Complete claimed? |
 |------|-------|----------------------|----------------------|-------------------|
 | SEC-M2 cookies | | | [ ] | N/A (FIXED; enable ≠ reopen) |
 | Paid billing provider soak | | | [ ] | **No** — Complete MISSING |
 | Entitlement gate ON | | | [ ] | **No** — Complete MISSING |
-| ADR-005 scope ON | | | [ ] | **No** — Complete MISSING |
+| ADR-005 scope ON / store-scoped RBAC | | | [ ] | **No** — Complete MISSING |
 | Wipe-via-push browser | | | [ ] | **No** — push Complete MISSING |
 | 7-day physical matrix | | | [ ] | **No** — VERIFIED MISSING |
-| Go-live / Offline Complete | | | [ ] | **No** — MISSING |
+| Offline Complete attestation | | | [ ] | **No** — MISSING |
+| Go-live / ops attestation | | | [ ] | **No** — MISSING (blocked until all Completes above) |
 
 ---
 
@@ -204,6 +212,9 @@ only operator evidence on staging/real tills:
    (`adr005_staging_soak_checklist.md`); product sign-off before any prod default ON.
 5. SEC-M2 cookie staging enable when ready (`sec_m2_staging_soak_checklist.md`)
    — FIXED finding; enable is ops cutover only.
-6. Do **not** resume continuum RBAC dumps. Do **not** claim Offline Complete /
-   7-day VERIFIED / go-live / paid billing Complete / ADR-005 Complete /
-   store-scoped RBAC Complete from this checklist or flag flips alone.
+6. Do **not** resume continuum company-dump slices unless a new leak is found.
+   Intentional ALLOWs (logo binary GET; caller-scoped sessions/notifications)
+   stay allowed. Do **not** claim Offline Complete / 7-day VERIFIED / go-live /
+   paid billing Complete / ADR-005 Complete / store-scoped RBAC Complete from
+   this checklist or flag flips alone. Go-live ready **only** when §5 Completes
+   are all claimed with ops attestation evidence.

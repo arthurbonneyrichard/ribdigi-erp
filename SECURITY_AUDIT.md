@@ -196,4 +196,4 @@ Allowed engagement shorthand: ✅ HARDENED · ⚠️ HIGH REMAINING · 🛑 CRIT
 
 **Rationale:** No Critical, High, or Medium findings remain open after Phase 2 (H1–H5) + Phase 3 (M1–M5, L2). **SEC-M2** closed via Phase E automated flag-ON soak (`test_sec_m2_cookie_soak.py`) covering login/2FA/refresh null JSON tokens + Set-Cookie, cookie+CSRF auth, logout/idle cookie clear, and SPA LS skip. Flag default stays **false** — production enable is an **ops cutover** step (not an open finding). See `docs/ADR_SESSION_COOKIE_DUAL_MODE.md`.
 
-Do **not** claim go-live / Offline Complete / 7-day VERIFIED / paid billing Complete / ADR-005 Complete / store-scoped RBAC Complete. Continuum leftovers (logo binary GET, `/auth/sessions`, `/notifications/settings`, ADR-005) stay intentional **PARTIAL**, not security Completes.
+Do **not** claim go-live / Offline Complete / 7-day VERIFIED / paid billing Complete / ADR-005 Complete / store-scoped RBAC Complete. Intentional product ALLOWs (logo binary GET; caller-scoped `/auth/sessions` + `/notifications/settings`) are not company dumps. ADR-005 + store-scoped RBAC Complete + go-live stay **MISSING** (not security Completes).

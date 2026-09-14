@@ -366,13 +366,23 @@ leave contradictory Complete/PARTIAL wording across those three surfaces.
 
 ### Intentionally still open (do not rewrite as closed)
 
-1. Company/tenant **logo binary GET** (workspace chrome; branding *writes* already denied). Mistaken close in `b0fc721a15` was **reverted** — leftover restored.
-2. Per-user `/auth/sessions` + `/notifications/settings` (self-service; not company dumps).
+1. Company/tenant **logo binary GET** — intentional product **ALLOW** for workspace
+   chrome (branding *writes* already denied). Mistaken close in `b0fc721a15` was
+   **reverted**. Not a Completes blocker to deny.
+2. Per-user `/auth/sessions` + `/notifications/settings` — intentional product
+   **ALLOW** (caller-scoped self-service; tenant-wide `/auth/tenant-sessions`
+   denied; prefs bind to `claims.sub`). Secure versions proven by continuum
+   tests — not company dumps / not Completes blockers.
 3. **ADR-005** user↔store membership **PARTIAL** (scaffold + admin UI + flag-gated
    scope wire + cashier fail-closed + automated flag-ON soak; default OFF — see
    `docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md` + `docs/adr005_staging_soak_checklist.md`;
    Complete still **MISSING**; production default still ``stores.manager_id``).
-4. Managed-store list may still expose self-scope `manager_id` (not peer org graph).
+   **This remains the primary engineering gate for store-scoped RBAC Complete.**
+
+### Closed this continuum slice (still PARTIAL overall)
+
+- Managed-store list/export/patch ``manager_id`` **redacted** for `store_manager`
+  (self-scope no longer dumped; same class as warehouse `manager_id`).
 
 ### Closed continuum themes (summary — still PARTIAL)
 
