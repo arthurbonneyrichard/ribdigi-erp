@@ -11,6 +11,21 @@
 
 ---
 
+### Tip — CLE additional_amount redact (2026-09-15)
+
+**As of tip:** `245aaefccb1afcde5ce1432496b13f8a0791d2f4`
+CREDIT_LIMIT_EXCEEDED 409 `additional_amount` redact for `store_manager`
+(base settlement that recovers FX rate with scoped invoice `total_amount`;
+`invoice_total` / `invoice_total_base` / master credit fields already redacted;
+`exceeded` / `code` / `message` / `invoice_number` remain; admin keeps
+`additional_amount`). Continuum stays **PARTIAL**. Store-scoped RBAC Complete
+remains **MISSING** (intentional ALLOWs + residual backlog + product sign-off +
+staging soak). Offline / 7-day / go-live / paid billing Completes remain
+**MISSING**. Next CONTINUE: residual continuum field-leak (named surface) or
+product ALLOW sign-off / staging soak docs.
+
+---
+
 ### Tip — audit details FX redact (2026-09-15)
 
 **As of tip:** `60c5e751410d0cd1e1c2778663ea7008830800cc`
