@@ -102,7 +102,8 @@ store activation — never frontend-only.
    returns via linked invoice store (+ export/asserts), and dashboard
    expenses / stock-alerts / summary (+ main dashboard inventory KPIs /
    pending expenses) store+WH scoped (not `product.stock_qty`), and
-   accounting journal entries (+ export; create/unpost/attachment asserts)
+   accounting journal entries (+ export; create/unpost/attachment asserts;
+   **list/get/create/unpost/upload/delete ``attachment_url`` storage key redacted**)
    from managed-store journals (null-store fail-closed; foreign `store_id`
    denied), and sales invoice create/post/send/cancel + CSV export (+ get/print
    null-store fail-closed) store scoped + **credit_limit_override denied for
@@ -154,6 +155,9 @@ store activation — never frontend-only.
    (``has_attachment`` + store-scoped binary download remain; admin keeps key)
    + **purchase-invoice list/get/patch/upload ``attachment_url`` storage key redacted**
    (``has_attachment`` + WH-scoped binary download remain; admin keeps key)
+   + **journal-entry list/get/create/unpost/upload/delete ``attachment_url`` storage key redacted**
+   (``has_attachment`` + store-scoped binary download remain; admin keeps key;
+   opening-balance / liquid-transfer JE responses included)
    + **product variants CSV export denied**
    (company roster ``/products/variants/export`` + per-product path
    ``/products/{id}/variants/export``; variants list/get remain for POS/sales), and **stock CSV import denied for store_manager** (company-level
@@ -306,7 +310,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `789f2eb83df895044784295cce3134479f1ecafa` — `docs: bump PR #303 tip to 60ec5f65ef purchase invoice attachment_url redact` (feat ancestry `60ec5f65ef`).  
+**As of tip:** `8c82d4b68f6f3169e24056f430c2d3336338e3c0` — `feat(rbac): redact journal entry attachment_url for store_manager` (feat ancestry `8c82d4b68f`).  
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
@@ -334,7 +338,9 @@ GET (`GET /products/{id}/image`); product list/get `image_url` storage-key
 redact; product list/get `has_image` forced false; expense list/get/patch
 `attachment_url` storage-key redact (`has_attachment` + scoped binary download
 remain); purchase-invoice list/get/patch/upload `attachment_url` storage-key
-redact (`has_attachment` + WH-scoped binary download remain). Each slice closes
+redact (`has_attachment` + WH-scoped binary download remain); journal-entry
+list/get/create/unpost/upload/delete `attachment_url` storage-key redact
+(`has_attachment` + store-scoped binary download remain). Each slice closes
 one dump or write path; the continuum as a whole stays **PARTIAL**.
 
 ### Continuum agent contract
