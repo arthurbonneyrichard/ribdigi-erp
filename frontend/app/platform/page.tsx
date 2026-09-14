@@ -826,7 +826,7 @@ export default function PlatformConsole() {
                       alignItems: 'center',
                       fontSize: 13,
                       padding: '6px 8px',
-                      border: '1px solid #e2e8f0',
+                      border: '1px solid var(--line, #D4E5C4)',
                       borderRadius: 8,
                       opacity: locked ? 0.7 : 1,
                     }}

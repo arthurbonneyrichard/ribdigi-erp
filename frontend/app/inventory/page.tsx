@@ -2403,7 +2403,7 @@ export default function Page() {
                       alignItems: 'center',
                       flexWrap: 'wrap',
                       paddingLeft: depth * 16,
-                      borderLeft: depth ? '2px solid #cbd5e1' : undefined,
+                      borderLeft: depth ? '2px solid var(--line, #D4E5C4)' : undefined,
                     }}
                   >
                     <span className="muted" style={{ minWidth: 220 }}>
@@ -2603,7 +2603,7 @@ export default function Page() {
                       alt={`${b.name} logo`}
                       width={32}
                       height={32}
-                      style={{ objectFit: 'contain', border: '1px solid #e2e8f0' }}
+                      style={{ objectFit: 'contain', border: '1px solid var(--line, #D4E5C4)' }}
                     />
                   )}
                   <span>

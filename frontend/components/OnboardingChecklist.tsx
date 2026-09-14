@@ -158,7 +158,7 @@ export default function OnboardingChecklist({
                 flexWrap: 'wrap',
                 alignItems: 'center',
                 padding: '8px 0',
-                borderTop: '1px solid var(--border, #eef1f7)',
+                borderTop: '1px solid var(--line, #D4E5C4)',
               }}
             >
               <span aria-hidden style={{ width: 18, textAlign: 'center' }}>

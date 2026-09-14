@@ -280,7 +280,7 @@ export default function Page() {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '10px 0',
-                borderTop: '1px solid var(--border, #e5e7eb)',
+                borderTop: '1px solid var(--line, #D4E5C4)',
               }}
             >
               <div style={{ minWidth: 0, flex: '1 1 220px' }}>
