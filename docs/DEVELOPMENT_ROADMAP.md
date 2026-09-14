@@ -13,7 +13,7 @@
 
 ### Tip — CLE currency redact (2026-09-15)
 
-**As of tip:** `2ac9e7fbee0962ff22ff2663027d1a3bf526518d`
+**As of tip:** `86b7397bd62c38c5be9bb47fd3d33029791ad0fa`
 CREDIT_LIMIT_EXCEEDED 409 `currency` redact for `store_manager`
 (document FX / rate-table identity in `extra_details`; sales-invoice list/get
 already nulls `currency`; `invoice_total` / `invoice_total_base` /
