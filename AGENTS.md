@@ -306,7 +306,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `60ec5f65ef` — `feat(rbac): redact purchase invoice attachment_url for store_manager` (feat ancestry `60ec5f65ef`).  
+**As of tip:** `789f2eb83df895044784295cce3134479f1ecafa` — `docs: bump PR #303 tip to 60ec5f65ef purchase invoice attachment_url redact` (feat ancestry `60ec5f65ef`).  
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and

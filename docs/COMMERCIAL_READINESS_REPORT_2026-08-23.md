@@ -9,7 +9,7 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `60ec5f65ef` — purchase invoice attachment_url redact (feat `60ec5f65ef`) for `store_manager` |
+| **As of tip** | `789f2eb83df895044784295cce3134479f1ecafa` — purchase invoice attachment_url redact honesty (feat `60ec5f65ef`) for `store_manager` |
 | RBAC / store scope | **PARTIAL** only |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
 
