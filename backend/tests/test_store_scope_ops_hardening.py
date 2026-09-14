@@ -20442,6 +20442,95 @@ async def test_store_manager_sales_products_category_filter_denied(client, db_se
 
 
 @pytest.mark.asyncio
+
+async def test_store_manager_expenses_summary_category_filter_denied(client, db_session):
+    """Expenses summary (+ export) category_id filter denied for store_manager.
+
+    Expense categories list GET already denied; expense JSON + BI by_category
+    category_id already redacted. Query/export category_id must not probe
+    company expense-category master. Unfiltered scoped summary remains.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    today = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
+
+    cat = m.ExpenseCategory(
+        tenant_id=tid,
+        company_id=cid,
+        code="EXSUM-CAT",
+        name="Expense Summary Filter Cat",
+        budget_amount=500,
+        is_active=True,
+    )
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Expense Summary Filter Store",
+        code="EXSUM-ST",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add_all([cat, store])
+    await db_session.flush()
+    expense = m.Expense(
+        tenant_id=tid,
+        company_id=cid,
+        category_id=cat.id,
+        category=cat.name,
+        description="Expense summary filter target",
+        amount=55,
+        store_id=store.id,
+        status="approved",
+        expense_date=today,
+        created_by=mgr.id,
+    )
+    db_session.add(expense)
+    await db_session.commit()
+
+    ok = await ac.get("/api/v1/reports/expenses/summary", headers=headers)
+    assert ok.status_code == 200, ok.text
+    assert ok.json()["data"]["count"] >= 1
+
+    denied = await ac.get(
+        f"/api/v1/reports/expenses/summary?category_id={cat.id}",
+        headers=headers,
+    )
+    assert denied.status_code == 403, denied.text
+    body = denied.json()
+    detail = body.get("detail") or body
+    if isinstance(detail, dict):
+        assert detail.get("code") == "STORE_SCOPE_DENIED"
+    else:
+        assert "STORE_SCOPE_DENIED" in str(detail) or "category" in str(detail).lower()
+
+    admin_ok = await ac.get(
+        f"/api/v1/reports/expenses/summary?category_id={cat.id}",
+        headers=admin_headers,
+    )
+    assert admin_ok.status_code == 200, admin_ok.text
+
+    denied_export = await ac.get(
+        f"/api/v1/reports/export?report_type=expenses_summary&format=csv&category_id={cat.id}",
+        headers=headers,
+    )
+    assert denied_export.status_code == 403, denied_export.text
+
+    ok_export = await ac.get(
+        "/api/v1/reports/export?report_type=expenses_summary&format=csv",
+        headers=headers,
+    )
+    assert ok_export.status_code == 200, ok_export.text
+
+
 async def test_store_manager_sales_customers_party_code_redacted(client, db_session):
     """Sales-by-customer nulls party code for store_manager.
 

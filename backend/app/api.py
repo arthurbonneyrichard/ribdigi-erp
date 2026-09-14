@@ -14784,6 +14784,10 @@ async def reports_export(
         dashboard_scope_svc.assert_sales_products_category_filter_denied(
             managed, category_id=category_id
         )
+    if report_type == "expenses_summary":
+        dashboard_scope_svc.assert_expenses_summary_category_filter_denied(
+            managed, category_id=category_id
+        )
     single, _multi = dashboard_scope_svc.constrain_store_query(managed, store_id)
     managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims)
     if warehouse_id:
@@ -15435,6 +15439,9 @@ async def report_expenses_summary(
     from app import dashboard_scope as dashboard_scope_svc
 
     managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_expenses_summary_category_filter_denied(
+        managed, category_id=category_id
+    )
     return env(
         await reports_svc.expenses_summary(
             db,
