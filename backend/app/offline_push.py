@@ -4,13 +4,18 @@ Registers browser PushManager subscriptions per offline device and attempts
 Web Push when a remote wipe is queued. Without VAPID keys or a subscription,
 delivery is honestly skipped (``skipped_unconfigured`` / ``skipped_no_subscription``).
 
+Hardening (still PARTIAL): sync retries on transient failures; revoke subscription
+on HTTP 404/410 Gone endpoints.
+
 Does **not** claim Offline Complete, push-delivery Complete, or 7-day VERIFIED.
 """
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
+import time
 from datetime import datetime
 from typing import Any, Callable
 from urllib.parse import urlparse
@@ -32,6 +37,11 @@ STATUS_FAILED = "failed"
 STATUS_SKIPPED_NO_SUB = "skipped_no_subscription"
 STATUS_SKIPPED_UNCONFIGURED = "skipped_unconfigured"
 STATUS_DISABLED = "disabled"
+
+# Push service said subscription is gone — revoke local row.
+_GONE_HTTP = {404, 410}
+# Transient push-service / network — retry within OFFLINE_PUSH_MAX_ATTEMPTS.
+_TRANSIENT_HTTP = {408, 429, 500, 502, 503, 504}
 
 # Injectable sender for tests: (subscription_info, data_str, vapid_private_key, vapid_claims) -> None
 _PushSender = Callable[[dict[str, Any], str, str, dict[str, str]], None]
@@ -64,6 +74,7 @@ def vapid_public_key_payload() -> dict[str, Any]:
         "enabled": enabled,
         "public_key": (settings.OFFLINE_PUSH_VAPID_PUBLIC_KEY or "").strip() or None,
         "subject": (settings.OFFLINE_PUSH_VAPID_SUBJECT or "").strip() or None,
+        "fail_closed": True,
         "push_delivery_partial": True,
         "push_delivery_complete_claimed": False,
         "offline_complete_claimed": False,
@@ -73,7 +84,8 @@ def vapid_public_key_payload() -> dict[str, Any]:
             if enabled
             else (
                 "Web Push not fully configured (set OFFLINE_PUSH_VAPID_* and OFFLINE_PUSH_ENABLED). "
-                "Wipe still works via online poll; Offline Complete remains deferred."
+                "Fail-closed: wipe still works via online poll; push is skipped. "
+                "Offline Complete remains deferred. See docs/OFFLINE_WEB_PUSH_VAPID_OPS.md."
             )
         ),
     }
@@ -253,6 +265,66 @@ def _resolve_sender() -> _PushSender:
     return _push_sender or _default_webpush_send
 
 
+def _extract_response_status(exc: BaseException) -> int | None:
+    resp = getattr(exc, "response", None)
+    if resp is None:
+        return None
+    code = getattr(resp, "status_code", None)
+    if code is None:
+        return None
+    try:
+        return int(code)
+    except (TypeError, ValueError):
+        return None
+
+
+def _is_transient_failure(status: int | None, exc: BaseException) -> bool:
+    if status in _TRANSIENT_HTTP:
+        return True
+    if status in _GONE_HTTP:
+        return False
+    if status is not None and 400 <= status < 500:
+        return False
+    msg = str(exc).lower()
+    return any(
+        token in msg
+        for token in (
+            "timeout",
+            "timed out",
+            "connection",
+            "temporarily",
+            "reset by peer",
+            "unavailable",
+        )
+    )
+
+
+def _max_attempts() -> int:
+    try:
+        n = int(getattr(settings, "OFFLINE_PUSH_MAX_ATTEMPTS", 3) or 3)
+    except (TypeError, ValueError):
+        n = 3
+    return max(1, min(n, 10))
+
+
+def _retry_delay_seconds() -> float:
+    try:
+        ms = int(getattr(settings, "OFFLINE_PUSH_RETRY_DELAY_MS", 50) or 0)
+    except (TypeError, ValueError):
+        ms = 50
+    return max(0.0, min(ms, 5000) / 1000.0)
+
+
+async def _sleep_retry(delay: float) -> None:
+    if delay <= 0:
+        return
+    try:
+        await asyncio.sleep(delay)
+    except RuntimeError:
+        # Sync test contexts without a running loop.
+        time.sleep(delay)
+
+
 async def deliver_remote_wipe_push(
     db: AsyncSession,
     *,
@@ -290,6 +362,7 @@ async def deliver_remote_wipe_push(
         "push_delivery_partial": True,
         "push_delivery_complete_claimed": False,
         "offline_complete_claimed": False,
+        "fail_closed": True,
     }
 
     if not bool(settings.OFFLINE_PUSH_ENABLED):
@@ -300,6 +373,7 @@ async def deliver_remote_wipe_push(
             **serialize_delivery(delivery),
             **honesty,
             "attempted": False,
+            "subscription_revoked": False,
             "message": "Push delivery disabled by config; wipe still pending via online poll.",
         }
 
@@ -311,9 +385,11 @@ async def deliver_remote_wipe_push(
             **serialize_delivery(delivery),
             **honesty,
             "attempted": False,
+            "subscription_revoked": False,
             "message": (
-                "Push skipped — VAPID not configured. Wipe remains pending for online poll. "
-                "Not Offline Complete."
+                "Push skipped — VAPID not configured (fail-closed). "
+                "Wipe remains pending for online poll. Not Offline Complete. "
+                "See docs/OFFLINE_WEB_PUSH_VAPID_OPS.md."
             ),
         }
 
@@ -326,6 +402,7 @@ async def deliver_remote_wipe_push(
             **serialize_delivery(delivery),
             **honesty,
             "attempted": False,
+            "subscription_revoked": False,
             "message": (
                 "Push skipped — device has no Web Push subscription. "
                 "Wipe remains pending for online poll. Not Offline Complete."
@@ -333,7 +410,6 @@ async def deliver_remote_wipe_push(
         }
 
     delivery.subscription_id = sub.id
-    delivery.attempt_count = 1
     data_str = json.dumps(payload)
     subscription_info = {
         "endpoint": sub.endpoint,
@@ -342,39 +418,98 @@ async def deliver_remote_wipe_push(
     vapid_claims = {
         "sub": (settings.OFFLINE_PUSH_VAPID_SUBJECT or "mailto:noreply@localhost").strip()
     }
-    try:
-        _resolve_sender()(
-            subscription_info,
-            data_str,
-            settings.OFFLINE_PUSH_VAPID_PRIVATE_KEY.strip(),
-            vapid_claims,
-        )
-        delivery.status = STATUS_DELIVERED
-        delivery.delivered_at = datetime.utcnow()
-        delivery.response_status = 201
-        sub.last_success_at = delivery.delivered_at
-        sub.updated_at = delivery.delivered_at
-        await db.flush()
-        return {
-            **serialize_delivery(delivery),
-            **honesty,
-            "attempted": True,
-            "message": (
-                "Web Push delivered for remote wipe (PARTIAL). "
-                "Client must clear IndexedDB and ack. Offline Complete still deferred."
-            ),
-        }
-    except Exception as exc:  # noqa: BLE001 — record honest failure; wipe still pending
-        logger.warning("offline wipe push failed device=%s: %s", device.id, exc)
-        delivery.status = STATUS_FAILED
-        delivery.error = str(exc)[:1000]
-        await db.flush()
-        return {
-            **serialize_delivery(delivery),
-            **honesty,
-            "attempted": True,
-            "message": (
-                "Web Push attempt failed; wipe remains pending for online poll. "
-                "Offline Complete still deferred."
-            ),
-        }
+    priv = settings.OFFLINE_PUSH_VAPID_PRIVATE_KEY.strip()
+    max_attempts = _max_attempts()
+    delay = _retry_delay_seconds()
+    last_exc: BaseException | None = None
+
+    for attempt in range(1, max_attempts + 1):
+        delivery.attempt_count = attempt
+        try:
+            _resolve_sender()(subscription_info, data_str, priv, vapid_claims)
+            delivery.status = STATUS_DELIVERED
+            delivery.delivered_at = datetime.utcnow()
+            delivery.response_status = 201
+            delivery.error = None
+            sub.last_success_at = delivery.delivered_at
+            sub.updated_at = delivery.delivered_at
+            await db.flush()
+            return {
+                **serialize_delivery(delivery),
+                **honesty,
+                "attempted": True,
+                "subscription_revoked": False,
+                "message": (
+                    "Web Push delivered for remote wipe (PARTIAL). "
+                    "Client must clear IndexedDB and ack. Offline Complete still deferred."
+                ),
+            }
+        except Exception as exc:  # noqa: BLE001 — record honest failure; wipe still pending
+            last_exc = exc
+            status = _extract_response_status(exc)
+            delivery.response_status = status
+            delivery.error = str(exc)[:1000]
+            logger.warning(
+                "offline wipe push failed device=%s attempt=%s/%s status=%s: %s",
+                device.id,
+                attempt,
+                max_attempts,
+                status,
+                exc,
+            )
+
+            if status in _GONE_HTTP:
+                if sub.revoked_at is None:
+                    sub.revoked_at = datetime.utcnow()
+                    sub.updated_at = sub.revoked_at
+                delivery.status = STATUS_FAILED
+                delivery.error = (
+                    f"endpoint_gone:{status} — subscription revoked; "
+                    f"client must rebind PushManager. {str(exc)[:800]}"
+                )[:1000]
+                await db.flush()
+                return {
+                    **serialize_delivery(delivery),
+                    **honesty,
+                    "attempted": True,
+                    "subscription_revoked": True,
+                    "message": (
+                        "Web Push endpoint gone (404/410); subscription revoked. "
+                        "Wipe remains pending for online poll until client rebinds. "
+                        "Offline Complete still deferred."
+                    ),
+                }
+
+            if attempt < max_attempts and _is_transient_failure(status, exc):
+                await db.flush()
+                await _sleep_retry(delay)
+                continue
+
+            delivery.status = STATUS_FAILED
+            await db.flush()
+            return {
+                **serialize_delivery(delivery),
+                **honesty,
+                "attempted": True,
+                "subscription_revoked": False,
+                "message": (
+                    "Web Push attempt failed; wipe remains pending for online poll. "
+                    "Offline Complete still deferred."
+                ),
+            }
+
+    # Unreachable, but keep honesty if loop exits oddly.
+    delivery.status = STATUS_FAILED
+    if last_exc is not None and not delivery.error:
+        delivery.error = str(last_exc)[:1000]
+    await db.flush()
+    return {
+        **serialize_delivery(delivery),
+        **honesty,
+        "attempted": True,
+        "subscription_revoked": False,
+        "message": (
+            "Web Push attempt failed; wipe remains pending for online poll. "
+            "Offline Complete still deferred."
+        ),
+    }

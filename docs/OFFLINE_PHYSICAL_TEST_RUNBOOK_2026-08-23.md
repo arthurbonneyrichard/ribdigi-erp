@@ -3,7 +3,9 @@
 **Purpose:** Human/QA endurance and reconnect tests for commercial offline POS (§51–52).  
 **Does NOT claim:** Offline Complete, 7-day VERIFIED, go-live, or attestation Completes.
 
-**Related code:** `offlineAuthEnvelope.ts`, `offlineQueue.ts`, `offlineReceiptNumber.ts`, `POST /offline/devices/{id}/bind`, `GET /offline/alerts`, recovery export UI.
+**Related code:** `offlineAuthEnvelope.ts`, `offlineQueue.ts`, `offlineReceiptNumber.ts`,
+`offlinePush.ts`, `POST /offline/devices/{id}/bind`, `GET /offline/alerts`, recovery export UI,
+`docs/OFFLINE_WEB_PUSH_VAPID_OPS.md` (VAPID enable path — push delivery still PARTIAL).
 
 ## Prerequisites
 
@@ -24,9 +26,11 @@
 ## Day 0 — setup
 
 1. Register device on Company → Offline sync; Bind; confirm IndexedDB envelope.
-2. Pull offline catalog while online.
-3. Open POS shift; note `session_id`.
-4. Capture screenshot of bound device + `offline_valid_until`.
+2. If staging has VAPID configured (`docs/OFFLINE_WEB_PUSH_VAPID_OPS.md`), confirm bind
+   message notes Web Push registered/rebound; otherwise expect fail-closed skip (poll remains).
+3. Pull offline catalog while online.
+4. Open POS shift; note `session_id`.
+5. Capture screenshot of bound device + `offline_valid_until`.
 
 ## Days 1–6 — offline operations
 

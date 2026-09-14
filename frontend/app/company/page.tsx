@@ -1311,16 +1311,26 @@ export default function Page() {
                                 user_id: me.data?.id || null,
                                 store_id: getSelectedStoreId() || null,
                               });
+                              let pushNote =
+                                'Web Push registration attempted when VAPID configured (PARTIAL).';
                               try {
                                 const { registerOfflinePushSubscription } = await import(
                                   '../../lib/offlinePush'
                                 );
-                                await registerOfflinePushSubscription(d.id);
+                                const push = await registerOfflinePushSubscription(d.id);
+                                if (push.registered) {
+                                  pushNote = push.rebound
+                                    ? 'Web Push subscription rebound to server (PARTIAL).'
+                                    : 'Web Push subscription registered (PARTIAL).';
+                                } else if (push.reason === 'vapid_unconfigured') {
+                                  pushNote =
+                                    'Web Push skipped — VAPID unconfigured (fail-closed; wipe poll remains).';
+                                }
                               } catch {
                                 /* push optional — wipe poll remains */
                               }
                               setMessage(
-                                'Browser bound — 7-day offline auth envelope issued (renew online before expiry). Web Push registration attempted when VAPID configured (PARTIAL).',
+                                `Browser bound — 7-day offline auth envelope issued (renew online before expiry). ${pushNote}`,
                               );
                             } catch (err: any) {
                               setError(err.message || 'Device bind failed');
@@ -1384,9 +1394,21 @@ export default function Page() {
                                 await processPendingRemoteWipeIfNeeded(r.data);
                                 setBoundDeviceId('');
                               }
+                              const push = r.data?.push_delivery;
+                              const pushStatus = push?.status
+                                ? ` Push delivery: ${push.status}` +
+                                  (push.attempt_count
+                                    ? ` (${push.attempt_count} attempt(s))`
+                                    : '') +
+                                  (push.subscription_revoked
+                                    ? '; subscription revoked (rebind needed)'
+                                    : '') +
+                                  '.'
+                                : '';
                               setMessage(
-                                r.data?.message ||
-                                  'Remote wipe queued (PARTIAL — Offline Complete deferred)',
+                                (r.data?.message ||
+                                  'Remote wipe queued (PARTIAL — Offline Complete deferred)') +
+                                  pushStatus,
                               );
                               await refreshOfflineSync();
                             } catch (err: any) {

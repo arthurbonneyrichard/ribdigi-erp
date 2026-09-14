@@ -156,11 +156,15 @@ class Settings(BaseSettings):
     REQUEST_LOG_ENABLED: bool = True
     LOG_LEVEL: str = "INFO"
     # Offline Web Push (remote wipe delivery PARTIAL — not Offline Complete).
-    # When VAPID keys unset, wipe still queues; push is skipped_unconfigured.
+    # Fail-closed: when keys unset or ENABLED=false, wipe still queues; push is
+    # skipped_unconfigured / disabled (never fabricates delivered).
+    # Ops: docs/OFFLINE_WEB_PUSH_VAPID_OPS.md
     OFFLINE_PUSH_ENABLED: bool = True
     OFFLINE_PUSH_VAPID_PUBLIC_KEY: str = ""  # applicationServerKey (url-safe base64)
     OFFLINE_PUSH_VAPID_PRIVATE_KEY: str = ""  # PEM private key (or path accepted by pywebpush)
     OFFLINE_PUSH_VAPID_SUBJECT: str = "mailto:noreply@localhost"
+    OFFLINE_PUSH_MAX_ATTEMPTS: int = 3  # sync retries on transient push failures
+    OFFLINE_PUSH_RETRY_DELAY_MS: int = 50  # delay between sync retry attempts
 
     model_config = SettingsConfigDict(env_file="../.env", extra="ignore")
 
