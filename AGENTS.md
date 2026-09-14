@@ -96,7 +96,9 @@ store activation — never frontend-only.
    null-WH fail-closed; empty managed → zero) + **tax rate create/patch/default
    + list/detail GET + CSV export denied** + **``/tax/calculate`` company master
    resolve denied** (``tax_rate_id`` / default-rate fallback; explicit
-   rate/components math remains), and audit list/export
+   rate/components math remains) + **tax filing TIN redacted** (``tax_registration_number``
+   on ``/reports/tax/filing`` JSON + government header + ``tax_filing_*`` exports;
+   amounts/schedules remain), and audit list/export
    fail-closed to self-authored events plus details with managed
    `store_id`/`warehouse_id` (no audit store column; ADR-005 open), sales
    returns via linked invoice store (+ export/asserts), and dashboard
@@ -156,6 +158,8 @@ store activation — never frontend-only.
    + POS receipt; ``company_name`` falls back to trading switcher when distinct;
    ``has_logo`` + server-side HTML/PDF/text embeds remain) + **POS receipt JSON
    ``company_address`` / ``company_phone`` redacted** (``company_name`` + ``has_logo``
+   + server-side text/PDF embeds remain) + **POS receipt JSON
+   ``document_header`` / ``document_footer`` redacted** (``company_name`` + ``has_logo``
    + server-side text/PDF embeds remain) + **product
    list/get ``image_url``
    storage key redacted** + **product list/get ``has_image`` forced false**
@@ -319,7 +323,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `82f3f8942022a3cb97f0b9ba7c4dfaa40b834c59` — `feat(rbac): redact receipt company_address/phone for store_manager` (ancestry also includes continuum PO `emailed_to` `9ff88796a1` + security H1–H5 `3cf99a5540`/`caf7d98b55`).
+**As of tip:** `47844e3c4d1a7b50f26a605421167af2ec71d1cf` — `feat(rbac): redact tax filing TIN for store_manager` (ancestry also includes receipt header/footer `9100933f8c` + receipt company_address/phone `82f3f89420` + continuum PO `emailed_to` `9ff88796a1` + security H1–H5 `3cf99a5540`/`caf7d98b55`).
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
@@ -351,7 +355,7 @@ redact (`has_attachment` + WH-scoped binary download remain); journal-entry
 list/get/create/unpost/upload/delete `attachment_url` storage-key redact
 (`has_attachment` + store-scoped binary download remain); print/receipt JSON
 `logo_data_url` redact (invoice/quotation/credit-note print + POS receipt;
-`has_logo` + server-side HTML/PDF embeds remain); print/receipt JSON `legal_name` / `trading_name` redact (invoice/quotation/credit-note print + POS receipt; `company_name` falls back to trading switcher when distinct; `has_logo` + server-side HTML/PDF/text embeds remain); POS receipt JSON `company_address` / `company_phone` redact (`company_name` + `has_logo` + server-side text/PDF embeds remain); sales-invoice credit-override audit redact (`credit_limit_overridden` / `credit_override_reason` / `by` / `at`; balance/status remain); sales-invoice `emailed_to` redact (`delivery.to` on send; `emailed_at` remains); quotation `emailed_to` redact (list/get/send/print/export + `delivery.to`; `emailed_at` remains); purchase-order `emailed_to` redact (list/get/create/patch/amend/send/print/cancel/export + convert/low-stock + `delivery.to`; `sent_at` remains). Each slice closes
+`has_logo` + server-side HTML/PDF embeds remain); print/receipt JSON `legal_name` / `trading_name` redact (invoice/quotation/credit-note print + POS receipt; `company_name` falls back to trading switcher when distinct; `has_logo` + server-side HTML/PDF/text embeds remain); POS receipt JSON `company_address` / `company_phone` redact (`company_name` + `has_logo` + server-side text/PDF embeds remain); POS receipt JSON `document_header` / `document_footer` redact (`company_name` + `has_logo` + server-side text/PDF embeds remain); tax filing TIN redact (`tax_registration_number` on `/reports/tax/filing` JSON + government header + `tax_filing_*` exports; amounts/schedules remain); sales-invoice credit-override audit redact (`credit_limit_overridden` / `credit_override_reason` / `by` / `at`; balance/status remain); sales-invoice `emailed_to` redact (`delivery.to` on send; `emailed_at` remains); quotation `emailed_to` redact (list/get/send/print/export + `delivery.to`; `emailed_at` remains); purchase-order `emailed_to` redact (list/get/create/patch/amend/send/print/cancel/export + convert/low-stock + `delivery.to`; `sent_at` remains). Each slice closes
 one dump or write path; the continuum as a whole stays **PARTIAL**.
 
 ### Continuum agent contract
