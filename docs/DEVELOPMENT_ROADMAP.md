@@ -13,7 +13,7 @@
 
 ### Tip — % approval limits + store-scoped RBAC remaining checklist (2026-09-15)
 
-**As of tip:** _(updated on merge/push; see AGENTS.md tip SHA)_
+**As of tip:** `52cdb349df5dea25716b24c61070963c696af84e`
 
 Percentage approval limits landed on expense/PR matrices (`min_percent` + expense
 category budget percent basis). ADR-005 remains **Complete** (flag default OFF).
@@ -26,7 +26,7 @@ where noted). Do not resume continuum dump spam as the default CONTINUE path.
 
 ### Tip — RBAC approval hardening + ADR-005 Complete (2026-09-15)
 
-**As of tip:** `10a7c64af691009826e90e15c46d0bd8ed6dfeec`
+**As of tip:** `52cdb349df5dea25716b24c61070963c696af84e`
 
 ADR-005 attested **Complete** via automated flag-ON soak + POS store bind + honesty
 flags. `STORE_MEMBERSHIP_SCOPE_ENABLED` remains **false** by default (ops cutover;
