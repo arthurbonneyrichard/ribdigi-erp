@@ -157,6 +157,8 @@ See Phase 1 artifact for SEC-M1…M5 and SEC-L1…L3 (uploads magic bytes, local
 
 - Phase 1 report: `/opt/cursor/artifacts/security_audit_phase1.md`
 - Secrets / scan notes: `/opt/cursor/artifacts/security/` (updated in Phase 2)
+- Phase 2 High suites: `/opt/cursor/artifacts/security/phase2_high_pytest.log` (50 passed)
+- Phase 2 summary: `/opt/cursor/artifacts/security/phase2_hardening_summary.json`
 - Existing suites: `pytest -m "security or isolation"`
 
 ---
