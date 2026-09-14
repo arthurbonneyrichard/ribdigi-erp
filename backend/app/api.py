@@ -8467,20 +8467,20 @@ async def print_sales_invoice(
     if fmt == "html":
         return HTMLResponse(sales_svc.render_invoice_html(data, **brand))
     text = sales_svc.render_invoice_text(data, **brand)
-    return env(
-        {
-            "invoice": data,
-            "text": text,
-            "template": tpl,
-            "format": fmt,
-            "customer_name": customer.name,
-            "company_name": doc_brand["company_name"],
-            "legal_name": doc_brand["legal_name"],
-            "trading_name": doc_brand["trading_name"],
-            "has_logo": doc_brand["has_logo"],
-            "logo_data_url": doc_brand["logo_data_url"],
-        }
-    )
+    payload = {
+        "invoice": data,
+        "text": text,
+        "template": tpl,
+        "format": fmt,
+        "customer_name": customer.name,
+        "company_name": doc_brand["company_name"],
+        "legal_name": doc_brand["legal_name"],
+        "trading_name": doc_brand["trading_name"],
+        "has_logo": doc_brand["has_logo"],
+        "logo_data_url": doc_brand["logo_data_url"],
+    }
+    payload = dashboard_scope_svc.apply_document_logo_manager_redacts(payload, managed)
+    return env(payload)
 
 
 @api.post("/sales/invoices/{invoice_id}/send")
@@ -8701,6 +8701,7 @@ async def print_sales_quotation(
     quote = await sales_docs_svc.get_quotation(db, claims["tenant_id"], quotation_id)
     assert_record_access(claims, quote.created_by)
     workspace_svc.assert_record_company(claims, quote)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     await dashboard_scope_svc.assert_quotation_in_manager_scope(db, claims, quote)
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     company = None
@@ -8773,20 +8774,20 @@ async def print_sales_quotation(
     if fmt == "html":
         return HTMLResponse(sales_docs_svc.render_quotation_html(data, **brand))
     text = sales_docs_svc.render_quotation_text(data, **brand)
-    return env(
-        {
-            "quotation": data,
-            "text": text,
-            "template": tpl,
-            "format": fmt,
-            "customer_name": customer.name,
-            "company_name": doc_brand["company_name"],
-            "legal_name": doc_brand["legal_name"],
-            "trading_name": doc_brand["trading_name"],
-            "has_logo": doc_brand["has_logo"],
-            "logo_data_url": doc_brand["logo_data_url"],
-        }
-    )
+    payload = {
+        "quotation": data,
+        "text": text,
+        "template": tpl,
+        "format": fmt,
+        "customer_name": customer.name,
+        "company_name": doc_brand["company_name"],
+        "legal_name": doc_brand["legal_name"],
+        "trading_name": doc_brand["trading_name"],
+        "has_logo": doc_brand["has_logo"],
+        "logo_data_url": doc_brand["logo_data_url"],
+    }
+    payload = dashboard_scope_svc.apply_document_logo_manager_redacts(payload, managed)
+    return env(payload)
 
 
 @api.post("/sales/quotations/{quotation_id}/send")
@@ -9340,6 +9341,7 @@ async def print_sales_return_credit_note(
     ret = await sales_docs_svc.get_return(db, claims["tenant_id"], return_id)
     assert_record_access(claims, ret.created_by)
     workspace_svc.assert_record_company(claims, ret)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     await dashboard_scope_svc.assert_sales_return_in_manager_scope(db, claims, ret)
     if ret.status != "posted" or not ret.credit_note_number:
         raise HTTPException(
@@ -9419,21 +9421,21 @@ async def print_sales_return_credit_note(
     if fmt == "html":
         return HTMLResponse(sales_docs_svc.render_credit_note_html(data, **brand))
     text = sales_docs_svc.render_credit_note_text(data, **brand)
-    return env(
-        {
-            "return": data,
-            "text": text,
-            "template": tpl,
-            "format": fmt,
-            "customer_name": customer.name,
-            "company_name": doc_brand["company_name"],
-            "legal_name": doc_brand["legal_name"],
-            "trading_name": doc_brand["trading_name"],
-            "has_logo": doc_brand["has_logo"],
-            "logo_data_url": doc_brand["logo_data_url"],
-            "invoice_number": invoice.invoice_number,
-        }
-    )
+    payload = {
+        "return": data,
+        "text": text,
+        "template": tpl,
+        "format": fmt,
+        "customer_name": customer.name,
+        "company_name": doc_brand["company_name"],
+        "legal_name": doc_brand["legal_name"],
+        "trading_name": doc_brand["trading_name"],
+        "has_logo": doc_brand["has_logo"],
+        "logo_data_url": doc_brand["logo_data_url"],
+        "invoice_number": invoice.invoice_number,
+    }
+    payload = dashboard_scope_svc.apply_document_logo_manager_redacts(payload, managed)
+    return env(payload)
 
 
 @api.post("/sales/returns/{return_id}/post")
@@ -11346,6 +11348,7 @@ async def pos_receipt(
     from app import dashboard_scope as dashboard_scope_svc
 
     await dashboard_scope_svc.assert_pos_sale_in_manager_scope(db, claims, sale_id)
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
     receipt = await receipts_svc.build_sale_receipt(
         db,
         tenant_id=claims["tenant_id"],
@@ -11368,6 +11371,9 @@ async def pos_receipt(
 
         receipt["drawer_kick_base64"] = cash_drawer_svc.kick_base64()
         receipt["drawer_kick_hex"] = cash_drawer_svc.kick_hex()
+        receipt = dashboard_scope_svc.apply_document_logo_manager_redacts(
+            receipt, managed
+        )
         return env(receipt)
     if fmt == "text":
         text = receipts_svc.render_thermal_text(receipt, paper=paper)

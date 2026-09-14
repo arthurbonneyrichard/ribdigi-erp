@@ -14160,6 +14160,100 @@ async def test_store_manager_company_tenant_logo_binary_get_denied(
 
 
 @pytest.mark.asyncio
+async def test_store_manager_document_logo_data_url_redacted(
+    client, db_session, tmp_path, monkeypatch
+):
+    """Print/receipt JSON nulls logo_data_url for store_manager after logo GET deny.
+
+    POS receipt JSON keeps has_logo; admin JSON keeps logo_data_url. Server-side
+    HTML/PDF embeds still load logos from storage.
+    """
+    from app import storage as storage_svc
+
+    monkeypatch.setattr(storage_svc.settings, "MEDIA_DIR", str(tmp_path))
+    monkeypatch.setattr(storage_svc.settings, "STORAGE_BACKEND", "local")
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    png = b"\x89PNG\r\n\x1a\n" + b"logo-data-url-dump"
+
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    upload_headers = {**admin_headers, "X-Workspace-Kind": "tenant"}
+    ok_co = await ac.post(
+        f"/api/v1/companies/{cid}/logo",
+        headers=upload_headers,
+        files={"file": ("co.png", io.BytesIO(png), "image/png")},
+    )
+    assert ok_co.status_code == 200, ok_co.text
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Logo Data URL Store",
+        code="LDU1",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    sess = m.PosSession(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        user_id=mgr.id,
+        session_number="S-LDU-1",
+        status="open",
+        opening_cash=0,
+    )
+    db_session.add(sess)
+    await db_session.flush()
+    sale = m.Transaction(
+        tenant_id=tid,
+        company_id=cid,
+        tx_type="pos_sale",
+        reference="POS-LDU-REF",
+        session_id=sess.id,
+        subtotal=5,
+        tax=0,
+        total=5,
+        status="completed",
+        payload={"items": [{"name": "Item", "quantity": 1, "unit_price": 5}]},
+    )
+    db_session.add(sale)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    # Super in company workspace for POS receipt (keeps logo_data_url).
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    admin_receipt = await ac.get(
+        f"/api/v1/pos/sales/{sale.id}/receipt", headers=admin_company
+    )
+    assert admin_receipt.status_code == 200, admin_receipt.text
+    admin_data = admin_receipt.json()["data"]
+    assert admin_data.get("has_logo") is True
+    assert isinstance(admin_data.get("logo_data_url"), str)
+    assert admin_data["logo_data_url"].startswith("data:image/")
+
+    mgr_receipt = await ac.get(f"/api/v1/pos/sales/{sale.id}/receipt", headers=headers)
+    assert mgr_receipt.status_code == 200, mgr_receipt.text
+    mgr_data = mgr_receipt.json()["data"]
+    assert mgr_data.get("has_logo") is True
+    assert mgr_data.get("logo_data_url") is None
+
+
+@pytest.mark.asyncio
 async def test_store_manager_me_workspace_company_profile_redacted(client, db_session):
     """GET /me + /workspace redact company legal/tax dump + company_entitlement for store_manager."""
     ac, seed = client
