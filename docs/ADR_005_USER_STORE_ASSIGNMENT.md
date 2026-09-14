@@ -20,11 +20,11 @@ A dedicated User↔Store membership table (or `users.store_id`) would introduce 
 For Stage 1 / Commercial MVP operational scope:
 
 1. **Default operational store scope** remains **`stores.manager_id`** via `dashboard_scope.managed_store_ids` (`STORE_MEMBERSHIP_SCOPE_ENABLED` default **false**).
-2. **Flag-gated cutover (PARTIAL):** when `STORE_MEMBERSHIP_SCOPE_ENABLED=true`, store_manager scope is **`manager_id` ∪ active memberships** (see cutover design). Admins still bypass; cashiers unchanged this slice. Enabling the flag ≠ ADR-005 Complete.
+2. **Flag-gated cutover (PARTIAL):** when `STORE_MEMBERSHIP_SCOPE_ENABLED=true`, store_manager scope is **`manager_id` ∪ active memberships** (see cutover design). Admins still bypass. Cashiers stay `None` on `managed_store_ids` but are **fail-closed** on POS bind + store lists via `store_visibility_ids`. Enabling the flag ≠ ADR-005 Complete.
 3. Record scoping for users continues via **branch / department / own / all** (existing record_scope).
 4. POS/sales store context remains **session/document `store_id`**, not a permanent user home store.
 5. **Scaffold opened (PARTIAL):** `user_store_memberships` table + admin assign/list/revoke APIs + `GET /me/store-memberships` + Company/Admin UI at `/stores#memberships`.
-6. Production-default membership scope + cashier fail-closed + Complete evidence remain **MISSING**.
+6. Production-default membership scope + Complete evidence remain **MISSING** (cashier fail-closed is PARTIAL behind the same flag).
 
 ## Consequences
 

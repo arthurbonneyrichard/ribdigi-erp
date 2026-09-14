@@ -4,7 +4,9 @@ Assignment CRUD plus optional flag-gated scope expansion documented in
 ``docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md``. Default operational scope remains
 ``stores.manager_id`` (``STORE_MEMBERSHIP_SCOPE_ENABLED`` false). When the flag
 is on, ``dashboard_scope.managed_store_ids`` unions membership store IDs for
-store_manager only. ADR-005 Complete / store-scoped RBAC Complete remain MISSING.
+store_manager only; cashiers stay ``None`` on that helper and use
+``store_visibility_ids`` / ``cashier_membership_store_ids`` for POS + store-list
+fail-closed. ADR-005 Complete / store-scoped RBAC Complete remain MISSING.
 """
 
 from __future__ import annotations
@@ -35,9 +37,10 @@ def honesty_payload() -> dict:
         "store_scoped_rbac_complete_claimed": STORE_SCOPED_RBAC_COMPLETE_CLAIMED,
         "scope_wired_to_membership": SCOPE_WIRED_TO_MEMBERSHIP,
         "store_membership_scope_enabled": flag_on,
+        "cashier_membership_fail_closed": flag_on,
         "scaffold_status": "partial",
         "operational_scope": (
-            "stores.manager_id ∪ user_store_memberships"
+            "stores.manager_id ∪ user_store_memberships (+ cashier membership fail-closed on POS/store lists)"
             if flag_on
             else "stores.manager_id"
         ),
