@@ -12445,11 +12445,55 @@ async def test_store_manager_product_primary_image_get_denied(client, db_session
     assert listed.status_code == 200, listed.text
     row = next(r for r in listed.json()["data"] if r["id"] == product.id)
     assert row.get("has_image") is True
+    assert row.get("image_url") is None
 
     got = await ac.get(f"/api/v1/products/{product.id}", headers=headers)
     assert got.status_code == 200, got.text
     assert got.json()["data"]["sku"] == product.sku
     assert got.json()["data"].get("has_image") is True
+    assert got.json()["data"].get("image_url") is None
+
+
+@pytest.mark.asyncio
+async def test_store_manager_product_image_url_redacted(client, db_session):
+    """Product list/get nulls image_url storage key for store_manager; has_image remains.
+
+    Primary binary GET + gallery list/export already denied; list/get must not
+    re-dump image_url (storage_key). Admin list/get keep image_url.
+    """
+    ac, seed = client
+    product = seed["p1"]
+    storage_key = f"{seed['t1'].id}/product_images/url-redact-dump.png"
+    product.image_url = storage_key
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    admin_got = await ac.get(f"/api/v1/products/{product.id}", headers=admin_headers)
+    assert admin_got.status_code == 200, admin_got.text
+    assert admin_got.json()["data"].get("image_url") == storage_key
+    assert admin_got.json()["data"].get("has_image") is True
+
+    listed = await ac.get("/api/v1/products", headers=headers)
+    assert listed.status_code == 200, listed.text
+    row = next(r for r in listed.json()["data"] if r["id"] == product.id)
+    assert row.get("has_image") is True
+    assert row.get("image_url") is None
+
+    got = await ac.get(f"/api/v1/products/{product.id}", headers=headers)
+    assert got.status_code == 200, got.text
+    assert got.json()["data"].get("has_image") is True
+    assert got.json()["data"].get("image_url") is None
+
+    denied_binary = await ac.get(f"/api/v1/products/{product.id}/image", headers=headers)
+    assert denied_binary.status_code == 403, denied_binary.text
+    assert denied_binary.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
 
 
 @pytest.mark.asyncio
