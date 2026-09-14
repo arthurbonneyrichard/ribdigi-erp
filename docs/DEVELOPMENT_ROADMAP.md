@@ -11,6 +11,22 @@
 
 ---
 
+### Tip — audit attachment storage key redact (2026-09-15)
+
+**As of tip:** `1bd3b0c6a32ae0da010b01754f32917e1c48a600`
+Scoped audit list/export `details` attachment storage key redact for `store_manager`
+(`key` on `expense_attachment_upload` / `invoice_attachment_upload` /
+`journal_attachment_upload`; `storage_key` on cold archive on `GET /audit-logs` + CSV;
+expense/PI/journal `attachment_url` + upload `uploaded.key` already redacted;
+size / content_type / event_count remain; API-key `key_prefix` stays; admin keeps
+storage keys). Continuum stays **PARTIAL**. Store-scoped RBAC Complete remains
+**MISSING** (intentional ALLOWs + residual backlog + product sign-off + staging
+soak). Offline / 7-day / go-live / paid billing Completes remain **MISSING**.
+Next CONTINUE: residual continuum field-leak (named surface) or product ALLOW
+sign-off / staging soak docs.
+
+---
+
 ### Tip — audit emailed_to redact (2026-09-15)
 
 **As of tip:** `511634ec0dbdf1507c86f9815c9679ccba7acfd8`
