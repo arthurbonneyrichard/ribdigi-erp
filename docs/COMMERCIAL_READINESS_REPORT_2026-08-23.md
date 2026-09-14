@@ -9,7 +9,7 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `5d076753b7a45c9be9d26c3e2460b737d598a461` — feat invoice/quotation/credit-note print `template` redact (ancestry); leftovers still open |
+| **As of tip** | `0c811fa81aab3d13c961a0be4a55cb446bbce6a6` — docs sync after print invoice template `5d076753b7` (feat ancestry); leftovers still open |
 | RBAC / store scope | **PARTIAL** only |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
 

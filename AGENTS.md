@@ -325,7 +325,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `5d076753b7a45c9be9d26c3e2460b737d598a461` — `feat(rbac): redact print invoice template for store_manager` (feat ancestry invoice print `template` `5d076753b7` + receipt print template `8d06c785d9` + tax filing TIN `47844e3c4d` + continuum PO `emailed_to` `9ff88796a1` + security H1–H5 `3cf99a5540`/`caf7d98b55`).
+**As of tip:** `0c811fa81aab3d13c961a0be4a55cb446bbce6a6` — `docs: sync PR #303 As of tip to print invoice template redact` (feat ancestry invoice print `template` `5d076753b7` + receipt print template `8d06c785d9` + tax filing TIN `47844e3c4d` + continuum PO `emailed_to` `9ff88796a1` + security H1–H5 `3cf99a5540`/`caf7d98b55`).
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
