@@ -108,7 +108,7 @@ store activation — never frontend-only.
    denied), and sales invoice create/post/send/cancel + CSV export (+ get/print
    null-store fail-closed) store scoped + **credit_limit_override denied for
    store_manager on invoice post / POS credit** (default role has credit:approve;
-   override remains company/finance admin) + **sales invoice credit-override audit redacted** (``credit_limit_overridden`` / ``credit_override_reason`` / ``by`` / ``at``; balance/status remain) + **sales invoice emailed_to redacted** (``delivery.to`` on send; ``emailed_at`` remains) + **quotation emailed_to redacted** (list/get/send/print/export + ``delivery.to``; ``emailed_at`` remains; purchase-order ``emailed_to`` leftover), and recurring expense list/export/
+   override remains company/finance admin) + **sales invoice credit-override audit redacted** (``credit_limit_overridden`` / ``credit_override_reason`` / ``by`` / ``at``; balance/status remain) + **sales invoice emailed_to redacted** (``delivery.to`` on send; ``emailed_at`` remains) + **quotation emailed_to redacted** (list/get/send/print/export + ``delivery.to``; ``emailed_at`` remains) + **purchase-order emailed_to redacted** (list/get/create/patch/amend/send/print/cancel/export + convert/low-stock + ``delivery.to``; ``sent_at`` remains), and recurring expense list/export/
    patch/generate residual store scoped (null-store fail-closed), and COA
    account ledger (+ export) from managed-store journals (null-store
    fail-closed), and bank statements list/export/get/reconcile writes
@@ -132,7 +132,8 @@ store activation — never frontend-only.
    omitted/skipped — no store_id), and products catalog list/get/export/
    lookup/POS search stock_qty from managed WarehouseStock (not
    product.stock_qty; cost_price redacted on list/get/export + per-product variants; category_id/brand_id/unit_id/tax_rate_id redacted on list/get + category_code/brand_code/unit_code blanked on export; **inventory balance/valuation cost_price/value/total_value redacted** on JSON + `/reports/export`; **low-stock list/export cost_price redacted**; **AI dead-stock cost_price/estimated_carrying_cost/total_carrying_cost redacted** on JSON + CSV; **stock-count variance unit_cost/variance_value/total_variance_value redacted** on JSON/CSV/PDF), and sales quotations list/export/get/lifecycle
-   via own drafts + converted in-scope order/invoice (**quotation ``emailed_to`` redacted**; ``emailed_at`` remains; purchase-order ``emailed_to`` leftover), and
+   via own drafts + converted in-scope order/invoice (**quotation ``emailed_to`` redacted**; ``emailed_at`` remains), and purchasing orders
+   (**purchase-order ``emailed_to`` redacted**; ``sent_at`` remains), and
    **branches/departments create/patch/list GET/export denied for store_manager** (company-level
    org units) + **users list/get denied for store_manager** (company org roster dump after
    users CSV export deny; self ``/me`` remains; PII/org/MFA redacts retained defense-in-depth), and **catalog
@@ -313,7 +314,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `d9c89987c9a7a9f96847e4f6a0d3dc5794d098a5` — `docs: align PR #303 As of tip to quotation emailed_to redact honesty HEAD` (feat ancestry `a1060911af`).
+**As of tip:** `6cd96334886dc2477bf183ec560f9ecff2b42adb` — `feat(rbac): redact purchase-order emailed_to for store_manager`.
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
@@ -345,7 +346,7 @@ redact (`has_attachment` + WH-scoped binary download remain); journal-entry
 list/get/create/unpost/upload/delete `attachment_url` storage-key redact
 (`has_attachment` + store-scoped binary download remain); print/receipt JSON
 `logo_data_url` redact (invoice/quotation/credit-note print + POS receipt;
-`has_logo` + server-side HTML/PDF embeds remain); sales-invoice credit-override audit redact (`credit_limit_overridden` / `credit_override_reason` / `by` / `at`; balance/status remain); sales-invoice `emailed_to` redact (`delivery.to` on send; `emailed_at` remains); quotation `emailed_to` redact (list/get/send/print/export + `delivery.to`; `emailed_at` remains; purchase-order `emailed_to` leftover). Each slice closes
+`has_logo` + server-side HTML/PDF embeds remain); sales-invoice credit-override audit redact (`credit_limit_overridden` / `credit_override_reason` / `by` / `at`; balance/status remain); sales-invoice `emailed_to` redact (`delivery.to` on send; `emailed_at` remains); quotation `emailed_to` redact (list/get/send/print/export + `delivery.to`; `emailed_at` remains); purchase-order `emailed_to` redact (list/get/create/patch/amend/send/print/cancel/export + convert/low-stock + `delivery.to`; `sent_at` remains). Each slice closes
 one dump or write path; the continuum as a whole stays **PARTIAL**.
 
 ### Continuum agent contract
