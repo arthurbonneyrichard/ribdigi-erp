@@ -13,7 +13,7 @@
 
 ### Tip — audit attachment storage key redact (2026-09-15)
 
-**As of tip:** `1bd3b0c6a32ae0da010b01754f32917e1c48a600`
+**As of tip:** `66e31db87637024fbf83ceaef93a335914c29ef0`
 Scoped audit list/export `details` attachment storage key redact for `store_manager`
 (`key` on `expense_attachment_upload` / `invoice_attachment_upload` /
 `journal_attachment_upload`; `storage_key` on cold archive on `GET /audit-logs` + CSV;
