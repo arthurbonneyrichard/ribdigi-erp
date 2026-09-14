@@ -9,7 +9,7 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `f1b60b567b` — product primary image binary GET deny for `store_manager` |
+| **As of tip** | `52e604871c` — product primary image binary GET deny honesty (feat `f1b60b567b`) for `store_manager` |
 | RBAC / store scope | **PARTIAL** only |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
 
