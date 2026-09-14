@@ -9,7 +9,7 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `3e5ef67f19fbd0644a992781036374788af2983a` — feat redact purchase-invoice `exchange_rate` (`0d97de259c`); leftovers still open |
+| **As of tip** | `19964c706cfb9278971ab9326fd5d232d10f680d` — feat redact purchase-invoice `exchange_rate` (`0d97de259c`); leftovers still open |
 | RBAC / store scope | **PARTIAL** only |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
 
