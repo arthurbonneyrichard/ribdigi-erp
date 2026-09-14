@@ -133,16 +133,17 @@ store activation — never frontend-only.
    product.stock_qty; cost_price redacted on list/get/export + per-product variants; category_id/brand_id/unit_id/tax_rate_id redacted on list/get + category_code/brand_code/unit_code blanked on export; **inventory balance/valuation cost_price/value/total_value redacted** on JSON + `/reports/export`; **low-stock list/export cost_price redacted**; **AI dead-stock cost_price/estimated_carrying_cost/total_carrying_cost redacted** on JSON + CSV; **stock-count variance unit_cost/variance_value/total_variance_value redacted** on JSON/CSV/PDF), and sales quotations list/export/get/lifecycle
    via own drafts + converted in-scope order/invoice (no store_id), and
    **branches/departments create/patch/list GET/export denied for store_manager** (company-level
-   org units) + **users list/get branch_id/department_id org assignment + totp_enabled MFA status + email_verified redacted** (with email/phone
-   contact PII; name/role/active remain), and **catalog
+   org units) + **users list/get denied for store_manager** (company org roster dump after
+   users CSV export deny; self ``/me`` remains; PII/org/MFA redacts retained defense-in-depth), and **catalog
    categories/brands/units create/patch/deactivate (+ brand logo writes) denied
    for store_manager** (company-level catalog meta; list/export/convert + brand
    logo binary GET denied; product reads + WH stock ops remain), and **customer groups create/patch/deactivate denied for
    store_manager** (company-level sales master; list/export/get reads allowed),
    and **product CSV import denied for store_manager** (company-level catalog
-   master bulk seed; template/export reads allowed), and **product catalog
+   master bulk seed; import template denied) + **product catalog CSV export denied**
+   (``GET /products/export`` company roster dump; list/get + WH stock ops remain), and **product catalog
    master writes denied for store_manager** (create/patch + variants + barcode
-   assign + image writes; list/get/export/lookup/POS search reads + WH stock
+   assign + image writes; list/get/lookup/POS search reads + WH stock
    ops remain) + **product images gallery list GET + CSV export denied**
    (``storage_key`` media dump; primary ``/products/{id}/image`` binary GET
    remains for POS/chrome) + **product variants CSV export denied**
@@ -297,7 +298,7 @@ columns — not checkout or MRR Completes.
 ## PR #303 store_manager RBAC continuum (honesty source of truth)
 
 **Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
-**As of tip:** `45f32f76b0` — `feat(rbac): deny product catalog CSV export for store_manager`.  
+**As of tip:** `e993538f93` — `feat(rbac): deny users list/get for store_manager`.  
 **Honesty:** **PARTIAL** only — never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never ADR-005 membership Complete, never store-scoped RBAC Complete.
 
 Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
@@ -319,8 +320,9 @@ company-level admin / settings / catalog / party-master / bank-feed / offline-de
 denies; JSON/CSV redacts for cost, PII, org links, approval-matrix `awaiting_roles`,
 early-discount quote matrix fields, and BI company config/cost embeds; product
 images gallery list GET; product variants path CSV export (after roster export
-deny); product catalog CSV export (`GET /products/export`). Each slice closes
-one dump or write path; the continuum as a whole stays **PARTIAL**.
+deny); product catalog CSV export (`GET /products/export`); users list/get
+(company org roster after users CSV export deny). Each slice closes one dump or
+write path; the continuum as a whole stays **PARTIAL**.
 
 ### Continuum agent contract
 
