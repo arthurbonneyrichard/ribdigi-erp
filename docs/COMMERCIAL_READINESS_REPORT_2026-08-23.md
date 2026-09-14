@@ -9,7 +9,7 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `5b3bbc12630bedf73cffcc9ecbdbafa254f31bf0` — docs sync after receipt header/footer `9100933f8c` + tax filing TIN `47844e3c4d` (feat ancestry); leftovers still open |
+| **As of tip** | `140fe80ca527de7eed803e6834636e1900ab9b83` — docs align after tax filing TIN `47844e3c4d` + receipt header/footer `9100933f8c` (feat ancestry); leftovers still open |
 | RBAC / store scope | **PARTIAL** only |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
 
