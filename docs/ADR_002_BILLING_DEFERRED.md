@@ -25,6 +25,8 @@ For Stage 1 / Commercial MVP:
 - Entitlement enforcement by plan can be added later without rewriting trial lifecycle.
 - BR-1.3 “upgrade/downgrade” is PARTIAL until a billing provider ships; metadata change is the Stage 1 closeout.
 
+**2026-09-14 scaffold:** Engineering tables/APIs for provider customer, subscription mirror, webhook inbox, and portal-session skeleton landed as **PARTIAL** — see [`ADR_002_PAID_BILLING_SCAFFOLD.md`](ADR_002_PAID_BILLING_SCAFFOLD.md). Paid billing Complete / checkout success / fabricated MRR remain **MISSING**. Entitlement gate flag defaults OFF.
+
 See also Stage 180 go-live remaining-gate index: [`GOLIVE_REMAINING_GATE_MVP.md`](GOLIVE_REMAINING_GATE_MVP.md) (billing remains deferred).
 
 See also Stage 181 billing remaining-gate index: [`BILLING_REMAINING_GATE_MVP.md`](BILLING_REMAINING_GATE_MVP.md) (billing remains deferred; not Complete).

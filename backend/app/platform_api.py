@@ -1075,6 +1075,9 @@ async def platform_billing_honesty(
     Stage 85 R1: includes tenant×plan subscriptions roster as metadata only.
     """
     roster = await platform_svc.platform_subscriptions_roster(db)
+    from app import billing_provider as billing_provider_svc
+
+    honesty = billing_provider_svc.honesty_payload()
     return env(
         {
             "deferred": True,
@@ -1086,11 +1089,14 @@ async def platform_billing_honesty(
             "checkout_enabled": False,
             "message": (
                 "Subscription billing is deferred (ADR-002). The roster below is "
-                "tenant×plan commercial metadata only — not live checkout or MRR."
+                "tenant×plan commercial metadata only — not live checkout or MRR. "
+                "Paid billing scaffold is PARTIAL (tables/webhook/portal skeleton); "
+                "Complete remains MISSING."
             ),
             "plan_codes": sorted(tenants_svc.VALID_PLAN_CODES),
             "distribution": roster.get("distribution"),
             "roster_total": roster.get("total"),
+            **honesty,
         }
     )
 

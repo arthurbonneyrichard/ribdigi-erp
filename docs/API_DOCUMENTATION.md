@@ -232,6 +232,8 @@ Optional `X-Tenant-ID` must match the key’s tenant when present. Permissions a
 
 **Current tenant (Stage 21 T1/C1):** `GET /tenants/me` / `PATCH /tenants/me` — company admin / super_admin profile (legal name, registration/tax IDs, billing/shipping/warehouse addresses, contact person, currency, logo via `/tenants/me/logo`). `document_numbering` + `document_numbering_preview` cover sales/purchase series including order, return, credit note, debit note (Stage 24 N1: `test_document_numbering_n1.py`). Evidence: `test_tenant_lifecycle_t1.py`, `test_company_currency_tax_c1.py`.
 
+**Paid billing scaffold (ADR-002 PARTIAL — Complete MISSING):** `GET /billing/status`, `POST /billing/portal-session` (skeleton; `portal_url` null until live cutover), `POST /billing/webhooks/provider` (signed ingest + local subscription mirror; never mutates `Tenant.plan_code` / never claims payment success). Flag `PAID_BILLING_ENTITLEMENT_GATE_ENABLED` default false. Ops: `docs/PAID_BILLING_PROVIDER_OPS.md`. Evidence: `test_paid_billing_scaffold.py`.
+
 ### 3.3 Update Tenant Profile
 **Endpoint:** `PATCH /tenants/{tenant_id}`
 
