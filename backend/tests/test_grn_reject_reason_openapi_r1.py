@@ -27,8 +27,7 @@ def test_grn_rejection_reason_schema():
             "received_qty": 10,
             "accepted_qty": 8,
             "rejected_qty": 2,
-            "rejection_reason": "  Damaged packaging  ",
-        }
+            "rejection_reason": "  Damaged packaging  "}
     )
     assert ok.rejection_reason == "Damaged packaging"
 
@@ -38,8 +37,7 @@ def test_grn_rejection_reason_schema():
             "po_item_id": _PO_ITEM,
             "received_qty": 5,
             "accepted_qty": 5,
-            "rejected_qty": 0,
-        }
+            "rejected_qty": 0}
     )
 
     with pytest.raises(ValidationError) as explicit:
@@ -48,8 +46,7 @@ def test_grn_rejection_reason_schema():
                 "po_item_id": _PO_ITEM,
                 "received_qty": 10,
                 "accepted_qty": 8,
-                "rejected_qty": 2,
-            }
+                "rejected_qty": 2}
         )
     assert "rejection_reason" in str(explicit.value).lower()
 
@@ -60,8 +57,7 @@ def test_grn_rejection_reason_schema():
                 "po_item_id": _PO_ITEM,
                 "received_qty": 10,
                 "accepted_qty": 7,
-                "rejected_qty": 0,
-            }
+                "rejected_qty": 0}
         )
     assert "rejection_reason" in str(inferred.value).lower()
 
@@ -73,8 +69,7 @@ def test_grn_rejection_reason_schema():
                     "received_qty": 10,
                     "accepted_qty": 8,
                     "rejected_qty": 2,
-                    "rejection_reason": bad,
-                }
+                    "rejection_reason": bad}
             )
         # Garbage still 422 even when no reject qty (optional field honesty)
         with pytest.raises(ValidationError):
@@ -84,8 +79,7 @@ def test_grn_rejection_reason_schema():
                     "received_qty": 5,
                     "accepted_qty": 5,
                     "rejected_qty": 0,
-                    "rejection_reason": bad,
-                }
+                    "rejection_reason": bad}
             )
 
 
@@ -137,7 +131,7 @@ async def test_grn_rejection_reason_api_blank_invalid_422(client, db_session):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=admin,
-        json={"name": f"TIP208 Vendor {suffix}", "kind": "supplier"},
+        json={"name": f"TIP208 Vendor {suffix}"},
     )
     assert supplier.status_code == 200, supplier.text
     created = await ac.post(
@@ -146,8 +140,7 @@ async def test_grn_rejection_reason_api_blank_invalid_422(client, db_session):
         json={
             "supplier_id": supplier.json()["data"]["id"],
             "notes": "tip208",
-            "items": [{"product_id": seed["p1"].id, "quantity": 10, "unit_price": 5}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 10, "unit_price": 5}]},
     )
     assert created.status_code == 200, created.text
     po_id = created.json()["data"]["id"]
@@ -170,10 +163,8 @@ async def test_grn_rejection_reason_api_blank_invalid_422(client, db_session):
                         "received_qty": 10,
                         "accepted_qty": 8,
                         "rejected_qty": 2,
-                        "rejection_reason": bad,
-                    }
-                ],
-            },
+                        "rejection_reason": bad}
+                ]},
         )
         assert resp.status_code == 422, (bad, resp.text)
 
@@ -188,10 +179,8 @@ async def test_grn_rejection_reason_api_blank_invalid_422(client, db_session):
                     "received_qty": 10,
                     "accepted_qty": 8,
                     "rejected_qty": 2,
-                    "rejection_reason": tag,
-                }
-            ],
-        },
+                    "rejection_reason": tag}
+            ]},
     )
     assert ok.status_code == 200, ok.text
     item = ok.json()["data"]["items"][0]

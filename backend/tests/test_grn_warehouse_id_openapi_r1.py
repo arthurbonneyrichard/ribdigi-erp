@@ -26,8 +26,7 @@ def test_grn_warehouse_id_schema():
         {
             "purchase_order_id": _PO,
             "warehouse_id": f"  {_VALID}  ",
-            "items": _ITEMS,
-        }
+            "items": _ITEMS}
     )
     assert ok.warehouse_id == _VALID.lower()
     omit_ok = GrnCreate.model_validate({"purchase_order_id": _PO, "items": _ITEMS})
@@ -38,8 +37,7 @@ def test_grn_warehouse_id_schema():
                 {
                     "purchase_order_id": _PO,
                     "warehouse_id": bad,
-                    "items": _ITEMS,
-                }
+                    "items": _ITEMS}
             )
 
 
@@ -66,9 +64,8 @@ async def test_grn_warehouse_id_api_blank_invalid_422(client, seeded):
         headers=headers,
         json={
             "name": f"TIP366 Vendor {suffix}",
-            "kind": "supplier",
-            "email": f"tip366-{suffix}@example.com",
-        },
+            
+            "email": f"tip366-{suffix}@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
     po = await ac.post(
@@ -78,8 +75,7 @@ async def test_grn_warehouse_id_api_blank_invalid_422(client, seeded):
             "supplier_id": supplier.json()["data"]["id"],
             "items": [
                 {"product_id": product_id, "quantity": 2, "unit_price": 1},
-            ],
-        },
+            ]},
     )
     assert po.status_code == 200, po.text
     po_data = po.json()["data"]
@@ -98,8 +94,7 @@ async def test_grn_warehouse_id_api_blank_invalid_422(client, seeded):
             json={
                 "purchase_order_id": po_data["id"],
                 "warehouse_id": bad,
-                "items": [item],
-            },
+                "items": [item]},
         )
         assert resp.status_code == 422, (bad, resp.text)
 
@@ -109,8 +104,7 @@ async def test_grn_warehouse_id_api_blank_invalid_422(client, seeded):
         json={
             "purchase_order_id": po_data["id"],
             "warehouse_id": f"  {str(uuid4()).upper()}  ",
-            "items": [item],
-        },
+            "items": [item]},
     )
     assert missing.status_code in (400, 404), missing.text
     assert missing.status_code != 422

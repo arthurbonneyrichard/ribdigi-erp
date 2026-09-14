@@ -53,9 +53,8 @@ async def test_supplier_payment_liquid_account_id_api_blank_invalid_422(client, 
         headers=headers,
         json={
             "name": f"TIP406 Vendor {suffix}",
-            "kind": "supplier",
-            "email": f"tip406-{suffix}@example.com",
-        },
+            
+            "email": f"tip406-{suffix}@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
     supp = supplier.json()["data"]["id"]
@@ -73,8 +72,7 @@ async def test_supplier_payment_liquid_account_id_api_blank_invalid_422(client, 
         json={
             "supplier_id": supp,
             "amount": 1,
-            "liquid_account_id": f"  {str(uuid4()).upper()}  ",
-        },
+            "liquid_account_id": f"  {str(uuid4()).upper()}  "},
     )
     assert missing.status_code in (400, 404), missing.text
     assert missing.status_code != 422

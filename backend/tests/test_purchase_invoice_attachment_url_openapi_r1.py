@@ -63,9 +63,8 @@ async def test_purchase_invoice_attachment_url_api_blank_invalid_422(client):
         headers=headers,
         json={
             "name": f"TIP240 Vendor {suffix}",
-            "kind": "supplier",
-            "email": f"tip240-{suffix}@example.com",
-        },
+            
+            "email": f"tip240-{suffix}@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
     supplier_id = supplier.json()["data"]["id"]
@@ -74,8 +73,7 @@ async def test_purchase_invoice_attachment_url_api_blank_invalid_422(client):
         "product_id": product_id,
         "quantity": 1,
         "unit_price": 12.5,
-        "tax_rate": 0,
-    }
+        "tax_rate": 0}
 
     for bad in ("", "ftp://evil", "not-a-url", "http://remote.example/x"):
         r = await ac.post(
@@ -84,8 +82,7 @@ async def test_purchase_invoice_attachment_url_api_blank_invalid_422(client):
             json={
                 "supplier_id": supplier_id,
                 "attachment_url": bad,
-                "items": [item],
-            },
+                "items": [item]},
         )
         assert r.status_code == 422, (bad, r.text)
 
@@ -95,8 +92,7 @@ async def test_purchase_invoice_attachment_url_api_blank_invalid_422(client):
         json={
             "supplier_id": supplier_id,
             "attachment_url": f"  https://files.example.com/tip240-{suffix}.pdf  ",
-            "items": [item],
-        },
+            "items": [item]},
     )
     assert hello.status_code == 200, hello.text
     data = hello.json()["data"]
@@ -108,8 +104,7 @@ async def test_purchase_invoice_attachment_url_api_blank_invalid_422(client):
         headers=headers,
         json={
             "supplier_id": supplier_id,
-            "items": [item],
-        },
+            "items": [item]},
     )
     assert omit.status_code == 200, omit.text
     assert omit.json()["data"]["attachment_url"] is None

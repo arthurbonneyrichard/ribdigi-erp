@@ -85,8 +85,7 @@ async def test_batch_number_api_blank_invalid_422(client, db_session):
             headers=headers,
             json={
                 "post_journal": False,
-                "lines": [{"product_id": product_id, "quantity": 1, "batch_number": bad}],
-            },
+                "lines": [{"product_id": product_id, "quantity": 1, "batch_number": bad}]},
         )
         assert opening.status_code == 422, (bad, opening.text)
 
@@ -96,8 +95,7 @@ async def test_batch_number_api_blank_invalid_422(client, db_session):
         json={
             "product_id": product_id,
             "quantity": 2,
-            "batch_number": f"  LOT-TIP230-{suffix}  ",
-        },
+            "batch_number": f"  LOT-TIP230-{suffix}  "},
     )
     assert hello.status_code == 200, hello.text
     batch = (hello.json().get("data") or {}).get("batch") or {}
@@ -108,9 +106,8 @@ async def test_batch_number_api_blank_invalid_422(client, db_session):
         headers=headers,
         json={
             "name": f"GRN Batch Vendor {suffix}",
-            "kind": "supplier",
-            "email": f"grn-batch-{suffix}@example.com",
-        },
+            
+            "email": f"grn-batch-{suffix}@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
 
@@ -120,8 +117,7 @@ async def test_batch_number_api_blank_invalid_422(client, db_session):
         json={
             "supplier_id": supplier.json()["data"]["id"],
             "items": [{"product_id": product_id, "quantity": 3, "unit_price": 5}],
-            "notes": "batch number OpenAPI hello-world",
-        },
+            "notes": "batch number OpenAPI hello-world"},
     )
     assert created.status_code == 200, created.text
     po = created.json()["data"]
@@ -144,10 +140,8 @@ async def test_batch_number_api_blank_invalid_422(client, db_session):
                         "received_qty": 1,
                         "accepted_qty": 1,
                         "rejected_qty": 0,
-                        "batch_number": bad,
-                    }
-                ],
-            },
+                        "batch_number": bad}
+                ]},
         )
         assert resp.status_code == 422, (bad, resp.text)
 
@@ -162,10 +156,8 @@ async def test_batch_number_api_blank_invalid_422(client, db_session):
                     "received_qty": 2,
                     "accepted_qty": 2,
                     "rejected_qty": 0,
-                    "batch_number": f"  GRN-TIP230-{suffix}  ",
-                }
-            ],
-        },
+                    "batch_number": f"  GRN-TIP230-{suffix}  "}
+            ]},
     )
     assert grn_ok.status_code == 200, grn_ok.text
     assert grn_ok.json()["data"]["items"][0]["batch_number"] == f"GRN-TIP230-{suffix}"

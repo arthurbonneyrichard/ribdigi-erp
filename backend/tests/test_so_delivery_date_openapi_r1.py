@@ -24,8 +24,7 @@ def test_so_delivery_date_schema():
         {
             "customer_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
             "delivery_date": " 2026-08-20 ",
-            "items": [base_item],
-        }
+            "items": [base_item]}
     )
     assert create_ok.delivery_date == "2026-08-20"
     for bad in ("", " ", "not-a-date", "01/02/2024", "2026-13-01"):
@@ -66,9 +65,8 @@ async def test_so_delivery_date_api_blank_invalid_422(client):
         headers=headers,
         json={
             "name": f"SO Date Customer {uuid4().hex[:6]}",
-            "kind": "customer",
-            "email": f"so-date-{uuid4().hex[:6]}@example.com",
-        },
+            
+            "email": f"so-date-{uuid4().hex[:6]}@example.com"},
     )
     assert customer.status_code == 200, customer.text
     customer_id = customer.json()["data"]["id"]
@@ -76,8 +74,7 @@ async def test_so_delivery_date_api_blank_invalid_422(client):
         "product_id": seed["p1"].id,
         "quantity": 1,
         "unit_price": 10,
-        "tax_rate": 0,
-    }
+        "tax_rate": 0}
 
     for bad in ("", "not-a-date", "01/02/2024"):
         resp = await ac.post(
@@ -86,8 +83,7 @@ async def test_so_delivery_date_api_blank_invalid_422(client):
             json={
                 "customer_id": customer_id,
                 "delivery_date": bad,
-                "items": [item],
-            },
+                "items": [item]},
         )
         assert resp.status_code == 422, (bad, resp.text)
 
@@ -98,8 +94,7 @@ async def test_so_delivery_date_api_blank_invalid_422(client):
             "customer_id": customer_id,
             "delivery_date": "2026-08-20",
             "items": [item],
-            "notes": "so delivery_date OpenAPI hello-world",
-        },
+            "notes": "so delivery_date OpenAPI hello-world"},
     )
     assert created.status_code == 200, created.text
     order = created.json()["data"]

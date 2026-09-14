@@ -26,8 +26,7 @@ def test_po_line_unit_id_schema():
             "product_id": _PRODUCT,
             "quantity": 1,
             "unit_price": 1,
-            "unit_id": f"  {_VALID}  ",
-        }
+            "unit_id": f"  {_VALID}  "}
     )
     assert ok.unit_id == _VALID.lower()
     omit_ok = PurchaseOrderItemCreate.model_validate(
@@ -41,8 +40,7 @@ def test_po_line_unit_id_schema():
                     "product_id": _PRODUCT,
                     "quantity": 1,
                     "unit_price": 1,
-                    "unit_id": bad,
-                }
+                    "unit_id": bad}
             )
     wrapped = PurchaseOrderCreate.model_validate(
         {
@@ -52,10 +50,8 @@ def test_po_line_unit_id_schema():
                     "product_id": _PRODUCT,
                     "quantity": 1,
                     "unit_price": 1,
-                    "unit_id": _VALID,
-                }
-            ],
-        }
+                    "unit_id": _VALID}
+            ]}
     )
     assert wrapped.items[0].unit_id == _VALID.lower()
 
@@ -82,7 +78,7 @@ async def test_po_line_unit_id_api_blank_invalid_422(client, seeded):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=headers,
-        json={"name": f"TIP363 Vendor {suffix}", "kind": "supplier"},
+        json={"name": f"TIP363 Vendor {suffix}"},
     )
     assert supplier.status_code == 200, supplier.text
     supplier_id = supplier.json()["data"]["id"]
@@ -98,10 +94,8 @@ async def test_po_line_unit_id_api_blank_invalid_422(client, seeded):
                         "product_id": product_id,
                         "quantity": 1,
                         "unit_price": 1,
-                        "unit_id": bad,
-                    }
-                ],
-            },
+                        "unit_id": bad}
+                ]},
         )
         assert resp.status_code == 422, (bad, resp.text)
 
@@ -115,10 +109,8 @@ async def test_po_line_unit_id_api_blank_invalid_422(client, seeded):
                     "product_id": product_id,
                     "quantity": 1,
                     "unit_price": 1,
-                    "unit_id": f"  {str(uuid4()).upper()}  ",
-                }
-            ],
-        },
+                    "unit_id": f"  {str(uuid4()).upper()}  "}
+            ]},
     )
     # OpenAPI accepts a UUID; existence lookup only runs when product.unit_id is set
     # (to_stock_qty early-returns otherwise and may persist the entered id).

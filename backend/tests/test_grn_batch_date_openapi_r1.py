@@ -57,9 +57,8 @@ async def test_grn_batch_date_api_blank_invalid_422(client, db_session):
         headers=headers,
         json={
             "name": f"GRN Date Vendor {uuid4().hex[:6]}",
-            "kind": "supplier",
-            "email": f"grn-date-{uuid4().hex[:6]}@example.com",
-        },
+            
+            "email": f"grn-date-{uuid4().hex[:6]}@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
 
@@ -72,11 +71,9 @@ async def test_grn_batch_date_api_blank_invalid_422(client, db_session):
                 {
                     "product_id": seed["p1"].id,
                     "quantity": 3,
-                    "unit_price": 5,
-                }
+                    "unit_price": 5}
             ],
-            "notes": "grn batch date OpenAPI hello-world",
-        },
+            "notes": "grn batch date OpenAPI hello-world"},
     )
     assert created.status_code == 200, created.text
     po = created.json()["data"]
@@ -104,10 +101,8 @@ async def test_grn_batch_date_api_blank_invalid_422(client, db_session):
                             "received_qty": 1,
                             "accepted_qty": 1,
                             "rejected_qty": 0,
-                            field: bad,
-                        }
-                    ],
-                },
+                            field: bad}
+                    ]},
             )
             assert resp.status_code == 422, (field, bad, resp.text)
 
@@ -124,10 +119,8 @@ async def test_grn_batch_date_api_blank_invalid_422(client, db_session):
                     "rejected_qty": 0,
                     "batch_number": f"LOT-TIP109-{uuid4().hex[:4]}",
                     "manufacturing_date": "2026-01-15",
-                    "expiry_date": "2027-01-15",
-                }
-            ],
-        },
+                    "expiry_date": "2027-01-15"}
+            ]},
     )
     assert ok.status_code == 200, ok.text
     item = ok.json()["data"]["items"][0]

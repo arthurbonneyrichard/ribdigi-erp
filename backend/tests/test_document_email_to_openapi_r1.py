@@ -69,9 +69,8 @@ async def test_document_email_to_query_blank_invalid_422(client, seeded, monkeyp
         headers=admin,
         json={
             "name": "Email To Honesty Buyer",
-            "kind": "customer",
-            "email": "buyer-to@example.com",
-        },
+            
+            "email": "buyer-to@example.com"},
     )
     assert customer.status_code == 200, customer.text
     customer_id = customer.json()["data"]["id"]
@@ -81,8 +80,7 @@ async def test_document_email_to_query_blank_invalid_422(client, seeded, monkeyp
         headers=admin,
         json={
             "customer_id": customer_id,
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 10}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 10}]},
     )
     assert created.status_code == 200, created.text
     inv_id = created.json()["data"]["id"]
@@ -116,8 +114,7 @@ async def test_document_email_to_query_blank_invalid_422(client, seeded, monkeyp
         headers=admin,
         json={
             "customer_id": customer_id,
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 8}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 8}]},
     )
     assert quote.status_code == 200, quote.text
     qid = quote.json()["data"]["id"]
@@ -139,9 +136,8 @@ async def test_document_email_to_query_blank_invalid_422(client, seeded, monkeyp
         headers=admin,
         json={
             "name": "Email To Honesty Vendor",
-            "kind": "supplier",
-            "email": "vendor-to@example.com",
-        },
+            
+            "email": "vendor-to@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
     supplier_id = supplier.json()["data"]["id"]
@@ -150,8 +146,7 @@ async def test_document_email_to_query_blank_invalid_422(client, seeded, monkeyp
         headers=admin,
         json={
             "supplier_id": supplier_id,
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 4}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 4}]},
     )
     assert po.status_code == 200, po.text
     po_id = po.json()["data"]["id"]

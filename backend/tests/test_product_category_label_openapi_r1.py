@@ -40,7 +40,7 @@ def test_product_category_label_value_schema():
 def test_product_category_label_ui_and_docs():
     page = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Product category"' in page
-    assert "category_id: productCategoryId || null" in page
+    assert "category_id: productCategoryId.trim() || null" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Product category label OpenAPI" in agents
     assert "ProductCategoryLabelValue" in agents

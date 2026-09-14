@@ -70,7 +70,7 @@ async def test_purchase_order_amend_reason_api_blank_invalid_422(client, db_sess
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=admin,
-        json={"name": f"TIP206 Vendor {suffix}", "kind": "supplier"},
+        json={"name": f"TIP206 Vendor {suffix}"},
     )
     assert supplier.status_code == 200, supplier.text
     created = await ac.post(
@@ -79,8 +79,7 @@ async def test_purchase_order_amend_reason_api_blank_invalid_422(client, db_sess
         json={
             "supplier_id": supplier.json()["data"]["id"],
             "notes": "tip206 original",
-            "items": [{"product_id": seed["p1"].id, "quantity": 2, "unit_price": 5}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 2, "unit_price": 5}]},
     )
     assert created.status_code == 200, created.text
     po_id = created.json()["data"]["id"]
@@ -89,8 +88,7 @@ async def test_purchase_order_amend_reason_api_blank_invalid_422(client, db_sess
         {
             "product_id": line["product_id"],
             "quantity": 3,
-            "unit_price": 5,
-        }
+            "unit_price": 5}
     ]
 
     for bad in ("", "!!!", "http://evil", "   "):

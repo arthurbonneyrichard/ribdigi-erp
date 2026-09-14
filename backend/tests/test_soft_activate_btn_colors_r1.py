@@ -21,10 +21,13 @@ def test_users_soft_activate_deactivate_colors():
 
 def test_inventory_product_and_catalog_soft_colors():
     page = _read("frontend/app/inventory/page.tsx")
-    assert 'className="btn-ok" onClick={() => setProductActive(true)' in page
-    assert 'className="btn-danger" onClick={() => setProductActive(false)' in page
-    assert 'className="btn-ok" onClick={() => activateVariant(v.id)' in page
-    assert 'className="btn-danger"' in page and "deactivateVariant" in page
+    assert 'className="btn-ok" aria-label="Activate product" onClick={() => setProductActive(true)' in page
+    assert 'className="btn-danger" aria-label="Deactivate product" onClick={() => setProductActive(false)' in page
+    assert 'className="btn-ok" aria-label={`Activate variant ${v.id}`} onClick={() => activateVariant(v.id)' in page
+    # Deactivate is multi-line in inventory (className / aria-label / onClick).
+    assert 'className="btn-danger"' in page
+    assert "aria-label={`Deactivate variant ${v.id}`}" in page
+    assert "onClick={() => deactivateVariant(v.id)}" in page
     assert page.count('className="btn-danger"') >= 4
     assert page.count('className="btn-ok"') >= 4
 

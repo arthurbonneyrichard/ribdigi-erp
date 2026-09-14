@@ -42,7 +42,7 @@ def test_supplier_payment_supplier_id_ui_and_docs():
     assert "UuidIdValue" in docs
     assert "Credit payment party" in docs
     assert "POST /suppliers/{supplier_id}/payments" in docs
-    assert "required body `supplier_id` ∈ `UuidIdValue`" in docs
+    assert "Required body `supplier_id` ∈ `UuidIdValue`" in docs
 
 
 @pytest.mark.asyncio

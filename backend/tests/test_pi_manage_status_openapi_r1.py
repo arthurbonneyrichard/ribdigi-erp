@@ -65,9 +65,8 @@ async def test_pi_manage_status_api_blank_invalid_422(client):
         headers=headers,
         json={
             "name": "PI Manage Status Vendor",
-            "kind": "supplier",
-            "email": "pi-manage-status@example.com",
-        },
+            
+            "email": "pi-manage-status@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
 
@@ -81,11 +80,9 @@ async def test_pi_manage_status_api_blank_invalid_422(client):
                     "product_id": seed["p1"].id,
                     "quantity": 1,
                     "unit_price": 12,
-                    "tax_rate": 0,
-                }
+                    "tax_rate": 0}
             ],
-            "notes": "piManageFilter hello-world",
-        },
+            "notes": "piManageFilter hello-world"},
     )
     assert created.status_code == 200, created.text
     inv = created.json()["data"]

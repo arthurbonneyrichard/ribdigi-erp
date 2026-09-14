@@ -25,8 +25,7 @@ def test_purchase_invoice_notes_schema():
         {
             "supplier_id": _sup,
             "items": [{"product_id": _prod, "quantity": 1, "unit_price": 1}],
-            "notes": "  Vendor bill memo  ",
-        }
+            "notes": "  Vendor bill memo  "}
     )
     assert create_ok.notes == "Vendor bill memo"
     for bad in ("", " ", "!!!", "http://evil", "@@"):
@@ -35,8 +34,7 @@ def test_purchase_invoice_notes_schema():
                 {
                     "supplier_id": _sup,
                     "items": [{"product_id": _prod, "quantity": 1, "unit_price": 1}],
-                    "notes": bad,
-                }
+                    "notes": bad}
             )
 
     patch_omit = PurchaseInvoiceUpdate.model_validate({})
@@ -74,9 +72,8 @@ async def test_purchase_invoice_notes_api_blank_invalid_422(client):
         headers=headers,
         json={
             "name": f"PI Notes Vendor {suffix}",
-            "kind": "supplier",
-            "email": f"pi-notes-{suffix}@example.com",
-        },
+            
+            "email": f"pi-notes-{suffix}@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
     supplier_id = supplier.json()["data"]["id"]
@@ -84,8 +81,7 @@ async def test_purchase_invoice_notes_api_blank_invalid_422(client):
         "product_id": seed["p1"].id,
         "quantity": 1,
         "unit_price": 12,
-        "tax_rate": 0,
-    }
+        "tax_rate": 0}
 
     for bad in ("", "!!!", "http://evil"):
         resp = await ac.post(

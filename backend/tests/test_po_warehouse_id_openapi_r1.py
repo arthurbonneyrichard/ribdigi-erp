@@ -26,8 +26,7 @@ def test_po_warehouse_id_schema():
         {
             "supplier_id": _SUPPLIER,
             "warehouse_id": f"  {_VALID}  ",
-            "items": _ITEMS,
-        }
+            "items": _ITEMS}
     )
     assert ok.warehouse_id == _VALID.lower()
     omit_ok = PurchaseOrderCreate.model_validate(
@@ -40,8 +39,7 @@ def test_po_warehouse_id_schema():
                 {
                     "supplier_id": _SUPPLIER,
                     "warehouse_id": bad,
-                    "items": _ITEMS,
-                }
+                    "items": _ITEMS}
             )
 
 
@@ -66,7 +64,7 @@ async def test_po_warehouse_id_api_blank_invalid_422(client, seeded):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=headers,
-        json={"name": f"TIP362 Vendor {suffix}", "kind": "supplier"},
+        json={"name": f"TIP362 Vendor {suffix}"},
     )
     assert supplier.status_code == 200, supplier.text
     supplier_id = supplier.json()["data"]["id"]
@@ -79,8 +77,7 @@ async def test_po_warehouse_id_api_blank_invalid_422(client, seeded):
             json={
                 "supplier_id": supplier_id,
                 "warehouse_id": bad,
-                "items": [item],
-            },
+                "items": [item]},
         )
         assert resp.status_code == 422, (bad, resp.text)
 
@@ -90,8 +87,7 @@ async def test_po_warehouse_id_api_blank_invalid_422(client, seeded):
         json={
             "supplier_id": supplier_id,
             "warehouse_id": f"  {str(uuid4()).upper()}  ",
-            "items": [item],
-        },
+            "items": [item]},
     )
     assert missing.status_code in (400, 404), missing.text
     assert missing.status_code != 422

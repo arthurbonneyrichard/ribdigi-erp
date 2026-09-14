@@ -52,7 +52,7 @@ async def test_party_history_date_query_blank_invalid_422(client):
     created = await ac.post(
         "/api/v1/suppliers",
         headers=headers,
-        json={"name": "History Date Query Supplier", "kind": "supplier"},
+        json={"name": "History Date Query Supplier"},
     )
     assert created.status_code in (200, 201), created.text
     supplier_id = created.json()["data"]["id"]

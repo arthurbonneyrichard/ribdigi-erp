@@ -24,10 +24,8 @@ _BASE = {
             "po_item_id": "bbbbbbbb-bbbb-cccc-dddd-eeeeeeeeeeee",
             "received_qty": 1,
             "accepted_qty": 1,
-            "rejected_qty": 0,
-        }
-    ],
-}
+            "rejected_qty": 0}
+    ]}
 
 
 def test_grn_notes_schema():
@@ -87,9 +85,8 @@ async def _sent_po(ac, db_session, *, admin, io, seed, vendor: str, qty: float =
         headers=admin,
         json={
             "name": vendor,
-            "kind": "supplier",
-            "email": f"{vendor.replace(' ', '').lower()}@example.com",
-        },
+            
+            "email": f"{vendor.replace(' ', '').lower()}@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
     created = await ac.post(
@@ -102,10 +99,8 @@ async def _sent_po(ac, db_session, *, admin, io, seed, vendor: str, qty: float =
                     "product_id": seed["p1"].id,
                     "quantity": qty,
                     "unit_price": 5,
-                    "tax_rate": 0,
-                }
-            ],
-        },
+                    "tax_rate": 0}
+            ]},
     )
     assert created.status_code == 200, created.text
     po = created.json()["data"]
@@ -130,8 +125,7 @@ async def test_grn_notes_api_blank_invalid_422(client, db_session):
         "po_item_id": po["items"][0]["id"],
         "received_qty": 1,
         "accepted_qty": 1,
-        "rejected_qty": 0,
-    }
+        "rejected_qty": 0}
 
     for bad in ("", "!!!", "http://evil"):
         resp = await ac.post(
@@ -160,10 +154,8 @@ async def test_grn_notes_api_blank_invalid_422(client, db_session):
                     "po_item_id": po["items"][0]["id"],
                     "received_qty": 1,
                     "accepted_qty": 1,
-                    "rejected_qty": 0,
-                }
-            ],
-        },
+                    "rejected_qty": 0}
+            ]},
     )
     assert ok.status_code == 200, ok.text
     assert ok.json()["data"].get("notes") == tag, ok.json()

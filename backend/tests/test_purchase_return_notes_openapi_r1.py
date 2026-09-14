@@ -23,10 +23,8 @@ _BASE = {
     "items": [
         {
             "goods_receipt_item_id": "11111111-2222-3333-4444-555555555555",
-            "quantity": 1,
-        }
-    ],
-}
+            "quantity": 1}
+    ]}
 
 
 def test_purchase_return_notes_schema():
@@ -88,9 +86,8 @@ async def _posted_grn(ac, db_session, *, admin, io, seed, vendor: str, qty: floa
         headers=admin,
         json={
             "name": vendor,
-            "kind": "supplier",
-            "email": f"{vendor.replace(' ', '').lower()}@example.com",
-        },
+            
+            "email": f"{vendor.replace(' ', '').lower()}@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
     created = await ac.post(
@@ -103,10 +100,8 @@ async def _posted_grn(ac, db_session, *, admin, io, seed, vendor: str, qty: floa
                     "product_id": seed["p1"].id,
                     "quantity": qty,
                     "unit_price": 5,
-                    "tax_rate": 0,
-                }
-            ],
-        },
+                    "tax_rate": 0}
+            ]},
     )
     assert created.status_code == 200, created.text
     po = created.json()["data"]
@@ -124,10 +119,8 @@ async def _posted_grn(ac, db_session, *, admin, io, seed, vendor: str, qty: floa
                     "po_item_id": po["items"][0]["id"],
                     "received_qty": qty,
                     "accepted_qty": qty,
-                    "rejected_qty": 0,
-                }
-            ],
-        },
+                    "rejected_qty": 0}
+            ]},
     )
     assert grn.status_code == 200, grn.text
     body = grn.json()["data"]
@@ -154,8 +147,7 @@ async def test_purchase_return_notes_api_blank_invalid_422(client, db_session):
                 "goods_receipt_id": grn_id,
                 "reason": "damaged",
                 "notes": bad,
-                "items": [{"goods_receipt_item_id": grn_item_id, "quantity": 1}],
-            },
+                "items": [{"goods_receipt_item_id": grn_item_id, "quantity": 1}]},
         )
         assert resp.status_code == 422, (bad, resp.text)
 
@@ -165,8 +157,7 @@ async def test_purchase_return_notes_api_blank_invalid_422(client, db_session):
         json={
             "goods_receipt_id": grn_id,
             "reason": "wrong_item",
-            "items": [{"goods_receipt_item_id": grn_item_id, "quantity": 1}],
-        },
+            "items": [{"goods_receipt_item_id": grn_item_id, "quantity": 1}]},
     )
     assert omit.status_code == 200, omit.text
     assert omit.json()["data"].get("notes") in (None, "")
@@ -178,8 +169,7 @@ async def test_purchase_return_notes_api_blank_invalid_422(client, db_session):
             "goods_receipt_id": grn_id,
             "reason": "quality",
             "notes": f"  {tag}  ",
-            "items": [{"goods_receipt_item_id": grn_item_id, "quantity": 1}],
-        },
+            "items": [{"goods_receipt_item_id": grn_item_id, "quantity": 1}]},
     )
     assert ok.status_code == 200, ok.text
     assert ok.json()["data"].get("notes") == tag, ok.json()

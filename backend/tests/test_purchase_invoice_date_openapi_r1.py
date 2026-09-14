@@ -53,9 +53,8 @@ async def test_purchase_invoice_date_api_blank_invalid_422(client):
         headers=headers,
         json={
             "name": f"PI Date Vendor {uuid4().hex[:6]}",
-            "kind": "supplier",
-            "email": f"pi-date-{uuid4().hex[:6]}@example.com",
-        },
+            
+            "email": f"pi-date-{uuid4().hex[:6]}@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
 
@@ -69,11 +68,9 @@ async def test_purchase_invoice_date_api_blank_invalid_422(client):
                     "product_id": seed["p1"].id,
                     "quantity": 1,
                     "unit_price": 12,
-                    "tax_rate": 0,
-                }
+                    "tax_rate": 0}
             ],
-            "notes": "purchase invoice date OpenAPI hello-world",
-        },
+            "notes": "purchase invoice date OpenAPI hello-world"},
     )
     assert created.status_code == 200, created.text
     inv = created.json()["data"]

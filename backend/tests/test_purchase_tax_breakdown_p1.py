@@ -22,7 +22,7 @@ async def test_purchase_invoice_exposes_line_tax_breakdown(client, db_session):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=headers,
-        json={"name": "Tax PI Vendor", "kind": "supplier", "email": "tax-pi@example.com"},
+        json={"name": "Tax PI Vendor",  "email": "tax-pi@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
     supplier_id = supplier.json()["data"]["id"]
@@ -36,8 +36,7 @@ async def test_purchase_invoice_exposes_line_tax_breakdown(client, db_session):
             "items": [
                 {"product_id": product_id, "quantity": 2, "unit_price": 50, "tax_rate": 10},
                 {"product_id": product_id, "quantity": 1, "unit_price": 20, "tax_rate": 5},
-            ],
-        },
+            ]},
     )
     assert created.status_code == 200, created.text
     data = created.json()["data"]

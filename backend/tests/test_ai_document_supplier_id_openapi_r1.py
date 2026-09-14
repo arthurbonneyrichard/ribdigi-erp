@@ -59,9 +59,8 @@ async def test_ai_document_supplier_id_api_blank_invalid_422(client, seeded):
         headers=headers,
         json={
             "name": "AI Supplier Tip312",
-            "kind": "supplier",
-            "email": f"ai-sup-312-{uuid4().hex[:6]}@example.com",
-        },
+            
+            "email": f"ai-sup-312-{uuid4().hex[:6]}@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
     supplier_id = supplier.json()["data"]["id"]
@@ -72,8 +71,7 @@ async def test_ai_document_supplier_id_api_blank_invalid_422(client, seeded):
         json={
             "supplier_id": supplier_id,
             "notes": "AI supplier tip 312",
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 5}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 5}]},
     )
     assert po.status_code == 200, po.text
     po_id = po.json()["data"]["id"]
@@ -98,8 +96,7 @@ async def test_ai_document_supplier_id_api_blank_invalid_422(client, seeded):
         headers=headers,
         json={
             "purchase_order_id": po_id,
-            "supplier_id": f"  {str(uuid4()).upper()}  ",
-        },
+            "supplier_id": f"  {str(uuid4()).upper()}  "},
     )
     assert mismatch.status_code in (400, 404), mismatch.text
     assert mismatch.status_code != 422

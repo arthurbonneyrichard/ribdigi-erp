@@ -33,8 +33,7 @@ def test_pi_item_product_id_schema():
         PurchaseInvoiceCreate.model_validate(
             {
                 "supplier_id": _SUP,
-                "items": [{"product_id": "p1", "quantity": 1, "unit_price": 1}],
-            }
+                "items": [{"product_id": "p1", "quantity": 1, "unit_price": 1}]}
         )
 
 
@@ -60,9 +59,8 @@ async def test_pi_item_product_id_api_blank_invalid_422(client, seeded):
         headers=headers,
         json={
             "name": f"TIP391 Vendor {suffix}",
-            "kind": "supplier",
-            "email": f"tip391-{suffix}@example.com",
-        },
+            
+            "email": f"tip391-{suffix}@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
     supplier_id = supplier.json()["data"]["id"]
@@ -73,8 +71,7 @@ async def test_pi_item_product_id_api_blank_invalid_422(client, seeded):
             headers=headers,
             json={
                 "supplier_id": supplier_id,
-                "items": [{"product_id": bad, "quantity": 1, "unit_price": 1}],
-            },
+                "items": [{"product_id": bad, "quantity": 1, "unit_price": 1}]},
         )
         assert resp.status_code == 422, (bad, resp.text)
 
@@ -87,10 +84,8 @@ async def test_pi_item_product_id_api_blank_invalid_422(client, seeded):
                 {
                     "product_id": f"  {str(uuid4()).upper()}  ",
                     "quantity": 1,
-                    "unit_price": 1,
-                }
-            ],
-        },
+                    "unit_price": 1}
+            ]},
     )
     assert missing.status_code in (400, 404), missing.text
     assert missing.status_code != 422

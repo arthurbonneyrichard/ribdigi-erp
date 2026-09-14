@@ -40,7 +40,7 @@ async def test_po_cancel_requires_reason_and_persists(client, db_session):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=headers,
-        json={"name": "PO Cancel Reason Vendor", "kind": "supplier"},
+        json={"name": "PO Cancel Reason Vendor"},
     )
     assert supplier.status_code == 200, supplier.text
     created = await ac.post(
@@ -49,8 +49,7 @@ async def test_po_cancel_requires_reason_and_persists(client, db_session):
         json={
             "supplier_id": supplier.json()["data"]["id"],
             "notes": "original note",
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 9}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 9}]},
     )
     assert created.status_code == 200, created.text
     po_id = created.json()["data"]["id"]

@@ -54,9 +54,8 @@ async def test_grn_item_po_item_id_api_blank_invalid_422(client, seeded):
         headers=headers,
         json={
             "name": f"TIP380 Vendor {suffix}",
-            "kind": "supplier",
-            "email": f"tip380-{suffix}@example.com",
-        },
+            
+            "email": f"tip380-{suffix}@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
     po = await ac.post(
@@ -64,8 +63,7 @@ async def test_grn_item_po_item_id_api_blank_invalid_422(client, seeded):
         headers=headers,
         json={
             "supplier_id": supplier.json()["data"]["id"],
-            "items": [{"product_id": product_id, "quantity": 2, "unit_price": 1}],
-        },
+            "items": [{"product_id": product_id, "quantity": 2, "unit_price": 1}]},
     )
     assert po.status_code == 200, po.text
     po_data = po.json()["data"]
@@ -81,8 +79,7 @@ async def test_grn_item_po_item_id_api_blank_invalid_422(client, seeded):
             headers=headers,
             json={
                 "purchase_order_id": po_data["id"],
-                "items": [{"po_item_id": bad, "received_qty": 1}],
-            },
+                "items": [{"po_item_id": bad, "received_qty": 1}]},
         )
         assert resp.status_code == 422, (bad, resp.text)
 
@@ -94,10 +91,8 @@ async def test_grn_item_po_item_id_api_blank_invalid_422(client, seeded):
             "items": [
                 {
                     "po_item_id": f"  {str(uuid4()).upper()}  ",
-                    "received_qty": 1,
-                }
-            ],
-        },
+                    "received_qty": 1}
+            ]},
     )
     assert missing.status_code in (400, 404), missing.text
     assert missing.status_code != 422

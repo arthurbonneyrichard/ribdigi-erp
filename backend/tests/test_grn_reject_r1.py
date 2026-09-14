@@ -38,7 +38,7 @@ async def _sent_po(ac, db_session, *, admin, io, seed, qty: float = 10):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=admin,
-        json={"name": "Reject Vendor", "kind": "supplier", "email": "reject-v@example.com"},
+        json={"name": "Reject Vendor",  "email": "reject-v@example.com"},
     )
     supplier_id = supplier.json()["data"]["id"]
     created = await ac.post(
@@ -46,8 +46,7 @@ async def _sent_po(ac, db_session, *, admin, io, seed, qty: float = 10):
         headers=io,
         json={
             "supplier_id": supplier_id,
-            "items": [{"product_id": seed["p1"].id, "quantity": qty, "unit_price": 3}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": qty, "unit_price": 3}]},
     )
     assert created.status_code == 200, created.text
     po_id = created.json()["data"]["id"]
@@ -79,10 +78,8 @@ async def test_grn_reject_requires_reason_and_stocks_accepted_only(client, db_se
                     "po_item_id": po_item_id,
                     "received_qty": 10,
                     "accepted_qty": 8,
-                    "rejected_qty": 2,
-                }
-            ],
-        },
+                    "rejected_qty": 2}
+            ]},
     )
     assert missing_reason.status_code == 422
     assert "rejection_reason" in missing_reason.text.lower()
@@ -98,10 +95,8 @@ async def test_grn_reject_requires_reason_and_stocks_accepted_only(client, db_se
                     "received_qty": 10,
                     "accepted_qty": 8,
                     "rejected_qty": 2,
-                    "rejection_reason": "   ",
-                }
-            ],
-        },
+                    "rejection_reason": "   "}
+            ]},
     )
     assert blank_reason.status_code == 422
     assert "rejection_reason" in blank_reason.text.lower()
@@ -117,10 +112,8 @@ async def test_grn_reject_requires_reason_and_stocks_accepted_only(client, db_se
                     "received_qty": 10,
                     "accepted_qty": 8,
                     "rejected_qty": 2,
-                    "rejection_reason": "Damaged packaging",
-                }
-            ],
-        },
+                    "rejection_reason": "Damaged packaging"}
+            ]},
     )
     assert ok.status_code == 200, ok.text
     data = ok.json()["data"]
@@ -155,8 +148,7 @@ async def test_grn_reject_inferred_from_accepted_shortfall(client, db_session):
             "purchase_order_id": po_id,
             "items": [
                 {"po_item_id": po_item_id, "received_qty": 5, "accepted_qty": 4},
-            ],
-        },
+            ]},
     )
     assert missing.status_code == 422
     assert "rejection_reason" in missing.text.lower()
@@ -171,10 +163,8 @@ async def test_grn_reject_inferred_from_accepted_shortfall(client, db_session):
                     "po_item_id": po_item_id,
                     "received_qty": 5,
                     "accepted_qty": 4,
-                    "rejection_reason": "Wrong item",
-                }
-            ],
-        },
+                    "rejection_reason": "Wrong item"}
+            ]},
     )
     assert ok.status_code == 200, ok.text
     item = ok.json()["data"]["items"][0]

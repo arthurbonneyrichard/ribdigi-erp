@@ -34,8 +34,7 @@ def test_pr_item_goods_receipt_item_id_schema():
             {
                 "goods_receipt_id": _GRN,
                 "reason": "damaged",
-                "items": [{"goods_receipt_item_id": "gi-1", "quantity": 1}],
-            }
+                "items": [{"goods_receipt_item_id": "gi-1", "quantity": 1}]}
         )
 
 
@@ -63,9 +62,8 @@ async def test_pr_item_goods_receipt_item_id_api_blank_invalid_422(client, seede
         headers=headers,
         json={
             "name": f"TIP381 Vendor {suffix}",
-            "kind": "supplier",
-            "email": f"tip381-{suffix}@example.com",
-        },
+            
+            "email": f"tip381-{suffix}@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
     po = await ac.post(
@@ -73,8 +71,7 @@ async def test_pr_item_goods_receipt_item_id_api_blank_invalid_422(client, seede
         headers=headers,
         json={
             "supplier_id": supplier.json()["data"]["id"],
-            "items": [{"product_id": product_id, "quantity": 2, "unit_price": 1}],
-        },
+            "items": [{"product_id": product_id, "quantity": 2, "unit_price": 1}]},
     )
     assert po.status_code == 200, po.text
     po_data = po.json()["data"]
@@ -92,10 +89,8 @@ async def test_pr_item_goods_receipt_item_id_api_blank_invalid_422(client, seede
                 {
                     "po_item_id": po_data["items"][0]["id"],
                     "received_qty": 2,
-                    "accepted_qty": 2,
-                }
-            ],
-        },
+                    "accepted_qty": 2}
+            ]},
     )
     assert grn.status_code == 200, grn.text
     grn_id = grn.json()["data"]["id"]
@@ -107,8 +102,7 @@ async def test_pr_item_goods_receipt_item_id_api_blank_invalid_422(client, seede
             json={
                 "goods_receipt_id": grn_id,
                 "reason": "damaged",
-                "items": [{"goods_receipt_item_id": bad, "quantity": 1}],
-            },
+                "items": [{"goods_receipt_item_id": bad, "quantity": 1}]},
         )
         assert resp.status_code == 422, (bad, resp.text)
 
@@ -121,10 +115,8 @@ async def test_pr_item_goods_receipt_item_id_api_blank_invalid_422(client, seede
             "items": [
                 {
                     "goods_receipt_item_id": f"  {str(uuid4()).upper()}  ",
-                    "quantity": 1,
-                }
-            ],
-        },
+                    "quantity": 1}
+            ]},
     )
     assert missing.status_code in (400, 404), missing.text
     assert missing.status_code != 422

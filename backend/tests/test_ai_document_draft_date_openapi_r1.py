@@ -46,29 +46,25 @@ def test_ai_document_draft_date_schema_rejects_invalid():
         AiDocumentPurchaseInvoiceCreate.model_validate(
             {
                 "purchase_order_id": "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE",
-                "invoice_date": "not-a-date",
-            }
+                "invoice_date": "not-a-date"}
         )
     with pytest.raises(ValidationError):
         AiDocumentPurchaseInvoiceCreate.model_validate(
             {
                 "purchase_order_id": "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE",
-                "invoice_date": "",
-            }
+                "invoice_date": ""}
         )
     with pytest.raises(ValidationError):
         AiDocumentPurchaseInvoiceCreate.model_validate(
             {
                 "purchase_order_id": "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE",
-                "extra": 1,
-            }
+                "extra": 1}
         )
 
     pi = AiDocumentPurchaseInvoiceCreate.model_validate(
         {
             "purchase_order_id": "  AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE  ",
-            "invoice_date": " 2026-08-10 ",
-        }
+            "invoice_date": " 2026-08-10 "}
     )
     assert pi.invoice_date == "2026-08-10"
     assert pi.purchase_order_id == "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
@@ -123,8 +119,7 @@ async def test_ai_document_draft_date_api_blank_invalid_422(client, seeded):
             "payee": "Draft Date Cafe",
             "reference": "OCR-DATE-R1",
             "expense_date": "2026-08-01",
-            "payment_method": "cash",
-        },
+            "payment_method": "cash"},
     )
     assert created.status_code == 200, created.text
     exp = created.json()["data"]["expense"]
@@ -143,9 +138,8 @@ async def test_ai_document_draft_date_api_blank_invalid_422(client, seeded):
         headers=headers,
         json={
             "name": "AI Draft Date Vendor",
-            "kind": "supplier",
-            "email": "ai-draft-date@example.com",
-        },
+            
+            "email": "ai-draft-date@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
     supplier_id = supplier.json()["data"]["id"]
@@ -156,8 +150,7 @@ async def test_ai_document_draft_date_api_blank_invalid_422(client, seeded):
         json={
             "supplier_id": supplier_id,
             "notes": "AI draft date PI source",
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 5}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 5}]},
     )
     assert po.status_code == 200, po.text
     po_id = po.json()["data"]["id"]
@@ -183,8 +176,7 @@ async def test_ai_document_draft_date_api_blank_invalid_422(client, seeded):
             "purchase_order_id": po_id,
             "supplier_id": supplier_id,
             "supplier_invoice_number": "SUP-DATE-R1",
-            "invoice_date": "2026-08-10",
-        },
+            "invoice_date": "2026-08-10"},
     )
     assert pi_ok.status_code == 200, pi_ok.text
     inv = pi_ok.json()["data"]["purchase_invoice"]

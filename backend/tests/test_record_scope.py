@@ -188,7 +188,7 @@ async def test_purchasing_own_scope_and_approve_bypass(client, db_session):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=admin,
-        json={"name": "Scope Supplier", "kind": "supplier"},
+        json={"name": "Scope Supplier"},
     )
     assert supplier.status_code == 200, supplier.text
     supplier_id = supplier.json()["data"]["id"]
@@ -198,8 +198,7 @@ async def test_purchasing_own_scope_and_approve_bypass(client, db_session):
         headers=io1,
         json={
             "preferred_supplier_id": supplier_id,
-            "items": [{"product_id": seed["p1"].id, "quantity": 3}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 3}]},
     )
     assert foreign_pr.status_code == 200, foreign_pr.text
     pr_id = foreign_pr.json()["data"]["id"]
@@ -223,8 +222,7 @@ async def test_purchasing_own_scope_and_approve_bypass(client, db_session):
         headers=io1,
         json={
             "supplier_id": supplier_id,
-            "items": [{"product_id": seed["p1"].id, "quantity": 2, "unit_price": 1}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 2, "unit_price": 1}]},
     )
     assert foreign_po.status_code == 200, foreign_po.text
     po_id = foreign_po.json()["data"]["id"]
@@ -236,8 +234,7 @@ async def test_purchasing_own_scope_and_approve_bypass(client, db_session):
         headers=io1,
         json={
             "supplier_id": supplier_id,
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 5}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 5}]},
     )
     assert foreign_inv.status_code == 200, foreign_inv.text
     inv_id = foreign_inv.json()["data"]["id"]

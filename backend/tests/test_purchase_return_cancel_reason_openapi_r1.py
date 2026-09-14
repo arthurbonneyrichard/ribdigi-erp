@@ -76,7 +76,7 @@ async def test_purchase_return_cancel_reason_api_blank_invalid_422(client, db_se
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=admin,
-        json={"name": f"TIP201 Vendor {suffix}", "kind": "supplier"},
+        json={"name": f"TIP201 Vendor {suffix}"},
     )
     assert supplier.status_code == 200, supplier.text
     created_po = await ac.post(
@@ -84,8 +84,7 @@ async def test_purchase_return_cancel_reason_api_blank_invalid_422(client, db_se
         headers=io,
         json={
             "supplier_id": supplier.json()["data"]["id"],
-            "items": [{"product_id": seed["p1"].id, "quantity": 3, "unit_price": 5, "tax_rate": 0}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 3, "unit_price": 5, "tax_rate": 0}]},
     )
     assert created_po.status_code == 200, created_po.text
     po = created_po.json()["data"]
@@ -103,10 +102,8 @@ async def test_purchase_return_cancel_reason_api_blank_invalid_422(client, db_se
                     "po_item_id": po["items"][0]["id"],
                     "received_qty": 3,
                     "accepted_qty": 3,
-                    "rejected_qty": 0,
-                }
-            ],
-        },
+                    "rejected_qty": 0}
+            ]},
     )
     assert grn.status_code == 200, grn.text
     grn_body = grn.json()["data"]
@@ -118,8 +115,7 @@ async def test_purchase_return_cancel_reason_api_blank_invalid_422(client, db_se
             "goods_receipt_id": grn_body["id"],
             "reason": "damaged",
             "notes": f"tip201 {suffix}",
-            "items": [{"goods_receipt_item_id": grn_body["items"][0]["id"], "quantity": 1}],
-        },
+            "items": [{"goods_receipt_item_id": grn_body["items"][0]["id"], "quantity": 1}]},
     )
     assert created.status_code == 200, created.text
     rid = created.json()["data"]["id"]

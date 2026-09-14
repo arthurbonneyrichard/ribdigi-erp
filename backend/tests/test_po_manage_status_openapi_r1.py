@@ -69,7 +69,7 @@ async def test_po_manage_status_api_blank_invalid_422(client):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=headers,
-        json={"name": "PO Manage Status Supplier", "kind": "supplier"},
+        json={"name": "PO Manage Status Supplier"},
     )
     assert supplier.status_code == 200, supplier.text
     supplier_id = supplier.json()["data"]["id"]
@@ -80,8 +80,7 @@ async def test_po_manage_status_api_blank_invalid_422(client):
         json={
             "supplier_id": supplier_id,
             "items": [{"product_id": seed["p1"].id, "quantity": 2, "unit_price": 5}],
-            "notes": "poManageFilter hello-world",
-        },
+            "notes": "poManageFilter hello-world"},
     )
     assert created.status_code == 200, created.text
     po_id = created.json()["data"]["id"]

@@ -45,7 +45,7 @@ async def test_amend_draft_po_lines_and_history(client, db_session):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=admin,
-        json={"name": "Amend Vendor", "kind": "supplier", "email": "amend-vendor@example.com"},
+        json={"name": "Amend Vendor",  "email": "amend-vendor@example.com"},
     )
     supplier_id = supplier.json()["data"]["id"]
     created = await ac.post(
@@ -54,8 +54,7 @@ async def test_amend_draft_po_lines_and_history(client, db_session):
         json={
             "supplier_id": supplier_id,
             "notes": "Original",
-            "items": [{"product_id": seed["p1"].id, "quantity": 2, "unit_price": 5}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 2, "unit_price": 5}]},
     )
     assert created.status_code == 200, created.text
     po_id = created.json()["data"]["id"]
@@ -68,8 +67,7 @@ async def test_amend_draft_po_lines_and_history(client, db_session):
         json={
             "reason": "Qty correction",
             "notes": "Amended notes",
-            "items": [{"product_id": seed["p1"].id, "quantity": 5, "unit_price": 4}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 5, "unit_price": 4}]},
     )
     assert amended.status_code == 200, amended.text
     body = amended.json()["data"]
@@ -104,7 +102,7 @@ async def test_amend_sent_po_with_notify(client, db_session, monkeypatch):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=admin,
-        json={"name": "Notify Vendor", "kind": "supplier", "email": "notify-vendor@example.com"},
+        json={"name": "Notify Vendor",  "email": "notify-vendor@example.com"},
     )
     supplier_id = supplier.json()["data"]["id"]
     created = await ac.post(
@@ -112,8 +110,7 @@ async def test_amend_sent_po_with_notify(client, db_session, monkeypatch):
         headers=io,
         json={
             "supplier_id": supplier_id,
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 10}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 10}]},
     )
     po_id = created.json()["data"]["id"]
     sent = await ac.post(f"/api/v1/purchasing/orders/{po_id}/send", headers=io)
@@ -126,8 +123,7 @@ async def test_amend_sent_po_with_notify(client, db_session, monkeypatch):
         json={
             "items": [{"product_id": seed["p1"].id, "quantity": 3, "unit_price": 10}],
             "reason": "Extra units",
-            "notify_supplier": True,
-        },
+            "notify_supplier": True},
     )
     assert amended.status_code == 200, amended.text
     body = amended.json()["data"]
@@ -150,7 +146,7 @@ async def test_amend_blocked_after_receipt(client, db_session):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=admin,
-        json={"name": "Receipt Vendor", "kind": "supplier", "email": "r@example.com"},
+        json={"name": "Receipt Vendor",  "email": "r@example.com"},
     )
     supplier_id = supplier.json()["data"]["id"]
     created = await ac.post(
@@ -158,8 +154,7 @@ async def test_amend_blocked_after_receipt(client, db_session):
         headers=io,
         json={
             "supplier_id": supplier_id,
-            "items": [{"product_id": seed["p1"].id, "quantity": 4, "unit_price": 2}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 4, "unit_price": 2}]},
     )
     po_id = created.json()["data"]["id"]
     # Force status to sent without email dependency
@@ -173,8 +168,7 @@ async def test_amend_blocked_after_receipt(client, db_session):
         headers=io,
         json={
             "purchase_order_id": po_id,
-            "items": [{"po_item_id": items[0]["id"], "received_qty": 1, "accepted_qty": 1}],
-        },
+            "items": [{"po_item_id": items[0]["id"], "received_qty": 1, "accepted_qty": 1}]},
     )
     assert grn.status_code == 200, grn.text
 
@@ -183,8 +177,7 @@ async def test_amend_blocked_after_receipt(client, db_session):
         headers=io,
         json={
             "reason": "should fail after receipt",
-            "items": [{"product_id": seed["p1"].id, "quantity": 8, "unit_price": 2}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 8, "unit_price": 2}]},
     )
     assert blocked.status_code == 409
     assert "received" in blocked.json()["detail"].lower()
@@ -199,7 +192,7 @@ async def test_amend_noop_rejected(client, db_session):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=admin,
-        json={"name": "Noop Vendor", "kind": "supplier"},
+        json={"name": "Noop Vendor"},
     )
     created = await ac.post(
         "/api/v1/purchasing/orders",
@@ -207,8 +200,7 @@ async def test_amend_noop_rejected(client, db_session):
         json={
             "supplier_id": supplier.json()["data"]["id"],
             "notes": "Same",
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 3}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 3}]},
     )
     po_id = created.json()["data"]["id"]
     empty = await ac.post(
@@ -223,7 +215,6 @@ async def test_amend_noop_rejected(client, db_session):
         json={
             "reason": "noop attempt",
             "notes": "Same",
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 3}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 3}]},
     )
     assert same.status_code == 400

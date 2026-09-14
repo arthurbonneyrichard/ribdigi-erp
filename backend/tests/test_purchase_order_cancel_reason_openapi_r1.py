@@ -45,7 +45,7 @@ async def test_purchase_order_cancel_reason_api_blank_invalid_422(client):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=headers,
-        json={"name": f"TIP199 Vendor {suffix}", "kind": "supplier"},
+        json={"name": f"TIP199 Vendor {suffix}"},
     )
     assert supplier.status_code == 200, supplier.text
     created = await ac.post(
@@ -54,8 +54,7 @@ async def test_purchase_order_cancel_reason_api_blank_invalid_422(client):
         json={
             "supplier_id": supplier.json()["data"]["id"],
             "notes": f"tip199 {suffix}",
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 11}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 11}]},
     )
     assert created.status_code == 200, created.text
     po_id = created.json()["data"]["id"]

@@ -53,25 +53,22 @@ async def test_po_amend_due_date_api_blank_invalid_422(client):
         headers=headers,
         json={
             "name": f"PO Due Vendor {uuid4().hex[:6]}",
-            "kind": "supplier",
-            "email": f"po-due-{uuid4().hex[:6]}@example.com",
-        },
+            
+            "email": f"po-due-{uuid4().hex[:6]}@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
     item = {
         "product_id": seed["p1"].id,
         "quantity": 2,
         "unit_price": 5,
-        "tax_rate": 0,
-    }
+        "tax_rate": 0}
     created = await ac.post(
         "/api/v1/purchasing/orders",
         headers=headers,
         json={
             "supplier_id": supplier.json()["data"]["id"],
             "items": [item],
-            "notes": "po amend due_date OpenAPI hello-world",
-        },
+            "notes": "po amend due_date OpenAPI hello-world"},
     )
     assert created.status_code == 200, created.text
     po = created.json()["data"]

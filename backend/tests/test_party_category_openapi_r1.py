@@ -64,10 +64,9 @@ async def test_party_category_api_blank_invalid_422(client):
             headers=headers,
             json={
                 "name": f"TIP215 Vendor {suffix}",
-                "kind": "supplier",
+                
                 "category": bad,
-                "email": f"tip215-bad-{suffix}@example.com",
-            },
+                "email": f"tip215-bad-{suffix}@example.com"},
         )
         assert r.status_code == 422, (bad, r.text)
 
@@ -76,10 +75,9 @@ async def test_party_category_api_blank_invalid_422(client):
         headers=headers,
         json={
             "name": f"TIP215 Vendor OK {suffix}",
-            "kind": "supplier",
+            
             "category": f"  PartyCategoryValue-{suffix}  ",
-            "email": f"tip215-ok-{suffix}@example.com",
-        },
+            "email": f"tip215-ok-{suffix}@example.com"},
     )
     assert hello.status_code == 200, hello.text
     data = hello.json()["data"]
@@ -105,8 +103,7 @@ async def test_party_category_api_blank_invalid_422(client):
         headers=headers,
         json={
             "name": f"TIP215 Cust OK {suffix}",
-            "category": f"  Retail-{suffix}  ",
-        },
+            "category": f"  Retail-{suffix}  "},
     )
     assert cust_ok.status_code == 200, cust_ok.text
     assert cust_ok.json()["data"]["category"] == f"Retail-{suffix}"

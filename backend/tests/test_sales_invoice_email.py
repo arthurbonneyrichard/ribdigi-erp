@@ -32,10 +32,8 @@ def test_render_sales_invoice_bodies_includes_total():
                     "quantity": 2,
                     "unit_price": 50,
                     "tax_rate": 15,
-                    "line_total": 115,
-                }
-            ],
-        },
+                    "line_total": 115}
+            ]},
     )
     assert "INV-1" in text and "115.00" in text
     assert "Buyer Co" in html and "Acme" in html
@@ -62,7 +60,7 @@ async def test_send_invoice_email_console_and_resend(client, db_session, monkeyp
     customer = await ac.post(
         "/api/v1/customers",
         headers=admin,
-        json={"name": "Email Buyer", "kind": "customer", "email": "buyer@example.com"},
+        json={"name": "Email Buyer",  "email": "buyer@example.com"},
     )
     assert customer.status_code == 200, customer.text
     customer_id = customer.json()["data"]["id"]
@@ -73,8 +71,7 @@ async def test_send_invoice_email_console_and_resend(client, db_session, monkeyp
         json={
             "customer_id": customer_id,
             "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 10}],
-            "notes": "Net 14",
-        },
+            "notes": "Net 14"},
     )
     assert created.status_code == 200, created.text
     inv_id = created.json()["data"]["id"]
@@ -124,7 +121,7 @@ async def test_send_invoice_requires_customer_email(client, db_session, monkeypa
     customer = await ac.post(
         "/api/v1/customers",
         headers=admin,
-        json={"name": "No Email Buyer", "kind": "customer"},
+        json={"name": "No Email Buyer"},
     )
     assert customer.status_code == 200, customer.text
     created = await ac.post(
@@ -132,8 +129,7 @@ async def test_send_invoice_requires_customer_email(client, db_session, monkeypa
         headers=admin,
         json={
             "customer_id": customer.json()["data"]["id"],
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 5}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 5}]},
     )
     assert created.status_code == 200, created.text
     inv_id = created.json()["data"]["id"]
@@ -157,15 +153,14 @@ async def test_send_invoice_email_disabled(client, db_session, monkeypatch):
     customer = await ac.post(
         "/api/v1/customers",
         headers=admin,
-        json={"name": "Disabled Mail Buyer", "kind": "customer", "email": "b@example.com"},
+        json={"name": "Disabled Mail Buyer",  "email": "b@example.com"},
     )
     created = await ac.post(
         "/api/v1/sales/invoices",
         headers=admin,
         json={
             "customer_id": customer.json()["data"]["id"],
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 5}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 5}]},
     )
     inv_id = created.json()["data"]["id"]
     posted = await ac.post(f"/api/v1/sales/invoices/{inv_id}/post", headers=admin)
