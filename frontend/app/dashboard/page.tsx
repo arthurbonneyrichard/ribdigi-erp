@@ -323,7 +323,7 @@ export default function Page() {
   const monthly = d.monthly_sales || [];
 
   const flow = [
-    { label: 'Sales', value: sales, color: '#22c55e' },
+    { label: 'Sales', value: sales, color: '#4AB012' },
     { label: 'Purchases', value: purchases, color: '#38bdf8' },
     { label: 'Expenses', value: expenses, color: '#fb7185' },
   ];
@@ -346,7 +346,7 @@ export default function Page() {
   const recent = d.recent_sales || [];
 
   const finItems = [
-    { label: 'Sales', value: sales, color: '#22c55e' },
+    { label: 'Sales', value: sales, color: '#4AB012' },
     { label: 'Purchases', value: purchases, color: '#38bdf8' },
     { label: 'Expenses', value: expenses, color: '#fb7185' },
   ].filter((x) => x.value > 0);
@@ -438,7 +438,7 @@ export default function Page() {
             {dailyEmpty ? (
               <div className="empty">No sales in the last 7 days yet.</div>
             ) : (
-              <DailyBars data={daily} field="sales" color="#22c55e" />
+              <DailyBars data={daily} field="sales" color="#4AB012" />
             )}
           </div>
 
@@ -484,7 +484,7 @@ export default function Page() {
                   cy="65"
                   r={rr}
                   fill="none"
-                  stroke="#22c55e"
+                  stroke="#4AB012"
                   strokeWidth="14"
                   strokeDasharray={healthArc.dash}
                   strokeLinecap="round"
@@ -499,7 +499,7 @@ export default function Page() {
               </svg>
               <div className="nums">
                 <span className="pill">
-                  <span className="dot" style={{ background: '#22c55e', width: 12, height: 12, borderRadius: 4 }} />
+                  <span className="dot" style={{ background: '#4AB012', width: 12, height: 12, borderRadius: 4 }} />
                   In stock&nbsp;<b>{num(inStock)}</b>
                 </span>
                 <Link className="pill" href={links.low_stock || '/reports'} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -569,7 +569,7 @@ export default function Page() {
                   <span className="li">No financial activity yet</span>
                 ) : (
                   [
-                    { label: 'Sales', value: sales, color: '#22c55e' },
+                    { label: 'Sales', value: sales, color: '#4AB012' },
                     { label: 'Purchases', value: purchases, color: '#38bdf8' },
                     { label: 'Expenses', value: expenses, color: '#fb7185' },
                   ].map((it) => (

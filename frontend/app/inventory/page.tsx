@@ -68,7 +68,7 @@ function StockStatusBadge({ product }: { product: any }) {
   const colors: Record<string, { bg: string; fg: string; text: string }> = {
     red: { bg: '#fee2e2', fg: '#b91c1c', text: 'Low / out' },
     yellow: { bg: '#fef9c3', fg: '#a16207', text: 'Near reorder' },
-    green: { bg: '#dcfce7', fg: '#15803d', text: 'OK' },
+    green: { bg: '#eaf8d8', fg: '#006B2E', text: 'OK' },
   };
   const c = colors[status] || colors.green;
   return (
