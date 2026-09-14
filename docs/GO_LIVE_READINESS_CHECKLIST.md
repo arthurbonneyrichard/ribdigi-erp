@@ -35,6 +35,7 @@ Related deep runbooks (do not duplicate dumps here):
 
 - Security cookie cutover: [`sec_m2_staging_soak_checklist.md`](sec_m2_staging_soak_checklist.md)
 - ADR-005 membership: [`adr005_staging_soak_checklist.md`](adr005_staging_soak_checklist.md)
+- Store-scoped RBAC remaining: [`STORE_SCOPED_RBAC_COMPLETE_REMAINING.md`](STORE_SCOPED_RBAC_COMPLETE_REMAINING.md)
 - Offline wipe + VAPID browser: [`offline_wipe_push_staging_checklist.md`](offline_wipe_push_staging_checklist.md)
 - Offline 7-day matrix: [`OFFLINE_PHYSICAL_TEST_RUNBOOK_2026-08-23.md`](OFFLINE_PHYSICAL_TEST_RUNBOOK_2026-08-23.md)
 - Paid billing provider: [`PAID_BILLING_PROVIDER_OPS.md`](PAID_BILLING_PROVIDER_OPS.md)
@@ -54,7 +55,7 @@ Related deep runbooks (do not duplicate dumps here):
 | Offline Complete attestation | **MISSING** | Explicitly not claimed (`OFFLINE_COMPLETE_ATTESTATION.md`) | Product attestation after endurance + push Complete |
 | 7-day offline physical VERIFIED | **MISSING** | Envelope + client gate shipped only | Execute platform matrix runbook (unchecked) |
 | ADR-005 membership (assignment + flag scope + POS bind) | **Complete** | Assign/list/revoke; flag-gated union; cashier fail-closed; POS picker; automated flag-ON soak | Staging enable (ops cutover ≠ reopen Complete) |
-| Store-scoped RBAC Complete | **MISSING** | Continuum separate from ADR-005; manager_id self-scope dump closed | Do **not** flip from membership soak |
+| Store-scoped RBAC Complete | **MISSING** | Continuum separate from ADR-005; remaining checklist [`STORE_SCOPED_RBAC_COMPLETE_REMAINING.md`](STORE_SCOPED_RBAC_COMPLETE_REMAINING.md); manager_id self-scope dump closed | Do **not** flip from membership soak |
 | Paid billing scaffold (portal/checkout/webhooks) | **PARTIAL** (engineering mock soak ready) | ADR-002 tables; HMAC webhooks; portal + checkout create (503 unconfigured; mock CI); lifecycle + `invoice.paid` non-Complete; `test_paid_billing_soak.py` | Live Stripe keys + staging soak |
 | Paid billing entitlement gate | **PARTIAL** | `PAID_BILLING_ENTITLEMENT_GATE_ENABLED` default **OFF**; when ON gates only `POST /sales` + `PATCH /companies/{id}`; mock gate-ON soak proven | Staging mirror→access evidence before any prod enable |
 | Paid billing Complete / go-live | **MISSING** (ops-blocked) | No `Tenant.plan_code` mutation from Checkout/webhooks; no fabricated MRR; `paid_billing_complete_ops_blocked=true` | Live Stripe cutover + commercial acceptance |

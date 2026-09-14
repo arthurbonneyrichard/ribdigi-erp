@@ -96,7 +96,12 @@ type PurchaseRequest = {
   awaiting_roles?: string[];
   items: { id: string; product_id: string; quantity: number; unit_price: number }[];
 };
-type ApprovalLevel = { min_amount: number; roles: string[]; label?: string };
+type ApprovalLevel = {
+  min_amount: number;
+  min_percent?: number | null;
+  roles: string[];
+  label?: string;
+};
 type GrnItem = {
   id: string;
   product_id: string;
@@ -761,11 +766,18 @@ export default function Page() {
       const r = await api('/purchasing/settings', {
         method: 'PATCH',
         body: JSON.stringify({
-          levels: prLevels.map((l) => ({
-            min_amount: Number(l.min_amount) || 0.01,
-            roles: l.roles,
-            label: l.label || undefined,
-          })),
+          levels: prLevels.map((l) => {
+            const pct =
+              l.min_percent === null || l.min_percent === undefined
+                ? null
+                : Number(l.min_percent);
+            return {
+              min_amount: Number(l.min_amount) || 0.01,
+              min_percent: pct != null && !Number.isNaN(pct) && pct > 0 ? pct : null,
+              roles: l.roles,
+              label: l.label || undefined,
+            };
+          }),
         }),
       });
       setPrLevels(r.data?.levels || []);
@@ -1405,8 +1417,9 @@ export default function Page() {
         <div className="card" style={{ marginBottom: 16 }} id="purchase-settings">
           <h3>Purchase settings</h3>
           <p className="muted" style={{ marginBottom: 8 }}>
-            PR approval matrix — estimated total must exceed a level&apos;s min to require that step (Store
-            Manager → Company Admin by default). Company admins can save changes. Export via{' '}
+            PR approval matrix — a level triggers when estimated total exceeds Min amount{' '}
+            <strong>or</strong> optional Min % (when a percent basis is supplied). Store Manager →
+            Company Admin by default. Company admins can save changes. Export via{' '}
             <code>GET /purchasing/settings/export</code> (Stage 138 P1).
           </p>
           {prLevels.length === 0 ? (
@@ -1423,6 +1436,18 @@ export default function Page() {
                   onChange={(e) => updatePrLevel(idx, { min_amount: Number(e.target.value) || 0 })}
                   placeholder="Min amount"
                   style={{ width: 100 }}
+                />
+                <input
+                  value={lvl.min_percent ?? ''}
+                  onChange={(e) => {
+                    const v = e.target.value.trim();
+                    updatePrLevel(idx, {
+                      min_percent: v === '' ? null : Number(v) || 0,
+                    });
+                  }}
+                  placeholder="Min % (opt)"
+                  style={{ width: 90 }}
+                  title="Optional percentage threshold"
                 />
                 <input
                   value={lvl.label || ''}

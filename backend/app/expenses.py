@@ -38,12 +38,14 @@ def default_approval_levels(
         {
             "step": 1,
             "min_amount": auto_t,
+            "min_percent": None,
             "roles": list(DEFAULT_L1_ROLES),
             "label": "Manager / accountant",
         },
         {
             "step": 2,
             "min_amount": l2_t,
+            "min_percent": None,
             "roles": sorted(L2_ROLES),
             "label": "Company admin",
         },
@@ -58,6 +60,9 @@ def normalize_approval_matrix(
     """Validate/normalize levels. Raises HTTPException on bad input.
 
     ``known_roles`` may include tenant custom role slugs (system roles always allowed).
+    Optional ``min_percent`` (0 < pct ≤ 100) enables percentage approval limits: a
+    level triggers when amount exceeds ``min_amount`` **or** (when a percent basis
+    is supplied at evaluation time) when percent exceeds ``min_percent``.
     """
     from app.rbac import VALID_ROLES
     from app.roles import SLUG_RE
@@ -80,6 +85,7 @@ def normalize_approval_matrix(
 
     levels: list[dict] = []
     prev_min: float | None = None
+    prev_pct: float | None = None
     for i, item in enumerate(levels_in):
         if not isinstance(item, dict):
             raise HTTPException(status_code=400, detail=f"level {i + 1} must be an object")
@@ -94,6 +100,30 @@ def normalize_approval_matrix(
                 status_code=400,
                 detail="level min_amount values must be strictly increasing",
             )
+        raw_pct = item.get("min_percent", None)
+        min_percent: float | None
+        if raw_pct is None or raw_pct == "":
+            min_percent = None
+        else:
+            try:
+                min_percent = float(raw_pct)
+            except (TypeError, ValueError):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"level {i + 1} min_percent must be a number",
+                ) from None
+            if min_percent <= 0 or min_percent > 100:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"level {i + 1} min_percent must be > 0 and ≤ 100",
+                )
+            if prev_pct is not None and min_percent <= prev_pct:
+                raise HTTPException(
+                    status_code=400,
+                    detail="level min_percent values must be strictly increasing when set",
+                )
+            min_percent = round(min_percent, 4)
+            prev_pct = min_percent
         roles_raw = item.get("roles") or []
         if not isinstance(roles_raw, list) or not roles_raw:
             raise HTTPException(status_code=400, detail=f"level {i + 1} roles must be a non-empty list")
@@ -114,6 +144,7 @@ def normalize_approval_matrix(
             {
                 "step": i + 1,
                 "min_amount": round(min_amount, 2),
+                "min_percent": min_percent,
                 "roles": roles,
                 "label": label,
             }
@@ -126,10 +157,54 @@ def matrix_payload(levels: list[dict]) -> dict:
     return {"levels": levels}
 
 
-def steps_required_from_matrix(amount: float, levels: list[dict]) -> int:
-    """Count levels whose min_amount the expense exceeds (0 = auto-approve)."""
+def steps_required_from_matrix(
+    amount: float,
+    levels: list[dict],
+    *,
+    percent: float | None = None,
+) -> int:
+    """Count levels that the amount/percent basis exceeds (0 = auto-approve).
+
+    A level triggers when ``amount > min_amount`` **or** when ``percent`` is
+    provided and the level has ``min_percent`` and ``percent > min_percent``.
+    """
     amt = float(amount)
-    return sum(1 for lvl in levels if amt > float(lvl["min_amount"]))
+    pct = float(percent) if percent is not None else None
+    count = 0
+    for lvl in levels:
+        amount_hit = amt > float(lvl["min_amount"])
+        percent_hit = False
+        if pct is not None and lvl.get("min_percent") is not None:
+            percent_hit = pct > float(lvl["min_percent"])
+        if amount_hit or percent_hit:
+            count += 1
+    return count
+
+
+async def category_budget_percent_basis(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    category_id: str | None,
+    amount: float,
+    company_id: str | None = None,
+) -> float | None:
+    """Expense amount as % of category budget (None when no positive budget)."""
+    if not category_id:
+        return None
+    stmt = select(m.ExpenseCategory).where(
+        m.ExpenseCategory.id == category_id,
+        m.ExpenseCategory.tenant_id == tenant_id,
+    )
+    if company_id:
+        stmt = stmt.where(m.ExpenseCategory.company_id == company_id)
+    cat = (await db.execute(stmt)).scalar_one_or_none()
+    if not cat:
+        return None
+    budget = float(getattr(cat, "budget_amount", 0) or 0)
+    if budget <= 0:
+        return None
+    return round((float(amount) / budget) * 100.0, 4)
 
 
 def requires_approval(amount: float, threshold: float) -> bool:
@@ -761,7 +836,14 @@ async def create_expense(
     settings = await get_approval_settings(db, tenant_id)
     levels = settings["levels"]
     auto_t = settings["expense_approval_threshold"]
-    steps = steps_required_from_matrix(amount, levels)
+    percent_basis = await category_budget_percent_basis(
+        db,
+        tenant_id=tenant_id,
+        category_id=cat_id,
+        amount=amount,
+        company_id=company_id,
+    )
+    steps = steps_required_from_matrix(amount, levels, percent=percent_basis)
     needs_approval = steps > 0
 
     if liquid_account_id:
@@ -1136,7 +1218,16 @@ async def update_expense(
         expense.amount = new_amount
         if expense.status == "pending":
             settings = await get_approval_settings(db, tenant_id)
-            steps = steps_required_from_matrix(new_amount, settings["levels"])
+            percent_basis = await category_budget_percent_basis(
+                db,
+                tenant_id=tenant_id,
+                category_id=expense.category_id,
+                amount=new_amount,
+                company_id=getattr(expense, "company_id", None),
+            )
+            steps = steps_required_from_matrix(
+                new_amount, settings["levels"], percent=percent_basis
+            )
             if steps == 0:
                 expense.status = "approved"
                 expense.approved_by = user_id
@@ -1179,7 +1270,16 @@ async def update_expense(
         elif expense.status == "rejected":
             # Re-open for approval with new amount
             settings = await get_approval_settings(db, tenant_id)
-            steps = steps_required_from_matrix(new_amount, settings["levels"])
+            percent_basis = await category_budget_percent_basis(
+                db,
+                tenant_id=tenant_id,
+                category_id=expense.category_id,
+                amount=new_amount,
+                company_id=getattr(expense, "company_id", None),
+            )
+            steps = steps_required_from_matrix(
+                new_amount, settings["levels"], percent=percent_basis
+            )
             if steps == 0:
                 expense.status = "approved"
                 expense.approved_by = user_id

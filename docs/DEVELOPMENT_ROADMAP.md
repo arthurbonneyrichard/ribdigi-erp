@@ -11,6 +11,19 @@
 
 ---
 
+### Tip — % approval limits + store-scoped RBAC remaining checklist (2026-09-15)
+
+**As of tip:** _(updated on merge/push; see AGENTS.md tip SHA)_
+
+Percentage approval limits landed on expense/PR matrices (`min_percent` + expense
+category budget percent basis). ADR-005 remains **Complete** (flag default OFF).
+Overall RBAC readiness remains **PARTIAL**. Store-scoped RBAC Complete remains
+**MISSING** — remaining criteria in `docs/STORE_SCOPED_RBAC_COMPLETE_REMAINING.md`.
+Offline / 7-day / go-live / paid billing Completes remain **MISSING** (ops-blocked
+where noted). Do not resume continuum dump spam as the default CONTINUE path.
+
+---
+
 ### Tip — RBAC approval hardening + ADR-005 Complete (2026-09-15)
 
 **As of tip:** `10a7c64af691009826e90e15c46d0bd8ed6dfeec`

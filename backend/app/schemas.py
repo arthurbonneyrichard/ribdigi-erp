@@ -629,6 +629,8 @@ class RecurringExpenseUpdate(BaseModel):
 
 class ApprovalLevelUpdate(BaseModel):
     min_amount: float = Field(gt=0)
+    # Optional percentage limit (0 < pct ≤ 100). Triggers with amount OR percent basis.
+    min_percent: float | None = Field(default=None, gt=0, le=100)
     roles: list[str] = Field(min_length=1)
     label: str | None = None
     step: int | None = None
