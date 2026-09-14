@@ -12504,7 +12504,7 @@ async def test_store_manager_product_has_image_redacted(client, db_session):
 
     Primary binary GET + gallery list/export + image_url already closed; has_image
     was a leftover catalog media inventory signal. Admin keeps has_image true.
-    WH stock ops / POS lookup remain; company/tenant logo binary GET denied separately.
+    WH stock ops / POS lookup remain; company/tenant logo binary GET stays open.
     """
     ac, seed = client
     product = seed["p1"]
@@ -14096,15 +14096,14 @@ async def test_store_manager_tenant_logo_writes_denied(client, db_session, tmp_p
 
 
 @pytest.mark.asyncio
-async def test_store_manager_company_tenant_logo_binary_get_denied(
+async def test_store_manager_company_tenant_logo_binary_get_allowed(
     client, db_session, tmp_path, monkeypatch
 ):
-    """Company + tenant logo binary GET denied after branding write denies.
+    """Company + tenant logo binary GET remain allowed for store_manager.
 
-    Leftover company/tenant branding asset dump (same class as catalog brand logo
-    / product primary image). Writes already denied; switcher name/has_logo chrome
-    + managed store ops remain; WorkspaceBrand soft-fails to initials.
-    Admin binary GET remains.
+    Continuum leftover (workspace chrome): branding *writes* denied; binary GET
+    intentionally open. Mistaken ``b0fc721a15`` deny was reverted. Switcher
+    name/has_logo chrome + managed store ops remain. Admin binary GET remains.
     """
     from app import storage as storage_svc
 
@@ -14113,7 +14112,7 @@ async def test_store_manager_company_tenant_logo_binary_get_denied(
 
     ac, seed = client
     cid = seed["c1"].id
-    png = b"\x89PNG\r\n\x1a\n" + b"logo-binary-dump"
+    png = b"\x89PNG\r\n\x1a\n" + b"logo-binary-chrome"
 
     admin_headers = await auth_headers(
         ac,
@@ -14137,19 +14136,14 @@ async def test_store_manager_company_tenant_logo_binary_get_denied(
     )
     assert ok_tenant.status_code == 200, ok_tenant.text
 
-    admin_co_get = await ac.get(f"/api/v1/companies/{cid}/logo", headers=admin_headers)
-    assert admin_co_get.status_code == 200, admin_co_get.text
-    admin_tenant_get = await ac.get("/api/v1/tenants/me/logo", headers=admin_headers)
-    assert admin_tenant_get.status_code == 200, admin_tenant_get.text
-
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
-    denied_co = await ac.get(f"/api/v1/companies/{cid}/logo", headers=headers)
-    assert denied_co.status_code == 403, denied_co.text
-    assert denied_co.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+    mgr_co = await ac.get(f"/api/v1/companies/{cid}/logo", headers=headers)
+    assert mgr_co.status_code == 200, mgr_co.text
+    assert mgr_co.content.startswith(b"\x89PNG")
 
-    denied_tenant = await ac.get("/api/v1/tenants/me/logo", headers=headers)
-    assert denied_tenant.status_code == 403, denied_tenant.text
-    assert denied_tenant.json()["detail"]["code"] == "STORE_SCOPE_DENIED"
+    mgr_tenant = await ac.get("/api/v1/tenants/me/logo", headers=headers)
+    assert mgr_tenant.status_code == 200, mgr_tenant.text
+    assert mgr_tenant.content.startswith(b"\x89PNG")
 
     # Switcher chrome fields still present on /me (has_logo / tenant_has_logo).
     me = await ac.get("/api/v1/me", headers=headers)
@@ -14163,10 +14157,11 @@ async def test_store_manager_company_tenant_logo_binary_get_denied(
 async def test_store_manager_document_logo_data_url_redacted(
     client, db_session, tmp_path, monkeypatch
 ):
-    """Print/receipt JSON nulls logo_data_url for store_manager after logo GET deny.
+    """Print/receipt JSON nulls logo_data_url for store_manager.
 
-    POS receipt JSON keeps has_logo; admin JSON keeps logo_data_url. Server-side
-    HTML/PDF embeds still load logos from storage.
+    Binary logo GET remains intentionally open for chrome; print/receipt JSON must
+    not re-dump base64. POS receipt JSON keeps has_logo; admin JSON keeps
+    logo_data_url. Server-side HTML/PDF embeds still load logos from storage.
     """
     from app import storage as storage_svc
 
