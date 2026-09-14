@@ -5612,17 +5612,46 @@ def redact_audit_party_ledger_details(details: dict) -> dict:
     return out
 
 
+# Audit detail keys that re-dump company department org assignment already
+# redacted on expense / recurring JSON/CSV (departments list GET denied).
+_AUDIT_DEPARTMENT_DETAIL_KEYS = ("department_id",)
+
+
+def omit_audit_department_details(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit ``department_id`` inside audit ``details``.
+
+    Expense / recurring list/get/export/patch already redact ``department_id``;
+    departments list GET + assign/clear writes already denied. Scoped
+    ``GET /audit-logs`` (+ CSV) must not re-dump the same company org-unit
+    assignment via ``expense_update`` (and sibling) audit ``details``.
+    Operational amounts / status / ``store_id`` remain; admin keeps
+    ``department_id`` in details. FX + CLE master + party ledger keys already
+    handled by sibling omit helpers.
+    """
+    return managed_ids is not None
+
+
+def redact_audit_department_details(details: dict) -> dict:
+    """Null department org-assignment keys on an audit ``details`` dict."""
+    out = dict(details)
+    for key in _AUDIT_DEPARTMENT_DETAIL_KEYS:
+        if key in out:
+            out[key] = None
+    return out
+
+
 def redact_audit_manager_details(details: dict) -> dict:
-    """Compose store_manager audit ``details`` redacts (FX + CLE + party ledger)."""
+    """Compose store_manager audit ``details`` redacts (FX + CLE + party + dept)."""
     out = redact_audit_fx_details(details)
     out = redact_audit_cle_master_details(out)
-    return redact_audit_party_ledger_details(out)
+    out = redact_audit_party_ledger_details(out)
+    return redact_audit_department_details(out)
 
 
 def apply_audit_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager audit JSON redacts (FX + CLE + party ledger in ``details``)."""
+    """Apply store_manager audit JSON redacts (FX + CLE + party + dept in ``details``)."""
     out = dict(payload)
     if not isinstance(out.get("details"), dict):
         return out
@@ -5633,6 +5662,8 @@ def apply_audit_manager_redacts(
         details = redact_audit_cle_master_details(details)
     if omit_audit_party_ledger_details(managed_ids):
         details = redact_audit_party_ledger_details(details)
+    if omit_audit_department_details(managed_ids):
+        details = redact_audit_department_details(details)
     out["details"] = details
     return out
 

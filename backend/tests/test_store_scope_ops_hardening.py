@@ -23848,3 +23848,105 @@ async def test_store_manager_audit_details_party_ledger_redacted(client, db_sess
     assert float(mgr_csv_inv_details.get("total") or 0) == pytest.approx(80.0)
     assert mgr_csv_inv_details.get("invoice_number") == "INV-APL-1"
     assert float(mgr_csv_pay_details.get("amount") or 0) == pytest.approx(50.0)
+
+
+@pytest.mark.asyncio
+async def test_store_manager_audit_details_department_redacted(client, db_session):
+    """Audit list/export nulls department_id inside details for store_manager.
+
+    Expense / recurring list/get/export/patch already redact department_id;
+    departments list GET + assign/clear already denied. Scoped audit JSON/CSV
+    must not re-dump company org-unit assignment via expense_update details.
+    Operational amount / status / store_id remain; admin keeps department_id.
+    FX + CLE + party ledger keys already redacted separately; integrity hashes
+    unchanged (redact on read only).
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    other_user = seed["admin1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Audit Dept Redact Store",
+        code="ADR-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+
+    dept_id = "dept-adr-org-1"
+    exp_ev = await audit_svc.record_event(
+        db_session,
+        tenant_id=tid,
+        company_id=cid,
+        user_id=other_user.id,
+        module="expenses",
+        action="expense_update",
+        entity="expense",
+        entity_id="exp-adr-1",
+        details={
+            "status": "pending",
+            "amount": 18.0,
+            "store_id": store.id,
+            "department_id": dept_id,
+        },
+    )
+    await db_session.commit()
+
+    admin_listed = await ac.get(
+        "/api/v1/audit-logs", headers=admin_company, params={"limit": 500}
+    )
+    assert admin_listed.status_code == 200, admin_listed.text
+    admin_row = next(r for r in admin_listed.json()["data"] if r["id"] == exp_ev.id)
+    assert (admin_row.get("details") or {}).get("department_id") == dept_id
+    assert float((admin_row.get("details") or {}).get("amount") or 0) == pytest.approx(18.0)
+
+    mgr_listed = await ac.get(
+        "/api/v1/audit-logs", headers=headers, params={"limit": 500}
+    )
+    assert mgr_listed.status_code == 200, mgr_listed.text
+    mgr_row = next(r for r in mgr_listed.json()["data"] if r["id"] == exp_ev.id)
+    mgr_details = mgr_row.get("details") or {}
+    assert mgr_details.get("department_id") is None
+    assert float(mgr_details.get("amount") or 0) == pytest.approx(18.0)
+    assert mgr_details.get("status") == "pending"
+    assert mgr_details.get("store_id") == store.id
+
+    admin_csv = await ac.get(
+        "/api/v1/audit-logs/export",
+        headers=admin_company,
+        params={"format": "csv"},
+    )
+    assert admin_csv.status_code == 200, admin_csv.text
+    admin_detail_rows = list(csv.DictReader(io.StringIO(admin_csv.text)))
+    admin_csv_row = next(r for r in admin_detail_rows if r.get("entity_id") == "exp-adr-1")
+    assert json.loads(admin_csv_row["details"]).get("department_id") == dept_id
+
+    mgr_csv = await ac.get(
+        "/api/v1/audit-logs/export",
+        headers=headers,
+        params={"format": "csv"},
+    )
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    mgr_detail_rows = list(csv.DictReader(io.StringIO(mgr_csv.text)))
+    mgr_csv_row = next(r for r in mgr_detail_rows if r.get("entity_id") == "exp-adr-1")
+    mgr_csv_details = json.loads(mgr_csv_row["details"])
+    assert mgr_csv_details.get("department_id") is None
+    assert float(mgr_csv_details.get("amount") or 0) == pytest.approx(18.0)
+    assert mgr_csv_details.get("store_id") == store.id
