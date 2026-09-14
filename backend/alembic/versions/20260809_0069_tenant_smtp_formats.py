@@ -26,7 +26,8 @@ def upgrade() -> None:
         batch.add_column(sa.Column("smtp_password_enc", sa.Text(), nullable=True))
         batch.add_column(sa.Column("smtp_from_email", sa.String(length=255), nullable=True))
         batch.add_column(sa.Column("smtp_from_name", sa.String(length=150), nullable=True))
-        batch.add_column(sa.Column("smtp_use_tls", sa.Boolean(), nullable=False, server_default=sa.text("1")))
+        # PostgreSQL requires a boolean literal (true/false), not integer 1.
+        batch.add_column(sa.Column("smtp_use_tls", sa.Boolean(), nullable=False, server_default=sa.text("true")))
         batch.add_column(sa.Column("smtp_use_ssl", sa.Boolean(), nullable=False, server_default=sa.text("0")))
 
 

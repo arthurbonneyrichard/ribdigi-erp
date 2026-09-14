@@ -123,16 +123,22 @@ Follow [`adr005_staging_soak_checklist.md`](adr005_staging_soak_checklist.md):
 Follow [`offline_wipe_push_staging_checklist.md`](offline_wipe_push_staging_checklist.md)
 and [`OFFLINE_WEB_PUSH_VAPID_OPS.md`](OFFLINE_WEB_PUSH_VAPID_OPS.md):
 
-1. Generate VAPID keypair into secrets manager (never commit private key).
-2. Staging: set public/private/subject keys; `OFFLINE_PUSH_ENABLED=true`; restart.
-3. `GET /api/v1/offline/push/vapid-public-key` → `configured: true`, `enabled: true`;
-   honesty Complete flags remain **false**.
-4. Staging till browser: register/bind device → **Bind browser** (PushManager subscribe).
-5. Admin `POST /api/v1/offline/devices/{id}/wipe` → pending + push `delivered` (or honest skip/fail).
-6. SW receives `remote_wipe`; IndexedDB cleared; wipe ack succeeds.
-7. Optional 410 revoke → subscription revoked; rebind; poll fallback until ack.
-8. Rollback: `OFFLINE_PUSH_ENABLED=false` or clear keys — wipe still queues via poll.
-9. Evidence pack required for any future push-delivery Complete — **not** Offline Complete.
+- [ ] Generate VAPID keypair into secrets manager (never commit private key).
+- [ ] Staging: set public/private/subject keys; `OFFLINE_PUSH_ENABLED=true`; restart.
+- [ ] `GET /api/v1/offline/push/vapid-public-key` → `configured: true`, `enabled: true`;
+      honesty Complete flags remain **false**.
+- [ ] Staging till browser: register/bind device → **Bind browser** (PushManager subscribe).
+- [ ] Admin `POST /api/v1/offline/devices/{id}/wipe` → pending + push `delivered` (or honest skip/fail).
+- [ ] SW receives `remote_wipe`; IndexedDB cleared; wipe ack succeeds.
+- [ ] Optional 410 revoke → subscription revoked; rebind; poll fallback until ack.
+- [ ] Rollback: `OFFLINE_PUSH_ENABLED=false` or clear keys — wipe still queues via poll.
+- [ ] Evidence pack required for any future push-delivery Complete — **not** Offline Complete.
+
+**Cloud-agent local attempt (2026-09-15):** stack + VAPID endpoint + device bind
+proven; **PushManager.subscribe blocked** (timeout / no FCM endpoint). Leave all
+boxes above unchecked. See
+`/opt/cursor/artifacts/local_vapid_wipe_browser_proof_blocker.md`. Push + Offline
+remain **PARTIAL**; Completes stay **MISSING**.
 
 ### 3E. Seven-day physical offline matrix (MISSING / NOT RUN)
 

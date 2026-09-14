@@ -45,32 +45,45 @@ cd backend && .venv/bin/pytest \
 Do **not** run these on production tills with live queue data. Use a staging
 tenant and a disposable browser profile.
 
-1. Generate VAPID keys per `docs/OFFLINE_WEB_PUSH_VAPID_OPS.md` (secret manager;
-   never commit private keys).
-2. Staging env: set `OFFLINE_PUSH_VAPID_PUBLIC_KEY`,
-   `OFFLINE_PUSH_VAPID_PRIVATE_KEY`, `OFFLINE_PUSH_VAPID_SUBJECT=mailto:…`,
-   then `OFFLINE_PUSH_ENABLED=true`. Restart API workers.
-3. Confirm `GET /api/v1/offline/push/vapid-public-key` returns
-   `configured: true`, `enabled: true`, and a public key (no private material).
-   Honesty flags `push_delivery_complete_claimed` / `offline_complete_claimed`
-   must remain **false**.
-4. On a staging till browser: Company → Offline devices → register/bind device →
-   **Bind browser** (PushManager subscribe + `PUT .../push-subscription`).
-5. From an admin session: `POST /api/v1/offline/devices/{id}/wipe`.
-   Expect wipe response `wipe_pending: true` and
-   `push_delivery.status: delivered` (or honest skip/fail). Soft lockdown
-   applies; queue wipe remains pending until client ack.
-6. Browser proof: service worker receives `push` with `type`/`action`
-   `remote_wipe`; client clears IndexedDB offline DBs; `POST .../wipe/ack`
-   succeeds; device shows wipe acked / not pending.
-7. Optional 410 path: revoke subscription at the push service (or use a stale
-   endpoint) → wipe returns `subscription_revoked: true`; UI prompts rebind;
-   wipe stays pending via online poll until rebind + clear + ack.
-8. Fail-closed rollback: set `OFFLINE_PUSH_ENABLED=false` (or clear VAPID keys)
-   and restart — wipe still queues; push status is `disabled` /
-   `skipped_unconfigured`; poll path remains source of truth.
-9. Capture screenshots / HAR / wipe API JSON into an ops evidence pack.
-   **Still does not** by itself mark Offline Complete or 7-day VERIFIED.
+### Checklist (leave unchecked until ops evidence exists)
+
+- [ ] Generate VAPID keys per `docs/OFFLINE_WEB_PUSH_VAPID_OPS.md` (secret manager;
+      never commit private keys).
+- [ ] Staging env: set `OFFLINE_PUSH_VAPID_PUBLIC_KEY`,
+      `OFFLINE_PUSH_VAPID_PRIVATE_KEY`, `OFFLINE_PUSH_VAPID_SUBJECT=mailto:…`,
+      then `OFFLINE_PUSH_ENABLED=true`. Restart API workers.
+- [ ] Confirm `GET /api/v1/offline/push/vapid-public-key` returns
+      `configured: true`, `enabled: true`, and a public key (no private material).
+      Honesty flags `push_delivery_complete_claimed` / `offline_complete_claimed`
+      must remain **false**.
+- [ ] On a staging till browser: Company → Offline devices → register/bind device →
+      **Bind browser** (PushManager subscribe + `PUT .../push-subscription`).
+- [ ] From an admin session: `POST /api/v1/offline/devices/{id}/wipe`.
+      Expect wipe response `wipe_pending: true` and
+      `push_delivery.status: delivered` (or honest skip/fail). Soft lockdown
+      applies; queue wipe remains pending until client ack.
+- [ ] Browser proof: service worker receives `push` with `type`/`action`
+      `remote_wipe`; client clears IndexedDB offline DBs; `POST .../wipe/ack`
+      succeeds; device shows wipe acked / not pending.
+- [ ] Optional 410 path: revoke subscription at the push service (or use a stale
+      endpoint) → wipe returns `subscription_revoked: true`; UI prompts rebind;
+      wipe stays pending via online poll until rebind + clear + ack.
+- [ ] Fail-closed rollback: set `OFFLINE_PUSH_ENABLED=false` (or clear VAPID keys)
+      and restart — wipe still queues; push status is `disabled` /
+      `skipped_unconfigured`; poll path remains source of truth.
+- [ ] Capture screenshots / HAR / wipe API JSON into an ops evidence pack.
+      **Still does not** by itself mark Offline Complete or 7-day VERIFIED.
+
+### Cloud-agent local attempt (2026-09-15) — not a checkbox Complete
+
+Attempted local real-browser proof on tip ancestry `7e21080e0e9ae05f4cff3851cfcbe3ea7d6a9307`
+with generated VAPID keys + Chrome CDP. **Proven only:** API/FE up, VAPID public
+endpoint enabled with honesty flags false, SW + PushManager present, notifications
+granted, offline device register/bind. **Blocked:** `PushManager.subscribe`
+timed out (no FCM endpoint) — cannot prove SW `push` / wipe-via-push delivery.
+Evidence: `/opt/cursor/artifacts/local_vapid_wipe_browser_proof_blocker.md`.
+**Do not check** the operator boxes above from that attempt. Offline / push remain
+**PARTIAL**.
 
 ## Honesty
 

@@ -92,6 +92,12 @@ Store the private key in your secret manager / compose secrets — **never commi
 Automated evidence ≠ push-delivery Complete. Physical/browser ops cannot be
 skipped for Complete.
 
+**Cloud Agent note (2026-09-15):** A local Chrome CDP attempt with generated VAPID
+keys reached SW ready + device bind, but `PushManager.subscribe` timed out (no
+usable FCM endpoint in that desktop). That attempt is documented as a **blocker**,
+not proof — do not treat it as push-delivery Complete. Retry on a normal staging
+till browser per `docs/offline_wipe_push_staging_checklist.md`.
+
 ## Honesty
 
 - Remote wipe = **PARTIAL**
