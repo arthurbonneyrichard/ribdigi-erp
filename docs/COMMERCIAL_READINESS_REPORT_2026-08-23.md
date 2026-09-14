@@ -9,7 +9,7 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `b47287c539b88b9431c91a521a1131eb6f5131bc` — feat redact credit-aging document `balance_due_base` (`15435528c568`); leftovers still open |
+| **As of tip** | `718b198b660af443f81d3b0c8a2ee1f66eec5d4b` — feat redact credit-aging document `balance_due_base` (`15435528c568`); leftovers still open |
 | RBAC / store scope | **PARTIAL** only |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
 
