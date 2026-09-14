@@ -1795,7 +1795,7 @@ export default function Page() {
                 value={editCost}
                 onChange={(e) => setEditCost(e.target.value)}
                 placeholder="0.00"
-                aria-label="Edit product actual price (cost)"
+                aria-label="Edit product cost price"
               />
             </div>
             <div className="product-price-field">
@@ -2166,7 +2166,7 @@ export default function Page() {
               value={productCost}
               onChange={(e) => setProductCost(e.target.value)}
               placeholder="0.00"
-              aria-label="Product actual price (cost)"
+              aria-label="Product cost price"
             />
           </div>
           <div className="product-price-field">
