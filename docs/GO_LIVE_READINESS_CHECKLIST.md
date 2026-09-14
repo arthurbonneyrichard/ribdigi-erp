@@ -5,6 +5,13 @@
 **As of engineering tip ancestry:** paid billing entitlement gate + ADR-005 soak +
 offline wipe-via-push automation (see `AGENTS.md` tip SHA after merge).
 
+**Engineering → Complete path: ops-blocked.** Landed code + automated suites do
+**not** advance Offline / push-delivery / 7-day VERIFIED / go-live / paid billing /
+ADR-005 / store-scoped RBAC Completes. Cloud-agent Chrome could not finish
+`PushManager.subscribe` (no FCM endpoint) — that attempt is a **blocker note**,
+not proof. Remaining work is **ops-only** (staging keys, real till browser,
+soaks, physical matrix). Do **not** resume continuum RBAC dumps.
+
 **Honesty — do not claim from this document alone:**
 
 | Claim | Status |
@@ -38,7 +45,7 @@ Related deep runbooks (do not duplicate dumps here):
 |------|--------|----------------------|--------------------|
 | Security Mediums SEC-M1…M5 + L2 | **FIXED** / overall ✅ **HARDENED** | Automated cookie soak Phase E; flag defaults OFF intentional | Staging cookie enable per SEC-M2 checklist (ops cutover ≠ reopen finding) |
 | Offline remote wipe scaffold | **PARTIAL** | Alembic `20260914_0111`; request/ack + IndexedDB clear | — |
-| Offline Web Push wipe delivery | **PARTIAL** | Alembic `20260914_0112`; VAPID dispatch; automated wipe-via-push suite | Staging VAPID keys + **real-browser** proof |
+| Offline Web Push wipe delivery | **PARTIAL** (ops-blocked for Complete) | Alembic `20260914_0112`; VAPID dispatch; automated wipe-via-push suite; cloud-agent subscribe **blocked** | Staging VAPID keys + **real till browser** proof (not cloud agent) |
 | Offline Complete attestation | **MISSING** | Explicitly not claimed (`OFFLINE_COMPLETE_ATTESTATION.md`) | Product attestation after endurance + push Complete |
 | 7-day offline physical VERIFIED | **MISSING** | Envelope + client gate shipped only | Execute platform matrix runbook (unchecked) |
 | ADR-005 membership scaffold + UI + flag scope | **PARTIAL** | Assign/list/revoke; flag-gated union scope; cashier fail-closed; automated flag-ON soak | Staging `STORE_MEMBERSHIP_SCOPE_ENABLED=true` soak |
@@ -179,13 +186,24 @@ ADR-005 Complete, store-scoped RBAC Complete, 7-day VERIFIED, or go-live attesta
 
 ---
 
-## 6. Recommended ops next (priority order)
+## 6. Remaining ops-only next steps (Completes path)
 
-1. Staging: real billing provider keys + price map + signed webhook soak (`PAID_BILLING_PROVIDER_OPS.md`).
-2. Staging entitlement gate ON **after** mirror→access evidence on the allowlist only.
-3. Staging VAPID + **real-browser** wipe-via-push proof (`offline_wipe_push_staging_checklist.md`).
-4. Operator 7-day physical matrix (`OFFLINE_PHYSICAL_TEST_RUNBOOK_2026-08-23.md`).
-5. Staging ADR-005 flag ON soak (`adr005_staging_soak_checklist.md`).
-6. SEC-M2 cookie staging enable when ready (`sec_m2_staging_soak_checklist.md`).
-7. Do **not** resume continuum RBAC dumps unless an explicit launch blocker.
-8. Do **not** claim Completes from this checklist or from flag flips alone.
+No further engineering slices are required to unlock Completes for these gates —
+only operator evidence on staging/real tills:
+
+1. Staging VAPID secrets + **real till browser** wipe-via-push proof
+   (`offline_wipe_push_staging_checklist.md`, `OFFLINE_WEB_PUSH_VAPID_OPS.md`).
+   Do **not** re-attempt in cloud-agent Chrome (PushManager/FCM blocked).
+2. Operator 7-day physical offline matrix
+   (`OFFLINE_PHYSICAL_TEST_RUNBOOK_2026-08-23.md`) — required before any
+   **7-day VERIFIED** claim; Offline Complete remains a separate attestation.
+3. Staging: real billing provider keys + price map + signed webhook soak
+   (`PAID_BILLING_PROVIDER_OPS.md`); entitlement gate ON only after
+   mirror→access evidence on the allowlist.
+4. Staging ADR-005 `STORE_MEMBERSHIP_SCOPE_ENABLED=true` soak
+   (`adr005_staging_soak_checklist.md`); product sign-off before any prod default ON.
+5. SEC-M2 cookie staging enable when ready (`sec_m2_staging_soak_checklist.md`)
+   — FIXED finding; enable is ops cutover only.
+6. Do **not** resume continuum RBAC dumps. Do **not** claim Offline Complete /
+   7-day VERIFIED / go-live / paid billing Complete / ADR-005 Complete /
+   store-scoped RBAC Complete from this checklist or flag flips alone.
