@@ -24139,3 +24139,203 @@ async def test_store_manager_audit_details_emailed_to_redacted(client, db_sessio
     assert mgr_csv_pos_details.get("to") is None
     assert mgr_csv_pos_details.get("reference") == "RCPT-AET-1"
     assert mgr_csv_alloc_details.get("to") == 3
+
+
+@pytest.mark.asyncio
+async def test_store_manager_audit_details_attachment_storage_redacted(client, db_session):
+    """Audit list/export nulls attachment storage keys inside details for store_manager.
+
+    Expense / purchase-invoice / journal list/get/upload already redact
+    attachment_url and upload echo uploaded.key. Scoped audit JSON/CSV must not
+    re-dump the same storage path via expense_attachment_upload /
+    invoice_attachment_upload / journal_attachment_upload details.key, or cold
+    archive storage_key. Size / content_type / event_count remain; admin keeps
+    keys. API-key key_prefix stays (not an attachment key). FX + CLE + party
+    ledger + department + emailed_to keys already redacted separately; integrity
+    hashes unchanged (redact on read only).
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    other_user = seed["admin1"]
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Audit Attach Key Redact Store",
+        code="AAK-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+
+    exp_key = "tenants/%s/expenses/exp-aak-1.pdf" % tid
+    pi_key = "tenants/%s/purchase_invoices/pi-aak-1.pdf" % tid
+    je_key = "tenants/%s/journals/je-aak-1.pdf" % tid
+    cold_key = "tenants/%s/audit-cold/pack-aak-1.jsonl.gz" % tid
+    exp_ev = await audit_svc.record_event(
+        db_session,
+        tenant_id=tid,
+        company_id=cid,
+        user_id=mgr.id,
+        module="expenses",
+        action="expense_attachment_upload",
+        entity="expense",
+        entity_id="exp-aak-1",
+        details={
+            "key": exp_key,
+            "size": 2048,
+            "content_type": "application/pdf",
+            "store_id": store.id,
+        },
+    )
+    pi_ev = await audit_svc.record_event(
+        db_session,
+        tenant_id=tid,
+        company_id=cid,
+        user_id=other_user.id,
+        module="purchasing",
+        action="invoice_attachment_upload",
+        entity="purchase_invoice",
+        entity_id="pi-aak-1",
+        details={
+            "key": pi_key,
+            "size": 4096,
+            "content_type": "application/pdf",
+            "store_id": store.id,
+        },
+    )
+    je_ev = await audit_svc.record_event(
+        db_session,
+        tenant_id=tid,
+        company_id=cid,
+        user_id=other_user.id,
+        module="accounting",
+        action="journal_attachment_upload",
+        entity="journal_entry",
+        entity_id="je-aak-1",
+        details={
+            "key": je_key,
+            "size": 1024,
+            "content_type": "application/pdf",
+            "store_id": store.id,
+        },
+    )
+    cold_ev = await audit_svc.record_event(
+        db_session,
+        tenant_id=tid,
+        company_id=cid,
+        user_id=other_user.id,
+        module="audit",
+        action="audit_cold_archived",
+        entity="audit_cold_archive",
+        entity_id="arch-aak-1",
+        details={
+            "event_count": 12,
+            "storage_key": cold_key,
+            "sha256": "abc123",
+            "store_id": store.id,
+        },
+    )
+    # API-key key_prefix must not be wiped (not attachment storage).
+    api_ev = await audit_svc.record_event(
+        db_session,
+        tenant_id=tid,
+        company_id=cid,
+        user_id=other_user.id,
+        module="settings",
+        action="api_key_created",
+        entity="api_key",
+        entity_id="key-aak-1",
+        details={
+            "name": "ops-bot",
+            "key_prefix": "rdg_live_aak",
+            "store_id": store.id,
+        },
+    )
+    await db_session.commit()
+
+    admin_listed = await ac.get(
+        "/api/v1/audit-logs", headers=admin_company, params={"limit": 500}
+    )
+    assert admin_listed.status_code == 200, admin_listed.text
+    admin_by_id = {r["id"]: r for r in admin_listed.json()["data"]}
+    assert (admin_by_id[exp_ev.id].get("details") or {}).get("key") == exp_key
+    assert (admin_by_id[pi_ev.id].get("details") or {}).get("key") == pi_key
+    assert (admin_by_id[je_ev.id].get("details") or {}).get("key") == je_key
+    assert (admin_by_id[cold_ev.id].get("details") or {}).get("storage_key") == cold_key
+    assert (admin_by_id[api_ev.id].get("details") or {}).get("key_prefix") == "rdg_live_aak"
+
+    mgr_listed = await ac.get(
+        "/api/v1/audit-logs", headers=headers, params={"limit": 500}
+    )
+    assert mgr_listed.status_code == 200, mgr_listed.text
+    mgr_by_id = {r["id"]: r for r in mgr_listed.json()["data"]}
+    mgr_exp = mgr_by_id[exp_ev.id].get("details") or {}
+    mgr_pi = mgr_by_id[pi_ev.id].get("details") or {}
+    mgr_je = mgr_by_id[je_ev.id].get("details") or {}
+    mgr_cold = mgr_by_id[cold_ev.id].get("details") or {}
+    mgr_api = mgr_by_id[api_ev.id].get("details") or {}
+    assert mgr_exp.get("key") is None
+    assert int(mgr_exp.get("size") or 0) == 2048
+    assert mgr_exp.get("content_type") == "application/pdf"
+    assert mgr_exp.get("store_id") == store.id
+    assert mgr_pi.get("key") is None
+    assert int(mgr_pi.get("size") or 0) == 4096
+    assert mgr_je.get("key") is None
+    assert int(mgr_je.get("size") or 0) == 1024
+    assert mgr_cold.get("storage_key") is None
+    assert int(mgr_cold.get("event_count") or 0) == 12
+    assert mgr_api.get("key_prefix") == "rdg_live_aak"
+    assert mgr_api.get("name") == "ops-bot"
+
+    admin_csv = await ac.get(
+        "/api/v1/audit-logs/export",
+        headers=admin_company,
+        params={"format": "csv"},
+    )
+    assert admin_csv.status_code == 200, admin_csv.text
+    admin_detail_rows = list(csv.DictReader(io.StringIO(admin_csv.text)))
+    admin_csv_exp = next(r for r in admin_detail_rows if r.get("entity_id") == "exp-aak-1")
+    admin_csv_cold = next(r for r in admin_detail_rows if r.get("entity_id") == "arch-aak-1")
+    assert json.loads(admin_csv_exp["details"]).get("key") == exp_key
+    assert json.loads(admin_csv_cold["details"]).get("storage_key") == cold_key
+
+    mgr_csv = await ac.get(
+        "/api/v1/audit-logs/export",
+        headers=headers,
+        params={"format": "csv"},
+    )
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    mgr_detail_rows = list(csv.DictReader(io.StringIO(mgr_csv.text)))
+    mgr_csv_exp = next(r for r in mgr_detail_rows if r.get("entity_id") == "exp-aak-1")
+    mgr_csv_pi = next(r for r in mgr_detail_rows if r.get("entity_id") == "pi-aak-1")
+    mgr_csv_je = next(r for r in mgr_detail_rows if r.get("entity_id") == "je-aak-1")
+    mgr_csv_cold = next(r for r in mgr_detail_rows if r.get("entity_id") == "arch-aak-1")
+    mgr_csv_api = next(r for r in mgr_detail_rows if r.get("entity_id") == "key-aak-1")
+    mgr_csv_exp_details = json.loads(mgr_csv_exp["details"])
+    mgr_csv_pi_details = json.loads(mgr_csv_pi["details"])
+    mgr_csv_je_details = json.loads(mgr_csv_je["details"])
+    mgr_csv_cold_details = json.loads(mgr_csv_cold["details"])
+    mgr_csv_api_details = json.loads(mgr_csv_api["details"])
+    assert mgr_csv_exp_details.get("key") is None
+    assert int(mgr_csv_exp_details.get("size") or 0) == 2048
+    assert mgr_csv_pi_details.get("key") is None
+    assert mgr_csv_je_details.get("key") is None
+    assert mgr_csv_cold_details.get("storage_key") is None
+    assert int(mgr_csv_cold_details.get("event_count") or 0) == 12
+    assert mgr_csv_api_details.get("key_prefix") == "rdg_live_aak"

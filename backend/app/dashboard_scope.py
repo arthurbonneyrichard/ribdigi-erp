@@ -5675,19 +5675,53 @@ def redact_audit_emailed_to_details(details: dict) -> dict:
     return out
 
 
+def omit_audit_attachment_storage_details(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit attachment storage keys inside audit ``details``.
+
+    Expense / purchase-invoice / journal list/get/upload already redact
+    ``attachment_url`` and upload echo ``uploaded.key`` (binary download remains
+    scoped). Scoped ``GET /audit-logs`` (+ CSV) must not re-dump the same storage
+    path via ``expense_attachment_upload`` / ``invoice_attachment_upload`` /
+    ``journal_attachment_upload`` (and sibling logo/brand upload) ``details.key``,
+    or cold-archive ``storage_key``. Size / content_type / event counts remain;
+    admin keeps storage keys. FX + CLE + party ledger + department + emailed_to
+    keys already handled by sibling omit helpers. API-key audits use
+    ``key_prefix`` (not ``key``) and stay intact.
+    """
+    return managed_ids is not None
+
+
+def redact_audit_attachment_storage_details(details: dict) -> dict:
+    """Null attachment / media storage keys on an audit ``details`` dict.
+
+    Clears upload-shaped top-level ``key`` (paired with ``size`` / ``content_type``),
+    plus ``storage_key`` / ``attachment_url`` when present. Does not touch
+    ``key_prefix`` (API keys).
+    """
+    out = dict(details)
+    if "storage_key" in out:
+        out["storage_key"] = None
+    if "attachment_url" in out:
+        out["attachment_url"] = None
+    if "key" in out and ("size" in out or "content_type" in out):
+        out["key"] = None
+    return out
+
+
 def redact_audit_manager_details(details: dict) -> dict:
-    """Compose store_manager audit ``details`` redacts (FX + CLE + party + dept + emailed_to)."""
+    """Compose store_manager audit ``details`` redacts (FX + CLE + party + dept + emailed_to + attachment key)."""
     out = redact_audit_fx_details(details)
     out = redact_audit_cle_master_details(out)
     out = redact_audit_party_ledger_details(out)
     out = redact_audit_department_details(out)
-    return redact_audit_emailed_to_details(out)
+    out = redact_audit_emailed_to_details(out)
+    return redact_audit_attachment_storage_details(out)
 
 
 def apply_audit_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager audit JSON redacts (FX + CLE + party + dept + emailed_to in ``details``)."""
+    """Apply store_manager audit JSON redacts (FX + CLE + party + dept + emailed_to + attachment key in ``details``)."""
     out = dict(payload)
     if not isinstance(out.get("details"), dict):
         return out
@@ -5702,6 +5736,8 @@ def apply_audit_manager_redacts(
         details = redact_audit_department_details(details)
     if omit_audit_emailed_to_details(managed_ids):
         details = redact_audit_emailed_to_details(details)
+    if omit_audit_attachment_storage_details(managed_ids):
+        details = redact_audit_attachment_storage_details(details)
     out["details"] = details
     return out
 
