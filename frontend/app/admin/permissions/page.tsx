@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import Shell from '../../../components/Shell';
-import { api } from '../../../lib/api';
+import { api, apiFetch } from '../../../lib/api';
 
 type RoleRow = {
   role: string;
@@ -127,15 +127,7 @@ export default function AdminPermissionsPage() {
     setError('');
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-      const res = await fetch(`${apiBase}/roles/permissions/export?active_only=false`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-          'X-Tenant-ID': tenant || '',
-        },
-      });
+      const res = await apiFetch(`/roles/permissions/export?active_only=false`);
       if (!res.ok) throw new Error('Permissions matrix CSV export failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);

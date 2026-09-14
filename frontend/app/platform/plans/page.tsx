@@ -3,9 +3,7 @@
 import { useEffect, useState } from 'react';
 import PlatformShell from '../../../components/PlatformShell';
 import { DonutChart } from '../../../components/DashboardCharts';
-import { api } from '../../../lib/api';
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+import { api, apiFetch } from '../../../lib/api';
 
 type PlanItem = {
   code: string;
@@ -41,14 +39,7 @@ export default function PlatformPlansPage() {
   async function downloadPlansCsv() {
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/platform/plans/export`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
-      });
+      const res = await apiFetch(`/platform/plans/export`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.detail || body.message || 'Plans export failed');

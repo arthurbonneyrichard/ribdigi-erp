@@ -2,10 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
-import { api } from '../../lib/api';
+import { api, apiFetch } from '../../lib/api';
 import { setWorkspaceContext } from '../../lib/workspaceContext';
-
-const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 export default function Page() {
   const [rows, setRows] = useState<any[]>([]);
@@ -93,14 +91,7 @@ export default function Page() {
   async function downloadBackup(id: string, filename: string) {
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${base}/backup/${id}/download`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-          'X-Tenant-ID': tenant || '',
-        },
-      });
+      const res = await apiFetch(`/backup/${id}/download`);
       if (!res.ok) throw new Error('Download failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -201,12 +192,7 @@ export default function Page() {
                 // Stage 140 B1 — backup schedule settings CSV
                 setError('');
                 try {
-                  const token = localStorage.getItem('token');
-                  const res = await fetch(`${base}/backup/settings/export`, {
-                    headers: {
-                      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                    },
-                  });
+                  const res = await apiFetch(`/backup/settings/export`);
                   if (!res.ok) throw new Error('Backup settings export failed');
                   const blob = await res.blob();
                   const url = URL.createObjectURL(blob);
@@ -271,15 +257,9 @@ export default function Page() {
         <button
           type="button"
           onClick={async () => {
-            const token = localStorage.getItem('token') || '';
-            const tenant = localStorage.getItem('tenant') || '';
+
             const qs = backupStatusFilter ? `?status=${encodeURIComponent(backupStatusFilter)}` : '';
-            const res = await fetch(`${base}/backup/export${qs}`, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'X-Tenant-ID': tenant,
-              },
-            });
+            const res = await apiFetch(`/backup/export${qs}`);
             if (!res.ok) {
               setError(await res.text());
               return;

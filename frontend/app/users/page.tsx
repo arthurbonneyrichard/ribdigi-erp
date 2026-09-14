@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Shell from '../../components/Shell';
-import { api } from '../../lib/api';
+import { api, apiFetch } from '../../lib/api';
 
 type RoleRow = {
   role: string;
@@ -56,8 +56,6 @@ function PageInner() {
   const [q, setQ] = useState(() => searchParams.get('q') || '');
   const [roleFilter, setRoleFilter] = useState(() => searchParams.get('role') || '');
   const [activeFilter, setActiveFilter] = useState(() => searchParams.get('is_active') || '');
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-
   function syncUrl(next: { q?: string; role?: string; isActive?: string }) {
     const params = new URLSearchParams();
     const nq = next.q !== undefined ? next.q : q;
@@ -146,14 +144,7 @@ function PageInner() {
   async function downloadUserImportTemplate() {
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/users/import/template`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
-      });
+      const res = await apiFetch(`/users/import/template`);
       if (!res.ok) throw new Error('Template download failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -172,14 +163,7 @@ function PageInner() {
     setError('');
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/users/export`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
-      });
+      const res = await apiFetch(`/users/export`);
       if (!res.ok) throw new Error('Users export failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -198,16 +182,10 @@ function PageInner() {
     setError('');
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
       const body = new FormData();
       body.append('file', file);
-      const res = await fetch(`${apiBase}/users/import?dry_run=${dryRun}`, {
+      const res = await apiFetch(`/users/import?dry_run=${dryRun}`, {
         method: 'POST',
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
         body,
       });
       const json = await res.json().catch(() => ({}));

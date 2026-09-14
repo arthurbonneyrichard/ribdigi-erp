@@ -2,15 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
-import { api, authHeaders } from '../../lib/api';
+import { api, apiFetch } from '../../lib/api';
 import {
   getSelectedStoreId,
   setSelectedStoreId,
   subscribeStoreContext,
 } from '../../lib/storeContext';
 import { getCompanyId } from '../../lib/workspaceContext';
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 type Store = {
   id: string;
@@ -235,11 +233,7 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}${path}`, {
-        headers: authHeaders(),
-      });
+      const res = await apiFetch(`${path}`);
       if (!res.ok) throw new Error(`${filename} export failed`);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -706,11 +700,7 @@ export default function Page() {
                     : '';
                 setError('');
                 try {
-                  const token = localStorage.getItem('token');
-                  const tenant = localStorage.getItem('tenant');
-                  const res = await fetch(`${apiBase}/stores/transfers/export${qs}`, {
-                    headers: authHeaders(),
-                  });
+                  const res = await apiFetch(`/stores/transfers/export${qs}`);
                   if (!res.ok) throw new Error('Stores transfers export failed');
                   const blob = await res.blob();
                   const url = URL.createObjectURL(blob);

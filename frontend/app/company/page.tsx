@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
-import { api, authHeaders } from '../../lib/api';
+import { api, apiFetch } from '../../lib/api';
 import { clearLoginSession } from '../../lib/authSession';
 import { formatDate } from '../../lib/format';
 import {
@@ -91,8 +91,6 @@ export default function Page() {
     return localStorage.getItem('offline_device_id') || '';
   });
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-
   async function refreshOfflineSync() {
     try {
       const [devicesRes, syncRes, conflictsRes, alertsRes] = await Promise.all([
@@ -123,9 +121,7 @@ export default function Page() {
         scope === 'company' && companyId
           ? `/companies/${companyId}/logo`
           : '/tenants/me/logo';
-      const res = await fetch(`${apiBase}${path}`, {
-        headers: authHeaders(),
-      });
+      const res = await apiFetch(`${path}`);
       if (!res.ok) {
         setLogoPreview(null);
         return;
@@ -400,11 +396,10 @@ export default function Page() {
                 brandingScope === 'company' && activeCompany?.id
                   ? `/companies/${activeCompany.id}/logo`
                   : '/tenants/me/logo';
-              const res = await fetch(`${apiBase}${path}`, {
+              const res = await apiFetch(`${path}`, {
                 method: 'POST',
-                headers: authHeaders(),
                 body: form,
-              });
+      });
               const body = await res.json().catch(() => ({}));
               if (!res.ok) throw new Error(body.detail?.message || body.detail || body.message || 'Upload failed');
               if (brandingScope === 'company') {
@@ -670,10 +665,7 @@ export default function Page() {
                     // Stage 139 F1 — fiscal period status CSV
                     setError('');
                     try {
-                      const token = localStorage.getItem('token') || '';
-                      const res = await fetch(`${apiBase}/accounting/fiscal-period/export`, {
-                        headers: { Authorization: `Bearer ${token}` },
-                      });
+                      const res = await apiFetch(`/accounting/fiscal-period/export`);
                       if (!res.ok) {
                         setError(await res.text());
                         return;
@@ -729,10 +721,7 @@ export default function Page() {
               // Stage 143 P1 — company profile CSV
               setError('');
               try {
-                const token = localStorage.getItem('token') || '';
-                const res = await fetch(`${apiBase}/tenants/me/export`, {
-                  headers: { Authorization: `Bearer ${token}` },
-                });
+                const res = await apiFetch(`/tenants/me/export`);
                 if (!res.ok) {
                   setError(await res.text());
                   return;
@@ -825,13 +814,11 @@ export default function Page() {
             onClick={() => {
               // Stage 119 T1 — sample invoice preview (current select value)
               const tpl = encodeURIComponent(tenant.invoice_print_template || 'a4');
-              const token = localStorage.getItem('token');
-              const ten = localStorage.getItem('tenant');
-              const url = `${apiBase}/tenants/me/print-templates/preview?kind=invoice&format=html&template=${tpl}`;
+
               const w = window.open('', '_blank');
-              fetch(url, {
-                headers: authHeaders(),
-              })
+              apiFetch(
+                `/tenants/me/print-templates/preview?kind=invoice&format=html&template=${tpl}`,
+              )
                 .then(async (res) => {
                   if (!res.ok) throw new Error('Invoice preview failed');
                   return res.text();
@@ -855,13 +842,11 @@ export default function Page() {
             onClick={() => {
               // Stage 119 T1 — sample receipt preview
               const tpl = encodeURIComponent(tenant.receipt_print_template || 'thermal_80');
-              const token = localStorage.getItem('token');
-              const ten = localStorage.getItem('tenant');
-              const url = `${apiBase}/tenants/me/print-templates/preview?kind=receipt&format=html&template=${tpl}`;
+
               const w = window.open('', '_blank');
-              fetch(url, {
-                headers: authHeaders(),
-              })
+              apiFetch(
+                `/tenants/me/print-templates/preview?kind=receipt&format=html&template=${tpl}`,
+              )
                 .then(async (res) => {
                   if (!res.ok) throw new Error('Receipt preview failed');
                   return res.text();
@@ -993,10 +978,8 @@ export default function Page() {
           <button
             type="button"
             onClick={async () => {
-              const token = localStorage.getItem('token') || '';
-              const res = await fetch(`${apiBase}/tenants/me/document-settings/export`, {
-                headers: { Authorization: `Bearer ${token}` },
-              });
+
+              const res = await apiFetch(`/tenants/me/document-settings/export`);
               if (!res.ok) {
                 // Soft-fail store_manager STORE_SCOPE_DENIED (company document dump).
                 if (res.status === 403) {
@@ -1401,10 +1384,7 @@ export default function Page() {
                 // Stage 140 S1 — storage settings CSV (no S3 keys)
                 setError('');
                 try {
-                  const token = localStorage.getItem('token') || '';
-                  const res = await fetch(`${apiBase}/settings/storage/export`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                  });
+                  const res = await apiFetch(`/settings/storage/export`);
                   if (!res.ok) {
                     setError(await res.text());
                     return;
@@ -1441,10 +1421,7 @@ export default function Page() {
             // Stage 143 J1 — jobs catalog CSV
             setError('');
             try {
-              const token = localStorage.getItem('token') || '';
-              const res = await fetch(`${apiBase}/jobs/export`, {
-                headers: { Authorization: `Bearer ${token}` },
-              });
+              const res = await apiFetch(`/jobs/export`);
               if (!res.ok) {
                 setError(await res.text());
                 return;
@@ -1581,10 +1558,7 @@ export default function Page() {
                 onClick={async () => {
                   setError('');
                   try {
-                    const token = localStorage.getItem('token') || '';
-                    const res = await fetch(`${apiBase}/settings/email/export`, {
-                      headers: { Authorization: `Bearer ${token}` },
-                    });
+                    const res = await apiFetch(`/settings/email/export`);
                     if (!res.ok) {
                       setError(await res.text());
                       return;
@@ -1662,10 +1636,7 @@ export default function Page() {
               onClick={async () => {
                 setError('');
                 try {
-                  const token = localStorage.getItem('token') || '';
-                  const res = await fetch(`${apiBase}/settings/sms/export`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                  });
+                  const res = await apiFetch(`/settings/sms/export`);
                   if (!res.ok) {
                     setError(await res.text());
                     return;
@@ -1728,17 +1699,13 @@ export default function Page() {
               setError('');
               setMessage('');
               try {
-                const token = localStorage.getItem('token');
-                const tenant = localStorage.getItem('tenant');
                 const qs =
                   branchActiveFilter === 'true'
                     ? '?is_active=true'
                     : branchActiveFilter === 'false'
                       ? '?is_active=false'
                       : '';
-                const res = await fetch(`${apiBase}/branches/export${qs}`, {
-                  headers: authHeaders(),
-                });
+                const res = await apiFetch(`/branches/export${qs}`);
                 if (!res.ok) throw new Error('Branches export failed');
                 const blob = await res.blob();
                 const url = URL.createObjectURL(blob);
@@ -1787,17 +1754,13 @@ export default function Page() {
               setError('');
               setMessage('');
               try {
-                const token = localStorage.getItem('token');
-                const tenant = localStorage.getItem('tenant');
                 const qs =
                   deptActiveFilter === 'true'
                     ? '?is_active=true'
                     : deptActiveFilter === 'false'
                       ? '?is_active=false'
                       : '';
-                const res = await fetch(`${apiBase}/departments/export${qs}`, {
-                  headers: authHeaders(),
-                });
+                const res = await apiFetch(`/departments/export${qs}`);
                 if (!res.ok) throw new Error('Departments export failed');
                 const blob = await res.blob();
                 const url = URL.createObjectURL(blob);

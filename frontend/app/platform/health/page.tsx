@@ -2,12 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import PlatformShell from '../../../components/PlatformShell';
-import { api } from '../../../lib/api';
+import { api, apiFetch } from '../../../lib/api';
 import { downloadPlatformEvidence } from '../../../lib/platformEvidence';
 
 type Check = { status?: string; latency_ms?: number; reason?: string; mode?: string; required?: boolean };
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 export default function PlatformHealthPage() {
   const [data, setData] = useState<any>(null);
@@ -34,14 +32,7 @@ export default function PlatformHealthPage() {
     setError('');
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}${path}`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-          'X-Tenant-ID': tenant || '',
-        },
-      });
+      const res = await apiFetch(`${path}`);
       if (!res.ok) throw new Error(`${filename} export failed`);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);

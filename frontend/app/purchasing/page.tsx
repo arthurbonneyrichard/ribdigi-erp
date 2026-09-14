@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
-import { api, authHeaders } from '../../lib/api';
+import { api, apiFetch } from '../../lib/api';
 import { useTabQuery } from '../../lib/tabQuery';
 
 type Tab = 'suppliers' | 'requests' | 'orders' | 'grn' | 'invoices' | 'returns' | 'settings';
@@ -335,12 +335,7 @@ export default function Page() {
     // Stage 119 E1 — suppliers CSV export
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-      const res = await fetch(`${apiBase}/suppliers/export`, {
-        headers: authHeaders(),
-      });
+      const res = await apiFetch(`/suppliers/export`);
       if (!res.ok) {
         // Soft-fail store_manager STORE_SCOPE_DENIED (company party CRM dump).
         if (res.status === 403) {
@@ -366,15 +361,10 @@ export default function Page() {
     // Stage 132 P1 — purchase invoice header CSV
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
       const qs = invoiceStatusFilter
         ? `?status=${encodeURIComponent(invoiceStatusFilter)}`
         : '';
-      const res = await fetch(`${apiBase}/purchasing/invoices/export${qs}`, {
-        headers: authHeaders(),
-      });
+      const res = await apiFetch(`/purchasing/invoices/export${qs}`);
       if (!res.ok) throw new Error('Purchase invoice export failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -397,13 +387,8 @@ export default function Page() {
     // Stage 135 R1 — purchase returns CSV
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
       const qs = status ? `?status=${encodeURIComponent(status)}` : '';
-      const res = await fetch(`${apiBase}/purchasing/${kind}/export${qs}`, {
-        headers: authHeaders(),
-      });
+      const res = await apiFetch(`/purchasing/${kind}/export${qs}`);
       if (!res.ok) throw new Error(`${kind} export failed`);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -657,12 +642,7 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-      const res = await fetch(`${apiBase}/suppliers/${id}/history/export`, {
-        headers: authHeaders(),
-      });
+      const res = await apiFetch(`/suppliers/${id}/history/export`);
       if (!res.ok) throw new Error('Supplier history CSV export failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -869,12 +849,7 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-      const res = await fetch(`${apiBase}/purchasing/orders/${poId}/amendments/export`, {
-        headers: authHeaders(),
-      });
+      const res = await apiFetch(`/purchasing/orders/${poId}/amendments/export`);
       if (!res.ok) throw new Error('PO amendments CSV export failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -1143,18 +1118,13 @@ export default function Page() {
     }
   }
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-
   async function uploadInvoiceAttachment(id: string, file: File) {
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
       const form = new FormData();
       form.append('file', file);
-      const res = await fetch(`${apiBase}/purchasing/invoices/${id}/attachment`, {
+      const res = await apiFetch(`/purchasing/invoices/${id}/attachment`, {
         method: 'POST',
-        headers: authHeaders(),
         body: form,
       });
       const body = await res.json().catch(() => ({}));
@@ -1169,11 +1139,7 @@ export default function Page() {
   async function downloadInvoiceAttachment(id: string) {
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/purchasing/invoices/${id}/attachment`, {
-        headers: authHeaders(),
-      });
+      const res = await apiFetch(`/purchasing/invoices/${id}/attachment`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.detail || body.message || 'Download failed');
@@ -1490,12 +1456,7 @@ export default function Page() {
                 // Stage 138 P1 — purchasing approval settings CSV
                 setError('');
                 try {
-                  const token = localStorage.getItem('token');
-                  const tenant = localStorage.getItem('tenant');
-                  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-                  const res = await fetch(`${apiBase}/purchasing/settings/export`, {
-                    headers: authHeaders(),
-                  });
+                  const res = await apiFetch(`/purchasing/settings/export`);
                   if (!res.ok) throw new Error('Purchasing settings export failed');
                   const blob = await res.blob();
                   const url = URL.createObjectURL(blob);

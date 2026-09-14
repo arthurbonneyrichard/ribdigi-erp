@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
-import { api, authHeaders } from '../../lib/api';
+import { api, apiFetch } from '../../lib/api';
 import { setWorkspaceContext } from '../../lib/workspaceContext';
 
 type Company = {
@@ -45,8 +45,6 @@ type CompanyEntitlement = {
 };
 
 type BusinessType = { id: string; code: string; label: string };
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 export default function CompaniesPage() {
   const [rows, setRows] = useState<Company[]>([]);
@@ -156,9 +154,8 @@ export default function CompaniesPage() {
       if (companyId && logoFile) {
         const form = new FormData();
         form.append('file', logoFile);
-        const res = await fetch(`${API_BASE}/companies/${companyId}/logo`, {
+        const res = await apiFetch(`/companies/${companyId}/logo`, {
           method: 'POST',
-          headers: authHeaders(),
           body: form,
         });
         if (!res.ok) {
