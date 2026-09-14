@@ -11,6 +11,21 @@
 
 ---
 
+### Tip — audit emailed_to redact (2026-09-15)
+
+**As of tip:** `ae1b06fb03ab6b81c519863605284ab4c8720414`
+Scoped audit list/export `details` send-recipient / `emailed_to` redact for `store_manager`
+(`to` on `invoice_sent` / `pos_receipt_sent`; nested `delivery.to` on `po_sent` on
+`GET /audit-logs` + CSV; document `emailed_to` already redacted; invoice/PO numbers /
+totals / `mode` / `channel` / `store_id` remain; plan/limit `from`/`to` without send
+`mode`/`channel` stay; admin keeps recipients). Continuum stays **PARTIAL**. Store-scoped
+RBAC Complete remains **MISSING** (intentional ALLOWs + residual backlog + product
+sign-off + staging soak). Offline / 7-day / go-live / paid billing Completes remain
+**MISSING**. Next CONTINUE: residual continuum field-leak (named surface) or product
+ALLOW sign-off / staging soak docs.
+
+---
+
 ### Tip — audit department_id redact (2026-09-15)
 
 **As of tip:** `a60c412cbbff074915e5fbd15854a61a6f4ee768`
