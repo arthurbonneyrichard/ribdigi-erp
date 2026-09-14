@@ -14,7 +14,7 @@ store-scoped RBAC Complete.
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `b5757c2d1025c3debe32ba2d85444e0109e39c2d` — SEC-M1…M5/L2 FIXED; overall ✅ HARDENED; cookie + membership-scope + entitlement-gate flags default OFF; offline remote-wipe + Web Push delivery **PARTIAL** (Completes still MISSING); ADR-005 membership **PARTIAL** (default OFF; Complete still MISSING); paid billing **PARTIAL** (ADR-002 Phase E mock soak ready; Complete still MISSING / ops-blocked on live Stripe; `PAID_BILLING_ENTITLEMENT_GATE_ENABLED` default **OFF**; `engineering_mock_soak_ready=true`); go-live pack Completes still MISSING; Offline Complete still MISSING |
+| **As of tip** | `PENDING_FIXED_POINT` — SEC-M1…M5/L2 FIXED; overall ✅ HARDENED; cookie + membership-scope + entitlement-gate flags default OFF; offline remote-wipe + Web Push delivery **PARTIAL** (Completes still MISSING); ADR-005 membership **PARTIAL** (default OFF; Complete still MISSING); paid billing **PARTIAL** (ADR-002 Phase E mock soak ready; Complete still MISSING / ops-blocked on live Stripe; `PAID_BILLING_ENTITLEMENT_GATE_ENABLED` default **OFF**; `engineering_mock_soak_ready=true`); go-live pack Completes still MISSING; Offline Complete still MISSING |
 | RBAC / store scope | **PARTIAL** only |
 | Security Mediums | **M1–M5 FIXED**; **L2 FIXED**; overall ✅ HARDENED (flag OFF = ops cutover, not open finding) |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
