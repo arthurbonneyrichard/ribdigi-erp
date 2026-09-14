@@ -473,7 +473,7 @@ export default function Page() {
                 padding: 12,
                 overflow: 'auto',
                 fontSize: 12,
-                background: 'var(--surface-2, #f8fafc)',
+                background: 'var(--mist, #F2F7EC)',
                 borderRadius: 8,
               }}
             >{`# Python
