@@ -277,6 +277,32 @@ export default function AdminPermissionsPage() {
       {canWrite && editRole && (
         <div className="card" style={{ marginTop: 24 }}>
           <h2 style={{ fontSize: 18 }}>Permission matrix · {editRole}</h2>
+          <p className="muted" style={{ marginBottom: 12 }}>
+            Write/approve always includes read on save. Grants beyond your own permissions are
+            rejected by the API. High-risk modules (users, backup, accounting, credit, …) show
+            warnings below.
+          </p>
+          {(() => {
+            const dangerous = Object.keys(matrix).filter((m) =>
+              [
+                'users',
+                'backup',
+                'audit',
+                'accounting',
+                'credit',
+                'security',
+                'companies',
+                'subscription',
+              ].includes(m)
+            );
+            if (!dangerous.length) return null;
+            return (
+              <p style={{ color: '#92400e', background: '#fffbeb', padding: 12, marginBottom: 12 }}>
+                Dangerous permissions selected: {dangerous.join(', ')}. Confirm least privilege
+                before saving.
+              </p>
+            );
+          })()}
           <select
             value={matrixScope}
             onChange={(e) => setMatrixScope(e.target.value)}

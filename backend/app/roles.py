@@ -16,11 +16,17 @@ from app.rbac import (
     ROLE_LABELS,
     SYSTEM_MODULES,
     VALID_ROLES,
+    assert_permissions_within_grantor,
+    dangerous_permission_warnings,
+    ensure_permission_dependencies,
+    FALLBACK_ADMIN_ROLES,
     list_system_role_catalog,
     normalize_permissions_map,
     normalize_record_scope,
     permissions_for_role,
+    PROTECTED_OWNER_ROLES,
     record_scope_for_role,
+    validate_permission_dependencies,
 )
 from app.platform_const import PLATFORM_ROLES, is_platform_tenant_id
 
@@ -219,6 +225,75 @@ def _copy_base_permissions(base_role: str | None) -> dict:
     return permissions_for_role(base)
 
 
+async def assert_owner_lockout_safe(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    target: m.User,
+    deactivating: bool = False,
+    new_role: str | None = None,
+) -> None:
+    """Prevent deactivating/demoting the last protected owner/admin for a tenant.
+
+    - Last active ``super_admin`` or ``tenant_owner`` cannot be deactivated or demoted.
+    - If no protected owners remain active, last active ``company_admin`` is protected.
+    """
+    if not deactivating and new_role is None:
+        return
+    old_role = (target.role or "").strip()
+    demoting = new_role is not None and new_role.strip() != old_role
+    if not deactivating and not demoting:
+        return
+    if not target.is_active and deactivating:
+        return
+
+    async def _active_count(roles: set[str], *, exclude_id: str | None = None) -> int:
+        stmt = select(func.count()).select_from(m.User).where(
+            m.User.tenant_id == tenant_id,
+            m.User.is_active == True,  # noqa: E712
+            m.User.role.in_(list(roles)),
+        )
+        if exclude_id:
+            stmt = stmt.where(m.User.id != exclude_id)
+        return int((await db.execute(stmt)).scalar_one() or 0)
+
+    if old_role in PROTECTED_OWNER_ROLES:
+        others = await _active_count({old_role}, exclude_id=target.id)
+        if others == 0:
+            action = "deactivate" if deactivating else "demote"
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Cannot {action} the last active '{old_role}' for this tenant "
+                    "(owner lockout protection)"
+                ),
+            )
+        return
+
+    if old_role in FALLBACK_ADMIN_ROLES:
+        owners = await _active_count(set(PROTECTED_OWNER_ROLES))
+        if owners == 0:
+            others = await _active_count(set(FALLBACK_ADMIN_ROLES), exclude_id=target.id)
+            if others == 0:
+                action = "deactivate" if deactivating else "demote"
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Cannot {action} the last active '{old_role}' for this tenant "
+                        "(owner lockout protection)"
+                    ),
+                )
+
+
+def role_payload_with_hardening(row: m.CustomRole) -> dict:
+    """Serialize custom role and attach dependency / dangerous-permission warnings."""
+    data = serialize_custom_role(row)
+    perms = data.get("permissions") or {}
+    data["permission_dependency_notes"] = validate_permission_dependencies(perms)
+    data["dangerous_permission_warnings"] = dangerous_permission_warnings(perms)
+    return data
+
+
 async def create_custom_role(
     db: AsyncSession,
     *,
@@ -229,6 +304,7 @@ async def create_custom_role(
     base_role: str | None = "cashier",
     permissions: dict | None = None,
     record_scope: str = "own",
+    grantor_permissions: dict | None = None,
 ) -> m.CustomRole:
     slug = validate_role_slug(slug)
     label_clean = (label or "").strip()
@@ -247,18 +323,31 @@ async def create_custom_role(
     if exists:
         raise HTTPException(status_code=409, detail="A custom role with this slug already exists")
 
+    allow_platform = is_platform_tenant_id(tenant_id)
     if permissions is not None:
-        perms = normalize_permissions_map(
-            permissions,
-            allow_wildcard=False,
-            allow_platform_modules=is_platform_tenant_id(tenant_id),
-        )
+        try:
+            perms = ensure_permission_dependencies(
+                permissions,
+                allow_wildcard=False,
+                allow_platform_modules=allow_platform,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
     else:
-        perms = normalize_permissions_map(
-            _copy_base_permissions(base_role),
-            allow_wildcard=False,
-            allow_platform_modules=is_platform_tenant_id(tenant_id),
-        )
+        try:
+            perms = ensure_permission_dependencies(
+                _copy_base_permissions(base_role),
+                allow_wildcard=False,
+                allow_platform_modules=allow_platform,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    if grantor_permissions is not None:
+        try:
+            assert_permissions_within_grantor(perms, grantor_permissions)
+        except ValueError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
 
     row = m.CustomRole(
         tenant_id=tenant_id,
@@ -284,6 +373,7 @@ async def update_custom_role(
     permissions: dict | None = None,
     record_scope: str | None = None,
     is_active: bool | None = None,
+    grantor_permissions: dict | None = None,
 ) -> m.CustomRole:
     row = await get_custom_role(db, tenant_id, slug)
     if label is not None:
@@ -299,11 +389,20 @@ async def update_custom_role(
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
     if permissions is not None:
-        row.permissions = normalize_permissions_map(
-            permissions,
-            allow_wildcard=False,
-            allow_platform_modules=is_platform_tenant_id(tenant_id),
-        )
+        try:
+            perms = ensure_permission_dependencies(
+                permissions,
+                allow_wildcard=False,
+                allow_platform_modules=is_platform_tenant_id(tenant_id),
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        if grantor_permissions is not None:
+            try:
+                assert_permissions_within_grantor(perms, grantor_permissions)
+            except ValueError as exc:
+                raise HTTPException(status_code=403, detail=str(exc)) from exc
+        row.permissions = perms
     if is_active is not None:
         row.is_active = bool(is_active)
     row.updated_at = datetime.utcnow()
@@ -371,6 +470,7 @@ def role_detail_payload(role: str, *, custom: m.CustomRole | None = None) -> dic
 __all__ = [
     "SYSTEM_MODULES",
     "assert_assignable_role",
+    "assert_owner_lockout_safe",
     "create_custom_role",
     "delete_custom_role",
     "get_custom_role",
@@ -381,6 +481,7 @@ __all__ = [
     "resolve_role_permissions",
     "resolve_role_record_scope",
     "role_detail_payload",
+    "role_payload_with_hardening",
     "serialize_custom_role",
     "update_custom_role",
     "validate_role_slug",

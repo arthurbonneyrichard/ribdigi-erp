@@ -660,16 +660,15 @@ async def amend_purchase_order(
 
 
 async def get_purchase_request(
-    db: AsyncSession, tenant_id: str, request_id: str
+    db: AsyncSession, tenant_id: str, request_id: str, *, for_update: bool = False
 ) -> m.PurchaseRequest:
-    row = (
-        await db.execute(
-            select(m.PurchaseRequest).where(
-                m.PurchaseRequest.id == request_id,
-                m.PurchaseRequest.tenant_id == tenant_id,
-            )
-        )
-    ).scalar_one_or_none()
+    stmt = select(m.PurchaseRequest).where(
+        m.PurchaseRequest.id == request_id,
+        m.PurchaseRequest.tenant_id == tenant_id,
+    )
+    if for_update:
+        stmt = stmt.with_for_update()
+    row = (await db.execute(stmt)).scalar_one_or_none()
     if not row:
         raise HTTPException(status_code=404, detail="Purchase request not found")
     return row
@@ -920,7 +919,7 @@ async def approve_purchase_request(
 ) -> m.PurchaseRequest:
     from app.expenses import assert_actor_may_act
 
-    pr = await get_purchase_request(db, tenant_id, request_id)
+    pr = await get_purchase_request(db, tenant_id, request_id, for_update=True)
     if pr.status not in PR_APPROVABLE:
         raise HTTPException(status_code=409, detail=f"Cannot approve PR in status {pr.status}")
     if pr.created_by and pr.created_by == user_id and (actor_role or "") not in {"super_admin"}:
@@ -1015,7 +1014,7 @@ async def reject_purchase_request(
 ) -> m.PurchaseRequest:
     from app.expenses import assert_actor_may_act
 
-    pr = await get_purchase_request(db, tenant_id, request_id)
+    pr = await get_purchase_request(db, tenant_id, request_id, for_update=True)
     if pr.status not in PR_APPROVABLE:
         raise HTTPException(status_code=409, detail=f"Cannot reject PR in status {pr.status}")
     if pr.created_by and pr.created_by == user_id and (actor_role or "") not in {"super_admin"}:

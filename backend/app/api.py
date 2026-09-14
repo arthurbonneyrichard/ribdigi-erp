@@ -3275,7 +3275,7 @@ async def role_detail(
     if role in VALID_ROLES:
         return env(roles_svc.role_detail_payload(role))
     custom = await roles_svc.get_custom_role(db, claims["tenant_id"], role)
-    return env(roles_svc.serialize_custom_role(custom))
+    return env(roles_svc.role_payload_with_hardening(custom))
 
 
 @api.post("/roles")
@@ -3302,6 +3302,9 @@ async def create_custom_role(
             base_role=payload.base_role,
             permissions=payload.permissions,
             record_scope=payload.record_scope,
+            grantor_permissions=claims.get("permissions")
+            if isinstance(claims.get("permissions"), dict)
+            else None,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -3316,7 +3319,7 @@ async def create_custom_role(
         details={"slug": row.slug, "label": row.label},
     )
     await db.commit()
-    return env(roles_svc.serialize_custom_role(row), "Custom role created")
+    return env(roles_svc.role_payload_with_hardening(row), "Custom role created")
 
 
 @api.patch("/roles/{role}")
@@ -3346,6 +3349,9 @@ async def update_custom_role(
             permissions=payload.permissions,
             record_scope=payload.record_scope,
             is_active=payload.is_active,
+            grantor_permissions=claims.get("permissions")
+            if isinstance(claims.get("permissions"), dict)
+            else None,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -3360,7 +3366,7 @@ async def update_custom_role(
         details={"slug": row.slug},
     )
     await db.commit()
-    return env(roles_svc.serialize_custom_role(row), "Custom role updated")
+    return env(roles_svc.role_payload_with_hardening(row), "Custom role updated")
 
 
 @api.put("/roles/{role}/permissions")
@@ -3387,6 +3393,9 @@ async def put_custom_role_permissions(
             slug=role,
             permissions=payload.permissions,
             record_scope=payload.record_scope,
+            grantor_permissions=claims.get("permissions")
+            if isinstance(claims.get("permissions"), dict)
+            else None,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -3401,7 +3410,7 @@ async def put_custom_role_permissions(
         details={"slug": row.slug},
     )
     await db.commit()
-    return env(roles_svc.serialize_custom_role(row), "Role permissions updated")
+    return env(roles_svc.role_payload_with_hardening(row), "Role permissions updated")
 
 
 @api.delete("/roles/{role}")
@@ -3989,6 +3998,12 @@ async def update_user(
         if user.id == claims["sub"] and new_role != user.role:
             raise HTTPException(status_code=400, detail="Cannot change your own role")
         if user.role != new_role:
+            await roles_svc.assert_owner_lockout_safe(
+                db,
+                tenant_id=claims["tenant_id"],
+                target=user,
+                new_role=new_role,
+            )
             changes["role"] = {"from": user.role, "to": new_role}
             prev_scope = None
             if isinstance(user.permissions, dict):
@@ -4016,6 +4031,13 @@ async def update_user(
                 if not tenant:
                     raise HTTPException(status_code=404, detail="Tenant not found")
                 await store_ent_svc.assert_can_reactivate_user(db, tenant=tenant, user=user)
+            if user.is_active and not payload.is_active:
+                await roles_svc.assert_owner_lockout_safe(
+                    db,
+                    tenant_id=claims["tenant_id"],
+                    target=user,
+                    deactivating=True,
+                )
             user.is_active = bool(payload.is_active)
             changes["is_active"] = user.is_active
             if not user.is_active:
@@ -4148,6 +4170,12 @@ async def deactivate_user(
         raise HTTPException(status_code=400, detail="Cannot deactivate your own account")
     if not user.is_active:
         return env(serialize_user(user), "User already inactive")
+    await roles_svc.assert_owner_lockout_safe(
+        db,
+        tenant_id=claims["tenant_id"],
+        target=user,
+        deactivating=True,
+    )
     user.is_active = False
     revoked = await _revoke_user_sessions(db, tenant_id=claims["tenant_id"], user_id=user.id)
     await audit_svc.record_event(
