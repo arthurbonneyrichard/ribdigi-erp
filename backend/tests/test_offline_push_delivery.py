@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pyotp
@@ -112,7 +113,15 @@ async def test_offline_push_subscription_upsert_and_wipe_delivers(client, db_ses
     assert push.get("push_delivery_complete_claimed") is False
     assert push.get("offline_complete_claimed") is False
     assert len(fake_push_sender) == 1
-    assert "remote_wipe" in fake_push_sender[0]["data"]
+    call = fake_push_sender[0]
+    assert "remote_wipe" in call["data"]
+    payload = json.loads(call["data"])
+    assert payload["type"] == "remote_wipe"
+    assert payload["action"] == "remote_wipe"
+    assert payload["device_id"] == device_id
+    assert payload["wipe_pending"] is True
+    assert call["vapid_claims"]["sub"] == "mailto:test@example.com"
+    assert call["subscription_info"]["endpoint"] == "https://push.example.test/endpoint/abc"
 
     row = (
         await db_session.execute(
