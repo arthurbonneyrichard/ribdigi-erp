@@ -31,7 +31,7 @@
     {
       "id": "rp-owner-outline",
       "category": "pipeline",
-      "title": "Index owner Development \u2192 Internal QA \u2192 Staging \u2192 Regression \u2192 Security Review \u2192 MVP RC path as honesty boundary",
+      "title": "Index owner Development → Internal QA → Staging → Regression → Security Review → MVP RC path as honesty boundary",
       "status": "packaged",
       "done": false,
       "pack_refs": [
@@ -43,7 +43,7 @@
     {
       "id": "rp-staging-gha",
       "category": "staging",
-      "title": "Link Stage 28 staging GHA as staging adjacency (live staging apply Remaining \u2260 pipeline Complete)",
+      "title": "Link Stage 28 staging GHA as staging adjacency (live staging apply Remaining ≠ pipeline Complete)",
       "status": "packaged",
       "done": false,
       "pack_refs": [
@@ -55,7 +55,7 @@
     {
       "id": "rp-security-scan",
       "category": "security",
-      "title": "Link Stage 27 security-scan as Internal QA / security-review adjacency (OWASP packaging \u2260 review signed)",
+      "title": "Link Stage 27 security-scan as Internal QA / security-review adjacency (OWASP packaging ≠ review signed)",
       "status": "packaged",
       "done": false,
       "pack_refs": [
@@ -67,7 +67,7 @@
     {
       "id": "rp-pentest",
       "category": "security",
-      "title": "Link Stage 29 pen-test pack as security-review adjacency (purchased cert Remaining \u2260 review Complete)",
+      "title": "Link Stage 29 pen-test pack as security-review adjacency (purchased cert Remaining ≠ review Complete)",
       "status": "packaged",
       "done": false,
       "pack_refs": [
@@ -79,7 +79,7 @@
     {
       "id": "rp-attestation",
       "category": "rc",
-      "title": "Link Stage 30 attestation as MVP RC adjacency (attestation Remaining \u2260 RC signed)",
+      "title": "Link Stage 30 attestation as MVP RC adjacency (attestation Remaining ≠ RC signed)",
       "status": "packaged",
       "done": false,
       "pack_refs": [
@@ -91,7 +91,7 @@
     {
       "id": "rp-mvp-declaration",
       "category": "rc",
-      "title": "Link Stage 31 MVP declaration / gate matrix as packaging adjacency (declared packaging \u2260 RC signed)",
+      "title": "Link Stage 31 MVP declaration / gate matrix as packaging adjacency (declared packaging ≠ RC signed)",
       "status": "packaged",
       "done": false,
       "pack_refs": [
@@ -104,7 +104,7 @@
     {
       "id": "rp-cutover",
       "category": "staging",
-      "title": "Link Stage 29 cutover pack as promotion adjacency (production cutover Remaining \u2260 RC promotion)",
+      "title": "Link Stage 29 cutover pack as promotion adjacency (production cutover Remaining ≠ RC promotion)",
       "status": "packaged",
       "done": false,
       "pack_refs": [
@@ -116,7 +116,7 @@
     {
       "id": "rp-release-notes",
       "category": "pipeline",
-      "title": "Link Stage 32 release notes as Development / QA communication adjacency (notes \u2260 RC signed)",
+      "title": "Link Stage 32 release notes as Development / QA communication adjacency (notes ≠ RC signed)",
       "status": "packaged",
       "done": false,
       "pack_refs": [
@@ -140,7 +140,7 @@
     {
       "id": "rp-rc-remaining",
       "category": "honesty",
-      "title": "Signed MVP Release Candidate Remaining \u2014 packaging \u2260 RC sign-off",
+      "title": "Signed MVP Release Candidate Remaining — packaging ≠ RC sign-off",
       "status": "remaining",
       "done": false,
       "pack_refs": [
@@ -167,8 +167,8 @@
     "Live release pipeline / Internal QA gate Complete",
     "Live staging promotion / GHA apply Complete",
     "Security-review sign-off Complete",
-    "Live go-live / \u00a77 / attestation Complete"
+    "Live go-live / §7 / attestation Complete"
   ],
-  "continuum_honesty_touched_at": "2026-09-15T09:09:08Z",
-  "continuum_honesty_note": "PARTIAL \u2014 audit CLE invoice_total redact; store-scoped RBAC Complete still MISSING"
+  "continuum_honesty_touched_at": "2026-09-15T09:55:38Z",
+  "continuum_honesty_note": "PARTIAL — notification expense approval threshold redact; store-scoped RBAC Complete still MISSING"
 }

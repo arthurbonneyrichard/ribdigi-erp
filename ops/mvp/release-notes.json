@@ -20,14 +20,14 @@
     {
       "id": "foundation-commerce",
       "title": "Foundation through commerce & AI packaging Complete (MVP)",
-      "stages": "1\u201325",
+      "stages": "1–25",
       "class": "complete_mvp",
-      "summary": "Multi-tenant ERP shell, inventory, sales/POS, accounting, tax, reports, commerce gates, actuals\u2192AI insights packaging evidenced under Stage exit/freeze ADRs"
+      "summary": "Multi-tenant ERP shell, inventory, sales/POS, accounting, tax, reports, commerce gates, actuals→AI insights packaging evidenced under Stage exit/freeze ADRs"
     },
     {
       "id": "ops-platform",
       "title": "Ops platform / release / staging / hardening / go-live support packaging Complete (MVP)",
-      "stages": "26\u201330",
+      "stages": "26–30",
       "class": "complete_mvp",
       "summary": "Monitoring, WAL/PITR, K8s/Helm, load capacity, offsite backup, PgBouncer, security scan, launch cert, staging packs, pen-test/soak/TLS/cutover, evidence/incident/support/attestation packaging"
     },
@@ -36,25 +36,25 @@
       "title": "Commercial MVP closeout packaging Complete (MVP)",
       "stages": "31",
       "class": "complete_mvp",
-      "summary": "Gate honesty matrix, deferred ADR register, operator Remaining register, packaging\u2260live declaration"
+      "summary": "Gate honesty matrix, deferred ADR register, operator Remaining register, packaging≠live declaration"
     },
     {
       "id": "handoff-archive",
       "title": "Acceptance archive + operator handoff packaging Complete (MVP)",
-      "stages": "32 A1\u2013H1",
+      "stages": "32 A1–H1",
       "class": "complete_mvp",
-      "summary": "Stage 1\u201331 exit/freeze index and ops take-over checklist; handoff_complete_claimed remains false"
+      "summary": "Stage 1–31 exit/freeze index and ops take-over checklist; handoff_complete_claimed remains false"
     },
     {
       "id": "remaining-go-live",
-      "title": "Live go-live / \u00a77 / attestation Remaining",
+      "title": "Live go-live / §7 / attestation Remaining",
       "stages": "operator",
       "class": "remaining_post_mvp",
-      "summary": "LAUNCH \u00a7\u00a71\u20133 / \u00a77, live drills, hosted SaaS observability, purchased pen-test require real env verification"
+      "summary": "LAUNCH §§1–3 / §7, live drills, hosted SaaS observability, purchased pen-test require real env verification"
     },
     {
       "id": "remaining-deferred-adrs",
-      "title": "Deferred ADR-001\u2013006 post-MVP scopes Remaining",
+      "title": "Deferred ADR-001–006 post-MVP scopes Remaining",
       "stages": "deferred",
       "class": "deferred_adr",
       "summary": "Paid billing, schema-per-tenant, i18n packs, store membership, hard-delete archival not implemented as Complete"
@@ -63,10 +63,10 @@
   "evidence_artifact": "/opt/cursor/artifacts/launch/stage32_n1_release_notes.json",
   "deferred": [
     "Treating release notes packaging as production live",
-    "Forged LAUNCH \u00a77 Name/Date sign-off",
-    "Claiming live go-live Complete from Stage 26\u201332 packaging",
-    "Implementing deferred ADR-001\u2013006 as Complete"
+    "Forged LAUNCH §7 Name/Date sign-off",
+    "Claiming live go-live Complete from Stage 26–32 packaging",
+    "Implementing deferred ADR-001–006 as Complete"
   ],
-  "continuum_honesty_touched_at": "2026-09-15T09:09:08Z",
-  "continuum_honesty_note": "PARTIAL \u2014 audit CLE invoice_total redact; store-scoped RBAC Complete still MISSING"
+  "continuum_honesty_touched_at": "2026-09-15T09:55:38Z",
+  "continuum_honesty_note": "PARTIAL — notification expense approval threshold redact; store-scoped RBAC Complete still MISSING"
 }

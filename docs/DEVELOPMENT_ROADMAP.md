@@ -11,6 +11,22 @@
 
 ---
 
+### Tip — notification expense approval threshold redact (2026-09-15)
+
+**As of tip:** `a8b40fa7f05bd8e053989963fe3ce5b8311f50a3`
+Expense-approval notification `message` company auto-approve threshold redact for
+`store_manager` (`exceeds approval threshold (N)` stripped on `GET /notifications`
++ export + mark-read/unread; `create_expense` notify source no longer embeds the
+number; audit `details.threshold` already redacted; `DEFAULT_L1_ROLES` includes
+`store_manager`; title / amount / level wording remain; admin keeps the
+parenthetical). Continuum stays **PARTIAL**. Store-scoped RBAC Complete
+remains **MISSING** (intentional ALLOWs + residual backlog + product sign-off +
+staging soak). Offline / 7-day / go-live / paid billing Completes remain
+**MISSING**. Next CONTINUE: residual continuum field-leak (named surface) or
+product ALLOW sign-off / staging soak docs.
+
+---
+
 ### Tip — audit CLE invoice_total redact (2026-09-15)
 
 **As of tip:** `3bec132e07ca174b09cd42686dd5bc914926580c`
