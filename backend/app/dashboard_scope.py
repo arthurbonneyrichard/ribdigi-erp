@@ -1832,6 +1832,41 @@ def redact_stock_transfer_store_manager_assignment(payload: dict) -> dict:
     return out
 
 
+def omit_stock_movement_created_by_email(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit stock-movement ``created_by_email``.
+
+    Users list/get + CSV export already denied (company org roster). Movement
+    list/export must not re-dump staff email via ``created_by_email``.
+    Quantity / type / notes / ``created_at`` / ``created_by`` id remain for ops.
+    """
+    return managed_ids is not None
+
+
+def redact_stock_movement_created_by_email(payload: dict) -> dict:
+    """Null ``created_by_email`` on a stock-movement JSON/CSV row dict."""
+    out = dict(payload)
+    if "created_by_email" in out:
+        out["created_by_email"] = None
+    return out
+
+
+def apply_stock_movement_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager stock-movement JSON redacts (created_by_email)."""
+    out = payload
+    if omit_stock_movement_created_by_email(managed_ids):
+        out = redact_stock_movement_created_by_email(out)
+    return out
+
+
+def apply_stock_movement_manager_redacts_list(
+    rows: list[dict], managed_ids: list[str] | None
+) -> list[dict]:
+    """Map ``apply_stock_movement_manager_redacts`` across movement list rows."""
+    return [apply_stock_movement_manager_redacts(row, managed_ids) for row in rows]
+
+
 def assert_store_branch_assignment_write_denied(
     managed_ids: list[str] | None,
     *,

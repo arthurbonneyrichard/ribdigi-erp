@@ -18537,3 +18537,114 @@ async def test_store_manager_stock_transfer_store_manager_ids_redacted(client, d
     store_row = next(r for r in stores.json()["data"] if r["id"] == mine.id)
     assert store_row.get("manager_id") == mgr.id
 
+
+@pytest.mark.asyncio
+async def test_store_manager_stock_movement_created_by_email_redacted(client, db_session):
+    """Stock movement list/export nulls created_by_email for store_manager.
+
+    Users list/get + CSV export already denied (company org roster). Movement
+    JSON/CSV must not re-dump staff email via created_by_email. Qty/type/notes
+    + created_at remain; admin JSON/CSV keep the email.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    admin = seed["admin1"]
+    product = seed["p1"]
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Mov Email Store",
+        code="MES1",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        name="Mov Email WH",
+        code="WH-MES1",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    db_session.add(wh)
+    await db_session.flush()
+    movement = m.StockMovement(
+        tenant_id=tid,
+        company_id=cid,
+        product_id=product.id,
+        warehouse_id=wh.id,
+        movement_type="stock_in",
+        quantity=3,
+        quantity_before=0,
+        quantity_after=3,
+        notes="created-by-email-redact",
+        created_by=admin.id,
+    )
+    db_session.add(movement)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    admin_list = await ac.get(
+        "/api/v1/inventory/movements",
+        headers=admin_company,
+        params={"warehouse_id": wh.id},
+    )
+    assert admin_list.status_code == 200, admin_list.text
+    admin_row = next(
+        r for r in admin_list.json()["data"] if r.get("notes") == "created-by-email-redact"
+    )
+    assert admin_row.get("created_by_email") == "admin@alpha.example.com"
+    assert admin_row.get("notes") == "created-by-email-redact"
+
+    mgr_list = await ac.get(
+        "/api/v1/inventory/movements",
+        headers=headers,
+        params={"warehouse_id": wh.id},
+    )
+    assert mgr_list.status_code == 200, mgr_list.text
+    mgr_row = next(
+        r for r in mgr_list.json()["data"] if r.get("notes") == "created-by-email-redact"
+    )
+    assert mgr_row.get("created_by_email") is None
+    assert mgr_row.get("notes") == "created-by-email-redact"
+    assert mgr_row.get("quantity") == 3.0
+
+    admin_csv = await ac.get(
+        "/api/v1/inventory/movements/export",
+        headers=admin_company,
+        params={"warehouse_id": wh.id},
+    )
+    assert admin_csv.status_code == 200, admin_csv.text
+    admin_rows = list(csv.DictReader(io.StringIO(admin_csv.text)))
+    admin_csv_row = next(r for r in admin_rows if r.get("notes") == "created-by-email-redact")
+    assert admin_csv_row.get("created_by_email") == "admin@alpha.example.com"
+
+    mgr_csv = await ac.get(
+        "/api/v1/inventory/movements/export",
+        headers=headers,
+        params={"warehouse_id": wh.id},
+    )
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    mgr_rows = list(csv.DictReader(io.StringIO(mgr_csv.text)))
+    mgr_csv_row = next(r for r in mgr_rows if r.get("notes") == "created-by-email-redact")
+    assert mgr_csv_row.get("created_by_email") in (None, "")
+    assert mgr_csv_row.get("notes") == "created-by-email-redact"
+

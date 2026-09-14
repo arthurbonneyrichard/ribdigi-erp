@@ -6077,6 +6077,9 @@ async def movements(
         limit=200,
         company_id=claims.get("company_id"),
     )
+    rows = dashboard_scope_svc.apply_stock_movement_manager_redacts_list(
+        rows, managed_wh
+    )
     return env(rows)
 
 
@@ -6105,6 +6108,9 @@ async def export_movements_csv(
         from_date=from_date,
         to_date=to_date,
         company_id=claims.get("company_id"),
+        omit_created_by_email=dashboard_scope_svc.omit_stock_movement_created_by_email(
+            managed_wh
+        ),
     )
     return Response(
         content=text,

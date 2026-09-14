@@ -252,6 +252,7 @@ async def export_movements_csv(
     from_date: str | None = None,
     to_date: str | None = None,
     company_id: str | None = None,
+    omit_created_by_email: bool = False,
 ) -> str:
     if movement_type:
         key = movement_type.strip().lower()
@@ -280,7 +281,10 @@ async def export_movements_csv(
     writer = csv.DictWriter(buf, fieldnames=MOVEMENT_EXPORT_COLUMNS)
     writer.writeheader()
     for row in rows:
-        writer.writerow({k: _cell(row.get(k)) for k in MOVEMENT_EXPORT_COLUMNS})
+        out = {k: _cell(row.get(k)) for k in MOVEMENT_EXPORT_COLUMNS}
+        if omit_created_by_email:
+            out["created_by_email"] = ""
+        writer.writerow(out)
     return buf.getvalue()
 
 
