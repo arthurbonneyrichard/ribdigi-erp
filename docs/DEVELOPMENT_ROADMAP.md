@@ -13,7 +13,7 @@
 
 ### Tip — CLE additional_amount redact (2026-09-15)
 
-**As of tip:** `de97054eeb826ccf00f1d6364ed2e97ae71e1e75`
+**As of tip:** `c44078e499dbc5028ead2550c3247b400b0beadf`
 CREDIT_LIMIT_EXCEEDED 409 `additional_amount` redact for `store_manager`
 (base settlement that recovers FX rate with scoped invoice `total_amount`;
 `invoice_total` / `invoice_total_base` / master credit fields already redacted;
