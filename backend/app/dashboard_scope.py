@@ -1418,10 +1418,30 @@ def redact_document_header_footer(payload: dict) -> dict:
     return out
 
 
+def omit_document_receipt_print_template(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit receipt ``receipt_print_template`` / ``default_paper``.
+
+    Document-settings PATCH/export/preview + GET ``/tenants/me`` already denied.
+    POS receipt JSON must not re-dump company print-template settings.
+    ``company_name`` + ``has_logo`` + resolved ``paper`` + server-side text/PDF embeds remain.
+    """
+    return managed_ids is not None
+
+
+def redact_document_receipt_print_template(payload: dict) -> dict:
+    """Null ``receipt_print_template`` / ``default_paper`` on a receipt JSON dict."""
+    out = dict(payload)
+    if "receipt_print_template" in out:
+        out["receipt_print_template"] = None
+    if "default_paper" in out:
+        out["default_paper"] = None
+    return out
+
+
 def apply_document_logo_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager document-brand JSON redacts (logo + legal + contact + header)."""
+    """Apply store_manager document-brand JSON redacts (logo + legal + contact + header + tpl)."""
     out = payload
     if omit_document_logo_data_url(managed_ids):
         out = redact_document_logo_data_url(out)
@@ -1431,6 +1451,8 @@ def apply_document_logo_manager_redacts(
         out = redact_document_company_contact(out)
     if omit_document_header_footer(managed_ids):
         out = redact_document_header_footer(out)
+    if omit_document_receipt_print_template(managed_ids):
+        out = redact_document_receipt_print_template(out)
     return out
 
 

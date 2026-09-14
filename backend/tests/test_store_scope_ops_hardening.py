@@ -15026,6 +15026,93 @@ async def test_store_manager_receipt_document_header_footer_redacted(client, db_
 
 
 @pytest.mark.asyncio
+async def test_store_manager_receipt_print_template_redacted(client, db_session):
+    """POS receipt JSON nulls receipt_print_template/default_paper for store_manager.
+
+    Document-settings PATCH/export/preview + GET /tenants/me already denied; receipt
+    JSON must not re-dump company print-template settings. company_name + has_logo +
+    resolved paper remain; admin JSON keeps template fields; server-side text/PDF embeds remain.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    co = seed["c1"]
+    co.name = "Alpha Trading Co"
+    co.receipt_print_template = "thermal_58"
+    await db_session.commit()
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Print Template Receipt Store",
+        code="PTR1",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    sess = m.PosSession(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        user_id=mgr.id,
+        session_number="S-PTR-1",
+        status="open",
+        opening_cash=0,
+    )
+    db_session.add(sess)
+    await db_session.flush()
+    sale = m.Transaction(
+        tenant_id=tid,
+        company_id=cid,
+        tx_type="pos_sale",
+        reference="POS-PTR-REF",
+        session_id=sess.id,
+        subtotal=5,
+        tax=0,
+        total=5,
+        status="completed",
+        payload={"items": [{"name": "Item", "quantity": 1, "unit_price": 5}]},
+    )
+    db_session.add(sale)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    admin_receipt = await ac.get(
+        f"/api/v1/pos/sales/{sale.id}/receipt", headers=admin_company
+    )
+    assert admin_receipt.status_code == 200, admin_receipt.text
+    admin_data = admin_receipt.json()["data"]
+    assert admin_data.get("receipt_print_template") == "thermal_58"
+    assert admin_data.get("default_paper") == "58mm"
+    assert admin_data.get("paper") == "58mm"
+
+    mgr_receipt = await ac.get(f"/api/v1/pos/sales/{sale.id}/receipt", headers=headers)
+    assert mgr_receipt.status_code == 200, mgr_receipt.text
+    mgr_data = mgr_receipt.json()["data"]
+    assert mgr_data.get("company_name") == "Alpha Trading Co"
+    assert mgr_data.get("receipt_print_template") is None
+    assert mgr_data.get("default_paper") is None
+    # Resolved paper for this render remains (operational width, not settings catalog).
+    assert mgr_data.get("paper") == "58mm"
+    assert "has_logo" in mgr_data
+    assert isinstance(mgr_data.get("text"), str)
+
+
+@pytest.mark.asyncio
 async def test_store_manager_me_workspace_company_profile_redacted(client, db_session):
     """GET /me + /workspace redact company legal/tax dump + company_entitlement for store_manager."""
     ac, seed = client
