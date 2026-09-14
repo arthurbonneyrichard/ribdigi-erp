@@ -580,7 +580,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     [role, permissions, enabledModules]
   );
   const showAlerts = visible.some(([, href]) => href === '/notifications');
-  const sidebarLogoSrc = companyLogoUrl || '/brand/logo-sidebar.svg';
+  const sidebarLogoSrc = companyLogoUrl || '/brand/logo-sidebar.png';
   const sidebarLogoAlt = companyLogoUrl
     ? companyName || 'Company logo'
     : 'RIBDIGI ERP';
