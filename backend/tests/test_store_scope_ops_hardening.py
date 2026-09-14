@@ -10368,7 +10368,7 @@ async def test_store_manager_quotation_emailed_to_redacted(client, db_session):
 
     Party master email already redacted; quotation JSON/CSV must not re-dump the
     recipient address. emailed_at remains as send-status chrome. Admin keeps
-    emailed_to. Purchase-order emailed_to remains a leftover dump.
+    emailed_to.
     """
     ac, seed = client
     tid = seed["t1"].id
@@ -10484,6 +10484,146 @@ async def test_store_manager_quotation_emailed_to_redacted(client, db_session):
     assert send_payload.get("emailed_at") is not None
     assert (send_payload.get("delivery") or {}).get("to") is None
     assert send_payload.get("delivery", {}).get("mode") == "console"
+
+
+@pytest.mark.asyncio
+async def test_store_manager_purchase_order_emailed_to_redacted(client, db_session):
+    """Purchase-order list/get/export/print nulls emailed_to for store_manager.
+
+    Party master email already redacted; PO JSON/CSV must not re-dump the
+    supplier recipient address. sent_at remains as send-status chrome. Admin
+    keeps emailed_to.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    recipient = "vip-supplier@example.com"
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="PO Emailed To Redact Store",
+        code="POETR-MGR",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        name="PO Emailed To Redact WH",
+        code="WH-POETR",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="PO ETR Supplier",
+        kind="supplier",
+        credit_limit=0,
+    )
+    db_session.add_all([wh, supplier])
+    await db_session.flush()
+
+    sent_at = datetime.utcnow()
+    po = m.PurchaseOrder(
+        tenant_id=tid,
+        company_id=cid,
+        po_number="PO-ETR-1",
+        supplier_id=supplier.id,
+        warehouse_id=wh.id,
+        status="sent",
+        subtotal=75,
+        tax_amount=0,
+        total_amount=75,
+        created_by=seed["super"].id,
+        sent_at=sent_at,
+        emailed_to=recipient,
+    )
+    db_session.add(po)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+
+    admin_got = await ac.get(
+        f"/api/v1/purchasing/orders/{po.id}", headers=admin_headers
+    )
+    assert admin_got.status_code == 200, admin_got.text
+    admin_data = admin_got.json()["data"]
+    assert admin_data.get("emailed_to") == recipient
+    assert admin_data.get("sent_at") is not None
+
+    mgr_got = await ac.get(f"/api/v1/purchasing/orders/{po.id}", headers=headers)
+    assert mgr_got.status_code == 200, mgr_got.text
+    mgr_data = mgr_got.json()["data"]
+    assert mgr_data.get("emailed_to") is None
+    assert mgr_data.get("sent_at") is not None
+    assert float(mgr_data.get("total_amount") or 0) == 75.0
+    assert mgr_data.get("status") == "sent"
+
+    listed = await ac.get("/api/v1/purchasing/orders", headers=headers)
+    assert listed.status_code == 200, listed.text
+    row = next(r for r in listed.json()["data"] if r["id"] == po.id)
+    assert row.get("emailed_to") is None
+    assert row.get("sent_at") is not None
+
+    admin_csv = await ac.get("/api/v1/purchasing/orders/export", headers=admin_headers)
+    assert admin_csv.status_code == 200, admin_csv.text
+    admin_csv_row = next(
+        r
+        for r in csv.DictReader(io.StringIO(admin_csv.text))
+        if r.get("po_number") == "PO-ETR-1"
+    )
+    assert admin_csv_row.get("emailed_to") == recipient
+
+    mgr_csv = await ac.get("/api/v1/purchasing/orders/export", headers=headers)
+    assert mgr_csv.status_code == 200, mgr_csv.text
+    assert recipient not in mgr_csv.text
+    mgr_csv_row = next(
+        r
+        for r in csv.DictReader(io.StringIO(mgr_csv.text))
+        if r.get("po_number") == "PO-ETR-1"
+    )
+    assert (mgr_csv_row.get("emailed_to") or "") == ""
+    assert mgr_csv_row.get("sent_at")
+
+    admin_print = await ac.get(
+        f"/api/v1/purchasing/orders/{po.id}/print", headers=admin_headers
+    )
+    assert admin_print.status_code == 200, admin_print.text
+    assert admin_print.json()["data"]["po"].get("emailed_to") == recipient
+
+    mgr_print = await ac.get(
+        f"/api/v1/purchasing/orders/{po.id}/print", headers=headers
+    )
+    assert mgr_print.status_code == 200, mgr_print.text
+    assert mgr_print.json()["data"]["po"].get("emailed_to") is None
+    assert recipient not in (mgr_print.json()["data"].get("text") or "")
+
+    from app import dashboard_scope as dashboard_scope_svc
+
+    send_payload = dashboard_scope_svc.apply_purchase_order_manager_redacts(
+        {
+            "emailed_to": recipient,
+            "sent_at": sent_at.isoformat(),
+            "delivery": {"to": recipient, "sent": True},
+        },
+        [wh.id],
+    )
+    assert send_payload.get("emailed_to") is None
+    assert send_payload.get("sent_at") is not None
+    assert (send_payload.get("delivery") or {}).get("to") is None
+    assert send_payload.get("delivery", {}).get("sent") is True
 
 
 @pytest.mark.asyncio

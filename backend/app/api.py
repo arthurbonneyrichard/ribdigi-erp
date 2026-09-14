@@ -6030,7 +6030,9 @@ async def low_stock_reorder_po(
         },
     )
     await db.commit()
-    return env(await purchasing_svc.serialize_po(db, po), "Draft purchase order created from low stock")
+    data = await purchasing_svc.serialize_po(db, po)
+    data = dashboard_scope_svc.apply_purchase_order_manager_redacts(data, managed_wh)
+    return env(data, "Draft purchase order created from low stock")
 
 
 @api.get("/inventory/movements")
@@ -9894,6 +9896,11 @@ async def convert_purchase_request(
     }
     if dashboard_scope_svc.omit_approval_matrix_roles(managed_wh):
         payload_out = dashboard_scope_svc.redact_approval_matrix_roles(payload_out)
+    payload_out["purchase_order"] = (
+        dashboard_scope_svc.apply_purchase_order_manager_redacts(
+            payload_out["purchase_order"], managed_wh
+        )
+    )
     return env(
         payload_out,
         "Purchase request converted to PO",
@@ -9939,7 +9946,9 @@ async def list_purchase_orders(
         stmt, m.PurchaseOrder, managed_wh
     )
     rows = (await db.execute(stmt)).scalars().all()
-    return env([await purchasing_svc.serialize_po(db, po) for po in rows])
+    out = [await purchasing_svc.serialize_po(db, po) for po in rows]
+    out = dashboard_scope_svc.apply_purchase_order_manager_redacts_list(out, managed_wh)
+    return env(out)
 
 
 @api.get("/purchasing/orders/export")
@@ -9985,7 +9994,9 @@ async def create_purchase_order(
         company_id=claims.get("company_id"),
     )
     await db.commit()
-    return env(await purchasing_svc.serialize_po(db, po), "Purchase order created")
+    data = await purchasing_svc.serialize_po(db, po)
+    data = dashboard_scope_svc.apply_purchase_order_manager_redacts(data, managed_wh)
+    return env(data, "Purchase order created")
 
 
 @api.get("/purchasing/orders/{po_id}")
@@ -10003,7 +10014,9 @@ async def get_purchase_order(
     dashboard_scope_svc.assert_warehouse_in_manager_scope(
         managed_wh, getattr(po, "warehouse_id", None), allow_unset=False
     )
-    return env(await purchasing_svc.serialize_po(db, po))
+    data = await purchasing_svc.serialize_po(db, po)
+    data = dashboard_scope_svc.apply_purchase_order_manager_redacts(data, managed_wh)
+    return env(data)
 
 
 @api.patch("/purchasing/orders/{po_id}")
@@ -10044,7 +10057,11 @@ async def patch_purchase_order(
         track_amendment=False if data.get("reason") is None else None,
     )
     await db.commit()
-    return env(await purchasing_svc.serialize_po(db, po), "Purchase order updated")
+    data_out = await purchasing_svc.serialize_po(db, po)
+    data_out = dashboard_scope_svc.apply_purchase_order_manager_redacts(
+        data_out, managed_wh
+    )
+    return env(data_out, "Purchase order updated")
 
 
 @api.post("/purchasing/orders/{po_id}/amend")
@@ -10084,7 +10101,13 @@ async def amend_purchase_order(
         notes=data.get("notes") if "notes" in data else None,
     )
     await db.commit()
-    return env(await purchasing_svc.serialize_po(db, po), f"Purchase order amended to revision {po.revision}")
+    data_out = await purchasing_svc.serialize_po(db, po)
+    data_out = dashboard_scope_svc.apply_purchase_order_manager_redacts(
+        data_out, managed_wh
+    )
+    return env(
+        data_out, f"Purchase order amended to revision {po.revision}"
+    )
 
 
 @api.get("/purchasing/orders/{po_id}/amendments")
@@ -10154,9 +10177,13 @@ async def send_purchase_order(
     data = await purchasing_svc.serialize_po(db, po)
     if delivery:
         data["delivery"] = delivery
+    data = dashboard_scope_svc.apply_purchase_order_manager_redacts(data, managed_wh)
     msg = "Purchase order sent"
     if delivery and delivery.get("sent"):
-        msg = f"Purchase order sent and emailed to {delivery['to']}"
+        if dashboard_scope_svc.omit_document_emailed_to(managed_wh):
+            msg = "Purchase order sent and emailed"
+        else:
+            msg = f"Purchase order sent and emailed to {delivery['to']}"
     return env(data, msg)
 
 
@@ -10188,6 +10215,7 @@ async def print_purchase_order(
 
     doc_brand = tenant_document_brand(tenant, company)
     data = await purchasing_svc.serialize_po(db, po)
+    data = dashboard_scope_svc.apply_purchase_order_manager_redacts(data, managed_wh)
     text = purchasing_svc.render_po_text(
         data,
         supplier_name=supplier.name,
@@ -10215,7 +10243,9 @@ async def cancel_purchase_order(
         db, tenant_id=claims["tenant_id"], user_id=claims["sub"], po_id=po_id
     )
     await db.commit()
-    return env(await purchasing_svc.serialize_po(db, po), "Purchase order cancelled")
+    data = await purchasing_svc.serialize_po(db, po)
+    data = dashboard_scope_svc.apply_purchase_order_manager_redacts(data, managed_wh)
+    return env(data, "Purchase order cancelled")
 
 
 @api.get("/purchasing/grn")

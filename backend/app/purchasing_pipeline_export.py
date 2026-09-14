@@ -169,6 +169,9 @@ async def export_purchase_orders_csv(
     writer.writeheader()
     for row in rows:
         data = await purchasing_svc.serialize_po(db, row)
+        data = dashboard_scope_svc.apply_purchase_order_manager_redacts(
+            data, managed_wh
+        )
         writer.writerow({k: _cell(data.get(k)) for k in PO_EXPORT_COLUMNS})
     return buf.getvalue()
 

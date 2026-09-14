@@ -2999,10 +2999,10 @@ def redact_sales_invoice_credit_override(payload: dict) -> dict:
 def omit_document_emailed_to(managed_ids: list[str] | None) -> bool:
     """True when store_manager must omit document ``emailed_to`` party email.
 
-    Party master email is already redacted on customer/supplier JSON; sales-invoice
-    and quotation list/get/send/export must not re-dump the recipient address via
-    ``emailed_to`` (or nested send ``delivery.to``). ``emailed_at`` remains as
-    send-status chrome. Purchase-order ``emailed_to`` remains a leftover dump.
+    Party master email is already redacted on customer/supplier JSON; sales-invoice,
+    quotation, and purchase-order list/get/send/export must not re-dump the recipient
+    address via ``emailed_to`` (or nested send ``delivery.to``). ``emailed_at`` /
+    ``sent_at`` remain as send-status chrome.
     """
     return managed_ids is not None
 
@@ -3054,6 +3054,23 @@ def apply_quotation_manager_redacts_list(
 ) -> list[dict]:
     """Map ``apply_quotation_manager_redacts`` across quotation list rows."""
     return [apply_quotation_manager_redacts(row, managed_ids) for row in rows]
+
+
+def apply_purchase_order_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager purchase-order JSON redacts (emailed_to)."""
+    out = payload
+    if omit_document_emailed_to(managed_ids):
+        out = redact_document_emailed_to(out)
+    return out
+
+
+def apply_purchase_order_manager_redacts_list(
+    rows: list[dict], managed_ids: list[str] | None
+) -> list[dict]:
+    """Map ``apply_purchase_order_manager_redacts`` across PO list rows."""
+    return [apply_purchase_order_manager_redacts(row, managed_ids) for row in rows]
 
 
 def assert_company_level_user_admin_export_denied(
