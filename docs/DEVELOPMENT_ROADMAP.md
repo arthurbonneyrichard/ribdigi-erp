@@ -13,7 +13,7 @@
 
 ### Tip — audit CLE invoice_total redact (2026-09-15)
 
-**As of tip:** `495adf91c8a61e9daa13080a09986d1d29190771`
+**As of tip:** `d5efeebf412527b32227c5d8f3d93d5ae43637a8`
 Scoped audit list/export `details` CLE `invoice_total` redact for
 `store_manager` (`credit_limit_override` on `GET /audit-logs` + CSV;
 CREDIT_LIMIT_EXCEEDED 409 already redacts document-currency `invoice_total`;
