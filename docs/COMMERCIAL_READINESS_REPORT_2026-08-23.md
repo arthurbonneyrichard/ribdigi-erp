@@ -9,9 +9,11 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `44619da1c292c0f5be025d957f1db013ce00fcb0` — feat redact credit payment `fx_gain_loss` (`26e7d58799`); leftovers still open |
+| **As of tip** | `877db22150f91a31ddc16bc316714dfb2cd60151` — feat redact sales-invoice `exchange_rate` (`877db22150`); leftovers still open |
 | RBAC / store scope | **PARTIAL** only |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
+
+Closed this continuum slice: sales-invoice list/get/export/print `exchange_rate` redact for store_manager (currency already redacted; credit payment exchange_rate already redacted; exchange-rates GET already denied; totals/status/balance remain).
 
 Closed this continuum slice: expenses-summary `category_id` query/export filter denied (`STORE_SCOPE_DENIED`; unfiltered scoped summary remains).
 
