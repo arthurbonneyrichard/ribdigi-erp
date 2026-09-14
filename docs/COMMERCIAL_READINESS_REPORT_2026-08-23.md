@@ -9,7 +9,7 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `48c26faa44d90666742a2486ad5d1dad2ba19d08` — feat redact credit payment `currency` (`450f6476d7`); leftovers still open |
+| **As of tip** | `aed70d3b804d63c501178d748008664e06bc7400` — feat redact credit payment `currency` (`450f6476d7`); leftovers still open |
 | RBAC / store scope | **PARTIAL** only |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
 
