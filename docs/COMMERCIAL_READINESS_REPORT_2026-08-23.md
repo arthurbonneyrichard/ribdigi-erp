@@ -9,13 +9,13 @@
 | Field | Value |
 |------|--------|
 | Branch / PR | `cursor/transfer-genemonyuglaze-gate-427f` / #303 |
-| **As of tip** | `eba2e1cf15cbc2271e31cb1c16d0037d3e23b175` — journal entry attachment_url redact honesty (feat `8c82d4b68f`) for `store_manager` |
+| **As of tip** | `b0fc721a157a6c1e0d1747ae364bbdbe4a9ff45c` — company/tenant logo binary GET deny for `store_manager` (docs tip bump follows) |
 | RBAC / store scope | **PARTIAL** only |
 | Must never claim | Offline Complete · 7-day VERIFIED · go-live · paid billing Complete · ADR-005 Complete |
 
-**Intentionally still open (same list as `AGENTS.md`):** company/tenant logo binary GET; per-user `/auth/sessions` + `/notifications/settings`; ADR-005 user↔store membership **MISSING**; managed-store self-scope `manager_id` may remain.
+**Intentionally still open (same list as `AGENTS.md`):** per-user `/auth/sessions` + `/notifications/settings`; ADR-005 user↔store membership **MISSING**; managed-store self-scope `manager_id` may remain.
 
-**Closed themes (brief, still PARTIAL):** store/WH ops+reports scope; company-level admin/settings/catalog/party/bank/offline denies; cost/PII/org/approval-matrix/`awaiting_roles`/early-discount-matrix/BI-config redacts; product images gallery list GET; product variants path CSV export; product catalog CSV export (`GET /products/export`); users list/get (company org roster); product primary image binary GET (`GET /products/{id}/image`); product list/get `image_url` storage-key redact; product list/get `has_image` forced false; expense list/get/patch `attachment_url` storage-key redact (`has_attachment` + scoped binary download remain); purchase-invoice list/get/patch/upload `attachment_url` storage-key redact (`has_attachment` + WH-scoped binary download remain); journal-entry list/get/create/unpost/upload/delete `attachment_url` storage-key redact (`has_attachment` + store-scoped binary download remain). Continuum agent contract: see `AGENTS.md` → “PR #303 store_manager RBAC continuum”. Refresh `/opt/cursor/artifacts/pr303_body_update.md` when `gh pr edit` fails.
+**Closed themes (brief, still PARTIAL):** store/WH ops+reports scope; company-level admin/settings/catalog/party/bank/offline denies; cost/PII/org/approval-matrix/`awaiting_roles`/early-discount-matrix/BI-config redacts; product images gallery list GET; product variants path CSV export; product catalog CSV export (`GET /products/export`); users list/get (company org roster); product primary image binary GET (`GET /products/{id}/image`); product list/get `image_url` storage-key redact; product list/get `has_image` forced false; expense list/get/patch `attachment_url` storage-key redact (`has_attachment` + scoped binary download remain); purchase-invoice list/get/patch/upload `attachment_url` storage-key redact (`has_attachment` + WH-scoped binary download remain); journal-entry list/get/create/unpost/upload/delete `attachment_url` storage-key redact (`has_attachment` + store-scoped binary download remain); company/tenant logo binary GET deny (`GET /companies/{id}/logo` + `GET /tenants/me/logo`; switcher `has_logo`/`tenant_has_logo` + initials remain). Continuum agent contract: see `AGENTS.md` → “PR #303 store_manager RBAC continuum”. Refresh `/opt/cursor/artifacts/pr303_body_update.md` when `gh pr edit` fails.
 
 ---
 
