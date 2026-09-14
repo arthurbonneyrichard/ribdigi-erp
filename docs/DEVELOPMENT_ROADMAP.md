@@ -13,7 +13,7 @@
 
 ### Tip — export residual closed + temp membership expires_at (2026-09-15)
 
-**As of tip:** `13de889ca0961a74ff3f96af87b8b395f0f5b3c8`
+**As of tip:** `830840eb15f8d2434264607af39b4fbb97b7a6bb`
 Closed residual admin/settings/catalog module `export` gates (role-gated admin
 dumps + caller-scoped session/passkey exports retained intentionally). First-class
 `export` / `view_cost` actions marked **Complete** for this engine slice (not
