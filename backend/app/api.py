@@ -2207,17 +2207,19 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
         for mem in mems:
             co = await db.get(m.Company, mem.company_id)
             if co:
-                memberships.append(
-                    {
-                        "company_id": co.id,
-                        "company_name": co.name,
-                        "role": mem.role,
-                        "is_default": co.is_default,
-                        "has_logo": bool(co.logo_url),
-                        "business_type_label": companies_svc.business_type_label_for(co),
-                        "industry": co.industry,
-                    }
-                )
+                row = {
+                    "company_id": co.id,
+                    "company_name": co.name,
+                    "role": mem.role,
+                    "is_default": co.is_default,
+                    "has_logo": bool(co.logo_url),
+                }
+                # store_manager: business-types GET already denied — do not
+                # re-dump industry / business_type_label via /me memberships.
+                if not switcher_only:
+                    row["business_type_label"] = companies_svc.business_type_label_for(co)
+                    row["industry"] = co.industry
+                memberships.append(row)
     company_payload = None
     if claims.get("company_id"):
         co = await db.get(m.Company, claims["company_id"])

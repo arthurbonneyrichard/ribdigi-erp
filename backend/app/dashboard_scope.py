@@ -1630,7 +1630,8 @@ def omit_company_profile_details(managed_ids: list[str] | None) -> bool:
 
     Detail/list company GETs already denied; ``GET /me`` and ``GET /workspace``
     must not re-dump legal/tax/address/store_limit via ``serialize_company``.
-    Switcher chrome fields (id/name/has_logo/industry) remain.
+    Switcher chrome fields (id/name/has_logo) remain; ``business_type_label`` /
+    ``industry`` omitted (``GET /business-types`` already denied — catalog re-dump).
     """
     return managed_ids is not None
 

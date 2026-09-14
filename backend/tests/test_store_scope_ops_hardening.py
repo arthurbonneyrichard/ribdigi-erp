@@ -16692,6 +16692,69 @@ async def test_store_manager_business_types_read_denied(client, db_session):
 
 
 @pytest.mark.asyncio
+async def test_store_manager_switcher_business_type_industry_omitted(client, db_session):
+    """GET /me + /workspace omit business_type_label/industry for store_manager.
+
+    GET /business-types already denied (company create catalog). Session switcher
+    must not re-dump catalog fields via company / memberships payloads.
+    id/name/has_logo remain; admin /me keeps industry + business_type_label.
+    """
+    ac, seed = client
+    cid = seed["c1"].id
+    co = seed["c1"]
+    co.industry = "retail"
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    admin_me = await ac.get("/api/v1/me", headers=admin_company)
+    assert admin_me.status_code == 200, admin_me.text
+    admin_co = admin_me.json()["data"].get("company") or {}
+    assert admin_co.get("industry") == "retail"
+    assert admin_co.get("business_type_label")
+    admin_mems = admin_me.json()["data"].get("company_memberships") or []
+    assert any(m.get("industry") == "retail" for m in admin_mems)
+
+    mgr_me = await ac.get("/api/v1/me", headers=headers)
+    assert mgr_me.status_code == 200, mgr_me.text
+    mgr_data = mgr_me.json()["data"]
+    mgr_co = mgr_data.get("company") or {}
+    assert mgr_co.get("name")
+    assert "has_logo" in mgr_co
+    assert "industry" not in mgr_co
+    assert "business_type_label" not in mgr_co
+    assert "legal_name" not in mgr_co
+    for mem in mgr_data.get("company_memberships") or []:
+        assert "industry" not in mem
+        assert "business_type_label" not in mem
+        assert mem.get("company_name")
+
+    mgr_ws = await ac.get("/api/v1/workspace", headers=headers)
+    assert mgr_ws.status_code == 200, mgr_ws.text
+    for row in mgr_ws.json()["data"].get("companies") or []:
+        assert row.get("name")
+        assert "has_logo" in row
+        assert "industry" not in row
+        assert "business_type_label" not in row
+
+    admin_ws = await ac.get("/api/v1/workspace", headers=admin_company)
+    assert admin_ws.status_code == 200, admin_ws.text
+    admin_rows = admin_ws.json()["data"].get("companies") or []
+    assert any(r.get("industry") == "retail" for r in admin_rows)
+
+
+@pytest.mark.asyncio
 async def test_store_manager_legacy_sale_purchase_writes_denied(client, db_session):
     """Legacy GET/POST /sales and /purchases denied for store_manager (no store_id; use invoices/PO)."""
     ac, seed = client

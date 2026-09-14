@@ -91,15 +91,19 @@ def serialize_company_switcher(
 
     Used for store_manager ``GET /me`` + ``GET /workspace`` after company
     profile/list GETs were denied (avoid session-payload bypass).
+
+    Omits ``business_type_label`` / ``industry`` — ``GET /business-types`` is
+    already denied for store_manager (company create catalog); session switcher
+    must not re-dump those catalog fields. ``id`` / ``name`` / ``has_logo`` remain.
+    ``business_type`` is accepted for call-site compatibility but unused.
     """
+    _ = business_type  # unused — catalog label omitted for store_manager switcher
     return {
         "id": co.id,
         "name": co.name,
         "is_default": co.is_default,
         "is_active": co.is_active,
         "has_logo": bool(co.logo_url),
-        "business_type_label": business_type_label_for(co, business_type),
-        "industry": co.industry,
     }
 
 
