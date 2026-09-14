@@ -320,6 +320,8 @@ async def export_aging_csv(
     key = (kind or "receivable").strip().lower()
     if key not in {"receivable", "payable"}:
         raise HTTPException(status_code=400, detail="kind must be receivable or payable")
+    from app import dashboard_scope as dashboard_scope_svc
+
     report = (
         await credit_svc.ap_aging(
             db, tenant_id, company_id=company_id, warehouse_ids=warehouse_ids
@@ -329,6 +331,9 @@ async def export_aging_csv(
             db, tenant_id, company_id=company_id, store_ids=store_ids
         )
     )
+    # store_manager scope: apply same JSON redacts before CSV (credit_limit + currency).
+    managed = warehouse_ids if key == "payable" else store_ids
+    report = dashboard_scope_svc.apply_credit_aging_manager_redacts(report, managed)
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=AGING_EXPORT_COLUMNS)
     writer.writeheader()

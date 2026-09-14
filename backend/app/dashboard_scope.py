@@ -4664,13 +4664,45 @@ def redact_credit_aging_party_credit_limit(payload: dict) -> dict:
     return out
 
 
+def omit_credit_aging_document_currency(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit aging document ``currency``.
+
+    Exchange-rates GET already denied; POS receipt + sales/purchase-invoice JSON
+    already redact ``currency``. Credit AR/AP aging JSON/CSV must not re-dump
+    company currency prefs on document rows. Scoped ``balance_due`` /
+    ``balance_due_base`` / ``exchange_rate`` / buckets / party name remain;
+    admin keeps ``currency``.
+    """
+    return managed_ids is not None
+
+
+def redact_credit_aging_document_currency(payload: dict) -> dict:
+    """Null ``currency`` on credit-aging document rows."""
+    out = dict(payload)
+    documents = out.get("documents")
+    if isinstance(documents, list):
+        redacted = []
+        for row in documents:
+            if isinstance(row, dict):
+                item = dict(row)
+                if "currency" in item:
+                    item["currency"] = None
+                redacted.append(item)
+            else:
+                redacted.append(row)
+        out["documents"] = redacted
+    return out
+
+
 def apply_credit_aging_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager credit-aging redacts (party ``credit_limit``)."""
+    """Apply store_manager credit-aging redacts (party credit_limit + doc currency)."""
     out = payload
     if omit_credit_aging_party_credit_limit(managed_ids):
         out = redact_credit_aging_party_credit_limit(out)
+    if omit_credit_aging_document_currency(managed_ids):
+        out = redact_credit_aging_document_currency(out)
     return out
 
 
