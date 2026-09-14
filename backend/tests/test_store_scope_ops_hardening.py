@@ -12427,7 +12427,7 @@ async def test_store_manager_product_primary_image_get_denied(client, db_session
     Catalog primary media asset dump (same class as brand logo binary); gallery
     list/export + image writes already denied. Product list/get + WH stock ops
     remain (``image_url`` / ``has_image`` redacted). Company/tenant logo binary
-    GET denied separately.
+    GET stays intentionally open.
 
     Skip admin binary fetch — media keys need writable storage roots; assert
     store_manager deny + list/get remain instead.
