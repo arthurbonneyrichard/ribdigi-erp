@@ -1,10 +1,14 @@
-"""ADR-002 paid billing (PARTIAL — Complete still MISSING).
+"""ADR-002 paid billing (PARTIAL — Complete still MISSING / ops-blocked).
 
 Extends commercial plan metadata (``tenants.plan_code`` / ``PLAN_CATALOG``) with
 provider-shaped tables and APIs. Portal Session and Checkout Session create are
-real when keys are configured (or mock mode for CI). Does **not** invent
-payment success, auto-upgrade ``Tenant.plan_code``, fabricate MRR, or claim
-paid billing Complete.
+real when keys are configured (or mock mode for CI). Webhook ingest mirrors
+subscription lifecycle locally and records ``checkout.session.completed`` /
+``invoice.paid`` without inventing payment success, auto-upgrading
+``Tenant.plan_code``, fabricating MRR, or claiming paid billing Complete.
+
+Engineering mock soak (``test_paid_billing_soak.py``) proves gate-ON behavior.
+Live Stripe keys + staging soak remain required before any Complete claim.
 
 See ``docs/ADR_002_PAID_BILLING_SCAFFOLD.md`` and ``docs/PAID_BILLING_PROVIDER_OPS.md``.
 """
@@ -81,6 +85,10 @@ def honesty_payload() -> dict[str, Any]:
         # Hard non-claim: PARTIAL never advertises live checkout Complete.
         "checkout_enabled": False,
         "scaffold_status": "partial",
+        # Engineering path proven via mock soak; live Stripe still required for Complete.
+        "engineering_mock_soak_ready": True,
+        "paid_billing_complete_ops_blocked": True,
+        "paid_billing_complete_blocker": "live_stripe_keys_and_staging_soak",
         "paid_billing_entitlement_gate_enabled": gate_on,
         "entitlement_gated_routes": list(GATED_ROUTE_ALLOWLIST),
         "entitlement_allow_statuses": sorted(ENTITLEMENT_ALLOW_STATUSES),
@@ -852,6 +860,7 @@ async def _create_live_checkout_session(
         "customer": cus_id,
         "success_url": success_url,
         "cancel_url": cancel_url,
+        "client_reference_id": tenant.id,
         "line_items[0][price]": price_id,
         "line_items[0][quantity]": "1",
         "metadata[tenant_id]": tenant.id,
@@ -996,19 +1005,13 @@ async def ingest_provider_webhook(
             "message": "Idempotent replay — event already recorded.",
         }
 
-    # Optional tenant resolution via metadata.tenant_id (never trust cross-tenant blindly).
-    tenant_id = None
-    meta = obj.get("metadata") if isinstance(obj.get("metadata"), dict) else {}
-    if isinstance(meta, dict) and meta.get("tenant_id"):
-        tenant_id = str(meta["tenant_id"]).strip() or None
-        if tenant_id:
-            tenant = await db.get(m.Tenant, tenant_id)
-            if not tenant:
-                tenant_id = None
+    # Optional tenant resolution (never invent cross-tenant links).
+    tenant_id = await _resolve_webhook_tenant_id(db, provider=prov, obj=obj)
 
     note_parts = [
         "PARTIAL ingest only — no checkout success claim.",
         "Tenant.plan_code / entitlement caps not mutated.",
+        "payment_success never claimed from webhook ingest.",
     ]
     if not webhook_secret_present():
         note_parts.append("webhook_secret_unset_signature_not_enforced")
@@ -1027,20 +1030,61 @@ async def ingest_provider_webhook(
     db.add(row)
     await db.flush()
 
-    # Mirror subscription object when present — local only.
+    plan_before: dict[str, str | None] = {}
+    if tenant_id:
+        tenant_row = await db.get(m.Tenant, tenant_id)
+        if tenant_row is not None:
+            plan_before[tenant_id] = getattr(tenant_row, "plan_code", None)
+
+    mirrored = False
     if event_type.startswith("customer.subscription.") and obj.get("id"):
         await _mirror_subscription_object(
             db, provider=prov, tenant_id=tenant_id, obj=obj
         )
+        mirrored = True
         row.processing_status = "mirrored"
         row.processed_at = datetime.utcnow()
         row.processing_note = (
             (row.processing_note or "")
             + "; local subscription mirror updated (not paid billing Complete)"
         )
+    elif event_type == "checkout.session.completed":
+        mirrored = await _mirror_from_checkout_session(
+            db, provider=prov, tenant_id=tenant_id, obj=obj
+        )
+        row.processing_status = "mirrored" if mirrored else "recorded"
+        row.processed_at = datetime.utcnow()
+        row.processing_note = (
+            (row.processing_note or "")
+            + "; checkout.session.completed recorded without payment_success / "
+            "plan_code mutation"
+            + ("; local subscription mirror seeded" if mirrored else "")
+        )
+    elif event_type in ("invoice.paid", "invoice.payment_succeeded"):
+        mirrored = await _touch_mirror_from_invoice(
+            db, provider=prov, tenant_id=tenant_id, obj=obj
+        )
+        row.processing_status = "recorded_invoice_paid_no_complete"
+        row.processed_at = datetime.utcnow()
+        row.processing_note = (
+            (row.processing_note or "")
+            + "; invoice.paid recorded — no payment_success Complete, "
+            "no Tenant.plan_code mutation"
+            + ("; mirror period/status refreshed" if mirrored else "")
+        )
     else:
         row.processing_status = "recorded"
         row.processed_at = datetime.utcnow()
+
+    if tenant_id and tenant_id in plan_before:
+        tenant_row = await db.get(m.Tenant, tenant_id)
+        if tenant_row is not None and getattr(tenant_row, "plan_code", None) != plan_before[
+            tenant_id
+        ]:
+            raise HTTPException(
+                status_code=500,
+                detail="Webhook ingest must not mutate Tenant.plan_code",
+            )
 
     gate_on = bool(getattr(settings, "PAID_BILLING_ENTITLEMENT_GATE_ENABLED", False))
     return {
@@ -1051,18 +1095,148 @@ async def ingest_provider_webhook(
         "tenant_id": tenant_id,
         "signature_valid": bool(sig_ok),
         "processing_status": row.processing_status,
+        "subscription_mirrored": mirrored,
         "entitlement_gate_applied": False,
         "entitlement_gate_armed": gate_on,
         "entitlement_gated_routes": list(GATED_ROUTE_ALLOWLIST),
         "payment_success": False,
         "payment_processed": False,
+        "tenant_plan_code_unchanged": True,
         "message": (
             "Webhook recorded. Subscription mirror may update locally; entitlement "
             "gate (when enabled) evaluates mirror status on gated routes only. "
             "Legacy trial lifecycle remains authoritative when gate is OFF. "
-            "Paid billing Complete still MISSING."
+            "Paid billing Complete still MISSING (ops-blocked on live Stripe keys)."
         ),
     }
+
+
+async def _resolve_webhook_tenant_id(
+    db: AsyncSession, *, provider: str, obj: dict[str, Any]
+) -> str | None:
+    """Resolve tenant from metadata / client_reference_id / provider customer."""
+    meta = obj.get("metadata") if isinstance(obj.get("metadata"), dict) else {}
+    candidates: list[str] = []
+    if isinstance(meta, dict) and meta.get("tenant_id"):
+        candidates.append(str(meta["tenant_id"]).strip())
+    cref = obj.get("client_reference_id")
+    if cref:
+        candidates.append(str(cref).strip())
+    for candidate in candidates:
+        if not candidate:
+            continue
+        tenant = await db.get(m.Tenant, candidate)
+        if tenant:
+            return candidate
+
+    cus = obj.get("customer")
+    cus_id = None
+    if isinstance(cus, str) and cus.strip():
+        cus_id = cus.strip()
+    elif isinstance(cus, dict) and cus.get("id"):
+        cus_id = str(cus["id"]).strip()
+    if cus_id:
+        row = (
+            await db.execute(
+                select(m.TenantBillingCustomer).where(
+                    m.TenantBillingCustomer.provider == provider,
+                    m.TenantBillingCustomer.provider_customer_id == cus_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if row:
+            return row.tenant_id
+    return None
+
+
+async def _mirror_from_checkout_session(
+    db: AsyncSession,
+    *,
+    provider: str,
+    tenant_id: str | None,
+    obj: dict[str, Any],
+) -> bool:
+    """Seed/update subscription mirror from Checkout Session without Completes."""
+    sub_ref = obj.get("subscription")
+    sub_id = None
+    if isinstance(sub_ref, str) and sub_ref.strip():
+        sub_id = sub_ref.strip()
+    elif isinstance(sub_ref, dict) and sub_ref.get("id"):
+        sub_id = str(sub_ref["id"]).strip()
+    if not sub_id or not tenant_id:
+        return False
+    payment_status = str(obj.get("payment_status") or "").strip().lower()
+    status = "active" if payment_status == "paid" else "incomplete"
+    meta = obj.get("metadata") if isinstance(obj.get("metadata"), dict) else {}
+    mirror_obj: dict[str, Any] = {
+        "id": sub_id,
+        "status": status,
+        "metadata": meta if isinstance(meta, dict) else {},
+        "cancel_at_period_end": False,
+    }
+    await _mirror_subscription_object(
+        db, provider=provider, tenant_id=tenant_id, obj=mirror_obj
+    )
+    return True
+
+
+async def _touch_mirror_from_invoice(
+    db: AsyncSession,
+    *,
+    provider: str,
+    tenant_id: str | None,
+    obj: dict[str, Any],
+) -> bool:
+    """Refresh local mirror from invoice.paid without claiming payment_success."""
+    sub_ref = obj.get("subscription")
+    sub_id = None
+    if isinstance(sub_ref, str) and sub_ref.strip():
+        sub_id = sub_ref.strip()
+    elif isinstance(sub_ref, dict) and sub_ref.get("id"):
+        sub_id = str(sub_ref["id"]).strip()
+    if not sub_id:
+        return False
+    row = (
+        await db.execute(
+            select(m.TenantBillingSubscription).where(
+                m.TenantBillingSubscription.provider == provider,
+                m.TenantBillingSubscription.provider_subscription_id == sub_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        if not tenant_id:
+            return False
+        await _mirror_subscription_object(
+            db,
+            provider=provider,
+            tenant_id=tenant_id,
+            obj={
+                "id": sub_id,
+                "status": "incomplete",
+                "metadata": {"from_invoice_paid": True},
+                "cancel_at_period_end": False,
+            },
+        )
+        return True
+    period_end_ts = obj.get("period_end")
+    if not isinstance(period_end_ts, (int, float)) and isinstance(obj.get("lines"), dict):
+        data = obj["lines"].get("data")
+        if isinstance(data, list) and data:
+            first = data[0] if isinstance(data[0], dict) else {}
+            period = first.get("period") if isinstance(first.get("period"), dict) else {}
+            end = period.get("end")
+            if isinstance(end, (int, float)):
+                period_end_ts = end
+    if isinstance(period_end_ts, (int, float)):
+        row.current_period_end = datetime.utcfromtimestamp(int(period_end_ts))
+    meta = dict(row.metadata_json or {})
+    meta["invoice_paid_recorded"] = True
+    meta["payment_success"] = False
+    row.metadata_json = meta
+    row.updated_at = datetime.utcnow()
+    await db.flush()
+    return True
 
 
 async def _mirror_subscription_object(

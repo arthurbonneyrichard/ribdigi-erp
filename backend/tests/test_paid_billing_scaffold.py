@@ -46,6 +46,9 @@ def test_scaffold_docs_and_honesty_constants():
     assert honesty["billing_deferred"] is True
     assert honesty["checkout_enabled"] is False
     assert honesty["scaffold_status"] == "partial"
+    assert honesty["engineering_mock_soak_ready"] is True
+    assert honesty["paid_billing_complete_ops_blocked"] is True
+    assert honesty["paid_billing_complete_blocker"] == "live_stripe_keys_and_staging_soak"
     assert honesty["paid_billing_entitlement_gate_enabled"] is False
     assert honesty["provider_mode"] == "unconfigured"
     assert billing_svc.PAID_BILLING_COMPLETE_CLAIMED is False
@@ -469,7 +472,7 @@ async def test_signed_webhook_proof_valid_invalid_idempotent(client, db_session,
     assert data["signature_valid"] is True
     assert data["duplicate"] is False
     assert data["payment_success"] is False
-    assert data["processing_status"] == "recorded"
+    assert data["processing_status"] in ("recorded", "recorded_invoice_paid_no_complete")
     assert data["paid_billing_complete_claimed"] is False
 
     row = (
@@ -481,7 +484,7 @@ async def test_signed_webhook_proof_valid_invalid_idempotent(client, db_session,
     ).scalar_one()
     assert row.signature_valid is True
     assert row.event_type == "invoice.paid"
-    assert row.processing_status == "recorded"
+    assert row.processing_status in ("recorded", "recorded_invoice_paid_no_complete")
 
     # Idempotent replay with same valid signature
     ok2 = await ac.post(
@@ -797,6 +800,7 @@ def test_entitlement_gate_prod_example_defaults_off_and_go_live_pack_present():
     assert "adr005_staging_soak_checklist.md" in pack
     assert "OFFLINE_PHYSICAL_TEST_RUNBOOK_2026-08-23.md" in pack
     assert "PAID_BILLING_PROVIDER_OPS.md" in pack
+    assert "paid_billing_staging_soak_checklist.md" in pack
     cl = pack.lower()
     for forbidden_complete in (
         "offline complete",
