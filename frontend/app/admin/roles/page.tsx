@@ -3,9 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import Shell from '../../../components/Shell';
-import { api } from '../../../lib/api';
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+import { api, apiFetch } from '../../../lib/api';
 
 type RoleRow = {
   role: string;
@@ -181,8 +179,6 @@ export default function AdminRolesPage() {
             setError('');
             setMessage('');
             try {
-              const token = localStorage.getItem('token');
-              const tenant = localStorage.getItem('tenant');
               const qs =
                 roleActiveFilter === 'true'
                   ? '?is_active=true'
@@ -191,12 +187,7 @@ export default function AdminRolesPage() {
                     : roleActiveFilter === 'all'
                       ? '?active_only=false'
                       : '';
-              const res = await fetch(`${apiBase}/roles/export${qs}`, {
-                headers: {
-                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                  ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-                },
-              });
+              const res = await apiFetch(`/roles/export${qs}`);
               if (!res.ok) throw new Error('Roles export failed');
               const blob = await res.blob();
               const url = URL.createObjectURL(blob);

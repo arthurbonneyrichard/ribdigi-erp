@@ -5,8 +5,9 @@
  * persist access/refresh JWTs in localStorage. Most traffic should ride
  * httpOnly cookies via `credentials: 'include'` + CSRF.
  *
- * Flag default remains OFF on the server; until Phase C removes remaining raw
- * `localStorage.getItem('token')` sites, Bearer dual-mode stays supported.
+ * Flag default remains OFF on the server; Bearer dual-mode stays supported via
+ * `getBearerToken()` until Phase C staging soak stops relying on JSON token
+ * return + localStorage when cookies are enabled.
  */
 
 export const COOKIE_SESSION_MARKER = 'ribdigi_cookie_session';

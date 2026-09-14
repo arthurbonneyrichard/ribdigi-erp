@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
-import { api, authHeaders } from '../../lib/api';
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+import { api, apiFetch } from '../../lib/api';
 
 export default function Page() {
   const [kind, setKind] = useState<'receivable' | 'payable'>('receivable');
@@ -124,9 +122,7 @@ export default function Page() {
   async function downloadCreditExport(path: string, filename: string, okMessage: string) {
     setError('');
     try {
-      const res = await fetch(`${apiBase}${path}`, {
-        headers: authHeaders(),
-      });
+      const res = await apiFetch(`${path}`);
       if (!res.ok) {
         setError(await res.text());
         return;
@@ -494,10 +490,8 @@ export default function Page() {
             <button
               type="button"
               onClick={async () => {
-                const token = localStorage.getItem('token') || '';
-                const res = await fetch(`${apiBase}/credit/exchange-rates/export`, {
-                  headers: { Authorization: `Bearer ${token}` },
-                });
+
+                const res = await apiFetch(`/credit/exchange-rates/export`);
                 if (!res.ok) {
                   setError(await res.text());
                   return;

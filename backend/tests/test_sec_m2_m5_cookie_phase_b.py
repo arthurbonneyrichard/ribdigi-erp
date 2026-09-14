@@ -72,6 +72,31 @@ def test_sec_m2_phase_b_high_traffic_sites_use_apifetch():
     assert "clearLoginSession" in shell
 
 
+def test_sec_m2_phase_b_app_pages_have_no_raw_token_reads():
+    """Phase B remainder: no raw localStorage token reads under frontend/app or components."""
+    offenders = []
+    for root in (FE / "app", FE / "components"):
+        if not root.exists():
+            continue
+        for path in root.rglob("*.tsx"):
+            text = path.read_text(encoding="utf-8")
+            if "localStorage.getItem('token')" in text or 'localStorage.getItem("token")' in text:
+                offenders.append(str(path.relative_to(FE)))
+            if "localStorage.getItem('access_token')" in text:
+                offenders.append(f"{path.relative_to(FE)}:access_token")
+    assert offenders == [], f"raw token localStorage sites remain: {offenders}"
+
+
+def test_sec_m2_phase_b_helpers_still_support_bearer_dual_mode():
+    """Dual-mode: helpers may still read token when cookie session is off."""
+    src = (FE / "lib/authSession.ts").read_text(encoding="utf-8")
+    assert "getBearerToken" in src
+    assert "localStorage.getItem('token')" in src
+    api = (FE / "lib/api.ts").read_text(encoding="utf-8")
+    assert "getBearerToken" in api
+    assert "credentials: 'include'" in api
+
+
 def test_sec_m2_phase_b_adr_documents_phase_b_open():
     adr = (ROOT / "docs/ADR_SESSION_COOKIE_DUAL_MODE.md").read_text(encoding="utf-8")
     assert "Phase B" in adr

@@ -3,10 +3,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import Shell from '../../components/Shell';
 import PlatformShell from '../../components/PlatformShell';
-import { api } from '../../lib/api';
+import { api, apiFetch } from '../../lib/api';
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES, t } from '../../lib/i18n';
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 function bufferToBase64url(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
@@ -325,14 +323,7 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/api-keys/${id}/usage/export?days=30`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-          'X-Tenant-ID': tenant || '',
-        },
-      });
+      const res = await apiFetch(`/api-keys/${id}/usage/export?days=30`);
       if (!res.ok) throw new Error('API key usage CSV export failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -664,10 +655,8 @@ export default function Page() {
           <button
             type="button"
             onClick={async () => {
-              const token = localStorage.getItem('token') || '';
-              const res = await fetch(`${apiBase}/auth/webauthn/credentials/export`, {
-                headers: { Authorization: `Bearer ${token}` },
-              });
+
+              const res = await apiFetch(`/auth/webauthn/credentials/export`);
               if (!res.ok) {
                 setError(await res.text());
                 return;
@@ -785,7 +774,7 @@ export default function Page() {
             <button
               type="button"
               onClick={async () => {
-                const token = localStorage.getItem('token') || '';
+
                 const qs =
                   webhookActiveFilter === 'true'
                     ? '?is_active=true'
@@ -794,9 +783,7 @@ export default function Page() {
                       : webhookActiveFilter === 'all'
                         ? '?active_only=false'
                         : '';
-                const res = await fetch(`${apiBase}/webhooks/export${qs}`, {
-                  headers: { Authorization: `Bearer ${token}` },
-                });
+                const res = await apiFetch(`/webhooks/export${qs}`);
                 if (!res.ok) {
                   setError(await res.text());
                   return;
@@ -816,10 +803,8 @@ export default function Page() {
               type="button"
               onClick={async () => {
                 // Stage 144 W1 — webhook deliveries CSV (no payload)
-                const token = localStorage.getItem('token') || '';
-                const res = await fetch(`${apiBase}/webhooks/deliveries/export`, {
-                  headers: { Authorization: `Bearer ${token}` },
-                });
+
+                const res = await apiFetch(`/webhooks/deliveries/export`);
                 if (!res.ok) {
                   setError(await res.text());
                   return;
@@ -966,16 +951,14 @@ export default function Page() {
             <button
               type="button"
               onClick={async () => {
-                const token = localStorage.getItem('token') || '';
+
                 const qs =
                   apiKeyStatusFilter === 'active' ||
                   apiKeyStatusFilter === 'revoked' ||
                   apiKeyStatusFilter === 'expired'
                     ? `?status=${apiKeyStatusFilter}`
                     : '';
-                const res = await fetch(`${apiBase}/api-keys/export${qs}`, {
-                  headers: { Authorization: `Bearer ${token}` },
-                });
+                const res = await apiFetch(`/api-keys/export${qs}`);
                 if (!res.ok) {
                   setError(await res.text());
                   return;
@@ -1102,16 +1085,14 @@ export default function Page() {
           <button
             type="button"
             onClick={async () => {
-              const token = localStorage.getItem('token') || '';
+
               const qs =
                 sessionStatusFilter === 'active' ||
                 sessionStatusFilter === 'revoked' ||
                 sessionStatusFilter === 'all'
                   ? `?status=${sessionStatusFilter}`
                   : '';
-              const res = await fetch(`${apiBase}/auth/sessions/export${qs}`, {
-                headers: { Authorization: `Bearer ${token}` },
-              });
+              const res = await apiFetch(`/auth/sessions/export${qs}`);
               if (!res.ok) {
                 setError(await res.text());
                 return;
@@ -1198,16 +1179,14 @@ export default function Page() {
             <button
               type="button"
               onClick={async () => {
-                const token = localStorage.getItem('token') || '';
+
                 const qs =
                   tenantSessionStatusFilter === 'active' ||
                   tenantSessionStatusFilter === 'revoked' ||
                   tenantSessionStatusFilter === 'all'
                     ? `?status=${tenantSessionStatusFilter}`
                     : '';
-                const res = await fetch(`${apiBase}/auth/tenant-sessions/export${qs}`, {
-                  headers: { Authorization: `Bearer ${token}` },
-                });
+                const res = await apiFetch(`/auth/tenant-sessions/export${qs}`);
                 if (!res.ok) {
                   setError(await res.text());
                   return;

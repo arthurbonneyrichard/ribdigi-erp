@@ -3,7 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import PlatformShell from '../../../components/PlatformShell';
-import { api } from '../../../lib/api';
+import { api, apiFetch } from '../../../lib/api';
 import { formatDateTime } from '../../../lib/format';
 import { fetchHouseFormats, HOUSE_FORMAT_DEFAULTS } from '../../../lib/houseFormats';
 
@@ -17,8 +17,6 @@ type AuditRow = {
   user_id?: string;
   details?: Record<string, any>;
 };
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 function activityDefaultFromDate() {
   const d = new Date();
@@ -139,8 +137,6 @@ export default function PlatformAuditPage() {
     setError('');
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
       const params = new URLSearchParams();
       if (module.trim()) params.set('module', module.trim());
       if (action.trim()) params.set('action', action.trim());
@@ -150,12 +146,7 @@ export default function PlatformAuditPage() {
       if (toDate) params.set('to_date', toDate);
       if (deliveryOnly) params.set('delivery_only', 'true');
       params.set('format', fmt);
-      const res = await fetch(`${apiBase}/platform/audit/export?${params}`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-          'X-Tenant-ID': tenant || '',
-        },
-      });
+      const res = await apiFetch(`/platform/audit/export?${params}`);
       if (!res.ok) throw new Error(`${fmt.toUpperCase()} export failed`);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);

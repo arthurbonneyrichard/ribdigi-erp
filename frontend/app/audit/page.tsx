@@ -3,10 +3,8 @@
 import { Suspense, useEffect, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Shell from '../../components/Shell';
-import { api } from '../../lib/api';
+import { api, apiFetch } from '../../lib/api';
 import { formatDateTime, type RegionalFormats } from '../../lib/format';
-
-const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 function PageInner() {
   const searchParams = useSearchParams();
@@ -130,20 +128,13 @@ function PageInner() {
   async function exportCsv() {
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
       const params = new URLSearchParams();
       if (module) params.set('module', module);
       if (action) params.set('action', action);
       if (fromDate) params.set('from_date', fromDate);
       if (toDate) params.set('to_date', toDate);
       params.set('format', 'csv');
-      const res = await fetch(`${base}/audit-logs/export?${params}`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-          'X-Tenant-ID': tenant || '',
-        },
-      });
+      const res = await apiFetch(`/audit-logs/export?${params}`);
       if (!res.ok) throw new Error('Export failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -161,20 +152,13 @@ function PageInner() {
   async function exportPdf() {
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
       const params = new URLSearchParams();
       if (module) params.set('module', module);
       if (action) params.set('action', action);
       if (fromDate) params.set('from_date', fromDate);
       if (toDate) params.set('to_date', toDate);
       params.set('format', 'pdf');
-      const res = await fetch(`${base}/audit-logs/export?${params}`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-          'X-Tenant-ID': tenant || '',
-        },
-      });
+      const res = await apiFetch(`/audit-logs/export?${params}`);
       if (!res.ok) throw new Error('PDF export failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -263,10 +247,7 @@ function PageInner() {
             onClick={async () => {
               setError('');
               try {
-                const token = localStorage.getItem('token') || '';
-                const res = await fetch(`${base}/audit-logs/archives/export`, {
-                  headers: { Authorization: `Bearer ${token}` },
-                });
+                const res = await apiFetch(`/audit-logs/archives/export`);
                 if (!res.ok) {
                   setError(await res.text());
                   return;
