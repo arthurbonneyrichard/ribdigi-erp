@@ -15113,6 +15113,118 @@ async def test_store_manager_receipt_print_template_redacted(client, db_session)
 
 
 @pytest.mark.asyncio
+async def test_store_manager_invoice_print_template_redacted(client, db_session):
+    """Invoice/quotation/credit-note print JSON nulls template for store_manager.
+
+    Document-settings PATCH/export/preview + GET /tenants/me already denied; print
+    JSON must not re-dump company invoice_print_template via ``template``.
+    company_name + has_logo + server-side text embeds remain; admin JSON keeps template.
+    """
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    customer = seed["party1"]
+    co = seed["c1"]
+    co.name = "Alpha Trading Co"
+    co.invoice_print_template = "thermal_80"
+    await db_session.commit()
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Invoice Print Template Store",
+        code="IPT1",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+
+    invoice = m.SalesInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        customer_id=customer.id,
+        invoice_number="INV-IPT-1",
+        status="posted",
+        subtotal=10,
+        tax_amount=0,
+        discount_amount=0,
+        total_amount=10,
+        paid_amount=0,
+        created_by=mgr.id,
+    )
+    quote = m.SalesQuotation(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        customer_id=customer.id,
+        quotation_number="QT-IPT-1",
+        status="sent",
+        subtotal=20,
+        tax_amount=0,
+        discount_amount=0,
+        total_amount=20,
+        created_by=mgr.id,
+    )
+    db_session.add_all([invoice, quote])
+    await db_session.flush()
+    ret = m.SalesReturn(
+        tenant_id=tid,
+        company_id=cid,
+        return_number="SR-IPT-1",
+        credit_note_number="CN-IPT-1",
+        customer_id=customer.id,
+        sales_invoice_id=invoice.id,
+        status="posted",
+        reason="damaged",
+        restock=True,
+        subtotal=5,
+        tax_amount=0,
+        total_amount=5,
+        created_by=mgr.id,
+    )
+    db_session.add(ret)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    for path in (
+        f"/api/v1/sales/invoices/{invoice.id}/print",
+        f"/api/v1/sales/quotations/{quote.id}/print",
+        f"/api/v1/sales/returns/{ret.id}/print",
+    ):
+        admin_print = await ac.get(
+            path, headers=admin_company, params={"format": "text"}
+        )
+        assert admin_print.status_code == 200, admin_print.text
+        admin_data = admin_print.json()["data"]
+        assert admin_data.get("template") == "thermal_80"
+        assert admin_data.get("company_name") == "Alpha Trading Co"
+
+        mgr_print = await ac.get(path, headers=headers, params={"format": "text"})
+        assert mgr_print.status_code == 200, mgr_print.text
+        mgr_data = mgr_print.json()["data"]
+        assert mgr_data.get("company_name") == "Alpha Trading Co"
+        assert mgr_data.get("template") is None
+        assert mgr_data.get("invoice_print_template") is None
+        assert "has_logo" in mgr_data
+        assert isinstance(mgr_data.get("text"), str)
+
+
+@pytest.mark.asyncio
 async def test_store_manager_me_workspace_company_profile_redacted(client, db_session):
     """GET /me + /workspace redact company legal/tax dump + company_entitlement for store_manager."""
     ac, seed = client

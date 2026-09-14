@@ -1438,6 +1438,28 @@ def redact_document_receipt_print_template(payload: dict) -> dict:
     return out
 
 
+def omit_document_invoice_print_template(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit print JSON ``template`` / ``invoice_print_template``.
+
+    Document-settings PATCH/export/preview + GET ``/tenants/me`` already denied.
+    Invoice/quotation/credit-note print JSON must not re-dump company
+    ``invoice_print_template`` via the ``template`` field. ``company_name`` +
+    ``has_logo`` + server-side HTML/PDF/text embeds (rendered with the resolved
+    template) remain.
+    """
+    return managed_ids is not None
+
+
+def redact_document_invoice_print_template(payload: dict) -> dict:
+    """Null ``template`` / ``invoice_print_template`` on a print JSON dict."""
+    out = dict(payload)
+    if "template" in out:
+        out["template"] = None
+    if "invoice_print_template" in out:
+        out["invoice_print_template"] = None
+    return out
+
+
 def apply_document_logo_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
@@ -1453,6 +1475,8 @@ def apply_document_logo_manager_redacts(
         out = redact_document_header_footer(out)
     if omit_document_receipt_print_template(managed_ids):
         out = redact_document_receipt_print_template(out)
+    if omit_document_invoice_print_template(managed_ids):
+        out = redact_document_invoice_print_template(out)
     return out
 
 
