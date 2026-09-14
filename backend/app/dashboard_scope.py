@@ -3385,9 +3385,11 @@ def omit_early_pay_matrix(managed_ids: list[str] | None) -> bool:
     Credit early-pay settings GET/PATCH/export already denied (company discount
     pct/days dump). Party early-pay master fields already redacted on list/get.
     Invoice / purchase-invoice early-discount quotes must not re-dump
-    ``discount_pct`` / ``window_days`` / settings ``source``. Operational
-    ``eligible`` / ``discount_amount`` / ``cash_to_settle`` / ``balance_due``
-    and age counters remain for scoped settlement UX; payments remain.
+    ``discount_pct`` / ``window_days`` / settings ``source``. Supplier payment
+    schedule must not re-dump the same settings pack via top-level ``early_pay``
+    or nested item ``early_discount`` matrix fields. Operational ``eligible`` /
+    ``discount_amount`` / ``cash_to_settle`` / ``balance_due`` and age counters
+    remain for scoped settlement UX; payments remain.
     """
     return managed_ids is not None
 
@@ -3398,6 +3400,35 @@ def redact_early_pay_quote(payload: dict) -> dict:
     for key in ("discount_pct", "window_days", "source"):
         if key in out:
             out[key] = None
+    return out
+
+
+def apply_supplier_payment_schedule_manager_redacts(
+    payload: dict, managed_wh_ids: list[str] | None
+) -> dict:
+    """Redact early-pay settings + quote matrix on supplier payment-schedule JSON.
+
+    Credit early-pay settings GET already denied; party early-pay + dedicated
+    early-discount quotes already redacted. Schedule must not re-dump
+    ``early_pay`` (pct/days/source/enabled) or nested ``early_discount``
+    ``discount_pct`` / ``window_days`` / ``source``. Totals, buckets, and
+    operational discount amounts remain for scoped AP settlement UX.
+    """
+    if not omit_early_pay_matrix(managed_wh_ids):
+        return payload
+    out = dict(payload)
+    if "early_pay" in out:
+        out["early_pay"] = {}
+    items = out.get("items")
+    if isinstance(items, list):
+        redacted_items: list[dict] = []
+        for item in items:
+            row = dict(item)
+            early = row.get("early_discount")
+            if isinstance(early, dict):
+                row["early_discount"] = redact_early_pay_quote(early)
+            redacted_items.append(row)
+        out["items"] = redacted_items
     return out
 
 

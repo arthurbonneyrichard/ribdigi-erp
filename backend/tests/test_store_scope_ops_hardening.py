@@ -4848,6 +4848,146 @@ async def test_store_manager_early_pay_quote_matrix_redacted(client, db_session)
 
 
 @pytest.mark.asyncio
+async def test_store_manager_supplier_payment_schedule_early_pay_redacted(
+    client, db_session
+):
+    """Supplier payment-schedule nulls early_pay pack + quote matrix for store_manager.
+
+    Credit early-pay settings GET already denied; party early-pay + dedicated
+    early-discount quotes already redacted. Schedule JSON must not re-dump
+    company/party early-pay pct/days/source via top-level ``early_pay`` or nested
+    ``early_discount``. Totals/buckets + eligible/discount_amount remain; admin
+    keeps the pack and matrix fields.
+    """
+    from datetime import timedelta
+
+    from app.rbac import permissions_for_role
+
+    ac, seed = client
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    tenant = await db_session.get(m.Tenant, tid)
+    today = datetime.utcnow().date()
+
+    tenant.early_pay_discount_pct = 5.0
+    tenant.early_pay_discount_days = 14
+
+    perms = dict(permissions_for_role("store_manager"))
+    perms["credit"] = ["read", "write", "approve"]
+    mgr.permissions = perms
+    mem = (
+        await db_session.execute(
+            select(m.UserCompanyMembership).where(
+                m.UserCompanyMembership.user_id == mgr.id,
+                m.UserCompanyMembership.company_id == cid,
+            )
+        )
+    ).scalar_one()
+    mem.permissions = perms
+
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Sched Early Pay Store",
+        code="SEP-ST",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        name="Sched Early Pay WH",
+        code="SEP-WH",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    supplier = m.Party(
+        tenant_id=tid,
+        company_id=cid,
+        name="Sched Early Pay Supplier",
+        kind="supplier",
+        status="active",
+        credit_limit=0,
+        early_pay_discount_pct=3.0,
+        early_pay_discount_days=7,
+    )
+    db_session.add_all([wh, supplier])
+    await db_session.flush()
+
+    pi = m.PurchaseInvoice(
+        tenant_id=tid,
+        company_id=cid,
+        invoice_number="PI-SEP-1",
+        supplier_id=supplier.id,
+        warehouse_id=wh.id,
+        status="unpaid",
+        subtotal=150,
+        total_amount=150,
+        paid_amount=0,
+        invoice_date=today,
+        due_date=today + timedelta(days=30),
+        approved_at=today,
+        created_at=today,
+    )
+    db_session.add(pi)
+    await db_session.commit()
+
+    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_company = {
+        **admin_headers,
+        "X-Workspace-Kind": "company",
+        "X-Company-ID": cid,
+    }
+
+    admin_sch = await ac.get(
+        f"/api/v1/suppliers/{supplier.id}/payment-schedule", headers=admin_company
+    )
+    assert admin_sch.status_code == 200, admin_sch.text
+    admin_data = admin_sch.json()["data"]
+    admin_ep = admin_data.get("early_pay") or {}
+    assert float(admin_ep.get("early_pay_discount_pct") or 0) == 3.0
+    assert int(admin_ep.get("early_pay_discount_days") or 0) == 7
+    assert admin_ep.get("source") == "supplier"
+    assert float(admin_data.get("total_due") or 0) == pytest.approx(150.0)
+    admin_items = admin_data.get("items") or []
+    assert len(admin_items) == 1
+    admin_ed = admin_items[0].get("early_discount") or {}
+    assert float(admin_ed.get("discount_pct") or 0) == 3.0
+    assert int(admin_ed.get("window_days") or 0) == 7
+    assert admin_ed.get("eligible") is True
+    assert float(admin_ed.get("discount_amount") or 0) == pytest.approx(4.5)
+
+    mgr_sch = await ac.get(
+        f"/api/v1/suppliers/{supplier.id}/payment-schedule", headers=headers
+    )
+    assert mgr_sch.status_code == 200, mgr_sch.text
+    mgr_data = mgr_sch.json()["data"]
+    assert mgr_data.get("scope") == "store_manager"
+    assert float(mgr_data.get("total_due") or 0) == pytest.approx(150.0)
+    assert mgr_data.get("early_pay") == {}
+    mgr_items = mgr_data.get("items") or []
+    assert len(mgr_items) == 1
+    mgr_ed = mgr_items[0].get("early_discount") or {}
+    assert mgr_ed.get("discount_pct") is None
+    assert mgr_ed.get("window_days") is None
+    assert mgr_ed.get("source") is None
+    assert mgr_ed.get("eligible") is True
+    assert float(mgr_ed.get("discount_amount") or 0) == pytest.approx(4.5)
+    assert float(mgr_ed.get("cash_to_settle") or 0) == pytest.approx(145.5)
+    assert mgr_items[0].get("invoice_number") == "PI-SEP-1"
+
+
+@pytest.mark.asyncio
 async def test_store_manager_expense_payment_liquid_account_writes_scoped(
     client, db_session
 ):

@@ -894,17 +894,24 @@ async def supplier_payment_schedule(
         ),
         2,
     )
-    return {
+    result = {
         "supplier_id": supplier.id,
         "supplier_name": supplier.name,
         "as_of": as_of.date().isoformat(),
         "total_due": total_due,
         "overdue_total": overdue_total,
         "upcoming_total": upcoming_total,
+        # Credit early-pay settings GET + party early-pay already denied/redacted;
+        # schedule must not re-dump pct/days/source via early_pay (+ nested quotes).
         "early_pay": ep,
         "items": items,
         "scope": "store_manager" if manager_scope else "company",
     }
+    if manager_scope:
+        result = dashboard_scope_svc.apply_supplier_payment_schedule_manager_redacts(
+            result, warehouse_ids
+        )
+    return result
 
 
 def default_due_date(from_dt: datetime | None = None, terms_days: int = DEFAULT_PAYMENT_TERMS_DAYS) -> datetime:
