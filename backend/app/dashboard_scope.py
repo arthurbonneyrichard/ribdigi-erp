@@ -1401,6 +1401,25 @@ def redact_document_company_contact(payload: dict) -> dict:
     return out
 
 
+def omit_document_tax_registration(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit print/receipt ``tax_registration_number``.
+
+    Company profile GET + ``/me`` / ``/workspace`` + tax-filing JSON already omit TIN.
+    Invoice/quotation/credit-note print JSON + POS receipt JSON must not re-dump
+    ``tax_registration_number``. ``company_name`` + ``has_logo`` + server-side
+    HTML/PDF/text embeds remain.
+    """
+    return managed_ids is not None
+
+
+def redact_document_tax_registration(payload: dict) -> dict:
+    """Null ``tax_registration_number`` on a receipt/print JSON dict."""
+    out = dict(payload)
+    if "tax_registration_number" in out:
+        out["tax_registration_number"] = None
+    return out
+
+
 def omit_document_header_footer(managed_ids: list[str] | None) -> bool:
     """True when store_manager must omit receipt ``document_header`` / ``document_footer``.
 
@@ -1466,7 +1485,7 @@ def redact_document_invoice_print_template(payload: dict) -> dict:
 def apply_document_logo_manager_redacts(
     payload: dict, managed_ids: list[str] | None
 ) -> dict:
-    """Apply store_manager document-brand JSON redacts (logo + legal + contact + header + tpl)."""
+    """Apply store_manager document-brand JSON redacts (logo + legal + contact + TIN + header + tpl)."""
     out = payload
     if omit_document_logo_data_url(managed_ids):
         out = redact_document_logo_data_url(out)
@@ -1474,6 +1493,8 @@ def apply_document_logo_manager_redacts(
         out = redact_document_legal_trading_names(out)
     if omit_document_company_contact(managed_ids):
         out = redact_document_company_contact(out)
+    if omit_document_tax_registration(managed_ids):
+        out = redact_document_tax_registration(out)
     if omit_document_header_footer(managed_ids):
         out = redact_document_header_footer(out)
     if omit_document_receipt_print_template(managed_ids):
