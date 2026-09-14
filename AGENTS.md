@@ -146,7 +146,7 @@ store activation — never frontend-only.
    assign + image writes; list/get/lookup/POS search reads + WH stock
    ops remain) + **product images gallery list GET + CSV export denied**
    (``storage_key`` media dump) + **product primary image binary GET denied**
-   (``GET /products/{id}/image``; list/get ``has_image`` + WH stock ops remain;
+   (``GET /products/{id}/image``; WH stock ops remain;
    company/tenant logo binary GET stays open) + **product list/get ``image_url``
    storage key redacted** + **product list/get ``has_image`` forced false**
    (admin list/get keep ``image_url`` + ``has_image``; WH stock ops / POS remain)
