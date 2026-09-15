@@ -109,6 +109,10 @@ export default function Page() {
   const [closeThrough, setCloseThrough] = useState('');
   const [periodReason, setPeriodReason] = useState('');
   const [tbAsOf, setTbAsOf] = useState('');
+  const [balanceSheet, setBalanceSheet] = useState<any>(null);
+  const [cashFlow, setCashFlow] = useState<any>(null);
+  /** OpenAPI: omit | prior_period | prior_year (blank → no compare). */
+  const [bsCompare, setBsCompare] = useState('');
 
   function pnlQuery() {
     const params = new URLSearchParams();
@@ -142,6 +146,44 @@ export default function Page() {
   async function loadTrial() {
     const t = await api(`/accounting/trial-balance${trialQuery(tbAsOf)}`);
     setTrial(t.data);
+  }
+
+  function balanceSheetQuery() {
+    const params = new URLSearchParams();
+    if (tbAsOf) params.set('as_of', tbAsOf);
+    if (bsCompare === 'prior_period' || bsCompare === 'prior_year') params.set('compare', bsCompare);
+    // Header store scopes balance sheet when set (same as trial balance).
+    // trim so BS (UuidIdValue Query store_id/branch_id) do not 422
+    const storeTrim = headerStoreId.trim();
+    const branchTrim = pnlBranchId.trim();
+    if (storeTrim) params.set('store_id', storeTrim);
+    if (branchTrim) params.set('branch_id', branchTrim);
+    const s = params.toString();
+    return s ? `?${s}` : '';
+  }
+
+  function cashFlowQuery() {
+    // Same date + location filters as P&L (reports cash-flow API).
+    return pnlQuery();
+  }
+
+  async function loadBalanceSheet() {
+    try {
+      const b = await api(`/accounting/balance-sheet${balanceSheetQuery()}`);
+      setBalanceSheet(b.data);
+    } catch {
+      setBalanceSheet(null);
+    }
+  }
+
+  async function loadCashFlow() {
+    // Soft-fail when reports module / reports:read is unavailable.
+    try {
+      const c = await api(`/reports/cash-flow${cashFlowQuery()}`);
+      setCashFlow(c.data);
+    } catch {
+      setCashFlow(null);
+    }
   }
 
   async function loadCheques(direction = chequeDirection, status = chequeStatus) {
@@ -297,10 +339,14 @@ export default function Page() {
     Promise.all([
       api(`/accounting/profit-loss${pnlQuery()}`),
       api(`/accounting/trial-balance${trialQuery(tbAsOf)}`),
+      api(`/accounting/balance-sheet${balanceSheetQuery()}`),
+      api(`/reports/cash-flow${cashFlowQuery()}`),
     ])
-      .then(([pl, tbRes]) => {
+      .then(([pl, tbRes, bs, cf]) => {
         setPnl(pl.data);
         setTrial(tbRes.data);
+        setBalanceSheet(bs.data);
+        setCashFlow(cf.data);
       })
       .catch((e: any) => setError(e.message));
   }, [headerStoreId]);
@@ -1506,7 +1552,151 @@ export default function Page() {
             </div>
           </div>
 
-          <h3 style={{ marginTop: 16 }}>Recent journals</h3>
+          <div className="card" style={{ marginTop: 12 }}>
+          <h3 style={{ marginTop: 0 }}>Balance sheet</h3>
+          <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
+            Point-in-time statement. Uses the same as-of date as Trial balance, plus optional compare.
+            Store/branch follow the Shell header and P&amp;L branch filter when set.
+          </p>
+          <div className="row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <div>
+              <label className="muted" style={{ fontSize: 12, display: 'block' }}>As of</label>
+              <input
+                type="date"
+                value={tbAsOf}
+                onChange={(e) => setTbAsOf(e.target.value)}
+                aria-label="Balance sheet as of date"
+              />
+            </div>
+            <div>
+              <label className="muted" style={{ fontSize: 12, display: 'block' }}>Compare</label>
+              <select
+                value={bsCompare}
+                onChange={(e) => setBsCompare(e.target.value)}
+                aria-label="Balance sheet compare"
+              >
+                <option value="">None</option>
+                <option value="prior_period">Prior period</option>
+                <option value="prior_year">Prior year</option>
+              </select>
+            </div>
+            <button type="button" className="btn" onClick={() => void loadBalanceSheet()} aria-label="Apply balance sheet filters">
+              Apply
+            </button>
+          </div>
+          {balanceSheet ? (
+            <>
+              <div className="kpis" style={{ marginTop: 12 }}>
+                <div className="kpi"><span className="muted">Assets</span><strong>{fmtMoney(Number(balanceSheet.total_assets || 0), currency)}</strong></div>
+                <div className="kpi"><span className="muted">Liabilities</span><strong>{fmtMoney(Number(balanceSheet.total_liabilities || 0), currency)}</strong></div>
+                <div className="kpi"><span className="muted">Equity</span><strong>{fmtMoney(Number(balanceSheet.total_equity || 0), currency)}</strong></div>
+              </div>
+              {Array.isArray(balanceSheet.assets) && balanceSheet.assets.length > 0 ? (
+                <div className="table-wrap" style={{ marginTop: 8 }}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Account</th>
+                        <th>Balance</th>
+                        {bsCompare ? <th>Prior</th> : null}
+                        {bsCompare ? <th>Delta</th> : null}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(balanceSheet.assets as any[]).slice(0, 12).map((row: any) => (
+                        <tr key={String(row.account_id || row.code || row.name)}>
+                          <td>{String(row.code || '')} {String(row.name || '')}</td>
+                          <td>{fmtMoney(Number(row.balance || 0), currency)}</td>
+                          {bsCompare ? <td>{fmtMoney(Number(row.prior_balance || 0), currency)}</td> : null}
+                          {bsCompare ? <td>{fmtMoney(Number(row.delta || 0), currency)}</td> : null}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
+              <p className="muted" style={{ fontSize: 12, marginBottom: 0 }}>
+                {(headerStoreId || pnlBranchId)
+                  ? 'Scoped to Shell store and/or P&L branch filter.'
+                  : 'Company-wide (no Shell store or P&L branch filter).'}
+              </p>
+            </>
+          ) : (
+            <p className="muted" style={{ marginBottom: 0 }}>Loading balance sheet…</p>
+          )}
+        </div>
+
+        <div className="card" style={{ marginTop: 12 }}>
+          <h3 style={{ marginTop: 0 }}>Cash flow</h3>
+          <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
+            Period cash inflows and outflows (requires <code>reports:read</code>). Dates and store/branch match P&amp;L.
+          </p>
+          <div className="row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <div>
+              <label className="muted" style={{ fontSize: 12, display: 'block' }}>From</label>
+              <input
+                type="date"
+                value={pnlFrom}
+                onChange={(e) => setPnlFrom(e.target.value)}
+                aria-label="Cash flow from date"
+              />
+            </div>
+            <div>
+              <label className="muted" style={{ fontSize: 12, display: 'block' }}>To</label>
+              <input
+                type="date"
+                value={pnlTo}
+                onChange={(e) => setPnlTo(e.target.value)}
+                aria-label="Cash flow to date"
+              />
+            </div>
+            <button type="button" className="btn" onClick={() => void loadCashFlow()} aria-label="Apply cash flow filters">
+              Apply
+            </button>
+          </div>
+          {cashFlow ? (
+            <>
+              <div className="kpis" style={{ marginTop: 12 }}>
+                <div className="kpi"><span className="muted">Inflows</span><strong>{fmtMoney(Number(cashFlow.inflows || 0), currency)}</strong></div>
+                <div className="kpi"><span className="muted">Outflows</span><strong>{fmtMoney(Number(cashFlow.outflows || 0), currency)}</strong></div>
+                <div className="kpi"><span className="muted">Net</span><strong>{fmtMoney(Number(cashFlow.net || 0), currency)}</strong></div>
+              </div>
+              {Array.isArray(cashFlow.lines) && cashFlow.lines.length > 0 ? (
+                <div className="table-wrap" style={{ marginTop: 8 }}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Line</th>
+                        <th>Inflow</th>
+                        <th>Outflow</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(cashFlow.lines as any[]).slice(0, 12).map((row: any, i: number) => (
+                        <tr key={`${String(row.label || row.account || i)}-${i}`}>
+                          <td>{String(row.label || row.account || row.name || '—')}</td>
+                          <td>{fmtMoney(Number(row.inflow || 0), currency)}</td>
+                          <td>{fmtMoney(Number(row.outflow || 0), currency)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
+              <p className="muted" style={{ fontSize: 12, marginBottom: 0 }}>
+                {(headerStoreId || pnlBranchId)
+                  ? 'Scoped to Shell store and/or P&L branch filter.'
+                  : 'Company-wide (no Shell store or P&L branch filter).'}
+              </p>
+            </>
+          ) : (
+            <p className="muted" style={{ marginBottom: 0 }}>
+              Loading cash flow… (hidden if you lack reports:read)
+            </p>
+          )}
+        </div>
+
+        <h3 style={{ marginTop: 16 }}>Recent journals</h3>
           <p className="muted">
             Manual journals can be unposted within the current fiscal period when books are open for
             that date. Attach supporting

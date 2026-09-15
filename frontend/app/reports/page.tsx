@@ -147,7 +147,8 @@ export default function Page() {
     if (fromDate) params.set('from_date', fromDate);
     if (toDate) params.set('to_date', toDate);
     // trim so UuidIdValue Query store/warehouse/branch/department do not 422
-    const storeTrim = storeId.trim();
+    // Prefer page store filter; fall back to Shell header store when page is "All stores"
+    const storeTrim = (storeId || ctxStoreId || '').trim();
     const warehouseTrim = warehouseId.trim();
     const branchTrim = branchId.trim();
     const departmentTrim = departmentId.trim();
@@ -166,7 +167,7 @@ export default function Page() {
     const effectiveAsOf = asOf || toDate;
     if (effectiveAsOf) params.set('as_of', effectiveAsOf);
     if (compare) params.set('compare', compare);
-    const storeTrim = storeId.trim();
+    const storeTrim = (storeId || ctxStoreId || '').trim();
     const branchTrim = branchId.trim();
     if (storeTrim) params.set('store_id', storeTrim);
     if (branchTrim) params.set('branch_id', branchTrim);
@@ -178,7 +179,7 @@ export default function Page() {
     const params = new URLSearchParams();
     const effectiveAsOf = asOf || toDate;
     if (effectiveAsOf) params.set('as_of', effectiveAsOf);
-    const storeTrim = storeId.trim();
+    const storeTrim = (storeId || ctxStoreId || '').trim();
     const branchTrim = branchId.trim();
     if (storeTrim) params.set('store_id', storeTrim);
     if (branchTrim) params.set('branch_id', branchTrim);
@@ -382,7 +383,7 @@ export default function Page() {
       if (fromDate) params.set('from_date', fromDate);
       if (toDate) params.set('to_date', toDate);
       // trim so UuidIdValue Query filters do not 422 on whitespace
-      const storeTrim = storeId.trim();
+      const storeTrim = (storeId || ctxStoreId || '').trim();
       const branchTrim = branchId.trim();
       const departmentTrim = departmentId.trim();
       const warehouseTrim = warehouseId.trim();
@@ -583,7 +584,7 @@ export default function Page() {
         {tab === 'inventory' && (
           <>
             <select
-              value={storeId}
+              value={storeId || ctxStoreId}
               onChange={(e) => {
                 setStoreId(e.target.value);
                 setCtxStoreId(e.target.value);
@@ -641,7 +642,7 @@ export default function Page() {
         {tab === 'purchases' && (
           <>
             <select
-              value={storeId}
+              value={storeId || ctxStoreId}
               onChange={(e) => {
                 setStoreId(e.target.value);
                 setCtxStoreId(e.target.value);
@@ -705,7 +706,7 @@ export default function Page() {
               </select>
             )}
             <select
-              value={storeId}
+              value={storeId || ctxStoreId}
               onChange={(e) => {
                 setStoreId(e.target.value);
                 setCtxStoreId(e.target.value);
