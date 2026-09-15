@@ -319,6 +319,18 @@ export default function Page() {
   useEffect(() => {
     if (ctxStoreId) setStoreId(ctxStoreId);
   }, [ctxStoreId]);
+
+  const effectiveStoreId = storeId || ctxStoreId || '';
+
+  // Clear warehouse when it is not attached to the active store filter.
+  useEffect(() => {
+    if (!warehouseId || !effectiveStoreId) return;
+    const wh = warehouses.find((w) => w.id === warehouseId);
+    if (wh && wh.store_id && wh.store_id !== effectiveStoreId) {
+      setWarehouseId('');
+    }
+  }, [effectiveStoreId, warehouseId, warehouses]);
+
   function switchTab(t: Tab) {
     setTab(t);
     load(t);
@@ -619,7 +631,7 @@ export default function Page() {
               <option value="">All warehouses (company stock)</option>
               {warehouses
                 .filter((w) => w.is_active !== false)
-                .filter((w) => !storeId || w.store_id === storeId)
+                .filter((w) => !effectiveStoreId || w.store_id === effectiveStoreId)
                 .map((w) => (
                   <option key={w.id} value={w.id}>
                     {w.code} — {w.name}
@@ -659,15 +671,24 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <select
-              value={warehouseId}
-              onChange={(e) => setWarehouseId(e.target.value)}
-              aria-label="Report purchases warehouse filter"
-            >
+              <select
+                value={warehouseId}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  setWarehouseId(id);
+                  if (!id) return;
+                  const wh = warehouses.find((w) => w.id === id);
+                  if (wh?.store_id) {
+                    setStoreId(wh.store_id);
+                    setCtxStoreId(wh.store_id);
+                  }
+                }}
+                aria-label="Report purchases warehouse filter"
+              >
               <option value="">All warehouses</option>
               {warehouses
                 .filter((w) => w.is_active !== false)
-                .filter((w) => !storeId || w.store_id === storeId)
+                .filter((w) => !effectiveStoreId || w.store_id === effectiveStoreId)
                 .map((w) => (
                   <option key={w.id} value={w.id}>
                     {w.code} — {w.name}
