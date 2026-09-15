@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import AttachmentPreview from '../../components/AttachmentPreview';
 import { api } from '../../lib/api';
+import { useStoreContext } from '../../lib/storeContext';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -98,10 +99,12 @@ export default function Page() {
   const [editAcctName, setEditAcctName] = useState('');
   const [pnlFrom, setPnlFrom] = useState('');
   const [pnlTo, setPnlTo] = useState('');
+  const { storeId: headerStoreId, stores: ctxStores } = useStoreContext();
   const [pnlStoreId, setPnlStoreId] = useState('');
   const [pnlBranchId, setPnlBranchId] = useState('');
   const [stores, setStores] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
+  const storeOptions = (ctxStores.length ? ctxStores : stores).filter((s: any) => s?.is_active !== false);
   const [period, setPeriod] = useState<any>(null);
   const [closeThrough, setCloseThrough] = useState('');
   const [periodReason, setPeriodReason] = useState('');
@@ -111,8 +114,9 @@ export default function Page() {
     const params = new URLSearchParams();
     if (pnlFrom) params.set('from_date', pnlFrom);
     if (pnlTo) params.set('to_date', pnlTo);
+    // Prefer local P&L store filter; fall back to header store context.
     // trim so P&L (UuidIdValue Query store_id/branch_id) do not 422
-    const storeTrim = pnlStoreId.trim();
+    const storeTrim = (pnlStoreId.trim() || headerStoreId.trim());
     const branchTrim = pnlBranchId.trim();
     if (storeTrim) params.set('store_id', storeTrim);
     if (branchTrim) params.set('branch_id', branchTrim);
@@ -1436,20 +1440,25 @@ export default function Page() {
                     </option>
                   ))}
                 </select>
-                <select
-                  value={pnlStoreId}
-                  onChange={(e) => setPnlStoreId(e.target.value)}
-                  aria-label="P&L store filter"
-                >
-                  <option value="">All stores</option>
-                  {stores
-                    .filter((s) => !pnlBranchId || s.branch_id === pnlBranchId)
-                    .map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.code} — {s.name}
-                      </option>
-                    ))}
-                </select>
+            <select
+              value={pnlStoreId || headerStoreId}
+              onChange={(e) => setPnlStoreId(e.target.value)}
+              aria-label="P&L store filter"
+              title={
+                !pnlStoreId.trim() && headerStoreId.trim()
+                  ? "Using header store context — clear to All stores"
+                  : undefined
+              }
+            >
+              <option value="">All stores</option>
+              {stores
+                .filter((s) => !pnlBranchId || s.branch_id === pnlBranchId)
+                .map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.code} — {s.name}
+                  </option>
+                ))}
+            </select>
                 <button
                   type="button"
                   onClick={() =>

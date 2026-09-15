@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
+import { useStoreContext } from '../../lib/storeContext';
 
 type Tab =
   | 'products'
@@ -109,7 +110,28 @@ export default function Page() {
   const [categories, setCategories] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
   const [units, setUnits] = useState<any[]>([]);
-  const [warehouses, setWarehouses] = useState<any[]>([]);
+  const { storeId } = useStoreContext()
+  const [warehouses, setWarehouses] = useState<any[]>([])
+  const storeWarehouses = useMemo(
+    () =>
+      !storeId
+        ? warehouses
+        : warehouses.filter((w: any) => !w.store_id || String(w.store_id) === String(storeId)),
+    [warehouses, storeId],
+  )
+  useEffect(() => {
+    if (!storeId || !storeWarehouses.length) return
+    const ids = new Set(storeWarehouses.map((w: any) => String(w.id)))
+    const pick = (cur: string) => (cur && ids.has(String(cur)) ? cur : String(storeWarehouses[0].id))
+    setStockWarehouseId((cur: string) => pick(cur))
+    setOutWarehouseId((cur: string) => pick(cur))
+    setOpeningWarehouseId((cur: string) => pick(cur))
+    setAdjWarehouseId((cur: string) => pick(cur))
+    setXferFromWh((cur: string) => pick(cur))
+    setWhStockWarehouseId((cur: string) => pick(cur))
+    setCountWarehouseId((cur: string) => pick(cur))
+    setMvWarehouseId((cur: string) => (cur && ids.has(String(cur)) ? cur : ''))
+  }, [storeId, storeWarehouses]);
   const [selectedId, setSelectedId] = useState('');
   const [productManageFilter, setProductManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [categoryManageFilter, setCategoryManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -3055,7 +3077,7 @@ export default function Page() {
               title="Optional warehouse for stock-in (UuidIdValue)"
             >
               <option value="">Warehouse (optional)</option>
-              {warehouses
+              {storeWarehouses
                 .filter((w) => w.is_active !== false)
                 .map((w) => (
                 <option key={w.id} value={w.id}>
@@ -3202,7 +3224,7 @@ export default function Page() {
               title="Optional warehouse for opening stock line (UuidIdValue)"
             >
               <option value="">Warehouse (optional)</option>
-              {warehouses
+              {storeWarehouses
                 .filter((w) => w.is_active !== false)
                 .map((w) => (
                 <option key={w.id} value={w.id}>
@@ -3384,7 +3406,7 @@ export default function Page() {
               aria-label="Stock count warehouse"
             >
               <option value="">Warehouse</option>
-              {warehouses
+              {storeWarehouses
                 .filter((w) => w.is_active !== false)
                 .map((w) => (
                 <option key={w.id} value={w.id}>
@@ -3594,7 +3616,7 @@ export default function Page() {
                 aria-label="Movement warehouse filter"
               >
                 <option value="">All warehouses</option>
-                {warehouses
+                {storeWarehouses
                 .filter((w) => w.is_active !== false)
                 .map((w) => (
                   <option key={w.id} value={w.id}>
@@ -3752,7 +3774,7 @@ export default function Page() {
             title="Optional warehouse for adjustment (UuidIdValue)"
           >
             <option value="">Company / product stock only</option>
-            {warehouses
+            {storeWarehouses
                 .filter((w) => w.is_active !== false)
                 .map((w) => (
               <option key={w.id} value={w.id}>
@@ -3829,7 +3851,7 @@ export default function Page() {
             title="Optional warehouse for stock-out (UuidIdValue)"
           >
             <option value="">Company / product stock only</option>
-            {warehouses
+            {storeWarehouses
                 .filter((w) => w.is_active !== false)
                 .map((w) => (
               <option key={w.id} value={w.id}>
@@ -3918,7 +3940,7 @@ export default function Page() {
               aria-label="Warehouse stock warehouse"
             >
               <option value="">Select warehouse</option>
-              {warehouses
+              {storeWarehouses
                 .filter((w) => w.is_active !== false)
                 .map((w) => (
                 <option key={w.id} value={w.id}>
@@ -4053,7 +4075,7 @@ export default function Page() {
               title="Source warehouse for transfer (UuidIdValue)"
             >
               <option value="">Select source</option>
-              {warehouses
+              {storeWarehouses
                 .filter((w) => w.store_id)
                 .map((w) => (
                   <option key={w.id} value={w.id}>

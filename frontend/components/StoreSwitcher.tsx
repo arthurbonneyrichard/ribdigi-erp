@@ -11,7 +11,7 @@ export default function StoreSwitcher({ visible }: { visible: boolean }) {
   return (
     <label
       className="store-switcher"
-      title="Active store context for POS, sales, reports, and expenses"
+      title="Active store context for POS, sales, inventory, purchasing, accounting, reports, and expenses"
     >
       <span className="store-switcher-label muted">Store</span>
       <select

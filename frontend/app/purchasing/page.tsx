@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Shell from '../../components/Shell';
 import PartyContactsPanel from '../../components/PartyContactsPanel';
 import AttachmentPreview from '../../components/AttachmentPreview';
 import { api } from '../../lib/api';
+import { useStoreContext } from '../../lib/storeContext';
 
 type Tab = 'requests' | 'orders' | 'grn' | 'invoices' | 'returns';
 
@@ -162,6 +163,7 @@ type PurchaseInvoice = {
 };
 
 export default function Page() {
+  const { storeId } = useStoreContext();
   const [tab, setTab] = useState<Tab>('orders');
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [poManageFilter, setPoManageFilter] = useState<
@@ -183,6 +185,21 @@ export default function Page() {
   >('all');
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [warehouses, setWarehouses] = useState<any[]>([]);
+  const [warehouseId, setWarehouseId] = useState('');
+  const storeWarehouses = useMemo(
+    () => warehouses.filter((w: any) => !w.store_id || !storeId || String(w.store_id) === String(storeId)),
+    [warehouses, storeId],
+  );
+  useEffect(() => {
+    if (!storeId || !storeWarehouses.length) {
+      if (warehouseId) setWarehouseId('');
+      return;
+    }
+    const ids = new Set(storeWarehouses.map((w: any) => String(w.id)));
+    const pick = (cur: string) => (cur && ids.has(String(cur)) ? cur : String(storeWarehouses[0].id));
+    setWarehouseId((cur) => pick(cur));
+  }, [storeId, storeWarehouses, warehouseId]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [selected, setSelected] = useState<PurchaseOrder | null>(null);
   const [receiveDrafts, setReceiveDrafts] = useState<
@@ -300,7 +317,7 @@ export default function Page() {
   const [spyPreview, setSpyPreview] = useState('');
 
   async function refresh() {
-    const [poRes, prRes, settingsRes, numRes, supRes, prodRes, unitRes, grnRes, invRes, retRes] =
+    const [poRes, prRes, settingsRes, numRes, supRes, prodRes, unitRes, whRes, grnRes, invRes, retRes] =
       await Promise.all([
       api('/purchasing/orders'),
       api('/purchasing/requests'),
@@ -309,6 +326,7 @@ export default function Page() {
       api('/suppliers'),
       api('/products'),
       api('/catalog/units').catch(() => ({ data: [] })),
+      api('/warehouses').catch(() => ({ data: [] })),
       api('/purchasing/grn'),
       api('/purchasing/invoices'),
       api('/purchasing/returns'),
@@ -319,6 +337,7 @@ export default function Page() {
     setSuppliers(supRes.data || []);
     setProducts(prodRes.data || []);
     setUnits((unitRes.data || []).filter((u: Unit) => u.is_active !== false));
+    setWarehouses(Array.isArray(whRes.data) ? whRes.data : []);
     setGrns(grnRes.data || []);
     setInvoices(invRes.data || []);
     setReturns(retRes.data || []);
@@ -462,6 +481,7 @@ export default function Page() {
           // null when blank so Create does not 422 (AddressValue).
           delivery_address: poDeliveryAddress.trim() || null,
           notes: poNotes.trim() || null,
+          warehouse_id: warehouseId.trim() || null,
           items: [
             {
               product_id: productId.trim(),
@@ -477,6 +497,7 @@ export default function Page() {
       setMessage(`Created ${r.data.po_number}`);
       setPoDeliveryAddress('');
       setPoNotes('');
+      setWarehouseId('');
       setLineDiscount('0');
       await refresh();
       setSelected(r.data);
@@ -1963,10 +1984,19 @@ export default function Page() {
             aria-label="PO notes"
             title="Optional notes (1–500 chars; letters/digits required)"
           />
+          <label className="field">
+            <span>Warehouse (store context)</span>
+            <select aria-label="PO warehouse" value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)}>
+              <option value="">Default / any</option>
+              {storeWarehouses.map((w: any) => (
+                <option key={w.id} value={w.id}>{w.code} — {w.name}</option>
+              ))}
+            </select>
+          </label>
           <button
+            className="btn-primary"
             onClick={createPo}
             disabled={!supplierId || !productId}
-            aria-label="Create draft PO"
           >
             Create draft PO
           </button>
