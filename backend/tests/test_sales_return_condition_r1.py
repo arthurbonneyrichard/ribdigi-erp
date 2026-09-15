@@ -30,16 +30,16 @@ def test_sales_return_item_schema_requires_condition():
     field = SalesReturnItemCreate.model_fields["condition"]
     assert field.default is PydanticUndefined
     ok = SalesReturnItemCreate.model_validate(
-        {"product_id": "p1", "quantity": 1, "condition": "sellable"}
+        {"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 1, "condition": "sellable"}
     )
     assert ok.condition == "sellable"
     with pytest.raises(Exception):
         SalesReturnItemCreate.model_validate(
-            {"product_id": "p1", "quantity": 1, "condition": "broken"}
+            {"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 1, "condition": "broken"}
         )
     with pytest.raises(Exception):
         SalesReturnItemCreate.model_validate(
-            {"product_id": "p1", "quantity": 1, "condition": "  "}
+            {"product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 1, "condition": "  "}
         )
 
 

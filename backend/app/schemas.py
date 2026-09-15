@@ -1,11 +1,23 @@
 from __future__ import annotations
 
+import re
 from datetime import date, datetime
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, BeforeValidator, ConfigDict, EmailStr, Field, model_validator
+from pydantic import (
+    BaseModel,
+    AfterValidator,
+    BeforeValidator,
+    ConfigDict,
+    EmailStr,
+    Field,
+    TypeAdapter,
+    field_validator,
+    model_validator,
+)
 
 from app.pos import coerce_payment_method_value
+from app.rbac import SYSTEM_MODULES
 from app.tenants import (
     coerce_date_format_value,
     coerce_decimal_separator_value,
@@ -14,8 +26,11 @@ from app.tenants import (
     coerce_thousand_separator_value,
     coerce_time_format_value,
 )
+from app.tax_filings import coerce_tax_filing_jurisdiction_value
 from app.expenses import coerce_expense_payment_method_value
 from app.print_branding import coerce_invoice_template_value, coerce_receipt_paper_value
+from app.fx import coerce_currency_code_value
+from app.honesty import money_json
 
 PosTenderMethod = Annotated[
     Literal["cash", "card", "wallet", "credit", "other"],
@@ -40,6 +55,78 @@ IndustryValue = Annotated[
 TaxFilingPeriodValue = Annotated[
     Literal["monthly", "quarterly"],
     BeforeValidator(coerce_tax_filing_period_value),
+]
+# Keep aligned with app.tax_filings.SUPPORTED (Company profile + Tax filing Query/export).
+TaxFilingJurisdictionValue = Annotated[
+    Literal["GH"],
+    BeforeValidator(coerce_tax_filing_jurisdiction_value),
+]
+# Keep aligned with app.fx.normalize_currency (Credit FX rates — 3-letter ISO).
+CurrencyCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_currency_code_value),
+    Field(min_length=3, max_length=3, pattern=r"^[A-Z]{3}$"),
+]
+
+
+def coerce_fiscal_year_start_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for pattern 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_fiscal_year_start_value(value: str) -> str:
+    """AfterValidator: MM-DD with real calendar day (BR-10 / company profile)."""
+    if not re.fullmatch(r"(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])", value):
+        raise ValueError("fiscal_year_start must be MM-DD")
+    mm, dd = int(value[0:2]), int(value[3:5])
+    # Prefer leap year so 02-29 is allowed; other invalid days still fail.
+    year = 2024 if mm == 2 and dd == 29 else 2023
+    try:
+        date(year, mm, dd)
+    except ValueError as exc:
+        raise ValueError("fiscal_year_start must be a valid calendar MM-DD") from exc
+    return value
+
+
+# Keep aligned with app.accounting.parse_fiscal_mmdd (Company fiscal year start).
+FiscalYearStartValue = Annotated[
+    str,
+    BeforeValidator(coerce_fiscal_year_start_value),
+    AfterValidator(validate_fiscal_year_start_value),
+]
+
+
+def coerce_timezone_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_timezone_value(value: str) -> str:
+    """AfterValidator: IANA timezone key via zoneinfo (Company profile)."""
+    if not value:
+        raise ValueError("timezone is required")
+    try:
+        from zoneinfo import ZoneInfo
+
+        ZoneInfo(value)
+    except Exception as exc:  # ZoneInfoNotFoundError / ValueError
+        raise ValueError("timezone must be a valid IANA timezone") from exc
+    return value
+
+
+# Keep aligned with tenants.update_profile defense-in-depth ZoneInfo check.
+TimezoneValue = Annotated[
+    str,
+    BeforeValidator(coerce_timezone_value),
+    AfterValidator(validate_timezone_value),
 ]
 DateFormatValue = Annotated[
     Literal["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"],
@@ -78,6 +165,38 @@ ReceiptChannelValue = Annotated[
     Literal["email", "sms"],
     BeforeValidator(coerce_invoice_template_value),
 ]
+
+
+def coerce_product_search_query_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank (empty search OK)."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_product_search_query_value(value: str) -> str:
+    """AfterValidator: product lookup/search `q`; empty OK; garbage/URL → 422 (max 120)."""
+    if value == "":
+        return value
+    if len(value) > 120:
+        raise ValueError("search query must be 1–120 characters")
+    if "://" in value:
+        raise ValueError("search query must be a product name/SKU fragment (no URL)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("search query must include a letter or digit")
+    return value
+
+
+# Inventory / POS product search Query `q` — empty default OK; blank punctuation/URL → 422.
+ProductSearchQueryValue = Annotated[
+    str,
+    BeforeValidator(coerce_product_search_query_value),
+    AfterValidator(validate_product_search_query_value),
+]
+
+
 ExpensePaymentMethod = Annotated[
     Literal["cash", "bank_transfer", "card", "cheque"],
     BeforeValidator(coerce_expense_payment_method_value),
@@ -231,6 +350,8 @@ CustomRoleBaseRoleValue = Annotated[
     ],
     BeforeValidator(coerce_platform_role_value),
 ]
+# Keep aligned with app.custom_roles.ALLOWED_ACTIONS / ApiKeyCreate actions.
+ApiKeyPermissionAction = Literal["read", "write", "approve", "*"]
 
 # Non-platform system roles for revoke fallback (excludes platform_* / super_admin).
 AppFallbackRoleValue = Annotated[
@@ -244,13 +365,57 @@ AppFallbackRoleValue = Annotated[
     ],
     BeforeValidator(coerce_platform_role_value),
 ]
+# Keep aligned with app.rbac.VALID_ROLES / SYSTEM_ROLES (approval matrix roles[]).
+SystemRoleValue = Annotated[
+    Literal[
+        "super_admin",
+        "platform_owner",
+        "platform_admin",
+        "platform_support",
+        "platform_finance",
+        "company_admin",
+        "store_manager",
+        "sales_officer",
+        "inventory_officer",
+        "accountant",
+        "cashier",
+    ],
+    BeforeValidator(coerce_platform_role_value),
+]
+
+
+def coerce_role_key_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip/lowercase; blank stays blank for pattern 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().lower()
+
+
+def validate_role_key_value(value: str) -> str:
+    """AfterValidator: shape only (custom_roles.ROLE_KEY_RE); unknown role stays service 400."""
+    from app.custom_roles import ROLE_KEY_RE
+
+    if not ROLE_KEY_RE.match(value):
+        raise ValueError(
+            "Role key must be lowercase letters/numbers/underscore, start with a letter (2–49 chars)"
+        )
+    return value
+
+
+# Keep aligned with custom_roles.ROLE_KEY_RE (user assign + custom role key shape).
+RoleKeyValue = Annotated[
+    str,
+    BeforeValidator(coerce_role_key_value),
+    AfterValidator(validate_role_key_value),
+]
 
 
 def _require_credit_override_reason(model: BaseModel) -> BaseModel:
     """OpenAPI honesty (BR-11.1): reason required when override_credit_limit is true."""
     if bool(getattr(model, "override_credit_limit", False)):
-        reason = (getattr(model, "override_reason", None) or "").strip()
-        if not reason:
+        if not getattr(model, "override_reason", None):
             raise ValueError(
                 "override_reason is required when override_credit_limit is true"
             )
@@ -262,105 +427,328 @@ class ORMSchema(BaseModel):
 
 
 class Login(BaseModel):
+    """POST /auth/login — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
     email: EmailStr
-    password: str
-    tenant_id: str
-    totp_code: str | None = None
+    # Required password ∈ LoginPasswordValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; whitespace/`!!!`/URL reached verify_password as 401).
+    password: LoginPasswordValue
+    # Required workspace ∈ TenantRefValue (UUID or slug); blank/`!!!`/`http://…` → **422**
+    # (was free `str`; whitespace/`!!!`/URL reached resolve_tenant as **404**).
+    tenant_id: TenantRefValue
+    # omit/`null` → no TOTP field; blank/`!!!`/`http://…` → **422** (was free `str`)
+    totp_code: TwoFactorCodeValue | None = None
 
 
 class TwoFactorConfirm(BaseModel):
-    code: str
+    """POST /auth/2fa/confirm — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Required TOTP/backup code ∈ TwoFactorCodeValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; empty/garbage reached service verify).
+    code: TwoFactorCodeValue
 
 
 class TwoFactorVerify(BaseModel):
-    challenge_token: str
-    code: str
+    """POST /auth/2fa/verify — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Required MFA challenge JWT ∈ ChallengeTokenValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; whitespace/`!!!`/URL reached decode_challenge_token as **401**).
+    challenge_token: ChallengeTokenValue
+    # Required TOTP/backup code ∈ TwoFactorCodeValue; blank/`!!!`/`http://…` → **422**
+    code: TwoFactorCodeValue
 
 
 class TwoFactorDisable(BaseModel):
-    password: str
-    code: str
+    """POST /auth/2fa/disable — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Required password ∈ TwoFactorDisablePasswordValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; whitespace/`!!!`/URL reached verify_password as 401).
+    password: TwoFactorDisablePasswordValue
+    # Required TOTP/backup code ∈ TwoFactorCodeValue; blank/`!!!`/`http://…` → **422**
+    code: TwoFactorCodeValue
+
+
+class WebAuthnAttestationResponse(BaseModel):
+    """Registration authenticator response (create). Unknown keys → **422**."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    # ∈ Base64UrlValue; blank/`+`/`/`/`http://…` → **422** (was free `str` min_length=1)
+    clientDataJSON: Base64UrlValue
+    # ∈ Base64UrlValue; blank/`+`/`/`/`http://…` → **422** (was free `str` min_length=1)
+    attestationObject: Base64UrlValue
+    # omit/`null` → no transports; unknown token / non-list → **422** (was free `list[str]`)
+    transports: AuthenticatorTransportListValue | None = None
+
+
+class WebAuthnAssertionResponse(BaseModel):
+    """Assertion authenticator response (get). Unknown keys → **422**."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    # ∈ Base64UrlValue; blank/`+`/`/`/`http://…` → **422** (was free `str` min_length=1)
+    clientDataJSON: Base64UrlValue
+    # ∈ Base64UrlValue; blank/`+`/`/`/`http://…` → **422** (was free `str` min_length=1)
+    authenticatorData: Base64UrlValue
+    # ∈ Base64UrlValue; blank/`+`/`/`/`http://…` → **422** (was free `str` min_length=1)
+    signature: Base64UrlValue
+    # omit/`null` OK; blank/`+`/`/`/`http://…` → **422** (was free `str`)
+    userHandle: Base64UrlValue | None = None
+
+
+class WebAuthnRegistrationCredential(BaseModel):
+    """Browser PublicKeyCredential JSON for registration verify.
+
+    Unknown keys → **422** (`extra=forbid`). Was free `dict` — garbage shape
+    reached `verify_registration_response` as opaque **400**.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # ∈ Base64UrlValue; blank/`+`/`/`/`http://…` → **422** (was free `str` min_length=1)
+    id: Base64UrlValue
+    # ∈ Base64UrlValue; blank/`+`/`/`/`http://…` → **422** (was free `str` min_length=1)
+    rawId: Base64UrlValue
+    type: Literal["public-key"] = "public-key"
+    response: WebAuthnAttestationResponse
+    # Must be a JSON object (≤32 keys); list/string/number → **422** (was free `dict[str, Any]`)
+    clientExtensionResults: WebAuthnClientExtensionResultsValue = Field(default_factory=dict)
+
+
+class WebAuthnAuthenticationCredential(BaseModel):
+    """Browser PublicKeyCredential JSON for login verify.
+
+    Unknown keys → **422** (`extra=forbid`). Was free `dict` — missing `id`/
+    `rawId` was late service **400**; garbage shape reached
+    `verify_authentication_response` as opaque **400**.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # ∈ Base64UrlValue; blank/`+`/`/`/`http://…` → **422** (was free `str` min_length=1)
+    id: Base64UrlValue
+    # ∈ Base64UrlValue; blank/`+`/`/`/`http://…` → **422** (was free `str` min_length=1)
+    rawId: Base64UrlValue
+    type: Literal["public-key"] = "public-key"
+    response: WebAuthnAssertionResponse
+    # Must be a JSON object (≤32 keys); list/string/number → **422** (was free `dict[str, Any]`)
+    clientExtensionResults: WebAuthnClientExtensionResultsValue = Field(default_factory=dict)
 
 
 class WebAuthnRegisterVerify(BaseModel):
-    credential: dict
-    name: str | None = None
+    """POST /auth/webauthn/register/verify — optional passkey label.
+
+    Unknown keys → **422** (`extra=forbid`). Required `credential` ∈
+    `WebAuthnRegistrationCredential`. Optional `name` ∈ PasskeyNameValue;
+    omit/`null` → service default `"Passkey"`; blank/`!!!`/`http://…` → **422**
+    (was free `str`; blank silently became `"Passkey"` via strip-or-default;
+    punctuation/URL could persist on `WebAuthnCredential.name` String(120)).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    credential: WebAuthnRegistrationCredential
+    # omit/`null` → service default "Passkey"; blank/`!!!`/`http://…` → **422**
+    name: PasskeyNameValue | None = None
 
 
 class WebAuthnLoginOptions(BaseModel):
-    challenge_token: str
+    model_config = ConfigDict(extra="forbid")
+
+    # Required MFA challenge JWT ∈ ChallengeTokenValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; whitespace/`!!!`/URL reached decode_challenge_token as **401**).
+    challenge_token: ChallengeTokenValue
 
 
 class WebAuthnLoginVerify(BaseModel):
-    challenge_token: str
-    credential: dict
+    """POST /auth/webauthn/login/verify — challenge + assertion credential.
+
+    Unknown keys → **422** (`extra=forbid`).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Required MFA challenge JWT ∈ ChallengeTokenValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; whitespace/`!!!`/URL reached decode_challenge_token as **401**).
+    challenge_token: ChallengeTokenValue
+    credential: WebAuthnAuthenticationCredential
 
 
 class EmailTestRequest(BaseModel):
+    """POST /settings/email/test — optional override recipient.
+
+    Unknown keys → **422** (`extra=forbid`).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
     to: EmailStr | None = None
 
 
 class EmailSettingsUpdate(BaseModel):
-    host: str | None = None
+    """PATCH /settings/email (BR-20.3).
+
+    Unknown keys → **422** (`extra=forbid`). Optional `from_email` ∈ `EmailStr`;
+    omit/`null` → no change; blank/`not-an-email` → **422** (was free `str`;
+    blank/garbage were accepted into tenant SMTP config). Optional `host` ∈
+    `SmtpHostValue`; omit/`null` → no change; blank/`http://…`/`not a host` → **422**
+    (was free `str`; blank/garbage were accepted into tenant SMTP host). Optional
+    `from_name` ∈ `SmtpFromNameValue`; omit/`null` → no change; blank/`!!!`/
+    `http://…` → **422** (was free `str`; blank/garbage were accepted into
+    tenant SMTP From display name). Optional `username` ∈ `SmtpUsernameValue`;
+    omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    blank/garbage were accepted into tenant SMTP username; email-shaped logins OK).
+    Optional `password` ∈ `SmtpPasswordValue` (strip; 1–128; ≥1 letter/digit;
+    no `://` / `@` / spaces); omit/`null` → keep prior; blank/`!!!`/`http://…` → **422**
+    (was free `str`; blank was a silent no-op via service; punctuation/URL could be
+    encrypted into `email_settings.password_enc`). `clear_password: true` removes it.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    host: SmtpHostValue | None = None
     port: int | None = Field(default=None, ge=1, le=65535)
-    username: str | None = None
-    password: str | None = None
+    username: SmtpUsernameValue | None = None
+    password: SmtpPasswordValue | None = None
     clear_password: bool = False
-    from_email: str | None = None
-    from_name: str | None = None
+    from_email: EmailStr | None = None
+    from_name: SmtpFromNameValue | None = None
     use_tls: bool | None = None
     use_ssl: bool | None = None
 
 
 class SmsTestRequest(BaseModel):
-    to: str | None = None
+    """POST /settings/sms/test — optional override recipient.
+
+    Optional `to` ∈ `E164PhoneValue`; omit/`null` → profile phone; blank/invalid → **422**
+    (was free `str`; blank/garbage were accepted until send failed).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    to: E164PhoneValue | None = None
 
 
 class SmsSettingsUpdate(BaseModel):
-    account_sid: str | None = None
-    auth_token: str | None = None
+    """PATCH /settings/sms (BR-15.2).
+
+    Unknown keys → **422** (`extra=forbid`). Optional `from_number` ∈ `E164PhoneValue`
+    (`+` + 8–15 digits); omit/`null` → no change; blank/`not-a-phone`/`123` → **422**
+    (was free `str`; blank/garbage were accepted into tenant Twilio config). Optional
+    `account_sid` ∈ `TwilioAccountSidValue` (strip; alphanumeric 1–64); omit/`null` →
+    no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage were
+    accepted into tenant Twilio SID). Not strict `AC`+32hex (fixtures use short SIDs).
+    Optional `auth_token` ∈ `TwilioAuthTokenValue` (strip; 1–128; ≥1 letter/digit;
+    no `://` / `@` / spaces); omit/`null` → keep prior; blank/`!!!`/`http://…` → **422**
+    (was free `str`; blank was a silent no-op via service; punctuation/URL could be
+    encrypted into `sms_settings.auth_token_enc`). `clear_auth_token: true` removes it.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    account_sid: TwilioAccountSidValue | None = None
+    auth_token: TwilioAuthTokenValue | None = None
     clear_auth_token: bool = False
-    from_number: str | None = None
+    from_number: E164PhoneValue | None = None
 
 
 class ProfileUpdate(BaseModel):
-    full_name: str | None = None
-    phone: str | None = None
+    """PATCH /auth/profile — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank reached service **400** "full_name cannot be empty"; punctuation/URL
+    # could persist on User.full_name). Same UserFullNameValue as UserCreate/Update.
+    full_name: UserFullNameValue | None = None
+    # omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`;
+    # blank silently cleared phone; garbage was late **400** via normalize_phone).
+    phone: E164PhoneValue | None = None
 
 
 class RefreshRequest(BaseModel):
-    refresh_token: str
+    """POST /auth/refresh — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Required session refresh token ∈ RefreshTokenValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; whitespace/`!!!`/URL reached refresh lookup as invalid).
+    refresh_token: RefreshTokenValue
 
 
 class TenantCreate(BaseModel):
-    company_name: str
-    slug: str
+    model_config = ConfigDict(extra="forbid")
+
+    # Required trading name ∈ CompanyNameValue; blank/`!!!`/`http://…`/`X` → **422**
+    # (was free `str` with no create-path length/content check).
+    company_name: CompanyNameValue
+    # Required URL slug ∈ TenantSlugValue (strip/lower; 2–80; `^[a-z0-9][a-z0-9-]{1,79}$`);
+    # blank/`!!!`/`http://…`/`a b`/`X` → **422** (was free `str`; blank/garbage could persist
+    # on `Tenant.slug` String(80); uniqueness remains create **409**).
+    slug: TenantSlugValue
     # BR-1.2 — schema Literal (+ case coerce via BeforeValidator); omit → retail;
     # blank/invalid → 422 (no silent retail from garbage).
     industry: IndustryValue = "retail"
-    currency: str = "GHS"
+    # BR-2.6 — same CurrencyCodeValue as FX rates; omit → GHS; blank/non-ISO → 422
+    currency: CurrencyCodeValue = "GHS"
     admin_email: EmailStr
-    admin_password: str
+    # Required initial admin password ∈ TenantAdminPasswordValue; blank/`!!!`/`http://…`
+    # → **422** (was free `str`; whitespace/`!!!`/URL could reach hash path; strength
+    # still enforced by validate_password_strength → **400**).
+    admin_password: TenantAdminPasswordValue
 
 
 class TenantProfileUpdate(BaseModel):
-    company_name: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # omit/`null` → no change; blank/`!!!`/`http://…`/`X` → **422** (was free `str`;
+    # blank/`X` late service **400**; garbage could persist). Required trading name.
+    company_name: CompanyNameValue | None = None
     # omit = no change; blank/invalid → 422 (same IndustryValue Literal)
     industry: IndustryValue | None = None
-    currency: str | None = None
-    phone: str | None = None
+    # omit = no change; blank/non-ISO → 422 (was free str; length-only late **400**)
+    currency: CurrencyCodeValue | None = None
+    # omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`;
+    # blank silently cleared company phone; garbage could persist).
+    phone: E164PhoneValue | None = None
     email: EmailStr | None = None
-    website: str | None = None
-    address: str | None = None
-    legal_name: str | None = None
-    registration_number: str | None = None
-    contact_person: str | None = None
-    billing_address: str | None = None
-    shipping_address: str | None = None
-    timezone: str | None = None
-    fiscal_year_start: str | None = None
-    tax_jurisdiction: str | None = None
-    tax_registration_number: str | None = None
+    # omit/`null` → no change; blank/`ftp://`/`not-a-url`/plain-http remote → **422**
+    # (was free `str`; blank silently cleared; garbage like `www.x` could persist).
+    # Same absolute http(s) honesty as Webhook/Bank feed URLs (`WebhookUrlValue`).
+    website: WebhookUrlValue | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared HQ/billing/shipping; garbage could persist).
+    address: AddressValue | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…`/`X` → **422** (was free `str`;
+    # blank silently cleared; garbage could persist; len<2 or >200 was late **400**).
+    legal_name: LegalNameValue | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared; garbage could persist; length>80 was late **400**).
+    registration_number: RegistrationNumberValue | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared; garbage could persist; length>150 was late **400**).
+    contact_person: ContactPersonValue | None = None
+    # Same AddressValue honesty as HQ `address`.
+    billing_address: AddressValue | None = None
+    shipping_address: AddressValue | None = None
+    # omit = no change; blank/non-IANA → 422 (was free str; blank late **400**; garbage could persist)
+    timezone: TimezoneValue | None = None
+    # omit = no change; blank/invalid MM-DD → 422 (was free str; length-only late **400**)
+    fiscal_year_start: FiscalYearStartValue | None = None
+    # Keep aligned with tax_filings.SUPPORTED / TaxFilingJurisdictionValue (Company select).
+    # omit = no change; blank/unsupported → 422 (was free str; length-only late **400**).
+    tax_jurisdiction: TaxFilingJurisdictionValue | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared TIN; garbage could persist). Max 40 (DB column).
+    tax_registration_number: TaxRegistrationNumberValue | None = None
     # BR-20.2 / BR-12 — schema Literals; omit = no change; blank/invalid → 422
     tax_filing_period: TaxFilingPeriodValue | None = None
     date_format: DateFormatValue | None = None
@@ -372,19 +760,34 @@ class TenantProfileUpdate(BaseModel):
 
 
 class TenantSuspendRequest(BaseModel):
-    """Tenant suspend — typed reason required (honesty)."""
+    """Tenant suspend — typed reason required (honesty).
 
-    reason: str = Field(min_length=1, max_length=500)
+    `reason` ∈ TenantSuspendReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could persist on `Tenant.suspended_reason`).
+    Shared by platform `POST /tenants/{ref}/suspend` and company
+    `POST /tenants/me/suspend`.
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    reason: TenantSuspendReasonValue
 
 
 class TenantSubscriptionAssign(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # BR-1.x / platform — schema Literal (+ strip/lower); blank/invalid → 422
     # (was free str; service still defense-in-depth vs VALID_PACKAGE_CODES)
     package_code: PackageCodeValue
     term_value: int = Field(..., ge=1, le=120)
     # BR-1.x / platform — schema Literal; omit → months; blank/invalid → 422
     term_unit: Literal["months", "years"] = "months"
-    start_at: datetime | None = None
+    # Optional start ∈ IsoDateQueryValue; omit/`null` → now; blank/invalid → **422**
+    # (was free `datetime`; OpenAPI date-time; padded dates inconsistent).
+    # API `reports.parse_date` remains defense-in-depth.
+    start_at: IsoDateQueryValue | None = None
     activate: bool = True
     # Packageable modules Literal list; omit/null OK; blank/unknown/platform item → 422
     enabled_modules: list[PackageableModuleValue] | None = None
@@ -394,6 +797,8 @@ class TenantSubscriptionAssign(BaseModel):
 
 
 class TenantModulesUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # Same Literal list as subscription assign; omit when reset_to_package
     enabled_modules: list[PackageableModuleValue] | None = None
     reset_to_package: bool = False
@@ -401,6 +806,8 @@ class TenantModulesUpdate(BaseModel):
 
 class TenantStoreLimitUpdate(BaseModel):
     """Company (== Tenant) store allocation within subscription entitlement."""
+    model_config = ConfigDict(extra="forbid")
+
 
     # null = use full subscription entitlement
     store_limit: int | None = Field(default=None, ge=0)
@@ -408,69 +815,130 @@ class TenantStoreLimitUpdate(BaseModel):
 
 class TenantMaxStoresOverrideUpdate(BaseModel):
     """Platform-owner per-tenant store entitlement override."""
+    model_config = ConfigDict(extra="forbid")
+
 
     max_stores_override: int | None = Field(default=None, ge=0)
     clear: bool = False
 
 
 class UserCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     email: EmailStr
-    full_name: str
-    password: str
-    role: str = "cashier"
-    phone: str | None = None
-    branch_id: str | None = None
-    department_id: str | None = None
+    # Required display name ∈ UserFullNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; empty/whitespace/`!!!`/URL could persist).
+    full_name: UserFullNameValue
+    # Required password ∈ UserPasswordValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; whitespace/`!!!`/URL could reach hash path; strength still
+    # enforced by validate_password_strength → **400**).
+    password: UserPasswordValue
+    # omit → cashier; blank/malformed key → 422 (was free str; blank late **400**)
+    role: RoleKeyValue = "cashier"
+    # omit/`null` → no phone; blank/`not-a-phone`/`123` → **422** (was free `str`;
+    # blank/`garbage` could persist on create).
+    phone: E164PhoneValue | None = None
+    # Optional branch ∈ UuidIdValue; omit/`null` → no branch; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach branch
+    # lookup). Existence remains tenant-scoped branch lookup (**404**).
+    branch_id: UuidIdValue | None = None
+    # Optional department ∈ UuidIdValue; omit/`null` → no department; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach department
+    # lookup). Existence remains tenant-scoped department lookup (**404**).
+    department_id: UuidIdValue | None = None
     # BR-3.3 — omit = role default; blank/invalid → 422 (no silent all from "")
     record_scope: RecordScopeValue | None = None
 
 
 class UserUpdate(BaseModel):
-    full_name: str | None = None
-    phone: str | None = None
-    role: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # empty/whitespace/`!!!`/URL could persist).
+    full_name: UserFullNameValue | None = None
+    # omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`;
+    # blank silently cleared; garbage could persist).
+    phone: E164PhoneValue | None = None
+    # omit = no change; blank/malformed key → 422 (was free str; blank late **400**)
+    role: RoleKeyValue | None = None
     is_active: bool | None = None
-    password: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # whitespace/`!!!`/URL could reach hash path; strength still **400**).
+    password: UserPasswordValue | None = None
     # Record visibility: own | department | branch | all (omit = no change; blank → 422)
     record_scope: RecordScopeValue | None = None
-    branch_id: str | None = None
-    department_id: str | None = None
+    # omit → no change; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`;
+    # garbage could reach branch lookup). clear_branch remains explicit clear.
+    # Existence remains tenant-scoped branch lookup (**404**).
+    branch_id: UuidIdValue | None = None
+    # omit → no change; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`;
+    # garbage could reach department lookup). clear_department remains explicit clear.
+    # Existence remains tenant-scoped department lookup (**404**).
+    department_id: UuidIdValue | None = None
     clear_branch: bool = False
     clear_department: bool = False
 
 
 class PlatformGrantAccess(BaseModel):
     """Grant an existing app user access to the software-owner dashboard."""
+    model_config = ConfigDict(extra="forbid")
 
-    user_id: str
+
+    # Required app user ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach user lookup). Existence remains
+    # platform-scoped user lookup (**404**). Platform Staff **Grant dashboard**
+    # sends `user_id` trim.
+    user_id: UuidIdValue
     # Platform roles Literal (+ strip/lower); omit → platform_support; blank/invalid → 422
     # (was free str; "" used to silently coerce to platform_support in service)
     role: PlatformRoleValue = "platform_support"
 
 
 class PlatformStaffCreate(BaseModel):
-    """Create a platform staff user on the software-owner workspace."""
+    """Create a platform staff user on the software-owner workspace (BR-platform).
 
-    email: str = Field(min_length=3)
-    full_name: str = Field(min_length=1)
-    password: str = Field(min_length=1)
+    Unknown keys → **422** (`extra=forbid`). `email` ∈ `EmailStr`; blank /
+    `not-an-email` / too-short garbage → **422** (was free `str` with
+    `min_length=3`; `"abc"` was accepted).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    email: EmailStr
+    # Required display name ∈ PlatformStaffFullNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str` min_length=1; whitespace/`!!!`/URL could persist).
+    full_name: PlatformStaffFullNameValue
+    # Required password ∈ PlatformStaffPasswordValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str` min_length=1; whitespace/`!!!`/URL could reach hash path;
+    # strength still enforced by validate_password_strength → **400**).
+    password: PlatformStaffPasswordValue
     # Same Literal as grant; omit → platform_support; blank/invalid → 422
     # (was free dict; API `role or "platform_support"` silently coerced "")
     role: PlatformRoleValue = "platform_support"
-    phone: str | None = None
+    # omit/`null` → no phone; blank/`not-a-phone`/`123` → **422** (was free `str`;
+    # blank/garbage could persist on platform staff create).
+    phone: E164PhoneValue | None = None
 
 
 class PlatformStaffUpdate(BaseModel):
     """Patch platform staff — omit = no change; blank role → 422."""
+    model_config = ConfigDict(extra="forbid")
 
-    full_name: str | None = Field(default=None, min_length=1)
+
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`
+    # min_length=1; whitespace/`!!!`/URL could persist).
+    full_name: PlatformStaffFullNameValue | None = None
     role: PlatformRoleValue | None = None
-    phone: str | None = None
+    # omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`;
+    # blank/garbage could persist on platform staff PATCH).
+    phone: E164PhoneValue | None = None
     is_active: bool | None = None
 
 
 class PlatformRevokeAccess(BaseModel):
     """Revoke software-owner dashboard access; keep the account as an app user."""
+    model_config = ConfigDict(extra="forbid")
+
 
     # Non-platform system roles Literal (+ strip/lower); omit → company_admin;
     # blank/invalid/platform → 422 (was free str; "" silently coerced to company_admin)
@@ -478,117 +946,352 @@ class PlatformRevokeAccess(BaseModel):
 
 
 class AccountCreate(BaseModel):
-    code: str
-    name: str
+    model_config = ConfigDict(extra="forbid")
+
+    # Required COA identity ∈ AccountCodeValue; blank/`!!!`/`a b`/`http://…` → **422**
+    # (was free `str`; blank late service **400**; garbage could persist).
+    code: AccountCodeValue
+    # Required COA label ∈ AccountNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank late service **400**; garbage could persist).
+    name: AccountNameValue
     # BR-10.3 / COA — schema Literal; omit → asset; blank/invalid → 422
     account_type: Literal["asset", "liability", "equity", "income", "expense"] = "asset"
     # omit/null = non-liquid; blank/invalid → 422 (no silent None from "")
     liquid_kind: Literal["cash", "bank"] | None = None
-    bank_name: str | None = None
-    account_number: str | None = None
-    bank_branch: str | None = None
+    # omit/`null` → no name; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silent→null then late service **400** when liquid_kind=bank).
+    bank_name: BankNameValue | None = None
+    # omit/`null` → no number; blank/`not-an-account`/`http://…` → **422**
+    # (was free `str`; blank silent→null; garbage could persist on liquid bank COA).
+    account_number: BankAccountNumberValue | None = None
+    # omit/`null` → no branch; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silent→null; garbage could persist).
+    bank_branch: BankBranchValue | None = None
 
 
 class AccountUpdate(BaseModel):
-    name: str | None = None
-    bank_name: str | None = None
-    account_number: str | None = None
-    bank_branch: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank late service **400**; garbage could persist on COA display name).
+    name: AccountNameValue | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silent→null; garbage could persist; clearing bank_name on a bank
+    # account still fails service required-name **400**).
+    bank_name: BankNameValue | None = None
+    # omit/`null` → no change; blank/`not-an-account`/`http://…` → **422**
+    # (was free `str`; blank silent→null; garbage could persist).
+    account_number: BankAccountNumberValue | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silent→null; garbage could persist).
+    bank_branch: BankBranchValue | None = None
     is_active: bool | None = None
 
 
 class OpeningBalanceLine(BaseModel):
-    account_id: str | None = None
-    account_code: str | None = None
-    amount: float = Field(gt=0)
+    """COA opening-balance line — optional code ∈ AccountCodeValue (BR-10.1).
+
+    Provide `account_id` and/or `account_code`; omit/`null` code OK when id set;
+    blank/`!!!`/`a b`/`http://…` → **422** (was free `str`; blank reached service
+    **400**; malformed codes were late **404** Account not found). Same
+    AccountCodeValue as AccountCreate.code.
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    # Optional COA ∈ UuidIdValue; omit/`null` OK when account_code set; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach COA lookup).
+    # Existence remains tenant-scoped account lookup (**404**).
+    account_id: UuidIdValue | None = None
+    # Optional COA lookup ∈ AccountCodeValue; omit/`null` OK when account_id set
+    account_code: AccountCodeValue | None = None
+    # ∈ PositiveMoneyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    amount: PositiveMoneyValue
 
 
 class OpeningBalanceCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     lines: list[OpeningBalanceLine] = Field(min_length=1)
-    reference: str | None = None
-    notes: str | None = None
+    # omit/`null` → auto COA-OPEN-YYYYMMDD; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank silently auto-labeled / garbage could persist on journal reference).
+    reference: OpeningBalanceReferenceValue | None = None
+    # omit/`null` → default journal description; blank/`!!!`/`http://…` → **422** (was
+    # free `str`; blank fell through to default / garbage could persist on description).
+    notes: OpeningBalanceNotesValue | None = None
 
 
 class CashTransferCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # BR-10.3 — schema Literal; omit defaults to transfer; blank/invalid → 422
     kind: Literal["transfer", "deposit", "withdrawal"] = "transfer"
-    from_account_id: str | None = None
-    to_account_id: str | None = None
-    amount: float = Field(gt=0)
-    reference: str | None = None
-    notes: str | None = None
+    # Optional source liquid COA ∈ UuidIdValue; omit/`null` → service requires
+    # for transfer/withdrawal; blank/`!!!`/`http://…`/non-UUID → **422** (was free
+    # `str`; garbage could reach liquid-account lookup). Existence remains
+    # tenant-scoped account lookup (**404**).
+    from_account_id: UuidIdValue | None = None
+    # Optional destination liquid COA ∈ UuidIdValue; omit/`null` → service requires
+    # for transfer/deposit; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`;
+    # garbage could reach liquid-account lookup). Existence remains tenant-scoped
+    # account lookup (**404**).
+    to_account_id: UuidIdValue | None = None
+    # ∈ PositiveMoneyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    amount: PositiveMoneyValue
+    # omit/`null` → auto XFER-YYYY-NNNN; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank silently auto-numbered / garbage could persist).
+    reference: CashTransferReferenceValue | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently dropped / garbage could persist on CashTransfer.notes Text).
+    notes: CashTransferNotesValue | None = None
 
 
 class BranchCreate(BaseModel):
-    code: str
-    name: str
-    address: str | None = None
-    phone: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # Required branch code ∈ BranchCodeValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/invalid reached service **400** via `_clean_code`;
+    # punctuation/URL could otherwise slip past OpenAPI). Tenant uniqueness remains
+    # create_branch **409**.
+    code: BranchCodeValue
+    # Required branch label ∈ BranchNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on multi-store branch create).
+    name: BranchNameValue
+    # omit/`null` → no address; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on create). Same AddressValue as Company/Store.
+    address: AddressValue | None = None
+    # omit/`null` → no phone; blank/`not-a-phone`/`123` → **422** (was free `str`;
+    # blank/garbage could persist on create).
+    phone: E164PhoneValue | None = None
     email: EmailStr | None = None
-    manager_id: str | None = None
+    # Optional manager user FK ∈ UuidIdValue; omit/`null` → no manager; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach user lookup).
+    # Existence remains tenant-scoped user lookup (**404**).
+    manager_id: UuidIdValue | None = None
 
 
 class BranchUpdate(BaseModel):
-    name: str | None = None
-    address: str | None = None
-    phone: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on branch display name).
+    name: BranchNameValue | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared; garbage could persist). Same AddressValue as Company/Store.
+    address: AddressValue | None = None
+    # omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`;
+    # blank silently cleared; garbage could persist).
+    phone: E164PhoneValue | None = None
     email: EmailStr | None = None
-    manager_id: str | None = None
+    # Optional manager user FK ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach user lookup).
+    # Existence remains tenant-scoped user lookup (**404**). Same honesty as
+    # BranchCreate.manager_id. Use `clear_manager` to remove.
+    manager_id: UuidIdValue | None = None
     clear_manager: bool = False
     is_active: bool | None = None
 
 
 class DepartmentCreate(BaseModel):
-    code: str
-    name: str
-    branch_id: str | None = None
-    head_user_id: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # Required department code ∈ DepartmentCodeValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/invalid reached service **400** via `_clean_code`;
+    # punctuation/URL could otherwise slip past OpenAPI). Tenant uniqueness remains
+    # create_department **409**.
+    code: DepartmentCodeValue
+    # Required department label ∈ DepartmentNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on multi-store department create).
+    name: DepartmentNameValue
+    # omit/`null` → no branch; blank/`!!!`/`http://…`/non-UUID → **422** (was free
+    # `str`; garbage could reach branch lookup). Existence remains tenant-scoped
+    # branch lookup (**404**).
+    branch_id: UuidIdValue | None = None
+    # Optional department head user FK ∈ UuidIdValue; omit/`null` → no head; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach user lookup).
+    # Existence remains tenant-scoped user lookup (**404**).
+    head_user_id: UuidIdValue | None = None
 
 
 class DepartmentUpdate(BaseModel):
-    name: str | None = None
-    branch_id: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on department display name).
+    name: DepartmentNameValue | None = None
+    # Optional branch ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach branch
+    # lookup). Existence remains tenant-scoped branch lookup (**404**). Same honesty
+    # as DepartmentCreate.branch_id. Use `clear_branch` to remove.
+    branch_id: UuidIdValue | None = None
     clear_branch: bool = False
-    head_user_id: str | None = None
+    # Optional department head user FK ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach user lookup).
+    # Existence remains tenant-scoped user lookup (**404**). Same honesty as
+    # DepartmentCreate.head_user_id. Use `clear_head` to remove.
+    head_user_id: UuidIdValue | None = None
     clear_head: bool = False
     is_active: bool | None = None
 
 
 class CustomRoleCreate(BaseModel):
-    key: str
-    label: str
-    permissions: dict[str, list[str]] | None = None
+    """POST /roles — typed custom role create (BR-3.2).
+
+    Unknown top-level keys → **422** (`extra=forbid`). `permissions` map modules ∈
+    ASSIGNABLE_MODULES with actions ∈ read|write|approve|*; empty map / unknown
+    module|action / `*:*` → **422** (was late service **400**). Omit `permissions`
+    when cloning via `base_role`.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Shape via RoleKeyValue → 422 on blank/malformed; collision/super_/system stay service **400**
+    key: RoleKeyValue
+    # Required display label ∈ CustomRoleLabelValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on custom role create).
+    label: CustomRoleLabelValue
+    permissions: dict[str, list[ApiKeyPermissionAction]] | None = None
     # Clone-from system role; omit/null OK when permissions set; blank/unknown/super_admin → 422
     base_role: CustomRoleBaseRoleValue | None = None
     # BR-3.3 — omit = base_role/own default; blank/invalid → 422
     record_scope: RecordScopeValue | None = None
 
+    @field_validator("permissions", mode="before")
+    @classmethod
+    def _normalize_permissions_input(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+        out: dict[str, list[object]] = {}
+        for module, actions in value.items():
+            mod = str(module).strip().lower() if module is not None else module
+            if isinstance(actions, (list, tuple)):
+                out[mod] = [
+                    a.strip().lower() if isinstance(a, str) else a for a in actions
+                ]
+            else:
+                out[mod] = actions  # type: ignore[assignment]
+        return out
+
+    @model_validator(mode="after")
+    def _permissions_modules(self) -> CustomRoleCreate:
+        if self.permissions is None:
+            return self
+        from app.custom_roles import ASSIGNABLE_MODULES
+
+        if not self.permissions:
+            raise ValueError("permissions must include at least one module")
+        if self.permissions.get("*") == ["*"] or "*" in (self.permissions.get("*") or []):
+            raise ValueError("Custom roles cannot grant wildcard *:*")
+        for module, actions in self.permissions.items():
+            if module not in ASSIGNABLE_MODULES:
+                raise ValueError(f"Unknown or disallowed module '{module}'")
+            if not actions:
+                raise ValueError(f"Module '{module}' actions must be a non-empty list")
+        return self
+
 
 class CustomRoleUpdate(BaseModel):
-    label: str | None = None
-    permissions: dict[str, list[str]] | None = None
+    """PATCH /roles/{role} — typed custom role update (BR-3.2).
+
+    Unknown top-level keys → **422** (`extra=forbid`). Same `permissions` honesty as
+    create when the map is sent (omit = no change).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    label: CustomRoleLabelValue | None = None
+    permissions: dict[str, list[ApiKeyPermissionAction]] | None = None
     record_scope: RecordScopeValue | None = None
     is_active: bool | None = None
 
+    @field_validator("permissions", mode="before")
+    @classmethod
+    def _normalize_permissions_input(cls, value: object) -> object:
+        if not isinstance(value, dict):
+            return value
+        out: dict[str, list[object]] = {}
+        for module, actions in value.items():
+            mod = str(module).strip().lower() if module is not None else module
+            if isinstance(actions, (list, tuple)):
+                out[mod] = [
+                    a.strip().lower() if isinstance(a, str) else a for a in actions
+                ]
+            else:
+                out[mod] = actions  # type: ignore[assignment]
+        return out
+
+    @model_validator(mode="after")
+    def _permissions_modules(self) -> CustomRoleUpdate:
+        if self.permissions is None:
+            return self
+        from app.custom_roles import ASSIGNABLE_MODULES
+
+        if not self.permissions:
+            raise ValueError("permissions must include at least one module")
+        if self.permissions.get("*") == ["*"] or "*" in (self.permissions.get("*") or []):
+            raise ValueError("Custom roles cannot grant wildcard *:*")
+        for module, actions in self.permissions.items():
+            if module not in ASSIGNABLE_MODULES:
+                raise ValueError(f"Unknown or disallowed module '{module}'")
+            if not actions:
+                raise ValueError(f"Module '{module}' actions must be a non-empty list")
+        return self
+
 
 class ProductCreate(BaseModel):
-    name: str
-    sku: str | None = None  # omit/blank → auto-allocate unique SKU (BR-5.1)
-    barcode: str | None = None
-    description: str | None = None
-    category: str = "General"
-    category_id: str | None = None
-    brand_id: str | None = None
-    unit_id: str | None = None
-    cost_price: float = 0
-    selling_price: float = 0
-    weight: float | None = Field(default=None, ge=0)
-    length: float | None = Field(default=None, ge=0)
-    width: float | None = Field(default=None, ge=0)
-    height: float | None = Field(default=None, ge=0)
-    stock_qty: float = 0
-    reorder_level: float = 0
-    tax_rate_id: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # Required catalog label ∈ ProductNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on product create).
+    name: ProductNameValue
+    # Optional catalog SKU ∈ ProductSkuValue; omit/`null` → auto-allocate; blank/`!!!`/
+    # `a b`/`http://…` → **422** (was free `str`; blank also auto-allocated; garbage
+    # late service **400** via normalize_sku).
+    sku: ProductSkuValue | None = None
+    # omit/`null` → no barcode; blank/`!!!!`/`http://…`/`ab` → **422** (was free
+    # `str`; blank silently cleared; garbage late service **400** via normalize_barcode).
+    barcode: ProductBarcodeValue | None = None
+    # omit/`null` → no description; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank silently cleared / garbage could persist on Product.description Text).
+    description: ProductDescriptionValue | None = None
+    # Denormalized category label ∈ ProductCategoryLabelValue; omit → "General";
+    # blank/`!!!`/`http://…` → **422** (was free `str`; blank silently fell through
+    # to "General" in resolve_product_refs; punctuation/URL could persist on
+    # Product.category). When `category_id` is set, service overwrites label from
+    # catalog category name.
+    category: ProductCategoryLabelValue = "General"
+    # Optional catalog category FK ∈ UuidIdValue; omit/`null` → label-only / General path;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # category lookup). Existence remains tenant-scoped category lookup (**404**/400).
+    category_id: UuidIdValue | None = None
+    # Optional catalog brand FK ∈ UuidIdValue; omit/`null` → no brand;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # brand lookup / FK). Existence remains tenant-scoped brand lookup (**404**/integrity).
+    brand_id: UuidIdValue | None = None
+    # Optional catalog unit FK ∈ UuidIdValue; omit/`null` → no unit / default path;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # unit lookup / FK). Existence remains tenant-scoped unit lookup (**404**/integrity).
+    unit_id: UuidIdValue | None = None
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was unconstrained float)
+    cost_price: NonNegativeMoneyValue = 0
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was unconstrained float)
+    selling_price: NonNegativeMoneyValue = 0
+    # omit/`null` OK; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    weight: NonNegativeQtyValue | None = None
+    # omit/`null` OK; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    length: NonNegativeQtyValue | None = None
+    # omit/`null` OK; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    width: NonNegativeQtyValue | None = None
+    # omit/`null` OK; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    height: NonNegativeQtyValue | None = None
+    # ∈ NonNegativeQtyValue; nan/inf/<0 → **422** (was unconstrained float)
+    stock_qty: NonNegativeQtyValue = 0
+    # ∈ NonNegativeQtyValue; nan/inf/<0 → **422** (was unconstrained float)
+    reorder_level: NonNegativeQtyValue = 0
+    # Optional product tax rate FK ∈ UuidIdValue; omit/`null` → category/tenant default path;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # tax-rate lookup / FK). Existence remains tenant-scoped tax-rate lookup (**404**/integrity).
+    tax_rate_id: UuidIdValue | None = None
     tax_exempt: bool = False
     # BR-12.1 / BR-5.1 — schema Literal; omit → standard; blank/invalid → 422
     tax_supply_class: Literal["standard", "zero_rated", "exempt"] = "standard"
@@ -596,22 +1299,57 @@ class ProductCreate(BaseModel):
 
 
 class ProductUpdate(BaseModel):
-    name: str | None = None
-    sku: str | None = None
-    barcode: str | None = None
-    description: str | None = None
-    category: str | None = None
-    category_id: str | None = None
-    brand_id: str | None = None
-    unit_id: str | None = None
-    cost_price: float | None = None
-    selling_price: float | None = None
-    weight: float | None = Field(default=None, ge=0)
-    length: float | None = Field(default=None, ge=0)
-    width: float | None = Field(default=None, ge=0)
-    height: float | None = Field(default=None, ge=0)
-    reorder_level: float | None = None
-    tax_rate_id: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank late service **400**; garbage could persist on product display name).
+    name: ProductNameValue | None = None
+    # omit/`null` → no change; blank/`!!!`/`a b`/`http://…` → **422** (was free `str`;
+    # blank silently ignored on PATCH; garbage could persist without normalize_sku).
+    sku: ProductSkuValue | None = None
+    # omit/`null` → no change; blank/`!!!!`/`http://…`/`ab` → **422** (was free
+    # `str`; blank silently cleared; garbage late service **400** via normalize_barcode).
+    barcode: ProductBarcodeValue | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared / garbage could persist on Product.description Text).
+    description: ProductDescriptionValue | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently fell through to "General"; punctuation/URL could persist).
+    category: ProductCategoryLabelValue | None = None
+    # Optional catalog category FK ∈ UuidIdValue; omit/`null` → no change;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # category lookup). Existence remains tenant-scoped category lookup (**404**/400).
+    # Same honesty as ProductCreate.category_id.
+    category_id: UuidIdValue | None = None
+    # Optional catalog brand FK ∈ UuidIdValue; omit/`null` → no change;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # brand lookup / FK). Existence remains tenant-scoped brand lookup (**404**/integrity).
+    # Same honesty as ProductCreate.brand_id.
+    brand_id: UuidIdValue | None = None
+    # Optional catalog unit FK ∈ UuidIdValue; omit/`null` → no change;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # unit lookup / FK). Existence remains tenant-scoped unit lookup (**404**/integrity).
+    # Same honesty as ProductCreate.unit_id.
+    unit_id: UuidIdValue | None = None
+    # omit/`null` → no change / default; nan/inf/<0 → **422**
+    cost_price: NonNegativeMoneyValue | None = None
+    # omit/`null` → no change / default; nan/inf/<0 → **422**
+    selling_price: NonNegativeMoneyValue | None = None
+    # omit/`null` OK; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    weight: NonNegativeQtyValue | None = None
+    # omit/`null` OK; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    length: NonNegativeQtyValue | None = None
+    # omit/`null` OK; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    width: NonNegativeQtyValue | None = None
+    # omit/`null` OK; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    height: NonNegativeQtyValue | None = None
+    # omit/`null` → no change; nan/inf/<0 → **422**
+    reorder_level: NonNegativeQtyValue | None = None
+    # Optional product tax rate FK ∈ UuidIdValue; omit/`null` → no change;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # tax-rate lookup / FK). Existence remains tenant-scoped tax-rate lookup
+    # (**404**/integrity). Same honesty as ProductCreate.tax_rate_id.
+    tax_rate_id: UuidIdValue | None = None
     tax_exempt: bool | None = None
     # BR-12.1 — omit = no change; blank/invalid → 422 (no silent standard)
     tax_supply_class: Literal["standard", "zero_rated", "exempt"] | None = None
@@ -620,193 +1358,439 @@ class ProductUpdate(BaseModel):
 
 
 class StockCountCreate(BaseModel):
-    warehouse_id: str
-    notes: str | None = None
-    product_ids: list[str] | None = None
+    """POST /inventory/stock-counts — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Required warehouse ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach warehouse lookup). Existence remains
+    # tenant-scoped warehouse lookup (**404**).
+    warehouse_id: UuidIdValue
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently dropped / garbage could persist on StockCount.notes Text).
+    notes: StockCountNotesValue | None = None
+    # Optional seed catalog ∈ list[UuidIdValue]; omit/`null` → all warehouse stock;
+    # blank/`!!!`/`http://…`/non-UUID element → **422** (was free `list[str]`;
+    # garbage could reach product lookup). Existence remains tenant-scoped (**404**).
+    product_ids: list[UuidIdValue] | None = None
 
 
 class StockCountItemUpdate(BaseModel):
-    product_id: str
-    counted_qty: float
-    notes: str | None = None
+    """Nested stock-count line — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog / count-line lookup). Existence
+    # remains tenant-scoped product on count (**404**/400). Inventory Counts save
+    # sends `product_id` trim.
+    product_id: UuidIdValue
+    # ∈ NonNegativeQtyValue; nan/inf/<0 → **422** (was unconstrained float)
+    counted_qty: NonNegativeQtyValue
+    # omit/`null` → no line notes (or clear when sent null); blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank silently dropped via strip-to-None / garbage could persist).
+    notes: StockCountItemNotesValue | None = None
 
 
 class StockCountItemsUpdate(BaseModel):
+    """PATCH .../stock-counts/{id}/items — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
     items: list[StockCountItemUpdate]
 
 
 class StockCountCancel(BaseModel):
-    """Draft stock count cancel — typed reason required (BR-5.2 honesty)."""
+    """Draft stock count cancel — typed reason required (BR-5.2 honesty).
 
-    reason: str = Field(min_length=1, max_length=500)
+    Unknown keys → **422** (`extra=forbid`). `reason` ∈ StockCountCancelReasonValue
+    (strip; 1–500; ≥1 letter/digit; no `://`/`@`); omit/blank/`!!!`/`http://…` → **422**
+    (was free `str` with `min_length=1` only — whitespace still reached service **400**;
+    punctuation-only / URL-like garbage could be appended to count `notes` / audit).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    reason: StockCountCancelReasonValue
 
 
 class ProductCategoryCreate(BaseModel):
-    code: str
-    name: str
-    parent_id: str | None = None
-    tax_rate_id: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # Required category code ∈ CategoryCodeValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank reached service **400**; punctuation/URL could persist).
+    # Tenant uniqueness remains create_category **409**.
+    code: CategoryCodeValue
+    # Required category label ∈ CategoryNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on catalog category create).
+    name: CategoryNameValue
+    # Optional parent category FK ∈ UuidIdValue; omit/`null` → root; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach parent
+    # lookup). Existence remains tenant-scoped category lookup (**404**).
+    parent_id: UuidIdValue | None = None
+    # Optional category tax rate FK ∈ UuidIdValue; omit/`null` → tenant default path;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # tax-rate lookup). Existence remains tenant-scoped tax-rate lookup (**404**).
+    tax_rate_id: UuidIdValue | None = None
 
 
 class ProductCategoryUpdate(BaseModel):
-    code: str | None = None
-    name: str | None = None
-    parent_id: str | None = None
-    tax_rate_id: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on ProductCategory.code).
+    code: CategoryCodeValue | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on category display name).
+    name: CategoryNameValue | None = None
+    # Optional parent category FK ∈ UuidIdValue; omit → no change; `null` → root;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # parent lookup). Existence / cycle checks remain tenant-scoped (**404**/400).
+    # Same honesty as ProductCategoryCreate.parent_id.
+    parent_id: UuidIdValue | None = None
+    # Optional category tax rate FK ∈ UuidIdValue; omit → no change; `null` → clear;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # tax-rate lookup). Existence remains tenant-scoped tax-rate lookup (**404**).
+    # Same honesty as ProductCategoryCreate.tax_rate_id.
+    tax_rate_id: UuidIdValue | None = None
     is_active: bool | None = None
 
 
 class BrandCreate(BaseModel):
-    code: str
-    name: str
-    description: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # Required brand code ∈ BrandCodeValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank reached service **400**; punctuation/URL could persist).
+    # Tenant uniqueness remains create_brand **409**.
+    code: BrandCodeValue
+    # Required brand label ∈ BrandNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on catalog brand create).
+    name: BrandNameValue
+    # omit/`null` → no description; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank silently cleared / garbage could persist on Brand.description Text).
+    description: BrandDescriptionValue | None = None
 
 
 class BrandUpdate(BaseModel):
-    code: str | None = None
-    name: str | None = None
-    description: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank reached service **400**; punctuation/URL could persist on Brand.code).
+    code: BrandCodeValue | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on brand display name).
+    name: BrandNameValue | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared / garbage could persist on Brand.description Text).
+    description: BrandDescriptionValue | None = None
     is_active: bool | None = None
 
 
 class UnitOfMeasureCreate(BaseModel):
-    code: str
-    name: str
-    base_unit_id: str | None = None
-    conversion_ratio: float | None = 1
+    model_config = ConfigDict(extra="forbid")
+
+    # Required UoM code ∈ UnitCodeValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank reached service **400**; punctuation/URL could persist).
+    # Tenant uniqueness remains create_unit **409**.
+    code: UnitCodeValue
+    # Required UoM label ∈ UnitNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on catalog unit create).
+    name: UnitNameValue
+    # Optional base UoM ∈ UuidIdValue; omit/`null` → root unit; blank/`!!!`/`http://…`/
+    # non-UUID → **422** (was free `str`; garbage could reach base lookup).
+    # Existence / root-base rules remain validate_unit_base (**404**/400).
+    base_unit_id: UuidIdValue | None = None
+    # ∈ PositiveQtyValue; omit → 1; nan/inf/≤0 → **422** (was unconstrained float)
+    conversion_ratio: PositiveQtyValue | None = 1
 
 
 class UnitOfMeasureUpdate(BaseModel):
-    code: str | None = None
-    name: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank reached service **400**; punctuation/URL could persist on UnitOfMeasure.code).
+    code: UnitCodeValue | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on unit display name).
+    name: UnitNameValue | None = None
     is_active: bool | None = None
-    base_unit_id: str | None = None
-    conversion_ratio: float | None = None
+    # omit → no change; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`;
+    # garbage could reach base lookup). clear_base remains explicit root clear.
+    # Existence / root-base rules remain validate_unit_base (**404**/400).
+    base_unit_id: UuidIdValue | None = None
+    # omit/`null` → no change; nan/inf/≤0 → **422**
+    conversion_ratio: PositiveQtyValue | None = None
     clear_base: bool = False
 
 
 class UnitConvertPreview(BaseModel):
-    product_id: str
-    quantity: float = Field(gt=0)
-    from_unit_id: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**).
+    product_id: UuidIdValue
+    # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    quantity: PositiveQtyValue
+    # Optional entered UoM ∈ UuidIdValue; omit/`null` → product stock unit; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach UoM lookup).
+    # Existence / conversion remain to_stock_qty (**404**/400).
+    from_unit_id: UuidIdValue | None = None
 
 
 class ProductVariantCreate(BaseModel):
-    name: str
-    sku: str | None = None  # omit/blank → auto-allocate unique SKU (BR-5.1)
-    barcode: str | None = None
-    size: str | None = None
-    color: str | None = None
-    flavor: str | None = None
-    dosage: str | None = None
-    cost_price: float | None = None
-    selling_price: float | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # Required variant label ∈ VariantNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on product variant create).
+    name: VariantNameValue
+    # Optional variant SKU ∈ ProductSkuValue; omit/`null` → auto-allocate; blank/`!!!`/
+    # `a b`/`http://…` → **422** (was free `str`; blank also auto-allocated; garbage
+    # late service **400** via normalize_sku).
+    sku: ProductSkuValue | None = None
+    # omit/`null` → no barcode; blank/`!!!!`/`http://…`/`ab` → **422** (was free
+    # `str`; blank silently cleared; garbage late service **400** via normalize_barcode).
+    barcode: ProductBarcodeValue | None = None
+    # omit/`null` → no attr; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared via `_clean_attr`; punctuation/URL could persist).
+    size: VariantAttrValue | None = None
+    color: VariantAttrValue | None = None
+    flavor: VariantAttrValue | None = None
+    dosage: VariantAttrValue | None = None
+    # omit/`null` → no change / default; nan/inf/<0 → **422**
+    cost_price: NonNegativeMoneyValue | None = None
+    # omit/`null` → no change / default; nan/inf/<0 → **422**
+    selling_price: NonNegativeMoneyValue | None = None
 
 
 class ProductVariantUpdate(BaseModel):
-    name: str | None = None
-    sku: str | None = None
-    barcode: str | None = None
-    size: str | None = None
-    color: str | None = None
-    flavor: str | None = None
-    dosage: str | None = None
-    cost_price: float | None = None
-    selling_price: float | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on variant display name).
+    name: VariantNameValue | None = None
+    # omit/`null` → no change; blank/`!!!`/`a b`/`http://…` → **422** (was free `str`;
+    # blank reached service **400** "Variant sku is required"; garbage late **400**).
+    sku: ProductSkuValue | None = None
+    # omit/`null` → no change; blank/`!!!!`/`http://…`/`ab` → **422** (was free
+    # `str`; blank silently cleared; garbage late service **400** via normalize_barcode).
+    barcode: ProductBarcodeValue | None = None
+    # omit → no change; `null` → clear; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank silently cleared; punctuation/URL could persist).
+    size: VariantAttrValue | None = None
+    color: VariantAttrValue | None = None
+    flavor: VariantAttrValue | None = None
+    dosage: VariantAttrValue | None = None
+    # omit/`null` → no change / default; nan/inf/<0 → **422**
+    cost_price: NonNegativeMoneyValue | None = None
+    # omit/`null` → no change / default; nan/inf/<0 → **422**
+    selling_price: NonNegativeMoneyValue | None = None
     is_active: bool | None = None
 
 
 class ProductImagePrimaryUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     is_primary: bool = True
 
 
 class PartyCreate(BaseModel):
-    name: str
-    code: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # Required party label ∈ PartyNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on customer/supplier).
+    name: PartyNameValue
+    # omit/`null` → no code; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared via `_normalize_party_profile`; punctuation/URL could persist).
+    # Tenant uniqueness remains `_ensure_party_code_unique` (defense-in-depth).
+    code: PartyCodeValue | None = None
     # BR-6.1 / BR-7.1 — OpenAPI union Literal; kind-specific allow-list still enforced
     # in _normalize_party_profile. Omit → registered; blank/invalid → 422.
     profile_type: Literal[
         "walk_in", "registered", "trade", "manufacturer", "service", "other"
     ] = "registered"
-    category: str | None = None
+    # omit/`null` → no category; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared via `_normalize_party_profile`; punctuation/URL could persist).
+    category: PartyCategoryValue | None = None
     status: Literal["active", "inactive"] = "active"
     email: EmailStr | None = None
-    phone: str | None = None
-    address: str | None = None
-    latitude: float | None = None
-    longitude: float | None = None
-    credit_limit: float = 0
+    # omit/`null` → no phone; blank/`not-a-phone`/`123` → **422** (was free `str`;
+    # blank/garbage could persist on customer/supplier create).
+    phone: E164PhoneValue | None = None
+    # omit/`null` → no address; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on customer/supplier create). Same AddressValue
+    # as Company/Store/Branch/Warehouse.
+    address: AddressValue | None = None
+    # omit/`null` OK; nan/inf/out-of-range → **422** (was unconstrained float)
+    latitude: LatitudeValue | None = None
+    # omit/`null` OK; nan/inf/out-of-range → **422** (was unconstrained float)
+    longitude: LongitudeValue | None = None
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was unconstrained float default 0)
+    credit_limit: NonNegativeMoneyValue = 0
     payment_terms_days: int = Field(default=30, ge=0, le=3650)
-    customer_group_id: str | None = None
+    # Optional customer group ∈ UuidIdValue; omit/`null` → no group; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach group lookup).
+    # Existence / active-group rules remain require_active_group (**404**/400).
+    customer_group_id: UuidIdValue | None = None
 
 
 class PartyUpdate(BaseModel):
-    name: str | None = None
-    code: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on customer/supplier PATCH).
+    name: PartyNameValue | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared; punctuation/URL could persist on Party.code).
+    # Tenant uniqueness remains `_ensure_party_code_unique` (defense-in-depth).
+    code: PartyCodeValue | None = None
     # omit = no change; blank/invalid → 422 (no silent registered)
     profile_type: (
         Literal["walk_in", "registered", "trade", "manufacturer", "service", "other"] | None
     ) = None
-    category: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared; punctuation/URL could persist on Party.category).
+    category: PartyCategoryValue | None = None
     status: Literal["active", "inactive"] | None = None
     email: EmailStr | None = None
-    phone: str | None = None
-    address: str | None = None
-    latitude: float | None = None
-    longitude: float | None = None
-    credit_limit: float | None = None
+    # omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`;
+    # blank/garbage could persist on customer/supplier PATCH).
+    phone: E164PhoneValue | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on customer/supplier PATCH). Same AddressValue
+    # as Company/Store/Branch/Warehouse.
+    address: AddressValue | None = None
+    # omit/`null` OK; nan/inf/out-of-range → **422** (was unconstrained float)
+    latitude: LatitudeValue | None = None
+    # omit/`null` OK; nan/inf/out-of-range → **422** (was unconstrained float)
+    longitude: LongitudeValue | None = None
+    # omit/`null` → no change; nan/inf/<0 → **422** (was unconstrained float)
+    credit_limit: NonNegativeMoneyValue | None = None
     payment_terms_days: int | None = Field(default=None, ge=0, le=3650)
-    customer_group_id: str | None = None
+    # omit → no change; `null` → clear group; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach group lookup). Existence / active-group
+    # rules remain require_active_group (**404**/400). Same honesty as create.
+    customer_group_id: UuidIdValue | None = None
 
 
 class PartyContactCreate(BaseModel):
-    name: str
-    phone: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # Required contact label ∈ PartyContactNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on customer/supplier contact create).
+    name: PartyContactNameValue
+    # omit/`null` → no phone; blank/`not-a-phone`/`123` → **422** (was free `str`;
+    # blank/garbage could persist on customer/supplier contact create).
+    phone: E164PhoneValue | None = None
     email: EmailStr | None = None
-    designation: str | None = None
+    # omit/`null` → no designation; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently None / garbage could persist on contact create).
+    designation: PartyContactDesignationValue | None = None
     is_primary: bool = False
 
 
 class PartyContactUpdate(BaseModel):
-    name: str | None = None
-    phone: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    name: PartyContactNameValue | None = None
+    # omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`;
+    # blank/garbage could persist on customer/supplier contact PATCH).
+    phone: E164PhoneValue | None = None
     email: EmailStr | None = None
-    designation: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared / garbage could persist on contact PATCH).
+    designation: PartyContactDesignationValue | None = None
     is_primary: bool | None = None
 
 
 class CustomerGroupCreate(BaseModel):
-    name: str
-    code: str | None = None
-    discount_percent: float = 0
+    model_config = ConfigDict(extra="forbid")
+
+    # Required group label ∈ CustomerGroupNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on customer group create).
+    name: CustomerGroupNameValue
+    # omit/`null` → service slugs from name; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank silently fell through to name-slug; punctuation/URL could persist).
+    # Uniqueness remains create_group 409 (defense-in-depth).
+    code: CustomerGroupCodeValue | None = None
+    # ∈ PercentRateValue (0–100 finite); nan/inf/out-of-range → **422** (was unconstrained float)
+    discount_percent: PercentRateValue = 0
 
 
 class CustomerGroupUpdate(BaseModel):
-    name: str | None = None
-    discount_percent: float | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    name: CustomerGroupNameValue | None = None
+    # omit/`null` → no change; nan/inf/out-of-range → **422**
+    discount_percent: PercentRateValue | None = None
     is_active: bool | None = None
 
 
 class LineItem(BaseModel):
-    product_id: str
-    quantity: float = Field(gt=0)
-    unit_id: str | None = None  # entered UoM; stock converted at checkout
-    variant_id: str | None = None
-    unit_price: float | None = None
-    discount: float = Field(default=0, ge=0)
+    """POS / legacy sale line — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**). Shared by TransactionCreate + PosSaleCreate.
+    product_id: UuidIdValue
+    # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    quantity: PositiveQtyValue
+    # Optional entered UoM ∈ UuidIdValue; omit/`null` → product stock unit; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach UoM lookup).
+    unit_id: UuidIdValue | None = None
+    # Optional variant ∈ UuidIdValue; omit/`null` → no variant; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach variant lookup).
+    variant_id: UuidIdValue | None = None
+    # omit/`null` → catalog/group price; nan/inf/<0 → **422**
+    unit_price: NonNegativeMoneyValue | None = None
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    discount: NonNegativeMoneyValue = 0
+
+
+class LegacyTransactionPayload(BaseModel):
+    """Optional bag on legacy POST /sales|/purchases (BR-8.1).
+
+    Only `items[]` is accepted (`extra=forbid`). Prefer top-level `items`.
+    Nested lines use the same `LineItem` honesty (UUID/qty). Unknown keys → **422**
+    (was free `dict`; garbage keys could persist on `transactions.payload` and
+    `payload.items` bypassed top-level LineItem when top-level items empty).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[LineItem] | None = None
 
 
 class TransactionCreate(BaseModel):
-    party_id: str | None = None
-    subtotal: float = 0
-    tax: float = 0
-    total: float = 0
+    """Legacy POST /sales|/purchases body (BR-8.1).
+
+    Unknown keys → **422** (`extra=forbid`). Prefer top-level `items[]`; optional
+    `payload.items` uses the same `LineItem` honesty.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Optional customer party ∈ UuidIdValue; omit/`null` → walk-in / no party;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could
+    # reach party lookup). Existence remains tenant-scoped customer lookup
+    # (**404**). Legacy sale create path (POS uses PosSaleCreate.party_id).
+    party_id: UuidIdValue | None = None
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was unconstrained float)
+    subtotal: NonNegativeMoneyValue = 0
+    tax: NonNegativeMoneyValue = 0
+    total: NonNegativeMoneyValue = 0
     # BR-8.1 / legacy sale — only completed create path; blank/invalid → 422 (no garbage persist)
     status: Literal["completed"] = "completed"
-    payload: dict = Field(default_factory=dict)
+    # omit/`null` → no bag; unknown keys → **422** (was free `dict`)
+    payload: LegacyTransactionPayload | None = None
     items: list[LineItem] = Field(default_factory=list)
     override_credit_limit: bool = False
-    override_reason: str | None = Field(default=None, max_length=500)
+    # omit/`null` OK when not overriding; blank/`!!!`/`http://…` → **422**;
+    # required when override_credit_limit=true (was free `str` max_length only —
+    # whitespace failed model_validator, but garbage could land in audit).
+    override_reason: CreditOverrideReasonValue | None = None
 
     @model_validator(mode="after")
     def require_override_reason_when_flagged(self):
@@ -814,10 +1798,19 @@ class TransactionCreate(BaseModel):
 
 
 class CreditLimitOverrideBody(BaseModel):
-    """Optional body for posting sales that may exceed credit limit (BR-11.1)."""
+    """Optional body for posting sales that may exceed credit limit (BR-11.1).
+
+    `override_reason` ∈ CreditOverrideReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/`null` OK when `override_credit_limit` is false; blank/`!!!`/
+    `http://…` → **422**; required when flag is true (was free `str` with
+    `max_length=500` only — whitespace failed model_validator, but punctuation-
+    only / URL-like garbage could land in audit `credit_limit_override.details.reason`).
+    """
+    model_config = ConfigDict(extra="forbid")
+
 
     override_credit_limit: bool = False
-    override_reason: str | None = Field(default=None, max_length=500)
+    override_reason: CreditOverrideReasonValue | None = None
 
     @model_validator(mode="after")
     def require_override_reason_when_flagged(self):
@@ -825,253 +1818,788 @@ class CreditLimitOverrideBody(BaseModel):
 
 
 class StockAdjust(BaseModel):
-    quantity: float
+    """Manual stock adjust — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    # ∈ FiniteQtyValue (signed stock adjust); nan/inf → **422** (was unconstrained float)
+    quantity: FiniteQtyValue
     # Coded reason (BR-5.2); OpenAPI Literal → omit/blank/invalid → 422
     reason: Literal["damage", "theft", "expiry", "found", "lost"]
-    notes: str | None = None
-    warehouse_id: str | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently dropped / garbage could persist on StockMovement.notes Text).
+    notes: StockAdjustNotesValue | None = None
+    # Optional warehouse ∈ UuidIdValue; omit/`null` → company / product stock path;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # warehouse lookup). Existence remains tenant-scoped warehouse lookup (**404**).
+    warehouse_id: UuidIdValue | None = None
 
 
 class StockMove(BaseModel):
-    product_id: str
-    quantity: float = Field(gt=0)
-    unit_id: str | None = None  # entered UoM; converted to product.unit_id for stock
-    notes: str | None = None
-    warehouse_id: str | None = None
-    variant_id: str | None = None
-    batch_id: str | None = None
-    batch_number: str | None = None
-    manufacturing_date: datetime | None = None
-    expiry_date: datetime | None = None
-    # Optional on stock-in; stock-out uses StockOut with required Literal
-    reference_type: str | None = None
-    reference_id: str | None = None
+    """Manual stock-in — optional batch lot + dates (BR-5.2).
+
+    Unknown keys → **422** (`extra=forbid`). Optional `warehouse_id` ∈ UuidIdValue;
+    omit/`null` → company / product stock path; blank/`!!!`/`http://…`/non-UUID → **422**
+    (was free `str`; garbage could reach warehouse lookup). Existence remains
+    tenant-scoped warehouse lookup (**404**). Optional `batch_number` ∈ BatchNumberValue;
+    omit/`null` → no lot (service still requires a lot when product.tracks_batches);
+    blank/`!!!`/`http://…` → **422** (was free `str`; blank silently stripped to None /
+    punctuation/URL could persist on ProductBatch.batch_number). Optional
+    `manufacturing_date` / `expiry_date` ∈ IsoDateQueryValue; omit/`null` → no batch
+    dates; blank/invalid → **422** (was free `datetime`; OpenAPI date-time; padded
+    dates inconsistent). API `reports.parse_date` remains defense-in-depth. Optional
+    `reference_type` ∈ StockInReferenceTypeValue (strip/lower; 1–50; ≥1 letter/digit;
+    no `://`/`@`); omit/`null` → no coded source; blank/`!!!`/`http://…` → **422**
+    (was free `str`; blank/garbage could persist on StockMovement.reference_type
+    String(50)).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**).
+    product_id: UuidIdValue
+    # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    quantity: PositiveQtyValue
+    # Optional entered UoM ∈ UuidIdValue; omit/`null` → product stock unit; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach UoM lookup).
+    unit_id: UuidIdValue | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently dropped / garbage could persist on StockMovement.notes Text).
+    notes: StockInNotesValue | None = None
+    # Optional warehouse ∈ UuidIdValue; omit/`null` → company / product stock path;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # warehouse lookup). Existence remains tenant-scoped warehouse lookup (**404**).
+    warehouse_id: UuidIdValue | None = None
+    # Optional variant ∈ UuidIdValue; omit/`null` → no variant; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach variant lookup).
+    variant_id: UuidIdValue | None = None
+    # Optional existing batch ∈ UuidIdValue; omit/`null` → create/resolve via batch_number;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach batch lookup).
+    batch_id: UuidIdValue | None = None
+    # Optional lot ∈ BatchNumberValue; required by service when product.tracks_batches
+    batch_number: BatchNumberValue | None = None
+    manufacturing_date: IsoDateQueryValue | None = None
+    expiry_date: IsoDateQueryValue | None = None
+    # omit/`null` → no coded source; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank silently stored / punctuation/URL could persist on
+    # StockMovement.reference_type String(50)). Stock-out uses required Literal.
+    reference_type: StockInReferenceTypeValue | None = None
+    # omit/`null` → no external ref; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank/garbage could persist on StockMovement.reference_id String(36)).
+    reference_id: StockMovementReferenceIdValue | None = None
 
 
 class StockOut(BaseModel):
-    """Manual stock-out (BR-5.2) — coded reference_type required at schema."""
+    """Manual stock-out (BR-5.2) — coded reference_type required at schema.
 
-    product_id: str
-    quantity: float = Field(gt=0)
-    unit_id: str | None = None
-    notes: str | None = None
-    warehouse_id: str | None = None
-    variant_id: str | None = None
-    batch_id: str | None = None
+    Unknown keys → **422** (`extra=forbid`). Required `product_id` ∈ UuidIdValue;
+    blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    catalog lookup). Existence remains tenant-scoped product lookup (**404**).
+    Optional `reference_id` ∈ StockMovementReferenceIdValue; omit/`null` → no
+    external ref; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage
+    could persist on StockMovement.reference_id String(36)).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**).
+    product_id: UuidIdValue
+    # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    quantity: PositiveQtyValue
+    # Optional entered UoM ∈ UuidIdValue; omit/`null` → product stock unit; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach UoM lookup).
+    unit_id: UuidIdValue | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently dropped / garbage could persist on StockMovement.notes Text).
+    notes: StockOutNotesValue | None = None
+    # Optional warehouse ∈ UuidIdValue; omit/`null` → company / product stock path;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # warehouse lookup). Existence remains tenant-scoped warehouse lookup (**404**).
+    warehouse_id: UuidIdValue | None = None
+    # Optional variant ∈ UuidIdValue; omit/`null` → no variant; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach variant lookup).
+    variant_id: UuidIdValue | None = None
+    # Optional batch ∈ UuidIdValue; omit/`null` → no batch; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach batch lookup).
+    batch_id: UuidIdValue | None = None
     # OpenAPI Literal → omit/blank/invalid → 422
     reference_type: Literal["sale", "transfer", "adjustment", "damage", "internal", "other"]
-    reference_id: str | None = None
+    # omit/`null` → no external ref; blank/`!!!`/`http://…` → **422** (was free `str`)
+    reference_id: StockMovementReferenceIdValue | None = None
 
 
 class OpeningStockLine(BaseModel):
-    product_id: str
-    quantity: float = Field(gt=0)
-    unit_id: str | None = None
-    warehouse_id: str | None = None
-    variant_id: str | None = None
-    batch_number: str | None = None
-    manufacturing_date: datetime | None = None
-    expiry_date: datetime | None = None
-    unit_cost: float | None = Field(default=None, ge=0)  # defaults to product.cost_price
-    notes: str | None = None
+    """Opening-stock line — optional batch lot + dates (BR-5.2).
+
+    Unknown keys → **422** (`extra=forbid`). Optional `batch_number` ∈
+    BatchNumberValue; omit/`null` → no lot (service still requires a lot when
+    product.tracks_batches); blank/`!!!`/`http://…` → **422** (was free `str`;
+    blank silently stripped to None / punctuation/URL could persist on
+    ProductBatch.batch_number). Optional `manufacturing_date` / `expiry_date` ∈
+    IsoDateQueryValue; omit/`null` → no batch dates; blank/invalid → **422** (was
+    free `datetime`; OpenAPI date-time; padded dates inconsistent). API
+    `reports.parse_date` remains defense-in-depth.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**).
+    product_id: UuidIdValue
+    # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    quantity: PositiveQtyValue
+    # Optional entered UoM ∈ UuidIdValue; omit/`null` → product stock unit; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach UoM lookup).
+    unit_id: UuidIdValue | None = None
+    # Optional warehouse ∈ UuidIdValue; omit/`null` → company / product stock path;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # warehouse lookup). Existence remains tenant-scoped warehouse lookup (**404**).
+    warehouse_id: UuidIdValue | None = None
+    # Optional variant ∈ UuidIdValue; omit/`null` → no variant; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach variant lookup).
+    variant_id: UuidIdValue | None = None
+    # Optional lot ∈ BatchNumberValue; required by service when product.tracks_batches
+    batch_number: BatchNumberValue | None = None
+    manufacturing_date: IsoDateQueryValue | None = None
+    expiry_date: IsoDateQueryValue | None = None
+    # omit/`null` → product.cost_price; nan/inf/<0 → **422** (was Field(ge=0) only)
+    unit_cost: NonNegativeMoneyValue | None = None
+    # omit/`null` → no line notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could merge onto StockMovement.notes). Same `OpeningStockNotesValue`
+    # as header notes.
+    notes: OpeningStockNotesValue | None = None
 
 
 class OpeningStockCreate(BaseModel):
+    """POST opening stock — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
     lines: list[OpeningStockLine] = Field(min_length=1)
     post_journal: bool = True
-    reference: str | None = None
-    notes: str | None = None
+    # omit/`null` → auto OS-YYYY-NNNN; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank silently auto-numbered / garbage could persist on journal ref).
+    reference: OpeningStockReferenceValue | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently dropped / garbage could persist on movement notes).
+    notes: OpeningStockNotesValue | None = None
 
 
 class ExpenseCreate(BaseModel):
-    category: str | None = None
-    category_id: str | None = None
-    description: str = ""
-    amount: float = Field(gt=0)
+    model_config = ConfigDict(extra="forbid")
+
+    # Denormalized spend category label ∈ ExpenseCategoryLabelValue; omit/`null` OK
+    # when `category_id` set (prefer FK); blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank without category_id reached service **400**; punctuation/URL
+    # could persist on Expense.category). When category_id set, service overwrites
+    # label from ExpenseCategory.name.
+    category: ExpenseCategoryLabelValue | None = None
+    # Optional spend-category FK ∈ UuidIdValue; omit/`null` → label-only / MISC path;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # category lookup). Existence remains tenant-scoped category lookup (**404**/400).
+    category_id: UuidIdValue | None = None
+    # omit/`null` → empty narrative; blank/`!!!`/`http://…` → **422** (was free
+    # `str` default `""`; blank/garbage could persist).
+    description: ExpenseDescriptionValue | None = None
+    # ∈ PositiveMoneyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    amount: PositiveMoneyValue
     # BR-9.2 — schema Literal (+ aliases via BeforeValidator); omit → cash;
     # blank/invalid → 422 (no silent cash from garbage).
     payment_method: ExpensePaymentMethod = "cash"
-    liquid_account_id: str | None = None
-    reference: str | None = None
-    payee: str | None = None
-    store_id: str | None = None
-    branch_id: str | None = None
-    department_id: str | None = None
-    expense_date: datetime | None = None
+    # Optional liquid COA ∈ UuidIdValue; omit/`null` → method default GL; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach liquid-account
+    # lookup). Existence remains tenant-scoped liquid account lookup (**404**/400).
+    liquid_account_id: UuidIdValue | None = None
+    # omit/`null` → auto EXP-YYYY-NNNN; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank silently auto-numbered / garbage could persist).
+    reference: ExpenseReferenceValue | None = None
+    # omit/`null` → no payee; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on expense create).
+    payee: ExpensePayeeValue | None = None
+    # Optional store ∈ UuidIdValue; omit/`null` → no store; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach store
+    # lookup). Existence remains tenant-scoped store lookup (**404**).
+    store_id: UuidIdValue | None = None
+    # Optional branch ∈ UuidIdValue; omit/`null` → no branch; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach branch
+    # lookup). Existence remains tenant-scoped branch lookup (**404**).
+    branch_id: UuidIdValue | None = None
+    # Optional department ∈ UuidIdValue; omit/`null` → no department; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach department
+    # lookup). Existence remains tenant-scoped department lookup (**404**).
+    department_id: UuidIdValue | None = None
+    # omit/`null` → service default (today); blank/`not-a-date`/`01/02/2024` → **422**
+    # (was free `datetime`; OpenAPI date-time; padded dates inconsistent). Same
+    # IsoDateQueryValue as AI draft expense_date / payment cheque_date.
+    expense_date: IsoDateQueryValue | None = None
+
+
+class AiChatBody(BaseModel):
+    """POST /ai/chat — typed chat body (BR-21.1).
+
+    Unknown keys → **422** (`extra=forbid`). `message` or `prompt` ∈
+    `AiChatMessageValue` (strip; 1–16000; ≥1 letter/digit; no `://`/`@`); omit both
+    / blank / `!!!` / `http://…` → **422** (blank was late service **400**;
+    punctuation/URL could reach `parse_chat_message`). Optional `context` ∈ same
+    Value type; omit/`null` OK; blank/`!!!`/`http://…` → **422** (was free `str`
+    stripped to null). Optional `conversation_id` ∈ `UuidIdValue`; omit/`null` OK;
+    blank/`!!!`/`http://…`/non-UUID → **422** (was free `str` with strip-blank→omit;
+    garbage could pass through). Service `parse_chat_message` / injection checks
+    remain defense-in-depth.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    message: AiChatMessageValue | None = None
+    prompt: AiChatMessageValue | None = None
+    context: AiChatMessageValue | None = None
+    # Optional conversation ∈ UuidIdValue; omit/`null` OK; blank/`!!!`/`http://…`/
+    # non-UUID → **422** (was free `str` with strip-blank→omit).
+    conversation_id: UuidIdValue | None = None
+
+    @model_validator(mode="after")
+    def _require_message_or_prompt(self) -> AiChatBody:
+        if not (self.message or self.prompt):
+            raise ValueError("message is required")
+        return self
+
+
+class AiCustomerAssistBody(BaseModel):
+    """POST /ai/customer/assist — typed customer assistant body (BR-21.9).
+
+    Unknown keys → **422** (`extra=forbid`). Omit/`{}` still allowed (overview).
+    Optional `query` / `message` (alias) ∈ `AiChatMessageValue` (strip; 1–16000;
+    ≥1 letter/digit; no `://`/`@`); omit/`null` → overview; blank/`!!!`/`http://…`
+    → **422** (was free `str` stripped to null — punctuation could silently become
+    overview). Optional `customer_id` ∈ `UuidIdValue`; omit/`null` → overview /
+    all-customers path; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`
+    with blank coerced to omit).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Optional customer ∈ UuidIdValue; omit/`null` → overview / all-customers path;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; blank silently
+    # coerced to omit). Existence remains tenant-scoped customer lookup when set.
+    customer_id: UuidIdValue | None = None
+    query: AiChatMessageValue | None = None
+    message: AiChatMessageValue | None = None
 
 
 class AiDocumentExpenseCreate(BaseModel):
-    """Explicit Create draft expense from reviewed OCR fields (BR-21.8)."""
+    """Explicit Create draft expense from reviewed OCR fields (BR-21.8).
 
-    amount: float = Field(gt=0)
-    payee: str | None = None
-    description: str | None = None
-    reference: str | None = None
-    category_id: str | None = None
-    category: str | None = None
+    Unknown keys → **422** (`extra=forbid`). Optional `expense_date` ∈
+    `IsoDateQueryValue`; omit → service default (today); blank/invalid → **422**
+    (blank was silent default; invalid was late service **400** via
+    `_parse_expense_date`).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # ∈ PositiveMoneyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    amount: PositiveMoneyValue
+    # omit/`null` → no payee; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on AI draft expense).
+    payee: ExpensePayeeValue | None = None
+    # omit/`null` → no description; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank/garbage could persist on AI draft expense).
+    description: ExpenseDescriptionValue | None = None
+    # omit/`null` → auto / service default; blank/`!!!`/`http://…` → **422** (was
+    # free `str`; blank/garbage could persist on AI draft expense).
+    reference: ExpenseReferenceValue | None = None
+    # Optional spend-category FK ∈ UuidIdValue; omit/`null` → label-only / MISC path;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # category lookup). Existence remains tenant-scoped category lookup (**404**/400).
+    # Same honesty as ExpenseCreate.category_id.
+    category_id: UuidIdValue | None = None
+    # Denormalized spend category label ∈ ExpenseCategoryLabelValue; omit/`null` OK
+    # when `category_id` set; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # punctuation/URL could persist on AI draft Expense.category).
+    category: ExpenseCategoryLabelValue | None = None
     payment_method: ExpensePaymentMethod = "cash"
-    expense_date: str | datetime | None = None
-    store_id: str | None = None
-    branch_id: str | None = None
-    department_id: str | None = None
+    expense_date: IsoDateQueryValue | None = None
+    # Optional store ∈ UuidIdValue; omit/`null` → no store; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach store
+    # lookup). Existence remains tenant-scoped store lookup (**404**). Same honesty
+    # as ExpenseCreate.store_id.
+    store_id: UuidIdValue | None = None
+    # Optional branch ∈ UuidIdValue; omit/`null` → no branch; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach branch
+    # lookup). Existence remains tenant-scoped branch lookup (**404**). Same honesty
+    # as ExpenseCreate.branch_id.
+    branch_id: UuidIdValue | None = None
+    # Optional department ∈ UuidIdValue; omit/`null` → no department; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach department
+    # lookup). Existence remains tenant-scoped department lookup (**404**). Same
+    # honesty as ExpenseCreate.department_id.
+    department_id: UuidIdValue | None = None
 
 
 class AiDocumentPurchaseInvoiceCreate(BaseModel):
-    """Explicit Create draft purchase invoice from reviewed OCR + matched PO (BR-21.8)."""
+    """Explicit Create draft purchase invoice from reviewed OCR + matched PO (BR-21.8).
 
-    purchase_order_id: str
-    supplier_id: str | None = None
-    supplier_invoice_number: str | None = None
-    notes: str | None = None
+    Unknown keys → **422** (`extra=forbid`). Optional `invoice_date` ∈
+    `IsoDateQueryValue`; omit → service default; blank/invalid → **422**
+    (blank was silent default; invalid was late service **400** via
+    `_parse_invoice_date`).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Required PO ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422** (was free
+    # `str`; garbage could reach PO lookup). Existence remains tenant-scoped
+    # purchase-order lookup (**404**). Same honesty as GrnCreate.purchase_order_id.
+    purchase_order_id: UuidIdValue
+    # Optional supplier ∈ UuidIdValue; omit/`null` → PO's supplier; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach party
+    # lookup). Existence / PO match remains service (**400**/404).
+    supplier_id: UuidIdValue | None = None
+    # omit/`null` → no supplier invoice #; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank silently cleared; punctuation/URL could persist).
+    supplier_invoice_number: SupplierInvoiceNumberValue | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`).
+    notes: PurchaseInvoiceNotesValue | None = None
     is_reverse_charge: bool = False
-    invoice_date: str | datetime | None = None
+    invoice_date: IsoDateQueryValue | None = None
 
 
 class ExpenseUpdate(BaseModel):
-    category: str | None = None
-    category_id: str | None = None
-    description: str | None = None
-    amount: float | None = Field(default=None, gt=0)
+    model_config = ConfigDict(extra="forbid")
+
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # punctuation/URL could persist on Expense.category). Prefer category_id.
+    category: ExpenseCategoryLabelValue | None = None
+    # Optional spend-category FK ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach category
+    # lookup). Existence remains tenant-scoped category lookup (**404**/400). Same
+    # honesty as ExpenseCreate.category_id.
+    category_id: UuidIdValue | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on expense PATCH).
+    description: ExpenseDescriptionValue | None = None
+    amount: PositiveMoneyValue | None = None
     # omit = no change; blank/invalid → 422
     payment_method: ExpensePaymentMethod | None = None
-    reference: str | None = None
-    payee: str | None = None
-    expense_date: datetime | None = None
-    store_id: str | None = None
-    branch_id: str | None = None
-    department_id: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared / garbage could persist on expense PATCH).
+    reference: ExpenseReferenceValue | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on expense PATCH). Use recurring `clear_payee`
+    # pattern is N/A here — send a valid label to change.
+    payee: ExpensePayeeValue | None = None
+    # omit/`null` → no change; blank/`not-a-date`/`01/02/2024` → **422** (was free
+    # `datetime`; OpenAPI date-time; padded dates inconsistent). Same
+    # IsoDateQueryValue as create / AI draft / payment cheque_date.
+    expense_date: IsoDateQueryValue | None = None
+    # Optional store ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach store
+    # lookup). Existence remains tenant-scoped store lookup (**404**). Same honesty
+    # as ExpenseCreate.store_id. Use `clear_store` to remove.
+    store_id: UuidIdValue | None = None
+    # Optional branch ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach branch
+    # lookup). Existence remains tenant-scoped branch lookup (**404**). Same honesty
+    # as ExpenseCreate.branch_id. Use `clear_branch` to remove.
+    branch_id: UuidIdValue | None = None
+    # Optional department ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach department
+    # lookup). Existence remains tenant-scoped department lookup (**404**). Same
+    # honesty as ExpenseCreate.department_id. Use `clear_department` to remove.
+    department_id: UuidIdValue | None = None
     clear_store: bool = False
     clear_branch: bool = False
     clear_department: bool = False
 
 
 class ExpenseCategoryCreate(BaseModel):
-    code: str
-    name: str
-    budget_amount: float = Field(default=0, ge=0)
-    account_id: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # Required expense category code ∈ ExpenseCategoryCodeValue; blank/`!!!`/`http://…`
+    # → **422** (was free `str`; blank/punctuation/URL could persist on ExpenseCategory.code).
+    # Tenant uniqueness remains create **409** (UniqueConstraint).
+    code: ExpenseCategoryCodeValue
+    # Required category label ∈ ExpenseCategoryNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on expense category create).
+    name: ExpenseCategoryNameValue
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    budget_amount: NonNegativeMoneyValue = 0
+    # Optional expense-type GL ∈ UuidIdValue; omit/`null` → default 6000; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach COA lookup).
+    # Existence remains tenant-scoped account lookup (**404**).
+    account_id: UuidIdValue | None = None
 
 
 class ExpenseCategoryUpdate(BaseModel):
-    name: str | None = None
-    budget_amount: float | None = Field(default=None, ge=0)
+    model_config = ConfigDict(extra="forbid")
+
+    name: ExpenseCategoryNameValue | None = None
+    # omit/`null` → no change; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    budget_amount: NonNegativeMoneyValue | None = None
     is_active: bool | None = None
-    account_id: str | None = None
+    # Optional expense-type GL ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach COA lookup).
+    # Existence remains tenant-scoped account lookup (**404**). Use `clear_account`
+    # to remove. Expenses **Edit expense category GL account** select; Save sends
+    # trim, or `clear_account` when cleared.
+    account_id: UuidIdValue | None = None
     clear_account: bool = False
 
 
 class ExpenseDecision(BaseModel):
-    """Approve path — optional typed comment (BR-9.3)."""
+    """Approve path — optional typed comment (BR-9.3).
 
-    comment: str | None = None
+    Optional `comment` ∈ ExpenseApproveCommentValue; omit/`null` → no typed comment
+    (service may still set a level-awaiting system note); blank/`!!!`/`http://…` →
+    **422** (was free `str`; blank/garbage could persist on `approval_comment`).
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    # omit/`null` → no typed comment; blank/`!!!`/`http://…` → **422**
+    comment: ExpenseApproveCommentValue | None = None
 
 
 class ExpenseReject(BaseModel):
-    """Expense reject — typed reason required (BR-9.3 honesty)."""
+    """Expense reject — typed reason required (BR-9.3 honesty).
 
-    reason: str = Field(min_length=1, max_length=500)
+    `reason` ∈ ExpenseRejectReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could persist on `Expense.rejection_reason`).
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    reason: ExpenseRejectReasonValue
 
 
 class RecurringExpenseCreate(BaseModel):
-    category: str | None = None
-    category_id: str | None = None
-    description: str = ""
-    amount: float = Field(gt=0)
+    model_config = ConfigDict(extra="forbid")
+
+    # Denormalized spend category label ∈ ExpenseCategoryLabelValue; omit/`null` OK
+    # when `category_id` set; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # punctuation/URL could persist on RecurringExpense.category).
+    category: ExpenseCategoryLabelValue | None = None
+    # Optional spend-category FK ∈ UuidIdValue; omit/`null` → label-only path;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # category lookup). Existence remains tenant-scoped expense-category lookup
+    # (**404**/400).
+    category_id: UuidIdValue | None = None
+    # omit/`null` → empty narrative; blank/`!!!`/`http://…` → **422** (was free
+    # `str` default `""`; blank/garbage could persist on recurring create).
+    description: ExpenseDescriptionValue | None = None
+    # ∈ PositiveMoneyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    amount: PositiveMoneyValue
     # BR-9.5 — schema Literal; omit defaults to monthly; blank/invalid → 422
     frequency: Literal["daily", "weekly", "monthly", "yearly"] = "monthly"
     # BR-9.2 / BR-9.5 — same ExpensePaymentMethod Literal; omit → bank_transfer
     payment_method: ExpensePaymentMethod = "bank_transfer"
-    payee: str | None = None
-    branch_id: str | None = None
-    department_id: str | None = None
+    # omit/`null` → no payee; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on recurring create).
+    payee: ExpensePayeeValue | None = None
+    # Optional branch ∈ UuidIdValue; omit/`null` → no branch; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach branch
+    # lookup). Existence remains tenant-scoped branch lookup (**404**). Same honesty
+    # as ExpenseCreate.branch_id.
+    branch_id: UuidIdValue | None = None
+    # Optional department ∈ UuidIdValue; omit/`null` → no department; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach department
+    # lookup). Existence remains tenant-scoped department lookup (**404**). Same
+    # honesty as ExpenseCreate.department_id.
+    department_id: UuidIdValue | None = None
 
 
 class RecurringExpenseUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     is_active: bool | None = None
-    amount: float | None = Field(default=None, gt=0)
-    payee: str | None = None
+    amount: PositiveMoneyValue | None = None
+    # omit/`null` → no change (unless `clear_payee`); blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on recurring PATCH).
+    payee: ExpensePayeeValue | None = None
     clear_payee: bool = False
-    description: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on recurring PATCH).
+    description: ExpenseDescriptionValue | None = None
     payment_method: ExpensePaymentMethod | None = None
     frequency: Literal["daily", "weekly", "monthly", "yearly"] | None = None
-    category_id: str | None = None
-    category: str | None = None
-    branch_id: str | None = None
-    department_id: str | None = None
+    # Optional spend-category FK ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach category
+    # lookup). Existence remains tenant-scoped category lookup (**404**/400). Same
+    # honesty as RecurringExpenseCreate.category_id.
+    category_id: UuidIdValue | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # punctuation/URL could persist on RecurringExpense.category). Prefer category_id.
+    category: ExpenseCategoryLabelValue | None = None
+    # Optional branch ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach branch
+    # lookup). Existence remains tenant-scoped branch lookup (**404**). Same honesty
+    # as RecurringExpenseCreate.branch_id. Use `clear_branch` to remove.
+    branch_id: UuidIdValue | None = None
+    # Optional department ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach department
+    # lookup). Existence remains tenant-scoped department lookup (**404**). Same
+    # honesty as RecurringExpenseCreate.department_id. Use `clear_department` to remove.
+    department_id: UuidIdValue | None = None
     clear_branch: bool = False
     clear_department: bool = False
 
 
 class RecurringSkipNext(BaseModel):
-    """Skip next recurring occurrence — typed reason required (BR-9.5 honesty)."""
+    """Skip next recurring occurrence — typed reason required (BR-9.5 honesty).
 
-    reason: str = Field(min_length=1, max_length=500)
+    `reason` ∈ RecurringSkipReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could persist on audit `recurring_expense_skipped`).
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    reason: RecurringSkipReasonValue
 
 
 class ApprovalLevelUpdate(BaseModel):
-    min_amount: float = Field(gt=0)
-    roles: list[str] = Field(min_length=1)
-    label: str | None = None
-    step: int | None = None
+    """One expense approval matrix level (BR-9.3).
+
+    Unknown keys → **422** (`extra=forbid`). `roles[]` ∈ system roles
+    (`SystemRoleValue` / `rbac.VALID_ROLES`); blank/unknown role → **422**
+    (was late service **400**). Optional `label` ∈ ApprovalLevelLabelValue;
+    omit/`null` → no label; blank/`!!!`/`http://…` → **422** (was free `str`;
+    blank/garbage could persist in tenant expense approval matrix JSON).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # ∈ PositiveMoneyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    min_amount: PositiveMoneyValue
+    roles: list[SystemRoleValue] = Field(min_length=1)
+    # omit/`null` → no label; blank/`!!!`/`http://…` → **422** (was free `str`).
+    label: ApprovalLevelLabelValue | None = None
+    # omit/`null` → service order by list index; 0/`-1`/`21` → **422** (was unconstrained int)
+    step: int | None = Field(default=None, ge=1, le=20)
 
 
 class ExpenseThresholdUpdate(BaseModel):
-    expense_approval_threshold: float | None = Field(default=None, gt=0)
-    expense_l2_threshold: float | None = Field(default=None, gt=0)
+    """PATCH /expenses/settings — thresholds + approval matrix (BR-9.3).
+
+    Unknown keys → **422**. When `levels` is sent, each level uses
+    `ApprovalLevelUpdate` honesty.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    expense_approval_threshold: PositiveMoneyValue | None = None
+    expense_l2_threshold: PositiveMoneyValue | None = None
     levels: list[ApprovalLevelUpdate] | None = None
     expense_numbering: DocumentNumberingFields | None = None
 
 
+# Keep aligned with app.stores._TIME_RE / WEEKDAYS (Multi-Store operating hours).
+_STORE_HHMM_RE = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
+
+
+def coerce_store_hours_time_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip HH:MM; blank stays blank for AfterValidator 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_store_hours_time_value(value: str) -> str:
+    """AfterValidator: store open/close HH:MM (24h); blank/garbage → 422."""
+    if not value:
+        raise ValueError("store hours time must be HH:MM (24h)")
+    if not _STORE_HHMM_RE.fullmatch(value):
+        raise ValueError("store hours time must be HH:MM (24h)")
+    return value
+
+
+# Store day open/close — matches stores._TIME_RE HH:MM; omit/`null` OK (required when not closed).
+StoreHoursTimeValue = Annotated[
+    str,
+    BeforeValidator(coerce_store_hours_time_value),
+    AfterValidator(validate_store_hours_time_value),
+]
+
+
+class StoreDayHours(BaseModel):
+    """One weekday entry for store operating_hours (BR-2.3).
+
+    Unknown keys → **422** (`extra=forbid`). When not `closed`, `open`/`close`
+    ∈ StoreHoursTimeValue (HH:MM 24h) with open before close → **422**
+    (was free `str` + late model/service checks; blank/`!!!`/`25:99`/`http://…`
+    failed only via day model_validator / service **400**).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # omit/`null` OK; blank/`!!!`/`25:99`/`http://…` → **422** (was free `str`)
+    open: StoreHoursTimeValue | None = None
+    # omit/`null` OK; blank/`!!!`/`25:99`/`http://…` → **422** (was free `str`)
+    close: StoreHoursTimeValue | None = None
+    closed: bool | None = None
+
+    @model_validator(mode="after")
+    def _require_times_when_open(self) -> StoreDayHours:
+        if self.closed:
+            return self
+        open_t = self.open or ""
+        close_t = self.close or ""
+        # Presence when not closed (format already enforced by StoreHoursTimeValue).
+        if not open_t or not close_t:
+            raise ValueError("open/close required as HH:MM (24h) when not closed")
+        if open_t >= close_t:
+            raise ValueError("open must be before close")
+        return self
+
+
+class StoreOperatingHours(BaseModel):
+    """Weekly operating_hours map (BR-2.3).
+
+    Unknown day keys → **422** (`extra=forbid`). Keys ∈ mon…sun only.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    mon: StoreDayHours | None = None
+    tue: StoreDayHours | None = None
+    wed: StoreDayHours | None = None
+    thu: StoreDayHours | None = None
+    fri: StoreDayHours | None = None
+    sat: StoreDayHours | None = None
+    sun: StoreDayHours | None = None
+
+
 class StoreCreate(BaseModel):
-    name: str
-    code: str
-    address: str | None = None
-    phone: str | None = None
-    manager_id: str | None = None
-    branch_id: str | None = None
-    operating_hours: dict | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # Required store label ∈ StoreNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on multi-store create).
+    name: StoreNameValue
+    # Required store code ∈ StoreCodeValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/punctuation/URL could persist on Store.code).
+    # Tenant uniqueness remains UniqueConstraint (tenant_id, code).
+    code: StoreCodeValue
+    # omit/`null` → no address; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/`garbage` could persist on create). Same AddressValue as Company.
+    address: AddressValue | None = None
+    # omit/`null` → no phone; blank/`not-a-phone`/`123` → **422** (was free `str`;
+    # blank/garbage could persist on create).
+    phone: E164PhoneValue | None = None
+    # Optional store manager user FK ∈ UuidIdValue; omit/`null` → no manager; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach user lookup).
+    # Existence remains tenant-scoped user lookup (**404**).
+    manager_id: UuidIdValue | None = None
+    # Optional branch ∈ UuidIdValue; omit/`null` → no branch; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach branch
+    # lookup). Existence remains tenant-scoped branch lookup (**404**).
+    branch_id: UuidIdValue | None = None
+    operating_hours: StoreOperatingHours | None = None
 
 
 class StoreUpdate(BaseModel):
-    name: str | None = None
-    address: str | None = None
-    phone: str | None = None
-    manager_id: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on store display name).
+    name: StoreNameValue | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared; garbage could persist). Same AddressValue as Company.
+    address: AddressValue | None = None
+    # omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`;
+    # blank silently cleared; garbage could persist).
+    phone: E164PhoneValue | None = None
+    # Optional store manager user FK ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach user lookup).
+    # Existence remains tenant-scoped user lookup (**404**). Same honesty as
+    # StoreCreate.manager_id. Use `clear_manager` to remove.
+    manager_id: UuidIdValue | None = None
     clear_manager: bool = False
-    branch_id: str | None = None
+    # Optional branch ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach branch
+    # lookup). Existence remains tenant-scoped branch lookup (**404**). Same honesty
+    # as StoreCreate.branch_id. Use `clear_branch` to remove.
+    branch_id: UuidIdValue | None = None
     clear_branch: bool = False
     is_active: bool | None = None
-    operating_hours: dict | None = None
+    operating_hours: StoreOperatingHours | None = None
 
 
 class StoreDrawerSettingsUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # BR-8.1 — schema Literal; omit = no change; blank/invalid → 422 (no silent none)
     drawer_mode: Literal["none", "mock", "network", "browser_bridge"] | None = None
-    drawer_host: str | None = None
+    # omit/`null` → no change / clear; blank/`http://…`/`not a host` → **422**
+    # (was free `str`; blank silent→null; garbage could persist). Same hostname
+    # honesty as Company SMTP (`SmtpHostValue`). Network mode still requires host
+    # at service (**400**) when unset.
+    drawer_host: SmtpHostValue | None = None
     drawer_port: int | None = Field(default=None, ge=1, le=65535)
     drawer_open_on_cash: bool | None = None
 
 
 class PosDrawerOpen(BaseModel):
-    """Manual drawer open — cashier must supply a specific reason (not blank / not 'manual')."""
+    """Manual drawer open — cashier must supply a specific reason (BR-8.1 honesty).
 
-    reason: str = Field(min_length=1, max_length=200)
+    `reason` ∈ PosDrawerOpenReasonValue (strip; 3–200; ≥1 letter/digit; no `://`/`@`;
+    rejects placeholders `manual`/`n/a`/`na`/`none`/`test`); omit/blank/`!!!`/
+    `http://…`/placeholder → **422** (was free `str` with `min_length=1` only —
+    whitespace/placeholders still reached service **400**; punctuation-only /
+    URL-like garbage could be logged on drawer open). Auto-open on cash sale
+    bypasses this body (internal `pos_sale:{id}`).
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    reason: PosDrawerOpenReasonValue
 
 
 class StoreReorderPolicyUpdate(BaseModel):
-    product_id: str
-    reorder_level: float = Field(ge=0)
-    reorder_qty: float = Field(default=0, ge=0)
+    model_config = ConfigDict(extra="forbid")
+
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**). Multi-Store **Store reorder product**
+    # select; Save policy sends trim.
+    product_id: UuidIdValue
+    # ∈ NonNegativeQtyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    reorder_level: NonNegativeQtyValue
+    # ∈ NonNegativeQtyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    reorder_qty: NonNegativeQtyValue = 0
 
 
 class WarehouseReorderPolicyUpdate(BaseModel):
-    warehouse_id: str
-    product_id: str
-    reorder_level: float = Field(ge=0)
-    reorder_qty: float = Field(default=0, ge=0)
+    model_config = ConfigDict(extra="forbid")
+
+    # Required warehouse ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach warehouse lookup). Existence remains
+    # tenant-scoped warehouse lookup (**404**). Inventory **Warehouse stock
+    # warehouse** select; Save reorder policy sends trim.
+    warehouse_id: UuidIdValue
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**). Inventory **Warehouse reorder
+    # product** select; Save reorder policy sends trim.
+    product_id: UuidIdValue
+    # ∈ NonNegativeQtyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    reorder_level: NonNegativeQtyValue
+    # ∈ NonNegativeQtyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    reorder_qty: NonNegativeQtyValue = 0
 
 
 class InventoryFefoSettingsUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     fefo_strict_warehouse: bool | None = None
     stock_transfer_numbering: DocumentNumberingFields | None = None
     stock_count_numbering: DocumentNumberingFields | None = None
@@ -1079,40 +2607,100 @@ class InventoryFefoSettingsUpdate(BaseModel):
 
 
 class WarehouseCreate(BaseModel):
-    name: str
-    code: str
-    store_id: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # Required warehouse label ∈ WarehouseNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on multi-store warehouse create).
+    name: WarehouseNameValue
+    # Required warehouse code ∈ WarehouseCodeValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank reached service **400**; punctuation/URL could persist).
+    # Tenant uniqueness remains create_warehouse **409**.
+    code: WarehouseCodeValue
+    # Optional linked store ∈ UuidIdValue; omit/`null` → no store; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach store lookup).
+    # Existence remains tenant-scoped store lookup (**404**).
+    store_id: UuidIdValue | None = None
     # BR-2.4 — schema Literal; omit defaults to retail; blank/invalid → 422
     warehouse_type: Literal["retail", "bulk", "cold_storage", "other"] = "retail"
-    manager_id: str | None = None
-    address: str | None = None
-    capacity: float | None = Field(default=None, ge=0)
+    # Optional warehouse manager user FK ∈ UuidIdValue; omit/`null` → no manager;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # user lookup). Existence remains tenant-scoped user lookup (**404**).
+    manager_id: UuidIdValue | None = None
+    # omit/`null` → no address; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on create). Same AddressValue as Company/Store/Branch.
+    address: AddressValue | None = None
+    # omit/`null` OK; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    capacity: NonNegativeQtyValue | None = None
 
 
 class WarehouseUpdate(BaseModel):
-    name: str | None = None
-    store_id: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on warehouse display name).
+    name: WarehouseNameValue | None = None
+    # Optional linked store ∈ UuidIdValue; omit/`null` → no change; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach store lookup).
+    # Existence remains tenant-scoped store lookup (**404**). Same honesty as
+    # WarehouseCreate.store_id. Use `clear_store` to remove.
+    store_id: UuidIdValue | None = None
     clear_store: bool = False
     warehouse_type: Literal["retail", "bulk", "cold_storage", "other"] | None = None
-    manager_id: str | None = None
+    # Optional warehouse manager user FK ∈ UuidIdValue; omit/`null` → no change;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # user lookup). Existence remains tenant-scoped user lookup (**404**). Same
+    # honesty as WarehouseCreate.manager_id. Use `clear_manager` to remove.
+    manager_id: UuidIdValue | None = None
     clear_manager: bool = False
-    address: str | None = None
-    capacity: float | None = Field(default=None, ge=0)
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared; garbage could persist). Same AddressValue as Company/Store/Branch.
+    address: AddressValue | None = None
+    # omit/`null` OK; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    capacity: NonNegativeQtyValue | None = None
     clear_capacity: bool = False
     is_active: bool | None = None
 
 
 class StockTransferItemCreate(BaseModel):
-    product_id: str
-    quantity: float = Field(gt=0)
+    """Nested line on stock transfer create (BR-5.2 / BR-13.2).
+
+    Required `product_id` ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    (was free `str`; garbage could reach catalog lookup). Existence remains
+    tenant-scoped product lookup (**404**).
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**).
+    product_id: UuidIdValue
+    # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    quantity: PositiveQtyValue
 
 
 class StockTransferCreate(BaseModel):
-    from_store_id: str | None = None
-    to_store_id: str | None = None
-    from_warehouse_id: str | None = None
-    to_warehouse_id: str | None = None
-    notes: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # Optional source store ∈ UuidIdValue; omit/`null` OK when warehouse pair set;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # store lookup). Existence remains tenant-scoped store lookup (**404**).
+    from_store_id: UuidIdValue | None = None
+    # Optional destination store ∈ UuidIdValue; omit/`null` OK when warehouse pair set;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # store lookup). Existence remains tenant-scoped store lookup (**404**).
+    to_store_id: UuidIdValue | None = None
+    # Optional source warehouse ∈ UuidIdValue; omit/`null` OK when store pair set;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # warehouse lookup). Existence remains tenant-scoped warehouse lookup (**404**).
+    from_warehouse_id: UuidIdValue | None = None
+    # Optional destination warehouse ∈ UuidIdValue; omit/`null` OK when store pair set;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
+    # warehouse lookup). Existence remains tenant-scoped warehouse lookup (**404**).
+    to_warehouse_id: UuidIdValue | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently dropped / garbage could persist on StockTransfer.notes Text).
+    notes: StockTransferNotesValue | None = None
     submit: bool = False
     items: list[StockTransferItemCreate] = Field(min_length=1)
 
@@ -1128,367 +2716,1036 @@ class StockTransferCreate(BaseModel):
 
 
 class StockTransferReject(BaseModel):
-    """Stock / store transfer reject or cancel — typed reason required (BR-5.2/5.4 / BR-13.2)."""
+    """Stock / store transfer reject or cancel — typed reason required (BR-5.2/5.4 / BR-13.2).
 
-    reason: str = Field(min_length=1, max_length=500)
+    `reason` ∈ StockTransferRejectReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could persist on `StockTransfer.rejection_reason`).
+    Shared by reject and cancel endpoints (Inventory + Multi-Store).
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    reason: StockTransferRejectReasonValue
+
+
+def coerce_tax_component_basis_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip/lowercase; blank stays blank for Literal 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().lower()
+
+
+TaxComponentBasisValue = Annotated[
+    Literal["net", "compound"],
+    BeforeValidator(coerce_tax_component_basis_value),
+]
+
+
+def coerce_tax_component_label_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip code/name; blank stays blank for AfterValidator 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_tax_component_code_value(value: str) -> str:
+    """AfterValidator: tax component code; blank/URL/garbage → 422 (1–40)."""
+    if not value:
+        raise ValueError("tax component code must be a non-empty label (1–40 chars)")
+    if len(value) > 40:
+        raise ValueError("tax component code must be a non-empty label (1–40 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("tax component code must be a non-empty label (1–40 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("tax component code must be a non-empty label (1–40 chars)")
+    return value
+
+
+def validate_tax_component_name_value(value: str) -> str:
+    """AfterValidator: tax component display name; blank/URL/garbage → 422 (1–80)."""
+    if not value:
+        raise ValueError("tax component name must be a non-empty label (1–80 chars)")
+    if len(value) > 80:
+        raise ValueError("tax component name must be a non-empty label (1–80 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("tax component name must be a non-empty label (1–80 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("tax component name must be a non-empty label (1–80 chars)")
+    return value
+
+
+# Tax component code — matches normalize_components [:40]; omit/`null` → name or auto cN.
+TaxComponentCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_tax_component_label_value),
+    AfterValidator(validate_tax_component_code_value),
+]
+
+# Tax component name — matches normalize_components [:80]; omit/`null` → code.
+TaxComponentNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_tax_component_label_value),
+    AfterValidator(validate_tax_component_name_value),
+]
+
+
+class TaxComponent(BaseModel):
+    """Compound tax leg (BR-12.1) — unknown keys → 422; blank/invalid basis/code/name → 422."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    rate: NonNegativeMoneyValue
+    # omit → net; blank/invalid → 422 (was free dict; blank silently net; bad late **400**)
+    basis: TaxComponentBasisValue = "net"
+    # omit/`null` → service uses name or auto `cN`; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank silently fell through to name/`cN`; garbage could persist).
+    code: TaxComponentCodeValue | None = None
+    # omit/`null` → service uses code; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank silently fell through to code; garbage could persist).
+    name: TaxComponentNameValue | None = None
 
 
 class TaxCreate(BaseModel):
-    name: str
-    rate: float = Field(ge=0)
+    model_config = ConfigDict(extra="forbid")
+
+    # Required tax rate label ∈ TaxRateNameValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on tax rate create).
+    name: TaxRateNameValue
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    rate: NonNegativeMoneyValue
     # BR-12.1 — schema Literal; omit defaults; blank/invalid → 422
     tax_type: Literal["vat", "gst", "sales_tax", "custom"] = "vat"
     pricing_mode: Literal["exclusive", "inclusive"] = "exclusive"
-    components: list[dict] | None = None
+    components: list[TaxComponent] | None = None
     is_reverse_charge: bool = False
     is_default: bool = False
     is_active: bool = True
 
 
 class TaxUpdate(BaseModel):
-    name: str | None = None
-    rate: float | None = Field(default=None, ge=0)
+    model_config = ConfigDict(extra="forbid")
+
+    name: TaxRateNameValue | None = None
+    # omit/`null` → no change; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    rate: NonNegativeMoneyValue | None = None
     # BR-12.1 — omit = no change; blank/invalid → 422
     tax_type: Literal["vat", "gst", "sales_tax", "custom"] | None = None
     pricing_mode: Literal["exclusive", "inclusive"] | None = None
-    components: list[dict] | None = None
+    components: list[TaxComponent] | None = None
     is_reverse_charge: bool | None = None
     is_active: bool | None = None
 
 
 class TaxCalculateRequest(BaseModel):
-    amount: float = Field(gt=0)
-    rate: float | None = None
-    tax_rate_id: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # ∈ PositiveMoneyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    amount: PositiveMoneyValue
+    # omit/`null` → use tax_rate_id / tenant default; nan/inf/<0 → **422** (was unconstrained float)
+    rate: NonNegativeMoneyValue | None = None
+    # Optional tax rate ∈ UuidIdValue; omit/`null` → use `rate` / tenant default;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could
+    # reach tax-rate lookup). Existence remains tenant-scoped tax-rate lookup
+    # (**404**).
+    tax_rate_id: UuidIdValue | None = None
     # BR-12.1 — omit → exclusive at calc; blank/invalid → 422
     pricing_mode: Literal["exclusive", "inclusive"] | None = None
-    components: list[dict] | None = None
+    components: list[TaxComponent] | None = None
     is_reverse_charge: bool | None = None
 
 
 class PasswordResetRequest(BaseModel):
+    """POST /auth/password-reset-request — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
     email: EmailStr
-    tenant_id: str
+    # Required workspace ∈ TenantRefValue (UUID or slug); blank/`!!!`/`http://…` → **422**
+    # (was free `str`; whitespace/`!!!`/URL reached resolve_tenant as **404**).
+    tenant_id: TenantRefValue
 
 
 class PasswordResetConfirm(BaseModel):
-    token: str
-    new_password: str
+    """POST /auth/password-reset-confirm — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Required one-time token ∈ PasswordResetTokenValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; whitespace/`!!!`/URL reached hash lookup as invalid/expired).
+    token: PasswordResetTokenValue
+    # Required new password ∈ PasswordResetNewPasswordValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; whitespace/`!!!`/URL could reach hash path; strength still
+    # enforced by validate_password_strength → **400**).
+    new_password: PasswordResetNewPasswordValue
 
 
 class EmailVerifyConfirm(BaseModel):
-    token: str
+    """POST /auth/verify-email — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Required one-time token ∈ EmailVerifyTokenValue; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; whitespace/`!!!`/URL reached hash_token / invalid-token **400**).
+    token: EmailVerifyTokenValue
 
 
 class ResendVerificationRequest(BaseModel):
+    """POST /auth/resend-verification — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
     email: EmailStr
-    tenant_id: str
+    # Required workspace ∈ TenantRefValue (UUID or slug); blank/`!!!`/`http://…` → **422**
+    # (was free `str`; whitespace/`!!!`/URL reached resolve_tenant as **404**).
+    tenant_id: TenantRefValue
 
 
 class PurchaseOrderItemCreate(BaseModel):
-    product_id: str
-    quantity: float = Field(gt=0)
-    unit_id: str | None = None  # entered UoM; GRN converts to product stock unit
-    unit_price: float = Field(ge=0)
+    model_config = ConfigDict(extra="forbid")
+
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**).
+    product_id: UuidIdValue
+    # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    quantity: PositiveQtyValue
+    # Optional entered UoM ∈ UuidIdValue; omit/`null` → product stock unit; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach UoM lookup).
+    # Existence / conversion remain resolve_line_unit (**404**/400).
+    unit_id: UuidIdValue | None = None
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    unit_price: NonNegativeMoneyValue
     # Omit to auto-resolve product → category → tenant default (BR-12.2); explicit 0 allowed
-    tax_rate: float | None = Field(default=None, ge=0)
-    discount: float = Field(default=0, ge=0)
+    # omit/`null` → auto-resolve; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    tax_rate: NonNegativeMoneyValue | None = None
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    discount: NonNegativeMoneyValue = 0
 
 
 class PurchaseOrderCreate(BaseModel):
-    supplier_id: str
-    warehouse_id: str | None = None
-    notes: str | None = None
-    delivery_address: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # Required supplier ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach party lookup). Existence remains
+    # tenant-scoped supplier lookup (**404**).
+    supplier_id: UuidIdValue
+    # Optional destination warehouse ∈ UuidIdValue; omit/`null` → no warehouse; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach warehouse lookup).
+    # Existence / active-warehouse rules remain require_active_warehouse (**404**/400).
+    warehouse_id: UuidIdValue | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on PurchaseOrder.notes Text).
+    notes: PurchaseOrderNotesValue | None = None
+    # omit/`null` → no ship-to; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silent→null; garbage could persist). Same AddressValue as Party/Store.
+    delivery_address: AddressValue | None = None
     items: list[PurchaseOrderItemCreate] = Field(min_length=1)
 
 
 class PurchaseOrderAmend(BaseModel):
+    """PO amend (BR-6.3). Optional `to` ∈ EmailStr when notifying supplier; blank/invalid → 422.
+
+    Optional `due_date` ∈ `IsoDateQueryValue`; omit/`null` → no change;
+    blank/`not-a-date`/`01/02/2024` → **422** (was free `datetime`; OpenAPI date-time;
+    padded dates inconsistent). `clear_due_date=True` clears. API `reports.parse_date`
+    remains defense-in-depth.
+
+    `reason` ∈ PurchaseOrderAmendReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could persist on amendment history / audit).
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
     items: list[PurchaseOrderItemCreate] | None = None
-    notes: str | None = None
-    delivery_address: str | None = None
-    due_date: datetime | None = None
+    # omit/`null` → no change / clear when null sent; blank/`!!!`/`http://…` → **422**
+    # (was free `str`; blank/garbage could persist on PurchaseOrder.notes).
+    notes: PurchaseOrderNotesValue | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared ship-to; garbage could persist). Same AddressValue.
+    delivery_address: AddressValue | None = None
+    due_date: IsoDateQueryValue | None = None
     clear_due_date: bool = False
-    # Required typed reason (BR-6.3 honesty); no silent amend
-    reason: str = Field(min_length=1, max_length=500)
+    reason: PurchaseOrderAmendReasonValue
     notify_supplier: bool = False
-    to: str | None = None
+    to: EmailStr | None = None
 
 
 class PurchaseOrderCancel(BaseModel):
-    """PO cancel — typed reason required (BR-6.3 honesty)."""
+    """PO cancel — typed reason required (BR-6.3 honesty).
 
-    reason: str = Field(min_length=1, max_length=500)
+    `reason` ∈ PurchaseOrderCancelReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could be appended to PO `notes` / audit).
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    reason: PurchaseOrderCancelReasonValue
+
 
 class PurchaseRequestItemCreate(BaseModel):
-    product_id: str
-    quantity: float = Field(gt=0)
-    variant_id: str | None = None
-    notes: str | None = None
+    """Purchase request line — optional notes ∈ PurchaseRequestNotesValue (BR-6.2).
+
+    Optional `notes`; omit/`null` → no line notes; blank/`!!!`/`http://…` → **422**
+    (was free `str`; blank/garbage could persist on `PurchaseRequestItem.notes`).
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**).
+    product_id: UuidIdValue
+    # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    quantity: PositiveQtyValue
+    # Optional variant ∈ UuidIdValue; omit/`null` → no variant; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach variant lookup).
+    # Existence / product match remain create_request (**404**).
+    variant_id: UuidIdValue | None = None
+    # omit/`null` → no line notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on PurchaseRequestItem.notes text).
+    notes: PurchaseRequestNotesValue | None = None
 
 
 class PurchaseRequestCreate(BaseModel):
-    preferred_supplier_id: str | None = None
-    warehouse_id: str | None = None
-    required_date: datetime | None = None
-    department: str | None = None
-    notes: str | None = None
+    """Create purchase request — optional required_date ∈ IsoDateQueryValue (BR-6.2).
+
+    Optional `required_date`; omit/`null` → no needed-by date; blank/invalid → **422**
+    (was free `datetime`; OpenAPI date-time; padded dates inconsistent). API
+    `reports.parse_date` remains defense-in-depth.
+    Optional `notes` ∈ PurchaseRequestNotesValue; omit/`null` → no notes; blank/`!!!`/
+    `http://…` → **422** (was free `str`; blank/garbage could persist on PREQ).
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    # Optional preferred supplier ∈ UuidIdValue; omit/`null` → no preference; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach supplier lookup).
+    # Existence / active-supplier rules remain require_active_supplier (**404**/400).
+    preferred_supplier_id: UuidIdValue | None = None
+    # Optional destination warehouse ∈ UuidIdValue; omit/`null` → no warehouse; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach warehouse lookup).
+    # Existence remains tenant-scoped warehouse lookup (**404**).
+    warehouse_id: UuidIdValue | None = None
+    required_date: IsoDateQueryValue | None = None
+    # omit/`null` → no department label; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank/garbage could persist on PurchaseRequest.department).
+    department: PurchaseRequestDepartmentValue | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on PurchaseRequest.notes Text).
+    notes: PurchaseRequestNotesValue | None = None
     items: list[PurchaseRequestItemCreate] = Field(min_length=1)
 
 
 class PurchaseRequestReject(BaseModel):
-    """Purchase request reject — typed reason required (BR-6.2 honesty)."""
+    """Purchase request reject — typed reason required (BR-6.2 honesty).
 
-    reason: str = Field(min_length=1, max_length=500)
+    `reason` ∈ PurchaseRequestRejectReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could persist on `PurchaseRequest.rejection_reason`).
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    reason: PurchaseRequestRejectReasonValue
 
 
 class PurchaseRequestConvert(BaseModel):
-    supplier_id: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # Optional supplier override ∈ UuidIdValue; omit/`null` → preferred / first
+    # line supplier path; blank/`!!!`/`http://…`/non-UUID → **422** (was free
+    # `str`; garbage could reach party lookup). Existence remains tenant-scoped
+    # supplier lookup (**404**). Purchasing Convert to PO sends `{}` when no
+    # override (omit).
+    supplier_id: UuidIdValue | None = None
 
 
 class PurchaseApprovalLevelUpdate(BaseModel):
-    roles: list[str] = Field(min_length=1)
-    label: str | None = None
-    step: int | None = None
+    """One PR approval matrix level (role chain; BR-6.x).
+
+    Unknown keys → **422** (`extra=forbid`). Same `roles[]` honesty as expense
+    matrix (`SystemRoleValue`); blank/unknown → **422** (was late **400**).
+    Optional `label` ∈ ApprovalLevelLabelValue; omit/`null` → no label;
+    blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could
+    persist in tenant PR approval matrix JSON).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    roles: list[SystemRoleValue] = Field(min_length=1)
+    # omit/`null` → no label; blank/`!!!`/`http://…` → **422** (was free `str`).
+    label: ApprovalLevelLabelValue | None = None
+    # omit/`null` → service order by list index; 0/`-1`/`21` → **422** (was unconstrained int)
+    step: int | None = Field(default=None, ge=1, le=20)
 
 
 class PurchaseApprovalSettingsUpdate(BaseModel):
+    """PATCH /purchasing/requests/settings — PR approval matrix.
+
+    Unknown keys → **422**. `levels` required non-empty.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
     levels: list[PurchaseApprovalLevelUpdate] = Field(min_length=1)
 
 
 class LowStockSuggestionLine(BaseModel):
-    product_id: str
-    quantity: float | None = Field(default=None, gt=0)
-    warehouse_id: str | None = None
-    preferred_supplier_id: str | None = None
-    notes: str | None = None
+    """One low-stock suggestion line for draft PR creation (BR-6.2).
+
+    Optional `notes` ∈ PurchaseRequestNotesValue; omit/`null` → no line notes;
+    blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist).
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**).
+    product_id: UuidIdValue
+    # omit/`null` OK; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    quantity: PositiveQtyValue | None = None
+    # Optional warehouse ∈ UuidIdValue; omit/`null` → no warehouse; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach warehouse lookup).
+    warehouse_id: UuidIdValue | None = None
+    # Optional preferred supplier ∈ UuidIdValue; omit/`null` → no preference; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach supplier lookup).
+    preferred_supplier_id: UuidIdValue | None = None
+    # omit/`null` → no line notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on PurchaseRequestItem.notes).
+    notes: PurchaseRequestNotesValue | None = None
 
 
 class LowStockSuggestionsCreate(BaseModel):
+    """POST /purchasing/requests/from-low-stock (BR-6.2).
+
+    Optional header `notes` ∈ PurchaseRequestNotesValue; omit/`null` → service
+    default; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage
+    could persist on draft PREQ notes).
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
     lines: list[LowStockSuggestionLine] = Field(min_length=1)
-    notes: str | None = None
-    department: str | None = None
+    # omit/`null` → service default note; blank/`!!!`/`http://…` → **422** (was
+    # free `str`; blank/garbage could persist on PurchaseRequest.notes).
+    notes: PurchaseRequestNotesValue | None = None
+    # omit/`null` → no department; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on draft PREQ department).
+    department: PurchaseRequestDepartmentValue | None = None
+    include_open: bool = False
+
+
+class AiLowStockPredictionLine(BaseModel):
+    """One at-risk prediction row for draft PR creation (BR-21.4).
+
+    Unknown keys → **422** (`extra=forbid`). Required `product_id` ∈ UuidIdValue.
+    Optional confidence 0–1 and order qty ≥0. Aligns with fields read by
+    `create_requests_from_predictions` (not the full GET prediction shape).
+    Optional `risk_reason` ∈ AiPredictionRiskReasonValue; omit/`null` → service
+    defaults line note to `at_risk`; blank/`!!!`/`http://…` → **422** (was free
+    `str` stripped to null; garbage could land in draft PR line notes).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str` with blank→None strip; garbage could reach catalog lookup).
+    product_id: UuidIdValue
+    # omit/`null` OK; nan/inf/out-of-range → **422** (was Field(ge=0, le=1) — Inf/NaN edge cases)
+    confidence: UnitIntervalValue | None = None
+    # omit/`null` OK; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    suggested_order_qty: NonNegativeQtyValue | None = None
+    # omit/`null` OK; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    recommended_order_qty: NonNegativeQtyValue | None = None
+    # Optional warehouse ∈ UuidIdValue; omit/`null` → no warehouse; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; blank silently stripped to null).
+    warehouse_id: UuidIdValue | None = None
+    # Optional preferred supplier ∈ UuidIdValue; omit/`null` → no preference; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; blank silently stripped to null).
+    preferred_supplier_id: UuidIdValue | None = None
+    # omit/`null` → no line notes; blank/`!!!`/`http://…` → **422** (was free `str`
+    # stripped to null; blank/garbage could persist onto draft PR line notes).
+    notes: PurchaseRequestNotesValue | None = None
+    # omit/`null` → service uses `at_risk` in generated line notes; blank/`!!!`/
+    # `http://…` → **422** (was free `str`; blank silently dropped / garbage could
+    # embed into PurchaseRequestItem.notes via create_requests_from_predictions).
+    risk_reason: AiPredictionRiskReasonValue | None = None
+
+
+class AiLowStockPredictionRequestsBody(BaseModel):
+    """POST /ai/inventory/low-stock-prediction/requests (BR-21.4).
+
+    Unknown keys → **422** (`extra=forbid`). `days_ahead` ∈ 1–365 (omit → 14;
+    blank/non-int → **422** — was `int(... or 14)` which silently defaulted
+    blanks and could **500** on garbage). `min_confidence` ∈ 0–1 (omit → 0;
+    garbage → **422**). Nested `lines` are `AiLowStockPredictionLine`
+    (`extra=forbid`; blank `product_id` / unknown line keys / bad qty|confidence
+    → **422** — was free `list[dict]`). Omit/`null`/`[]` `lines` re-runs
+    prediction. Service `create_requests_from_predictions` remains defense-in-depth.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    lines: list[AiLowStockPredictionLine] | None = None
+    days_ahead: int = Field(default=14, ge=1, le=365)
+    # ∈ UnitIntervalValue; omit → 0; nan/inf/out-of-range → **422** (was Field(ge=0, le=1))
+    min_confidence: UnitIntervalValue = 0
+    # omit/`null` → no header notes; blank/`!!!`/`http://…` → **422** (was free
+    # `str` stripped to null; blank/garbage could persist on draft PREQ notes).
+    notes: PurchaseRequestNotesValue | None = None
     include_open: bool = False
 
 
 class GrnItemCreate(BaseModel):
-    po_item_id: str
-    received_qty: float = Field(gt=0)
-    accepted_qty: float | None = None
-    rejected_qty: float = Field(default=0, ge=0)
-    rejection_reason: str | None = None
-    # Optional lot for accepted stock (BR-6.4); required when product.tracks_batches
-    batch_number: str | None = None
-    manufacturing_date: datetime | None = None
-    expiry_date: datetime | None = None
+    """GRN line — optional batch lot + dates (BR-6.4).
+
+    Optional `batch_number` ∈ BatchNumberValue; omit/`null` → no lot (service still
+    requires a lot when product.tracks_batches); blank/`!!!`/`http://…` → **422**
+    (was free `str`; blank silently stripped to None / punctuation/URL could persist
+    on ProductBatch.batch_number). Optional `manufacturing_date` / `expiry_date` ∈
+    IsoDateQueryValue; omit/`null` → no batch dates; blank/invalid → **422** (was
+    free `datetime`; OpenAPI date-time; padded dates inconsistent). API
+    `reports.parse_date` remains defense-in-depth.
+
+    Optional `rejection_reason` ∈ GrnRejectionReasonValue when rejecting stock
+    (strip; 1–500; ≥1 letter/digit; no `://`/`@`); omit/`null` OK when no reject;
+    blank/`!!!`/`http://…` → **422** even if unused (was free `str`; blank still
+    failed model_validator when rejected, but punctuation-only / URL-like garbage
+    could persist on GRN line `rejection_reason`). Required when `rejected_qty > 0`
+    (or inferred reject from accepted < received).
+
+    Required `po_item_id` ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    (was free `str`; garbage could reach PO-line lookup). Existence remains
+    tenant-scoped purchase-order item lookup (**404**/400). Purchasing Post GRN /
+    Receive all send `po_item_id` trim.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    po_item_id: UuidIdValue
+    # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    received_qty: PositiveQtyValue
+    # omit/`null` → received_qty; nan/inf/<0 → **422**
+    accepted_qty: NonNegativeQtyValue | None = None
+    # ∈ NonNegativeQtyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    rejected_qty: NonNegativeQtyValue = 0
+    rejection_reason: GrnRejectionReasonValue | None = None
+    # Optional lot ∈ BatchNumberValue; required by service when product.tracks_batches
+    batch_number: BatchNumberValue | None = None
+    manufacturing_date: IsoDateQueryValue | None = None
+    expiry_date: IsoDateQueryValue | None = None
 
     @model_validator(mode="after")
     def require_reason_when_rejected(self):
         """OpenAPI honesty (BR-6.4): reason required when any qty is rejected."""
-        received = float(self.received_qty or 0)
-        rejected = float(self.rejected_qty or 0)
+        received = money_json(self.received_qty or 0)
+        rejected = money_json(self.rejected_qty or 0)
         accepted = self.accepted_qty
-        if rejected <= 1e-9 and accepted is not None and float(accepted) < received - 1e-9:
-            rejected = round(received - float(accepted), 6)
-        if rejected > 1e-9 and not (self.rejection_reason or "").strip():
+        if rejected <= 1e-9 and accepted is not None and money_json(accepted) < received - 1e-9:
+            rejected = money_json(round(received - money_json(accepted), 6))
+        if rejected > 1e-9 and not self.rejection_reason:
             raise ValueError("rejection_reason is required when rejected_qty > 0")
         return self
 
 
 class GrnCreate(BaseModel):
-    purchase_order_id: str
-    warehouse_id: str | None = None
-    notes: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # Required purchase order ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach PO lookup). Existence remains tenant-scoped
+    # PO lookup (**404**). Purchasing **GRN purchase order** control; Post GRN sends trim.
+    purchase_order_id: UuidIdValue
+    # Optional destination warehouse ∈ UuidIdValue; omit/`null` → PO warehouse /
+    # default path; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`;
+    # garbage could reach warehouse lookup). Existence remains tenant-scoped (**404**).
+    warehouse_id: UuidIdValue | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on GoodsReceipt.notes Text).
+    notes: GrnNotesValue | None = None
     items: list[GrnItemCreate] = Field(min_length=1)
 
 
 class PurchaseReturnItemCreate(BaseModel):
-    goods_receipt_item_id: str
-    quantity: float = Field(gt=0)
+    model_config = ConfigDict(extra="forbid")
+
+    # Required GRN line ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach goods-receipt item lookup). Existence
+    # remains tenant-scoped GRN line lookup (**404**/400). Purchasing **Purchase
+    # return GRN line** select; Draft return sends trim.
+    goods_receipt_item_id: UuidIdValue
+    # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    quantity: PositiveQtyValue
 
 
 class PurchaseReturnCreate(BaseModel):
-    goods_receipt_id: str
+    model_config = ConfigDict(extra="forbid")
+
+    # Required source GRN ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach GRN lookup). Existence remains
+    # tenant-scoped goods-receipt lookup (**404**).
+    goods_receipt_id: UuidIdValue
     # Required coded reason (BR-6.6); OpenAPI Literal → omit/blank/invalid → 422
     reason: Literal["damaged", "wrong_item", "expiry", "quality", "other"]
-    notes: str | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on PurchaseReturn.notes Text).
+    notes: PurchaseReturnNotesValue | None = None
     items: list[PurchaseReturnItemCreate] = Field(min_length=1)
 
 
 class PurchaseReturnCancel(BaseModel):
-    """Draft purchase return cancel — typed reason required (BR-6.6 honesty)."""
+    """Draft purchase return cancel — typed reason required (BR-6.6 honesty).
 
-    reason: str = Field(min_length=1, max_length=500)
+    `reason` ∈ PurchaseReturnCancelReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could be appended to return `notes` / audit).
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    reason: PurchaseReturnCancelReasonValue
 
 
 class PurchaseInvoiceItemCreate(BaseModel):
-    product_id: str
-    quantity: float = Field(gt=0)
-    unit_price: float | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**). Purchasing **Purchase invoice
+    # product** select; Draft manual PI sends trim.
+    product_id: UuidIdValue
+    # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    quantity: PositiveQtyValue
+    # omit/`null` → catalog/group price; nan/inf/<0 → **422**
+    unit_price: NonNegativeMoneyValue | None = None
     # Omit to auto-resolve product → category → tenant default (BR-12.2); explicit 0 allowed
-    tax_rate: float | None = Field(default=None, ge=0)
-    discount: float = Field(default=0, ge=0)
+    # omit/`null` → auto-resolve; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    tax_rate: NonNegativeMoneyValue | None = None
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    discount: NonNegativeMoneyValue = 0
 
 
 class PurchaseInvoiceCreate(BaseModel):
-    supplier_id: str | None = None
-    goods_receipt_id: str | None = None
-    purchase_order_id: str | None = None
-    supplier_invoice_number: str | None = None
-    discount_amount: float = Field(default=0, ge=0)
-    attachment_url: str | None = None
-    notes: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # Optional supplier ∈ UuidIdValue; omit/`null` OK when from-GRN / PO path;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could
+    # reach party lookup). Existence remains tenant-scoped supplier lookup (**404**).
+    # Purchasing **Purchase invoice supplier** select; Draft manual sends trim.
+    supplier_id: UuidIdValue | None = None
+    # Optional source GRN ∈ UuidIdValue; omit/`null` → manual / PO path; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach GRN lookup).
+    # Existence remains tenant-scoped goods-receipt lookup (**404**). Purchasing
+    # **Purchase invoice GRN** select; Draft from GRN sends trim.
+    goods_receipt_id: UuidIdValue | None = None
+    # Optional source PO ∈ UuidIdValue; omit/`null` → manual / GRN path; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach PO lookup).
+    # Existence remains tenant-scoped purchase-order lookup (**404**).
+    purchase_order_id: UuidIdValue | None = None
+    # omit/`null` → no supplier invoice #; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank/`""` could persist or be stored raw; punctuation/URL could persist
+    # on PurchaseInvoice.supplier_invoice_number).
+    supplier_invoice_number: SupplierInvoiceNumberValue | None = None
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    discount_amount: NonNegativeMoneyValue = 0
+    # omit/`null` → no external attachment URL; blank/`ftp://`/`not-a-url`/plain-http
+    # remote → **422** (was free `str`; blank/`""` could persist; garbage URLs could
+    # persist on PurchaseInvoice.attachment_url). Same absolute http(s) honesty as
+    # Webhook/Bank feed URLs (`WebhookUrlValue`). Multipart upload still sets a
+    # storage key via POST …/attachment (not this create field).
+    attachment_url: WebhookUrlValue | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on PurchaseInvoice.notes Text).
+    notes: PurchaseInvoiceNotesValue | None = None
     # Buyer self-assesses VAT (excluded from AP); posts Dr Input Tax / Cr Tax Payable on approve.
     is_reverse_charge: bool = False
-    currency: str | None = None
-    exchange_rate: float | None = Field(default=None, gt=0)
+    # omit/null → tenant base via resolve_rate; blank/non-ISO → 422 (was free str; blank silently base)
+    currency: CurrencyCodeValue | None = None
+    # omit/`null` → resolve_rate; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    exchange_rate: PositiveMoneyValue | None = None
     items: list[PurchaseInvoiceItemCreate] | None = None
 
 
 class PurchaseInvoiceUpdate(BaseModel):
-    supplier_invoice_number: str | None = None
-    notes: str | None = None
-    invoice_date: datetime | None = None
-    due_date: datetime | None = None
+    """PATCH draft purchase invoice — optional OCR/manual date fields.
+
+    Optional `invoice_date` / `due_date` ∈ `IsoDateQueryValue`; omit/`null` → no
+    change; blank/invalid → **422** (was free `datetime`; OpenAPI date-time;
+    padded dates inconsistent). API `reports.parse_date` remains defense-in-depth.
+    Optional `notes` ∈ PurchaseInvoiceNotesValue; omit/`null` → no change; blank/
+    `!!!`/`http://…` → **422** (was free `str`; blank silently cleared / garbage
+    could persist). Optional `supplier_invoice_number` ∈ SupplierInvoiceNumberValue;
+    omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank
+    silently cleared / garbage could persist).
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared / garbage could persist on draft PATCH).
+    supplier_invoice_number: SupplierInvoiceNumberValue | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared / garbage could persist on draft PATCH).
+    notes: PurchaseInvoiceNotesValue | None = None
+    invoice_date: IsoDateQueryValue | None = None
+    due_date: IsoDateQueryValue | None = None
 
 
 class PurchaseInvoiceCancel(BaseModel):
-    """Purchase invoice cancel — typed reason required (BR-6.5 honesty)."""
+    """Purchase invoice cancel — typed reason required (BR-6.5 honesty).
 
-    reason: str = Field(min_length=1, max_length=500)
+    `reason` ∈ PurchaseInvoiceCancelReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could be appended to invoice `notes` / audit).
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    reason: PurchaseInvoiceCancelReasonValue
 
 
 class SalesInvoiceItemCreate(BaseModel):
-    product_id: str
-    quantity: float = Field(gt=0)
-    unit_id: str | None = None  # entered UoM; post/reserve convert to stock unit
-    unit_price: float | None = None
-    tax_rate: float | None = None
-    discount: float = Field(default=0, ge=0)
-    variant_id: str | None = None
+    """SI / QT / SO create line — unknown keys → **422** (`extra=forbid`)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**). Shared by SI / QT / SO create lines.
+    product_id: UuidIdValue
+    # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    quantity: PositiveQtyValue
+    # Optional entered UoM ∈ UuidIdValue; omit/`null` → product stock unit; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach UoM lookup).
+    # Same honesty as LineItem.unit_id (POS / legacy sale).
+    unit_id: UuidIdValue | None = None
+    # omit/`null` → catalog/group price; nan/inf/<0 → **422**
+    unit_price: NonNegativeMoneyValue | None = None
+    # omit/`null` → auto-resolve; nan/inf/<0 → **422** (was unconstrained float)
+    tax_rate: NonNegativeMoneyValue | None = None
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    discount: NonNegativeMoneyValue = 0
+    # Optional variant ∈ UuidIdValue; omit/`null` → no variant; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach variant lookup).
+    # Same honesty as LineItem.variant_id.
+    variant_id: UuidIdValue | None = None
+
 
 
 class SalesInvoiceCreate(BaseModel):
-    customer_id: str
-    discount_amount: float = Field(default=0, ge=0)
-    notes: str | None = None
-    store_id: str | None = None
-    currency: str | None = None
-    exchange_rate: float | None = Field(default=None, gt=0)
+    model_config = ConfigDict(extra="forbid")
+
+    # Required customer ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach party lookup). Existence remains
+    # tenant-scoped customer lookup (**404**).
+    customer_id: UuidIdValue
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    discount_amount: NonNegativeMoneyValue = 0
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on SalesInvoice.notes Text).
+    notes: SalesDocumentNotesValue | None = None
+    # Optional store ∈ UuidIdValue; omit/`null` → no store / HQ path; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach store
+    # lookup). Existence remains tenant-scoped store lookup (**404**). Sales
+    # **Sale store** select (`aria-label`); Create invoice sends trim or `null`.
+    store_id: UuidIdValue | None = None
+    # omit/null → tenant base via resolve_rate; blank/non-ISO → 422 (was free str; blank silently base)
+    currency: CurrencyCodeValue | None = None
+    # omit/`null` → resolve_rate; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    exchange_rate: PositiveMoneyValue | None = None
     is_reverse_charge: bool = False
     items: list[SalesInvoiceItemCreate] = Field(min_length=1)
 
 
 class SalesQuotationCreate(BaseModel):
-    customer_id: str
-    discount_amount: float = Field(default=0, ge=0)
-    notes: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # Required customer ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach party lookup). Existence remains
+    # tenant-scoped customer lookup (**404**). Distinct from SalesInvoiceCreate /
+    # SalesOrderCreate (same honesty; shared Sale customer FE control).
+    customer_id: UuidIdValue
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    discount_amount: NonNegativeMoneyValue = 0
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on SalesQuotation.notes Text).
+    notes: SalesDocumentNotesValue | None = None
     valid_days: int = Field(default=14, ge=1, le=365)
     items: list[SalesInvoiceItemCreate] = Field(min_length=1)
 
 
 class SalesQuotationReject(BaseModel):
-    """Quotation reject — typed reason required (BR-7.2 honesty)."""
+    """Quotation reject — typed reason required (BR-7.2 honesty).
 
-    reason: str = Field(min_length=1, max_length=500)
+    `reason` ∈ SalesQuotationRejectReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could persist on `SalesQuotation.rejection_reason`).
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    reason: SalesQuotationRejectReasonValue
 
 
 class SalesOrderCreate(BaseModel):
-    customer_id: str
-    quotation_id: str | None = None
-    store_id: str | None = None
-    delivery_date: datetime | None = None
-    delivery_address: str | None = None
-    discount_amount: float = Field(default=0, ge=0)
-    notes: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # Required customer ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach party lookup). Existence remains
+    # tenant-scoped customer lookup (**404**). Distinct from SalesInvoiceCreate.
+    customer_id: UuidIdValue
+    # Optional source quotation ∈ UuidIdValue; omit/`null` → standalone order;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could
+    # reach quotation lookup). Existence remains tenant-scoped quotation lookup
+    # (**404**). UI convert-order uses path id; API create may pass body trim.
+    quotation_id: UuidIdValue | None = None
+    # Optional store ∈ UuidIdValue; omit/`null` → no store until confirm; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach store
+    # lookup). Existence remains tenant-scoped store lookup (**404**). Sales
+    # **Sale store** select (`aria-label`; shared create form); Create order sends
+    # trim or `null` when blank.
+    store_id: UuidIdValue | None = None
+    # omit/`null` → no promised date; blank/`not-a-date`/`01/02/2024` → **422**
+    # (was free `datetime`; OpenAPI date-time; padded dates inconsistent).
+    delivery_date: IsoDateQueryValue | None = None
+    # omit/`null` → no ship-to; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silent→null; garbage could persist). Same AddressValue as PO.
+    delivery_address: AddressValue | None = None
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    discount_amount: NonNegativeMoneyValue = 0
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on SalesOrder.notes Text).
+    notes: SalesDocumentNotesValue | None = None
     items: list[SalesInvoiceItemCreate] = Field(min_length=1)
 
 
 class SalesOrderConfirm(BaseModel):
-    store_id: str | None = None
-    delivery_date: datetime | None = None
-    delivery_address: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # Optional store ∈ UuidIdValue; omit/`null` → keep order store / require when
+    # confirming without one; blank/`!!!`/`http://…`/non-UUID → **422** (was free
+    # `str`; garbage could reach store lookup). Existence remains tenant-scoped
+    # (**404**). Sales **Sale store** select; Confirm sends trim when set.
+    store_id: UuidIdValue | None = None
+    # omit/`null` → no change; blank/`not-a-date`/`01/02/2024` → **422**
+    # (was free `datetime`; OpenAPI date-time; padded dates inconsistent).
+    delivery_date: IsoDateQueryValue | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silent→null; garbage could persist). Same AddressValue as PO.
+    delivery_address: AddressValue | None = None
 
 
 class SalesOrderCancel(BaseModel):
-    """Sales order cancel — typed reason required (BR-7.3 honesty)."""
+    """Sales order cancel — typed reason required (BR-7.3 honesty).
 
-    reason: str = Field(min_length=1, max_length=500)
+    `reason` ∈ SalesOrderCancelReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could be appended to order `notes` / audit).
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    reason: SalesOrderCancelReasonValue
 
 
 class SalesInvoiceCancel(BaseModel):
-    """Draft sales invoice cancel — typed reason required (BR-7.4 honesty)."""
+    """Draft sales invoice cancel — typed reason required (BR-7.4 honesty).
 
-    reason: str = Field(min_length=1, max_length=500)
+    `reason` ∈ SalesInvoiceCancelReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could be appended to invoice `notes` / audit).
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    reason: SalesInvoiceCancelReasonValue
 
 
 class SalesReturnItemCreate(BaseModel):
-    product_id: str
-    quantity: float = Field(gt=0)
+    model_config = ConfigDict(extra="forbid")
+
+    # Required product ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach catalog lookup). Existence remains
+    # tenant-scoped product lookup (**404**).
+    product_id: UuidIdValue
+    # ∈ PositiveQtyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    quantity: PositiveQtyValue
     # Required coded condition (BR-7.5); OpenAPI Literal → omit/blank/invalid → 422
     condition: Literal["sellable", "discard"]
-    variant_id: str | None = None
+    # Optional variant ∈ UuidIdValue; omit/`null` → no variant; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach variant lookup).
+    variant_id: UuidIdValue | None = None
 
 
 class SalesReturnCreate(BaseModel):
-    sales_invoice_id: str
+    model_config = ConfigDict(extra="forbid")
+
+    # Required source invoice ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach invoice lookup). Existence remains
+    # tenant-scoped sales invoice lookup (**404**).
+    sales_invoice_id: UuidIdValue
     # Required coded reason (BR-7.5); OpenAPI Literal → omit/blank/invalid → 422
     reason: Literal["damaged", "wrong_item", "defective", "customer_change", "other"]
     restock: bool = True
-    notes: str | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on SalesReturn.notes Text).
+    notes: SalesReturnNotesValue | None = None
     items: list[SalesReturnItemCreate] = Field(min_length=1)
 
 
 class SalesReturnCancel(BaseModel):
-    """Draft sales return cancel — typed reason required (BR-7.5 honesty)."""
+    """Draft sales return cancel — typed reason required (BR-7.5 honesty).
 
-    reason: str = Field(min_length=1, max_length=500)
+    `reason` ∈ SalesReturnCancelReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could be appended to return `notes` / audit).
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    reason: SalesReturnCancelReasonValue
 
 
 class SalesReturnPost(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # BR-7.5 — omit OK (service defaults adjust when no excess AR); blank/invalid → 422.
     # When return exceeds open AR, service still requires adjust|refund (400 SETTLEMENT_REQUIRED).
     settlement_method: SalesReturnSettlementMethod | None = None
     # BR-7.5 / BR-11 — same settlement Literal as AR payments; omit → cash; blank/invalid → 422
     payment_method: SettlementPaymentMethod = "cash"
-    liquid_account_id: str | None = None
+    # Optional liquid COA ∈ UuidIdValue; omit/`null` → payment-method default;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could
+    # reach liquid-account lookup). Existence remains tenant-scoped (**404**/400).
+    liquid_account_id: UuidIdValue | None = None
 
 
 class CustomerPaymentCreate(BaseModel):
-    customer_id: str
-    amount: float = Field(gt=0)
-    sales_invoice_id: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # Required customer ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach party lookup). Existence remains
+    # tenant-scoped customer lookup (**404**). Distinct from SupplierPaymentCreate.
+    customer_id: UuidIdValue
+    # ∈ PositiveMoneyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    amount: PositiveMoneyValue
+    # Optional target invoice ∈ UuidIdValue; omit/`null` → apply oldest-open;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could
+    # reach invoice lookup). Existence remains tenant-scoped sales-invoice
+    # lookup (**404**). Credit Record payment may omit (FIFO apply).
+    sales_invoice_id: UuidIdValue | None = None
     # BR-11.1 — schema Literal (+ aliases); omit → cash; blank/invalid → 422
     payment_method: SettlementPaymentMethod = "cash"
-    reference: str | None = None
-    notes: str | None = None
-    cheque_number: str | None = None
-    bank_name: str | None = None
-    cheque_date: datetime | None = None
+    # omit/`null` → no reference; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on CustomerPayment.reference String(100)).
+    reference: PaymentReferenceValue | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on CustomerPayment.notes Text).
+    notes: PaymentNotesValue | None = None
+    # omit/`null` → service falls back to reference/payment_number; blank/`!!!`/
+    # `http://…` → **422** (was free `str`; blank/garbage could persist on cheque).
+    cheque_number: ChequeNumberValue | None = None
+    # omit/`null` → no bank on cheque; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank/garbage could persist on cheque payment bank_name).
+    bank_name: BankNameValue | None = None
+    # omit/`null` → no cheque date; blank/`not-a-date`/`01/02/2024` → **422**
+    # (was free `datetime`; OpenAPI date-time; padded dates rejected; Credit UI
+    # never set → always null). API parses via reports.parse_date.
+    cheque_date: IsoDateQueryValue | None = None
     apply_early_discount: bool | None = None
-    liquid_account_id: str | None = None
-    currency: str | None = None
-    exchange_rate: float | None = Field(default=None, gt=0)
+    # Optional liquid COA ∈ UuidIdValue; omit/`null` → payment-method default GL;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could
+    # reach liquid-account lookup). Existence remains tenant-scoped (**404**/400).
+    # Credit **Credit payment liquid account** select; Record payment sends trim
+    # or `null` when blank.
+    liquid_account_id: UuidIdValue | None = None
+    # omit/null → invoice/base via resolve_rate; blank/non-ISO → 422 (was free str; blank silently base)
+    currency: CurrencyCodeValue | None = None
+    # omit/`null` → resolve_rate; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    exchange_rate: PositiveMoneyValue | None = None
 
 
 class EarlyPaySettingsUpdate(BaseModel):
-    early_pay_discount_pct: float = Field(ge=0, le=100)
+    model_config = ConfigDict(extra="forbid")
+
+    # ∈ PercentRateValue; nan/inf/out-of-range → **422** (was Field(ge=0, le=100) — Inf/NaN edge cases)
+    early_pay_discount_pct: PercentRateValue
     early_pay_discount_days: int = Field(ge=0, le=365)
+
+
+def coerce_document_prefix_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip + upper; blank stays blank for pattern 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().upper()
+
+
+def validate_document_prefix_value(value: str) -> str:
+    """AfterValidator: align with doc_numbers._PREFIX_RE / normalize_prefix."""
+    from app.doc_numbers import _PREFIX_RE
+
+    if not value or not _PREFIX_RE.match(value):
+        raise ValueError(
+            "Document prefix must be 1–20 chars: letters, digits, underscore, or hyphen"
+        )
+    return value
+
+
+# Shared by DocumentNumberingFields + legacy SalesInvoiceNumberingUpdate / SalesSettingsUpdate.prefix.
+DocumentPrefixValue = Annotated[
+    str,
+    BeforeValidator(coerce_document_prefix_value),
+    AfterValidator(validate_document_prefix_value),
+]
 
 
 class SalesInvoiceNumberingUpdate(BaseModel):
     """Legacy flat body for invoice-only PATCH /sales/settings."""
+    model_config = ConfigDict(extra="forbid")
 
-    prefix: str = Field(min_length=1, max_length=20)
+
+    prefix: DocumentPrefixValue
     next_number: int = Field(default=1, ge=1, le=999999)
 
 
 class DocumentNumberingFields(BaseModel):
-    prefix: str = Field(min_length=1, max_length=20)
+    """Nested numbering PATCH — prefix ∈ DocumentPrefixValue (BR-20.4).
+
+    Blank/`!!!`/`JE!`/`a b` → **422** (was free `str` min_length=1; service
+    `normalize_prefix` late **400**). Strip + upper at schema boundary.
+    Unknown nested keys → **422** (`extra=forbid`; parent forbid alone did not
+    reject junk under `*_numbering`).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    prefix: DocumentPrefixValue
     next_number: int = Field(default=1, ge=1, le=999999)
 
 
 class SalesSettingsUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     invoice_numbering: DocumentNumberingFields | None = None
     quotation_numbering: DocumentNumberingFields | None = None
     sales_order_numbering: DocumentNumberingFields | None = None
@@ -1496,11 +3753,13 @@ class SalesSettingsUpdate(BaseModel):
     credit_note_numbering: DocumentNumberingFields | None = None
     payment_receipt_numbering: DocumentNumberingFields | None = None
     # Legacy flat fields (invoice only)
-    prefix: str | None = Field(default=None, min_length=1, max_length=20)
+    prefix: DocumentPrefixValue | None = None
     next_number: int | None = Field(default=None, ge=1, le=999999)
 
 
 class PurchasingNumberingUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     purchase_order_numbering: DocumentNumberingFields | None = None
     grn_numbering: DocumentNumberingFields | None = None
     purchase_invoice_numbering: DocumentNumberingFields | None = None
@@ -1511,18 +3770,32 @@ class PurchasingNumberingUpdate(BaseModel):
 
 
 class AccountingSettingsUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     journal_numbering: DocumentNumberingFields | None = None
     cash_transfer_numbering: DocumentNumberingFields | None = None
 
 
 class PosSettingsUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     pos_sale_numbering: DocumentNumberingFields | None = None
     pos_session_numbering: DocumentNumberingFields | None = None
 
 
 class PrintBrandingUpdate(BaseModel):
-    header_text: str | None = Field(default=None, max_length=200)
-    footer_text: str | None = Field(default=None, max_length=300)
+    """PATCH /settings/print — branded header/footer + template defaults (BR-20.4).
+
+    Optional `header_text` ∈ PrintHeaderTextValue (strip; 1–200; ≥1 letter/digit; no
+    `://`/`@`); omit → no change; `null` → clear; blank/`!!!`/`http://…` → **422**
+    (was free `str` max_length=200; blank/garbage could persist on print branding).
+    Optional `footer_text` ∈ PrintFooterTextValue (strip; 1–300; same honesty).
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    header_text: PrintHeaderTextValue | None = None
+    footer_text: PrintFooterTextValue | None = None
     # BR-20.4 — schema Literals; omit = no change; blank/invalid → 422
     # (read path still coerces stored garbage to a4/80mm defaults)
     default_invoice_template: InvoiceTemplateValue | None = None
@@ -1531,6 +3804,8 @@ class PrintBrandingUpdate(BaseModel):
 
 class BackupSettingsUpdate(BaseModel):
     """Logical backup schedule settings (BR-16)."""
+    model_config = ConfigDict(extra="forbid")
+
 
     enabled: bool | None = None
     # Schema Literal; omit = no change; blank/invalid → 422 (was free dict str → service 400)
@@ -1542,8 +3817,87 @@ class BackupSettingsUpdate(BaseModel):
     hour_utc: int | None = Field(default=None, ge=0, le=23)
 
 
+class BackupCreateBody(BaseModel):
+    """POST /backup — typed create body (BR-16).
+
+    Optional `notes` ∈ BackupNotesValue; omit/`null` → no notes; blank/`!!!`/
+    `http://…` → **422** (was free `str` max_length=500; blank/garbage could
+    persist on BackupJob.notes).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`
+    # max_length=500; blank/garbage could persist on BackupJob.notes).
+    notes: BackupNotesValue | None = None
+
+
+class BackupVerifyBody(BaseModel):
+    """POST /backup/{id}/verify — typed sample limit (BR-16).
+
+    Unknown keys → **422**. `sample_limit` outside 1–500 → **422** (was silent clamp).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    sample_limit: int = Field(default=100, ge=1, le=500)
+
+
+class BackupRestoreBody(BaseModel):
+    """POST /backup/{id}/restore — typed dry-run / apply guard (BR-16).
+
+    Unknown keys → **422**. Destructive apply requires `confirm_text="RESTORE"`
+    (schema **422**; was late route **400** via free `dict`).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    dry_run: bool = True
+    confirm: bool = False
+    confirm_text: Literal["RESTORE"] | None = None
+
+    @model_validator(mode="after")
+    def _require_restore_confirm_text(self) -> BackupRestoreBody:
+        if self.confirm and not self.dry_run and self.confirm_text != "RESTORE":
+            raise ValueError(
+                'Destructive restore requires confirm=true, dry_run=false, and confirm_text="RESTORE"'
+            )
+        return self
+
+
 ScheduleFrequencyValue = Annotated[
     Literal["daily", "weekly"],
+    BeforeValidator(coerce_package_code_value),
+]
+# Keep aligned with app.jobs.JOB_HANDLERS keys (Jobs console Run sync / Enqueue).
+JobNameValue = Annotated[
+    Literal[
+        "scan_low_stock",
+        "scan_payment_due",
+        "scan_quotation_expiry",
+        "scan_recurring_expense_due",
+        "generate_recurring_expenses",
+        "run_due_backups",
+        "scan_trial_lifecycle",
+        "run_due_report_emails",
+        "refresh_fx_rates",
+        "sync_bank_feeds",
+        "archive_cold_audit_logs",
+        "retry_due_webhooks",
+        "scan_ai_security_alerts",
+        "send_weekly_ai_insight_digest",
+    ],
+    BeforeValidator(coerce_package_code_value),
+]
+# Keep aligned with app.onboarding.VALID_STEP_IDS / STEP_DEFS (Getting started Skip).
+OnboardingStepIdValue = Annotated[
+    Literal[
+        "setup_company",
+        "add_products",
+        "create_supplier",
+        "stock_ready",
+        "first_sale",
+    ],
     BeforeValidator(coerce_package_code_value),
 ]
 ReportExportFormatValue = Annotated[
@@ -1594,11 +3948,2690 @@ PendingPoReportStatusValue = Annotated[
     Literal["draft", "sent", "partially_received"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with app.purchasing.PO_MANAGE_STATUSES (Purchasing Orders manage list).
+PurchaseOrderStatusValue = Annotated[
+    Literal["draft", "sent", "partially_received", "received", "cancelled"],
+    BeforeValidator(coerce_package_code_value),
+]
+# Keep aligned with app.purchasing.PI_MANAGE_STATUSES (Purchasing Invoices manage list).
+PurchaseInvoiceStatusValue = Annotated[
+    Literal["draft", "unpaid", "partial", "paid", "overdue", "cancelled"],
+    BeforeValidator(coerce_package_code_value),
+]
+# Keep aligned with app.sales.SI_MANAGE_STATUSES (Sales Invoices manage list).
+SalesInvoiceStatusValue = Annotated[
+    Literal["draft", "posted", "sent", "partial", "paid", "overdue", "cancelled"],
+    BeforeValidator(coerce_package_code_value),
+]
+# Keep aligned with app.purchase_requests.PR_MANAGE_STATUSES (Purchasing Requests manage list).
+PurchaseRequestStatusValue = Annotated[
+    Literal["draft", "pending", "approved", "rejected", "converted"],
+    BeforeValidator(coerce_package_code_value),
+]
+# Keep aligned with app.sales_docs.QT_MANAGE_STATUSES (Sales Quotations manage list).
+SalesQuotationStatusValue = Annotated[
+    Literal["draft", "sent", "accepted", "rejected", "expired", "converted"],
+    BeforeValidator(coerce_package_code_value),
+]
+# Keep aligned with app.sales_docs.SO_MANAGE_STATUSES (Sales Orders manage list).
+SalesOrderStatusValue = Annotated[
+    Literal[
+        "draft",
+        "confirmed",
+        "processing",
+        "shipped",
+        "delivered",
+        "invoiced",
+        "cancelled",
+    ],
+    BeforeValidator(coerce_package_code_value),
+]
 # Keep aligned with app.reports.RETURN_REPORT_STATUSES (Reports sales/purchase returns).
 ReturnReportStatusValue = Annotated[
     Literal["draft", "posted", "cancelled"],
     BeforeValidator(coerce_package_code_value),
 ]
+# Keep aligned with app.tenants.VALID_STATUSES (Platform tenants list filter).
+TenantStatusFilterValue = Annotated[
+    Literal["trial", "active", "grace", "suspended"],
+    BeforeValidator(coerce_package_code_value),
+]
+# Keep aligned with app.api_keys.list_keys status filter (Integrations API keys).
+ApiKeyStatusFilterValue = Annotated[
+    Literal["active", "revoked", "expired"],
+    BeforeValidator(coerce_package_code_value),
+]
+# Keep aligned with expense.status (Expenses list manage filter).
+ExpenseStatusFilterValue = Annotated[
+    Literal["pending", "approved", "rejected"],
+    BeforeValidator(coerce_package_code_value),
+]
+# Keep aligned with JournalEntry.status (Accounting Ledger Recent journals filter).
+JournalStatusFilterValue = Annotated[
+    Literal["posted", "unposted"],
+    BeforeValidator(coerce_package_code_value),
+]
+# Keep aligned with CashTransfer.kind / CashTransferCreate.kind (Cash & Bank movements filter).
+CashTransferKindFilterValue = Annotated[
+    Literal["transfer", "deposit", "withdrawal"],
+    BeforeValidator(coerce_package_code_value),
+]
+# Keep aligned with PosSession.status (POS Recent shifts filter). Runtime open|closed only.
+PosSessionStatusFilterValue = Annotated[
+    Literal["open", "closed"],
+    BeforeValidator(coerce_package_code_value),
+]
+# Keep aligned with BankStatement.status (Accounting Reconcile statements filter).
+BankStatementStatusFilterValue = Annotated[
+    Literal["draft", "in_progress", "reconciled"],
+    BeforeValidator(coerce_package_code_value),
+]
+# Keep aligned with BackupJob.status (Backup jobs list filter).
+BackupJobStatusFilterValue = Annotated[
+    Literal["pending", "completed", "failed", "restoring"],
+    BeforeValidator(coerce_package_code_value),
+]
+# Keep aligned with app.webhooks STATUS_* (Integrations delivery history filter).
+WebhookDeliveryStatusFilterValue = Annotated[
+    Literal["pending", "pending_retry", "delivered", "failed"],
+    BeforeValidator(coerce_package_code_value),
+]
+# Keep aligned with app.audit.AUDIT_MODULES (Audit Logs module filter).
+AuditModuleValue = Annotated[
+    Literal[
+        "accounting",
+        "ai",
+        "audit",
+        "auth",
+        "backup",
+        "company",
+        "credit",
+        "dashboard",
+        "expenses",
+        "inventory",
+        "notifications",
+        "onboarding",
+        "platform_staff",
+        "pos",
+        "purchasing",
+        "reports",
+        "sales",
+        "security",
+        "settings",
+        "stores",
+        "system",
+        "tax",
+        "tenants",
+        "users",
+        "webhooks",
+    ],
+    BeforeValidator(coerce_package_code_value),
+]
+
+
+def coerce_audit_action_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip/lowercase; blank stays blank for shape 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().lower()
+
+
+def validate_audit_action_value(value: str) -> str:
+    """AfterValidator: snake_case action shape; digit-start OK for 2fa_* (not RoleKeyValue)."""
+    import re
+
+    # Allow digit start so recorded actions like 2fa_failed / 2fa_enabled stay filterable.
+    if not re.fullmatch(r"[a-z0-9][a-z0-9_]{1,62}", value or ""):
+        raise ValueError(
+            "action must be lowercase letters/numbers/underscore, 2–63 chars "
+            "(may start with a digit)"
+        )
+    return value
+
+
+# Shape-only Audit Logs action Query (not a closed Literal — ~120 growing writers).
+AuditActionValue = Annotated[
+    str,
+    BeforeValidator(coerce_audit_action_value),
+    AfterValidator(validate_audit_action_value),
+]
+
+
+def coerce_audit_entity_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip/lowercase; blank stays blank for shape 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().lower()
+
+
+def validate_audit_entity_value(value: str) -> str:
+    """AfterValidator: snake_case entity shape (not a closed Literal — growing writers)."""
+    import re
+
+    if not re.fullmatch(r"[a-z][a-z0-9_]{0,62}", value or ""):
+        raise ValueError(
+            "entity must be lowercase letters/numbers/underscore, 1–63 chars "
+            "(must start with a letter)"
+        )
+    return value
+
+
+# Shape-only Audit Logs entity Query (not a closed Literal).
+AuditEntityValue = Annotated[
+    str,
+    BeforeValidator(coerce_audit_entity_value),
+    AfterValidator(validate_audit_entity_value),
+]
+
+
+def coerce_iso_date_query_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for date 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_iso_date_query_value(value: str) -> str:
+    """AfterValidator: YYYY-MM-DD (or ISO datetime); blank/invalid → 422."""
+    if not value:
+        raise ValueError("date must be YYYY-MM-DD")
+    try:
+        if len(value) == 10:
+            datetime.strptime(value, "%Y-%m-%d")
+        else:
+            datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError("date must be YYYY-MM-DD") from exc
+    return value
+
+
+# Keep aligned with app.reports.parse_date (Audit + inventory movement + P&L + cash-flow + BS/TB as_of + reports/export + tax report + expenses report + sales products/customers + purchases summary/suppliers + purchases pending/returns + sales returns/salesperson + sales by-store/by-department + inventory transfers/stock-counts + customer/supplier history + AI sales/expenses analysis + sales daily + bank statement dates + AI document draft expense_date/invoice_date + payment cheque_date + purchase invoice PATCH invoice_date/due_date + expense expense_date + GRN line manufacturing_date/expiry_date + stock-in/opening-stock manufacturing_date/expiry_date + SO delivery_date + PO amend due_date + PR required_date + API key expires_at + subscription start_at + report date Query filters).
+IsoDateQueryValue = Annotated[
+    str,
+    BeforeValidator(coerce_iso_date_query_value),
+    AfterValidator(validate_iso_date_query_value),
+]
+
+
+def coerce_e164_phone_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for phone 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_e164_phone_value(value: str) -> str:
+    """AfterValidator: E.164 (+ and 8–15 digits); blank/invalid → 422."""
+    if not value:
+        raise ValueError("phone must be E.164 (+ and 8–15 digits)")
+    cleaned = re.sub(r"[^\d+]", "", value)
+    if cleaned.startswith("00"):
+        cleaned = "+" + cleaned[2:]
+    if not cleaned.startswith("+"):
+        raise ValueError("phone must be E.164 (+ and 8–15 digits)")
+    digits = re.sub(r"\D", "", cleaned)
+    if len(digits) < 8 or len(digits) > 15:
+        raise ValueError("phone must be E.164 (+ and 8–15 digits)")
+    return "+" + digits
+
+
+# Twilio From / SMS test override — require E.164 with leading +.
+E164PhoneValue = Annotated[
+    str,
+    BeforeValidator(coerce_e164_phone_value),
+    AfterValidator(validate_e164_phone_value),
+]
+
+
+def coerce_receipt_override_to_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for recipient 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_receipt_override_to_value(value: str) -> str:
+    """AfterValidator: email or E.164; blank/garbage → 422 (channel refine remains in API)."""
+    if not value:
+        raise ValueError("to must be a valid email or E.164 phone")
+    if "@" in value:
+        try:
+            return str(TypeAdapter(EmailStr).validate_python(value))
+        except Exception as exc:  # noqa: BLE001 — map to ValueError for OpenAPI 422
+            raise ValueError("to must be a valid email or E.164 phone") from exc
+    try:
+        return validate_e164_phone_value(value)
+    except ValueError as exc:
+        raise ValueError("to must be a valid email or E.164 phone") from exc
+
+
+# POS receipt send Query `to` — omit/`null` → cashier default; blank/invalid → 422.
+ReceiptOverrideToValue = Annotated[
+    str,
+    BeforeValidator(coerce_receipt_override_to_value),
+    AfterValidator(validate_receipt_override_to_value),
+]
+
+
+def coerce_twilio_account_sid_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for account_sid 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_twilio_account_sid_value(value: str) -> str:
+    """AfterValidator: alphanumeric Twilio SID; blank/URL/punctuation → 422.
+
+    Loose (not AC+32hex) so short fixtures like ACtip73 remain valid.
+    """
+    if not value:
+        raise ValueError("account_sid must be alphanumeric (1–64 chars)")
+    if len(value) > 64:
+        raise ValueError("account_sid must be alphanumeric (1–64 chars)")
+    if "://" in value or any(ch.isspace() for ch in value):
+        raise ValueError("account_sid must be alphanumeric (1–64 chars)")
+    if not re.fullmatch(r"[A-Za-z0-9]+", value):
+        raise ValueError("account_sid must be alphanumeric (1–64 chars)")
+    return value
+
+
+# Twilio Account SID — alphanumeric 1–64 (fixtures may be short; not strict AC+32hex).
+TwilioAccountSidValue = Annotated[
+    str,
+    BeforeValidator(coerce_twilio_account_sid_value),
+    AfterValidator(validate_twilio_account_sid_value),
+]
+
+
+def coerce_twilio_auth_token_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for auth_token 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_twilio_auth_token_value(value: str) -> str:
+    """AfterValidator: Twilio auth token; blank/URL/@/spaces → 422 (1–128).
+
+    Allows punctuation used in fixtures (e.g. Tip94Token!); rejects empty/URL garbage.
+    """
+    if not value:
+        raise ValueError("auth_token must be a non-empty token (1–128 chars)")
+    if len(value) > 128:
+        raise ValueError("auth_token must be a non-empty token (1–128 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("auth_token must be a non-empty token (1–128 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("auth_token must be a non-empty token (1–128 chars)")
+    return value
+
+
+# Twilio Auth Token — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-15.2).
+TwilioAuthTokenValue = Annotated[
+    str,
+    BeforeValidator(coerce_twilio_auth_token_value),
+    AfterValidator(validate_twilio_auth_token_value),
+]
+
+
+def coerce_smtp_password_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for password 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_smtp_password_value(value: str) -> str:
+    """AfterValidator: SMTP password; blank/URL/@/spaces → 422 (1–128).
+
+    Allows punctuation used in fixtures (e.g. Tip245Pass!); rejects empty/URL garbage.
+    """
+    if not value:
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if len(value) > 128:
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    return value
+
+
+# SMTP password — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-20.3).
+SmtpPasswordValue = Annotated[
+    str,
+    BeforeValidator(coerce_smtp_password_value),
+    AfterValidator(validate_smtp_password_value),
+]
+
+
+def coerce_bank_access_token_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for access_token 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_bank_access_token_value(value: str) -> str:
+    """AfterValidator: bank feed access token; blank/URL/@/spaces → 422 (1–128).
+
+    Allows punctuation used in fixtures (e.g. Tip249Token!); rejects empty/URL garbage.
+    """
+    if not value:
+        raise ValueError("access_token must be a non-empty token (1–128 chars)")
+    if len(value) > 128:
+        raise ValueError("access_token must be a non-empty token (1–128 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("access_token must be a non-empty token (1–128 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("access_token must be a non-empty token (1–128 chars)")
+    return value
+
+
+# Bank connection access_token — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-10.3).
+BankAccessTokenValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_access_token_value),
+    AfterValidator(validate_bank_access_token_value),
+]
+
+
+
+
+def coerce_smtp_host_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for host 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_smtp_host_value(value: str) -> str:
+    """AfterValidator: DNS hostname / IPv4 / localhost; blank/URL/garbage → 422."""
+    if not value:
+        raise ValueError("host must be a hostname (e.g. smtp.example.com or 127.0.0.1)")
+    if len(value) > 253:
+        raise ValueError("host must be a hostname (e.g. smtp.example.com or 127.0.0.1)")
+    lowered = value.lower()
+    if "://" in lowered or "@" in lowered or any(ch.isspace() for ch in value):
+        raise ValueError("host must be a hostname (e.g. smtp.example.com or 127.0.0.1)")
+    # localhost, dotted IPv4, or DNS labels (letters/digits/hyphen, dots between).
+    if not re.fullmatch(
+        r"(?:localhost|(?:\d{1,3}\.){3}\d{1,3}|(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)",
+        lowered,
+    ):
+        raise ValueError("host must be a hostname (e.g. smtp.example.com or 127.0.0.1)")
+    return lowered
+
+
+# Company SMTP host — hostname/IPv4/localhost (no URL scheme / email / spaces).
+SmtpHostValue = Annotated[
+    str,
+    BeforeValidator(coerce_smtp_host_value),
+    AfterValidator(validate_smtp_host_value),
+]
+
+
+def coerce_bank_account_number_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for account_number 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_bank_account_number_value(value: str) -> str:
+    """AfterValidator: alphanumeric (+ spaces/hyphens); blank/URL/garbage → 422."""
+    if not value:
+        raise ValueError(
+            "account_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    if len(value) > 64:
+        raise ValueError(
+            "account_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    if "://" in value or "@" in value:
+        raise ValueError(
+            "account_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 \-]{0,63}", value):
+        raise ValueError(
+            "account_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    return value
+
+
+# Liquid bank COA account_number — digits/letters with optional spaces/hyphens.
+BankAccountNumberValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_account_number_value),
+    AfterValidator(validate_bank_account_number_value),
+]
+
+
+def validate_tax_registration_number_value(value: str) -> str:
+    """AfterValidator: TIN/VAT id; blank/URL/garbage → 422 (max 40 for DB)."""
+    if not value:
+        raise ValueError(
+            "tax_registration_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    if len(value) > 40:
+        raise ValueError(
+            "tax_registration_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    if "://" in value or "@" in value:
+        raise ValueError(
+            "tax_registration_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 \-]{0,39}", value):
+        raise ValueError(
+            "tax_registration_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    return value
+
+
+# Company TIN / VAT registration number — alphanumeric + optional spaces/hyphens (max 40).
+TaxRegistrationNumberValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_account_number_value),
+    AfterValidator(validate_tax_registration_number_value),
+]
+
+
+def validate_registration_number_value(value: str) -> str:
+    """AfterValidator: company registration id; blank/URL/garbage → 422 (max 80)."""
+    if not value:
+        raise ValueError(
+            "registration_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    if len(value) > 80:
+        raise ValueError(
+            "registration_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    if "://" in value or "@" in value:
+        raise ValueError(
+            "registration_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 \-]{0,79}", value):
+        raise ValueError(
+            "registration_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    return value
+
+
+# Company registration number — alphanumeric + optional spaces/hyphens (max 80).
+RegistrationNumberValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_account_number_value),
+    AfterValidator(validate_registration_number_value),
+]
+
+
+def coerce_bank_name_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for bank_name 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_bank_name_value(value: str) -> str:
+    """AfterValidator: non-empty bank label; blank/URL/punctuation-only → 422."""
+    if not value:
+        raise ValueError("bank_name must be a non-empty bank name")
+    if len(value) > 120:
+        raise ValueError("bank_name must be a non-empty bank name")
+    if "://" in value or "@" in value:
+        raise ValueError("bank_name must be a non-empty bank name")
+    # Require at least one letter or digit (reject "!!!", "---", "...")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("bank_name must be a non-empty bank name")
+    return value
+
+
+# Liquid bank COA bank_name — human label (max 120; no URL/email).
+BankNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_bank_name_value),
+]
+
+
+def validate_account_name_value(value: str) -> str:
+    """AfterValidator: COA display name; blank/URL/garbage → 422 (1–150)."""
+    if not value:
+        raise ValueError("account name must be a non-empty label (1–150 chars)")
+    if len(value) > 150:
+        raise ValueError("account name must be a non-empty label (1–150 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("account name must be a non-empty label (1–150 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("account name must be a non-empty label (1–150 chars)")
+    return value
+
+
+# Chart-of-accounts display name — matches Account.name String(150).
+AccountNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_account_name_value),
+]
+
+
+def validate_party_name_value(value: str) -> str:
+    """AfterValidator: customer/supplier display name; blank/URL/garbage → 422 (1–180)."""
+    if not value:
+        raise ValueError("party name must be a non-empty label (1–180 chars)")
+    if len(value) > 180:
+        raise ValueError("party name must be a non-empty label (1–180 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("party name must be a non-empty label (1–180 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("party name must be a non-empty label (1–180 chars)")
+    return value
+
+
+# Party (customer/supplier) display name — matches Party.name String(180).
+PartyNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_party_name_value),
+]
+
+
+def validate_party_category_value(value: str) -> str:
+    """AfterValidator: party category label; blank/URL/garbage → 422 (1–80)."""
+    if not value:
+        raise ValueError("party category must be a non-empty label (1–80 chars)")
+    if len(value) > 80:
+        raise ValueError("party category must be a non-empty label (1–80 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("party category must be a non-empty label (1–80 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("party category must be a non-empty label (1–80 chars)")
+    return value
+
+
+# Customer/supplier category — matches Party.category String(80).
+PartyCategoryValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_party_category_value),
+]
+
+
+def validate_party_code_value(value: str) -> str:
+    """AfterValidator: party code; blank/URL/garbage → 422 (1–64)."""
+    if not value:
+        raise ValueError("party code must be a non-empty reference (1–64 chars)")
+    if len(value) > 64:
+        raise ValueError("party code must be a non-empty reference (1–64 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("party code must be a non-empty reference (1–64 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("party code must be a non-empty reference (1–64 chars)")
+    return value
+
+
+# Customer/supplier code — matches Party.code String(64); uniqueness stays in API.
+PartyCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_party_code_value),
+]
+
+
+def validate_product_name_value(value: str) -> str:
+    """AfterValidator: product display name; blank/URL/garbage → 422 (1–200)."""
+    if not value:
+        raise ValueError("product name must be a non-empty label (1–200 chars)")
+    if len(value) > 200:
+        raise ValueError("product name must be a non-empty label (1–200 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("product name must be a non-empty label (1–200 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("product name must be a non-empty label (1–200 chars)")
+    return value
+
+
+# Catalog product display name — matches Product.name String(200).
+ProductNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_product_name_value),
+]
+
+
+def validate_product_category_label_value(value: str) -> str:
+    """AfterValidator: denormalized product category label; blank/URL/garbage → 422 (1–100)."""
+    if not value:
+        raise ValueError("product category must be a non-empty label (1–100 chars)")
+    if len(value) > 100:
+        raise ValueError("product category must be a non-empty label (1–100 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("product category must be a non-empty label (1–100 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("product category must be a non-empty label (1–100 chars)")
+    return value
+
+
+# Denormalized Product.category String(100); catalog FK is category_id.
+ProductCategoryLabelValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_product_category_label_value),
+]
+
+
+# Keep aligned with app.barcodes.BARCODE_PATTERN / normalize_barcode (Code 128 family).
+_PRODUCT_BARCODE_RE = re.compile(r"^[A-Za-z0-9\-._]{4,48}$")
+
+
+def validate_product_barcode_value(value: str) -> str:
+    """AfterValidator: product/variant barcode; blank/pattern fail → 422 (4–48)."""
+    if not value:
+        raise ValueError("product barcode must be 4–48 characters (letters, numbers, - . _)")
+    code = value.upper()
+    if not _PRODUCT_BARCODE_RE.match(code):
+        raise ValueError("product barcode must be 4–48 characters (letters, numbers, - . _)")
+    return code
+
+
+# Product / variant barcode — String(100) column; API pattern 4–48 like normalize_barcode.
+ProductBarcodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_product_barcode_value),
+]
+
+
+# Keep aligned with app.catalog._SKU_RE / normalize_sku.
+_PRODUCT_SKU_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$")
+
+
+def validate_product_sku_value(value: str) -> str:
+    """AfterValidator: product/variant SKU; blank/pattern fail → 422 (1–100)."""
+    if not value:
+        raise ValueError(
+            "product SKU must be 1–100 chars: letters, digits, . _ - (start alphanumeric)"
+        )
+    sku = value.upper()
+    if not _PRODUCT_SKU_RE.fullmatch(sku):
+        raise ValueError(
+            "product SKU must be 1–100 chars: letters, digits, . _ - (start alphanumeric)"
+        )
+    return sku
+
+
+# Product / variant SKU — matches Product.sku / ProductVariant.sku String(100).
+ProductSkuValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_product_sku_value),
+]
+
+
+def validate_product_description_value(value: str) -> str:
+    """AfterValidator: product catalog narrative; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("product description must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("product description must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("product description must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("product description must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Product description — Product.description Text; keep ≤500 at API boundary.
+ProductDescriptionValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_product_description_value),
+]
+
+
+def validate_brand_description_value(value: str) -> str:
+    """AfterValidator: brand catalog narrative; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("brand description must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("brand description must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("brand description must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("brand description must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Brand description — Brand.description Text; keep ≤500 at API boundary.
+BrandDescriptionValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_brand_description_value),
+]
+
+
+def validate_stock_transfer_notes_value(value: str) -> str:
+    """AfterValidator: stock transfer notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("stock transfer notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("stock transfer notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("stock transfer notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("stock transfer notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Stock transfer notes — StockTransfer.notes Text; keep ≤500 at API boundary.
+StockTransferNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_stock_transfer_notes_value),
+]
+
+
+def validate_stock_adjust_notes_value(value: str) -> str:
+    """AfterValidator: stock adjustment notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("stock adjustment notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("stock adjustment notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("stock adjustment notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("stock adjustment notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Stock adjustment notes — StockMovement.notes Text; keep ≤500 at API boundary.
+StockAdjustNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_stock_adjust_notes_value),
+]
+
+
+def validate_stock_out_notes_value(value: str) -> str:
+    """AfterValidator: stock-out notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("stock-out notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("stock-out notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("stock-out notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("stock-out notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Stock-out notes — StockMovement.notes Text; keep ≤500 at API boundary.
+StockOutNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_stock_out_notes_value),
+]
+
+
+def validate_stock_movement_reference_id_value(value: str) -> str:
+    """AfterValidator: stock movement reference_id; blank/URL/garbage → 422 (1–36)."""
+    if not value:
+        raise ValueError(
+            "stock movement reference_id must be a non-empty label (1–36 chars)"
+        )
+    if len(value) > 36:
+        raise ValueError(
+            "stock movement reference_id must be a non-empty label (1–36 chars)"
+        )
+    if "://" in value or "@" in value:
+        raise ValueError(
+            "stock movement reference_id must be a non-empty label (1–36 chars)"
+        )
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError(
+            "stock movement reference_id must be a non-empty label (1–36 chars)"
+        )
+    return value
+
+
+# Manual stock-in / stock-out external ref — matches StockMovement.reference_id String(36).
+StockMovementReferenceIdValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_stock_movement_reference_id_value),
+]
+
+
+def coerce_stock_in_reference_type_value(value: object) -> object:
+    """BeforeValidator: strip + lower stock-in reference_type codes."""
+    if isinstance(value, str):
+        return value.strip().lower()
+    return value
+
+
+def validate_stock_in_reference_type_value(value: str) -> str:
+    """AfterValidator: stock-in reference_type; blank/URL/garbage → 422 (1–50)."""
+    if not value:
+        raise ValueError(
+            "stock-in reference_type must be a non-empty code (1–50 chars)"
+        )
+    if len(value) > 50:
+        raise ValueError(
+            "stock-in reference_type must be a non-empty code (1–50 chars)"
+        )
+    if "://" in value or "@" in value:
+        raise ValueError(
+            "stock-in reference_type must be a non-empty code (1–50 chars)"
+        )
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError(
+            "stock-in reference_type must be a non-empty code (1–50 chars)"
+        )
+    return value
+
+
+# Manual stock-in source code — matches StockMovement.reference_type String(50).
+StockInReferenceTypeValue = Annotated[
+    str,
+    BeforeValidator(coerce_stock_in_reference_type_value),
+    AfterValidator(validate_stock_in_reference_type_value),
+]
+
+
+def validate_stock_in_notes_value(value: str) -> str:
+    """AfterValidator: stock-in notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("stock-in notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("stock-in notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("stock-in notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("stock-in notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Stock-in notes — StockMovement.notes Text; keep ≤500 at API boundary.
+StockInNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_stock_in_notes_value),
+]
+
+
+def validate_store_name_value(value: str) -> str:
+    """AfterValidator: store display name; blank/URL/garbage → 422 (1–150)."""
+    if not value:
+        raise ValueError("store name must be a non-empty label (1–150 chars)")
+    if len(value) > 150:
+        raise ValueError("store name must be a non-empty label (1–150 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("store name must be a non-empty label (1–150 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("store name must be a non-empty label (1–150 chars)")
+    return value
+
+
+# Multi-store display name — matches Store.name String(150).
+StoreNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_store_name_value),
+]
+
+
+def validate_store_code_value(value: str) -> str:
+    """AfterValidator: store code; blank/URL/garbage → 422 (1–50)."""
+    if not value:
+        raise ValueError("store code must be a non-empty reference (1–50 chars)")
+    if len(value) > 50:
+        raise ValueError("store code must be a non-empty reference (1–50 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("store code must be a non-empty reference (1–50 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("store code must be a non-empty reference (1–50 chars)")
+    return value
+
+
+# Multi-store code — matches Store.code String(50); uniqueness via UniqueConstraint.
+StoreCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_store_code_value),
+]
+
+
+def validate_warehouse_name_value(value: str) -> str:
+    """AfterValidator: warehouse display name; blank/URL/garbage → 422 (1–150)."""
+    if not value:
+        raise ValueError("warehouse name must be a non-empty label (1–150 chars)")
+    if len(value) > 150:
+        raise ValueError("warehouse name must be a non-empty label (1–150 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("warehouse name must be a non-empty label (1–150 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("warehouse name must be a non-empty label (1–150 chars)")
+    return value
+
+
+# Warehouse display name — matches Warehouse.name String(150).
+WarehouseNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_warehouse_name_value),
+]
+
+
+def validate_warehouse_code_value(value: str) -> str:
+    """AfterValidator: warehouse code; blank/URL/garbage → 422 (1–50)."""
+    if not value:
+        raise ValueError("warehouse code must be a non-empty reference (1–50 chars)")
+    if len(value) > 50:
+        raise ValueError("warehouse code must be a non-empty reference (1–50 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("warehouse code must be a non-empty reference (1–50 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("warehouse code must be a non-empty reference (1–50 chars)")
+    return value
+
+
+# Warehouse code — matches Warehouse.code String(50); uniqueness in create_warehouse.
+WarehouseCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_warehouse_code_value),
+]
+
+
+def validate_branch_name_value(value: str) -> str:
+    """AfterValidator: branch display name; blank/URL/garbage → 422 (1–150)."""
+    if not value:
+        raise ValueError("branch name must be a non-empty label (1–150 chars)")
+    if len(value) > 150:
+        raise ValueError("branch name must be a non-empty label (1–150 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("branch name must be a non-empty label (1–150 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("branch name must be a non-empty label (1–150 chars)")
+    return value
+
+
+# Branch display name — matches Branch.name String(150).
+BranchNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_branch_name_value),
+]
+
+
+def validate_branch_code_value(value: str) -> str:
+    """AfterValidator: branch code; blank/URL/garbage → 422 (1–40)."""
+    if not value:
+        raise ValueError("branch code must be a non-empty reference (1–40 chars)")
+    if len(value) > 40:
+        raise ValueError("branch code must be a non-empty reference (1–40 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("branch code must be a non-empty reference (1–40 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("branch code must be a non-empty reference (1–40 chars)")
+    return value
+
+
+# Branch code — matches Branch.code String(40); uniqueness in create_branch.
+BranchCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_branch_code_value),
+]
+
+
+def validate_brand_name_value(value: str) -> str:
+    """AfterValidator: brand display name; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError("brand name must be a non-empty label (1–120 chars)")
+    if len(value) > 120:
+        raise ValueError("brand name must be a non-empty label (1–120 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("brand name must be a non-empty label (1–120 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("brand name must be a non-empty label (1–120 chars)")
+    return value
+
+
+# Catalog brand display name — matches Brand.name String(120).
+BrandNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_brand_name_value),
+]
+
+
+def validate_category_name_value(value: str) -> str:
+    """AfterValidator: product category display name; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError("category name must be a non-empty label (1–120 chars)")
+    if len(value) > 120:
+        raise ValueError("category name must be a non-empty label (1–120 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("category name must be a non-empty label (1–120 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("category name must be a non-empty label (1–120 chars)")
+    return value
+
+
+# Catalog product-category display name — matches ProductCategory.name String(120).
+CategoryNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_category_name_value),
+]
+
+
+def validate_category_code_value(value: str) -> str:
+    """AfterValidator: product category code; blank/URL/garbage → 422 (1–40)."""
+    if not value:
+        raise ValueError("category code must be a non-empty reference (1–40 chars)")
+    if len(value) > 40:
+        raise ValueError("category code must be a non-empty reference (1–40 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("category code must be a non-empty reference (1–40 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("category code must be a non-empty reference (1–40 chars)")
+    return value
+
+
+# Catalog category code — matches ProductCategory.code String(40); uniqueness in service.
+CategoryCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_category_code_value),
+]
+
+
+def validate_brand_code_value(value: str) -> str:
+    """AfterValidator: catalog brand code; blank/URL/garbage → 422 (1–40)."""
+    if not value:
+        raise ValueError("brand code must be a non-empty reference (1–40 chars)")
+    if len(value) > 40:
+        raise ValueError("brand code must be a non-empty reference (1–40 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("brand code must be a non-empty reference (1–40 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("brand code must be a non-empty reference (1–40 chars)")
+    return value
+
+
+# Catalog brand code — matches Brand.code String(40); uniqueness in service.
+BrandCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_brand_code_value),
+]
+
+
+def validate_unit_code_value(value: str) -> str:
+    """AfterValidator: unit-of-measure code; blank/URL/garbage → 422 (1–20)."""
+    if not value:
+        raise ValueError("unit code must be a non-empty reference (1–20 chars)")
+    if len(value) > 20:
+        raise ValueError("unit code must be a non-empty reference (1–20 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("unit code must be a non-empty reference (1–20 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("unit code must be a non-empty reference (1–20 chars)")
+    return value
+
+
+# Catalog UoM code — matches UnitOfMeasure.code String(20); uniqueness in service.
+UnitCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_unit_code_value),
+]
+
+
+def validate_batch_number_value(value: str) -> str:
+    """AfterValidator: product batch / lot number; blank/URL/garbage → 422 (1–80)."""
+    if not value:
+        raise ValueError("batch number must be a non-empty lot reference (1–80 chars)")
+    if len(value) > 80:
+        raise ValueError("batch number must be a non-empty lot reference (1–80 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("batch number must be a non-empty lot reference (1–80 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("batch number must be a non-empty lot reference (1–80 chars)")
+    return value
+
+
+# Product batch / lot number — matches ProductBatch.batch_number String(80).
+BatchNumberValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_batch_number_value),
+]
+
+
+def validate_unit_name_value(value: str) -> str:
+    """AfterValidator: unit-of-measure display name; blank/URL/garbage → 422 (1–80)."""
+    if not value:
+        raise ValueError("unit name must be a non-empty label (1–80 chars)")
+    if len(value) > 80:
+        raise ValueError("unit name must be a non-empty label (1–80 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("unit name must be a non-empty label (1–80 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("unit name must be a non-empty label (1–80 chars)")
+    return value
+
+
+# Catalog unit-of-measure display name — matches UnitOfMeasure.name String(80).
+UnitNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_unit_name_value),
+]
+
+
+def validate_department_name_value(value: str) -> str:
+    """AfterValidator: department display name; blank/URL/garbage → 422 (1–150)."""
+    if not value:
+        raise ValueError("department name must be a non-empty label (1–150 chars)")
+    if len(value) > 150:
+        raise ValueError("department name must be a non-empty label (1–150 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("department name must be a non-empty label (1–150 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("department name must be a non-empty label (1–150 chars)")
+    return value
+
+
+# Department display name — matches Department.name String(150).
+DepartmentNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_department_name_value),
+]
+
+
+def validate_department_code_value(value: str) -> str:
+    """AfterValidator: department code; blank/URL/garbage → 422 (1–40)."""
+    if not value:
+        raise ValueError("department code must be a non-empty reference (1–40 chars)")
+    if len(value) > 40:
+        raise ValueError("department code must be a non-empty reference (1–40 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("department code must be a non-empty reference (1–40 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("department code must be a non-empty reference (1–40 chars)")
+    return value
+
+
+# Department code — matches Department.code String(40); uniqueness in create_department.
+DepartmentCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_department_code_value),
+]
+
+
+def validate_variant_name_value(value: str) -> str:
+    """AfterValidator: product variant display name; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError("variant name must be a non-empty label (1–120 chars)")
+    if len(value) > 120:
+        raise ValueError("variant name must be a non-empty label (1–120 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("variant name must be a non-empty label (1–120 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("variant name must be a non-empty label (1–120 chars)")
+    return value
+
+
+# Product variant display name — matches ProductVariant.name String(120).
+VariantNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_variant_name_value),
+]
+
+
+def validate_variant_attr_value(value: str) -> str:
+    """AfterValidator: variant size/color/flavor/dosage; blank/URL/garbage → 422 (1–80)."""
+    if not value:
+        raise ValueError("variant attribute must be a non-empty label (1–80 chars)")
+    if len(value) > 80:
+        raise ValueError("variant attribute must be a non-empty label (1–80 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("variant attribute must be a non-empty label (1–80 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("variant attribute must be a non-empty label (1–80 chars)")
+    return value
+
+
+# Product variant attrs — matches ProductVariant.size|color|flavor|dosage String(80).
+VariantAttrValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_variant_attr_value),
+]
+
+
+def validate_customer_group_name_value(value: str) -> str:
+    """AfterValidator: customer group display name; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError("customer group name must be a non-empty label (1–120 chars)")
+    if len(value) > 120:
+        raise ValueError("customer group name must be a non-empty label (1–120 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("customer group name must be a non-empty label (1–120 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("customer group name must be a non-empty label (1–120 chars)")
+    return value
+
+
+# Customer group display name — matches CustomerGroup.name String(120).
+CustomerGroupNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_customer_group_name_value),
+]
+
+
+def validate_customer_group_code_value(value: str) -> str:
+    """AfterValidator: customer group code; blank/URL/garbage → 422 (1–40)."""
+    if not value:
+        raise ValueError("customer group code must be a non-empty reference (1–40 chars)")
+    if len(value) > 40:
+        raise ValueError("customer group code must be a non-empty reference (1–40 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("customer group code must be a non-empty reference (1–40 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("customer group code must be a non-empty reference (1–40 chars)")
+    return value
+
+
+# Customer group code — matches CustomerGroup.code String(40); omit → slug from name.
+CustomerGroupCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_customer_group_code_value),
+]
+
+
+def validate_tax_rate_name_value(value: str) -> str:
+    """AfterValidator: tax rate display name; blank/URL/garbage → 422 (1–80)."""
+    if not value:
+        raise ValueError("tax rate name must be a non-empty label (1–80 chars)")
+    if len(value) > 80:
+        raise ValueError("tax rate name must be a non-empty label (1–80 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("tax rate name must be a non-empty label (1–80 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("tax rate name must be a non-empty label (1–80 chars)")
+    return value
+
+
+# Tax rate display name — matches TaxRate.name String(80).
+TaxRateNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_tax_rate_name_value),
+]
+
+
+def validate_expense_category_name_value(value: str) -> str:
+    """AfterValidator: expense category display name; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError("expense category name must be a non-empty label (1–120 chars)")
+    if len(value) > 120:
+        raise ValueError("expense category name must be a non-empty label (1–120 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("expense category name must be a non-empty label (1–120 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("expense category name must be a non-empty label (1–120 chars)")
+    return value
+
+
+# Expense category display name — matches ExpenseCategory.name String(120).
+ExpenseCategoryNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_expense_category_name_value),
+]
+
+
+def validate_expense_category_code_value(value: str) -> str:
+    """AfterValidator: expense category code; blank/URL/garbage → 422 (1–40)."""
+    if not value:
+        raise ValueError("expense category code must be a non-empty reference (1–40 chars)")
+    if len(value) > 40:
+        raise ValueError("expense category code must be a non-empty reference (1–40 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("expense category code must be a non-empty reference (1–40 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("expense category code must be a non-empty reference (1–40 chars)")
+    return value
+
+
+# Expense category code — matches ExpenseCategory.code String(40); uniqueness on create.
+ExpenseCategoryCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_expense_category_code_value),
+]
+
+
+def validate_expense_category_label_value(value: str) -> str:
+    """AfterValidator: denormalized expense spend category label; blank/URL/garbage → 422 (1–100)."""
+    if not value:
+        raise ValueError("expense category must be a non-empty label (1–100 chars)")
+    if len(value) > 100:
+        raise ValueError("expense category must be a non-empty label (1–100 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("expense category must be a non-empty label (1–100 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("expense category must be a non-empty label (1–100 chars)")
+    return value
+
+
+# Denormalized Expense/RecurringExpense.category String(100); prefer category_id FK.
+ExpenseCategoryLabelValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_expense_category_label_value),
+]
+
+
+def validate_party_contact_name_value(value: str) -> str:
+    """AfterValidator: party contact display name; blank/URL/garbage → 422 (1–150)."""
+    if not value:
+        raise ValueError("party contact name must be a non-empty label (1–150 chars)")
+    if len(value) > 150:
+        raise ValueError("party contact name must be a non-empty label (1–150 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("party contact name must be a non-empty label (1–150 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("party contact name must be a non-empty label (1–150 chars)")
+    return value
+
+
+# Party contact display name — matches PartyContact.name String(150).
+PartyContactNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_party_contact_name_value),
+]
+
+
+def validate_platform_staff_full_name_value(value: str) -> str:
+    """AfterValidator: platform staff display name; blank/URL/garbage → 422 (1–150)."""
+    if not value:
+        raise ValueError("platform staff full name must be a non-empty label (1–150 chars)")
+    if len(value) > 150:
+        raise ValueError("platform staff full name must be a non-empty label (1–150 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("platform staff full name must be a non-empty label (1–150 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("platform staff full name must be a non-empty label (1–150 chars)")
+    return value
+
+
+# Platform staff full name — matches User.full_name String(150).
+PlatformStaffFullNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_platform_staff_full_name_value),
+]
+
+
+def coerce_platform_staff_password_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for password 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_platform_staff_password_value(value: str) -> str:
+    """AfterValidator: platform staff password; blank/URL/@/spaces → 422 (1–128).
+
+    Allows punctuation used in fixtures (e.g. Tip246Pass!); rejects empty/URL garbage.
+    Strength (8+ upper/lower/digit/symbol) remains service validate_password_strength.
+    """
+    if not value:
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if len(value) > 128:
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    return value
+
+
+# Platform staff create password — 1–128; ≥1 letter/digit; no :// / @ / spaces.
+PlatformStaffPasswordValue = Annotated[
+    str,
+    BeforeValidator(coerce_platform_staff_password_value),
+    AfterValidator(validate_platform_staff_password_value),
+]
+
+
+def coerce_user_password_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for password 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_user_password_value(value: str) -> str:
+    """AfterValidator: tenant user password; blank/URL/@/spaces → 422 (1–128).
+
+    Allows punctuation used in fixtures (e.g. Tip247Pass!); rejects empty/URL garbage.
+    Strength (8+ upper/lower/digit/symbol) remains service validate_password_strength.
+    """
+    if not value:
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if len(value) > 128:
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    return value
+
+
+# Tenant user create/PATCH password — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-3).
+UserPasswordValue = Annotated[
+    str,
+    BeforeValidator(coerce_user_password_value),
+    AfterValidator(validate_user_password_value),
+]
+
+
+def coerce_tenant_admin_password_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for admin_password 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_tenant_admin_password_value(value: str) -> str:
+    """AfterValidator: tenant create admin password; blank/URL/@/spaces → 422 (1–128).
+
+    Allows punctuation used in fixtures (e.g. Tip248Pass!); rejects empty/URL garbage.
+    Strength (8+ upper/lower/digit/symbol) remains service validate_password_strength.
+    """
+    if not value:
+        raise ValueError("admin password must be a non-empty secret (1–128 chars)")
+    if len(value) > 128:
+        raise ValueError("admin password must be a non-empty secret (1–128 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("admin password must be a non-empty secret (1–128 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("admin password must be a non-empty secret (1–128 chars)")
+    return value
+
+
+# Tenant create admin password — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-1).
+TenantAdminPasswordValue = Annotated[
+    str,
+    BeforeValidator(coerce_tenant_admin_password_value),
+    AfterValidator(validate_tenant_admin_password_value),
+]
+
+
+def coerce_password_reset_new_password_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for new_password 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_password_reset_new_password_value(value: str) -> str:
+    """AfterValidator: password-reset new_password; blank/URL/@/spaces → 422 (1–128).
+
+    Allows punctuation used in fixtures (e.g. Tip250Pass!); rejects empty/URL garbage.
+    Strength (8+ upper/lower/digit/symbol) remains service validate_password_strength.
+    """
+    if not value:
+        raise ValueError("new_password must be a non-empty secret (1–128 chars)")
+    if len(value) > 128:
+        raise ValueError("new_password must be a non-empty secret (1–128 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("new_password must be a non-empty secret (1–128 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("new_password must be a non-empty secret (1–128 chars)")
+    return value
+
+
+# Password reset confirm new_password — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-19).
+PasswordResetNewPasswordValue = Annotated[
+    str,
+    BeforeValidator(coerce_password_reset_new_password_value),
+    AfterValidator(validate_password_reset_new_password_value),
+]
+
+
+def coerce_password_reset_token_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for reset token 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_password_reset_token_value(value: str) -> str:
+    """AfterValidator: password-reset token; blank/URL/@/spaces → 422 (1–200).
+
+    Allows url-safe tokens (e.g. Tip254Token_abc-); rejects empty/URL garbage.
+    Authenticity remains hash_token / AuthToken lookup → **400**.
+    """
+    if not value:
+        raise ValueError("reset token must be a non-empty token (1–200 chars)")
+    if len(value) > 200:
+        raise ValueError("reset token must be a non-empty token (1–200 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("reset token must be a non-empty token (1–200 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("reset token must be a non-empty token (1–200 chars)")
+    return value
+
+
+# Password-reset confirm token — 1–200; ≥1 letter/digit; no :// / @ / spaces (BR-19).
+PasswordResetTokenValue = Annotated[
+    str,
+    BeforeValidator(coerce_password_reset_token_value),
+    AfterValidator(validate_password_reset_token_value),
+]
+
+
+def coerce_email_verify_token_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for email verify token 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_email_verify_token_value(value: str) -> str:
+    """AfterValidator: email-verify token; blank/URL/@/spaces → 422 (1–200).
+
+    Allows url-safe tokens (e.g. Tip255Token_abc-); rejects empty/URL garbage.
+    Authenticity remains hash_token / AuthToken lookup → **400**.
+    """
+    if not value:
+        raise ValueError("verify token must be a non-empty token (1–200 chars)")
+    if len(value) > 200:
+        raise ValueError("verify token must be a non-empty token (1–200 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("verify token must be a non-empty token (1–200 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("verify token must be a non-empty token (1–200 chars)")
+    return value
+
+
+# Email verify confirm token — 1–200; ≥1 letter/digit; no :// / @ / spaces (BR-19).
+EmailVerifyTokenValue = Annotated[
+    str,
+    BeforeValidator(coerce_email_verify_token_value),
+    AfterValidator(validate_email_verify_token_value),
+]
+
+
+def coerce_challenge_token_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for MFA challenge token 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_challenge_token_value(value: str) -> str:
+    """AfterValidator: MFA challenge JWT; blank/URL/@/spaces → 422 (1–2048).
+
+    Allows JWT-shaped fixtures (e.g. Tip257.eyJ…); rejects empty/URL garbage.
+    Authenticity remains decode_challenge_token → **401**.
+    """
+    if not value:
+        raise ValueError("challenge token must be a non-empty token (1–2048 chars)")
+    if len(value) > 2048:
+        raise ValueError("challenge token must be a non-empty token (1–2048 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("challenge token must be a non-empty token (1–2048 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("challenge token must be a non-empty token (1–2048 chars)")
+    return value
+
+
+# MFA login challenge JWT — 1–2048; ≥1 letter/digit; no :// / @ / spaces (BR-19).
+ChallengeTokenValue = Annotated[
+    str,
+    BeforeValidator(coerce_challenge_token_value),
+    AfterValidator(validate_challenge_token_value),
+]
+
+
+def coerce_refresh_token_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for refresh_token 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_refresh_token_value(value: str) -> str:
+    """AfterValidator: session refresh token; blank/URL/@/spaces → 422 (1–200).
+
+    Allows urlsafe tokens from issue_refresh_token (e.g. Tip258Tok_abc-); rejects empty/URL garbage.
+    Authenticity remains hashed refresh-token lookup (invalid/expired → **401**).
+    """
+    if not value:
+        raise ValueError("refresh_token must be a non-empty token (1–200 chars)")
+    if len(value) > 200:
+        raise ValueError("refresh_token must be a non-empty token (1–200 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("refresh_token must be a non-empty token (1–200 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("refresh_token must be a non-empty token (1–200 chars)")
+    return value
+
+
+# Session refresh token — 1–200; ≥1 letter/digit; no :// / @ / spaces (BR-19).
+RefreshTokenValue = Annotated[
+    str,
+    BeforeValidator(coerce_refresh_token_value),
+    AfterValidator(validate_refresh_token_value),
+]
+
+
+def coerce_login_password_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for login password 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_login_password_value(value: str) -> str:
+    """AfterValidator: login password; blank/URL/@/spaces → 422 (1–128).
+
+    Allows punctuation used in fixtures (e.g. Tip252Pass!); rejects empty/URL garbage.
+    Authenticity remains verify_password → **401**.
+    """
+    if not value:
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if len(value) > 128:
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    return value
+
+
+# Login password — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-19).
+LoginPasswordValue = Annotated[
+    str,
+    BeforeValidator(coerce_login_password_value),
+    AfterValidator(validate_login_password_value),
+]
+
+
+def coerce_two_factor_disable_password_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for disable password 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_two_factor_disable_password_value(value: str) -> str:
+    """AfterValidator: 2FA disable password; blank/URL/@/spaces → 422 (1–128).
+
+    Allows punctuation used in fixtures (e.g. Tip253Pass!); rejects empty/URL garbage.
+    Authenticity remains verify_password → **401**.
+    """
+    if not value:
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if len(value) > 128:
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("password must be a non-empty secret (1–128 chars)")
+    return value
+
+
+# 2FA disable password — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-19).
+TwoFactorDisablePasswordValue = Annotated[
+    str,
+    BeforeValidator(coerce_two_factor_disable_password_value),
+    AfterValidator(validate_two_factor_disable_password_value),
+]
+
+
+def validate_user_full_name_value(value: str) -> str:
+    """AfterValidator: tenant user display name; blank/URL/garbage → 422 (1–150)."""
+    if not value:
+        raise ValueError("user full name must be a non-empty label (1–150 chars)")
+    if len(value) > 150:
+        raise ValueError("user full name must be a non-empty label (1–150 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("user full name must be a non-empty label (1–150 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("user full name must be a non-empty label (1–150 chars)")
+    return value
+
+
+# Tenant user full name — matches User.full_name String(150).
+UserFullNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_user_full_name_value),
+]
+
+
+def validate_party_contact_designation_value(value: str) -> str:
+    """AfterValidator: party contact designation; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError("party contact designation must be a non-empty label (1–120 chars)")
+    if len(value) > 120:
+        raise ValueError("party contact designation must be a non-empty label (1–120 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("party contact designation must be a non-empty label (1–120 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("party contact designation must be a non-empty label (1–120 chars)")
+    return value
+
+
+# Party contact designation — matches PartyContact.designation String(120).
+PartyContactDesignationValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_party_contact_designation_value),
+]
+
+
+def validate_custom_role_label_value(value: str) -> str:
+    """AfterValidator: custom role display label; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError("custom role label must be a non-empty label (1–120 chars)")
+    if len(value) > 120:
+        raise ValueError("custom role label must be a non-empty label (1–120 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("custom role label must be a non-empty label (1–120 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("custom role label must be a non-empty label (1–120 chars)")
+    return value
+
+
+# Custom role display label — matches CustomRole.label String(120).
+CustomRoleLabelValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_custom_role_label_value),
+]
+
+
+def validate_approval_level_label_value(value: str) -> str:
+    """AfterValidator: approval matrix level label; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError("approval level label must be a non-empty label (1–120 chars)")
+    if len(value) > 120:
+        raise ValueError("approval level label must be a non-empty label (1–120 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("approval level label must be a non-empty label (1–120 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("approval level label must be a non-empty label (1–120 chars)")
+    return value
+
+
+# Expense / PR approval matrix level label — stored in tenant settings JSON.
+ApprovalLevelLabelValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_approval_level_label_value),
+]
+
+
+def validate_bank_connection_display_name_value(value: str) -> str:
+    """AfterValidator: bank connection display name; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError("bank connection display name must be a non-empty label (1–120 chars)")
+    if len(value) > 120:
+        raise ValueError("bank connection display name must be a non-empty label (1–120 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("bank connection display name must be a non-empty label (1–120 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("bank connection display name must be a non-empty label (1–120 chars)")
+    return value
+
+
+# Bank connection display name — matches BankConnection.display_name String(120).
+BankConnectionDisplayNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_bank_connection_display_name_value),
+]
+
+
+def validate_bank_external_account_id_value(value: str) -> str:
+    """AfterValidator: bank feed external account id; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError(
+            "bank external account id must be a non-empty label (1–120 chars)"
+        )
+    if len(value) > 120:
+        raise ValueError(
+            "bank external account id must be a non-empty label (1–120 chars)"
+        )
+    if "://" in value or "@" in value:
+        raise ValueError(
+            "bank external account id must be a non-empty label (1–120 chars)"
+        )
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError(
+            "bank external account id must be a non-empty label (1–120 chars)"
+        )
+    return value
+
+
+# Bank connection provider account id — matches BankConnection.external_account_id String(120).
+BankExternalAccountIdValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_bank_external_account_id_value),
+]
+
+
+def validate_pos_customer_name_value(value: str) -> str:
+    """AfterValidator: POS walk-in customer name; blank/URL/garbage → 422 (1–180)."""
+    if not value:
+        raise ValueError("POS customer name must be a non-empty label (1–180 chars)")
+    if len(value) > 180:
+        raise ValueError("POS customer name must be a non-empty label (1–180 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("POS customer name must be a non-empty label (1–180 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("POS customer name must be a non-empty label (1–180 chars)")
+    return value
+
+
+# POS walk-in receipt name — matches PosSaleCreate.customer_name max 180.
+PosCustomerNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_pos_customer_name_value),
+]
+
+
+def validate_pos_session_close_notes_value(value: str) -> str:
+    """AfterValidator: POS shift close notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("POS shift close notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("POS shift close notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("POS shift close notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("POS shift close notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# POS session close notes — PosSession.notes Text; keep ≤500 at API boundary.
+PosSessionCloseNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_pos_session_close_notes_value),
+]
+
+
+def validate_api_key_name_value(value: str) -> str:
+    """AfterValidator: API key display name; blank/URL/garbage/short → 422 (2–120)."""
+    if not value or len(value) < 2 or len(value) > 120:
+        raise ValueError("API key name must be a non-empty label (2–120 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("API key name must be a non-empty label (2–120 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("API key name must be a non-empty label (2–120 chars)")
+    return value
+
+
+# API key display name — matches ApiKeyCreate.name (2–120).
+ApiKeyNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_api_key_name_value),
+]
+
+
+def validate_passkey_name_value(value: str) -> str:
+    """AfterValidator: WebAuthn credential display name; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError("passkey name must be a non-empty label (1–120 chars)")
+    if len(value) > 120:
+        raise ValueError("passkey name must be a non-empty label (1–120 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("passkey name must be a non-empty label (1–120 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("passkey name must be a non-empty label (1–120 chars)")
+    return value
+
+
+# Passkey / WebAuthn credential label — matches WebAuthnCredential.name String(120).
+PasskeyNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_passkey_name_value),
+]
+
+
+def coerce_base64url_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip WebAuthn base64url; blank stays blank."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_base64url_value(value: str) -> str:
+    """AfterValidator: WebAuthn base64url blob; blank/URL/standard-b64 → 422.
+
+    Allows unpadded or `=`-padded `A-Za-z0-9_-` (browser PublicKeyCredential JSON).
+    Rejects spaces, `+`/`/` (standard base64), `://`/`@`. Authenticity remains
+    webauthn verify → **400**/**401**.
+    """
+    if not value:
+        raise ValueError("must be a non-empty base64url string")
+    if len(value) > 65536:
+        raise ValueError("must be a non-empty base64url string")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("must be a non-empty base64url string")
+    if "+" in value or "/" in value:
+        raise ValueError("must be a non-empty base64url string")
+    core = value.rstrip("=")
+    if not core or not re.fullmatch(r"[A-Za-z0-9_-]+", core):
+        raise ValueError("must be a non-empty base64url string")
+    if value[len(core) :].count("=") > 2 or (
+        value[len(core) :] and any(ch != "=" for ch in value[len(core) :])
+    ):
+        raise ValueError("must be a non-empty base64url string")
+    return value
+
+
+# WebAuthn PublicKeyCredential / authenticator response base64url fields (BR-19).
+Base64UrlValue = Annotated[
+    str,
+    BeforeValidator(coerce_base64url_value),
+    AfterValidator(validate_base64url_value),
+]
+
+
+_AUTHENTICATOR_TRANSPORTS = frozenset(
+    {"usb", "nfc", "ble", "internal", "hybrid", "smart-card"}
+)
+
+
+def coerce_authenticator_transport_list(value: object) -> object:
+    """Pydantic BeforeValidator: WebAuthn AuthenticatorTransport list.
+
+    Strip/lower each token; map legacy `cable` → `hybrid`; unknown → **422**.
+    """
+    if value is None:
+        return None
+    if not isinstance(value, list):
+        raise ValueError(
+            "transports must be a list of usb|nfc|ble|internal|hybrid|smart-card"
+        )
+    out: list[str] = []
+    for item in value:
+        if not isinstance(item, str):
+            raise ValueError(
+                "transports must be a list of usb|nfc|ble|internal|hybrid|smart-card"
+            )
+        token = item.strip().lower()
+        if token == "cable":
+            token = "hybrid"
+        if token not in _AUTHENTICATOR_TRANSPORTS:
+            raise ValueError(
+                "transports must be a list of usb|nfc|ble|internal|hybrid|smart-card"
+            )
+        if token not in out:
+            out.append(token)
+    return out
+
+
+# WebAuthn AuthenticatorTransport list (W3C + smart-card; cable→hybrid).
+AuthenticatorTransportListValue = Annotated[
+    list[Literal["usb", "nfc", "ble", "internal", "hybrid", "smart-card"]],
+    BeforeValidator(coerce_authenticator_transport_list),
+]
+
+
+def coerce_webauthn_client_extension_results(value: object) -> object:
+    """Pydantic BeforeValidator: clientExtensionResults must be a JSON object.
+
+    Extensions are open-ended (keys preserved). Reject list/string/number/bool;
+    cap at 32 keys so poison bags cannot balloon.
+    """
+    if value is None:
+        return {}
+    if not isinstance(value, dict):
+        raise ValueError("clientExtensionResults must be a JSON object")
+    if any(not isinstance(k, str) for k in value.keys()):
+        raise ValueError("clientExtensionResults keys must be strings")
+    if len(value) > 32:
+        raise ValueError("clientExtensionResults must have at most 32 keys")
+    return value
+
+
+# WebAuthn clientExtensionResults — object-only (open-ended keys; ≤32).
+WebAuthnClientExtensionResultsValue = Annotated[
+    dict[str, Any],
+    BeforeValidator(coerce_webauthn_client_extension_results),
+]
+
+
+def validate_two_factor_code_value(value: str) -> str:
+    """AfterValidator: TOTP / backup code; blank/URL/garbage → 422 (4–64)."""
+    if not value:
+        raise ValueError("2FA code must be a non-empty TOTP or backup code (4–64 chars)")
+    if len(value) < 4 or len(value) > 64:
+        raise ValueError("2FA code must be a non-empty TOTP or backup code (4–64 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("2FA code must be a non-empty TOTP or backup code (4–64 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("2FA code must be a non-empty TOTP or backup code (4–64 chars)")
+    return value
+
+
+# TOTP authenticator or backup recovery code (login + /auth/2fa/*).
+TwoFactorCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_two_factor_code_value),
+]
+
+
+def validate_ai_report_template_name_value(value: str) -> str:
+    """AfterValidator: AI report template name; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError("AI report template name must be a non-empty label (1–120 chars)")
+    if len(value) > 120:
+        raise ValueError("AI report template name must be a non-empty label (1–120 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("AI report template name must be a non-empty label (1–120 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("AI report template name must be a non-empty label (1–120 chars)")
+    return value
+
+
+# AI report template display name — matches AiReportTemplate.name String(120).
+AiReportTemplateNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_ai_report_template_name_value),
+]
+
+
+def validate_ai_report_prompt_value(value: str) -> str:
+    """AfterValidator: AI report prompt; blank/URL/garbage → 422 (1–16000)."""
+    if not value:
+        raise ValueError("AI report prompt must be a non-empty narrative (1–16000 chars)")
+    if len(value) > 16000:
+        raise ValueError("AI report prompt must be a non-empty narrative (1–16000 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("AI report prompt must be a non-empty narrative (1–16000 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("AI report prompt must be a non-empty narrative (1–16000 chars)")
+    return value
+
+
+# AI report NL prompt — templates / generate / export (align AI_MAX_MESSAGE_CHARS).
+AiReportPromptValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_ai_report_prompt_value),
+]
+
+
+def validate_ai_report_period_value(value: str) -> str:
+    """AfterValidator: AI report period shorthand; blank/URL/garbage → 422 (1–80)."""
+    if not value:
+        raise ValueError("AI report period must be a non-empty label (1–80 chars)")
+    if len(value) > 80:
+        raise ValueError("AI report period must be a non-empty label (1–80 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("AI report period must be a non-empty label (1–80 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("AI report period must be a non-empty label (1–80 chars)")
+    return value
+
+
+# AI report period shorthand — this_month / last_month / Q1 2026 / 2026-01 / year (BR-21.7).
+AiReportPeriodValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_ai_report_period_value),
+]
+
+
+def validate_ai_chat_message_value(value: str) -> str:
+    """AfterValidator: AI chat / customer-assist NL text; blank/URL/garbage → 422 (1–16000)."""
+    if not value:
+        raise ValueError("AI chat message must be a non-empty narrative (1–16000 chars)")
+    if len(value) > 16000:
+        raise ValueError("AI chat message must be a non-empty narrative (1–16000 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("AI chat message must be a non-empty narrative (1–16000 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("AI chat message must be a non-empty narrative (1–16000 chars)")
+    return value
+
+
+# AI chat / customer-assist NL text (align AI_MAX_MESSAGE_CHARS).
+AiChatMessageValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_ai_chat_message_value),
+]
+
+
+def validate_account_code_value(value: str) -> str:
+    """AfterValidator: COA code; blank/garbage → 422 (1–30; alnum/_/-)."""
+    if not value:
+        raise ValueError(
+            "account code must be 1–30 chars: letters, digits, underscore, or hyphen"
+        )
+    if len(value) > 30 or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,29}", value):
+        raise ValueError(
+            "account code must be 1–30 chars: letters, digits, underscore, or hyphen"
+        )
+    return value
+
+
+# Chart-of-accounts code — matches Account.code String(30); no forced upper.
+AccountCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_account_code_value),
+]
+
+
+def validate_smtp_from_name_value(value: str) -> str:
+    """AfterValidator: non-empty From display name; blank/URL/punctuation-only → 422."""
+    if not value:
+        raise ValueError("from_name must be a non-empty display name")
+    if len(value) > 120:
+        raise ValueError("from_name must be a non-empty display name")
+    if "://" in value or "@" in value:
+        raise ValueError("from_name must be a non-empty display name")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("from_name must be a non-empty display name")
+    return value
+
+
+# Company SMTP From display name — human label (max 120; no URL/email).
+SmtpFromNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_smtp_from_name_value),
+]
+
+
+def validate_contact_person_value(value: str) -> str:
+    """AfterValidator: non-empty person name; blank/URL/punctuation-only → 422 (max 150)."""
+    if not value:
+        raise ValueError("contact_person must be a non-empty person name")
+    if len(value) > 150:
+        raise ValueError("contact_person must be a non-empty person name")
+    if "://" in value or "@" in value:
+        raise ValueError("contact_person must be a non-empty person name")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("contact_person must be a non-empty person name")
+    return value
+
+
+# Company primary contact person — human label (max 150; no URL/email).
+ContactPersonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_contact_person_value),
+]
+
+
+def validate_legal_name_value(value: str) -> str:
+    """AfterValidator: legal entity name; blank/URL/short/garbage → 422 (2–200)."""
+    if not value:
+        raise ValueError("legal_name must be a non-empty legal name (2–200 chars)")
+    if len(value) < 2 or len(value) > 200:
+        raise ValueError("legal_name must be a non-empty legal name (2–200 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("legal_name must be a non-empty legal name (2–200 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("legal_name must be a non-empty legal name (2–200 chars)")
+    return value
+
+
+# Company legal name — human label (2–200; no URL/email).
+LegalNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_legal_name_value),
+]
+
+
+def validate_company_name_value(value: str) -> str:
+    """AfterValidator: trading name; blank/URL/short/garbage → 422 (2–200)."""
+    if not value:
+        raise ValueError("company_name must be a non-empty trading name (2–200 chars)")
+    if len(value) < 2 or len(value) > 200:
+        raise ValueError("company_name must be a non-empty trading name (2–200 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("company_name must be a non-empty trading name (2–200 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("company_name must be a non-empty trading name (2–200 chars)")
+    return value
+
+
+# Company trading name — required identity label (2–200; no URL/email).
+CompanyNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_company_name_value),
+]
+
+
+def coerce_tenant_slug_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip/lowercase; blank stays blank for pattern 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().lower()
+
+
+def validate_tenant_slug_value(value: str) -> str:
+    """AfterValidator: URL-safe tenant slug; blank/URL/garbage → 422 (2–80).
+
+    Aligns with Platform create input `pattern=[a-z0-9-]{2,80}` and `Tenant.slug`
+    String(80). Must start with a letter or digit (rejects leading hyphen / `---`).
+    """
+    if not value or not re.fullmatch(r"[a-z0-9][a-z0-9-]{1,79}", value):
+        raise ValueError(
+            "tenant slug must be 2–80 lowercase letters, digits, or hyphens "
+            "(must start with a letter or digit)"
+        )
+    return value
+
+
+# Tenant URL slug — matches Tenant.slug String(80); uniqueness via create_tenant 409.
+TenantSlugValue = Annotated[
+    str,
+    BeforeValidator(coerce_tenant_slug_value),
+    AfterValidator(validate_tenant_slug_value),
+]
+
+
+_UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+    re.IGNORECASE,
+)
+
+
+def coerce_tenant_ref_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for tenant_id 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_tenant_ref_value(value: str) -> str:
+    """AfterValidator: login/auth workspace ref — UUID or slug; blank/URL → 422.
+
+    Accepts canonical UUID (normalized lower) or TenantSlugValue pattern (2–80).
+    Allows fixtures like Tip256-co; rejects empty/URL/@/space garbage.
+    Existence remains resolve_tenant → **404**.
+    """
+    if not value:
+        raise ValueError("tenant_id must be a UUID or slug (2–80 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("tenant_id must be a UUID or slug (2–80 chars)")
+    if _UUID_RE.fullmatch(value):
+        return value.lower()
+    lowered = value.lower()
+    if re.fullmatch(r"[a-z0-9][a-z0-9-]{1,79}", lowered):
+        return lowered
+    raise ValueError("tenant_id must be a UUID or slug (2–80 chars)")
+
+
+# Auth workspace tenant_id — UUID or slug (Login / password-reset / resend) (BR-19 / BR-1).
+TenantRefValue = Annotated[
+    str,
+    BeforeValidator(coerce_tenant_ref_value),
+    AfterValidator(validate_tenant_ref_value),
+]
+
+
+def coerce_uuid_id_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for UUID id 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_uuid_id_value(value: str) -> str:
+    """AfterValidator: required UUID FK; blank/non-UUID → 422 (normalized lower).
+
+    Existence remains service tenant-scoped lookup (**404**).
+    """
+    if not value:
+        raise ValueError("UUID id must not be blank")
+    if not _UUID_RE.fullmatch(value):
+        raise ValueError("UUID id must be a valid UUID")
+    return value.lower()
+
+
+# Foreign-key UUID id — strip + lower; blank/`!!!`/URL/non-UUID → 422.
+UuidIdValue = Annotated[
+    str,
+    BeforeValidator(coerce_uuid_id_value),
+    AfterValidator(validate_uuid_id_value),
+]
+
+
+def coerce_api_key_header_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for X-API-Key 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_api_key_header_value(value: str) -> str:
+    """AfterValidator: X-API-Key header; blank/URL/@/spaces/non-rdk_ → 422 (1–200).
+
+    Raw keys are ``rdk_`` + urlsafe secret (api_keys.generate_raw_key). Authenticity
+    remains hashed key lookup (**401**).
+    """
+    if not value:
+        raise ValueError("X-API-Key must be a non-empty rdk_… secret (1–200 chars)")
+    if len(value) > 200:
+        raise ValueError("X-API-Key must be a non-empty rdk_… secret (1–200 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("X-API-Key must be a non-empty rdk_… secret (1–200 chars)")
+    if not value.startswith("rdk_"):
+        raise ValueError("X-API-Key must start with rdk_")
+    if not re.search(r"[A-Za-z0-9]", value[4:] if len(value) > 4 else ""):
+        raise ValueError("X-API-Key must be a non-empty rdk_… secret (1–200 chars)")
+    return value
+
+
+# Optional X-API-Key header — strip; rdk_…; 1–200; no :// / @ / spaces (BR-18.1).
+ApiKeyHeaderValue = Annotated[
+    str,
+    BeforeValidator(coerce_api_key_header_value),
+    AfterValidator(validate_api_key_header_value),
+]
+
+
+# Finite money amounts — reject NaN/Inf and absurd magnitudes (was unconstrained
+# `float`; `nan`/`inf`/1e308 could persist or break math).
+FiniteMoneyValue = Annotated[
+    float,
+    Field(allow_inf_nan=False, ge=-1_000_000_000_000_000, le=1_000_000_000_000_000),
+]
+# Required positive money (payments/expenses) — gt 0 + finite.
+PositiveMoneyValue = Annotated[
+    float,
+    Field(allow_inf_nan=False, gt=0, le=1_000_000_000_000_000),
+]
+# Non-negative money (cash counts, journal sides, budgets) — ge 0 + finite.
+NonNegativeMoneyValue = Annotated[
+    float,
+    Field(allow_inf_nan=False, ge=0, le=1_000_000_000_000_000),
+]
+# Percent rate 0–100 (discounts / early-pay) — finite; nan/inf/out-of-range → 422.
+PercentRateValue = Annotated[
+    float,
+    Field(allow_inf_nan=False, ge=0, le=100),
+]
+# Positive quantity (line qty, received qty) — gt 0 + finite.
+PositiveQtyValue = Annotated[
+    float,
+    Field(allow_inf_nan=False, gt=0, le=1_000_000_000_000_000),
+]
+# Non-negative quantity (stock, reorder, capacity, dims) — ge 0 + finite.
+NonNegativeQtyValue = Annotated[
+    float,
+    Field(allow_inf_nan=False, ge=0, le=1_000_000_000_000_000),
+]
+# Signed finite quantity (stock adjust +/-) — reject nan/inf/absurd magnitude.
+FiniteQtyValue = Annotated[
+    float,
+    Field(allow_inf_nan=False, ge=-1_000_000_000_000_000, le=1_000_000_000_000_000),
+]
+# GPS latitude / longitude bounds — finite; out-of-range → 422.
+LatitudeValue = Annotated[
+    float,
+    Field(allow_inf_nan=False, ge=-90, le=90),
+]
+LongitudeValue = Annotated[
+    float,
+    Field(allow_inf_nan=False, ge=-180, le=180),
+]
+# Unit interval 0–1 (AI confidence floors) — finite; nan/inf/out-of-range → 422.
+UnitIntervalValue = Annotated[
+    float,
+    Field(allow_inf_nan=False, ge=0, le=1),
+]
+
+
+def validate_address_value(value: str) -> str:
+    """AfterValidator: non-empty postal/physical address; blank/URL/garbage → 422 (max 500)."""
+    if not value:
+        raise ValueError("address must be a non-empty postal address")
+    if len(value) > 500:
+        raise ValueError("address must be a non-empty postal address")
+    if "://" in value or "@" in value:
+        raise ValueError("address must be a non-empty postal address")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("address must be a non-empty postal address")
+    return value
+
+
+# Company HQ / billing / shipping address — postal label (max 500; no URL/email).
+AddressValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_address_value),
+]
+
+
+def validate_smtp_username_value(value: str) -> str:
+    """AfterValidator: non-empty SMTP login; blank/URL/punctuation-only → 422.
+
+    Email-shaped usernames (`ops@smtp.example.com`) are allowed; URLs are not.
+    """
+    if not value:
+        raise ValueError("username must be a non-empty SMTP login")
+    if len(value) > 200:
+        raise ValueError("username must be a non-empty SMTP login")
+    if "://" in value:
+        raise ValueError("username must be a non-empty SMTP login")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("username must be a non-empty SMTP login")
+    return value
+
+
+# Company SMTP username — plain login or email-shaped (max 200; no URL scheme).
+SmtpUsernameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_smtp_username_value),
+]
+
+
+def validate_bank_branch_value(value: str) -> str:
+    """AfterValidator: non-empty branch label; blank/URL/punctuation-only → 422."""
+    if not value:
+        raise ValueError("bank_branch must be a non-empty branch name")
+    if len(value) > 120:
+        raise ValueError("bank_branch must be a non-empty branch name")
+    if "://" in value or "@" in value:
+        raise ValueError("bank_branch must be a non-empty branch name")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("bank_branch must be a non-empty branch name")
+    return value
+
+
+# Liquid bank COA bank_branch — human label (max 120; no URL/email).
+BankBranchValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_bank_branch_value),
+]
+
+
+def coerce_cheque_number_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for cheque_number 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_cheque_number_value(value: str) -> str:
+    """AfterValidator: cheque ref (max 50); blank/URL/garbage → 422."""
+    if not value:
+        raise ValueError(
+            "cheque_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    if len(value) > 50:
+        raise ValueError(
+            "cheque_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    if "://" in value or "@" in value:
+        raise ValueError(
+            "cheque_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9 \-]{0,49}", value):
+        raise ValueError(
+            "cheque_number must be alphanumeric (optional spaces/hyphens)"
+        )
+    return value
+
+
+# Customer/supplier payment cheque_number — short cheque ref (max 50).
+ChequeNumberValue = Annotated[
+    str,
+    BeforeValidator(coerce_cheque_number_value),
+    AfterValidator(validate_cheque_number_value),
+]
+
+
+class ApiKeyCreate(BaseModel):
+    """POST /api-keys — typed create body (BR-18.1).
+
+    Unknown top-level keys → **422** (`extra=forbid`). Name ∈ `ApiKeyNameValue`
+    (strip; 2–120; ≥1 letter/digit; no `://`/`@`); omit/too short/`!!!`/URL → **422**
+    (was free `str` min_length=2; punctuation/URL could persist). Invalid `expires_at`,
+    unknown permission module/action → **422** (was late **400** via free `dict`).
+    Omit/null/`{}` `permissions` → service default read map.
+
+    Optional `expires_at` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime);
+    omit/`null` → no expiry; blank/`not-a-date`/`01/02/2024` → **422** (was free
+    `datetime`; OpenAPI date-time; padded dates inconsistent). API
+    `reports.parse_datetime` keeps clock time (defense-in-depth).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Required key label ∈ ApiKeyNameValue; blank/`!!!`/`http://…`/`x` → **422**
+    # (was free `str` min_length=2; punctuation/URL could persist).
+    name: ApiKeyNameValue
+    permissions: dict[str, list[ApiKeyPermissionAction]] | None = None
+    expires_at: IsoDateQueryValue | None = None
+
+    @field_validator("permissions", mode="before")
+    @classmethod
+    def _normalize_permissions_input(cls, value: object) -> object:
+        # Preserve historical create_key behavior: falsy/empty map → defaults.
+        if value == {} or value is False:
+            return None
+        if not isinstance(value, dict):
+            return value
+        out: dict[str, list[object]] = {}
+        for module, actions in value.items():
+            mod = str(module).strip().lower() if module is not None else module
+            if isinstance(actions, (list, tuple)):
+                out[mod] = [
+                    a.strip().lower() if isinstance(a, str) else a for a in actions
+                ]
+            else:
+                out[mod] = actions  # type: ignore[assignment]
+        return out
+
+    @model_validator(mode="after")
+    def _permissions_modules(self) -> ApiKeyCreate:
+        if self.permissions is None:
+            return self
+        if not self.permissions:
+            raise ValueError("permissions must include at least one module")
+        for module, actions in self.permissions.items():
+            if module not in SYSTEM_MODULES:
+                raise ValueError(f"Invalid permission module: {module}")
+            if not actions:
+                raise ValueError(f"Invalid actions for module: {module}")
+        return self
+
+
 # Keep aligned with app.sales_docs.RETURN_REASONS (Reports sales returns reason filter).
 SalesReturnReportReasonValue = Annotated[
     Literal["damaged", "wrong_item", "defective", "customer_change", "other"],
@@ -1664,10 +6697,194 @@ ReportTypeValue = Annotated[
 ]
 
 
-class ReportScheduleCreate(BaseModel):
-    """Email report schedule create (BR-14)."""
+class AiReportFilters(BaseModel):
+    """AI report `filters` / `params` bag (BR-21.7).
 
-    name: str = Field(min_length=2)
+    Unknown keys → **422** (`extra=forbid`). Optional fields mirror report-export
+    Query honesty (dates / UUIDs / year-month / days / jurisdiction). Was free
+    `dict[str, Any]` — garbage keys and non-UUID ids could reach
+    `build_report_payload`. Shared by generate + export bodies (`params` alias).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    from_date: IsoDateQueryValue | None = None
+    to_date: IsoDateQueryValue | None = None
+    date: IsoDateQueryValue | None = None
+    as_of: IsoDateQueryValue | None = None
+    year: int | None = Field(default=None, ge=2000, le=2100)
+    month: int | None = Field(default=None, ge=1, le=12)
+    days: int | None = Field(default=None, ge=1, le=365)
+    warehouse_id: UuidIdValue | None = None
+    store_id: UuidIdValue | None = None
+    branch_id: UuidIdValue | None = None
+    category_id: UuidIdValue | None = None
+    department_id: UuidIdValue | None = None
+    jurisdiction: TaxFilingJurisdictionValue | None = None
+    compare: BalanceSheetCompareValue | None = None
+
+
+class AiReportsGenerateBody(BaseModel):
+    """POST /ai/reports/generate — typed report generator body (BR-21.7).
+
+    Unknown keys → **422** (`extra=forbid`). Must provide `prompt`, `template_id`,
+    or `report_type` (schema **422**; was late service **422**). Optional `prompt` ∈
+    `AiReportPromptValue` (strip; 1–16000; ≥1 letter/digit; no `://`/`@`); omit/`null`
+    OK when template_id|report_type present; blank/`!!!`/`http://…` → **422** (was free
+    `str` stripped to null — punctuation/URL could reach parse_prompt). Optional
+    `template_id` ∈ `UuidIdValue`; omit/`null` OK with prompt|report_type; blank/`!!!`/
+    `http://…`/non-UUID → **422** (was free `str` with strip-blank→omit; garbage could
+    reach template lookup). Optional `period` ∈ `AiReportPeriodValue` (strip; 1–80; ≥1
+    letter/digit; no `://`/`@`); omit/`null` → service/prompt default; blank/`!!!`/
+    `http://…` → **422** (was free `str` soft-nulled on blank; punctuation/URL could
+    reach period_label / parse_prompt). Invalid `format` / `report_type` → **422**
+    (format garbage was silently remapped to csv; unknown report_type was late **400**).
+    Optional `filters` / `params` ∈ `AiReportFilters` (`extra=forbid`; was free
+    `dict[str, Any]`). Service `generate_report` / `parse_prompt` remain defense-in-depth.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    prompt: AiReportPromptValue | None = None
+    format: ReportExportFormatValue | None = None
+    # Optional saved template ∈ UuidIdValue; omit/`null` OK with prompt|report_type;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str` strip-blank→omit).
+    # Existence remains tenant-scoped template lookup (**404**).
+    template_id: UuidIdValue | None = None
+    report_type: ReportTypeValue | None = None
+    # omit/`null` → service/prompt default; blank/`!!!`/`http://…` → **422**
+    period: AiReportPeriodValue | None = None
+    filters: AiReportFilters | None = None
+    params: AiReportFilters | None = None
+
+    @model_validator(mode="after")
+    def _require_prompt_template_or_type(self) -> AiReportsGenerateBody:
+        if not (self.prompt or self.template_id or self.report_type):
+            raise ValueError("Provide prompt, template_id, or report_type")
+        return self
+
+
+class AiReportsExportBody(BaseModel):
+    """POST /ai/reports/export — typed export body (BR-21.7).
+
+    Unknown keys → **422** (`extra=forbid`). Must provide `prompt`, `template_id`,
+    or `report_type`. Optional `prompt` ∈ `AiReportPromptValue` (strip; 1–16000; ≥1
+    letter/digit; no `://`/`@`); omit/`null` OK when template_id|report_type present;
+    blank/`!!!`/`http://…` → **422** (was free `str` stripped to null). Optional
+    `template_id` ∈ `UuidIdValue`; omit/`null` OK with prompt|report_type; blank/`!!!`/
+    `http://…`/non-UUID → **422** (was free `str` with strip-blank→omit; garbage could
+    reach template lookup). Optional `period` ∈ `AiReportPeriodValue` (strip; 1–80; ≥1
+    letter/digit; no `://`/`@`); omit/`null` → service/prompt default; blank/`!!!`/
+    `http://…` → **422** (field was absent — unknown `period` key → **422** via
+    `extra=forbid`; generate already typed the same Value). `format` ∈ csv|pdf|xlsx
+    (omit → **csv**; blank/invalid → **422** — was free `dict` with `or "csv"`).
+    Invalid `report_type` → **422**. Optional `filters` / `params` ∈ `AiReportFilters`
+    (same honesty as generate). Service `export_from_intent` remains defense-in-depth.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    prompt: AiReportPromptValue | None = None
+    format: ReportExportFormatValue = "csv"
+    # Optional saved template ∈ UuidIdValue; omit/`null` OK with prompt|report_type;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str` strip-blank→omit).
+    # Same honesty as AiReportsGenerateBody.template_id.
+    template_id: UuidIdValue | None = None
+    report_type: ReportTypeValue | None = None
+    # omit/`null` → service/prompt default; blank/`!!!`/`http://…` → **422**
+    # (same AiReportPeriodValue as AiReportsGenerateBody.period).
+    period: AiReportPeriodValue | None = None
+    filters: AiReportFilters | None = None
+    params: AiReportFilters | None = None
+
+    @model_validator(mode="after")
+    def _require_prompt_template_or_type(self) -> AiReportsExportBody:
+        if not (self.prompt or self.template_id or self.report_type):
+            raise ValueError("Provide prompt, template_id, or report_type")
+        return self
+
+
+class AiReportTemplateCreateBody(BaseModel):
+    """POST /ai/reports/templates — typed template create body (BR-21.7).
+
+    Unknown keys → **422** (`extra=forbid`). `name` ∈ `AiReportTemplateNameValue`
+    (strip; 1–120; ≥1 letter/digit; no `://`/`@`); blank/`!!!`/`http://…` → **422**
+    (was free `str` min_length=1; punctuation/URL could persist). `prompt` ∈
+    `AiReportPromptValue` (strip; 1–16000; ≥1 letter/digit; no `://`/`@`); blank/
+    omit/`!!!`/`http://…` → **422** (was free `str` min_length=1; punctuation/URL
+    could persist on templates). `format` ∈ csv|pdf|xlsx (omit → derived from
+    prompt; blank/invalid → **422** — was late **400**). Service `create_template` /
+    `parse_prompt` remain defense-in-depth.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: AiReportTemplateNameValue
+    prompt: AiReportPromptValue
+    format: ReportExportFormatValue | None = None
+
+
+def coerce_report_schedule_recipients(value: object) -> object:
+    """Pydantic BeforeValidator: str/list → stripped email list; blank → ValueError.
+
+    Comma/`;` separated strings expand to multiple addresses. Empty / whitespace-only
+    → ValueError (422). Each item is then validated as EmailStr (rejects `bad`,
+    `almost@`, etc.). Was free `list[str]|str` with service soft-dropping non-`@`.
+    """
+    if value is None:
+        return None
+    if isinstance(value, str):
+        parts = [p.strip() for p in value.replace(";", ",").split(",") if p.strip()]
+    elif isinstance(value, (list, tuple)):
+        parts = [str(p).strip() for p in value if p is not None and str(p).strip()]
+    else:
+        return value
+    if not parts:
+        raise ValueError("at least one recipient email is required")
+    return parts
+
+
+# Create requires ≥1 EmailStr; Update omit/`null` → no change; blank/invalid → **422**.
+ReportScheduleRecipientsValue = Annotated[
+    list[EmailStr],
+    BeforeValidator(coerce_report_schedule_recipients),
+]
+
+
+def validate_report_schedule_name_value(value: str) -> str:
+    """AfterValidator: schedule title; blank/URL/short/garbage → 422 (2–120)."""
+    if not value:
+        raise ValueError("schedule name must be a non-empty label (2–120 chars)")
+    if len(value) < 2 or len(value) > 120:
+        raise ValueError("schedule name must be a non-empty label (2–120 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("schedule name must be a non-empty label (2–120 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("schedule name must be a non-empty label (2–120 chars)")
+    return value
+
+
+# Report schedule display name — matches ReportSchedule.name String(120).
+ReportScheduleNameValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_report_schedule_name_value),
+]
+
+
+class ReportScheduleCreate(BaseModel):
+    """Email report schedule create (BR-14).
+
+    `name` ∈ ReportScheduleNameValue (strip; 2–120; ≥1 letter/digit; no `://`/`@`);
+    blank/`!!!`/`http://…` → **422** (was free `str` min_length=2; whitespace
+    late service **400**; punctuation/URL could persist). `recipients` ∈
+    ReportScheduleRecipientsValue (`list[EmailStr]` or comma/`;` string); required ≥1;
+    blank/`bad` → **422**.
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    name: ReportScheduleNameValue
     # Schema Literal; blank/unknown → 422 (was free str → service 400)
     report_type: ReportTypeValue
     format: ReportExportFormatValue = "xlsx"
@@ -1675,20 +6892,27 @@ class ReportScheduleCreate(BaseModel):
     frequency: ScheduleFrequencyValue = "daily"
     weekday: int | None = Field(default=None, ge=0, le=6)
     hour_utc: int = Field(default=6, ge=0, le=23)
-    recipients: list[str] | str | None = None
+    recipients: ReportScheduleRecipientsValue
     enabled: bool = True
 
 
 class ReportScheduleUpdate(BaseModel):
-    """Email report schedule patch — omit = no change; blank frequency/format/report_type → 422."""
+    """Email report schedule patch — omit = no change; blank frequency/format/report_type → 422.
 
-    name: str | None = Field(default=None, min_length=2)
+    Optional `name` ∈ ReportScheduleNameValue; omit/`null` → no change; blank/invalid → **422**.
+    Optional `recipients` ∈ ReportScheduleRecipientsValue; omit/`null` → no change;
+    blank/invalid → **422** (do not clear to empty).
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    name: ReportScheduleNameValue | None = None
     report_type: ReportTypeValue | None = None
     format: ReportExportFormatValue | None = None
     frequency: ScheduleFrequencyValue | None = None
     weekday: int | None = Field(default=None, ge=0, le=6)
     hour_utc: int | None = Field(default=None, ge=0, le=23)
-    recipients: list[str] | str | None = None
+    recipients: ReportScheduleRecipientsValue | None = None
     enabled: bool | None = None
 
 
@@ -1722,60 +6946,200 @@ WebhookEventValue = Annotated[
 ]
 
 
+def coerce_webhook_url_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for URL 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_webhook_url_value(value: str) -> str:
+    """AfterValidator: absolute http(s) URL; http only for localhost (BR-18.6)."""
+    from urllib.parse import urlparse
+
+    parsed = urlparse(value)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise ValueError("url must be an absolute http(s) URL")
+    host = (parsed.hostname or "").lower()
+    if parsed.scheme == "http" and host not in {
+        "localhost",
+        "127.0.0.1",
+        "testserver",
+        "host.docker.internal",
+    }:
+        raise ValueError("Webhook URL must use HTTPS (http allowed only for localhost)")
+    return value
+
+
+# Keep aligned with app.webhooks.validate_url (Integrations endpoint URL).
+# Also reused for BankConnectionCreate/Update.feed_url (Accounting Reconcile).
+WebhookUrlValue = Annotated[
+    str,
+    BeforeValidator(coerce_webhook_url_value),
+    AfterValidator(validate_webhook_url_value),
+]
+
+
+def validate_webhook_description_value(value: str) -> str:
+    """AfterValidator: webhook endpoint label; blank/URL/garbage → 422 (1–255)."""
+    if not value:
+        raise ValueError("webhook description must be a non-empty label (1–255 chars)")
+    if len(value) > 255:
+        raise ValueError("webhook description must be a non-empty label (1–255 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("webhook description must be a non-empty label (1–255 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("webhook description must be a non-empty label (1–255 chars)")
+    return value
+
+
+# Webhook endpoint description — matches WebhookEndpoint.description String(255).
+WebhookDescriptionValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_webhook_description_value),
+]
+
+
+def coerce_webhook_secret_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip; blank stays blank for secret 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_webhook_secret_value(value: str) -> str:
+    """AfterValidator: webhook signing secret; blank/URL/@/spaces → 422 (1–128).
+
+    Allows punctuation used in fixtures (e.g. Tip251WebhookSecret!); rejects empty/URL garbage.
+    Non-`whsec_` secrets still need ≥16 chars in service create_endpoint (**400**).
+    """
+    if not value:
+        raise ValueError("secret must be a non-empty signing secret (1–128 chars)")
+    if len(value) > 128:
+        raise ValueError("secret must be a non-empty signing secret (1–128 chars)")
+    if "://" in value or "@" in value or any(ch.isspace() for ch in value):
+        raise ValueError("secret must be a non-empty signing secret (1–128 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("secret must be a non-empty signing secret (1–128 chars)")
+    return value
+
+
+# Webhook create optional signing secret — 1–128; ≥1 letter/digit; no :// / @ / spaces (BR-18.6).
+WebhookSecretValue = Annotated[
+    str,
+    BeforeValidator(coerce_webhook_secret_value),
+    AfterValidator(validate_webhook_secret_value),
+]
+
+
 class WebhookCreate(BaseModel):
     """Outbound webhook endpoint create."""
+    model_config = ConfigDict(extra="forbid")
 
-    url: str = Field(min_length=1)
+
+    # omit not allowed; blank/non-http(s)/non-localhost http → 422 (was free str; late **400**)
+    url: WebhookUrlValue
     # Closed event catalog; blank/unknown item → 422; empty list → 422
     events: list[WebhookEventValue] = Field(min_length=1)
-    secret: str | None = None
-    description: str | None = None
+    # omit/`null` → auto-generate `whsec_…`; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank silently auto-generated via strip-or-generate; punctuation/URL could
+    # be encrypted into `WebhookEndpoint.secret_enc`). Service min-length for non-whsec
+    # remains defense-in-depth (**400**).
+    secret: WebhookSecretValue | None = None
+    # omit/`null` → no description; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently None / garbage could persist).
+    description: WebhookDescriptionValue | None = None
     is_active: bool = True
 
 
 class WebhookUpdate(BaseModel):
     """Outbound webhook endpoint patch — omit = no change."""
+    model_config = ConfigDict(extra="forbid")
 
-    url: str | None = Field(default=None, min_length=1)
+
+    # omit = no change; blank/non-http(s) → 422 (was free str min_length=1; late **400**)
+    url: WebhookUrlValue | None = None
     events: list[WebhookEventValue] | None = Field(default=None, min_length=1)
-    description: str | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently cleared / garbage could persist).
+    description: WebhookDescriptionValue | None = None
     is_active: bool | None = None
     rotate_secret: bool = False
 
 
 class ExchangeRateUpsert(BaseModel):
-    currency_code: str
-    rate_to_base: float = Field(gt=0)
+    """PUT /credit/exchange-rates/{currency_code} — typed FX upsert (BR-2.6).
+
+    Unknown keys → **422** (`extra=forbid`). `currency_code` ∈ 3-letter ISO
+    (strip/upper); blank/invalid → **422** (was late service **400**).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    currency_code: CurrencyCodeValue
+    # ∈ PositiveMoneyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    rate_to_base: PositiveMoneyValue
 
 
 class ExchangeRateRefresh(BaseModel):
-    currencies: list[str] | None = None
+    """POST /credit/exchange-rates/refresh — optional currency watch list (BR-2.6).
+
+    Unknown keys → **422**. Each `currencies[]` item same ISO honesty as upsert.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    currencies: list[CurrencyCodeValue] | None = None
 
 
 class FxAutoRefreshUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     fx_auto_refresh: bool
 
 
 class BankConnectionCreate(BaseModel):
-    account_id: str
+    model_config = ConfigDict(extra="forbid")
+
+    # Required liquid COA ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach liquid-account lookup). Existence remains
+    # tenant-scoped liquid account lookup (**404**).
+    account_id: UuidIdValue
     # BR-10.3 — schema Literal; omit defaults to mock; blank/invalid → 422
     provider: Literal["mock", "http_json"] = "mock"
-    display_name: str | None = None
-    external_account_id: str | None = None
-    feed_url: str | None = None
-    access_token: str | None = None
+    # omit/`null` OK; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist)
+    display_name: BankConnectionDisplayNameValue | None = None
+    # omit/`null` OK; blank/`!!!`/`http://…` → **422** (was free `str`; blank silent→null; garbage could persist)
+    external_account_id: BankExternalAccountIdValue | None = None
+    # omit/null OK (mock); blank/non-http(s)/plain-http remote → 422 (was free str; garbage could persist)
+    feed_url: WebhookUrlValue | None = None
+    # omit/`null` OK; blank/`!!!`/`http://…` → **422** (was free `str`; blank silent no-op via service;
+    # punctuation/URL could be encrypted into credentials_enc)
+    access_token: BankAccessTokenValue | None = None
     auto_sync: bool = True
     auto_match_after_sync: bool = True
     sync_lookback_days: int = Field(default=30, ge=1, le=365)
 
 
 class BankConnectionUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     # BR-10.3 — omit = no change; blank/invalid → 422 (no silent mock)
     provider: Literal["mock", "http_json"] | None = None
-    display_name: str | None = None
-    external_account_id: str | None = None
-    feed_url: str | None = None
-    access_token: str | None = None
+    # omit/`null` = no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist)
+    display_name: BankConnectionDisplayNameValue | None = None
+    # omit/`null` = no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank silent→null; garbage could persist)
+    external_account_id: BankExternalAccountIdValue | None = None
+    # omit/null = no change; blank/non-http(s)/plain-http remote → 422 (was free str; garbage could persist)
+    feed_url: WebhookUrlValue | None = None
+    # omit/`null` = no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank silent no-op;
+    # punctuation/URL could be encrypted into credentials_enc). clear_credentials still clears.
+    access_token: BankAccessTokenValue | None = None
     clear_credentials: bool | None = None
     auto_sync: bool | None = None
     auto_match_after_sync: bool | None = None
@@ -1785,6 +7149,8 @@ class BankConnectionUpdate(BaseModel):
 
 class BankAutoClearBody(BaseModel):
     """One-shot bank↔book auto-clear confidence floor (BR-10.3 reconcile)."""
+    model_config = ConfigDict(extra="forbid")
+
 
     # omit → high; blank/invalid → 422 (was free dict; ""/garbage silently coerced to high)
     min_confidence: Annotated[
@@ -1794,113 +7160,1585 @@ class BankAutoClearBody(BaseModel):
     date_window_days: int = Field(default=7, ge=1, le=90)
 
 
+class BankStatementLineCreate(BaseModel):
+    """Nested line on `BankStatementCreateBody` (BR-10.3).
+
+    Unknown keys → **422**. Zero / missing amount → **422** (was late service **400**).
+    Optional `txn_date` ∈ `IsoDateQueryValue`; omit → service default; blank/invalid → **422**
+    (blank was silent default; invalid was uncaught **500** via `_parse_dt`).
+    Optional `description` ∈ `BankStatementLineDescriptionValue`; omit/`null` → no
+    description; blank/`!!!`/`http://…` → **422** (was free `str`; blank silently
+    dropped via strip-to-None / garbage could persist).
+    Optional `external_ref` ∈ `BankStatementLineExternalRefValue`; omit/`null` → no
+    ref; blank/`!!!`/`http://…` → **422** (was free `str`; blank silently dropped
+    via strip-to-None / garbage could persist; max 120 matches column).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # ∈ FiniteMoneyValue (signed); zero rejected below; nan/inf → **422**
+    amount: FiniteMoneyValue
+    txn_date: IsoDateQueryValue | None = None
+    # omit/`null` → no description; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently dropped via strip-to-None / garbage could persist).
+    description: BankStatementLineDescriptionValue | None = None
+    # omit/`null` → no ref; blank/`!!!`/`http://…` → **422** (was free `str`; blank
+    # silently dropped via strip-to-None / garbage could persist; max 120).
+    external_ref: BankStatementLineExternalRefValue | None = None
+
+    @field_validator("amount")
+    @classmethod
+    def _nonzero_amount(cls, value: float) -> float:
+        amount = money_json(value)
+        if abs(amount) < 1e-9:
+            raise ValueError("Statement line amount cannot be zero")
+        return amount
+
+
+class BankStatementCreateBody(BaseModel):
+    """POST /accounting/bank-statements (BR-10.3).
+
+    Unknown keys → **422** (`extra=forbid`). Required `account_id` ∈ `UuidIdValue`
+    (strip; lower; valid UUID); blank/`!!!`/`http://…`/non-UUID → **422** (was
+    free `str` min_length=1; garbage could reach liquid-account lookup). Existence
+    remains tenant-scoped liquid account lookup (**404**). Zero line amounts →
+    **422**. Optional `statement_date` ∈ `IsoDateQueryValue`; omit → today;
+    blank/invalid → **422** (blank was silent today; invalid was uncaught **500**).
+    Optional `notes` ∈ `BankStatementNotesValue`; omit/`null` → no notes; blank/
+    `!!!`/`http://…` → **422** (was free `str`; blank silently dropped via
+    strip-to-None / garbage could persist). Optional `opening_balance` /
+    `closing_balance` ∈ `FiniteMoneyValue` (finite; ±1e15; omit → 0; `nan`/`inf`/
+    out-of-range → **422** — was unconstrained `float`). Service `create_statement`
+    remains defense-in-depth.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Required liquid COA ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str` min_length=1; garbage could reach liquid-account lookup).
+    # Existence remains tenant-scoped liquid account lookup (**404**).
+    account_id: UuidIdValue
+    statement_date: IsoDateQueryValue | None = None
+    opening_balance: FiniteMoneyValue = 0
+    closing_balance: FiniteMoneyValue = 0
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently dropped via strip-to-None / garbage could persist).
+    notes: BankStatementNotesValue | None = None
+    lines: list[BankStatementLineCreate] = Field(default_factory=list)
+
+
+class BankStatementMatchBody(BaseModel):
+    """POST .../bank-statements/{id}/lines/{line_id}/match (BR-10.3).
+
+    Unknown keys → **422** (`extra=forbid`). Required `journal_line_id` ∈
+    `UuidIdValue`; blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`
+    `min_length=1` — whitespace still reached service **404**; non-UUID garbage
+    could reach journal-line lookup). Existence remains tenant-scoped journal
+    line lookup (**404**). Accounting **Match bank line to journal line**.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    journal_line_id: UuidIdValue
+
+
+class BankClearGroupBody(BaseModel):
+    """POST .../bank-statements/{id}/clear-group (BR-10.3).
+
+    Unknown keys → **422**. Empty either id list (after stripping blanks) → **422**
+    (was free `dict` with late **400**). Required `statement_line_ids` /
+    `journal_line_ids` ∈ `list[UuidIdValue]` (each element strip; lower; valid UUID;
+    blank/`!!!`/`http://…`/non-UUID element → **422** — was free `list[str]` with
+    blank-strip only; non-UUID garbage could reach line lookup). Optional `notes` ∈
+    `BankClearGroupNotesValue`; omit/`null` → no notes; blank/`!!!`/`http://…` →
+    **422** (was free `str`; blank/garbage could persist on clearing group).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Required bank statement lines ∈ list[UuidIdValue]; empty after strip → **422**;
+    # non-UUID element → **422** (was free `list[str]`).
+    statement_line_ids: list[UuidIdValue] = Field(min_length=1)
+    # Required journal lines ∈ list[UuidIdValue]; same honesty as statement_line_ids.
+    journal_line_ids: list[UuidIdValue] = Field(min_length=1)
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on clearing group).
+    notes: BankClearGroupNotesValue | None = None
+
+    @field_validator("statement_line_ids", "journal_line_ids", mode="before")
+    @classmethod
+    def _clean_id_lists(cls, value: object) -> object:
+        if not isinstance(value, list):
+            return value
+        cleaned: list[str] = []
+        for item in value:
+            if item is None:
+                continue
+            text = str(item).strip()
+            if text:
+                cleaned.append(text)
+        return cleaned
+
+
 class SupplierPaymentCreate(BaseModel):
-    supplier_id: str
-    amount: float = Field(gt=0)
-    purchase_order_id: str | None = None
-    purchase_invoice_id: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # Required supplier ∈ UuidIdValue; blank/`!!!`/`http://…`/non-UUID → **422**
+    # (was free `str`; garbage could reach party lookup). Existence remains
+    # tenant-scoped supplier lookup (**404**). Distinct from CustomerPaymentCreate
+    # (same Value type; AP payment create path).
+    supplier_id: UuidIdValue
+    # ∈ PositiveMoneyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    amount: PositiveMoneyValue
+    # Optional target PO ∈ UuidIdValue; omit/`null` → apply oldest-open; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach PO lookup).
+    # Existence remains tenant-scoped purchase-order lookup (**404**).
+    purchase_order_id: UuidIdValue | None = None
+    # Optional target bill ∈ UuidIdValue; omit/`null` → apply oldest-open; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach PI lookup).
+    # Existence remains tenant-scoped purchase-invoice lookup (**404**).
+    purchase_invoice_id: UuidIdValue | None = None
     # BR-11.2 — same settlement Literal; omit → bank_transfer; blank/invalid → 422
     payment_method: SettlementPaymentMethod = "bank_transfer"
-    reference: str | None = None
-    notes: str | None = None
-    cheque_number: str | None = None
-    bank_name: str | None = None
-    cheque_date: datetime | None = None
+    # omit/`null` → no reference; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on SupplierPayment.reference).
+    reference: PaymentReferenceValue | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on SupplierPayment.notes Text).
+    notes: PaymentNotesValue | None = None
+    # omit/`null` → service falls back to reference/payment_number; blank/`!!!`/
+    # `http://…` → **422** (was free `str`; blank/garbage could persist on cheque).
+    cheque_number: ChequeNumberValue | None = None
+    # omit/`null` → no bank on cheque; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank/garbage could persist on cheque payment bank_name).
+    bank_name: BankNameValue | None = None
+    # omit/`null` → no cheque date; blank/`not-a-date`/`01/02/2024` → **422**
+    # (was free `datetime`; OpenAPI date-time; padded dates rejected; Credit UI
+    # never set → always null). API parses via reports.parse_date.
+    cheque_date: IsoDateQueryValue | None = None
     apply_early_discount: bool | None = None
-    liquid_account_id: str | None = None
-    currency: str | None = None
-    exchange_rate: float | None = Field(default=None, gt=0)
+    # Optional liquid COA ∈ UuidIdValue; omit/`null` → payment-method default GL;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could
+    # reach liquid-account lookup). Existence remains tenant-scoped (**404**/400).
+    # Same honesty as CustomerPaymentCreate.liquid_account_id. Credit **Credit
+    # payment liquid account** select; Record payment sends trim or `null`.
+    liquid_account_id: UuidIdValue | None = None
+    # omit/null → invoice/base via resolve_rate; blank/non-ISO → 422 (was free str; blank silently base)
+    currency: CurrencyCodeValue | None = None
+    # omit/`null` → resolve_rate; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    exchange_rate: PositiveMoneyValue | None = None
 
 
 class CreditLimitUpdate(BaseModel):
-    credit_limit: float = Field(ge=0)
+    model_config = ConfigDict(extra="forbid")
+
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    credit_limit: NonNegativeMoneyValue
     payment_terms_days: int | None = Field(default=None, ge=0, le=3650)
 
 
+class NotificationChannelPrefs(BaseModel):
+    """Per-category dashboard/email/sms toggles — unknown channels → 422."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    dashboard: bool | None = None
+    email: bool | None = None
+    sms: bool | None = None
+
+
+class NotificationPreferencesMap(BaseModel):
+    """Preference categories aligned with app.notifications.DEFAULT_PREFERENCES."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    low_stock: NotificationChannelPrefs | None = None
+    expense_approval: NotificationChannelPrefs | None = None
+    shift_variance: NotificationChannelPrefs | None = None
+    credit_limit: NotificationChannelPrefs | None = None
+    purchase_received: NotificationChannelPrefs | None = None
+    payment_due: NotificationChannelPrefs | None = None
+    quotation_expiry: NotificationChannelPrefs | None = None
+    recurring_expense_due: NotificationChannelPrefs | None = None
+    new_order: NotificationChannelPrefs | None = None
+    transfer: NotificationChannelPrefs | None = None
+    billing: NotificationChannelPrefs | None = None
+    security: NotificationChannelPrefs | None = None
+    system: NotificationChannelPrefs | None = None
+
+
 class NotificationPreferencesUpdate(BaseModel):
-    preferences: dict
+    """PATCH /notifications/settings — typed preference map (BR-4.4 / BR-15.2).
+
+    Unknown top-level keys or nested category/channel keys → **422** (`extra=forbid`).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    preferences: NotificationPreferencesMap
 
 
 class JournalLineCreate(BaseModel):
-    account_id: str | None = None
-    account_code: str | None = None
-    debit: float = Field(default=0, ge=0)
-    credit: float = Field(default=0, ge=0)
-    description: str | None = None
+    """Nested line on `JournalCreate` (BR-10.2).
+
+    Optional `account_code` ∈ `AccountCodeValue`; omit/`null` OK when `account_id`
+    set; blank/`!!!`/`a b`/`http://…` → **422** (was free `str`; blank reached
+    service **400**; malformed codes were late **404**). Same AccountCodeValue as
+    AccountCreate.code. Optional `description` ∈ `JournalLineDescriptionValue`;
+    omit/`null` → no line narrative; blank/`!!!`/`http://…` → **422** (was free
+    `str`; blank/garbage could persist on `JournalEntryLine.description`).
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    # Optional COA ∈ UuidIdValue; omit/`null` OK when account_code set; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach COA lookup).
+    # Existence remains tenant-scoped account lookup (**404**).
+    account_id: UuidIdValue | None = None
+    # Optional COA lookup ∈ AccountCodeValue; omit/`null` OK when account_id set
+    account_code: AccountCodeValue | None = None
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    debit: NonNegativeMoneyValue = 0
+    credit: NonNegativeMoneyValue = 0
+    # omit/`null` → no line narrative; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank/garbage could persist on JournalEntryLine.description).
+    description: JournalLineDescriptionValue | None = None
+
+
+def validate_journal_description_value(value: str) -> str:
+    """AfterValidator: journal narrative; blank/URL/short/garbage → 422 (2–500)."""
+    if not value:
+        raise ValueError("journal description must be a non-empty narrative (2–500 chars)")
+    if len(value) < 2 or len(value) > 500:
+        raise ValueError("journal description must be a non-empty narrative (2–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("journal description must be a non-empty narrative (2–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("journal description must be a non-empty narrative (2–500 chars)")
+    return value
+
+
+# Manual journal header narrative (BR-10.2) — Text column; keep ≤500 at API boundary.
+JournalDescriptionValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_journal_description_value),
+]
+
+
+def validate_journal_line_description_value(value: str) -> str:
+    """AfterValidator: journal line narrative; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("journal line description must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("journal line description must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("journal line description must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("journal line description must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Manual journal line narrative — JournalEntryLine.description Text; ≤500 at API.
+JournalLineDescriptionValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_journal_line_description_value),
+]
+
+
+def validate_journal_reference_value(value: str) -> str:
+    """AfterValidator: journal reference; blank/URL/garbage → 422 (1–100)."""
+    if not value:
+        raise ValueError("journal reference must be a non-empty label (1–100 chars)")
+    if len(value) > 100:
+        raise ValueError("journal reference must be a non-empty label (1–100 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("journal reference must be a non-empty label (1–100 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("journal reference must be a non-empty label (1–100 chars)")
+    return value
+
+
+# Manual journal reference — JournalEntry.reference String(100); omit → no reference.
+JournalReferenceValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_journal_reference_value),
+]
+
+
+def validate_bank_statement_line_description_value(value: str) -> str:
+    """AfterValidator: bank statement line description; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError(
+            "bank statement line description must be a non-empty narrative (1–500 chars)"
+        )
+    if len(value) > 500:
+        raise ValueError(
+            "bank statement line description must be a non-empty narrative (1–500 chars)"
+        )
+    if "://" in value or "@" in value:
+        raise ValueError(
+            "bank statement line description must be a non-empty narrative (1–500 chars)"
+        )
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError(
+            "bank statement line description must be a non-empty narrative (1–500 chars)"
+        )
+    return value
+
+
+# Bank statement line narrative — keep ≤500 at API boundary.
+BankStatementLineDescriptionValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_bank_statement_line_description_value),
+]
+
+
+def validate_bank_statement_line_external_ref_value(value: str) -> str:
+    """AfterValidator: bank statement line external_ref; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError(
+            "bank statement line external_ref must be a non-empty label (1–120 chars)"
+        )
+    if len(value) > 120:
+        raise ValueError(
+            "bank statement line external_ref must be a non-empty label (1–120 chars)"
+        )
+    if "://" in value or "@" in value:
+        raise ValueError(
+            "bank statement line external_ref must be a non-empty label (1–120 chars)"
+        )
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError(
+            "bank statement line external_ref must be a non-empty label (1–120 chars)"
+        )
+    return value
+
+
+# Bank statement line external_ref — matches BankStatementLine.external_ref String(120).
+BankStatementLineExternalRefValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_bank_statement_line_external_ref_value),
+]
+
+
+def validate_bank_statement_notes_value(value: str) -> str:
+    """AfterValidator: bank statement header notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("bank statement notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("bank statement notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("bank statement notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("bank statement notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Bank statement header notes — keep ≤500 at API boundary.
+BankStatementNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_bank_statement_notes_value),
+]
+
+
+def validate_bank_clear_group_notes_value(value: str) -> str:
+    """AfterValidator: bank clear-group notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("bank clear-group notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("bank clear-group notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("bank clear-group notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("bank clear-group notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Bank clearing-group notes — keep ≤500 at API boundary.
+BankClearGroupNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_bank_clear_group_notes_value),
+]
+
+
+def validate_expense_description_value(value: str) -> str:
+    """AfterValidator: expense narrative; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("expense description must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("expense description must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("expense description must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("expense description must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Expense / recurring narrative (BR-9.2 / BR-9.5) — Text column; keep ≤500 at API.
+ExpenseDescriptionValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_expense_description_value),
+]
+
+
+def validate_expense_approve_comment_value(value: str) -> str:
+    """AfterValidator: expense approve comment; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("expense approve comment must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("expense approve comment must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("expense approve comment must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("expense approve comment must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Expense approve comment — Expense.approval_comment Text; keep ≤500 at API boundary.
+ExpenseApproveCommentValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_expense_approve_comment_value),
+]
+
+
+def validate_recurring_skip_reason_value(value: str) -> str:
+    """AfterValidator: recurring skip-next reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("recurring skip reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("recurring skip reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("recurring skip reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("recurring skip reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Recurring skip-next reason — audit `recurring_expense_skipped.details.reason` (BR-9.5).
+RecurringSkipReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_recurring_skip_reason_value),
+]
+
+
+def validate_expense_reject_reason_value(value: str) -> str:
+    """AfterValidator: expense reject reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("expense reject reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("expense reject reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("expense reject reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("expense reject reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Expense reject reason — Expense.rejection_reason column (BR-9.3).
+ExpenseRejectReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_expense_reject_reason_value),
+]
+
+
+def validate_purchase_request_reject_reason_value(value: str) -> str:
+    """AfterValidator: PR reject reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("purchase request reject reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("purchase request reject reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("purchase request reject reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("purchase request reject reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Purchase request reject reason — PurchaseRequest.rejection_reason column (BR-6.2).
+PurchaseRequestRejectReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_purchase_request_reject_reason_value),
+]
+
+
+def validate_sales_quotation_reject_reason_value(value: str) -> str:
+    """AfterValidator: quotation reject reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("quotation reject reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("quotation reject reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("quotation reject reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("quotation reject reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Sales quotation reject reason — SalesQuotation.rejection_reason column (BR-7.2).
+SalesQuotationRejectReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_sales_quotation_reject_reason_value),
+]
+
+
+def validate_stock_transfer_reject_reason_value(value: str) -> str:
+    """AfterValidator: stock/store transfer reject/cancel reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("stock transfer reject reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("stock transfer reject reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("stock transfer reject reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("stock transfer reject reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Stock / store transfer reject/cancel reason — StockTransfer.rejection_reason (BR-5.2/5.4 / BR-13.2).
+StockTransferRejectReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_stock_transfer_reject_reason_value),
+]
+
+
+def validate_stock_count_cancel_reason_value(value: str) -> str:
+    """AfterValidator: stock count cancel reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("stock count cancel reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("stock count cancel reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("stock count cancel reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("stock count cancel reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Stock count cancel reason — appended to StockCount.notes + audit stock_count_cancelled (BR-5.2).
+StockCountCancelReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_stock_count_cancel_reason_value),
+]
+
+
+_POS_DRAWER_PLACEHOLDER_REASONS = frozenset({"manual", "n/a", "na", "none", "test"})
+
+
+def validate_pos_drawer_open_reason_value(value: str) -> str:
+    """AfterValidator: POS manual drawer open reason; blank/URL/garbage/placeholder → 422 (3–200)."""
+    if not value or len(value) < 3 or len(value) > 200:
+        raise ValueError("cash drawer open reason must be a specific narrative (3–200 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("cash drawer open reason must be a specific narrative (3–200 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("cash drawer open reason must be a specific narrative (3–200 chars)")
+    if value.lower() in _POS_DRAWER_PLACEHOLDER_REASONS:
+        raise ValueError("cash drawer open reason must be a specific narrative (3–200 chars)")
+    return value
+
+
+# POS manual drawer open reason — POST /pos/sessions/{id}/drawer/open (BR-8.1).
+PosDrawerOpenReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_pos_drawer_open_reason_value),
+]
+
+
+def validate_tenant_suspend_reason_value(value: str) -> str:
+    """AfterValidator: tenant suspend reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("tenant suspend reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("tenant suspend reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("tenant suspend reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("tenant suspend reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Tenant suspend reason — Tenant.suspended_reason (platform + company self-suspend).
+TenantSuspendReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_tenant_suspend_reason_value),
+]
+
+
+def validate_sales_order_cancel_reason_value(value: str) -> str:
+    """AfterValidator: sales order cancel reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("sales order cancel reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("sales order cancel reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("sales order cancel reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("sales order cancel reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Sales order cancel reason — appended to SalesOrder.notes + audit so_cancelled (BR-7.3).
+SalesOrderCancelReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_sales_order_cancel_reason_value),
+]
+
+
+def validate_sales_invoice_cancel_reason_value(value: str) -> str:
+    """AfterValidator: sales invoice cancel reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("sales invoice cancel reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("sales invoice cancel reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("sales invoice cancel reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("sales invoice cancel reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Sales invoice cancel reason — appended to SalesInvoice.notes + audit invoice_cancelled (BR-7.4).
+SalesInvoiceCancelReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_sales_invoice_cancel_reason_value),
+]
+
+
+def validate_sales_return_cancel_reason_value(value: str) -> str:
+    """AfterValidator: sales return cancel reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("sales return cancel reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("sales return cancel reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("sales return cancel reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("sales return cancel reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Sales return cancel reason — appended to SalesReturn.notes + audit sales_return_cancelled (BR-7.5).
+SalesReturnCancelReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_sales_return_cancel_reason_value),
+]
+
+
+def validate_purchase_order_cancel_reason_value(value: str) -> str:
+    """AfterValidator: purchase order cancel reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("purchase order cancel reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("purchase order cancel reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("purchase order cancel reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("purchase order cancel reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Purchase order cancel reason — appended to PurchaseOrder.notes + audit po_cancelled (BR-6.3).
+PurchaseOrderCancelReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_purchase_order_cancel_reason_value),
+]
+
+
+def validate_purchase_order_amend_reason_value(value: str) -> str:
+    """AfterValidator: purchase order amend reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("purchase order amend reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("purchase order amend reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("purchase order amend reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("purchase order amend reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Purchase order amend reason — purchase_order_amendments.reason + audit po_amended (BR-6.3).
+PurchaseOrderAmendReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_purchase_order_amend_reason_value),
+]
+
+
+def validate_purchase_invoice_cancel_reason_value(value: str) -> str:
+    """AfterValidator: purchase invoice cancel reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("purchase invoice cancel reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("purchase invoice cancel reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("purchase invoice cancel reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("purchase invoice cancel reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Purchase invoice cancel reason — appended to PurchaseInvoice.notes + audit pi_cancelled (BR-6.5).
+PurchaseInvoiceCancelReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_purchase_invoice_cancel_reason_value),
+]
+
+
+def validate_purchase_return_cancel_reason_value(value: str) -> str:
+    """AfterValidator: purchase return cancel reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("purchase return cancel reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("purchase return cancel reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("purchase return cancel reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("purchase return cancel reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Purchase return cancel reason — appended to PurchaseReturn.notes + audit purchase_return_cancelled (BR-6.6).
+PurchaseReturnCancelReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_purchase_return_cancel_reason_value),
+]
+
+
+def validate_journal_unpost_reason_value(value: str) -> str:
+    """AfterValidator: journal unpost reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("journal unpost reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("journal unpost reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("journal unpost reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("journal unpost reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Journal unpost reason — appended to JournalEntry.description + audit journal_unposted (BR-10.2).
+JournalUnpostReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_journal_unpost_reason_value),
+]
+
+
+def validate_cheque_lifecycle_reason_value(value: str) -> str:
+    """AfterValidator: cheque bounce/cancel reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("cheque bounce/cancel reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("cheque bounce/cancel reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("cheque bounce/cancel reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("cheque bounce/cancel reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Cheque bounce/cancel reason — appended to Cheque.notes + journal description (BR-10.4).
+ChequeLifecycleReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_cheque_lifecycle_reason_value),
+]
+
+
+def validate_period_close_reason_value(value: str) -> str:
+    """AfterValidator: period close/reopen reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("period close/reopen reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("period close/reopen reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("period close/reopen reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("period close/reopen reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Period close/reopen reason — audit period_closed / period_reopened details.reason (BR-10.2).
+PeriodCloseReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_period_close_reason_value),
+]
+
+
+def validate_expense_payee_value(value: str) -> str:
+    """AfterValidator: expense payee label; blank/URL/garbage → 422 (1–150)."""
+    if not value:
+        raise ValueError("expense payee must be a non-empty label (1–150 chars)")
+    if len(value) > 150:
+        raise ValueError("expense payee must be a non-empty label (1–150 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("expense payee must be a non-empty label (1–150 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("expense payee must be a non-empty label (1–150 chars)")
+    return value
+
+
+# Expense / recurring payee — matches Expense.payee / RecurringExpense.payee String(150).
+ExpensePayeeValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_expense_payee_value),
+]
+
+
+def validate_expense_reference_value(value: str) -> str:
+    """AfterValidator: expense vendor/doc reference; blank/URL/garbage → 422 (1–100)."""
+    if not value:
+        raise ValueError("expense reference must be a non-empty label (1–100 chars)")
+    if len(value) > 100:
+        raise ValueError("expense reference must be a non-empty label (1–100 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("expense reference must be a non-empty label (1–100 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("expense reference must be a non-empty label (1–100 chars)")
+    return value
+
+
+# Expense reference — matches Expense.reference String(100); omit → auto EXP-YYYY-NNNN.
+ExpenseReferenceValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_expense_reference_value),
+]
+
+
+def validate_payment_reference_value(value: str) -> str:
+    """AfterValidator: AR/AP payment reference; blank/URL/garbage → 422 (1–100)."""
+    if not value:
+        raise ValueError("payment reference must be a non-empty label (1–100 chars)")
+    if len(value) > 100:
+        raise ValueError("payment reference must be a non-empty label (1–100 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("payment reference must be a non-empty label (1–100 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("payment reference must be a non-empty label (1–100 chars)")
+    return value
+
+
+# Customer/supplier payment reference — String(100); omit → no reference.
+PaymentReferenceValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_payment_reference_value),
+]
+
+
+def validate_payment_notes_value(value: str) -> str:
+    """AfterValidator: AR/AP payment notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("payment notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("payment notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("payment notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("payment notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Customer/supplier payment notes — Text column; keep ≤500 at API boundary.
+PaymentNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_payment_notes_value),
+]
+
+
+def validate_cash_transfer_reference_value(value: str) -> str:
+    """AfterValidator: cash transfer reference; blank/URL/garbage → 422 (1–80)."""
+    if not value:
+        raise ValueError("cash transfer reference must be a non-empty label (1–80 chars)")
+    if len(value) > 80:
+        raise ValueError("cash transfer reference must be a non-empty label (1–80 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("cash transfer reference must be a non-empty label (1–80 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("cash transfer reference must be a non-empty label (1–80 chars)")
+    return value
+
+
+# Cash transfer reference — matches CashTransfer.reference String(80); omit → auto XFER.
+CashTransferReferenceValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_cash_transfer_reference_value),
+]
+
+
+def validate_opening_balance_reference_value(value: str) -> str:
+    """AfterValidator: COA opening balance reference; blank/URL/garbage → 422 (1–100)."""
+    if not value:
+        raise ValueError("opening balance reference must be a non-empty label (1–100 chars)")
+    if len(value) > 100:
+        raise ValueError("opening balance reference must be a non-empty label (1–100 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("opening balance reference must be a non-empty label (1–100 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("opening balance reference must be a non-empty label (1–100 chars)")
+    return value
+
+
+# COA opening reference — JournalEntry.reference; omit → auto COA-OPEN-YYYYMMDD.
+OpeningBalanceReferenceValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_opening_balance_reference_value),
+]
+
+
+def validate_opening_balance_notes_value(value: str) -> str:
+    """AfterValidator: COA opening balance notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("opening balance notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("opening balance notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("opening balance notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("opening balance notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# COA opening notes — JournalEntry.description; omit → default "COA opening balances …".
+OpeningBalanceNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_opening_balance_notes_value),
+]
+
+
+def validate_stock_count_notes_value(value: str) -> str:
+    """AfterValidator: stock count notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("stock count notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("stock count notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("stock count notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("stock count notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Stock count notes — StockCount.notes Text; keep ≤500 at API boundary.
+StockCountNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_stock_count_notes_value),
+]
+
+
+def validate_sales_return_notes_value(value: str) -> str:
+    """AfterValidator: sales return notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("sales return notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("sales return notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("sales return notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("sales return notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Sales return header notes — SalesReturn.notes Text; keep ≤500 at API boundary.
+SalesReturnNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_sales_return_notes_value),
+]
+
+
+def validate_sales_document_notes_value(value: str) -> str:
+    """AfterValidator: sales invoice/quotation/order notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("sales document notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("sales document notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("sales document notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("sales document notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Shared QT/SO/SI header notes — Text columns; keep ≤500 at API boundary.
+SalesDocumentNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_sales_document_notes_value),
+]
+
+
+def validate_purchase_return_notes_value(value: str) -> str:
+    """AfterValidator: purchase return notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("purchase return notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("purchase return notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("purchase return notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("purchase return notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Purchase return header notes — PurchaseReturn.notes Text; keep ≤500 at API boundary.
+PurchaseReturnNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_purchase_return_notes_value),
+]
+
+
+def validate_purchase_order_notes_value(value: str) -> str:
+    """AfterValidator: purchase order notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("purchase order notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("purchase order notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("purchase order notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("purchase order notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Purchase order notes — PurchaseOrder.notes Text; keep ≤500 at API boundary.
+PurchaseOrderNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_purchase_order_notes_value),
+]
+
+
+def validate_purchase_request_notes_value(value: str) -> str:
+    """AfterValidator: purchase request notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("purchase request notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("purchase request notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("purchase request notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("purchase request notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Purchase request notes — PurchaseRequest.notes column; keep ≤500 at API boundary.
+PurchaseRequestNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_purchase_request_notes_value),
+]
+
+
+def validate_purchase_request_department_value(value: str) -> str:
+    """AfterValidator: PR requesting department label; blank/URL/garbage → 422 (1–120)."""
+    if not value:
+        raise ValueError(
+            "purchase request department must be a non-empty label (1–120 chars)"
+        )
+    if len(value) > 120:
+        raise ValueError(
+            "purchase request department must be a non-empty label (1–120 chars)"
+        )
+    if "://" in value or "@" in value:
+        raise ValueError(
+            "purchase request department must be a non-empty label (1–120 chars)"
+        )
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError(
+            "purchase request department must be a non-empty label (1–120 chars)"
+        )
+    return value
+
+
+# Requesting department free-text — matches PurchaseRequest.department String(120).
+PurchaseRequestDepartmentValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_purchase_request_department_value),
+]
+
+
+def validate_ai_prediction_risk_reason_value(value: str) -> str:
+    """AfterValidator: AI prediction risk_reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("AI prediction risk_reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("AI prediction risk_reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("AI prediction risk_reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("AI prediction risk_reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# AI low-stock prediction line risk_reason — embeds into draft PR line notes (BR-21.4).
+AiPredictionRiskReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_ai_prediction_risk_reason_value),
+]
+
+
+def validate_grn_rejection_reason_value(value: str) -> str:
+    """AfterValidator: GRN line rejection_reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("GRN rejection_reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("GRN rejection_reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("GRN rejection_reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("GRN rejection_reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# GRN line rejection_reason — when rejected_qty > 0 / inferred reject (BR-6.4).
+GrnRejectionReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_grn_rejection_reason_value),
+]
+
+
+def validate_credit_override_reason_value(value: str) -> str:
+    """AfterValidator: credit override_reason; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("credit override_reason must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("credit override_reason must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("credit override_reason must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("credit override_reason must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Credit limit override reason — sales invoice post / POS / legacy sale (BR-11.1).
+CreditOverrideReasonValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_credit_override_reason_value),
+]
+
+
+def validate_print_header_text_value(value: str) -> str:
+    """AfterValidator: print branding header_text; blank/URL/garbage → 422 (1–200)."""
+    if not value:
+        raise ValueError("print header_text must be a non-empty narrative (1–200 chars)")
+    if len(value) > 200:
+        raise ValueError("print header_text must be a non-empty narrative (1–200 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("print header_text must be a non-empty narrative (1–200 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("print header_text must be a non-empty narrative (1–200 chars)")
+    return value
+
+
+def validate_print_footer_text_value(value: str) -> str:
+    """AfterValidator: print branding footer_text; blank/URL/garbage → 422 (1–300)."""
+    if not value:
+        raise ValueError("print footer_text must be a non-empty narrative (1–300 chars)")
+    if len(value) > 300:
+        raise ValueError("print footer_text must be a non-empty narrative (1–300 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("print footer_text must be a non-empty narrative (1–300 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("print footer_text must be a non-empty narrative (1–300 chars)")
+    return value
+
+
+# Print branding header/footer — invoices, receipts, branded emails (BR-20.4).
+PrintHeaderTextValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_print_header_text_value),
+]
+PrintFooterTextValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_print_footer_text_value),
+]
+
+
+def validate_purchase_invoice_notes_value(value: str) -> str:
+    """AfterValidator: purchase invoice notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("purchase invoice notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("purchase invoice notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("purchase invoice notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("purchase invoice notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Purchase invoice notes — PurchaseInvoice.notes Text; keep ≤500 at API boundary.
+PurchaseInvoiceNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_purchase_invoice_notes_value),
+]
+
+
+def validate_supplier_invoice_number_value(value: str) -> str:
+    """AfterValidator: supplier invoice #; blank/URL/garbage → 422 (1–100)."""
+    if not value:
+        raise ValueError(
+            "supplier_invoice_number must be a non-empty reference (1–100 chars)"
+        )
+    if len(value) > 100:
+        raise ValueError(
+            "supplier_invoice_number must be a non-empty reference (1–100 chars)"
+        )
+    if "://" in value or "@" in value:
+        raise ValueError(
+            "supplier_invoice_number must be a non-empty reference (1–100 chars)"
+        )
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError(
+            "supplier_invoice_number must be a non-empty reference (1–100 chars)"
+        )
+    return value
+
+
+# Supplier's own invoice reference — matches PurchaseInvoice.supplier_invoice_number String(100).
+SupplierInvoiceNumberValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_supplier_invoice_number_value),
+]
+
+
+def validate_grn_notes_value(value: str) -> str:
+    """AfterValidator: GRN notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("GRN notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("GRN notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("GRN notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("GRN notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Goods receipt notes — GoodsReceipt.notes Text; keep ≤500 at API boundary.
+GrnNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_grn_notes_value),
+]
+
+
+def validate_stock_count_item_notes_value(value: str) -> str:
+    """AfterValidator: stock count line notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("stock count item notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("stock count item notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("stock count item notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("stock count item notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Stock count line notes — StockCountItem.notes Text; keep ≤500 at API boundary.
+StockCountItemNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_stock_count_item_notes_value),
+]
+
+
+def validate_cash_transfer_notes_value(value: str) -> str:
+    """AfterValidator: cash transfer notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("cash transfer notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("cash transfer notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("cash transfer notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("cash transfer notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Cash transfer notes — CashTransfer.notes Text; keep ≤500 at API boundary.
+CashTransferNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_cash_transfer_notes_value),
+]
+
+
+def validate_opening_stock_reference_value(value: str) -> str:
+    """AfterValidator: opening-stock reference; blank/URL/garbage → 422 (1–100)."""
+    if not value:
+        raise ValueError("opening stock reference must be a non-empty label (1–100 chars)")
+    if len(value) > 100:
+        raise ValueError("opening stock reference must be a non-empty label (1–100 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("opening stock reference must be a non-empty label (1–100 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("opening stock reference must be a non-empty label (1–100 chars)")
+    return value
+
+
+# Opening stock reference — journal/audit String(100); omit → auto OS-YYYY-NNNN.
+OpeningStockReferenceValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_opening_stock_reference_value),
+]
+
+
+def validate_opening_stock_notes_value(value: str) -> str:
+    """AfterValidator: opening-stock notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("opening stock notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("opening stock notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("opening stock notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("opening stock notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Opening stock header notes — merged into StockMovement.notes Text; ≤500 at API.
+OpeningStockNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_opening_stock_notes_value),
+]
+
+
+def validate_backup_notes_value(value: str) -> str:
+    """AfterValidator: backup job notes; blank/URL/garbage → 422 (1–500)."""
+    if not value:
+        raise ValueError("backup notes must be a non-empty narrative (1–500 chars)")
+    if len(value) > 500:
+        raise ValueError("backup notes must be a non-empty narrative (1–500 chars)")
+    if "://" in value or "@" in value:
+        raise ValueError("backup notes must be a non-empty narrative (1–500 chars)")
+    if not re.search(r"[A-Za-z0-9]", value):
+        raise ValueError("backup notes must be a non-empty narrative (1–500 chars)")
+    return value
+
+
+# Backup job notes — BackupJob.notes Text; keep ≤500 at API boundary.
+BackupNotesValue = Annotated[
+    str,
+    BeforeValidator(coerce_bank_name_value),
+    AfterValidator(validate_backup_notes_value),
+]
 
 
 class JournalCreate(BaseModel):
-    description: str
-    reference: str | None = None
-    entry_date: date | None = None
+    """Manual journal create — description + optional entry_date (BR-10.2).
+
+    `description` ∈ JournalDescriptionValue (strip; 2–500; ≥1 letter/digit; no
+    `://`/`@`); blank/`!!!`/`http://…` → **422** (was free `str`; empty/garbage
+    could persist on the ledger). Optional `reference` ∈ JournalReferenceValue
+    (strip; 1–100; ≥1 letter/digit; no `://`/`@`); omit/`null` → no reference;
+    blank/`!!!`/`http://…` → **422** (was free `str`; blank silently dropped /
+    garbage could persist on journal `reference`). Optional `entry_date` ∈
+    IsoDateQueryValue; omit/`null` → now; blank/invalid → **422**.
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    description: JournalDescriptionValue
+    # omit/`null` → no reference; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank silently dropped / garbage could persist on JournalEntry.reference).
+    reference: JournalReferenceValue | None = None
+    # IsoDateQueryValue as expense_date / SO delivery_date / subscription start_at.
+    entry_date: IsoDateQueryValue | None = None
     lines: list[JournalLineCreate] = Field(min_length=2)
 
 
 class JournalUnpost(BaseModel):
-    """Manual journal unpost — typed reason required (BR-10.2 honesty)."""
+    """Manual journal unpost — typed reason required (BR-10.2 honesty).
 
-    reason: str = Field(min_length=1, max_length=500)
+    `reason` ∈ JournalUnpostReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could be appended to journal `description` / audit).
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    reason: JournalUnpostReasonValue
 
 
 class ChequeLifecycleReason(BaseModel):
-    """Cheque bounce / cancel — typed reason required (BR-10.4 honesty)."""
+    """Cheque bounce / cancel — typed reason required (BR-10.4 honesty).
 
-    reason: str = Field(min_length=1, max_length=500)
+    `reason` ∈ ChequeLifecycleReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could be appended to cheque `notes` / journal).
+    Shared by bounce and cancel endpoints.
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    reason: ChequeLifecycleReasonValue
 
 
 class PeriodCloseBody(BaseModel):
-    """Close books through an inclusive calendar date (BR-10.2)."""
+    """Close books through an inclusive calendar date (BR-10.2).
 
-    through_date: date
-    reason: str = Field(min_length=1, max_length=500)
+    `through_date` ∈ IsoDateQueryValue (required); blank/invalid → **422**.
+    `reason` ∈ PeriodCloseReasonValue (strip; 1–500; ≥1 letter/digit; no
+    `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
+    `min_length=1` only — whitespace still reached service **400**; punctuation-
+    only / URL-like garbage could land in audit `period_closed.details.reason`).
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    # IsoDateQueryValue as JournalCreate.entry_date / expense_date.
+    through_date: IsoDateQueryValue
+    reason: PeriodCloseReasonValue
 
 
 class PeriodReopenBody(BaseModel):
-    """Reopen: set an earlier closed-through date, or null to clear — reason required (BR-10.2 honesty)."""
+    """Reopen: set an earlier closed-through date, or null to clear — reason required (BR-10.2 honesty).
 
-    through_date: date | None = None
-    reason: str = Field(min_length=1, max_length=500)
+    Optional `through_date` ∈ IsoDateQueryValue; omit/`null` → clear; blank/invalid → **422**.
+    `reason` ∈ PeriodCloseReasonValue (same honesty as close; omit/blank/garbage → **422** —
+    was free `str` with `min_length=1` only; whitespace still reached service **400**).
+    """
+    model_config = ConfigDict(extra="forbid")
+
+
+    through_date: IsoDateQueryValue | None = None
+    reason: PeriodCloseReasonValue
 
 
 class PosSessionOpen(BaseModel):
-    store_id: str | None = None
-    opening_cash: float = Field(default=0, ge=0)
+    model_config = ConfigDict(extra="forbid")
+
+    # Optional store ∈ UuidIdValue; omit/`null` → no store / HQ path; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach store
+    # lookup). Existence remains tenant-scoped store lookup (**404**). POS
+    # **POS store** select (`aria-label`); Open shift sends trim or `null`.
+    store_id: UuidIdValue | None = None
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    opening_cash: NonNegativeMoneyValue = 0
 
 
 class PosSessionClose(BaseModel):
-    actual_cash: float = Field(ge=0)
-    closing_cash: float | None = None
-    notes: str | None = None
+    model_config = ConfigDict(extra="forbid")
+
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    actual_cash: NonNegativeMoneyValue
+    # omit/`null` → no separate closing figure; nan/inf/<0 → **422**
+    closing_cash: NonNegativeMoneyValue | None = None
+    # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
+    # blank/garbage could persist on PosSession.notes Text).
+    notes: PosSessionCloseNotesValue | None = None
 
 
 class PosPaymentLine(BaseModel):
-    """One tender toward a POS sale total (supports split payments)."""
+    """One tender toward a POS sale total (supports split payments).
+
+    Optional `reference` ∈ PaymentReferenceValue; omit/`null` → no tender
+    reference; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage
+    could persist on POS payment `reference`).
+    """
+    model_config = ConfigDict(extra="forbid")
+
 
     # BR-8.1 — schema Literal (+ wallet aliases via BeforeValidator); blank/invalid → 422
     payment_method: PosTenderMethod = "cash"
-    amount: float = Field(gt=0)
-    reference: str | None = None
-    liquid_account_id: str | None = None
+    # ∈ PositiveMoneyValue; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
+    amount: PositiveMoneyValue
+    # omit/`null` → no tender reference; blank/`!!!`/`http://…` → **422** (was free
+    # `str`; blank/garbage could persist on POS payment reference).
+    reference: PaymentReferenceValue | None = None
+    # Optional liquid COA ∈ UuidIdValue; omit/`null` → tender-method default;
+    # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could
+    # reach liquid-account lookup). Existence remains tenant-scoped (**404**/400).
+    liquid_account_id: UuidIdValue | None = None
 
 
 class PosSaleCreate(BaseModel):
-    session_id: str | None = None
-    party_id: str | None = None
-    customer_name: str | None = Field(default=None, max_length=180)
-    subtotal: float = 0
-    tax: float = 0
-    total: float = 0
-    discount_amount: float = Field(default=0, ge=0)
+    """POST /pos/sales — completed POS checkout (BR-8.1).
+
+    Unknown keys → **422** (`extra=forbid`). Server builds `transactions.payload`
+    (items/payments/session); clients must not send a free `payload` bag.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # Optional open shift ∈ UuidIdValue; omit/`null` → current session path; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach session
+    # lookup). Existence remains tenant-scoped POS session lookup (**404**/400).
+    # POS Complete sale sends `session_id` trim when a shift is open.
+    session_id: UuidIdValue | None = None
+    # Optional customer party ∈ UuidIdValue; omit/`null` → walk-in; blank/`!!!`/
+    # `http://…`/non-UUID → **422** (was free `str`; garbage could reach party
+    # lookup). Existence remains tenant-scoped customer lookup (**404**). POS
+    # **POS customer** select (`aria-label`); Complete sale sends trim or `null`.
+    party_id: UuidIdValue | None = None
+    # omit/`null` → walk-in (no name); blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist)
+    customer_name: PosCustomerNameValue | None = None
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was unconstrained float; FE usually omits — server totals)
+    subtotal: NonNegativeMoneyValue = 0
+    tax: NonNegativeMoneyValue = 0
+    total: NonNegativeMoneyValue = 0
+    # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
+    discount_amount: NonNegativeMoneyValue = 0
     # BR-8.1 — only completed POS create; omit → completed; blank/invalid → 422
     # (was free str; garbage persisted on transactions.status)
     status: Literal["completed"] = "completed"
     # BR-8.1 — omit → cash; blank/invalid → 422; split allowed when payments[] present
     payment_method: PosSalePaymentMethod = "cash"
     payments: list[PosPaymentLine] | None = None
-    payload: dict = Field(default_factory=dict)
     items: list[LineItem] = Field(min_length=1)
     override_credit_limit: bool = False
-    override_reason: str | None = Field(default=None, max_length=500)
+    # omit/`null` OK when not overriding; blank/`!!!`/`http://…` → **422**;
+    # required when override_credit_limit=true (same CreditOverrideReasonValue).
+    override_reason: CreditOverrideReasonValue | None = None
 
     @model_validator(mode="after")
     def require_override_reason_when_flagged(self):

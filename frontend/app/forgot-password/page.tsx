@@ -26,11 +26,16 @@ function ForgotPasswordForm() {
     setError('');
     setMessage('');
     setDebugToken('');
+    const trimmedTenant = tenant.trim();
+    if (!trimmedTenant) {
+      setError('Password reset tenant is required');
+      return;
+    }
     setSubmitting(true);
     try {
       const r = await api('/auth/password-reset-request', {
         method: 'POST',
-        body: JSON.stringify({ email, tenant_id: tenant }),
+        body: JSON.stringify({ email: email.trim(), tenant_id: trimmedTenant }),
       });
       setMessage(
         r.message ||
@@ -59,9 +64,9 @@ function ForgotPasswordForm() {
           <img
             className="login-logo"
             src="/brand/logo-full.png"
-            alt="RIBDIGI ERP — Run your business smarter"
-            width={160}
-            height={98}
+            alt="RIBDIGI ERP — One System. Total Business Control."
+            width={1024}
+            height={341}
           />
         </div>
 
@@ -74,6 +79,7 @@ function ForgotPasswordForm() {
           <label className="login-field">
             <span>Workspace</span>
             <input
+              aria-label="Password reset tenant"
               value={tenant}
               onChange={(e) => setTenant(e.target.value)}
               placeholder="Tenant slug or ID"
@@ -84,6 +90,7 @@ function ForgotPasswordForm() {
           <label className="login-field">
             <span>Email</span>
             <input
+              aria-label="Password reset email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@company.com"
@@ -93,7 +100,12 @@ function ForgotPasswordForm() {
             />
           </label>
 
-          <button className="login-primary" type="submit" disabled={submitting}>
+          <button
+            className="login-primary"
+            type="submit"
+            disabled={submitting}
+            aria-label="Send password reset link"
+          >
             {submitting ? 'Sending…' : 'Send reset link'}
           </button>
 

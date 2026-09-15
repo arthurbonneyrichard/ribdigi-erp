@@ -44,9 +44,8 @@ async def _discounted_grn(ac, db_session, *, admin, io, seed, vendor: str, qty=4
         headers=admin,
         json={
             "name": vendor,
-            "kind": "supplier",
-            "email": f"{vendor.replace(' ', '').lower()}@example.com",
-        },
+            
+            "email": f"{vendor.replace(' ', '').lower()}@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
     created = await ac.post(
@@ -60,10 +59,8 @@ async def _discounted_grn(ac, db_session, *, admin, io, seed, vendor: str, qty=4
                     "quantity": qty,
                     "unit_price": 10,
                     "tax_rate": 10,
-                    "discount": disc,
-                }
-            ],
-        },
+                    "discount": disc}
+            ]},
     )
     assert created.status_code == 200, created.text
     po = created.json()["data"]
@@ -81,10 +78,8 @@ async def _discounted_grn(ac, db_session, *, admin, io, seed, vendor: str, qty=4
                     "po_item_id": po["items"][0]["id"],
                     "received_qty": qty,
                     "accepted_qty": qty,
-                    "rejected_qty": 0,
-                }
-            ],
-        },
+                    "rejected_qty": 0}
+            ]},
     )
     assert grn.status_code == 200, grn.text
     body = grn.json()["data"]
@@ -108,8 +103,7 @@ async def test_return_inherits_full_po_line_discount(client, db_session):
         json={
             "goods_receipt_id": grn_id,
             "reason": "damaged",
-            "items": [{"goods_receipt_item_id": grn_item_id, "quantity": 4}],
-        },
+            "items": [{"goods_receipt_item_id": grn_item_id, "quantity": 4}]},
     )
     assert created.status_code == 200, created.text
     body = created.json()["data"]
@@ -146,8 +140,7 @@ async def test_return_partial_qty_proportional_discount(client, db_session):
         json={
             "goods_receipt_id": grn_id,
             "reason": "quality",
-            "items": [{"goods_receipt_item_id": grn_item_id, "quantity": 2}],
-        },
+            "items": [{"goods_receipt_item_id": grn_item_id, "quantity": 2}]},
     )
     assert created.status_code == 200, created.text
     body = created.json()["data"]
@@ -174,8 +167,7 @@ async def test_return_zero_po_discount_unchanged(client, db_session):
         json={
             "goods_receipt_id": grn_id,
             "reason": "other",
-            "items": [{"goods_receipt_item_id": grn_item_id, "quantity": 1}],
-        },
+            "items": [{"goods_receipt_item_id": grn_item_id, "quantity": 1}]},
     )
     assert created.status_code == 200, created.text
     body = created.json()["data"]

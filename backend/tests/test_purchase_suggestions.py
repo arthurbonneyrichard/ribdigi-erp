@@ -50,7 +50,7 @@ async def test_low_stock_suggestions_and_create_draft_pr(client, db_session):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=admin,
-        json={"name": "Suggest Supplier", "kind": "supplier", "email": "s@example.com"},
+        json={"name": "Suggest Supplier",  "email": "s@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
     supplier_id = supplier.json()["data"]["id"]
@@ -61,8 +61,7 @@ async def test_low_stock_suggestions_and_create_draft_pr(client, db_session):
         headers=io,
         json={
             "supplier_id": supplier_id,
-            "items": [{"product_id": product.id, "quantity": 1, "unit_price": 1}],
-        },
+            "items": [{"product_id": product.id, "quantity": 1, "unit_price": 1}]},
     )
     assert po.status_code == 200, po.text
 
@@ -82,11 +81,9 @@ async def test_low_stock_suggestions_and_create_draft_pr(client, db_session):
                 {
                     "product_id": product.id,
                     "quantity": line["suggested_order_qty"],
-                    "preferred_supplier_id": supplier_id,
-                }
+                    "preferred_supplier_id": supplier_id}
             ],
-            "notes": "Auto from low stock",
-        },
+            "notes": "Auto from low stock"},
     )
     assert created.status_code == 200, created.text
     data = created.json()["data"]

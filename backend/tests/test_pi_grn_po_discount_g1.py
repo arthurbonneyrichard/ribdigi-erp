@@ -44,9 +44,8 @@ async def _grn_from_discounted_po(ac, db_session, *, admin, io, seed, vendor: st
         headers=admin,
         json={
             "name": vendor,
-            "kind": "supplier",
-            "email": f"{vendor.replace(' ', '').lower()}@example.com",
-        },
+            
+            "email": f"{vendor.replace(' ', '').lower()}@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
     created = await ac.post(
@@ -60,10 +59,8 @@ async def _grn_from_discounted_po(ac, db_session, *, admin, io, seed, vendor: st
                     "quantity": 4,
                     "unit_price": 10,
                     "tax_rate": 10,
-                    "discount": 8,
-                }
-            ],
-        },
+                    "discount": 8}
+            ]},
     )
     assert created.status_code == 200, created.text
     po = created.json()["data"]
@@ -85,10 +82,8 @@ async def _grn_from_discounted_po(ac, db_session, *, admin, io, seed, vendor: st
                     "po_item_id": po["items"][0]["id"],
                     "received_qty": 4,
                     "accepted_qty": 4,
-                    "rejected_qty": 0,
-                }
-            ],
-        },
+                    "rejected_qty": 0}
+            ]},
     )
     assert grn.status_code == 200, grn.text
     return grn.json()["data"]["id"], po
@@ -134,7 +129,7 @@ async def test_from_grn_pi_partial_receive_proportional_discount(client, db_sess
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=admin,
-        json={"name": "PI Partial Disc", "kind": "supplier", "email": "pi-part-d@example.com"},
+        json={"name": "PI Partial Disc",  "email": "pi-part-d@example.com"},
     )
     assert supplier.status_code == 200
     created = await ac.post(
@@ -148,10 +143,8 @@ async def test_from_grn_pi_partial_receive_proportional_discount(client, db_sess
                     "quantity": 4,
                     "unit_price": 10,
                     "tax_rate": 0,
-                    "discount": 8,
-                }
-            ],
-        },
+                    "discount": 8}
+            ]},
     )
     assert created.status_code == 200, created.text
     po = created.json()["data"]
@@ -170,10 +163,8 @@ async def test_from_grn_pi_partial_receive_proportional_discount(client, db_sess
                     "po_item_id": po["items"][0]["id"],
                     "received_qty": 2,
                     "accepted_qty": 2,
-                    "rejected_qty": 0,
-                }
-            ],
-        },
+                    "rejected_qty": 0}
+            ]},
     )
     assert grn.status_code == 200, grn.text
 

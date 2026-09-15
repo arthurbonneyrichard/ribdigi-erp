@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import ai as ai_svc
 from app import models as m
+from app.honesty import money_json
 from app import reports as reports_svc
 from app.ai_inventory import seasonality_hint
 
@@ -88,7 +89,7 @@ async def _invoice_baskets(
                 "id": inv.id,
                 "customer_id": inv.customer_id,
                 "posted_at": inv.posted_at,
-                "total": float(inv.total_amount or 0),
+                "total": money_json(inv.total_amount or 0),
                 "product_ids": set(),
             },
         )
@@ -121,7 +122,7 @@ async def _pos_events(
             {
                 "id": tx.id,
                 "created_at": tx.created_at,
-                "total": float(tx.total or 0),
+                "total": money_json(tx.total or 0),
                 "product_ids": pids,
             }
         )
@@ -147,14 +148,14 @@ async def build_rfm(
             cid, {"customer_id": cid, "frequency": 0, "monetary": 0.0, "last": None}
         )
         row["frequency"] += 1
-        row["monetary"] += float(b["total"])
+        row["monetary"] += money_json(b["total"])
         if b["posted_at"] and (row["last"] is None or b["posted_at"] > row["last"]):
             row["last"] = b["posted_at"]
     recency_days = {
         cid: (now - (row["last"] or start)).days for cid, row in cust.items()
     }
-    freq = {cid: float(row["frequency"]) for cid, row in cust.items()}
-    mon = {cid: float(row["monetary"]) for cid, row in cust.items()}
+    freq = {cid: money_json(row["frequency"]) for cid, row in cust.items()}
+    mon = {cid: money_json(row["monetary"]) for cid, row in cust.items()}
     r_scores = _score_map(recency_days, higher_is_better=False)
     f_scores = _score_map(freq, higher_is_better=True)
     m_scores = _score_map(mon, higher_is_better=True)
@@ -177,7 +178,7 @@ async def build_rfm(
                 "customer_name": parties.get(cid),
                 "recency_days": recency_days.get(cid),
                 "frequency": row["frequency"],
-                "monetary": round(row["monetary"], 2),
+                "monetary": money_json(round(money_json(row["monetary"]), 2)),
                 "r": rs,
                 "f": fs,
                 "m": ms,
@@ -206,12 +207,15 @@ async def sales_analysis(
     for b in baskets:
         if b["posted_at"]:
             key = b["posted_at"].strftime("%Y-%m")
-            months[key] += float(b["total"])
+            months[key] += money_json(b["total"])
     for p in pos:
         if p["created_at"]:
             key = p["created_at"].strftime("%Y-%m")
-            months[key] += float(p["total"])
-    series = [{"month": k, "total": round(v, 2)} for k, v in sorted(months.items())]
+            months[key] += money_json(p["total"])
+    series = [
+        {"month": k, "total": money_json(round(money_json(v), 2))}
+        for k, v in sorted(months.items())
+    ]
     if len(series) >= 2:
         recent = series[-1]["total"]
         prior = series[-2]["total"]
@@ -221,13 +225,13 @@ async def sales_analysis(
         ratio = season.get("ratio") or (1.0 if prior <= 0 else recent / max(prior, 1e-9))
         if season.get("label") == "emerging_demand":
             ratio = 1.15
-        forecast_next = round(recent * float(ratio), 2)
+        forecast_next = money_json(round(money_json(recent) * money_json(ratio), 2))
     elif len(series) == 1:
-        season = {"detected": False, "ratio": 1.0, "label": "stable"}
+        season = {"detected": False, "ratio": money_json(1), "label": "stable"}
         forecast_next = series[0]["total"]
     else:
         season = {"detected": False, "ratio": None, "label": "insufficient_history"}
-        forecast_next = 0.0
+        forecast_next = money_json(0)
 
     rfm_rows, segment_counts = await build_rfm(
         db, tenant_id, baskets=baskets, start=start, end=end

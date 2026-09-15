@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import ai as ai_svc
 from app import ai_expenses as ai_expenses_svc
 from app import expense_ocr as ocr_svc
+from app.honesty import money_json, optional_honest_narrative
 from app import expenses as expenses_svc
 from app import models as m
 from app import purchasing as purchasing_svc
@@ -51,7 +52,7 @@ def name_similarity(a: str, b: str) -> float:
     j = inter / union if union else 0.0
     shorter = ta if len(ta) <= len(tb) else tb
     cover = inter / len(shorter) if shorter else 0.0
-    return round(max(j, cover * 0.85), 3)
+    return money_json(round(max(j, cover * 0.85), 3))
 
 
 def infer_document_type(text: str, explicit: str | None) -> str:
@@ -89,7 +90,7 @@ def match_parties(
                 "party_id": p.id,
                 "name": p.name,
                 "kind": p.kind,
-                "score": round(score, 3),
+                "score": money_json(round(score, 3)),
             }
         )
     hits.sort(key=lambda x: (-x["score"], x["name"]))
@@ -116,10 +117,10 @@ def match_purchase_orders(
                     "purchase_order_id": po.id,
                     "po_number": po.po_number,
                     "status": po.status,
-                    "total_amount": float(po.total_amount or 0),
+                    "total_amount": money_json(po.total_amount),
                     "supplier_id": po.supplier_id,
                     "supplier_name": supplier.name if supplier else None,
-                    "score": 1.0 if po_n.upper() in blob else 0.8,
+                    "score": money_json(1) if po_n.upper() in blob else money_json(0.8),
                 }
             )
     hits.sort(key=lambda x: -x["score"])
@@ -170,17 +171,18 @@ def build_discrepancies(
             }
         )
     if expected_amount is not None and fields.get("amount") is not None:
-        amt = float(fields["amount"])
-        if abs(amt - float(expected_amount)) > 0.05:
+        amt = money_json(fields["amount"])
+        expected = money_json(expected_amount)
+        if abs(amt - expected) > 0.05:
             flags.append(
                 {
                     "code": "amount_mismatch",
                     "severity": "high",
                     "message": (
-                        f"Extracted amount {amt} differs from expected {float(expected_amount):.2f}"
+                        f"Extracted amount {amt} differs from expected {expected:.2f}"
                     ),
                     "extracted": amt,
-                    "expected": float(expected_amount),
+                    "expected": expected,
                 }
             )
     if fields.get("payee") and not party_matches:
@@ -210,7 +212,7 @@ def build_discrepancies(
         )
     if po_matches and fields.get("amount") is not None:
         top = po_matches[0]
-        if abs(float(fields["amount"]) - float(top["total_amount"])) > 0.05:
+        if abs(money_json(fields["amount"]) - money_json(top["total_amount"])) > 0.05:
             flags.append(
                 {
                     "code": "po_amount_mismatch",
@@ -262,7 +264,7 @@ async def analyze_upload(
     ocr = ocr_svc.suggest_from_media(media)
     fields = dict(ocr.get("suggestions") or {})
     raw = ocr.get("raw_text_preview") or ""
-    confidence = float(ocr.get("confidence") or 0)
+    confidence = money_json(ocr.get("confidence") or 0)
     resolved_type = infer_document_type(raw, doc_type)
 
     parties = (
@@ -448,7 +450,7 @@ async def create_expense_from_extract(
 ) -> dict:
     """Create a pending/auto-approved expense from reviewed OCR fields (explicit action)."""
     try:
-        amt = float(amount) if amount is not None else 0.0
+        amt = money_json(amount) if amount is not None else 0.0
     except (TypeError, ValueError) as exc:
         raise HTTPException(status_code=400, detail="amount is required") from exc
     if amt <= 0:
@@ -457,9 +459,14 @@ async def create_expense_from_extract(
     method = (payment_method or "cash").strip().lower() or "cash"
 
     parsed_date = _parse_expense_date(expense_date)
-    desc = (description or "").strip()
-    if not desc and payee:
-        desc = f"OCR receipt — {payee}"
+    # OpenAPI ExpenseDescriptionValue / PayeeValue / ReferenceValue → 422; service → 400.
+    desc = optional_honest_narrative(description, label="expense description") or ""
+    payee_clean = optional_honest_narrative(payee, label="expense payee", max_length=150)
+    reference_clean = optional_honest_narrative(
+        reference, label="expense reference", max_length=100
+    )
+    if not desc and payee_clean:
+        desc = f"OCR receipt — {payee_clean}"
     if not desc:
         desc = "OCR draft expense"
 
@@ -491,8 +498,8 @@ async def create_expense_from_extract(
         category_id=resolved_category_id,
         category=resolved_category,
         payment_method=method,
-        reference=(reference or "").strip() or None,
-        payee=(payee or "").strip() or None,
+        reference=reference_clean,
+        payee=payee_clean,
         store_id=store_id,
         branch_id=branch_id,
         department_id=department_id,
@@ -507,7 +514,7 @@ async def create_expense_from_extract(
         message=f"expense:{expense.id}",
         details={
             "expense_id": expense.id,
-            "amount": float(expense.amount),
+            "amount": money_json(expense.amount),
             "payee": expense.payee,
             "reference": expense.reference,
             "method": "rule_based_ocr_apply",
@@ -562,24 +569,25 @@ async def create_purchase_invoice_from_extract(
     po_items = await purchasing_svc.list_po_items(db, tenant_id, po.id)
     items: list[dict] = []
     for poi in po_items:
-        qty = float(poi.quantity or 0)
+        qty = money_json(poi.quantity or 0)
         if qty <= 0:
             continue
         items.append(
             {
                 "product_id": poi.product_id,
-                "quantity": qty,
-                "unit_price": float(poi.unit_price or 0),
-                "tax_rate": float(poi.tax_rate or 0),
-                "discount": float(getattr(poi, "discount", 0) or 0),
+                "quantity": money_json(qty),
+                "unit_price": money_json(poi.unit_price),
+                "tax_rate": money_json(poi.tax_rate),
+                "discount": money_json(getattr(poi, "discount", 0) or 0),
             }
         )
     if not items:
         raise HTTPException(status_code=400, detail="Purchase order has no line items")
 
-    discount_amount = round(sum(float(i.get("discount") or 0) for i in items), 2)
+    discount_amount = money_json(round(sum(money_json(i.get("discount") or 0) for i in items), 2))
     parsed_date = _parse_invoice_date(invoice_date)
-    inv_notes = (notes or "").strip() or None
+    # OpenAPI PurchaseInvoiceNotesValue → 422; omit/`null`/blank → OCR default note.
+    inv_notes = optional_honest_narrative(notes, label="purchase invoice notes")
     if not inv_notes:
         inv_notes = f"OCR draft PI from {po.po_number}"
 
@@ -590,7 +598,9 @@ async def create_purchase_invoice_from_extract(
         supplier_id=resolved_supplier_id,
         purchase_order_id=po.id,
         items=items,
-        supplier_invoice_number=(supplier_invoice_number or "").strip() or None,
+        supplier_invoice_number=optional_honest_narrative(
+            supplier_invoice_number, label="supplier invoice number", max_length=100
+        ),
         invoice_date=parsed_date,
         discount_amount=discount_amount,
         notes=inv_notes,

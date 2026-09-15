@@ -18,34 +18,34 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_ar_ap_payment_method_literal_schema():
     ok = CustomerPaymentCreate.model_validate(
-        {"customer_id": "c1", "amount": 10, "payment_method": "Check"}
+        {"customer_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "amount": 10, "payment_method": "Check"}
     )
     assert ok.payment_method == "cheque"
-    defaulted = CustomerPaymentCreate.model_validate({"customer_id": "c1", "amount": 1})
+    defaulted = CustomerPaymentCreate.model_validate({"customer_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "amount": 1})
     assert defaulted.payment_method == "cash"
 
     with pytest.raises(ValidationError):
         CustomerPaymentCreate.model_validate(
-            {"customer_id": "c1", "amount": 1, "payment_method": ""}
+            {"customer_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "amount": 1, "payment_method": ""}
         )
     with pytest.raises(ValidationError):
         CustomerPaymentCreate.model_validate(
-            {"customer_id": "c1", "amount": 1, "payment_method": "crypto"}
+            {"customer_id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", "amount": 1, "payment_method": "crypto"}
         )
 
-    ap = SupplierPaymentCreate.model_validate({"supplier_id": "s1", "amount": 5})
+    ap = SupplierPaymentCreate.model_validate({"supplier_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "amount": 5})
     assert ap.payment_method == "bank_transfer"
     ap_card = SupplierPaymentCreate.model_validate(
-        {"supplier_id": "s1", "amount": 5, "payment_method": "credit_card"}
+        {"supplier_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "amount": 5, "payment_method": "credit_card"}
     )
     assert ap_card.payment_method == "card"
     with pytest.raises(ValidationError):
         SupplierPaymentCreate.model_validate(
-            {"supplier_id": "s1", "amount": 5, "payment_method": "   "}
+            {"supplier_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "amount": 5, "payment_method": "   "}
         )
     with pytest.raises(ValidationError):
         SupplierPaymentCreate.model_validate(
-            {"supplier_id": "s1", "amount": 5, "payment_method": "wallet"}
+            {"supplier_id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", "amount": 5, "payment_method": "wallet"}
         )
 
     ret = SalesReturnPost.model_validate({})

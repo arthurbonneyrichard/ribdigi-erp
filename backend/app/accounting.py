@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.doc_numbers import next_journal_entry_number
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
 DEFAULT_ACCOUNTS = [
     ("1000", "Cash", "asset", True, False),
@@ -32,8 +33,8 @@ DEFAULT_ACCOUNTS = [
 
 
 def lines_are_balanced(lines: list[dict], tolerance: float = 0.01) -> bool:
-    debit = sum(float(x.get("debit") or 0) for x in lines)
-    credit = sum(float(x.get("credit") or 0) for x in lines)
+    debit = sum(money_json(x.get("debit") or 0) for x in lines)
+    credit = sum(money_json(x.get("credit") or 0) for x in lines)
     return abs(debit - credit) <= tolerance
 
 
@@ -139,7 +140,23 @@ async def resolve_settlement_gl(
     return liquid_gl_for_payment_method(payment_method)
 
 
+def require_account_code(value: str | None) -> str:
+    """OpenAPI AccountCodeValue → 422; service defense-in-depth → 400.
+
+    Used by journal lines + COA opening balances that resolve by ``account_code``
+    (was strip-then-404/400 “not found” for malformed codes).
+    """
+    from app.schemas import validate_account_code_value
+
+    try:
+        return validate_account_code_value((value or "").strip())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 async def get_account_by_code(db: AsyncSession, tenant_id: str, code: str) -> m.Account:
+    # OpenAPI AccountCodeValue → 422; service defense-in-depth → 400.
+    code = require_account_code(code)
     account = (
         await db.execute(
             select(m.Account).where(m.Account.tenant_id == tenant_id, m.Account.code == code)
@@ -339,9 +356,7 @@ async def unpost_journal_entry(
     reason: str | None = None,
 ) -> m.JournalEntry:
     """Reverse a posted manual journal within the current fiscal period (BR-10.2)."""
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="unpost reason is required")
+    reason_s = require_honest_narrative(reason, label="unpost reason")
 
     entry = await get_journal_entry(db, tenant_id, entry_id)
     if entry.status != "posted":
@@ -381,8 +396,8 @@ async def unpost_journal_entry(
         ).scalar_one_or_none()
         if not account:
             raise HTTPException(status_code=404, detail="Account not found for journal line")
-        account.balance = float(account.balance or 0) - _signed_balance_delta(
-            account.account_type, float(line.debit or 0), float(line.credit or 0)
+        account.balance = money_json(account.balance or 0) - _signed_balance_delta(
+            account.account_type, money_json(line.debit or 0), money_json(line.credit or 0)
         )
 
     entry.status = "unposted"
@@ -396,8 +411,8 @@ async def unpost_journal_entry(
             entity_id=entry.id,
             details={
                 "entry_number": entry.entry_number,
-                "total_debit": float(entry.total_debit or 0),
-                "total_credit": float(entry.total_credit or 0),
+                "total_debit": money_json(entry.total_debit or 0),
+                "total_credit": money_json(entry.total_credit or 0),
                 "reason": reason_s,
             },
         )
@@ -425,8 +440,8 @@ async def post_journal_entry(
 
     normalized = []
     for line in lines:
-        debit = float(line.get("debit") or 0)
-        credit = float(line.get("credit") or 0)
+        debit = money_json(line.get("debit") or 0)
+        credit = money_json(line.get("credit") or 0)
         if debit < 0 or credit < 0:
             raise HTTPException(status_code=400, detail="Debit/credit cannot be negative")
         if debit == 0 and credit == 0:
@@ -439,6 +454,19 @@ async def post_journal_entry(
 
     if not lines_are_balanced(normalized):
         raise HTTPException(status_code=400, detail="Journal entry is not balanced")
+
+    # OpenAPI JournalDescriptionValue → 422; service defense-in-depth → 400.
+    description = require_honest_narrative(
+        description, label="journal description", min_length=2
+    )
+    for line in normalized:
+        line["description"] = optional_honest_narrative(
+            line.get("description"), label="journal line description"
+        )
+    # OpenAPI JournalReferenceValue → 422; service defense-in-depth → 400.
+    reference = optional_honest_narrative(
+        reference, label="journal reference", max_length=100
+    )
 
     total_debit = sum(x["debit"] for x in normalized)
     total_credit = sum(x["credit"] for x in normalized)
@@ -491,7 +519,7 @@ async def post_journal_entry(
                 description=line.get("description"),
             )
         )
-        account.balance = float(account.balance or 0) + _signed_balance_delta(
+        account.balance = money_json(account.balance or 0) + _signed_balance_delta(
             account.account_type, line["debit"], line["credit"]
         )
 
@@ -504,7 +532,7 @@ async def post_journal_entry(
             entity_id=entry.id,
             details={
                 "entry_number": entry.entry_number,
-                "total_debit": total_debit,
+                "total_debit": money_json(total_debit),
                 "source_type": source_type,
                 "source_id": source_id,
             },
@@ -533,20 +561,20 @@ async def serialize_journal(db: AsyncSession, entry: m.JournalEntry) -> dict:
         "description": entry.description,
         "source_type": entry.source_type,
         "source_id": entry.source_id,
-        "total_debit": float(entry.total_debit),
-        "total_credit": float(entry.total_credit),
+        "total_debit": money_json(entry.total_debit),
+        "total_credit": money_json(entry.total_credit),
         "status": entry.status,
         "attachment_url": entry.attachment_url,
         "has_attachment": bool(entry.attachment_url),
         "can_unpost": journal_can_unpost(entry, tenant),
         "created_at": entry.created_at,
-        "balanced": abs(float(entry.total_debit) - float(entry.total_credit)) < 0.01,
+        "balanced": abs(money_json(entry.total_debit) - money_json(entry.total_credit)) < 0.01,
         "lines": [
             {
                 "id": ln.id,
                 "account_id": ln.account_id,
-                "debit": float(ln.debit),
-                "credit": float(ln.credit),
+                "debit": money_json(ln.debit),
+                "credit": money_json(ln.credit),
                 "description": ln.description,
             }
             for ln in lines
@@ -577,9 +605,7 @@ async def close_books(
     reason: str | None = None,
 ) -> dict:
     """Advance tenants.books_closed_through (inclusive). Cannot close future dates."""
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="close reason is required")
+    reason_s = require_honest_narrative(reason, label="close reason")
     tenant = await get_tenant_or_404(db, tenant_id)
     today = datetime.utcnow().date()
     if through_date > today:
@@ -623,9 +649,7 @@ async def reopen_books(
     reason: str | None = None,
 ) -> dict:
     """Move books_closed_through earlier, or clear when through_date is null."""
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="reopen reason is required")
+    reason_s = require_honest_narrative(reason, label="reopen reason")
     tenant = await get_tenant_or_404(db, tenant_id)
     current = as_calendar_date(tenant.books_closed_through)
     if current is None:
@@ -681,7 +705,7 @@ async def unit_cost_for_line(
             )
         ).scalar_one_or_none()
         if variant is not None:
-            v_cost = float(variant.cost_price or 0)
+            v_cost = money_json(variant.cost_price or 0)
             if v_cost > 0:
                 return v_cost
     product = (
@@ -694,7 +718,7 @@ async def unit_cost_for_line(
     ).scalar_one_or_none()
     if not product:
         return 0.0
-    return float(product.cost_price or 0)
+    return money_json(product.cost_price or 0)
 
 
 async def stock_qty_for_cogs(
@@ -717,15 +741,15 @@ async def stock_qty_for_cogs(
         )
     ).scalar_one_or_none()
     if not product:
-        return float(quantity or 0)
+        return money_json(quantity or 0)
     qty_base, _, _ = await to_stock_qty(
         db,
         tenant_id=tenant_id,
-        quantity=float(quantity),
+        quantity=money_json(quantity),
         from_unit_id=unit_id,
         product=product,
     )
-    return float(qty_base)
+    return money_json(qty_base)
 
 
 async def compute_standard_cogs(
@@ -743,7 +767,7 @@ async def compute_standard_cogs(
         product_id = line.get("product_id")
         if not product_id:
             continue
-        qty = float(line.get("quantity") or 0)
+        qty = money_json(line.get("quantity") or 0)
         if qty <= 0:
             continue
         unit_id = line.get("unit_id")
@@ -764,12 +788,12 @@ async def compute_standard_cogs(
             variant_id=line.get("variant_id"),
         )
         total += stock_qty * cost
-    return round(total, 2)
+    return money_json(round(total, 2))
 
 
 def append_cogs_lines(lines: list[dict], cogs: float, *, reverse: bool = False) -> None:
     """Append Dr 5000 / Cr 1200 (or reverse) when cogs > 0."""
-    cogs = round(float(cogs or 0), 2)
+    cogs = money_json(round(money_json(cogs or 0), 2))
     if cogs <= 0:
         return
     if reverse:
@@ -820,9 +844,11 @@ async def post_sales_invoice_journal(
     from app.sales import list_invoice_items
 
     rate = doc_rate(invoice)
-    revenue = to_base(float(invoice.subtotal) - float(invoice.discount_amount or 0), rate)
-    tax = to_base(float(invoice.tax_amount or 0), rate)
-    total = to_base(float(invoice.total_amount), rate)
+    revenue = to_base(
+        money_json(invoice.subtotal) - money_json(invoice.discount_amount or 0), rate
+    )
+    tax = to_base(money_json(invoice.tax_amount or 0), rate)
+    total = to_base(money_json(invoice.total_amount), rate)
     lines = [
         {"account_code": "1100", "debit": total, "credit": 0, "description": "AR"},
         {"account_code": "4000", "debit": 0, "credit": max(revenue, 0), "description": "Sales"},
@@ -839,7 +865,7 @@ async def post_sales_invoice_journal(
         lines=[
             {
                 "product_id": it.product_id,
-                "quantity": float(it.quantity),
+                "quantity": money_json(it.quantity),
                 "unit_id": it.unit_id,
                 "variant_id": it.variant_id,
             }
@@ -871,9 +897,9 @@ async def post_sales_return_journal(
     await ensure_default_accounts(db, tenant_id)
     from app.sales_docs import list_return_items
 
-    revenue = float(sales_return.subtotal or 0)
-    tax = float(sales_return.tax_amount or 0)
-    total = float(sales_return.total_amount)
+    revenue = money_json(sales_return.subtotal or 0)
+    tax = money_json(sales_return.tax_amount or 0)
+    total = money_json(sales_return.total_amount)
     cn = getattr(sales_return, "credit_note_number", None) or sales_return.return_number
     lines = [
         {"account_code": "4000", "debit": max(revenue, 0), "credit": 0, "description": "Sales return"},
@@ -891,7 +917,7 @@ async def post_sales_return_journal(
             lines=[
                 {
                     "product_id": it.product_id,
-                    "quantity": float(it.quantity),
+                    "quantity": money_json(it.quantity),
                     "variant_id": it.variant_id,
                 }
                 for it in items
@@ -924,7 +950,7 @@ async def post_sales_return_refund_journal(
 ) -> m.JournalEntry:
     """Pay out customer credit from a return: Dr AR, Cr cash/bank."""
     await ensure_default_accounts(db, tenant_id)
-    amount = round(float(amount), 2)
+    amount = money_json(round(money_json(amount), 2))
     if amount <= 0:
         raise HTTPException(status_code=400, detail="Refund amount must be positive")
     liquid_code, liquid_label = await resolve_settlement_gl(
@@ -968,8 +994,8 @@ async def post_customer_payment_journal(
     await ensure_default_accounts(db, tenant_id)
     from app.fx import doc_rate, fx_lines_for_receipt, to_base
 
-    amount = float(payment.amount)
-    discount = float(getattr(payment, "early_payment_discount", 0) or 0)
+    amount = money_json(payment.amount)
+    discount = money_json(getattr(payment, "early_payment_discount", 0) or 0)
     pay_rate = doc_rate(payment)
     liquid_code, liquid_label = await resolve_settlement_gl(
         db,
@@ -986,10 +1012,10 @@ async def post_customer_payment_journal(
         cash_at_inv = 0.0
         for inv, settle, disc in allocations:
             inv_rate = doc_rate(inv)
-            cash_doc = round(settle - disc, 2)
-            ar_base = round(ar_base + to_base(settle, inv_rate), 2)
-            disc_base = round(disc_base + to_base(disc, inv_rate), 2)
-            cash_at_inv = round(cash_at_inv + to_base(cash_doc, inv_rate), 2)
+            cash_doc = money_json(round(settle - disc, 2))
+            ar_base = money_json(round(ar_base + to_base(settle, inv_rate), 2))
+            disc_base = money_json(round(disc_base + to_base(disc, inv_rate), 2))
+            cash_at_inv = money_json(round(cash_at_inv + to_base(cash_doc, inv_rate), 2))
         # Remeasure cash portion at payment rate vs invoice rates
         cash_base = to_base(amount, pay_rate)
         fx_amt, fx_extra = fx_lines_for_receipt(
@@ -1001,7 +1027,7 @@ async def post_customer_payment_journal(
         disc_base = to_base(discount, pay_rate)
         fx_amt, fx_extra = 0.0, []
 
-    payment.fx_gain_loss = round(fx_amt, 2)
+    payment.fx_gain_loss = money_json(round(fx_amt, 2))
     lines = [
         {
             "account_code": liquid_code,
@@ -1051,8 +1077,8 @@ async def post_supplier_payment_journal(
     await ensure_default_accounts(db, tenant_id)
     from app.fx import doc_rate, fx_lines_for_payment, to_base
 
-    amount = float(payment.amount)
-    discount = float(getattr(payment, "early_payment_discount", 0) or 0)
+    amount = money_json(payment.amount)
+    discount = money_json(getattr(payment, "early_payment_discount", 0) or 0)
     pay_rate = doc_rate(payment)
     liquid_code, liquid_label = await resolve_settlement_gl(
         db,
@@ -1067,8 +1093,8 @@ async def post_supplier_payment_journal(
         disc_base = 0.0
         for inv, settle, disc in allocations:
             inv_rate = doc_rate(inv)
-            ap_base = round(ap_base + to_base(settle, inv_rate), 2)
-            disc_base = round(disc_base + to_base(disc, inv_rate), 2)
+            ap_base = money_json(round(ap_base + to_base(settle, inv_rate), 2))
+            disc_base = money_json(round(disc_base + to_base(disc, inv_rate), 2))
         fx_amt, fx_extra = fx_lines_for_payment(
             cash_base=cash_base, ap_base=ap_base, discount_base=disc_base
         )
@@ -1077,7 +1103,7 @@ async def post_supplier_payment_journal(
         disc_base = to_base(discount, pay_rate)
         fx_amt, fx_extra = 0.0, []
 
-    payment.fx_gain_loss = round(fx_amt, 2)
+    payment.fx_gain_loss = money_json(round(fx_amt, 2))
     lines = [
         {
             "account_code": "2000",
@@ -1178,7 +1204,7 @@ async def post_purchase_return_journal(
 ) -> m.JournalEntry:
     """Reverse GRN impact: Dr AP / Cr Inventory for return total (tax-inclusive inventory value)."""
     await ensure_default_accounts(db, tenant_id)
-    total = float(purchase_return.total_amount)
+    total = money_json(purchase_return.total_amount)
     return await post_journal_entry(
         db,
         tenant_id=tenant_id,
@@ -1207,13 +1233,16 @@ async def post_purchase_invoice_journal(
 
     rate = doc_rate(purchase_invoice)
     net = to_base(
-        round(
-            float(purchase_invoice.subtotal or 0) - float(purchase_invoice.discount_amount or 0),
+        money_json(round(
+            money_json(purchase_invoice.subtotal or 0)
+            - money_json(purchase_invoice.discount_amount or 0),
             2,
-        ),
+        )),
         rate,
     )
-    rc = to_base(float(getattr(purchase_invoice, "reverse_charge_tax", 0) or 0), rate)
+    rc = to_base(
+        money_json(getattr(purchase_invoice, "reverse_charge_tax", 0) or 0), rate
+    )
     is_rc = bool(getattr(purchase_invoice, "is_reverse_charge", False)) and rc > 0
     if is_rc:
         lines = [
@@ -1223,8 +1252,8 @@ async def post_purchase_invoice_journal(
             {"account_code": "2100", "debit": 0, "credit": rc, "description": "Tax payable (RC self-assess)"},
         ]
     else:
-        total = to_base(float(purchase_invoice.total_amount), rate)
-        tax = to_base(float(purchase_invoice.tax_amount or 0), rate)
+        total = to_base(money_json(purchase_invoice.total_amount), rate)
+        tax = to_base(money_json(purchase_invoice.tax_amount or 0), rate)
         if tax > 0 and abs(total - (net + tax)) < 0.02:
             lines = [
                 {"account_code": "1200", "debit": net, "credit": 0, "description": "Inventory/purchases"},
@@ -1260,13 +1289,16 @@ async def post_purchase_invoice_reversal_journal(
 
     rate = doc_rate(purchase_invoice)
     net = to_base(
-        round(
-            float(purchase_invoice.subtotal or 0) - float(purchase_invoice.discount_amount or 0),
+        money_json(round(
+            money_json(purchase_invoice.subtotal or 0)
+            - money_json(purchase_invoice.discount_amount or 0),
             2,
-        ),
+        )),
         rate,
     )
-    rc = to_base(float(getattr(purchase_invoice, "reverse_charge_tax", 0) or 0), rate)
+    rc = to_base(
+        money_json(getattr(purchase_invoice, "reverse_charge_tax", 0) or 0), rate
+    )
     is_rc = bool(getattr(purchase_invoice, "is_reverse_charge", False)) and rc > 0
     if is_rc:
         lines = [
@@ -1276,8 +1308,8 @@ async def post_purchase_invoice_reversal_journal(
             {"account_code": "1300", "debit": 0, "credit": rc, "description": "Input tax reverse"},
         ]
     else:
-        total = to_base(float(purchase_invoice.total_amount), rate)
-        tax = to_base(float(purchase_invoice.tax_amount or 0), rate)
+        total = to_base(money_json(purchase_invoice.total_amount), rate)
+        tax = to_base(money_json(purchase_invoice.tax_amount or 0), rate)
         if tax > 0 and abs(total - (net + tax)) < 0.02:
             lines = [
                 {"account_code": "2000", "debit": total, "credit": 0, "description": "AP reverse"},
@@ -1309,7 +1341,7 @@ async def post_expense_journal(
     expense: m.Expense,
 ) -> m.JournalEntry:
     await ensure_default_accounts(db, tenant_id)
-    amount = float(expense.amount)
+    amount = money_json(expense.amount)
     liquid_code, liquid_label = await resolve_settlement_gl(
         db,
         tenant_id,
@@ -1367,9 +1399,9 @@ async def post_pos_sale_journal(
 ) -> m.JournalEntry:
     """Post POS sale GL; supports split tenders as multiple debit lines."""
     await ensure_default_accounts(db, tenant_id)
-    amount = float(tx.total or 0)
-    tax = float(tx.tax or 0)
-    revenue = round(amount - tax, 2)
+    amount = money_json(tx.total or 0)
+    tax = money_json(tx.tax or 0)
+    revenue = money_json(round(amount - tax, 2))
     if abs(amount - (revenue + tax)) > 0.02:
         raise HTTPException(status_code=400, detail="POS journal amounts do not balance")
 
@@ -1380,7 +1412,7 @@ async def post_pos_sale_journal(
     debit_sum = 0.0
     for tender in tenders:
         method = (tender.get("payment_method") or "cash").strip().lower()
-        part = round(float(tender.get("amount") or 0), 2)
+        part = money_json(round(money_json(tender.get("amount") or 0), 2))
         if part <= 0:
             continue
         liquid_id = tender.get("liquid_account_id")
@@ -1418,7 +1450,7 @@ async def post_pos_sale_journal(
         lines=[
             {
                 "product_id": it.get("product_id"),
-                "quantity": float(it.get("quantity") or 0),
+                "quantity": money_json(it.get("quantity") or 0),
                 "unit_id": it.get("unit_id"),
                 "variant_id": it.get("variant_id"),
             }
@@ -1475,7 +1507,7 @@ async def trial_balance(
         )
 
     if effective_as_of is None:
-        bal_by_id = {a.id: float(a.balance or 0) for a in accounts}
+        bal_by_id = {a.id: money_json(a.balance) for a in accounts}
         as_of_day = datetime.utcnow().date()
         mode = "balances"
     else:
@@ -1503,10 +1535,10 @@ async def trial_balance(
             else:
                 stmt = stmt.where(m.JournalEntry.id.in_(allowed_journal_ids))
         for line, account in (await db.execute(stmt)).all():
-            bal_by_id[account.id] = float(bal_by_id.get(account.id, 0)) + _signed_balance_delta(
+            bal_by_id[account.id] = money_json(bal_by_id.get(account.id, 0)) + _signed_balance_delta(
                 account.account_type,
-                float(line.debit or 0),
-                float(line.credit or 0),
+                money_json(line.debit),
+                money_json(line.credit),
             )
         as_of_day = effective_as_of.date()
         mode = "journals"
@@ -1515,13 +1547,15 @@ async def trial_balance(
     debit_total = 0.0
     credit_total = 0.0
     for account in accounts:
-        bal = round(float(bal_by_id.get(account.id, 0)), 2)
+        bal = money_json(round(money_json(bal_by_id.get(account.id, 0)), 2))
         if mode == "journals" and abs(bal) < 0.0001:
             continue
         if account.account_type in {"asset", "expense"}:
             d, c = (bal, 0.0) if bal >= 0 else (0.0, abs(bal))
         else:
             d, c = (0.0, bal) if bal >= 0 else (abs(bal), 0.0)
+        d = money_json(d)
+        c = money_json(c)
         debit_total += d
         credit_total += c
         rows.append(
@@ -1541,8 +1575,8 @@ async def trial_balance(
         "store_id": store_id,
         "branch_id": branch_id,
         "rows": rows,
-        "total_debit": round(debit_total, 2),
-        "total_credit": round(credit_total, 2),
+        "total_debit": money_json(round(debit_total, 2)),
+        "total_credit": money_json(round(credit_total, 2)),
         "balanced": abs(debit_total - credit_total) < 0.01,
     }
 
@@ -1725,17 +1759,17 @@ def _pnl_pack(
     branch_id: str | None,
     mode: str,
 ) -> dict:
-    expense = cogs + operating_expenses
-    gross_profit = revenue - cogs
-    net_profit = revenue - expense
+    expense = money_json(round(cogs + operating_expenses, 2))
+    gross_profit = money_json(round(revenue - cogs, 2))
+    net_profit = money_json(round(revenue - expense, 2))
     return {
-        "income": round(revenue, 2),  # back-compat alias
-        "revenue": round(revenue, 2),
-        "cogs": round(cogs, 2),
-        "gross_profit": round(gross_profit, 2),
-        "operating_expenses": round(operating_expenses, 2),
-        "expense": round(expense, 2),  # back-compat: total expenses incl. COGS
-        "net_profit": round(net_profit, 2),
+        "income": money_json(round(money_json(revenue), 2)),  # back-compat alias
+        "revenue": money_json(round(money_json(revenue), 2)),
+        "cogs": money_json(round(money_json(cogs), 2)),
+        "gross_profit": money_json(round(money_json(gross_profit), 2)),
+        "operating_expenses": money_json(round(money_json(operating_expenses), 2)),
+        "expense": money_json(round(money_json(expense), 2)),  # back-compat: total expenses incl. COGS
+        "net_profit": money_json(round(money_json(net_profit), 2)),
         "accounts": accounts,
         "from_date": from_date.isoformat() if from_date else None,
         "to_date": to_date.isoformat() if to_date else None,
@@ -1770,10 +1804,10 @@ async def profit_and_loss(
         accounts = (
             await db.execute(select(m.Account).where(m.Account.tenant_id == tenant_id))
         ).scalars().all()
-        revenue = sum(float(a.balance or 0) for a in accounts if a.account_type == "income")
-        cogs = sum(float(a.balance or 0) for a in accounts if a.code == "5000")
+        revenue = sum(money_json(a.balance) for a in accounts if a.account_type == "income")
+        cogs = sum(money_json(a.balance) for a in accounts if a.code == "5000")
         operating_expenses = sum(
-            float(a.balance or 0)
+            money_json(a.balance)
             for a in accounts
             if a.account_type == "expense" and a.code != "5000"
         )
@@ -1786,7 +1820,7 @@ async def profit_and_loss(
                     "code": a.code,
                     "name": a.name,
                     "account_type": a.account_type,
-                    "balance": float(a.balance or 0),
+                    "balance": money_json(a.balance),
                 }
                 for a in accounts
                 if a.account_type in {"income", "expense"}
@@ -1838,17 +1872,17 @@ async def profit_and_loss(
     cogs = 0.0
     operating_expenses = 0.0
     for line, _entry, account in rows:
-        debit = float(line.debit or 0)
-        credit = float(line.credit or 0)
+        debit = money_json(line.debit)
+        credit = money_json(line.credit)
         if account.account_type == "income":
-            net = credit - debit
-            revenue += net
+            net = money_json(round(credit - debit, 2))
+            revenue = money_json(round(revenue + net, 2))
         else:
-            net = debit - credit
+            net = money_json(round(debit - credit, 2))
             if account.code == "5000":
-                cogs += net
+                cogs = money_json(round(cogs + net, 2))
             else:
-                operating_expenses += net
+                operating_expenses = money_json(round(operating_expenses + net, 2))
         bucket = by_account.setdefault(
             account.id,
             {
@@ -1858,7 +1892,7 @@ async def profit_and_loss(
                 "balance": 0.0,
             },
         )
-        bucket["balance"] = round(float(bucket["balance"]) + net, 2)
+        bucket["balance"] = money_json(round(money_json(bucket["balance"]) + net, 2))
 
     accounts_out = sorted(by_account.values(), key=lambda r: r["code"] or "")
     return _pnl_pack(

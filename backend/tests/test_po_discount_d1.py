@@ -22,7 +22,7 @@ async def test_po_create_with_line_discount(client):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=headers,
-        json={"name": "PO Disc Vendor", "kind": "supplier", "email": "po-disc@example.com"},
+        json={"name": "PO Disc Vendor",  "email": "po-disc@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
 
@@ -38,10 +38,8 @@ async def test_po_create_with_line_discount(client):
                     "quantity": 2,
                     "unit_price": 10,
                     "tax_rate": 10,
-                    "discount": 3,
-                }
-            ],
-        },
+                    "discount": 3}
+            ]},
     )
     assert created.status_code == 200, created.text
     po = created.json()["data"]
@@ -64,7 +62,7 @@ async def test_po_discount_cannot_exceed_merchandise(client):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=headers,
-        json={"name": "PO Over Disc", "kind": "supplier", "email": "po-over@example.com"},
+        json={"name": "PO Over Disc",  "email": "po-over@example.com"},
     )
     assert supplier.status_code == 200
     created = await ac.post(
@@ -78,10 +76,8 @@ async def test_po_discount_cannot_exceed_merchandise(client):
                     "quantity": 1,
                     "unit_price": 10,
                     "tax_rate": 0,
-                    "discount": 11,
-                }
-            ],
-        },
+                    "discount": 11}
+            ]},
     )
     assert created.status_code == 400, created.text
     assert "discount" in created.text.lower()
@@ -94,7 +90,7 @@ async def test_po_amend_updates_discount(client):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=headers,
-        json={"name": "PO Amend Disc", "kind": "supplier", "email": "po-amend-d@example.com"},
+        json={"name": "PO Amend Disc",  "email": "po-amend-d@example.com"},
     )
     assert supplier.status_code == 200
     created = await ac.post(
@@ -108,10 +104,8 @@ async def test_po_amend_updates_discount(client):
                     "quantity": 2,
                     "unit_price": 10,
                     "tax_rate": 0,
-                    "discount": 1,
-                }
-            ],
-        },
+                    "discount": 1}
+            ]},
     )
     assert created.status_code == 200, created.text
     po = created.json()["data"]
@@ -129,10 +123,8 @@ async def test_po_amend_updates_discount(client):
                     "quantity": 2,
                     "unit_price": 10,
                     "tax_rate": 0,
-                    "discount": 5,
-                }
-            ],
-        },
+                    "discount": 5}
+            ]},
     )
     assert amended.status_code == 200, amended.text
     body = amended.json()["data"]

@@ -20,6 +20,9 @@ def test_po_amend_reason_ui_wired():
     page = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
     assert "amendReason" in page
     assert "Required amendment reason" in page
+    assert 'aria-label="Purchase order amend reason"' in page
+    assert 'aria-label="Save purchase order amendment"' in page
+    assert "aria-label={`Amend purchase order ${o.id}`}" in page
     assert "Enter an amendment reason before saving" in page
     assert "reason: amendReason.trim() || null" not in page
     assert "reason," in page or "reason\n" in page
@@ -60,7 +63,7 @@ async def test_po_amend_requires_reason(client, db_session):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=admin,
-        json={"name": "Amend Reason Vendor", "kind": "supplier"},
+        json={"name": "Amend Reason Vendor"},
     )
     created = await ac.post(
         "/api/v1/purchasing/orders",
@@ -68,8 +71,7 @@ async def test_po_amend_requires_reason(client, db_session):
         json={
             "supplier_id": supplier.json()["data"]["id"],
             "notes": "Original",
-            "items": [{"product_id": seed["p1"].id, "quantity": 2, "unit_price": 5}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 2, "unit_price": 5}]},
     )
     assert created.status_code == 200, created.text
     po_id = created.json()["data"]["id"]
@@ -84,10 +86,8 @@ async def test_po_amend_requires_reason(client, db_session):
                 {
                     "product_id": line["product_id"],
                     "quantity": 3,
-                    "unit_price": 5,
-                }
-            ],
-        },
+                    "unit_price": 5}
+            ]},
     )
     assert missing.status_code == 422
 
@@ -101,10 +101,8 @@ async def test_po_amend_requires_reason(client, db_session):
                 {
                     "product_id": line["product_id"],
                     "quantity": 3,
-                    "unit_price": 5,
-                }
-            ],
-        },
+                    "unit_price": 5}
+            ]},
     )
     assert empty.status_code == 422
 
@@ -118,13 +116,10 @@ async def test_po_amend_requires_reason(client, db_session):
                 {
                     "product_id": line["product_id"],
                     "quantity": 3,
-                    "unit_price": 5,
-                }
-            ],
-        },
+                    "unit_price": 5}
+            ]},
     )
-    assert blank.status_code == 400
-    assert "reason" in blank.json()["detail"].lower()
+    assert blank.status_code == 422
 
     ok = await ac.post(
         f"/api/v1/purchasing/orders/{po_id}/amend",
@@ -136,10 +131,8 @@ async def test_po_amend_requires_reason(client, db_session):
                 {
                     "product_id": line["product_id"],
                     "quantity": 4,
-                    "unit_price": 5,
-                }
-            ],
-        },
+                    "unit_price": 5}
+            ]},
     )
     assert ok.status_code == 200, ok.text
     body = ok.json()["data"]

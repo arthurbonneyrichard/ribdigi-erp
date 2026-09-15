@@ -29,10 +29,8 @@ def test_render_purchase_order_bodies_includes_total():
                     "quantity": 2,
                     "unit_price": 50,
                     "tax_rate": 15,
-                    "line_total": 115,
-                }
-            ],
-        },
+                    "line_total": 115}
+            ]},
     )
     assert "PO-1" in text and "115.00" in text
     assert "Vendor Co" in html and "Acme" in html
@@ -76,7 +74,7 @@ async def test_send_po_email_console_and_resend(client, db_session, monkeypatch)
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=admin,
-        json={"name": "Email Vendor", "kind": "supplier", "email": "vendor@example.com"},
+        json={"name": "Email Vendor",  "email": "vendor@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
     supplier_id = supplier.json()["data"]["id"]
@@ -87,8 +85,7 @@ async def test_send_po_email_console_and_resend(client, db_session, monkeypatch)
         json={
             "supplier_id": supplier_id,
             "items": [{"product_id": seed["p1"].id, "quantity": 2, "unit_price": 5}],
-            "notes": "Please ship ASAP",
-        },
+            "notes": "Please ship ASAP"},
     )
     assert created.status_code == 200, created.text
     po_id = created.json()["data"]["id"]
@@ -131,7 +128,7 @@ async def test_send_po_requires_supplier_email(client, db_session, monkeypatch):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=admin,
-        json={"name": "No Email Vendor", "kind": "supplier"},
+        json={"name": "No Email Vendor"},
     )
     assert supplier.status_code == 200, supplier.text
     created = await ac.post(
@@ -139,8 +136,7 @@ async def test_send_po_requires_supplier_email(client, db_session, monkeypatch):
         headers=io,
         json={
             "supplier_id": supplier.json()["data"]["id"],
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 3}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 3}]},
     )
     assert created.status_code == 200, created.text
     po_id = created.json()["data"]["id"]
@@ -164,15 +160,14 @@ async def test_send_po_email_disabled(client, db_session, monkeypatch):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=admin,
-        json={"name": "Disabled Mail Vendor", "kind": "supplier", "email": "v@example.com"},
+        json={"name": "Disabled Mail Vendor",  "email": "v@example.com"},
     )
     created = await ac.post(
         "/api/v1/purchasing/orders",
         headers=io,
         json={
             "supplier_id": supplier.json()["data"]["id"],
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 3}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 3}]},
     )
     po_id = created.json()["data"]["id"]
     disabled = await ac.post(f"/api/v1/purchasing/orders/{po_id}/send", headers=io)

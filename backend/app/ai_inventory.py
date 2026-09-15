@@ -16,6 +16,7 @@ from app import ai as ai_svc
 from app import models as m
 from app import reports as reports_svc
 from app.config import settings
+from app.honesty import money_json
 
 POSTED_STATUSES = ("posted", "sent", "partial", "paid", "overdue")
 
@@ -39,10 +40,10 @@ def _clamp(v: float, lo: float = 0.0, hi: float = 1.0) -> float:
 def confidence_score(*, sold_qty: float, lookback: int, sale_days_present: int) -> float:
     """Heuristic 0–1: more sale activity + coverage of lookback → higher confidence."""
     if sold_qty <= 0:
-        return 0.25  # low-confidence "no velocity" observation
+        return money_json(0.25)  # low-confidence "no velocity" observation
     coverage = sale_days_present / max(1, lookback)
     volume = _clamp(math.log10(sold_qty + 1) / 3.0)  # ~1000 units → 1.0
-    return round(_clamp(0.35 + 0.45 * coverage + 0.2 * volume), 3)
+    return money_json(round(_clamp(0.35 + 0.45 * coverage + 0.2 * volume), 3))
 
 
 def seasonality_hint(*, recent_velocity: float, prior_velocity: float) -> dict[str, Any]:
@@ -58,7 +59,11 @@ def seasonality_hint(*, recent_velocity: float, prior_velocity: float) -> dict[s
         label = "falling"
     else:
         label = "stable"
-    return {"detected": label != "stable", "ratio": round(ratio, 3), "label": label}
+    return {
+        "detected": label != "stable",
+        "ratio": money_json(round(ratio, 3)),
+        "label": label,
+    }
 
 
 async def _sales_qty_by_product(
@@ -72,7 +77,7 @@ async def _sales_qty_by_product(
         db, tenant_id, from_date=from_date, to_date=to_date
     )
     return {
-        str(p["product_id"]): float(p.get("quantity") or 0)
+        str(p["product_id"]): money_json(p.get("quantity") or 0)
         for p in (report.get("products") or [])
     }
 
@@ -135,10 +140,10 @@ def _recommended_qty(
     gap = max(0.0, target - stock)
     # Prefer configured reorder_qty when product is already at/below reorder
     if stock <= reorder_level and reorder_qty > 0:
-        return round(max(reorder_qty, gap), 3)
+        return money_json(round(max(reorder_qty, gap), 3))
     if gap <= 0:
-        return 0.0
-    return round(max(1.0, gap) if velocity > 0 else 0.0, 3)
+        return money_json(0)
+    return money_json(round(max(1.0, gap) if velocity > 0 else 0.0, 3))
 
 
 async def build_product_forecasts(
@@ -180,26 +185,29 @@ async def build_product_forecasts(
     ).all()
     reorder_qty_map: dict[str, float] = {}
     for pid, rq in wh_rows:
-        reorder_qty_map[str(pid)] = max(float(rq or 0), reorder_qty_map.get(str(pid), 0.0))
+        reorder_qty_map[str(pid)] = max(money_json(rq or 0), reorder_qty_map.get(str(pid), 0.0))
 
-    lead = float(default_lead_days())
-    cover = float(cover_days())
+    lead = money_json(default_lead_days())
+    cover = money_json(cover_days())
+    lb_f = money_json(lb)
+    half_f = money_json(half)
+    prior_span = money_json(max(1, lb - half))
     out: list[dict[str, Any]] = []
     for p in products:
         pid = p.id
-        stock = float(p.stock_qty or 0)
-        sold = float(sold_all.get(pid, 0))
-        velocity = sold / float(lb) if lb else 0.0
-        recent_v = float(sold_recent.get(pid, 0)) / float(half)
-        prior_v = float(sold_prior.get(pid, 0)) / float(max(1, lb - half))
+        stock = money_json(p.stock_qty or 0)
+        sold = money_json(sold_all.get(pid, 0))
+        velocity = sold / lb_f if lb_f else 0.0
+        recent_v = money_json(sold_recent.get(pid, 0)) / half_f
+        prior_v = money_json(sold_prior.get(pid, 0)) / prior_span
         days_to = (stock / velocity) if velocity > 1e-9 else None
-        rq = float(reorder_qty_map.get(pid, 0))
+        rq = money_json(reorder_qty_map.get(pid, 0))
         rec = _recommended_qty(
             stock=stock,
             velocity=velocity,
             lead=lead,
             cover=cover,
-            reorder_level=float(p.reorder_level or 0),
+            reorder_level=money_json(p.reorder_level or 0),
             reorder_qty=rq,
         )
         conf = confidence_score(
@@ -211,20 +219,24 @@ async def build_product_forecasts(
                 "product_id": pid,
                 "sku": p.sku,
                 "name": p.name,
-                "stock_qty": stock,
-                "reorder_level": float(p.reorder_level or 0),
-                "reorder_qty": rq,
+                "stock_qty": money_json(stock),
+                "reorder_level": money_json(p.reorder_level),
+                "reorder_qty": money_json(rq),
                 "lookback_days": lb,
-                "sold_qty_lookback": round(sold, 3),
-                "velocity_per_day": round(velocity, 6),
-                "days_to_stockout": round(days_to, 2) if days_to is not None else None,
-                "forecast_demand_7": round(velocity * 7, 3),
-                "forecast_demand_30": round(velocity * 30, 3),
-                "forecast_demand_90": round(velocity * 90, 3),
-                "recommended_order_qty": rec,
+                "sold_qty_lookback": money_json(round(money_json(sold), 3)),
+                "velocity_per_day": money_json(round(money_json(velocity), 6)),
+                "days_to_stockout": (
+                    money_json(round(money_json(days_to), 2))
+                    if days_to is not None
+                    else None
+                ),
+                "forecast_demand_7": money_json(round(money_json(velocity) * 7, 3)),
+                "forecast_demand_30": money_json(round(money_json(velocity) * 30, 3)),
+                "forecast_demand_90": money_json(round(money_json(velocity) * 90, 3)),
+                "recommended_order_qty": money_json(rec),
                 "lead_time_days": lead,
                 "cover_days": cover,
-                "confidence": conf,
+                "confidence": money_json(conf),
                 "seasonality": season,
                 "dead_stock": False,  # filled below
             }
@@ -238,7 +250,7 @@ async def build_product_forecasts(
         row["dead_stock"] = (
             row["velocity_per_day"] <= 1e-9
             and row["stock_qty"] > 0
-            and float(sold_90.get(pid, 0)) <= 0
+            and money_json(sold_90.get(pid, 0)) <= 0
         )
     return out
 
@@ -289,7 +301,7 @@ async def low_stock_prediction(
     at_risk: list[dict[str, Any]] = []
     for r in rows:
         dts = r.get("days_to_stockout")
-        already_low = float(r["stock_qty"]) <= float(r["reorder_level"] or 0)
+        already_low = money_json(r["stock_qty"]) <= money_json(r["reorder_level"] or 0)
         predictive = dts is not None and dts <= days_ahead and r["velocity_per_day"] > 0
         if not (already_low or predictive):
             continue

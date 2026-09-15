@@ -15,6 +15,7 @@ from app import ai as ai_svc
 from app import expenses as expenses_svc
 from app import models as m
 from app import reports as reports_svc
+from app.honesty import money_json
 
 # Keyword → default category code (suggest-only for OCR)
 CATEGORY_KEYWORDS: list[tuple[str, re.Pattern[str]]] = [
@@ -111,31 +112,35 @@ async def expense_analysis(
     by_cat_vals: dict[str, list[float]] = defaultdict(list)
     for e in rows:
         key = e.category_id or e.category or "Uncategorized"
-        by_cat_vals[key].append(float(e.amount or 0))
+        by_cat_vals[key].append(money_json(e.amount or 0))
         if e.category_id:
-            by_cat_id_amount[e.category_id] += float(e.amount or 0)
+            by_cat_id_amount[e.category_id] += money_json(e.amount or 0)
         else:
-            by_cat_id_amount[e.category or "Uncategorized"] += float(e.amount or 0)
+            by_cat_id_amount[e.category or "Uncategorized"] += money_json(e.amount or 0)
 
     # Budget variance (scale monthly budget to period length)
     from app.expenses import scale_monthly_budget
 
     budget_alerts: list[dict[str, Any]] = []
     for cat in categories:
-        budget = float(cat.budget_amount or 0)
+        budget = money_json(cat.budget_amount or 0)
         if budget <= 0:
             continue
         scaled = scale_monthly_budget(budget, period_days)
-        spent = float(by_cat_id_amount.get(cat.id, 0) or by_cat_id_amount.get(cat.name, 0) or 0)
-        variance_pct = round((spent - scaled) / scaled * 100.0, 1) if scaled else 0.0
+        spent = money_json(by_cat_id_amount.get(cat.id, 0) or by_cat_id_amount.get(cat.name, 0) or 0)
+        variance_pct = (
+            money_json(round((spent - scaled) / scaled * 100.0, 1))
+            if scaled
+            else money_json(0)
+        )
         if spent > scaled * 1.0:
             budget_alerts.append(
                 {
                     "category_id": cat.id,
                     "category": cat.name,
-                    "budget_monthly": budget,
-                    "budget_scaled": round(scaled, 2),
-                    "spent": round(spent, 2),
+                    "budget_monthly": money_json(budget),
+                    "budget_scaled": money_json(round(money_json(scaled), 2)),
+                    "spent": money_json(round(money_json(spent), 2)),
                     "variance_pct": variance_pct,
                     "severity": "over_budget",
                 }
@@ -147,7 +152,7 @@ async def expense_analysis(
     for e in rows:
         key = e.category_id or e.category or "Uncategorized"
         vals = by_cat_vals.get(key) or []
-        amt = float(e.amount or 0)
+        amt = money_json(e.amount or 0)
         mean, std = _mean_std(vals)
         sorted_vals = sorted(vals)
         median = sorted_vals[len(sorted_vals) // 2] if sorted_vals else 0.0
@@ -165,12 +170,12 @@ async def expense_analysis(
                     "expense_id": e.id,
                     "category": e.category,
                     "category_id": e.category_id,
-                    "amount": amt,
+                    "amount": money_json(amt),
                     "payee": e.payee,
                     "expense_date": e.expense_date.isoformat() if e.expense_date else None,
                     "reason": reason,
-                    "category_mean": round(mean, 2),
-                    "category_std": round(std, 2),
+                    "category_mean": money_json(round(mean, 2)),
+                    "category_std": money_json(round(std, 2)),
                 }
             )
     unusual.sort(key=lambda x: -x["amount"])
@@ -179,11 +184,11 @@ async def expense_analysis(
     dup_key: dict[tuple, list[m.Expense]] = defaultdict(list)
     for e in rows:
         day = e.expense_date.date().isoformat() if e.expense_date else ""
-        dup_key[(e.payee or "", round(float(e.amount or 0), 2), day)].append(e)
+        dup_key[(e.payee or "", money_json(round(money_json(e.amount or 0), 2)), day)].append(e)
     duplicates = [
         {
             "payee": k[0],
-            "amount": k[1],
+            "amount": money_json(k[1]),
             "date": k[2],
             "count": len(vs),
             "expense_ids": [v.id for v in vs],
@@ -194,8 +199,8 @@ async def expense_analysis(
 
     # MoM rising for suggestions
     mid = start + (end - start) / 2
-    recent = sum(float(e.amount or 0) for e in rows if e.expense_date and e.expense_date >= mid)
-    prior = sum(float(e.amount or 0) for e in rows if e.expense_date and e.expense_date < mid)
+    recent = sum(money_json(e.amount or 0) for e in rows if e.expense_date and e.expense_date >= mid)
+    prior = sum(money_json(e.amount or 0) for e in rows if e.expense_date and e.expense_date < mid)
 
     suggestions: list[str] = []
     for alert in budget_alerts[:5]:
@@ -205,7 +210,7 @@ async def expense_analysis(
         )
     if prior > 0 and recent > prior * 1.25:
         suggestions.append(
-            f"Overall approved expenses rose {round((recent / prior - 1) * 100, 1)}% vs prior half of the window."
+            f"Overall approved expenses rose {money_json(round((recent / prior - 1) * 100, 1))}% vs prior half of the window."
         )
     for d in duplicates[:3]:
         suggestions.append(
@@ -260,7 +265,7 @@ async def expense_analysis(
                 "id": c.id,
                 "code": c.code,
                 "name": c.name,
-                "budget_amount": float(c.budget_amount or 0),
+                "budget_amount": money_json(c.budget_amount),
             }
             for c in categories
         ],

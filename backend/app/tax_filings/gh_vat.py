@@ -7,6 +7,7 @@ Does not e-file to the GRA portal.
 from __future__ import annotations
 
 from app import models as m
+from app.honesty import money_json
 
 TEMPLATE_CODE = "gh_vat_return"
 TEMPLATE_NAME = "Ghana GRA VAT Return"
@@ -14,86 +15,90 @@ TEMPLATE_NAME = "Ghana GRA VAT Return"
 
 def map_return(pack: dict, tenant: m.Tenant) -> dict:
     fb = pack.get("filing_boxes") or {}
-    by_code = {b["code"]: float(b.get("amount") or 0) for b in (fb.get("boxes") or [])}
+    by_code = {b["code"]: money_json(b.get("amount") or 0) for b in (fb.get("boxes") or [])}
     # Fallbacks if boxes list missing
-    taxable_outputs = float(by_code.get("taxable_outputs_net", fb.get("taxable_outputs_net") or 0))
-    output_tax = float(by_code.get("output_tax", fb.get("output_tax") or pack.get("output_tax") or 0))
-    reverse_charge = float(
+    taxable_outputs = money_json(by_code.get("taxable_outputs_net", fb.get("taxable_outputs_net") or 0))
+    output_tax = money_json(by_code.get("output_tax", fb.get("output_tax") or pack.get("output_tax") or 0))
+    reverse_charge = money_json(
         by_code.get("reverse_charge_tax", fb.get("reverse_charge_tax") or pack.get("reverse_charge_tax") or 0)
     )
-    taxable_inputs = float(by_code.get("taxable_inputs_net", fb.get("taxable_inputs_net") or 0))
-    input_tax = float(by_code.get("input_tax", fb.get("input_tax") or pack.get("input_tax") or 0))
-    net = float(by_code.get("net_tax_payable", fb.get("net_tax_payable") or pack.get("net_tax_payable") or 0))
+    taxable_inputs = money_json(by_code.get("taxable_inputs_net", fb.get("taxable_inputs_net") or 0))
+    input_tax = money_json(by_code.get("input_tax", fb.get("input_tax") or pack.get("input_tax") or 0))
+    net = money_json(by_code.get("net_tax_payable", fb.get("net_tax_payable") or pack.get("net_tax_payable") or 0))
 
-    zero_rated = float(
+    zero_rated = money_json(
         by_code.get("zero_rated_outputs_net", fb.get("zero_rated_outputs_net") or 0)
     )
-    exempt = float(by_code.get("exempt_outputs_net", fb.get("exempt_outputs_net") or 0))
+    exempt = money_json(by_code.get("exempt_outputs_net", fb.get("exempt_outputs_net") or 0))
+
+    gh2 = (
+        money_json(output_tax - reverse_charge)
+        if output_tax >= reverse_charge
+        else money_json(output_tax)
+    )
 
     boxes = [
         {
             "box": "1",
             "code": "GH1",
             "label": "Value of standard-rated taxable supplies",
-            "amount": round(taxable_outputs, 2),
+            "amount": taxable_outputs,
             "source_box": "1",
         },
         {
             "box": "2",
             "code": "GH2",
             "label": "Output VAT on standard-rated supplies",
-            "amount": round(output_tax - reverse_charge, 2)
-            if output_tax >= reverse_charge
-            else round(output_tax, 2),
+            "amount": gh2,
             "source_box": "2",
         },
         {
             "box": "3",
             "code": "GH3",
             "label": "Value of zero-rated supplies",
-            "amount": round(zero_rated, 2),
+            "amount": zero_rated,
             "source_box": "1a",
         },
         {
             "box": "4",
             "code": "GH4",
             "label": "Value of exempt supplies",
-            "amount": round(exempt, 2),
+            "amount": exempt,
             "source_box": "1b",
         },
         {
             "box": "5",
             "code": "GH5",
             "label": "Total output VAT (incl. reverse charge self-assess)",
-            "amount": round(output_tax, 2),
+            "amount": output_tax,
             "source_box": "2",
         },
         {
             "box": "6",
             "code": "GH6",
             "label": "Reverse charge / self-assessed VAT",
-            "amount": round(reverse_charge, 2),
+            "amount": reverse_charge,
             "source_box": "2a",
         },
         {
             "box": "7",
             "code": "GH7",
             "label": "Value of taxable purchases / inputs",
-            "amount": round(taxable_inputs, 2),
+            "amount": taxable_inputs,
             "source_box": "3",
         },
         {
             "box": "8",
             "code": "GH8",
             "label": "Input VAT claimable",
-            "amount": round(input_tax, 2),
+            "amount": input_tax,
             "source_box": "4",
         },
         {
             "box": "9",
             "code": "GH9",
             "label": "Net VAT payable / (refundable)",
-            "amount": round(net, 2),
+            "amount": net,
             "source_box": "5",
         },
     ]

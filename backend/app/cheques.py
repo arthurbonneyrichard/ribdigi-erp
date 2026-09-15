@@ -14,6 +14,7 @@ from app.accounting import (
     is_cheque_method,
     post_journal_entry,
 )
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
 RECEIVED = "received"
 ISSUED = "issued"
@@ -33,7 +34,7 @@ def serialize_cheque(row: m.Cheque) -> dict:
         "direction": row.direction,
         "status": row.status,
         "cheque_number": row.cheque_number,
-        "amount": float(row.amount),
+        "amount": money_json(row.amount),
         "bank_name": row.bank_name,
         "cheque_date": row.cheque_date,
         "party_id": row.party_id,
@@ -108,13 +109,21 @@ async def create_from_customer_payment(
 ) -> m.Cheque | None:
     if not is_cheque_method(payment.payment_method):
         return None
-    number = (cheque_number or _cheque_number_from_payment(payment.reference, payment.payment_number)).strip()
+    # OpenAPI ChequeNumberValue → 422; service defense-in-depth → 400.
+    number = optional_honest_narrative(
+        cheque_number, label="cheque number", max_length=50
+    )
+    if number is None:
+        number = _cheque_number_from_payment(payment.reference, payment.payment_number)
+    bank_name = optional_honest_narrative(
+        bank_name, label="bank name", max_length=120
+    )
     row = m.Cheque(
         tenant_id=tenant_id,
         direction=RECEIVED,
         status=PENDING,
         cheque_number=number,
-        amount=float(payment.amount),
+        amount=money_json(payment.amount),
         bank_name=bank_name,
         cheque_date=cheque_date,
         party_id=payment.customer_id,
@@ -139,13 +148,21 @@ async def create_from_supplier_payment(
 ) -> m.Cheque | None:
     if not is_cheque_method(payment.payment_method):
         return None
-    number = (cheque_number or _cheque_number_from_payment(payment.reference, payment.payment_number)).strip()
+    # OpenAPI ChequeNumberValue → 422; service defense-in-depth → 400.
+    number = optional_honest_narrative(
+        cheque_number, label="cheque number", max_length=50
+    )
+    if number is None:
+        number = _cheque_number_from_payment(payment.reference, payment.payment_number)
+    bank_name = optional_honest_narrative(
+        bank_name, label="bank name", max_length=120
+    )
     row = m.Cheque(
         tenant_id=tenant_id,
         direction=ISSUED,
         status=PENDING,
         cheque_number=number,
-        amount=float(payment.amount),
+        amount=money_json(payment.amount),
         bank_name=bank_name,
         cheque_date=cheque_date,
         party_id=payment.supplier_id,
@@ -173,7 +190,7 @@ async def deposit_cheque(
         raise HTTPException(status_code=409, detail=f"Cannot deposit cheque in status {cheque.status}")
 
     await ensure_default_accounts(db, tenant_id)
-    amount = float(cheque.amount)
+    amount = money_json(cheque.amount)
     await post_journal_entry(
         db,
         tenant_id=tenant_id,
@@ -202,7 +219,7 @@ async def clear_cheque(
 ) -> m.Cheque:
     """Mark cleared. Issued pending cheques also post Bank out of Cheques Payable."""
     cheque = await get_cheque(db, tenant_id, cheque_id)
-    amount = float(cheque.amount)
+    amount = money_json(cheque.amount)
     await ensure_default_accounts(db, tenant_id)
 
     if cheque.direction == RECEIVED:
@@ -257,9 +274,9 @@ async def _reverse_customer_payment(db: AsyncSession, tenant_id: str, payment: m
     from app.fx import doc_rate, to_base
     from app.sales import get_customer, get_invoice, apply_invoice_status
 
-    amount = float(payment.amount)
-    discount = float(getattr(payment, "early_payment_discount", 0) or 0)
-    settlement = round(amount + discount, 2)
+    amount = money_json(payment.amount)
+    discount = money_json(getattr(payment, "early_payment_discount", 0) or 0)
+    settlement = money_json(round(amount + discount, 2))
     # Prefer invoice rate for base restore when linked.
     if payment.sales_invoice_id:
         inv = await get_invoice(db, tenant_id, payment.sales_invoice_id)
@@ -267,7 +284,7 @@ async def _reverse_customer_payment(db: AsyncSession, tenant_id: str, payment: m
     else:
         settlement_base = to_base(settlement, doc_rate(payment))
     customer = await get_customer(db, tenant_id, payment.customer_id)
-    customer.balance = float(customer.balance or 0) + settlement_base
+    customer.balance = money_json(customer.balance or 0) + settlement_base
 
     allocations: list[tuple[str, float]] = []
     notes = payment.notes or ""
@@ -279,7 +296,7 @@ async def _reverse_customer_payment(db: AsyncSession, tenant_id: str, payment: m
                 continue
             inv_no, amt_s = part.rsplit(":", 1)
             try:
-                allocations.append((inv_no.strip(), float(amt_s)))
+                allocations.append((inv_no.strip(), money_json(amt_s)))
             except ValueError:
                 continue
 
@@ -295,12 +312,12 @@ async def _reverse_customer_payment(db: AsyncSession, tenant_id: str, payment: m
             ).scalar_one_or_none()
             if not inv:
                 continue
-            inv.paid_amount = max(float(inv.paid_amount or 0) - amt, 0)
+            inv.paid_amount = max(money_json(inv.paid_amount or 0) - amt, 0)
             apply_invoice_status(inv)
             inv.updated_at = datetime.utcnow()
     elif payment.sales_invoice_id:
         inv = await get_invoice(db, tenant_id, payment.sales_invoice_id)
-        inv.paid_amount = max(float(inv.paid_amount or 0) - settlement, 0)
+        inv.paid_amount = max(money_json(inv.paid_amount or 0) - settlement, 0)
         apply_invoice_status(inv)
         inv.updated_at = datetime.utcnow()
 
@@ -309,9 +326,9 @@ async def _reverse_supplier_payment(db: AsyncSession, tenant_id: str, payment: m
     from app.fx import doc_rate, to_base
     from app.purchasing import get_po, get_purchase_invoice, purchase_invoice_status
 
-    amount = float(payment.amount)
-    discount = float(getattr(payment, "early_payment_discount", 0) or 0)
-    settlement = round(amount + discount, 2)
+    amount = money_json(payment.amount)
+    discount = money_json(getattr(payment, "early_payment_discount", 0) or 0)
+    settlement = money_json(round(amount + discount, 2))
     if payment.purchase_invoice_id:
         inv = await get_purchase_invoice(db, tenant_id, payment.purchase_invoice_id)
         settlement_base = to_base(settlement, doc_rate(inv))
@@ -327,18 +344,18 @@ async def _reverse_supplier_payment(db: AsyncSession, tenant_id: str, payment: m
         )
     ).scalar_one_or_none()
     if supplier:
-        supplier.balance = float(supplier.balance or 0) + settlement_base
+        supplier.balance = money_json(supplier.balance or 0) + settlement_base
 
     if payment.purchase_invoice_id:
         inv = await get_purchase_invoice(db, tenant_id, payment.purchase_invoice_id)
-        inv.paid_amount = max(float(inv.paid_amount or 0) - settlement, 0)
+        inv.paid_amount = max(money_json(inv.paid_amount or 0) - settlement, 0)
         inv.status = purchase_invoice_status(
-            float(inv.total_amount), float(inv.paid_amount), inv.due_date
+            money_json(inv.total_amount), money_json(inv.paid_amount), inv.due_date
         )
         inv.updated_at = datetime.utcnow()
     elif payment.purchase_order_id:
         po = await get_po(db, tenant_id, payment.purchase_order_id)
-        po.paid_amount = max(float(po.paid_amount or 0) - settlement, 0)
+        po.paid_amount = max(money_json(po.paid_amount or 0) - settlement, 0)
         po.updated_at = datetime.utcnow()
 
 
@@ -351,9 +368,7 @@ async def bounce_cheque(
     reason: str | None = None,
 ) -> m.Cheque:
     """Dishonour cheque: reverse GL to AR/AP and restore document balances."""
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="bounce reason is required")
+    reason_s = require_honest_narrative(reason, label="bounce reason")
     cheque = await get_cheque(db, tenant_id, cheque_id)
     if cheque.status in {BOUNCED, CANCELLED}:
         raise HTTPException(status_code=409, detail=f"Cheque already {cheque.status}")
@@ -366,7 +381,7 @@ async def bounce_cheque(
         raise HTTPException(status_code=409, detail=f"Cannot bounce cheque in status {cheque.status}")
 
     await ensure_default_accounts(db, tenant_id)
-    amount = float(cheque.amount)
+    amount = money_json(cheque.amount)
 
     if cheque.direction == RECEIVED:
         pay_amount = amount
@@ -381,10 +396,10 @@ async def bounce_cheque(
                 )
             ).scalar_one_or_none()
             if payment:
-                discount = float(getattr(payment, "early_payment_discount", 0) or 0)
-                pay_amount = float(payment.amount)
+                discount = money_json(getattr(payment, "early_payment_discount", 0) or 0)
+                pay_amount = money_json(payment.amount)
                 await _reverse_customer_payment(db, tenant_id, payment)
-        ar_restore = round(pay_amount + discount, 2)
+        ar_restore = money_json(round(pay_amount + discount, 2))
         if cheque.status == PENDING:
             lines = [
                 {"account_code": "1100", "debit": ar_restore, "credit": 0, "description": "AR restore"},
@@ -435,10 +450,10 @@ async def bounce_cheque(
                 )
             ).scalar_one_or_none()
             if payment:
-                discount = float(getattr(payment, "early_payment_discount", 0) or 0)
-                pay_amount = float(payment.amount)
+                discount = money_json(getattr(payment, "early_payment_discount", 0) or 0)
+                pay_amount = money_json(payment.amount)
                 await _reverse_supplier_payment(db, tenant_id, payment)
-        ap_restore = round(pay_amount + discount, 2)
+        ap_restore = money_json(round(pay_amount + discount, 2))
         if cheque.status == PENDING:
             # Reverse Dr AP / Cr 2015 (+ Cr 4200 if discount) → Dr 2015 (+ Dr 4200) / Cr AP
             lines = [
@@ -504,9 +519,7 @@ async def cancel_cheque(
     reason: str | None = None,
 ) -> m.Cheque:
     """Cancel an issued pending cheque (stop payment) before bank clearing."""
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="cancel reason is required")
+    reason_s = require_honest_narrative(reason, label="cancel reason")
     cheque = await get_cheque(db, tenant_id, cheque_id)
     if cheque.direction != ISSUED:
         raise HTTPException(status_code=409, detail="Only issued cheques can be cancelled; use bounce for received")
@@ -514,7 +527,7 @@ async def cancel_cheque(
         raise HTTPException(status_code=409, detail=f"Cannot cancel cheque in status {cheque.status}")
 
     await ensure_default_accounts(db, tenant_id)
-    amount = float(cheque.amount)
+    amount = money_json(cheque.amount)
     await post_journal_entry(
         db,
         tenant_id=tenant_id,

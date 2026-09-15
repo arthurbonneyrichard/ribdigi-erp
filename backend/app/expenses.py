@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.doc_numbers import next_expense_number
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
 DEFAULT_CATEGORIES = [
     ("RENT", "Rent"),
@@ -88,8 +89,8 @@ def default_approval_levels(
     auto_threshold: float = DEFAULT_APPROVAL_THRESHOLD,
     l2_threshold: float = DEFAULT_L2_THRESHOLD,
 ) -> list[dict]:
-    auto_t = float(auto_threshold)
-    l2_t = max(float(l2_threshold), auto_t)
+    auto_t = money_json(auto_threshold)
+    l2_t = max(money_json(l2_threshold), auto_t)
     return [
         {
             "step": 1,
@@ -107,7 +108,11 @@ def default_approval_levels(
 
 
 def normalize_approval_matrix(raw: dict | list | None) -> list[dict]:
-    """Validate/normalize levels. Raises HTTPException on bad input."""
+    """Validate/normalize levels. Raises HTTPException on bad input.
+
+    Schema ApprovalLevelUpdate.roles rejects blank/unknown → 422; keep
+    VALID_ROLES allow-list defense-in-depth here.
+    """
     from app.rbac import VALID_ROLES
 
     if raw is None:
@@ -130,7 +135,7 @@ def normalize_approval_matrix(raw: dict | list | None) -> list[dict]:
         if not isinstance(item, dict):
             raise HTTPException(status_code=400, detail=f"level {i + 1} must be an object")
         try:
-            min_amount = float(item.get("min_amount"))
+            min_amount = money_json(item.get("min_amount"))
         except (TypeError, ValueError):
             raise HTTPException(status_code=400, detail=f"level {i + 1} min_amount is required") from None
         if min_amount <= 0:
@@ -154,11 +159,18 @@ def normalize_approval_matrix(raw: dict | list | None) -> list[dict]:
                 roles.append(role)
         if not roles:
             raise HTTPException(status_code=400, detail=f"level {i + 1} roles must be a non-empty list")
-        label = str(item.get("label") or f"Level {i + 1}").strip() or f"Level {i + 1}"
+        # OpenAPI ApprovalLevelLabelValue → 422; service defense-in-depth → 400.
+        raw_label = item.get("label")
+        if raw_label is None or not str(raw_label).strip():
+            label = f"Level {i + 1}"
+        else:
+            label = optional_honest_narrative(
+                str(raw_label), label="approval level label", max_length=120
+            ) or f"Level {i + 1}"
         levels.append(
             {
                 "step": i + 1,
-                "min_amount": round(min_amount, 2),
+                "min_amount": money_json(round(min_amount, 2)),
                 "roles": roles,
                 "label": label,
             }
@@ -173,12 +185,12 @@ def matrix_payload(levels: list[dict]) -> dict:
 
 def steps_required_from_matrix(amount: float, levels: list[dict]) -> int:
     """Count levels whose min_amount the expense exceeds (0 = auto-approve)."""
-    amt = float(amount)
-    return sum(1 for lvl in levels if amt > float(lvl["min_amount"]))
+    amt = money_json(amount)
+    return sum(1 for lvl in levels if amt > money_json(lvl["min_amount"]))
 
 
 def requires_approval(amount: float, threshold: float) -> bool:
-    return float(amount) > float(threshold)
+    return money_json(amount) > money_json(threshold)
 
 
 def steps_required_for_amount(amount: float, *, auto_threshold: float, l2_threshold: float) -> int:
@@ -226,7 +238,7 @@ def serialize_recurring(row: m.RecurringExpense) -> dict:
         "category": row.category,
         "category_id": row.category_id,
         "description": row.description,
-        "amount": float(row.amount),
+        "amount": money_json(row.amount),
         "frequency": row.frequency,
         "payment_method": row.payment_method,
         "payee": row.payee,
@@ -257,7 +269,7 @@ async def ensure_default_categories(db: AsyncSession, tenant_id: str) -> None:
 def scale_monthly_budget(budget_monthly: float, period_days: int) -> float:
     """Scale a monthly category budget to an arbitrary reporting window (AI + reports)."""
     days = max(1, int(period_days))
-    return float(budget_monthly or 0) * (days / 30.0)
+    return money_json(money_json(budget_monthly or 0) * (days / 30.0))
 
 
 def serialize_category(cat: m.ExpenseCategory, account: m.Account | None = None) -> dict:
@@ -265,7 +277,7 @@ def serialize_category(cat: m.ExpenseCategory, account: m.Account | None = None)
         "id": cat.id,
         "code": cat.code,
         "name": cat.name,
-        "budget_amount": float(cat.budget_amount or 0),
+        "budget_amount": money_json(cat.budget_amount),
         "is_active": bool(cat.is_active),
         "account_id": getattr(cat, "account_id", None),
         "account_code": account.code if account else None,
@@ -329,12 +341,11 @@ async def update_category(
 ) -> m.ExpenseCategory:
     cat = await get_category(db, tenant_id, category_id)
     if name is not None:
-        cleaned = name.strip()
-        if not cleaned:
-            raise HTTPException(status_code=400, detail="name cannot be empty")
-        cat.name = cleaned
+        cat.name = require_honest_narrative(
+            name, label="expense category name", max_length=120
+        )
     if budget_amount is not None:
-        cat.budget_amount = float(budget_amount)
+        cat.budget_amount = money_json(budget_amount)
     if is_active is not None:
         cat.is_active = bool(is_active)
     if clear_account:
@@ -353,17 +364,21 @@ def resolve_tenant_levels(tenant: m.Tenant) -> list[dict]:
             return normalize_approval_matrix(raw)
         except HTTPException:
             pass
-    auto_t = float(tenant.expense_approval_threshold or DEFAULT_APPROVAL_THRESHOLD)
-    l2_t = float(getattr(tenant, "expense_l2_threshold", None) or DEFAULT_L2_THRESHOLD)
+    auto_t = money_json(tenant.expense_approval_threshold or DEFAULT_APPROVAL_THRESHOLD)
+    l2_t = money_json(getattr(tenant, "expense_l2_threshold", None) or DEFAULT_L2_THRESHOLD)
     return default_approval_levels(auto_threshold=auto_t, l2_threshold=l2_t)
 
 
 def settings_from_levels(levels: list[dict]) -> dict:
-    auto_t = float(levels[0]["min_amount"]) if levels else DEFAULT_APPROVAL_THRESHOLD
-    l2_t = float(levels[1]["min_amount"]) if len(levels) > 1 else max(DEFAULT_L2_THRESHOLD, auto_t)
+    auto_t = money_json(levels[0]["min_amount"]) if levels else DEFAULT_APPROVAL_THRESHOLD
+    l2_t = (
+        money_json(levels[1]["min_amount"])
+        if len(levels) > 1
+        else max(DEFAULT_L2_THRESHOLD, auto_t)
+    )
     return {
-        "expense_approval_threshold": auto_t,
-        "expense_l2_threshold": l2_t,
+        "expense_approval_threshold": money_json(auto_t),
+        "expense_l2_threshold": money_json(l2_t),
         "levels": levels,
         "max_levels": MAX_APPROVAL_LEVELS,
     }
@@ -374,7 +389,7 @@ async def get_approval_threshold(db: AsyncSession, tenant_id: str) -> float:
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
     levels = resolve_tenant_levels(tenant)
-    return float(levels[0]["min_amount"]) if levels else DEFAULT_APPROVAL_THRESHOLD
+    return money_json(levels[0]["min_amount"]) if levels else DEFAULT_APPROVAL_THRESHOLD
 
 
 async def get_l2_threshold(db: AsyncSession, tenant_id: str) -> float:
@@ -383,8 +398,8 @@ async def get_l2_threshold(db: AsyncSession, tenant_id: str) -> float:
         raise HTTPException(status_code=404, detail="Tenant not found")
     levels = resolve_tenant_levels(tenant)
     if len(levels) > 1:
-        return float(levels[1]["min_amount"])
-    return float(getattr(tenant, "expense_l2_threshold", None) or DEFAULT_L2_THRESHOLD)
+        return money_json(levels[1]["min_amount"])
+    return money_json(getattr(tenant, "expense_l2_threshold", None) or DEFAULT_L2_THRESHOLD)
 
 
 async def get_approval_settings(db: AsyncSession, tenant_id: str) -> dict:
@@ -405,12 +420,12 @@ async def update_approval_settings(
     if levels is not None:
         normalized = normalize_approval_matrix({"levels": levels})
     else:
-        auto_t = float(
+        auto_t = money_json(
             expense_approval_threshold
             if expense_approval_threshold is not None
             else (tenant.expense_approval_threshold or DEFAULT_APPROVAL_THRESHOLD)
         )
-        l2_t = float(
+        l2_t = money_json(
             expense_l2_threshold
             if expense_l2_threshold is not None
             else (getattr(tenant, "expense_l2_threshold", None) or DEFAULT_L2_THRESHOLD)
@@ -424,8 +439,8 @@ async def update_approval_settings(
         existing = resolve_tenant_levels(tenant)
         if len(existing) >= 2:
             normalized = [
-                {**existing[0], "min_amount": round(auto_t, 2), "step": 1},
-                {**existing[1], "min_amount": round(l2_t, 2), "step": 2},
+                {**existing[0], "min_amount": money_json(round(auto_t, 2)), "step": 1},
+                {**existing[1], "min_amount": money_json(round(l2_t, 2)), "step": 2},
                 *[{**lvl, "step": i + 3} for i, lvl in enumerate(existing[2:])],
             ]
             # Re-validate increasing mins if extra levels exist
@@ -437,8 +452,8 @@ async def update_approval_settings(
             normalized = default_approval_levels(auto_threshold=auto_t, l2_threshold=l2_t)
 
     tenant.expense_approval_matrix = matrix_payload(normalized)
-    tenant.expense_approval_threshold = float(normalized[0]["min_amount"])
-    tenant.expense_l2_threshold = float(
+    tenant.expense_approval_threshold = money_json(normalized[0]["min_amount"])
+    tenant.expense_l2_threshold = money_json(
         normalized[1]["min_amount"] if len(normalized) > 1 else normalized[0]["min_amount"]
     )
     await db.flush()
@@ -484,7 +499,7 @@ def serialize_expense(expense: m.Expense, actions: list[m.ExpenseApprovalAction]
         "category_id": expense.category_id,
         "category": expense.category,
         "description": expense.description,
-        "amount": float(expense.amount),
+        "amount": money_json(expense.amount),
         "expense_date": expense.expense_date,
         "payment_method": expense.payment_method,
         "liquid_account_id": getattr(expense, "liquid_account_id", None),
@@ -541,9 +556,10 @@ async def resolve_category(
         if not bool(cat.is_active):
             raise HTTPException(status_code=400, detail="Expense category is inactive")
         return cat.id, cat.name
-    name = (category or "").strip()
-    if not name:
-        raise HTTPException(status_code=400, detail="category or category_id is required")
+    # OpenAPI ExpenseCategoryLabelValue → 422; service defense-in-depth → 400.
+    name = require_honest_narrative(
+        category, label="expense category label", max_length=100
+    )
     return None, name
 
 
@@ -656,21 +672,25 @@ async def create_expense(
             outflow=True,
         )
 
-    ref = (reference or "").strip() or None
+    # OpenAPI ExpenseReferenceValue / ExpenseDescriptionValue / ExpensePayeeValue → 422;
+    # service defense-in-depth → 400.
+    ref = optional_honest_narrative(reference, label="expense reference", max_length=100)
     if not ref:
         ref = await next_expense_number(db, tenant_id)
+    desc = optional_honest_narrative(description, label="expense description") or ""
+    payee_s = optional_honest_narrative(payee, label="expense payee", max_length=150)
 
     expense = m.Expense(
         tenant_id=tenant_id,
         category_id=cat_id,
         category=cat_name,
-        description=description or "",
-        amount=round(float(amount), 2),
+        description=desc,
+        amount=money_json(round(money_json(amount), 2)),
         expense_date=expense_date or datetime.utcnow(),
         payment_method=method,
         liquid_account_id=liquid_account_id,
         reference=ref,
-        payee=payee,
+        payee=payee_s,
         store_id=resolved_store,
         branch_id=resolved_branch,
         department_id=resolved_dept,
@@ -741,6 +761,9 @@ async def approve_expense(
     }:
         raise HTTPException(status_code=403, detail="Cannot approve your own expense")
 
+    # Defense-in-depth vs OpenAPI ExpenseApproveCommentValue (**422**).
+    comment = optional_honest_narrative(comment, label="approve comment")
+
     step = int(expense.approval_step or 1)
     required = int(expense.approval_steps_required or 1)
     settings = await get_approval_settings(db, tenant_id)
@@ -773,7 +796,7 @@ async def approve_expense(
             category="expense_approval",
             title="Expense Needs Next-Level Approval",
             message=(
-                f"Expense {expense.category} of {float(expense.amount):.2f} passed level {step} "
+                f"Expense {expense.category} of {money_json(expense.amount):.2f} passed level {step} "
                 f"and awaits level {next_step} approval."
             ),
             entity_type="expense",
@@ -807,8 +830,7 @@ async def reject_expense(
     reason: str,
     actor_role: str | None = None,
 ) -> m.Expense:
-    if not (reason or "").strip():
-        raise HTTPException(status_code=400, detail="rejection reason is required")
+    reason_s = require_honest_narrative(reason, label="rejection reason")
     expense = await get_expense(db, tenant_id, expense_id)
     if expense.status != "pending":
         raise HTTPException(status_code=409, detail="Only pending expenses can be rejected")
@@ -824,13 +846,13 @@ async def reject_expense(
         step=step,
         action="reject",
         actor_id=user_id,
-        comment=reason.strip(),
+        comment=reason_s,
     )
 
     expense.status = "rejected"
     expense.approved_by = user_id
     expense.approved_at = datetime.utcnow()
-    expense.rejection_reason = reason.strip()
+    expense.rejection_reason = reason_s
     await db.flush()
     return expense
 
@@ -894,11 +916,17 @@ async def update_expense(
         expense.category = cat_name
 
     if description is not None:
-        expense.description = description
+        expense.description = (
+            optional_honest_narrative(description, label="expense description") or ""
+        )
     if payee is not None:
-        expense.payee = payee.strip() or None
+        expense.payee = optional_honest_narrative(
+            payee, label="expense payee", max_length=150
+        )
     if reference is not None:
-        expense.reference = reference.strip() or None
+        expense.reference = optional_honest_narrative(
+            reference, label="expense reference", max_length=100
+        )
     if expense_date is not None:
         expense.expense_date = expense_date
     if payment_method is not None:
@@ -936,7 +964,7 @@ async def update_expense(
             )
 
     if amount is not None:
-        new_amount = round(float(amount), 2)
+        new_amount = money_json(round(money_json(amount), 2))
         if new_amount <= 0:
             raise HTTPException(status_code=400, detail="amount must be positive")
         expense.amount = new_amount
@@ -1046,11 +1074,12 @@ async def create_recurring(
         tenant_id=tenant_id,
         category_id=cat_id,
         category=cat_name,
-        description=description or "",
-        amount=round(float(amount), 2),
+        description=optional_honest_narrative(description, label="expense description")
+        or "",
+        amount=money_json(round(money_json(amount), 2)),
         frequency=freq,
         payment_method=method,
-        payee=payee,
+        payee=optional_honest_narrative(payee, label="expense payee", max_length=150),
         branch_id=resolved_branch,
         department_id=resolved_dept,
         start_date=start,
@@ -1140,13 +1169,17 @@ async def update_recurring(
         row.category = cat_name
 
     if amount is not None:
-        row.amount = round(float(amount), 2)
+        row.amount = money_json(round(money_json(amount), 2))
     if clear_payee:
         row.payee = None
     elif payee is not None:
-        row.payee = payee.strip() or None
+        row.payee = optional_honest_narrative(
+            payee, label="expense payee", max_length=150
+        )
     if description is not None:
-        row.description = description
+        row.description = (
+            optional_honest_narrative(description, label="expense description") or ""
+        )
     if payment_method is not None:
         row.payment_method = normalize_expense_payment_method(
             payment_method, default="bank_transfer", required=True
@@ -1197,9 +1230,7 @@ async def skip_next_recurring(
 
     Reason is audit-only — do not mutate ``description`` (that is the generate template).
     """
-    reason_s = (reason or "").strip()
-    if not reason_s:
-        raise HTTPException(status_code=400, detail="skip reason is required")
+    reason_s = require_honest_narrative(reason, label="skip reason")
     row = (
         await db.execute(
             select(m.RecurringExpense).where(
@@ -1267,7 +1298,7 @@ async def generate_due_recurring(
             db,
             tenant_id=tenant_id,
             user_id=user_id,
-            amount=float(row.amount),
+            amount=money_json(row.amount),
             description=desc,
             category_id=row.category_id,
             category=row.category,

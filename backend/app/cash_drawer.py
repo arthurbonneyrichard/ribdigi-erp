@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.config import settings
+from app.honesty import require_honest_narrative
 
 logger = logging.getLogger(__name__)
 
@@ -138,19 +139,28 @@ async def open_drawer(
 ) -> dict:
     """Pulse the cash drawer. force=True for manual opens even if mode is none? No — none stays off.
 
-    When require_specific_reason=True (manual POS button), reject blank / placeholder reasons.
-    Auto-open on cash sale passes require_specific_reason=False with reason pos_sale:{id}.
+    When require_specific_reason=True (manual POS button), reject blank / URL /
+    punctuation / placeholder reasons (defense-in-depth vs OpenAPI
+    PosDrawerOpenReasonValue). Auto-open on cash sale passes
+    require_specific_reason=False with reason pos_sale:{id}.
     """
-    reason_clean = (reason or "").strip()
     if require_specific_reason:
-        if len(reason_clean) < 3:
+        try:
+            reason_clean = require_honest_narrative(
+                reason, label="drawer open reason", min_length=3, max_length=200
+            )
+        except HTTPException as exc:
             raise HTTPException(
                 status_code=400,
                 detail={
                     "code": "DRAWER_REASON_REQUIRED",
-                    "message": "Drawer open reason is required (min 3 characters)",
+                    "message": (
+                        "Drawer open reason is required (min 3 characters)"
+                        if "required" in str(exc.detail)
+                        else "Drawer open reason must be a plain narrative"
+                    ),
                 },
-            )
+            ) from exc
         if reason_clean.lower() in {"manual", "n/a", "na", "none", "test"}:
             raise HTTPException(
                 status_code=400,
@@ -159,10 +169,10 @@ async def open_drawer(
                     "message": "Provide a specific reason (e.g. change request, no sale)",
                 },
             )
-    elif not reason_clean:
-        reason_clean = "manual"
-    if len(reason_clean) > 200:
-        raise HTTPException(status_code=400, detail="reason too long")
+    else:
+        reason_clean = (reason or "").strip() or "manual"
+        if len(reason_clean) > 200:
+            raise HTTPException(status_code=400, detail="reason too long")
     cfg = await resolve_config(db, tenant_id=tenant_id, store_id=store_id)
     mode = normalize_mode(cfg.get("drawer_mode"))
     if mode == "none" and not force:

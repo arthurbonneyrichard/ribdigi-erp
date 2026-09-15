@@ -10,6 +10,7 @@ from typing import Any
 from fastapi import HTTPException
 
 from app import storage as storage_svc
+from app.honesty import money_json
 
 # Common total labels (case-insensitive)
 _AMOUNT_PATTERNS = [
@@ -109,7 +110,7 @@ def _parse_amount(text: str) -> float | None:
         # Prefer last match (often the grand total)
         raw = matches[-1] if isinstance(matches[-1], str) else matches[-1][0]
         try:
-            return round(float(str(raw).replace(",", "")), 2)
+            return money_json(round(float(str(raw).replace(",", "")), 2))
         except ValueError:
             continue
     return None
@@ -170,7 +171,7 @@ def parse_receipt_text(text: str) -> dict[str, Any]:
         description = "Receipt capture"
 
     fields = {
-        "amount": amount,
+        "amount": money_json(amount) if amount is not None else None,
         "expense_date": expense_date,
         "payee": payee,
         "description": description,
@@ -184,7 +185,7 @@ def parse_receipt_text(text: str) -> dict[str, Any]:
             confidence = min(0.95, confidence + 0.15)
     return {
         "fields": fields,
-        "confidence": round(confidence, 2),
+        "confidence": money_json(round(confidence, 2)),
         "raw_text_preview": cleaned[:2000] if cleaned else "",
     }
 

@@ -89,6 +89,7 @@ export default function OnboardingChecklist({
           type="button"
           disabled={busy}
           onClick={() => run('/onboarding/checklist/restore')}
+          aria-label="Restore onboarding checklist"
         >
           Restore checklist
         </button>
@@ -108,7 +109,12 @@ export default function OnboardingChecklist({
         <span className="muted">
           {data.completed_count}/{data.total_count} · {pct}%
         </span>
-        <button type="button" onClick={() => setExpanded((v) => !v)} disabled={busy}>
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          disabled={busy}
+          aria-label={expanded ? 'Collapse onboarding checklist' : 'Expand onboarding checklist'}
+        >
           {expanded ? 'Collapse' : 'Expand'}
         </button>
         {canManage && data.dismissible && (
@@ -116,6 +122,7 @@ export default function OnboardingChecklist({
             type="button"
             onClick={() => run('/onboarding/checklist/dismiss')}
             disabled={busy}
+            aria-label="Dismiss onboarding checklist"
           >
             Dismiss
           </button>
@@ -125,7 +132,7 @@ export default function OnboardingChecklist({
         style={{
           height: 8,
           borderRadius: 999,
-          background: 'var(--muted-bg, #e2e8f0)',
+          background: 'var(--line, #D4E5C4)',
           overflow: 'hidden',
         }}
         aria-label={`Onboarding progress ${pct} percent`}
@@ -134,7 +141,7 @@ export default function OnboardingChecklist({
           style={{
             width: `${pct}%`,
             height: '100%',
-            background: '#0f766e',
+            background: 'var(--brand, #4AB012)',
             transition: 'width 200ms ease',
           }}
         />
@@ -151,7 +158,7 @@ export default function OnboardingChecklist({
                 flexWrap: 'wrap',
                 alignItems: 'center',
                 padding: '8px 0',
-                borderTop: '1px solid var(--border, #eef1f7)',
+                borderTop: '1px solid var(--line, #D4E5C4)',
               }}
             >
               <span aria-hidden style={{ width: 18, textAlign: 'center' }}>
@@ -176,6 +183,11 @@ export default function OnboardingChecklist({
                 <button
                   type="button"
                   disabled={busy}
+                  aria-label={
+                    step.skipped
+                      ? `Onboarding unskip ${step.id}`
+                      : `Onboarding skip ${step.id}`
+                  }
                   onClick={() =>
                     run(
                       step.skipped
@@ -189,7 +201,9 @@ export default function OnboardingChecklist({
               )}
               {!step.completed && (
                 <Link href={step.href}>
-                  <button type="button">Open</button>
+                  <button type="button" aria-label={`Open onboarding step ${step.id}`}>
+                    Open
+                  </button>
                 </Link>
               )}
             </li>

@@ -9,6 +9,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json, optional_honest_narrative
 
 
 def serialize_account(account: m.Account) -> dict:
@@ -20,8 +21,8 @@ def serialize_account(account: m.Account) -> dict:
         "code": account.code,
         "name": account.name,
         "account_type": account.account_type,
-        "balance": float(account.balance or 0),
-        "opening_balance": float(getattr(account, "opening_balance", 0) or 0),
+        "balance": money_json(account.balance),
+        "opening_balance": money_json(getattr(account, "opening_balance", 0)),
         "is_system": account.code in system_codes,
         "is_active": bool(getattr(account, "is_active", True)),
         "is_cash_account": bool(account.is_cash_account),
@@ -37,7 +38,7 @@ def serialize_line(line: m.BankStatementLine) -> dict:
         "id": line.id,
         "statement_id": line.statement_id,
         "txn_date": line.txn_date,
-        "amount": float(line.amount),
+        "amount": money_json(line.amount),
         "description": line.description,
         "external_ref": line.external_ref,
         "status": line.status,
@@ -56,8 +57,8 @@ def serialize_statement(stmt: m.BankStatement, lines: list[m.BankStatementLine] 
         "id": stmt.id,
         "account_id": stmt.account_id,
         "statement_date": stmt.statement_date,
-        "opening_balance": float(stmt.opening_balance or 0),
-        "closing_balance": float(stmt.closing_balance or 0),
+        "opening_balance": money_json(stmt.opening_balance),
+        "closing_balance": money_json(stmt.closing_balance),
         "status": stmt.status,
         "notes": stmt.notes,
         "reconciled_at": stmt.reconciled_at,
@@ -73,7 +74,9 @@ def serialize_statement(stmt: m.BankStatement, lines: list[m.BankStatementLine] 
 
 def journal_line_signed_amount(line: m.JournalEntryLine) -> float:
     """Asset convention: debit positive (inflow), credit negative (outflow)."""
-    return round(float(line.debit or 0) - float(line.credit or 0), 2)
+    return money_json(
+        round(money_json(line.debit or 0) - money_json(line.credit or 0), 2)
+    )
 
 
 async def get_liquid_account(db: AsyncSession, tenant_id: str, account_id: str) -> m.Account:
@@ -146,18 +149,32 @@ async def list_statement_lines(
     )
 
 
-async def list_statements(db: AsyncSession, tenant_id: str) -> list[m.BankStatement]:
-    return list(
-        (
-            await db.execute(
-                select(m.BankStatement)
-                .where(m.BankStatement.tenant_id == tenant_id)
-                .order_by(m.BankStatement.created_at.desc())
-            )
-        )
-        .scalars()
-        .all()
+async def list_statements(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    status: str | None = None,
+) -> list[m.BankStatement]:
+    stmt = (
+        select(m.BankStatement)
+        .where(m.BankStatement.tenant_id == tenant_id)
+        .order_by(m.BankStatement.created_at.desc())
     )
+    if status is not None:
+        # Schema BankStatementStatusFilterValue rejects blank/invalid → 422;
+        # keep allow-list defense-in-depth (no silent empty filter / blank→all).
+        wanted = (status or "").strip().lower()
+        allowed = {"draft", "in_progress", "reconciled"}
+        if not wanted:
+            pass
+        elif wanted not in allowed:
+            raise HTTPException(
+                status_code=422,
+                detail="status must be draft, in_progress, or reconciled",
+            )
+        else:
+            stmt = stmt.where(m.BankStatement.status == wanted)
+    return list((await db.execute(stmt)).scalars().all())
 
 
 def _parse_dt(value: str | datetime | None) -> datetime:
@@ -188,16 +205,16 @@ async def create_statement(
         tenant_id=tenant_id,
         account_id=account_id,
         statement_date=_parse_dt(statement_date),
-        opening_balance=float(opening_balance or 0),
-        closing_balance=float(closing_balance or 0),
+        opening_balance=money_json(opening_balance or 0),
+        closing_balance=money_json(closing_balance or 0),
         status="in_progress" if lines else "draft",
-        notes=notes,
+        notes=optional_honest_narrative(notes, label="bank statement notes"),
         created_by=user_id,
     )
     db.add(stmt)
     await db.flush()
     for raw in lines or []:
-        amount = float(raw.get("amount") or 0)
+        amount = money_json(raw.get("amount") or 0)
         if abs(amount) < 1e-9:
             raise HTTPException(status_code=400, detail="Statement line amount cannot be zero")
         db.add(
@@ -206,8 +223,14 @@ async def create_statement(
                 statement_id=stmt.id,
                 txn_date=_parse_dt(raw.get("txn_date") or statement_date),
                 amount=amount,
-                description=(raw.get("description") or "").strip() or None,
-                external_ref=(raw.get("external_ref") or "").strip() or None,
+                description=optional_honest_narrative(
+                    raw.get("description"), label="statement line description"
+                ),
+                external_ref=optional_honest_narrative(
+                    raw.get("external_ref"),
+                    label="statement line external ref",
+                    max_length=120,
+                ),
                 status="unmatched",
             )
         )
@@ -233,23 +256,23 @@ async def import_statement_from_feed(
 
     parsed = parse_bank_feed(content, filename=filename)
     lines = parsed["lines"]
-    net = round(sum(float(ln["amount"]) for ln in lines), 2)
+    net = money_json(round(sum(money_json(ln["amount"]) for ln in lines), 2))
 
     open_bal = (
-        float(opening_balance)
+        money_json(opening_balance)
         if opening_balance is not None
         else (
-            float(parsed["opening_balance"])
+            money_json(parsed["opening_balance"])
             if parsed.get("opening_balance") is not None
             else 0.0
         )
     )
     if closing_balance is not None:
-        close_bal = float(closing_balance)
+        close_bal = money_json(closing_balance)
     elif parsed.get("closing_balance") is not None:
-        close_bal = float(parsed["closing_balance"])
+        close_bal = money_json(parsed["closing_balance"])
     else:
-        close_bal = round(open_bal + net, 2)
+        close_bal = money_json(round(open_bal + net, 2))
 
     # Statement date: explicit, else latest txn date
     if statement_date is None:
@@ -350,9 +373,9 @@ async def unmatched_book_lines(
                 "description": line.description or entry.description,
                 "reference": entry.reference,
                 "source_type": entry.source_type,
-                "debit": float(line.debit or 0),
-                "credit": float(line.credit or 0),
-                "signed_amount": signed,
+                "debit": money_json(line.debit),
+                "credit": money_json(line.credit),
+                "signed_amount": money_json(signed),
             }
         )
     return out
@@ -365,6 +388,10 @@ async def match_line(
     line_id: str,
     journal_line_id: str,
 ) -> m.BankStatementLine:
+    # Schema BankStatementMatchBody rejects blank journal_line_id → 422; keep defense.
+    jid = (journal_line_id or "").strip()
+    if not jid:
+        raise HTTPException(status_code=422, detail="journal_line_id is required")
     line = (
         await db.execute(
             select(m.BankStatementLine).where(
@@ -387,7 +414,7 @@ async def match_line(
     jl = (
         await db.execute(
             select(m.JournalEntryLine).where(
-                m.JournalEntryLine.id == journal_line_id,
+                m.JournalEntryLine.id == jid,
                 m.JournalEntryLine.tenant_id == tenant_id,
             )
         )
@@ -401,7 +428,7 @@ async def match_line(
         await db.execute(
             select(m.BankStatementLine.id).where(
                 m.BankStatementLine.tenant_id == tenant_id,
-                m.BankStatementLine.matched_journal_line_id == journal_line_id,
+                m.BankStatementLine.matched_journal_line_id == jid,
             )
         )
     ).scalar_one_or_none()
@@ -411,7 +438,7 @@ async def match_line(
         await db.execute(
             select(m.BankClearingBookLink.id).where(
                 m.BankClearingBookLink.tenant_id == tenant_id,
-                m.BankClearingBookLink.journal_line_id == journal_line_id,
+                m.BankClearingBookLink.journal_line_id == jid,
             )
         )
     ).scalar_one_or_none()
@@ -419,7 +446,7 @@ async def match_line(
         raise HTTPException(status_code=409, detail="Journal line already in a clearing group")
 
     signed = journal_line_signed_amount(jl)
-    bank_amt = round(float(line.amount), 2)
+    bank_amt = money_json(round(money_json(line.amount), 2))
     if abs(signed - bank_amt) > 0.01:
         raise HTTPException(
             status_code=400,
@@ -505,16 +532,16 @@ async def complete_statement(db: AsyncSession, *, tenant_id: str, statement_id: 
             },
         )
 
-    net = sum(float(ln.amount) for ln in lines)
-    expected_closing = round(float(stmt.opening_balance or 0) + net, 2)
-    if abs(expected_closing - float(stmt.closing_balance or 0)) > 0.01:
+    net = sum(money_json(ln.amount) for ln in lines)
+    expected_closing = money_json(round(money_json(stmt.opening_balance or 0) + net, 2))
+    if abs(expected_closing - money_json(stmt.closing_balance or 0)) > 0.01:
         raise HTTPException(
             status_code=409,
             detail={
                 "code": "STATEMENT_ARITHMETIC",
                 "message": "opening + matched/unignored lines does not equal closing balance",
                 "expected_closing": expected_closing,
-                "statement_closing": float(stmt.closing_balance or 0),
+                "statement_closing": money_json(stmt.closing_balance or 0),
             },
         )
 
@@ -573,7 +600,7 @@ async def auto_match_suggestions(
     for bl in lines:
         if bl.status != "unmatched":
             continue
-        amt = round(float(bl.amount), 2)
+        amt = money_json(round(money_json(bl.amount), 2))
         bank_tokens = _tokens(bl.description) | _tokens(bl.external_ref)
         best = None
         for jl in book:
@@ -703,8 +730,8 @@ def serialize_clearing_group(
         "created_at": group.created_at,
         "statement_line_ids": bank_line_ids,
         "journal_line_ids": journal_line_ids,
-        "bank_total": bank_total,
-        "book_total": book_total,
+        "bank_total": money_json(bank_total),
+        "book_total": money_json(book_total),
     }
 
 
@@ -749,7 +776,7 @@ async def list_clearing_groups(
             .scalars()
             .all()
         )
-        bank_total = round(sum(float(ln.amount) for ln in bank_lines), 2)
+        bank_total = money_json(round(sum(money_json(ln.amount) for ln in bank_lines), 2))
         book_total = 0.0
         jl_ids = [lk.journal_line_id for lk in links]
         if jl_ids:
@@ -762,7 +789,7 @@ async def list_clearing_groups(
                 .scalars()
                 .all()
             )
-            book_total = round(sum(journal_line_signed_amount(jl) for jl in jlines), 2)
+            book_total = money_json(round(sum(journal_line_signed_amount(jl) for jl in jlines), 2))
         out.append(
             serialize_clearing_group(
                 g,
@@ -792,9 +819,10 @@ async def create_clearing_group(
 
     bank_ids = list(dict.fromkeys([str(x) for x in (statement_line_ids or []) if x]))
     book_ids = list(dict.fromkeys([str(x) for x in (journal_line_ids or []) if x]))
+    # Schema BankClearGroupBody rejects empty id lists → 422; keep defense-in-depth.
     if not bank_ids or not book_ids:
         raise HTTPException(
-            status_code=400,
+            status_code=422,
             detail="clearing group requires at least one statement line and one journal line",
         )
     if len(bank_ids) == 1 and len(book_ids) == 1:
@@ -861,23 +889,24 @@ async def create_clearing_group(
             raise HTTPException(status_code=409, detail=f"Journal line {jid} already in a clearing group")
         book_lines.append(jl)
 
-    bank_total = round(sum(float(ln.amount) for ln in bank_lines), 2)
-    book_total = round(sum(journal_line_signed_amount(jl) for jl in book_lines), 2)
+    bank_total = money_json(round(sum(money_json(ln.amount) for ln in bank_lines), 2))
+    book_total = money_json(round(sum(journal_line_signed_amount(jl) for jl in book_lines), 2))
     if abs(bank_total - book_total) > 0.01:
         raise HTTPException(
             status_code=400,
             detail={
                 "code": "AMOUNT_MISMATCH",
                 "message": "Sum of bank lines must equal sum of journal signed amounts",
-                "bank_total": bank_total,
-                "book_total": book_total,
+                "bank_total": money_json(bank_total),
+                "book_total": money_json(book_total),
             },
         )
 
+    notes = optional_honest_narrative(notes, label="clear-group notes")
     group = m.BankClearingGroup(
         tenant_id=tenant_id,
         statement_id=statement_id,
-        notes=notes,
+        notes=optional_honest_narrative(notes, label="clear-group notes"),
         created_by=user_id,
     )
     db.add(group)

@@ -12,28 +12,31 @@ from app.schemas import PlatformGrantAccess
 ROOT = Path(__file__).resolve().parents[2]
 
 
+_USER = "11111111-2222-3333-4444-555555555555"
+
+
 def test_platform_grant_role_literal_schema():
     ok = PlatformGrantAccess.model_validate(
-        {"user_id": "u1", "role": "platform_finance"}
+        {"user_id": _USER, "role": "platform_finance"}
     )
     assert ok.role == "platform_finance"
 
-    defaulted = PlatformGrantAccess.model_validate({"user_id": "u1"})
+    defaulted = PlatformGrantAccess.model_validate({"user_id": _USER})
     assert defaulted.role == "platform_support"
 
     coerced = PlatformGrantAccess.model_validate(
-        {"user_id": "u1", "role": "  Platform_Admin "}
+        {"user_id": _USER, "role": "  Platform_Admin "}
     )
     assert coerced.role == "platform_admin"
 
     with pytest.raises(ValidationError):
-        PlatformGrantAccess.model_validate({"user_id": "u1", "role": ""})
+        PlatformGrantAccess.model_validate({"user_id": _USER, "role": ""})
     with pytest.raises(ValidationError):
-        PlatformGrantAccess.model_validate({"user_id": "u1", "role": "   "})
+        PlatformGrantAccess.model_validate({"user_id": _USER, "role": "   "})
     with pytest.raises(ValidationError):
-        PlatformGrantAccess.model_validate({"user_id": "u1", "role": "cashier"})
+        PlatformGrantAccess.model_validate({"user_id": _USER, "role": "cashier"})
     with pytest.raises(ValidationError):
-        PlatformGrantAccess.model_validate({"user_id": "u1", "role": "garbage_xyz"})
+        PlatformGrantAccess.model_validate({"user_id": _USER, "role": "garbage_xyz"})
 
 
 def test_platform_grant_role_ui_and_docs():

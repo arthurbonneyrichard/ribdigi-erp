@@ -51,7 +51,7 @@ async def test_product_description_weight_dimensions_create_and_patch(client):
     patched = await ac.patch(
         f"/api/v1/products/{pid}",
         headers=headers,
-        json={"description": "", "weight": 0.55, "height": None},
+        json={"description": None, "weight": 0.55, "height": None},
     )
     assert patched.status_code == 200, patched.text
     pdata = patched.json()["data"]

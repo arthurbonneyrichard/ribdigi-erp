@@ -27,15 +27,16 @@ export function idleTimeoutMs(minutes?: number | null): number {
 
 async function refreshSession(): Promise<boolean> {
   if (typeof window === 'undefined') return false;
-  const refresh_token = localStorage.getItem('refresh_token');
-  if (!refresh_token) return false;
+  const raw = localStorage.getItem('refresh_token');
+  const trimmedRefreshToken = (raw || '').trim();
+  if (!trimmedRefreshToken) return false;
   if (!refreshPromise) {
     refreshPromise = (async () => {
       try {
         const r = await fetch(base + '/auth/refresh', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refresh_token }),
+          body: JSON.stringify({ refresh_token: trimmedRefreshToken }),
           cache: 'no-store',
         });
         if (!r.ok) return false;

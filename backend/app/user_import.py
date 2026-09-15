@@ -8,6 +8,7 @@ import re
 from typing import Any
 
 from fastapi import HTTPException
+from pydantic import TypeAdapter, ValidationError
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,6 +16,7 @@ from app import audit as audit_svc
 from app import models as m
 from app.config import settings
 from app.rbac import VALID_ROLES, permissions_for_role, serialize_user
+from app.schemas import E164PhoneValue, UserFullNameValue, UserPasswordValue
 from app.security import hash_password, issue_one_time_token, validate_password_strength
 
 TEMPLATE_HEADERS = (
@@ -119,6 +121,14 @@ async def validate_import_rows(
 
         if not full_name:
             errors.append("full_name is required")
+        else:
+            try:
+                full_name = TypeAdapter(UserFullNameValue).validate_python(full_name)
+            except ValidationError:
+                errors.append(
+                    "full_name must be a plain person name (no URL/punctuation-only)"
+                )
+
         if not email:
             errors.append("email is required")
         elif not EMAIL_RE.match(email):
@@ -127,6 +137,13 @@ async def validate_import_rows(
             errors.append("duplicate email in file")
         if email:
             seen_emails.add(email)
+
+        if phone is not None:
+            try:
+                phone = TypeAdapter(E164PhoneValue).validate_python(phone)
+            except ValidationError:
+                errors.append("phone must be E.164 (+ and 8–15 digits)")
+                phone = None
 
         if not role:
             errors.append("role is required")
@@ -142,9 +159,16 @@ async def validate_import_rows(
             errors.append("temporary_password is required")
         else:
             try:
-                validate_password_strength(password)
-            except HTTPException as exc:
-                errors.append(str(exc.detail))
+                password = TypeAdapter(UserPasswordValue).validate_python(password)
+            except ValidationError:
+                errors.append(
+                    "temporary_password must be a plain secret (no URL/@/spaces)"
+                )
+            else:
+                try:
+                    validate_password_strength(password)
+                except HTTPException as exc:
+                    errors.append(str(exc.detail))
 
         if email and await _email_exists(db, tenant_id, email):
             errors.append("email already exists")

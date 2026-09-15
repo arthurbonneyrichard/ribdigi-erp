@@ -9,6 +9,8 @@ from fastapi import HTTPException
 
 from app import models as m
 from app.config import settings
+from app.honesty import optional_honest_narrative
+from app.schemas import validate_e164_phone_value
 
 
 @dataclass(frozen=True)
@@ -113,14 +115,32 @@ def apply_sms_settings_update(tenant: m.Tenant, payload: dict[str, Any]) -> dict
     """Merge PATCH fields into tenant.sms_settings. Auth token encrypted; never returned."""
     current = _raw_settings(tenant)
     if "account_sid" in payload and payload["account_sid"] is not None:
-        current["account_sid"] = str(payload["account_sid"]).strip()[:64]
+        # OpenAPI TwilioAccountSidValue → 422; service defense-in-depth → 400.
+        sid = optional_honest_narrative(
+            payload["account_sid"], label="Twilio account SID", max_length=64
+        )
+        if not sid:
+            raise HTTPException(status_code=400, detail="Twilio account SID is required")
+        current["account_sid"] = sid[:64]
     if "from_number" in payload and payload["from_number"] is not None:
-        current["from_number"] = str(payload["from_number"]).strip()[:32]
+        # OpenAPI E164PhoneValue → 422; service defense-in-depth → 400.
+        try:
+            current["from_number"] = validate_e164_phone_value(
+                str(payload["from_number"]).strip()
+            )[:32]
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
     if payload.get("clear_auth_token"):
         current.pop("auth_token_enc", None)
     elif payload.get("auth_token") is not None and str(payload.get("auth_token") or "") != "":
         from app.totp import encrypt_secret
 
-        current["auth_token_enc"] = encrypt_secret(str(payload["auth_token"]))
+        # OpenAPI TwilioAuthTokenValue → 422; service defense-in-depth → 400.
+        token = optional_honest_narrative(
+            payload["auth_token"], label="Twilio auth token", max_length=128
+        )
+        if not token or " " in token:
+            raise HTTPException(status_code=400, detail="Twilio auth token is required")
+        current["auth_token_enc"] = encrypt_secret(token)
     tenant.sms_settings = current
     return sms_status(tenant)

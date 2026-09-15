@@ -42,7 +42,7 @@ async def _posted_grn(ac, db_session, *, admin, io, seed, vendor: str):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=admin,
-        json={"name": vendor, "kind": "supplier", "email": f"{vendor.replace(' ', '').lower()}@example.com"},
+        json={"name": vendor,  "email": f"{vendor.replace(' ', '').lower()}@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
     created = await ac.post(
@@ -50,8 +50,7 @@ async def _posted_grn(ac, db_session, *, admin, io, seed, vendor: str):
         headers=io,
         json={
             "supplier_id": supplier.json()["data"]["id"],
-            "items": [{"product_id": seed["p1"].id, "quantity": 4, "unit_price": 5, "tax_rate": 0}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 4, "unit_price": 5, "tax_rate": 0}]},
     )
     assert created.status_code == 200, created.text
     po = created.json()["data"]
@@ -69,10 +68,8 @@ async def _posted_grn(ac, db_session, *, admin, io, seed, vendor: str):
                     "po_item_id": po["items"][0]["id"],
                     "received_qty": 4,
                     "accepted_qty": 4,
-                    "rejected_qty": 0,
-                }
-            ],
-        },
+                    "rejected_qty": 0}
+            ]},
     )
     assert grn.status_code == 200, grn.text
     body = grn.json()["data"]
@@ -94,8 +91,7 @@ async def test_purchase_return_reason_required(client, db_session):
         headers=io,
         json={
             "goods_receipt_id": grn_id,
-            "items": [{"goods_receipt_item_id": grn_item_id, "quantity": 1}],
-        },
+            "items": [{"goods_receipt_item_id": grn_item_id, "quantity": 1}]},
     )
     assert missing.status_code == 422, missing.text
 
@@ -105,8 +101,7 @@ async def test_purchase_return_reason_required(client, db_session):
         json={
             "goods_receipt_id": grn_id,
             "reason": "   ",
-            "items": [{"goods_receipt_item_id": grn_item_id, "quantity": 1}],
-        },
+            "items": [{"goods_receipt_item_id": grn_item_id, "quantity": 1}]},
     )
     assert blank.status_code == 422, blank.text
     assert "reason" in blank.text.lower()
@@ -129,8 +124,7 @@ async def test_purchase_return_explicit_reasons(client, db_session):
             json={
                 "goods_receipt_id": grn_id,
                 "reason": reason,
-                "items": [{"goods_receipt_item_id": grn_item_id, "quantity": 0.5}],
-            },
+                "items": [{"goods_receipt_item_id": grn_item_id, "quantity": 0.5}]},
         )
         assert created.status_code == 200, f"{reason}: {created.text}"
         assert created.json()["data"]["reason"] == reason
@@ -152,8 +146,7 @@ async def test_purchase_return_invalid_reason_rejected(client, db_session):
         json={
             "goods_receipt_id": grn_id,
             "reason": "not_a_reason",
-            "items": [{"goods_receipt_item_id": grn_item_id, "quantity": 1}],
-        },
+            "items": [{"goods_receipt_item_id": grn_item_id, "quantity": 1}]},
     )
     assert bad.status_code == 422, bad.text
     assert "reason" in bad.text.lower()

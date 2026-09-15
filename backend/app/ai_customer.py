@@ -17,6 +17,7 @@ from app import ai as ai_svc
 from app import ai_sales as ai_sales_svc
 from app import credit as credit_svc
 from app import models as m
+from app.honesty import money_json, optional_honest_narrative
 
 CHURN_BASE = {
     "champions": 0.08,
@@ -45,7 +46,7 @@ def churn_score(row: dict[str, Any]) -> dict[str, Any]:
     recency = int(row.get("recency_days") or 0)
     # Older recency increases risk
     bump = min(0.25, recency / 365.0)
-    score = round(min(0.99, base + bump * 0.5), 3)
+    score = money_json(round(min(0.99, base + bump * 0.5), 3))
     if score >= 0.7:
         level = "high"
     elif score >= 0.4:
@@ -118,6 +119,10 @@ async def customer_assist(
     customer_id: str | None = None,
     query: str | None = None,
 ) -> dict[str, Any]:
+    # OpenAPI AiChatMessageValue → 422; service defense-in-depth → 400.
+    query = optional_honest_narrative(
+        query, label="AI customer assist query", max_length=ai_svc.max_message_chars()
+    )
     if query:
         injection = ai_svc.find_injection(query)
         if injection:
@@ -215,8 +220,8 @@ async def customer_assist(
             raise
         customer_pack = {
             "customer": stmt["customer"],
-            "open_balance": float(stmt["customer"].get("balance") or 0),
-            "credit_limit": float(stmt["customer"].get("credit_limit") or 0),
+            "open_balance": money_json(stmt["customer"].get("balance")),
+            "credit_limit": money_json(stmt["customer"].get("credit_limit")),
             "rfm": next((r for r in rfm_rows if r["customer_id"] == customer_id), None),
             "churn": next((c for c in churn_rows if c["customer_id"] == customer_id), None),
             "promotion": next((p for p in promotions if p["customer_id"] == customer_id), None),

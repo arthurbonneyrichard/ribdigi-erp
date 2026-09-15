@@ -50,7 +50,7 @@ async def test_purchase_request_happy_path_convert(client, db_session):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=admin,
-        json={"name": "PR Supplier Co", "kind": "supplier"},
+        json={"name": "PR Supplier Co"},
     )
     assert supplier.status_code == 200, supplier.text
     supplier_id = supplier.json()["data"]["id"]
@@ -63,8 +63,7 @@ async def test_purchase_request_happy_path_convert(client, db_session):
             "preferred_supplier_id": supplier_id,
             "department": "Front Store",
             "notes": "Restock widgets",
-            "items": [{"product_id": product_id, "quantity": 12}],
-        },
+            "items": [{"product_id": product_id, "quantity": 12}]},
     )
     assert created.status_code == 200, created.text
     pr = created.json()["data"]

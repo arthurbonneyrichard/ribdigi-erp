@@ -37,6 +37,7 @@ export default function PlatformStaffPage() {
     full_name: '',
     password: '',
     role: 'platform_support',
+    phone: '',
   });
   const [grantRole, setGrantRole] = useState('platform_support');
   const [busy, setBusy] = useState(false);
@@ -65,15 +66,33 @@ export default function PlatformStaffPage() {
 
   async function createStaff(e: React.FormEvent) {
     e.preventDefault();
+    const fullName = form.full_name.trim();
+    const trimmedPassword = form.password.trim();
+    if (!fullName) {
+      setError('Platform staff full name is required.');
+      setMessage('');
+      return;
+    }
+    if (!trimmedPassword) {
+      setError('Platform staff password is required.');
+      setMessage('');
+      return;
+    }
     setBusy(true);
     setError('');
     setMessage('');
     try {
       await api('/platform/staff', {
         method: 'POST',
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          email: form.email.trim(),
+          full_name: fullName,
+          password: trimmedPassword,
+          role: form.role,
+          phone: form.phone.trim() || null,
+        }),
       });
-      setForm({ email: '', full_name: '', password: '', role: 'platform_support' });
+      setForm({ email: '', full_name: '', password: '', role: 'platform_support', phone: '' });
       setMessage('Staff user created');
       await refresh();
     } catch (err: any) {
@@ -124,7 +143,8 @@ export default function PlatformStaffPage() {
     try {
       await api('/platform/staff/grant', {
         method: 'POST',
-        body: JSON.stringify({ user_id: row.id, role: grantRole }),
+        // trim so Grant dashboard (UuidIdValue user_id) does not 422 on whitespace
+        body: JSON.stringify({ user_id: String(row.id).trim(), role: grantRole }),
       });
       setMessage(`Granted software owner dashboard to ${row.full_name}`);
       await refresh();
@@ -190,6 +210,7 @@ export default function PlatformStaffPage() {
               <input
                 value={form.full_name}
                 onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))}
+                aria-label="Platform staff full name"
                 required
               />
             </label>
@@ -199,6 +220,7 @@ export default function PlatformStaffPage() {
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                aria-label="Platform staff email"
                 required
               />
             </label>
@@ -208,6 +230,7 @@ export default function PlatformStaffPage() {
                 type="password"
                 value={form.password}
                 onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                aria-label="Platform staff password"
                 required
               />
             </label>
@@ -216,6 +239,7 @@ export default function PlatformStaffPage() {
               <select
                 value={form.role}
                 onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
+                aria-label="Platform staff role"
               >
                 {roles
                   .filter((r) => r.key !== 'super_admin')
@@ -226,7 +250,20 @@ export default function PlatformStaffPage() {
                   ))}
               </select>
             </label>
-            <button type="submit" disabled={busy}>
+            <label>
+              <span>Phone</span>
+              <input
+                value={form.phone}
+                onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                placeholder="Phone (E.164 e.g. +233...)"
+                aria-label="Platform staff phone"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={busy || !form.full_name.trim() || !form.password.trim()}
+              aria-label="Create platform staff"
+            >
               {busy ? 'Saving…' : 'Create staff'}
             </button>
           </form>
@@ -240,7 +277,12 @@ export default function PlatformStaffPage() {
           </p>
           <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
             <span>Grant as</span>
-            <select value={grantRole} onChange={(e) => setGrantRole(e.target.value)} disabled={busy}>
+            <select
+              value={grantRole}
+              onChange={(e) => setGrantRole(e.target.value)}
+              disabled={busy}
+              aria-label="Platform grant role"
+            >
               {roles
                 .filter((r) => r.key !== 'super_admin')
                 .map((r) => (
@@ -271,7 +313,12 @@ export default function PlatformStaffPage() {
                       <code>{u.role}</code>
                     </td>
                     <td>
-                      <button type="button" disabled={busy || u.is_active === false} onClick={() => grantAccess(u)}>
+                      <button
+                        type="button"
+                        disabled={busy || u.is_active === false}
+                        onClick={() => grantAccess(u)}
+                        aria-label="Grant dashboard"
+                      >
                         Grant dashboard
                       </button>
                     </td>
@@ -304,6 +351,7 @@ export default function PlatformStaffPage() {
                       value={u.role}
                       disabled={busy}
                       onChange={(e) => changeRole(u, e.target.value)}
+                      aria-label={`Change platform staff role for ${u.email}`}
                     >
                       {roles.map((r) => (
                         <option key={r.key} value={r.key}>
@@ -321,6 +369,7 @@ export default function PlatformStaffPage() {
                           className="btn-ok"
                           disabled={busy}
                           onClick={() => setActive(u, true)}
+                          aria-label={`Activate platform staff ${u.id}`}
                         >
                           Activate
                         </button>
@@ -330,12 +379,18 @@ export default function PlatformStaffPage() {
                           className="btn-danger"
                           disabled={busy}
                           onClick={() => setActive(u, false)}
+                          aria-label={`Deactivate platform staff ${u.id}`}
                         >
                           Deactivate
                         </button>
                       )}
                       {u.role !== 'super_admin' && (
-                        <button type="button" disabled={busy} onClick={() => revokeAccess(u)}>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => revokeAccess(u)}
+                          aria-label={`Revoke dashboard access ${u.id}`}
+                        >
                           Revoke dashboard
                         </button>
                       )}

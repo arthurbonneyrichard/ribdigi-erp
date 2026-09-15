@@ -40,7 +40,7 @@ async def _sent_po(ac, db_session, *, admin, io, seed, qty: float = 5, vendor: s
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=admin,
-        json={"name": vendor, "kind": "supplier", "email": f"{vendor.replace(' ', '').lower()}@example.com"},
+        json={"name": vendor,  "email": f"{vendor.replace(' ', '').lower()}@example.com"},
     )
     supplier_id = supplier.json()["data"]["id"]
     created = await ac.post(
@@ -48,8 +48,7 @@ async def _sent_po(ac, db_session, *, admin, io, seed, qty: float = 5, vendor: s
         headers=io,
         json={
             "supplier_id": supplier_id,
-            "items": [{"product_id": seed["p1"].id, "quantity": qty, "unit_price": 4}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": qty, "unit_price": 4}]},
     )
     assert created.status_code == 200, created.text
     po_id = created.json()["data"]["id"]
@@ -85,10 +84,8 @@ async def test_grn_batch_required_when_tracks_batches(client, db_session):
                     "po_item_id": po_item_id,
                     "received_qty": 5,
                     "accepted_qty": 5,
-                    "rejected_qty": 0,
-                }
-            ],
-        },
+                    "rejected_qty": 0}
+            ]},
     )
     assert missing.status_code == 400, missing.text
     assert "batch" in missing.text.lower()
@@ -125,10 +122,8 @@ async def test_grn_receive_creates_batch_and_echoes_on_serialize(client, db_sess
                     "rejected_qty": 0,
                     "batch_number": "LOT-GRN-1",
                     "manufacturing_date": mfg.isoformat(),
-                    "expiry_date": exp.isoformat(),
-                }
-            ],
-        },
+                    "expiry_date": exp.isoformat()}
+            ]},
     )
     assert posted.status_code == 200, posted.text
     body = posted.json()["data"]
@@ -177,10 +172,8 @@ async def test_grn_optional_batch_when_not_tracked(client, db_session):
                     "received_qty": 2,
                     "accepted_qty": 2,
                     "batch_number": "LOT-OPT-1",
-                    "expiry_date": (datetime.utcnow() + timedelta(days=30)).isoformat(),
-                }
-            ],
-        },
+                    "expiry_date": (datetime.utcnow() + timedelta(days=30)).isoformat()}
+            ]},
     )
     assert posted.status_code == 200, posted.text
     assert posted.json()["data"]["items"][0]["batch_number"] == "LOT-OPT-1"

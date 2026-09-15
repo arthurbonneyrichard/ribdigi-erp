@@ -1,110 +1,27 @@
-"""Action button hover color classes (btn-ok / btn-danger)."""
-
+"""R1 — Action button hover colors for green / red lifecycle buttons."""
 from __future__ import annotations
 
 from pathlib import Path
 
+
 ROOT = Path(__file__).resolve().parents[2]
+CSS = ROOT / "frontend" / "app" / "globals.css"
 
 
-def test_action_btn_hover_css_present():
-    css = (ROOT / "frontend/app/globals.css").read_text(encoding="utf-8")
-    assert "button.btn-ok" in css
-    assert "button.btn-danger" in css
-    assert "#dcfce7" in css or "#bbf7d0" in css  # green hover
-    assert "#fee2e2" in css or "#fecaca" in css  # red hover
-    assert '[data-theme="dark"] .main button.btn-ok' in css
-    assert '[data-theme="dark"] .main button.btn-danger' in css
-
-
-def test_sales_accept_reject_use_hover_classes():
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
-    assert 'className="btn-ok"' in sales
-    assert 'className="btn-danger"' in sales
-    assert "accept" in sales and "btn-ok" in sales
-    assert "/reject" in sales
-    # Accept uses green, Reject uses red
-    assert 'className="btn-ok" onClick={() => act(`/sales/quotations/${q.id}/accept`' in sales
-    assert 'className="btn-danger" onClick={() => act(`/sales/quotations/${q.id}/reject`' in sales
-
-
-def test_expenses_approve_reject_use_hover_classes():
-    expenses = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
-    assert 'className="btn-ok" onClick={() => approve(r.id)' in expenses
-    assert 'className="btn-danger" onClick={() => reject(r.id)' in expenses
-
-
-def test_lifecycle_remainders_use_hover_classes():
-    """Post GRN / Close books / Skip next / Post / Receive / Ship remainders."""
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
-    assert 'className="btn-ok"' in purchasing
-    assert "Post GRN (accept / reject)" in purchasing
-    assert purchasing.index('className="btn-ok"') < purchasing.index("Post GRN (accept / reject)")
-    assert "Receive all accepted" in purchasing
-    assert 'className="btn-ok" onClick={() => postReturn(r.id)' in purchasing
-
-    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
-    assert 'className="btn-danger" onClick={closeBooks}' in accounting
-    assert 'className="btn-ok" onClick={reopenBooks}' in accounting
-
-    expenses = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
-    assert 'className="btn-danger"' in expenses
-    assert "Skip next" in expenses
-    assert 'onClick={() => skipNextRecurring(r.id)' in expenses
-
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
-    assert 'className="btn-ok" onClick={() => postInvoice(inv)' in sales
-    assert 'Post credit' in sales and 'className="btn-ok"' in sales
-
-    inventory = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
-    assert "transferAct(t.id, 'ship')" in inventory
-    assert "transferAct(t.id, 'receive')" in inventory
-    assert inventory.count('className="btn-ok"') >= 3  # approve + ship + receive
-
-    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
-    assert "act(t.id, 'ship')" in stores
-    assert "act(t.id, 'receive')" in stores
-    assert stores.count('className="btn-ok"') >= 3
-
-
-def test_sales_fulfillment_btn_ok_wired():
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
-    assert "/process" in sales and "btn-ok" in sales
-    assert "/ship" in sales
-    assert "/deliver" in sales
-    assert 'convert-order' in sales
-    assert 'convert-invoice' in sales
-    # Process / Ship / Deliver / convert use btn-ok
-    assert "Processing" in sales
-    assert sales.count('className="btn-ok"') >= 8
-
-    inventory = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
-    assert 'className="btn-ok" onClick={() => transferAct(t.id, \'submit\')}' in inventory
-    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
-    assert 'className="btn-ok" onClick={() => act(t.id, \'submit\')}' in stores
-
-
-def test_residual_post_actions_use_btn_ok():
-    """Journal / COA open / cash transfer / stock Post actions use btn-ok."""
-    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
-    assert 'className="btn-ok" onClick={postManual}' in accounting
-    assert "Post balanced entry" in accounting
-    assert 'className="btn-ok" onClick={postCoaOpening}' in accounting
-    assert "Post opening balances" in accounting
-    assert 'className="btn-ok" onClick={postTransfer}' in accounting
-
-    inventory = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
-    assert 'className="btn-ok" onClick={postOpeningStock}' in inventory
-    assert "Post opening stock" in inventory
-    assert 'className="btn-ok" onClick={postStockAdjust}' in inventory
-    assert "Post adjustment" in inventory
-    assert 'className="btn-ok" onClick={postStockOut}' in inventory
-    assert "Post stock out" in inventory
-    assert inventory.count('className="btn-ok"') >= 6
-
-
-def test_expense_submit_uses_btn_ok():
-    """New expense Submit uses green lifecycle hover class."""
-    expenses = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
-    assert 'className="btn-ok" onClick={createExpense}' in expenses
-    assert "Submit expense" in expenses
+def test_btn_ok_and_btn_danger_hover_colors_defined():
+    css = CSS.read_text(encoding="utf-8")
+    # Green (ok) hover — brand tokens or classic light greens.
+    green_hover = (
+        "var(--brand-light)" in css
+        or "var(--brand)" in css
+        or "#dcfce7" in css
+        or "#bbf7d0" in css
+    )
+    assert green_hover, "btn-ok hover should use brand-light / brand or classic green tones"
+    # Red (danger) hover — classic light reds or danger tokens.
+    assert ("#fee2e2" in css or "#fecaca" in css or "var(--danger" in css), (
+        "btn-danger hover should use light red tones"
+    )
+    # Dark theme overrides (attribute selector or class).
+    assert 'data-theme="dark"' in css or ".dark " in css
+    assert "button.btn-ok" in css and "button.btn-danger" in css

@@ -10,14 +10,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.doc_numbers import next_pos_sale_number, next_pos_session_number  # re-exported for API callers
+from app.honesty import money_json, optional_honest_narrative
 
 
 def compute_expected_cash(opening_cash: float, cash_sales: float) -> float:
-    return round(float(opening_cash or 0) + float(cash_sales or 0), 2)
+    return money_json(round(money_json(opening_cash or 0) + money_json(cash_sales or 0), 2))
 
 
 def compute_variance(actual_cash: float, expected_cash: float) -> float:
-    return round(float(actual_cash) - float(expected_cash), 2)
+    return money_json(round(money_json(actual_cash) - money_json(expected_cash), 2))
 
 
 PAYMENT_METHODS = frozenset({"cash", "card", "wallet", "credit", "other"})
@@ -133,7 +134,7 @@ async def open_session(
 
         store = await stores_svc.require_active_store(db, tenant_id, store_id)
 
-    cash = round(float(opening_cash or 0), 2)
+    cash = money_json(round(money_json(opening_cash or 0), 2))
     if cash < 0:
         raise HTTPException(status_code=400, detail="opening_cash must be >= 0")
 
@@ -164,7 +165,7 @@ def resolve_sale_payments(
     payments: list[dict] | None,
 ) -> list[dict]:
     """Normalize single or split tenders; amounts must sum to sale total."""
-    sale_total = round(float(total or 0), 2)
+    sale_total = money_json(round(money_json(total or 0), 2))
     if sale_total < 0:
         raise HTTPException(status_code=400, detail="Sale total cannot be negative")
 
@@ -174,18 +175,20 @@ def resolve_sale_payments(
         normalized: list[dict] = []
         for raw in payments:
             method = normalize_payment_method(raw.get("payment_method"))
-            amount = round(float(raw.get("amount") or 0), 2)
+            amount = money_json(round(money_json(raw.get("amount") or 0), 2))
             if amount <= 0:
                 raise HTTPException(status_code=400, detail="Each payment amount must be > 0")
             normalized.append(
                 {
                     "payment_method": method,
                     "amount": amount,
-                    "reference": (raw.get("reference") or None),
+                    "reference": optional_honest_narrative(
+                        raw.get("reference"), label="payment reference", max_length=100
+                    ),
                     "liquid_account_id": raw.get("liquid_account_id") or None,
                 }
             )
-        paid = round(sum(p["amount"] for p in normalized), 2)
+        paid = money_json(round(sum(p["amount"] for p in normalized), 2))
         if abs(paid - sale_total) > 0.01:
             raise HTTPException(
                 status_code=400,
@@ -220,9 +223,11 @@ def primary_payment_method(payments: list[dict]) -> str:
 
 
 def credit_portion(payments: list[dict]) -> float:
-    return round(
-        sum(p["amount"] for p in payments if p["payment_method"] == "credit"),
-        2,
+    return money_json(
+        round(
+            sum(p["amount"] for p in payments if p["payment_method"] == "credit"),
+            2,
+        )
     )
 
 
@@ -237,21 +242,21 @@ async def apply_sale_to_session(
     payment_method: str,
     payments: list[dict] | None = None,
 ) -> None:
-    amount = round(float(total or 0), 2)
+    amount = money_json(round(money_json(total or 0), 2))
     tenders = payments or [
         {"payment_method": normalize_payment_method(payment_method), "amount": amount}
     ]
-    session.total_sales = round(float(session.total_sales or 0) + amount, 2)
+    session.total_sales = money_json(round(money_json(session.total_sales or 0) + amount, 2))
     session.sale_count = int(session.sale_count or 0) + 1
     for tender in tenders:
         method = normalize_payment_method(tender.get("payment_method"))
-        part = round(float(tender.get("amount") or 0), 2)
+        part = money_json(round(money_json(tender.get("amount") or 0), 2))
         if method == "cash":
-            session.cash_sales = round(float(session.cash_sales or 0) + part, 2)
+            session.cash_sales = money_json(round(money_json(session.cash_sales or 0) + part, 2))
         elif method == "card":
-            session.card_sales = round(float(session.card_sales or 0) + part, 2)
+            session.card_sales = money_json(round(money_json(session.card_sales or 0) + part, 2))
         else:
-            session.other_sales = round(float(session.other_sales or 0) + part, 2)
+            session.other_sales = money_json(round(money_json(session.other_sales or 0) + part, 2))
     session.expected_cash = compute_expected_cash(session.opening_cash, session.cash_sales)
 
 
@@ -283,7 +288,7 @@ def serialize_payment(row: m.PosPayment) -> dict:
         "id": row.id,
         "sale_id": row.sale_id,
         "payment_method": row.payment_method,
-        "amount": float(row.amount or 0),
+        "amount": money_json(row.amount),
         "reference": row.reference,
         "liquid_account_id": row.liquid_account_id,
         "created_at": row.created_at,
@@ -299,18 +304,20 @@ async def close_session(
     actual_cash: float,
     notes: str | None = None,
 ) -> m.PosSession:
+    # OpenAPI PosSessionCloseNotesValue → 422; service defense-in-depth → 400.
+    notes_s = optional_honest_narrative(notes, label="close notes")
     session = await get_session(db, tenant_id, session_id)
     if session.status != "open":
         raise HTTPException(status_code=409, detail="POS session is already closed")
 
     expected = compute_expected_cash(session.opening_cash, session.cash_sales)
-    actual = round(float(actual_cash), 2)
+    actual = money_json(round(money_json(actual_cash), 2))
     variance = compute_variance(actual, expected)
 
     session.expected_cash = expected
     session.actual_cash = actual
     session.variance = variance
-    session.notes = notes
+    session.notes = notes_s
     session.status = "closed"
     session.closed_at = datetime.utcnow()
 
@@ -340,15 +347,15 @@ async def drawer_summary(session: m.PosSession) -> dict:
         "session_id": session.id,
         "session_number": session.session_number,
         "status": session.status,
-        "opening_cash": float(session.opening_cash or 0),
-        "cash_sales": float(session.cash_sales or 0),
-        "card_sales": float(session.card_sales or 0),
-        "other_sales": float(session.other_sales or 0),
-        "total_sales": float(session.total_sales or 0),
+        "opening_cash": money_json(session.opening_cash),
+        "cash_sales": money_json(session.cash_sales),
+        "card_sales": money_json(session.card_sales),
+        "other_sales": money_json(session.other_sales),
+        "total_sales": money_json(session.total_sales),
         "sale_count": int(session.sale_count or 0),
         "expected_cash": expected,
-        "actual_cash": float(session.actual_cash) if session.actual_cash is not None else None,
-        "variance": float(session.variance) if session.variance is not None else None,
+        "actual_cash": money_json(session.actual_cash) if session.actual_cash is not None else None,
+        "variance": money_json(session.variance) if session.variance is not None else None,
     }
 
 
@@ -401,12 +408,12 @@ async def shift_report(db: AsyncSession, session: m.PosSession) -> dict:
     net_sum = 0.0
     for s in sales:
         payload = s.payload or {}
-        cart_disc = float(payload.get("discount_amount") or 0)
-        line_disc = float(payload.get("line_discounts") or 0)
-        disc = round(cart_disc + line_disc, 2)
-        subtotal = float(s.subtotal or 0)
-        tax = float(s.tax or 0)
-        total = float(s.total or 0)
+        cart_disc = money_json(payload.get("discount_amount") or 0)
+        line_disc = money_json(payload.get("line_discounts") or 0)
+        disc = money_json(round(cart_disc + line_disc, 2))
+        subtotal = money_json(s.subtotal or 0)
+        tax = money_json(s.tax or 0)
+        total = money_json(s.total or 0)
         subtotal_sum += subtotal
         tax_sum += tax
         discount_sum += disc
@@ -415,16 +422,16 @@ async def shift_report(db: AsyncSession, session: m.PosSession) -> dict:
             {
                 "id": s.id,
                 "reference": s.reference,
-                "total": total,
-                "tax": tax,
-                "subtotal": subtotal,
+                "total": money_json(total),
+                "tax": money_json(tax),
+                "subtotal": money_json(subtotal),
                 "status": s.status,
                 "payment_method": payload.get("payment_method", "cash"),
                 "payments": payload.get("payments") or [],
                 "customer_name": payload.get("customer_name"),
-                "discount_amount": cart_disc,
-                "line_discounts": line_disc,
-                "discounts": disc,
+                "discount_amount": money_json(cart_disc),
+                "line_discounts": money_json(line_disc),
+                "discounts": money_json(disc),
                 "created_at": s.created_at,
             }
         )
@@ -456,7 +463,7 @@ async def shift_report(db: AsyncSession, session: m.PosSession) -> dict:
             )
         if not include:
             continue
-        amount = float(ret.total_amount or 0)
+        amount = money_json(ret.total_amount or 0)
         return_total += amount
         return_rows.append(
             {
@@ -465,7 +472,7 @@ async def shift_report(db: AsyncSession, session: m.PosSession) -> dict:
                 "credit_note_number": ret.credit_note_number,
                 "status": ret.status,
                 "reason": ret.reason,
-                "total_amount": amount,
+                "total_amount": money_json(amount),
                 "sales_invoice_id": ret.sales_invoice_id,
                 "posted_at": ret.posted_at,
                 "created_at": ret.created_at,
@@ -474,13 +481,13 @@ async def shift_report(db: AsyncSession, session: m.PosSession) -> dict:
 
     summary = {
         "sale_count": len(sale_rows),
-        "subtotal": round(subtotal_sum, 2),
-        "tax": round(tax_sum, 2),
-        "discounts": round(discount_sum, 2),
-        "net_sales": round(net_sum, 2),
+        "subtotal": money_json(round(subtotal_sum, 2)),
+        "tax": money_json(round(tax_sum, 2)),
+        "discounts": money_json(round(discount_sum, 2)),
+        "net_sales": money_json(round(net_sum, 2)),
         "return_count": len(return_rows),
-        "return_total": round(return_total, 2),
-        "net_after_returns": round(net_sum - return_total, 2),
+        "return_total": money_json(round(return_total, 2)),
+        "net_after_returns": money_json(round(net_sum - return_total, 2)),
     }
 
     return {
@@ -489,9 +496,9 @@ async def shift_report(db: AsyncSession, session: m.PosSession) -> dict:
         "sales": sale_rows,
         "returns": return_rows,
         "payment_breakdown": {
-            "cash": float(session.cash_sales or 0),
-            "card": float(session.card_sales or 0),
-            "other": float(session.other_sales or 0),
-            "total": float(session.total_sales or 0),
+            "cash": money_json(session.cash_sales or 0),
+            "card": money_json(session.card_sales or 0),
+            "other": money_json(session.other_sales or 0),
+            "total": money_json(session.total_sales or 0),
         },
     }

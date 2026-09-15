@@ -19,7 +19,7 @@ async def _create_draft_pi(ac, headers, seed, *, name="Cancel PI Vendor"):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=headers,
-        json={"name": name, "kind": "supplier", "email": "cancel-pi@example.com"},
+        json={"name": name,  "email": "cancel-pi@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
     created = await ac.post(
@@ -32,11 +32,9 @@ async def _create_draft_pi(ac, headers, seed, *, name="Cancel PI Vendor"):
                     "product_id": seed["p1"].id,
                     "quantity": 2,
                     "unit_price": 10,
-                    "tax_rate": 0,
-                }
+                    "tax_rate": 0}
             ],
-            "notes": "pi cancel test",
-        },
+            "notes": "pi cancel test"},
     )
     assert created.status_code == 200, created.text
     return created.json()["data"]

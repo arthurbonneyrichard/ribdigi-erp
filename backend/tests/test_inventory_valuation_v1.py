@@ -70,4 +70,4 @@ async def test_standard_valuation_and_warehouse_filter(client, db_session):
         "/api/v1/reports/inventory/valuation?warehouse_id=does-not-exist",
         headers=headers,
     )
-    assert missing.status_code == 404
+    assert missing.status_code == 422

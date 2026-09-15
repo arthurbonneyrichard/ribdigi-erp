@@ -114,4 +114,5 @@ async def test_api_key_rejects_invalid_module(client):
         headers=headers,
         json={"name": "Bad", "permissions": {"not_a_module": ["read"]}},
     )
-    assert bad.status_code == 400
+    # OpenAPI TypedDict/forbid rejects unknown module keys before service 400.
+    assert bad.status_code == 422

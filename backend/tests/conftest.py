@@ -202,9 +202,20 @@ async def client(db_engine, seeded, _disable_rate_limit):
     app.dependency_overrides[get_db] = override_get_db
     previous_factory = getattr(app.state, "session_factory", None)
     app.state.session_factory = session_factory
+    # Job handlers import SessionLocal at module load and open their own sessions;
+    # point them at the in-memory test engine so CI without Docker DNS still works.
+    import app.db as db_mod
+    import app.jobs as jobs_mod
+
+    previous_db_session_local = db_mod.SessionLocal
+    previous_jobs_session_local = jobs_mod.SessionLocal
+    db_mod.SessionLocal = session_factory
+    jobs_mod.SessionLocal = session_factory
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac, seeded
+    db_mod.SessionLocal = previous_db_session_local
+    jobs_mod.SessionLocal = previous_jobs_session_local
     app.state.session_factory = previous_factory
     app.dependency_overrides.clear()
 

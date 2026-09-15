@@ -111,6 +111,9 @@ def test_render_branded_html_includes_chrome_and_escapes():
     assert "Welcome &lt;user&gt;" in html_body
     assert "<p>Hello <b>world</b></p>" in html_body
     assert "Sent via RIBDIGI ERP" in html_body
+    # Logo-aligned chrome (forest header + brand accent)
+    assert "background:#003d1f" in html_body
+    assert "border-bottom:3px solid #4ab012" in html_body
 
 
 @pytest.mark.asyncio
