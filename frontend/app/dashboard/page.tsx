@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
+import { useStoreContext } from '../../lib/storeContext';
 
 type Subscription = {
   status?: string;
@@ -47,6 +48,9 @@ type Dash = {
   top_products_by_quantity?: TopProduct[];
   links?: Record<string, string>;
   subscription?: Subscription;
+  scope?: string;
+  store_id?: string | null;
+  store_name?: string | null;
 };
 
 // Monochrome line icons for panel headings (same style as the sidebar).
@@ -278,15 +282,20 @@ function arc(fraction: number, radius: number) {
 }
 
 export default function Page() {
+  const { storeId: headerStoreId } = useStoreContext();
   const [d, setD] = useState<Dash>({});
   const [now, setNow] = useState<Date | null>(null);
   const [fullName, setFullName] = useState('');
 
   useEffect(() => {
     setNow(new Date());
-    api('/dashboard')
+    const qs = headerStoreId ? `?store_id=${encodeURIComponent(headerStoreId)}` : '';
+    api(`/dashboard${qs}`)
       .then((r) => setD(r.data || {}))
       .catch(() => {});
+  }, [headerStoreId]);
+
+  useEffect(() => {
     api('/me')
       .then((r) => setFullName(r.data?.full_name || ''))
       .catch(() => {});

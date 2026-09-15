@@ -2860,10 +2860,14 @@ async def deactivate_user(
 
 
 @api.get("/dashboard")
-async def dashboard(claims=Depends(require_permission("dashboard", "read")), db: AsyncSession = Depends(get_db)):
+async def dashboard(
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
+    claims=Depends(require_permission("dashboard", "read")),
+    db: AsyncSession = Depends(get_db),
+):
     from app.dashboard import build_dashboard
 
-    return env(await build_dashboard(db, claims["tenant_id"]))
+    return env(await build_dashboard(db, claims["tenant_id"], store_id=store_id))
 
 
 @api.get("/products")

@@ -1,80 +1,60 @@
-# Ribdigi Business ERP — Completion Status
+# ERP completion status (working tracker)
 
-**Date:** 2026-09-15  
-**Audience:** Product + engineering (Commercial MVP / SMB retail–wholesale)  
-**Related:** root `PRODUCTION_READINESS.md`, `docs/DEVELOPMENT_ROADMAP.md`, `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md`
+Living tracker for Commercial MVP ERP gaps. Update after each meaningful ship.
+Last updated: 2026-09-15 (dashboard store-scoped KPIs + accounting trial balance).
 
-> Roadmap checkboxes in `DEVELOPMENT_ROADMAP.md` lag the codebase. Prefer this document + live routes/APIs for “what ships.”
+## Overall
 
-## Honest completeness
+| Segment | Estimate | Notes |
+|---|---|---|
+| Core SMB retail/wholesale path (sell, buy, stock, cash, basic books) | **~88%** | Header store now scopes Dashboard KPIs + Inventory/Purchasing ops + Accounting P&L/TB |
+| Full documented ERP (MRP, HR, Open Banking, multi-company-under-tenant) | **~72%** | Large BR slices still missing by design for MVP |
 
-| Lens | Estimate |
-|------|----------|
-| **SMB retail / wholesale ERP** (multi-store inventory, POS, sales, purchasing, credit, basic GL, tax, expenses, reports, platform billing) | **~78–85%** of a shippable commercial MVP |
-| **Full “enterprise ERP”** (MRP, advanced WMS putaway, payroll/HRIS, native Open Banking, marketplace connectors, mobile apps) | **~55–65%** — large domains remain out of scope or Partial |
+MVP target is the SMB path, not every BR-21 / WMS / HR line.
 
-## Module inventory
+## Module snapshot
 
-| Domain | Status | Evidence (UI / API) | Notes |
-|--------|--------|---------------------|--------|
-| Auth / users / RBAC / 2FA / sessions | **Done** | `/security`, `/users`, auth routes | Passkeys + TOTP; session revoke |
-| Company / branding / SMTP / SMS | **Done** | `/company` | Logo, email/SMS settings |
-| Multi-store / branches / warehouses / departments | **Done** | `/stores`, `StoreSwitcher`, `StoreProvider` | Header store context exists |
-| Inventory catalog / stock / transfers / counts | **Done** (ops) / **Partial** (WMS) | `/inventory` | Strong SKU/stock UI; **no bin/putaway**; store context under-wired |
-| POS | **Done** | `/pos` | Sessions, tenders, receipts; USB/serial drawer soft |
-| Sales (QT / SO / SI / returns) | **Done** | `/sales` | Uses store context |
-| Purchasing (PR / PO / GRN / PI / returns) | **Done** (flows) / **Partial** (store) | `/purchasing` | APIs support `warehouse_id`; UI ignored header store |
-| Customers / suppliers / credit | **Done** | `/sales`, `/purchasing`, `/credit` | Aging, payments, FX packaging |
-| Accounting / journals / bank recon / cheques | **Done** | `/accounting` | P&amp;L had local store filter; not synced to header |
-| Expenses / recurring | **Done** | `/expenses` | Store-aware |
-| Tax | **Done** | `/tax` | Store-aware reports |
-| Reports / export / schedules | **Done** | `/reports` | Store-aware |
-| Dashboard | **Partial** | `/dashboard` | KPIs tenant-wide; no active-store filter |
-| Notifications | **Done** | `/notifications` + shell bell | |
-| Audit | **Done** | `/audit` | |
-| Backup | **Done** (logical) / **Partial** (DR) | `/backup` | Logical backup/restore; PITR/ops runbooks separate |
-| Integrations (API keys / webhooks) | **Done** | `/integrations` | |
-| AI assist | **Partial** | `/ai` | Rule/heuristic packaging; full LLM chat not “complete” |
-| Platform / packages / tenant admin | **Done** | `/platform/*` | Subscription + modules + store entitlement |
-| Jobs / Celery admin | **Done** | `/jobs` | |
-| Manufacturing / MRP / BOM | **Missing** | — | Document only; not MVP |
-| HR / payroll | **Missing** | — | Out of MVP |
-| Multi-bin / putaway / location hierarchy | **Missing** | — | Roadmap Remaining; schema not present |
-| Open Banking / Plaid | **Missing** | — | HTTP/mock bank feeds only |
-| FIFO / LIFO costing | **Partial** | Inventory valuation | Standard/cost path; advanced costing soft |
-| Mobile native apps | **Missing** | — | Responsive web only |
-| Marketplace / e‑commerce connectors | **Missing** | — | |
+| Area | Status | Gaps / notes |
+|---|---|---|
+| Auth / tenancy / RBAC | Done (MVP) | Shared-schema `tenant_id`; package modules |
+| Multi-store / warehouses | Done (MVP) | Entitlements; header store switcher |
+| Catalog / products | Done (MVP) | Actual/Selling price labels kept |
+| Inventory ops | Done (MVP) | Header store scopes stock-in/out/adjust/transfers/warehouse stock |
+| Purchasing | Done (MVP) | Header store scopes PR/PO warehouse defaults + lists |
+| Sales / POS | Done (MVP) | Store on documents; POS session store |
+| Credit AR/AP | Done (MVP) | Payments, aging |
+| Expenses | Done (MVP) | Categories, approval, recurring |
+| Accounting | Done (MVP) | COA, journals; **P&L + trial balance honor header store** |
+| Reports | Partial | Many filters; not every tab fully store-scoped |
+| Dashboard | **Done (MVP)** | **KPIs honor header store** (`GET /dashboard?store_id=`) |
+| Tax | Done (MVP) | Rates, filing GH |
+| Backup / audit / jobs | Done (MVP) | |
+| Integrations / webhooks | Done (MVP) | |
+| AI | Partial | Insights/docs; not full BR-21 chat |
+| WMS advanced (bins/putaway) | Missing | Beyond warehouse stock |
+| MRP / HR / Open Banking | Missing | Out of SMB MVP |
+| Multi-company-under-tenant | N/A | Company == Tenant |
 
-## Top gaps blocking “complete ERP” (business impact)
+## This session (2026-09-15) — Dashboard store-scoped KPIs
 
-1. **Header store context not applied on Inventory / Purchasing** — cashiers/managers switch Store in the shell, but stock and buy flows still default to first warehouse / no warehouse. Highest UX integrity fix for multi-store MVP. *(This session: address.)*
-2. **Dashboard ignores active store** — HQ vs branch view unclear for managers.
-3. **Accounting P&amp;L store filter desynced** from header switcher — confusing dual controls.
-4. **Inventory multi-bin / putaway** — blocks warehouse-grade WMS claims (large; document, don’t fake).
-5. **Costing methods (FIFO/LIFO)** — retail MVP often OK on standard cost; wholesale may need later.
-6. **AI / chat completeness** — assist exists; do not market as full BR-21 LLM suite.
-7. **Native bank Open Banking** — recon works with import/HTTP; not bank-grade connectivity.
-8. **Manufacturing / HR** — out of retail–wholesale MVP; epic later if product expands.
-9. **Cross-tenant isolation automated matrix** — security hardening Remaining (ops/QA).
-10. **USB/serial cash drawer** beyond TCP/browser — POS hardware soft gap.
+- **Backend:** `GET /dashboard` accepts optional `store_id`; `build_dashboard(..., store_id=)` scopes sales/purchases/expenses/stock/recent/trends/top products to that store (or its warehouses for stock). Party counts + subscription remain tenant-wide. Invalid store → 404.
+- **Frontend Dashboard:** `useStoreContext` → refetch `/dashboard?store_id=` when header store changes; banner when scoped.
+- **Accounting:** Trial balance query now includes header `store_id` (same as P&L); both reload when header store changes.
 
-## Recommended epic order
+Prior session: Inventory/Purchasing/Accounting P&L header-store wiring (`6d1bb09e43`).
 
-1. **Store-context consistency** (inventory, purchasing, dashboard, accounting) ← current
-2. Dashboard store-scoped KPIs
-3. Inventory valuation / costing honesty (document method; FIFO only if required)
-4. Isolation / DR test matrix (PRODUCTION_READINESS Remaining)
-5. Hardware drawer + receipt polish
-6. AI packaging honesty + optional LLM (flagged)
-7. Defer: MRP, payroll, multi-bin WMS, Open Banking, marketplaces
+## Top remaining gaps (next sessions)
 
-## This session
+1. **Expense OCR / AI document draft** confidence and edge cases (if still partial in UI)
+2. **Reports** — remaining tabs without store/warehouse filter parity
+3. **Multi-bin / putaway WMS** (if product wants it for MVP+)
+4. **FIFO/LIFO costing** honesty vs standard-only valuation
+5. **Industry COA packs** / MRP / HR / Open Banking (documented missing)
 
-- Authored this status document.
-- Wired **Inventory** and **Purchasing** to `useStoreContext` (warehouse defaults / filters + PO/GRN `warehouse_id`).
-- Synced **Accounting** P&amp;L store filter with header active store when unset.
-- Clarified **StoreSwitcher** help text for inventory/purchasing.
+## Definition of done (per gap)
 
-## Do not regress
-
-- Add Product price labels stay **Actual price** / **Selling price** (no “What you paid / sell at” helper copy).
+- API + tenant/RBAC + validation
+- UI wired (or honest “not in UI”)
+- Focused test or tsc where practical
+- This file updated
+- No junk commits; Actual/Selling labels unchanged

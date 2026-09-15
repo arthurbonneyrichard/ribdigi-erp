@@ -124,14 +124,23 @@ export default function Page() {
     return s ? `?${s}` : '';
   }
 
+  function trialQuery(asOf?: string) {
+    const params = new URLSearchParams();
+    if (asOf) params.set('as_of', asOf);
+    // Header store scopes trial balance when set (same as P&L fallback).
+    const storeTrim = headerStoreId.trim();
+    if (storeTrim) params.set('store_id', storeTrim);
+    const s = params.toString();
+    return s ? `?${s}` : '';
+  }
+
   async function loadPnl() {
     const p = await api(`/accounting/profit-loss${pnlQuery()}`);
     setPnl(p.data);
   }
 
   async function loadTrial() {
-    const qs = tbAsOf ? `?as_of=${encodeURIComponent(tbAsOf)}` : '';
-    const t = await api(`/accounting/trial-balance${qs}`);
+    const t = await api(`/accounting/trial-balance${trialQuery(tbAsOf)}`);
     setTrial(t.data);
   }
 
@@ -148,7 +157,7 @@ export default function Page() {
     const [a, j, t, p, liq, stmts, conns, xfers, openSt, st, br, per, settings] = await Promise.all([
       api('/accounting/accounts'),
       api('/accounting/journal-entries'),
-      api('/accounting/trial-balance'),
+      api(`/accounting/trial-balance${trialQuery()}`),
       api(`/accounting/profit-loss${pnlQuery()}`),
       api('/accounting/liquid-accounts'),
       api('/accounting/bank-statements'),
@@ -283,6 +292,18 @@ export default function Page() {
   useEffect(() => {
     refresh().catch((err) => setError(err.message));
   }, []);
+
+  useEffect(() => {
+    Promise.all([
+      api(`/accounting/profit-loss${pnlQuery()}`),
+      api(`/accounting/trial-balance${trialQuery(tbAsOf)}`),
+    ])
+      .then(([pl, tbRes]) => {
+        setPnl(pl.data);
+        setTrial(tbRes.data);
+      })
+      .catch((e: any) => setError(e.message));
+  }, [headerStoreId]);
 
   async function postManual() {
     setError('');
