@@ -4,10 +4,325 @@
 
 **Version:** 1.0.0  
 **Classification:** Internal — Product & Engineering  
-**Last Updated:** August 2026  
+**Last Updated:** September 2026  
 **Applies To:** RIBDIGI ERP MVP (Version 1.0)  
 **Total Phases:** 5  
 **Estimated Duration:** 24–28 Weeks
+
+---
+
+### Tip — continuum residual dump NONE (2026-09-15)
+
+**As of tip:** `1f7255beebd19d29cf46faf95763e9035d77b24e`
+Continuum residual dump **NONE** for `store_manager`: no safe SM-visible named
+leftover after scan of audit `details` re-dumps, personal/broadcast notification
+embeds, and omit-sibling surfaces. Credit-limit warning broadcasts
+(`entity_type=customer`) fail-closed for SM inbox; tenant SMTP audit host/from
+remain out of SM scope. Intentional ALLOWs unchanged (logo binary GET;
+`/auth/sessions` + `/notifications/settings`; ADR-005 Complete flag OFF).
+Continuum stays **PARTIAL**. Store-scoped RBAC Complete remains **MISSING**
+(known safe residual dump backlog empty; product ALLOW sign-off + staging soak
+still open). Offline / 7-day / go-live / paid billing Completes remain
+**MISSING**. Next CONTINUE: product ALLOW sign-off **or** live staging execution of
+`docs/adr005_staging_soak_checklist.md` + `docs/ADR005_STAGING_SOAK_EVIDENCE_TEMPLATE.md`
+(not dump spam; soak alone ≠ store-scoped Complete).
+
+---
+
+### Tip — notification expense approval threshold redact (2026-09-15)
+
+**As of tip:** `364bec08fdd95cb8bdc47790696ae637955b81a5`
+Expense-approval notification `message` company auto-approve threshold redact for
+`store_manager` (`exceeds approval threshold (N)` stripped on `GET /notifications`
++ export + mark-read/unread; `create_expense` notify source no longer embeds the
+number; audit `details.threshold` already redacted; `DEFAULT_L1_ROLES` includes
+`store_manager`; title / amount / level wording remain; admin keeps the
+parenthetical). Continuum stays **PARTIAL**. Store-scoped RBAC Complete
+remains **MISSING** (intentional ALLOWs + residual backlog + product sign-off +
+staging soak). Offline / 7-day / go-live / paid billing Completes remain
+**MISSING**. Next CONTINUE: residual continuum field-leak (named surface) or
+product ALLOW sign-off / staging soak docs.
+
+---
+
+### Tip — audit CLE invoice_total redact (2026-09-15)
+
+**As of tip:** `3bec132e07ca174b09cd42686dd5bc914926580c`
+Scoped audit list/export `details` CLE `invoice_total` redact for
+`store_manager` (`credit_limit_override` on `GET /audit-logs` + CSV;
+CREDIT_LIMIT_EXCEEDED 409 already redacts document-currency `invoice_total`;
+`invoice_number` / reason / `store_id` / `exceeded` remain; admin keeps
+`invoice_total`). Continuum stays **PARTIAL**. Store-scoped RBAC Complete
+remains **MISSING** (intentional ALLOWs + residual backlog + product sign-off +
+staging soak). Offline / 7-day / go-live / paid billing Completes remain
+**MISSING**. Next CONTINUE: residual continuum field-leak (named surface) or
+product ALLOW sign-off / staging soak docs.
+
+---
+
+### Tip — audit expense approval threshold redact (2026-09-15)
+
+**As of tip:** `bdec62fed75cf5ff8b759e3ee4225ce5125c5354`
+Scoped audit list/export `details` expense approval `threshold` redact for
+`store_manager` (`expense_submitted` / `expense_auto_approved` on
+`GET /audit-logs` + CSV; expense settings GET/PATCH/export already denied;
+amount / category / `approval_steps_required` / reason / `store_id` remain;
+admin keeps `threshold`). Tenant SMTP audit `smtp_host` / `smtp_from_email`
+verified **out of SM scope** (no `store_id`; not SM-authored). Continuum stays
+**PARTIAL**. Store-scoped RBAC Complete remains **MISSING** (intentional ALLOWs
++ residual backlog + product sign-off + staging soak). Offline / 7-day /
+go-live / paid billing Completes remain **MISSING**. Next CONTINUE: residual
+continuum field-leak (named surface) or product ALLOW sign-off / staging soak
+docs.
+
+---
+
+### Tip — audit store manager_id redact (2026-09-15)
+
+**As of tip:** `238614c638b8e0c51ef9662b3faf254d02f8821e`
+Scoped audit list/export `details` store manager_id redact for `store_manager`
+(`expected_manager_id` on `transfer_manager_override`; sibling `manager_id` /
+`from_store_manager_id` / `to_store_manager_id` on `GET /audit-logs` + CSV;
+store/WH list/export/patch + stock-transfer manager ids already redacted;
+transfer number / `store_id` / `transfer_action` / `store_code` remain; admin
+keeps manager ids). Continuum stays **PARTIAL**. Store-scoped RBAC Complete
+remains **MISSING** (intentional ALLOWs + residual backlog + product sign-off +
+staging soak). Offline / 7-day / go-live / paid billing Completes remain
+**MISSING**. Next CONTINUE: residual continuum field-leak (named surface) or
+product ALLOW sign-off / staging soak docs.
+
+---
+
+### Tip — audit attachment storage key redact (2026-09-15)
+
+**As of tip:** `e6bf2f71a58cf0f6bbc596e1da5b69f9aa16ac6d`
+Scoped audit list/export `details` attachment storage key redact for `store_manager`
+(`key` on `expense_attachment_upload` / `invoice_attachment_upload` /
+`journal_attachment_upload`; `storage_key` on cold archive on `GET /audit-logs` + CSV;
+expense/PI/journal `attachment_url` + upload `uploaded.key` already redacted;
+size / content_type / event_count remain; API-key `key_prefix` stays; admin keeps
+storage keys). Continuum stays **PARTIAL**. Store-scoped RBAC Complete remains
+**MISSING** (intentional ALLOWs + residual backlog + product sign-off + staging
+soak). Offline / 7-day / go-live / paid billing Completes remain **MISSING**.
+Next CONTINUE: residual continuum field-leak (named surface) or product ALLOW
+sign-off / staging soak docs.
+
+---
+
+### Tip — audit emailed_to redact (2026-09-15)
+
+**As of tip:** `511634ec0dbdf1507c86f9815c9679ccba7acfd8`
+Scoped audit list/export `details` send-recipient / `emailed_to` redact for `store_manager`
+(`to` on `invoice_sent` / `pos_receipt_sent`; nested `delivery.to` on `po_sent` on
+`GET /audit-logs` + CSV; document `emailed_to` already redacted; invoice/PO numbers /
+totals / `mode` / `channel` / `store_id` remain; plan/limit `from`/`to` without send
+`mode`/`channel` stay; admin keeps recipients). Continuum stays **PARTIAL**. Store-scoped
+RBAC Complete remains **MISSING** (intentional ALLOWs + residual backlog + product
+sign-off + staging soak). Offline / 7-day / go-live / paid billing Completes remain
+**MISSING**. Next CONTINUE: residual continuum field-leak (named surface) or product
+ALLOW sign-off / staging soak docs.
+
+---
+
+### Tip — audit department_id redact (2026-09-15)
+
+**As of tip:** `a60c412cbbff074915e5fbd15854a61a6f4ee768`
+Scoped audit list/export `details` `department_id` redact for `store_manager`
+(expense/recurring JSON already nulls `department_id`; departments list GET +
+assign/clear already denied; amounts / status / `store_id` remain; admin keeps
+`department_id`). Continuum stays **PARTIAL**. Store-scoped RBAC Complete remains
+**MISSING** (intentional ALLOWs + residual backlog + product sign-off + staging
+soak). Offline / 7-day / go-live / paid billing Completes remain **MISSING**.
+Next CONTINUE: residual continuum field-leak (named surface) or product ALLOW
+sign-off / staging soak docs.
+
+---
+
+### Tip — audit party ledger balance redact (2026-09-15)
+
+**As of tip:** `fa96911e87952d61dbbd63d9b3b0c85fefd17c43`
+Scoped audit list/export `details` party ledger balance redact for `store_manager`
+(`customer_balance` / `supplier_balance_before` / `supplier_balance_after` on
+`GET /audit-logs` + CSV; FX + CLE master already redacted; amounts /
+`invoice_number` / `store_id` remain; admin keeps party ledger fields).
+Continuum stays **PARTIAL**. Store-scoped RBAC Complete remains **MISSING**
+(intentional ALLOWs + residual backlog + product sign-off + staging soak).
+Offline / 7-day / go-live / paid billing Completes remain **MISSING**. Next
+CONTINUE: residual continuum field-leak (named surface) or product ALLOW
+sign-off / staging soak docs.
+
+---
+
+### Tip — audit CLE master redact (2026-09-15)
+
+**As of tip:** `d5656990a95dc33deeb8fd1e92b96c741fe282bb`
+Scoped audit list/export `details` CLE master redact for `store_manager`
+(`credit_limit` / `available` / `current_balance` / `projected_balance` /
+`additional_amount` on `GET /audit-logs` + CSV; FX keys already redacted;
+`invoice_number` / reason / amounts / `store_id` remain; admin keeps CLE
+master fields). Continuum stays **PARTIAL**. Store-scoped RBAC Complete remains
+**MISSING** (intentional ALLOWs + residual backlog + product sign-off + staging
+soak). Offline / 7-day / go-live / paid billing Completes remain **MISSING**.
+Next CONTINUE: residual continuum field-leak (named surface) or product ALLOW
+sign-off / staging soak docs.
+
+---
+
+### Tip — CLE currency redact (2026-09-15)
+
+**As of tip:** `86b7397bd62c38c5be9bb47fd3d33029791ad0fa`
+CREDIT_LIMIT_EXCEEDED 409 `currency` redact for `store_manager`
+(document FX / rate-table identity in `extra_details`; sales-invoice list/get
+already nulls `currency`; `invoice_total` / `invoice_total_base` /
+`additional_amount` / master credit fields already redacted; `exceeded` /
+`code` / `message` / `invoice_number` remain; admin keeps `currency`).
+Continuum stays **PARTIAL**. Store-scoped RBAC Complete remains **MISSING**
+(intentional ALLOWs + residual backlog + product sign-off + staging soak).
+Offline / 7-day / go-live / paid billing Completes remain **MISSING**. Next
+CONTINUE: residual continuum field-leak (named surface) or product ALLOW
+sign-off / staging soak docs.
+
+---
+
+### Tip — CLE additional_amount redact (2026-09-15)
+
+**As of tip:** `c44078e499dbc5028ead2550c3247b400b0beadf`
+CREDIT_LIMIT_EXCEEDED 409 `additional_amount` redact for `store_manager`
+(base settlement that recovers FX rate with scoped invoice `total_amount`;
+`invoice_total` / `invoice_total_base` / master credit fields already redacted;
+`exceeded` / `code` / `message` / `invoice_number` remain; admin keeps
+`additional_amount`). Continuum stays **PARTIAL**. Store-scoped RBAC Complete
+remains **MISSING** (intentional ALLOWs + residual backlog + product sign-off +
+staging soak). Offline / 7-day / go-live / paid billing Completes remain
+**MISSING**. Next CONTINUE: residual continuum field-leak (named surface) or
+product ALLOW sign-off / staging soak docs.
+
+---
+
+### Tip — audit details FX redact (2026-09-15)
+
+**As of tip:** `60c5e751410d0cd1e1c2778663ea7008830800cc`
+Scoped audit list/export `details` FX redact for `store_manager`
+(`currency` / `exchange_rate` / `total_base` / `invoice_total_base` /
+`balance_due_base` / `fx_gain_loss` / `settlement_base` on `GET /audit-logs`
++ CSV; amounts / invoice numbers / `store_id` remain). Invoice/payment/aging/CLE
+surfaces already redacted; admin keeps FX in details. Continuum stays
+**PARTIAL**. Store-scoped RBAC Complete remains **MISSING** (intentional ALLOWs
++ residual backlog + product sign-off + staging soak). Offline / 7-day /
+go-live / paid billing Completes remain **MISSING**. Next CONTINUE: residual
+continuum field-leak (named surface) or product ALLOW sign-off / staging soak
+docs.
+
+---
+
+### Tip — concurrent approval stress pack (2026-09-15)
+
+**As of tip:** `4911f37e0144e80d72b105f5308d09e7578872f7`
+Concurrent approval stress pack **Complete**: expense + purchase-request
+double-approve / approve-vs-reject / PR→PO double-convert races covered by
+`backend/tests/test_concurrent_approval_stress.py`. Process locks +
+`SELECT FOR UPDATE` + commit-before-release close the SQLite/API prefetch gap;
+PR convert now locks with `for_update`. Overall RBAC readiness remains
+**PARTIAL**. Store-scoped RBAC Complete remains **MISSING**. Offline / 7-day /
+go-live / paid billing Completes remain **MISSING**. Next CONTINUE: residual
+continuum field-leak (product-prioritized) or staging soak docs.
+
+---
+
+### Tip — living store-scope RBAC test matrix (2026-09-15)
+
+**As of tip:** `d61c79f194793d0bfdbe8e90546fa2fad19a170e`
+Living indexed store-scope matrix landed (`ops/mvp/store-scope-rbac-matrix.json`,
+`docs/STORE_SCOPED_RBAC_TEST_MATRIX.md`, `backend/tests/test_store_scope_rbac_matrix.py`,
+CI marker `store_scope`). Covers cross-store deny, membership-on soak, cashier
+fail-closed, manager union, intentional ALLOWs (logo GET / sessions /
+notification settings) + breadth index. Store-scoped RBAC Complete remains
+**MISSING** (residual continuum + product ALLOW sign-off + staging soak still
+open — matrix alone ≠ Complete). Elevation / break-glass MVP **Complete**; temp
+membership `expires_at` **Complete**; export/`view_cost` engine slice **Complete**;
+ADR-005 **Complete** (flag default OFF). Overall RBAC readiness **PARTIAL**.
+Offline / 7-day / go-live / paid billing Completes remain **MISSING**. Next
+CONTINUE: concurrent approval stress pack.
+
+---
+
+### Tip — elevation / break-glass MVP (2026-09-15)
+
+**As of tip:** `7150bf940ec39ca8ac8165d48600d98ce20d032d`
+Time-bounded RBAC elevation / break-glass MVP: required reason, grantor-subset
+permissions, audit on grant/revoke, ``expires_at`` auto-deny (≤24h), early revoke.
+Reuses membership expiry patterns; no RBAC rebuild. Elevation slice **Complete**.
+Temp membership ``expires_at`` **Complete** (with elevation). Overall RBAC readiness
+remains **PARTIAL**. Store-scoped RBAC Complete remains **MISSING**. Offline /
+7-day / go-live / paid billing Completes remain **MISSING**.
+
+---
+
+### Tip — export residual closed + temp membership expires_at (2026-09-15)
+
+**As of tip:** `7150bf940ec39ca8ac8165d48600d98ce20d032d`
+Closed residual admin/settings/catalog module `export` gates (role-gated admin
+dumps + caller-scoped session/passkey exports retained intentionally). First-class
+`export` / `view_cost` actions marked **Complete** for this engine slice (not
+overall RBAC Complete). Temp membership `expires_at` landed (scope exclusion +
+admin UI + tests) — elevation / break-glass later **Complete** (see tip above).
+ADR-005 remains **Complete** (flag default OFF). Overall RBAC readiness remains
+**PARTIAL**. Store-scoped RBAC Complete remains **MISSING**. Offline / 7-day /
+go-live / paid billing Completes remain **MISSING**.
+
+---
+
+### Tip — export / view_cost broaden + unified cost omit (2026-09-15)
+
+**As of tip:** `5d25a914b02afc6db5a57e22e31bdf062e97958c`
+Broadened first-class `export` gates across commerce/dashboard/ops/AI CSV
+surfaces; unified report / BI / AI / stock-count cost omit on
+`inventory:view_cost` / `business_insights:view_cost` (legacy fallback retained).
+Status remains **PARTIAL** (residual admin/settings/catalog export paths).
+ADR-005 remains **Complete** (flag default OFF). Overall RBAC readiness remains
+**PARTIAL**. Store-scoped RBAC Complete remains **MISSING**. Offline / 7-day /
+go-live / paid billing Completes remain **MISSING**.
+
+---
+
+### Tip — first-class export / view_cost RBAC actions (2026-09-15)
+
+**As of tip:** `5d25a914b02afc6db5a57e22e31bdf062e97958c`
+
+First-class `export` and `view_cost` actions landed in the RBAC engine
+(`ALLOWED_ACTIONS` + system role grants + dependency auto-`read`). Backend
+enforcement on key surfaces: product/variants/low-stock exports, sales invoice
+export, reports export; product catalog cost redact uses `inventory:view_cost`.
+ADR-005 remains **Complete** (flag default OFF). Overall RBAC readiness remains
+**PARTIAL**. Store-scoped RBAC Complete remains **MISSING** — see
+`docs/STORE_SCOPED_RBAC_COMPLETE_REMAINING.md`. Offline / 7-day / go-live / paid
+billing Completes remain **MISSING**.
+
+---
+
+### Tip — % approval limits + store-scoped RBAC remaining checklist (2026-09-15)
+
+**As of tip:** `5d25a914b02afc6db5a57e22e31bdf062e97958c`
+
+Percentage approval limits landed on expense/PR matrices (`min_percent` + expense
+category budget percent basis). ADR-005 remains **Complete** (flag default OFF).
+Overall RBAC readiness remains **PARTIAL**. Store-scoped RBAC Complete remains
+**MISSING** — remaining criteria in `docs/STORE_SCOPED_RBAC_COMPLETE_REMAINING.md`.
+Offline / 7-day / go-live / paid billing Completes remain **MISSING** (ops-blocked
+where noted). Do not resume continuum dump spam as the default CONTINUE path.
+
+---
+
+### Tip — RBAC approval hardening + ADR-005 Complete (2026-09-15)
+
+**As of tip:** `5d25a914b02afc6db5a57e22e31bdf062e97958c`
+
+ADR-005 attested **Complete** via automated flag-ON soak + POS store bind + honesty
+flags. `STORE_MEMBERSHIP_SCOPE_ENABLED` remains **false** by default (ops cutover;
+Complete ≠ prod default ON). RBAC approval hardening landed (owner lockout, grantor
+subset, permission deps, dangerous-permission warnings, concurrent approval
+`FOR UPDATE`) — overall RBAC readiness remains **PARTIAL**. Store-scoped RBAC /
+Offline / 7-day / go-live / paid billing Completes remain **MISSING**.
 
 ---
 

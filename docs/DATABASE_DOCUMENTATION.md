@@ -210,12 +210,18 @@ Application → SQLAlchemy Engine → PgBouncer (Connection Pool)
 
 ## 3. Tenant Isolation Strategy
 
-### 3.1 Schema-Per-Tenant Implementation
+> **SUPERSEDED / historical:** §§3.1–3.4 below describe a **schema-per-tenant**
+> design that was **not** implemented for MVP. Live isolation is shared-schema
+> `tenant_id` (+ `company_id`) application filters (`docs/ADR_001_TENANCY.md`).
+> Do not run `CREATE SCHEMA tenant_*` or dynamic `search_path` provisioning from
+> these samples.
 
-Each tenant receives a dedicated PostgreSQL schema with identical table structure.
+### 3.1 Schema-Per-Tenant Implementation (historical — not live)
+
+~~Each tenant receives a dedicated PostgreSQL schema with identical table structure.~~
 
 ```sql
--- Global tenant registry (public schema)
+-- Global tenant registry (public schema) — historical sample
 CREATE TABLE public.tenants (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     company_name VARCHAR(255) NOT NULL,
@@ -230,7 +236,7 @@ CREATE TABLE public.tenants (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Create tenant schema function
+-- Create tenant schema function — NOT used in MVP
 CREATE OR REPLACE FUNCTION create_tenant_schema(tenant_id UUID)
 RETURNS VOID AS $$
 BEGIN
@@ -239,10 +245,10 @@ END;
 $$ LANGUAGE plpgsql;
 ```
 
-### 3.2 Row-Level Security (RLS) — Optional Layer
+### 3.2 Row-Level Security (RLS) — Optional Layer (historical sample)
 
 ```sql
--- Enable RLS on a tenant table (defense in depth)
+-- Enable RLS on a tenant table (defense in depth) — historical schema-per-tenant example
 ALTER TABLE tenant_abc123.products ENABLE ROW LEVEL SECURITY;
 
 -- Create policy that restricts rows based on tenant context
@@ -253,7 +259,7 @@ CREATE POLICY tenant_isolation_policy ON tenant_abc123.products
 SET app.current_tenant = 'abc123';
 ```
 
-### 3.3 SQLAlchemy Dynamic Schema Selection
+### 3.3 SQLAlchemy Dynamic Schema Selection (historical — not live)
 
 ```python
 from sqlalchemy import create_engine, event
@@ -270,12 +276,12 @@ class TenantSession(Session):
 engine = create_engine("postgresql://user:pass@host/ribdigi_erp")
 ```
 
-### 3.4 Tenant Provisioning Flow
+### 3.4 Tenant Provisioning Flow (historical — not live)
 
 ```
 1. Tenant registered in public.tenants
-2. Schema tenant_{id} created via SQLAlchemy event
-3. Alembic migrations applied to new schema
+2. Schema tenant_{id} created via SQLAlchemy event  # NOT MVP
+3. Alembic migrations applied to new schema         # NOT MVP
 4. Default data seeded (roles, admin user, settings)
 5. AI models initialized for tenant
 6. Notification sent to tenant admin

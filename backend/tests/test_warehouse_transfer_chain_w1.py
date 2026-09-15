@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -13,8 +14,15 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _wh_qty(db, tenant_id: str, warehouse_id: str, product_id: str) -> float:
@@ -34,19 +42,20 @@ async def _wh_qty(db, tenant_id: str, warehouse_id: str, product_id: str) -> flo
 async def test_warehouse_stock_grid_and_transfer_ship_receive(client, db_session):
     """GET warehouse-stock + inventory stock-transfers create→ship→receive updates qty/movements."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
 
     product = m.Product(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="S17 W1 Transfer SKU",
         sku="S17-W1-XFER",
         cost_price=1,
         selling_price=2,
         stock_qty=0,
     )
-    wh_a = m.Warehouse(tenant_id=tenant_id, name="S17 W1 Source", code="S17W1A")
-    wh_b = m.Warehouse(tenant_id=tenant_id, name="S17 W1 Dest", code="S17W1B")
+    wh_a = m.Warehouse(tenant_id=tenant_id, company_id=seed["c1"].id, name="S17 W1 Source", code="S17W1A")
+    wh_b = m.Warehouse(tenant_id=tenant_id, company_id=seed["c1"].id, name="S17 W1 Dest", code="S17W1B")
     db_session.add_all([product, wh_a, wh_b])
     await db_session.commit()
     product_id, wh_a_id, wh_b_id = product.id, wh_a.id, wh_b.id
@@ -174,19 +183,20 @@ async def test_warehouse_stock_grid_and_transfer_ship_receive(client, db_session
 @pytest.mark.asyncio
 async def test_warehouse_transfer_insufficient_stock_no_movements(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
 
     product = m.Product(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="S17 W1 Short SKU",
         sku="S17-W1-SHORT",
         cost_price=1,
         selling_price=2,
         stock_qty=0,
     )
-    wh_a = m.Warehouse(tenant_id=tenant_id, name="S17 W1 Short A", code="S17W1SA")
-    wh_b = m.Warehouse(tenant_id=tenant_id, name="S17 W1 Short B", code="S17W1SB")
+    wh_a = m.Warehouse(tenant_id=tenant_id, company_id=seed["c1"].id, name="S17 W1 Short A", code="S17W1SA")
+    wh_b = m.Warehouse(tenant_id=tenant_id, company_id=seed["c1"].id, name="S17 W1 Short B", code="S17W1SB")
     db_session.add_all([product, wh_a, wh_b])
     await db_session.commit()
 

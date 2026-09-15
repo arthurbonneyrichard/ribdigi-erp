@@ -2,8 +2,15 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 /**
- * Stage 87 Z1 — console boundary hardening.
- * Uses `ribdigi_principal` cookie set at login (localStorage alone is not visible here).
+ * Stage 87 Z1 + SEC-M5 Phase D — console boundary.
+ *
+ * Phase D: do **not** trust the legacy JS-writable `ribdigi_principal` cookie
+ * as an auth or console boundary (it was UX-only and forgeable). Principal and
+ * console routing are enforced by authenticated `GET /me` in Shell /
+ * PlatformShell plus backend platform-vs-tenant checks.
+ *
+ * Middleware only clears a stale principal cookie when present so it cannot
+ * linger as a misleading signal.
  */
 const PUBLIC_PREFIXES = [
   '/',
@@ -12,36 +19,9 @@ const PUBLIC_PREFIXES = [
   '/verify-email',
 ];
 
-const TENANT_ERP_PREFIXES = [
-  '/dashboard',
-  '/company',
-  '/inventory',
-  '/sales',
-  '/pos',
-  '/purchasing',
-  '/expenses',
-  '/accounting',
-  '/credit',
-  '/tax',
-  '/stores',
-  '/reports',
-  '/business-insights',
-  '/notifications',
-  '/audit',
-  '/activity',
-  '/backup',
-  '/ai',
-  '/users',
-  '/admin',
-];
-
 function isPublic(path: string): boolean {
   if (path === '/') return true;
   return PUBLIC_PREFIXES.some((p) => p !== '/' && (path === p || path.startsWith(`${p}/`)));
-}
-
-function isTenantErp(path: string): boolean {
-  return TENANT_ERP_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`));
 }
 
 export function middleware(request: NextRequest) {
@@ -49,22 +29,17 @@ export function middleware(request: NextRequest) {
   if (isPublic(path) || path.startsWith('/_next') || path.startsWith('/api')) {
     return NextResponse.next();
   }
-  // Shared security surface for MFA enrollment (both principals)
-  if (path === '/security' || path.startsWith('/security/')) {
-    return NextResponse.next();
-  }
 
-  const principal = request.cookies.get('ribdigi_principal')?.value || '';
-  if (principal === 'platform') {
-    if (isTenantErp(path)) {
-      return NextResponse.redirect(new URL('/platform/dashboard', request.url));
-    }
-  } else if (principal === 'tenant') {
-    if (path === '/platform' || path.startsWith('/platform/')) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
+  const res = NextResponse.next();
+  if (request.cookies.has('ribdigi_principal')) {
+    res.cookies.set({
+      name: 'ribdigi_principal',
+      value: '',
+      path: '/',
+      maxAge: 0,
+    });
   }
-  return NextResponse.next();
+  return res;
 }
 
 export const config = {

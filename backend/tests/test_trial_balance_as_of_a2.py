@@ -18,9 +18,9 @@ async def _super(ac, seed):
     )
 
 
-async def _post_dated(db, *, tenant_id, user_id, when: datetime, **kwargs):
+async def _post_dated(db, *, tenant_id, user_id, when: datetime, company_id=None, **kwargs):
     entry = await accounting_svc.post_journal_entry(
-        db, tenant_id=tenant_id, user_id=user_id, **kwargs
+        db, tenant_id=tenant_id, user_id=user_id, company_id=company_id, **kwargs
     )
     entry.entry_date = when
     await db.flush()
@@ -33,7 +33,7 @@ async def test_trial_balance_and_balance_sheet_as_of(client, db_session):
     headers = await _super(ac, seed)
     tenant_id = seed["t1"].id
     user_id = seed["admin1"].id
-    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+    await accounting_svc.ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
 
     # Early period: cash +100 / revenue +100
     await _post_dated(
@@ -47,6 +47,7 @@ async def test_trial_balance_and_balance_sheet_as_of(client, db_session):
             {"account_code": "4000", "debit": 0, "credit": 100},
         ],
         source_type="sales_invoice",
+        company_id=seed["c1"].id,
     )
     # Later period: opex 40 / cash -40 (should be excluded from March as_of)
     await _post_dated(
@@ -60,6 +61,7 @@ async def test_trial_balance_and_balance_sheet_as_of(client, db_session):
             {"account_code": "1000", "debit": 0, "credit": 40},
         ],
         source_type="expense",
+        company_id=seed["c1"].id,
     )
     await db_session.commit()
 

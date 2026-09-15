@@ -7,14 +7,22 @@ from pathlib import Path
 import pyotp
 import pytest
 
+from app import models as m
 from app.inventory import apply_stock_change
 from tests.conftest import auth_headers
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _admin(ac, seed):
@@ -28,7 +36,7 @@ async def _admin(ac, seed):
 async def test_purchases_api_br_18_5_jwt(client, db_session):
     """BR-18.5: suppliers, PR→PO, GRN, purchase invoice, supplier payment via JWT."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     admin = await _admin(ac, seed)
     product_id = seed["p1"].id
 
@@ -133,7 +141,7 @@ async def test_purchases_api_br_18_5_jwt(client, db_session):
 async def test_sales_api_br_18_4_thin_regression(client, db_session):
     """BR-18.4 thin JWT regression: quote→order→invoice→payment + POS sale."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     cashier = await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")
     product_id = seed["p1"].id
     tenant_id = seed["t1"].id
@@ -148,13 +156,31 @@ async def test_sales_api_br_18_4_thin_regression(client, db_session):
     )
     await db_session.commit()
 
+    store = m.Store(
+        tenant_id=tenant_id,
+        company_id=seed["c1"].id,
+        name="S19 Store",
+        code="S19-ST",
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tenant_id,
+        company_id=seed["c1"].id,
+        store_id=store.id,
+        name="S19 WH",
+        code="S19-WH",
+    )
+    db_session.add(wh)
+    await db_session.commit()
+
     customer = await ac.post(
         "/api/v1/customers",
         headers=headers,
         json={
             "name": "S19 S1 Customer",
-            "party_type": "registered",
-            "credit_limit": 2000,
         },
     )
     assert customer.status_code == 200, customer.text
@@ -165,6 +191,7 @@ async def test_sales_api_br_18_4_thin_regression(client, db_session):
         headers=headers,
         json={
             "customer_id": customer_id,
+            "store_id": store.id,
             "items": [{"product_id": product_id, "quantity": 2, "unit_price": 10}],
         },
     )

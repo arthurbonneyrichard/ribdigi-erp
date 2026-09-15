@@ -32,10 +32,22 @@ async def test_inter_store_ship_receive_requires_store_managers(client, db_sessi
     )
     db_session.add(mgr_to)
     await db_session.flush()
+    db_session.add(
+        m.UserCompanyMembership(
+            tenant_id=tenant_id,
+            user_id=mgr_to.id,
+            company_id=seed["c1"].id,
+            role="store_manager",
+            permissions=permissions_for_role("store_manager"),
+            is_active=True,
+        )
+    )
+    await db_session.flush()
 
     from_store = await create_store(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         code="SRC1",
         name="Source Store",
         manager_id=mgr_from.id,
@@ -43,6 +55,7 @@ async def test_inter_store_ship_receive_requires_store_managers(client, db_sessi
     to_store = await create_store(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         code="DST1",
         name="Dest Store",
         manager_id=mgr_to.id,
@@ -84,8 +97,24 @@ async def test_inter_store_ship_receive_requires_store_managers(client, db_sessi
     assert created.status_code == 200, created.text
     transfer_id = created.json()["data"]["id"]
     body = created.json()["data"]
-    assert body["from_store_manager_id"] == mgr_from.id
-    assert body["to_store_manager_id"] == mgr_to.id
+    # store_manager JSON redacts peer/self store-manager org assignment dump
+    assert body.get("from_store_manager_id") is None
+    assert body.get("to_store_manager_id") is None
+
+    admin_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    admin_get = await ac.get(
+        f"/api/v1/stores/transfers/{transfer_id}",
+        headers=admin_headers,
+    )
+    assert admin_get.status_code == 200, admin_get.text
+    admin_body = admin_get.json()["data"]
+    assert admin_body["from_store_manager_id"] == mgr_from.id
+    assert admin_body["to_store_manager_id"] == mgr_to.id
 
     # Destination manager cannot ship
     denied_ship = await ac.post(
@@ -136,10 +165,22 @@ async def test_admin_override_ships_with_audit(client, db_session):
     )
     db_session.add(mgr_to)
     await db_session.flush()
+    db_session.add(
+        m.UserCompanyMembership(
+            tenant_id=tenant_id,
+            user_id=mgr_to.id,
+            company_id=seed["c1"].id,
+            role="store_manager",
+            permissions=permissions_for_role("store_manager"),
+            is_active=True,
+        )
+    )
+    await db_session.flush()
 
     from_store = await create_store(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         code="SRC2",
         name="Source Store 2",
         manager_id=mgr_from.id,
@@ -147,6 +188,7 @@ async def test_admin_override_ships_with_audit(client, db_session):
     to_store = await create_store(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         code="DST2",
         name="Dest Store 2",
         manager_id=mgr_to.id,

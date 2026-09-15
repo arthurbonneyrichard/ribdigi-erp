@@ -29,6 +29,7 @@ async def test_orders_export_csv(client, db_session):
         [
             m.SalesOrder(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 order_number="SO-133-DRAFT",
                 customer_id=seed["party1"].id,
                 status="draft",
@@ -38,6 +39,7 @@ async def test_orders_export_csv(client, db_session):
             ),
             m.SalesOrder(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 order_number="SO-133-CONF",
                 customer_id=seed["party1"].id,
                 status="confirmed",

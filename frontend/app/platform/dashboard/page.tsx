@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import PlatformShell from '../../../components/PlatformShell';
 import { BarChart, DonutChart } from '../../../components/DashboardCharts';
-import { api } from '../../../lib/api';
+import { api, apiFetch } from '../../../lib/api';
 
 type Dash = {
   total_tenants?: number;
@@ -26,8 +26,6 @@ type Dash = {
   generated_at?: string;
 };
 
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-
 export default function PlatformDashboardPage() {
   const [d, setD] = useState<Dash>({});
   const [error, setError] = useState('');
@@ -46,14 +44,7 @@ export default function PlatformDashboardPage() {
     setError('');
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/platform/dashboard/export`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-          'X-Tenant-ID': tenant || '',
-        },
-      });
+      const res = await apiFetch(`/platform/dashboard/export`);
       if (!res.ok) throw new Error('Dashboard CSV export failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);

@@ -5,7 +5,7 @@
 **Register:** `ops/mvp/membership-remaining-gate.json`  
 **Related:** [MEMBERSHIP_BLOCKERS_MVP.md](MEMBERSHIP_BLOCKERS_MVP.md) · [MEMBERSHIP_PACK_POINTERS_MVP.md](MEMBERSHIP_PACK_POINTERS_MVP.md) · [ADR_005_USER_STORE_ASSIGNMENT.md](ADR_005_USER_STORE_ASSIGNMENT.md) · [STAGE_182_PLAN.md](STAGE_182_PLAN.md)
 
-Single index of user↔store membership remaining gates. Packaging only — **membership Complete remains MISSING.** Distinct from Stage 35 U1 / Stage 81 S1 packaging and Stage 181 billing remaining-gate index.
+Single index of user↔store membership remaining gates. Packaging only — **ADR-005 membership is now Complete** (see ADR_005 docs + soak); this Stage 182 index is historical packaging. Distinct from Stage 35 U1 / Stage 81 S1 packaging and Stage 181 billing remaining-gate index.
 
 ## Classification
 

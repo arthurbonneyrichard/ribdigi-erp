@@ -77,6 +77,7 @@ async def export_variants_csv(
     is_active: bool | None = None,
     active_only: bool = False,
     company_id: str | None = None,
+    omit_cost_price: bool = False,
 ) -> str:
     stmt = (
         select(m.ProductVariant, m.Product)
@@ -108,7 +109,7 @@ async def export_variants_csv(
                 "size": _cell(variant.size),
                 "color": _cell(variant.color),
                 "flavor": _cell(variant.flavor),
-                "cost_price": _cell(float(variant.cost_price or 0)),
+                "cost_price": "" if omit_cost_price else _cell(float(variant.cost_price or 0)),
                 "selling_price": _cell(float(variant.selling_price or 0)),
                 "stock_qty": _cell(float(variant.stock_qty or 0)),
                 "is_active": _cell(bool(variant.is_active)),
@@ -124,6 +125,7 @@ async def export_product_variants_csv(
     product_id: str,
     is_active: bool | None = None,
     active_only: bool = False,
+    omit_cost_price: bool = False,
 ) -> str:
     """Stage 156 V1 — path-scoped per-product variants CSV (distinct from Stage 124 roster)."""
     await catalog_svc.get_product(db, tenant_id, product_id)
@@ -133,6 +135,7 @@ async def export_product_variants_csv(
         product_id=product_id,
         is_active=is_active,
         active_only=active_only,
+        omit_cost_price=omit_cost_price,
     )
 
 

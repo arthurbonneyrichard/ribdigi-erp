@@ -34,7 +34,7 @@ async def _backdate_latest(db_session, tenant_id: str, when: datetime, *, action
 @pytest.mark.asyncio
 async def test_security_alerts_export_csv(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     now = datetime.utcnow()
     for i in range(6):
         await audit_svc.record_event(

@@ -1,32 +1,22 @@
-# ADR-005: User Store Assignment Deferred
+# ADR-005: User Store Assignment
 
-**Status:** Accepted  
-**Date:** 2026-08-09
-
-## Context
-
-BR-3.1 mentions branch/store assignment on users. Stage 1 already supports:
-
-- User → `branch_id` / `department_id` (org assignment + record scopes)
-- Store → `manager_id` (who manages a store)
-- Store → linked warehouse (inventory location)
-
-A dedicated User↔Store membership table (or `users.store_id`) would introduce a fourth org axis before Stage 1 scopes and reports need it.
+**Status:** Accepted — **Complete** (2026-09-15); flag default OFF (ops cutover)  
+**Date:** 2026-08-09  
+**Scaffold history:** [`ADR_005_MEMBERSHIP_SCAFFOLD.md`](ADR_005_MEMBERSHIP_SCAFFOLD.md)  
+**Cutover design:** [`ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md`](ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md)  
+**Ops checklist:** [`adr005_staging_soak_checklist.md`](adr005_staging_soak_checklist.md)
 
 ## Decision
 
-For Stage 1 / Commercial MVP:
-
-1. **No `users.store_id` / user–store membership API** in Stage 1.
-2. Store responsibility is modeled by **`stores.manager_id`** (and warehouse manager where set).
-3. Record scoping for users continues via **branch / department / own / all** (existing record_scope).
-4. POS/sales store context remains **session/document `store_id`**, not a permanent user home store.
-5. Multi-store user membership (one user assigned to many stores for scoped dashboards) is **post-Stage-1** if required.
+1. **`user_store_memberships`** is the assignment model (assign/list/revoke + `/me/store-memberships` + `/stores#memberships`).
+2. Default operational scope remains **`stores.manager_id`** while `STORE_MEMBERSHIP_SCOPE_ENABLED` is **false**.
+3. When flag ON: store_manager = **`manager_id` ∪ memberships**; cashiers fail-closed via `store_visibility_ids`.
+4. **ADR-005 Complete** = feature complete + automated flag-ON soak (SEC-M2 parallel). Complete ≠ production default ON.
+5. **Store-scoped RBAC Complete** remains **MISSING** (separate continuum claim).
+6. POS shift bind uses membership / Shell picker when scope is enabled (`posStoreBinding.ts`).
 
 ## Consequences
 
-- BR-3.1 “branch/store assignment” is PARTIAL: branch (and department) yes; dedicated store assignment deferred.
-- Avoids parallel permission stacks and FK complexity during Stage 1 freeze.
-- Store managers remain editable on Multi-Store (Stage 1 C8).
-
-See also Stage 182 membership remaining-gate index: [`MEMBERSHIP_REMAINING_GATE_MVP.md`](MEMBERSHIP_REMAINING_GATE_MVP.md) (membership remains deferred; not Complete).
+- BR-3.1 store assignment is Complete for membership + flag-gated scope wire.
+- Flag OFF in prod examples is intentional ops cutover — not unfinished feature.
+- Do not claim Offline Complete, 7-day VERIFIED, go-live, or paid billing Complete from this ADR.

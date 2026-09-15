@@ -65,6 +65,8 @@ async def update_purchase_invoice_draft(
     notes: str | None = None,
     invoice_date: datetime | None = None,
     due_date: datetime | None = None,
+    warehouse_id: str | None = None,
+    clear_warehouse: bool = False,
 ) -> m.PurchaseInvoice:
     inv = await purchasing_svc.get_purchase_invoice(db, tenant_id, invoice_id)
     if inv.status != "draft":
@@ -73,8 +75,9 @@ async def update_purchase_invoice_draft(
             detail=f"Only draft purchase invoices can be edited (status={inv.status})",
         )
     provided = any(
-        x is not None for x in (supplier_invoice_number, notes, invoice_date, due_date)
-    )
+        x is not None
+        for x in (supplier_invoice_number, notes, invoice_date, due_date, warehouse_id)
+    ) or clear_warehouse
     if not provided:
         raise HTTPException(status_code=400, detail="No invoice fields provided")
 
@@ -86,6 +89,17 @@ async def update_purchase_invoice_draft(
         inv.invoice_date = invoice_date
     if due_date is not None:
         inv.due_date = due_date
+    if clear_warehouse:
+        inv.warehouse_id = None
+    elif warehouse_id is not None:
+        wid = warehouse_id.strip() or None
+        if wid:
+            from app.inventory import get_warehouse
+
+            await get_warehouse(
+                db, tenant_id, wid, company_id=getattr(inv, "company_id", None)
+            )
+        inv.warehouse_id = wid
     inv.updated_at = datetime.utcnow()
     await db.flush()
     return inv

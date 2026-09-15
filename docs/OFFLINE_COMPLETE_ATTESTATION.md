@@ -1,19 +1,36 @@
 # Offline Complete Attestation — Stage 168 F1
 
 **Status:** PARTIAL — contract proofs only  
-**Date:** 2026-08-13  
-**Related:** [STAGE_168_FIDELITY.md](STAGE_168_FIDELITY.md), [ADR-342](ADR_342_STAGE168_OPEN.md), [ADR-343](ADR_343_STAGE168_FREEZE.md)
+**Date:** 2026-08-13 (amended 2026-09-15 — wipe poll engineering-ready label)  
+**Related:** [STAGE_168_FIDELITY.md](STAGE_168_FIDELITY.md), [ADR-342](ADR_342_STAGE168_OPEN.md), [ADR-343](ADR_343_STAGE168_FREEZE.md),
+[OFFLINE_WIPE_POLL_LOCAL_ALTERNATIVE.md](OFFLINE_WIPE_POLL_LOCAL_ALTERNATIVE.md),
+[OFFLINE_7DAY_EVIDENCE_TEMPLATE.md](OFFLINE_7DAY_EVIDENCE_TEMPLATE.md)
 
 ## Verdict
 
 | Claim | Status |
 |-------|--------|
 | Offline Complete (full browser E2E UX) | **MISSING** — not claimed |
+| Wipe poll-path **engineering-ready** (wipe→poll→ack; no FCM required) | **YES** — contracts + automated evidence; **not** Offline Complete |
+| Wipe / Web Push delivery | **PARTIAL** — browser FCM proof still required for push-delivery Complete |
+| 7-day physical VERIFIED | **MISSING** — operator matrix + evidence template not run |
 | SW static-cache contract (no `/api/v1/*`) | **COMPLETE** (W1 static proof) |
 | Offline sale → `/sync/push` flush path (API) | **COMPLETE** (F1 API proof) |
 | IndexedDB queue never stores tokens | **COMPLETE** (contract marker) |
 | Device revoke mid-queue honesty | **COMPLETE** (R1) |
 | `attestation_claimed` / go-live | **false** — unchanged |
+
+## Honesty labels (do not conflate)
+
+| Label | Means | Does **not** mean |
+|-------|--------|-------------------|
+| Engineering-ready (poll-path wipe) | API + client poll contracts proven without FCM | Offline Complete / push Complete / 7-day VERIFIED |
+| PARTIAL (wipe push) | Code + automated VAPID evidence landed; ops browser unchecked | push-delivery Complete |
+| MISSING (Offline Complete) | Product acceptance + browser E2E UX unfinished | — |
+| MISSING (7-day VERIFIED) | Physical endurance matrix not executed | — |
+
+Docs **do not** allow Offline Complete without browser E2E + product acceptance,
+even when poll-path engineering is ready. Keep Complete **MISSING**.
 
 ## Proven paths (Stage 168)
 
@@ -26,6 +43,8 @@
 - Headless/browser Playwright offline → online sale E2E in CI
 - Full Offline Complete product acceptance
 - Fabricated sync success or demo offline MRR
+- 7-day physical VERIFIED (see evidence template — operator only)
+- Wipe-via-push real-browser Complete (FCM; Cloud Agent blocked)
 
 ## Stage 178 G1 amendment
 

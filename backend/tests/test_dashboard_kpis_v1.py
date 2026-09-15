@@ -38,6 +38,7 @@ async def test_dashboard_kpis_alerts_and_charts_fidelity(client, db_session):
     db_session.add(
         m.Product(
             tenant_id=tid,
+        company_id=seed["c1"].id,
             name="V1 Low Stock Item",
             sku="V1-LOW",
             cost_price=1,
@@ -49,18 +50,21 @@ async def test_dashboard_kpis_alerts_and_charts_fidelity(client, db_session):
     db_session.add(
         m.ProductBatch(
             tenant_id=tid,
+            company_id=seed["c1"].id,
             product_id=product.id,
             batch_number="V1-BATCH",
             quantity=3,
             expiry_date=now + timedelta(days=10),
         )
     )
-    supplier = m.Party(tenant_id=tid, name="V1 Supplier", kind="supplier", credit_limit=0)
+    supplier = m.Party(tenant_id=tid,
+        company_id=seed["c1"].id, name="V1 Supplier", kind="supplier", credit_limit=0)
     db_session.add(supplier)
     db_session.add_all(
         [
             m.Transaction(
                 tenant_id=tid,
+                company_id=seed["c1"].id,
                 tx_type="pos_sale",
                 reference="V1-TODAY",
                 total=50,
@@ -71,6 +75,7 @@ async def test_dashboard_kpis_alerts_and_charts_fidelity(client, db_session):
             ),
             m.Transaction(
                 tenant_id=tid,
+                company_id=seed["c1"].id,
                 tx_type="pos_sale",
                 reference="V1-YDAY",
                 total=25,
@@ -81,6 +86,7 @@ async def test_dashboard_kpis_alerts_and_charts_fidelity(client, db_session):
             ),
             m.Transaction(
                 tenant_id=tid,
+                company_id=seed["c1"].id,
                 tx_type="pos_sale",
                 reference="V1-PRIOR-M",
                 total=40,
@@ -91,6 +97,7 @@ async def test_dashboard_kpis_alerts_and_charts_fidelity(client, db_session):
             ),
             m.Expense(
                 tenant_id=tid,
+                company_id=seed["c1"].id,
                 category="General",
                 amount=12,
                 description="V1 expense",
@@ -102,6 +109,7 @@ async def test_dashboard_kpis_alerts_and_charts_fidelity(client, db_session):
     )
     inv = m.SalesInvoice(
         tenant_id=tid,
+        company_id=seed["c1"].id,
         invoice_number="INV-V1-1",
         customer_id=seed["party1"].id,
         status="posted",

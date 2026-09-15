@@ -2,20 +2,28 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 
 from app import models as m
 from tests.conftest import auth_headers
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 @pytest.mark.asyncio
 async def test_pending_orders_and_return_summary(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     product_id = str(seed["p1"].id)
 
     supplier = await ac.post(
@@ -161,7 +169,7 @@ async def test_pending_orders_and_return_summary(client, db_session):
 @pytest.mark.asyncio
 async def test_purchase_report_depth_tenant_isolation(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     product_id = str(seed["p1"].id)
 
     supplier = await ac.post(

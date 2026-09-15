@@ -29,6 +29,7 @@ async def test_cheques_export_csv(client, db_session):
         [
             m.Cheque(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 direction="received",
                 status="pending",
                 cheque_number="CHQ-130-P",
@@ -39,6 +40,7 @@ async def test_cheques_export_csv(client, db_session):
             ),
             m.Cheque(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 direction="issued",
                 status="cleared",
                 cheque_number="CHQ-130-C",

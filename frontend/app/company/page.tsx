@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
-import { api, authHeaders } from '../../lib/api';
+import { api, apiFetch } from '../../lib/api';
+import { clearLoginSession } from '../../lib/authSession';
 import { formatDate } from '../../lib/format';
 import {
   clearOfflineAuthEnvelope,
   refreshOfflineAuthEnvelope,
 } from '../../lib/offlineAuthEnvelope';
 import { downloadOfflineRecoveryPack, setBoundOfflineDeviceId } from '../../lib/offlineQueue';
+import { processPendingRemoteWipeIfNeeded } from '../../lib/offlineRemoteWipe';
 import { getSelectedStoreId } from '../../lib/storeContext';
 import { getCompanyId, getWorkspaceKind } from '../../lib/workspaceContext';
 
@@ -80,6 +82,8 @@ export default function Page() {
   // Stage 163 V1 / S1 / Stage 165 R1 — offline devices + sync honesty + conflict resolve
   const [offlineDevices, setOfflineDevices] = useState<any[]>([]);
   const [syncStatus, setSyncStatus] = useState<any>(null);
+  const [offlineAlerts, setOfflineAlerts] = useState<any[]>([]);
+  const [offlineAlertSummary, setOfflineAlertSummary] = useState<any>(null);
   const [syncConflicts, setSyncConflicts] = useState<any[]>([]);
   const [deviceForm, setDeviceForm] = useState({ name: '', platform: 'web' });
   const [deviceBusy, setDeviceBusy] = useState(false);
@@ -88,18 +92,21 @@ export default function Page() {
     return localStorage.getItem('offline_device_id') || '';
   });
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-
   async function refreshOfflineSync() {
     try {
-      const [devicesRes, syncRes, conflictsRes] = await Promise.all([
+      const [devicesRes, syncRes, conflictsRes, alertsRes] = await Promise.all([
         api('/offline/devices').catch(() => null),
         api('/sync/status').catch(() => null),
         api('/sync/conflicts?status=open').catch(() => null),
+        api('/offline/alerts').catch(() => null),
       ]);
       if (devicesRes?.data) setOfflineDevices(devicesRes.data || []);
       if (syncRes?.data) setSyncStatus(syncRes.data);
       if (conflictsRes?.data) setSyncConflicts(conflictsRes.data || []);
+      if (alertsRes?.data) {
+        setOfflineAlerts(alertsRes.data.alerts || []);
+        setOfflineAlertSummary(alertsRes.data.summary || null);
+      }
     } catch {
       // Company admins only for devices; sync status is authenticated.
     }
@@ -115,9 +122,7 @@ export default function Page() {
         scope === 'company' && companyId
           ? `/companies/${companyId}/logo`
           : '/tenants/me/logo';
-      const res = await fetch(`${apiBase}${path}`, {
-        headers: authHeaders(),
-      });
+      const res = await apiFetch(`${path}`);
       if (!res.ok) {
         setLogoPreview(null);
         return;
@@ -146,9 +151,9 @@ export default function Page() {
           ? '?is_active=false'
           : '';
     const [r, e, s, me, st, br, dep, users] = await Promise.all([
-      api('/tenants/me'),
-      api('/settings/email'),
-      api('/settings/sms'),
+      api('/tenants/me').catch(() => ({ data: null })),
+      api('/settings/email').catch(() => ({ data: null })),
+      api('/settings/sms').catch(() => ({ data: null })),
       api('/me'),
       api('/settings/storage').catch(() => ({ data: null })),
       api(`/branches${branchQs}`).catch(() => ({ data: [] })),
@@ -301,8 +306,7 @@ export default function Page() {
       });
       setTenant(r.data);
       setMessage(r.message || 'Suspended');
-      localStorage.removeItem('token');
-      localStorage.removeItem('refresh_token');
+      clearLoginSession();
     } catch (err: any) {
       setError(err.message);
     }
@@ -393,11 +397,10 @@ export default function Page() {
                 brandingScope === 'company' && activeCompany?.id
                   ? `/companies/${activeCompany.id}/logo`
                   : '/tenants/me/logo';
-              const res = await fetch(`${apiBase}${path}`, {
+              const res = await apiFetch(`${path}`, {
                 method: 'POST',
-                headers: authHeaders(),
                 body: form,
-              });
+      });
               const body = await res.json().catch(() => ({}));
               if (!res.ok) throw new Error(body.detail?.message || body.detail || body.message || 'Upload failed');
               if (brandingScope === 'company') {
@@ -512,9 +515,79 @@ export default function Page() {
           ))}
         </select>
         <p className="muted" style={{ margin: 0, gridColumn: '1 / -1' }}>
-          Plan is commercial metadata only. Billing/payment for upgrades is deferred (see ADR-002);
-          changing plan does not charge a card or confirm payment.
+          Plan is commercial metadata only. Changing plan does not charge a card or confirm payment.
+          Paid billing is PARTIAL (ADR-002) — Complete remains MISSING.
         </p>
+        <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                setError('');
+                setMessage('');
+                const res = await api('/billing/portal-session', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    return_url:
+                      typeof window !== 'undefined' ? `${window.location.origin}/company` : undefined,
+                  }),
+                });
+                const data = res.data || {};
+                if (data.portal_url) {
+                  window.location.assign(data.portal_url);
+                  return;
+                }
+                // No portal_url without error should not happen when API is honest —
+                // surface status rather than inventing success.
+                setError(
+                  data.message ||
+                    `Billing portal unavailable (${data.status || 'unknown'}). Provider keys may be unset.`
+                );
+              } catch (err: any) {
+                setError(err.message || 'Billing portal request failed');
+              }
+            }}
+          >
+            Open billing portal
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                setError('');
+                setMessage('');
+                const origin = typeof window !== 'undefined' ? window.location.origin : '';
+                const res = await api('/billing/checkout-session', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    success_url: origin ? `${origin}/company?billing=checkout_return` : undefined,
+                    cancel_url: origin ? `${origin}/company?billing=checkout_cancel` : undefined,
+                    plan_code: tenant.plan_code && tenant.plan_code !== 'trial' ? tenant.plan_code : 'starter',
+                  }),
+                });
+                const data = res.data || {};
+                if (data.checkout_url) {
+                  window.location.assign(data.checkout_url);
+                  return;
+                }
+                setError(
+                  data.message ||
+                    `Billing checkout unavailable (${data.status || 'unknown'}). Provider keys may be unset.`
+                );
+              } catch (err: any) {
+                setError(err.message || 'Billing checkout request failed');
+              }
+            }}
+          >
+            Start checkout
+          </button>
+          <span className="muted">
+            Opens provider portal or Checkout Session when configured (`portal_url` /
+            `checkout_url`). Unconfigured returns a clear error — not payment success.
+            Checkout does not auto-upgrade plan. Paid billing Complete still MISSING
+            (ADR-002).
+          </span>
+        </div>
         <select
           value={tenant.industry || 'retail'}
           onChange={(e) => setTenant({ ...tenant, industry: e.target.value })}
@@ -663,10 +736,7 @@ export default function Page() {
                     // Stage 139 F1 — fiscal period status CSV
                     setError('');
                     try {
-                      const token = localStorage.getItem('token') || '';
-                      const res = await fetch(`${apiBase}/accounting/fiscal-period/export`, {
-                        headers: { Authorization: `Bearer ${token}` },
-                      });
+                      const res = await apiFetch(`/accounting/fiscal-period/export`);
                       if (!res.ok) {
                         setError(await res.text());
                         return;
@@ -722,10 +792,7 @@ export default function Page() {
               // Stage 143 P1 — company profile CSV
               setError('');
               try {
-                const token = localStorage.getItem('token') || '';
-                const res = await fetch(`${apiBase}/tenants/me/export`, {
-                  headers: { Authorization: `Bearer ${token}` },
-                });
+                const res = await apiFetch(`/tenants/me/export`);
                 if (!res.ok) {
                   setError(await res.text());
                   return;
@@ -818,13 +885,11 @@ export default function Page() {
             onClick={() => {
               // Stage 119 T1 — sample invoice preview (current select value)
               const tpl = encodeURIComponent(tenant.invoice_print_template || 'a4');
-              const token = localStorage.getItem('token');
-              const ten = localStorage.getItem('tenant');
-              const url = `${apiBase}/tenants/me/print-templates/preview?kind=invoice&format=html&template=${tpl}`;
+
               const w = window.open('', '_blank');
-              fetch(url, {
-                headers: authHeaders(),
-              })
+              apiFetch(
+                `/tenants/me/print-templates/preview?kind=invoice&format=html&template=${tpl}`,
+              )
                 .then(async (res) => {
                   if (!res.ok) throw new Error('Invoice preview failed');
                   return res.text();
@@ -848,13 +913,11 @@ export default function Page() {
             onClick={() => {
               // Stage 119 T1 — sample receipt preview
               const tpl = encodeURIComponent(tenant.receipt_print_template || 'thermal_80');
-              const token = localStorage.getItem('token');
-              const ten = localStorage.getItem('tenant');
-              const url = `${apiBase}/tenants/me/print-templates/preview?kind=receipt&format=html&template=${tpl}`;
+
               const w = window.open('', '_blank');
-              fetch(url, {
-                headers: authHeaders(),
-              })
+              apiFetch(
+                `/tenants/me/print-templates/preview?kind=receipt&format=html&template=${tpl}`,
+              )
                 .then(async (res) => {
                   if (!res.ok) throw new Error('Receipt preview failed');
                   return res.text();
@@ -986,11 +1049,14 @@ export default function Page() {
           <button
             type="button"
             onClick={async () => {
-              const token = localStorage.getItem('token') || '';
-              const res = await fetch(`${apiBase}/tenants/me/document-settings/export`, {
-                headers: { Authorization: `Bearer ${token}` },
-              });
+
+              const res = await apiFetch(`/tenants/me/document-settings/export`);
               if (!res.ok) {
+                // Soft-fail store_manager STORE_SCOPE_DENIED (company document dump).
+                if (res.status === 403) {
+                  setMessage('Document settings export requires a company administrator.');
+                  return;
+                }
                 setError(await res.text());
                 return;
               }
@@ -1012,8 +1078,10 @@ export default function Page() {
         <h2>Offline sync</h2>
         <p className="muted">
           Stage 168: register/bind devices for IndexedDB queue flush and offline catalog pull (4h TTL).
-          Revoking a device blocks flush and retains pending queue ops (not auto-applied). Conflict
-          accept_client never double-posts applied POS. Offline Complete remains deferred.
+          Revoke soft-locks the device (expires server auth envelope, blocks sync/rebind) and retains
+          pending queue ops (not auto-applied). Conflict accept_client never double-posts applied POS.
+          Remote wipe is PARTIAL (request → Web Push when configured → client clear IndexedDB →
+          ack; online poll fallback). Push-delivery Complete and Offline Complete remain deferred.
         </p>
         {syncStatus ? (
           <div
@@ -1035,6 +1103,52 @@ export default function Page() {
             </p>
           </div>
         ) : null}
+        {offlineAlerts.length > 0 ? (
+          <div
+            className="card"
+            style={{ marginBottom: 12, padding: 12, borderLeft: '4px solid #f59e0b' }}
+          >
+            <h3 style={{ marginTop: 0 }}>Owner offline alerts</h3>
+            <p className="muted" style={{ marginTop: 0 }}>
+              In-app list plus optional security-email notify for critical alerts. Wipe Web Push is
+              PARTIAL; Offline Complete remains deferred.
+              {offlineAlertSummary
+                ? ` · ${offlineAlertSummary.critical ?? 0} critical · ${offlineAlertSummary.warning ?? 0} warning`
+                : ''}
+            </p>
+            <ul style={{ marginBottom: 8, paddingLeft: 20 }}>
+              {offlineAlerts.map((a, idx) => (
+                <li key={`${a.code}-${a.device_id || idx}`}>
+                  <strong>{String(a.severity || 'info').toUpperCase()}</strong> — {a.message}
+                </li>
+              ))}
+            </ul>
+            {(offlineAlertSummary?.critical ?? 0) > 0 ? (
+              <button
+                type="button"
+                disabled={deviceBusy}
+                onClick={async () => {
+                  setError('');
+                  setDeviceBusy(true);
+                  try {
+                    const r = await api('/offline/alerts/notify', { method: 'POST' });
+                    setMessage(
+                      r.data?.message ||
+                        `Notified ${r.data?.notifications_created ?? 0} critical offline alert(s)`,
+                    );
+                    await refreshOfflineSync();
+                  } catch (err: any) {
+                    setError(err.message || 'Offline alert notify failed');
+                  } finally {
+                    setDeviceBusy(false);
+                  }
+                }}
+              >
+                Email critical alerts
+              </button>
+            ) : null}
+          </div>
+        ) : null}
         <div
           style={{
             marginBottom: 12,
@@ -1046,8 +1160,8 @@ export default function Page() {
           <h3 style={{ marginTop: 0 }}>Local recovery export</h3>
           <p className="muted" style={{ marginBottom: 8 }}>
             Download this browser&apos;s IndexedDB offline queue + device/envelope metadata as JSON.
-            Export never clears pending ops. No passwords or tokens are included. Owner alerts and
-            Offline Complete remain deferred.
+            Export never clears pending ops. No passwords or tokens are included. Soft lockdown
+            and critical email notify are PARTIAL; push and Offline Complete remain deferred.
           </p>
           <button
             type="button"
@@ -1267,8 +1381,35 @@ export default function Page() {
                                 user_id: me.data?.id || null,
                                 store_id: getSelectedStoreId() || null,
                               });
+                              let pushNote =
+                                'Web Push registration attempted when VAPID configured (PARTIAL).';
+                              try {
+                                const { registerOfflinePushSubscription } = await import(
+                                  '../../lib/offlinePush'
+                                );
+                                const push = await registerOfflinePushSubscription(d.id);
+                                if (push.registered) {
+                                  pushNote = push.rebound
+                                    ? 'Web Push subscription rebound to server (PARTIAL).'
+                                    : 'Web Push subscription registered (PARTIAL).';
+                                } else if (push.reason === 'vapid_unconfigured') {
+                                  pushNote =
+                                    'Web Push skipped — VAPID unconfigured (fail-closed; wipe poll remains).';
+                                } else if (push.reason === 'subscribe_timeout') {
+                                  pushNote =
+                                    'Web Push subscribe timed out (no FCM/push endpoint) — wipe poll remains source of truth.';
+                                } else if (push.reason === 'subscribe_failed') {
+                                  pushNote =
+                                    'Web Push subscribe failed — wipe poll remains source of truth.';
+                                } else if (push.reason === 'push_unsupported') {
+                                  pushNote =
+                                    'Web Push unsupported in this browser — wipe poll remains source of truth.';
+                                }
+                              } catch {
+                                /* push optional — wipe poll remains */
+                              }
                               setMessage(
-                                'Browser bound — 7-day offline auth envelope issued (renew online before expiry)',
+                                `Browser bound — 7-day offline auth envelope issued (renew online before expiry). ${pushNote}`,
                               );
                             } catch (err: any) {
                               setError(err.message || 'Device bind failed');
@@ -1297,9 +1438,9 @@ export default function Page() {
                               const pending = r.data?.pending_queue?.pending_total ?? 0;
                               setMessage(
                                 pending > 0
-                                  ? `Offline device revoked — ${pending} pending queue op(s) retained (not auto-applied; flush blocked)`
+                                  ? `Offline device soft-locked — envelope expired; ${pending} pending queue op(s) retained (flush blocked)`
                                   : r.data?.message ||
-                                      'Offline device revoked (soft revoke; no pending queue ops)',
+                                      'Offline device soft-locked (envelope expired; queue empty)',
                               );
                               await refreshOfflineSync();
                             } catch (err: any) {
@@ -1310,8 +1451,61 @@ export default function Page() {
                           }}
                         >
                           Revoke
+                        </button>{' '}
+                        <button
+                          type="button"
+                          disabled={deviceBusy}
+                          onClick={async () => {
+                            if (
+                              !window.confirm(
+                                'Queue remote IndexedDB wipe for this device? Soft lockdown applies. Web Push is PARTIAL when configured; Offline Complete remains deferred.',
+                              )
+                            ) {
+                              return;
+                            }
+                            setError('');
+                            setDeviceBusy(true);
+                            try {
+                              const r = await api(`/offline/devices/${d.id}/wipe`, {
+                                method: 'POST',
+                              });
+                              if (boundDeviceId === d.id) {
+                                await processPendingRemoteWipeIfNeeded(r.data);
+                                setBoundDeviceId('');
+                              }
+                              const push = r.data?.push_delivery;
+                              const pushStatus = push?.status
+                                ? ` Push delivery: ${push.status}` +
+                                  (push.attempt_count
+                                    ? ` (${push.attempt_count} attempt(s))`
+                                    : '') +
+                                  (push.subscription_revoked
+                                    ? '; subscription revoked (rebind needed)'
+                                    : '') +
+                                  '.'
+                                : '';
+                              setMessage(
+                                (r.data?.message ||
+                                  'Remote wipe queued (PARTIAL — Offline Complete deferred)') +
+                                  pushStatus,
+                              );
+                              await refreshOfflineSync();
+                            } catch (err: any) {
+                              setError(err.message || 'Remote wipe failed');
+                            } finally {
+                              setDeviceBusy(false);
+                            }
+                          }}
+                        >
+                          Remote wipe
                         </button>
                       </>
+                    )}
+                    {d.status === 'revoked' && d.wipe_status === 'pending' && (
+                      <span className="muted"> wipe pending</span>
+                    )}
+                    {d.wipe_status === 'acked' && (
+                      <span className="muted"> wipe acked</span>
                     )}
                   </td>
                 </tr>
@@ -1342,10 +1536,7 @@ export default function Page() {
                 // Stage 140 S1 — storage settings CSV (no S3 keys)
                 setError('');
                 try {
-                  const token = localStorage.getItem('token') || '';
-                  const res = await fetch(`${apiBase}/settings/storage/export`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                  });
+                  const res = await apiFetch(`/settings/storage/export`);
                   if (!res.ok) {
                     setError(await res.text());
                     return;
@@ -1382,10 +1573,7 @@ export default function Page() {
             // Stage 143 J1 — jobs catalog CSV
             setError('');
             try {
-              const token = localStorage.getItem('token') || '';
-              const res = await fetch(`${apiBase}/jobs/export`, {
-                headers: { Authorization: `Bearer ${token}` },
-              });
+              const res = await apiFetch(`/jobs/export`);
               if (!res.ok) {
                 setError(await res.text());
                 return;
@@ -1522,10 +1710,7 @@ export default function Page() {
                 onClick={async () => {
                   setError('');
                   try {
-                    const token = localStorage.getItem('token') || '';
-                    const res = await fetch(`${apiBase}/settings/email/export`, {
-                      headers: { Authorization: `Bearer ${token}` },
-                    });
+                    const res = await apiFetch(`/settings/email/export`);
                     if (!res.ok) {
                       setError(await res.text());
                       return;
@@ -1603,10 +1788,7 @@ export default function Page() {
               onClick={async () => {
                 setError('');
                 try {
-                  const token = localStorage.getItem('token') || '';
-                  const res = await fetch(`${apiBase}/settings/sms/export`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                  });
+                  const res = await apiFetch(`/settings/sms/export`);
                   if (!res.ok) {
                     setError(await res.text());
                     return;
@@ -1669,17 +1851,13 @@ export default function Page() {
               setError('');
               setMessage('');
               try {
-                const token = localStorage.getItem('token');
-                const tenant = localStorage.getItem('tenant');
                 const qs =
                   branchActiveFilter === 'true'
                     ? '?is_active=true'
                     : branchActiveFilter === 'false'
                       ? '?is_active=false'
                       : '';
-                const res = await fetch(`${apiBase}/branches/export${qs}`, {
-                  headers: authHeaders(),
-                });
+                const res = await apiFetch(`/branches/export${qs}`);
                 if (!res.ok) throw new Error('Branches export failed');
                 const blob = await res.blob();
                 const url = URL.createObjectURL(blob);
@@ -1728,17 +1906,13 @@ export default function Page() {
               setError('');
               setMessage('');
               try {
-                const token = localStorage.getItem('token');
-                const tenant = localStorage.getItem('tenant');
                 const qs =
                   deptActiveFilter === 'true'
                     ? '?is_active=true'
                     : deptActiveFilter === 'false'
                       ? '?is_active=false'
                       : '';
-                const res = await fetch(`${apiBase}/departments/export${qs}`, {
-                  headers: authHeaders(),
-                });
+                const res = await apiFetch(`/departments/export${qs}`);
                 if (!res.ok) throw new Error('Departments export failed');
                 const blob = await res.blob();
                 const url = URL.createObjectURL(blob);

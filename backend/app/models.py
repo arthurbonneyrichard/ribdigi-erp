@@ -182,6 +182,118 @@ class UserCompanyMembership(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class UserStoreMembership(Base):
+    """User ↔ Store membership assignment (ADR-005 Complete; flag default OFF).
+
+    Assignment rows only. Default operational store scope remains ``stores.manager_id``.
+    When ``STORE_MEMBERSHIP_SCOPE_ENABLED`` is true, store_manager ``managed_store_ids``
+    unions active membership store IDs (see ``docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md``).
+    Optional ``expires_at`` excludes the row from scope once past (temp access MVP).
+    Elevation / break-glass lives on ``RbacElevation`` (separate time-bounded
+    permission grants). Table presence alone is not store-scoped RBAC Complete;
+    ADR-005 Complete is flag-gated soak + assignment APIs.
+    """
+
+    __tablename__ = "user_store_memberships"
+    __table_args__ = (UniqueConstraint("tenant_id", "user_id", "store_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    company_id: Mapped[str] = mapped_column(ForeignKey("companies.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    store_id: Mapped[str] = mapped_column(ForeignKey("stores.id"), index=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Temp membership: null = no expiry; past UTC now ⇒ excluded from scope resolution.
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class RbacElevation(Base):
+    """Time-bounded elevated permission grant (break-glass MVP).
+
+    Reason required; ``expires_at`` required; past expiry or ``revoked_at`` ⇒
+    grant inactive (deny). Merged into effective permissions at claim resolution.
+    Does not claim overall RBAC Complete or store-scoped RBAC Complete.
+    """
+
+    __tablename__ = "rbac_elevations"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    permissions: Mapped[dict] = mapped_column(JSON, default=dict)
+    reason: Mapped[str] = mapped_column(Text)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    granted_by: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class TenantBillingCustomer(Base):
+    """Provider customer mapping (ADR-002 paid billing scaffold — Complete MISSING).
+
+    Local row only. Presence does not imply live checkout, charges, or MRR.
+    """
+
+    __tablename__ = "tenant_billing_customers"
+    __table_args__ = (UniqueConstraint("tenant_id", "provider"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    provider: Mapped[str] = mapped_column(String(40), default="stripe")
+    provider_customer_id: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    metadata_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class TenantBillingSubscription(Base):
+    """Provider subscription mirror (ADR-002 scaffold — not live subscriptions Complete).
+
+    Never treat a row as payment success. Entitlement gate flag default OFF.
+    """
+
+    __tablename__ = "tenant_billing_subscriptions"
+    __table_args__ = (UniqueConstraint("provider", "provider_subscription_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    billing_customer_id: Mapped[str | None] = mapped_column(
+        ForeignKey("tenant_billing_customers.id"), nullable=True, index=True
+    )
+    provider: Mapped[str] = mapped_column(String(40), default="stripe")
+    provider_subscription_id: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    plan_code: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    status: Mapped[str] = mapped_column(String(40), default="incomplete", index=True)
+    current_period_end: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    cancel_at_period_end: Mapped[bool] = mapped_column(Boolean, default=False)
+    raw_status: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    metadata_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class BillingWebhookEvent(Base):
+    """Inbound provider webhook inbox (idempotent stub — no fake payment success)."""
+
+    __tablename__ = "billing_webhook_events"
+    __table_args__ = (UniqueConstraint("provider", "provider_event_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    provider: Mapped[str] = mapped_column(String(40), default="stripe")
+    provider_event_id: Mapped[str] = mapped_column(String(120))
+    event_type: Mapped[str] = mapped_column(String(120), index=True)
+    tenant_id: Mapped[str | None] = mapped_column(ForeignKey("tenants.id"), nullable=True, index=True)
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    signature_valid: Mapped[bool] = mapped_column(Boolean, default=False)
+    processing_status: Mapped[str] = mapped_column(String(40), default="received", index=True)
+    processing_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
 
 class Branch(Base):
     """Tenant branch / region for org structure and record scopes."""
@@ -1514,6 +1626,7 @@ class SalesQuotation(Base):
     company_id: Mapped[str | None] = mapped_column(ForeignKey("companies.id"), nullable=True, index=True)
     quotation_number: Mapped[str] = mapped_column(String(50), index=True)
     customer_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
     status: Mapped[str] = mapped_column(String(30), default="draft", index=True)
     subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
@@ -1682,6 +1795,9 @@ class PurchaseInvoice(Base):
     supplier_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
     purchase_order_id: Mapped[str | None] = mapped_column(ForeignKey("purchase_orders.id"), nullable=True, index=True)
     goods_receipt_id: Mapped[str | None] = mapped_column(ForeignKey("goods_receipts.id"), nullable=True, index=True)
+    warehouse_id: Mapped[str | None] = mapped_column(
+        ForeignKey("warehouses.id"), nullable=True, index=True
+    )
     supplier_invoice_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
     status: Mapped[str] = mapped_column(String(30), default="draft", index=True)
     # draft -> unpaid -> partial/paid | cancelled; overdue derived when past due
@@ -1786,8 +1902,60 @@ class OfflineDevice(Base):
     offline_authorized_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     catalog_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
     app_version: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    # Remote IndexedDB wipe scaffold — Offline Complete still MISSING; wipe push PARTIAL.
+    wipe_requested_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    wipe_requested_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    wipe_acked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    wipe_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class OfflinePushSubscription(Base):
+    """Web Push subscription bound to an offline device (wipe delivery PARTIAL).
+
+    Does not claim Offline Complete or push-delivery Complete.
+    """
+
+    __tablename__ = "offline_push_subscriptions"
+    __table_args__ = (UniqueConstraint("tenant_id", "device_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    device_id: Mapped[str] = mapped_column(
+        ForeignKey("offline_devices.id"), index=True
+    )
+    endpoint: Mapped[str] = mapped_column(String(2000))
+    p256dh: Mapped[str] = mapped_column(String(255))
+    auth: Mapped[str] = mapped_column(String(255))
+    user_agent: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    last_success_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class OfflinePushDelivery(Base):
+    """Outbound Web Push attempt log (remote_wipe etc.). Honesty: PARTIAL only."""
+
+    __tablename__ = "offline_push_deliveries"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    device_id: Mapped[str] = mapped_column(
+        ForeignKey("offline_devices.id"), index=True
+    )
+    subscription_id: Mapped[str | None] = mapped_column(
+        ForeignKey("offline_push_subscriptions.id"), nullable=True, index=True
+    )
+    event_type: Mapped[str] = mapped_column(String(40), index=True)
+    payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(40), default="pending", index=True)
+    attempt_count: Mapped[int] = mapped_column(Integer, default=0)
+    response_status: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class SyncQueueItem(Base):

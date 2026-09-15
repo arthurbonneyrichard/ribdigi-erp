@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
-import { api } from '../../lib/api';
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+import { api, apiFetch } from '../../lib/api';
 
 type Prediction = {
   product_id: string;
@@ -230,21 +228,11 @@ export default function Page() {
       return;
     }
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
       const form = new FormData();
       form.append('file', docFile);
-      const res = await fetch(
-        `${apiBase}/ai/documents/analyze?document_type=${encodeURIComponent(docType)}`,
-        {
+      const res = await apiFetch(`/ai/documents/analyze?document_type=${encodeURIComponent(docType)}`, {
           method: 'POST',
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-          },
-          body: form,
-        },
-      );
+          body: form },);
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
         throw new Error(body.detail?.message || body.detail || body.message || 'Analyze failed');
@@ -264,21 +252,11 @@ export default function Page() {
       return;
     }
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
       const form = new FormData();
       form.append('file', docFile);
-      const res = await fetch(
-        `${apiBase}/ai/documents/analyze/export?document_type=${encodeURIComponent(docType)}`,
-        {
+      const res = await apiFetch(`/ai/documents/analyze/export?document_type=${encodeURIComponent(docType)}`, {
           method: 'POST',
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-          },
-          body: form,
-        },
-      );
+          body: form },);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.detail || body.message || 'Document analyze export failed');
@@ -394,14 +372,7 @@ export default function Page() {
   async function downloadAiCsv(path: string, filename: string) {
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}${path}`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
-      });
+      const res = await apiFetch(`${path}`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.detail || body.message || `${filename} export failed`);

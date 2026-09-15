@@ -11,10 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import models as m
 
 
-def serialize_account(account: m.Account) -> dict:
+def serialize_account(account: m.Account, *, balance: float | None = None) -> dict:
     from app.accounting import serialize_coa_account
 
-    return serialize_coa_account(account)
+    return serialize_coa_account(account, balance=balance)
 
 
 def serialize_line(line: m.BankStatementLine) -> dict:
@@ -302,8 +302,13 @@ async def unmatched_book_lines(
     account_id: str,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
+    store_ids: list[str] | None = None,
 ) -> list[dict]:
-    """Journal lines on the liquid account not already matched on any statement."""
+    """Journal lines on the liquid account not already matched on any statement.
+
+    When ``store_ids`` is set (store_manager scope), only journal lines from those
+    stores are included (null-store fail-closed).
+    """
     matched_ids = {
         mid
         for mid in (
@@ -346,6 +351,11 @@ async def unmatched_book_lines(
         q = q.where(m.JournalEntry.entry_date >= from_date)
     if to_date:
         q = q.where(m.JournalEntry.entry_date <= to_date)
+    if store_ids is not None:
+        if store_ids:
+            q = q.where(m.JournalEntry.store_id.in_(store_ids))
+        else:
+            q = q.where(m.JournalEntry.id.is_(None))
 
     out: list[dict] = []
     for line, entry in (await db.execute(q)).all():
@@ -377,6 +387,7 @@ async def match_line(
     tenant_id: str,
     line_id: str,
     journal_line_id: str,
+    store_ids: list[str] | None = None,
 ) -> m.BankStatementLine:
     line = (
         await db.execute(
@@ -414,6 +425,23 @@ async def match_line(
     )
     if jl.account_id != stmt.account_id:
         raise HTTPException(status_code=400, detail="Journal line is not on this bank/cash account")
+
+    if store_ids is not None:
+        from app.dashboard_scope import assert_store_in_manager_scope
+
+        entry = (
+            await db.execute(
+                select(m.JournalEntry).where(
+                    m.JournalEntry.id == jl.journal_entry_id,
+                    m.JournalEntry.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not entry:
+            raise HTTPException(status_code=404, detail="Journal entry not found")
+        assert_store_in_manager_scope(
+            store_ids, getattr(entry, "store_id", None), allow_unset=False
+        )
 
     already = (
         await db.execute(
@@ -554,6 +582,7 @@ async def auto_match_suggestions(
     tenant_id: str,
     statement_id: str,
     date_window_days: int = 7,
+    store_ids: list[str] | None = None,
 ) -> list[dict]:
     """Suggest bank↔book matches with confidence (does not persist).
 
@@ -564,7 +593,9 @@ async def auto_match_suggestions(
     """
     stmt = await get_statement(db, tenant_id, statement_id)
     lines = await list_statement_lines(db, tenant_id, statement_id)
-    book = await unmatched_book_lines(db, tenant_id=tenant_id, account_id=stmt.account_id)
+    book = await unmatched_book_lines(
+        db, tenant_id=tenant_id, account_id=stmt.account_id, store_ids=store_ids
+    )
     used: set[str] = set()
     suggestions: list[dict] = []
 
@@ -660,6 +691,7 @@ async def apply_auto_matches(
     min_confidence: str = "high",
     date_window_days: int = 7,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
     """Persist suggestions at or above min_confidence (high > medium > low)."""
     await get_statement(db, tenant_id, statement_id, company_id=company_id)
@@ -670,6 +702,7 @@ async def apply_auto_matches(
         tenant_id=tenant_id,
         statement_id=statement_id,
         date_window_days=date_window_days,
+        store_ids=store_ids,
     )
     applied: list[dict] = []
     skipped: list[dict] = []
@@ -684,6 +717,7 @@ async def apply_auto_matches(
                 tenant_id=tenant_id,
                 line_id=sug["statement_line_id"],
                 journal_line_id=sug["journal_line_id"],
+                store_ids=store_ids,
             )
             applied.append(
                 {
@@ -804,6 +838,7 @@ async def create_clearing_group(
     journal_line_ids: list[str],
     notes: str | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
     """Match N bank lines to M book lines when signed totals are equal."""
     stmt = await get_statement(db, tenant_id, statement_id, company_id=company_id)
@@ -819,7 +854,11 @@ async def create_clearing_group(
         )
     if len(bank_ids) == 1 and len(book_ids) == 1:
         line = await match_line(
-            db, tenant_id=tenant_id, line_id=bank_ids[0], journal_line_id=book_ids[0]
+            db,
+            tenant_id=tenant_id,
+            line_id=bank_ids[0],
+            journal_line_id=book_ids[0],
+            store_ids=store_ids,
         )
         return {
             "mode": "single",
@@ -866,6 +905,22 @@ async def create_clearing_group(
         )
         if jl.account_id != stmt.account_id:
             raise HTTPException(status_code=400, detail="Journal line is not on this bank/cash account")
+        if store_ids is not None:
+            from app.dashboard_scope import assert_store_in_manager_scope
+
+            entry = (
+                await db.execute(
+                    select(m.JournalEntry).where(
+                        m.JournalEntry.id == jl.journal_entry_id,
+                        m.JournalEntry.tenant_id == tenant_id,
+                    )
+                )
+            ).scalar_one_or_none()
+            if not entry:
+                raise HTTPException(status_code=404, detail="Journal entry not found")
+            assert_store_in_manager_scope(
+                store_ids, getattr(entry, "store_id", None), allow_unset=False
+            )
         already = (
             await db.execute(
                 select(m.BankStatementLine.id).where(

@@ -6,6 +6,12 @@
 
 This is the **operator go-live checklist** for a commercial MVP launch. It is **not** a claim that deferred infra (hosted Grafana/PagerDuty, vendor pen test, certified 1000-VU soak, live GHA→prod cutover) is Complete. K8s/WAL/PgBouncer packaging are Complete (MVP) under Stages 26–27 with honest Remaining.
 
+**Commercial residual honesty pack:** for FIXED vs PARTIAL vs MISSING on Offline /
+ADR-005 / paid billing / security flags and the exact staging soak steps, use
+[`GO_LIVE_READINESS_CHECKLIST.md`](GO_LIVE_READINESS_CHECKLIST.md). That pack does
+**not** claim Offline Complete, 7-day VERIFIED, go-live, paid billing Complete,
+ADR-005 Complete, or store-scoped RBAC Complete.
+
 Use this list before promoting a staging build to production. Check items only when verified in the target environment — never on demo data or fake success.
 
 ## 1. Configuration & secrets
@@ -134,7 +140,7 @@ Operator env verification. Automated BR-1/3/4 proofs: Stage 21 T1/I1/U1/V1/N1 (`
 - [x] Stage 22 fidelity sync (D1: `test_stage22_fidelity_d1.py`, `docs/STAGE_22_FIDELITY.md` — BR-9–12 + finance readiness + USER_MANUAL / API / launch)
 - [x] Stage 22 exit + freeze (H22x: `test_stage22_exit_h22x.py`, ADR-050)
 - [x] Stage 23 Reports Dimension & Commercial MVP Gate Fidelity (closed: `docs/STAGE_23_PLAN.md`, ADR-052) — F1–D1 / H23x complete
-- [x] Financial report dimension filters (Stage 23 F1: `test_financial_report_filters_f1.py` — balance sheet / P&L / cash-flow `store_id` + `branch_id`)
+- [x] Financial report dimension filters (Stage 23 F1 / ADR-051: `test_financial_report_filters_f1.py` — balance sheet / P&L / cash-flow `store_id` + `branch_id`)
 - [x] Financial comparative fidelity (Stage 23 C1: `test_financial_comparative_c1.py` — P&L / cash-flow / BS `compare=true` prior period + change_pct)
 - [x] Isolation matrix residual (Stage 23 I1: `test_isolation_matrix_i1.py` — liquid accounts/transfers, expense categories/recurring, report dimensions, mismatched header)
 - [x] Commercial MVP gate closure (Stage 23 G1: `test_mvp_gate_closure_g1.py` — isolation/lifecycle/expenses/accounting/tax/reports Complete MVP; Remaining deferred-only)

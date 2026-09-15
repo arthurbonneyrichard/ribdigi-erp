@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import Shell from '../../../components/Shell';
-import { api } from '../../../lib/api';
+import { api, apiFetch } from '../../../lib/api';
 
 type RoleRow = {
   role: string;
@@ -127,15 +127,7 @@ export default function AdminPermissionsPage() {
     setError('');
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-      const res = await fetch(`${apiBase}/roles/permissions/export?active_only=false`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-          'X-Tenant-ID': tenant || '',
-        },
-      });
+      const res = await apiFetch(`/roles/permissions/export?active_only=false`);
       if (!res.ok) throw new Error('Permissions matrix CSV export failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -229,13 +221,15 @@ export default function AdminPermissionsPage() {
                     <th>read</th>
                     <th>write</th>
                     <th>approve</th>
+                    <th>export</th>
+                    <th>view_cost</th>
                   </tr>
                 </thead>
                 <tbody>
                   {MODULES.map((mod) => (
                     <tr key={mod}>
                       <td>{mod}</td>
-                      {(['read', 'write', 'approve'] as const).map((action) => (
+                      {(['read', 'write', 'approve', 'export', 'view_cost'] as const).map((action) => (
                         <td key={action}>
                           <input
                             type="checkbox"
@@ -285,6 +279,32 @@ export default function AdminPermissionsPage() {
       {canWrite && editRole && (
         <div className="card" style={{ marginTop: 24 }}>
           <h2 style={{ fontSize: 18 }}>Permission matrix · {editRole}</h2>
+          <p className="muted" style={{ marginBottom: 12 }}>
+            Write/approve/export/view_cost always includes read on save. Grants beyond your own
+            permissions are rejected by the API. High-risk modules (users, backup, accounting,
+            credit, …) show warnings below.
+          </p>
+          {(() => {
+            const dangerous = Object.keys(matrix).filter((m) =>
+              [
+                'users',
+                'backup',
+                'audit',
+                'accounting',
+                'credit',
+                'security',
+                'companies',
+                'subscription',
+              ].includes(m)
+            );
+            if (!dangerous.length) return null;
+            return (
+              <p style={{ color: '#92400e', background: '#fffbeb', padding: 12, marginBottom: 12 }}>
+                Dangerous permissions selected: {dangerous.join(', ')}. Confirm least privilege
+                before saving.
+              </p>
+            );
+          })()}
           <select
             value={matrixScope}
             onChange={(e) => setMatrixScope(e.target.value)}
@@ -302,13 +322,15 @@ export default function AdminPermissionsPage() {
                 <th>read</th>
                 <th>write</th>
                 <th>approve</th>
+                <th>export</th>
+                <th>view_cost</th>
               </tr>
             </thead>
             <tbody>
               {MODULES.map((mod) => (
                 <tr key={mod}>
                   <td>{mod}</td>
-                  {(['read', 'write', 'approve'] as const).map((action) => (
+                  {(['read', 'write', 'approve', 'export', 'view_cost'] as const).map((action) => (
                     <td key={action}>
                       <input
                         type="checkbox"

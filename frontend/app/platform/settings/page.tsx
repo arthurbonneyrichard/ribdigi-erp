@@ -2,10 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import PlatformShell from '../../../components/PlatformShell';
-import { api } from '../../../lib/api';
+import { api, apiFetch } from '../../../lib/api';
 import { downloadPlatformEvidence } from '../../../lib/platformEvidence';
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 export default function PlatformSettingsPage() {
   const [companyName, setCompanyName] = useState('');
@@ -83,14 +81,7 @@ export default function PlatformSettingsPage() {
     setError('');
     setMsg('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/platform/settings/export`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
-      });
+      const res = await apiFetch(`/platform/settings/export`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.detail || body.message || 'Settings export failed');

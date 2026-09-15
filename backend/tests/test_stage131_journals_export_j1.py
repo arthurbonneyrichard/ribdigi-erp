@@ -29,6 +29,7 @@ async def test_journals_export_csv(client, db_session):
         [
             m.JournalEntry(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 entry_number="JE-131-POSTED",
                 description="Stage131 posted",
                 status="posted",
@@ -37,6 +38,7 @@ async def test_journals_export_csv(client, db_session):
             ),
             m.JournalEntry(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 entry_number="JE-131-UNPOSTED",
                 description="Stage131 unposted",
                 status="unposted",

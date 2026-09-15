@@ -1,0 +1,34 @@
+{
+  "title": "Commercial tip migrations 2026-08-23",
+  "doc": "docs/COMMERCIAL_DEPLOY_MIGRATIONS_2026-08-23.md",
+  "production_cutover_claimed": false,
+  "go_live_claimed": false,
+  "migrations": [
+    {
+      "revision": "20260823_0106",
+      "purpose": "offline_devices auth envelope",
+      "required_before": ["offline device bind", "sync envelope validation"]
+    },
+    {
+      "revision": "20260823_0107",
+      "purpose": "tenants.max_companies_override",
+      "required_before": ["platform company-entitlement"]
+    },
+    {
+      "revision": "20260823_0108",
+      "purpose": "tenants.max_users_override",
+      "required_before": ["user limit enforcement", "platform user-entitlement"]
+    },
+    {
+      "revision": "20260823_0109",
+      "purpose": "purchase_invoices.warehouse_id",
+      "required_before": ["store-manager manual purchase invoices"]
+    }
+  ],
+  "apply_order": ["20260823_0106", "20260823_0107", "20260823_0108", "20260823_0109"],
+  "operator_checklist": [
+    "alembic upgrade through 0109 on staging/prod before cutover",
+    "smoke bind + company/user entitlement patches + PI warehouse create",
+    "do not claim go-live from this file alone"
+  ]
+}

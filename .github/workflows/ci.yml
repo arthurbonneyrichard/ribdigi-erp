@@ -9,9 +9,11 @@ jobs:
         with: {python-version: "3.11"}
       - run: pip install -r backend/requirements.txt
       - run: python -m compileall backend/app backend/scripts
-      # Stage 18 C1 — explicit security/isolation marker pass (subset), then full suite
-      - name: Pytest security and isolation markers
-        run: cd backend && PYTHONPATH=. pytest -q -m "security or isolation"
+      # Stage 18 C1 — explicit security/isolation/store_scope marker pass (subset), then full suite
+      - name: Pytest security, isolation, and store_scope markers
+        run: cd backend && PYTHONPATH=. pytest -q -m "security or isolation or store_scope"
+      - name: Pytest living store-scope RBAC matrix
+        run: cd backend && PYTHONPATH=. pytest -q tests/test_store_scope_rbac_matrix.py
       - name: Pytest full suite
         run: cd backend && PYTHONPATH=. pytest -q
   frontend:

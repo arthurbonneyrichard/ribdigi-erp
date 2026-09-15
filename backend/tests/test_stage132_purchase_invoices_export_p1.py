@@ -26,7 +26,11 @@ async def test_purchase_invoices_export_csv(client, db_session):
     headers = await _super(ac, seed)
 
     supplier = m.Party(
-        tenant_id=seed["t1"].id, name="Stage132 Supplier", kind="supplier", credit_limit=0
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        name="Stage132 Supplier",
+        kind="supplier",
+        credit_limit=0,
     )
     db_session.add(supplier)
     await db_session.flush()
@@ -35,6 +39,7 @@ async def test_purchase_invoices_export_csv(client, db_session):
         [
             m.PurchaseInvoice(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 invoice_number="PINV-132-DRAFT",
                 supplier_id=supplier.id,
                 status="draft",
@@ -44,6 +49,7 @@ async def test_purchase_invoices_export_csv(client, db_session):
             ),
             m.PurchaseInvoice(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 invoice_number="PINV-132-UNPAID",
                 supplier_id=supplier.id,
                 status="unpaid",

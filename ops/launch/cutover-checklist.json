@@ -30,6 +30,13 @@
       "maps_to": []
     },
     {
+      "id": "3b",
+      "title": "Commercial tip Alembic: upgrade through 20260823_0106→0107→0108 before offline bind / entitlement overrides (docs/COMMERCIAL_DEPLOY_MIGRATIONS_2026-08-23.md)",
+      "class": "operator_required",
+      "maps_to": ["1", "2"],
+      "checklist": "ops/launch/commercial-tip-migrations.json"
+    },
+    {
       "id": "4",
       "title": "Smoke: HTTPS /api/v1/health and /health/ready; login + RBAC spot-check",
       "class": "operator_required",

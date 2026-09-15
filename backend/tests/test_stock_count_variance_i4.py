@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -18,7 +19,9 @@ async def _complete_count_with_variance(ac, db_session, seed):
     await db_session.commit()
 
     store = await create_store(
-        db_session, tenant_id=seed["t1"].id, name="Var Report Store", code="VRS"
+        db_session, tenant_id=seed["t1"].id, name="Var Report Store", code="VRS",
+        company_id=seed["c1"].id,
+        manager_id=seed["mgr1"].id,
     )
     await db_session.flush()
     wh = (
@@ -40,7 +43,13 @@ async def _complete_count_with_variance(ac, db_session, seed):
     )
     await db_session.commit()
 
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+
+    headers = await auth_headers(
+
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+
+    )
     created = await ac.post(
         "/api/v1/inventory/stock-counts",
         headers=headers,
@@ -72,7 +81,7 @@ async def test_variance_report_csv_pdf_and_json(client, db_session):
 
     draft_block = await ac.get(
         f"/api/v1/inventory/stock-counts/{count_id}/variance-report?format=csv",
-        headers=await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha"),
+        headers=headers,
     )
     # already completed — CSV should succeed
     assert draft_block.status_code == 200, draft_block.text
@@ -117,7 +126,9 @@ async def test_variance_report_requires_completed(client, db_session):
     product.stock_qty = 0
     await db_session.commit()
     store = await create_store(
-        db_session, tenant_id=seed["t1"].id, name="Draft Var Store", code="DVS"
+        db_session, tenant_id=seed["t1"].id, name="Draft Var Store", code="DVS",
+        company_id=seed["c1"].id,
+        manager_id=seed["mgr1"].id,
     )
     await db_session.flush()
     wh = (
@@ -138,7 +149,10 @@ async def test_variance_report_requires_completed(client, db_session):
         warehouse_id=wh.id,
     )
     await db_session.commit()
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     created = await ac.post(
         "/api/v1/inventory/stock-counts",
         headers=headers,

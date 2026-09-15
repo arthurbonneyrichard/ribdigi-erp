@@ -136,34 +136,39 @@ async def resolve_user_permissions(db: AsyncSession, user: m.User) -> dict:
     """Resolve effective permissions with optional Redis/app-cache (Stage 7 C2).
 
     Soft-fails when cache is disabled or Redis is down (same pattern as P2).
+    Active RBAC elevations are overlaid after cache so expiry is always live.
     """
     from app.cache import app_cache
+    from app import rbac_elevations as elev_svc
 
     key = app_cache.permissions_key(user.tenant_id, user.id)
     cached = await app_cache.get_json(key)
     if isinstance(cached, dict):
-        return cached
-
-    if isinstance(user.permissions, dict) and user.permissions:
-        perms = dict(user.permissions)
-    elif user.role in VALID_ROLES:
-        perms = permissions_for_role(user.role)
+        perms = cached
     else:
-        from app import roles as roles_svc
+        if isinstance(user.permissions, dict) and user.permissions:
+            perms = dict(user.permissions)
+        elif user.role in VALID_ROLES:
+            perms = permissions_for_role(user.role)
+        else:
+            from app import roles as roles_svc
 
-        try:
-            perms = await roles_svc.permissions_for_assignment(
-                db, user.tenant_id, user.role
-            )
-        except Exception:
+            try:
+                perms = await roles_svc.permissions_for_assignment(
+                    db, user.tenant_id, user.role
+                )
+            except Exception:
+                perms = {}
+
+        if not isinstance(perms, dict):
             perms = {}
+        await app_cache.set_json(
+            key, perms, ttl_seconds=int(settings.CACHE_PERMISSIONS_TTL_SECONDS)
+        )
 
-    if not isinstance(perms, dict):
-        perms = {}
-    await app_cache.set_json(
-        key, perms, ttl_seconds=int(settings.CACHE_PERMISSIONS_TTL_SECONDS)
+    return await elev_svc.overlay_active_elevations(
+        db, tenant_id=user.tenant_id, user_id=user.id, base=perms
     )
-    return perms
 
 
 async def current_claims(
@@ -195,10 +200,20 @@ async def current_claims(
         request.state.company_id = claims.get("company_id")
         return claims
 
-    if not creds:
+    # Dual-mode (SEC-M2 foundation): Bearer preferred; httpOnly cookie when flag enabled.
+    from app import session_cookies as cookie_svc
+
+    raw_token = (creds.credentials if creds else "") or ""
+    auth_via_cookie = False
+    if not raw_token and cookie_svc.cookies_enabled():
+        raw_token = cookie_svc.access_token_from_request(request) or ""
+        auth_via_cookie = bool(raw_token)
+    if not raw_token:
         raise HTTPException(status_code=401, detail="Authentication required")
+    if auth_via_cookie:
+        cookie_svc.assert_csrf_for_cookie_auth(request)
     try:
-        data = jwt.decode(creds.credentials, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        data = jwt.decode(raw_token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
     except JWTError as exc:
         raise HTTPException(status_code=401, detail="Invalid or expired token") from exc
 
@@ -214,18 +229,24 @@ async def current_claims(
         raise HTTPException(status_code=403, detail="Cross-tenant access denied")
 
     jti = data.get("jti")
-    if jti:
-        session = (
-            await db.execute(
-                select(m.AuthSession).where(
-                    m.AuthSession.jti == jti,
-                    m.AuthSession.tenant_id == tenant_id,
-                    m.AuthSession.user_id == user_id,
-                )
+    if not jti:
+        raise HTTPException(status_code=401, detail="Invalid token claims")
+    session = (
+        await db.execute(
+            select(m.AuthSession).where(
+                m.AuthSession.jti == jti,
+                m.AuthSession.tenant_id == tenant_id,
+                m.AuthSession.user_id == user_id,
             )
-        ).scalar_one_or_none()
-        if session and session.revoked_at is not None:
-            raise HTTPException(status_code=401, detail="Session revoked")
+        )
+    ).scalar_one_or_none()
+    # SEC-H1 — access tokens must map to a live AuthSession (missing row ≠ allow).
+    if session is None:
+        raise HTTPException(status_code=401, detail="Session revoked")
+    if session.revoked_at is not None:
+        raise HTTPException(status_code=401, detail="Session revoked")
+    if session.expires_at is not None and session.expires_at < datetime.utcnow():
+        raise HTTPException(status_code=401, detail="Session expired")
 
     user = (
         await db.execute(
@@ -264,7 +285,7 @@ async def current_claims(
     data["read_only"] = tenants_svc.is_read_only(tenant)
     data["branch_id"] = getattr(user, "branch_id", None)
     data["department_id"] = getattr(user, "department_id", None)
-    data["auth_method"] = "jwt"
+    data["auth_method"] = "jwt_cookie" if auth_via_cookie else "jwt"
     data["principal"] = live_principal
     data["role"] = user.role
     if live_principal == "platform" and not path_allowed_for_platform_principal(request.url.path):
@@ -324,6 +345,15 @@ async def current_claims(
             # Tenant workspace: strip operational wildcards for non-platform tenant admins
             # by keeping permissions but gating modules in require_permission via workspace.
             data["tenant_admin"] = True
+        # Re-apply elevations after workspace permission refinements (deny after expiry).
+        from app import rbac_elevations as elev_svc
+
+        data["permissions"] = await elev_svc.overlay_active_elevations(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            base=data.get("permissions") if isinstance(data.get("permissions"), dict) else {},
+        )
     else:
         data["workspace_kind"] = "platform"
         data["company_id"] = None

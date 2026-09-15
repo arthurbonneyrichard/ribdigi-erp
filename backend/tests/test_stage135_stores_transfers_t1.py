@@ -25,22 +25,25 @@ async def test_stores_transfers_status_filter_and_export(client, db_session):
     ac, seed = client
     headers = await _super(ac, seed)
 
+    cid = seed["c1"].id
     wh_a = m.Warehouse(
-        tenant_id=seed["t1"].id, code="WH-135-A", name="Stage135 A"
+        tenant_id=seed["t1"].id, company_id=cid, code="WH-135-A", name="Stage135 A"
     )
     wh_b = m.Warehouse(
-        tenant_id=seed["t1"].id, code="WH-135-B", name="Stage135 B"
+        tenant_id=seed["t1"].id, company_id=cid, code="WH-135-B", name="Stage135 B"
     )
     db_session.add_all([wh_a, wh_b])
     await db_session.flush()
 
     store_a = m.Store(
         tenant_id=seed["t1"].id,
+        company_id=cid,
         code="ST-135-A",
         name="Stage135 Store A",
     )
     store_b = m.Store(
         tenant_id=seed["t1"].id,
+        company_id=cid,
         code="ST-135-B",
         name="Stage135 Store B",
     )
@@ -49,6 +52,7 @@ async def test_stores_transfers_status_filter_and_export(client, db_session):
 
     draft = m.StockTransfer(
         tenant_id=seed["t1"].id,
+        company_id=cid,
         transfer_number="XFER-135-DRAFT",
         from_store_id=store_a.id,
         to_store_id=store_b.id,
@@ -59,6 +63,7 @@ async def test_stores_transfers_status_filter_and_export(client, db_session):
     )
     received = m.StockTransfer(
         tenant_id=seed["t1"].id,
+        company_id=cid,
         transfer_number="XFER-135-RECV",
         from_store_id=store_a.id,
         to_store_id=store_b.id,

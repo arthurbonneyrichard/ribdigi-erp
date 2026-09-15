@@ -14,8 +14,15 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _admin(ac, seed):
@@ -41,9 +48,11 @@ async def test_success_envelope_json_and_v1_prefix(client):
 @pytest.mark.asyncio
 async def test_rest_methods_and_json_round_trip(client):
     ac, seed = client
-    headers = await _mgr(ac)
+    # Catalog writes are company-admin; store_manager is denied (STORE_SCOPE_DENIED).
+    headers = await _admin(ac, seed)
+    mgr = await _mgr(ac, seed)
 
-    listed = await ac.get("/api/v1/products", headers=headers)
+    listed = await ac.get("/api/v1/products", headers=mgr)
     assert listed.status_code == 200, listed.text
     assert listed.json()["success"] is True
     assert isinstance(listed.json()["data"], list)
@@ -78,7 +87,7 @@ async def test_rest_methods_and_json_round_trip(client):
 @pytest.mark.asyncio
 async def test_http_exception_detail_shape(client):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
 
     missing = await ac.get(
         "/api/v1/products/00000000-0000-0000-0000-000000000000",

@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
+import pyotp
 import pytest
 
 from app import models as m
@@ -17,10 +18,14 @@ ROOT = Path(__file__).resolve().parents[2]
 @pytest.mark.asyncio
 async def test_store_sales_export_csv(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     tenant_id = seed["t1"].id
     store = await create_store(
-        db_session, tenant_id=tenant_id, code="SAL155", name="Stage 155 Sales Store"
+        db_session, tenant_id=tenant_id, code="SAL155", name="Stage 155 Sales Store",
+        company_id=seed["c1"].id,
     )
     await db_session.flush()
     now = datetime.utcnow()

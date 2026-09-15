@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pyotp
 import pytest
 from PIL import Image
 import io
@@ -60,7 +61,10 @@ def test_qr_label_render_unit():
 @pytest.mark.asyncio
 async def test_product_qr_label_endpoint(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
     gen = await ac.post(
         f"/api/v1/products/{seed['p1'].id}/barcode/generate?format=ean13",

@@ -18,6 +18,9 @@ from app.rbac import permissions_for_role
 def _disable_rate_limit(monkeypatch):
     monkeypatch.setattr("app.middleware.settings.RATE_LIMIT_ENABLED", False)
     monkeypatch.setattr("app.config.settings.RATE_LIMIT_ENABLED", False)
+    # SEC-M3 — tests that register tenants via POST /tenants need the opt-in flag.
+    monkeypatch.setattr("app.api.settings.ALLOW_PUBLIC_TENANT_SIGNUP", True)
+    monkeypatch.setattr("app.config.settings.ALLOW_PUBLIC_TENANT_SIGNUP", True)
 
 
 @pytest_asyncio.fixture

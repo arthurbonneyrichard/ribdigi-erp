@@ -26,16 +26,19 @@ async def test_stock_transfers_status_filter_and_export(client, db_session):
     headers = await _super(ac, seed)
 
     wh_a = m.Warehouse(
-        tenant_id=seed["t1"].id, code="WH-132-A", name="Stage132 A"
+        tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id, code="WH-132-A", name="Stage132 A"
     )
     wh_b = m.Warehouse(
-        tenant_id=seed["t1"].id, code="WH-132-B", name="Stage132 B"
+        tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id, code="WH-132-B", name="Stage132 B"
     )
     db_session.add_all([wh_a, wh_b])
     await db_session.flush()
 
     draft = m.StockTransfer(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         transfer_number="XFER-132-DRAFT",
         from_warehouse_id=wh_a.id,
         to_warehouse_id=wh_b.id,
@@ -44,6 +47,7 @@ async def test_stock_transfers_status_filter_and_export(client, db_session):
     )
     received = m.StockTransfer(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         transfer_number="XFER-132-RECV",
         from_warehouse_id=wh_a.id,
         to_warehouse_id=wh_b.id,

@@ -80,7 +80,9 @@ async def analyze_sales(
     to_date: datetime | str | None = None,
     lookback_days: int = 90,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
+    """Sales analysis. ``store_ids`` set = store_manager scope (null-store fail-closed)."""
     now = datetime.utcnow()
     lookback_days = max(14, min(int(lookback_days), 365))
     try:
@@ -95,6 +97,33 @@ async def analyze_sales(
 
         raise HTTPException(status_code=400, detail="to_date must be on or after from_date")
 
+    if store_ids is not None and not store_ids:
+        return {
+            "generated_at": now,
+            "from_date": start,
+            "to_date": end,
+            "method": "rules_v1",
+            "scope": "store_manager",
+            "summary": {
+                "invoice_count": 0,
+                "total_sales": 0.0,
+                "avg_daily_sales": 0.0,
+                "customer_count": 0,
+                "trend_direction": "flat",
+                "daily_slope": 0.0,
+            },
+            "trend": {
+                "daily": [],
+                "forecast_totals": {},
+                "direction": "flat",
+                "daily_slope": 0.0,
+                "note": "Linear projection from daily posted invoice totals (not Prophet).",
+            },
+            "rfm": {"customers": [], "segment_counts": {}, "count": 0},
+            "product_affinity": {"pairs": [], "baskets_with_2plus_lines": 0},
+            "peaks": {"peak_hour": None, "peak_weekday": None, "by_hour": [], "by_weekday": []},
+        }
+
     inv_stmt = select(m.SalesInvoice).where(
         m.SalesInvoice.tenant_id == tenant_id,
         m.SalesInvoice.status.in_(list(POSTED_INVOICE_STATUSES)),
@@ -102,6 +131,8 @@ async def analyze_sales(
         m.SalesInvoice.created_at <= end,
     )
     inv_stmt = apply_company_filter(inv_stmt, m.SalesInvoice.company_id, company_id)
+    if store_ids is not None:
+        inv_stmt = inv_stmt.where(m.SalesInvoice.store_id.in_(store_ids))
     invoices = (await db.execute(inv_stmt)).scalars().all()
 
     inv_ids = [i.id for i in invoices]
@@ -302,6 +333,7 @@ async def analyze_sales(
         "from_date": start,
         "to_date": end,
         "method": "rules_v1",
+        "scope": "store_manager" if store_ids is not None else "company",
         "summary": {
             "invoice_count": len(invoices),
             "total_sales": total_sales,

@@ -175,7 +175,7 @@ async def test_bi_tenant_isolation_history(client, db_session: AsyncSession):
     db_session.add(
         m.BusinessInsight(
             tenant_id=seed["t2"].id,
-            company_id=seed["c2"].id,
+            company_id=seed["c1"].id,
             insight_type="low_stock",
             category="inventory",
             priority="WARNING",
@@ -256,7 +256,7 @@ async def test_bi_settings_get_put(client):
 @pytest.mark.asyncio
 async def test_bi_formulas_document_sources(client):
     http, seed = client
-    headers = await _mgr_headers(http, seed)
+    headers = await _super_headers(http, seed)
     res = await http.get("/api/v1/business-insights/formulas", headers=headers)
     assert res.status_code == 200
     body = res.json()

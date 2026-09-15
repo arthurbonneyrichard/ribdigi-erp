@@ -14,6 +14,7 @@ import pytest
 from fastapi import HTTPException
 
 from app.document_numbering import DOC_KEYS, DEFAULTS, merge_document_numbering
+from app import models as m
 from app.inventory import apply_stock_change
 from tests.conftest import auth_headers
 
@@ -80,7 +81,7 @@ async def test_configure_and_preview_all_doc_keys(client):
 async def test_live_allocate_quote_order_invoice_return_po_grn(client, db_session):
     ac, seed = client
     admin = await _admin(ac)
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
     product_id = seed["p1"].id
 
@@ -101,13 +102,33 @@ async def test_live_allocate_quote_order_invoice_return_po_grn(client, db_sessio
     )
     await db_session.commit()
 
+    store = m.Store(
+        tenant_id=tenant_id,
+        company_id=seed["c1"].id,
+        name="N1 Store",
+        code="N1-ST",
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tenant_id,
+        company_id=seed["c1"].id,
+        store_id=store.id,
+        name="N1 WH",
+        code="N1-WH",
+    )
+    db_session.add(wh)
+    await db_session.commit()
+    store_id = store.id
+    wh_id = wh.id
+
     customer = await ac.post(
         "/api/v1/customers",
         headers=headers,
         json={
             "name": "N1 Numbering Customer",
-            "party_type": "registered",
-            "credit_limit": 5000,
         },
     )
     assert customer.status_code == 200, customer.text
@@ -118,6 +139,7 @@ async def test_live_allocate_quote_order_invoice_return_po_grn(client, db_sessio
         headers=headers,
         json={
             "customer_id": customer_id,
+            "store_id": store_id,
             "items": [{"product_id": product_id, "quantity": 2, "unit_price": 10}],
         },
     )
@@ -181,6 +203,7 @@ async def test_live_allocate_quote_order_invoice_return_po_grn(client, db_sessio
         headers=headers,
         json={
             "supplier_id": supplier_id,
+            "warehouse_id": wh.id,
             "items": [
                 {
                     "product_id": product_id,
@@ -206,6 +229,7 @@ async def test_live_allocate_quote_order_invoice_return_po_grn(client, db_sessio
         headers=headers,
         json={
             "purchase_order_id": po_body["id"],
+            "warehouse_id": wh_id,
             "items": [
                 {
                     "po_item_id": po_body["items"][0]["id"],

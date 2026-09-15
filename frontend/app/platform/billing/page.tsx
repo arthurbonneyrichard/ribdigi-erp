@@ -3,11 +3,9 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import PlatformShell from '../../../components/PlatformShell';
-import { api } from '../../../lib/api';
+import { api, apiFetch } from '../../../lib/api';
 import { formatDateTime } from '../../../lib/format';
 import { fetchHouseFormats, HOUSE_FORMAT_DEFAULTS } from '../../../lib/houseFormats';
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 type RosterItem = {
   tenant_id: string;
@@ -52,14 +50,7 @@ export default function PlatformBillingPage() {
   async function downloadSubscriptionsCsv() {
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/platform/subscriptions/export`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
-      });
+      const res = await apiFetch(`/platform/subscriptions/export`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.detail || body.message || 'Subscriptions export failed');

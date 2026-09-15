@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pyotp
 import pytest
 
 from tests.conftest import auth_headers
@@ -31,7 +32,10 @@ def test_expenses_status_param_in_api():
 @pytest.mark.asyncio
 async def test_expenses_status_filter_api(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
     bad = await ac.get("/api/v1/expenses?status=bogus", headers=headers)
     assert bad.status_code == 400

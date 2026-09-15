@@ -38,12 +38,14 @@ def default_approval_levels(
         {
             "step": 1,
             "min_amount": auto_t,
+            "min_percent": None,
             "roles": list(DEFAULT_L1_ROLES),
             "label": "Manager / accountant",
         },
         {
             "step": 2,
             "min_amount": l2_t,
+            "min_percent": None,
             "roles": sorted(L2_ROLES),
             "label": "Company admin",
         },
@@ -58,6 +60,9 @@ def normalize_approval_matrix(
     """Validate/normalize levels. Raises HTTPException on bad input.
 
     ``known_roles`` may include tenant custom role slugs (system roles always allowed).
+    Optional ``min_percent`` (0 < pct ≤ 100) enables percentage approval limits: a
+    level triggers when amount exceeds ``min_amount`` **or** (when a percent basis
+    is supplied at evaluation time) when percent exceeds ``min_percent``.
     """
     from app.rbac import VALID_ROLES
     from app.roles import SLUG_RE
@@ -80,6 +85,7 @@ def normalize_approval_matrix(
 
     levels: list[dict] = []
     prev_min: float | None = None
+    prev_pct: float | None = None
     for i, item in enumerate(levels_in):
         if not isinstance(item, dict):
             raise HTTPException(status_code=400, detail=f"level {i + 1} must be an object")
@@ -94,6 +100,30 @@ def normalize_approval_matrix(
                 status_code=400,
                 detail="level min_amount values must be strictly increasing",
             )
+        raw_pct = item.get("min_percent", None)
+        min_percent: float | None
+        if raw_pct is None or raw_pct == "":
+            min_percent = None
+        else:
+            try:
+                min_percent = float(raw_pct)
+            except (TypeError, ValueError):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"level {i + 1} min_percent must be a number",
+                ) from None
+            if min_percent <= 0 or min_percent > 100:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"level {i + 1} min_percent must be > 0 and ≤ 100",
+                )
+            if prev_pct is not None and min_percent <= prev_pct:
+                raise HTTPException(
+                    status_code=400,
+                    detail="level min_percent values must be strictly increasing when set",
+                )
+            min_percent = round(min_percent, 4)
+            prev_pct = min_percent
         roles_raw = item.get("roles") or []
         if not isinstance(roles_raw, list) or not roles_raw:
             raise HTTPException(status_code=400, detail=f"level {i + 1} roles must be a non-empty list")
@@ -114,6 +144,7 @@ def normalize_approval_matrix(
             {
                 "step": i + 1,
                 "min_amount": round(min_amount, 2),
+                "min_percent": min_percent,
                 "roles": roles,
                 "label": label,
             }
@@ -126,10 +157,54 @@ def matrix_payload(levels: list[dict]) -> dict:
     return {"levels": levels}
 
 
-def steps_required_from_matrix(amount: float, levels: list[dict]) -> int:
-    """Count levels whose min_amount the expense exceeds (0 = auto-approve)."""
+def steps_required_from_matrix(
+    amount: float,
+    levels: list[dict],
+    *,
+    percent: float | None = None,
+) -> int:
+    """Count levels that the amount/percent basis exceeds (0 = auto-approve).
+
+    A level triggers when ``amount > min_amount`` **or** when ``percent`` is
+    provided and the level has ``min_percent`` and ``percent > min_percent``.
+    """
     amt = float(amount)
-    return sum(1 for lvl in levels if amt > float(lvl["min_amount"]))
+    pct = float(percent) if percent is not None else None
+    count = 0
+    for lvl in levels:
+        amount_hit = amt > float(lvl["min_amount"])
+        percent_hit = False
+        if pct is not None and lvl.get("min_percent") is not None:
+            percent_hit = pct > float(lvl["min_percent"])
+        if amount_hit or percent_hit:
+            count += 1
+    return count
+
+
+async def category_budget_percent_basis(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    category_id: str | None,
+    amount: float,
+    company_id: str | None = None,
+) -> float | None:
+    """Expense amount as % of category budget (None when no positive budget)."""
+    if not category_id:
+        return None
+    stmt = select(m.ExpenseCategory).where(
+        m.ExpenseCategory.id == category_id,
+        m.ExpenseCategory.tenant_id == tenant_id,
+    )
+    if company_id:
+        stmt = stmt.where(m.ExpenseCategory.company_id == company_id)
+    cat = (await db.execute(stmt)).scalar_one_or_none()
+    if not cat:
+        return None
+    budget = float(getattr(cat, "budget_amount", 0) or 0)
+    if budget <= 0:
+        return None
+    return round((float(amount) / budget) * 100.0, 4)
 
 
 def requires_approval(amount: float, threshold: float) -> bool:
@@ -357,6 +432,7 @@ async def category_budget_variance(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
     """Budget vs approved spend by category for a period (defaults to current month)."""
     from app.reports import apply_company_filter
@@ -371,6 +447,23 @@ async def category_budget_variance(
             end = datetime(now.year, now.month + 1, 1) - timedelta(seconds=1)
     else:
         end = to_date
+
+    if store_ids is not None and not store_ids:
+        from app import dashboard_scope as dashboard_scope_svc
+
+        return dashboard_scope_svc.redact_expense_budget_limits(
+            {
+                "from_date": start,
+                "to_date": end,
+                "categories": [],
+                "totals": {
+                    "budget_amount": 0.0,
+                    "spent": 0.0,
+                    "pending": 0.0,
+                    "variance": 0.0,
+                },
+            }
+        )
 
     cat_stmt = (
         select(m.ExpenseCategory)
@@ -387,6 +480,8 @@ async def category_budget_variance(
         m.Expense.status.in_(["approved", "pending"]),
     )
     exp_stmt = apply_company_filter(exp_stmt, m.Expense.company_id, company_id)
+    if store_ids is not None:
+        exp_stmt = exp_stmt.where(m.Expense.store_id.in_(store_ids))
     expenses = (await db.execute(exp_stmt)).scalars().all()
 
     spent_by: dict[str, float] = {}
@@ -423,7 +518,7 @@ async def category_budget_variance(
         total_spent += spent
         total_pending += pending
 
-    return {
+    result = {
         "from_date": start,
         "to_date": end,
         "categories": rows,
@@ -434,6 +529,13 @@ async def category_budget_variance(
             "variance": round(total_budget - total_spent, 2),
         },
     }
+    # store_ids set (including empty) = store_manager scope — omit company
+    # budget_amount master + category identity while keeping scoped spent/pending/name.
+    if store_ids is not None:
+        from app import dashboard_scope as dashboard_scope_svc
+
+        return dashboard_scope_svc.redact_expense_budget_limits(result)
+    return result
 
 
 def resolve_tenant_levels(tenant: m.Tenant) -> list[dict]:
@@ -666,15 +768,18 @@ async def resolve_org_dimensions(
     return resolved_store, resolved_dept
 
 
-async def get_expense(db: AsyncSession, tenant_id: str, expense_id: str) -> m.Expense:
-    expense = (
-        await db.execute(
-            select(m.Expense).where(
-                m.Expense.id == expense_id,
-                m.Expense.tenant_id == tenant_id,
-            )
-        )
-    ).scalar_one_or_none()
+async def get_expense(
+    db: AsyncSession, tenant_id: str, expense_id: str, *, for_update: bool = False
+) -> m.Expense:
+    stmt = select(m.Expense).where(
+        m.Expense.id == expense_id,
+        m.Expense.tenant_id == tenant_id,
+    )
+    if for_update:
+        # populate_existing: ignore stale identity-map after concurrent commits
+        # (expire_on_commit=False) without expiring the whole session.
+        stmt = stmt.with_for_update().execution_options(populate_existing=True)
+    expense = (await db.execute(stmt)).scalar_one_or_none()
     if not expense:
         raise HTTPException(status_code=404, detail="Expense not found")
     return expense
@@ -733,7 +838,14 @@ async def create_expense(
     settings = await get_approval_settings(db, tenant_id)
     levels = settings["levels"]
     auto_t = settings["expense_approval_threshold"]
-    steps = steps_required_from_matrix(amount, levels)
+    percent_basis = await category_budget_percent_basis(
+        db,
+        tenant_id=tenant_id,
+        category_id=cat_id,
+        amount=amount,
+        company_id=company_id,
+    )
+    steps = steps_required_from_matrix(amount, levels, percent=percent_basis)
     needs_approval = steps > 0
 
     if liquid_account_id:
@@ -791,8 +903,11 @@ async def create_expense(
             step=1,
             title="Expense Approval Required",
             message=(
+                # Do not embed company auto-approve threshold — expense settings
+                # GET/PATCH/export already denied; audit details.threshold already
+                # redacted for store_manager (DEFAULT_L1_ROLES includes store_manager).
                 f"Expense {cat_name} of {expense.amount:.2f} exceeds approval threshold "
-                f"({auto_t:.2f}) and awaits level-1 review"
+                f"and awaits level-1 review"
                 + (f" (of {steps} levels)." if steps > 1 else ".")
             ),
             exclude_user_ids={user_id},
@@ -852,102 +967,115 @@ async def approve_expense(
     comment: str | None = None,
     actor_role: str | None = None,
 ) -> m.Expense:
-    expense = await get_expense(db, tenant_id, expense_id)
-    if expense.status == "approved":
-        raise HTTPException(status_code=409, detail="Expense already approved")
-    if expense.status == "rejected":
-        raise HTTPException(status_code=409, detail="Rejected expenses cannot be approved")
-    if expense.status != "pending":
-        raise HTTPException(status_code=409, detail="Only pending expenses can be approved")
+    from app.approval_locks import expense_approval_lock
 
-    if expense.created_by and expense.created_by == user_id and (actor_role or "") not in {
-        "super_admin",
-    }:
-        raise HTTPException(status_code=403, detail="Cannot approve your own expense")
+    async with expense_approval_lock(tenant_id, expense_id):
+        # End any outer read txn so SQLite observes concurrent commits; locked
+        # get uses populate_existing (not expire_all) to refresh this row only.
+        await db.commit()
+        expense = await get_expense(db, tenant_id, expense_id, for_update=True)
+        if expense.status == "approved":
+            raise HTTPException(status_code=409, detail="Expense already approved")
+        if expense.status == "rejected":
+            raise HTTPException(status_code=409, detail="Rejected expenses cannot be approved")
+        if expense.status != "pending":
+            raise HTTPException(status_code=409, detail="Only pending expenses can be approved")
 
-    step = int(expense.approval_step or 1)
-    required = int(expense.approval_steps_required or 1)
-    settings = await get_approval_settings(db, tenant_id)
-    assert_actor_may_act(levels=settings["levels"], step=step, actor_role=actor_role)
+        if expense.created_by and expense.created_by == user_id and (actor_role or "") not in {
+            "super_admin",
+        }:
+            raise HTTPException(status_code=403, detail="Cannot approve your own expense")
 
-    # Same actor cannot approve consecutive steps
-    prior = await list_approval_actions(db, tenant_id, expense.id)
-    if any(a.action == "approve" and a.actor_id == user_id for a in prior):
-        raise HTTPException(status_code=403, detail="You already approved an earlier step on this expense")
+        step = int(expense.approval_step or 1)
+        required = int(expense.approval_steps_required or 1)
+        settings = await get_approval_settings(db, tenant_id)
+        assert_actor_may_act(levels=settings["levels"], step=step, actor_role=actor_role)
 
-    await _record_action(
-        db,
-        tenant_id=tenant_id,
-        expense_id=expense.id,
-        step=step,
-        action="approve",
-        actor_id=user_id,
-        comment=comment,
-    )
+        # Same actor cannot approve consecutive steps
+        prior = await list_approval_actions(db, tenant_id, expense.id)
+        if any(a.action == "approve" and a.actor_id == user_id for a in prior):
+            raise HTTPException(
+                status_code=403, detail="You already approved an earlier step on this expense"
+            )
 
-    from app import audit as audit_svc
-
-    if step < required:
-        expense.approval_step = step + 1
-        expense.approval_comment = comment or f"Level {step} approved; awaiting level {step + 1}"
-        await notify_expense_approvers(
+        await _record_action(
             db,
             tenant_id=tenant_id,
-            expense=expense,
-            step=step + 1,
-            title="Expense Needs Next-Level Approval",
-            message=(
-                f"Expense {expense.category} of {float(expense.amount):.2f} passed level {step} "
-                f"and awaits level {step + 1} approval."
-            ),
-            exclude_user_ids={user_id, expense.created_by} if expense.created_by else {user_id},
+            expense_id=expense.id,
+            step=step,
+            action="approve",
+            actor_id=user_id,
+            comment=comment,
         )
+
+        from app import audit as audit_svc
+
+        if step < required:
+            expense.approval_step = step + 1
+            expense.approval_comment = comment or f"Level {step} approved; awaiting level {step + 1}"
+            await notify_expense_approvers(
+                db,
+                tenant_id=tenant_id,
+                expense=expense,
+                step=step + 1,
+                title="Expense Needs Next-Level Approval",
+                message=(
+                    f"Expense {expense.category} of {float(expense.amount):.2f} passed level {step} "
+                    f"and awaits level {step + 1} approval."
+                ),
+                exclude_user_ids={user_id, expense.created_by} if expense.created_by else {user_id},
+            )
+            await audit_svc.record_event(
+                db,
+                tenant_id=tenant_id,
+                user_id=user_id,
+                action="expense_level_approved",
+                entity="expense",
+                entity_id=expense.id,
+                details={
+                    "category": expense.category,
+                    "amount": float(expense.amount),
+                    "step": step,
+                    "next_step": step + 1,
+                    "comment": comment,
+                },
+                module="expenses",
+            )
+            await db.flush()
+            # Durable before releasing process lock (see terminal approve commit).
+            await db.commit()
+            return expense
+
+        expense.status = "approved"
+        expense.approved_by = user_id
+        expense.approved_at = datetime.utcnow()
+        expense.approval_comment = comment
+        expense.rejection_reason = None
+        expense.approval_step = required
+
+        from app.accounting import post_expense_journal
+
+        await post_expense_journal(db, tenant_id=tenant_id, user_id=user_id, expense=expense)
         await audit_svc.record_event(
             db,
             tenant_id=tenant_id,
             user_id=user_id,
-            action="expense_level_approved",
+            action="expense_approved",
             entity="expense",
             entity_id=expense.id,
             details={
                 "category": expense.category,
                 "amount": float(expense.amount),
-                "step": step,
-                "next_step": step + 1,
+                "steps": required,
                 "comment": comment,
             },
             module="expenses",
         )
         await db.flush()
+        # Commit while holding the process lock so concurrent sessions cannot
+        # re-read pending before this terminal decision is durable (SQLite).
+        await db.commit()
         return expense
-
-    expense.status = "approved"
-    expense.approved_by = user_id
-    expense.approved_at = datetime.utcnow()
-    expense.approval_comment = comment
-    expense.rejection_reason = None
-    expense.approval_step = required
-
-    from app.accounting import post_expense_journal
-
-    await post_expense_journal(db, tenant_id=tenant_id, user_id=user_id, expense=expense)
-    await audit_svc.record_event(
-        db,
-        tenant_id=tenant_id,
-        user_id=user_id,
-        action="expense_approved",
-        entity="expense",
-        entity_id=expense.id,
-        details={
-            "category": expense.category,
-            "amount": float(expense.amount),
-            "steps": required,
-            "comment": comment,
-        },
-        module="expenses",
-    )
-    await db.flush()
-    return expense
 
 
 async def reject_expense(
@@ -961,47 +1089,54 @@ async def reject_expense(
 ) -> m.Expense:
     if not (reason or "").strip():
         raise HTTPException(status_code=400, detail="rejection reason is required")
-    expense = await get_expense(db, tenant_id, expense_id)
-    if expense.status != "pending":
-        raise HTTPException(status_code=409, detail="Only pending expenses can be rejected")
+    from app.approval_locks import expense_approval_lock
 
-    step = int(expense.approval_step or 1)
-    settings = await get_approval_settings(db, tenant_id)
-    assert_actor_may_act(levels=settings["levels"], step=step, actor_role=actor_role)
+    async with expense_approval_lock(tenant_id, expense_id):
+        await db.commit()
+        expense = await get_expense(db, tenant_id, expense_id, for_update=True)
+        if expense.status != "pending":
+            raise HTTPException(status_code=409, detail="Only pending expenses can be rejected")
 
-    await _record_action(
-        db,
-        tenant_id=tenant_id,
-        expense_id=expense.id,
-        step=step,
-        action="reject",
-        actor_id=user_id,
-        comment=reason.strip(),
-    )
+        step = int(expense.approval_step or 1)
+        settings = await get_approval_settings(db, tenant_id)
+        assert_actor_may_act(levels=settings["levels"], step=step, actor_role=actor_role)
 
-    expense.status = "rejected"
-    expense.approved_by = user_id
-    expense.approved_at = datetime.utcnow()
-    expense.rejection_reason = reason.strip()
-    from app import audit as audit_svc
+        await _record_action(
+            db,
+            tenant_id=tenant_id,
+            expense_id=expense.id,
+            step=step,
+            action="reject",
+            actor_id=user_id,
+            comment=reason.strip(),
+        )
 
-    await audit_svc.record_event(
-        db,
-        tenant_id=tenant_id,
-        user_id=user_id,
-        action="expense_rejected",
-        entity="expense",
-        entity_id=expense.id,
-        details={
-            "category": expense.category,
-            "amount": float(expense.amount),
-            "reason": expense.rejection_reason,
-            "step": step,
-        },
-        module="expenses",
-    )
-    await db.flush()
-    return expense
+        expense.status = "rejected"
+        expense.approved_by = user_id
+        expense.approved_at = datetime.utcnow()
+        expense.rejection_reason = reason.strip()
+        from app import audit as audit_svc
+
+        await audit_svc.record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="expense_rejected",
+            entity="expense",
+            entity_id=expense.id,
+            details={
+                "category": expense.category,
+                "amount": float(expense.amount),
+                "reason": expense.rejection_reason,
+                "step": step,
+            },
+            module="expenses",
+        )
+        await db.flush()
+        # Commit while holding the process lock so concurrent sessions cannot
+        # re-read pending before this terminal decision is durable (SQLite).
+        await db.commit()
+        return expense
 
 
 async def update_expense(
@@ -1108,7 +1243,16 @@ async def update_expense(
         expense.amount = new_amount
         if expense.status == "pending":
             settings = await get_approval_settings(db, tenant_id)
-            steps = steps_required_from_matrix(new_amount, settings["levels"])
+            percent_basis = await category_budget_percent_basis(
+                db,
+                tenant_id=tenant_id,
+                category_id=expense.category_id,
+                amount=new_amount,
+                company_id=getattr(expense, "company_id", None),
+            )
+            steps = steps_required_from_matrix(
+                new_amount, settings["levels"], percent=percent_basis
+            )
             if steps == 0:
                 expense.status = "approved"
                 expense.approved_by = user_id
@@ -1151,7 +1295,16 @@ async def update_expense(
         elif expense.status == "rejected":
             # Re-open for approval with new amount
             settings = await get_approval_settings(db, tenant_id)
-            steps = steps_required_from_matrix(new_amount, settings["levels"])
+            percent_basis = await category_budget_percent_basis(
+                db,
+                tenant_id=tenant_id,
+                category_id=expense.category_id,
+                amount=new_amount,
+                company_id=getattr(expense, "company_id", None),
+            )
+            steps = steps_required_from_matrix(
+                new_amount, settings["levels"], percent=percent_basis
+            )
             if steps == 0:
                 expense.status = "approved"
                 expense.approved_by = user_id
@@ -1287,6 +1440,7 @@ async def list_recurring(
     active_only: bool = False,
     is_active: bool | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> list[m.RecurringExpense]:
     """Stage 125 R1 — is_active / active_only for honest paused-only recurring lists."""
     stmt = select(m.RecurringExpense).where(m.RecurringExpense.tenant_id == tenant_id)
@@ -1296,6 +1450,11 @@ async def list_recurring(
         stmt = stmt.where(m.RecurringExpense.is_active.is_(bool(is_active)))
     elif active_only:
         stmt = stmt.where(m.RecurringExpense.is_active.is_(True))
+    if store_ids is not None:
+        if store_ids:
+            stmt = stmt.where(m.RecurringExpense.store_id.in_(store_ids))
+        else:
+            stmt = stmt.where(m.RecurringExpense.id.is_(None))
     stmt = stmt.order_by(m.RecurringExpense.created_at.desc())
     return list((await db.execute(stmt)).scalars().all())
 
@@ -1393,6 +1552,7 @@ async def generate_due_recurring(
     tenant_id: str,
     user_id: str,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> list[m.Expense]:
     now = datetime.utcnow()
     stmt = select(m.RecurringExpense).where(
@@ -1402,6 +1562,11 @@ async def generate_due_recurring(
     )
     if company_id:
         stmt = stmt.where(m.RecurringExpense.company_id == company_id)
+    if store_ids is not None:
+        if store_ids:
+            stmt = stmt.where(m.RecurringExpense.store_id.in_(store_ids))
+        else:
+            stmt = stmt.where(m.RecurringExpense.id.is_(None))
     rows = (await db.execute(stmt)).scalars().all()
     created: list[m.Expense] = []
     for row in rows:

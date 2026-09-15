@@ -84,6 +84,29 @@ def serialize_company(
     }
 
 
+def serialize_company_switcher(
+    co: m.Company, *, business_type: m.BusinessType | None = None
+) -> dict:
+    """Workspace chrome fields only — no legal/tax/address/store_limit dump.
+
+    Used for store_manager ``GET /me`` + ``GET /workspace`` after company
+    profile/list GETs were denied (avoid session-payload bypass).
+
+    Omits ``business_type_label`` / ``industry`` — ``GET /business-types`` is
+    already denied for store_manager (company create catalog); session switcher
+    must not re-dump those catalog fields. ``id`` / ``name`` / ``has_logo`` remain.
+    ``business_type`` is accepted for call-site compatibility but unused.
+    """
+    _ = business_type  # unused — catalog label omitted for store_manager switcher
+    return {
+        "id": co.id,
+        "name": co.name,
+        "is_default": co.is_default,
+        "is_active": co.is_active,
+        "has_logo": bool(co.logo_url),
+    }
+
+
 async def get_company(db: AsyncSession, *, tenant_id: str, company_id: str) -> m.Company:
     co = await db.get(m.Company, company_id)
     if not co or co.tenant_id != tenant_id:
@@ -91,10 +114,14 @@ async def get_company(db: AsyncSession, *, tenant_id: str, company_id: str) -> m
     return co
 
 
-async def serialize_company_async(db: AsyncSession, co: m.Company) -> dict:
+async def serialize_company_async(
+    db: AsyncSession, co: m.Company, *, switcher_only: bool = False
+) -> dict:
     bt = None
     if co.business_type_id:
         bt = await db.get(m.BusinessType, co.business_type_id)
+    if switcher_only:
+        return serialize_company_switcher(co, business_type=bt)
     return serialize_company(co, business_type=bt)
 
 

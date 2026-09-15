@@ -232,6 +232,8 @@ Optional `X-Tenant-ID` must match the key’s tenant when present. Permissions a
 
 **Current tenant (Stage 21 T1/C1):** `GET /tenants/me` / `PATCH /tenants/me` — company admin / super_admin profile (legal name, registration/tax IDs, billing/shipping/warehouse addresses, contact person, currency, logo via `/tenants/me/logo`). `document_numbering` + `document_numbering_preview` cover sales/purchase series including order, return, credit note, debit note (Stage 24 N1: `test_document_numbering_n1.py`). Evidence: `test_tenant_lifecycle_t1.py`, `test_company_currency_tax_c1.py`.
 
+**Paid billing (ADR-002 PARTIAL — Complete MISSING):** `GET /billing/status`, `POST /billing/portal-session` (creates portal session when provider keys configured or `BILLING_PROVIDER_MODE=mock`; HTTP 503 when unconfigured — no fake success), `POST /billing/checkout-session` (creates Checkout Session when configured/mock; HTTP 503 when unconfigured; never auto-upgrades `Tenant.plan_code` / never claims payment success), `POST /billing/webhooks/provider` (signed ingest + local subscription mirror; never mutates `Tenant.plan_code` / never claims payment success). Flag `PAID_BILLING_ENTITLEMENT_GATE_ENABLED` default false; when ON, provider mirror is authoritative only for gated allowlist `POST /sales` + `PATCH /companies/{id}` (`active`/`trialing` allow; missing/`past_due`/`canceled` deny). Ops: `docs/PAID_BILLING_PROVIDER_OPS.md`. Evidence: `test_paid_billing_scaffold.py`.
+
 ### 3.3 Update Tenant Profile
 **Endpoint:** `PATCH /tenants/{tenant_id}`
 
@@ -766,7 +768,7 @@ Stage 19 P1 proves customers/groups CRUD + balance + history via JWT and X-API-K
 }
 ```
 
-Reason must be at least 3 characters (`400 CREDIT_OVERRIDE_REASON_REQUIRED`). Missing permission → `403 CREDIT_OVERRIDE_FORBIDDEN`. Successful override writes audit action `credit_limit_override` and sets invoice `credit_limit_overridden` / `credit_override_reason` / `credit_override_by` / `credit_override_at`.
+Reason must be at least 3 characters (`400 CREDIT_OVERRIDE_REASON_REQUIRED`). Missing permission → `403 CREDIT_OVERRIDE_FORBIDDEN`. `store_manager` is denied override with `403 STORE_SCOPE_DENIED` despite default `credit:approve` (finance/admin only). Successful override writes audit action `credit_limit_override` and sets invoice `credit_limit_overridden` / `credit_override_reason` / `credit_override_by` / `credit_override_at`.
 
 **Create Invoice:**
 ```json
@@ -846,7 +848,7 @@ Reason must be at least 3 characters (`400 CREDIT_OVERRIDE_REASON_REQUIRED`). Mi
 Single tender: set `payment_method` (`cash`|`card`|`wallet`|`credit`|`other`).  
 Split tender: set `payments[]` with `{ "payment_method", "amount", "reference?", "liquid_account_id?" }` summing to the computed sale total (`PAYMENT_TOTAL_MISMATCH` if not). Response includes `payments` rows and `payment_method` (`split` when multiple). Credit portion only increases customer AR balance.
 
-Credit tender (full or split portion) enforces the same credit-limit gate as invoice post. Optional body fields: `credit_limit_override` (bool), `credit_override_reason` (string). Same `CREDIT_LIMIT_*` error codes and audit action apply.
+Credit tender (full or split portion) enforces the same credit-limit gate as invoice post. Optional body fields: `credit_limit_override` (bool), `credit_override_reason` (string). Same `CREDIT_LIMIT_*` / `STORE_SCOPE_DENIED` (store_manager override deny) error codes and audit action apply. `store_manager` override attempts return `403 STORE_SCOPE_DENIED`.
 
 **Stock integrity (Stage 13 H1):** Aggregated line quantities are checked before the sale transaction is created. Insufficient available stock returns `409` with `detail.code = INSUFFICIENT_STOCK`. No `Transaction`, `PosPayment`, or `pos_sale` journal is committed; open session totals are unchanged.
 
@@ -1170,6 +1172,10 @@ Consolidated inter-store + warehouse transfer history (same `StockTransfer` reco
 **Create:** `POST /stores`  
 **Get:** `GET /stores/{store_id}`  
 **Update:** `PATCH /stores/{store_id}`
+
+**User↔store membership (ADR-005 Complete — flag default OFF):**  
+`GET/POST /stores/{store_id}/memberships` · `DELETE /stores/{store_id}/memberships/{user_id}` · `GET /me/store-memberships`  
+Assignment bookkeeping + optional flag-gated scope: when `STORE_MEMBERSHIP_SCOPE_ENABLED=true`, store_manager `managed_store_ids` = `manager_id` ∪ active memberships; cashiers stay `None` on that helper and are fail-closed on POS bind + `GET /stores` via `store_visibility_ids` (membership or empty). Default **false** = legacy. Company/Admin UI: `/stores#memberships`. Honesty: `adr005_complete_claimed` + `scope_wired_to_membership` true; store-scoped RBAC Complete false. Complete ≠ prod default ON. Design: `docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md`. Ops checklist: `docs/adr005_staging_soak_checklist.md`. Evidence: `test_adr005_membership_scope_soak.py`, `test_store_membership_scaffold.py`, `storeMembershipAdmin.test.mjs`.
 
 **Create Store:**
 ```json

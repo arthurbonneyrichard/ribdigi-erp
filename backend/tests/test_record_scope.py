@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import pyotp
 import pytest
+from sqlalchemy import select
 
 from app import models as m
 from app import purchasing as purchasing_svc
 from app import sales as sales_svc
 from app import sales_docs as sales_docs_svc
 from app.expenses import create_expense, ensure_default_categories
+from app.stores import create_store
 from app.rbac import (
     RECORD_SCOPE_KEY,
     assert_record_access,
@@ -45,12 +47,13 @@ def test_assert_record_access_own_hides_foreign():
 async def test_expense_own_scope_hides_others_records(client, db_session):
     ac, seed = client
     admin = await _admin_headers(ac, seed)
-    await ensure_default_categories(db_session, seed["t1"].id)
+    await ensure_default_categories(db_session, seed["t1"].id, company_id=seed["c1"].id)
     await db_session.commit()
 
     foreign = await create_expense(
         db_session,
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         user_id=seed["admin1"].id,
         amount=40,
         description="Admin expense",
@@ -68,9 +71,24 @@ async def test_expense_own_scope_hides_others_records(client, db_session):
     assert patched.status_code == 200, patched.text
     assert patched.json()["data"]["record_scope"] == "own"
 
+    store = await create_store(
+        db_session,
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        code="SCOPE-E",
+        name="Scope Store",
+        manager_id=seed["mgr1"].id,
+    )
+    await db_session.commit()
+
     mgr = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
     missing = await ac.get(f"/api/v1/expenses/{foreign.id}", headers=mgr)
-    assert missing.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert missing.status_code in (403, 404), missing.text
+    if missing.status_code == 403:
+        detail = missing.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"
 
     listed = await ac.get("/api/v1/expenses", headers=mgr)
     assert listed.status_code == 200
@@ -80,7 +98,13 @@ async def test_expense_own_scope_hides_others_records(client, db_session):
     created = await ac.post(
         "/api/v1/expenses",
         headers=mgr,
-        json={"amount": 12, "description": "Mine", "category": "Supplies", "payment_method": "cash"},
+        json={
+            "amount": 12,
+            "description": "Mine",
+            "category": "Supplies",
+            "payment_method": "cash",
+            "store_id": store.id,
+        },
     )
     assert created.status_code == 200, created.text
     mine_id = created.json()["data"]["id"]
@@ -96,7 +120,12 @@ async def test_expense_own_scope_hides_others_records(client, db_session):
 @pytest.mark.asyncio
 async def test_roles_catalog_includes_record_scope(client):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
     r = await ac.get("/api/v1/roles", headers=headers)
     assert r.status_code == 200
     by_role = {row["role"]: row for row in r.json()["data"]}
@@ -152,6 +181,17 @@ async def test_sales_docs_own_scope_hides_others_records(client, db_session):
     )
     assert patched.status_code == 200, patched.text
 
+    store = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        name="Record Scope Store",
+        code="REC-SCOPE",
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.commit()
+
     mgr = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
 
     assert (await ac.get(f"/api/v1/sales/quotations/{foreign_quote.id}", headers=mgr)).status_code == 404
@@ -177,6 +217,7 @@ async def test_sales_docs_own_scope_hides_others_records(client, db_session):
         headers=mgr,
         json={
             "customer_id": seed["party1"].id,
+            "store_id": store.id,
             "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 3}],
         },
     )
@@ -193,7 +234,12 @@ async def test_sales_docs_own_scope_hides_others_records(client, db_session):
             "items": [{"product_id": seed["p1"].id, "quantity": 1}],
         },
     )
-    assert blocked_return.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert blocked_return.status_code in (403, 404), blocked_return.text
+    if blocked_return.status_code == 403:
+        detail = blocked_return.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"
 
     # Admin with default all still sees foreign docs
     admin2 = await _admin_headers(ac, seed)
@@ -209,6 +255,7 @@ async def test_purchasing_docs_own_scope_hides_others_records(client, db_session
 
     supplier = m.Party(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         kind="supplier",
         name="Scope Supplier",
         status="active",
@@ -245,6 +292,25 @@ async def test_purchasing_docs_own_scope_hides_others_records(client, db_session
         json={"record_scope": "own"},
     )
     assert patched.status_code == 200, patched.text
+    scope_store = await create_store(
+        db_session,
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        code="SCOPE-P",
+        name="Scope Purch Store",
+        manager_id=seed["mgr1"].id,
+    )
+    await db_session.flush()
+    scope_wh = (
+        await db_session.execute(
+            select(m.Warehouse).where(
+                m.Warehouse.tenant_id == seed["t1"].id,
+                m.Warehouse.store_id == scope_store.id,
+            )
+        )
+    ).scalar_one()
+    await db_session.commit()
+
     mgr = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
 
     assert (await ac.get(f"/api/v1/purchasing/requests/{foreign_pr.id}", headers=mgr)).status_code == 404
@@ -263,7 +329,8 @@ async def test_purchasing_docs_own_scope_hides_others_records(client, db_session
     assert inv_list.status_code == 200
     assert foreign_inv.id not in {row["id"] for row in inv_list.json()["data"]}
 
-    # Approvals intentionally bypass own-scope (creator is admin1, not mgr)
+    # Approvals intentionally bypass own-scope for record visibility, but store-manager
+    # warehouse scope still applies — use admin for the approve mutation.
     await purchasing_svc.submit_purchase_request(
         db_session,
         tenant_id=seed["t1"].id,
@@ -273,7 +340,7 @@ async def test_purchasing_docs_own_scope_hides_others_records(client, db_session
     await db_session.commit()
     approved = await ac.post(
         f"/api/v1/purchasing/requests/{foreign_pr.id}/approve",
-        headers=mgr,
+        headers=admin,
     )
     assert approved.status_code == 200, approved.text
     assert approved.json()["data"]["status"] == "approved"
@@ -283,6 +350,7 @@ async def test_purchasing_docs_own_scope_hides_others_records(client, db_session
         headers=mgr,
         json={
             "supplier_id": supplier.id,
+            "warehouse_id": scope_wh.id,
             "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 3}],
         },
     )

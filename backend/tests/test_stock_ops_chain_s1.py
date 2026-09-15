@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pyotp
 import pytest
 from sqlalchemy import func, select
 
@@ -13,8 +14,15 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _wh_qty(db, tenant_id: str, warehouse_id: str, product_id: str) -> float:
@@ -44,18 +52,19 @@ async def _sum_movements(db, *, tenant_id: str, product_id: str, warehouse_id: s
 async def test_stock_in_adjust_opening_warehouse_chain(client, db_session):
     """Stock-in → warehouse qty + movements → adjust(damage) → opening-stock add."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
 
     product = m.Product(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="S17 S1 Ops SKU",
         sku="S17-S1-OPS",
         cost_price=1,
         selling_price=2,
         stock_qty=0,
     )
-    wh = m.Warehouse(tenant_id=tenant_id, name="S17 S1 WH", code="S17S1WH")
+    wh = m.Warehouse(tenant_id=tenant_id, company_id=seed["c1"].id, name="S17 S1 WH", code="S17S1WH")
     db_session.add_all([product, wh])
     await db_session.commit()
     product_id, warehouse_id = product.id, wh.id

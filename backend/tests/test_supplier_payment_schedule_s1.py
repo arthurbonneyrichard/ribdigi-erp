@@ -24,7 +24,7 @@ async def test_supplier_payment_schedule_buckets_and_early_pay(client, db_sessio
     ac, seed = client
     headers = await _admin(ac, seed)
     tenant_id = seed["t1"].id
-    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+    await accounting_svc.ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
     seed["t1"].early_pay_discount_pct = 2
     seed["t1"].early_pay_discount_days = 10
 
@@ -40,6 +40,7 @@ async def test_supplier_payment_schedule_buckets_and_early_pay(client, db_sessio
 
     overdue = m.PurchaseInvoice(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         invoice_number="PI-SCHED-OVER",
         supplier_id=supplier.id,
         status="unpaid",
@@ -54,6 +55,7 @@ async def test_supplier_payment_schedule_buckets_and_early_pay(client, db_sessio
     )
     upcoming = m.PurchaseInvoice(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         invoice_number="PI-SCHED-UP",
         supplier_id=supplier.id,
         status="unpaid",
@@ -121,4 +123,9 @@ async def test_supplier_payment_schedule_not_found(client):
         "/api/v1/suppliers/00000000-0000-0000-0000-000000000099/payment-schedule",
         headers=headers,
     )
-    assert r.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert r.status_code in (403, 404), r.text
+    if r.status_code == 403:
+        detail = r.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"

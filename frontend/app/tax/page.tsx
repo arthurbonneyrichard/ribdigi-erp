@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
-import { api, authHeaders } from '../../lib/api';
-
-const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+import { api, apiFetch } from '../../lib/api';
 
 type TaxRate = {
   id: string;
@@ -98,7 +96,7 @@ export default function Page() {
           ? '?is_active=false'
           : '';
     const [rates, taxReport, filingPack] = await Promise.all([
-      api(`/tax/rates${taxQs}`),
+      api(`/tax/rates${taxQs}`).catch(() => ({ data: [] })),
       api(`/reports/tax${q}`),
       api(`/reports/tax/filing${q}`),
     ]);
@@ -247,8 +245,6 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
       const params = new URLSearchParams();
       params.set('report_type', reportType);
       params.set('format', format);
@@ -257,9 +253,7 @@ export default function Page() {
       if (reportType === 'tax_filing_gh') params.set('jurisdiction', 'GH');
       if (reportType === 'tax_filing_ke') params.set('jurisdiction', 'KE');
       if (reportType === 'tax_filing_ng') params.set('jurisdiction', 'NG');
-      const res = await fetch(`${base}/reports/export?${params}`, {
-        headers: authHeaders(),
-      });
+      const res = await apiFetch(`/reports/export?${params}`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.detail || 'Export failed');
@@ -427,18 +421,11 @@ export default function Page() {
               setError('');
               setMessage('');
               try {
-                const token = localStorage.getItem('token') || '';
-                const tenant = localStorage.getItem('tenant') || '';
                 const params = new URLSearchParams();
                 if (fromDate) params.set('from_date', fromDate);
                 if (toDate) params.set('to_date', toDate);
                 const qs = params.toString() ? `?${params}` : '';
-                const res = await fetch(`${base}/reports/tax/export${qs}`, {
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                    'X-Tenant-ID': tenant,
-                  },
-                });
+                const res = await apiFetch(`/reports/tax/export${qs}`);
                 if (!res.ok) throw new Error(await res.text());
                 const blob = await res.blob();
                 const a = document.createElement('a');
@@ -579,11 +566,7 @@ export default function Page() {
             setError('');
             setMessage('');
             try {
-              const token = localStorage.getItem('token');
-              const tenant = localStorage.getItem('tenant');
-              const res = await fetch(`${base}/tax/rates/export`, {
-                headers: authHeaders(),
-              });
+              const res = await apiFetch(`/tax/rates/export`);
               if (!res.ok) throw new Error('Tax rates export failed');
               const blob = await res.blob();
               const url = URL.createObjectURL(blob);

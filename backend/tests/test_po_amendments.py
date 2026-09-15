@@ -2,13 +2,21 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 
 from tests.conftest import auth_headers
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _create_sent_po(ac, headers, product_id: str, *, qty: float = 10, price: float = 5):
@@ -33,7 +41,7 @@ async def _create_sent_po(ac, headers, product_id: str, *, qty: float = 10, pric
 @pytest.mark.asyncio
 async def test_draft_patch_without_amendment_history(client):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     supplier = await ac.post("/api/v1/suppliers", headers=headers, json={"name": "Draft Sup"})
     po = await ac.post(
         "/api/v1/purchasing/orders",
@@ -73,7 +81,7 @@ async def test_draft_patch_without_amendment_history(client):
 @pytest.mark.asyncio
 async def test_sent_po_amend_bumps_revision_and_history(client):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     po = await _create_sent_po(ac, headers, seed["p1"].id, qty=10, price=5)
     po_id = po["id"]
     line_id = po["items"][0]["id"]
@@ -122,7 +130,7 @@ async def test_sent_po_amend_bumps_revision_and_history(client):
 @pytest.mark.asyncio
 async def test_amend_cannot_reduce_below_received(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     po = await _create_sent_po(ac, headers, seed["p1"].id, qty=20, price=2)
     po_id = po["id"]
     line_id = po["items"][0]["id"]

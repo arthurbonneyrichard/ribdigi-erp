@@ -64,7 +64,9 @@ async def test_store_manager_dashboard_view(client):
     assert r.status_code == 200, r.text
     data = r.json()["data"]
     assert data.get("view") == "store_manager"
-    # Store managers have users:read in RBAC — user_stats may appear
+    # Company-wide user KPIs denied; list/get /users remain elsewhere
+    assert "user_stats" not in data
+    assert "users" not in (data.get("sections") or [])
     assert "sections" in data
 
 

@@ -33,11 +33,24 @@ async def _backdate_latest(db_session, tenant_id: str, when: datetime, *, action
 
 async def _seed_customer_intel(db_session, seed):
     tenant_id = seed["t1"].id
+    cid = seed["c1"].id
+    store = m.Store(
+        tenant_id=tenant_id,
+        company_id=cid,
+        name="U1 Mgr Store",
+        code="U1-MGR",
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
     now = datetime.utcnow()
     for i in range(5):
         db_session.add(
             m.SalesInvoice(
                 tenant_id=tenant_id,
+                company_id=cid,
+                store_id=store.id,
                 invoice_number=f"INV-U1-BEST-{i}",
                 customer_id=seed["party1"].id,
                 status="posted",
@@ -51,6 +64,7 @@ async def _seed_customer_intel(db_session, seed):
         )
     stale = m.Party(
         tenant_id=tenant_id,
+        company_id=cid,
         name="U1 Quiet Customer",
         kind="customer",
         status="active",
@@ -61,6 +75,8 @@ async def _seed_customer_intel(db_session, seed):
     db_session.add(
         m.SalesInvoice(
             tenant_id=tenant_id,
+            company_id=cid,
+            store_id=store.id,
             invoice_number="INV-U1-STALE",
             customer_id=stale.id,
             status="posted",
@@ -80,7 +96,7 @@ async def _seed_customer_intel(db_session, seed):
 async def test_customer_churn_best_promos_api(client, db_session):
     """BR-21.9: churn risk, best customers, promotion suggestions via insights API."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     stale = await _seed_customer_intel(db_session, seed)
 
     r = await ac.get(
@@ -91,6 +107,7 @@ async def test_customer_churn_best_promos_api(client, db_session):
     assert r.status_code == 200, r.text
     body = r.json()["data"]
     assert body["method"] == "rules_v1"
+    assert body.get("scope") == "store_manager"
     assert body["customer_count"] >= 2
 
     assert body["best_customers"]
@@ -125,7 +142,7 @@ async def test_customer_churn_best_promos_api(client, db_session):
 async def test_security_login_txn_alerts_and_notify(client, db_session):
     """BR-21.10: unusual login (IP/device), txn burst, admin notify via alerts API."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
     user = seed["mgr1"]
     now = datetime.utcnow()

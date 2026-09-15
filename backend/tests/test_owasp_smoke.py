@@ -72,10 +72,20 @@ async def test_sql_injection_style_tenant_slug_rejected(client):
 
 @pytest.mark.asyncio
 async def test_users_response_has_no_secret_fields(client):
+    """Secret-field redaction on users list — company-level admin (not store_manager).
+
+    store_manager is STORE_SCOPE_DENIED for /users under commercial continuum RBAC;
+    this assertion is about payload hygiene, not manager list entitlement.
+    """
+    import pyotp
+
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     r = await ac.get("/api/v1/users", headers=headers)
-    assert r.status_code == 200
+    assert r.status_code == 200, r.text
     blob = r.text.lower()
     assert "password_hash" not in blob
     assert "totp_secret" not in blob

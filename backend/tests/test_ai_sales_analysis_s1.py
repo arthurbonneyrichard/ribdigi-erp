@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import pyotp
 import pytest
 
 from app import models as m
@@ -13,8 +14,15 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _seed_sales_patterns(db_session, seed):
@@ -23,6 +31,7 @@ async def _seed_sales_patterns(db_session, seed):
     p1 = seed["p1"]
     p2 = m.Product(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="S1 Bundle Mate",
         sku="S1-BUNDLE",
         cost_price=1,
@@ -34,6 +43,7 @@ async def _seed_sales_patterns(db_session, seed):
     champ = seed["party1"]
     at_risk = m.Party(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="S1 At Risk Customer",
         kind="customer",
         credit_limit=50,
@@ -42,13 +52,15 @@ async def _seed_sales_patterns(db_session, seed):
     await db_session.flush()
 
     now = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
-    # Rising trend: day-offset i has amount (i+1)*20 at hour 10 (peak) or 15
+    # Rising trend: day-offset i has amount (i+1)*20 at hour 10 (peak) or 15.
+    # Anchor at least 1 day back so peak hours never fall after "now".
     for i in range(14):
-        when = now - timedelta(days=13 - i)
+        when = now - timedelta(days=14 - i)
         when = when.replace(hour=10 if i % 3 else 15)
         amt = float((i + 1) * 20)
         inv = m.SalesInvoice(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             invoice_number=f"INV-S1-T-{i}",
             customer_id=champ.id,
             status="posted",
@@ -65,6 +77,7 @@ async def _seed_sales_patterns(db_session, seed):
             [
                 m.SalesInvoiceItem(
                     tenant_id=tenant_id,
+                    company_id=seed["c1"].id,
                     sales_invoice_id=inv.id,
                     product_id=p1.id,
                     quantity=2,
@@ -73,6 +86,7 @@ async def _seed_sales_patterns(db_session, seed):
                 ),
                 m.SalesInvoiceItem(
                     tenant_id=tenant_id,
+                    company_id=seed["c1"].id,
                     sales_invoice_id=inv.id,
                     product_id=p2.id,
                     quantity=2,
@@ -89,6 +103,7 @@ async def _seed_sales_patterns(db_session, seed):
         when = when.replace(hour=11)
         inv = m.SalesInvoice(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             invoice_number=f"INV-S1-R-{j}",
             customer_id=at_risk.id,
             status="posted",
@@ -103,6 +118,7 @@ async def _seed_sales_patterns(db_session, seed):
         db_session.add(
             m.SalesInvoiceItem(
                 tenant_id=tenant_id,
+                company_id=seed["c1"].id,
                 sales_invoice_id=inv.id,
                 product_id=p1.id,
                 quantity=1,
@@ -119,7 +135,7 @@ async def _seed_sales_patterns(db_session, seed):
 async def test_sales_trend_rfm_affinity_peaks_api(client, db_session):
     """BR-21.5: trend forecast, RFM, affinity, peak hour/day via /ai/sales/analysis."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     seeded = await _seed_sales_patterns(db_session, seed)
 
     r = await ac.get(
@@ -181,7 +197,7 @@ async def test_sales_trend_rfm_affinity_peaks_api(client, db_session):
 async def test_sales_analysis_tenant_isolation(client, db_session):
     """BR-21.5: analysis stays on caller's tenant (no Beta leakage)."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     now = datetime.utcnow()
     db_session.add(
         m.SalesInvoice(

@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
+import pyotp
 import pytest
 
 from app import models as m
@@ -13,19 +14,22 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _super(ac, seed):
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 @pytest.mark.asyncio
 async def test_chat_history_export_csv(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
-    mgr = seed["mgr1"]
+    headers = await _super(ac, seed)
     db_session.add(
         m.AiQuery(
             tenant_id=seed["t1"].id,
-            user_id=mgr.id,
+            company_id=seed["c1"].id,
+            user_id=seed["super"].id,
             message="What is my top selling product?",
             answer="Alpha Widget leads posted sales this month.",
             intent="top_product",

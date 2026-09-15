@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -55,7 +56,10 @@ def test_resolve_early_pay_prefers_supplier_override():
 @pytest.mark.asyncio
 async def test_supplier_override_used_for_payment_and_quote(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
     tenant = await db_session.get(m.Tenant, seed["t1"].id)
     tenant.early_pay_discount_pct = 1

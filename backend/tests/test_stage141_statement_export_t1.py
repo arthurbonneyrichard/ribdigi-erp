@@ -27,7 +27,7 @@ async def test_customer_statement_export_csv(client, db_session):
     ac, seed = client
     headers = await _super(ac, seed)
     tenant_id = seed["t1"].id
-    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+    await accounting_svc.ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
 
     customer = m.Party(
         tenant_id=tenant_id,
@@ -41,6 +41,7 @@ async def test_customer_statement_export_csv(client, db_session):
     db_session.add(
         m.SalesInvoice(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             invoice_number="INV-141-STMT",
             customer_id=customer.id,
             status="posted",
@@ -84,6 +85,7 @@ async def test_supplier_statement_export_csv(client, db_session):
     db_session.add(
         m.PurchaseOrder(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             po_number="PO-141-STMT",
             supplier_id=supplier.id,
             status="sent",

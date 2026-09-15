@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -35,6 +36,7 @@ async def test_inter_store_transfer_stock_movement_chain(client, db_session):
     # Dedicated product avoids seed unlocated stock being parked on ship via allocate_unlocated_stock.
     product = m.Product(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="S16 M1 Transfer SKU",
         sku="S16-M1-XFER",
         cost_price=3,
@@ -57,10 +59,22 @@ async def test_inter_store_transfer_stock_movement_chain(client, db_session):
     )
     db_session.add(mgr_to)
     await db_session.flush()
+    db_session.add(
+        m.UserCompanyMembership(
+            tenant_id=tenant_id,
+            user_id=mgr_to.id,
+            company_id=seed["c1"].id,
+            role="store_manager",
+            permissions=permissions_for_role("store_manager"),
+            is_active=True,
+        )
+    )
+    await db_session.flush()
 
     from_store = await create_store(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         code="S16M1S",
         name="S16 M1 Source",
         manager_id=mgr_from.id,
@@ -68,6 +82,7 @@ async def test_inter_store_transfer_stock_movement_chain(client, db_session):
     to_store = await create_store(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         code="S16M1D",
         name="S16 M1 Dest",
         manager_id=mgr_to.id,
@@ -221,10 +236,14 @@ async def test_inter_store_transfer_stock_movement_chain(client, db_session):
     qty_field = match.get("quantity", match.get("stock_qty", match.get("on_hand")))
     assert float(qty_field) == pytest.approx(qty_ship)
 
-    # Movements report includes both legs
+    # Movements report includes both legs (admin sees full chain across stores)
+    _totp = pyotp.TOTP(seed["super_totp_secret"]).now()
+    admin_h = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=_totp
+    )
     report = await ac.get(
         f"/api/v1/reports/inventory/movements?product_id={product_id}",
-        headers=mgr_from_h,
+        headers=admin_h,
     )
     assert report.status_code == 200, report.text
     movements = report.json()["data"]["movements"]
@@ -244,6 +263,7 @@ async def test_inter_store_ship_insufficient_warehouse_stock(client, db_session)
 
     product = m.Product(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="S16 M1 Insuf SKU",
         sku="S16-M1-INSUF",
         cost_price=1,
@@ -266,10 +286,22 @@ async def test_inter_store_ship_insufficient_warehouse_stock(client, db_session)
     )
     db_session.add(mgr_to)
     await db_session.flush()
+    db_session.add(
+        m.UserCompanyMembership(
+            tenant_id=tenant_id,
+            user_id=mgr_to.id,
+            company_id=seed["c1"].id,
+            role="store_manager",
+            permissions=permissions_for_role("store_manager"),
+            is_active=True,
+        )
+    )
+    await db_session.flush()
 
     from_store = await create_store(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         code="S16M1A",
         name="S16 M1 Insuf Src",
         manager_id=mgr_from.id,
@@ -277,6 +309,7 @@ async def test_inter_store_ship_insufficient_warehouse_stock(client, db_session)
     to_store = await create_store(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         code="S16M1B",
         name="S16 M1 Insuf Dst",
         manager_id=mgr_to.id,

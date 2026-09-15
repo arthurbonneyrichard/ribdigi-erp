@@ -21,7 +21,12 @@ async def test_product_warehouse_stock_export_csv(client, db_session):
     headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
     tenant_id = seed["t1"].id
     store = await create_store(
-        db_session, tenant_id=tenant_id, code="WH155", name="Stage 155 WH Store"
+        db_session,
+        tenant_id=tenant_id,
+        company_id=seed["c1"].id,
+        code="WH155",
+        name="Stage 155 WH Store",
+        manager_id=seed["mgr1"].id,
     )
     await db_session.flush()
     wh = (

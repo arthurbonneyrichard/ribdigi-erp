@@ -165,6 +165,12 @@ async def run_baseline(
         transport=transport,
         follow_redirects=True,
     ) as client:
+        # Pre-login once so concurrent product/dashboard workers share a token
+        # (avoids TOTP window races + sqlite login stampede under ASGI CI).
+        if email and password and tenant_slug:
+            from loadtest.scenarios import scenario_login
+
+            await scenario_login(client, ctx_template)
 
         async def worker() -> None:
             while True:

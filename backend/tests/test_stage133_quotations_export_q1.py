@@ -29,6 +29,7 @@ async def test_quotations_export_csv(client, db_session):
         [
             m.SalesQuotation(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 quotation_number="Q-133-DRAFT",
                 customer_id=seed["party1"].id,
                 status="draft",
@@ -38,6 +39,7 @@ async def test_quotations_export_csv(client, db_session):
             ),
             m.SalesQuotation(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 quotation_number="Q-133-SENT",
                 customer_id=seed["party1"].id,
                 status="sent",

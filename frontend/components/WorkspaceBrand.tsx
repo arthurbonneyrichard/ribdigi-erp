@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { authHeaders } from '../lib/api';
+import { apiFetch } from '../lib/api';
 import {
   getCompanyId,
   getWorkspaceKind,
@@ -9,8 +9,6 @@ import {
   type WorkspaceKind,
 } from '../lib/workspaceContext';
 import { getSelectedStoreId, subscribeStoreContext } from '../lib/storeContext';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 export type BrandCompany = {
   id: string;
@@ -149,10 +147,10 @@ export default function WorkspaceBrand({
     if (!brand.logoPath) {
       return () => undefined;
     }
+    const logoPath = brand.logoPath;
     (async () => {
       try {
-        const res = await fetch(`${API_BASE}${brand.logoPath}`, {
-          headers: authHeaders(),
+        const res = await apiFetch(logoPath, {
           cache: 'no-store',
         });
         if (!res.ok) throw new Error('logo missing');

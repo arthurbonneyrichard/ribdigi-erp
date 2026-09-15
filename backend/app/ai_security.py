@@ -13,6 +13,8 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.audit import audit_in_store_manager_scope
+
 
 SENSITIVE_ACTIONS = frozenset(
     {
@@ -59,11 +61,22 @@ async def scan_security_alerts(
     lookback_hours: int = 72,
     notify: bool = False,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
+    scoped_user_id: str | None = None,
 ) -> dict:
+    """Scan audit logs for behavioral alerts.
+
+    ``store_ids`` set (including empty) = store_manager view: self-attributed
+    events plus rows whose details carry a managed store/warehouse id.
+    """
     lookback_hours = max(6, min(int(lookback_hours), 168))
     now = datetime.utcnow()
     since = now - timedelta(hours=lookback_hours)
     history_since = now - timedelta(days=30)
+    manager_scope = store_ids is not None
+    managed_stores = list(store_ids or []) if manager_scope else []
+    managed_wh = list(warehouse_ids or []) if manager_scope else []
 
     stmt = (
         select(m.AuditLog)
@@ -80,6 +93,17 @@ async def scan_security_alerts(
             or_(m.AuditLog.company_id == company_id, m.AuditLog.company_id.is_(None))
         )
     logs = (await db.execute(stmt)).scalars().all()
+    if manager_scope:
+        logs = [
+            e
+            for e in logs
+            if audit_in_store_manager_scope(
+                e,
+                user_id=scoped_user_id,
+                store_ids=managed_stores,
+                warehouse_ids=managed_wh,
+            )
+        ]
 
     recent = [e for e in logs if e.created_at and e.created_at >= since]
     alerts: list[dict] = []
@@ -375,7 +399,7 @@ async def scan_security_alerts(
         await db.flush()
 
     high = sum(1 for a in alerts if a["severity"] in {"high", "critical"})
-    return {
+    out = {
         "generated_at": now,
         "lookback_hours": lookback_hours,
         "method": "rules_v1",
@@ -385,3 +409,12 @@ async def scan_security_alerts(
         "notifications_created": notifications_created,
         "note": "Behavioral rules over audit_logs; not a substitute for IDS/SIEM.",
     }
+    if manager_scope:
+        out["scope"] = "store_manager"
+        out["note"] = (
+            "Behavioral rules over audit_logs (store_manager: self + details.store_id/"
+            "warehouse_id only; no audit store column — ADR-005 open). Not IDS/SIEM."
+        )
+    else:
+        out["scope"] = "company"
+    return out

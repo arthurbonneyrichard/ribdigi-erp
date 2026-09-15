@@ -34,6 +34,7 @@ async def test_aging_export_csv(client, db_session):
 
     inv = m.SalesInvoice(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         invoice_number="INV-136-AGE",
         customer_id=customer.id,
         status="posted",

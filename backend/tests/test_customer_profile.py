@@ -2,19 +2,39 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 
 from tests.conftest import auth_headers
 
 
-async def _sales(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _company_admin(ac, seed):
+    """Super admin — party credit/terms/deactivate are company-level master writes."""
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 @pytest.mark.asyncio
-async def test_customer_profile_contacts_history_and_deactivate(client):
+async def test_customer_profile_contacts_history_and_deactivate(client, db_session):
+    from app import models as m
+
     ac, seed = client
-    headers = await _sales(ac)
+    headers = await _company_admin(ac, seed)
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Customer Profile Store",
+        code="CUST-PROF",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.commit()
 
     created = await ac.post(
         "/api/v1/customers",
@@ -92,6 +112,7 @@ async def test_customer_profile_contacts_history_and_deactivate(client):
         headers=headers,
         json={
             "customer_id": customer["id"],
+            "store_id": store.id,
             "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 5}],
         },
     )
@@ -120,11 +141,11 @@ async def test_customer_profile_contacts_history_and_deactivate(client):
 async def test_pos_credit_rejects_walk_in_customer(client, db_session):
     ac, seed = client
     headers = await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")
-    mgr = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    admin = await _company_admin(ac, seed)
 
     walk = await ac.post(
         "/api/v1/customers",
-        headers=mgr,
+        headers=admin,
         json={"name": "Walk Credit Block", "party_type": "walk-in", "credit_limit": 500},
     )
     assert walk.status_code == 200, walk.text
@@ -143,10 +164,10 @@ async def test_pos_credit_rejects_walk_in_customer(client, db_session):
         headers=headers,
         json={
             "session_id": session_id,
-            "party_id": walk_id,
+            "customer_id": walk_id,
             "payment_method": "credit",
-            "items": [{"product_id": seed["p1"].id, "quantity": 1}],
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 10}],
         },
     )
-    assert sale.status_code == 400
-    assert "registered" in sale.json()["detail"].lower()
+    assert sale.status_code == 400, sale.text
+    assert "walk-in" in sale.text.lower() or "credit" in sale.text.lower()

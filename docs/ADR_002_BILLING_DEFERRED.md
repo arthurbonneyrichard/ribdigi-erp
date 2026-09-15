@@ -25,6 +25,10 @@ For Stage 1 / Commercial MVP:
 - Entitlement enforcement by plan can be added later without rewriting trial lifecycle.
 - BR-1.3 “upgrade/downgrade” is PARTIAL until a billing provider ships; metadata change is the Stage 1 closeout.
 
+**2026-09-14 scaffold + portal/checkout create:** Engineering tables/APIs for provider customer, subscription mirror, webhook inbox, Portal + Checkout Session create (live when keys configured; mock for CI; 503 when unconfigured) landed as **PARTIAL** — see [`ADR_002_PAID_BILLING_SCAFFOLD.md`](ADR_002_PAID_BILLING_SCAFFOLD.md).
+
+**2026-09-15 Phase E mock soak:** Automated mock-provider soak (`test_paid_billing_soak.py`) proves portal/checkout/webhook lifecycle + entitlement gate ON allowlist + `invoice.paid` non-Complete. Entitlement gate flag defaults OFF. Paid billing Complete / checkout success / fabricated MRR remain **MISSING** — **ops-blocked** on live Stripe keys + [`paid_billing_staging_soak_checklist.md`](paid_billing_staging_soak_checklist.md) (mock evidence ≠ Complete).
+
 See also Stage 180 go-live remaining-gate index: [`GOLIVE_REMAINING_GATE_MVP.md`](GOLIVE_REMAINING_GATE_MVP.md) (billing remains deferred).
 
 See also Stage 181 billing remaining-gate index: [`BILLING_REMAINING_GATE_MVP.md`](BILLING_REMAINING_GATE_MVP.md) (billing remains deferred; not Complete).

@@ -16,8 +16,15 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _super(ac, seed):
@@ -31,7 +38,7 @@ async def _super(ac, seed):
 async def test_ar_ap_aging_payments_overdue_and_export(client, db_session):
     """BR-10.4–10.6: AR/AP auto + aging + partial pay + due notify + PDF/Excel export."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     super_h = await _super(ac, seed)
     tenant_id = seed["t1"].id
     now = datetime.utcnow()
@@ -45,11 +52,22 @@ async def test_ar_ap_aging_payments_overdue_and_export(client, db_session):
     assert customer.status_code == 200, customer.text
     customer_id = customer.json()["data"]["id"]
 
+    store = m.Store(
+        tenant_id=tenant_id,
+        company_id=seed["c1"].id,
+        name="P1 AR Store",
+        code="P1-AR",
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.commit()
+
     inv = await ac.post(
         "/api/v1/sales/invoices",
         headers=headers,
         json={
             "customer_id": customer_id,
+            "store_id": store.id,
             "items": [
                 {
                     "product_id": seed["p1"].id,
@@ -89,6 +107,7 @@ async def test_ar_ap_aging_payments_overdue_and_export(client, db_session):
     db_session.add(
         m.SalesInvoice(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             invoice_number="INV-P1-AGE-90",
             customer_id=customer_id,
             status="posted",

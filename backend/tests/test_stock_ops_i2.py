@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -12,7 +13,10 @@ from tests.conftest import auth_headers
 @pytest.mark.asyncio
 async def test_adjust_requires_valid_reason_and_persists(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
     bad = await ac.post(
         f"/api/v1/inventory/adjust/{seed['p1'].id}",
@@ -49,7 +53,10 @@ async def test_adjust_requires_valid_reason_and_persists(client, db_session):
 @pytest.mark.asyncio
 async def test_product_lookup_selects_for_ops(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     seed["p1"].barcode = "4006381333931"
     await db_session.commit()
 

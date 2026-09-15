@@ -23,10 +23,17 @@ PYTEST_INI = ROOT / "backend" / "pytest.ini"
 def test_ci_runs_pytest_markers_and_frontend_build_no_k8s():
     text = CI_WORKFLOW.read_text(encoding="utf-8")
     assert "pytest" in text
-    assert '-m "security or isolation"' in text or "-m 'security or isolation'" in text
+    assert (
+        '-m "security or isolation or store_scope"' in text
+        or "-m 'security or isolation or store_scope'" in text
+        or '-m "security or isolation"' in text
+        or "-m 'security or isolation'" in text
+    )
+    assert "store_scope" in text
     assert "npm run build" in text
     assert "setup-python" in text
     assert "setup-node" in text
+    assert "test_store_scope_rbac_matrix.py" in text
     lowered = text.lower()
     assert "kubernetes" not in lowered or "no kubernetes" in lowered
     assert "helm" not in lowered or "no " in lowered
@@ -42,6 +49,7 @@ def test_pytest_ini_declares_security_and_isolation_markers():
     text = PYTEST_INI.read_text(encoding="utf-8")
     assert "security:" in text
     assert "isolation:" in text
+    assert "store_scope:" in text
 
 
 def test_production_env_template_aligned_with_s1_validators():
@@ -61,9 +69,18 @@ def test_production_env_template_aligned_with_s1_validators():
     assert "JWT_SECRET_KEY=" in text
     assert "REQUEST_LOG_ENABLED=true" in text
     assert "METRICS_ENABLED=true" in text
+    assert "METRICS_REQUIRE_AUTH=true" in text
+    assert "METRICS_BEARER_TOKEN=" in text
+    assert "TRUST_X_FORWARDED_FOR=" in text
     assert "ALLOW_DEVELOPMENT_SEED=false" in text
+    assert "ALLOW_DEMO_TENANT_SEED=false" in text
+    assert "TOTP_ENCRYPTION_KEY=" in text
+    assert "BACKUP_ENCRYPTION_KEY=" in text
+    assert "ALLOW_PUBLIC_TENANT_SIGNUP=false" in text
 
     # Template values must satisfy Settings production validator
+    from cryptography.fernet import Fernet
+
     cfg = Settings(
         APP_ENV="production",
         JWT_SECRET_KEY="x" * 32,
@@ -75,11 +92,19 @@ def test_production_env_template_aligned_with_s1_validators():
         EMAIL_ENABLED=False,
         SMS_ENABLED=False,
         ALLOW_DEVELOPMENT_SEED=False,
+        ALLOW_DEMO_TENANT_SEED=False,
+        ALLOW_PUBLIC_TENANT_SIGNUP=False,
         METRICS_ENABLED=True,
+        METRICS_REQUIRE_AUTH=True,
+        METRICS_BEARER_TOKEN="x" * 16,
         REQUEST_LOG_ENABLED=True,
+        TOTP_ENCRYPTION_KEY=Fernet.generate_key().decode(),
+        BACKUP_ENCRYPTION_KEY=Fernet.generate_key().decode(),
     )
     assert cfg.RATE_LIMIT_REQUIRE_REDIS is True
     assert cfg.APP_ENV == "production"
+    assert cfg.METRICS_REQUIRE_AUTH is True
+    assert cfg.ALLOW_PUBLIC_TENANT_SIGNUP is False
 
 
 def test_production_compose_overlay_no_reload_requires_redis_rate_limit():
@@ -151,11 +176,13 @@ def test_production_rejects_wildcard_cors_and_weak_jwt():
     assert "JWT" in str(exc_jwt.value)
 
 
-def test_health_still_exposes_security_posture_under_c1():
+def test_health_omits_security_posture_under_c1():
+    """SEC-L2 — C1 prod-config hardening must not reintroduce public posture."""
     rate_limiter.reset_for_tests()
     client = TestClient(app)
     response = client.get("/api/v1/health")
     assert response.status_code == 200
-    security = response.json()["data"]["security"]
-    assert security["rate_limit_enabled"] is True
-    assert security["cors_allows_wildcard"] is False
+    data = response.json()["data"]
+    assert "security" not in data
+    assert "env" not in data
+    assert data["status"] == "ok"

@@ -2,10 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
-import { api, authHeaders } from '../../lib/api';
+import { api, apiFetch } from '../../lib/api';
 import { useTabQuery } from '../../lib/tabQuery';
-
-const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 type Tab =
   | 'summary'
@@ -241,7 +239,7 @@ export default function Page() {
             : scheduleEnabledFilter === 'false'
               ? '?enabled=false'
               : '';
-        const r = await api(`/reports/schedules${schedQs}`);
+        const r = await api(`/reports/schedules${schedQs}`).catch(() => ({ data: [] }));
         setSchedules(r.data || []);
         setData(null);
         return;
@@ -380,8 +378,6 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
       const params = new URLSearchParams();
       params.set('report_type', reportType || TAB_EXPORT[tab]);
       params.set('format', format);
@@ -397,9 +393,7 @@ export default function Page() {
         if (transferStatus) params.set('status', transferStatus);
       }
       Object.entries(extra).forEach(([k, v]) => v && params.set(k, v));
-      const res = await fetch(`${base}/reports/export?${params}`, {
-        headers: authHeaders(),
-      });
+      const res = await apiFetch(`/reports/export?${params}`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.detail || 'Export failed');
@@ -646,17 +640,13 @@ export default function Page() {
               setError('');
               setMessage('');
               try {
-                const token = localStorage.getItem('token');
-                const tenant = localStorage.getItem('tenant');
                 const params = new URLSearchParams();
                 if (fromDate) params.set('from_date', fromDate);
                 if (toDate) params.set('to_date', toDate);
                 if (storeId) params.set('store_id', storeId);
                 if (branchId) params.set('branch_id', branchId);
                 const qs = params.toString() ? `?${params}` : '';
-                const res = await fetch(`${base}/reports/profit-loss/export${qs}`, {
-                  headers: authHeaders(),
-                });
+                const res = await apiFetch(`/reports/profit-loss/export${qs}`);
                 if (!res.ok) throw new Error(await res.text());
                 const blob = await res.blob();
                 const a = document.createElement('a');
@@ -680,17 +670,13 @@ export default function Page() {
               setError('');
               setMessage('');
               try {
-                const token = localStorage.getItem('token');
-                const tenant = localStorage.getItem('tenant');
                 const params = new URLSearchParams();
                 if (fromDate) params.set('from_date', fromDate);
                 if (toDate) params.set('to_date', toDate);
                 if (storeId) params.set('store_id', storeId);
                 if (branchId) params.set('branch_id', branchId);
                 const qs = params.toString() ? `?${params}` : '';
-                const res = await fetch(`${base}/reports/cash-flow/export${qs}`, {
-                  headers: authHeaders(),
-                });
+                const res = await apiFetch(`/reports/cash-flow/export${qs}`);
                 if (!res.ok) throw new Error(await res.text());
                 const blob = await res.blob();
                 const a = document.createElement('a');
@@ -714,16 +700,12 @@ export default function Page() {
               setError('');
               setMessage('');
               try {
-                const token = localStorage.getItem('token');
-                const tenant = localStorage.getItem('tenant');
                 const params = new URLSearchParams();
                 if (toDate) params.set('as_of_date', toDate);
                 if (storeId) params.set('store_id', storeId);
                 if (branchId) params.set('branch_id', branchId);
                 const qs = params.toString() ? `?${params}` : '';
-                const res = await fetch(`${base}/reports/balance-sheet/export${qs}`, {
-                  headers: authHeaders(),
-                });
+                const res = await apiFetch(`/reports/balance-sheet/export${qs}`);
                 if (!res.ok) throw new Error(await res.text());
                 const blob = await res.blob();
                 const a = document.createElement('a');
@@ -747,15 +729,11 @@ export default function Page() {
               setError('');
               setMessage('');
               try {
-                const token = localStorage.getItem('token');
-                const tenant = localStorage.getItem('tenant');
                 const params = new URLSearchParams();
                 if (fromDate) params.set('from_date', fromDate);
                 if (toDate) params.set('to_date', toDate);
                 const qs = params.toString() ? `?${params}` : '';
-                const res = await fetch(`${base}/reports/tax/export${qs}`, {
-                  headers: authHeaders(),
-                });
+                const res = await apiFetch(`/reports/tax/export${qs}`);
                 if (!res.ok) throw new Error(await res.text());
                 const blob = await res.blob();
                 const a = document.createElement('a');
@@ -784,14 +762,10 @@ export default function Page() {
                 setError('');
                 setMessage('');
                 try {
-                  const token = localStorage.getItem('token');
-                  const tenant = localStorage.getItem('tenant');
                   const params = new URLSearchParams();
                   if (toDate) params.set('as_of_date', toDate);
                   const qs = params.toString() ? `?${params}` : '';
-                  const res = await fetch(`${base}/reports/trial-balance/export${qs}`, {
-                    headers: authHeaders(),
-                  });
+                  const res = await apiFetch(`/reports/trial-balance/export${qs}`);
                   if (!res.ok) throw new Error(await res.text());
                   const blob = await res.blob();
                   const a = document.createElement('a');
@@ -1626,7 +1600,7 @@ export default function Page() {
                   next === 'true' ? '?enabled=true' : next === 'false' ? '?enabled=false' : '';
                 api(`/reports/schedules${schedQs}`)
                   .then((r) => setSchedules(r.data || []))
-                  .catch((err) => setError(err.message));
+                  .catch(() => setSchedules([]));
               }}
               aria-label="Filter schedules by enabled"
             >
@@ -1637,16 +1611,14 @@ export default function Page() {
             <button
               type="button"
               onClick={async () => {
-                const token = localStorage.getItem('token') || '';
+
                 const qs =
                   scheduleEnabledFilter === 'true'
                     ? '?enabled=true'
                     : scheduleEnabledFilter === 'false'
                       ? '?enabled=false'
                       : '';
-                const res = await fetch(`${base}/reports/schedules/export${qs}`, {
-                  headers: { Authorization: `Bearer ${token}` },
-                });
+                const res = await apiFetch(`/reports/schedules/export${qs}`);
                 if (!res.ok) {
                   setError(await res.text());
                   return;

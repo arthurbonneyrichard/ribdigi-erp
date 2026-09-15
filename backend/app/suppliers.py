@@ -300,8 +300,23 @@ async def delete_contact(
 
 
 async def supplier_history(
-    db: AsyncSession, *, tenant_id: str, supplier_id: str, company_id: str | None = None
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    supplier_id: str,
+    company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> dict:
+    """Purchase history for one supplier.
+
+    When ``warehouse_ids`` is set (store_manager), PO/PI/returns are filtered by
+    warehouse (null-WH fail-closed; PI uses direct/GRN/PO coalesce via dashboard
+    helper); payments via linked PI/PO warehouse (unallocated fail-closed).
+    """
+    from sqlalchemy import func
+
+    from app import dashboard_scope as dashboard_scope_svc
+
     await get_supplier(db, tenant_id, supplier_id)
 
     def _scoped(model):
@@ -310,66 +325,88 @@ async def supplier_history(
             clauses.append(model.company_id == company_id)
         return clauses
 
-    orders = list(
-        (
-            await db.execute(
-                select(m.PurchaseOrder)
-                .where(
-                    *_scoped(m.PurchaseOrder),
-                    m.PurchaseOrder.supplier_id == supplier_id,
-                )
-                .order_by(m.PurchaseOrder.created_at.desc())
-                .limit(50)
-            )
+    order_stmt = (
+        select(m.PurchaseOrder)
+        .where(
+            *_scoped(m.PurchaseOrder),
+            m.PurchaseOrder.supplier_id == supplier_id,
         )
-        .scalars()
-        .all()
+        .order_by(m.PurchaseOrder.created_at.desc())
+        .limit(50)
     )
-    invoices = list(
-        (
-            await db.execute(
-                select(m.PurchaseInvoice)
-                .where(
-                    *_scoped(m.PurchaseInvoice),
-                    m.PurchaseInvoice.supplier_id == supplier_id,
-                )
-                .order_by(m.PurchaseInvoice.created_at.desc())
-                .limit(50)
-            )
+    order_stmt = dashboard_scope_svc.apply_warehouse_scope_filter(
+        order_stmt, m.PurchaseOrder, warehouse_ids
+    )
+    orders = list((await db.execute(order_stmt)).scalars().all())
+
+    inv_stmt = (
+        select(m.PurchaseInvoice)
+        .where(
+            *_scoped(m.PurchaseInvoice),
+            m.PurchaseInvoice.supplier_id == supplier_id,
         )
-        .scalars()
-        .all()
+        .order_by(m.PurchaseInvoice.created_at.desc())
+        .limit(50)
     )
-    returns = list(
-        (
-            await db.execute(
-                select(m.PurchaseReturn)
-                .where(
-                    *_scoped(m.PurchaseReturn),
-                    m.PurchaseReturn.supplier_id == supplier_id,
-                )
-                .order_by(m.PurchaseReturn.created_at.desc())
-                .limit(50)
-            )
+    inv_stmt = dashboard_scope_svc.apply_purchase_invoice_warehouse_scope(
+        inv_stmt, warehouse_ids
+    )
+    invoices = list((await db.execute(inv_stmt)).scalars().all())
+
+    ret_stmt = (
+        select(m.PurchaseReturn)
+        .where(
+            *_scoped(m.PurchaseReturn),
+            m.PurchaseReturn.supplier_id == supplier_id,
         )
-        .scalars()
-        .all()
+        .order_by(m.PurchaseReturn.created_at.desc())
+        .limit(50)
     )
-    payments = list(
-        (
-            await db.execute(
-                select(m.SupplierPayment)
-                .where(
-                    *_scoped(m.SupplierPayment),
-                    m.SupplierPayment.supplier_id == supplier_id,
-                )
-                .order_by(m.SupplierPayment.created_at.desc())
-                .limit(50)
-            )
+    ret_stmt = dashboard_scope_svc.apply_warehouse_scope_filter(
+        ret_stmt, m.PurchaseReturn, warehouse_ids
+    )
+    returns = list((await db.execute(ret_stmt)).scalars().all())
+
+    pay_stmt = (
+        select(m.SupplierPayment)
+        .where(
+            *_scoped(m.SupplierPayment),
+            m.SupplierPayment.supplier_id == supplier_id,
         )
-        .scalars()
-        .all()
+        .order_by(m.SupplierPayment.created_at.desc())
+        .limit(50)
     )
+    if warehouse_ids is not None:
+        if not warehouse_ids:
+            pay_stmt = pay_stmt.where(m.SupplierPayment.id.is_(None))
+        else:
+            pay_stmt = (
+                pay_stmt.outerjoin(
+                    m.PurchaseInvoice,
+                    m.PurchaseInvoice.id == m.SupplierPayment.purchase_invoice_id,
+                )
+                .outerjoin(
+                    m.GoodsReceipt,
+                    m.GoodsReceipt.id == m.PurchaseInvoice.goods_receipt_id,
+                )
+                .outerjoin(
+                    m.PurchaseOrder,
+                    m.PurchaseOrder.id
+                    == func.coalesce(
+                        m.SupplierPayment.purchase_order_id,
+                        m.PurchaseInvoice.purchase_order_id,
+                    ),
+                )
+                .where(
+                    func.coalesce(
+                        m.PurchaseInvoice.warehouse_id,
+                        m.GoodsReceipt.warehouse_id,
+                        m.PurchaseOrder.warehouse_id,
+                    ).in_(warehouse_ids)
+                )
+            )
+    payments = list((await db.execute(pay_stmt)).scalars().all())
+
     return {
         "supplier_id": supplier_id,
         "orders": [

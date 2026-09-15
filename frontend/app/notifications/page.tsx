@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Shell from '../../components/Shell';
-import { api } from '../../lib/api';
+import { api, apiFetch } from '../../lib/api';
 import { formatDateTime, type RegionalFormats } from '../../lib/format';
 
 type Note = {
@@ -228,15 +228,12 @@ function PageInner() {
         <button
           type="button"
           onClick={async () => {
-            const token = localStorage.getItem('token') || '';
-            const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
             const params = new URLSearchParams();
             if (status && status !== 'all') params.set('status', status);
             if (group) params.set('group', group);
             const qs = params.toString() ? `?${params}` : '';
-            const res = await fetch(`${apiBase}/notifications/export${qs}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
+            const res = await apiFetch(`/notifications/export${qs}`);
             if (!res.ok) {
               setError(await res.text());
               return;
@@ -328,16 +325,7 @@ function PageInner() {
                 // Stage 140 N1 — notification preferences CSV
                 setError('');
                 try {
-                  const token = localStorage.getItem('token');
-                  const tenant = localStorage.getItem('tenant');
-                  const apiBase =
-                    process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-                  const res = await fetch(`${apiBase}/notifications/settings/export`, {
-                    headers: {
-                      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                      ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-                    },
-                  });
+                  const res = await apiFetch(`/notifications/settings/export`);
                   if (!res.ok) throw new Error('Notification preferences export failed');
                   const blob = await res.blob();
                   const url = URL.createObjectURL(blob);

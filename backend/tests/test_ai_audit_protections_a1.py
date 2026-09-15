@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -10,8 +11,15 @@ from app import models as m
 from tests.conftest import auth_headers
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 def test_redact_for_audit_strips_secrets_and_emails():
@@ -37,7 +45,7 @@ def test_sanitize_blocks_injection_and_overlong():
 @pytest.mark.asyncio
 async def test_chat_rejects_injection_and_audits(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
 
     r = await ac.post(
@@ -65,7 +73,7 @@ async def test_chat_rejects_injection_and_audits(client, db_session):
 @pytest.mark.asyncio
 async def test_chat_success_audits_with_redacted_preview(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
 
     r = await ac.post(
@@ -100,7 +108,7 @@ async def test_chat_success_audits_with_redacted_preview(client, db_session):
 @pytest.mark.asyncio
 async def test_chat_rejects_overlong_message(client):
     ac, _seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     r = await ac.post(
         "/api/v1/ai/chat",
         headers=headers,
@@ -113,7 +121,7 @@ async def test_chat_rejects_overlong_message(client):
 @pytest.mark.asyncio
 async def test_report_generate_rejects_injection(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     r = await ac.post(
         "/api/v1/ai/reports/generate",
         headers=headers,

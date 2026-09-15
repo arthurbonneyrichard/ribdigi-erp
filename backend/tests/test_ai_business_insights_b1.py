@@ -19,11 +19,45 @@ async def _mgr(ac):
 
 async def _seed_four_actuals(db_session, seed):
     tenant_id = seed["t1"].id
+    cid = seed["c1"].id
     product = seed["p1"]
     product.stock_qty = 1
     product.reorder_level = 10
+    product.company_id = cid
     customer = seed["party1"]
-    supplier = m.Party(tenant_id=tenant_id, name="B1 Supplier", kind="supplier")
+    store = m.Store(
+        tenant_id=tenant_id,
+        company_id=cid,
+        name="B1 Mgr Store",
+        code="B1-MGR",
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tenant_id,
+        company_id=cid,
+        store_id=store.id,
+        name="B1 Mgr WH",
+        code="B1-MGR-WH",
+    )
+    db_session.add(wh)
+    await db_session.flush()
+    db_session.add(
+        m.WarehouseStock(
+            tenant_id=tenant_id,
+            company_id=cid,
+            warehouse_id=wh.id,
+            product_id=product.id,
+            quantity=1,
+            reserved_qty=0,
+            reorder_level=10,
+        )
+    )
+    supplier = m.Party(
+        tenant_id=tenant_id, company_id=cid, name="B1 Supplier", kind="supplier"
+    )
     db_session.add(supplier)
     await db_session.flush()
 
@@ -35,6 +69,8 @@ async def _seed_four_actuals(db_session, seed):
         db_session.add(
             m.SalesInvoice(
                 tenant_id=tenant_id,
+                company_id=cid,
+                store_id=store.id,
                 invoice_number=f"INV-B1-W-{i}",
                 customer_id=customer.id,
                 status="posted",
@@ -47,6 +83,8 @@ async def _seed_four_actuals(db_session, seed):
     db_session.add(
         m.SalesInvoice(
             tenant_id=tenant_id,
+            company_id=cid,
+            store_id=store.id,
             invoice_number="INV-B1-PW",
             customer_id=customer.id,
             status="posted",
@@ -63,6 +101,8 @@ async def _seed_four_actuals(db_session, seed):
         db_session.add(
             m.PurchaseInvoice(
                 tenant_id=tenant_id,
+                company_id=cid,
+                warehouse_id=wh.id,
                 invoice_number=f"PI-B1-W-{i}",
                 supplier_id=supplier.id,
                 status="unpaid",
@@ -77,6 +117,8 @@ async def _seed_four_actuals(db_session, seed):
     db_session.add(
         m.PurchaseInvoice(
             tenant_id=tenant_id,
+            company_id=cid,
+            warehouse_id=wh.id,
             invoice_number="PI-B1-PW",
             supplier_id=supplier.id,
             status="paid",
@@ -91,6 +133,8 @@ async def _seed_four_actuals(db_session, seed):
     db_session.add(
         m.PurchaseInvoice(
             tenant_id=tenant_id,
+            company_id=cid,
+            warehouse_id=wh.id,
             invoice_number="PI-B1-OVER",
             supplier_id=supplier.id,
             status="overdue",
@@ -108,6 +152,8 @@ async def _seed_four_actuals(db_session, seed):
         db_session.add(
             m.PurchaseOrder(
                 tenant_id=tenant_id,
+                company_id=cid,
+                warehouse_id=wh.id,
                 po_number=f"PO-B1-D-{i}",
                 supplier_id=supplier.id,
                 status="draft",
@@ -121,6 +167,8 @@ async def _seed_four_actuals(db_session, seed):
     db_session.add(
         m.Expense(
             tenant_id=tenant_id,
+            company_id=cid,
+            store_id=store.id,
             category="Utilities",
             description="B1 spike",
             amount=700,
@@ -132,6 +180,8 @@ async def _seed_four_actuals(db_session, seed):
     db_session.add(
         m.Expense(
             tenant_id=tenant_id,
+            company_id=cid,
+            store_id=store.id,
             category="Utilities",
             description="B1 prior",
             amount=100,
@@ -146,7 +196,7 @@ async def _seed_four_actuals(db_session, seed):
 @pytest.mark.asyncio
 async def test_business_insights_four_actuals(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     await _seed_four_actuals(db_session, seed)
 
     r = await ac.get("/api/v1/ai/insights", headers=headers)
@@ -182,7 +232,26 @@ async def test_business_insights_four_actuals(client, db_session):
 @pytest.mark.asyncio
 async def test_business_insights_tenant_isolation(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
+    store = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        name="B1 Iso Store",
+        code="B1-ISO",
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    db_session.add(
+        m.Warehouse(
+            tenant_id=seed["t1"].id,
+            company_id=seed["c1"].id,
+            store_id=store.id,
+            name="B1 Iso WH",
+            code="B1-ISO-WH",
+        )
+    )
     now = datetime.utcnow()
     db_session.add(
         m.PurchaseInvoice(

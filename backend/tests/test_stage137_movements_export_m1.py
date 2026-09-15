@@ -27,6 +27,7 @@ async def test_movements_export_csv(client, db_session):
 
     product = m.Product(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         name="Stage137 Move Product",
         sku="SKU-137-MOVE",
         stock_qty=10,
@@ -40,6 +41,7 @@ async def test_movements_export_csv(client, db_session):
         [
             m.StockMovement(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 product_id=product.id,
                 movement_type="stock_in",
                 quantity=5,
@@ -49,6 +51,7 @@ async def test_movements_export_csv(client, db_session):
             ),
             m.StockMovement(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 product_id=product.id,
                 movement_type="stock_out",
                 quantity=2,

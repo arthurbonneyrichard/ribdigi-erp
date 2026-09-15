@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -14,7 +15,10 @@ from tests.conftest import auth_headers
 @pytest.mark.asyncio
 async def test_grn_partial_accept_reject_with_batch(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
     product = await db_session.get(m.Product, seed["p1"].id)
     product.tracks_batches = True

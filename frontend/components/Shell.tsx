@@ -2,7 +2,12 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { api } from '../lib/api';
+import { api, apiFetch } from '../lib/api';
+import {
+  applyPrincipalFromMe,
+  clearLoginSession,
+  hasAuthSession,
+} from '../lib/authSession';
 import { canReadModule } from '../lib/rbac';
 import {
   getSelectedStoreId,
@@ -1189,6 +1194,12 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
+    label: 'Store Memberships',
+    href: '/stores#memberships',
+    modules: ['stores'],
+  },
+  {
+    kind: 'link',
     label: 'Inter-store Transfers',
     href: '/stores#transfers',
     modules: ['stores'],
@@ -2059,6 +2070,13 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [tenantAdmin, setTenantAdmin] = useState(false);
   const [tenantName, setTenantName] = useState('');
   const [tenantHasLogo, setTenantHasLogo] = useState(false);
+  const [companyEntitlement, setCompanyEntitlement] = useState<{
+    max_companies: number;
+    max_companies_unlimited?: boolean;
+    used?: number;
+    remaining?: number | null;
+    over_entitlement?: boolean;
+  } | null>(null);
   const [onboarding, setOnboarding] = useState<OnboardingChecklist | null>(null);
   const [onboardingBusy, setOnboardingBusy] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
@@ -2175,12 +2193,38 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Remote wipe PARTIAL — online poll is source of truth when Web Push/FCM unavailable.
+  // Periodic poll covers already-online tills (Cloud Agent / fail-closed push); not Offline Complete.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let cancelled = false;
+    const WIPE_POLL_INTERVAL_MS = 45_000;
+    const run = () => {
+      if (cancelled || (typeof navigator !== 'undefined' && !navigator.onLine)) return;
+      void import('../lib/offlineRemoteWipe')
+        .then(({ processPendingRemoteWipeIfNeeded }) => processPendingRemoteWipeIfNeeded())
+        .catch(() => {
+          /* wipe poll best-effort */
+        });
+    };
+    run();
+    window.addEventListener('online', run);
+    const interval = window.setInterval(run, WIPE_POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('online', run);
+      window.clearInterval(interval);
+    };
+  }, []);
+
   useEffect(() => {
     let active = true;
     async function load() {
       try {
         const meRes = await api('/me');
         if (!active) return;
+        // SEC-M5 Phase D — principal from authenticated /me (in-memory), not LS/cookie.
+        applyPrincipalFromMe(meRes.data);
         // ADR-137 — platform staff use Ribdigi House console, not tenant ERP nav
         // (allow /security for MFA enrollment).
         if (meRes.data?.principal === 'platform') {
@@ -2200,6 +2244,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         }
         setPrincipal(meRes.data?.principal || 'tenant');
         setTenantAdmin(Boolean(meRes.data?.tenant_admin));
+        if (meRes.data?.company_entitlement) {
+          setCompanyEntitlement(meRes.data.company_entitlement);
+        }
         const memberships = meRes.data?.company_memberships || [];
         setCompanies(
           memberships.map(
@@ -2256,11 +2303,27 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         } else if (storedKind === 'company' && !getCompanyId() && memberships[0]) {
           setWorkspaceContext('company', memberships[0].company_id);
         }
+        const ent = meRes.data?.company_entitlement;
+        const singleCompanyCap =
+          ent?.max_companies === 1 && !ent?.max_companies_unlimited;
+        if (
+          !meRes.data?.tenant_admin &&
+          singleCompanyCap &&
+          memberships.length === 1 &&
+          getWorkspaceKind() !== 'company'
+        ) {
+          setWorkspaceContext('company', memberships[0].company_id);
+          setWorkspaceKind('company');
+          setCompanyIdState(memberships[0].company_id);
+        }
         try {
           const ws = await api('/workspace');
           if (active && ws.data) {
             setTenantName(ws.data.tenant_name || '');
             setTenantHasLogo(Boolean(ws.data.tenant_has_logo));
+            if (ws.data?.company_entitlement) {
+              setCompanyEntitlement(ws.data.company_entitlement);
+            }
             if (Array.isArray(ws.data.companies) && ws.data.companies.length) {
               setCompanies(
                 ws.data.companies.map(
@@ -2373,8 +2436,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const token = localStorage.getItem('token');
-    if (!token) return;
+    if (!hasAuthSession()) return;
     const timeoutMs = Math.max(5, idleMinutes) * 60 * 1000;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let loggingOut = false;
@@ -2387,8 +2449,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       } catch {
         // Still clear local credentials if the server call fails (expired token, etc.)
       }
-      localStorage.removeItem('token');
-      localStorage.removeItem('refresh_token');
+      clearLoginSession();
       clearWorkspaceContext();
       window.location.href = '/';
     }
@@ -2414,8 +2475,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     } catch {
       // clear local session anyway
     }
-    localStorage.removeItem('token');
-    localStorage.removeItem('refresh_token');
+    clearLoginSession();
     clearWorkspaceContext();
     window.location.href = '/';
   }
@@ -2497,7 +2557,15 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     canReadModule(permissions, 'stores') &&
     stores.length > 0;
 
-  const showWorkspaceSwitcher = principal !== 'platform' && (tenantAdmin || companies.length > 0);
+  const singleCompanyCap =
+    companyEntitlement?.max_companies === 1 && !companyEntitlement?.max_companies_unlimited;
+  const hideWorkspaceSwitcherForSingleCompany =
+    singleCompanyCap && companies.length <= 1 && !tenantAdmin;
+
+  const showWorkspaceSwitcher =
+    principal !== 'platform' &&
+    !hideWorkspaceSwitcherForSingleCompany &&
+    (tenantAdmin || companies.length > 0);
 
   function groupIsOpen(id: string): boolean {
     return Boolean(openNavGroups[id]);
@@ -2812,12 +2880,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                     onClick={async () => {
                       // Stage 143 O1 — onboarding checklist CSV
                       try {
-                        const token = localStorage.getItem('token') || '';
-                        const apiBase =
-                          process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-                        const res = await fetch(`${apiBase}/onboarding/checklist/export`, {
-                          headers: { Authorization: `Bearer ${token}` },
-                        });
+                        const res = await apiFetch('/onboarding/checklist/export');
                         if (!res.ok) return;
                         const blob = await res.blob();
                         const a = document.createElement('a');

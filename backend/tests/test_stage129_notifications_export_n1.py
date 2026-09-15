@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pyotp
 import pytest
 
 from app import models as m
@@ -15,15 +16,17 @@ ROOT = Path(__file__).resolve().parents[2]
 @pytest.mark.asyncio
 async def test_notifications_export_csv(client, db_session):
     ac, seed = client
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
     headers = await auth_headers(
-        ac, email="mgr@alpha.example.com", tenant_slug="alpha"
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
     )
 
     db_session.add_all(
         [
             m.Notification(
                 tenant_id=seed["t1"].id,
-                user_id=seed["mgr1"].id,
+                company_id=seed["c1"].id,
+                user_id=seed["super"].id,
                 category="system",
                 title="Stage129 Unread",
                 message="Unread body",
@@ -31,7 +34,8 @@ async def test_notifications_export_csv(client, db_session):
             ),
             m.Notification(
                 tenant_id=seed["t1"].id,
-                user_id=seed["mgr1"].id,
+                company_id=seed["c1"].id,
+                user_id=seed["super"].id,
                 category="system",
                 title="Stage129 Read",
                 message="Read body",

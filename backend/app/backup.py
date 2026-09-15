@@ -101,12 +101,19 @@ def backup_root() -> Path:
 
 
 def _fernet() -> Fernet:
+    """Fernet for .ribbak archives. Production requires a dedicated key (SEC-M4)."""
     raw = (settings.BACKUP_ENCRYPTION_KEY or "").strip()
     if raw:
         try:
             return Fernet(raw.encode("utf-8") if isinstance(raw, str) else raw)
         except Exception as exc:
             raise HTTPException(status_code=500, detail=f"Invalid BACKUP_ENCRYPTION_KEY: {exc}") from exc
+    if settings.APP_ENV.lower() == "production":
+        raise HTTPException(
+            status_code=500,
+            detail="BACKUP_ENCRYPTION_KEY required in production",
+        )
+    # Development-only fallback — never used when APP_ENV=production (fail closed).
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,

@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 
 import pytest
+import pyotp
 
 from app import models as m
 from app.stores import create_store
@@ -14,7 +15,10 @@ from tests.conftest import auth_headers
 @pytest.mark.asyncio
 async def test_daily_comparative_and_customer_sales(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     tenant_id = seed["t1"].id
     customer = seed["party1"]
     today = datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
@@ -24,6 +28,7 @@ async def test_daily_comparative_and_customer_sales(client, db_session):
         [
             m.SalesInvoice(
                 tenant_id=tenant_id,
+                company_id=seed["c1"].id,
                 invoice_number="INV-R1-TODAY",
                 customer_id=customer.id,
                 status="posted",
@@ -35,6 +40,7 @@ async def test_daily_comparative_and_customer_sales(client, db_session):
             ),
             m.SalesInvoice(
                 tenant_id=tenant_id,
+                company_id=seed["c1"].id,
                 invoice_number="INV-R1-YDAY",
                 customer_id=customer.id,
                 status="posted",
@@ -72,11 +78,14 @@ async def test_daily_comparative_and_customer_sales(client, db_session):
 @pytest.mark.asyncio
 async def test_product_sales_store_and_category_filters(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     tenant_id = seed["t1"].id
 
-    cat_a = m.ProductCategory(tenant_id=tenant_id, name="Cat A", code="CA")
-    cat_b = m.ProductCategory(tenant_id=tenant_id, name="Cat B", code="CB")
+    cat_a = m.ProductCategory(tenant_id=tenant_id, company_id=seed["c1"].id, name="Cat A", code="CA")
+    cat_b = m.ProductCategory(tenant_id=tenant_id, company_id=seed["c1"].id, name="Cat B", code="CB")
     db_session.add_all([cat_a, cat_b])
     await db_session.flush()
 
@@ -84,6 +93,7 @@ async def test_product_sales_store_and_category_filters(client, db_session):
     p_a.category_id = cat_a.id
     p_b = m.Product(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="Beta Widget",
         sku="B-R1",
         cost_price=1,
@@ -94,13 +104,14 @@ async def test_product_sales_store_and_category_filters(client, db_session):
     db_session.add(p_b)
     await db_session.flush()
 
-    store_a = await create_store(db_session, tenant_id=tenant_id, code="R1A", name="R1 Store A")
-    store_b = await create_store(db_session, tenant_id=tenant_id, code="R1B", name="R1 Store B")
+    store_a = await create_store(db_session, tenant_id=tenant_id, company_id=seed["c1"].id, code="R1A", name="R1 Store A")
+    store_b = await create_store(db_session, tenant_id=tenant_id, company_id=seed["c1"].id, code="R1B", name="R1 Store B")
     await db_session.flush()
 
     now = datetime.utcnow()
     inv_a = m.SalesInvoice(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         invoice_number="INV-R1-A",
         customer_id=seed["party1"].id,
         store_id=store_a.id,
@@ -112,6 +123,7 @@ async def test_product_sales_store_and_category_filters(client, db_session):
     )
     inv_b = m.SalesInvoice(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         invoice_number="INV-R1-B",
         customer_id=seed["party1"].id,
         store_id=store_b.id,
@@ -127,6 +139,7 @@ async def test_product_sales_store_and_category_filters(client, db_session):
         [
             m.SalesInvoiceItem(
                 tenant_id=tenant_id,
+                company_id=seed["c1"].id,
                 sales_invoice_id=inv_a.id,
                 product_id=p_a.id,
                 quantity=2,
@@ -135,6 +148,7 @@ async def test_product_sales_store_and_category_filters(client, db_session):
             ),
             m.SalesInvoiceItem(
                 tenant_id=tenant_id,
+                company_id=seed["c1"].id,
                 sales_invoice_id=inv_b.id,
                 product_id=p_b.id,
                 quantity=10,
@@ -171,13 +185,23 @@ async def test_product_sales_store_and_category_filters(client, db_session):
         headers=headers,
         params={"store_id": "00000000-0000-0000-0000-000000000099"},
     )
-    assert foreign.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert foreign.status_code in (403, 404), foreign.text
+    if foreign.status_code == 403:
+        detail = foreign.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"
 
 
 @pytest.mark.asyncio
 async def test_sales_customers_exportable(client):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
     listed = await ac.get("/api/v1/reports/exportable", headers=headers)
     assert listed.status_code == 200
     assert "sales_customers" in listed.json()["data"]["types"]

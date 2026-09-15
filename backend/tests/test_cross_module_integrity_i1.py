@@ -11,8 +11,15 @@ from app import models as m
 from tests.conftest import auth_headers
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _cashier(ac):
@@ -106,18 +113,19 @@ async def _pos_counts(db, tenant_id: str, session_id: str | None = None) -> dict
 async def test_inventory_qty_equals_stage17_movement_chain(client, db_session):
     """Inventory qty = Σ movements after Stage 17 stock-in / adjust / warehouse ops."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
 
     product = m.Product(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="S18 I1 Stock SKU",
         sku="S18-I1-STOCK",
         cost_price=2.5,
         selling_price=10,
         stock_qty=0,
     )
-    wh = m.Warehouse(tenant_id=tenant_id, name="S18 I1 WH", code="S18I1WH")
+    wh = m.Warehouse(tenant_id=tenant_id, company_id=seed["c1"].id, name="S18 I1 WH", code="S18I1WH")
     db_session.add_all([product, wh])
     await db_session.commit()
     product_id, warehouse_id = product.id, wh.id
@@ -188,13 +196,14 @@ async def test_inventory_qty_equals_stage17_movement_chain(client, db_session):
 async def test_accounting_tb_inventory_gl_and_ar_sanity(client, db_session):
     """Journals/TB balanced; Inventory GL + AR move sanely after invoice post."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     super_h = await _super(ac, seed)
     tenant_id = seed["t1"].id
-    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+    await accounting_svc.ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
 
     product = m.Product(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="S18 I1 GL SKU",
         sku="S18-I1-GL",
         cost_price=4,
@@ -295,10 +304,11 @@ async def test_pos_money_path_no_orphans_and_stock_reconciles(client, db_session
     ac, seed = client
     cashier = await _cashier(ac)
     tenant_id = seed["t1"].id
-    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+    await accounting_svc.ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
 
     product = m.Product(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="S18 I1 POS SKU",
         sku="S18-I1-POS",
         cost_price=3,
@@ -311,7 +321,7 @@ async def test_pos_money_path_no_orphans_and_stock_reconciles(client, db_session
     await db_session.commit()
     product_id = product.id
 
-    mgr = await _mgr(ac)
+    mgr = await _mgr(ac, seed)
     stock_in = await ac.post(
         "/api/v1/inventory/stock-in",
         headers=mgr,

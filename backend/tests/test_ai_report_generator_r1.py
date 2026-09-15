@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
+import pyotp
 import pytest
 
 from app import models as m
@@ -15,13 +16,18 @@ ROOT = Path(__file__).resolve().parents[2]
 PROMPT_Q2 = "Show me monthly sales for Q2 2026"
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _admin(ac, seed):
+    """Super admin with TOTP — store_manager is denied company-level NL generate."""
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _seed_q2_sale(db_session, seed):
     inv = m.SalesInvoice(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         invoice_number="INV-R1-Q2-1",
         customer_id=seed["party1"].id,
         status="posted",
@@ -36,6 +42,7 @@ async def _seed_q2_sale(db_session, seed):
     db_session.add(
         m.SalesInvoiceItem(
             tenant_id=seed["t1"].id,
+            company_id=seed["c1"].id,
             sales_invoice_id=inv.id,
             product_id=seed["p1"].id,
             quantity=8,
@@ -50,7 +57,7 @@ async def _seed_q2_sale(db_session, seed):
 async def test_generate_report_from_nl_prompt(client, db_session):
     """BR-21.7: generate reports from text prompts (Q2 monthly sales)."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _admin(ac, seed)
     await _seed_q2_sale(db_session, seed)
 
     r = await ac.post(
@@ -78,7 +85,7 @@ async def test_generate_report_from_nl_prompt(client, db_session):
 async def test_export_generated_report(client, db_session):
     """BR-21.7: export generated reports (csv + pdf)."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _admin(ac, seed)
     await _seed_q2_sale(db_session, seed)
 
     csv_r = await ac.post(
@@ -90,7 +97,8 @@ async def test_export_generated_report(client, db_session):
     assert "text/csv" in csv_r.headers.get("content-type", "")
     assert "attachment" in csv_r.headers.get("content-disposition", "").lower()
     assert len(csv_r.content) > 0
-    assert b"sku" in csv_r.content.lower() or b"Alpha" in csv_r.content or b"," in csv_r.content
+    assert b"no rows" not in csv_r.content.lower()
+    assert b"sku" in csv_r.content.lower() or b"Alpha" in csv_r.content
 
     pdf_r = await ac.post(
         "/api/v1/ai/reports/generate?export=true",
@@ -106,7 +114,7 @@ async def test_export_generated_report(client, db_session):
 async def test_save_and_reuse_report_template(client, db_session):
     """BR-21.7: save report templates and regenerate/export from template_id."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _admin(ac, seed)
     await _seed_q2_sale(db_session, seed)
 
     save = await ac.post(

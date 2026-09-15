@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
-import { api, authHeaders } from '../../lib/api';
+import { api, apiFetch } from '../../lib/api';
 import { setWorkspaceContext } from '../../lib/workspaceContext';
 
 type Company = {
@@ -36,14 +36,21 @@ type StoreEntitlement = {
   over_entitlement?: boolean;
 };
 
-type BusinessType = { id: string; code: string; label: string };
+type CompanyEntitlement = {
+  max_companies: number;
+  max_companies_unlimited?: boolean;
+  used: number;
+  remaining: number | null;
+  over_entitlement?: boolean;
+};
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+type BusinessType = { id: string; code: string; label: string };
 
 export default function CompaniesPage() {
   const [rows, setRows] = useState<Company[]>([]);
   const [types, setTypes] = useState<BusinessType[]>([]);
   const [storeEnt, setStoreEnt] = useState<StoreEntitlement | null>(null);
+  const [companyEnt, setCompanyEnt] = useState<CompanyEntitlement | null>(null);
   const [allocations, setAllocations] = useState<Record<string, StoreAllocation>>({});
   const [error, setError] = useState('');
   const [name, setName] = useState('');
@@ -63,8 +70,8 @@ export default function CompaniesPage() {
   async function load() {
     setWorkspaceContext('tenant');
     const [list, bt, dash, tenantStores] = await Promise.all([
-      api('/companies'),
-      api('/business-types'),
+      api('/companies').catch(() => ({ data: [] })),
+      api('/business-types').catch(() => ({ data: [] })),
       api('/tenant/dashboard').catch(() => ({ data: null })),
       api('/tenant/store-entitlement').catch(() => ({ data: null })),
     ]);
@@ -75,6 +82,28 @@ export default function CompaniesPage() {
       dash?.data?.subscription?.store_entitlement ||
       null;
     setStoreEnt(ent);
+    const coEnt =
+      dash?.data?.subscription?.company_entitlement ||
+      dash?.data?.subscription?.limits ||
+      null;
+    if (coEnt && typeof coEnt.max_companies === 'number') {
+      setCompanyEnt({
+        max_companies: coEnt.max_companies,
+        max_companies_unlimited: coEnt.max_companies_unlimited,
+        used: coEnt.used ?? dash?.data?.counts?.companies,
+        remaining: coEnt.remaining ?? null,
+        over_entitlement: coEnt.over_entitlement,
+      });
+    } else if (dash?.data?.subscription?.limits) {
+      const lim = dash.data.subscription.limits;
+      setCompanyEnt({
+        max_companies: Number(lim.max_companies ?? 1),
+        max_companies_unlimited: Boolean(lim.max_companies_unlimited),
+        used: dash?.data?.counts?.companies ?? list.data?.length ?? 0,
+        remaining: null,
+        over_entitlement: false,
+      });
+    }
     const allocRows: StoreAllocation[] =
       dash?.data?.subscription?.store_allocations || [];
     const map: Record<string, StoreAllocation> = {};
@@ -125,9 +154,8 @@ export default function CompaniesPage() {
       if (companyId && logoFile) {
         const form = new FormData();
         form.append('file', logoFile);
-        const res = await fetch(`${API_BASE}/companies/${companyId}/logo`, {
+        const res = await apiFetch(`/companies/${companyId}/logo`, {
           method: 'POST',
-          headers: authHeaders(),
           body: form,
         });
         if (!res.ok) {
@@ -154,6 +182,18 @@ export default function CompaniesPage() {
   const storeLimitLabel = storeEnt?.max_stores_unlimited
     ? 'Unlimited'
     : String(storeEnt?.max_stores ?? '—');
+  const companyLimitLabel = companyEnt?.max_companies_unlimited
+    ? 'Unlimited'
+    : String(companyEnt?.max_companies ?? '—');
+  const singleCompanyPlan =
+    companyEnt?.max_companies === 1 && !companyEnt?.max_companies_unlimited;
+  const atCompanyLimit =
+    companyEnt != null &&
+    !companyEnt.max_companies_unlimited &&
+    companyEnt.remaining != null &&
+    companyEnt.remaining <= 0;
+  const showCreateCompany = !atCompanyLimit;
+  const showCompanySwitch = !(singleCompanyPlan && rows.length <= 1);
 
   return (
     <Shell>
@@ -164,6 +204,28 @@ export default function CompaniesPage() {
           Store capacity is allocated per company under the tenant subscription entitlement.
         </p>
         {error && <p className="error">{error}</p>}
+
+        {companyEnt && (
+          <div className="card" style={{ marginBottom: 16, maxWidth: 640 }}>
+            <strong>Subscription company allowance</strong>
+            <p style={{ marginTop: 8 }}>
+              Companies: {companyEnt.used ?? rows.length} / {companyLimitLabel}
+              {companyEnt.remaining != null ? ` · Remaining: ${companyEnt.remaining}` : ''}
+            </p>
+            {singleCompanyPlan && (
+              <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
+                This plan includes one operating company — multi-company switching is hidden for
+                staff users.
+              </p>
+            )}
+            {companyEnt.over_entitlement && (
+              <p className="error" style={{ marginTop: 8 }}>
+                Over entitlement — existing companies are preserved; new creates are blocked until
+                capacity is resolved.
+              </p>
+            )}
+          </div>
+        )}
 
         {storeEnt && (
           <div className="card" style={{ marginBottom: 16, maxWidth: 640 }}>
@@ -211,19 +273,22 @@ export default function CompaniesPage() {
                 {used != null ? ` · Used: ${used}` : ''}
                 {remaining != null ? ` · Remaining: ${remaining}` : ''}
                 {' · '}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setWorkspaceContext('company', c.id);
-                    window.location.assign('/dashboard');
-                  }}
-                >
-                  Switch to company
-                </button>
+                {showCompanySwitch ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWorkspaceContext('company', c.id);
+                      window.location.assign('/dashboard');
+                    }}
+                  >
+                    Switch to company
+                  </button>
+                ) : null}
               </li>
             );
           })}
         </ul>
+        {showCreateCompany ? (
         <form onSubmit={onCreate} style={{ marginTop: 24, maxWidth: 480 }}>
           <h2>Add company</h2>
           <label>
@@ -292,6 +357,12 @@ export default function CompaniesPage() {
             {busy ? 'Creating…' : 'Create company'}
           </button>
         </form>
+        ) : (
+          <p className="muted" style={{ marginTop: 24 }}>
+            Company limit reached for this subscription plan. Upgrade or contact Ribdigi House to add
+            another operating company.
+          </p>
+        )}
       </div>
     </Shell>
   );

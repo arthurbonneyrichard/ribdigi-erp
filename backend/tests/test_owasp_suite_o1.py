@@ -132,8 +132,14 @@ async def test_a03_sql_injection_product_search_safe(client):
 
 @pytest.mark.asyncio
 async def test_a03_xss_payload_stored_as_json_text(client):
-    ac, _seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    ac, seed = client
+    # store_manager catalog create is STORE_SCOPE_DENIED — use super+TOTP so XSS-as-JSON is still covered
+    import pyotp
+
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     xss = "<script>alert(1)</script>"
     created = await ac.post(
         "/api/v1/products",

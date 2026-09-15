@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
 import { DailyRevenueLineChart, MonthlyRevenueBarChart } from '../../components/RevenueCharts';
-import { api } from '../../lib/api';
+import { api, apiFetch } from '../../lib/api';
 import { formatDateTime, formatNumber, type RegionalFormats } from '../../lib/format';
 
 type Dash = {
@@ -111,20 +111,11 @@ export default function Page() {
   const [posShift, setPosShift] = useState<PosShift>(undefined as unknown as PosShift);
   const [posShiftLoaded, setPosShiftLoaded] = useState(false);
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-
   async function exportDashboardCsv() {
     setError('');
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/dashboard/export`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-          'X-Tenant-ID': tenant || '',
-        },
-      });
+      const res = await apiFetch('/dashboard/export');
       if (!res.ok) throw new Error('Dashboard CSV export failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -143,14 +134,7 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}${path}`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-          'X-Tenant-ID': tenant || '',
-        },
-      });
+      const res = await apiFetch(path);
       if (!res.ok) throw new Error(`${filename} export failed`);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
