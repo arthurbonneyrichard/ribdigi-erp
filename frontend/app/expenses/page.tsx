@@ -138,8 +138,10 @@ export default function Page() {
   const [skipNextReason, setSkipNextReason] = useState('');
 
   async function refresh() {
+    const storeTrim = (storeId || ctxStoreId || '').trim();
+    const expensesPath = storeTrim ? `/expenses?store_id=${encodeURIComponent(storeTrim)}` : '/expenses';
     const [exp, cats, settings, liquid, st, br, dep, accounts, rec] = await Promise.all([
-      api('/expenses'),
+      api(expensesPath),
       api('/expenses/categories'),
       api('/expenses/settings'),
       api('/accounting/liquid-accounts').catch(() => ({ data: [] })),

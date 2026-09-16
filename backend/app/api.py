@@ -8095,6 +8095,7 @@ async def generate_recurring_expenses(
 @api.get("/expenses")
 async def expenses(
     status: Annotated[ExpenseStatusFilterValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("expenses", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -8117,6 +8118,8 @@ async def expenses(
             )
         else:
             stmt = stmt.where(m.Expense.status == wanted)
+    if store_id:
+        stmt = stmt.where(m.Expense.store_id == store_id)
     rows = (await db.execute(stmt)).scalars().all()
     return env([await expenses_svc.serialize_expense_full(db, e) for e in rows])
 
