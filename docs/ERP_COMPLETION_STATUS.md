@@ -25,11 +25,12 @@ Dashboard/Accounting/Reports/Inventory/Purchasing/Expenses header store wiring; 
 - Basic service worker shell cache (`public/sw.js`)
 - Recovery JSON export/import (pending queue + envelope metadata; **no secrets**)
 - POS device heartbeat table + API (`20260917_0107`, `POST /pos/devices/heartbeat`, `GET /pos/devices`)
+- OS lockdown **guide** (`docs/POS_DEVICE_LOCKDOWN_GUIDE.md`) — not physical certification
 
 ## Intentionally out of scope / FAIL until built or certified
 
 - Physical 7-day offline endurance + multi-device reconnect certification
-- Device alert dashboard / MDM; OS lockdown guides
+- Device alert dashboard / MDM; physical kiosk verification
 - Multi-company under one Tenant (MVP = Tenant is the company profile)
 - Paid payment gateway
 - Physical platform certification (Windows / Android / iPadOS / macOS)

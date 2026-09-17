@@ -28,7 +28,7 @@
 | 7-Day Offline | **NOT RUN** (auth window implemented; physical 7-day endurance not executed) |
 | Offline Recovery | **PARTIAL** (JSON export/import of pending queue + envelope metadata; no secrets; physical recover drill NOT RUN) |
 | POS Device Monitoring | **PARTIAL** (`pos_devices` heartbeat upsert + list API; no alert dashboard / MDM) |
-| POS Device Lockdown | **PARTIAL** (app blocks unsafe cash-offline rules + reset guard helper; OS lockdown guides pending) |
+| POS Device Lockdown | **PARTIAL** (app cash-offline rules + reset guard; OS guide in `docs/POS_DEVICE_LOCKDOWN_GUIDE.md`; physical kiosk verification NOT RUN) |
 | Windows / Android / iPadOS / macOS POS | **NOT VERIFIED** |
 | Backup | **PASS** (logical) |
 | Restore | **PASS** (logical CI drill) / prod restore **NOT RUN** |
@@ -53,7 +53,8 @@
 6. **Offline POS foundation** — IndexedDB queue + 7-day auth envelope (`frontend/lib/posOffline.ts`), SW shell cache (`public/sw.js`), POS cash-only offline checkout + auto-flush, `client_request_id` idempotency (migration `20260917_0106`)  
 7. **Offline recovery package** — export/import pending queue JSON (no tokens) from POS UI  
 8. **POS device heartbeat** — `pos_devices` table (migration `20260917_0107`), `POST /pos/devices/heartbeat`, `GET /pos/devices`  
-9. **This checklist + report**
+9. **OS lockdown guide** — `docs/POS_DEVICE_LOCKDOWN_GUIDE.md` (guidance only; hardware NOT VERIFIED)  
+10. **This checklist + report**
 
 ---
 

@@ -23,7 +23,7 @@ Legend: **PASS** | **FAIL** | **BLOCKED** | **NOT REQUIRED FOR MVP**
 | Tax | Tax rates / reports | PASS | Tax module |
 | Credit | Customer credit | PASS | Credit module |
 | Offline | IndexedDB / 7-day / SW | PARTIAL | `posOffline.ts`, `/sw.js`, `client_request_id`; recovery JSON; endurance NOT RUN |
-| POS Devices | Heartbeat / lockdown | PARTIAL | `pos_devices` heartbeat + list; OS lockdown / alerts pending |
+| POS Devices | Heartbeat / lockdown | PARTIAL | Heartbeat API + `docs/POS_DEVICE_LOCKDOWN_GUIDE.md`; physical kiosk NOT VERIFIED |
 | Backup | Logical backup API | PASS | `/backup`, DR runbook |
 | Restore | Logical restore tested in CI | PASS | `test_logical_dr_drill_b1.py` |
 | Security | Internal isolation/RBAC tests | PASS | Backend test suite |
@@ -46,6 +46,7 @@ Legend: **PASS** | **FAIL** | **BLOCKED** | **NOT REQUIRED FOR MVP**
 
 - Multi-company under one Tenant  
 - User↔POS terminal binding (`ASSIGNED_POS_ONLY`)  
-- Offline endurance certification, device alert dashboard, OS lockdown guides  
+- Offline endurance certification, device alert dashboard (beyond last-seen table)  
+- Physical kiosk verification per `docs/POS_DEVICE_LOCKDOWN_GUIDE.md`  
 - PITR live drill, paid payment provider  
 - HR / MRP / Open Banking  
