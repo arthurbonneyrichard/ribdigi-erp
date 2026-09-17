@@ -177,8 +177,10 @@ def _save_state(tenant: m.Tenant, state: dict) -> None:
 
 
 async def skip_step(db: AsyncSession, tenant_id: str, step_id: str) -> dict[str, Any]:
+    # Schema OnboardingStepIdValue rejects blank/unknown → 422; keep allow-list
+    # defense-in-depth if Literal and VALID_STEP_IDS drift.
     if step_id not in VALID_STEP_IDS:
-        raise HTTPException(status_code=400, detail=f"Unknown step: {step_id}")
+        raise HTTPException(status_code=422, detail=f"Unknown step: {step_id}")
     tenant = await db.get(m.Tenant, tenant_id)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
@@ -192,7 +194,7 @@ async def skip_step(db: AsyncSession, tenant_id: str, step_id: str) -> dict[str,
 
 async def unskip_step(db: AsyncSession, tenant_id: str, step_id: str) -> dict[str, Any]:
     if step_id not in VALID_STEP_IDS:
-        raise HTTPException(status_code=400, detail=f"Unknown step: {step_id}")
+        raise HTTPException(status_code=422, detail=f"Unknown step: {step_id}")
     tenant = await db.get(m.Tenant, tenant_id)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")

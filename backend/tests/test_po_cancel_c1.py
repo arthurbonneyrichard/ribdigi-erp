@@ -20,7 +20,7 @@ async def _supplier_and_po(ac, headers, seed, *, notes="cancel test"):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=headers,
-        json={"name": f"Cancel Vendor {notes}", "kind": "supplier", "email": "cancel-v@example.com"},
+        json={"name": f"Cancel Vendor {notes}",  "email": "cancel-v@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
     created = await ac.post(
@@ -29,8 +29,7 @@ async def _supplier_and_po(ac, headers, seed, *, notes="cancel test"):
         json={
             "supplier_id": supplier.json()["data"]["id"],
             "notes": notes,
-            "items": [{"product_id": seed["p1"].id, "quantity": 2, "unit_price": 5}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 2, "unit_price": 5}]},
     )
     assert created.status_code == 200, created.text
     return created.json()["data"]
@@ -108,10 +107,8 @@ async def test_cancel_blocked_after_grn_receipt(client, db_session):
                 {
                     "po_item_id": po["items"][0]["id"],
                     "received_qty": 1,
-                    "accepted_qty": 1,
-                }
-            ],
-        },
+                    "accepted_qty": 1}
+            ]},
     )
     assert grn.status_code == 200, grn.text
 

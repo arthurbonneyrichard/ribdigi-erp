@@ -10,6 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import require_honest_narrative
 from app.rbac import (
     RECORD_SCOPE_KEY,
     VALID_ROLES,
@@ -63,29 +64,31 @@ def validate_role_key(key: str) -> str:
 
 
 def normalize_permissions(raw: dict | None) -> dict:
+    # Schema CustomRoleCreate/Update.permissions rejects blank/unknown/bad actions
+    # → 422; keep allow-list defense-in-depth (same codes as schema).
     if not isinstance(raw, dict) or not raw:
-        raise HTTPException(status_code=400, detail="permissions must be a non-empty object")
+        raise HTTPException(status_code=422, detail="permissions must be a non-empty object")
     if raw.get("*") == ["*"] or "*" in (raw.get("*") or []):
-        raise HTTPException(status_code=400, detail="Custom roles cannot grant wildcard *:*")
+        raise HTTPException(status_code=422, detail="Custom roles cannot grant wildcard *:*")
     out: dict[str, list[str]] = {}
     for module, actions in raw.items():
         mod = str(module or "").strip()
         if mod == RECORD_SCOPE_KEY:
             continue
         if mod not in ASSIGNABLE_MODULES:
-            raise HTTPException(status_code=400, detail=f"Unknown or disallowed module '{mod}'")
+            raise HTTPException(status_code=422, detail=f"Unknown or disallowed module '{mod}'")
         if not isinstance(actions, list) or not actions:
-            raise HTTPException(status_code=400, detail=f"Module '{mod}' actions must be a non-empty list")
+            raise HTTPException(status_code=422, detail=f"Module '{mod}' actions must be a non-empty list")
         cleaned: list[str] = []
         for a in actions:
             act = str(a or "").strip()
             if act not in ALLOWED_ACTIONS:
-                raise HTTPException(status_code=400, detail=f"Invalid action '{act}' for module '{mod}'")
+                raise HTTPException(status_code=422, detail=f"Invalid action '{act}' for module '{mod}'")
             if act not in cleaned:
                 cleaned.append(act)
         out[mod] = cleaned
     if not out:
-        raise HTTPException(status_code=400, detail="permissions must include at least one module")
+        raise HTTPException(status_code=422, detail="permissions must include at least one module")
     return out
 
 
@@ -147,9 +150,15 @@ async def resolve_role_assignment(
     db: AsyncSession, tenant_id: str, role: str
 ) -> tuple[str, dict]:
     """Return (role_key, permissions payload including record_scope) for user assignment."""
-    role_key = (role or "").strip()
+    # Schema RoleKeyValue rejects blank/malformed → 422; keep shape + unknown defense-in-depth.
+    role_key = (role or "").strip().lower()
     if not role_key:
         raise HTTPException(status_code=400, detail="Role is required")
+    if not ROLE_KEY_RE.match(role_key):
+        raise HTTPException(
+            status_code=400,
+            detail="Role key must be lowercase letters/numbers/underscore, start with a letter (2–49 chars)",
+        )
     if role_key in VALID_ROLES:
         perms = permissions_for_role(role_key)
         scope = record_scope_for_role(role_key)
@@ -176,9 +185,7 @@ async def create_custom_role(
     record_scope: str | None = None,
 ) -> m.CustomRole:
     role_key = validate_role_key(key)
-    label_s = (label or "").strip()
-    if not label_s:
-        raise HTTPException(status_code=400, detail="label is required")
+    label_s = require_honest_narrative(label, label="custom role label", max_length=120)
 
     base = (base_role or "").strip() or None
     # Defense in depth: CustomRoleCreate.base_role Literal rejects blank/unknown/super_admin
@@ -235,10 +242,9 @@ async def update_custom_role(
         raise HTTPException(status_code=404, detail="Custom role not found")
 
     if label is not None:
-        label_s = label.strip()
-        if not label_s:
-            raise HTTPException(status_code=400, detail="label is required")
-        row.label = label_s[:120]
+        row.label = require_honest_narrative(
+            label, label="custom role label", max_length=120
+        )
     if permissions is not None:
         row.permissions = normalize_permissions(permissions)
     if record_scope is not None:

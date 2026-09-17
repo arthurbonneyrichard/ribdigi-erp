@@ -163,7 +163,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** High
 - **Acceptance Criteria:**
   - [x] Support statuses: Trial, Active, Suspended
-    - Complete (MVP): also `grace`; platform list/filter + suspend/activate with required **Suspend reason** (`POST /tenants/{ref}/suspend` `{ reason }` → `suspended_reason`; Platform console input — no `window.prompt`) + Company self-suspend reason (`POST /tenants/me/suspend` required reason; Company page input — no hardcoded `"Admin requested"`)
+    - Complete (MVP): also `grace`; platform list/filter + suspend/activate with required **Suspend reason** (`POST /tenants/{ref}/suspend` `{ reason }` ∈ `TenantSuspendReasonValue` → `suspended_reason`; omit/blank/garbage → **422**; Platform console **Tenant suspend reason** — no `window.prompt`) + Company self-suspend reason (`POST /tenants/me/suspend` same Value type; Company page **Tenant suspend reason** — no hardcoded `"Admin requested"`)
   - [x] Automatic trial expiration notification (7 days, 3 days, 1 day before)
     - Complete (MVP): Celery `scan_trial_lifecycle` + in-app billing notices
   - [x] Grace period handling for suspended tenants (read-only access)
@@ -366,9 +366,9 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] **Stock Out:** Record outgoing stock with reference (sales, transfer, adjustment, damage), quantity, warehouse (`POST /inventory/stock-out` requires `reference_type` ∈ sale|transfer|adjustment|damage|internal|other + optional `reference_id`/`warehouse_id`/`variant_id`/`batch_id`; Inventory Stock Out **Select reference type** — no silent default to `other`; FEFO when batch omitted)
   - [x] **Stock Adjust:** Coded reason required (`POST /inventory/adjust/{id}` ∈ damage|theft|expiry|found|lost; Inventory Adjust **Select reason** — no silent default to `damage`)
   - [x] **Stock Adjustment:** Correct stock discrepancies with reason (damage, theft, expiry, found, lost) (`POST /inventory/adjust/{product_id}` requires coded `reason`; `stock_movements.reason`; optional `warehouse_id`; Inventory Adjust tab; movements `reason=` filter)
-  - [x] **Stock Transfer:** Move stock between warehouses with transfer note, approval workflow (`POST /inventory/stock-transfers` accepts `from_warehouse_id`/`to_warehouse_id`; same-store = 1-step approval, inter-store = dual; ship/receive; **Reject / Cancel reason** via `POST .../reject|cancel` `{ reason }` required → `rejection_reason` + status `cancelled`; Inventory + Multi-Store Transfers tabs; aliases under `/inventory/stock-transfers*` and `/stores/transfers*`; `transfer_number` via tenant series `GET|PATCH /inventory/settings` → `stock_transfer_numbering`; default `TR`)
+  - [x] **Stock Transfer:** Move stock between warehouses with transfer note, approval workflow (`POST /inventory/stock-transfers` accepts `from_warehouse_id`/`to_warehouse_id`; same-store = 1-step approval, inter-store = dual; ship/receive; **Reject / Cancel reason** via `POST .../reject|cancel` `{ reason }` ∈ `StockTransferRejectReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/blank/garbage → **422**) → `rejection_reason` + status `cancelled`; Inventory + Multi-Store Transfers tabs (**Stock transfer reject reason** `aria-label`); aliases under `/inventory/stock-transfers*` and `/stores/transfers*`; `transfer_number` via tenant series `GET|PATCH /inventory/settings` → `stock_transfer_numbering`; default `TR`)
   - [x] **Opening Stock:** Initialize stock levels for new products or fiscal year start (`POST /inventory/opening-stock`, optional equity journal; `reference` via tenant series `GET|PATCH /inventory/settings` → `opening_stock_numbering`; `{PREFIX}-{YYYY}-{NNNN}` default `OS` when omitted; Inventory Document numbering Opening stock row)
-  - [x] **Stock Count:** Physical count reconciliation with system stock; variance report generation (`GET|POST /inventory/stock-counts` + complete posts variances; draft **Cancel** via `POST /inventory/stock-counts/{id}/cancel` `{ reason }` required → notes + audit; Inventory **Cancel reason** UI; `GET /reports/inventory/stock-counts` variance report + export `inventory_stock_counts`; Reports Inventory panel; `count_number` via tenant series `GET|PATCH /inventory/settings` → `stock_count_numbering`; default `SC`; Inventory Document numbering UI)
+  - [x] **Stock Count:** Physical count reconciliation with system stock; variance report generation (`GET|POST /inventory/stock-counts` + complete posts variances; draft **Cancel** via `POST /inventory/stock-counts/{id}/cancel` `{ reason }` ∈ `StockCountCancelReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/blank/garbage → **422**) → notes + audit; Inventory **Stock count cancel reason** UI (`aria-label`); `GET /reports/inventory/stock-counts` variance report + export `inventory_stock_counts`; Reports Inventory panel; `count_number` via tenant series `GET|PATCH /inventory/settings` → `stock_count_numbering`; default `SC`; Inventory Document numbering UI)
 
 #### BR-5.3 Stock Movement History
 - **Description:** Complete audit trail of all inventory changes.
@@ -430,9 +430,9 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] PO number auto-generation with configurable prefix (`GET|PATCH /purchasing/settings`)
   - [x] Product lines with quantity, unit price, tax, discount, total (`items[].discount` on create/amend; tax before discount; Purchasing create/amend/detail; Alembic `20260814_0096`)
   - [x] Supplier selection and delivery address (`purchase_orders.delivery_address` on create/amend/serialize + supplier email; Purchasing UI)
-  - [x] PO status: Draft, Sent, Partially Received, Fully Received (`received`), Cancelled (`POST /purchasing/orders/{id}/cancel` `{ reason }` required → notes + audit; `can_cancel`; Purchasing **Cancel reason** UI; blocked after any receipt)
+  - [x] PO status: Draft, Sent, Partially Received, Fully Received (`received`), Cancelled (`POST /purchasing/orders/{id}/cancel` `{ reason }` ∈ `PurchaseOrderCancelReasonValue` → notes + audit; omit/blank/garbage → **422**; `can_cancel`; Purchasing **Purchase order cancel reason** UI; blocked after any receipt)
   - [x] Print/email PO to supplier
-  - [x] PO amendment tracking (`POST /purchasing/orders/{id}/amend` `{ reason }` **required** → amendment row + audit `po_amended.details.reason`; Purchasing **Required amendment reason** UI; blocked after any receipt)
+  - [x] PO amendment tracking (`POST /purchasing/orders/{id}/amend` `{ reason }` ∈ `PurchaseOrderAmendReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/blank/garbage → **422**) → amendment row + audit `po_amended.details.reason`; Purchasing **Purchase order amend reason** UI (`aria-label`); blocked after any receipt)
 
 #### BR-6.4 Goods Received Note (GRN)
 - **Description:** Record goods received against PO.
@@ -444,7 +444,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Handle partial receipts (multiple GRNs per PO) (`po_item.received_qty` accumulates; PO → `partially_received` / `received`; Receive remains while partial)
   - [x] Auto-update inventory on GRN approval
     - Complete (MVP): GRN posts on create (`status=posted`) → `stock_in_with_batch` + `post_grn_journal` (no separate draft→approve step)
-  - [x] Handle rejected/damaged goods with reason (`rejected_qty` + required `rejection_reason` on GRN lines; only accepted stocked; Purchasing receive UI)
+  - [x] Handle rejected/damaged goods with reason (`rejected_qty` + `rejection_reason` ∈ `GrnRejectionReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; required when reject; omit/blank/garbage → **422**) on GRN lines; only accepted stocked; Purchasing receive **GRN rejection reason** UI)
 
 #### BR-6.5 Purchase Invoice
 - **Description:** Supplier billing and payable recording.
@@ -454,7 +454,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Invoice number, date, due date (tenant series `GET|PATCH /purchasing/settings` → `purchase_invoice_numbering`; `{PREFIX}-{YYYY}-{NNNN}` default `PINV`; date/due via party payment terms)
   - [x] Line items with quantity, rate, tax, discount (`items[].discount` + header `discount_amount` on create; from-GRN inherits proportional PO line discount; Purchasing create + detail UI; tax before line discount)
   - [x] Attach supplier invoice document (PDF/image) (`POST|GET|DELETE /purchasing/invoices/{id}/attachment`; Purchasing Upload/Preview)
-  - [x] Status: Draft, Approved (`unpaid`), Paid, Partially Paid, Overdue, Cancelled (`POST /purchasing/invoices/{id}/cancel` `{ reason }` required → notes + audit; `can_cancel` when unpaid with zero payments; Purchasing **Cancel reason** UI)
+  - [x] Status: Draft, Approved (`unpaid`), Paid, Partially Paid, Overdue, Cancelled (`POST /purchasing/invoices/{id}/cancel` `{ reason }` ∈ `PurchaseInvoiceCancelReasonValue` → notes + audit; omit/blank/garbage → **422**; `can_cancel` when unpaid with zero payments; Purchasing **Purchase invoice cancel reason** UI)
   - [x] Auto-update Accounts Payable
     - Complete (MVP): GRN path posts AP via `post_grn_journal` + supplier balance; manual PI posts AP on approve (skips double-post when from GRN)
 
@@ -467,7 +467,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Deduct returned quantity from inventory (`post_purchase_return` → `apply_stock_change` negative qty + AP/inventory journal)
   - [x] Generate debit note (`debit_note_number` allocated on post via tenant series `GET|PATCH /purchasing/settings` → `debit_note_numbering`; return `return_number` series on create; unique per tenant; Purchasing Document numbering UI)
   - [x] Update supplier balance (post credits AP using return `total_amount`, which inherits proportional PO line discount: `accepted return_qty / ordered × PO discount`; tax before discount; Purchasing Returns Discount column)
-  - [x] Cancel draft return with required reason (`POST /purchasing/returns/{id}/cancel` `{ reason }` → `status=cancelled`; appends to `notes` + audit `purchase_return_cancelled`; Purchasing **Cancel reason** UI; no stock/AP change; cancelled excluded from returned-qty)
+  - [x] Cancel draft return with required reason (`POST /purchasing/returns/{id}/cancel` `{ reason }` ∈ `PurchaseReturnCancelReasonValue` → `status=cancelled`; appends to `notes` + audit `purchase_return_cancelled`; omit/blank/garbage → **422**; Purchasing **Purchase return cancel reason** UI; no stock/AP change; cancelled excluded from returned-qty)
 
 ---
 
@@ -505,7 +505,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Create order from quotation or directly (order_number via tenant series `GET|PATCH /sales/settings` → `sales_order_numbering`; `{PREFIX}-{YYYY}-{NNNN}` default `SO`; Sales Document numbering UI)
   - [x] Line + header discounts on create (`items[].discount` + `discount_amount`; Sales Create sale UI + detail)
   - [x] Reserve inventory (soft allocation) on confirm against store warehouse (`stock_reservations`); cancel releases; invoice post consumes then hard stock-out
-  - [x] Order status: Draft, Confirmed, Processing, Shipped, Delivered, Cancelled (plus `invoiced` after convert-to-invoice; cancel allowed through processing; required typed `reason` on `POST /sales/orders/{id}/cancel` → notes + audit; Sales **Cancel reason** UI)
+  - [x] Order status: Draft, Confirmed, Processing, Shipped, Delivered, Cancelled (plus `invoiced` after convert-to-invoice; cancel allowed through processing; `{ reason }` ∈ `SalesOrderCancelReasonValue` on `POST /sales/orders/{id}/cancel` → notes + audit; omit/blank/garbage → **422**; Sales **Sales order cancel reason** UI)
   - [x] Delivery date and address
   - [x] Convert to invoice with one click
 
@@ -518,7 +518,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Product lines with quantity, unit price, tax, discount, total (`items[].discount` + header `discount_amount` on create; Sales Create sale + detail KPI; tax before line discount)
   - [x] Customer selection with auto-filled details
   - [x] Multiple print templates (A4, thermal receipt) via `GET /sales/invoices/{id}/print?template=a4|thermal`
-  - [x] Status: Draft, Posted (approved), Sent (emailed), Partial, Paid, Overdue, Cancelled (`POST /sales/invoices/{id}/cancel` `{ reason }` required for draft → notes + audit; Sales **Cancel reason** UI; overdue derived from due date; payment-due scan refreshes overdue)
+  - [x] Status: Draft, Posted (approved), Sent (emailed), Partial, Paid, Overdue, Cancelled (`POST /sales/invoices/{id}/cancel` `{ reason }` ∈ `SalesInvoiceCancelReasonValue` for draft → notes + audit; omit/blank/garbage → **422**; Sales **Sales invoice cancel reason** UI; overdue derived from due date; payment-due scan refreshes overdue)
   - [x] Auto-update Accounts Receivable
   - [x] Support credit sales with credit limit check
   - [x] Email posted/sent/partial/paid/overdue invoice to customer (SMTP/console) with optional `to=` override; stamp `emailed_at`/`emailed_to`; unpaid → `sent` on first email; resend without changing payment status
@@ -532,7 +532,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Restock or discard returned items
   - [x] Generate credit note (`credit_note_number` on post via tenant series `GET|PATCH /sales/settings` → `credit_note_numbering`; return `return_number` series on create; unique per tenant; Sales Document numbering UI)
   - [x] Refund or adjust customer balance (`settlement_method=adjust|refund`; refund required/optional when return exceeds open invoice AR; cash/bank refund journal)
-  - [x] Cancel draft return with required reason (`POST /sales/returns/{id}/cancel` `{ reason }` → `status=cancelled`; appends to `notes` + audit `sales_return_cancelled`; Sales **Cancel reason** UI; no stock/AR change)
+  - [x] Cancel draft return with required reason (`POST /sales/returns/{id}/cancel` `{ reason }` ∈ `SalesReturnCancelReasonValue` → `status=cancelled`; appends to `notes` + audit `sales_return_cancelled`; omit/blank/garbage → **422**; Sales **Sales return cancel reason** UI; no stock/AR change)
 
 ---
 
@@ -550,7 +550,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] **Multiple Payment Methods:** Cash, Card, Digital Wallet, Credit (for registered customers) (`cash`/`card`/`wallet`/`credit` + split cash+card; aliases `digital_wallet`/`mobile_money` → `wallet`)
   - [x] **Receipt Printing:** Thermal printer support; digital receipt via email/SMS
   - [x] Sale reference auto-generation (`Transaction.reference` via tenant series `GET|PATCH /pos/settings` → `pos_sale_numbering`; `{PREFIX}-{YYYY}-{NNNN}` default `POS`; POS Document numbering UI)
-  - [x] **Cash Drawer:** Auto-open on cash payment; manual open with required specific reason (`POST /pos/sessions/{id}/drawer/open`; rejects blank/placeholder; POS **Drawer reason** input — no `window.prompt`)
+  - [x] **Cash Drawer:** Auto-open on cash payment; manual open with required specific reason (`POST /pos/sessions/{id}/drawer/open` `{ reason }` ∈ `PosDrawerOpenReasonValue` (strip; 3–200; ≥1 letter/digit; no `://`/`@`; rejects placeholders; omit/blank/garbage/placeholder → **422**); POS **Cash drawer open reason** UI (`aria-label`) — no `window.prompt`)
 
 #### BR-8.2 Shift Management
 - **Description:** Cashier accountability and reconciliation.
@@ -635,7 +635,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Auto-balancing validation
   - [x] Journal number auto-generation (`entry_number` via tenant series `GET|PATCH /accounting/settings` → `journal_numbering`; `{PREFIX}-{YYYY}-{NNNN}` default `JE`; Accounting Document numbering UI; shared by manual + auto-posted journals)
   - [x] Attach supporting documents
-  - [x] Post/unpost capability (unpost only within same fiscal period; required typed `reason` on `POST .../unpost` → description + audit; Accounting **Unpost reason**)
+  - [x] Post/unpost capability (unpost only within same fiscal period; `{ reason }` ∈ `JournalUnpostReasonValue` on `POST .../unpost` → description + audit; omit/blank/garbage → **422**; Accounting **Journal unpost reason**)
   - [x] **Period close / books lock:** `tenants.books_closed_through`; `GET|POST /accounting/period` close/reopen; blocks post & unpost on/before closed date; **close/reopen reason required** (`{ reason }` → audit `period_closed` / `period_reopened` `details.reason`; Accounting UI typed reason) (Accounting UI)
 
 #### BR-10.3 Cash & Bank Accounts
@@ -646,7 +646,7 @@ All modules listed in Section 4 are within MVP scope, including:
   - [x] Create bank accounts with bank name, account number, branch
   - [x] Record deposits, withdrawals, transfers between accounts (`reference` via tenant series `GET|PATCH /accounting/settings` → `cash_transfer_numbering`; `{PREFIX}-{YYYY}-{NNNN}` default `XFER` when omitted; Accounting Document numbering Transfer/XFER row)
   - [x] Bank reconciliation (system balance vs statement)
-  - [x] Cheque management (issue, deposit, bounce tracking) (`POST /accounting/cheques/{id}/bounce|cancel` `{ reason }` **required**; omit/empty → 422; Accounting Cheques Bounce/Cancel reason field → notes + journal description)
+  - [x] Cheque management (issue, deposit, bounce tracking) (`POST /accounting/cheques/{id}/bounce|cancel` `{ reason }` ∈ `ChequeLifecycleReasonValue`; omit/blank/garbage → **422**; Accounting Cheques **Cheque bounce cancel reason** → notes + journal description)
 
 #### BR-10.4 Accounts Receivable (AR)
 - **Description:** Track money owed by customers.
@@ -686,7 +686,7 @@ All modules listed in Section 4 are within MVP scope, including:
 - **Priority:** High
 - **Acceptance Criteria:**
   - [x] Set per-customer credit limit
-  - [x] Block sales that exceed credit limit (with override permission) (`override_credit_limit` + required `override_reason` on Sales Post / POS credit; API `400 CREDIT_OVERRIDE_REASON_REQUIRED` when override without reason; no canned `window.prompt` default; audit `credit_limit_override`)
+  - [x] Block sales that exceed credit limit (with override permission) (`override_credit_limit` + `override_reason` ∈ `CreditOverrideReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; required when overriding; omit/blank/garbage → **422**) on Sales Post / POS credit; API `400 CREDIT_OVERRIDE_REASON_REQUIRED` defense in depth; no canned `window.prompt` default; audit `credit_limit_override`; Sales/POS **Credit override reason** UI)
   - [x] Display outstanding balance on customer profile
   - [x] Record payment collections with date, amount, method, reference
   - [x] Allocate payments to specific invoices or auto-allocate (oldest first)

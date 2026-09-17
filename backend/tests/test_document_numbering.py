@@ -45,8 +45,7 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
         headers=admin,
         json={
             "customer_id": cust.json()["data"]["id"],
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 10}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 10}]},
     )
     assert q.status_code == 200, q.text
     assert q.json()["data"]["quotation_number"] == f"Q-{year}-0005"
@@ -56,8 +55,7 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
         headers=admin,
         json={
             "purchase_order_numbering": {"prefix": "PO", "next_number": 3},
-            "grn_numbering": {"prefix": "GRN", "next_number": 9},
-        },
+            "grn_numbering": {"prefix": "GRN", "next_number": 9}},
     )
     assert purch.status_code == 200, purch.text
     assert purch.json()["data"]["purchase_order_numbering"]["preview"] == f"PO-{year}-0003"
@@ -66,7 +64,7 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=admin,
-        json={"name": "Num Supplier", "kind": "supplier", "email": "sup@example.com"},
+        json={"name": "Num Supplier",  "email": "sup@example.com"},
     )
     supplier_id = supplier.json()["data"]["id"]
 
@@ -75,8 +73,7 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
         headers=admin,
         json={
             "supplier_id": supplier_id,
-            "items": [{"product_id": seed["p1"].id, "quantity": 2, "unit_price": 5}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 2, "unit_price": 5}]},
     )
     assert po.status_code == 200, po.text
     assert po.json()["data"]["po_number"] == f"PO-{year}-0003"
@@ -94,10 +91,8 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
                 {
                     "po_item_id": items[0]["id"],
                     "received_qty": 2,
-                    "accepted_qty": 2,
-                }
-            ],
-        },
+                    "accepted_qty": 2}
+            ]},
     )
     assert grn.status_code == 200, grn.text
     assert grn.json()["data"]["grn_number"] == f"GRN-{year}-0009"
@@ -124,10 +119,8 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
                     "product_id": seed["p1"].id,
                     "quantity": 1,
                     "unit_price": 10,
-                    "tax_rate": 0,
-                }
-            ],
-        },
+                    "tax_rate": 0}
+            ]},
     )
     assert inv.status_code == 200, inv.text
     assert inv.json()["data"]["invoice_number"] == f"PINV-{year}-0007"
@@ -138,8 +131,7 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
         headers=admin,
         json={
             "purchase_return_numbering": {"prefix": "PR", "next_number": 4},
-            "debit_note_numbering": {"prefix": "DN", "next_number": 6},
-        },
+            "debit_note_numbering": {"prefix": "DN", "next_number": 6}},
     )
     assert purch_ret.status_code == 200, purch_ret.text
     assert purch_ret.json()["data"]["purchase_return_numbering"]["preview"] == f"PR-{year}-0004"
@@ -155,8 +147,7 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
         json={
             "goods_receipt_id": grn.json()["data"]["id"],
             "reason": "damaged",
-            "items": [{"goods_receipt_item_id": gitems[0]["id"], "quantity": 1}],
-        },
+            "items": [{"goods_receipt_item_id": gitems[0]["id"], "quantity": 1}]},
     )
     assert ret.status_code == 200, ret.text
     assert ret.json()["data"]["return_number"] == f"PR-{year}-0004"
@@ -176,8 +167,7 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
         headers=admin,
         json={
             "sales_return_numbering": {"prefix": "SR", "next_number": 8},
-            "credit_note_numbering": {"prefix": "CN", "next_number": 11},
-        },
+            "credit_note_numbering": {"prefix": "CN", "next_number": 11}},
     )
     assert sales_num.status_code == 200, sales_num.text
     assert sales_num.json()["data"]["sales_return_numbering"]["preview"] == f"SR-{year}-0008"
@@ -194,8 +184,7 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
         headers=admin,
         json={
             "customer_id": cust.json()["data"]["id"],
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 20}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 20}]},
     )
     assert sinv.status_code == 200, sinv.text
     sinv_id = sinv.json()["data"]["id"]
@@ -214,8 +203,7 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
             "sales_invoice_id": sinv_id,
             "reason": "damaged",
             "restock": True,
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "condition": "sellable"}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "condition": "sellable"}]},
     )
     assert sret.status_code == 200, sret.text
     assert sret.json()["data"]["return_number"] == f"SR-{year}-0008"
@@ -240,8 +228,7 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
         headers=admin,
         json={
             "customer_id": cust.json()["data"]["id"],
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 15}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 15}]},
     )
     assert so.status_code == 200, so.text
     assert so.json()["data"]["order_number"] == f"SO-{year}-0012"
@@ -258,8 +245,7 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
         "/api/v1/purchasing/requests",
         headers=admin,
         json={
-            "items": [{"product_id": seed["p1"].id, "quantity": 2}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 2}]},
     )
     assert preq.status_code == 200, preq.text
     assert preq.json()["data"]["request_number"] == f"PREQ-{year}-0003"
@@ -286,8 +272,7 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
         headers=admin,
         json={
             "customer_id": cust.json()["data"]["id"],
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 40}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 40}]},
     )
     assert pay_inv.status_code == 200, pay_inv.text
     pay_inv_id = pay_inv.json()["data"]["id"]
@@ -299,8 +284,7 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
             "customer_id": cust.json()["data"]["id"],
             "sales_invoice_id": pay_inv_id,
             "amount": 10,
-            "payment_method": "cash",
-        },
+            "payment_method": "cash"},
     )
     assert cust_pay.status_code == 200, cust_pay.text
     assert cust_pay.json()["data"]["payment_number"] == f"RCP-{year}-0005"
@@ -316,8 +300,7 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
             "supplier_id": supplier_id,
             "purchase_invoice_id": pinvid,
             "amount": 5,
-            "payment_method": "cash",
-        },
+            "payment_method": "cash"},
     )
     assert spy.status_code == 200, spy.text
     assert spy.json()["data"]["payment_number"] == f"SPY-{year}-0006"
@@ -339,8 +322,7 @@ async def test_quotation_po_grn_numbering(client, db_session, seeded, monkeypatc
             "lines": [
                 {"account_code": "6000", "debit": 12, "credit": 0},
                 {"account_code": "1000", "debit": 0, "credit": 12},
-            ],
-        },
+            ]},
     )
     assert je.status_code == 200, je.text
     assert je.json()["data"]["entry_number"] == f"JE-{year}-0701"

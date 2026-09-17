@@ -16,7 +16,7 @@ def test_pos_sale_status_literal_schema():
     ok = PosSaleCreate.model_validate(
         {
             "total": 1,
-            "items": [{"product_id": "p1", "quantity": 1, "unit_price": 1}],
+            "items": [{"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1, "unit_price": 1}],
             "status": "completed",
         }
     )
@@ -24,7 +24,7 @@ def test_pos_sale_status_literal_schema():
     defaulted = PosSaleCreate.model_validate(
         {
             "total": 1,
-            "items": [{"product_id": "p1", "quantity": 1, "unit_price": 1}],
+            "items": [{"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1, "unit_price": 1}],
         }
     )
     assert defaulted.status == "completed"
@@ -33,7 +33,7 @@ def test_pos_sale_status_literal_schema():
         PosSaleCreate.model_validate(
             {
                 "total": 1,
-                "items": [{"product_id": "p1", "quantity": 1, "unit_price": 1}],
+                "items": [{"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1, "unit_price": 1}],
                 "status": "",
             }
         )
@@ -41,7 +41,7 @@ def test_pos_sale_status_literal_schema():
         PosSaleCreate.model_validate(
             {
                 "total": 1,
-                "items": [{"product_id": "p1", "quantity": 1, "unit_price": 1}],
+                "items": [{"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1, "unit_price": 1}],
                 "status": "draft",
             }
         )
@@ -49,7 +49,7 @@ def test_pos_sale_status_literal_schema():
         PosSaleCreate.model_validate(
             {
                 "total": 1,
-                "items": [{"product_id": "p1", "quantity": 1, "unit_price": 1}],
+                "items": [{"product_id": "11111111-2222-3333-4444-555555555555", "quantity": 1, "unit_price": 1}],
                 "status": "garbage_xyz",
             }
         )

@@ -9,6 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json
 from app.inventory import allocate_unlocated_stock, get_or_create_warehouse_stock
 
 
@@ -28,7 +29,7 @@ async def active_reserved_qty(
     )
     if exclude_order_id:
         stmt = stmt.where(m.StockReservation.sales_order_id != exclude_order_id)
-    return float((await db.execute(stmt)).scalar() or 0)
+    return money_json((await db.execute(stmt)).scalar() or 0)
 
 
 async def available_qty(
@@ -45,7 +46,7 @@ async def available_qty(
     row = await get_or_create_warehouse_stock(
         db, tenant_id=tenant_id, warehouse_id=warehouse_id, product_id=product_id
     )
-    on_hand = float(row.quantity or 0)
+    on_hand = money_json(row.quantity or 0)
     reserved = await active_reserved_qty(
         db,
         tenant_id=tenant_id,
@@ -53,7 +54,7 @@ async def available_qty(
         product_id=product_id,
         exclude_order_id=exclude_order_id,
     )
-    return on_hand - reserved
+    return money_json(on_hand - reserved)
 
 
 async def list_order_reservations(
@@ -93,7 +94,7 @@ async def reserve_order(
         stock_qty, _u, _e = await to_stock_qty(
             db,
             tenant_id=tenant_id,
-            quantity=float(item.quantity),
+            quantity=money_json(item.quantity),
             from_unit_id=item.unit_id,
             product=product,
         )

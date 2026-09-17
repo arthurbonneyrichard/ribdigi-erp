@@ -21,6 +21,8 @@ def test_po_cancel_reason_ui_wired():
     assert "Enter a cancel reason before cancelling a purchase order" in page
     assert "JSON.stringify({ reason })" in page
     assert "setPoCancelReason" in page
+    assert 'aria-label="Purchase order cancel reason"' in page
+    assert "aria-label={`Cancel purchase order ${o.id}`}" in page
 
 
 async def _admin(ac, seed):
@@ -38,7 +40,7 @@ async def test_po_cancel_requires_reason_and_persists(client, db_session):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=headers,
-        json={"name": "PO Cancel Reason Vendor", "kind": "supplier"},
+        json={"name": "PO Cancel Reason Vendor"},
     )
     assert supplier.status_code == 200, supplier.text
     created = await ac.post(
@@ -47,8 +49,7 @@ async def test_po_cancel_requires_reason_and_persists(client, db_session):
         json={
             "supplier_id": supplier.json()["data"]["id"],
             "notes": "original note",
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 9}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 9}]},
     )
     assert created.status_code == 200, created.text
     po_id = created.json()["data"]["id"]
@@ -72,8 +73,14 @@ async def test_po_cancel_requires_reason_and_persists(client, db_session):
         headers=headers,
         json={"reason": "   "},
     )
-    assert blank.status_code == 400
-    assert "reason" in blank.json()["detail"].lower()
+    assert blank.status_code == 422, blank.text
+
+    garbage = await ac.post(
+        f"/api/v1/purchasing/orders/{po_id}/cancel",
+        headers=headers,
+        json={"reason": "!!!!"},
+    )
+    assert garbage.status_code == 422, garbage.text
 
     ok = await ac.post(
         f"/api/v1/purchasing/orders/{po_id}/cancel",

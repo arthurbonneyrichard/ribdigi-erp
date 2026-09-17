@@ -17,7 +17,11 @@ def test_sales_discount_ui_wired():
     assert "selected.discount_amount" in sales
 
     api_docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
-    assert "Sales **Create sale** UI exposes Line discount" in api_docs
+    assert (
+        "Sales **Create sale** UI **Line quantity** / **Line unit price** / "
+        "**Line discount** + **Header discount**"
+        in api_docs
+    )
 
 
 def test_sales_discount_br_marked():

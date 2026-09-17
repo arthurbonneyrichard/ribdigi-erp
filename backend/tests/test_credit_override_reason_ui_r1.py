@@ -18,10 +18,13 @@ def test_credit_override_reason_ui_wired():
     sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
     pos = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
     assert "creditOverrideReason" in sales
+    assert 'aria-label="Credit override reason"' in sales
+    assert "aria-label={`Post sales invoice ${inv.id}`}" in sales
     assert "Enter a credit override reason before posting over the limit" in sales
     assert "Approved over-limit credit sale" not in sales
     assert "window.prompt('Override reason" not in sales
     assert "creditOverrideReason" in pos
+    assert 'aria-label="Credit override reason"' in pos
     assert "Enter a credit override reason before completing an over-limit credit sale" in pos
     assert "Approved over-limit POS credit" not in pos
     assert "window.prompt('Override reason" not in pos

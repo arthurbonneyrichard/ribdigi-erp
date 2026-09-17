@@ -3,12 +3,27 @@ import './globals.css';
 export const metadata = {
   title: 'RIBDIGI ERP',
   description: 'One System. Total Business Control. A Ribdigi House Product.',
+  themeColor: '#4AB012',
+  applicationName: 'RIBDIGI ERP',
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
       { url: '/icon.png', type: 'image/png' },
     ],
     apple: [{ url: '/apple-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
+  openGraph: {
+    title: 'RIBDIGI ERP',
+    description: 'One System. Total Business Control. A Ribdigi House Product.',
+    siteName: 'RIBDIGI ERP',
+    images: [{ url: '/brand/logo-full.png', alt: 'RIBDIGI ERP — One System. Total Business Control.' }],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'RIBDIGI ERP',
+    description: 'One System. Total Business Control. A Ribdigi House Product.',
+    images: ['/brand/logo-full.png'],
   },
 };
 

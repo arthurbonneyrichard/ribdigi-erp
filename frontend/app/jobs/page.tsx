@@ -82,7 +82,7 @@ export default function Page() {
         See <code>docs/CELERY_RELIABILITY_RUNBOOK.md</code>.
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: '#0f766e' }}>{message}</p>}
+      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 
       <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 6 }}>
         <h3 style={{ margin: 0 }}>Broker</h3>
@@ -97,7 +97,12 @@ export default function Page() {
           Results: {info?.result_backend || '—'}
         </div>
         <div>
-          <button type="button" onClick={() => refresh().catch((e) => setError(e.message))} disabled={!!busy}>
+          <button
+            type="button"
+            onClick={() => refresh().catch((e) => setError(e.message))}
+            disabled={!!busy}
+            aria-label="Refresh jobs list"
+          >
             Refresh
           </button>
         </div>
@@ -139,6 +144,7 @@ export default function Page() {
                         type="button"
                         disabled={!!busy}
                         onClick={() => runJob(name, false)}
+                        aria-label={`Run sync ${name}`}
                       >
                         {busy === `${name}:run` ? 'Running…' : 'Run sync'}
                       </button>
@@ -147,6 +153,7 @@ export default function Page() {
                         disabled={!!busy || !info?.celery_enabled}
                         title={!info?.celery_enabled ? 'CELERY_ENABLED is false' : undefined}
                         onClick={() => runJob(name, true)}
+                        aria-label={`Enqueue ${name}`}
                       >
                         {busy === `${name}:enqueue` ? 'Enqueue…' : 'Enqueue'}
                       </button>

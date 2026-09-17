@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.config import settings
+from app.honesty import optional_honest_narrative
 
 CHALLENGE_TTL_MINUTES = 5
 
@@ -219,7 +220,11 @@ async def verify_registration(
         device_type=str(getattr(verification, "credential_device_type", None) or "")
         or None,
         backed_up=bool(getattr(verification, "credential_backed_up", False)),
-        name=(name or "").strip() or "Passkey",
+        # OpenAPI PasskeyNameValue → 422; omit/null → default "Passkey".
+        name=(
+            optional_honest_narrative(name, label="passkey name", max_length=120)
+            or "Passkey"
+        ),
     )
     db.add(row)
     await db.flush()

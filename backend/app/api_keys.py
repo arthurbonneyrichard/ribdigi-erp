@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import require_honest_narrative
 from app.rbac import ALLOWED_ACTIONS, SYSTEM_MODULES
 from app.security import hash_token
 
@@ -25,24 +26,26 @@ DEFAULT_PERMISSIONS: dict[str, list[str]] = {
 
 
 def normalize_permissions(raw: dict | None) -> dict[str, list[str]]:
+    # Schema ApiKeyCreate rejects unknown modules/actions → 422; keep allow-list
+    # defense-in-depth (no silent drop of bad keys).
     source = raw if isinstance(raw, dict) and raw else DEFAULT_PERMISSIONS
     out: dict[str, list[str]] = {}
     for module, actions in source.items():
         mod = str(module).strip().lower()
         if mod not in SYSTEM_MODULES:
-            raise HTTPException(status_code=400, detail=f"Invalid permission module: {module}")
+            raise HTTPException(status_code=422, detail=f"Invalid permission module: {module}")
         if not isinstance(actions, (list, tuple)) or not actions:
-            raise HTTPException(status_code=400, detail=f"Invalid actions for module: {module}")
+            raise HTTPException(status_code=422, detail=f"Invalid actions for module: {module}")
         cleaned: list[str] = []
         for action in actions:
             act = str(action).strip().lower()
             if act not in ALLOWED_ACTIONS:
-                raise HTTPException(status_code=400, detail=f"Invalid action: {action}")
+                raise HTTPException(status_code=422, detail=f"Invalid action: {action}")
             if act not in cleaned:
                 cleaned.append(act)
         out[mod] = cleaned
     if not out:
-        raise HTTPException(status_code=400, detail="permissions must include at least one module")
+        raise HTTPException(status_code=422, detail="permissions must include at least one module")
     return out
 
 
@@ -99,13 +102,18 @@ async def list_keys(
         .all()
     )
     if status is not None:
-        wanted = str(status).strip().lower()
-        if wanted not in {"active", "revoked", "expired"}:
+        # Schema ApiKeyStatusFilterValue rejects blank/invalid → 422; keep allow-list
+        # defense-in-depth (no silent empty filter / blank→all).
+        wanted = (status or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in {"active", "revoked", "expired"}:
             raise HTTPException(
-                status_code=400,
+                status_code=422,
                 detail="status must be active, revoked, or expired",
             )
-        rows = [r for r in rows if serialize_key(r)["status"] == wanted]
+        else:
+            rows = [r for r in rows if serialize_key(r)["status"] == wanted]
     elif active_only:
         rows = [r for r in rows if serialize_key(r)["status"] == "active"]
     return rows
@@ -120,11 +128,9 @@ async def create_key(
     permissions: dict | None = None,
     expires_at: datetime | None = None,
 ) -> tuple[m.ApiKey, str]:
-    cleaned_name = (name or "").strip()
-    if len(cleaned_name) < 2:
-        raise HTTPException(status_code=400, detail="name must be at least 2 characters")
-    if len(cleaned_name) > 120:
-        raise HTTPException(status_code=400, detail="name must be at most 120 characters")
+    cleaned_name = require_honest_narrative(
+        name, label="API key name", min_length=2, max_length=120
+    )
     perms = normalize_permissions(permissions)
     raw, prefix, key_hash = generate_raw_key()
     row = m.ApiKey(

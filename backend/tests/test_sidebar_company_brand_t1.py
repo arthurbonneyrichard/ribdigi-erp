@@ -23,10 +23,13 @@ def test_sidebar_brand_ui_wired():
     assert "topbar-brand" not in shell
     css = (ROOT / "frontend/app/globals.css").read_text(encoding="utf-8")
     assert ".brand{" in css or ".brand{" in css.replace(" ", "")
-    assert "min-height:72px" in css
+    # Wide wordmark brand slot (shrunk after logo fit passes)
+    assert "min-height:64px" in css
+    assert "max-height:50px" in css
     assert "brand-name" in css
     assert "topbar-brand" not in css
-    assert "width:min(120px,42%)" in css
+    # Login wordmark width (30% smaller than initial 320px fit)
+    assert "width:min(224px,100%)" in css
 
 
 @pytest.mark.asyncio

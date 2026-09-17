@@ -25,7 +25,6 @@ async def test_pos_search_includes_tax_fields(client):
         headers=admin,
         json={
             "name": "VAT 15",
-            "code": "VAT15",
             "rate": 15,
             "pricing_mode": "exclusive",
             "is_default": True,

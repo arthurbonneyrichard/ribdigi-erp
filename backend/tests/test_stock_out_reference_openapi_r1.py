@@ -12,20 +12,23 @@ from app.schemas import StockOut
 ROOT = Path(__file__).resolve().parents[2]
 
 
+_VALID_PRODUCT = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+
+
 def test_stock_out_reference_type_literal_schema():
     ok = StockOut.model_validate(
-        {"product_id": "p", "quantity": 1, "reference_type": "sale"}
+        {"product_id": _VALID_PRODUCT, "quantity": 1, "reference_type": "sale"}
     )
     assert ok.reference_type == "sale"
     with pytest.raises(ValidationError):
-        StockOut.model_validate({"product_id": "p", "quantity": 1})
+        StockOut.model_validate({"product_id": _VALID_PRODUCT, "quantity": 1})
     with pytest.raises(ValidationError):
         StockOut.model_validate(
-            {"product_id": "p", "quantity": 1, "reference_type": "  "}
+            {"product_id": _VALID_PRODUCT, "quantity": 1, "reference_type": "  "}
         )
     with pytest.raises(ValidationError):
         StockOut.model_validate(
-            {"product_id": "p", "quantity": 1, "reference_type": "sales"}
+            {"product_id": _VALID_PRODUCT, "quantity": 1, "reference_type": "sales"}
         )
 
 

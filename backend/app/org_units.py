@@ -10,18 +10,33 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import optional_honest_narrative, require_honest_narrative
+from app.schemas import validate_e164_phone_value
 
 CODE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$")
 
 
-def _clean_code(code: str) -> str:
-    value = (code or "").strip().upper()
+def _clean_code(code: str, *, label: str = "code") -> str:
+    # OpenAPI BranchCodeValue / DepartmentCodeValue → 422; service defense → 400.
+    value = require_honest_narrative(
+        (code or "").strip().upper(), label=label, max_length=40
+    )
     if not CODE_RE.fullmatch(value):
         raise HTTPException(
             status_code=400,
             detail="code must be 1–40 chars: letters, digits, underscore, or hyphen",
         )
     return value
+
+
+def _optional_branch_phone(value: str | None) -> str | None:
+    """OpenAPI E164PhoneValue → 422; service defense-in-depth → 400."""
+    if value is None:
+        return None
+    try:
+        return validate_e164_phone_value(str(value).strip())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 async def _assert_tenant_user(db: AsyncSession, tenant_id: str, user_id: str | None) -> str | None:
@@ -134,10 +149,11 @@ async def create_branch(
     email: str | None = None,
     manager_id: str | None = None,
 ) -> m.Branch:
-    code = _clean_code(code)
-    name_clean = (name or "").strip()
-    if len(name_clean) < 2:
-        raise HTTPException(status_code=400, detail="name must be at least 2 characters")
+    code = _clean_code(code, label="branch code")
+    # OpenAPI BranchNameValue → 422; service defense-in-depth → 400.
+    name_clean = require_honest_narrative(
+        name, label="branch name", min_length=2, max_length=150
+    )
     manager_id = await _assert_tenant_user(db, tenant_id, manager_id)
     exists = (
         await db.execute(
@@ -150,8 +166,8 @@ async def create_branch(
         tenant_id=tenant_id,
         code=code,
         name=name_clean,
-        address=(address or "").strip() or None,
-        phone=(phone or "").strip() or None,
+        address=optional_honest_narrative(address, label="branch address", max_length=500),
+        phone=_optional_branch_phone(phone),
         email=(email or "").strip() or None,
         manager_id=manager_id,
         is_active=True,
@@ -176,14 +192,17 @@ async def update_branch(
 ) -> m.Branch:
     row = await get_branch(db, tenant_id, branch_id)
     if name is not None:
-        name_clean = name.strip()
-        if len(name_clean) < 2:
-            raise HTTPException(status_code=400, detail="name must be at least 2 characters")
-        row.name = name_clean
+        # OpenAPI BranchNameValue → 422; service defense-in-depth → 400.
+        row.name = require_honest_narrative(
+            name, label="branch name", min_length=2, max_length=150
+        )
     if address is not None:
-        row.address = address.strip() or None
+        row.address = optional_honest_narrative(
+            address, label="branch address", max_length=500
+        )
     if phone is not None:
-        row.phone = phone.strip() or None
+        # Defense in depth: BranchUpdate E164PhoneValue → 422 on blank/invalid.
+        row.phone = _optional_branch_phone(phone)
     if email is not None:
         row.email = email.strip() or None
     if clear_manager:
@@ -205,10 +224,11 @@ async def create_department(
     branch_id: str | None = None,
     head_user_id: str | None = None,
 ) -> m.Department:
-    code = _clean_code(code)
-    name_clean = (name or "").strip()
-    if len(name_clean) < 2:
-        raise HTTPException(status_code=400, detail="name must be at least 2 characters")
+    code = _clean_code(code, label="department code")
+    # OpenAPI DepartmentNameValue → 422; service defense-in-depth → 400.
+    name_clean = require_honest_narrative(
+        name, label="department name", min_length=2, max_length=150
+    )
     if branch_id:
         await get_branch(db, tenant_id, branch_id)
     head_user_id = await _assert_tenant_user(db, tenant_id, head_user_id)
@@ -246,10 +266,10 @@ async def update_department(
 ) -> m.Department:
     row = await get_department(db, tenant_id, department_id)
     if name is not None:
-        name_clean = name.strip()
-        if len(name_clean) < 2:
-            raise HTTPException(status_code=400, detail="name must be at least 2 characters")
-        row.name = name_clean
+        # OpenAPI DepartmentNameValue → 422; service defense-in-depth → 400.
+        row.name = require_honest_narrative(
+            name, label="department name", min_length=2, max_length=150
+        )
     if clear_branch:
         row.branch_id = None
     elif branch_id is not None:

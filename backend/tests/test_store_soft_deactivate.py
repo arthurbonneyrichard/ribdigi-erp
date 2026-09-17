@@ -99,7 +99,7 @@ async def test_inactive_store_blocked_on_pos_and_sales(client, seeded):
     customer = await ac.post(
         "/api/v1/customers",
         headers=admin,
-        json={"name": "Store Deact Buyer", "kind": "customer", "email": "store-deact@example.com"},
+        json={"name": "Store Deact Buyer",  "email": "store-deact@example.com"},
     )
     assert customer.status_code == 200, customer.text
     cid = customer.json()["data"]["id"]
@@ -110,8 +110,7 @@ async def test_inactive_store_blocked_on_pos_and_sales(client, seeded):
         json={
             "customer_id": cid,
             "store_id": sid,
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 10}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 10}]},
     )
     assert blocked_inv.status_code == 400, blocked_inv.text
     assert "inactive" in blocked_inv.json()["detail"].lower()
@@ -130,8 +129,7 @@ async def test_inactive_store_blocked_on_pos_and_sales(client, seeded):
         json={
             "customer_id": cid,
             "store_id": sid,
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 10}],
-        },
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 10}]},
     )
     assert ok_inv.status_code == 200, ok_inv.text
     assert ok_inv.json()["data"]["store_id"] == sid

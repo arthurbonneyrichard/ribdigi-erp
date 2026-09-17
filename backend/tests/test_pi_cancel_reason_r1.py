@@ -21,6 +21,8 @@ def test_pi_cancel_reason_ui_wired():
     assert "JSON.stringify({ reason })" in page
     assert "setPiCancelReason" in page
     assert "Required before Cancel" in page
+    assert 'aria-label="Purchase invoice cancel reason"' in page
+    assert "aria-label={`Cancel purchase invoice ${inv.id}`}" in page
 
 
 async def _admin(ac, seed):
@@ -38,7 +40,7 @@ async def test_pi_cancel_requires_reason_and_persists(client, db_session):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=headers,
-        json={"name": "PI Cancel Reason Vendor", "kind": "supplier"},
+        json={"name": "PI Cancel Reason Vendor"},
     )
     assert supplier.status_code == 200, supplier.text
     created = await ac.post(
@@ -52,10 +54,8 @@ async def test_pi_cancel_requires_reason_and_persists(client, db_session):
                     "product_id": seed["p1"].id,
                     "quantity": 1,
                     "unit_price": 8,
-                    "tax_rate": 0,
-                }
-            ],
-        },
+                    "tax_rate": 0}
+            ]},
     )
     assert created.status_code == 200, created.text
     inv_id = created.json()["data"]["id"]
@@ -79,8 +79,14 @@ async def test_pi_cancel_requires_reason_and_persists(client, db_session):
         headers=headers,
         json={"reason": "   "},
     )
-    assert blank.status_code == 400
-    assert "reason" in blank.json()["detail"].lower()
+    assert blank.status_code == 422, blank.text
+
+    garbage = await ac.post(
+        f"/api/v1/purchasing/invoices/{inv_id}/cancel",
+        headers=headers,
+        json={"reason": "!!!!"},
+    )
+    assert garbage.status_code == 422, garbage.text
 
     ok = await ac.post(
         f"/api/v1/purchasing/invoices/{inv_id}/cancel",

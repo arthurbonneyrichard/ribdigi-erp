@@ -19,6 +19,9 @@ def test_period_close_reason_ui_wired():
     page = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
     assert "periodReason" in page
     assert "Required close / reopen reason" in page
+    assert 'aria-label="Period close or reopen reason"' in page
+    assert 'aria-label="Close books"' in page
+    assert 'aria-label="Reopen books"' in page
     assert "Enter a close reason before closing the books" in page
     assert "Enter a reopen reason before reopening the books" in page
     assert "through_date: closeThrough, reason" in page
@@ -56,8 +59,7 @@ async def test_period_close_and_reopen_require_reason(client, db_session):
         headers=headers,
         json={"through_date": yesterday, "reason": "   "},
     )
-    assert blank.status_code == 400
-    assert "reason" in blank.json()["detail"].lower()
+    assert blank.status_code == 422
 
     ok = await ac.post(
         "/api/v1/accounting/period/close",
@@ -92,8 +94,7 @@ async def test_period_close_and_reopen_require_reason(client, db_session):
         headers=headers,
         json={"through_date": None, "reason": "  "},
     )
-    assert reopen_blank.status_code == 400
-    assert "reason" in reopen_blank.json()["detail"].lower()
+    assert reopen_blank.status_code == 422
 
     reopen = await ac.post(
         "/api/v1/accounting/period/reopen",

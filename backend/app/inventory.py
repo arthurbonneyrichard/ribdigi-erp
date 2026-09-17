@@ -7,6 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json, optional_honest_narrative
 
 STOCK_ADJUSTMENT_REASONS = frozenset({"damage", "theft", "expiry", "found", "lost"})
 # BR-5.2 Stock Out reference (sales / transfer / adjustment / damage + internal/other)
@@ -70,16 +71,16 @@ async def apply_warehouse_stock_change(
     row = await get_or_create_warehouse_stock(
         db, tenant_id=tenant_id, warehouse_id=warehouse_id, product_id=product_id
     )
-    before = float(row.quantity or 0)
-    after = before + float(quantity_delta)
+    before = money_json(row.quantity or 0)
+    after = before + money_json(quantity_delta)
     if after < 0 and not allow_negative:
         raise HTTPException(
             status_code=409,
             detail={
                 "code": "INSUFFICIENT_WAREHOUSE_STOCK",
                 "message": "Insufficient stock at source warehouse",
-                "available": before,
-                "requested": abs(float(quantity_delta)),
+                "available": money_json(before),
+                "requested": money_json(abs(money_json(quantity_delta))),
                 "warehouse_id": warehouse_id,
                 "product_id": product_id,
             },
@@ -97,7 +98,7 @@ async def allocate_unlocated_stock(
     product_id: str,
 ) -> None:
     """If product has consolidated stock but no warehouse rows, park it at warehouse_id."""
-    located = float(
+    located = money_json(
         (
             await db.execute(
                 select(func.coalesce(func.sum(m.WarehouseStock.quantity), 0)).where(
@@ -115,7 +116,7 @@ async def allocate_unlocated_stock(
     ).scalar_one_or_none()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-    unlocated = float(product.stock_qty or 0) - located
+    unlocated = money_json(product.stock_qty or 0) - located
     if unlocated > 0:
         await apply_warehouse_stock_change(
             db,
@@ -139,7 +140,7 @@ async def transfer_warehouse_stock(
     notes: str | None = None,
 ) -> None:
     """Move stock between warehouses without changing consolidated product.stock_qty."""
-    qty = float(quantity)
+    qty = money_json(quantity)
     if qty <= 0:
         raise HTTPException(status_code=400, detail="Transfer quantity must be positive")
     if from_warehouse_id == to_warehouse_id:
@@ -163,7 +164,7 @@ async def transfer_warehouse_stock(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    before = float(product.stock_qty or 0)
+    before = money_json(product.stock_qty or 0)
     await apply_warehouse_stock_change(
         db,
         tenant_id=tenant_id,
@@ -230,6 +231,9 @@ async def apply_stock_change(
     if quantity_delta == 0:
         raise HTTPException(status_code=400, detail="Stock quantity change cannot be zero")
 
+    # OpenAPI StockIn/Out/AdjustNotesValue → 422; service defense-in-depth → 400.
+    notes = optional_honest_narrative(notes, label="stock movement notes")
+
     result = await db.execute(
         select(m.Product)
         .where(m.Product.id == product_id, m.Product.tenant_id == tenant_id)
@@ -239,16 +243,16 @@ async def apply_stock_change(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    before = float(product.stock_qty or 0)
-    after = before + float(quantity_delta)
+    before = money_json(product.stock_qty or 0)
+    after = before + money_json(quantity_delta)
     if after < 0 and not allow_negative:
         raise HTTPException(
             status_code=409,
             detail={
                 "code": "INSUFFICIENT_STOCK",
                 "message": f"Insufficient stock for {product.sku}",
-                "available": before,
-                "requested": abs(float(quantity_delta)),
+                "available": money_json(before),
+                "requested": money_json(abs(money_json(quantity_delta))),
             },
         )
 
@@ -262,11 +266,11 @@ async def apply_stock_change(
             tenant_id=tenant_id,
             warehouse_id=warehouse_id,
             product_id=product.id,
-            quantity_delta=float(quantity_delta),
+            quantity_delta=money_json(quantity_delta),
             allow_negative=allow_negative,
         )
         # Warehouse-level reorder alert after stock-out
-        if float(quantity_delta) < 0:
+        if money_json(quantity_delta) < 0:
             from app.notifications import notify_warehouse_low_stock_if_needed
 
             wh_row = await get_or_create_warehouse_stock(
@@ -282,7 +286,7 @@ async def apply_stock_change(
         batch_id=batch_id,
         warehouse_id=warehouse_id,
         movement_type=movement_type,
-        quantity=float(quantity_delta),
+        quantity=money_json(quantity_delta),
         quantity_before=before,
         quantity_after=after,
         reference_type=reference_type,
@@ -300,9 +304,9 @@ async def apply_stock_change(
             entity="product",
             entity_id=product.id,
             details={
-                "quantity_delta": float(quantity_delta),
-                "before": before,
-                "after": after,
+                "quantity_delta": money_json(quantity_delta),
+                "before": money_json(before),
+                "after": money_json(after),
                 "reference_type": reference_type,
                 "reference_id": reference_id,
                 "variant_id": variant_id,
@@ -323,8 +327,8 @@ async def apply_stock_change(
                 "product_id": product.id,
                 "sku": product.sku,
                 "name": product.name,
-                "quantity": float(quantity_delta),
-                "stock_qty": after,
+                "quantity": money_json(quantity_delta),
+                "stock_qty": money_json(after),
                 "warehouse_id": warehouse_id,
                 "variant_id": variant_id,
                 "batch_id": batch_id,
@@ -347,8 +351,8 @@ async def apply_stock_change(
                 "product_id": product.id,
                 "sku": product.sku,
                 "name": product.name,
-                "quantity": abs(float(quantity_delta)),
-                "stock_qty": after,
+                "quantity": abs(money_json(quantity_delta)),
+                "stock_qty": money_json(after),
                 "warehouse_id": warehouse_id,
                 "variant_id": variant_id,
                 "batch_id": batch_id,
@@ -356,7 +360,7 @@ async def apply_stock_change(
                 "reference_id": reference_id,
             },
         )
-    if after <= float(product.reorder_level or 0):
+    if after <= money_json(product.reorder_level or 0):
         from app.notifications import notify_low_stock_if_needed
 
         await notify_low_stock_if_needed(db, tenant_id=tenant_id, product=product)
@@ -382,7 +386,7 @@ async def apply_line_items_stock(
 
     for item in items:
         product_id = item.get("product_id")
-        qty = float(item.get("quantity") or 0)
+        qty = money_json(item.get("quantity") or 0)
         variant_id = item.get("variant_id")
         unit_id = item.get("unit_id")
         if not product_id or qty <= 0:
@@ -434,7 +438,7 @@ async def apply_line_items_stock(
             )
             if variant_id:
                 variant = await get_variant(db, tenant_id, variant_id)
-                variant.stock_qty = float(variant.stock_qty or 0) + stock_qty
+                variant.stock_qty = money_json(variant.stock_qty or 0) + stock_qty
 
 
 async def list_warehouse_stock(
@@ -464,9 +468,9 @@ async def list_warehouse_stock(
     rows = (await db.execute(stmt)).all()
     items = []
     for stock, product in rows:
-        qty = float(stock.quantity or 0)
-        reorder = float(stock.reorder_level or 0)
-        reorder_qty = float(stock.reorder_qty or 0)
+        qty = money_json(stock.quantity)
+        reorder = money_json(stock.reorder_level)
+        reorder_qty = money_json(stock.reorder_qty)
         items.append(
             {
                 "product_id": product.id,
@@ -476,11 +480,13 @@ async def list_warehouse_stock(
                 "reorder_level": reorder,
                 "reorder_qty": reorder_qty,
                 "below_reorder": reorder > 0 and qty <= reorder,
-                "suggested_order_qty": max(reorder_qty, round(reorder - qty, 3))
-                if reorder > 0 and qty <= reorder
-                else reorder_qty,
+                "suggested_order_qty": (
+                    money_json(max(reorder_qty, money_json(round(reorder - qty, 3))))
+                    if reorder > 0 and qty <= reorder
+                    else reorder_qty
+                ),
                 "warehouse_id": wh.id,
-                "consolidated_stock": float(product.stock_qty or 0),
+                "consolidated_stock": money_json(product.stock_qty),
             }
         )
     return {
@@ -491,7 +497,7 @@ async def list_warehouse_stock(
         "include_zero": include_zero,
         "count": len(items),
         "items": items,
-        "total_quantity": round(sum(i["quantity"] for i in items), 3),
+        "total_quantity": money_json(round(sum(i["quantity"] for i in items), 3)),
     }
 
 
@@ -520,18 +526,18 @@ async def set_warehouse_reorder_policy(
     row = await get_or_create_warehouse_stock(
         db, tenant_id=tenant_id, warehouse_id=wh.id, product_id=product_id
     )
-    row.reorder_level = max(float(reorder_level or 0), 0)
-    row.reorder_qty = max(float(reorder_qty or 0), 0)
+    row.reorder_level = max(money_json(reorder_level or 0), 0)
+    row.reorder_qty = max(money_json(reorder_qty or 0), 0)
     await db.flush()
-    qty = float(row.quantity or 0)
-    reorder = float(row.reorder_level or 0)
+    qty = money_json(row.quantity)
+    reorder = money_json(row.reorder_level)
     return {
         "product_id": product.id,
         "sku": product.sku,
         "name": product.name,
         "quantity": qty,
         "reorder_level": reorder,
-        "reorder_qty": float(row.reorder_qty or 0),
+        "reorder_qty": money_json(row.reorder_qty),
         "below_reorder": reorder > 0 and qty <= reorder,
         "warehouse_id": wh.id,
         "store_id": wh.store_id,
@@ -624,8 +630,8 @@ async def list_product_warehouse_stock(
     rows = (await db.execute(stmt)).all()
     items = []
     for stock, wh in rows:
-        qty = float(stock.quantity or 0)
-        reorder = float(stock.reorder_level or 0)
+        qty = money_json(stock.quantity)
+        reorder = money_json(stock.reorder_level)
         items.append(
             {
                 "warehouse_id": wh.id,
@@ -634,7 +640,7 @@ async def list_product_warehouse_stock(
                 "store_id": wh.store_id,
                 "quantity": qty,
                 "reorder_level": reorder,
-                "reorder_qty": float(stock.reorder_qty or 0),
+                "reorder_qty": money_json(stock.reorder_qty),
                 "below_reorder": reorder > 0 and qty <= reorder,
             }
         )
@@ -642,9 +648,9 @@ async def list_product_warehouse_stock(
         "product_id": product.id,
         "sku": product.sku,
         "name": product.name,
-        "consolidated_stock": float(product.stock_qty or 0),
-        "reorder_level": float(product.reorder_level or 0),
+        "consolidated_stock": money_json(product.stock_qty),
+        "reorder_level": money_json(product.reorder_level or 0),
         "count": len(items),
         "items": items,
-        "total_quantity": round(sum(i["quantity"] for i in items), 3),
+        "total_quantity": money_json(round(sum(i["quantity"] for i in items), 3)),
     }

@@ -58,7 +58,12 @@ async def test_list_and_revoke_own_sessions(client):
     assert other["id"] not in ids
 
     missing = await ac.delete("/api/v1/auth/sessions/nonexistent", headers=headers)
-    assert missing.status_code == 404
+    assert missing.status_code == 422
+
+    from uuid import uuid4
+
+    absent = await ac.delete(f"/api/v1/auth/sessions/{uuid4()}", headers=headers)
+    assert absent.status_code == 404
 
 
 @pytest.mark.asyncio

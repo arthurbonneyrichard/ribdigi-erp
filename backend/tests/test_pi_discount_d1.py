@@ -22,7 +22,7 @@ async def test_manual_pi_line_and_header_discount(client):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=headers,
-        json={"name": "Discount PI Vendor", "kind": "supplier", "email": "disc-pi@example.com"},
+        json={"name": "Discount PI Vendor",  "email": "disc-pi@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
 
@@ -40,11 +40,9 @@ async def test_manual_pi_line_and_header_discount(client):
                     "quantity": 2,
                     "unit_price": 10,
                     "tax_rate": 10,
-                    "discount": 3,
-                }
+                    "discount": 3}
             ],
-            "notes": "pi discount test",
-        },
+            "notes": "pi discount test"},
     )
     assert created.status_code == 200, created.text
     inv = created.json()["data"]
@@ -74,7 +72,7 @@ async def test_manual_pi_reverse_charge_header_discount(client):
     supplier = await ac.post(
         "/api/v1/suppliers",
         headers=headers,
-        json={"name": "RC Discount Vendor", "kind": "supplier", "email": "rc-disc@example.com"},
+        json={"name": "RC Discount Vendor",  "email": "rc-disc@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
 
@@ -92,10 +90,8 @@ async def test_manual_pi_reverse_charge_header_discount(client):
                     "quantity": 1,
                     "unit_price": 50,
                     "tax_rate": 10,
-                    "discount": 0,
-                }
-            ],
-        },
+                    "discount": 0}
+            ]},
     )
     assert created.status_code == 200, created.text
     inv = created.json()["data"]

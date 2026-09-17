@@ -10,6 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 from app.inventory import apply_stock_change
 
 _SKU_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$")
@@ -98,9 +99,9 @@ def serialize_variant(v: m.ProductVariant) -> dict:
         "color": v.color,
         "flavor": v.flavor,
         "dosage": getattr(v, "dosage", None),
-        "cost_price": float(v.cost_price or 0),
-        "selling_price": float(v.selling_price or 0),
-        "stock_qty": float(v.stock_qty or 0),
+        "cost_price": money_json(v.cost_price),
+        "selling_price": money_json(v.selling_price),
+        "stock_qty": money_json(v.stock_qty),
         "is_active": bool(v.is_active),
         "created_at": v.created_at,
     }
@@ -115,7 +116,7 @@ def serialize_batch(b: m.ProductBatch) -> dict:
         "batch_number": b.batch_number,
         "manufacturing_date": b.manufacturing_date,
         "expiry_date": b.expiry_date,
-        "quantity": float(b.quantity or 0),
+        "quantity": money_json(b.quantity),
         "created_at": b.created_at,
         "updated_at": b.updated_at,
     }
@@ -171,12 +172,12 @@ async def resolve_sale_line(
         if not variant.is_active:
             raise HTTPException(status_code=409, detail="Variant is inactive")
     if item.get("unit_price") is not None:
-        unit_price = float(item["unit_price"])
+        unit_price = money_json(item["unit_price"])
     else:
         if variant is not None:
-            unit_price = float(variant.selling_price or 0)
+            unit_price = money_json(variant.selling_price or 0)
         else:
-            unit_price = float(product.selling_price or 0)
+            unit_price = money_json(product.selling_price or 0)
         if customer_id:
             from app.customer_groups import apply_discount, customer_group_discount
 
@@ -208,10 +209,8 @@ async def list_variants(
 
 
 def _clean_attr(value: str | None) -> str | None:
-    if value is None:
-        return None
-    cleaned = value.strip()
-    return cleaned or None
+    """Strip blank → None; non-blank garbage → **400** (VariantAttrValue defense)."""
+    return optional_honest_narrative(value, label="variant attribute", max_length=80)
 
 
 async def create_variant(
@@ -230,9 +229,7 @@ async def create_variant(
     selling_price: float | None = None,
 ) -> m.ProductVariant:
     product = await get_product(db, tenant_id, product_id)
-    name = (name or "").strip()
-    if not name:
-        raise HTTPException(status_code=400, detail="Variant name is required")
+    name = require_honest_narrative(name, label="variant name", max_length=120)
     sku_norm = normalize_sku(sku)
     if not sku_norm:
         sku_norm = await allocate_sku(db, tenant_id, prefix="SKU")
@@ -258,8 +255,8 @@ async def create_variant(
         color=_clean_attr(color),
         flavor=_clean_attr(flavor),
         dosage=_clean_attr(dosage),
-        cost_price=float(cost_price if cost_price is not None else product.cost_price or 0),
-        selling_price=float(
+        cost_price=money_json(cost_price if cost_price is not None else product.cost_price or 0),
+        selling_price=money_json(
             selling_price if selling_price is not None else product.selling_price or 0
         ),
         stock_qty=0,
@@ -298,10 +295,9 @@ async def update_variant(
         raise HTTPException(status_code=404, detail="Variant not found")
 
     if name is not None:
-        name = name.strip()
-        if not name:
-            raise HTTPException(status_code=400, detail="Variant name is required")
-        variant.name = name
+        variant.name = require_honest_narrative(
+            name, label="variant name", max_length=120
+        )
     if sku is not None:
         sku_norm = normalize_sku(sku)
         if not sku_norm:
@@ -327,23 +323,23 @@ async def update_variant(
     if clear_size:
         variant.size = None
     elif size is not None:
-        variant.size = size.strip() or None
+        variant.size = _clean_attr(size)
     if clear_color:
         variant.color = None
     elif color is not None:
-        variant.color = color.strip() or None
+        variant.color = _clean_attr(color)
     if clear_flavor:
         variant.flavor = None
     elif flavor is not None:
-        variant.flavor = flavor.strip() or None
+        variant.flavor = _clean_attr(flavor)
     if clear_dosage:
         variant.dosage = None
     elif dosage is not None:
-        variant.dosage = dosage.strip() or None
+        variant.dosage = _clean_attr(dosage)
     if cost_price is not None:
-        variant.cost_price = float(cost_price)
+        variant.cost_price = money_json(cost_price)
     if selling_price is not None:
-        variant.selling_price = float(selling_price)
+        variant.selling_price = money_json(selling_price)
     if is_active is not None:
         variant.is_active = bool(is_active)
     await db.flush()
@@ -443,7 +439,7 @@ async def stock_in_with_batch(
 ) -> dict:
     from app.uom import to_stock_qty
 
-    entered_qty = float(quantity)
+    entered_qty = money_json(quantity)
     if entered_qty <= 0:
         raise HTTPException(status_code=400, detail="quantity must be positive")
     product = await get_product(db, tenant_id, product_id)
@@ -463,9 +459,22 @@ async def stock_in_with_batch(
     if product.tracks_batches and not (batch_number or "").strip():
         raise HTTPException(status_code=400, detail="batch_number required for batch-tracked products")
 
+    # OpenAPI BatchNumberValue → 422; service defense-in-depth → 400.
+    batch_number = optional_honest_narrative(
+        batch_number, label="batch number", max_length=80
+    )
+    # OpenAPI StockInReferenceTypeValue / StockMovementReferenceIdValue → 422.
+    reference_type = optional_honest_narrative(
+        reference_type, label="stock-in reference type", max_length=50
+    )
+    if reference_type is not None:
+        reference_type = reference_type.lower()
+    reference_id = optional_honest_narrative(
+        reference_id, label="stock movement reference id", max_length=36
+    )
+
     batch = None
     if batch_number:
-        batch_number = batch_number.strip()
         batch = await _find_batch(
             db,
             tenant_id=tenant_id,
@@ -493,9 +502,10 @@ async def stock_in_with_batch(
                 batch.expiry_date = expiry_date
             if warehouse_id:
                 batch.warehouse_id = warehouse_id
-        batch.quantity = float(batch.quantity or 0) + quantity_base
+        batch.quantity = money_json(batch.quantity or 0) + quantity_base
         batch.updated_at = datetime.utcnow()
 
+    notes = optional_honest_narrative(notes, label="stock movement notes")
     note_text = notes
     if entered_unit_id and product.unit_id and entered_unit_id != product.unit_id:
         suffix = f"entered {entered_qty:g} (unit {entered_unit_id[:8]}) → {quantity_base:g} stock"
@@ -516,16 +526,16 @@ async def stock_in_with_batch(
         reference_id=reference_id,
     )
     if variant:
-        variant.stock_qty = float(variant.stock_qty or 0) + quantity_base
+        variant.stock_qty = money_json(variant.stock_qty or 0) + quantity_base
 
     return {
         "product_id": product.id,
-        "stock_qty": float(product.stock_qty),
-        "quantity_entered": entered_qty,
-        "quantity_base": quantity_base,
+        "stock_qty": money_json(product.stock_qty),
+        "quantity_entered": money_json(entered_qty),
+        "quantity_base": money_json(quantity_base),
         "unit_id": entered_unit_id,
         "stock_unit_id": product.unit_id,
-        "cost_price": float(product.cost_price or 0),
+        "cost_price": money_json(product.cost_price),
         "variant": serialize_variant(variant) if variant else None,
         "batch": serialize_batch(batch) if batch else None,
     }
@@ -548,7 +558,7 @@ async def stock_out_with_batch(
 ) -> dict:
     from app.uom import to_stock_qty
 
-    entered_qty = float(quantity)
+    entered_qty = money_json(quantity)
     if entered_qty <= 0:
         raise HTTPException(status_code=400, detail="quantity must be positive")
     product = await get_product(db, tenant_id, product_id)
@@ -564,7 +574,7 @@ async def stock_out_with_batch(
         variant = await get_variant(db, tenant_id, variant_id)
         if variant.product_id != product.id:
             raise HTTPException(status_code=400, detail="Variant does not belong to product")
-        if float(variant.stock_qty or 0) + 1e-9 < quantity:
+        if money_json(variant.stock_qty or 0) + 1e-9 < quantity:
             raise HTTPException(status_code=409, detail="Insufficient variant stock")
 
     remaining = quantity
@@ -584,12 +594,12 @@ async def stock_out_with_batch(
         ).scalar_one_or_none()
         if not batch:
             raise HTTPException(status_code=404, detail="Batch not found")
-        avail = float(batch.quantity or 0)
+        avail = money_json(batch.quantity or 0)
         if avail + 1e-9 < quantity:
             raise HTTPException(status_code=409, detail="Insufficient batch quantity")
-        batch.quantity = avail - quantity
+        batch.quantity = money_json(round(avail - quantity, 6))
         batch.updated_at = datetime.utcnow()
-        consumed.append({"batch_id": batch.id, "quantity": quantity})
+        consumed.append({"batch_id": batch.id, "quantity": money_json(quantity)})
         remaining = 0
         primary_batch_id = batch.id
     else:
@@ -627,25 +637,30 @@ async def stock_out_with_batch(
             for batch in batches:
                 if remaining <= 1e-9:
                     break
-                take = min(float(batch.quantity or 0), remaining)
+                take = min(money_json(batch.quantity or 0), remaining)
                 if take <= 0:
                     continue
-                batch.quantity = float(batch.quantity or 0) - take
+                batch.quantity = money_json(batch.quantity or 0) - take
                 batch.updated_at = datetime.utcnow()
-                consumed.append({"batch_id": batch.id, "quantity": take})
+                consumed.append({"batch_id": batch.id, "quantity": money_json(take)})
                 if primary_batch_id is None:
                     primary_batch_id = batch.id
-                remaining = round(remaining - take, 6)
+                remaining = money_json(round(remaining - take, 6))
             if remaining > 1e-9 and (product.tracks_batches or consumed):
                 raise HTTPException(
                     status_code=409,
                     detail={
                         "code": "INSUFFICIENT_BATCH_STOCK",
                         "message": "Not enough batch quantity (FEFO)",
-                        "shortfall": remaining,
+                        "shortfall": money_json(remaining),
                     },
                 )
 
+    notes = optional_honest_narrative(notes, label="stock movement notes")
+    # OpenAPI StockMovementReferenceIdValue → 422; stock-out type is Literal at schema.
+    reference_id = optional_honest_narrative(
+        reference_id, label="stock movement reference id", max_length=36
+    )
     note_text = notes
     if entered_unit_id and product.unit_id and entered_unit_id != product.unit_id:
         suffix = f"entered {entered_qty:g} (unit {entered_unit_id[:8]}) → {quantity:g} stock"
@@ -666,13 +681,13 @@ async def stock_out_with_batch(
         reference_id=reference_id,
     )
     if variant:
-        variant.stock_qty = max(float(variant.stock_qty or 0) - quantity, 0)
+        variant.stock_qty = max(money_json(variant.stock_qty or 0) - quantity, 0)
 
     return {
         "product_id": product.id,
-        "stock_qty": float(product.stock_qty),
-        "quantity_entered": entered_qty,
-        "quantity_base": quantity,
+        "stock_qty": money_json(product.stock_qty),
+        "quantity_entered": money_json(entered_qty),
+        "quantity_base": money_json(quantity),
         "unit_id": entered_unit_id,
         "stock_unit_id": product.unit_id,
         "variant": serialize_variant(variant) if variant else None,

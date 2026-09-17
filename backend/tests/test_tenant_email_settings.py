@@ -78,11 +78,11 @@ async def test_patch_email_settings_api_no_password_leak(client):
         "/api/v1/settings/email",
         headers=admin,
         json={
-            "host": "mail.alpha.test",
+            "host": "mail.alpha.example.com",
             "port": 587,
             "username": "alpha",
             "password": "AlphaSmtpPass!",
-            "from_email": "noreply@alpha.test",
+            "from_email": "noreply@alpha.example.com",
             "from_name": "Alpha ERP",
             "use_tls": True,
             "use_ssl": False,
@@ -90,8 +90,8 @@ async def test_patch_email_settings_api_no_password_leak(client):
     )
     assert patched.status_code == 200, patched.text
     data = patched.json()["data"]
-    assert data["host"] == "mail.alpha.test"
-    assert data["from_email"] == "noreply@alpha.test"
+    assert data["host"] == "mail.alpha.example.com"
+    assert data["from_email"] == "noreply@alpha.example.com"
     assert data["tenant_override"] is True
     assert data["has_password"] is True
     assert data.get("password") in (None, "")
@@ -119,9 +119,9 @@ async def test_test_email_uses_tenant_config(client, monkeypatch):
         "/api/v1/settings/email",
         headers=admin,
         json={
-            "host": "tenant-only.smtp",
+            "host": "tenant-only.smtp.example.com",
             "port": 587,
-            "from_email": "from@tenant-only.test",
+            "from_email": "from@tenant-only.example.com",
             "from_name": "Tenant Only",
         },
     )
@@ -138,6 +138,6 @@ async def test_test_email_uses_tenant_config(client, monkeypatch):
     assert r.json()["data"]["sent"] is True
     assert r.json()["data"]["mode"] == "smtp"
     assert len(captured) == 1
-    assert captured[0][1] == "tenant-only.smtp"
-    assert captured[0][2] == "from@tenant-only.test"
+    assert captured[0][1] == "tenant-only.smtp.example.com"
+    assert captured[0][2] == "from@tenant-only.example.com"
     assert captured[0][3] == "tenant"

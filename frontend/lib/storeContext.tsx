@@ -120,16 +120,22 @@ export function StoreProvider({
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }
 
+/** Stable noops — POS/etc. call useStoreContext above Shell's StoreProvider;
+ *  inline `() => undefined` in the fallback re-created every render and
+ *  re-fired effects that listed `setStoreId` in deps (request storms). */
+const NOOP_SET_STORE_ID = (_id: string) => undefined;
+const NOOP_REFRESH_STORES = async () => undefined;
+
 export function useStoreContext(): StoreContextValue {
   const ctx = useContext(StoreContext);
   if (!ctx) {
     return {
       stores: [],
       storeId: '',
-      setStoreId: () => undefined,
+      setStoreId: NOOP_SET_STORE_ID,
       activeStore: null,
       loading: false,
-      refreshStores: async () => undefined,
+      refreshStores: NOOP_REFRESH_STORES,
     };
   }
   return ctx;

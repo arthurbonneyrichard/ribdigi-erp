@@ -138,7 +138,7 @@ function DailyBars({
   const bw = Math.min(26, slot * 0.55);
   return (
     <svg viewBox="0 0 300 172" width="100%" height="172" role="img" aria-label={`Daily ${field}`}>
-      <line x1="8" y1="138" x2="292" y2="138" stroke="#e5e7eb" />
+      <line x1="8" y1="138" x2="292" y2="138" stroke="#D4E5C4" />
       {data.map((t, i) => {
         const v = t[field] || 0;
         const h = Math.max(0, (v / max) * 112);
@@ -175,7 +175,7 @@ function TrendLine({
   });
   return (
     <svg viewBox="0 0 300 172" width="100%" height="172" role="img" aria-label="30-day sales">
-      <line x1="8" y1="138" x2="292" y2="138" stroke="#e5e7eb" />
+      <line x1="8" y1="138" x2="292" y2="138" stroke="#D4E5C4" />
       <polyline fill="none" stroke={color} strokeWidth="2.5" points={pts.join(' ')} />
       <text x="8" y="156" className="vbar-label">
         {data[0]?.label || ''}
@@ -194,7 +194,7 @@ function MonthlyBars({ data }: { data: { label: string; total: number }[] }) {
   const bw = Math.min(18, slot * 0.65);
   return (
     <svg viewBox="0 0 300 172" width="100%" height="172" role="img" aria-label="Monthly sales">
-      <line x1="8" y1="138" x2="292" y2="138" stroke="#e5e7eb" />
+      <line x1="8" y1="138" x2="292" y2="138" stroke="#D4E5C4" />
       {data.map((t, i) => {
         const v = t.total || 0;
         const h = Math.max(0, (v / max) * 112);
@@ -323,7 +323,7 @@ export default function Page() {
   const monthly = d.monthly_sales || [];
 
   const flow = [
-    { label: 'Sales', value: sales, color: '#22c55e' },
+    { label: 'Sales', value: sales, color: '#4AB012' },
     { label: 'Purchases', value: purchases, color: '#38bdf8' },
     { label: 'Expenses', value: expenses, color: '#fb7185' },
   ];
@@ -346,7 +346,7 @@ export default function Page() {
   const recent = d.recent_sales || [];
 
   const finItems = [
-    { label: 'Sales', value: sales, color: '#22c55e' },
+    { label: 'Sales', value: sales, color: '#4AB012' },
     { label: 'Purchases', value: purchases, color: '#38bdf8' },
     { label: 'Expenses', value: expenses, color: '#fb7185' },
   ].filter((x) => x.value > 0);
@@ -438,7 +438,7 @@ export default function Page() {
             {dailyEmpty ? (
               <div className="empty">No sales in the last 7 days yet.</div>
             ) : (
-              <DailyBars data={daily} field="sales" color="#22c55e" />
+              <DailyBars data={daily} field="sales" color="#4AB012" />
             )}
           </div>
 
@@ -451,7 +451,7 @@ export default function Page() {
             {dailyAll.every((x) => !x.sales) ? (
               <div className="empty">No sales in the last 30 days yet.</div>
             ) : (
-              <TrendLine data={dailyAll} color="#6366f1" />
+              <TrendLine data={dailyAll} color="#4AB012" />
             )}
           </div>
 
@@ -484,7 +484,7 @@ export default function Page() {
                   cy="65"
                   r={rr}
                   fill="none"
-                  stroke="#22c55e"
+                  stroke="#4AB012"
                   strokeWidth="14"
                   strokeDasharray={healthArc.dash}
                   strokeLinecap="round"
@@ -499,7 +499,7 @@ export default function Page() {
               </svg>
               <div className="nums">
                 <span className="pill">
-                  <span className="dot" style={{ background: '#22c55e', width: 12, height: 12, borderRadius: 4 }} />
+                  <span className="dot" style={{ background: '#4AB012', width: 12, height: 12, borderRadius: 4 }} />
                   In stock&nbsp;<b>{num(inStock)}</b>
                 </span>
                 <Link className="pill" href={links.low_stock || '/reports'} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -511,7 +511,7 @@ export default function Page() {
                   Out of stock&nbsp;<b>{num(oos)}</b>
                 </Link>
                 <Link className="pill" href={links.expiring || '/inventory'} style={{ textDecoration: 'none', color: 'inherit' }}>
-                  <span className="dot" style={{ background: '#6366f1', width: 12, height: 12, borderRadius: 4 }} />
+                  <span className="dot" style={{ background: '#13612E', width: 12, height: 12, borderRadius: 4 }} />
                   Expiring (30d)&nbsp;<b>{num(expiring)}</b>
                 </Link>
               </div>
@@ -557,7 +557,7 @@ export default function Page() {
             <div className="mix">
               <svg width="140" height="140" viewBox="0 0 140 140" role="img" aria-label="Revenue vs costs">
                 {finTotal <= 0 ? (
-                  <circle cx="70" cy="70" r="66" fill="#eef1f7" />
+                  <circle cx="70" cy="70" r="66" fill="#EAF8D8" />
                 ) : finItems.length === 1 ? (
                   <circle cx="70" cy="70" r="66" fill={finItems[0].color} />
                 ) : (
@@ -569,7 +569,7 @@ export default function Page() {
                   <span className="li">No financial activity yet</span>
                 ) : (
                   [
-                    { label: 'Sales', value: sales, color: '#22c55e' },
+                    { label: 'Sales', value: sales, color: '#4AB012' },
                     { label: 'Purchases', value: purchases, color: '#38bdf8' },
                     { label: 'Expenses', value: expenses, color: '#fb7185' },
                   ].map((it) => (
@@ -591,7 +591,7 @@ export default function Page() {
             <p className="hint">Customers vs suppliers</p>
             <div className="mix">
               <svg width="140" height="140" viewBox="0 0 140 140" role="img" aria-label="Customers vs suppliers">
-                <circle cx="70" cy="70" r={r} fill="none" stroke="#eef1f7" strokeWidth="16" />
+                <circle cx="70" cy="70" r={r} fill="none" stroke="#EAF8D8" strokeWidth="16" />
                 {parties > 0 && (
                   <>
                     <circle
@@ -611,7 +611,7 @@ export default function Page() {
                       cy="70"
                       r={r}
                       fill="none"
-                      stroke="#6366f1"
+                      stroke="#13612E"
                       strokeWidth="16"
                       strokeDasharray={suppArc.dash}
                       strokeDashoffset={-custArc.c * custFrac}
@@ -632,7 +632,7 @@ export default function Page() {
                   <span className="dot" style={{ background: '#f59e0b' }} /> Customers · <b>&nbsp;{num(customers)}</b>
                 </span>
                 <span className="li">
-                  <span className="dot" style={{ background: '#6366f1' }} /> Suppliers · <b>&nbsp;{num(suppliers)}</b>
+                  <span className="dot" style={{ background: '#13612E' }} /> Suppliers · <b>&nbsp;{num(suppliers)}</b>
                 </span>
               </div>
             </div>

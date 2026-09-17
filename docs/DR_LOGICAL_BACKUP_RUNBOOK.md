@@ -29,15 +29,17 @@ Infrastructure PITR targets are documented under Stage 26 W1 (`docs/DR_WAL_PITR_
 
 ## Drill procedure (quarterly)
 
-1. **Create backup** — `POST /api/v1/backup` (or rely on schedule). Record `backup_id`, filename, and `checksum_sha256`.
+1. **Create backup** — `POST /api/v1/backup` typed body `BackupCreateBody` `{ "notes"? }` (`extra=forbid`; unknown keys → **422**). Optional `notes` ∈ `BackupNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → no notes; blank/`!!!`/`http://…` → **422** — was free `str` max_length=500). Backup UI **Backup notes** input (`aria-label`; blank omitted as `null`). Or rely on schedule. Record `backup_id`, filename, and `checksum_sha256`.
+1b. **List backups** — `GET /api/v1/backup` optional Query `status` ∈ `pending`|`completed`|`failed`|`restoring` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Backup UI **Backup job status filter** (`backupManageFilter`).
 2. **Download** (optional) — `GET /api/v1/backup/{id}/download`; confirm `X-Checksum-SHA256`.
 3. **Simulate loss** (staging only) — mutate or delete a known product/party field that exists in the backup.
-4. **Dry-run** — `POST /api/v1/backup/{id}/restore` with `{"dry_run": true}`. Confirm `valid`, `record_counts`, tenant match.
+4. **Dry-run** — `POST /api/v1/backup/{id}/restore` with typed `BackupRestoreBody` `{"dry_run": true}` (`extra=forbid`). Confirm `valid`, `record_counts`, tenant match.
 5. **Apply restore** — `POST /api/v1/backup/{id}/restore` with:
    ```json
    {"dry_run": false, "confirm": true, "confirm_text": "RESTORE"}
    ```
-6. **Integrity proof** — response includes `proof.ok`, `proof.checked`, `proof.mismatches`. Also run:
+   Omit/wrong `confirm_text` / unknown keys → **422** (was late **400** via free `dict`).
+6. **Integrity proof** — response includes `proof.ok`, `proof.checked`, `proof.mismatches`. Also run typed `BackupVerifyBody` `{ "sample_limit"? }` (1–500; omit → 100; out of range / unknown keys → **422** — was silent clamp):
    `POST /api/v1/backup/{id}/verify`
 7. **Audit** — confirm `restore_dry_run` / `restore_apply` / `restore_verify` events under `module=backup`.
 8. **Pass criteria** — `proof.ok == true`, spot-check UI (catalog / customer), no cross-tenant leakage.
@@ -46,7 +48,7 @@ Automated coverage: `backend/tests/test_backup_restore_proof_b1.py`, `backend/te
 
 ## Schedule, retention, and failure alerts (Stage 18 B1)
 
-1. **Configure** — `PATCH /api/v1/backup/settings` with `enabled`, `frequency` schema `Literal["daily","weekly"]` (omit = no change; blank/invalid → **422**), `retention_count` (1–365), `hour_utc` (0–23).
+1. **Configure** — `PATCH /api/v1/backup/settings` with `enabled`, `frequency` schema `Literal["daily","weekly"]` (omit = no change; blank/invalid → **422**), `retention_count` (1–365), `hour_utc` (0–23). Backup UI **Backup frequency** select (`aria-label`).
 2. **Due runner** — `POST /api/v1/backup/run-due` (admin) or Celery beat `run-due-backups`. Returns `ran`/`reason` (`schedule_disabled` | `already_ran` | `before_hour` | `created` | `failed` | `dir_not_writable`). A failed schedule run returns `ran=false` — never a fake success.
 3. **Retention** — after each successful backup, older completed jobs beyond `retention_count` are deleted (files + rows).
 4. **Failure notify** — failed create persists `BackupJob.status=failed` and creates a tenant `system` notification titled **Backup failed** (visible to admins). Disk-not-writable on schedule also notifies.

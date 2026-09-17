@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json, optional_honest_narrative
 from app.accounting import (
     DEFAULT_ACCOUNTS,
     ensure_default_accounts,
@@ -41,7 +42,8 @@ async def _resolve_account(
         assert_account_active(row)
         return row
     if account_code:
-        row = await get_account_by_code(db, tenant_id, account_code.strip())
+        # OpenAPI AccountCodeValue → 422; get_account_by_code defense-in-depth → 400.
+        row = await get_account_by_code(db, tenant_id, account_code)
         if not row:
             raise HTTPException(status_code=404, detail=f"Account not found: {account_code}")
         assert_account_active(row)
@@ -89,7 +91,10 @@ async def post_coa_opening_balances(
         )
 
     entry_id = str(uuid.uuid4())
-    ref_label = (reference or "").strip() or f"COA-OPEN-{datetime.utcnow():%Y%m%d}"
+    # OpenAPI OpeningBalanceReferenceValue → 422; service defense-in-depth → 400.
+    ref_label = optional_honest_narrative(
+        reference, label="opening balance reference", max_length=100
+    ) or f"COA-OPEN-{datetime.utcnow():%Y%m%d}"
     journal_lines: list[dict] = []
     snapshots: list[dict] = []
     seen: set[str] = set()
@@ -109,7 +114,7 @@ async def post_coa_opening_balances(
                 detail=f"Duplicate opening line for account {account.code}",
             )
         seen.add(account.id)
-        amount = float(raw.get("amount") or 0)
+        amount = money_json(raw.get("amount") or 0)
         if amount <= 0:
             raise HTTPException(status_code=400, detail="amount must be positive")
 
@@ -147,7 +152,7 @@ async def post_coa_opening_balances(
         )
 
     # Auto-plug residual to Owner's Equity (3000)
-    residual = round(total_debit - total_credit, 2)
+    residual = money_json(round(total_debit - total_credit, 2))
     plug_account = None
     if abs(residual) > 0.009:
         plug_account = await get_account_by_code(db, tenant_id, EQUITY_PLUG_CODE)
@@ -160,7 +165,9 @@ async def post_coa_opening_balances(
         if residual > 0:
             # Need more credit
             if existing_plug:
-                existing_plug["credit"] = round(float(existing_plug["credit"]) + residual, 2)
+                existing_plug["credit"] = money_json(round(
+                    money_json(existing_plug["credit"]) + residual, 2
+                ))
             else:
                 journal_lines.append(
                     {
@@ -170,15 +177,17 @@ async def post_coa_opening_balances(
                         "description": "Opening balance plug (equity)",
                     }
                 )
-            plug_account.opening_balance = round(
-                float(plug_account.opening_balance or 0) + residual, 2
-            )
+            plug_account.opening_balance = money_json(round(
+                money_json(plug_account.opening_balance or 0) + residual, 2
+            ))
         else:
             need_debit = abs(residual)
             if existing_plug:
                 # reduce credit or flip — simplest: add debit side
-                if float(existing_plug["credit"]) >= need_debit:
-                    existing_plug["credit"] = round(float(existing_plug["credit"]) - need_debit, 2)
+                if money_json(existing_plug["credit"]) >= need_debit:
+                    existing_plug["credit"] = money_json(round(
+                        money_json(existing_plug["credit"]) - need_debit, 2
+                    ))
                     if existing_plug["credit"] == 0 and existing_plug["debit"] == 0:
                         journal_lines.remove(existing_plug)
                 else:
@@ -195,9 +204,9 @@ async def post_coa_opening_balances(
                         "description": "Opening balance plug (equity)",
                     }
                 )
-            plug_account.opening_balance = round(
-                float(plug_account.opening_balance or 0) - need_debit, 2
-            )
+            plug_account.opening_balance = money_json(round(
+                money_json(plug_account.opening_balance or 0) - need_debit, 2
+            ))
 
     if len(journal_lines) < 2:
         raise HTTPException(
@@ -205,11 +214,12 @@ async def post_coa_opening_balances(
             detail="Opening balances must produce at least two journal lines (add more accounts or a balancing plug)",
         )
 
+    notes_s = optional_honest_narrative(notes, label="opening balance notes")
     journal = await post_journal_entry(
         db,
         tenant_id=tenant_id,
         user_id=user_id,
-        description=notes or f"COA opening balances {ref_label}",
+        description=notes_s or f"COA opening balances {ref_label}",
         reference=ref_label,
         source_type="coa_opening",
         source_id=entry_id,
@@ -238,9 +248,9 @@ async def post_coa_opening_balances(
         "reference": ref_label,
         "journal_id": journal.id,
         "journal_number": journal.entry_number,
-        "total_debit": float(journal.total_debit),
-        "total_credit": float(journal.total_credit),
-        "equity_plug_amount": residual if abs(residual) > 0.009 else 0.0,
+        "total_debit": money_json(journal.total_debit),
+        "total_credit": money_json(journal.total_credit),
+        "equity_plug_amount": money_json(residual) if abs(residual) > 0.009 else 0.0,
         "lines": snapshots,
         "system_account_codes": sorted(system_codes),
     }

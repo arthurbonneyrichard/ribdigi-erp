@@ -105,7 +105,7 @@ async def test_inventory_stock_transfer_cancel_requires_reason(client, db_sessio
         headers=headers,
         json={"reason": "  "},
     )
-    assert blank.status_code == 400, blank.text
+    assert blank.status_code == 422, blank.text
 
     ok = await ac.post(
         f"/api/v1/inventory/stock-transfers/{tid}/cancel",
@@ -160,7 +160,7 @@ async def test_stores_transfer_cancel_requires_reason(client, db_session, seeded
         headers=headers,
         json={"reason": "   "},
     )
-    assert whitespace.status_code == 400, whitespace.text
+    assert whitespace.status_code == 422, whitespace.text
 
     ok = await ac.post(
         f"/api/v1/stores/transfers/{tid}/cancel",

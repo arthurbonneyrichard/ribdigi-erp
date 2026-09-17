@@ -15,6 +15,8 @@ from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from fastapi import HTTPException
+
+from app.honesty import money_json, optional_honest_narrative
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -109,7 +111,7 @@ def _json_default(value: Any) -> Any:
     if isinstance(value, datetime):
         return value.isoformat()
     if isinstance(value, Decimal):
-        return float(value)
+        return money_json(value)
     if isinstance(value, bytes):
         return base64.b64encode(value).decode("ascii")
     return str(value)
@@ -224,13 +226,19 @@ async def collect_tenant_payload(db: AsyncSession, tenant_id: str) -> tuple[dict
             "industry": tenant.industry,
             "currency": tenant.currency,
             "status": tenant.status,
-            "expense_approval_threshold": float(tenant.expense_approval_threshold or 0),
-            "expense_l2_threshold": float(getattr(tenant, "expense_l2_threshold", None) or 1000),
+            "expense_approval_threshold": money_json(
+                tenant.expense_approval_threshold or 0
+            ),
+            "expense_l2_threshold": money_json(
+                getattr(tenant, "expense_l2_threshold", None), default=1000.0
+            ),
             "expense_approval_matrix": getattr(tenant, "expense_approval_matrix", None),
             "tax_jurisdiction": getattr(tenant, "tax_jurisdiction", None) or "GH",
             "tax_registration_number": getattr(tenant, "tax_registration_number", None),
             "tax_filing_period": getattr(tenant, "tax_filing_period", None) or "monthly",
-            "early_pay_discount_pct": float(getattr(tenant, "early_pay_discount_pct", None) or 0),
+            "early_pay_discount_pct": money_json(
+                getattr(tenant, "early_pay_discount_pct", None) or 0
+            ),
             "early_pay_discount_days": int(getattr(tenant, "early_pay_discount_days", None) or 0),
         },
         "created_at": datetime.utcnow().isoformat(),
@@ -305,7 +313,7 @@ async def create_backup(
         encrypted=True,
         record_counts={},
         created_by=user_id,
-        notes=notes,
+        notes=optional_honest_narrative(notes, label="backup notes"),
     )
     db.add(job)
     await db.flush()
@@ -360,13 +368,34 @@ async def create_backup(
         raise HTTPException(status_code=500, detail=f"Backup failed: {exc}") from exc
 
 
-async def list_backups(db: AsyncSession, tenant_id: str, limit: int = 50) -> list[m.BackupJob]:
-    result = await db.execute(
+async def list_backups(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    status: str | None = None,
+    limit: int = 50,
+) -> list[m.BackupJob]:
+    stmt = (
         select(m.BackupJob)
         .where(m.BackupJob.tenant_id == tenant_id)
         .order_by(m.BackupJob.created_at.desc())
         .limit(min(max(limit, 1), 200))
     )
+    if status is not None:
+        # Schema BackupJobStatusFilterValue rejects blank/invalid → 422;
+        # keep allow-list defense-in-depth (no silent empty filter / blank→all).
+        wanted = (status or "").strip().lower()
+        allowed = {"pending", "completed", "failed", "restoring"}
+        if not wanted:
+            pass
+        elif wanted not in allowed:
+            raise HTTPException(
+                status_code=422,
+                detail="status must be pending, completed, failed, or restoring",
+            )
+        else:
+            stmt = stmt.where(m.BackupJob.status == wanted)
+    result = await db.execute(stmt)
     return list(result.scalars().all())
 
 
@@ -476,7 +505,7 @@ def _proof_values_equal(expected: Any, actual: Any) -> bool:
         return True
     if isinstance(expected, (int, float, Decimal)) or isinstance(actual, (int, float, Decimal)):
         try:
-            return float(expected or 0) == float(actual or 0)
+            return money_json(expected or 0) == money_json(actual or 0)
         except (TypeError, ValueError):
             return str(expected) == str(actual)
     return str(expected) == str(actual)
@@ -527,7 +556,9 @@ async def prove_restore_integrity(
                             "id": pk,
                             "field": field,
                             "expected": raw[field],
-                            "actual": actual if not isinstance(actual, Decimal) else float(actual),
+                            "actual": actual
+                            if not isinstance(actual, Decimal)
+                            else money_json(actual),
                         }
                     )
                     break

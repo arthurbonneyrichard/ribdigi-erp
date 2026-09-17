@@ -33,9 +33,8 @@ async def test_create_purchase_invoice_from_po_and_rejects_cancelled(client, see
         headers=admin,
         json={
             "name": "AI Doc PI Vendor",
-            "kind": "supplier",
-            "email": "ai-doc-pi@example.com",
-        },
+            
+            "email": "ai-doc-pi@example.com"},
     )
     assert supplier.status_code == 200, supplier.text
     supplier_id = supplier.json()["data"]["id"]
@@ -48,8 +47,7 @@ async def test_create_purchase_invoice_from_po_and_rejects_cancelled(client, see
             "notes": "AI draft PI source",
             "items": [
                 {"product_id": seed["p1"].id, "quantity": 3, "unit_price": 10},
-            ],
-        },
+            ]},
     )
     assert po.status_code == 200, po.text
     po_body = po.json()["data"]
@@ -70,8 +68,7 @@ async def test_create_purchase_invoice_from_po_and_rejects_cancelled(client, see
             "supplier_id": supplier_id,
             "supplier_invoice_number": "SUP-INV-OCR-77",
             "notes": "From OCR review",
-            "invoice_date": "2026-08-10",
-        },
+            "invoice_date": "2026-08-10"},
     )
     assert created.status_code == 200, created.text
     body = created.json()["data"]
@@ -92,9 +89,8 @@ async def test_create_purchase_invoice_from_po_and_rejects_cancelled(client, see
         headers=admin,
         json={
             "name": "Wrong AI PI Vendor",
-            "kind": "supplier",
-            "email": "wrong-ai-pi@example.com",
-        },
+            
+            "email": "wrong-ai-pi@example.com"},
     )
     assert other.status_code == 200, other.text
     bad_supplier = await ac.post(
@@ -102,8 +98,7 @@ async def test_create_purchase_invoice_from_po_and_rejects_cancelled(client, see
         headers=admin,
         json={
             "purchase_order_id": po_id,
-            "supplier_id": other.json()["data"]["id"],
-        },
+            "supplier_id": other.json()["data"]["id"]},
     )
     assert bad_supplier.status_code == 400, bad_supplier.text
     assert "supplier" in bad_supplier.json()["detail"].lower()
@@ -117,8 +112,7 @@ async def test_create_purchase_invoice_from_po_and_rejects_cancelled(client, see
             "notes": "AI draft PI cancel source",
             "items": [
                 {"product_id": seed["p1"].id, "quantity": 1, "unit_price": 4},
-            ],
-        },
+            ]},
     )
     assert po2.status_code == 200, po2.text
     po2_id = po2.json()["data"]["id"]

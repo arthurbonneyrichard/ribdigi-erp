@@ -19,8 +19,11 @@ def test_purchase_request_reject_reason_ui_wired():
     assert "prRejectReason" in page
     assert "Rejected from purchasing UI" not in page
     assert "Enter a reject reason before rejecting a purchase request" in page
+    assert 'aria-label="Purchase request reject reason"' in page
     assert "rejection_reason" in page
     assert "/purchasing/requests/${id}/${action}" in page
+    agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    assert "PurchaseRequestRejectReasonValue" in agents
 
 
 async def _admin(ac, seed):
@@ -68,8 +71,15 @@ async def test_purchase_request_reject_requires_reason_and_persists(client, db_s
         headers=headers,
         json={"reason": "   "},
     )
-    assert blank.status_code == 400
-    assert "reason" in blank.json()["detail"].lower()
+    # OpenAPI honesty: strip + PurchaseRequestRejectReasonValue → 422 (was service 400).
+    assert blank.status_code == 422
+
+    garbage = await ac.post(
+        f"/api/v1/purchasing/requests/{rid}/reject",
+        headers=headers,
+        json={"reason": "!!!!"},
+    )
+    assert garbage.status_code == 422
 
     rejected = await ac.post(
         f"/api/v1/purchasing/requests/{rid}/reject",
