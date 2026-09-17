@@ -274,6 +274,7 @@ from app.schemas import (
     WebAuthnRegisterVerify,
     UserCreate,
     UserUpdate,
+    UserStoreMembershipsReplace,
     CustomRoleCreate,
     CustomRoleUpdate,
     BranchCreate,
@@ -336,6 +337,8 @@ async def tenant_pk(db: AsyncSession, tenant_ref: str) -> str:
 async def seed_tenant_defaults(db: AsyncSession, tenant_id: str) -> None:
     from app.accounting import ensure_default_accounts
     from app import catalog_meta as catalog_meta_svc
+    from app import stores as stores_svc
+    from app import store_entitlements as store_ent_svc
 
     await ensure_default_accounts(db, tenant_id)
     await expenses_svc.ensure_default_categories(db, tenant_id)
@@ -352,20 +355,36 @@ async def seed_tenant_defaults(db: AsyncSession, tenant_id: str) -> None:
         title="Welcome to RIBDIGI ERP",
         message="Your tenant was provisioned. Complete company setup and add products to begin.",
     )
-    db.add_all(
-        [
-            m.TaxRate(
-                tenant_id=tenant_id,
-                name="VAT",
-                rate=15,
-                tax_type="vat",
-                pricing_mode="exclusive",
-                is_default=True,
-                is_active=True,
-            ),
-            m.Warehouse(tenant_id=tenant_id, name="Main Warehouse", code="WH-MAIN"),
-        ]
+    db.add(
+        m.TaxRate(
+            tenant_id=tenant_id,
+            name="VAT",
+            rate=15,
+            tax_type="vat",
+            pricing_mode="exclusive",
+            is_default=True,
+            is_active=True,
+        )
     )
+    # Default Main Store (consumes store entitlement). create_store also adds WH-MAIN warehouse.
+    existing_store = (
+        await db.execute(select(m.Store).where(m.Store.tenant_id == tenant_id).limit(1))
+    ).scalar_one_or_none()
+    if existing_store is None:
+        tenant = await db.get(m.Tenant, tenant_id)
+        if tenant is not None:
+            try:
+                await store_ent_svc.assert_can_create_store(db, tenant)
+                await stores_svc.create_store(
+                    db,
+                    tenant_id=tenant_id,
+                    name="Main Store",
+                    code="MAIN",
+                )
+            except Exception:
+                # Entitlement or race — leave tenant without a store rather than half-create.
+                pass
+
 
 
 async def create_session(
@@ -2620,6 +2639,73 @@ async def get_user(
 ):
     user = await _get_tenant_user(db, claims["tenant_id"], user_id)
     return env(serialize_user(user))
+
+
+@api.get("/users/{user_id}/stores")
+async def get_user_stores(
+    user_id: UuidIdValue,
+    claims=Depends(require_permission("users", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """List store memberships for a user (empty = all stores / grandfather)."""
+    from app import store_access as store_access_svc
+
+    await _get_tenant_user(db, claims["tenant_id"], user_id)
+    rows = await store_access_svc.list_memberships(
+        db, tenant_id=claims["tenant_id"], user_id=user_id, active_only=True
+    )
+    allowed = await store_access_svc.assigned_store_ids(
+        db, tenant_id=claims["tenant_id"], user_id=user_id
+    )
+    return env(
+        {
+            "memberships": [store_access_svc.serialize_membership(r) for r in rows],
+            "store_ids": [r.store_id for r in rows],
+            "all_stores": allowed is None,
+        }
+    )
+
+
+@api.put("/users/{user_id}/stores")
+async def put_user_stores(
+    user_id: UuidIdValue,
+    payload: UserStoreMembershipsReplace,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Replace store memberships. Empty store_ids clears assignments (all stores)."""
+    from app import store_access as store_access_svc
+    from app import audit as audit_svc
+
+    await _get_tenant_user(db, claims["tenant_id"], user_id)
+    rows = await store_access_svc.replace_memberships(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=user_id,
+        store_ids=list(payload.store_ids or []),
+        actor_user_id=claims.get("sub"),
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        actor_user_id=claims.get("sub"),
+        action="user.stores.replace",
+        entity_type="user",
+        entity_id=user_id,
+        details={"store_ids": [r.store_id for r in rows]},
+    )
+    await db.commit()
+    allowed = await store_access_svc.assigned_store_ids(
+        db, tenant_id=claims["tenant_id"], user_id=user_id
+    )
+    return env(
+        {
+            "memberships": [store_access_svc.serialize_membership(r) for r in rows],
+            "store_ids": [r.store_id for r in rows],
+            "all_stores": allowed is None,
+        },
+        "Store assignments updated",
+    )
 
 
 @api.post("/users")
@@ -7038,6 +7124,8 @@ async def pos_stores(
     db: AsyncSession = Depends(get_db),
 ):
     """Active stores available for POS shift open (cashiers may lack stores:read)."""
+    from app import store_access as store_access_svc
+
     rows = (
         await db.execute(
             select(m.Store)
@@ -7048,6 +7136,9 @@ async def pos_stores(
             .order_by(m.Store.name.asc())
         )
     ).scalars().all()
+    rows = await store_access_svc.filter_stores_for_user(
+        db, tenant_id=claims["tenant_id"], user_id=claims["sub"], stores=list(rows)
+    )
     return env(
         [
             {
@@ -7068,6 +7159,14 @@ async def pos_open_session(
     claims=Depends(require_permission("pos", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    await store_access_svc.assert_store_access(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=payload.store_id,
+    )
     session = await pos_svc.open_session(
         db,
         tenant_id=claims["tenant_id"],

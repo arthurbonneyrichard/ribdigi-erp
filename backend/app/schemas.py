@@ -879,6 +879,14 @@ class UserUpdate(BaseModel):
     clear_department: bool = False
 
 
+class UserStoreMembershipsReplace(BaseModel):
+    """Replace a user's store memberships. Empty list = clear (all stores / grandfather)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    store_ids: list[UuidIdValue] = []
+
+
 class PlatformGrantAccess(BaseModel):
     """Grant an existing app user access to the software-owner dashboard."""
     model_config = ConfigDict(extra="forbid")

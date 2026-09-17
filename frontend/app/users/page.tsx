@@ -20,6 +20,7 @@ type DepartmentRow = {
   branch_id?: string | null;
   is_active?: boolean;
 };
+type StoreRow = { id: string; code: string; name: string; is_active?: boolean };
 type UserRow = {
   id: string;
   full_name: string;
@@ -78,6 +79,8 @@ export default function Page() {
   const [roles, setRoles] = useState<RoleRow[]>([]);
   const [branches, setBranches] = useState<BranchRow[]>([]);
   const [departments, setDepartments] = useState<DepartmentRow[]>([]);
+  const [stores, setStores] = useState<StoreRow[]>([]);
+  const [userStoreIds, setUserStoreIds] = useState<Record<string, string[]>>({});
   const [form, setForm] = useState(emptyForm);
   const [roleForm, setRoleForm] = useState({
     key: '',
@@ -93,18 +96,20 @@ export default function Page() {
   const [importBusy, setImportBusy] = useState(false);
 
   async function refresh() {
-    const [usersRes, rolesRes, meRes, branchesRes, deptsRes] = await Promise.all([
+    const [usersRes, rolesRes, meRes, branchesRes, deptsRes, storesRes] = await Promise.all([
       api('/users'),
       // Manage list needs inactive custom roles for Activate / Deactivate (BR-3.2).
       api('/roles?include_inactive=true'),
       api('/me'),
       api('/branches').catch(() => ({ data: [] })),
       api('/departments').catch(() => ({ data: [] })),
+      api('/stores').catch(() => ({ data: [] })),
     ]);
     setRows(usersRes.data || []);
     setRoles(rolesRes.data || []);
     setBranches(branchesRes.data || []);
     setDepartments(deptsRes.data || []);
+    setStores((storesRes.data || []).filter((s: StoreRow) => s.is_active !== false));
     const perms = meRes.data?.permissions || {};
     const role = meRes.data?.role || '';
     setCanWrite(
@@ -114,6 +119,18 @@ export default function Page() {
         (perms.users || []).includes('write') ||
         (perms.users || []).includes('*')
     );
+    const users: UserRow[] = usersRes.data || [];
+    const membershipEntries = await Promise.all(
+      users.map(async (u) => {
+        try {
+          const r = await api(`/users/${u.id}/stores`);
+          return [u.id, r.data?.store_ids || []] as const;
+        } catch {
+          return [u.id, []] as const;
+        }
+      })
+    );
+    setUserStoreIds(Object.fromEntries(membershipEntries));
   }
 
   const isCustomRole = (r: RoleRow) => r.system === false;
@@ -302,6 +319,25 @@ export default function Page() {
       { record_scope: scope || 'own' },
       'Record scope updated',
     );
+  }
+
+  async function setUserStores(userId: string, storeIds: string[]) {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/users/${userId}/stores`, {
+        method: 'PUT',
+        body: JSON.stringify({ store_ids: storeIds }),
+      });
+      setUserStoreIds((prev) => ({ ...prev, [userId]: storeIds }));
+      setMessage(
+        storeIds.length
+          ? `Store access limited to ${storeIds.length} store(s)`
+          : 'Store access cleared (all stores)'
+      );
+    } catch (err: any) {
+      setError(err.message);
+    }
   }
 
   async function setActive(userId: string, is_active: boolean) {
@@ -700,6 +736,7 @@ export default function Page() {
             <th>Branch</th>
             <th>Department</th>
             <th>Scope</th>
+            <th>Stores</th>
             <th>Active</th>
             {canWrite && <th>Actions</th>}
           </tr>
@@ -707,7 +744,7 @@ export default function Page() {
         <tbody>
           {managedUsers.length === 0 && (
             <tr>
-              <td colSpan={canWrite ? 8 : 7} className="muted">
+              <td colSpan={canWrite ? 9 : 8} className="muted">
                 {rows.length ? 'No users for this filter' : 'No users yet'}
               </td>
             </tr>
@@ -793,6 +830,35 @@ export default function Page() {
                   </select>
                 ) : (
                   r.record_scope || '—'
+                )}
+              </td>
+              <td>
+                {canWrite && r.role !== 'company_admin' && r.role !== 'super_admin' ? (
+                  <select
+                    multiple
+                    value={userStoreIds[r.id] || []}
+                    onChange={(e) => {
+                      const selected = Array.from(e.target.selectedOptions).map((o) => o.value);
+                      setUserStores(r.id, selected);
+                    }}
+                    aria-label={`Assign stores for ${r.email}`}
+                    title="Empty = all stores. Select one or more to restrict POS/store access."
+                    style={{ minWidth: 140, minHeight: 64 }}
+                  >
+                    {stores.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.code} — {s.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="muted">
+                    {r.role === 'company_admin' || r.role === 'super_admin'
+                      ? 'All stores'
+                      : (userStoreIds[r.id] || []).length
+                        ? `${(userStoreIds[r.id] || []).length} assigned`
+                        : 'All stores'}
+                  </span>
                 )}
               </td>
               <td>{r.is_active ? 'Yes' : 'No'}</td>

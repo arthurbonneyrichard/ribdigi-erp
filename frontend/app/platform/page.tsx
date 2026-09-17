@@ -392,7 +392,9 @@ export default function PlatformConsole() {
             <p className="plat-kicker">Software owner</p>
             <h1>Platform console</h1>
             <p className="plat-sub">
-              Create workspaces, assign subscription terms (months/years), track usage and renewal,
+              Create workspaces, assign subscription terms (months/years), track usage and renewal.
+              Paid self-serve checkout is not live — use Contact Ribdigi / Request Plan Upgrade for
+              customer billing; this console assigns entitlements only.
               and control package features per tenant.
             </p>
           </div>

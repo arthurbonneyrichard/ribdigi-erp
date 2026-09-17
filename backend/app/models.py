@@ -163,6 +163,26 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class UserStoreMembership(Base):
+    """User ↔ Store assignment for store-scoped RBAC (commercial MVP).
+
+    Privileged roles (company_admin / platform) bypass membership and see all stores.
+    Other roles: when at least one active membership exists, access is limited to those
+    stores; when none exist, all active stores are allowed (grandfather existing tenants).
+    """
+
+    __tablename__ = "user_store_memberships"
+    __table_args__ = (UniqueConstraint("tenant_id", "user_id", "store_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    store_id: Mapped[str] = mapped_column(ForeignKey("stores.id"), index=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class CustomRole(Base):
     __tablename__ = "custom_roles"
     __table_args__ = (UniqueConstraint("tenant_id", "key"),)
