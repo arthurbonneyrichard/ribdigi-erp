@@ -624,7 +624,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-        <div className="side-foot">A Ribdigi House Product</div>
+        <div className="side-foot">
+        <a href="https://ribdigihouse.com" target="_blank" rel="noopener noreferrer">
+          A Ribdigi House Product
+        </a>
+      </div>
       </aside>
       <div className="side-backdrop" onClick={() => setMenuOpen(false)} aria-hidden />
       <main className="main">

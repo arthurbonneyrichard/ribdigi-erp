@@ -133,7 +133,11 @@ function ForgotPasswordForm() {
           )}
         </form>
 
-        <p className="login-foot">A Ribdigi House Product</p>
+        <p className="login-foot">
+          <a href="https://ribdigihouse.com" target="_blank" rel="noopener noreferrer">
+            A Ribdigi House Product
+          </a>
+        </p>
       </div>
     </div>
   );
