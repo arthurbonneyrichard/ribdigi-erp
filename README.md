@@ -48,4 +48,16 @@ Never enable this flag in staging or production.
 
 ## Production deployment
 
-Use production secrets, production CORS origins, managed infrastructure, TLS, migrations, backup/restore, monitoring and security controls as defined in the deployment and security documentation. Do not use development Docker credentials in production.
+For a single Ubuntu 24.04 VPS with Docker Compose + Caddy TLS, see:
+
+- **`ops/vps/README.md`** — full A–L operator guide
+- **`docker-compose.prod.yml`** — production stack (do not use `docker-compose.yml` on the VPS)
+- **`ops/vps/env.production.example`** — copy to `.env` and replace all `REPLACE_ME_*` values
+
+```bash
+cp ops/vps/env.production.example .env
+# edit .env and ops/vps/Caddyfile for your domain
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+Do not use development Docker credentials in production. Never set `ALLOW_DEVELOPMENT_SEED=true` on a public host.

@@ -1,12 +1,14 @@
-# Domain-specific Caddyfile for erp.ribdigihouse.com
-# Prefer editing ops/vps/Caddyfile (used by docker-compose.prod.yml) to this hostname,
-# or copy these site blocks into ops/vps/Caddyfile before deploy.
+# Caddy reverse proxy for Ribdigi ERP (Docker Compose production).
+# Upstream hostnames are Compose service names on network ribdigi_edge.
+#
+# Replace erp.example.com with your public hostname (must match .env CORS / FRONTEND_URL).
+# Let's Encrypt certificates are obtained automatically when ports 80/443 are reachable.
 
 {
 	email REPLACE_ME_LETSENCRYPT_EMAIL@example.com
 }
 
-erp.ribdigihouse.com {
+erp.example.com {
 	encode gzip
 
 	header {
@@ -17,6 +19,7 @@ erp.ribdigihouse.com {
 		-Server
 	}
 
+	# FastAPI (all routes under /api/...)
 	handle /api/* {
 		reverse_proxy backend:8000 {
 			header_up X-Forwarded-Proto {scheme}
@@ -25,6 +28,7 @@ erp.ribdigihouse.com {
 		}
 	}
 
+	# Next.js UI
 	handle {
 		reverse_proxy frontend:3000 {
 			header_up X-Forwarded-Proto {scheme}

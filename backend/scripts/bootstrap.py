@@ -1,9 +1,10 @@
-"""Bootstrap database schema via Alembic, with create_all fallback."""
+"""Bootstrap database schema via Alembic, with create_all fallback (non-production only)."""
 
 import asyncio
 import subprocess
 import sys
 
+from app.config import settings
 from app.db import engine
 from app.models import Base
 
@@ -34,8 +35,12 @@ async def create_all_fallback() -> None:
 
 
 async def main() -> None:
-    if not run_alembic():
-        await create_all_fallback()
+    if run_alembic():
+        return
+    if settings.APP_ENV.lower() == "production":
+        print("Alembic failed in production — refusing create_all fallback", file=sys.stderr)
+        sys.exit(1)
+    await create_all_fallback()
 
 
 if __name__ == "__main__":
