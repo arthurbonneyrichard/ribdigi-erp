@@ -1,0 +1,74 @@
+# Production-ish overrides for a single VPS behind Caddy.
+# Usage:
+#   docker compose -f docker-compose.yml -f ops/vps/docker-compose.prod.example.yml up --build -d
+#
+# Bind app ports to localhost only (Caddy terminates TLS on 80/443).
+# Replace default service passwords via .env (see env.erp.ribdigihouse.com.example).
+
+services:
+  postgres:
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ribdigi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-ribdigi_erp}
+    ports: []
+    # no public 5432
+
+  redis:
+    ports: []
+
+  rabbitmq:
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-ribdigi}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:?set RABBITMQ_DEFAULT_PASS in .env}
+    ports: []
+
+  minio:
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env}
+    ports: []
+
+  minio-init:
+    entrypoint: >
+      /bin/sh -c "
+      for i in 1 2 3 4 5 6 7 8 9 10; do
+        mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} && break;
+        sleep 1;
+      done;
+      mc mb -p local/$${S3_BUCKET:-ribdigi-prod} || true;
+      exit 0;
+      "
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      S3_BUCKET: ${S3_BUCKET:-ribdigi-prod}
+
+  backend:
+    ports:
+      - "127.0.0.1:8000:8000"
+    # Drop live reload for VPS
+    command: sh -c "python scripts/bootstrap.py && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2"
+    volumes:
+      - backup_data:/data/backups
+      - media_data:/data/media
+      # no source bind-mount in prod override — image code only
+    environment:
+      PYTHONPATH: /app
+
+  celery_worker:
+    volumes:
+      - backup_data:/data/backups
+      - media_data:/data/media
+
+  celery_beat:
+    volumes: []
+
+  frontend:
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: https://erp.ribdigihouse.com/api/v1
+    # Note: Next bakes NEXT_PUBLIC_* at build time for production builds.
+    # Current frontend Dockerfile runs `npm run dev`, which reads env at runtime.
+    # For a later hardened build, switch Dockerfile CMD to `npm run build && npm start`.

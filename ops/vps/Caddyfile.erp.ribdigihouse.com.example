@@ -1,0 +1,17 @@
+# Caddy — https://erp.ribdigihouse.com
+# Install: sudo cp ops/vps/Caddyfile.erp.ribdigihouse.com.example /etc/caddy/Caddyfile
+# Then:    sudo systemctl reload caddy
+
+erp.ribdigihouse.com {
+	encode gzip
+
+	# FastAPI (routes are under /api/v1/...)
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8000
+	}
+
+	# Next.js UI
+	handle {
+		reverse_proxy 127.0.0.1:3000
+	}
+}
