@@ -1,36 +1,36 @@
-"""Dashboard KPIs: sales (today / MTD), purchases, expenses, stock alerts, AR/AP."""
+"""Executive dashboard aggregates (BR-4.1 / 4.2 / 4.3)."""
 
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta
 from typing import Any
 
-from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app import tenants as tenants_svc
+from app.config import settings
 from app.honesty import money_json
+
+
+def _pct_change(current: float, previous: float) -> float | None:
+    if previous == 0:
+        return None if current == 0 else money_json(100)
+    return money_json(round((current - previous) / abs(previous) * 100.0, 1))
 
 
 def _day_start(d: date) -> datetime:
     return datetime(d.year, d.month, d.day)
 
 
-def _month_start(d: date) -> datetime:
-    return datetime(d.year, d.month, 1)
+def _month_start(year: int, month: int) -> datetime:
+    return datetime(year, month, 1)
 
 
-def _add_months(d: date, months: int) -> date:
-    y = d.year + (d.month - 1 + months) // 12
-    mo = (d.month - 1 + months) % 12 + 1
-    return date(y, mo, 1)
-
-
-def _pct_change(current: float, previous: float) -> float | None:
-    if previous == 0:
-        return None if current == 0 else 100.0
-    return money_json(round((current - previous) / previous * 100.0, 1))
+def _add_months(year: int, month: int, delta: int) -> tuple[int, int]:
+    idx = year * 12 + (month - 1) + delta
+    return idx // 12, idx % 12 + 1
 
 
 async def _sum_sales(
@@ -41,17 +41,19 @@ async def _sum_sales(
     end: datetime | None = None,
     store_id: str | None = None,
 ) -> float:
-    stmt = select(func.coalesce(func.sum(m.Transaction.total), 0.0)).where(
+    stmt = select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
         m.Transaction.tenant_id == tenant_id,
         m.Transaction.tx_type.in_(["sale", "pos_sale"]),
     )
     if store_id:
-        stmt = stmt.where(m.Transaction.store_id == store_id)
+        stmt = stmt.outerjoin(
+            m.PosSession, m.Transaction.session_id == m.PosSession.id
+        ).where(m.PosSession.store_id == store_id)
     if start is not None:
         stmt = stmt.where(m.Transaction.created_at >= start)
     if end is not None:
         stmt = stmt.where(m.Transaction.created_at < end)
-    return money_json((await db.execute(stmt)).scalar_one())
+    return money_json((await db.execute(stmt)).scalar())
 
 
 async def build_dashboard(
@@ -60,12 +62,10 @@ async def build_dashboard(
     *,
     store_id: str | None = None,
 ) -> dict[str, Any]:
-    today = date.today()
-    tomorrow = today + timedelta(days=1)
-    yesterday = today - timedelta(days=1)
-    this_month = _month_start(today)
-    next_month = _month_start(_add_months(today, 1))
-    prev_month_start = _month_start(_add_months(today, -1))
+    from fastapi import HTTPException
+
+    async def scalar(stmt):
+        return (await db.execute(stmt)).scalar() or 0
 
     store_name: str | None = None
     if store_id:
@@ -78,9 +78,15 @@ async def build_dashboard(
             raise HTTPException(status_code=404, detail="Store not found")
         store_name = store.name
 
-    async def scalar(stmt) -> Any:
-        return (await db.execute(stmt)).scalar_one()
+    now_dt = datetime.utcnow()
+    today = now_dt.date()
+    yesterday = today - timedelta(days=1)
+    tomorrow = today + timedelta(days=1)
+    this_month = _month_start(today.year, today.month)
+    prev_y, prev_m = _add_months(today.year, today.month, -1)
+    prev_month = _month_start(prev_y, prev_m)
 
+    sales_all = await _sum_sales(db, tenant_id, store_id=store_id)
     sales_today = await _sum_sales(
         db, tenant_id, start=_day_start(today), end=_day_start(tomorrow), store_id=store_id
     )
@@ -88,189 +94,264 @@ async def build_dashboard(
         db, tenant_id, start=_day_start(yesterday), end=_day_start(today), store_id=store_id
     )
     sales_mtd = await _sum_sales(
-        db, tenant_id, start=this_month, end=next_month, store_id=store_id
+        db, tenant_id, start=this_month, end=_day_start(tomorrow), store_id=store_id
     )
     sales_prev_month = await _sum_sales(
-        db, tenant_id, start=prev_month_start, end=this_month, store_id=store_id
+        db, tenant_id, start=prev_month, end=this_month, store_id=store_id
     )
 
-    purchases_stmt = select(func.coalesce(func.sum(m.Transaction.total), 0.0)).where(
+    purchases_stmt = select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
         m.Transaction.tenant_id == tenant_id,
         m.Transaction.tx_type == "purchase",
-        m.Transaction.created_at >= this_month,
-        m.Transaction.created_at < next_month,
     )
     if store_id:
-        purchases_stmt = purchases_stmt.where(m.Transaction.store_id == store_id)
-    purchases_mtd = money_json(await scalar(purchases_stmt))
-
-    expenses_stmt = select(func.coalesce(func.sum(m.Expense.amount), 0.0)).where(
+        purchases_stmt = purchases_stmt.outerjoin(
+            m.PosSession, m.Transaction.session_id == m.PosSession.id
+        ).where(m.PosSession.store_id == store_id)
+    purchases = money_json(await scalar(purchases_stmt))
+    expenses_stmt = select(func.coalesce(func.sum(m.Expense.amount), 0)).where(
         m.Expense.tenant_id == tenant_id,
         m.Expense.status == "approved",
-        m.Expense.expense_date >= this_month,
-        m.Expense.expense_date < next_month,
     )
     if store_id:
         expenses_stmt = expenses_stmt.where(m.Expense.store_id == store_id)
-    expenses_mtd = money_json(await scalar(expenses_stmt))
-
-    # Products at / below reorder (global product stock — not store-scoped bins).
-    low_stock = (
-        await db.execute(
-            select(m.Product)
-            .where(
+    expenses = money_json(await scalar(expenses_stmt))
+    products = int(
+        await scalar(select(func.count(m.Product.id)).where(m.Product.tenant_id == tenant_id))
+    )
+    low_stock = int(
+        await scalar(
+            select(func.count(m.Product.id)).where(
                 m.Product.tenant_id == tenant_id,
-                m.Product.is_active.is_(True),
                 m.Product.stock_qty <= m.Product.reorder_level,
             )
-            .order_by(m.Product.stock_qty.asc())
-            .limit(10)
         )
-    ).scalars().all()
-
-    # Expiring batches within 30 days.
-    expiry_cut = datetime.utcnow() + timedelta(days=30)
-    expiring = (
-        await db.execute(
-            select(m.ProductBatch, m.Product.name)
-            .join(m.Product, m.Product.id == m.ProductBatch.product_id)
-            .where(
-                m.ProductBatch.tenant_id == tenant_id,
-                m.ProductBatch.expiry_date.isnot(None),
-                m.ProductBatch.expiry_date <= expiry_cut,
-                m.ProductBatch.quantity > 0,
+    )
+    out_of_stock = int(
+        await scalar(
+            select(func.count(m.Product.id)).where(
+                m.Product.tenant_id == tenant_id,
+                m.Product.stock_qty <= 0,
             )
-            .order_by(m.ProductBatch.expiry_date.asc())
-            .limit(10)
-        )
-    ).all()
-
-    customers = await scalar(
-        select(func.count()).select_from(m.Party).where(
-            m.Party.tenant_id == tenant_id, m.Party.kind == "customer", m.Party.is_active.is_(True)
         )
     )
-    suppliers = await scalar(
-        select(func.count()).select_from(m.Party).where(
-            m.Party.tenant_id == tenant_id, m.Party.kind == "supplier", m.Party.is_active.is_(True)
+    customers = int(
+        await scalar(
+            select(func.count(m.Party.id)).where(
+                m.Party.tenant_id == tenant_id, m.Party.kind == "customer"
+            )
         )
     )
-    products = await scalar(
-        select(func.count()).select_from(m.Product).where(
-            m.Product.tenant_id == tenant_id, m.Product.is_active.is_(True)
+    suppliers = int(
+        await scalar(
+            select(func.count(m.Party.id)).where(
+                m.Party.tenant_id == tenant_id, m.Party.kind == "supplier"
+            )
         )
     )
 
-    daily_sales_stmt = (
-        select(m.Transaction)
-        .where(
-            m.Transaction.tenant_id == tenant_id,
-            m.Transaction.tx_type.in_(["sale", "pos_sale"]),
-            m.Transaction.created_at >= this_month,
-            m.Transaction.created_at < next_month,
-        )
-        .order_by(m.Transaction.created_at.asc())
+    from app.catalog import list_expiring_batches
+
+    expiring_batches = await list_expiring_batches(db, tenant_id, within_days=30)
+    expiring_soon = len(expiring_batches)
+
+    # Monthly sales trend (last 12 calendar months)
+    months_seq = []
+    for i in range(11, -1, -1):
+        yy, mm = _add_months(now_dt.year, now_dt.month, -i)
+        months_seq.append((yy, mm))
+    earliest_month = _month_start(months_seq[0][0], months_seq[0][1])
+    month_totals = {k: 0.0 for k in months_seq}
+    trend_stmt = select(m.Transaction.created_at, m.Transaction.total).where(
+        m.Transaction.tenant_id == tenant_id,
+        m.Transaction.tx_type.in_(["sale", "pos_sale"]),
+        m.Transaction.created_at >= earliest_month,
     )
     if store_id:
-        daily_sales_stmt = daily_sales_stmt.where(m.Transaction.store_id == store_id)
-    daily_rows = (await db.execute(daily_sales_stmt)).scalars().all()
-    by_day: dict[str, float] = {}
-    for r in daily_rows:
-        key = r.created_at.date().isoformat() if r.created_at else today.isoformat()
-        by_day[key] = money_json(by_day.get(key, 0.0) + float(r.total or 0))
-    # Fill every day of the month so charts don't jump.
-    cursor = this_month.date()
-    end_fill = min(today, (next_month - timedelta(seconds=1)).date())
-    daily_series = []
-    while cursor <= end_fill:
-        k = cursor.isoformat()
-        daily_series.append({"date": k, "sales": money_json(by_day.get(k, 0.0))})
-        cursor += timedelta(days=1)
-
-    # Top products this month from sale payloads (best-effort).
-    product_totals: dict[str, dict[str, Any]] = {}
-    for r in daily_rows:
-        payload = r.payload or {}
-        items = payload.get("items") or []
-        if not isinstance(items, list):
+        trend_stmt = trend_stmt.outerjoin(
+            m.PosSession, m.Transaction.session_id == m.PosSession.id
+        ).where(m.PosSession.store_id == store_id)
+    trend_rows = (await db.execute(trend_stmt)).all()
+    for created_at, total in trend_rows:
+        if created_at is None:
             continue
-        for it in items:
-            if not isinstance(it, dict):
-                continue
-            name = str(it.get("name") or it.get("product_name") or "Item")
-            qty = float(it.get("quantity") or it.get("qty") or 0)
-            line = float(it.get("total") or it.get("line_total") or 0)
-            if line == 0 and it.get("unit_price") is not None:
-                line = float(it["unit_price"]) * qty
-            bucket = product_totals.setdefault(name, {"name": name, "qty": 0.0, "revenue": 0.0})
-            bucket["qty"] = money_json(bucket["qty"] + qty)
-            bucket["revenue"] = money_json(bucket["revenue"] + line)
-    top_products = sorted(product_totals.values(), key=lambda x: x["revenue"], reverse=True)[:5]
+        key = (created_at.year, created_at.month)
+        if key in month_totals:
+            month_totals[key] += money_json(total or 0)
+    monthly_sales = [
+        {
+            "label": datetime(yy, mm, 1).strftime("%b %y"),
+            "year": yy,
+            "month": mm,
+            "total": money_json(round(month_totals[(yy, mm)], 2)),
+        }
+        for (yy, mm) in months_seq
+    ]
 
-    recent_sales_stmt = (
+    # Daily sales & profit for the last 30 days
+    days_seq = [today - timedelta(days=i) for i in range(29, -1, -1)]
+    earliest_day = _day_start(days_seq[0])
+    cost_rows = (
+        await db.execute(select(m.Product.id, m.Product.cost_price).where(m.Product.tenant_id == tenant_id))
+    ).all()
+    cost_map = {pid: money_json(cost or 0) for pid, cost in cost_rows}
+    product_names = {
+        pid: name
+        for pid, name in (
+            await db.execute(select(m.Product.id, m.Product.name).where(m.Product.tenant_id == tenant_id))
+        ).all()
+    }
+    product_skus = {
+        pid: sku
+        for pid, sku in (
+            await db.execute(select(m.Product.id, m.Product.sku).where(m.Product.tenant_id == tenant_id))
+        ).all()
+    }
+    daily = {d: {"sales": 0.0, "profit": 0.0} for d in days_seq}
+    top_qty: dict[str, float] = {}
+    top_rev: dict[str, float] = {}
+    daily_stmt = select(
+        m.Transaction.created_at, m.Transaction.total, m.Transaction.payload
+    ).where(
+        m.Transaction.tenant_id == tenant_id,
+        m.Transaction.tx_type.in_(["sale", "pos_sale"]),
+        m.Transaction.created_at >= earliest_day,
+    )
+    if store_id:
+        daily_stmt = daily_stmt.outerjoin(
+            m.PosSession, m.Transaction.session_id == m.PosSession.id
+        ).where(m.PosSession.store_id == store_id)
+    daily_rows = (await db.execute(daily_stmt)).all()
+    for created_at, total, payload in daily_rows:
+        if created_at is None:
+            continue
+        d = created_at.date()
+        if d in daily:
+            daily[d]["sales"] += money_json(total or 0)
+            for it in (payload or {}).get("items") or []:
+                qty = money_json(it.get("quantity") or 0)
+                unit_price = money_json(it.get("unit_price") or 0)
+                pid = it.get("product_id")
+                cost = cost_map.get(pid, 0.0)
+                daily[d]["profit"] += qty * (unit_price - cost)
+                if pid:
+                    top_qty[pid] = top_qty.get(pid, 0.0) + qty
+                    top_rev[pid] = top_rev.get(pid, 0.0) + qty * unit_price
+    daily_sales = [
+        {
+            "label": d.strftime("%d %b"),
+            "date": d.isoformat(),
+            "sales": money_json(round(daily[d]["sales"], 2)),
+            "profit": money_json(round(daily[d]["profit"], 2)),
+        }
+        for d in days_seq
+    ]
+
+    def _top(metric: dict[str, float], *, limit: int = 5) -> list[dict]:
+        ranked = sorted(metric.items(), key=lambda kv: kv[1], reverse=True)[:limit]
+        return [
+            {
+                "product_id": pid,
+                "name": product_names.get(pid) or pid,
+                "sku": product_skus.get(pid),
+                "quantity": money_json(round(top_qty.get(pid, 0.0), 2)),
+                "revenue": money_json(round(top_rev.get(pid, 0.0), 2)),
+            }
+            for pid, _ in ranked
+        ]
+
+    top_products_by_revenue = _top(top_rev)
+    top_products_by_quantity = _top(top_qty)
+
+    recent_stmt = (
         select(m.Transaction)
         .where(
             m.Transaction.tenant_id == tenant_id,
             m.Transaction.tx_type.in_(["sale", "pos_sale"]),
         )
         .order_by(m.Transaction.created_at.desc())
-        .limit(8)
+        .limit(10)
     )
     if store_id:
-        recent_sales_stmt = recent_sales_stmt.where(m.Transaction.store_id == store_id)
-    recent_sales = (await db.execute(recent_sales_stmt)).scalars().all()
+        recent_stmt = recent_stmt.outerjoin(
+            m.PosSession, m.Transaction.session_id == m.PosSession.id
+        ).where(m.PosSession.store_id == store_id)
+    recent_rows = (await db.execute(recent_stmt)).scalars().all()
+    recent_party_ids = [t.party_id for t in recent_rows if t.party_id]
+    recent_party_names: dict = {}
+    if recent_party_ids:
+        recent_party_names = {
+            p.id: p.name
+            for p in (
+                await db.execute(select(m.Party).where(m.Party.id.in_(recent_party_ids)))
+            ).scalars().all()
+        }
+    recent_sales = [
+        {
+            "id": t.id,
+            "reference": t.reference,
+            "date": t.created_at,
+            "total": money_json(t.total),
+            "customer": recent_party_names.get(t.party_id) or "Walk-in",
+            "type": t.tx_type,
+        }
+        for t in recent_rows
+    ]
+
+    tenant = await db.get(m.Tenant, tenant_id)
+    if tenant and tenant.status == "trial":
+        days_remaining = tenants_svc.calendar_days_until(tenant.trial_ends_at)
+    elif tenant and tenant.status == "grace":
+        days_remaining = tenants_svc.calendar_days_until(tenant.grace_ends_at)
+    else:
+        days_remaining = None
+    subscription = {
+        "status": tenant.status if tenant else None,
+        "trial_ends_at": tenant.trial_ends_at if tenant else None,
+        "grace_ends_at": tenant.grace_ends_at if tenant else None,
+        "days_remaining": days_remaining,
+        "read_only": tenants_svc.is_read_only(tenant) if tenant else False,
+        "trial_days": int(settings.TRIAL_DAYS),
+    }
 
     return {
         "scope": "store" if store_id else "tenant",
         "store_id": store_id,
         "store_name": store_name,
-        "as_of": datetime.utcnow().isoformat() + "Z",
-        "kpis": {
-            "sales_today": money_json(sales_today),
-            "sales_yesterday": money_json(sales_yesterday),
+        "total_sales": money_json(sales_all),
+        "total_purchases": money_json(purchases),
+        "total_expenses": money_json(expenses),
+        "products": products,
+        "low_stock": low_stock,
+        "out_of_stock": out_of_stock,
+        "expiring_soon": expiring_soon,
+        "expiring_within_days": 30,
+        "customers": customers,
+        "suppliers": suppliers,
+        "comparisons": {
+            "sales_today": money_json(round(money_json(sales_today), 2)),
+            "sales_yesterday": money_json(round(money_json(sales_yesterday), 2)),
             "sales_today_pct": _pct_change(sales_today, sales_yesterday),
-            "sales_mtd": money_json(sales_mtd),
-            "sales_prev_month": money_json(sales_prev_month),
+            "sales_mtd": money_json(round(money_json(sales_mtd), 2)),
+            "sales_prev_month": money_json(round(money_json(sales_prev_month), 2)),
             "sales_mtd_pct": _pct_change(sales_mtd, sales_prev_month),
-            "purchases_mtd": money_json(purchases_mtd),
-            "expenses_mtd": money_json(expenses_mtd),
-            "customers": int(customers or 0),
-            "suppliers": int(suppliers or 0),
-            "products": int(products or 0),
-            "low_stock_count": len(low_stock),
-            "expiring_count": len(expiring),
         },
-        "daily_sales": daily_series,
-        "top_products": top_products,
-        "low_stock": [
-            {
-                "id": p.id,
-                "sku": p.sku,
-                "name": p.name,
-                "stock_qty": money_json(p.stock_qty),
-                "reorder_level": money_json(p.reorder_level),
-            }
-            for p in low_stock
-        ],
-        "expiring_batches": [
-            {
-                "batch_id": b.id,
-                "product_id": b.product_id,
-                "product_name": pname,
-                "batch_number": b.batch_number,
-                "expiry_date": b.expiry_date.isoformat() if b.expiry_date else None,
-                "quantity": money_json(b.quantity),
-            }
-            for b, pname in expiring
-        ],
-        "recent_sales": [
-            {
-                "id": r.id,
-                "created_at": r.created_at.isoformat() if r.created_at else None,
-                "total": money_json(r.total),
-                "payment_method": r.payment_method,
-                "customer_name": (r.payload or {}).get("customer_name"),
-            }
-            for r in recent_sales
-        ],
+        "monthly_sales": monthly_sales,
+        "daily_sales": daily_sales,
+        "recent_sales": recent_sales,
+        "top_products_by_revenue": top_products_by_revenue,
+        "top_products_by_quantity": top_products_by_quantity,
+        "links": {
+            "sales": "/sales",
+            "purchases": "/purchasing",
+            "expenses": "/expenses",
+            "customers": "/sales",
+            "suppliers": "/purchasing",
+            "products": "/inventory",
+            "low_stock": "/reports",
+            "expiring": "/inventory",
+            "reports_sales": "/reports",
+        },
+        "subscription": subscription,
+        "generated_at": now_dt,
     }

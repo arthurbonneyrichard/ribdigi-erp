@@ -308,7 +308,7 @@
 }
 .login-brand{text-align:center;margin-bottom:18px}
 .login-logo{
-  display:block;width:min(179px,100%);height:auto;margin:0 auto;object-fit:contain;
+  display:block;width:min(224px,100%);height:auto;margin:0 auto;object-fit:contain;
 }
 
 .auth-gate{

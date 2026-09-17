@@ -82,7 +82,7 @@ A few surfaces expose their own bounded `limit` Query params (e.g. audit logs, n
 |--------|-------|
 | `GET` | Retrieve resources |
 | `POST` | Create resources / actions |
-| `PUT` | Rare upsert/replace only — today: `PUT /credit/exchange-rates/{currency_code}`, `PUT /inventory/warehouse-stock/reorder`, `PUT /stores/{store_id}/reorder-policy` (not a general “full update” verb) |
+| `PUT` | Rare upsert/replace only — today: `PUT /credit/exchange-rates/{currency_code}`, `PUT /inventory/warehouse-stock/reorder`, `PUT /stores/{store_id}/reorder-policy`, `PUT /users/{user_id}/stores` (not a general “full update” verb) |
 | `PATCH` | Partial update (primarily PATCH — the update verb across modules) |
 | `DELETE` | Remove / soft-deactivate resources |
 

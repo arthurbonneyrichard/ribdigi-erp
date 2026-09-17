@@ -8,9 +8,16 @@ import { useStoreContext } from '../../lib/storeContext';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
+function fmtMoney(n: number, _currency?: string) {
+  const v = Number(n);
+  if (!Number.isFinite(v)) return '—';
+  return v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 type Tab = 'ledger' | 'cash' | 'reconcile' | 'cheques';
 
 export default function Page() {
+  const currency = '';
   const [tab, setTab] = useState<Tab>('ledger');
   const [accounts, setAccounts] = useState<any[]>([]);
   const [accountManageFilter, setAccountManageFilter] = useState<'all' | 'active' | 'inactive'>('all');

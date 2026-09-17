@@ -1997,6 +1997,7 @@ export default function Page() {
             className="btn-primary"
             onClick={createPo}
             disabled={!supplierId || !productId}
+            aria-label="Create draft PO"
           >
             Create draft PO
           </button>

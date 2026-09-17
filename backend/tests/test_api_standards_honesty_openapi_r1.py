@@ -83,18 +83,19 @@ def test_iso_date_query_accepts_date_and_datetime():
         _ISO.validate_python("")
 
 
-def test_put_routes_are_only_three_upserts():
+def test_put_routes_are_only_documented_upserts():
     src = Path(api_mod.__file__).read_text(encoding="utf-8")
     puts = [
         line.strip()
         for line in src.splitlines()
         if line.strip().startswith("@api.put(")
     ]
-    assert len(puts) == 3, puts
+    assert len(puts) == 4, puts
     joined = "\n".join(puts)
     assert "/credit/exchange-rates/{currency_code}" in joined
     assert "/inventory/warehouse-stock/reorder" in joined
     assert "/stores/{store_id}/reorder-policy" in joined
+    assert "/users/{user_id}/stores" in joined
 
 
 def test_product_lookup_returns_items_wrapper_shape():
