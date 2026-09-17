@@ -48,10 +48,17 @@ Never enable this flag in staging or production.
 
 ## Production deployment
 
-For a single Ubuntu 24.04 VPS with Docker Compose + Caddy TLS, see:
+### Option A — Dokploy (recommended for first VPS)
+
+Step-by-step (buy VPS → install Dokploy → GitHub → domains → Platform Owner):
+
+- **`ops/vps/DOKPLOY_FIRST_TIME.md`**
+- Compose file: **`docker-compose.dokploy.yml`** (Traefik handles HTTPS — no Caddy)
+
+### Option B — Manual Docker Compose + Caddy
 
 - **`ops/vps/README.md`** — full A–L operator guide
-- **`docker-compose.prod.yml`** — production stack (do not use `docker-compose.yml` on the VPS)
+- **`docker-compose.prod.yml`** — production stack with Caddy
 - **`ops/vps/env.production.example`** — copy to `.env` and replace all `REPLACE_ME_*` values
 
 ```bash
@@ -60,4 +67,5 @@ cp ops/vps/env.production.example .env
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
+Do not run Option A and Option B on the same VPS (both need ports 80/443).  
 Do not use development Docker credentials in production. Never set `ALLOW_DEVELOPMENT_SEED=true` on a public host.

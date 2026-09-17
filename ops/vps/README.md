@@ -4,7 +4,10 @@
 [security checklist](#l-production-security-checklist) and a smoke test before
 calling a host commercially go-live ready.
 
-Authoritative compose file: **`docker-compose.prod.yml`** (repo root).  
+**First time + Dokploy?** Start here instead → **[`DOKPLOY_FIRST_TIME.md`](./DOKPLOY_FIRST_TIME.md)**  
+(uses `docker-compose.dokploy.yml` + Traefik; do not mix with this Caddy stack).
+
+Authoritative **manual** compose file: **`docker-compose.prod.yml`** (repo root).  
 Env template: **`ops/vps/env.production.example`**.  
 TLS proxy: **Caddy** service in compose + **`ops/vps/Caddyfile`**.
 
