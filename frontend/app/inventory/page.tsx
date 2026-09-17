@@ -1815,7 +1815,7 @@ export default function Page() {
                         placeholder="0.00"
                         value={editCost}
                         onChange={e => setEditCost(e.target.value)}
-                        aria-label="Actual price"
+                        aria-label="Edit product cost price"
                       />
                     </div>
             <div className="product-price-field product-price-field--selling">
@@ -1829,7 +1829,7 @@ export default function Page() {
                         placeholder="0.00"
                         value={editPrice}
                         onChange={e => setEditPrice(e.target.value)}
-                        aria-label="Selling price"
+                        aria-label="Edit product selling price"
                       />
                     </div>
             <label className="muted">Tax supply class</label>
@@ -2182,7 +2182,7 @@ export default function Page() {
                         placeholder="0.00"
                         value={productCost}
                         onChange={e => setProductCost(e.target.value)}
-                        aria-label="Actual price"
+                        aria-label="Product cost price"
                       />
                     </div>
           <div className="product-price-field product-price-field--selling">
@@ -2196,7 +2196,7 @@ export default function Page() {
                         placeholder="0.00"
                         value={productPrice}
                         onChange={e => setProductPrice(e.target.value)}
-                        aria-label="Selling price"
+                        aria-label="Product selling price"
                       />
                     </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
