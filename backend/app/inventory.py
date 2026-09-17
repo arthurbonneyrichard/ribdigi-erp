@@ -54,15 +54,27 @@ async def get_or_create_warehouse_stock(
             .with_for_update()
         )
     ).scalar_one_or_none()
+    # SEC-H3 — never bind cross-tenant product ids into warehouse stock.
+    product = (
+        await db.execute(
+            select(m.Product).where(
+                m.Product.id == product_id,
+                m.Product.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    if company_id and getattr(product, "company_id", None) and product.company_id != company_id:
+        raise HTTPException(status_code=404, detail="Product not found")
+
     if row:
         if not getattr(row, "company_id", None):
-            product = await db.get(m.Product, product_id)
             row.company_id = (
                 getattr(product, "company_id", None)
                 or getattr(warehouse, "company_id", None)
             )
         return row
-    product = await db.get(m.Product, product_id)
     row = m.WarehouseStock(
         tenant_id=tenant_id,
         company_id=getattr(product, "company_id", None)
@@ -512,6 +524,7 @@ async def list_movements_serialized(
     tenant_id: str,
     product_id: str | None = None,
     warehouse_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
     movement_type: str | None = None,
     from_dt=None,
     to_dt=None,
@@ -525,6 +538,10 @@ async def list_movements_serialized(
         stmt = stmt.where(m.StockMovement.product_id == product_id)
     if warehouse_id:
         stmt = stmt.where(m.StockMovement.warehouse_id == warehouse_id)
+    elif warehouse_ids is not None:
+        if not warehouse_ids:
+            return []
+        stmt = stmt.where(m.StockMovement.warehouse_id.in_(warehouse_ids))
     if movement_type:
         stmt = stmt.where(m.StockMovement.movement_type == movement_type)
     if from_dt:

@@ -134,7 +134,9 @@ async def analyze_expenses(
     from_date: datetime | str | None = None,
     to_date: datetime | str | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
+    """Expense analysis. ``store_ids`` set = store_manager scope (null-store fail-closed)."""
     now = datetime.utcnow()
     try:
         start = _parse_bound(from_date) or datetime(now.year, now.month, 1)
@@ -148,8 +150,55 @@ async def analyze_expenses(
 
         raise HTTPException(status_code=400, detail="to_date must be on or after from_date")
 
+    if store_ids is not None and not store_ids:
+        return {
+            "generated_at": now,
+            "from_date": start,
+            "to_date": end,
+            "method": "rules_v1",
+            "scope": "store_manager",
+            "summary": {
+                "expense_count": 0,
+                "approved_count": 0,
+                "pending_count": 0,
+                "total_approved": 0.0,
+                "total_pending": 0.0,
+                "avg_approved_amount": 0.0,
+                "with_attachment": 0,
+                "wow_change_pct": None,
+            },
+            "budget_variance": {
+                "categories": [],
+                "totals": {
+                    "budget_amount": 0.0,
+                    "spent": 0.0,
+                    "pending": 0.0,
+                    "variance": 0.0,
+                },
+                "over_budget_count": 0,
+            },
+            "anomalies": [],
+            "optimization_suggestions": [],
+            "categorization": {
+                "uncategorized_or_misc_count": 0,
+                "ocr_endpoint": "POST /expenses/{id}/ocr-suggest",
+                "ocr_apply_endpoint": "POST /expenses/{id}/ocr-apply",
+                "text_category_suggestions": [],
+                "note": (
+                    "Receipt OCR extracts amount/date/payee; category is suggested from "
+                    "receipt/description keywords against tenant expense categories. "
+                    "Apply reviewed fields with confirm=true (Stage 10 A1) — no silent auto-write."
+                ),
+            },
+        }
+
     budgets = await expenses_svc.category_budget_variance(
-        db, tenant_id, from_date=start, to_date=end, company_id=company_id
+        db,
+        tenant_id,
+        from_date=start,
+        to_date=end,
+        company_id=company_id,
+        store_ids=store_ids,
     )
 
     exp_stmt = select(m.Expense).where(
@@ -158,6 +207,8 @@ async def analyze_expenses(
         m.Expense.expense_date <= end,
     )
     exp_stmt = apply_company_filter(exp_stmt, m.Expense.company_id, company_id)
+    if store_ids is not None:
+        exp_stmt = exp_stmt.where(m.Expense.store_id.in_(store_ids))
     expenses = (await db.execute(exp_stmt)).scalars().all()
 
     cat_stmt = select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == tenant_id)
@@ -327,6 +378,7 @@ async def analyze_expenses(
         "from_date": start,
         "to_date": end,
         "method": "rules_v1",
+        "scope": "store_manager" if store_ids is not None else "company",
         "summary": {
             "expense_count": len(expenses),
             "approved_count": len(approved),

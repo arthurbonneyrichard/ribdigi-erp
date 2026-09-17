@@ -84,7 +84,7 @@ async def test_dashboard_and_products_cache_hit(client, fake_cache):
 
     first = await ac.get("/api/v1/dashboard", headers=headers)
     assert first.status_code == 200, first.text
-    dash_key = cache_svc.app_cache.dashboard_key(seed["t1"].id)
+    dash_key = cache_svc.app_cache.dashboard_key(seed["t1"].id, role="super_admin", company_id=seed["c1"].id)
     assert dash_key in fake_cache.store
     assert fake_cache.ttls[dash_key] == 300
     sets_after_first = fake_cache.sets
@@ -96,7 +96,7 @@ async def test_dashboard_and_products_cache_hit(client, fake_cache):
 
     p1 = await ac.get("/api/v1/products", headers=headers)
     assert p1.status_code == 200, p1.text
-    products_key = cache_svc.app_cache.products_key(seed["t1"].id)
+    products_key = cache_svc.app_cache.products_key(seed["t1"].id, company_id=seed["c1"].id)
     assert products_key in fake_cache.store
     assert fake_cache.ttls[products_key] == 600
     sets_mid = fake_cache.sets
@@ -116,8 +116,8 @@ async def test_categories_flat_vs_tree_keys(client, fake_cache):
     tree = await ac.get("/api/v1/catalog/categories?tree=true", headers=headers)
     assert flat.status_code == 200, flat.text
     assert tree.status_code == 200, tree.text
-    flat_key = cache_svc.app_cache.categories_key(seed["t1"].id, tree=False)
-    tree_key = cache_svc.app_cache.categories_key(seed["t1"].id, tree=True)
+    flat_key = cache_svc.app_cache.categories_key(seed["t1"].id, tree=False, company_id=seed["c1"].id)
+    tree_key = cache_svc.app_cache.categories_key(seed["t1"].id, tree=True, company_id=seed["c1"].id)
     assert flat_key in fake_cache.store
     assert tree_key in fake_cache.store
     assert flat_key != tree_key
@@ -130,8 +130,8 @@ async def test_product_create_invalidates_catalog_and_dashboard(client, fake_cac
 
     await ac.get("/api/v1/dashboard", headers=headers)
     await ac.get("/api/v1/products", headers=headers)
-    dash_key = cache_svc.app_cache.dashboard_key(seed["t1"].id)
-    products_key = cache_svc.app_cache.products_key(seed["t1"].id)
+    dash_key = cache_svc.app_cache.dashboard_key(seed["t1"].id, role="super_admin", company_id=seed["c1"].id)
+    products_key = cache_svc.app_cache.products_key(seed["t1"].id, company_id=seed["c1"].id)
     assert dash_key in fake_cache.store
     assert products_key in fake_cache.store
 
@@ -162,8 +162,8 @@ async def test_tenant_isolation_of_cache_keys(client, fake_cache):
     ac, seed = client
     headers = await _admin(ac, seed)
     await ac.get("/api/v1/products", headers=headers)
-    t1_key = cache_svc.app_cache.products_key(seed["t1"].id)
-    t2_key = cache_svc.app_cache.products_key(seed["t2"].id)
+    t1_key = cache_svc.app_cache.products_key(seed["t1"].id, company_id=seed["c1"].id)
+    t2_key = cache_svc.app_cache.products_key(seed["t2"].id, company_id=seed["c2"].id)
     assert t1_key in fake_cache.store
     assert t2_key not in fake_cache.store
     # Poison t2 key with t1 payload — must not be returned for t1

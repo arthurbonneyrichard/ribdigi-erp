@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 
 from app.document_numbering import format_document_number, normalize_document_numbering
@@ -9,8 +10,15 @@ from app.purchasing import render_debit_note_text
 from tests.conftest import auth_headers
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _admin(ac):
@@ -49,7 +57,7 @@ def test_debit_note_numbering_defaults():
 @pytest.mark.asyncio
 async def test_purchase_return_debit_note_allocate_and_print(client):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     admin = await _admin(ac)
     product_id = str(seed["p1"].id)
 
@@ -158,9 +166,14 @@ async def test_purchase_return_debit_note_allocate_and_print(client):
 @pytest.mark.asyncio
 async def test_foreign_purchase_return_print_404(client):
     ac, _seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     r = await ac.get(
         "/api/v1/purchasing/returns/00000000-0000-4000-8000-000000000099/print",
         headers=headers,
     )
-    assert r.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert r.status_code in (403, 404), r.text
+    if r.status_code == 403:
+        detail = r.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"

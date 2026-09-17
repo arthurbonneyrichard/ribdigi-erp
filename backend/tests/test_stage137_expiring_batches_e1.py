@@ -28,6 +28,7 @@ async def test_expiring_batches_export_csv(client, db_session):
 
     product = m.Product(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         name="Stage137 Batch Product",
         sku="SKU-137-BAT",
         stock_qty=10,
@@ -40,6 +41,7 @@ async def test_expiring_batches_export_csv(client, db_session):
 
     soon = m.ProductBatch(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         product_id=product.id,
         batch_number="BAT-137-SOON",
         quantity=5,
@@ -47,6 +49,7 @@ async def test_expiring_batches_export_csv(client, db_session):
     )
     later = m.ProductBatch(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         product_id=product.id,
         batch_number="BAT-137-LATER",
         quantity=5,

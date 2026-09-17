@@ -20,7 +20,7 @@ async def _mgr(ac):
 @pytest.mark.asyncio
 async def test_sales_analysis_export_csv(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     product = seed["p1"]
     inv = m.SalesInvoice(
         tenant_id=seed["t1"].id,

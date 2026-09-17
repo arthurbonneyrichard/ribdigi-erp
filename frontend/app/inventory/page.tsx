@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import BarcodeCameraScanner from '../../components/BarcodeCameraScanner';
 import Shell from '../../components/Shell';
-import { api, authHeaders } from '../../lib/api';
+import { api, apiFetch } from '../../lib/api';
 import { useTabQuery } from '../../lib/tabQuery';
 
 type Tab =
@@ -33,8 +33,6 @@ const INVENTORY_TABS: Tab[] = [
   'stock',
   'lowstock',
 ];
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 export default function Page() {
   const [tab, setTab] = useTabQuery(INVENTORY_TABS, 'products');
@@ -335,10 +333,10 @@ export default function Page() {
     const [p, e, c, tree, b, u, w, sc, tr, ls, sup, tax] = await Promise.all([
       api(`/products${productQs}`),
       api(`/inventory/batches/expiring${expiryQs}`),
-      api(`/catalog/categories${catFlat}`),
-      api(`/catalog/categories${catTree}`),
-      api(`/catalog/brands${brandQs}`),
-      api(`/catalog/units${unitQs}`),
+      api(`/catalog/categories${catFlat}`).catch(() => ({ data: [] })),
+      api(`/catalog/categories${catTree}`).catch(() => ({ data: [] })),
+      api(`/catalog/brands${brandQs}`).catch(() => ({ data: [] })),
+      api(`/catalog/units${unitQs}`).catch(() => ({ data: [] })),
       api('/warehouses'),
       api(`/inventory/stock-counts${countQs}`),
       api(`/inventory/stock-transfers${transferQs}`).catch(() => ({ data: [] })),
@@ -391,11 +389,7 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}${path}`, {
-        headers: authHeaders(),
-      });
+      const res = await apiFetch(`${path}`);
       if (!res.ok) throw new Error(`${filename} export failed`);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -473,7 +467,8 @@ export default function Page() {
     const [v, b, g] = await Promise.all([
       api(`/products/${id}/variants${variantQs}`),
       api(`/products/${id}/batches`),
-      api(`/products/${id}/images`),
+      // Soft-fail store_manager STORE_SCOPE_DENIED (company product gallery dump).
+      api(`/products/${id}/images`).catch(() => ({ data: [] })),
     ]);
     setVariants(v.data || []);
     setBatches(b.data || []);
@@ -651,14 +646,7 @@ export default function Page() {
   async function downloadCountVariance(countId: string, format: 'csv' | 'pdf') {
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(
-        `${apiBase}/inventory/stock-counts/${countId}/variance-report?format=${format}`,
-        {
-          headers: authHeaders(),
-        },
-      );
+      const res = await apiFetch(`/inventory/stock-counts/${countId}/variance-report?format=${format}`, {},);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         const detail = body.detail;
@@ -890,16 +878,13 @@ export default function Page() {
     if (!selectedId) return;
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
       const form = new FormData();
       form.append('file', file);
       const path = asPrimary
-        ? `${apiBase}/products/${selectedId}/image`
-        : `${apiBase}/products/${selectedId}/images`;
-      const res = await fetch(path, {
+        ? `/products/${selectedId}/image`
+        : `/products/${selectedId}/images`;
+      const res = await apiFetch(path, {
         method: 'POST',
-        headers: authHeaders(),
         body: form,
       });
       const body = await res.json().catch(() => ({}));
@@ -1005,15 +990,8 @@ export default function Page() {
     if (!selectedId) return;
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
       const copies = Math.max(1, Math.min(50, Number(labelCopies) || 1));
-      const res = await fetch(
-        `${apiBase}/products/${selectedId}/labels?format=${format}&copies=${copies}&code_type=${codeType}`,
-        {
-          headers: authHeaders(),
-        },
-      );
+      const res = await apiFetch(`/products/${selectedId}/labels?format=${format}&copies=${copies}&code_type=${codeType}`, {},);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.detail || body.message || 'Label print failed');
@@ -1061,11 +1039,7 @@ export default function Page() {
   async function downloadImportTemplate() {
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/products/import/template`, {
-        headers: authHeaders(),
-      });
+      const res = await apiFetch(`/products/import/template`);
       if (!res.ok) throw new Error('Template download failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -1080,15 +1054,24 @@ export default function Page() {
   }
 
   async function downloadProductsExport() {
-    // Stage 118 E1 — catalog CSV export
+    // Stage 118 E1 — catalog CSV export (store_manager company catalog dump denied).
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/products/export`, {
-        headers: authHeaders(),
-      });
-      if (!res.ok) throw new Error('Product export failed');
+      const res = await apiFetch(`/products/export`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const detail = body?.detail;
+        const code = typeof detail === 'object' ? detail?.code : undefined;
+        if (res.status === 403 && code === 'STORE_SCOPE_DENIED') {
+          throw new Error(
+            'Product catalog CSV export is admin-only (company catalog dump).'
+          );
+        }
+        throw new Error(
+          (typeof detail === 'string' ? detail : detail?.message) ||
+            'Product export failed'
+        );
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -1105,13 +1088,10 @@ export default function Page() {
   async function importProductsCsv(file: File, dryRun: boolean) {
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
       const form = new FormData();
       form.append('file', file);
-      const res = await fetch(`${apiBase}/products/import?dry_run=${dryRun}`, {
+      const res = await apiFetch(`/products/import?dry_run=${dryRun}`, {
         method: 'POST',
-        headers: authHeaders(),
         body: form,
       });
       const body = await res.json().catch(() => ({}));
@@ -1127,11 +1107,7 @@ export default function Page() {
   async function downloadStockImportTemplate() {
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/inventory/stock/import/template`, {
-        headers: authHeaders(),
-      });
+      const res = await apiFetch(`/inventory/stock/import/template`);
       if (!res.ok) throw new Error('Stock template download failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -1148,13 +1124,10 @@ export default function Page() {
   async function importStockCsv(file: File, dryRun: boolean) {
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
       const form = new FormData();
       form.append('file', file);
-      const res = await fetch(`${apiBase}/inventory/stock/import?dry_run=${dryRun}`, {
+      const res = await apiFetch(`/inventory/stock/import?dry_run=${dryRun}`, {
         method: 'POST',
-        headers: authHeaders(),
         body: form,
       });
       const body = await res.json().catch(() => ({}));
@@ -1294,7 +1267,11 @@ export default function Page() {
             </option>
           ))}
         </select>
-        {selected?.has_image && <p className="muted">Has primary image</p>}
+        {selected?.has_image && (
+          <p className="muted">
+            Has primary image
+          </p>
+        )}
         <label className="muted">Add gallery image (max 5)</label>
         <input
           type="file"
@@ -1834,15 +1811,12 @@ export default function Page() {
                             if (!file) return;
                             setError('');
                             try {
-                              const token = localStorage.getItem('token');
-                              const tenant = localStorage.getItem('tenant');
                               const form = new FormData();
                               form.append('file', file);
-                              const res = await fetch(`${apiBase}/catalog/brands/${b.id}/logo`, {
+                              const res = await apiFetch(`/catalog/brands/${b.id}/logo`, {
                                 method: 'POST',
-                                headers: authHeaders(),
                                 body: form,
-                              });
+      });
                               const body = await res.json().catch(() => ({}));
                               if (!res.ok) throw new Error(body.detail || body.message || 'Logo upload failed');
                               setMessage('Brand logo uploaded');
@@ -2012,9 +1986,10 @@ export default function Page() {
         <>
           <p className="muted" style={{ marginBottom: 8 }}>
             Filter via <code>variant_active</code> → <code>GET /products/&#123;id&#125;/variants?is_active=</code>{' '}
-            (Stage 124 V1). Path-scoped export via{' '}
-            <code>{'GET /products/{id}/variants/export'}</code> (Stage 156 V1); tenant roster remains{' '}
-            <code>/products/variants/export</code> (Stage 124 X1).
+            (Stage 124 V1). Admin path-scoped export via{' '}
+            <code>{'GET /products/{id}/variants/export'}</code> (Stage 156 V1; store_manager path variants CSV dump denied); tenant roster{' '}
+            <code>/products/variants/export</code> (Stage 124 X1; also denied for store_manager).
+            Variants list/get remain for POS/sales.
           </p>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12, alignItems: 'center' }}>
             <label className="muted">
@@ -2053,17 +2028,13 @@ export default function Page() {
                 setError('');
                 setMessage('');
                 try {
-                  const token = localStorage.getItem('token');
-                  const tenant = localStorage.getItem('tenant');
                   const qs = new URLSearchParams();
                   if (selectedId) qs.set('product_id', selectedId);
                   if (variantActiveFilter === 'true' || variantActiveFilter === 'false') {
                     qs.set('is_active', variantActiveFilter);
                   }
                   const q = qs.toString();
-                  const res = await fetch(`${apiBase}/products/variants/export${q ? `?${q}` : ''}`, {
-                    headers: authHeaders(),
-                  });
+                  const res = await apiFetch(`/products/variants/export${q ? `?${q}` : ''}`);
                   if (!res.ok) throw new Error('Variants export failed');
                   const blob = await res.blob();
                   const url = URL.createObjectURL(blob);
@@ -2324,16 +2295,14 @@ export default function Page() {
             <button
               type="button"
               onClick={async () => {
-                const token = localStorage.getItem('token') || '';
+
                 const qs =
                   countStatusFilter === 'draft' ||
                   countStatusFilter === 'completed' ||
                   countStatusFilter === 'cancelled'
                     ? `?status=${countStatusFilter}`
                     : '';
-                const res = await fetch(`${apiBase}/inventory/stock-counts/export${qs}`, {
-                  headers: { Authorization: `Bearer ${token}` },
-                });
+                const res = await apiFetch(`/inventory/stock-counts/export${qs}`);
                 if (!res.ok) {
                   setError(await res.text());
                   return;
@@ -2934,7 +2903,7 @@ export default function Page() {
               <button
                 type="button"
                 onClick={async () => {
-                  const token = localStorage.getItem('token') || '';
+
                   const qs =
                     transferStatusFilter === 'draft' ||
                     transferStatusFilter === 'requested' ||
@@ -2943,9 +2912,7 @@ export default function Page() {
                     transferStatusFilter === 'cancelled'
                       ? `?status=${transferStatusFilter}`
                       : '';
-                  const res = await fetch(`${apiBase}/inventory/stock-transfers/export${qs}`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                  });
+                  const res = await apiFetch(`/inventory/stock-transfers/export${qs}`);
                   if (!res.ok) {
                     setError(await res.text());
                     return;

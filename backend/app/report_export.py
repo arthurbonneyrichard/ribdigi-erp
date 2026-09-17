@@ -545,13 +545,22 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
             *[{"section": "output", **r} for r in out_sched],
             *[{"section": "input", **r} for r in in_sched],
         ]
+        tin = header.get("tax_registration_number")
+        tin_line = f"TIN: {tin}" if tin else (
+            "TIN: (missing)" if header.get("tin_missing") else None
+        )
         lines = [
             f"Template: {gov.get('template_name') or gov.get('template')}",
             f"Taxpayer: {header.get('taxpayer_name')}",
-            f"TIN: {header.get('tax_registration_number') or '(missing)'}",
-            f"Currency: {header.get('currency')}",
-            f"Period: {header.get('period_from')} → {header.get('period_to')}",
         ]
+        if tin_line:
+            lines.append(tin_line)
+        lines.extend(
+            [
+                f"Currency: {header.get('currency')}",
+                f"Period: {header.get('period_from')} → {header.get('period_to')}",
+            ]
+        )
         for w in gov.get("warnings") or []:
             lines.append(f"WARNING: {w}")
         label = f"{juris.upper()} VAT BOXES"
@@ -652,6 +661,9 @@ async def build_report_payload(
     limit: int | None = None,
     compare: bool = False,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
+    store_ids: list[str] | None = None,
+    claims: dict | None = None,
 ) -> Any:
     if report_type not in EXPORTABLE:
         raise HTTPException(
@@ -665,10 +677,18 @@ async def build_report_payload(
     now = datetime.utcnow()
 
     if report_type == "summary":
-        daily = await reports_svc.sales_daily(db, tenant_id, now)
-        monthly = await reports_svc.sales_monthly(db, tenant_id, now.year, now.month)
-        low = await reports_svc.inventory_low_stock(db, tenant_id)
-        expenses = await reports_svc.expenses_summary(db, tenant_id)
+        daily = await reports_svc.sales_daily(
+            db, tenant_id, now, company_id=company_id, store_ids=store_ids
+        )
+        monthly = await reports_svc.sales_monthly(
+            db, tenant_id, now.year, now.month, company_id=company_id, store_ids=store_ids
+        )
+        low = await reports_svc.inventory_low_stock(
+            db, tenant_id, company_id=company_id, warehouse_ids=warehouse_ids
+        )
+        expenses = await reports_svc.expenses_summary(
+            db, tenant_id, company_id=company_id, store_ids=store_ids
+        )
         return {
             "today_sales": daily,
             "month_sales": monthly,
@@ -676,10 +696,21 @@ async def build_report_payload(
             "expenses": expenses,
         }
     if report_type == "sales_daily":
-        return await reports_svc.sales_daily(db, tenant_id, reports_svc.parse_date(date) or now)
+        return await reports_svc.sales_daily(
+            db,
+            tenant_id,
+            reports_svc.parse_date(date) or now,
+            company_id=company_id,
+            store_ids=store_ids,
+        )
     if report_type == "sales_monthly":
         return await reports_svc.sales_monthly(
-            db, tenant_id, year or now.year, month or now.month
+            db,
+            tenant_id,
+            year or now.year,
+            month or now.month,
+            company_id=company_id,
+            store_ids=store_ids,
         )
     if report_type == "sales_products":
         return await reports_svc.sales_by_product(
@@ -689,33 +720,114 @@ async def build_report_payload(
             to_date=td,
             store_id=store_id,
             category_id=category_id,
+            company_id=company_id,
+            store_ids=store_ids if not store_id else None,
         )
     if report_type == "sales_customers":
-        return await reports_svc.sales_by_customer(db, tenant_id, from_date=fd, to_date=td)
+        return await reports_svc.sales_by_customer(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            company_id=company_id,
+            store_ids=store_ids,
+        )
     if report_type == "sales_salesperson":
-        return await reports_svc.sales_by_salesperson(db, tenant_id, from_date=fd, to_date=td)
+        return await reports_svc.sales_by_salesperson(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            company_id=company_id,
+            store_ids=store_ids,
+        )
     if report_type == "sales_by_store":
-        return await reports_svc.sales_by_store(db, tenant_id, from_date=fd, to_date=td)
+        return await reports_svc.sales_by_store(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            company_id=company_id,
+            store_ids=store_ids,
+        )
     if report_type == "inventory_balance":
-        return await reports_svc.inventory_balance(db, tenant_id, warehouse_id)
+        return await reports_svc.inventory_balance(
+            db,
+            tenant_id,
+            warehouse_id,
+            company_id=company_id,
+            warehouse_ids=warehouse_ids,
+            claims=claims,
+        )
     if report_type == "inventory_movements":
-        return await reports_svc.inventory_movements(db, tenant_id, from_date=fd, to_date=td)
+        return await reports_svc.inventory_movements(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            company_id=company_id,
+            warehouse_ids=warehouse_ids,
+        )
     if report_type == "inventory_low_stock":
-        return await reports_svc.inventory_low_stock(db, tenant_id)
+        return await reports_svc.inventory_low_stock(
+            db, tenant_id, company_id=company_id, warehouse_ids=warehouse_ids
+        )
     if report_type == "inventory_valuation":
         return await reports_svc.inventory_valuation(
-            db, tenant_id, warehouse_id=warehouse_id, store_id=store_id
+            db,
+            tenant_id,
+            warehouse_id=warehouse_id,
+            store_id=store_id,
+            company_id=company_id,
+            warehouse_ids=warehouse_ids,
+            claims=claims,
         )
     if report_type == "purchases_summary":
-        return await reports_svc.purchases_summary(db, tenant_id, from_date=fd, to_date=td)
+        return await reports_svc.purchases_summary(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            company_id=company_id,
+            warehouse_ids=warehouse_ids,
+        )
     if report_type == "purchases_suppliers":
-        return await reports_svc.purchases_by_supplier(db, tenant_id, from_date=fd, to_date=td)
+        return await reports_svc.purchases_by_supplier(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            company_id=company_id,
+            warehouse_ids=warehouse_ids,
+        )
     if report_type == "purchases_pending_orders":
-        return await reports_svc.purchases_pending_orders(db, tenant_id, from_date=fd, to_date=td)
+        return await reports_svc.purchases_pending_orders(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            company_id=company_id,
+            warehouse_ids=warehouse_ids,
+        )
     if report_type == "purchases_returns":
-        return await reports_svc.purchases_return_summary(db, tenant_id, from_date=fd, to_date=td)
+        return await reports_svc.purchases_return_summary(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            company_id=company_id,
+            warehouse_ids=warehouse_ids,
+        )
     if report_type == "expenses_summary":
-        return await reports_svc.expenses_summary(db, tenant_id, from_date=fd, to_date=td)
+        return await reports_svc.expenses_summary(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            category_id=category_id,
+            company_id=company_id,
+            store_ids=store_ids,
+        )
     if report_type == "cash_flow":
         return await reports_svc.cash_flow_with_optional_compare(
             db,
@@ -724,10 +836,18 @@ async def build_report_payload(
             to_date=td,
             store_id=store_id,
             branch_id=branch_id,
+            store_ids=store_ids if not store_id else None,
             compare=compare,
+            company_id=company_id,
         )
     if report_type == "trial_balance":
-        return await accounting_svc.trial_balance(db, tenant_id, as_of=as_of)
+        return await accounting_svc.trial_balance(
+            db,
+            tenant_id,
+            as_of=as_of,
+            company_id=company_id,
+            store_ids=store_ids,
+        )
     if report_type == "profit_loss":
         return await reports_svc.profit_loss_with_optional_compare(
             db,
@@ -736,7 +856,9 @@ async def build_report_payload(
             to_date=td,
             store_id=store_id,
             branch_id=branch_id,
+            store_ids=store_ids if not store_id else None,
             compare=compare,
+            company_id=company_id,
         )
     if report_type == "balance_sheet":
         return await reports_svc.balance_sheet_with_optional_compare(
@@ -745,22 +867,48 @@ async def build_report_payload(
             as_of=as_of,
             store_id=store_id,
             branch_id=branch_id,
+            store_ids=store_ids if not store_id else None,
             compare=compare,
+            company_id=company_id,
         )
     if report_type == "credit_aging":
         from app import credit as credit_svc
 
         aging_kind = (kind or "receivable").strip().lower()
         if aging_kind in {"payable", "ap"}:
-            return await credit_svc.ap_aging(db, tenant_id, as_of=as_of or now)
-        return await credit_svc.ar_aging(db, tenant_id, as_of=as_of or now)
+            return await credit_svc.ap_aging(
+                db,
+                tenant_id,
+                as_of=as_of or now,
+                company_id=company_id,
+                warehouse_ids=warehouse_ids,
+            )
+        return await credit_svc.ar_aging(
+            db,
+            tenant_id,
+            as_of=as_of or now,
+            company_id=company_id,
+            store_ids=store_ids,
+        )
     if report_type == "tax":
         return await tax_svc.tax_report(
-            db, tenant_id, from_date=fd, to_date=td, company_id=company_id
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            company_id=company_id,
+            store_ids=store_ids,
+            warehouse_ids=warehouse_ids,
         )
     if report_type == "tax_filing":
         return await tax_svc.tax_filing_pack(
-            db, tenant_id, from_date=fd, to_date=td, company_id=company_id
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            company_id=company_id,
+            store_ids=store_ids,
+            warehouse_ids=warehouse_ids,
         )
     if report_type == "tax_filing_gh":
         from app import tax_filings as tax_filings_svc
@@ -772,6 +920,8 @@ async def build_report_payload(
             to_date=td,
             jurisdiction=jurisdiction or "GH",
             company_id=company_id,
+            store_ids=store_ids,
+            warehouse_ids=warehouse_ids,
         )
     if report_type == "tax_filing_ke":
         from app import tax_filings as tax_filings_svc
@@ -783,6 +933,8 @@ async def build_report_payload(
             to_date=td,
             jurisdiction=jurisdiction or "KE",
             company_id=company_id,
+            store_ids=store_ids,
+            warehouse_ids=warehouse_ids,
         )
     if report_type == "tax_filing_ng":
         from app import tax_filings as tax_filings_svc
@@ -794,6 +946,8 @@ async def build_report_payload(
             to_date=td,
             jurisdiction=jurisdiction or "NG",
             company_id=company_id,
+            store_ids=store_ids,
+            warehouse_ids=warehouse_ids,
         )
     if report_type == "transfer_history":
         from app import stores as stores_svc
@@ -803,10 +957,12 @@ async def build_report_payload(
             tenant_id,
             status=status,
             store_id=store_id,
+            store_ids=store_ids if not store_id else None,
             from_date=fd,
             to_date=td,
             scope=scope or "all",
             limit=int(limit or 200),
+            company_id=company_id,
         )
     raise HTTPException(status_code=400, detail="Unhandled report type")
 
@@ -825,6 +981,30 @@ async def export_report(
             detail=f"format must be one of {sorted(EXPORT_FORMATS)}",
         )
     payload = await build_report_payload(db, tenant_id, report_type, **kwargs)
+    if report_type in {"tax_filing", "tax_filing_gh", "tax_filing_ke", "tax_filing_ng"}:
+        from app import dashboard_scope as dashboard_scope_svc
+
+        payload = dashboard_scope_svc.apply_tax_filing_manager_redacts(
+            payload, kwargs.get("store_ids")
+        )
+    if report_type == "sales_products":
+        from app import dashboard_scope as dashboard_scope_svc
+
+        payload = dashboard_scope_svc.apply_sales_products_manager_redacts(
+            payload, kwargs.get("store_ids")
+        )
+    if report_type == "sales_customers":
+        from app import dashboard_scope as dashboard_scope_svc
+
+        payload = dashboard_scope_svc.apply_sales_customers_manager_redacts(
+            payload, kwargs.get("store_ids")
+        )
+    if report_type == "sales_salesperson":
+        from app import dashboard_scope as dashboard_scope_svc
+
+        payload = dashboard_scope_svc.apply_sales_salesperson_manager_redacts(
+            payload, kwargs.get("store_ids")
+        )
     rows, pdf_lines, title = flatten_report(report_type, payload)
     stamp = datetime.utcnow().strftime("%Y%m%d")
     if fmt == "csv":

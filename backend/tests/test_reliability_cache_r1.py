@@ -105,7 +105,7 @@ async def test_dashboard_catalog_soft_fail_on_redis_blip(client, blip_cache):
     # Warm path works
     ok = await ac.get("/api/v1/dashboard", headers=headers)
     assert ok.status_code == 200, ok.text
-    dash_key = cache_svc.app_cache.dashboard_key(seed["t1"].id)
+    dash_key = cache_svc.app_cache.dashboard_key(seed["t1"].id, role="super_admin") + f':co:{seed["c1"].id}'
     assert dash_key in blip_cache.store
 
     # Redis get blip — miss soft-fails to live query

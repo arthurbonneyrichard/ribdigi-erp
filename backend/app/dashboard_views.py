@@ -73,6 +73,9 @@ def allowed_sections(claims: dict) -> list[str]:
     if view == "cashier":
         blocked = {"purchasing", "expenses", "accounting", "users", "suppliers", "credit", "reports"}
         out = [s for s in out if s not in blocked]
+    # Store manager: omit company-wide user/role KPIs (list/get /users remain elsewhere)
+    if view == "store_manager":
+        out = [s for s in out if s != "users"]
     return out
 
 

@@ -12,8 +12,15 @@ from app.inventory import apply_stock_change
 from tests.conftest import auth_headers
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _super(ac, seed):
@@ -26,7 +33,7 @@ async def _super(ac, seed):
 @pytest.mark.asyncio
 async def test_invoice_posted_audit_enriched_with_stock_tax_ar(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     super_h = await _super(ac, seed)
     tenant_id = seed["t1"].id
     await accounting_svc.ensure_default_accounts(db_session, tenant_id)
@@ -114,7 +121,7 @@ async def test_invoice_posted_audit_enriched_with_stock_tax_ar(client, db_sessio
 @pytest.mark.asyncio
 async def test_sales_return_posted_audit_and_journal_link(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     super_h = await _super(ac, seed)
     tenant_id = seed["t1"].id
     await accounting_svc.ensure_default_accounts(db_session, tenant_id)

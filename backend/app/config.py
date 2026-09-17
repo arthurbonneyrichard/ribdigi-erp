@@ -1,5 +1,20 @@
+from cryptography.fernet import Fernet
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import model_validator
+
+
+def validate_fernet_key(name: str, value: str) -> str:
+    """Return a stripped Fernet key or raise ValueError if missing/invalid."""
+    raw = (value or "").strip()
+    if not raw:
+        raise ValueError(
+            f"Production requires {name} (url-safe Fernet key from Fernet.generate_key())"
+        )
+    try:
+        Fernet(raw.encode("utf-8"))
+    except Exception as exc:
+        raise ValueError(f"Production {name} must be a valid Fernet key") from exc
+    return raw
 
 
 class Settings(BaseSettings):
@@ -17,6 +32,11 @@ class Settings(BaseSettings):
     RABBITMQ_URL: str = "amqp://ribdigi:ribdigi@rabbitmq:5672/"
     CORS_ORIGINS: str = "http://localhost:3000"
     TRUSTED_HOSTS: str = ""
+    # SEC-H4 — only honor X-Forwarded-For when the app sits behind a trusted reverse proxy.
+    TRUST_X_FORWARDED_FOR: bool = False
+    # SEC-H2 — optional Prometheus scrape bearer (required in production when METRICS_REQUIRE_AUTH).
+    METRICS_BEARER_TOKEN: str = ""
+    METRICS_REQUIRE_AUTH: bool = False
     RATE_LIMIT_ENABLED: bool = True
     RATE_LIMIT_PER_MINUTE: int = 120
     RATE_LIMIT_AUTH_PER_MINUTE: int = 20
@@ -37,6 +57,18 @@ class Settings(BaseSettings):
     WEBHOOK_RETRY_BASE_SECONDS: int = 60
     CELERY_WEBHOOK_RETRY_INTERVAL_SECONDS: int = 30
     ALLOW_DEVELOPMENT_SEED: bool = False
+    # Opt-in live customer-demo tenant seed (scripts/seed_demo_tenant.py). Fail closed; never production.
+    ALLOW_DEMO_TENANT_SEED: bool = False
+    # SEC-M3 — unauthenticated POST /tenants self-service (fail closed; enable explicitly for local/demo).
+    ALLOW_PUBLIC_TENANT_SIGNUP: bool = False
+    # SEC-M2 / SEC-M5 — httpOnly session cookies + CSRF (dual-mode with Bearer). Default OFF.
+    # Enabling alone does not close M2/M5; frontend must stop using localStorage tokens.
+    AUTH_HTTPONLY_COOKIES_ENABLED: bool = False
+    # None = Secure when APP_ENV=production; set True/False to override.
+    AUTH_COOKIE_SECURE: bool | None = None
+    AUTH_COOKIE_SAMESITE: str = "lax"  # lax | strict | none
+    AUTH_COOKIE_DOMAIN: str = ""  # empty = host-only
+    AUTH_CSRF_HEADER: str = "X-CSRF-Token"
     BACKUP_DIR: str = "/data/backups"
     MEDIA_DIR: str = "/data/media"
     MEDIA_MAX_LOGO_BYTES: int = 2_000_000
@@ -125,6 +157,42 @@ class Settings(BaseSettings):
     # Stage 18 L1 — structured JSON request/error logs (MVP-lite)
     REQUEST_LOG_ENABLED: bool = True
     LOG_LEVEL: str = "INFO"
+    # Offline Web Push (remote wipe delivery PARTIAL — not Offline Complete).
+    # Fail-closed: when keys unset or ENABLED=false, wipe still queues; push is
+    # skipped_unconfigured / disabled (never fabricates delivered).
+    # Ops: docs/OFFLINE_WEB_PUSH_VAPID_OPS.md
+    OFFLINE_PUSH_ENABLED: bool = True
+    OFFLINE_PUSH_VAPID_PUBLIC_KEY: str = ""  # applicationServerKey (url-safe base64)
+    OFFLINE_PUSH_VAPID_PRIVATE_KEY: str = ""  # PEM private key (or path accepted by pywebpush)
+    OFFLINE_PUSH_VAPID_SUBJECT: str = "mailto:noreply@localhost"
+    OFFLINE_PUSH_MAX_ATTEMPTS: int = 3  # sync retries on transient push failures
+    OFFLINE_PUSH_RETRY_DELAY_MS: int = 50  # delay between sync retry attempts
+    # ADR-005 — when True, store_manager managed_store_ids = manager_id ∪ active
+    # memberships (docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md). Default OFF keeps
+    # legacy manager_id-only scope. Enabling does not claim ADR-005 Complete.
+    STORE_MEMBERSHIP_SCOPE_ENABLED: bool = False
+    # ADR-002 paid billing scaffold (PARTIAL). Default OFF — trial/grace/suspend
+    # lifecycle remains the commercial access gate. When ON, provider subscription
+    # mirror status is authoritative only for documented gated routes
+    # (POST /sales, PATCH /companies/{id}) — still NOT paid billing Complete.
+    # Ops: docs/PAID_BILLING_PROVIDER_OPS.md · docs/ADR_002_PAID_BILLING_SCAFFOLD.md
+    PAID_BILLING_ENTITLEMENT_GATE_ENABLED: bool = False
+    BILLING_PROVIDER: str = ""  # e.g. "stripe" when intentionally configured
+    BILLING_PROVIDER_SECRET_KEY: str = ""  # never commit real secrets
+    BILLING_PROVIDER_WEBHOOK_SECRET: str = ""
+    BILLING_PROVIDER_PORTAL_RETURN_URL: str = ""
+    BILLING_PROVIDER_CHECKOUT_SUCCESS_URL: str = ""
+    BILLING_PROVIDER_CHECKOUT_CANCEL_URL: str = ""
+    # JSON map plan_code → Stripe price id, e.g. {"starter":"price_…","growth":"price_…"}.
+    # Live Checkout Session create requires a price (body price_id or this map).
+    BILLING_PROVIDER_PRICE_IDS: str = ""
+    # Portal/checkout create mode: "" (auto), "mock" (CI / deterministic URL), "live".
+    # Mock never claims payment_success / paid billing Complete.
+    BILLING_PROVIDER_MODE: str = ""
+    BILLING_PROVIDER_API_BASE: str = "https://api.stripe.com"
+    # Hard non-claim: honesty payload never advertises checkout Complete.
+    # Session create itself follows provider keys (like portal) — not this flag.
+    BILLING_CHECKOUT_ENABLED: bool = False
 
     model_config = SettingsConfigDict(env_file="../.env", extra="ignore")
 
@@ -188,6 +256,16 @@ class Settings(BaseSettings):
                         "Production SMS_ENABLED requires TWILIO_ACCOUNT_SID, "
                         "TWILIO_AUTH_TOKEN, and TWILIO_FROM_NUMBER"
                     )
+            if self.METRICS_ENABLED and self.METRICS_REQUIRE_AUTH:
+                mtok = (self.METRICS_BEARER_TOKEN or "").strip()
+                if len(mtok) < 16:
+                    raise ValueError(
+                        "Production METRICS_REQUIRE_AUTH requires METRICS_BEARER_TOKEN "
+                        "of at least 16 characters"
+                    )
+            # SEC-M4 — dedicated Fernet keys; never fall back to JWT+static-salt in production.
+            validate_fernet_key("TOTP_ENCRYPTION_KEY", self.TOTP_ENCRYPTION_KEY)
+            validate_fernet_key("BACKUP_ENCRYPTION_KEY", self.BACKUP_ENCRYPTION_KEY)
         return self
 
 

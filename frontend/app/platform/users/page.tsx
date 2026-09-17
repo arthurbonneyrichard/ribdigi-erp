@@ -3,11 +3,9 @@
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import PlatformShell from '../../../components/PlatformShell';
-import { api } from '../../../lib/api';
+import { api, apiFetch } from '../../../lib/api';
 import { formatDateTime } from '../../../lib/format';
 import { fetchHouseFormats, HOUSE_FORMAT_DEFAULTS } from '../../../lib/houseFormats';
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 type PlatformUser = {
   id: string;
@@ -93,14 +91,7 @@ function PlatformUsersInner() {
   async function downloadPlatformCsv(path: string, filename: string) {
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}${path}`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-        },
-      });
+      const res = await apiFetch(`${path}`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.detail || body.message || `${filename} export failed`);

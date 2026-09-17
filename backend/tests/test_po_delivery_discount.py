@@ -2,14 +2,22 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 
 from app.purchasing import _calc_po_line_amounts, render_po_text
 from tests.conftest import auth_headers
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 def test_po_line_amounts_tax_on_net_after_discount():
@@ -56,7 +64,7 @@ def test_render_po_text_includes_delivery_and_discount():
 @pytest.mark.asyncio
 async def test_create_print_amend_po_delivery_and_discount(client):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     product_id = str(seed["p1"].id)
 
     supplier = await ac.post(

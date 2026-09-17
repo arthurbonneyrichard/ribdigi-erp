@@ -69,15 +69,26 @@ async def export_cheques_csv(
     direction: str | None = None,
     status: str | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
+    from app import dashboard_scope as dashboard_scope_svc
+
     rows = await cheques_svc.list_cheques(
-        db, tenant_id, direction=direction, status=status, company_id=company_id
+        db,
+        tenant_id,
+        direction=direction,
+        status=status,
+        company_id=company_id,
+        store_ids=store_ids,
+        warehouse_ids=warehouse_ids,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=CHEQUE_EXPORT_COLUMNS)
     writer.writeheader()
     for row in rows:
         data = cheques_svc.serialize_cheque(row)
+        data = dashboard_scope_svc.apply_cheque_manager_redacts(data, store_ids)
         writer.writerow({k: _cell(data.get(k)) for k in CHEQUE_EXPORT_COLUMNS})
     return buf.getvalue()
 
@@ -88,11 +99,19 @@ async def list_pos_sessions(
     tenant_id: str,
     status: str | None = None,
     company_id: str | None = None,
+    store_id: str | None = None,
+    store_ids: list[str] | None = None,
     limit: int = 50,
 ) -> list[m.PosSession]:
     q = select(m.PosSession).where(m.PosSession.tenant_id == tenant_id)
     if company_id:
         q = q.where(m.PosSession.company_id == company_id)
+    if store_id:
+        q = q.where(m.PosSession.store_id == store_id)
+    elif store_ids is not None:
+        if not store_ids:
+            return []
+        q = q.where(m.PosSession.store_id.in_(store_ids))
     status_n = (status or "").strip().lower() or None
     if status_n:
         q = q.where(m.PosSession.status == status_n)
@@ -106,9 +125,17 @@ async def export_pos_sessions_csv(
     tenant_id: str,
     status: str | None = None,
     company_id: str | None = None,
+    store_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> str:
     rows = await list_pos_sessions(
-        db, tenant_id=tenant_id, status=status, company_id=company_id, limit=200
+        db,
+        tenant_id=tenant_id,
+        status=status,
+        company_id=company_id,
+        store_id=store_id,
+        store_ids=store_ids,
+        limit=200,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=POS_SESSION_EXPORT_COLUMNS)
@@ -125,11 +152,16 @@ async def list_stock_counts(
     tenant_id: str,
     status: str | None = None,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
     limit: int = 50,
 ) -> list[m.StockCount]:
     q = select(m.StockCount).where(m.StockCount.tenant_id == tenant_id)
     if company_id:
         q = q.where(m.StockCount.company_id == company_id)
+    if warehouse_ids is not None:
+        if not warehouse_ids:
+            return []
+        q = q.where(m.StockCount.warehouse_id.in_(warehouse_ids))
     status_n = (status or "").strip().lower() or None
     if status_n:
         q = q.where(m.StockCount.status == status_n)
@@ -143,9 +175,15 @@ async def export_stock_counts_csv(
     tenant_id: str,
     status: str | None = None,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> str:
     rows = await list_stock_counts(
-        db, tenant_id=tenant_id, status=status, company_id=company_id, limit=200
+        db,
+        tenant_id=tenant_id,
+        status=status,
+        company_id=company_id,
+        warehouse_ids=warehouse_ids,
+        limit=200,
     )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=STOCK_COUNT_EXPORT_COLUMNS)

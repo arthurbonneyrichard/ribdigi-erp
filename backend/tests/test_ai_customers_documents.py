@@ -15,6 +15,20 @@ async def _mgr(ac):
     return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
 
 
+async def _bind_mgr_store(db_session, seed, *, code: str = "AI-CUST"):
+    store = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        name=f"{code} Store",
+        code=code,
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    return store
+
+
 @pytest.mark.asyncio
 async def test_customer_churn_best_and_assist(db_session, seeded):
     tenant_id = seeded["t1"].id
@@ -78,11 +92,14 @@ async def test_customer_churn_best_and_assist(db_session, seeded):
 @pytest.mark.asyncio
 async def test_customer_assist_api_tenant_scoped(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
+    store = await _bind_mgr_store(db_session, seed, code="AI-CA")
     now = datetime.utcnow()
     db_session.add(
         m.SalesInvoice(
             tenant_id=seed["t1"].id,
+            company_id=seed["c1"].id,
+            store_id=store.id,
             invoice_number="INV-CA-1",
             customer_id=seed["party1"].id,
             status="posted",
@@ -96,7 +113,9 @@ async def test_customer_assist_api_tenant_scoped(client, db_session):
 
     r = await ac.get("/api/v1/ai/customers/insights", headers=headers)
     assert r.status_code == 200, r.text
-    names = {c["name"] for c in r.json()["data"]["best_customers"]}
+    body = r.json()["data"]
+    assert body.get("scope") == "store_manager"
+    names = {c["name"] for c in body["best_customers"]}
     assert "Beta" not in " ".join(names)
 
     assist = await ac.post(
@@ -111,7 +130,7 @@ async def test_customer_assist_api_tenant_scoped(client, db_session):
 @pytest.mark.asyncio
 async def test_document_analyze_receipt_text_pdf(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
 
     from io import BytesIO
     from pypdf import PdfWriter

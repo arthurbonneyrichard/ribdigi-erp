@@ -61,7 +61,9 @@ async def export_expenses_csv(
     claims: dict,
     status: str | None = None,
     store_id: str | None = None,
+    store_ids: list[str] | None = None,
     department_id: str | None = None,
+    omit_department_id: bool = False,
 ) -> str:
     """Stage 120 X1 — export tenant expenses (record-scope aware)."""
     stmt = (
@@ -71,6 +73,13 @@ async def export_expenses_csv(
     )
     if store_id:
         stmt = stmt.where(m.Expense.store_id == store_id)
+    elif store_ids is not None:
+        if not store_ids:
+            buf = io.StringIO()
+            writer = csv.DictWriter(buf, fieldnames=EXPENSE_EXPORT_COLUMNS)
+            writer.writeheader()
+            return buf.getvalue()
+        stmt = stmt.where(m.Expense.store_id.in_(store_ids))
     if department_id:
         stmt = stmt.where(m.Expense.department_id == department_id)
     if status:
@@ -100,7 +109,11 @@ async def export_expenses_csv(
                 "reference": _cell(row.reference),
                 "status": _cell(row.status),
                 "store_id": _cell(row.store_id),
-                "department_id": _cell(getattr(row, "department_id", None)),
+                "department_id": (
+                    ""
+                    if omit_department_id
+                    else _cell(getattr(row, "department_id", None))
+                ),
                 "created_by": _cell(row.created_by),
             }
         )
@@ -114,10 +127,16 @@ async def export_expense_budgets_csv(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> str:
     """Stage 139 B1 — category budget variance CSV for a period."""
     data = await expenses_svc.category_budget_variance(
-        db, tenant_id, from_date=from_date, to_date=to_date, company_id=company_id
+        db,
+        tenant_id,
+        from_date=from_date,
+        to_date=to_date,
+        company_id=company_id,
+        store_ids=store_ids,
     )
     period_from = data.get("from_date")
     period_to = data.get("to_date")

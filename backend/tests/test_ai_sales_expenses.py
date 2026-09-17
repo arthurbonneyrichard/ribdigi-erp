@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -14,8 +15,15 @@ from app import models as m
 from tests.conftest import auth_headers
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 @pytest.mark.asyncio
@@ -35,15 +43,20 @@ async def test_sales_analysis_rfm_affinity_peaks(db_session, seeded):
 
     now = datetime.utcnow()
     for i, hour in enumerate((10, 10, 15)):
+        # Anchor on yesterday so peak hours cannot fall after "now" (UTC morning flake).
+        when = (now - timedelta(days=i + 1)).replace(
+            hour=hour, minute=0, second=0, microsecond=0
+        )
         inv = m.SalesInvoice(
             tenant_id=tenant_id,
+            company_id=seeded["c1"].id,
             invoice_number=f"INV-SA-{i}",
             customer_id=seeded["party1"].id,
             status="posted",
             subtotal=30,
             total_amount=30,
-            created_at=now.replace(hour=hour, minute=0, second=0) - timedelta(days=i),
-            posted_at=now.replace(hour=hour, minute=0, second=0) - timedelta(days=i),
+            created_at=when,
+            posted_at=when,
         )
         db_session.add(inv)
         await db_session.flush()
@@ -51,6 +64,7 @@ async def test_sales_analysis_rfm_affinity_peaks(db_session, seeded):
             [
                 m.SalesInvoiceItem(
                     tenant_id=tenant_id,
+                    company_id=seeded["c1"].id,
                     sales_invoice_id=inv.id,
                     product_id=p1.id,
                     quantity=2,
@@ -59,6 +73,7 @@ async def test_sales_analysis_rfm_affinity_peaks(db_session, seeded):
                 ),
                 m.SalesInvoiceItem(
                     tenant_id=tenant_id,
+                    company_id=seeded["c1"].id,
                     sales_invoice_id=inv.id,
                     product_id=p_extra.id,
                     quantity=4,
@@ -100,6 +115,7 @@ async def test_expense_analysis_budget_and_anomaly(db_session, seeded):
         db_session.add(
             m.Expense(
                 tenant_id=tenant_id,
+                company_id=seeded["c1"].id,
                 category_id=util.id,
                 category=util.name,
                 description=f"Electric bill {amt}",
@@ -128,10 +144,11 @@ async def test_expense_analysis_budget_and_anomaly(db_session, seeded):
 @pytest.mark.asyncio
 async def test_sales_and_expense_analysis_api_tenant_scoped(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     now = datetime.utcnow()
     inv = m.SalesInvoice(
         tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
         invoice_number="INV-API-SA-1",
         customer_id=seed["party1"].id,
         status="posted",

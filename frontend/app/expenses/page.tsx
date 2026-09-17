@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
-import { api, authHeaders } from '../../lib/api';
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+import { api, apiFetch } from '../../lib/api';
 
 type Category = {
   id: string;
@@ -60,7 +58,7 @@ export default function Page() {
   const [threshold, setThreshold] = useState(100);
   const [l2Threshold, setL2Threshold] = useState(1000);
   const [levels, setLevels] = useState<
-    { min_amount: number; roles: string[]; label: string; step?: number }[]
+    { min_amount: number; min_percent?: number | null; roles: string[]; label: string; step?: number }[]
   >([]);
   const [categoryId, setCategoryId] = useState('');
   const [amount, setAmount] = useState('50');
@@ -164,8 +162,8 @@ export default function Page() {
     const [exp, cats, settings, liquid, rec, bud, accounts, storeRows, deptRows] =
       await Promise.all([
         api(`/expenses${expQs}`),
-        api(`/expenses/categories${catQs}`),
-        api('/expenses/settings'),
+        api(`/expenses/categories${catQs}`).catch(() => ({ data: [] })),
+        api('/expenses/settings').catch(() => ({ data: { levels: [] } })),
         api('/accounting/liquid-accounts').catch(() => ({ data: [] })),
         api(`/expenses/recurring${recQs}`).catch(() => ({ data: [] })),
         api('/expenses/budgets').catch(() => ({ data: null })),
@@ -318,13 +316,10 @@ export default function Page() {
   async function uploadAttachment(id: string, file: File) {
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
       const form = new FormData();
       form.append('file', file);
-      const res = await fetch(`${apiBase}/expenses/${id}/attachment`, {
+      const res = await apiFetch(`/expenses/${id}/attachment`, {
         method: 'POST',
-        headers: authHeaders(),
         body: form,
       });
       const body = await res.json().catch(() => ({}));
@@ -339,11 +334,7 @@ export default function Page() {
   async function downloadAttachment(id: string) {
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/expenses/${id}/attachment`, {
-        headers: authHeaders(),
-      });
+      const res = await apiFetch(`/expenses/${id}/attachment`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.detail || body.message || 'Download failed');
@@ -427,11 +418,18 @@ export default function Page() {
       const r = await api('/expenses/settings', {
         method: 'PATCH',
         body: JSON.stringify({
-          levels: levels.map((l) => ({
-            min_amount: Number(l.min_amount),
-            roles: l.roles,
-            label: l.label || undefined,
-          })),
+          levels: levels.map((l) => {
+            const pct =
+              l.min_percent === null || l.min_percent === undefined
+                ? null
+                : Number(l.min_percent);
+            return {
+              min_amount: Number(l.min_amount),
+              min_percent: pct != null && !Number.isNaN(pct) && pct > 0 ? pct : null,
+              roles: l.roles,
+              label: l.label || undefined,
+            };
+          }),
         }),
       });
       setThreshold(r.data?.expense_approval_threshold ?? threshold);
@@ -455,6 +453,7 @@ export default function Page() {
         ...prev,
         {
           min_amount: min,
+          min_percent: null,
           roles: ['company_admin', 'super_admin'],
           label: `Level ${prev.length + 1}`,
         },
@@ -620,16 +619,12 @@ export default function Page() {
             setError('');
             setMessage('');
             try {
-              const token = localStorage.getItem('token');
-              const tenant = localStorage.getItem('tenant');
               const qs = new URLSearchParams();
               if (filterStatus) qs.set('status', filterStatus);
               if (filterStoreId) qs.set('store_id', filterStoreId);
               if (filterDepartmentId) qs.set('department_id', filterDepartmentId);
               const q = qs.toString();
-              const res = await fetch(`${apiBase}/expenses/export${q ? `?${q}` : ''}`, {
-                headers: authHeaders(),
-              });
+              const res = await apiFetch(`/expenses/export${q ? `?${q}` : ''}`);
               if (!res.ok) throw new Error('Expenses export failed');
               const blob = await res.blob();
               const url = URL.createObjectURL(blob);
@@ -698,17 +693,13 @@ export default function Page() {
               setError('');
               setMessage('');
               try {
-                const token = localStorage.getItem('token');
-                const tenant = localStorage.getItem('tenant');
                 const qs =
                   expenseCategoryActiveFilter === 'true'
                     ? '?is_active=true'
                     : expenseCategoryActiveFilter === 'false'
                       ? '?is_active=false'
                       : '';
-                const res = await fetch(`${apiBase}/expenses/categories/export${qs}`, {
-                  headers: authHeaders(),
-                });
+                const res = await apiFetch(`/expenses/categories/export${qs}`);
                 if (!res.ok) throw new Error('Expense categories export failed');
                 const blob = await res.blob();
                 const url = URL.createObjectURL(blob);
@@ -732,11 +723,7 @@ export default function Page() {
               setError('');
               setMessage('');
               try {
-                const token = localStorage.getItem('token');
-                const tenant = localStorage.getItem('tenant');
-                const res = await fetch(`${apiBase}/expenses/budgets/export`, {
-                  headers: authHeaders(),
-                });
+                const res = await apiFetch(`/expenses/budgets/export`);
                 if (!res.ok) throw new Error('Expense budgets export failed');
                 const blob = await res.blob();
                 const url = URL.createObjectURL(blob);
@@ -900,7 +887,6 @@ export default function Page() {
           <button
             type="button"
             onClick={async () => {
-              const token = localStorage.getItem('access_token') || '';
               const qs =
                 recurringActiveFilter === 'true'
                   ? '?is_active=true'
@@ -909,9 +895,7 @@ export default function Page() {
                     : recurringActiveFilter === 'all'
                       ? '?active_only=false'
                       : '';
-              const res = await fetch(`${apiBase}/expenses/recurring/export${qs}`, {
-                headers: { Authorization: `Bearer ${token}` },
-              });
+              const res = await apiFetch(`/expenses/recurring/export${qs}`);
               if (!res.ok) {
                 setError(await res.text());
                 return;
@@ -1090,8 +1074,9 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }} id="approval-matrix">
         <h3>Approval matrix</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
-          Amount must exceed a level&apos;s min to require that step. Roles are comma-separated.
-          Export via <code>GET /expenses/settings/export</code> (Stage 138 E1).
+          A level triggers when amount exceeds Min amount <strong>or</strong> (when the category has
+          a budget) when amount÷budget% exceeds optional Min %. Roles are comma-separated. Export via{' '}
+          <code>GET /expenses/settings/export</code> (Stage 138 E1).
         </p>
         {levels.map((lvl, idx) => (
           <div
@@ -1104,6 +1089,18 @@ export default function Page() {
               onChange={(e) => updateLevel(idx, { min_amount: Number(e.target.value) || 0 })}
               placeholder="Min amount"
               style={{ width: 100 }}
+            />
+            <input
+              value={lvl.min_percent ?? ''}
+              onChange={(e) => {
+                const v = e.target.value.trim();
+                updateLevel(idx, {
+                  min_percent: v === '' ? null : Number(v) || 0,
+                });
+              }}
+              placeholder="Min % (opt)"
+              style={{ width: 90 }}
+              title="Optional percentage of category budget"
             />
             <input
               value={lvl.label || ''}
@@ -1143,11 +1140,7 @@ export default function Page() {
               setError('');
               setMessage('');
               try {
-                const token = localStorage.getItem('token');
-                const tenant = localStorage.getItem('tenant');
-                const res = await fetch(`${apiBase}/expenses/settings/export`, {
-                  headers: authHeaders(),
-                });
+                const res = await apiFetch(`/expenses/settings/export`);
                 if (!res.ok) throw new Error('Expense settings export failed');
                 const blob = await res.blob();
                 const url = URL.createObjectURL(blob);

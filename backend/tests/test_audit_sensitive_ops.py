@@ -109,7 +109,10 @@ async def test_bank_statement_create_and_import_audited(client, db_session):
 @pytest.mark.asyncio
 async def test_stock_adjust_uses_hash_chained_audit(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     r = await ac.post(
         f"/api/v1/inventory/adjust/{seed['p1'].id}",
         headers=headers,

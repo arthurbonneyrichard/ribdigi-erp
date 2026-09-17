@@ -83,6 +83,7 @@ async def list_connections(
     active_only: bool = False,
     is_active: bool | None = None,
     company_id: str | None = None,
+    account_ids: list[str] | None = None,
 ) -> list[m.BankAccountConnection]:
     """Stage 126 C1 — is_active / active_only for honest inactive-only bank connection lists."""
     stmt = select(m.BankAccountConnection).where(
@@ -90,6 +91,11 @@ async def list_connections(
     )
     if company_id:
         stmt = stmt.where(m.BankAccountConnection.company_id == company_id)
+    if account_ids is not None:
+        if account_ids:
+            stmt = stmt.where(m.BankAccountConnection.account_id.in_(account_ids))
+        else:
+            stmt = stmt.where(m.BankAccountConnection.id.is_(None))
     if is_active is not None:
         stmt = stmt.where(m.BankAccountConnection.is_active.is_(bool(is_active)))
     elif active_only:

@@ -22,6 +22,8 @@ export default function PlatformTenantDetailPage() {
   const [baseMaxStores, setBaseMaxStores] = useState('');
   const [companyOverride, setCompanyOverride] = useState('');
   const [baseMaxCompanies, setBaseMaxCompanies] = useState('');
+  const [userOverride, setUserOverride] = useState('');
+  const [baseMaxUsers, setBaseMaxUsers] = useState('');
 
   async function load() {
     setError('');
@@ -52,6 +54,16 @@ export default function PlatformTenantDetailPage() {
       setBaseMaxCompanies(
         r.data?.max_companies != null && r.data?.max_companies !== undefined
           ? String(r.data.max_companies)
+          : ''
+      );
+      setUserOverride(
+        r.data?.max_users_override != null && r.data?.max_users_override !== undefined
+          ? String(r.data.max_users_override)
+          : ''
+      );
+      setBaseMaxUsers(
+        r.data?.max_users != null && r.data?.max_users !== undefined
+          ? String(r.data.max_users)
           : ''
       );
     } catch (err: any) {
@@ -143,6 +155,40 @@ export default function PlatformTenantDetailPage() {
       await load();
     } catch (err: any) {
       setError(err.message || 'Failed to update store entitlement');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveUserEntitlement(opts?: {
+    clearOverride?: boolean;
+    unlimited?: boolean;
+  }) {
+    setBusy(true);
+    setError('');
+    setMsg('');
+    try {
+      const body: Record<string, unknown> = {};
+      if (opts?.clearOverride) {
+        body.clear_override = true;
+      } else if (opts?.unlimited) {
+        body.max_users_override = -1;
+      } else if (userOverride.trim() !== '') {
+        body.max_users_override = Number(userOverride);
+      }
+      if (baseMaxUsers.trim() !== '') {
+        body.max_users = Number(baseMaxUsers);
+      }
+      const r = await api(`/platform/tenants/${id}/user-entitlement`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      });
+      setMsg(
+        `User entitlement updated · effective=${r.data?.user_entitlement?.effective ?? r.data?.max_users_effective ?? '—'}`
+      );
+      await load();
+    } catch (err: any) {
+      setError(err.message || 'Failed to update user entitlement');
     } finally {
       setBusy(false);
     }
@@ -355,128 +401,204 @@ export default function PlatformTenantDetailPage() {
             )}
           </div>
 
-          <div className="card" style={{ marginTop: 16, maxWidth: 520 }}>
-            <div className="muted">Company entitlement (subscription multi-company)</div>
-            <p style={{ marginTop: 8 }}>
-              Active companies: {row.company_count ?? '—'} · Effective max:{' '}
-              {row.max_companies_effective ?? row.max_companies ?? '—'}
-              {row.max_companies_override != null
-                ? ` (override ${row.max_companies_override})`
-                : ' (plan/base)'}
-            </p>
-            <label style={{ display: 'block', marginTop: 8 }}>
-              Base max_companies (−1 = unlimited)
-              <input
-                value={baseMaxCompanies}
-                onChange={(e) => setBaseMaxCompanies(e.target.value)}
-                placeholder="e.g. 3"
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  marginTop: 4,
-                  padding: 10,
-                  borderRadius: 8,
-                  border: '1px solid #cbd5e1',
-                }}
-              />
-            </label>
-            <label style={{ display: 'block', marginTop: 8 }}>
-              Tenant override (optional; wins over plan/base)
-              <input
-                value={companyOverride}
-                onChange={(e) => setCompanyOverride(e.target.value)}
-                placeholder="blank = no override"
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  marginTop: 4,
-                  padding: 10,
-                  borderRadius: 8,
-                  border: '1px solid #cbd5e1',
-                }}
-              />
-            </label>
-            <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-              <button type="button" disabled={busy} onClick={() => saveCompanyEntitlement()}>
-                Save company entitlement
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => saveCompanyEntitlement({ unlimited: true })}
-              >
-                Set unlimited (−1)
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => saveCompanyEntitlement({ clearOverride: true })}
-              >
-                Clear override
-              </button>
+          <div
+            style={{
+              marginTop: 16,
+              display: 'flex',
+              gap: 16,
+              flexWrap: 'wrap',
+              alignItems: 'flex-start',
+            }}
+          >
+            <div className="card" style={{ flex: '1 1 320px', maxWidth: 520 }}>
+              <div className="muted">Company entitlement (subscription multi-company)</div>
+              <p style={{ marginTop: 8 }}>
+                Active companies: {row.company_count ?? '—'} · Effective max:{' '}
+                {row.max_companies_effective ?? row.max_companies ?? '—'}
+                {row.max_companies_override != null
+                  ? ` (override ${row.max_companies_override})`
+                  : ' (plan/base)'}
+              </p>
+              <label style={{ display: 'block', marginTop: 8 }}>
+                Base max_companies (−1 = unlimited)
+                <input
+                  value={baseMaxCompanies}
+                  onChange={(e) => setBaseMaxCompanies(e.target.value)}
+                  placeholder="e.g. 3"
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    marginTop: 4,
+                    padding: 10,
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                  }}
+                />
+              </label>
+              <label style={{ display: 'block', marginTop: 8 }}>
+                Tenant override (optional; wins over plan/base)
+                <input
+                  value={companyOverride}
+                  onChange={(e) => setCompanyOverride(e.target.value)}
+                  placeholder="blank = no override"
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    marginTop: 4,
+                    padding: 10,
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                  }}
+                />
+              </label>
+              <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                <button type="button" disabled={busy} onClick={() => saveCompanyEntitlement()}>
+                  Save company entitlement
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => saveCompanyEntitlement({ unlimited: true })}
+                >
+                  Set unlimited (−1)
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => saveCompanyEntitlement({ clearOverride: true })}
+                >
+                  Clear override
+                </button>
+              </div>
+              <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
+                Downgrades never delete companies. Override is for special customer agreements — not
+                paid billing Completes.
+              </p>
             </div>
-            <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
-              Downgrades never delete companies. Override is for special customer agreements — not paid
-              billing Completes.
-            </p>
-          </div>
 
-          <div className="card" style={{ marginTop: 16, maxWidth: 520 }}>
-            <div className="muted">Store entitlement (subscription multi-store)</div>
-            <p style={{ marginTop: 8 }}>
-              Active stores: {row.store_count ?? '—'} · Effective max:{' '}
-              {row.max_stores_effective ?? row.max_stores ?? '—'}
-              {row.max_stores_override != null
-                ? ` (override ${row.max_stores_override})`
-                : ' (plan/base)'}
-            </p>
-            <label style={{ display: 'block', marginTop: 8 }}>
-              Base max_stores (−1 = unlimited)
-              <input
-                value={baseMaxStores}
-                onChange={(e) => setBaseMaxStores(e.target.value)}
-                placeholder="e.g. 5"
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  marginTop: 4,
-                  padding: 10,
-                  borderRadius: 8,
-                  border: '1px solid #cbd5e1',
-                }}
-              />
-            </label>
-            <label style={{ display: 'block', marginTop: 8 }}>
-              Tenant override (optional; wins over plan/base)
-              <input
-                value={storeOverride}
-                onChange={(e) => setStoreOverride(e.target.value)}
-                placeholder="blank = no override"
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  marginTop: 4,
-                  padding: 10,
-                  borderRadius: 8,
-                  border: '1px solid #cbd5e1',
-                }}
-              />
-            </label>
-            <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-              <button type="button" disabled={busy} onClick={() => saveStoreEntitlement()}>
-                Save store entitlement
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => saveStoreEntitlement({ clearOverride: true })}
-              >
-                Clear override
-              </button>
+            <div className="card" style={{ flex: '1 1 320px', maxWidth: 520 }}>
+              <div className="muted">User entitlement (subscription seat cap)</div>
+              <p style={{ marginTop: 8 }}>
+                Active users: {row.user_count ?? '—'} · Effective max:{' '}
+                {row.max_users_effective ?? row.max_users ?? '—'}
+                {row.max_users_override != null
+                  ? ` (override ${row.max_users_override})`
+                  : ' (plan/base)'}
+              </p>
+              <label style={{ display: 'block', marginTop: 8 }}>
+                Base max_users (−1 = unlimited)
+                <input
+                  value={baseMaxUsers}
+                  onChange={(e) => setBaseMaxUsers(e.target.value)}
+                  placeholder="e.g. 15"
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    marginTop: 4,
+                    padding: 10,
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                  }}
+                />
+              </label>
+              <label style={{ display: 'block', marginTop: 8 }}>
+                Tenant override (optional; wins over plan/base)
+                <input
+                  value={userOverride}
+                  onChange={(e) => setUserOverride(e.target.value)}
+                  placeholder="blank = no override"
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    marginTop: 4,
+                    padding: 10,
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                  }}
+                />
+              </label>
+              <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                <button type="button" disabled={busy} onClick={() => saveUserEntitlement()}>
+                  Save user entitlement
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => saveUserEntitlement({ unlimited: true })}
+                >
+                  Set unlimited (−1)
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => saveUserEntitlement({ clearOverride: true })}
+                >
+                  Clear override
+                </button>
+              </div>
+              <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
+                Downgrades never delete users. Override is for special customer agreements — not paid
+                billing Completes.
+              </p>
             </div>
-            <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
-              Downgrades never delete stores. Override is for special customer agreements.
-            </p>
+
+            <div className="card" style={{ flex: '1 1 320px', maxWidth: 520 }}>
+              <div className="muted">Store entitlement (subscription multi-store)</div>
+              <p style={{ marginTop: 8 }}>
+                Active stores: {row.store_count ?? '—'} · Effective max:{' '}
+                {row.max_stores_effective ?? row.max_stores ?? '—'}
+                {row.max_stores_override != null
+                  ? ` (override ${row.max_stores_override})`
+                  : ' (plan/base)'}
+              </p>
+              <label style={{ display: 'block', marginTop: 8 }}>
+                Base max_stores (−1 = unlimited)
+                <input
+                  value={baseMaxStores}
+                  onChange={(e) => setBaseMaxStores(e.target.value)}
+                  placeholder="e.g. 5"
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    marginTop: 4,
+                    padding: 10,
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                  }}
+                />
+              </label>
+              <label style={{ display: 'block', marginTop: 8 }}>
+                Tenant override (optional; wins over plan/base)
+                <input
+                  value={storeOverride}
+                  onChange={(e) => setStoreOverride(e.target.value)}
+                  placeholder="blank = no override"
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    marginTop: 4,
+                    padding: 10,
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                  }}
+                />
+              </label>
+              <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                <button type="button" disabled={busy} onClick={() => saveStoreEntitlement()}>
+                  Save store entitlement
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => saveStoreEntitlement({ clearOverride: true })}
+                >
+                  Clear override
+                </button>
+              </div>
+              <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
+                Downgrades never delete stores. Override is for special customer agreements.
+              </p>
+            </div>
           </div>
 
           <div className="card" style={{ marginTop: 16, maxWidth: 640 }}>

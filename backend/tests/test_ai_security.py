@@ -99,7 +99,7 @@ async def test_failed_login_burst_and_new_ip_alerts(db_session, seeded):
 @pytest.mark.asyncio
 async def test_security_alerts_api_tenant_scoped(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     now = datetime.utcnow()
 
     await audit_svc.record_event(

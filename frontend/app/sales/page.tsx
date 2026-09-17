@@ -2,10 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
-import { api, authHeaders } from '../../lib/api';
+import { api, apiFetch } from '../../lib/api';
 import { useTabQuery } from '../../lib/tabQuery';
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 type Tab = 'invoices' | 'quotations' | 'orders' | 'returns' | 'customers' | 'groups';
 const SALES_TABS: Tab[] = ['invoices', 'quotations', 'orders', 'returns', 'customers', 'groups'];
@@ -228,13 +226,15 @@ export default function Page() {
     // Stage 119 E1 — customers CSV export
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-      const res = await fetch(`${apiBase}/customers/export`, {
-        headers: authHeaders(),
-      });
-      if (!res.ok) throw new Error('Customer export failed');
+      const res = await apiFetch(`/customers/export`);
+      if (!res.ok) {
+        // Soft-fail store_manager STORE_SCOPE_DENIED (company party CRM dump).
+        if (res.status === 403) {
+          setMessage('Customers CSV export requires a company administrator.');
+          return;
+        }
+        throw new Error('Customer export failed');
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -252,15 +252,10 @@ export default function Page() {
     // Stage 132 I1 — sales invoice header CSV
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
       const qs = invoiceStatusFilter
         ? `?status=${encodeURIComponent(invoiceStatusFilter)}`
         : '';
-      const res = await fetch(`${apiBase}/sales/invoices/export${qs}`, {
-        headers: authHeaders(),
-      });
+      const res = await apiFetch(`/sales/invoices/export${qs}`);
       if (!res.ok) throw new Error('Invoice export failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -282,13 +277,8 @@ export default function Page() {
     // Stage 133 Q1 / O1 / R1 — sales pipeline header CSVs
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
       const qs = status ? `?status=${encodeURIComponent(status)}` : '';
-      const res = await fetch(`${apiBase}/sales/${kind}/export${qs}`, {
-        headers: authHeaders(),
-      });
+      const res = await apiFetch(`/sales/${kind}/export${qs}`);
       if (!res.ok) throw new Error(`${kind} export failed`);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -554,11 +544,7 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/customers/${id}/history/export`, {
-        headers: authHeaders(),
-      });
+      const res = await apiFetch(`/customers/${id}/history/export`);
       if (!res.ok) throw new Error('Customer history CSV export failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -717,11 +703,8 @@ export default function Page() {
         setMessage(`${label} print (${r.data?.template || 'a4'}) ready`);
         return;
       }
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}${path}`, {
-        headers: authHeaders(),
-      });
+
+      const res = await apiFetch(`${path}`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.detail || body.message || 'Print failed');
@@ -823,17 +806,13 @@ export default function Page() {
                 setError('');
                 setMessage('');
                 try {
-                  const token = localStorage.getItem('token');
-                  const tenant = localStorage.getItem('tenant');
                   const qs =
                     groupActiveFilter === 'true'
                       ? '?is_active=true'
                       : groupActiveFilter === 'false'
                         ? '?is_active=false'
                         : '';
-                  const res = await fetch(`${apiBase}/customers/groups/export${qs}`, {
-                    headers: authHeaders(),
-                  });
+                  const res = await apiFetch(`/customers/groups/export${qs}`);
                   if (!res.ok) throw new Error('Customer groups export failed');
                   const blob = await res.blob();
                   const url = URL.createObjectURL(blob);

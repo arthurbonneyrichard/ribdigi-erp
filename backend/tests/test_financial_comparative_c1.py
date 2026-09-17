@@ -22,9 +22,9 @@ async def _super(ac, seed):
     )
 
 
-async def _post_dated(db, *, tenant_id, user_id, when: datetime, **kwargs):
+async def _post_dated(db, *, tenant_id, user_id, when: datetime, company_id=None, **kwargs):
     entry = await accounting_svc.post_journal_entry(
-        db, tenant_id=tenant_id, user_id=user_id, **kwargs
+        db, tenant_id=tenant_id, user_id=user_id, company_id=company_id, **kwargs
     )
     entry.entry_date = when
     await db.flush()
@@ -37,7 +37,7 @@ async def test_financial_comparative_pnl_cashflow_balance_sheet(client, db_sessi
     headers = await _super(ac, seed)
     tenant_id = seed["t1"].id
     user_id = seed["admin1"].id
-    await accounting_svc.ensure_default_accounts(db_session, tenant_id)
+    await accounting_svc.ensure_default_accounts(db_session, tenant_id, company_id=seed["c1"].id)
 
     # Prior month (May): revenue 80
     await _post_dated(
@@ -51,6 +51,7 @@ async def test_financial_comparative_pnl_cashflow_balance_sheet(client, db_sessi
             {"account_code": "4000", "debit": 0, "credit": 80},
         ],
         source_type="sales_invoice",
+        company_id=seed["c1"].id,
     )
     # Current month (June): revenue 100
     await _post_dated(
@@ -64,6 +65,7 @@ async def test_financial_comparative_pnl_cashflow_balance_sheet(client, db_sessi
             {"account_code": "4000", "debit": 0, "credit": 100},
         ],
         source_type="sales_invoice",
+        company_id=seed["c1"].id,
     )
     await db_session.commit()
 

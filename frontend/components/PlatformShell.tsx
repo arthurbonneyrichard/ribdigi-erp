@@ -4,6 +4,11 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { api } from '../lib/api';
+import {
+  applyPrincipalFromMe,
+  clearLoginSession,
+  hasAuthSession,
+} from '../lib/authSession';
 import { canReadModule } from '../lib/rbac';
 
 const items: [string, string, string][] = [
@@ -60,6 +65,8 @@ export default function PlatformShell({ children }: { children: React.ReactNode 
       try {
         const meRes = await api('/me');
         if (!active) return;
+        // SEC-M5 Phase D — principal from authenticated /me (in-memory), not LS/cookie.
+        applyPrincipalFromMe(meRes.data);
         if (meRes.data?.principal !== 'platform') {
           router.replace(meRes.data?.redirect_path || '/dashboard');
           return;
@@ -69,7 +76,7 @@ export default function PlatformShell({ children }: { children: React.ReactNode 
         setReady(true);
       } catch {
         if (active) {
-          localStorage.removeItem('token');
+          clearLoginSession();
           router.replace('/');
         }
       }
@@ -99,8 +106,7 @@ export default function PlatformShell({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     if (typeof window === 'undefined' || !ready) return;
-    const token = localStorage.getItem('token');
-    if (!token) return;
+    if (!hasAuthSession()) return;
     const timeoutMs = Math.max(5, idleMinutes) * 60 * 1000;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let loggingOut = false;
@@ -113,8 +119,7 @@ export default function PlatformShell({ children }: { children: React.ReactNode 
       } catch {
         // clear local session anyway
       }
-      localStorage.removeItem('token');
-      localStorage.removeItem('refresh_token');
+      clearLoginSession();
       window.location.href = '/';
     }
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 
+import pyotp
 import pytest
 from PIL import Image
 
@@ -58,7 +59,10 @@ def test_labels_html_and_pdf_contain_content():
 @pytest.mark.asyncio
 async def test_product_label_endpoints(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
     # No barcode yet
     missing = await ac.get(f"/api/v1/products/{seed['p1'].id}/labels", headers=headers)

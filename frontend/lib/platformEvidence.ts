@@ -1,16 +1,9 @@
 /** Shared House evidence download helper (Stage 93 V1). */
 
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+import { apiFetch } from './api';
 
 export async function downloadPlatformEvidence(): Promise<string> {
-  const token = localStorage.getItem('token');
-  const tenant = localStorage.getItem('tenant');
-  const res = await fetch(`${apiBase}/platform/evidence`, {
-    headers: {
-      Authorization: token ? `Bearer ${token}` : '',
-      'X-Tenant-ID': tenant || '',
-    },
-  });
+  const res = await apiFetch('/platform/evidence');
   if (!res.ok) throw new Error('Evidence download failed');
   const body = await res.json();
   const blob = new Blob([JSON.stringify(body.data ?? body, null, 2)], {

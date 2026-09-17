@@ -28,19 +28,33 @@ async def _super(ac, seed):
 @pytest.mark.asyncio
 async def test_expense_and_manual_journal_store_filters_pnl_cashflow(client, db_session):
     ac, seed = client
-    mgr = await _mgr(ac)
+    mgr = await _mgr(ac, seed)
     super_h = await _super(ac, seed)
     tenant_id = seed["t1"].id
     await accounting_svc.ensure_default_accounts(db_session, tenant_id)
 
     store_a = await create_store(
-        db_session, tenant_id=tenant_id, code="A1SA", name="A1 Store A"
+        db_session,
+        tenant_id=tenant_id,
+        company_id=seed["c1"].id,
+        code="A1SA",
+        name="A1 Store A",
+        manager_id=seed["mgr1"].id,
     )
     store_b = await create_store(
-        db_session, tenant_id=tenant_id, code="A1SB", name="A1 Store B"
+        db_session,
+        tenant_id=tenant_id,
+        company_id=seed["c1"].id,
+        code="A1SB",
+        name="A1 Store B",
+        manager_id=seed["mgr1"].id,
     )
     foreign = await create_store(
-        db_session, tenant_id=seed["t2"].id, code="A1FX", name="Foreign Store"
+        db_session,
+        tenant_id=seed["t2"].id,
+        company_id=seed["c2"].id,
+        code="A1FX",
+        name="Foreign Store",
     )
     await db_session.commit()
 

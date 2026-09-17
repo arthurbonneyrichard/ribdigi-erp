@@ -77,6 +77,8 @@ secretName: ribdigi-secrets
 # Do not commit real secrets.
 requiredSecretKeys:
   - JWT_SECRET_KEY
+  - TOTP_ENCRYPTION_KEY
+  - BACKUP_ENCRYPTION_KEY
   - DATABASE_URL
   - REDIS_URL
   - CELERY_BROKER_URL

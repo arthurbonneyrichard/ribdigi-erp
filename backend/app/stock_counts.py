@@ -453,12 +453,14 @@ def variance_report_pdf(report: dict) -> bytes:
 
     completed = report.get("completed_at")
     completed_s = completed.isoformat() if hasattr(completed, "isoformat") else str(completed or "")
+    total_value = report.get("total_variance_value")
+    total_value_s = "" if total_value is None else str(total_value)
     lines = [
         f"Count: {report['count_number']}  Warehouse: {report['warehouse_code']} — {report['warehouse_name']}",
         f"Completed: {completed_s}",
         (
             f"Lines: {report['line_count']}  With variance: {report['variance_line_count']}  "
-            f"Qty var: {report['total_variance_qty']}  Value var: {report['total_variance_value']}"
+            f"Qty var: {report['total_variance_qty']}  Value var: {total_value_s}"
         ),
         "",
         "SKU | Expected | Counted | Var Qty | Var Value",
@@ -466,9 +468,11 @@ def variance_report_pdf(report: dict) -> bytes:
     for row in report["rows"]:
         if abs(float(row["variance_qty"])) < 1e-9:
             continue
+        var_value = row.get("variance_value")
+        var_value_s = "" if var_value is None else str(var_value)
         lines.append(
             f"{row['sku']} | {row['expected_qty']} | {row['counted_qty']} | "
-            f"{row['variance_qty']} | {row['variance_value']}"
+            f"{row['variance_qty']} | {var_value_s}"
         )
     if report["variance_line_count"] == 0:
         lines.append("(no quantity variances)")

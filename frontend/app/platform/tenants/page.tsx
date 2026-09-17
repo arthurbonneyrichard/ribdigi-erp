@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import PlatformShell from '../../../components/PlatformShell';
-import { api } from '../../../lib/api';
+import { api, apiFetch } from '../../../lib/api';
 import { formatDateTime } from '../../../lib/format';
 import { fetchHouseFormats, HOUSE_FORMAT_DEFAULTS } from '../../../lib/houseFormats';
 
@@ -35,8 +35,6 @@ type PlanItem = {
 };
 
 type IndustryItem = { code: string; label?: string };
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 const emptyForm = {
   company_name: '',
@@ -209,8 +207,6 @@ function PlatformTenantsInner() {
     setError('');
     setMsg('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
       const params = new URLSearchParams();
       if (q.trim()) params.set('q', q.trim());
       if (status) params.set('status', status);
@@ -218,12 +214,7 @@ function PlatformTenantsInner() {
       if (industry) params.set('industry', industry);
       if (createdThisMonth) params.set('created_this_month', 'true');
       params.set('format', fmt);
-      const res = await fetch(`${apiBase}/platform/tenants/export?${params}`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-          'X-Tenant-ID': tenant || '',
-        },
-      });
+      const res = await apiFetch(`/platform/tenants/export?${params}`);
       if (!res.ok) throw new Error(`${fmt.toUpperCase()} export failed`);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -242,14 +233,7 @@ function PlatformTenantsInner() {
     setError('');
     setMsg('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/platform/tenants/at-risk/export?within_days=14`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-          'X-Tenant-ID': tenant || '',
-        },
-      });
+      const res = await apiFetch(`/platform/tenants/at-risk/export?within_days=14`);
       if (!res.ok) throw new Error('At-risk CSV export failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -268,14 +252,7 @@ function PlatformTenantsInner() {
     setError('');
     setMsg('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/platform/industries/export`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-          'X-Tenant-ID': tenant || '',
-        },
-      });
+      const res = await apiFetch(`/platform/industries/export`);
       if (!res.ok) throw new Error('Industries CSV export failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);

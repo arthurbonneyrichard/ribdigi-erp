@@ -42,12 +42,296 @@ store activation — never frontend-only.
    belong to one Company and therefore one Tenant.
 4. **Unlimited** uses integer `-1` (enterprise catalog `None` maps to `-1`).
 5. **Live billing / checkout Completes remain deferred** (ADR-002). Caps are real
-   gates on tenant columns, not fabricated MRR.
-6. **User↔store membership** remains deferred (ADR-005). Do not invent parallel
-   membership tables unless that ADR is intentionally opened.
+   gates on tenant columns, not fabricated MRR. Paid billing **scaffold** may land
+   as PARTIAL (`docs/ADR_002_PAID_BILLING_SCAFFOLD.md`) — never claim Complete
+   from tables/webhook/portal skeleton alone.
+6. **User↔store membership** is **ADR-005 Complete** (`user_store_memberships` +
+   assign/list/revoke + `/me/store-memberships` + `/stores#memberships` + POS bind +
+   cutover + automated flag-ON soak). Default operational scope uses ``stores.manager_id``;
+   when ``STORE_MEMBERSHIP_SCOPE_ENABLED`` is true (default **false** — ops cutover),
+   store_manager ``managed_store_ids`` is **manager_id ∪ active memberships**, and
+   cashiers fail-closed via ``store_visibility_ids``. Complete ≠ production default ON
+   (SEC-M2 parallel). Store-scoped RBAC Complete is **Complete** (flag default OFF; ALLOWs product-accepted). Scope helpers in `backend/app/dashboard_scope.py`
+   (`managed_store_ids`, `store_visibility_ids`, `cashier_membership_store_ids`,
+   `constrain_store_query`, `assert_transfer_touches_manager_scope`, `managed_warehouse_ids`,
+   `constrain_warehouse_query`, `apply_warehouse_scope_filter`,
+   `apply_purchase_invoice_warehouse_scope`, `STORE_SCOPE_DENIED`) — dashboard/BI,
+   POS sales, sales invoices, expenses, stores, transfers, warehouse inventory ops,
+   purchasing PR/PO/GRN/returns, purchase invoices (direct `warehouse_id` or linked
+   PO/GRN warehouse), sales orders, POS sessions (open requires managed
+   ``store_id``; null/unset fail-closed), low-stock / expiring-batch
+   list+export+reports, inventory balance/valuation/movements reports (**cost/value redacted** for store_manager) + **stock-count variance unit_cost/variance_value redacted** (JSON/CSV/PDF; qty remain), sales
+   daily/monthly/products/customers/salesperson/by-store reports, purchasing
+   summary/suppliers/pending/returns reports, transfer history report,
+   inventory stock-transfer write asserts (from-WH required; mutations must touch
+   managed stores) + **stock-transfer from_store_manager_id/to_store_manager_id
+   redacted** on stores/inventory transfer JSON + transfer history (store/WH ids
+   remain; managed-store list ``manager_id`` self-scope remains), expenses summary + category budget spent/pending
+   (null-store fail-closed; budget limits company-level — create/patch + categories list denied for store_manager; budget_amount/variance/utilization + category master id/code/account_id redacted on budgets JSON/CSV + embeds; spend/pending/name still scoped), expense +
+   recurring create / expense patch store asserts (foreign `store_id` denied;
+   **expense department_id assign/clear denied + department_id redacted** on
+   expense/recurring list/get/export/patch JSON/CSV; **expense category_id
+   redacted** on expense/recurring list/get/patch JSON + OCR/AI embeds —
+   free-text category name remains),
+   and AI inventory low-stock / demand-forecast / dead-stock / predictions
+   (+ exports; chat stockout intent) via managed WarehouseStock + store sales
+   (null-store fail-closed; empty managed WH → empty; no `product.stock_qty`
+   fallback; **dead-stock cost_price / carrying-cost redacted** on JSON + CSV), and AI insights + sales/expenses/purchases/cross-domain analysis
+   (+ exports) with the same store/WH fail-closed semantics, AI customer
+   insights/assist (+ export; chat customer count) from managed-store sales
+   only (customer universe = buyers on those invoices), AI chat
+   top-product / sales-month / expenses / classic low-stock helpers
+   (managed-store invoices/expenses; managed WarehouseStock vs reorder —
+   not `product.stock_qty`; empty managed store/WH → empty/zero), AI
+   security alerts (+ export) fail-closed to self-attributed audit events
+   plus details.store_id/warehouse_id in managed scope (no audit store
+   column), and AI documents/analyze (+ export) match only customers on
+   managed-store sales, suppliers on managed-WH PO/GRN/PI, and products
+   with managed WH stock or managed-store sales (expense categories remain
+   company-level), and credit AR/AP aging (+ export; dashboard credit slice;
+   BI credit; reports credit_aging export) from managed-store invoices /
+   managed-WH purchase bills (null-store/null-WH fail-closed; party ledger
+   balance zeroed under scope; **party ``credit_limit`` redacted** on aging
+   JSON), and credit statements / outstanding /
+   payment registers (+ exports; **customer statement party ``credit_limit``
+   redacted**) plus customer/supplier payment write
+   asserts (invoice/PO/PI required in managed scope; unallocated payments
+   denied), and accounting P&L / trial balance / cash-flow / balance-sheet
+   (+ path CSVs, `/reports/export`, dashboard MTD P&L) from managed-store
+   journals (null-store fail-closed; foreign `store_id` denied), and tax
+   report / filing (+ path CSV, `/reports/export` tax/tax_filing*) from
+   managed-store sales/POS + managed-WH purchase bills/POs (null-store /
+   null-WH fail-closed; empty managed → zero) + **tax rate create/patch/default
+   + list/detail GET + CSV export denied** + **``/tax/calculate`` company master
+   resolve denied** (``tax_rate_id`` / default-rate fallback; explicit
+   rate/components math remains) + **tax filing TIN redacted** (``tax_registration_number``
+   on ``/reports/tax/filing`` JSON + government header + ``tax_filing_*`` exports;
+   amounts/schedules remain), and audit list/export
+   fail-closed to self-authored events plus details with managed
+   `store_id`/`warehouse_id` (no audit store column; ADR-005 open), sales
+   returns via linked invoice store (+ export/asserts), and dashboard
+   expenses / stock-alerts / summary (+ main dashboard inventory KPIs /
+   pending expenses) store+WH scoped (not `product.stock_qty`), and
+   accounting journal entries (+ export; create/unpost/attachment asserts;
+   **list/get/create/unpost/upload/delete ``attachment_url`` storage key redacted**)
+   from managed-store journals (null-store fail-closed; foreign `store_id`
+   denied), and sales invoice create/post/send/cancel + CSV export (+ get/print
+   null-store fail-closed) store scoped + **credit_limit_override denied for
+   store_manager on invoice post / POS credit** (default role has credit:approve;
+   override remains company/finance admin) + **CREDIT_LIMIT_EXCEEDED 409 ``credit_limit`` / ``available`` / ``current_balance`` / ``projected_balance`` redacted** (invoice post / POS credit; ``exceeded`` / ``code`` / ``message`` remain; ``additional_amount`` / ``currency`` redacted separately; admin keeps projection) + **sales invoice credit-override audit redacted** (``credit_limit_overridden`` / ``credit_override_reason`` / ``by`` / ``at``; balance/status remain) + **sales invoice emailed_to redacted** (``delivery.to`` on send; ``emailed_at`` remains) + **quotation emailed_to redacted** (list/get/send/print/export + ``delivery.to``; ``emailed_at`` remains) + **purchase-order emailed_to redacted** (list/get/create/patch/amend/send/print/cancel/export + convert/low-stock + ``delivery.to``; ``sent_at`` remains), and recurring expense list/export/
+   patch/generate residual store scoped (null-store fail-closed), and COA
+   account ledger (+ export) from managed-store journals (null-store
+   fail-closed), and bank statements list/export/get/reconcile writes
+   (+ create/import) scoped to managed liquid accounts, and bank connections
+   list/create/patch/delete/sync scoped to managed liquid accounts
+   (+ CSV export denied; feed identity redacted on list/patch)
+   (**bank connection is_active lifecycle writes denied for store_manager**;
+   display name patches on managed connections remain; sync policy + credential
+   field patches also denied),
+   and expense approve/reject/delete + OCR suggest/apply +
+   attachment upload/delete writes store scoped, and customer/supplier
+   history (+ CSV) store+WH scoped (open quotations omit without store
+   column), and per-product batches list/export WH scoped (null-WH
+   fail-closed), and cheques list/get/export/lifecycle via payment
+   invoice store / WH scope (null/unallocated fail-closed), and POS
+   holds list/create/resume/discard via `PosSession.store_id` (null
+   session fail-closed) + drawer-settings CSV export store scoped, and
+   stores CSV export + patch/drawer/reorder write asserts (create denied
+   for store_manager), and notifications list/export/unread/mark +
+   scan-due (payment/recurring) via entity store/WH joins (quotations
+   omitted/skipped — no store_id), and products catalog list/get/export/
+   lookup/POS search stock_qty from managed WarehouseStock (not
+   product.stock_qty; cost_price redacted on list/get/export + per-product variants; category_id/brand_id/unit_id/tax_rate_id redacted on list/get + category_code/brand_code/unit_code blanked on export; **sales-by-product report/export category_id redacted** (revenue/qty/name/product_id/sku remain; categories list GET + product list/get assignment already denied/redacted) + **sales-by-product category_id query/export filter denied** (`STORE_SCOPE_DENIED`; unfiltered report remains; admin may filter); **inventory balance/valuation cost_price/value/total_value redacted** on JSON + `/reports/export`; **low-stock list/export cost_price redacted**; **AI dead-stock cost_price/estimated_carrying_cost/total_carrying_cost redacted** on JSON + CSV; **stock-count variance unit_cost/variance_value/total_variance_value redacted** on JSON/CSV/PDF), and sales quotations list/export/get/lifecycle
+   via own drafts + converted in-scope order/invoice (**quotation ``emailed_to`` redacted**; ``emailed_at`` remains), and purchasing orders
+   (**purchase-order ``emailed_to`` redacted**; ``sent_at`` remains), and
+   **branches/departments create/patch/list GET/export denied for store_manager** (company-level
+   org units) + **users list/get denied for store_manager** (company org roster dump after
+   users CSV export deny; self ``/me`` remains; PII/org/MFA redacts retained defense-in-depth), and **catalog
+   categories/brands/units create/patch/deactivate (+ brand logo writes) denied
+   for store_manager** (company-level catalog meta; list/export/convert + brand
+   logo binary GET denied; product reads + WH stock ops remain), and **customer groups create/patch/deactivate denied for
+   store_manager** (company-level sales master; list/export/get reads allowed),
+   and **product CSV import denied for store_manager** (company-level catalog
+   master bulk seed; import template denied) + **product catalog CSV export denied**
+   (``GET /products/export`` company roster dump; list/get + WH stock ops remain), and **product catalog
+   master writes denied for store_manager** (create/patch + variants + barcode
+   assign + image writes; list/get/lookup/POS search reads + WH stock
+   ops remain) + **product images gallery list GET + CSV export denied**
+   (``storage_key`` media dump) + **product primary image binary GET denied**
+   (``GET /products/{id}/image``; WH stock ops remain;
+   company/tenant logo binary GET stays open) + **print/receipt JSON
+   ``logo_data_url`` redacted** (invoice/quotation/credit-note print + POS
+   receipt; ``has_logo`` + server-side HTML/PDF embeds remain) + **print/receipt JSON
+   ``legal_name`` / ``trading_name`` redacted** (invoice/quotation/credit-note print
+   + POS receipt; ``company_name`` falls back to trading switcher when distinct;
+   ``has_logo`` + server-side HTML/PDF/text embeds remain) + **POS receipt JSON
+   ``company_address`` / ``company_phone`` redacted** (``company_name`` + ``has_logo``
+   + server-side text/PDF embeds remain)    + **print/receipt JSON ``company_email``
+   redacted** (invoice/quotation/credit-note print + POS receipt; ``company_name``
+   + ``has_logo`` + server-side text/PDF/HTML embeds remain) + **print/receipt JSON
+   ``tax_registration_number`` redacted** (invoice/quotation/credit-note print + POS
+   receipt; ``company_name`` + ``has_logo`` + server-side text/PDF/HTML embeds remain)
+   + **POS receipt JSON
+   ``document_header`` / ``document_footer`` redacted** (``company_name`` + ``has_logo``
+   + server-side text/PDF embeds remain) + **POS receipt JSON
+   ``receipt_print_template`` / ``default_paper`` redacted** (``company_name`` + ``has_logo``
+   + resolved ``paper`` + server-side text/PDF embeds remain) + **POS receipt JSON
+   ``cashier_name`` redacted** (``company_name`` + ``has_logo`` + totals remain;
+   server-side text/PDF embeds may retain name) + **POS receipt JSON
+   ``currency`` redacted** (``company_name`` + ``has_logo`` + totals remain;
+   server-side text/PDF embeds may retain code; ``/me`` switcher already omits
+   company ``currency``) + **``/me`` + ``/workspace`` switcher
+   ``business_type_label`` / ``industry`` omitted** (``GET /business-types`` already denied;
+   id/name/has_logo remain) + **product
+   list/get ``image_url``
+   storage key redacted** + **product list/get ``has_image`` forced false**
+   (admin list/get keep ``image_url`` + ``has_image``; WH stock ops / POS remain)
+   + **expense list/get/patch ``attachment_url`` storage key redacted**
+   (``has_attachment`` + store-scoped binary download remain; admin keeps key)
+   + **purchase-invoice list/get/patch/upload ``attachment_url`` storage key redacted**
+   (``has_attachment`` + WH-scoped binary download remain; admin keeps key)
+   + **journal-entry list/get/create/unpost/upload/delete ``attachment_url`` storage key redacted**
+   (``has_attachment`` + store-scoped binary download remain; admin keeps key;
+   opening-balance / liquid-transfer JE responses included)
+   + **product variants CSV export denied**
+   (company roster ``/products/variants/export`` + per-product path
+   ``/products/{id}/variants/export``; variants list/get remain for POS/sales), and **stock CSV import denied for store_manager** (company-level
+   bulk WH / product.stock_qty seed; template read + per-WH stock-in/out remain),
+   and **customer/supplier deactivate denied for store_manager** (company-level
+   party master lifecycle; PATCH status also denied; create/list/get + non-credit
+   patch remain), and
+   **party payment_terms_days create/patch denied for store_manager** (credit-
+   adjacent company terms; zero-default create allowed; name/notes patch remain)
+   + **party credit master redacted on list/get/patch JSON** (credit_limit /
+   payment_terms_days / early-pay null; balance/name remain; POS credit checks
+   server-side) + **AI customer insights/assist/export credit_limit redacted**
+   (nested customer rows + balance-answer text; monetary/churn remain) + **AI
+   customer insights/assist/export party ``code`` redacted** (list/get code
+   already redacted; name/monetary/churn remain),
+   and **AI report template create/delete denied for store_manager** (company-
+   level NL report templates; list/export reads allowed), and **AI NL report
+   generate/export denied for store_manager** (company-level ``/ai/reports/generate``;
+   store-scoped ``/reports/*`` + Layer-1 AI insights remain), and **company report
+   schedule CRUD/run denied for store_manager** (even when ``reports:write`` granted;
+   admin allowlist retained; store-scoped ``/reports/*`` reads remain), and
+   **customer/supplier
+   contact create/delete denied for store_manager** (company-level party contact
+   master; nested contacts on create denied) + **party contacts roster
+   redacted** on customer/supplier list/get/patch JSON (contacts → `[]`;
+   name/status remain), and
+   **company membership assign/revoke denied for store_manager** (even when
+   companies write is granted; list/read remain when permitted).
+   and **company profile/logo branding writes denied for store_manager** (even when
+   companies write is granted; company GET remains when permitted),
+   and **business-insights settings GET/PUT + formulas GET denied for store_manager** (overview/attention embeds + health weights redacted)
+   + **BI overview profit COGS / stock_value / expiry value_at_risk redacted** (revenue/expenses/qty remain; engine still uses cost server-side)
+   (company-level BI thresholds/formulas; GET settings/formulas + acknowledge/dismiss remain),
+   and **purchasing PR approval settings GET/PATCH/export denied for store_manager**
+   (company-level approval matrix; admin allowlist retained) + **expense/PR
+   ``awaiting_roles`` redacted** on pending expense + purchase-request JSON
+   (settings GET already denied; step/level counters remain) + **early-discount
+   quote matrix redacted** (``discount_pct`` / ``window_days`` / ``source`` null
+   after credit early-pay settings GET deny; eligible/discount_amount/cash_to_settle remain)
+   + **supplier payment-schedule ``early_pay`` pack + nested quote matrix redacted**
+   (``early_pay`` → ``{}``; nested ``discount_pct`` / ``window_days`` / ``source`` null;
+   totals/buckets + eligible/discount_amount/cash_to_settle remain),
+   and **document numbering / print-template / tenant profile PATCH /tenants/me
+   denied for store_manager** (company-level document settings; admin export reads
+   remain),
+   and **legacy POST /sales and /purchases denied for store_manager** (unscoped
+   Transaction writes; use store-scoped invoices / purchasing pipeline), and
+   **store manager_id assign/clear denied for store_manager** (company-level
+   manager assignment; other managed-store patches remain; managed-store list
+   ``manager_id`` self-scope remains) + **stock-transfer from/to store
+   manager_id redacted** on transfer JSON + history (peer org graph), and **store
+   branch_id assign/clear denied for store_manager** (company-level store↔branch
+   org link; other managed-store patches remain; branch_id redacted on
+   list/export/patch JSON/CSV), and **warehouse manager_id
+   assign/clear denied for store_manager** (company-level WH manager assignment;
+   other managed-WH patches remain; manager_id redacted on list/export/patch
+   JSON/CSV), and **warehouse store_id assign/clear
+   denied for store_manager** (company-level WH↔store org link; other managed-WH
+   patches remain), and **warehouse type/capacity structure writes denied for
+   store_manager** (company inventory-master attributes; name/address on managed
+   WH remain; warehouse_type/capacity redacted on list/export/patch JSON/CSV), and **warehouse is_active lifecycle writes denied for
+   store_manager** (activate/deactivate admin-only; name/address remain), and
+   **store is_active lifecycle writes denied for store_manager**
+   (activate/deactivate admin-only / entitlement-gated; name/phone/address/
+   operating_hours remain), and **opening stock writes denied for
+   store_manager** (company fiscal inventory init / BR-5.2; stock-in/out on
+   managed WH remain), and **inventory barcode labels WH-scoped for
+   store_manager** (products without managed WarehouseStock denied; in-scope
+   print remains), and **POS hold expire-stale denied for store_manager**
+   (company maintenance; list/create/resume auto-expire own holds remain), and
+   **liquid account is_active lifecycle writes denied for store_manager**
+   (activate/deactivate admin-only; name on managed liquid accounts remain), and
+   **bank connection is_active lifecycle writes denied
+   for store_manager** (activate/deactivate admin-only; display name patches on
+   managed connections remain), and **party customer_group assignment
+   denied for store_manager** (company sales-master party↔group link; name/notes
+   party patches remain) + **party customer_group redacted on list/get/patch**
+   (customer_group_id/customer_group/customer_group_name/group_discount_percent
+   null for store_manager; POS/sales apply discount server-side), and **bank connection create/delete denied for
+   store_manager** (company bank-feed credentials; list/patch/sync on
+   managed liquid accounts remain; **CSV export denied**; **feed_url/
+   external_account_id redacted** on list/patch), and **bank connection credential field
+   patches denied for store_manager** (access_token/feed_url/provider/external
+   id; display_name on managed connections remain), and **bank connection sync
+   policy patches denied for store_manager** (auto_sync/auto_match_after_sync/
+   sync_lookback_days; display_name + manual sync on managed connections
+   remain), and
+   **offline device bind store-scoped for store_manager** (managed store_id
+   required; foreign/unset fail-closed; device register/revoke remain admin), and
+   **offline sync push/pull/ack + conflicts/status store-scoped for store_manager**
+   (managed ``store_id`` required on `/sync/push` + `/sync/pull` + `/sync/ack`;
+   conflicts/status limited to managed-store-bound devices; null device fail-closed;
+   Offline Complete remains MISSING), and
+   **liquid account bank detail patches denied for store_manager**
+   (bank_name/account_number/bank_branch/clear_bank_details; name on managed
+   liquid accounts remain), and
+   **party category/party_type classification writes denied for store_manager**
+   (company party master classification; name remain) + **party category/party_type
+   redacted on list/get/patch JSON**, and **party master
+   code writes denied for store_manager** (customer/supplier ``code`` on
+   create/patch; name remain; create without code allowed) + **party master
+   code redacted on list/get/patch JSON**, and
+   **party master email writes denied for store_manager** (customer/supplier
+   ``email`` on create/patch; name remain; create without email allowed;
+   nested contact endpoints remain separately denied), and
+   **party master phone writes denied for store_manager** (customer/supplier
+   ``phone`` on create/patch; name remain; create without phone
+   allowed), and
+   **party master address/geo writes denied for store_manager** (customer/supplier
+   ``address``/``latitude``/``longitude`` on create/patch; name remain;
+   create without address allowed), and
+   **party master notes writes denied for store_manager** (customer/supplier
+   ``notes`` on create/patch; name remain; create without notes allowed), and
+   **party master CSV export denied for store_manager** (customers/suppliers
+   ``/export`` company CRM dump; list/get + scoped history CSV remain), and
+   **party status lifecycle patches denied for store_manager** (PATCH status
+   cannot bypass DELETE deactivate deny; name remain), and **POS session
+   open requires managed store_id for store_manager** (null/unset fail-closed;
+   foreign store denied; list/report remain store scoped), and **POS session
+   close/drawer/report/current null-store fail-closed for store_manager**
+   (``assert_pos_session_store_in_manager_scope``; foreign store still denied),
+   and
+   **company store-limit allocation denied for store_manager** (tenant
+   entitlement allocation; even when companies write granted; tenant-admin path
+   retained).
+   Not store-scoped RBAC Complete.
 7. Reuse `stores` RBAC module actions (`read`/`write`) and tenant-admin roles for
    allocation; do not invent dotted permission strings unless the RBAC system is
    extended project-wide.
+8. **Offline soft lockdown / remote wipe is PARTIAL:** revoke expires server
+   `offline_authorized_until` and blocks sync; critical alerts can email via
+   security notifications (`POST /offline/alerts/notify`). Remote IndexedDB wipe
+   request/ack + Web Push delivery are **PARTIAL** (VAPID + subscription required
+   for push; online poll remains **engineering-ready**; automated wipe-via-push evidence in
+   `test_offline_wipe_push_vapid_evidence.py` + poll-path evidence
+   `test_offline_wipe_poll_path_evidence.py` + operator checklist
+   `docs/offline_wipe_push_staging_checklist.md` / `docs/OFFLINE_WIPE_POLL_LOCAL_ALTERNATIVE.md`
+   — browser FCM proof still required for push Complete).
+   Offline Complete and 7-day VERIFIED remain **MISSING**.
 
 ### Key modules
 
@@ -62,10 +346,80 @@ store activation — never frontend-only.
 
 ### Do not claim Completes
 
-Offline Complete, paid billing Completes, ADR-005 membership Completes, go-live,
-and attestation Completes remain **MISSING** unless separately delivered with
-evidence. Store, company, and user caps are subscription gates on `Tenant.max_*`
-columns — not checkout or MRR Completes.
+Offline Complete, paid billing Completes, go-live, and attestation Completes
+remain **MISSING** unless separately delivered with evidence. **ADR-005 membership**
+and **store-scoped RBAC** are **Complete** (feature + automated/local soak + product-accepted
+ALLOWs; flag default OFF). Store, company, and user caps are subscription gates on
+`Tenant.max_*` columns — not checkout or MRR Completes. Commercial MVP is
+**market-ready with conditions** (`docs/MARKET_READY_LAUNCH.md`) — not go-live Complete.
+
+## PR #303 store_manager RBAC continuum (honesty source of truth)
+
+**Branch:** `cursor/transfer-genemonyuglaze-gate-427f` (PR #303).  
+**As of tip:** `6136f6d90b537284473358793e3f3d7d6043fba4` — store-scoped RBAC **Complete** (residual dump **NONE** + product-accepted intentional ALLOWs + living matrix + automated/local demo-seed soak; flag default OFF); continuum residual dump **NONE**; prior tip ancestry includes notification expense approval threshold redact + audit CLE invoice_total + expense threshold + store manager_id + attachment storage key + emailed_to + department_id + party ledger + CLE master + CLE currency + additional_amount + audit FX; concurrent approval stress pack **Complete**; living store-scope matrix landed — SEC-M1…M5/L2 FIXED; overall `✅ HARDENED`; offline remote-wipe + Web Push delivery **PARTIAL** (Completes still **MISSING**); ADR-005 membership **Complete** (flag default OFF); overall RBAC readiness **PARTIAL** (approval hardening + % limits + export/`view_cost` Complete + expires_at + elevation + concurrent approval stress Complete — not RBAC Complete); paid billing **PARTIAL** (ops-blocked); operator go-live pack `docs/GO_LIVE_READINESS_CHECKLIST.md` (go-live Completes still **MISSING**); commercial MVP **market-ready with conditions** (`docs/MARKET_READY_LAUNCH.md`); Offline Complete still **MISSING**. Cookie + membership-scope + entitlement-gate flags default remain OFF (ops enable cutover).
+
+**Security:** no open Critical/High/Medium. Do not claim go-live Completes. Cookie + membership-scope flags OFF in prod examples are intentional until ops cutover (`docs/sec_m2_staging_soak_checklist.md`, `docs/adr005_staging_soak_checklist.md`). Offline push prod template stays fail-closed until `docs/offline_wipe_push_staging_checklist.md` browser proof. Entitlement gate prod default stays OFF until mirror→access evidence (`docs/PAID_BILLING_PROVIDER_OPS.md`). Operator roll-up: `docs/GO_LIVE_READINESS_CHECKLIST.md`.  
+**Honesty:** never Offline Complete, never 7-day VERIFIED, never go-live, never paid billing Complete, never overall RBAC Complete. ADR-005 membership **and** store-scoped RBAC **are Complete** (flag default OFF intentional). Prefer **market-ready with conditions** over false go-live Complete.
+
+Keep this section, `docs/COMMERCIAL_READINESS_REPORT_2026-08-23.md` tip banner, and
+`/opt/cursor/artifacts/pr303_body_update.md` synchronized on the same tip SHA and
+the same leftovers list. Prefer bumping “as of” after each landed slice; do not
+leave contradictory Complete/PARTIAL wording across those three surfaces.
+
+### Intentionally still open (do not rewrite as closed)
+
+1. ~~Company/tenant logo binary GET~~ — **ACCEPTED ALLOW** policy
+   (`docs/STORE_SCOPED_RBAC_INTENTIONAL_ALLOWS.md`); not a dump to close.
+2. ~~Per-user `/auth/sessions` + `/notifications/settings`~~ — **ACCEPTED ALLOW**
+   (caller-scoped self-service); tenant-wide `/auth/tenant-sessions` remains denied.
+3. Staging enable of `STORE_MEMBERSHIP_SCOPE_ENABLED` (ops cutover; Completes already
+   claimed; flag default OFF). Offline Complete / 7-day VERIFIED / paid billing Complete /
+   go-live remain **MISSING**. Overall RBAC Complete remains **MISSING**.
+
+### Closed this continuum slice
+
+- Store-scoped RBAC **Complete** — product-accepted intentional ALLOWs + empty residual +
+  living matrix + automated/local demo-seed soak (`docs/STORE_SCOPED_RBAC_COMPLETE_REMAINING.md`,
+  `docs/MARKET_READY_LAUNCH.md`). Flag default OFF; staging enable = ops cutover.
+- Continuum residual dump **NONE** remains; do **not** resume dump spam.
+
+
+
+### Closed continuum themes (summary — still PARTIAL)
+
+Defense-in-depth on tip ancestry includes: store/WH ops + report/export scoping;
+company-level admin / settings / catalog / party-master / bank-feed / offline-device
+denies; JSON/CSV redacts for cost, PII, org links, approval-matrix `awaiting_roles`,
+early-discount quote matrix fields, and BI company config/cost embeds; product
+images gallery list GET; product variants path CSV export (after roster export
+deny); product catalog CSV export (`GET /products/export`); users list/get
+(company org roster after users CSV export deny); product primary image binary
+GET (`GET /products/{id}/image`); product list/get `image_url` storage-key
+redact; product list/get `has_image` forced false; expense list/get/patch
+`attachment_url` storage-key redact (`has_attachment` + scoped binary download
+remain); purchase-invoice list/get/patch/upload `attachment_url` storage-key
+redact (`has_attachment` + WH-scoped binary download remain); journal-entry
+list/get/create/unpost/upload/delete `attachment_url` storage-key redact
+(`has_attachment` + store-scoped binary download remain); print/receipt JSON
+`logo_data_url` redact (invoice/quotation/credit-note print + POS receipt;
+`has_logo` + server-side HTML/PDF embeds remain); print/receipt JSON `legal_name` / `trading_name` redact (invoice/quotation/credit-note print + POS receipt; `company_name` falls back to trading switcher when distinct; `has_logo` + server-side HTML/PDF/text embeds remain); POS receipt JSON `company_address` / `company_phone` redact (`company_name` + `has_logo` + server-side text/PDF embeds remain); print/receipt JSON `company_email` redact (invoice/quotation/credit-note print + POS receipt; `company_name` + `has_logo` + server-side text/PDF/HTML embeds remain); print/receipt JSON `tax_registration_number` redact (invoice/quotation/credit-note print + POS receipt; `company_name` + `has_logo` + server-side text/PDF/HTML embeds remain); POS receipt JSON `document_header` / `document_footer` redact (`company_name` + `has_logo` + server-side text/PDF embeds remain); POS receipt JSON `receipt_print_template` / `default_paper` redact (`company_name` + `has_logo` + resolved `paper` + server-side text/PDF embeds remain); invoice/quotation/credit-note print JSON `template` / `invoice_print_template` redact (`company_name` + `has_logo` + server-side text/PDF/HTML embeds remain); tax filing TIN redact (`tax_registration_number` on `/reports/tax/filing` JSON + government header + `tax_filing_*` exports; amounts/schedules remain); **tax filing company prefs redacted** + **tax filing jurisdiction redacted** (`jurisdiction`/`supported_jurisdictions`/`government.jurisdiction`) (`tax_filing_period` + government header `currency`/`timezone`/`filing_period`; amounts/schedules/`taxpayer_name` remain; TIN already redacted; `/me` prefs + receipt currency already redacted); sales-invoice credit-override audit redact (`credit_limit_overridden` / `credit_override_reason` / `by` / `at`; balance/status remain); sales-invoice `emailed_to` redact (`delivery.to` on send; `emailed_at` remains); quotation `emailed_to` redact (list/get/send/print/export + `delivery.to`; `emailed_at` remains); purchase-order `emailed_to` redact (list/get/create/patch/amend/send/print/cancel/export + convert/low-stock + `delivery.to`; `sent_at` remains); stock-movement list/export `created_by_email` redact (qty/type/notes/`created_at` remain; users list/get already denied); stock-movement list `created_by_name` redact (qty/type/notes/`created_at`/`created_by` id remain; CSV columns omit name; users list/get already denied); sales-by-salesperson report/export staff `email` redact (revenue/sale_count/`user_id` remain; users list/get already denied); sales-by-salesperson report/export staff `full_name` redact (revenue/sale_count/`user_id` remain; email already redacted; users list/get already denied); sales-by-salesperson report/export staff `role` redact (revenue/sale_count/`user_id` remain; email/full_name already redacted; users list/get already denied); POS receipt JSON `cashier_name` redact (`company_name` + `has_logo` + totals remain; server-side text/PDF embeds may retain name; users list/get already denied); `/me` + `/workspace` switcher omit `business_type_label` / `industry` (`GET /business-types` already denied; id/name/has_logo remain); sales-by-customer report/export party `code` redact (revenue/sale_count/name/`customer_id` remain; party list/get + AI customer `code` already redacted); credit AR/AP aging party `credit_limit` redact (scoped `total_due`/buckets/name/documents remain; party list/get + AI `credit_limit` already redacted); customer AR statement JSON/CSV party `credit_limit` redact (scoped lines/name/zeroed balance remain; aging + party list/get + AI already redacted); CREDIT_LIMIT_EXCEEDED 409 `credit_limit`/`available` redact (invoice post / POS credit; `exceeded`/`code`/`message` remain; `additional_amount` redacted separately; admin keeps projection; statement + aging + party list/get + AI already redacted); POS receipt JSON `currency` redact (`company_name` + `has_logo` + totals remain; server-side text/PDF embeds may retain code; `/me` switcher already omits company `currency`); GET `/me` tenant preference settings redact (`timezone` / `date_format` / `number_format` / `time_format` / `inactivity_timeout_minutes`; role/permissions/switcher chrome remain; `GET /tenants/me` already denied); supplier payment-schedule JSON `early_pay` pack + nested `early_discount` matrix redact (`early_pay` → `{}`; `discount_pct` / `window_days` / `source` null; totals/buckets + eligible/discount_amount/cash_to_settle remain; settings GET + party early-pay + dedicated quotes already denied/redacted).; sales-by-product report/export `category_id` redact (revenue/qty/name/`product_id`/`sku` remain; product list/get catalog assignment + categories list GET already denied/redacted); **sales-by-product `category_id` query/export filter denied** (`STORE_SCOPE_DENIED`; unfiltered remains; admin may filter); tax filing JSON/CSV company prefs redact (`tax_filing_period` + government header `currency`/`timezone`/`filing_period`; amounts/schedules/`taxpayer_name` remain; TIN already redacted; `/me` prefs + receipt currency already redacted); sales-invoice list/get/export/print `currency` redact (totals/status/balance/`exchange_rate` remain; company profile + `/me` switcher + POS receipt currency already omitted/redacted); **purchase-invoice list/get/export `currency` redact** (totals/status/balance/`exchange_rate` remain; sales-invoice + POS receipt + `/me` switcher currency already omitted/redacted). credit AR/AP aging document `currency` redact (JSON/CSV; `balance_due`/`balance_due_base`/`exchange_rate`/buckets/party name remain; sales/purchase-invoice + POS receipt `currency` already redacted; exchange-rates GET already denied).; **tax filing jurisdiction redacted** (`jurisdiction` / `supported_jurisdictions` / `government.jurisdiction`; amounts/schedules/`taxpayer_name` remain; TIN + company prefs already redacted).; **credit customer/supplier payment register JSON/CSV (+ create) `currency` redact** (amount/method/`exchange_rate` remain; sales/purchase-invoice + aging document + POS receipt `currency` already redacted; exchange-rates GET already denied). ; **credit payment `fx_gain_loss` redact** (JSON/CSV + create; amount/method/`exchange_rate` remain; currency already redacted; exchange-rates GET already denied); **BI expenses.by_category category_id redacted** (overview + `/business-insights/expenses`; free-text `name` + amounts remain; expense list/get category_id + categories list GET already denied/redacted); **cheque list/get/export `bank_name` redact** (amount/`cheque_number`/status remain; liquid-account bank identity already redacted). ; **AI document analyze `extracted_fields.category_id` redact** (JSON + CSV export; free-text `category` name remains; expense/AI analysis + BI by_category + categories list already denied/redacted); **expenses list/export `department_id` query filter denied** (`STORE_SCOPE_DENIED`; unfiltered scoped list/export remains; departments list + expense department_id JSON/CSV already denied/redacted). ; **credit customer/supplier payment register JSON/CSV (+ create) `exchange_rate` redact** (amount/method remain; `currency` + `fx_gain_loss` already redacted; exchange-rates GET already denied); **expenses-summary `category_id` query/export filter denied** (`STORE_SCOPE_DENIED`; unfiltered scoped summary remains; expense categories list + expense JSON + BI by_category `category_id` already denied/redacted); **sales-invoice list/get/export/print `exchange_rate` redact**; **sales-invoice list/get/export/print `balance_due_base` redact** (totals/status/`balance_due` remain; `currency` + `exchange_rate` already redacted; aging document `balance_due_base` already redacted; exchange-rates GET already denied; admin keeps base) (totals/status/balance remain; `currency` already redacted; credit payment `exchange_rate` already redacted; exchange-rates GET already denied; admin keeps rate); **purchase-invoice `exchange_rate` redact** (list/get/export; totals/status/balance/`has_attachment` remain; `currency` already redacted; sales-invoice + credit-payment `exchange_rate` already redacted; exchange-rates GET already denied). ; **credit AR/AP aging document `exchange_rate` redact**; **credit AR/AP aging document `balance_due_base` redact** (JSON/CSV; `balance_due`/buckets/party name remain; currency + exchange_rate already redacted) (JSON/CSV; `balance_due`/`balance_due_base`/buckets/party name remain; currency already redacted; sales/purchase-invoice + credit-payment `exchange_rate` already redacted; exchange-rates GET already denied).  ; **accounting/reports P&L + cash-flow + balance-sheet `branch_id` query/export filter denied** (`STORE_SCOPE_DENIED`; unfiltered store-scoped reports remain; branches list + store `branch_id` JSON already denied/redacted).; **purchase-invoice `balance_due_base` redact** (list/get/export; totals/status/`balance_due`/`has_attachment` remain; `currency` + `exchange_rate` already redacted; sales-invoice + aging document `balance_due_base` already redacted; exchange-rates GET already denied). ; **tax filing `jurisdiction` query/export filter denied** (`STORE_SCOPE_DENIED`; unfiltered default scoped filing remains; filing JSON jurisdiction / supported_jurisdictions / government.jurisdiction already redacted; `GET /tenants/me` already denied; admin may filter); **CREDIT_LIMIT_EXCEEDED 409 `invoice_total_base` redact** (invoice post extra_details; `exceeded`/`code`/`message`/`invoice_number` remain; `additional_amount` redacted separately; master credit_limit/available/current_balance/projected_balance already redacted; sales/purchase-invoice + aging `balance_due_base` already redacted; exchange-rates GET already denied; admin keeps base); **CREDIT_LIMIT_EXCEEDED 409 `invoice_total` redact**; **audit details FX redact** (scoped `/audit-logs` JSON + CSV; amounts/`store_id` remain); **CREDIT_LIMIT_EXCEEDED 409 `additional_amount` redact** (base FX identity; `exceeded`/`code`/`message`/`invoice_number` remain); **CREDIT_LIMIT_EXCEEDED 409 `currency` redact** (document FX identity in extra_details; sales-invoice currency already redacted; `exceeded`/`code`/`message`/`invoice_number` remain); **audit details CLE master redact** (scoped `/audit-logs` JSON + CSV; `credit_limit`/`available`/`current_balance`/`projected_balance`/`additional_amount`; FX already redacted; amounts/`invoice_number`/`store_id`/reason remain); **audit details party ledger balance redact** (scoped `/audit-logs` JSON + CSV; `customer_balance`/`supplier_balance_before`/`supplier_balance_after`; FX + CLE master already redacted; amounts/`invoice_number`/`store_id` remain); **audit details department_id redact** (scoped `/audit-logs` JSON + CSV; expense/recurring department_id already redacted; amounts/status/`store_id` remain); **audit details emailed_to / send-recipient redact** (scoped `/audit-logs` JSON + CSV; `invoice_sent`/`pos_receipt_sent` `to` + `po_sent` `delivery.to`; document `emailed_to` already redacted; invoice/PO numbers/totals/`mode`/`channel` remain). Closing one dump or write path; the continuum as a whole stays **PARTIAL**.
+
+### Continuum agent contract
+
+1. **Flock before mutate:** `flock -w 300 /tmp/commercial_rbac_slice.lock` before
+   product or honesty edits on this branch. Push honesty with
+   `flock /tmp/git_push_honesty.lock`.
+2. **One dump per slice:** land one focused deny/redact + tests; do not batch
+   unrelated leftovers into the same commit.
+3. **Honesty fields (same way every slice):** tip SHA + short subject; status
+   **PARTIAL** only; refresh the three surfaces above; keep the intentionally-open
+   list unless that exact leftover was the slice.
+4. **PR body:** try `gh pr edit 303 --body-file …`; on failure, always refresh
+   `/opt/cursor/artifacts/pr303_body_update.md` so the next agent has the intended body.
+5. **Do not** claim Offline Complete, 7-day VERIFIED, go-live, paid billing Complete,
+   or overall RBAC Complete. ADR-005 membership **and** store-scoped RBAC **are
+   Complete** (flag default OFF). Prefer market-ready-with-conditions over false
+   go-live Complete. **Do not** rewrite unrelated leftovers as closed.
 
 ## Subscription Company Entitlement
 
@@ -87,7 +441,9 @@ is called from `companies.create_company` — never frontend-only.
 3. **Tenant isolation** remains shared-schema + `tenant_id` (ADR-001).
 4. **Unlimited** uses integer `-1` (enterprise catalog `None` maps to `-1`).
 5. **Live billing / checkout Completes remain deferred** (ADR-002). Caps are real
-   gates on tenant columns, not fabricated MRR.
+   gates on tenant columns, not fabricated MRR. Paid billing **scaffold** may land
+   as PARTIAL (`docs/ADR_002_PAID_BILLING_SCAFFOLD.md`) — never claim Complete
+   from tables/webhook/portal skeleton alone.
 6. When `max_companies_override` is set, plan changes do not overwrite
    `Tenant.max_companies` until the override is cleared.
 7. Reuse `companies` RBAC module actions and tenant-admin workspace flows; do not
@@ -132,11 +488,14 @@ after `0107` in deploy order.
    count active `User` rows for the tenant — not per-store membership (ADR-005).
 4. **Unlimited** uses integer `-1` (enterprise catalog `None` maps to `-1`).
 5. **Live billing / checkout Completes remain deferred** (ADR-002). Caps are real
-   gates on tenant columns, not fabricated MRR.
+   gates on tenant columns, not fabricated MRR. Paid billing **scaffold** may land
+   as PARTIAL (`docs/ADR_002_PAID_BILLING_SCAFFOLD.md`) — never claim Complete
+   from tables/webhook/portal skeleton alone.
 6. When `max_users_override` is set, plan changes do not overwrite
    `Tenant.max_users` until the override is cleared.
-7. **User↔store membership** remains deferred (ADR-005). Do not invent parallel
-   membership tables unless that ADR is intentionally opened.
+7. **User↔store membership** is **Complete** (ADR-005; flag-gated scope; POS bind;
+   automated soak; default OFF until ops enable). Do not claim store-scoped RBAC
+   Complete or that production already runs with the membership-scope flag ON.
 
 ### Key modules
 

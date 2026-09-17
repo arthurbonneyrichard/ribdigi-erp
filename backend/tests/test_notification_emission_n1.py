@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -20,19 +21,27 @@ async def _cashier(ac):
     return await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 @pytest.mark.asyncio
 async def test_low_stock_scan_emits_and_lists_in_stock_group(client, db_session):
     """Low Stock bucket: scan_low_stock creates unread low_stock; visible via HTTP."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
 
     product = m.Product(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="S16 N1 Low Stock SKU",
         sku="S16-N1-LOW",
         cost_price=1,
@@ -89,7 +98,7 @@ async def test_low_stock_scan_emits_and_lists_in_stock_group(client, db_session)
 async def test_new_order_emits_important_sales_event(client, db_session):
     """Important Sales Events bucket: sales order create → new_order."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
 
     created = await ac.post(
@@ -134,12 +143,13 @@ async def test_new_order_emits_important_sales_event(client, db_session):
 async def test_credit_limit_alert_on_invoice_post(client, db_session):
     """Credit Alerts bucket: invoice post at ≥80% utilization → credit_limit."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
     await accounting_svc.ensure_default_accounts(db_session, tenant_id)
 
     product = m.Product(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="S16 N1 Credit SKU",
         sku="S16-N1-CR",
         cost_price=1,
@@ -221,7 +231,7 @@ async def test_credit_limit_alert_on_invoice_post(client, db_session):
 async def test_purchase_received_on_grn_post(client, db_session):
     """Operational Alerts: GRN post → purchase_received."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
     product = seed["p1"]
     product.stock_qty = 0
@@ -376,6 +386,7 @@ async def test_transfer_ship_emits_operational_alert(client, db_session):
 
     product = m.Product(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="S16 N1 Xfer SKU",
         sku="S16-N1-XFER",
         cost_price=1,
@@ -401,6 +412,7 @@ async def test_transfer_ship_emits_operational_alert(client, db_session):
     from_store = await create_store(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         code="S16N1S",
         name="S16 N1 Src",
         manager_id=mgr_from.id,
@@ -408,6 +420,7 @@ async def test_transfer_ship_emits_operational_alert(client, db_session):
     to_store = await create_store(
         db_session,
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         code="S16N1D",
         name="S16 N1 Dst",
         manager_id=mgr_to.id,
@@ -436,7 +449,7 @@ async def test_transfer_ship_emits_operational_alert(client, db_session):
     )
     await db_session.commit()
 
-    mgr_from_h = await _mgr(ac)
+    mgr_from_h = await _mgr(ac, seed)
     created = await ac.post(
         "/api/v1/stores/transfers",
         headers=mgr_from_h,

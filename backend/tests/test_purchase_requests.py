@@ -5,6 +5,7 @@ from __future__ import annotations
 import pyotp
 import pytest
 
+from app import models as m
 from tests.conftest import auth_headers
 
 
@@ -29,11 +30,37 @@ async def _ensure_supplier(ac, headers) -> str:
     return created.json()["data"]["id"]
 
 
+async def _managed_warehouse(db_session, seed) -> str:
+    store = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        name="PR Mgr Store",
+        code="PR-MGR",
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        store_id=store.id,
+        name="PR Mgr WH",
+        code="WH-PR-MGR",
+        warehouse_type="retail",
+        is_active=True,
+    )
+    db_session.add(wh)
+    await db_session.commit()
+    return wh.id
+
+
 @pytest.mark.asyncio
-async def test_purchase_request_approve_convert_flow(client):
+async def test_purchase_request_approve_convert_flow(client, db_session):
     ac, seed = client
     mgr = await _mgr_headers(ac)
     super_h = await _super_headers(ac, seed)
+    warehouse_id = await _managed_warehouse(db_session, seed)
 
     supplier_id = await _ensure_supplier(ac, mgr)
     product_id = seed["p1"].id
@@ -43,6 +70,7 @@ async def test_purchase_request_approve_convert_flow(client):
         headers=mgr,
         json={
             "supplier_id": supplier_id,
+            "warehouse_id": warehouse_id,
             "department": "Store Ops",
             "items": [{"product_id": product_id, "quantity": 12, "unit_price": 5}],
         },
@@ -89,10 +117,11 @@ async def test_purchase_request_approve_convert_flow(client):
 
 
 @pytest.mark.asyncio
-async def test_purchase_request_reject_and_isolation(client):
+async def test_purchase_request_reject_and_isolation(client, db_session):
     ac, seed = client
     mgr = await _mgr_headers(ac)
     super_h = await _super_headers(ac, seed)
+    warehouse_id = await _managed_warehouse(db_session, seed)
 
     supplier_id = await _ensure_supplier(ac, mgr)
     created = await ac.post(
@@ -100,9 +129,11 @@ async def test_purchase_request_reject_and_isolation(client):
         headers=mgr,
         json={
             "supplier_id": supplier_id,
+            "warehouse_id": warehouse_id,
             "items": [{"product_id": seed["p1"].id, "quantity": 3}],
         },
     )
+    assert created.status_code == 200, created.text
     pr_id = created.json()["data"]["id"]
     await ac.post(f"/api/v1/purchasing/requests/{pr_id}/submit", headers=mgr)
 
@@ -118,8 +149,6 @@ async def test_purchase_request_reject_and_isolation(client):
     bad = await ac.post(f"/api/v1/purchasing/requests/{pr_id}/convert", headers=mgr)
     assert bad.status_code == 409
 
-    foreign = await ac.get(
-        f"/api/v1/purchasing/requests/{pr_id}",
-        headers=await auth_headers(ac, email="cashier@beta.example.com", tenant_slug="beta"),
-    )
-    assert foreign.status_code in {403, 404}
+    other = await auth_headers(ac, email="cashier@beta.example.com", tenant_slug="beta")
+    missing = await ac.get(f"/api/v1/purchasing/requests/{pr_id}", headers=other)
+    assert missing.status_code in {403, 404}

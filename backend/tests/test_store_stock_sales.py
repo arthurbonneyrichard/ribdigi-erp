@@ -19,6 +19,7 @@ async def test_post_invoice_deducts_store_warehouse_stock(db_session, seeded):
 
     store = m.Store(
         tenant_id=tenant_id,
+        company_id=seeded["c1"].id,
         name="North Branch",
         code="NORTH",
         is_active=True,
@@ -27,6 +28,7 @@ async def test_post_invoice_deducts_store_warehouse_stock(db_session, seeded):
     await db_session.flush()
     wh = m.Warehouse(
         tenant_id=tenant_id,
+        company_id=seeded["c1"].id,
         store_id=store.id,
         name="North WH",
         code="WH-NORTH",

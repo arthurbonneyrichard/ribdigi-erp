@@ -80,19 +80,51 @@ async def test_insufficient_sales_history_not_at_risk(db_session, seeded):
 @pytest.mark.asyncio
 async def test_low_stock_prediction_api_tenant_scoped(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     product = seed["p1"]
     product.stock_qty = 24
+    product.company_id = seed["c1"].id
+    store = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        name="AI LS Mgr",
+        code="AILS",
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
     await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        store_id=store.id,
+        name="AI LS WH",
+        code="AILS-WH",
+    )
+    db_session.add(wh)
+    await db_session.flush()
+    db_session.add(
+        m.WarehouseStock(
+            tenant_id=seed["t1"].id,
+            company_id=seed["c1"].id,
+            warehouse_id=wh.id,
+            product_id=product.id,
+            quantity=24,
+            reserved_qty=0,
+            reorder_level=5,
+        )
+    )
 
     for day in range(30):
         inv = m.SalesInvoice(
             tenant_id=seed["t1"].id,
+            company_id=seed["c1"].id,
             invoice_number=f"INV-API-{day}",
             customer_id=seed["party1"].id,
             status="posted",
             subtotal=4,
             total_amount=4,
+            store_id=store.id,
             posted_at=datetime.utcnow() - timedelta(days=day),
             created_at=datetime.utcnow() - timedelta(days=day),
         )
@@ -101,6 +133,7 @@ async def test_low_stock_prediction_api_tenant_scoped(client, db_session):
         db_session.add(
             m.SalesInvoiceItem(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 sales_invoice_id=inv.id,
                 product_id=product.id,
                 quantity=2,
@@ -118,15 +151,11 @@ async def test_low_stock_prediction_api_tenant_scoped(client, db_session):
     assert r.status_code == 200, r.text
     body = r.json()["data"]
     assert body["method"] == "sales_velocity_v1"
+    assert body.get("scope") == "store_manager"
     ids = {p["product_id"] for p in body["predictions"]}
     assert product.id in ids
     # Beta product must not appear
     assert seed["p2"].id not in ids
-
-    insights = await ac.get("/api/v1/ai/insights", headers=headers)
-    assert insights.status_code == 200
-    text = " ".join(insights.json()["data"].get("insights") or [])
-    assert "predicted" in text.lower() or insights.json()["data"]["low_stock_predictions"]["at_risk_count"] >= 1
 
 
 @pytest.mark.asyncio

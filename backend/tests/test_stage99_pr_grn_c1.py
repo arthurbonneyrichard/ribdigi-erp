@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pyotp
 import pytest
 
 from tests.conftest import auth_headers
@@ -32,8 +33,13 @@ def test_shell_pr_po_grn_and_notification_fix():
 
 @pytest.mark.asyncio
 async def test_pr_po_grn_status_filter_api(client):
-    ac, _seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    ac, seed = client
+    # Status validation is role-agnostic; use super so empty SM warehouse scope
+    # does not short-circuit before the 400 on bogus status.
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
     assert (await ac.get("/api/v1/purchasing/requests?status=bogus", headers=headers)).status_code == 400
     assert (await ac.get("/api/v1/purchasing/orders?status=bogus", headers=headers)).status_code == 400

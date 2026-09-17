@@ -51,5 +51,6 @@ def test_inventory_page_export_button_e1():
     assert "Stage 118" in page
     assert "/products/export" in page
     assert "Export products CSV" in page
+    assert "admin-only" in page or "STORE_SCOPE_DENIED" in page
     svc = (ROOT / "backend/app/product_import.py").read_text(encoding="utf-8")
     assert "export_products_csv" in svc

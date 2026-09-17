@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
+import pyotp
 import pytest
 
 from app.inventory import apply_stock_change
@@ -13,7 +14,10 @@ from tests.conftest import auth_headers
 @pytest.mark.asyncio
 async def test_order_delivery_fields_and_status_flow(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     product_id = seed["p1"].id
     customer_id = seed["party1"].id
 
@@ -85,7 +89,10 @@ async def test_order_delivery_fields_and_status_flow(client, db_session):
 @pytest.mark.asyncio
 async def test_cancel_from_processing_releases_stock(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     product_id = seed["p1"].id
     customer_id = seed["party1"].id
 
@@ -120,7 +127,10 @@ async def test_cancel_from_processing_releases_stock(client, db_session):
 @pytest.mark.asyncio
 async def test_default_delivery_address_from_customer(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     seed["party1"].address = "Customer Default Ave"
     await db_session.commit()
     customer_id = seed["party1"].id

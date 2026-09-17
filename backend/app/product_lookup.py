@@ -17,8 +17,11 @@ async def lookup_products(
     barcode: str | None = None,
     limit: int = 40,
     company_id: str | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> list[dict]:
     """Resolve products and variants by barcode scan or text search."""
+    from app import catalog_meta as catalog_meta_svc
+
     q = (q or "").strip()
     scan = barcode_svc.normalize_barcode(barcode) or (
         q if barcode_svc.looks_like_barcode_scan(q) else None
@@ -41,6 +44,11 @@ async def lookup_products(
             | m.Product.barcode.ilike(f"%{q}%")
         )
     products = (await db.execute(stmt.limit(30))).scalars().all()
+    stock_map: dict[str, float] = {}
+    if warehouse_ids is not None:
+        stock_map, _, _ = await catalog_meta_svc.warehouse_stock_totals(
+            db, tenant_id, warehouse_ids=warehouse_ids, company_id=company_id
+        )
     out: list[dict] = [
         {
             "id": p.id,
@@ -50,7 +58,11 @@ async def lookup_products(
             "sku": p.sku,
             "barcode": p.barcode,
             "selling_price": float(p.selling_price or 0),
-            "stock_qty": float(p.stock_qty or 0),
+            "stock_qty": (
+                stock_map.get(p.id, 0.0)
+                if warehouse_ids is not None
+                else float(p.stock_qty or 0)
+            ),
             "kind": "product",
         }
         for p in products
@@ -87,7 +99,11 @@ async def lookup_products(
                 "sku": v.sku,
                 "barcode": v.barcode,
                 "selling_price": float(v.selling_price or 0),
-                "stock_qty": float(v.stock_qty or 0),
+                "stock_qty": (
+                    stock_map.get(v.product_id, 0.0)
+                    if warehouse_ids is not None
+                    else float(v.stock_qty or 0)
+                ),
                 "kind": "variant",
             }
         )

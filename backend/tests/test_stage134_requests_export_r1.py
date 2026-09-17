@@ -35,6 +35,7 @@ async def test_purchase_requests_export_csv(client, db_session):
         [
             m.PurchaseRequest(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 request_number="PR-134-DRAFT",
                 supplier_id=supplier.id,
                 status="draft",
@@ -42,6 +43,7 @@ async def test_purchase_requests_export_csv(client, db_session):
             ),
             m.PurchaseRequest(
                 tenant_id=seed["t1"].id,
+                company_id=seed["c1"].id,
                 request_number="PR-134-PEND",
                 supplier_id=supplier.id,
                 status="pending",

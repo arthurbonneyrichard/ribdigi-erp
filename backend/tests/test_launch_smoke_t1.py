@@ -13,8 +13,15 @@ from app import models as m
 from tests.conftest import auth_headers
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _super(ac, seed):
@@ -30,7 +37,7 @@ async def test_launch_expense_to_journal_tb_pnl_and_backup_drill(
 ):
     """LAUNCH_CHECKLIST §4: expense→JE, TB/P&L readable, backup create→verify→dry-run."""
     ac, seed = client
-    mgr = await _mgr(ac)
+    mgr = await _mgr(ac, seed)
     super_h = await _super(ac, seed)
     tenant_id = seed["t1"].id
     await accounting_svc.ensure_default_accounts(db_session, tenant_id)

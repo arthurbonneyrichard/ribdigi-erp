@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -13,7 +14,10 @@ from tests.conftest import auth_headers
 @pytest.mark.asyncio
 async def test_create_order_emits_new_order_notification(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     tenant_id = seed["t1"].id
 
     created = await ac.post(
@@ -59,7 +63,10 @@ async def test_create_order_emits_new_order_notification(client, db_session):
 @pytest.mark.asyncio
 async def test_confirm_order_emits_new_order_and_prefs_honored(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     tenant_id = seed["t1"].id
     uid = seed["mgr1"].id
 
@@ -128,7 +135,10 @@ async def test_confirm_order_emits_new_order_and_prefs_honored(client, db_sessio
 @pytest.mark.asyncio
 async def test_new_order_notification_tenant_isolated(client, db_session):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
     foreign = m.Notification(
         tenant_id=seed["t2"].id,

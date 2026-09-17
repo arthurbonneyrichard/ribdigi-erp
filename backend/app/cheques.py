@@ -72,7 +72,22 @@ async def list_cheques(
     direction: str | None = None,
     status: str | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
+    warehouse_ids: list[str] | None = None,
 ) -> list[m.Cheque]:
+    """List cheques.
+
+    When ``store_ids`` / ``warehouse_ids`` are set (store_manager), received cheques
+    must link to a managed-store sales invoice and issued cheques to a managed-WH
+    supplier payment (null / unallocated fail-closed).
+    """
+    from sqlalchemy import and_, func, or_
+
+    # Manager mode: either list may be empty, but at least one param is not None.
+    manager_scope = store_ids is not None or warehouse_ids is not None
+    if manager_scope and not (store_ids or warehouse_ids):
+        return []
+
     stmt = select(m.Cheque).where(m.Cheque.tenant_id == tenant_id)
     if company_id:
         stmt = stmt.where(m.Cheque.company_id == company_id)
@@ -80,9 +95,139 @@ async def list_cheques(
         stmt = stmt.where(m.Cheque.direction == direction)
     if status:
         stmt = stmt.where(m.Cheque.status == status)
+
+    if manager_scope:
+        stmt = (
+            stmt.outerjoin(
+                m.CustomerPayment,
+                m.CustomerPayment.id == m.Cheque.customer_payment_id,
+            )
+            .outerjoin(
+                m.SalesInvoice,
+                m.SalesInvoice.id == m.CustomerPayment.sales_invoice_id,
+            )
+            .outerjoin(
+                m.SupplierPayment,
+                m.SupplierPayment.id == m.Cheque.supplier_payment_id,
+            )
+            .outerjoin(
+                m.PurchaseInvoice,
+                m.PurchaseInvoice.id == m.SupplierPayment.purchase_invoice_id,
+            )
+            .outerjoin(
+                m.GoodsReceipt,
+                m.GoodsReceipt.id == m.PurchaseInvoice.goods_receipt_id,
+            )
+            .outerjoin(
+                m.PurchaseOrder,
+                m.PurchaseOrder.id
+                == func.coalesce(
+                    m.SupplierPayment.purchase_order_id,
+                    m.PurchaseInvoice.purchase_order_id,
+                ),
+            )
+        )
+        clauses: list = []
+        if store_ids:
+            clauses.append(
+                and_(
+                    m.Cheque.direction == RECEIVED,
+                    m.SalesInvoice.store_id.in_(store_ids),
+                )
+            )
+        if warehouse_ids:
+            wh_expr = func.coalesce(
+                m.PurchaseInvoice.warehouse_id,
+                m.GoodsReceipt.warehouse_id,
+                m.PurchaseOrder.warehouse_id,
+            )
+            clauses.append(
+                and_(m.Cheque.direction == ISSUED, wh_expr.in_(warehouse_ids))
+            )
+        if not clauses:
+            return []
+        stmt = stmt.where(or_(*clauses))
+
     stmt = stmt.order_by(m.Cheque.created_at.desc())
     return list((await db.execute(stmt)).scalars().all())
 
+
+async def assert_cheque_in_manager_scope(
+    db: AsyncSession,
+    claims: dict,
+    cheque: m.Cheque,
+) -> None:
+    """403 when cheque's linked payment is outside managed store/WH scope."""
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    if managed is None:
+        return
+    managed_wh = await dashboard_scope_svc.managed_warehouse_ids(db, claims) or []
+
+    if cheque.direction == RECEIVED:
+        if not cheque.customer_payment_id:
+            dashboard_scope_svc.assert_store_in_manager_scope(
+                managed, None, allow_unset=False
+            )
+            return
+        pay = await db.get(m.CustomerPayment, cheque.customer_payment_id)
+        inv = (
+            await db.get(m.SalesInvoice, pay.sales_invoice_id)
+            if pay and pay.sales_invoice_id
+            else None
+        )
+        dashboard_scope_svc.assert_store_in_manager_scope(
+            managed, getattr(inv, "store_id", None) if inv else None, allow_unset=False
+        )
+        return
+
+    # issued
+    from sqlalchemy import func, select
+
+    if not cheque.supplier_payment_id:
+        dashboard_scope_svc.assert_warehouse_in_manager_scope(
+            managed_wh, None, allow_unset=False
+        )
+        return
+    pay = await db.get(m.SupplierPayment, cheque.supplier_payment_id)
+    if not pay:
+        dashboard_scope_svc.assert_warehouse_in_manager_scope(
+            managed_wh, None, allow_unset=False
+        )
+        return
+    wh_id = (
+        await db.execute(
+            select(
+                func.coalesce(
+                    m.PurchaseInvoice.warehouse_id,
+                    m.GoodsReceipt.warehouse_id,
+                    m.PurchaseOrder.warehouse_id,
+                )
+            )
+            .select_from(m.SupplierPayment)
+            .outerjoin(
+                m.PurchaseInvoice,
+                m.PurchaseInvoice.id == m.SupplierPayment.purchase_invoice_id,
+            )
+            .outerjoin(
+                m.GoodsReceipt,
+                m.GoodsReceipt.id == m.PurchaseInvoice.goods_receipt_id,
+            )
+            .outerjoin(
+                m.PurchaseOrder,
+                m.PurchaseOrder.id
+                == func.coalesce(
+                    m.SupplierPayment.purchase_order_id,
+                    m.PurchaseInvoice.purchase_order_id,
+                ),
+            )
+            .where(m.SupplierPayment.id == pay.id)
+        )
+    ).scalar_one_or_none()
+    dashboard_scope_svc.assert_warehouse_in_manager_scope(
+        managed_wh, wh_id, allow_unset=False
+    )
 
 def _cheque_number_from_payment(reference: str | None, payment_number: str) -> str:
     ref = (reference or "").strip()

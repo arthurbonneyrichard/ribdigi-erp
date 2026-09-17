@@ -2,10 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
-import { api, authHeaders } from '../../lib/api';
+import { api, apiFetch } from '../../lib/api';
 import { useTabQuery } from '../../lib/tabQuery';
-
-const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 type Tab = 'ledger' | 'reconcile' | 'cheques';
 const ACCOUNTING_TABS: Tab[] = ['ledger', 'reconcile', 'cheques'];
@@ -348,13 +346,10 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
       const form = new FormData();
       form.append('file', file);
-      const res = await fetch(`${apiBase}/accounting/journal-entries/${id}/attachment`, {
+      const res = await apiFetch(`/accounting/journal-entries/${id}/attachment`, {
         method: 'POST',
-        headers: authHeaders(),
         body: form,
       });
       const body = await res.json().catch(() => ({}));
@@ -371,11 +366,7 @@ export default function Page() {
   async function downloadJournalAttachment(id: string) {
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/accounting/journal-entries/${id}/attachment`, {
-        headers: authHeaders(),
-      });
+      const res = await apiFetch(`/accounting/journal-entries/${id}/attachment`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.detail || body.message || 'Download failed');
@@ -551,9 +542,6 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
       const form = new FormData();
       form.append('file', importFile);
       const qs = new URLSearchParams({
@@ -561,9 +549,8 @@ export default function Page() {
         opening_balance: String(Number(opening) || 0),
       });
       if (closing !== '' && closing != null) qs.set('closing_balance', String(Number(closing)));
-      const res = await fetch(`${apiBase}/accounting/bank-statements/import?${qs}`, {
+      const res = await apiFetch(`/accounting/bank-statements/import?${qs}`, {
         method: 'POST',
-        headers: authHeaders(),
         body: form,
       });
       const body = await res.json().catch(() => ({}));
@@ -860,7 +847,6 @@ export default function Page() {
               <button
                 type="button"
                 onClick={async () => {
-                  const token = localStorage.getItem('access_token') || '';
                   const qs = new URLSearchParams();
                   if (liquidActiveFilter === 'true' || liquidActiveFilter === 'false') {
                     qs.set('is_active', liquidActiveFilter);
@@ -868,11 +854,15 @@ export default function Page() {
                     qs.set('active_only', 'false');
                   }
                   const q = qs.toString();
-                  const res = await fetch(
-                    `${apiBase}/accounting/liquid-accounts/export${q ? `?${q}` : ''}`,
-                    { headers: { Authorization: `Bearer ${token}` } },
+                  const res = await apiFetch(
+                    `/accounting/liquid-accounts/export${q ? `?${q}` : ''}`,
                   );
                   if (!res.ok) {
+                    // Soft-fail store_manager STORE_SCOPE_DENIED (company bank detail dump).
+                    if (res.status === 403) {
+                      setMessage('Liquid accounts CSV export requires a company administrator.');
+                      return;
+                    }
                     setError(await res.text());
                     return;
                   }
@@ -1074,8 +1064,6 @@ export default function Page() {
                   // Stage 123 X1 — accounts CSV export
                   setError('');
                   try {
-                    const token = localStorage.getItem('token');
-                    const tenant = localStorage.getItem('tenant');
                     const qs =
                       accountActiveFilter === 'true'
                         ? '?is_active=true'
@@ -1084,9 +1072,7 @@ export default function Page() {
                           : accountActiveFilter === 'all'
                             ? '?active_only=false'
                             : '';
-                    const res = await fetch(`${apiBase}/accounting/accounts/export${qs}`, {
-                      headers: authHeaders(),
-                    });
+                    const res = await apiFetch(`/accounting/accounts/export${qs}`);
                     if (!res.ok) throw new Error('Accounts export failed');
                     const blob = await res.blob();
                     const url = URL.createObjectURL(blob);
@@ -1163,21 +1149,14 @@ export default function Page() {
                       // Stage 139 A1 — account ledger CSV
                       setError('');
                       try {
-                        const token = localStorage.getItem('token');
-                        const tenant = localStorage.getItem('tenant');
-                        const apiBase =
-                          process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
                         const qs = new URLSearchParams();
                         if (txFrom) qs.set('from_date', txFrom);
                         if (txTo) qs.set('to_date', txTo);
                         const q = qs.toString();
-                        const res = await fetch(
-                          `${apiBase}/accounting/accounts/${obAccountId}/transactions/export${
+                        const res = await apiFetch(
+                          `/accounting/accounts/${obAccountId}/transactions/export${
                             q ? `?${q}` : ''
                           }`,
-                          {
-                            headers: authHeaders(),
-                          },
                         );
                         if (!res.ok) throw new Error('Account ledger export failed');
                         const blob = await res.blob();
@@ -1307,14 +1286,11 @@ export default function Page() {
                 <button
                   type="button"
                   onClick={async () => {
-                    const token = localStorage.getItem('token') || '';
+
                     const qs = tbAsOf
                       ? `?as_of_date=${encodeURIComponent(tbAsOf)}`
                       : '';
-                    const res = await fetch(
-                      `${apiBase}/accounting/trial-balance/export${qs}`,
-                      { headers: { Authorization: `Bearer ${token}` } },
-                    );
+                    const res = await apiFetch(`/accounting/trial-balance/export${qs}`, {},);
                     if (!res.ok) {
                       setError(await res.text());
                       return;
@@ -1361,16 +1337,13 @@ export default function Page() {
                 <button
                   type="button"
                   onClick={async () => {
-                    const token = localStorage.getItem('token') || '';
+
                     const params = new URLSearchParams();
                     if (pnlFrom) params.set('from_date', pnlFrom);
                     if (pnlTo) params.set('to_date', pnlTo);
                     if (pnlStoreId) params.set('store_id', pnlStoreId);
                     const qs = params.toString() ? `?${params}` : '';
-                    const res = await fetch(
-                      `${apiBase}/accounting/profit-loss/export${qs}`,
-                      { headers: { Authorization: `Bearer ${token}` } },
-                    );
+                    const res = await apiFetch(`/accounting/profit-loss/export${qs}`, {},);
                     if (!res.ok) {
                       setError(await res.text());
                       return;
@@ -1439,7 +1412,7 @@ export default function Page() {
             <button
               type="button"
               onClick={async () => {
-                const token = localStorage.getItem('token') || '';
+
                 const params = new URLSearchParams();
                 if (journalStoreId) params.set('store_id', journalStoreId);
                 if (journalStatusFilter && journalStatusFilter !== 'all') {
@@ -1448,9 +1421,7 @@ export default function Page() {
                   params.set('status', 'all');
                 }
                 const qs = params.toString() ? `?${params}` : '';
-                const res = await fetch(`${apiBase}/accounting/journal-entries/export${qs}`, {
-                  headers: { Authorization: `Bearer ${token}` },
-                });
+                const res = await apiFetch(`/accounting/journal-entries/export${qs}`);
                 if (!res.ok) {
                   setError(await res.text());
                   return;
@@ -1591,14 +1562,8 @@ export default function Page() {
             <button
               type="button"
               onClick={async () => {
-                const token = localStorage.getItem('token') || '';
-                const tenant = localStorage.getItem('tenant') || '';
-                const res = await fetch(`${apiBase}/settings/bank-feed/export`, {
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                    ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-                  },
-                });
+
+                const res = await apiFetch(`/settings/bank-feed/export`);
                 if (!res.ok) {
                   setError(await res.text());
                   return;
@@ -1645,7 +1610,7 @@ export default function Page() {
               <button
                 type="button"
                 onClick={async () => {
-                  const token = localStorage.getItem('token') || '';
+
                   const qs = new URLSearchParams();
                   if (bankConnActiveFilter === 'true' || bankConnActiveFilter === 'false') {
                     qs.set('is_active', bankConnActiveFilter);
@@ -1653,10 +1618,7 @@ export default function Page() {
                     qs.set('active_only', 'false');
                   }
                   const q = qs.toString();
-                  const res = await fetch(
-                    `${apiBase}/accounting/bank-connections/export${q ? `?${q}` : ''}`,
-                    { headers: { Authorization: `Bearer ${token}` } },
-                  );
+                  const res = await apiFetch(`/accounting/bank-connections/export${q ? `?${q}` : ''}`, {},);
                   if (!res.ok) {
                     setError(await res.text());
                     return;
@@ -1752,13 +1714,11 @@ export default function Page() {
             <button
               type="button"
               onClick={async () => {
-                const token = localStorage.getItem('token') || '';
+
                 const params = new URLSearchParams();
                 if (statementStatusFilter) params.set('status', statementStatusFilter);
                 const qs = params.toString() ? `?${params}` : '';
-                const res = await fetch(`${apiBase}/accounting/bank-statements/export${qs}`, {
-                  headers: { Authorization: `Bearer ${token}` },
-                });
+                const res = await apiFetch(`/accounting/bank-statements/export${qs}`);
                 if (!res.ok) {
                   setError(await res.text());
                   return;
@@ -2023,14 +1983,12 @@ export default function Page() {
             <button
               type="button"
               onClick={async () => {
-                const token = localStorage.getItem('token') || '';
+
                 const params = new URLSearchParams();
                 if (chequeDirectionFilter) params.set('direction', chequeDirectionFilter);
                 if (chequeStatusFilter) params.set('status', chequeStatusFilter);
                 const qs = params.toString() ? `?${params}` : '';
-                const res = await fetch(`${apiBase}/accounting/cheques/export${qs}`, {
-                  headers: { Authorization: `Bearer ${token}` },
-                });
+                const res = await apiFetch(`/accounting/cheques/export${qs}`);
                 if (!res.ok) {
                   setError(await res.text());
                   return;

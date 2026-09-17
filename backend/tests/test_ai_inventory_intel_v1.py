@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import pyotp
 import pytest
 
 from app import models as m
@@ -13,8 +14,15 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 async def _seed_steady_sales(db_session, seed, *, days: int = 30, qty_per_day: float = 4):
@@ -28,6 +36,7 @@ async def _seed_steady_sales(db_session, seed, *, days: int = 30, qty_per_day: f
     for day in range(days):
         inv = m.SalesInvoice(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             invoice_number=f"INV-V1-FC-{day}",
             customer_id=seed["party1"].id,
             status="posted",
@@ -42,6 +51,7 @@ async def _seed_steady_sales(db_session, seed, *, days: int = 30, qty_per_day: f
         db_session.add(
             m.SalesInvoiceItem(
                 tenant_id=tenant_id,
+                company_id=seed["c1"].id,
                 sales_invoice_id=inv.id,
                 product_id=product.id,
                 quantity=qty_per_day,
@@ -57,7 +67,7 @@ async def _seed_steady_sales(db_session, seed, *, days: int = 30, qty_per_day: f
 async def test_demand_forecast_reorder_and_seasonality_api(client, db_session):
     """BR-21.3: 7/30/90 demand forecast, optimal reorder qty, seasonality."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     product = await _seed_steady_sales(db_session, seed, days=30, qty_per_day=4)
 
     fc = await ac.get(
@@ -83,7 +93,7 @@ async def test_demand_forecast_reorder_and_seasonality_api(client, db_session):
 async def test_dead_stock_identification_api(client, db_session):
     """BR-21.3: dead stock with no sales in lookback window."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
     product = seed["p1"]
     product.stock_qty = 25
@@ -92,6 +102,7 @@ async def test_dead_stock_identification_api(client, db_session):
 
     inv = m.SalesInvoice(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         invoice_number="INV-V1-DEAD-OLD",
         customer_id=seed["party1"].id,
         status="posted",
@@ -106,6 +117,7 @@ async def test_dead_stock_identification_api(client, db_session):
     db_session.add(
         m.SalesInvoiceItem(
             tenant_id=tenant_id,
+            company_id=seed["c1"].id,
             sales_invoice_id=inv.id,
             product_id=product.id,
             quantity=2,
@@ -134,7 +146,7 @@ async def test_dead_stock_identification_api(client, db_session):
 async def test_inventory_predictions_bundle_api(client, db_session):
     """BR-21.3: combined predictions endpoint includes forecasts."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     await _seed_steady_sales(db_session, seed, days=30, qty_per_day=3)
 
     pred = await ac.get("/api/v1/ai/inventory/predictions", headers=headers)

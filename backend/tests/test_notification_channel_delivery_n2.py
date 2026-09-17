@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -28,8 +29,15 @@ def _outbox_emails() -> list[str]:
     return emailed
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -78,7 +86,7 @@ async def test_new_order_email_attempt_respects_prefs(client, db_session):
     )
     await db_session.commit()
 
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     created = await ac.post(
         "/api/v1/sales/orders",
         headers=headers,
@@ -172,7 +180,7 @@ async def test_low_stock_email_and_sms_attempts(client, db_session):
 async def test_outline_category_email_off_skips_send(client, db_session):
     """Default email=False for new_order → dashboard note only, no email attempt."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
 
     created = await ac.post(
         "/api/v1/sales/orders",

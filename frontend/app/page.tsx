@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { api } from '../lib/api';
+import { persistLoginSession } from '../lib/authSession';
 import { useRouter } from 'next/navigation';
 
 function bufferToBase64url(buf: ArrayBuffer): string {
@@ -40,13 +41,8 @@ export default function Login() {
   const router = useRouter();
 
   function finishLogin(data: any) {
-    localStorage.setItem('token', data.access_token);
-    if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
-    localStorage.setItem('tenant', data.user.tenant_id);
-    const principal = data.principal || data.user?.principal || 'tenant';
-    localStorage.setItem('principal', principal);
-    // Stage 87 Z1 — cookie for Next middleware console boundary (readable server-side)
-    document.cookie = `ribdigi_principal=${encodeURIComponent(principal)}; path=/; SameSite=Lax`;
+    // Phase B: when server sets cookie_session, skip writing JWTs to localStorage.
+    persistLoginSession(data);
     if (!remember) {
       // Session-only preference marker for future idle logout UX.
       sessionStorage.setItem('ribdigi_session_only', '1');

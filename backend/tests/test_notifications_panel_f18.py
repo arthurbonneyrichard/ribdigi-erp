@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
+import pyotp
 import pytest
 
 from app import models as m
@@ -30,6 +31,7 @@ async def test_notifications_group_filter_mark_unread_and_history_window(client,
     stock = await create_notification(
         db_session,
         tenant_id=tid,
+        company_id=seed["c1"].id,
         user_id=uid,
         category="low_stock",
         title="Low Stock Alert",
@@ -38,6 +40,7 @@ async def test_notifications_group_filter_mark_unread_and_history_window(client,
     pay = await create_notification(
         db_session,
         tenant_id=tid,
+        company_id=seed["c1"].id,
         user_id=uid,
         category="payment_due",
         title="Payment Due",
@@ -45,6 +48,7 @@ async def test_notifications_group_filter_mark_unread_and_history_window(client,
     )
     old = m.Notification(
         tenant_id=tid,
+        company_id=seed["c1"].id,
         user_id=uid,
         category="system",
         title="Ancient",

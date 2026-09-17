@@ -20,13 +20,46 @@ async def _mgr(ac):
 async def _seed_cross_domain(db_session, seed):
     """Sales rising, purchases lagging, expenses heavy, overdue PI, low stock."""
     tenant_id = seed["t1"].id
+    cid = seed["c1"].id
     product = seed["p1"]
     product.stock_qty = 2
     product.reorder_level = 20
     product.reorder_qty = 30
+    product.company_id = cid
     customer = seed["party1"]
+    store = m.Store(
+        tenant_id=tenant_id,
+        company_id=cid,
+        name="X1 Mgr Store",
+        code="X1-MGR",
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tenant_id,
+        company_id=cid,
+        store_id=store.id,
+        name="X1 Mgr WH",
+        code="X1-MGR-WH",
+    )
+    db_session.add(wh)
+    await db_session.flush()
+    db_session.add(
+        m.WarehouseStock(
+            tenant_id=tenant_id,
+            company_id=cid,
+            warehouse_id=wh.id,
+            product_id=product.id,
+            quantity=2,
+            reserved_qty=0,
+            reorder_level=20,
+        )
+    )
     supplier = m.Party(
         tenant_id=tenant_id,
+        company_id=cid,
         name="X1 Supplier",
         kind="supplier",
         credit_limit=0,
@@ -42,6 +75,8 @@ async def _seed_cross_domain(db_session, seed):
         amt = float((i + 1) * 40)
         inv = m.SalesInvoice(
             tenant_id=tenant_id,
+            company_id=cid,
+            store_id=store.id,
             invoice_number=f"INV-X1-{i}",
             customer_id=customer.id,
             status="posted",
@@ -56,6 +91,7 @@ async def _seed_cross_domain(db_session, seed):
         db_session.add(
             m.SalesInvoiceItem(
                 tenant_id=tenant_id,
+                company_id=cid,
                 sales_invoice_id=inv.id,
                 product_id=product.id,
                 quantity=2,
@@ -70,6 +106,8 @@ async def _seed_cross_domain(db_session, seed):
         db_session.add(
             m.PurchaseInvoice(
                 tenant_id=tenant_id,
+                company_id=cid,
+                warehouse_id=wh.id,
                 invoice_number=f"PI-X1-{i}",
                 supplier_id=supplier.id,
                 status="unpaid" if i else "overdue",
@@ -86,6 +124,8 @@ async def _seed_cross_domain(db_session, seed):
     db_session.add(
         m.PurchaseOrder(
             tenant_id=tenant_id,
+            company_id=cid,
+            warehouse_id=wh.id,
             po_number="PO-X1-DRAFT",
             supplier_id=supplier.id,
             status="draft",
@@ -100,6 +140,8 @@ async def _seed_cross_domain(db_session, seed):
         db_session.add(
             m.Expense(
                 tenant_id=tenant_id,
+                company_id=cid,
+                store_id=store.id,
                 category="Utilities",
                 description=f"X1 exp {i}",
                 amount=400,
@@ -112,6 +154,8 @@ async def _seed_cross_domain(db_session, seed):
     db_session.add(
         m.Expense(
             tenant_id=tenant_id,
+            company_id=cid,
+            store_id=store.id,
             category="Utilities",
             description="X1 prior",
             amount=50,
@@ -122,13 +166,13 @@ async def _seed_cross_domain(db_session, seed):
     )
 
     await db_session.commit()
-    return {"supplier": supplier, "product": product}
+    return {"supplier": supplier, "product": product, "store": store, "warehouse": wh}
 
 
 @pytest.mark.asyncio
 async def test_cross_domain_analysis_api(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     await _seed_cross_domain(db_session, seed)
 
     r = await ac.get(
@@ -181,7 +225,26 @@ async def test_cross_domain_analysis_api(client, db_session):
 @pytest.mark.asyncio
 async def test_cross_domain_tenant_isolation(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
+    store = m.Store(
+        tenant_id=seed["t1"].id,
+        company_id=seed["c1"].id,
+        name="X1 Iso Store",
+        code="X1-ISO",
+        manager_id=seed["mgr1"].id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    db_session.add(
+        m.Warehouse(
+            tenant_id=seed["t1"].id,
+            company_id=seed["c1"].id,
+            store_id=store.id,
+            name="X1 Iso WH",
+            code="X1-ISO-WH",
+        )
+    )
     now = datetime.utcnow()
     db_session.add(
         m.SalesInvoice(

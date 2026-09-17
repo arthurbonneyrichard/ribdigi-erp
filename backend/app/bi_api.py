@@ -188,6 +188,10 @@ async def bi_get_settings(
     claims=Depends(require_permission("business_insights", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_bi_settings_read_denied(managed)
     return {"settings": await _svc(db, claims).load_settings(), "formulas": FORMULA_DOCS}
 
 
@@ -197,6 +201,13 @@ async def bi_put_settings(
     claims=Depends(require_permission("business_insights", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_bi_settings_write_denied(
+        managed,
+        message="Store managers cannot update company business-insights settings.",
+    )
     patch = {k: v for k, v in body.model_dump().items() if v is not None}
     settings = await _svc(db, claims).save_settings(patch)
     return {"settings": settings}
@@ -205,6 +216,10 @@ async def bi_put_settings(
 @router.get("/formulas")
 async def bi_formulas(
     claims=Depends(require_permission("business_insights", "read")),
-    _db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ):
+    from app import dashboard_scope as dashboard_scope_svc
+
+    managed = await dashboard_scope_svc.managed_store_ids(db, claims)
+    dashboard_scope_svc.assert_company_level_bi_formulas_read_denied(managed)
     return {"formulas": FORMULA_DOCS, "external_ai": False}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Shell from '../../components/Shell';
-import { api, authHeaders } from '../../lib/api';
+import { api, apiFetch } from '../../lib/api';
 import { useTabQuery } from '../../lib/tabQuery';
 
 type Tab = 'suppliers' | 'requests' | 'orders' | 'grn' | 'invoices' | 'returns' | 'settings';
@@ -96,7 +96,12 @@ type PurchaseRequest = {
   awaiting_roles?: string[];
   items: { id: string; product_id: string; quantity: number; unit_price: number }[];
 };
-type ApprovalLevel = { min_amount: number; roles: string[]; label?: string };
+type ApprovalLevel = {
+  min_amount: number;
+  min_percent?: number | null;
+  roles: string[];
+  label?: string;
+};
 type GrnItem = {
   id: string;
   product_id: string;
@@ -202,6 +207,8 @@ export default function Page() {
   const [manualInvPrice, setManualInvPrice] = useState('0');
   const [manualInvTaxRate, setManualInvTaxRate] = useState('15');
   const [manualInvRc, setManualInvRc] = useState(false);
+  const [manualInvWarehouseId, setManualInvWarehouseId] = useState('');
+  const [warehouses, setWarehouses] = useState<any[]>([]);
   const [ocrFor, setOcrFor] = useState<string | null>(null);
   const [ocrDraft, setOcrDraft] = useState<{
     supplier_invoice_number: string;
@@ -261,7 +268,8 @@ export default function Page() {
         : supplierStatus === 'active'
           ? '?status=active'
           : '';
-    const [prRes, poRes, supRes, prodRes, grnRes, invRes, retRes, settingsRes] = await Promise.all([
+    const [prRes, poRes, supRes, prodRes, grnRes, invRes, retRes, settingsRes, whRes] =
+      await Promise.all([
       api(prPath),
       api(poPath),
       api(`/suppliers${supplierQs}`),
@@ -269,7 +277,8 @@ export default function Page() {
       api(grnPath),
       api(invPath),
       api(retPath),
-      api('/purchasing/settings'),
+      api('/purchasing/settings').catch(() => ({ data: { levels: [] } })),
+      api('/warehouses').catch(() => ({ data: [] })),
     ]);
     setRequests(prRes.data || []);
     setOrders(poRes.data || []);
@@ -277,6 +286,7 @@ export default function Page() {
     setProducts(prodRes.data || []);
     setGrns(grnRes.data || []);
     setInvoices(invRes.data || []);
+    setWarehouses(whRes.data || []);
     setReturns(retRes.data || []);
     setPrLevels(settingsRes.data?.levels || []);
   }
@@ -330,13 +340,15 @@ export default function Page() {
     // Stage 119 E1 — suppliers CSV export
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-      const res = await fetch(`${apiBase}/suppliers/export`, {
-        headers: authHeaders(),
-      });
-      if (!res.ok) throw new Error('Supplier export failed');
+      const res = await apiFetch(`/suppliers/export`);
+      if (!res.ok) {
+        // Soft-fail store_manager STORE_SCOPE_DENIED (company party CRM dump).
+        if (res.status === 403) {
+          setMessage('Suppliers CSV export requires a company administrator.');
+          return;
+        }
+        throw new Error('Supplier export failed');
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -354,15 +366,10 @@ export default function Page() {
     // Stage 132 P1 — purchase invoice header CSV
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
       const qs = invoiceStatusFilter
         ? `?status=${encodeURIComponent(invoiceStatusFilter)}`
         : '';
-      const res = await fetch(`${apiBase}/purchasing/invoices/export${qs}`, {
-        headers: authHeaders(),
-      });
+      const res = await apiFetch(`/purchasing/invoices/export${qs}`);
       if (!res.ok) throw new Error('Purchase invoice export failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -385,13 +392,8 @@ export default function Page() {
     // Stage 135 R1 — purchase returns CSV
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
       const qs = status ? `?status=${encodeURIComponent(status)}` : '';
-      const res = await fetch(`${apiBase}/purchasing/${kind}/export${qs}`, {
-        headers: authHeaders(),
-      });
+      const res = await apiFetch(`/purchasing/${kind}/export${qs}`);
       if (!res.ok) throw new Error(`${kind} export failed`);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -645,12 +647,7 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-      const res = await fetch(`${apiBase}/suppliers/${id}/history/export`, {
-        headers: authHeaders(),
-      });
+      const res = await apiFetch(`/suppliers/${id}/history/export`);
       if (!res.ok) throw new Error('Supplier history CSV export failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -769,11 +766,18 @@ export default function Page() {
       const r = await api('/purchasing/settings', {
         method: 'PATCH',
         body: JSON.stringify({
-          levels: prLevels.map((l) => ({
-            min_amount: Number(l.min_amount) || 0.01,
-            roles: l.roles,
-            label: l.label || undefined,
-          })),
+          levels: prLevels.map((l) => {
+            const pct =
+              l.min_percent === null || l.min_percent === undefined
+                ? null
+                : Number(l.min_percent);
+            return {
+              min_amount: Number(l.min_amount) || 0.01,
+              min_percent: pct != null && !Number.isNaN(pct) && pct > 0 ? pct : null,
+              roles: l.roles,
+              label: l.label || undefined,
+            };
+          }),
         }),
       });
       setPrLevels(r.data?.levels || []);
@@ -857,12 +861,7 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-      const res = await fetch(`${apiBase}/purchasing/orders/${poId}/amendments/export`, {
-        headers: authHeaders(),
-      });
+      const res = await apiFetch(`/purchasing/orders/${poId}/amendments/export`);
       if (!res.ok) throw new Error('PO amendments CSV export failed');
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -1093,6 +1092,7 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({
           supplier_id: manualInvSupplierId,
+          warehouse_id: manualInvWarehouseId || undefined,
           supplier_invoice_number: supplierInvoiceNo || undefined,
           is_reverse_charge: manualInvRc,
           items: [
@@ -1112,6 +1112,7 @@ export default function Page() {
       setTab('invoices');
       setSupplierInvoiceNo('');
       setManualInvRc(false);
+      setManualInvWarehouseId('');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -1129,18 +1130,13 @@ export default function Page() {
     }
   }
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-
   async function uploadInvoiceAttachment(id: string, file: File) {
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
       const form = new FormData();
       form.append('file', file);
-      const res = await fetch(`${apiBase}/purchasing/invoices/${id}/attachment`, {
+      const res = await apiFetch(`/purchasing/invoices/${id}/attachment`, {
         method: 'POST',
-        headers: authHeaders(),
         body: form,
       });
       const body = await res.json().catch(() => ({}));
@@ -1155,11 +1151,7 @@ export default function Page() {
   async function downloadInvoiceAttachment(id: string) {
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/purchasing/invoices/${id}/attachment`, {
-        headers: authHeaders(),
-      });
+      const res = await apiFetch(`/purchasing/invoices/${id}/attachment`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.detail || body.message || 'Download failed');
@@ -1425,8 +1417,9 @@ export default function Page() {
         <div className="card" style={{ marginBottom: 16 }} id="purchase-settings">
           <h3>Purchase settings</h3>
           <p className="muted" style={{ marginBottom: 8 }}>
-            PR approval matrix — estimated total must exceed a level&apos;s min to require that step (Store
-            Manager → Company Admin by default). Company admins can save changes. Export via{' '}
+            PR approval matrix — a level triggers when estimated total exceeds Min amount{' '}
+            <strong>or</strong> optional Min % (when a percent basis is supplied). Store Manager →
+            Company Admin by default. Company admins can save changes. Export via{' '}
             <code>GET /purchasing/settings/export</code> (Stage 138 P1).
           </p>
           {prLevels.length === 0 ? (
@@ -1443,6 +1436,18 @@ export default function Page() {
                   onChange={(e) => updatePrLevel(idx, { min_amount: Number(e.target.value) || 0 })}
                   placeholder="Min amount"
                   style={{ width: 100 }}
+                />
+                <input
+                  value={lvl.min_percent ?? ''}
+                  onChange={(e) => {
+                    const v = e.target.value.trim();
+                    updatePrLevel(idx, {
+                      min_percent: v === '' ? null : Number(v) || 0,
+                    });
+                  }}
+                  placeholder="Min % (opt)"
+                  style={{ width: 90 }}
+                  title="Optional percentage threshold"
                 />
                 <input
                   value={lvl.label || ''}
@@ -1476,12 +1481,7 @@ export default function Page() {
                 // Stage 138 P1 — purchasing approval settings CSV
                 setError('');
                 try {
-                  const token = localStorage.getItem('token');
-                  const tenant = localStorage.getItem('tenant');
-                  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-                  const res = await fetch(`${apiBase}/purchasing/settings/export`, {
-                    headers: authHeaders(),
-                  });
+                  const res = await apiFetch(`/purchasing/settings/export`);
                   if (!res.ok) throw new Error('Purchasing settings export failed');
                   const blob = await res.blob();
                   const url = URL.createObjectURL(blob);
@@ -1604,6 +1604,10 @@ export default function Page() {
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Create manual purchase invoice</h3>
+        <p className="muted" style={{ marginTop: 0 }}>
+          Store managers must pick a managed warehouse (or use GRN/PO). Unlinked invoices without
+          warehouse stay fail-closed.
+        </p>
         <div style={{ display: 'grid', gap: 8, maxWidth: 480 }}>
           <select value={manualInvSupplierId} onChange={(e) => setManualInvSupplierId(e.target.value)}>
             <option value="">Select supplier</option>
@@ -1612,6 +1616,17 @@ export default function Page() {
               .map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={manualInvWarehouseId}
+            onChange={(e) => setManualInvWarehouseId(e.target.value)}
+          >
+            <option value="">Warehouse (optional for admins; required for store managers)</option>
+            {warehouses.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.name || w.code || w.id}
               </option>
             ))}
           </select>

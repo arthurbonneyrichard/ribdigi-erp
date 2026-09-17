@@ -207,7 +207,7 @@ async def ensure_default_accounts(
     await db.flush()
 
 
-def serialize_coa_account(account: m.Account) -> dict:
+def serialize_coa_account(account: m.Account, *, balance: float | None = None) -> dict:
     return {
         "id": account.id,
         "company_id": getattr(account, "company_id", None),
@@ -215,7 +215,7 @@ def serialize_coa_account(account: m.Account) -> dict:
         "name": account.name,
         "account_type": account.account_type,
         "parent_id": account.parent_id,
-        "balance": float(account.balance or 0),
+        "balance": float(balance if balance is not None else (account.balance or 0)),
         "is_cash_account": bool(account.is_cash_account),
         "is_bank_account": bool(account.is_bank_account),
         "is_system": bool(getattr(account, "is_system", False)),
@@ -226,9 +226,22 @@ def serialize_coa_account(account: m.Account) -> dict:
     }
 
 
-def build_account_tree(rows: list[m.Account]) -> list[dict]:
+def build_account_tree(
+    rows: list[m.Account],
+    *,
+    balance_by_id: dict[str, float] | None = None,
+) -> list[dict]:
     """Nest accounts by parent_id; orphans with missing parents become roots."""
-    by_id = {r.id: {**serialize_coa_account(r), "children": []} for r in rows}
+    by_id = {
+        r.id: {
+            **serialize_coa_account(
+                r,
+                balance=balance_by_id.get(r.id, 0.0) if balance_by_id is not None else None,
+            ),
+            "children": [],
+        }
+        for r in rows
+    }
     roots: list[dict] = []
     for r in rows:
         node = by_id[r.id]
@@ -285,8 +298,13 @@ async def account_transactions(
     to_date: datetime | None = None,
     include_unposted: bool = False,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
-    """Ledger drill-down for one COA account (Stage 8 A1)."""
+    """Ledger drill-down for one COA account (Stage 8 A1).
+
+    When ``store_ids`` is set (store_manager scope), only journal lines from those
+    stores are included in opening/period balances (null-store fail-closed).
+    """
     account = await get_tenant_account(db, tenant_id, account_id, company_id=company_id)
     stmt = (
         select(m.JournalEntryLine, m.JournalEntry)
@@ -299,6 +317,11 @@ async def account_transactions(
     )
     if not include_unposted:
         stmt = stmt.where(m.JournalEntry.status == "posted")
+    if store_ids is not None:
+        if store_ids:
+            stmt = stmt.where(m.JournalEntry.store_id.in_(store_ids))
+        else:
+            stmt = stmt.where(m.JournalEntry.id.is_(None))
     stmt = stmt.order_by(
         m.JournalEntry.entry_date.asc(),
         m.JournalEntry.entry_number.asc(),
@@ -352,8 +375,12 @@ async def account_transactions(
             }
         )
 
+    scoped_balance = float(account.balance or 0)
+    if store_ids is not None:
+        scoped_balance = running if period_rows else opening
+
     return {
-        "account": serialize_coa_account(account),
+        "account": serialize_coa_account(account, balance=scoped_balance),
         "from_date": from_date.date().isoformat() if from_date else None,
         "to_date": to_date.date().isoformat() if to_date else None,
         "include_unposted": bool(include_unposted),
@@ -564,6 +591,7 @@ async def post_account_opening_balance(
     amount: float,
     description: str | None = None,
     company_id: str | None = None,
+    store_id: str | None = None,
 ) -> m.JournalEntry:
     """Post a balanced opening-balance journal for one account (BR-10.1)."""
     await ensure_default_accounts(db, tenant_id, company_id=company_id)
@@ -649,6 +677,7 @@ async def post_account_opening_balance(
         reference=f"OB-{account.code}",
         source_type="opening_balance",
         source_id=account.id,
+        store_id=store_id,
         company_id=company_id,
         lines=lines,
     )
@@ -768,6 +797,7 @@ async def transfer_liquid_funds(
     reference: str | None = None,
     kind: str | None = None,
     company_id: str | None = None,
+    store_id: str | None = None,
 ) -> m.JournalEntry:
     """Move funds between cash/bank accounts (deposit, withdrawal, or transfer)."""
     from app.bank_recon import get_liquid_account
@@ -811,6 +841,7 @@ async def transfer_liquid_funds(
         reference=reference,
         source_type=f"liquid_{kind_norm}",
         source_id=None,
+        store_id=store_id,
         company_id=company_id,
         lines=[
             {
@@ -1190,6 +1221,24 @@ async def resolve_journal_dimension_ids(
     return None, None, None
 
 
+def merge_journal_store_scope(
+    dimension_store_ids: list[str] | None,
+    scope_store_ids: list[str] | None,
+) -> list[str] | None:
+    """Intersect optional journal dimension filter with store_manager scope.
+
+    - Both ``None`` → tenant-wide (no store filter)
+    - ``scope_store_ids`` set → fail-closed list (may be empty); null-store journals excluded
+    - Both lists → intersection (empty when no overlap)
+    """
+    if scope_store_ids is None:
+        return dimension_store_ids
+    if dimension_store_ids is None:
+        return list(scope_store_ids)
+    allowed = set(scope_store_ids)
+    return [sid for sid in dimension_store_ids if sid in allowed]
+
+
 async def post_journal_entry(
     db: AsyncSession,
     *,
@@ -1440,7 +1489,8 @@ async def post_sales_invoice_journal(
     user_id: str,
     invoice: m.SalesInvoice,
 ) -> m.JournalEntry:
-    await ensure_default_accounts(db, tenant_id)
+    company_id = getattr(invoice, "company_id", None)
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
     from app.fx import doc_rate, to_base
 
     rate = doc_rate(invoice)
@@ -1476,6 +1526,7 @@ async def post_sales_invoice_journal(
         source_type="sales_invoice",
         source_id=invoice.id,
         store_id=getattr(invoice, "store_id", None),
+        company_id=company_id,
         lines=lines,
     )
 
@@ -1488,7 +1539,9 @@ async def post_sales_return_journal(
     sales_return: m.SalesReturn,
     invoice: m.SalesInvoice | None = None,
 ) -> m.JournalEntry:
-    await ensure_default_accounts(db, tenant_id)
+    company_id = getattr(sales_return, "company_id", None) or (
+        getattr(invoice, "company_id", None) if invoice is not None else None
+    )
     from app.fx import doc_rate, to_base
 
     if invoice is None:
@@ -1500,6 +1553,10 @@ async def post_sales_return_journal(
                 )
             )
         ).scalar_one_or_none()
+    company_id = company_id or (
+        getattr(invoice, "company_id", None) if invoice is not None else None
+    )
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
     rate = doc_rate(invoice) if invoice is not None else 1.0
     revenue = to_base(float(sales_return.subtotal or 0), rate)
     tax = to_base(float(sales_return.tax_amount or 0), rate)
@@ -1536,6 +1593,7 @@ async def post_sales_return_journal(
         source_type="sales_return",
         source_id=sales_return.id,
         store_id=getattr(invoice, "store_id", None) if invoice is not None else None,
+        company_id=company_id,
         lines=lines,
     )
 
@@ -1549,7 +1607,8 @@ async def post_customer_payment_journal(
     allocations: list[tuple[m.SalesInvoice, float, float]] | None = None,
 ) -> m.JournalEntry:
     """Post receipt. allocations: (invoice, settlement_doc, discount_doc) for FX per invoice rate."""
-    await ensure_default_accounts(db, tenant_id)
+    company_id = getattr(payment, "company_id", None)
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
     from app.fx import doc_rate, fx_lines_for_receipt, to_base
 
     amount = float(payment.amount)
@@ -1621,6 +1680,7 @@ async def post_customer_payment_journal(
         reference=payment.payment_number,
         source_type="customer_payment",
         source_id=payment.id,
+        company_id=company_id,
         lines=lines,
     )
 
@@ -1633,7 +1693,8 @@ async def post_supplier_payment_journal(
     payment: m.SupplierPayment,
     allocations: list[tuple[m.PurchaseInvoice, float, float]] | None = None,
 ) -> m.JournalEntry:
-    await ensure_default_accounts(db, tenant_id)
+    company_id = getattr(payment, "company_id", None)
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
     from app.fx import doc_rate, fx_lines_for_payment, to_base
 
     amount = float(payment.amount)
@@ -1696,6 +1757,7 @@ async def post_supplier_payment_journal(
         reference=payment.payment_number,
         source_type="supplier_payment",
         source_id=payment.id,
+        company_id=company_id,
         lines=lines,
     )
 
@@ -1710,7 +1772,8 @@ async def post_grn_journal(
 ) -> m.JournalEntry | None:
     if accepted_value <= 0:
         return None
-    await ensure_default_accounts(db, tenant_id)
+    company_id = getattr(grn, "company_id", None)
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
     return await post_journal_entry(
         db,
         tenant_id=tenant_id,
@@ -1719,6 +1782,7 @@ async def post_grn_journal(
         reference=grn.grn_number,
         source_type="grn",
         source_id=grn.id,
+        company_id=company_id,
         lines=[
             {"account_code": "1200", "debit": accepted_value, "credit": 0, "description": "Inventory"},
             {"account_code": "2000", "debit": 0, "credit": accepted_value, "description": "AP"},
@@ -1734,7 +1798,8 @@ async def post_purchase_return_journal(
     purchase_return: m.PurchaseReturn,
 ) -> m.JournalEntry:
     """Reverse GRN impact: Dr AP / Cr Inventory for return total (tax-inclusive inventory value)."""
-    await ensure_default_accounts(db, tenant_id)
+    company_id = getattr(purchase_return, "company_id", None)
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
     total = float(purchase_return.total_amount)
     return await post_journal_entry(
         db,
@@ -1744,6 +1809,7 @@ async def post_purchase_return_journal(
         reference=purchase_return.debit_note_number or purchase_return.return_number,
         source_type="purchase_return",
         source_id=purchase_return.id,
+        company_id=company_id,
         lines=[
             {"account_code": "2000", "debit": total, "credit": 0, "description": "AP credit"},
             {"account_code": "1200", "debit": 0, "credit": total, "description": "Inventory out"},
@@ -1765,7 +1831,8 @@ async def post_purchase_invoice_journal(
     Stage 11 C2 GRN-linked RC: Inv/AP already posted by GRN — post self-assess
     Dr 1300 / Cr 2100 only when ``skip_inventory_ap`` is true.
     """
-    await ensure_default_accounts(db, tenant_id)
+    company_id = getattr(purchase_invoice, "company_id", None)
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
     from app.fx import doc_rate, to_base
 
     rate = doc_rate(purchase_invoice)
@@ -1819,6 +1886,7 @@ async def post_purchase_invoice_journal(
         reference=purchase_invoice.supplier_invoice_number or purchase_invoice.invoice_number,
         source_type="purchase_invoice",
         source_id=purchase_invoice.id,
+        company_id=company_id,
         lines=lines,
     )
 
@@ -1831,7 +1899,8 @@ async def post_purchase_invoice_reversal_journal(
     purchase_invoice: m.PurchaseInvoice,
     skip_inventory_ap: bool = False,
 ) -> m.JournalEntry | None:
-    await ensure_default_accounts(db, tenant_id)
+    company_id = getattr(purchase_invoice, "company_id", None)
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
     from app.fx import doc_rate, to_base
 
     rate = doc_rate(purchase_invoice)
@@ -1881,6 +1950,7 @@ async def post_purchase_invoice_reversal_journal(
         reference=purchase_invoice.invoice_number,
         source_type="purchase_invoice_cancel",
         source_id=purchase_invoice.id,
+        company_id=company_id,
         lines=lines,
     )
 
@@ -1892,7 +1962,8 @@ async def post_expense_journal(
     user_id: str,
     expense: m.Expense,
 ) -> m.JournalEntry:
-    await ensure_default_accounts(db, tenant_id)
+    company_id = getattr(expense, "company_id", None)
+    await ensure_default_accounts(db, tenant_id, company_id=company_id)
     amount = float(expense.amount)
     liquid_code, liquid_label = await resolve_settlement_gl(
         db,
@@ -1900,7 +1971,7 @@ async def post_expense_journal(
         expense.payment_method,
         liquid_account_id=getattr(expense, "liquid_account_id", None),
         outflow=True,
-        company_id=getattr(expense, "company_id", None),
+        company_id=company_id,
     )
     # Stage 14 E1 — debit mapped category COA when set; else Operating Expenses 6000
     debit_line: dict = {
@@ -1944,6 +2015,7 @@ async def post_expense_journal(
         source_type="expense",
         source_id=expense.id,
         store_id=getattr(expense, "store_id", None),
+        company_id=company_id,
         lines=[
             debit_line,
             {
@@ -2043,6 +2115,22 @@ async def post_pos_sale_journal(
     )
 
 
+async def scoped_coa_balance_map(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    company_id: str | None,
+    store_ids: list[str] | None,
+) -> dict[str, float] | None:
+    """Rebuild COA balances from posted journals when ``store_ids`` is set; else None."""
+    if store_ids is None:
+        return None
+    _accounts, bal_by_id = await account_balances_through(
+        db, tenant_id, store_ids=store_ids, company_id=company_id
+    )
+    return bal_by_id
+
+
 async def account_balances_through(
     db: AsyncSession,
     tenant_id: str,
@@ -2096,10 +2184,11 @@ async def trial_balance(
     *,
     as_of: datetime | None = None,
     company_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
-    """Trial balance; optional as_of rebuilds balances from posted journals through that date."""
+    """Trial balance; optional as_of / store_ids rebuilds from posted journals."""
     accounts, bal_by_id = await account_balances_through(
-        db, tenant_id, as_of=as_of, company_id=company_id
+        db, tenant_id, as_of=as_of, store_ids=store_ids, company_id=company_id
     )
     rows = []
     debit_total = 0.0
@@ -2155,17 +2244,19 @@ async def profit_and_loss(
     to_date: datetime | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    store_ids: list[str] | None = None,
     company_id: str | None = None,
 ) -> dict:
-    """Period P&L from posted journal lines (optional date range / store / branch)."""
+    """Period P&L from posted journal lines (optional date range / store / branch / scope)."""
     await ensure_default_accounts(db, tenant_id, company_id=company_id)
-    resolved_store, resolved_branch, store_ids = await resolve_journal_dimension_ids(
+    resolved_store, resolved_branch, dim_store_ids = await resolve_journal_dimension_ids(
         db,
         tenant_id=tenant_id,
         store_id=store_id,
         branch_id=branch_id,
         company_id=company_id,
     )
+    effective_store_ids = merge_journal_store_scope(dim_store_ids, store_ids)
 
     stmt = (
         select(m.JournalEntryLine, m.Account, m.JournalEntry)
@@ -2185,9 +2276,9 @@ async def profit_and_loss(
         stmt = stmt.where(m.JournalEntry.entry_date >= from_date)
     if to_date:
         stmt = stmt.where(m.JournalEntry.entry_date <= to_date)
-    if store_ids is not None:
-        if store_ids:
-            stmt = stmt.where(m.JournalEntry.store_id.in_(store_ids))
+    if effective_store_ids is not None:
+        if effective_store_ids:
+            stmt = stmt.where(m.JournalEntry.store_id.in_(effective_store_ids))
         else:
             stmt = stmt.where(m.JournalEntry.store_id.in_([]))
 

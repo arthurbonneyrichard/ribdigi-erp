@@ -31,7 +31,7 @@ async def _super(ac, seed):
 async def test_cross_tenant_isolation_and_header_validation(client):
     """BR-1.4: Tenant A cannot read Tenant B; mismatched X-Tenant-ID denied."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
 
     products = await ac.get("/api/v1/products", headers=headers)
     assert products.status_code == 200, products.text

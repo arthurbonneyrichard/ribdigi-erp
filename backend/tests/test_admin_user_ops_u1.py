@@ -58,7 +58,7 @@ async def test_admin_can_update_branch_assignment(client, db_session):
 
 def test_users_ui_has_reset_password_and_org_controls():
     text = (ROOT / "frontend/app/users/page.tsx").read_text(encoding="utf-8")
-    assert "Reset password" in text
+    assert "Set temp password" in text or "Reset password" in text
     assert "resetPassword" in text
     assert "setOrg" in text
     assert "Branch" in text and "Department" in text

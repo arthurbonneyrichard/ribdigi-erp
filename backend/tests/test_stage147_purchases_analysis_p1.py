@@ -20,7 +20,7 @@ async def _mgr(ac):
 @pytest.mark.asyncio
 async def test_purchases_analysis_export_csv(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     supplier = seed.get("party2") or seed["party1"]
     inv = m.PurchaseInvoice(
         tenant_id=seed["t1"].id,

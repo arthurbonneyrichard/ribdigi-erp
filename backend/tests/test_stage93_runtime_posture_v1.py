@@ -81,9 +81,11 @@ async def test_number_format_house_runtime_parity(client, db_engine):
     public = await ac.get("/api/v1/health")
     assert public.status_code == 200
     public_body = public.json()
-    public_sec = public_body.get("security") or public_body.get("data", {}).get("security") or {}
-    if isinstance(public_sec, dict):
-        assert not isinstance(public_sec.get("cors_origins"), list)
+    public_data = public_body.get("data") if isinstance(public_body.get("data"), dict) else {}
+    # SEC-L2 — no public security posture object.
+    assert "security" not in public_body
+    assert "security" not in public_data
+    assert "env" not in public_data
 
 
 def test_settings_health_evidence_ui_v1():

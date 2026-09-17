@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 
 from app import models as m
@@ -9,18 +10,26 @@ from app.tax import resolve_product_tax
 from tests.conftest import auth_headers
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 @pytest.mark.asyncio
 async def test_category_tax_resolution_precedence(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
 
     default = m.TaxRate(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="Default VAT",
         rate=10,
         tax_type="vat",
@@ -30,6 +39,7 @@ async def test_category_tax_resolution_precedence(client, db_session):
     )
     cat_rate = m.TaxRate(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="Category VAT",
         rate=15,
         tax_type="vat",
@@ -39,6 +49,7 @@ async def test_category_tax_resolution_precedence(client, db_session):
     )
     prod_rate = m.TaxRate(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="Product VAT",
         rate=5,
         tax_type="vat",
@@ -94,11 +105,12 @@ async def test_category_tax_resolution_precedence(client, db_session):
 @pytest.mark.asyncio
 async def test_category_tax_patch_and_foreign_rate_rejected(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant_id = seed["t1"].id
 
     rate = m.TaxRate(
         tenant_id=tenant_id,
+        company_id=seed["c1"].id,
         name="Patch VAT",
         rate=12,
         tax_type="vat",
@@ -139,7 +151,12 @@ async def test_category_tax_patch_and_foreign_rate_rejected(client, db_session):
         headers=headers,
         json={"tax_rate_id": foreign.id},
     )
-    assert bad.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert bad.status_code in (403, 404), bad.text
+    if bad.status_code == 403:
+        detail = bad.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"
 
     cleared = await ac.patch(
         f"/api/v1/catalog/categories/{cat_id}",

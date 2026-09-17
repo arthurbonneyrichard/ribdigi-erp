@@ -193,8 +193,15 @@ async def test_backup_failure_notifies_admin_no_fake_success(
     assert note.category == "system"
     assert note.status == "unread"
 
-    listed = await ac.get("/api/v1/notifications", headers=headers)
-    assert listed.status_code == 200
+    # Notifications are a company-workspace module; backup itself requires tenant workspace.
+    company_headers = await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
+    listed = await ac.get("/api/v1/notifications", headers=company_headers)
+    assert listed.status_code == 200, listed.text
     titles = [n["title"] for n in listed.json()["data"]]
     assert "Backup failed" in titles
 

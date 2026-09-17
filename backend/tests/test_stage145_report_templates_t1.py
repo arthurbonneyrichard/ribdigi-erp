@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pyotp
 import pytest
 
 from tests.conftest import auth_headers
@@ -11,14 +12,20 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _admin(ac, seed):
+    return await auth_headers(
+        ac,
+        email="super@alpha.example.com",
+        tenant_slug="alpha",
+        totp_code=pyotp.TOTP(seed["super_totp_secret"]).now(),
+    )
 
 
 @pytest.mark.asyncio
 async def test_report_templates_export_csv(client):
+    """Company admins can create + export AI report templates CSV."""
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _admin(ac, seed)
 
     created = await ac.post(
         "/api/v1/ai/reports/templates",

@@ -643,6 +643,7 @@ async def list_transfers_filtered(
     *,
     status: str | None = None,
     store_id: str | None = None,
+    store_ids: list[str] | None = None,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     scope: str = "all",
@@ -667,6 +668,15 @@ async def list_transfers_filtered(
             or_(
                 m.StockTransfer.from_store_id == store_id,
                 m.StockTransfer.to_store_id == store_id,
+            )
+        )
+    elif store_ids is not None:
+        if not store_ids:
+            return []
+        stmt = stmt.where(
+            or_(
+                m.StockTransfer.from_store_id.in_(store_ids),
+                m.StockTransfer.to_store_id.in_(store_ids),
             )
         )
     if from_date:
@@ -695,6 +705,7 @@ async def transfer_history(
     *,
     status: str | None = None,
     store_id: str | None = None,
+    store_ids: list[str] | None = None,
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     scope: str = "all",
@@ -707,6 +718,7 @@ async def transfer_history(
         tenant_id,
         status=status,
         store_id=store_id,
+        store_ids=store_ids,
         from_date=from_date,
         to_date=to_date,
         scope=scope,

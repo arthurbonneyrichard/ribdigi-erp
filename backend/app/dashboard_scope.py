@@ -1,20 +1,76 @@
-"""Store-scoped dashboard resolution for Store Managers (Stage 81 S1 / ADR-005 adjacency)."""
+"""Store-scoped dashboard resolution for Store Managers (Stage 81 S1 / ADR-005 adjacency).
+
+Also used for operational list/read hardening (POS sales, sales invoices, expenses,
+transfers, warehouses / inventory movements) and accounting statement reads
+(P&L / TB / cash-flow / balance-sheet) and bank recon unmatched book lines.
+
+Default operational scope is ``stores.manager_id`` only. When
+``STORE_MEMBERSHIP_SCOPE_ENABLED`` is true, store_manager scope becomes the
+**union** of manager_id stores and active ``user_store_memberships`` (see
+``docs/ADR_005_MEMBERSHIP_SCOPE_CUTOVER.md``). Flag default is false (ops
+cutover). ADR-005 is **Complete** via automated flag-ON soak — Complete ≠
+production default ON. Store-scoped RBAC Complete remains MISSING.
+
+Cashier membership fail-closed (flag ON) uses ``store_visibility_ids`` for
+POS bind + store list surfaces only — ``managed_store_ids`` stays ``None`` for
+cashiers so continuum company-level denies/redacts (keyed off
+``managed_ids is not None``) do not treat cashiers as store_managers.
+
+Warehouse scope maps via ``Warehouse.store_id`` ∈ managed stores. POS holds
+scope via ``PosSession.store_id``; drawer-settings export uses visibility
+store IDs. POS sale receipt get/send scopes via ``PosSession.store_id``
+(null session fail-closed).
+"""
 
 from __future__ import annotations
 
+import re
 from datetime import datetime
 
-from sqlalchemy import select, func
+from fastapi import HTTPException
+from sqlalchemy import exists, or_, select, func, and_, false as sql_false
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.config import settings
 from app.dashboard_views import dashboard_view_for_role
+
+
+async def _active_membership_store_ids(
+    db: AsyncSession, *, tenant_id: str, user_id: str
+) -> list[str]:
+    """Active, non-expired membership store IDs joined to active tenant stores."""
+    from app import store_memberships as store_memberships_svc
+
+    mem_rows = (
+        await db.execute(
+            select(m.UserStoreMembership.store_id)
+            .join(m.Store, m.Store.id == m.UserStoreMembership.store_id)
+            .where(
+                m.UserStoreMembership.tenant_id == tenant_id,
+                m.UserStoreMembership.user_id == user_id,
+                m.UserStoreMembership.is_active.is_(True),
+                store_memberships_svc.membership_not_expired_clause(),
+                m.Store.tenant_id == tenant_id,
+                m.Store.is_active == True,  # noqa: E712
+            )
+        )
+    ).scalars().all()
+    return [str(sid) for sid in mem_rows]
 
 
 async def managed_store_ids(db: AsyncSession, claims: dict) -> list[str] | None:
     """Return managed store IDs for store_manager view; None means tenant-wide (no store filter).
 
-    Uses ``stores.manager_id`` only (ADR-005 — no user↔store membership table).
+    Legacy (flag OFF, default): ``stores.manager_id`` only.
+
+    Flag ON (``STORE_MEMBERSHIP_SCOPE_ENABLED``): store_manager scope is the
+    **union** of active manager_id stores and active membership store IDs
+    (tenant-isolated; inactive memberships/stores excluded). Admin/executive
+    and cashier views still return ``None`` here — cashiers use
+    ``store_visibility_ids`` / ``cashier_membership_store_ids`` for POS +
+    store-list fail-closed. Enabling the flag is ops cutover; ADR-005 Complete
+    is claimed from automated soak with default still OFF.
     """
     role = (claims.get("role") or "").strip().lower()
     if dashboard_view_for_role(role) != "store_manager":
@@ -32,7 +88,71 @@ async def managed_store_ids(db: AsyncSession, claims: dict) -> list[str] | None:
             )
         )
     ).scalars().all()
-    return [str(sid) for sid in rows]
+    ids = {str(sid) for sid in rows}
+
+    if bool(getattr(settings, "STORE_MEMBERSHIP_SCOPE_ENABLED", False)):
+        ids.update(
+            await _active_membership_store_ids(
+                db, tenant_id=tenant_id, user_id=user_id
+            )
+        )
+
+    return list(ids)
+
+
+async def cashier_membership_store_ids(
+    db: AsyncSession, claims: dict
+) -> list[str] | None:
+    """Cashier POS/store-list scope when membership flag is ON.
+
+    Returns:
+      - ``None`` — flag OFF or non-cashier (legacy: do not filter via this helper)
+      - ``[]`` — flag ON cashier with no active memberships (fail-closed)
+      - ``[store_id, ...]`` — flag ON cashier with active memberships
+
+    Intentionally separate from ``managed_store_ids`` so continuum
+    ``managed_ids is not None`` company denies/redacts stay store_manager-only.
+    """
+    role = (claims.get("role") or "").strip().lower()
+    if dashboard_view_for_role(role) != "cashier":
+        return None
+    if not bool(getattr(settings, "STORE_MEMBERSHIP_SCOPE_ENABLED", False)):
+        return None
+    user_id = claims.get("sub")
+    tenant_id = claims.get("tenant_id")
+    if not user_id or not tenant_id:
+        return []
+    return await _active_membership_store_ids(
+        db, tenant_id=tenant_id, user_id=user_id
+    )
+
+
+async def store_visibility_ids(db: AsyncSession, claims: dict) -> list[str] | None:
+    """Store IDs for store lists and POS bind/session scope.
+
+    Uses ``managed_store_ids`` for store_manager (incl. flag-ON union). When that
+    is ``None``, applies ``cashier_membership_store_ids`` (flag-ON fail-closed).
+    Otherwise ``None`` = tenant-wide (admins, flag-OFF cashiers).
+
+    Do **not** pass this into continuum company-level deny/redact helpers — those
+    must keep using ``managed_store_ids`` so cashiers are never treated as managers.
+    """
+    managed = await managed_store_ids(db, claims)
+    if managed is not None:
+        return managed
+    return await cashier_membership_store_ids(db, claims)
+
+
+def assert_store_membership_admin_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list or mutate user↔store memberships; "
+        "company/tenant admins assign store membership (ADR-005 scaffold)."
+    ),
+) -> None:
+    """403 when store_manager attempts company-level store membership admin APIs."""
+    assert_company_level_write_denied(managed_ids, message=message)
 
 
 def store_scope_payload(store_ids: list[str] | None) -> dict:
@@ -45,6 +165,6112 @@ def store_scope_payload(store_ids: list[str] | None) -> dict:
     }
 
 
+def assert_store_in_manager_scope(
+    managed_ids: list[str] | None,
+    store_id: str | None,
+    *,
+    allow_unset: bool = True,
+) -> None:
+    """403 when a store_manager requests a store outside ``manager_id`` scope.
+
+    When ``allow_unset`` is False, missing ``store_id`` is also denied (fail closed
+    for records that should be store-bound for managers).
+    """
+    if managed_ids is None:
+        return
+    sid = (store_id or "").strip()
+    if not sid:
+        if allow_unset:
+            return
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": "Record has no store assignment within your managed store scope.",
+                "store_id": None,
+            },
+        )
+    if sid not in managed_ids:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": "Store is outside your managed store scope.",
+                "store_id": sid,
+            },
+        )
+
+
+def assert_offline_sync_store_scope(
+    managed_ids: list[str] | None,
+    store_id: str | None,
+    *,
+    message: str = "Store managers must bind offline sync to a managed store.",
+) -> None:
+    """403 when store_manager sync push/pull/ack uses foreign or unset ``store_id``.
+
+    Mirrors offline device bind: envelope refresh on ``/sync/push``,
+    ``/sync/pull``, and ``/sync/ack`` must not company-bind or touch unmanaged
+    stores. Device list/get/register/revoke use offline-devices admin denies;
+    conflict resolve uses ``assert_company_level_sync_conflict_resolve_denied``.
+    Offline Complete remains MISSING.
+    """
+    if managed_ids is None:
+        return
+    sid = (store_id or "").strip()
+    if not sid:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": message,
+                "store_id": None,
+            },
+        )
+    if sid not in managed_ids:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": message,
+                "store_id": sid,
+            },
+        )
+
+
+def assert_company_level_offline_devices_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list or inspect company offline device inventory; "
+        "bind + scoped sync remain; Offline Complete remains MISSING."
+    ),
+) -> None:
+    """403 when store_manager GETs /offline/devices or /offline/devices/{id}.
+
+    Tenant-wide device inventory is company admin. Bind remains store-scoped;
+    register/revoke use write deny. Offline Complete remains MISSING.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_offline_devices_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot register or revoke company offline devices; "
+        "bind + scoped sync remain; Offline Complete remains MISSING."
+    ),
+) -> None:
+    """403 when store_manager POSTs /offline/devices or DELETE /offline/devices/{id}.
+
+    List/get already denied; register/revoke are company admin. Bind remains
+    store-scoped. Offline Complete remains MISSING.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_offline_alerts_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list company offline owner alerts; "
+        "bind + scoped sync remain; Offline Complete remains MISSING."
+    ),
+) -> None:
+    """403 when store_manager GETs /offline/alerts.
+
+    Tenant-wide owner/admin offline signals (envelope, backlog, conflicts) are
+    company admin. Notify uses write deny. Offline Complete remains MISSING.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_offline_alerts_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot notify company offline owner alerts; "
+        "bind + scoped sync remain; Offline Complete remains MISSING."
+    ),
+) -> None:
+    """403 when store_manager POSTs /offline/alerts/notify.
+
+    Critical security-email notify is company admin. GET already denied.
+    Offline Complete remains MISSING.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_sync_conflict_resolve_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot resolve company sync conflicts; "
+        "scoped conflict list remains; Offline Complete remains MISSING."
+    ),
+) -> None:
+    """403 when store_manager POSTs /sync/conflicts/{id}/resolve.
+
+    Conflict list/status remain store-scoped; explicit resolve is company admin
+    (accept_client / keep_server). Offline Complete remains MISSING.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+async def assert_pos_session_store_in_manager_scope(
+    db: AsyncSession,
+    claims: dict,
+    session_id: str | None,
+    *,
+    require_session: bool = False,
+) -> None:
+    """403 when scoped actors reference a POS session outside visibility stores.
+
+    Applies to store_manager (managed stores) and flag-ON cashiers (membership
+    fail-closed via ``store_visibility_ids``). Held carts have no ``store_id``;
+    scope follows ``PosSession.store_id``. When ``require_session`` is True,
+    missing ``session_id`` is denied.
+    """
+    scoped = await store_visibility_ids(db, claims)
+    if scoped is None:
+        return
+    sid = (session_id or "").strip() or None
+    if not sid:
+        assert_store_in_manager_scope(scoped, None, allow_unset=not require_session)
+        return
+    session = await db.get(m.PosSession, sid)
+    if not session or session.tenant_id != claims.get("tenant_id"):
+        raise HTTPException(status_code=404, detail="POS session not found")
+    company_id = claims.get("company_id")
+    if company_id and session.company_id and session.company_id != company_id:
+        raise HTTPException(status_code=404, detail="POS session not found")
+    assert_store_in_manager_scope(
+        scoped, getattr(session, "store_id", None), allow_unset=False
+    )
+
+
+async def assert_pos_sale_in_manager_scope(
+    db: AsyncSession,
+    claims: dict,
+    sale_id: str,
+) -> None:
+    """403 when scoped actors read/send a POS receipt outside visibility stores.
+
+    Applies to store_manager and flag-ON cashiers (membership fail-closed).
+    Scope follows ``PosSession.store_id`` via ``Transaction.session_id``; null
+    session fail-closed (same as POS holds).
+    """
+    scoped = await store_visibility_ids(db, claims)
+    if scoped is None:
+        return
+    sid = (sale_id or "").strip()
+    if not sid:
+        raise HTTPException(status_code=404, detail="POS sale not found")
+    tx = (
+        await db.execute(
+            select(m.Transaction).where(
+                m.Transaction.id == sid,
+                m.Transaction.tenant_id == claims.get("tenant_id"),
+                m.Transaction.tx_type == "pos_sale",
+            )
+        )
+    ).scalar_one_or_none()
+    if not tx:
+        raise HTTPException(status_code=404, detail="POS sale not found")
+    company_id = claims.get("company_id")
+    if company_id and tx.company_id and tx.company_id != company_id:
+        raise HTTPException(status_code=404, detail="POS sale not found")
+    session = None
+    if tx.session_id:
+        session = await db.get(m.PosSession, tx.session_id)
+        if not session or session.tenant_id != claims.get("tenant_id"):
+            raise HTTPException(status_code=404, detail="POS sale not found")
+        if company_id and session.company_id and session.company_id != company_id:
+            raise HTTPException(status_code=404, detail="POS sale not found")
+    assert_store_in_manager_scope(
+        scoped,
+        getattr(session, "store_id", None) if session else None,
+        allow_unset=False,
+    )
+
+
+async def assert_journal_line_in_manager_scope(
+    db: AsyncSession,
+    tenant_id: str,
+    journal_line_id: str,
+    managed_ids: list[str] | None,
+) -> None:
+    """403 when a store_manager references a journal line outside managed stores."""
+    if managed_ids is None:
+        return
+    jid = (journal_line_id or "").strip()
+    if not jid:
+        raise HTTPException(status_code=400, detail="journal_line_id required")
+    row = (
+        await db.execute(
+            select(m.JournalEntryLine, m.JournalEntry)
+            .join(m.JournalEntry, m.JournalEntry.id == m.JournalEntryLine.journal_entry_id)
+            .where(
+                m.JournalEntryLine.id == jid,
+                m.JournalEntryLine.tenant_id == tenant_id,
+            )
+        )
+    ).one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Journal line not found")
+    _line, entry = row
+    assert_store_in_manager_scope(
+        managed_ids, getattr(entry, "store_id", None), allow_unset=False
+    )
+
+
+def assert_transfer_touches_manager_scope(
+    managed_ids: list[str] | None,
+    *,
+    from_store_id: str | None,
+    to_store_id: str | None,
+) -> None:
+    """403 unless transfer involves at least one managed store (store_manager)."""
+    if managed_ids is None:
+        return
+    touched = {
+        sid
+        for sid in ((from_store_id or "").strip(), (to_store_id or "").strip())
+        if sid
+    }
+    if not touched or touched.isdisjoint(set(managed_ids)):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": "Stock transfer is outside your managed store scope.",
+                "from_store_id": from_store_id,
+                "to_store_id": to_store_id,
+            },
+        )
+
+
+def constrain_store_query(
+    managed_ids: list[str] | None,
+    requested_store_id: str | None = None,
+) -> tuple[str | None, list[str] | None]:
+    """Resolve list filters for store_manager.
+
+    Returns ``(single_store_id, store_ids_in)``:
+    - tenant-wide roles: ``(requested, None)``
+    - store_manager with request: validates then ``(requested, None)``
+    - store_manager without request: ``(None, managed_ids)`` (may be empty)
+    """
+    req = (requested_store_id or "").strip() or None
+    if managed_ids is None:
+        return req, None
+    if req:
+        assert_store_in_manager_scope(managed_ids, req)
+        return req, None
+    return None, list(managed_ids)
+
+
+async def managed_warehouse_ids(db: AsyncSession, claims: dict) -> list[str] | None:
+    """Warehouse IDs linked to managed stores; None = tenant-wide; [] = none.
+
+    Warehouses with null ``store_id`` (central / unassigned) are out of store_manager
+    scope. Still ``stores.manager_id`` only — ADR-005 deferred.
+    """
+    managed_stores = await managed_store_ids(db, claims)
+    if managed_stores is None:
+        return None
+    if not managed_stores:
+        return []
+    stmt = select(m.Warehouse.id).where(
+        m.Warehouse.tenant_id == claims["tenant_id"],
+        m.Warehouse.store_id.in_(managed_stores),
+    )
+    company_id = claims.get("company_id")
+    if company_id:
+        stmt = stmt.where(m.Warehouse.company_id == company_id)
+    rows = (await db.execute(stmt)).scalars().all()
+    return [str(wid) for wid in rows]
+
+
+def assert_warehouse_in_manager_scope(
+    managed_wh_ids: list[str] | None,
+    warehouse_id: str | None,
+    *,
+    allow_unset: bool = True,
+) -> None:
+    """403 when a store_manager targets a warehouse outside managed-store WHs."""
+    if managed_wh_ids is None:
+        return
+    wid = (warehouse_id or "").strip()
+    if not wid:
+        if allow_unset:
+            return
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": "Warehouse is required within your managed store scope.",
+                "warehouse_id": None,
+            },
+        )
+    if wid not in managed_wh_ids:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": "Warehouse is outside your managed store scope.",
+                "warehouse_id": wid,
+            },
+        )
+
+
+def constrain_warehouse_query(
+    managed_wh_ids: list[str] | None,
+    requested_warehouse_id: str | None = None,
+) -> tuple[str | None, list[str] | None]:
+    """Resolve warehouse list filters for store_manager (mirrors constrain_store_query)."""
+    req = (requested_warehouse_id or "").strip() or None
+    if managed_wh_ids is None:
+        return req, None
+    if req:
+        assert_warehouse_in_manager_scope(managed_wh_ids, req)
+        return req, None
+    return None, list(managed_wh_ids)
+
+
+def apply_warehouse_scope_filter(stmt, model, managed_wh_ids: list[str] | None):
+    """Restrict rows to managed warehouses; null warehouse_id excluded for managers."""
+    if managed_wh_ids is None:
+        return stmt
+    if not managed_wh_ids:
+        # sql_false() → ``0 = 1`` on SQLite (func.false() → invalid ``false()``).
+        return stmt.where(sql_false())
+    return stmt.where(getattr(model, "warehouse_id").in_(managed_wh_ids))
+
+
+def apply_sales_return_store_scope(stmt, store_ids: list[str] | None):
+    """Scope sales returns via linked ``SalesInvoice.store_id`` (null-store fail-closed)."""
+    if store_ids is None:
+        return stmt
+    stmt = stmt.join(
+        m.SalesInvoice, m.SalesInvoice.id == m.SalesReturn.sales_invoice_id
+    )
+    if not store_ids:
+        return stmt.where(m.SalesInvoice.id.is_(None))  # empty managed → no rows
+    return stmt.where(m.SalesInvoice.store_id.in_(store_ids))
+
+
+def apply_quotation_store_scope(
+    stmt,
+    *,
+    managed_store_ids: list[str] | None,
+    user_id: str | None,
+    tenant_id: str,
+    company_id: str | None = None,
+):
+    """Scope quotations via native ``store_id`` plus legacy conversion / own-draft fallbacks.
+
+    Rows with ``store_id`` use direct managed-store filter. Legacy null-store rows keep
+    own-draft + converted in-scope docs until backfilled (ADR-005 membership deferred).
+    """
+    if managed_store_ids is None:
+        return stmt
+    if not managed_store_ids:
+        if user_id:
+            return stmt.where(
+                or_(
+                    m.SalesQuotation.created_by == user_id,
+                    m.SalesQuotation.store_id.is_(None),
+                )
+            )
+        return stmt.where(m.SalesQuotation.id.is_(None))
+
+    in_scope_order = select(m.SalesOrder.id).where(
+        m.SalesOrder.tenant_id == tenant_id,
+        m.SalesOrder.store_id.in_(managed_store_ids),
+    )
+    in_scope_inv = select(m.SalesInvoice.id).where(
+        m.SalesInvoice.tenant_id == tenant_id,
+        m.SalesInvoice.store_id.in_(managed_store_ids),
+    )
+    if company_id:
+        in_scope_order = in_scope_order.where(m.SalesOrder.company_id == company_id)
+        in_scope_inv = in_scope_inv.where(m.SalesInvoice.company_id == company_id)
+
+    legacy_visible = or_(
+        m.SalesQuotation.converted_order_id.in_(in_scope_order),
+        m.SalesQuotation.converted_invoice_id.in_(in_scope_inv),
+    )
+    visible = or_(
+        m.SalesQuotation.store_id.in_(managed_store_ids),
+        legacy_visible,
+    )
+    if user_id:
+        visible = or_(
+            visible,
+            and_(
+                m.SalesQuotation.created_by == user_id,
+                m.SalesQuotation.store_id.is_(None),
+            ),
+        )
+    return stmt.where(visible)
+
+
+async def assert_quotation_in_manager_scope(
+    db: AsyncSession, claims: dict, quote: m.SalesQuotation
+) -> None:
+    """403 when quotation is outside managed store scope."""
+    managed = await managed_store_ids(db, claims)
+    if managed is None:
+        return
+
+    sid = getattr(quote, "store_id", None)
+    if sid:
+        assert_store_in_manager_scope(managed, str(sid), allow_unset=False)
+        return
+
+    user_id = claims.get("sub")
+    if user_id and quote.created_by == user_id:
+        return
+    if not managed:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": "Quotation is outside your managed store scope.",
+            },
+        )
+    if quote.converted_order_id:
+        order = await db.get(m.SalesOrder, quote.converted_order_id)
+        sid = getattr(order, "store_id", None) if order else None
+        if sid and str(sid) in managed:
+            return
+    if quote.converted_invoice_id:
+        inv = await db.get(m.SalesInvoice, quote.converted_invoice_id)
+        sid = getattr(inv, "store_id", None) if inv else None
+        if sid and str(sid) in managed:
+            return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "STORE_SCOPE_DENIED",
+            "message": "Quotation is outside your managed store scope.",
+        },
+    )
+
+
+async def managed_liquid_account_ids(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    store_ids: list[str] | None,
+    company_id: str | None = None,
+) -> list[str] | None:
+    """Liquid (cash/bank) account IDs touched by posted journals in scoped stores.
+
+    Returns ``None`` when ``store_ids`` is ``None`` (tenant-wide). Empty list when
+    no managed stores or no in-scope liquid activity.
+    """
+    if store_ids is None:
+        return None
+    if not store_ids:
+        return []
+    stmt = (
+        select(m.JournalEntryLine.account_id)
+        .join(m.JournalEntry, m.JournalEntry.id == m.JournalEntryLine.journal_entry_id)
+        .join(m.Account, m.Account.id == m.JournalEntryLine.account_id)
+        .where(
+            m.JournalEntryLine.tenant_id == tenant_id,
+            m.JournalEntry.tenant_id == tenant_id,
+            m.JournalEntry.status == "posted",
+            m.JournalEntry.store_id.in_(store_ids),
+            or_(
+                m.Account.is_cash_account.is_(True),
+                m.Account.is_bank_account.is_(True),
+            ),
+        )
+        .distinct()
+    )
+    if company_id:
+        stmt = stmt.where(m.JournalEntry.company_id == company_id)
+    return [
+        str(aid)
+        for aid in (await db.execute(stmt)).scalars().all()
+        if aid
+    ]
+
+
+def assert_company_level_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot perform company-level writes.",
+) -> None:
+    """403 when store_manager attempts tenant/company-level configuration writes."""
+    if managed_ids is None:
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "STORE_SCOPE_DENIED",
+            "message": message,
+        },
+    )
+
+
+def assert_company_level_accounting_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot perform company-level accounting writes.",
+) -> None:
+    """403 when store_manager attempts company-level chart/liquid account structure writes."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_fiscal_period_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot export company fiscal period status CSV.",
+) -> None:
+    """403 when store_manager exports fiscal period status CSV (company close state).
+
+    GET fiscal-period status is separately denied; CSV dump is company-level
+    administration. Close uses accounting write deny; reopen uses
+    ``assert_company_level_fiscal_period_write_denied``.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_fiscal_period_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view company fiscal period close status; "
+        "scoped journal/report ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads fiscal period open/close status (company admin dump).
+
+    Close/export already denied; reopen uses write deny. GET dumped year bounds
+    and ``current_period_closed``. Scoped journal/report ops remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_fiscal_period_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot reopen company fiscal periods; "
+        "scoped journal/report ops remain."
+    ),
+) -> None:
+    """403 when store_manager POSTs /accounting/fiscal-period/reopen.
+
+    Reads/export/close already denied; fiscal reopen is company accounting admin.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_bank_feed_settings_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot export bank-feed connector settings CSV.",
+) -> None:
+    """403 when store_manager exports bank-feed capability/settings CSV.
+
+    GET ``/settings/bank-feed`` is separately denied; CSV dump is company-level
+    administration (connection list/patch/sync on managed liquid accounts remain).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_bank_feed_settings_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view bank-feed connector capability settings; "
+        "managed bank connection ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads bank-feed capability/settings (infra config dump).
+
+    CSV export already denied; GET dumped sync_enabled/providers/timeouts/celery
+    interval. Scoped bank connection list/export/patch/sync remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_email_settings_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view or export company email/SMTP settings; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads GET /settings/email or /export.
+
+    Tenant SMTP host/from/username status dump is company infra admin.
+    Mutations use ``assert_company_level_email_settings_write_denied``.
+    SMS/storage settings separate.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_email_settings_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot update or test company email/SMTP settings; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager PATCHes /settings/email or POSTs /settings/email/test.
+
+    Reads already denied; SMTP credentials/test send are company infra admin.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_sms_settings_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view or export company SMS/Twilio settings; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads GET /settings/sms or /export.
+
+    Provider/capability status dump is company infra admin. Test send uses
+    ``assert_company_level_sms_settings_write_denied``. Storage settings separate.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_sms_settings_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot send company SMS/Twilio test messages; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager POSTs /settings/sms/test.
+
+    Reads already denied; SMS provider test send is company infra admin.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_storage_settings_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view or export company storage backend settings; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads GET /settings/storage or /export.
+
+    Storage backend/bucket capability dump is company infra admin.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_api_keys_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list, export, or inspect company API keys; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads GET /api-keys, /export, /{id}, or usage.
+
+    API key metadata/prefix + usage series dumps are company security admin.
+    Mutations use ``assert_company_level_api_keys_write_denied``.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_api_keys_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot create or revoke company API keys; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager creates or revokes company API keys.
+
+    Reads already denied; API key lifecycle is company security admin.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_webhooks_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list, export, or inspect company webhooks; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads GET /webhooks, /export, or /{id}.
+
+    Endpoint URL/event subscription dump is company security admin.
+    Deliveries use ``assert_company_level_webhook_deliveries_read_denied``.
+    Mutations use ``assert_company_level_webhooks_write_denied``.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_webhooks_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot create, update, delete, or test company webhooks; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager mutates webhooks (create/patch/delete/test).
+
+    Reads already denied; endpoint URL/secret management is company security admin.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_webhook_deliveries_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list or export company webhook deliveries; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads GET /webhooks/deliveries or /export.
+
+    Delivery attempt history dump is company security admin. Endpoint
+    list/export already denied; mutations remain admin-role gated.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_backup_settings_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view or export company backup schedule settings; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads GET /backup/settings or /export.
+
+    Backup schedule/retention dump is company infra admin. Job list/export use
+    ``assert_company_level_backup_jobs_read_denied``. PATCH uses
+    ``assert_company_level_backup_settings_write_denied``. Job mutations use
+    ``assert_company_level_backup_jobs_write_denied``.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_backup_settings_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot update company backup schedule settings; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager PATCHes /backup/settings.
+
+    Schedule/retention policy is company infra admin. Reads already denied.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_backup_jobs_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list, export, view, or download company backup jobs; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads GET /backup, /export, /{id}, or /download.
+
+    Backup job metadata + archive download are company infra admin. Settings
+    already denied. Mutations use ``assert_company_level_backup_jobs_write_denied``.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_backup_jobs_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot create, schedule-run, verify, or restore company backups; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager creates/runs/verifies/restores company backups.
+
+    Reads already denied; backup lifecycle is company infra admin.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_tenant_sessions_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list or export tenant-wide auth sessions; "
+        "own /auth/sessions remain."
+    ),
+) -> None:
+    """403 when store_manager reads GET /auth/tenant-sessions or /export.
+
+    Tenant-wide session inventory (all users) is company security admin.
+    Per-user ``/auth/sessions`` self-service remains.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_jobs_catalog_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view or export the company jobs catalog; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads GET /jobs or /jobs/export.
+
+    Celery job names/beat intervals (and broker metadata on GET) are company
+    infra admin. Manual run uses ``assert_company_level_jobs_catalog_write_denied``.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_jobs_catalog_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot manually run company scheduled jobs; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager POSTs /jobs/{job_name}/run.
+
+    Catalog reads already denied; manual Celery/job dry-run is company infra admin.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_tax_rate_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot export company tax rates CSV.",
+) -> None:
+    """403 when store_manager exports tax rates CSV (company tax master dump).
+
+    List GET is separately denied; store-scoped tax reports/filing remain. Full rate
+    export is company-level administration (create/patch/default already denied).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_tax_rate_list_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list company tax rates; "
+        "scoped tax reports/filing remain."
+    ),
+) -> None:
+    """403 when store_manager lists company tax rates (master dump).
+
+    Create/patch/default and CSV export already denied; GET ``/tax/rates`` dumped
+    the full company rate table. Detail GET is separately denied. Store-scoped tax
+    report/filing remain. ``/tax/calculate`` must not resolve company master rows
+    (``assert_company_level_tax_calculate_master_resolve_denied``); explicit
+    rate/components math remains.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_tax_rate_detail_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view company tax rate details; "
+        "scoped tax reports/filing remain."
+    ),
+) -> None:
+    """403 when store_manager reads a company tax rate by id (master dump).
+
+    List GET/export/writes already denied; detail GET would bypass list deny via
+    known ``rate_id``. Store-scoped tax report/filing remain.
+    ``/tax/calculate`` must not resolve company master rows
+    (``assert_company_level_tax_calculate_master_resolve_denied``); explicit
+    rate/components math remains.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_tax_calculate_master_resolve_denied(
+    managed_ids: list[str] | None,
+    *,
+    tax_rate_id: str | None = None,
+    rate: float | None = None,
+    components: list | None = None,
+    message: str = (
+        "Store managers cannot resolve company tax rate masters via calculate; "
+        "pass explicit rate/components, or use scoped tax reports/filing."
+    ),
+) -> None:
+    """403 when store_manager uses ``/tax/calculate`` to load company tax masters.
+
+    List/detail GET + CSV export + create/patch/default already denied.
+    ``tax_rate_id`` lookup and default-rate fallback re-dumped rate / components /
+    pricing_mode / reverse-charge from the company tax table. Explicit ``rate``
+    and/or ``components`` arithmetic remains (POS/sales line math); scoped tax
+    report/filing remain.
+    """
+    if managed_ids is None:
+        return
+    resolving_id = bool((tax_rate_id or "").strip())
+    has_explicit = rate is not None or (
+        isinstance(components, list) and len(components) > 0
+    )
+    resolving_default = (not resolving_id) and (not has_explicit)
+    if not resolving_id and not resolving_default:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_tax_filing_tin(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit tax-filing ``tax_registration_number``.
+
+    Company profile GET + ``/me`` / ``/workspace`` already omit TIN. Tax filing
+    JSON/CSV/XLSX/PDF must not re-dump the company TIN. Filing amounts /
+    schedules remain store+WH scoped. ``tin_missing`` stays (not the TIN value).
+    """
+    return managed_ids is not None
+
+
+def redact_tax_filing_tin(payload: dict) -> dict:
+    """Null ``tax_registration_number`` on a tax-filing JSON dict (+ government header)."""
+    out = dict(payload)
+    if "tax_registration_number" in out:
+        out["tax_registration_number"] = None
+    gov = out.get("government")
+    if isinstance(gov, dict):
+        gov_out = dict(gov)
+        header = gov_out.get("header")
+        if isinstance(header, dict) and "tax_registration_number" in header:
+            header = dict(header)
+            header["tax_registration_number"] = None
+            gov_out["header"] = header
+        out["government"] = gov_out
+    return out
+
+
+def omit_tax_filing_company_prefs(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit tax-filing company preference fields.
+
+    ``GET /tenants/me`` already denied; ``/me`` already redacts tenant
+    ``timezone`` / format prefs; POS receipt already redacts ``currency``.
+    Tax filing JSON/CSV must not re-dump ``tax_filing_period`` or government
+    header ``currency`` / ``timezone`` / ``filing_period``. Amounts / schedules
+    / ``taxpayer_name`` (company chrome) / ``tin_missing`` remain.
+    """
+    return managed_ids is not None
+
+
+def redact_tax_filing_company_prefs(payload: dict) -> dict:
+    """Null company preference fields on a tax-filing JSON dict (+ gov header)."""
+    out = dict(payload)
+    if "tax_filing_period" in out:
+        out["tax_filing_period"] = None
+    gov = out.get("government")
+    if isinstance(gov, dict):
+        gov_out = dict(gov)
+        header = gov_out.get("header")
+        if isinstance(header, dict):
+            header = dict(header)
+            for key in ("currency", "timezone", "filing_period"):
+                if key in header:
+                    header[key] = None
+            gov_out["header"] = header
+        out["government"] = gov_out
+    return out
+
+
+def omit_tax_filing_jurisdiction(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit tax-filing jurisdiction selection fields.
+
+    ``GET /tenants/me`` already denied (``tax_jurisdiction``). Tax filing period /
+    currency / timezone prefs + TIN already redacted. Filing JSON/CSV must not
+    re-dump tenant jurisdiction selection via top-level ``jurisdiction`` /
+    ``supported_jurisdictions`` or ``government.jurisdiction``. Amounts /
+    schedules / ``taxpayer_name`` / ``tin_missing`` remain.
+    """
+    return managed_ids is not None
+
+
+def redact_tax_filing_jurisdiction(payload: dict) -> dict:
+    """Null jurisdiction selection fields on a tax-filing JSON dict (+ government)."""
+    out = dict(payload)
+    if "jurisdiction" in out:
+        out["jurisdiction"] = None
+    if "supported_jurisdictions" in out:
+        out["supported_jurisdictions"] = []
+    gov = out.get("government")
+    if isinstance(gov, dict) and "jurisdiction" in gov:
+        gov_out = dict(gov)
+        gov_out["jurisdiction"] = None
+        out["government"] = gov_out
+    return out
+
+
+def apply_tax_filing_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager tax-filing JSON redacts (TIN + prefs + jurisdiction)."""
+    if not isinstance(payload, dict):
+        return payload
+    out = payload
+    if omit_tax_filing_tin(managed_ids):
+        out = redact_tax_filing_tin(out)
+    if omit_tax_filing_company_prefs(managed_ids):
+        out = redact_tax_filing_company_prefs(out)
+    if omit_tax_filing_jurisdiction(managed_ids):
+        out = redact_tax_filing_jurisdiction(out)
+    return out
+
+
+def assert_company_level_settings_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot update company-level settings.",
+) -> None:
+    """403 when store_manager attempts tenant/company settings writes (approval matrix, FX, FEFO)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_expense_settings_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view company expense approval settings; "
+        "scoped expense ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads expense approval matrix (company admin dump).
+
+    PATCH and CSV export already denied; GET dumped thresholds/levels/roles.
+    Scoped expense create/approve/list remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_credit_settings_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view company early-pay credit settings; "
+        "scoped credit AR/AP ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads company early-pay credit settings (admin dump).
+
+    PATCH and CSV export already denied; GET dumped discount pct/days/enabled.
+    Scoped credit aging/statements/payments remain. Early-discount quotes must
+    not re-dump matrix ``discount_pct`` / ``window_days`` / ``source`` (see
+    ``omit_early_pay_matrix`` / ``redact_early_pay_quote``).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_inventory_settings_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view company inventory FEFO settings; "
+        "scoped warehouse stock ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads company FEFO inventory settings (admin dump).
+
+    PATCH and CSV export already denied; GET dumped ``fefo_strict_warehouse``.
+    Scoped warehouse stock-in/out and FEFO enforcement at write time remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_settings_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot export company-level settings CSVs.",
+) -> None:
+    """403 when store_manager exports company settings CSVs (approval/FX/FEFO/early-pay).
+
+    Expense/credit/inventory settings GETs are separately denied. FX exchange-rates
+    GET is separately denied. Full CSV dumps are company-level administration
+    (writes already denied).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_exchange_rates_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view company exchange rates or FX provider settings; "
+        "scoped credit ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads company FX rates + provider settings.
+
+    Upsert/delete/refresh/settings PATCH and CSV export already denied; GET dumped
+    base currency, ``fx_auto_refresh``, provider, and full rate table. Credit AR/AP
+    ops remain store+WH scoped.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_purchasing_settings_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot update company-level purchasing approval settings.",
+) -> None:
+    """403 when store_manager attempts purchasing PR approval matrix writes (company-level)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_purchasing_settings_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view company purchasing approval settings; "
+        "scoped PR/PO ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads purchasing PR approval matrix (company admin dump).
+
+    PATCH and CSV export already denied; GET dumped full levels/roles/thresholds.
+    Scoped purchasing PR/PO/GRN ops remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_purchasing_settings_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot export company purchasing approval settings CSV.",
+) -> None:
+    """403 when store_manager exports purchasing PR approval settings CSV.
+
+    GET settings is separately denied; matrix dump is company-level administration
+    (PATCH already denied).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_admin_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot perform company-level user/role administration.",
+) -> None:
+    """403 when store_manager attempts user/role management writes (users module)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_audit_cold_archive_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list company-wide cold audit archives; "
+        "use live audit-logs scoped to self and managed store/warehouse details."
+    ),
+) -> None:
+    """403 when store_manager lists/exports cold audit archive manifests (tenant-wide packs).
+
+    Mutations use ``assert_company_level_audit_cold_archive_write_denied``.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_audit_cold_archive_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot run company-wide cold audit archive jobs; "
+        "use live audit-logs scoped to self and managed store/warehouse details."
+    ),
+) -> None:
+    """403 when store_manager POSTs /audit-logs/archive-cold.
+
+    List/export already denied; packing aged audit rows to cold storage is company
+    compliance administration.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_audit_chain_verify_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot verify the company-wide audit hash chain; "
+        "use live audit-logs scoped to self and managed store/warehouse details."
+    ),
+) -> None:
+    """403 when store_manager runs tenant-wide audit integrity verification.
+
+    Live scoped ``/audit-logs`` list/export remain; full-chain verify is company
+    compliance administration (cold archive list/export/write already denied).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_audit_retention_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view company audit retention policy; "
+        "use live audit-logs scoped to self and managed store/warehouse details."
+    ),
+) -> None:
+    """403 when store_manager reads audit retention policy (compliance admin dump).
+
+    Cold archive list/export and hash-chain verify already denied; GET dumped
+    retention years / purge_allowed. Live scoped ``/audit-logs`` list/export remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_membership_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot assign or revoke company memberships.",
+) -> None:
+    """403 when store_manager attempts company membership assign/revoke (companies module)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_membership_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list company memberships; "
+        "use users list/get for operational staff lookup."
+    ),
+) -> None:
+    """403 when store_manager lists company user↔company memberships.
+
+    Assign/revoke already denied; GET list was open when ``companies:read`` was
+    over-granted and dumps the company membership graph. ``GET /users`` list/get remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_company_branding_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot update company profile or branding.",
+) -> None:
+    """403 when store_manager attempts company profile/logo branding writes (companies module).
+
+    Tenant-level ``/tenants/me/logo`` uses ``assert_company_level_tenant_logo_write_denied``.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_tenant_logo_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot upload or delete tenant logo branding; "
+        "logo binary GET remains."
+    ),
+) -> None:
+    """403 when store_manager POSTs/DELETEs /tenants/me/logo.
+
+    Company logo writes already denied; tenant logo is company branding admin.
+    Binary GET remains intentionally open for workspace chrome (continuum leftover).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_document_logo_data_url(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit print/receipt ``logo_data_url``.
+
+    Company/tenant logo binary GET stays intentionally open for WorkspaceBrand
+    chrome. Invoice/quotation/credit-note print JSON + POS receipt JSON must not
+    re-dump the base64 data URI. ``has_logo`` + server-side HTML/PDF embeds remain.
+    """
+    return managed_ids is not None
+
+
+def redact_document_logo_data_url(payload: dict) -> dict:
+    """Null ``logo_data_url`` on a print/receipt JSON dict."""
+    out = dict(payload)
+    if "logo_data_url" in out:
+        out["logo_data_url"] = None
+    return out
+
+
+def omit_document_legal_trading_names(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit print/receipt ``legal_name`` / ``trading_name``.
+
+    Company profile GET + ``/me`` / ``/workspace`` already omit legal/tax/address
+    dumps. Invoice/quotation/credit-note print JSON + POS receipt JSON must not
+    re-dump ``legal_name`` / ``trading_name``. ``company_name`` + ``has_logo`` +
+    server-side HTML/PDF/text embeds remain.
+    """
+    return managed_ids is not None
+
+
+def redact_document_legal_trading_names(payload: dict) -> dict:
+    """Null ``legal_name`` / ``trading_name`` on a print/receipt JSON dict.
+
+    When ``trading_name`` is present (distinct from legal), rewrite ``company_name``
+    to that trading/switcher label so ``document_company_name`` (legal-preferring)
+    does not keep dumping the legal headline after legal_name is nulled.
+    """
+    out = dict(payload)
+    trading = out.get("trading_name")
+    if trading:
+        out["company_name"] = trading
+    if "legal_name" in out:
+        out["legal_name"] = None
+    if "trading_name" in out:
+        out["trading_name"] = None
+    return out
+
+
+def omit_document_company_contact(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit receipt/print company contact fields.
+
+    Company profile GET + ``/me`` / ``/workspace`` already omit address/phone/email.
+    POS receipt JSON + invoice/quotation/credit-note print JSON must not re-dump
+    ``company_address`` / ``company_phone`` / ``company_email``. ``company_name`` +
+    ``has_logo`` + server-side HTML/PDF/text embeds remain.
+    """
+    return managed_ids is not None
+
+
+def redact_document_company_contact(payload: dict) -> dict:
+    """Null company contact fields on a receipt/print JSON dict."""
+    out = dict(payload)
+    if "company_address" in out:
+        out["company_address"] = None
+    if "company_phone" in out:
+        out["company_phone"] = None
+    if "company_email" in out:
+        out["company_email"] = None
+    return out
+
+
+def omit_document_tax_registration(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit print/receipt ``tax_registration_number``.
+
+    Company profile GET + ``/me`` / ``/workspace`` + tax-filing JSON already omit TIN.
+    Invoice/quotation/credit-note print JSON + POS receipt JSON must not re-dump
+    ``tax_registration_number``. ``company_name`` + ``has_logo`` + server-side
+    HTML/PDF/text embeds remain.
+    """
+    return managed_ids is not None
+
+
+def redact_document_tax_registration(payload: dict) -> dict:
+    """Null ``tax_registration_number`` on a receipt/print JSON dict."""
+    out = dict(payload)
+    if "tax_registration_number" in out:
+        out["tax_registration_number"] = None
+    return out
+
+
+def omit_document_header_footer(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit receipt ``document_header`` / ``document_footer``.
+
+    Document-settings PATCH/export/preview + GET ``/tenants/me`` already denied.
+    POS receipt JSON must not re-dump company header/footer branding text.
+    ``company_name`` + ``has_logo`` + server-side text/PDF embeds remain.
+    """
+    return managed_ids is not None
+
+
+def redact_document_header_footer(payload: dict) -> dict:
+    """Null ``document_header`` / ``document_footer`` on a receipt/print JSON dict."""
+    out = dict(payload)
+    if "document_header" in out:
+        out["document_header"] = None
+    if "document_footer" in out:
+        out["document_footer"] = None
+    return out
+
+
+def omit_document_receipt_print_template(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit receipt ``receipt_print_template`` / ``default_paper``.
+
+    Document-settings PATCH/export/preview + GET ``/tenants/me`` already denied.
+    POS receipt JSON must not re-dump company print-template settings.
+    ``company_name`` + ``has_logo`` + resolved ``paper`` + server-side text/PDF embeds remain.
+    """
+    return managed_ids is not None
+
+
+def redact_document_receipt_print_template(payload: dict) -> dict:
+    """Null ``receipt_print_template`` / ``default_paper`` on a receipt JSON dict."""
+    out = dict(payload)
+    if "receipt_print_template" in out:
+        out["receipt_print_template"] = None
+    if "default_paper" in out:
+        out["default_paper"] = None
+    return out
+
+
+def omit_document_invoice_print_template(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit print JSON ``template`` / ``invoice_print_template``.
+
+    Document-settings PATCH/export/preview + GET ``/tenants/me`` already denied.
+    Invoice/quotation/credit-note print JSON must not re-dump company
+    ``invoice_print_template`` via the ``template`` field. ``company_name`` +
+    ``has_logo`` + server-side HTML/PDF/text embeds (rendered with the resolved
+    template) remain.
+    """
+    return managed_ids is not None
+
+
+def redact_document_invoice_print_template(payload: dict) -> dict:
+    """Null ``template`` / ``invoice_print_template`` on a print JSON dict."""
+    out = dict(payload)
+    if "template" in out:
+        out["template"] = None
+    if "invoice_print_template" in out:
+        out["invoice_print_template"] = None
+    return out
+
+
+def omit_receipt_cashier_name(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit POS receipt ``cashier_name``.
+
+    Users list/get already denied (company org roster). Salesperson ``full_name``
+    / stock-movement ``created_by_name`` already redacted. POS receipt JSON must
+    not re-dump staff display name via ``cashier_name``. ``company_name`` +
+    ``has_logo`` + totals remain; server-side text/PDF embeds may retain the
+    name (rendered before JSON redacts).
+    """
+    return managed_ids is not None
+
+
+def redact_receipt_cashier_name(payload: dict) -> dict:
+    """Null ``cashier_name`` on a POS receipt JSON dict."""
+    out = dict(payload)
+    if "cashier_name" in out:
+        out["cashier_name"] = None
+    return out
+
+
+def omit_receipt_currency(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit POS receipt ``currency``.
+
+    Company profile GET + ``/me``/``/workspace`` switcher already omit company
+    ``currency``. POS receipt JSON must not re-dump company/tenant currency
+    after those profile redacts. ``company_name`` + ``has_logo`` + totals remain;
+    server-side text/PDF embeds may retain the currency code (rendered before
+    JSON redacts).
+    """
+    return managed_ids is not None
+
+
+def redact_receipt_currency(payload: dict) -> dict:
+    """Null ``currency`` on a POS receipt JSON dict."""
+    out = dict(payload)
+    if "currency" in out:
+        out["currency"] = None
+    return out
+
+
+def apply_document_logo_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager document-brand JSON redacts (logo + legal + contact + TIN + header + tpl + cashier + currency)."""
+    out = payload
+    if omit_document_logo_data_url(managed_ids):
+        out = redact_document_logo_data_url(out)
+    if omit_document_legal_trading_names(managed_ids):
+        out = redact_document_legal_trading_names(out)
+    if omit_document_company_contact(managed_ids):
+        out = redact_document_company_contact(out)
+    if omit_document_tax_registration(managed_ids):
+        out = redact_document_tax_registration(out)
+    if omit_document_header_footer(managed_ids):
+        out = redact_document_header_footer(out)
+    if omit_document_receipt_print_template(managed_ids):
+        out = redact_document_receipt_print_template(out)
+    if omit_document_invoice_print_template(managed_ids):
+        out = redact_document_invoice_print_template(out)
+    if omit_receipt_cashier_name(managed_ids):
+        out = redact_receipt_cashier_name(out)
+    if omit_receipt_currency(managed_ids):
+        out = redact_receipt_currency(out)
+    return out
+
+
+def assert_company_level_company_profile_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view company profile branding details; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager reads company profile (branding/legal dump).
+
+    Profile/logo writes already denied; GET ``/companies/{id}`` dumped name/tax/address
+    branding fields. Company logo binary GET remains for workspace chrome.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_company_profile_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot export company profile CSV; "
+        "workspace switcher + logo binary GET remain for chrome."
+    ),
+) -> None:
+    """403 when store_manager exports company profile CSV (legal/tax/branding dump).
+
+    Company list/detail GET + ``/me``/``/workspace`` profile fields already denied or
+    redacted; ``GET /tenants/me/export`` dumped the same company profile pack.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_tenant_me_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot read GET /tenants/me company/tenant profile; "
+        "workspace switcher + logo binary GET remain for chrome."
+    ),
+) -> None:
+    """403 when store_manager reads GET /tenants/me (tenant+company profile dump).
+
+    Company list/detail GET + profile CSV export already denied or redacted;
+    ``GET /tenants/me`` serializes the same legal/tax/branding/document pack.
+    Logo binary GET + ``/me`` + ``/workspace`` switcher-only remain.
+    Lifecycle suspend/activate uses ``assert_company_level_tenant_lifecycle_write_denied``.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_tenant_lifecycle_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot suspend or activate the company tenant; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager POSTs /tenants/me/suspend or /activate.
+
+    Tenant profile GET/PATCH already denied; subscription lifecycle is company admin.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_tenant_dashboard_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view the tenant admin dashboard "
+        "(subscription/company entitlement dump); managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager GETs /tenant/dashboard.
+
+    Tenant store-entitlement GET already denied; this dumps subscription /
+    company_entitlement / store allocations for tenant admins. Companies UI
+    soft-fails. Offline Complete / store-scoped RBAC Complete remain MISSING (ADR-005 Complete; flag default OFF).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_company_list_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list company profiles (branding/legal dump); "
+        "workspace switcher + managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager lists companies (same profile dump as detail GET).
+
+    ``GET /companies`` returned full ``serialize_company`` rows after detail GET was
+    denied. Workspace ``/me`` + ``/workspace`` remain with switcher-only company
+    fields (legal/tax/address/store_limit + company_entitlement redacted).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_company_profile_details(managed_ids: list[str] | None) -> bool:
+    """True when store_manager session payloads must omit full company profiles.
+
+    Detail/list company GETs already denied; ``GET /me`` and ``GET /workspace``
+    must not re-dump legal/tax/address/store_limit via ``serialize_company``.
+    Switcher chrome fields (id/name/has_logo) remain; ``business_type_label`` /
+    ``industry`` omitted (``GET /business-types`` already denied — catalog re-dump).
+    """
+    return managed_ids is not None
+
+
+def omit_company_entitlement(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit tenant company-entitlement subscription dump.
+
+    ``company_entitlement`` on ``/me`` + ``/workspace`` exposed max_companies /
+    over_entitlement capacity (admin subscription surface). Store ops remain.
+    """
+    return managed_ids is not None
+
+
+def omit_me_tenant_preference_settings(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit tenant preference settings on ``GET /me``.
+
+    ``GET /tenants/me`` already denied (company/tenant profile dump including
+    ``timezone`` / ``date_format`` / ``number_format`` / ``time_format`` /
+    ``inactivity_timeout_minutes``). Session ``/me`` must not re-dump those
+    preference fields. Role/permissions/switcher chrome remain; hardcoded
+    locale scaffold (``en``) is not tenant-sourced and stays.
+    """
+    return managed_ids is not None
+
+
+def redact_me_tenant_preference_settings(payload: dict) -> dict:
+    """Null tenant preference settings on a ``GET /me`` session payload."""
+    out = dict(payload)
+    for key in (
+        "inactivity_timeout_minutes",
+        "date_format",
+        "number_format",
+        "time_format",
+        "timezone",
+    ):
+        if key in out:
+            out[key] = None
+    return out
+
+
+def assert_company_level_document_settings_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot update company document numbering or print templates.",
+) -> None:
+    """403 when store_manager attempts document numbering / print template writes (tenants module)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_document_settings_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot export company document numbering or print template settings; "
+        "admin export remains."
+    ),
+) -> None:
+    """403 when store_manager exports document settings CSV (numbering/print-template dump).
+
+    PATCH writes already denied; ``GET /tenants/me/document-settings/export`` dumped
+    company document numbering + print templates. Logo binary GET remains for chrome.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_print_templates_preview_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot preview company print templates; "
+        "document numbering/print writes + CSV export already denied."
+    ),
+) -> None:
+    """403 when store_manager previews company print templates.
+
+    Document settings write/export already denied; GET
+    ``/tenants/me/print-templates/preview`` dumped invoice/receipt
+    branding samples. Operational document print paths remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+
+def assert_company_level_tenant_profile_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot update tenant company profile settings.",
+) -> None:
+    """403 when store_manager attempts ``PATCH /tenants/me`` (company-level tenant profile)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_onboarding_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot access the company onboarding checklist; "
+        "tenant bootstrap progress is company-admin only."
+    ),
+) -> None:
+    """403 when store_manager reads tenant onboarding checklist (company bootstrap).
+
+    Export uses export deny; skip/unskip/dismiss/restore use write deny. GET was
+    open via ``current_claims`` and dumps company setup progress.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_onboarding_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot export company onboarding checklist CSV; "
+        "checklist GET already denied."
+    ),
+) -> None:
+    """403 when store_manager exports onboarding checklist CSV (company bootstrap dump).
+
+    Checklist GET already denied; mutations use
+    ``assert_company_level_onboarding_write_denied``.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_onboarding_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot skip, dismiss, or restore the company onboarding checklist; "
+        "tenant bootstrap progress is company-admin only."
+    ),
+) -> None:
+    """403 when store_manager mutates onboarding checklist (skip/unskip/dismiss/restore).
+
+    GET/export already denied; checklist lifecycle is company bootstrap admin.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+
+def assert_company_level_business_types_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list business types; "
+        "company create/bootstrap catalogs are company-admin only."
+    ),
+) -> None:
+    """403 when store_manager lists business-type catalog (company create bootstrap).
+
+    ``POST /companies`` already denied; GET ``/business-types`` was open via
+    ``current_claims`` as the industry picker for company creation.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_store_limit_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot allocate company store entitlement limits.",
+) -> None:
+    """403 when store_manager attempts tenant store-limit allocation (companies module)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_store_entitlement_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view company store entitlement allocations; "
+        "subscription capacity is company/tenant-admin only."
+    ),
+) -> None:
+    """403 when store_manager reads store-entitlement (subscription capacity dump).
+
+    Covers ``GET /companies/{id}/store-entitlement`` and ``GET /tenant/store-entitlement``.
+    ``PATCH /companies/{id}/store-limit`` already denied; company GET was open via
+    ``stores:read``. Tenant GET was tenant-admin-gated only — defense-in-depth
+    ``STORE_SCOPE_DENIED`` when elevated ``companies:read`` is present. Managed
+    store list/ops remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_legacy_transaction_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot use legacy unscoped sale/purchase transactions.",
+) -> None:
+    """403 when store_manager lists or posts legacy ``/sales`` or ``/purchases`` (no store_id).
+
+    Modern sales invoices and purchasing PR/PO/GRN paths remain available when
+    store/warehouse scoped.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_org_create_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot create company-level org structures.",
+) -> None:
+    """403 when store_manager attempts tenant/company org creates (companies, warehouses)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_store_manager_assignment_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    changing_manager: bool,
+    message: str = "Store managers cannot assign or clear store managers.",
+) -> None:
+    """403 when store_manager attempts company-level store manager_id assignment.
+
+    List/export/patch JSON redacts ``manager_id`` via
+    ``redact_store_manager_assignment`` (same class as warehouse manager_id).
+    """
+    if not changing_manager:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_store_manager_assignment(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit store ``manager_id`` on JSON/CSV.
+
+    Manager assign/clear writes already denied. Managed-store list/export/patch
+    must not re-dump the company store-manager org assignment (including the
+    caller's own self-scope ``manager_id``). Name/phone/address/operating_hours
+    and scoped store ops remain.
+    """
+    return managed_ids is not None
+
+
+def redact_store_manager_assignment(payload: dict) -> dict:
+    """Null ``manager_id`` on a serialized store dict for store_manager."""
+    out = dict(payload)
+    if "manager_id" in out:
+        out["manager_id"] = None
+    return out
+
+
+def omit_stock_transfer_store_manager_assignment(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit transfer from/to store manager_ids.
+
+    Store ``manager_id`` assign/clear already denied; store + warehouse
+    ``manager_id`` already redacted on list/get JSON. Stock-transfer
+    list/get/lifecycle + transfer history must not re-dump the company
+    store-manager org graph (including peer stores on inbound/outbound
+    transfers). Store/WH ids, qty, and status remain for ops.
+    """
+    return managed_ids is not None
+
+
+def redact_stock_transfer_store_manager_assignment(payload: dict) -> dict:
+    """Null ``from_store_manager_id`` / ``to_store_manager_id`` on transfer JSON.
+
+    Also redacts nested ``transfers`` rows on transfer-history report payloads.
+    """
+    out = dict(payload)
+    for key in ("from_store_manager_id", "to_store_manager_id"):
+        if key in out:
+            out[key] = None
+    nested = out.get("transfers")
+    if isinstance(nested, list):
+        out["transfers"] = [
+            redact_stock_transfer_store_manager_assignment(row)
+            if isinstance(row, dict)
+            else row
+            for row in nested
+        ]
+    return out
+
+
+def omit_stock_movement_created_by_email(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit stock-movement ``created_by_email``.
+
+    Users list/get + CSV export already denied (company org roster). Movement
+    list/export must not re-dump staff email via ``created_by_email``.
+    Quantity / type / notes / ``created_at`` / ``created_by`` id remain for ops.
+    """
+    return managed_ids is not None
+
+
+def redact_stock_movement_created_by_email(payload: dict) -> dict:
+    """Null ``created_by_email`` on a stock-movement JSON/CSV row dict."""
+    out = dict(payload)
+    if "created_by_email" in out:
+        out["created_by_email"] = None
+    return out
+
+
+def omit_stock_movement_created_by_name(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit stock-movement ``created_by_name``.
+
+    Users list/get + CSV export already denied (company org roster). Movement
+    list JSON must not re-dump staff display name via ``created_by_name`` after
+    ``created_by_email`` redacts. Quantity / type / notes / ``created_at`` /
+    ``created_by`` id remain for ops. CSV export columns do not include name.
+    """
+    return managed_ids is not None
+
+
+def redact_stock_movement_created_by_name(payload: dict) -> dict:
+    """Null ``created_by_name`` on a stock-movement JSON row dict."""
+    out = dict(payload)
+    if "created_by_name" in out:
+        out["created_by_name"] = None
+    return out
+
+
+def apply_stock_movement_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager stock-movement JSON redacts (email + name)."""
+    out = payload
+    if omit_stock_movement_created_by_email(managed_ids):
+        out = redact_stock_movement_created_by_email(out)
+    if omit_stock_movement_created_by_name(managed_ids):
+        out = redact_stock_movement_created_by_name(out)
+    return out
+
+
+def apply_stock_movement_manager_redacts_list(
+    rows: list[dict], managed_ids: list[str] | None
+) -> list[dict]:
+    """Map ``apply_stock_movement_manager_redacts`` across movement list rows."""
+    return [apply_stock_movement_manager_redacts(row, managed_ids) for row in rows]
+
+
+def omit_sales_salesperson_email(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit salesperson-report staff ``email``.
+
+    Users list/get + CSV export already denied (company org roster). Sales-by-
+    salesperson JSON/CSV must not re-dump staff email after movement
+    ``created_by_email`` / ``created_by_name`` redacts. Revenue / sale counts /
+    ``user_id`` remain for store ops; ``full_name`` is redacted separately.
+    """
+    return managed_ids is not None
+
+
+def redact_sales_salesperson_email(payload: dict) -> dict:
+    """Null ``email`` on a salesperson row dict (and nested ``salespeople``)."""
+    out = dict(payload)
+    if "email" in out:
+        out["email"] = None
+    people = out.get("salespeople")
+    if isinstance(people, list):
+        out["salespeople"] = [
+            redact_sales_salesperson_email(row) if isinstance(row, dict) else row
+            for row in people
+        ]
+    return out
+
+
+def omit_sales_salesperson_full_name(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit salesperson-report staff ``full_name``.
+
+    Users list/get already denied; salesperson ``email`` already redacted.
+    Sales-by-salesperson JSON/CSV must not re-dump org roster display names.
+    Revenue / sale counts / ``user_id`` remain for store ops (``role`` redacted separately).
+    """
+    return managed_ids is not None
+
+
+def redact_sales_salesperson_full_name(payload: dict) -> dict:
+    """Null ``full_name`` on a salesperson row dict (and nested ``salespeople``)."""
+    out = dict(payload)
+    if "full_name" in out:
+        out["full_name"] = None
+    people = out.get("salespeople")
+    if isinstance(people, list):
+        out["salespeople"] = [
+            redact_sales_salesperson_full_name(row) if isinstance(row, dict) else row
+            for row in people
+        ]
+    return out
+
+
+def omit_sales_salesperson_role(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit salesperson-report staff ``role``.
+
+    Users list/get already denied; salesperson ``email`` / ``full_name`` already
+    redacted. Sales-by-salesperson JSON/CSV must not re-dump org roster RBAC
+    role labels. Revenue / sale counts / ``user_id`` remain for store ops.
+    """
+    return managed_ids is not None
+
+
+def redact_sales_salesperson_role(payload: dict) -> dict:
+    """Null ``role`` on a salesperson row dict (and nested ``salespeople``)."""
+    out = dict(payload)
+    if "role" in out:
+        out["role"] = None
+    people = out.get("salespeople")
+    if isinstance(people, list):
+        out["salespeople"] = [
+            redact_sales_salesperson_role(row) if isinstance(row, dict) else row
+            for row in people
+        ]
+    return out
+
+
+def apply_sales_salesperson_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager sales-salesperson report redacts (email + full_name + role)."""
+    out = payload
+    if omit_sales_salesperson_email(managed_ids):
+        out = redact_sales_salesperson_email(out)
+    if omit_sales_salesperson_full_name(managed_ids):
+        out = redact_sales_salesperson_full_name(out)
+    if omit_sales_salesperson_role(managed_ids):
+        out = redact_sales_salesperson_role(out)
+    return out
+
+
+def assert_store_branch_assignment_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    changing_branch: bool,
+    message: str = "Store managers cannot assign or clear store branch org links.",
+) -> None:
+    """403 when store_manager attempts company-level store↔branch org assignment.
+
+    Branch/department master writes are already denied; store ``branch_id`` /
+    ``clear_branch`` is the same company-level org graph and stays admin-only.
+    List/export/patch JSON redacts ``branch_id`` via ``redact_store_branch_assignment``.
+    """
+    if not changing_branch:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_store_branch_assignment(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit store ``branch_id`` on JSON/CSV.
+
+    Branch assign/clear writes already denied; branches list GET already denied.
+    List/export/patch must not re-dump the company store↔branch org link.
+    Name/phone/address/operating_hours remain for managed-store ops
+    (``manager_id`` redacted separately via ``omit_store_manager_assignment``).
+    """
+    return managed_ids is not None
+
+
+def redact_store_branch_assignment(payload: dict) -> dict:
+    """Null ``branch_id`` on a serialized store dict for store_manager."""
+    out = dict(payload)
+    if "branch_id" in out:
+        out["branch_id"] = None
+    return out
+
+
+def assert_expense_department_assignment_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    department_id: str | None = None,
+    clear_department: bool = False,
+    message: str = "Store managers cannot assign or clear expense department org links.",
+) -> None:
+    """403 when store_manager attempts company-level expense↔department org assignment.
+
+    Department master writes are already denied; ``department_id`` / ``clear_department``
+    on expense create/patch/recurring-create is the same company-level org graph.
+    List/export/patch JSON redacts ``department_id`` via
+    ``redact_expense_department_assignment``.
+    """
+    if managed_ids is None:
+        return
+    changing = bool(clear_department) or bool((department_id or "").strip())
+    if not changing:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_expense_department_assignment(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit expense ``department_id`` on JSON/CSV.
+
+    Department assign/clear writes already denied; departments list GET already denied.
+    Expense + recurring list/get/export/patch must not re-dump the company
+    expense↔department org link. Amount/category/store/status remain for managed-store ops.
+    """
+    return managed_ids is not None
+
+
+def redact_expense_department_assignment(payload: dict) -> dict:
+    """Null ``department_id`` on a serialized expense or recurring-expense dict."""
+    out = dict(payload)
+    if "department_id" in out:
+        out["department_id"] = None
+    return out
+
+
+def omit_expense_category_assignment(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit expense ``category_id`` on JSON.
+
+    Expense categories list/export already denied (company budget master dump).
+    Expense + recurring list/get/patch/OCR/AI embeds + AI document analyze
+    ``extracted_fields`` must not re-dump the company expense↔category master FK.
+    Free-text ``category`` name, amount, store, and status remain for
+    managed-store ops. Budget row identity (id/code/account) is redacted via
+    ``redact_expense_budget_limits``.
+    """
+    return managed_ids is not None
+
+
+def redact_expense_category_assignment(payload: dict) -> dict:
+    """Null expense category master FKs on expense / recurring / AI / OCR payloads.
+
+    Clears ``category_id`` / ``suggested_category_id`` and walks common nested
+    lists/objects used by AI analysis, OCR suggestion envelopes, and AI
+    document-analyze ``extracted_fields``. Free-text ``category`` /
+    ``suggested_category`` names remain.
+    """
+    out = dict(payload)
+    for key in ("category_id", "suggested_category_id"):
+        if key in out:
+            out[key] = None
+    cat_sug = out.get("category_suggestion")
+    if isinstance(cat_sug, dict):
+        sug = dict(cat_sug)
+        if "id" in sug:
+            sug["id"] = None
+        out["category_suggestion"] = sug
+    suggestions = out.get("suggestions")
+    if isinstance(suggestions, dict):
+        sug = dict(suggestions)
+        if "category_id" in sug:
+            sug["category_id"] = None
+        out["suggestions"] = sug
+    for nest_key in (
+        "categories",
+        "optimization_suggestions",
+        "anomalies",
+        "text_category_suggestions",
+    ):
+        nested = out.get(nest_key)
+        if isinstance(nested, list):
+            out[nest_key] = [
+                redact_expense_category_assignment(row)
+                if isinstance(row, dict)
+                else row
+                for row in nested
+            ]
+    for nest_key in ("categorization", "budget_variance", "extracted_fields"):
+        nested = out.get(nest_key)
+        if isinstance(nested, dict):
+            out[nest_key] = redact_expense_category_assignment(nested)
+    return out
+
+
+
+def omit_expense_attachment_url(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit expense ``attachment_url`` storage keys.
+
+    Binary download remains store-scoped via attachment GET. List/get/patch JSON
+    must not re-dump ``attachment_url`` (storage_key / external URL). ``has_attachment``
+    remains for chrome. Same class as product ``image_url`` redact.
+    """
+    return managed_ids is not None
+
+
+def redact_attachment_url_storage_key(payload: dict) -> dict:
+    """Null ``attachment_url`` on a serialized dict (+ upload key echo)."""
+    out = dict(payload)
+    if "attachment_url" in out:
+        out["attachment_url"] = None
+    uploaded = out.get("uploaded")
+    if isinstance(uploaded, dict) and "key" in uploaded:
+        up = dict(uploaded)
+        up["key"] = None
+        out["uploaded"] = up
+    return out
+
+
+def redact_expense_attachment_url(payload: dict) -> dict:
+    """Null ``attachment_url`` on a serialized expense dict (+ upload key echo)."""
+    return redact_attachment_url_storage_key(payload)
+
+
+def omit_purchase_invoice_attachment_url(managed_wh_ids: list[str] | None) -> bool:
+    """True when store_manager must omit purchase-invoice ``attachment_url`` keys.
+
+    Binary download remains WH-scoped via attachment GET. List/get/patch/upload
+    JSON must not re-dump ``attachment_url`` (storage_key / external URL).
+    ``has_attachment`` remains for chrome. Same class as expense attachment_url.
+    """
+    return managed_wh_ids is not None
+
+
+def redact_purchase_invoice_attachment_url(payload: dict) -> dict:
+    """Null ``attachment_url`` on a serialized purchase invoice (+ upload key)."""
+    return redact_attachment_url_storage_key(payload)
+
+
+def omit_purchase_invoice_currency(managed_wh_ids: list[str] | None) -> bool:
+    """True when store_manager must omit purchase-invoice ``currency``.
+
+    Company profile GET + ``/me``/``/workspace`` switcher already omit company
+    ``currency``; POS receipt + sales-invoice JSON already redact ``currency``.
+    Purchase-invoice list/get/export JSON must not re-dump company/tenant (or
+    doc) currency after those profile redacts. Totals / status / balance /
+    ``has_attachment`` remain; ``exchange_rate`` and ``balance_due_base``
+    redacted separately; AP payment apply still resolves currency server-side.
+    """
+    return managed_wh_ids is not None
+
+
+def redact_purchase_invoice_currency(payload: dict) -> dict:
+    """Null ``currency`` on a purchase-invoice JSON/CSV row."""
+    out = dict(payload)
+    if "currency" in out:
+        out["currency"] = None
+    return out
+
+
+def omit_purchase_invoice_exchange_rate(managed_wh_ids: list[str] | None) -> bool:
+    """True when store_manager must omit purchase-invoice ``exchange_rate``.
+
+    Exchange-rates GET already denied; purchase-invoice ``currency`` already
+    redacted; sales-invoice + credit-payment ``exchange_rate`` already redacted.
+    Purchase-invoice list/get/export JSON must not re-dump company FX rate-table
+    identity. Totals / status / balance / ``has_attachment`` remain; admin keeps
+    ``exchange_rate``; ``balance_due_base`` redacted separately; AP payment
+    apply still resolves rates server-side.
+    """
+    return managed_wh_ids is not None
+
+
+def redact_purchase_invoice_exchange_rate(payload: dict) -> dict:
+    """Null ``exchange_rate`` on a purchase-invoice JSON/CSV row."""
+    out = dict(payload)
+    if "exchange_rate" in out:
+        out["exchange_rate"] = None
+    return out
+
+
+def omit_purchase_invoice_balance_due_base(
+    managed_wh_ids: list[str] | None,
+) -> bool:
+    """True when store_manager must omit purchase-invoice ``balance_due_base``.
+
+    Exchange-rates GET already denied; purchase-invoice ``currency`` +
+    ``exchange_rate`` already redacted; sales-invoice + credit-aging document
+    ``balance_due_base`` already redacted. Purchase-invoice list/get/export
+    JSON must not re-dump FX-converted base via ``balance_due`` × rate
+    (rate-table identity). Totals / status / ``balance_due`` /
+    ``has_attachment`` remain; admin keeps ``balance_due_base``.
+    """
+    return managed_wh_ids is not None
+
+
+def redact_purchase_invoice_balance_due_base(payload: dict) -> dict:
+    """Null ``balance_due_base`` on a purchase-invoice JSON/CSV row."""
+    out = dict(payload)
+    if "balance_due_base" in out:
+        out["balance_due_base"] = None
+    return out
+
+
+def apply_purchase_invoice_manager_redacts(
+    payload: dict, managed_wh_ids: list[str] | None
+) -> dict:
+    """Apply store_manager purchase-invoice JSON redacts (attachment + currency + rate + balance_due_base)."""
+    out = payload
+    if omit_purchase_invoice_attachment_url(managed_wh_ids):
+        out = redact_purchase_invoice_attachment_url(out)
+    if omit_purchase_invoice_currency(managed_wh_ids):
+        out = redact_purchase_invoice_currency(out)
+    if omit_purchase_invoice_exchange_rate(managed_wh_ids):
+        out = redact_purchase_invoice_exchange_rate(out)
+    if omit_purchase_invoice_balance_due_base(managed_wh_ids):
+        out = redact_purchase_invoice_balance_due_base(out)
+    return out
+
+
+def apply_purchase_invoice_manager_redacts_list(
+    rows: list[dict], managed_wh_ids: list[str] | None
+) -> list[dict]:
+    """Map ``apply_purchase_invoice_manager_redacts`` across invoice list rows."""
+    return [
+        apply_purchase_invoice_manager_redacts(row, managed_wh_ids) for row in rows
+    ]
+
+
+def omit_journal_entry_attachment_url(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit journal-entry ``attachment_url`` keys.
+
+    Binary download remains store-scoped via attachment GET. List/get/create/
+    unpost/upload/delete JSON must not re-dump ``attachment_url`` (storage_key /
+    external URL). ``has_attachment`` remains for chrome (JSON + CSV). Same class
+    as expense / purchase-invoice attachment_url redacts.
+    """
+    return managed_ids is not None
+
+
+def redact_journal_entry_attachment_url(payload: dict) -> dict:
+    """Null ``attachment_url`` on a serialized journal entry (+ upload key)."""
+    return redact_attachment_url_storage_key(payload)
+
+
+def apply_journal_entry_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager journal-entry JSON redacts (attachment_url)."""
+    out = payload
+    if omit_journal_entry_attachment_url(managed_ids):
+        out = redact_journal_entry_attachment_url(out)
+    return out
+
+
+def apply_journal_entry_manager_redacts_list(
+    rows: list[dict], managed_ids: list[str] | None
+) -> list[dict]:
+    """Map ``apply_journal_entry_manager_redacts`` across journal list rows."""
+    return [
+        apply_journal_entry_manager_redacts(row, managed_ids) for row in rows
+    ]
+
+
+def apply_expense_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager expense JSON redacts (dept/category/roles/attachment)."""
+    out = payload
+    if omit_expense_department_assignment(managed_ids):
+        out = redact_expense_department_assignment(out)
+    if omit_expense_category_assignment(managed_ids):
+        out = redact_expense_category_assignment(out)
+    if omit_approval_matrix_roles(managed_ids):
+        out = redact_approval_matrix_roles(out)
+    if omit_expense_attachment_url(managed_ids):
+        out = redact_expense_attachment_url(out)
+    return out
+
+
+def apply_expense_manager_redacts_list(
+    rows: list[dict], managed_ids: list[str] | None
+) -> list[dict]:
+    """Map ``apply_expense_manager_redacts`` across expense/recurring list rows."""
+    return [apply_expense_manager_redacts(row, managed_ids) for row in rows]
+
+
+def assert_expense_store_clear_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    clear_store: bool,
+    message: str = "Store managers cannot clear expense store assignment.",
+) -> None:
+    """403 when store_manager clears expense.store_id (company null-store escape)."""
+    if not clear_store:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_warehouse_manager_assignment_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    changing_manager: bool,
+    message: str = "Store managers cannot assign or clear warehouse managers.",
+) -> None:
+    """403 when store_manager attempts company-level warehouse manager_id assignment.
+
+    Warehouse create is already denied; ``manager_id`` / ``clear_manager`` on
+    managed warehouses stays admin-only (same org-assignment class as stores).
+    List/export/patch JSON redacts ``manager_id`` via
+    ``redact_warehouse_manager_assignment``.
+    """
+    if not changing_manager:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_warehouse_manager_assignment(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit warehouse ``manager_id`` on JSON/CSV.
+
+    Manager assign/clear writes already denied; list/export/patch must not
+    re-dump company WH manager org assignment. Name/address/code/store link and
+    managed-WH stock ops remain.
+    """
+    return managed_ids is not None
+
+
+def redact_warehouse_manager_assignment(payload: dict) -> dict:
+    """Null ``manager_id`` on a serialized warehouse dict for store_manager."""
+    out = dict(payload)
+    if "manager_id" in out:
+        out["manager_id"] = None
+    return out
+
+
+def assert_warehouse_store_assignment_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    changing_store: bool,
+    message: str = "Store managers cannot assign or clear warehouse store links.",
+) -> None:
+    """403 when store_manager attempts company-level warehouse↔store org assignment.
+
+    Warehouse create is already denied; ``store_id`` / ``clear_store`` re-homes
+    inventory scope across the company org graph and stays admin-only.
+    """
+    if not changing_store:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_warehouse_structure_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    changing_structure: bool,
+    message: str = "Store managers cannot change warehouse type or capacity.",
+) -> None:
+    """403 when store_manager attempts company-level warehouse structural fields.
+
+    ``warehouse_type`` / ``capacity`` are company inventory-master attributes;
+    name/address on managed warehouses remain allowed (``is_active`` is lifecycle).
+    List/export/patch JSON redacts those fields via ``redact_warehouse_structure``.
+    """
+    if not changing_structure:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_warehouse_structure(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit warehouse type/capacity on JSON/CSV.
+
+    Structure writes already denied; list/get/patch and warehouses CSV must not
+    re-dump company inventory-master ``warehouse_type`` / ``capacity``. Name,
+    address, code, store link, and is_active remain for managed-WH ops.
+    """
+    return managed_ids is not None
+
+
+def redact_warehouse_structure(payload: dict) -> dict:
+    """Null warehouse_type / capacity on a serialized warehouse dict."""
+    out = dict(payload)
+    if "warehouse_type" in out:
+        out["warehouse_type"] = None
+    if "capacity" in out:
+        out["capacity"] = None
+    return out
+
+
+def assert_warehouse_lifecycle_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    changing_active: bool,
+    message: str = "Store managers cannot activate or deactivate warehouses.",
+) -> None:
+    """403 when store_manager attempts company-level warehouse is_active lifecycle.
+
+    Warehouse create is already denied; soft activate/deactivate stays admin-only.
+    Name/address patches on managed warehouses remain allowed.
+    """
+    if not changing_active:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_store_lifecycle_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    changing_active: bool,
+    message: str = "Store managers cannot activate or deactivate stores.",
+) -> None:
+    """403 when store_manager attempts company-level store is_active lifecycle.
+
+    Store create is already denied; soft activate/deactivate (entitlement-gated)
+    stays admin-only. Name/phone/address/operating_hours on managed stores remain.
+    """
+    if not changing_active:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_pos_hold_expire_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot run POS hold expire-stale maintenance.",
+) -> None:
+    """403 when store_manager hits company POS hold expire-stale maintenance.
+
+    List/create/resume already auto-expire the caller's own soft-reserves.
+    Explicit ``POST /pos/holds/expire-stale`` stays admin/cashier maintenance
+    (cashiers keep self-expire; store_manager view is company-ops denied).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_liquid_account_lifecycle_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    changing_active: bool,
+    message: str = "Store managers cannot activate or deactivate liquid accounts.",
+) -> None:
+    """403 when store_manager attempts company-level liquid account is_active lifecycle.
+
+    Liquid account create is already denied; soft activate/deactivate stays
+    admin-only. Name patches on managed liquid accounts remain; bank identity
+    fields use ``assert_liquid_account_bank_details_write_denied``.
+    """
+    if not changing_active:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+LIQUID_ACCOUNT_BANK_DETAIL_FIELDS = frozenset(
+    {
+        "bank_name",
+        "account_number",
+        "bank_branch",
+        "clear_bank_details",
+    }
+)
+
+
+def assert_liquid_account_bank_details_write_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    message: str = "Store managers cannot update liquid account bank details.",
+) -> None:
+    """403 when store_manager patches bank identity fields on liquid accounts.
+
+    ``name`` on managed liquid accounts remains allowed; create / ``is_active``
+    lifecycle stay company-level denied separately.
+    """
+    if managed_ids is None:
+        return
+    fields = sorted(k for k in LIQUID_ACCOUNT_BANK_DETAIL_FIELDS if k in payload)
+    if not fields:
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "STORE_SCOPE_DENIED",
+            "message": message,
+            "fields": fields,
+        },
+    )
+
+
+def assert_company_level_liquid_accounts_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot export liquid accounts CSV "
+        "(company bank detail dump); scoped liquid list remains."
+    ),
+) -> None:
+    """403 when store_manager GETs /accounting/liquid-accounts/export.
+
+    CSV includes bank_name/account_number/bank_branch for all company liquid
+    accounts (store_ids only affect balances). Bank detail patches already
+    denied; list/get JSON redacts bank fields via
+    ``redact_liquid_account_bank_details`` while keeping cash-ops balances.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_liquid_account_bank_details(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit bank identity fields on liquid/COA JSON.
+
+    Liquid CSV export already denied; list/get must not re-dump bank_name /
+    account_number / bank_branch. Name, kind flags, and scoped balances remain.
+    """
+    return managed_ids is not None
+
+
+def redact_liquid_account_bank_details(payload: dict) -> dict:
+    """Null bank identity fields on a serialized account (and nested children)."""
+    out = dict(payload)
+    for key in ("bank_name", "account_number", "bank_branch"):
+        if key in out:
+            out[key] = None
+    children = out.get("children")
+    if isinstance(children, list):
+        out["children"] = [
+            redact_liquid_account_bank_details(child)
+            if isinstance(child, dict)
+            else child
+            for child in children
+        ]
+    return out
+
+
+def omit_cheque_bank_name(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit cheque ``bank_name``.
+
+    Liquid-account JSON already redacts ``bank_name`` / account_number /
+    bank_branch. Cheque list/get/export (+ lifecycle responses) must not
+    re-dump paying-bank identity after those liquid redacts. Amount /
+    ``cheque_number`` / status / dates / party refs remain; admin keeps
+    ``bank_name``.
+    """
+    return managed_ids is not None
+
+
+def redact_cheque_bank_name(payload: dict) -> dict:
+    """Null ``bank_name`` on a serialized cheque JSON/CSV row."""
+    out = dict(payload)
+    if "bank_name" in out:
+        out["bank_name"] = None
+    return out
+
+
+def apply_cheque_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager cheque JSON redacts (bank_name)."""
+    out = payload
+    if omit_cheque_bank_name(managed_ids):
+        out = redact_cheque_bank_name(out)
+    return out
+
+
+def apply_cheque_manager_redacts_list(
+    rows: list[dict], managed_ids: list[str] | None
+) -> list[dict]:
+    """Map ``apply_cheque_manager_redacts`` across cheque list rows."""
+    return [apply_cheque_manager_redacts(row, managed_ids) for row in rows]
+
+
+def assert_company_level_bank_connection_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot create or delete bank feed connections.",
+) -> None:
+    """403 when store_manager creates/deletes bank feed connections (credentials).
+
+    List/patch/sync on managed liquid-account connections remain scoped; list/patch
+    JSON redact ``feed_url`` / ``external_account_id`` via
+    ``redact_bank_connection_credentials``. CSV export uses
+    ``assert_company_level_bank_connections_export_denied``. Credential field
+    patches use ``assert_bank_connection_credentials_write_denied``. Soft
+    ``is_active`` uses ``assert_bank_connection_lifecycle_write_denied``.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_bank_connections_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot export bank connections CSV "
+        "(company feed identity dump); scoped list remains."
+    ),
+) -> None:
+    """403 when store_manager GETs /accounting/bank-connections/export.
+
+    CSV includes feed_url/external_account_id for scoped connections. Credential
+    patches already denied; list/patch JSON redacts those fields via
+    ``redact_bank_connection_credentials`` while keeping display_name/provider/
+    sync status.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_bank_connection_credentials(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit feed identity fields on connection JSON.
+
+    Bank-connections CSV export already denied; list/patch must not re-dump
+    feed_url / external_account_id. display_name, provider, has_credentials,
+    and sync status remain.
+    """
+    return managed_ids is not None
+
+
+def redact_bank_connection_credentials(payload: dict) -> dict:
+    """Null feed identity fields on a serialized bank connection."""
+    out = dict(payload)
+    for key in ("feed_url", "external_account_id"):
+        if key in out:
+            out[key] = None
+    return out
+
+
+BANK_CONNECTION_CREDENTIAL_FIELDS = frozenset(
+    {
+        "provider",
+        "external_account_id",
+        "feed_url",
+        "access_token",
+        "clear_credentials",
+    }
+)
+
+
+def assert_bank_connection_credentials_write_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    message: str = "Store managers cannot update bank feed credentials.",
+) -> None:
+    """403 when store_manager patches bank-feed credential / identity fields.
+
+    ``display_name`` on managed connections remains. Sync policy fields use
+    ``assert_bank_connection_sync_policy_write_denied``. ``is_active`` is gated
+    by ``assert_bank_connection_lifecycle_write_denied``.
+    """
+    if managed_ids is None:
+        return
+    fields = sorted(k for k in BANK_CONNECTION_CREDENTIAL_FIELDS if k in payload)
+    if not fields:
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "STORE_SCOPE_DENIED",
+            "message": message,
+            "fields": fields,
+        },
+    )
+
+
+BANK_CONNECTION_SYNC_POLICY_FIELDS = frozenset(
+    {
+        "auto_sync",
+        "auto_match_after_sync",
+        "sync_lookback_days",
+    }
+)
+
+
+def assert_bank_connection_sync_policy_write_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    message: str = "Store managers cannot update bank feed sync policy.",
+) -> None:
+    """403 when store_manager patches bank-feed auto-sync / lookback policy.
+
+    ``display_name`` and manual ``/sync`` on managed connections remain;
+    credentials and ``is_active`` stay company-level denied separately.
+    """
+    if managed_ids is None:
+        return
+    fields = sorted(k for k in BANK_CONNECTION_SYNC_POLICY_FIELDS if k in payload)
+    if not fields:
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "STORE_SCOPE_DENIED",
+            "message": message,
+            "fields": fields,
+        },
+    )
+
+
+def assert_bank_connection_lifecycle_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    changing_active: bool,
+    message: str = "Store managers cannot activate or deactivate bank connections.",
+) -> None:
+    """403 when store_manager attempts company-level bank connection is_active lifecycle.
+
+    Connection create/delete already denied; soft activate/deactivate stays
+    admin-only. Display name patches on managed connections remain; sync policy
+    uses ``assert_bank_connection_sync_policy_write_denied``.
+    """
+    if not changing_active:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+
+async def assert_products_in_manager_warehouse_scope(
+    db: AsyncSession,
+    tenant_id: str,
+    managed_wh_ids: list[str] | None,
+    product_ids: list[str],
+    *,
+    company_id: str | None = None,
+    message: str = "Product is outside your managed warehouse scope for label printing.",
+) -> None:
+    """403 when store_manager targets products without managed-warehouse stock rows.
+
+    Empty managed warehouse set fail-closes. Tenant-wide (``None``) skips.
+    """
+    if managed_wh_ids is None:
+        return
+    pids = [str(p).strip() for p in product_ids if str(p or "").strip()]
+    if not pids:
+        return
+    if not managed_wh_ids:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": message,
+            },
+        )
+    stmt = (
+        select(m.WarehouseStock.product_id)
+        .where(
+            m.WarehouseStock.tenant_id == tenant_id,
+            m.WarehouseStock.warehouse_id.in_(managed_wh_ids),
+            m.WarehouseStock.product_id.in_(pids),
+        )
+        .distinct()
+    )
+    if company_id:
+        stmt = stmt.where(m.WarehouseStock.company_id == company_id)
+    allowed = {str(pid) for pid in (await db.execute(stmt)).scalars().all() if pid}
+    missing = [pid for pid in pids if pid not in allowed]
+    if missing:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": message,
+                "product_ids": missing,
+            },
+        )
+
+
+def assert_company_level_org_unit_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot create or update branches or departments.",
+) -> None:
+    """403 when store_manager attempts branch/department org-unit writes (company-level)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_org_unit_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot export company branch/department CSVs.",
+) -> None:
+    """403 when store_manager exports branches/departments CSV (company org master dump).
+
+    List GETs also denied; full org-unit export is company-level administration
+    (writes already denied).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_org_unit_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list company branches or departments; "
+        "managed store ops remain."
+    ),
+) -> None:
+    """403 when store_manager lists branches/departments (company org-unit dump).
+
+    Create/patch + CSV export already denied; ``GET /branches`` and ``GET /departments``
+    dumped full org charts. Store/expense UIs soft-fail empty lists.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_expense_category_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot create or update expense categories or budget limits.",
+) -> None:
+    """403 when store_manager attempts expense category master writes (incl. budget limits)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_expense_category_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot export company expense categories CSV.",
+) -> None:
+    """403 when store_manager exports expense categories CSV (company finance master dump).
+
+    List GET also denied; full category export is company-level administration
+    (writes already denied). Spend/pending variance via budgets remains scoped.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_expense_category_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list company expense categories; "
+        "scoped spend/pending variance via budgets remain."
+    ),
+) -> None:
+    """403 when store_manager lists expense categories (company budget master dump).
+
+    Create/patch + CSV export already denied; ``GET /expenses/categories`` dumped
+    budget_amount / approval matrix fields. Expense UI soft-fails empty lists;
+    ``/expenses/budgets`` spend/pending remains store-scoped with company
+    ``budget_amount`` / variance / utilization redacted
+    (``redact_expense_budget_limits``).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_expense_budget_limits(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit company expense budget limit fields.
+
+    Category list/export already denied; budgets JSON/CSV and embedded report
+    budgets must not re-dump ``budget_amount`` (or variance/utilization derived
+    from it) or category master identity (``id`` / ``code`` / ``account_id`` /
+    ``company_id`` / ``is_active`` / account labels). Scoped ``name`` /
+    ``spent`` / ``pending`` remain.
+    """
+    return managed_ids is not None
+
+
+def redact_expense_budget_limits(payload: dict) -> dict:
+    """Null company budget limit + category master identity on budgets payloads."""
+    out = dict(payload)
+    cats = out.get("categories")
+    if isinstance(cats, list):
+        redacted: list = []
+        for row in cats:
+            if not isinstance(row, dict):
+                redacted.append(row)
+                continue
+            item = dict(row)
+            for key in (
+                "budget_amount",
+                "variance",
+                "utilization_pct",
+                "over_budget",
+                # Category list GET already denied — budgets must not re-dump master.
+                "id",
+                "code",
+                "account_id",
+                "company_id",
+                "is_active",
+                "account_code",
+                "account_name",
+            ):
+                if key in item:
+                    item[key] = None
+            redacted.append(item)
+        out["categories"] = redacted
+    totals = out.get("totals")
+    if isinstance(totals, dict):
+        t = dict(totals)
+        for key in ("budget_amount", "variance"):
+            if key in t:
+                t[key] = None
+        out["totals"] = t
+    return out
+
+
+def assert_company_level_catalog_meta_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot create or update catalog categories, brands, or units.",
+) -> None:
+    """403 when store_manager attempts company-level catalog meta writes (categories/brands/units)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_catalog_meta_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot export company catalog meta CSVs.",
+) -> None:
+    """403 when store_manager exports categories/brands/units CSV (company catalog dump).
+
+    List GETs also denied; full meta export is company-level administration
+    (writes already denied).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_catalog_meta_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list company catalog categories, brands, or units; "
+        "managed WH stock ops + product reads remain."
+    ),
+) -> None:
+    """403 when store_manager lists catalog categories/brands/units (company meta dump).
+
+    Create/patch/deactivate + CSV export already denied; ``GET /catalog/categories``,
+    ``GET /catalog/brands``, and ``GET /catalog/units`` dumped full catalog masters.
+    Inventory UIs soft-fail empty lists. Brand logo binary GET + units/convert are
+    denied separately (``assert_company_level_catalog_units_convert_denied`` /
+    ``assert_company_level_catalog_brand_logo_read_denied``).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_catalog_units_convert_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot convert company catalog units; "
+        "managed WH stock ops + product reads remain."
+    ),
+) -> None:
+    """403 when store_manager calls ``GET /catalog/units/convert``.
+
+    Unit list/export/write already denied; convert still exposed conversion factors /
+    unit codes (company UOM master). Product reads + WH stock ops remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_catalog_brand_logo_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot download company catalog brand logos; "
+        "managed WH stock ops + product reads remain."
+    ),
+) -> None:
+    """403 when store_manager GETs ``/catalog/brands/{id}/logo``.
+
+    Brand list/write/export already denied; binary logo GET was a leftover catalog
+    master asset dump. Company/tenant workspace logo binary GET remains.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_customer_group_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot create or update customer groups.",
+) -> None:
+    """403 when store_manager attempts company-level customer group master writes."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_customer_group_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot export company customer groups CSV.",
+) -> None:
+    """403 when store_manager exports customer groups CSV (company sales master dump).
+
+    List/get already denied alongside create/patch/deactivate and party↔group assignment.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_customer_group_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view the company customer groups catalog; "
+        "customer list/get and sales ops remain."
+    ),
+) -> None:
+    """403 when store_manager lists/gets customer groups (company sales-master catalog).
+
+    Create/patch/deactivate/export and party↔group assignment already denied; GET list/detail
+    was a leftover company dump. Customer list/get + name patches remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_party_customer_group_assignment_write_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    message: str = "Store managers cannot assign or clear customer groups on parties.",
+) -> None:
+    """403 when store_manager sets customer_group_id / customer_group on a party.
+
+    Customer group master CRUD is already denied; party↔group assignment is the
+    same company sales-master graph and stays admin-only. Name party
+    patches remain (phone/email/address/notes gated separately).
+    List/get/patch JSON redacts group fields via ``redact_party_customer_group_assignment``.
+    """
+    if managed_ids is None:
+        return
+    changing = "customer_group_id" in payload or "customer_group" in payload
+    if not changing:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_party_customer_group_assignment(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit party customer_group fields on JSON.
+
+    Group catalog list/get and party↔group assign/clear already denied; customer
+    list/get/patch must not re-dump sales-master group id/name/discount.
+    Name/status/credit and scoped history remain; POS/sales apply group discount
+    server-side via ``customer_group_discount_percent``.
+    """
+    return managed_ids is not None
+
+
+def redact_party_customer_group_assignment(payload: dict) -> dict:
+    """Null customer_group_id/customer_group/name/discount on customer JSON."""
+    out = dict(payload)
+    for key in (
+        "customer_group_id",
+        "customer_group",
+        "customer_group_name",
+        "group_discount_percent",
+    ):
+        if key in out:
+            out[key] = None
+    return out
+
+
+def assert_party_classification_write_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    clear_counts: bool = False,
+    message: str = "Store managers cannot set party category or party_type.",
+) -> None:
+    """403 when store_manager sets party category / party_type (company classification).
+
+    Name remains. On create full dumps, only non-empty values
+    deny (``clear_counts=False``). On PATCH exclude_unset, present keys deny
+    including explicit null clears (``clear_counts=True``).
+    List/get/patch JSON redacts classification via ``redact_party_classification``.
+    """
+    if managed_ids is None:
+        return
+    if clear_counts:
+        changing = "category" in payload or "party_type" in payload
+    else:
+        cat = payload.get("category")
+        ptype = payload.get("party_type")
+        changing = (
+            cat is not None and str(cat).strip() != ""
+        ) or (
+            ptype is not None and str(ptype).strip() != ""
+        )
+    if not changing:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_party_classification(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit party category/party_type on JSON.
+
+    Classification assign/clear already denied; customer/supplier list/get/patch
+    must not re-dump company party master category or party_type.
+    Name/status/credit and scoped history remain.
+    """
+    return managed_ids is not None
+
+
+def redact_party_classification(payload: dict) -> dict:
+    """Null category and party_type on customer/supplier JSON."""
+    out = dict(payload)
+    for key in ("category", "party_type"):
+        if key in out:
+            out[key] = None
+    return out
+
+
+def assert_party_code_write_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    clear_counts: bool = False,
+    message: str = "Store managers cannot set party master codes.",
+) -> None:
+    """403 when store_manager sets customer/supplier ``code`` (company party master).
+
+    Name remains. Create without a code still allowed
+    (``clear_counts=False`` ignores empty/null). PATCH present ``code`` key
+    denies including clears (``clear_counts=True``).
+    List/get/patch JSON redacts ``code`` via ``redact_party_code``.
+    """
+    if managed_ids is None:
+        return
+    if clear_counts:
+        changing = "code" in payload
+    else:
+        code = payload.get("code")
+        changing = code is not None and str(code).strip() != ""
+    if not changing:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_party_code(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit party master ``code`` on JSON.
+
+    Code assign/clear already denied; customer/supplier list/get/patch must not
+    re-dump company party master codes. AI customer insights/assist/export also
+    omit ``code`` when ``store_ids`` is set (see ``ai_customers`` /
+    ``redact_ai_customer_party_code``). Sales-by-customer report/export rows
+    omit ``code`` via ``redact_sales_customers_party_code``. Name/status and
+    scoped history remain; credit master fields are separately redacted.
+    """
+    return managed_ids is not None
+
+
+def redact_party_code(payload: dict) -> dict:
+    """Null ``code`` on customer/supplier JSON."""
+    out = dict(payload)
+    if "code" in out:
+        out["code"] = None
+    return out
+
+
+def redact_sales_customers_party_code(payload: dict) -> dict:
+    """Null party ``code`` on sales-by-customer report rows (and nested list).
+
+    Defense-in-depth after party list/get + AI customer ``code`` redacts.
+    Revenue / sale_count / name / customer_id remain for store ops.
+    """
+    out = dict(payload)
+    if "code" in out:
+        out["code"] = None
+    customers = out.get("customers")
+    if isinstance(customers, list):
+        out["customers"] = [
+            redact_sales_customers_party_code(row) if isinstance(row, dict) else row
+            for row in customers
+        ]
+    return out
+
+
+def apply_sales_customers_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager sales-by-customer report redacts (party ``code``)."""
+    out = payload
+    if omit_party_code(managed_ids):
+        out = redact_sales_customers_party_code(out)
+    return out
+
+
+def redact_ai_customer_party_code(payload: dict) -> dict:
+    """Null ``code`` on AI customer insights/assist nested customer rows.
+
+    Defense-in-depth after ``ai_customers`` omits party master codes for
+    store_manager scope (list/get already redacted via ``redact_party_code``).
+    """
+    out = dict(payload)
+
+    def _row(row: object) -> object:
+        if not isinstance(row, dict):
+            return row
+        item = dict(row)
+        if "code" in item:
+            item["code"] = None
+        return item
+
+    for key in ("best_customers", "churn_risks"):
+        rows = out.get(key)
+        if isinstance(rows, list):
+            out[key] = [_row(r) for r in rows]
+    if isinstance(out.get("customer"), dict):
+        out["customer"] = _row(out["customer"])
+    return out
+
+
+def assert_party_email_write_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    clear_counts: bool = False,
+    message: str = "Store managers cannot set party master emails.",
+) -> None:
+    """403 when store_manager sets customer/supplier ``email`` (company contact master).
+
+    Nested contact create/delete is already denied; primary party email is the
+    same company CRM identity surface. Name remains (phone/address/notes gated).
+    Create without email still allowed (``clear_counts=False``). PATCH present
+    ``email`` denies including clears (``clear_counts=True``).
+    """
+    if managed_ids is None:
+        return
+    if clear_counts:
+        changing = "email" in payload
+    else:
+        email = payload.get("email")
+        changing = email is not None and str(email).strip() != ""
+    if not changing:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_party_phone_write_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    clear_counts: bool = False,
+    message: str = "Store managers cannot set party master phones.",
+) -> None:
+    """403 when store_manager sets customer/supplier ``phone`` (company contact master).
+
+    Nested contact create/delete and primary email are already denied; primary
+    party phone is the same company CRM identity surface. Name remains
+    (address/geo/notes gated separately). Create without phone still allowed
+    (``clear_counts=False``). PATCH present ``phone`` denies including clears
+    (``clear_counts=True``).
+    """
+    if managed_ids is None:
+        return
+    if clear_counts:
+        changing = "phone" in payload
+    else:
+        phone = payload.get("phone")
+        changing = phone is not None and str(phone).strip() != ""
+    if not changing:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_party_address_write_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    clear_counts: bool = False,
+    message: str = "Store managers cannot set party master address or geo.",
+) -> None:
+    """403 when store_manager sets customer/supplier address/lat/long (company CRM).
+
+    Email/phone/contacts are already denied; primary address and coordinates are
+    the same company party-location master surface. Name remains (notes gated
+    separately). Create without address still allowed (``clear_counts=False``).
+    PATCH present ``address`` / ``latitude`` / ``longitude`` denies including
+    clears (``clear_counts=True``).
+    """
+    if managed_ids is None:
+        return
+    keys = ("address", "latitude", "longitude")
+    if clear_counts:
+        changing = any(k in payload for k in keys)
+    else:
+        changing = False
+        for k in keys:
+            val = payload.get(k)
+            if val is None:
+                continue
+            if isinstance(val, str) and str(val).strip() == "":
+                continue
+            changing = True
+            break
+    if not changing:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_party_notes_write_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    clear_counts: bool = False,
+    message: str = "Store managers cannot set party master notes.",
+) -> None:
+    """403 when store_manager sets customer/supplier ``notes`` (company CRM memo).
+
+    Email/phone/address/contacts are already denied; free-text notes are the
+    same company party-master annotation surface. Name remains. Create without
+    notes still allowed (``clear_counts=False``). PATCH present ``notes`` denies
+    including clears (``clear_counts=True``).
+    """
+    if managed_ids is None:
+        return
+    if clear_counts:
+        changing = "notes" in payload
+    else:
+        notes = payload.get("notes")
+        changing = notes is not None and str(notes).strip() != ""
+    if not changing:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_party_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot export company party master CSVs.",
+) -> None:
+    """403 when store_manager exports customers/suppliers CSV (company CRM dump).
+
+    Full master CSV is company-level PII (email/phone/address/notes already
+    gated on writes). List/get remain with PII redacted via
+    ``redact_party_master_pii``; scoped party history (+ CSV) remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_party_master_pii(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit party CRM PII on customer/supplier JSON.
+
+    Party master CSV export already denied; list/get must not re-dump
+    email/phone/address/geo/notes (or nested contact email/phone before roster
+    omit). Name, status, and scoped history remain for ops. Nested contact
+    roster identity is cleared via ``redact_party_contacts_roster``.
+    """
+    return managed_ids is not None
+
+
+def redact_party_master_pii(payload: dict) -> dict:
+    """Null company CRM PII fields on a serialized customer/supplier (+ contacts)."""
+    out = dict(payload)
+    for key in ("email", "phone", "address", "latitude", "longitude", "notes"):
+        if key in out:
+            out[key] = None
+    contacts = out.get("contacts")
+    if isinstance(contacts, list):
+        redacted: list = []
+        for contact in contacts:
+            if not isinstance(contact, dict):
+                redacted.append(contact)
+                continue
+            row = dict(contact)
+            for key in ("email", "phone"):
+                if key in row:
+                    row[key] = None
+            redacted.append(row)
+        out["contacts"] = redacted
+    return out
+
+
+def omit_party_contacts_roster(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit nested party ``contacts`` roster.
+
+    Contact create/delete (+ nested create) already denied; primary email/phone
+    PII already redacted. List/get/patch must not re-dump contact id/name/
+    is_primary (company CRM contact master graph). Party name/status and
+    scoped history remain.
+    """
+    return managed_ids is not None
+
+
+def redact_party_contacts_roster(payload: dict) -> dict:
+    """Clear nested party contacts roster on customer/supplier JSON."""
+    out = dict(payload)
+    if "contacts" in out:
+        out["contacts"] = []
+    return out
+
+
+def omit_approval_matrix_roles(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit ``awaiting_roles`` on expense/PR JSON.
+
+    Expense + purchasing approval settings GET/PATCH/export already denied
+    (company matrix dump of levels/roles/thresholds). Pending expense and
+    purchase-request payloads must not re-dump ``awaiting_roles`` from those
+    matrices. ``approval_step`` / ``approval_steps_required`` / ``awaiting_level``
+    remain for scoped workflow UX; approve/reject ops remain.
+    """
+    return managed_ids is not None
+
+
+def redact_approval_matrix_roles(payload: dict) -> dict:
+    """Clear approval-matrix ``awaiting_roles`` on expense / PR JSON (+ nested request)."""
+    out = dict(payload)
+    if "awaiting_roles" in out:
+        out["awaiting_roles"] = []
+    nested = out.get("request")
+    if isinstance(nested, dict) and "awaiting_roles" in nested:
+        req = dict(nested)
+        req["awaiting_roles"] = []
+        out["request"] = req
+    return out
+
+
+def omit_early_pay_matrix(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit early-pay matrix fields on quotes.
+
+    Credit early-pay settings GET/PATCH/export already denied (company discount
+    pct/days dump). Party early-pay master fields already redacted on list/get.
+    Invoice / purchase-invoice early-discount quotes must not re-dump
+    ``discount_pct`` / ``window_days`` / settings ``source``. Supplier payment
+    schedule must not re-dump the same settings pack via top-level ``early_pay``
+    or nested item ``early_discount`` matrix fields. Operational ``eligible`` /
+    ``discount_amount`` / ``cash_to_settle`` / ``balance_due`` and age counters
+    remain for scoped settlement UX; payments remain.
+    """
+    return managed_ids is not None
+
+
+def redact_early_pay_quote(payload: dict) -> dict:
+    """Null early-pay matrix fields on an early-discount quote dict."""
+    out = dict(payload)
+    for key in ("discount_pct", "window_days", "source"):
+        if key in out:
+            out[key] = None
+    return out
+
+
+def apply_supplier_payment_schedule_manager_redacts(
+    payload: dict, managed_wh_ids: list[str] | None
+) -> dict:
+    """Redact early-pay settings + quote matrix on supplier payment-schedule JSON.
+
+    Credit early-pay settings GET already denied; party early-pay + dedicated
+    early-discount quotes already redacted. Schedule must not re-dump
+    ``early_pay`` (pct/days/source/enabled) or nested ``early_discount``
+    ``discount_pct`` / ``window_days`` / ``source``. Totals, buckets, and
+    operational discount amounts remain for scoped AP settlement UX.
+    """
+    if not omit_early_pay_matrix(managed_wh_ids):
+        return payload
+    out = dict(payload)
+    if "early_pay" in out:
+        out["early_pay"] = {}
+    items = out.get("items")
+    if isinstance(items, list):
+        redacted_items: list[dict] = []
+        for item in items:
+            row = dict(item)
+            early = row.get("early_discount")
+            if isinstance(early, dict):
+                row["early_discount"] = redact_early_pay_quote(early)
+            redacted_items.append(row)
+        out["items"] = redacted_items
+    return out
+
+
+def omit_sales_invoice_credit_override(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit sales-invoice credit-override audit fields.
+
+    Credit-limit override *writes* already denied for store_manager (invoice post +
+    POS). List/get/post JSON must not re-dump finance override audit
+    (``credit_limit_overridden`` / ``credit_override_reason`` / ``credit_override_by``
+    / ``credit_override_at``). Balance/status/totals remain for scoped AR ops.
+    """
+    return managed_ids is not None
+
+
+def redact_sales_invoice_credit_override(payload: dict) -> dict:
+    """Clear credit-override audit fields on a sales invoice / POS sale dict."""
+    out = dict(payload)
+    if "credit_limit_overridden" in out:
+        out["credit_limit_overridden"] = False
+    for key in ("credit_override_reason", "credit_override_by", "credit_override_at"):
+        if key in out:
+            out[key] = None
+    return out
+
+
+def omit_document_emailed_to(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit document ``emailed_to`` party email.
+
+    Party master email is already redacted on customer/supplier JSON; sales-invoice,
+    quotation, and purchase-order list/get/send/export must not re-dump the recipient
+    address via ``emailed_to`` (or nested send ``delivery.to``). ``emailed_at`` /
+    ``sent_at`` remain as send-status chrome.
+    """
+    return managed_ids is not None
+
+
+def redact_document_emailed_to(payload: dict) -> dict:
+    """Null ``emailed_to`` (+ nested send ``delivery.to``) on a document dict."""
+    out = dict(payload)
+    if "emailed_to" in out:
+        out["emailed_to"] = None
+    delivery = out.get("delivery")
+    if isinstance(delivery, dict) and "to" in delivery:
+        delivery_out = dict(delivery)
+        delivery_out["to"] = None
+        out["delivery"] = delivery_out
+    return out
+
+
+def omit_sales_invoice_currency(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit sales-invoice ``currency``.
+
+    Company profile GET + ``/me``/``/workspace`` switcher already omit company
+    ``currency``; POS receipt JSON already redacts ``currency``. Sales-invoice
+    list/get/export/print JSON must not re-dump company/tenant (or doc) currency
+    after those profile redacts. Totals / status / balance remain;
+    ``exchange_rate`` is redacted separately (rate-table identity); server-side
+    HTML/PDF/text embeds may retain the code (resolved before JSON redacts on
+    print).
+    """
+    return managed_ids is not None
+
+
+def redact_sales_invoice_currency(payload: dict) -> dict:
+    """Null ``currency`` on a sales-invoice JSON/CSV row (and nested print invoice)."""
+    out = dict(payload)
+    if "currency" in out:
+        out["currency"] = None
+    nested = out.get("invoice")
+    if isinstance(nested, dict) and "currency" in nested:
+        inv = dict(nested)
+        inv["currency"] = None
+        out["invoice"] = inv
+    return out
+
+
+def omit_sales_invoice_exchange_rate(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit sales-invoice ``exchange_rate``.
+
+    Exchange-rates GET already denied; sales-invoice ``currency`` already
+    redacted; credit payment ``exchange_rate`` already redacted. Sales-invoice
+    list/get/export/print JSON must not re-dump company FX rate-table identity.
+    Totals / status / balance remain; admin keeps ``exchange_rate``;
+    ``balance_due_base`` is redacted separately (FX-base identity); server-side
+    HTML/PDF/text embeds may retain the rate (resolved before JSON redacts).
+    """
+    return managed_ids is not None
+
+
+def redact_sales_invoice_exchange_rate(payload: dict) -> dict:
+    """Null ``exchange_rate`` on a sales-invoice JSON/CSV row (+ nested print)."""
+    out = dict(payload)
+    if "exchange_rate" in out:
+        out["exchange_rate"] = None
+    nested = out.get("invoice")
+    if isinstance(nested, dict) and "exchange_rate" in nested:
+        inv = dict(nested)
+        inv["exchange_rate"] = None
+        out["invoice"] = inv
+    return out
+
+
+def omit_sales_invoice_balance_due_base(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit sales-invoice ``balance_due_base``.
+
+    Exchange-rates GET already denied; sales-invoice ``currency`` +
+    ``exchange_rate`` already redacted; credit-aging document
+    ``balance_due_base`` already redacted. Invoice JSON/CSV/print must not
+    re-dump FX-converted base via ``balance_due`` × rate (rate-table identity).
+    Totals / status / ``balance_due`` remain; admin keeps ``balance_due_base``.
+    """
+    return managed_ids is not None
+
+
+def redact_sales_invoice_balance_due_base(payload: dict) -> dict:
+    """Null ``balance_due_base`` on a sales-invoice JSON/CSV row (+ nested print)."""
+    out = dict(payload)
+    if "balance_due_base" in out:
+        out["balance_due_base"] = None
+    nested = out.get("invoice")
+    if isinstance(nested, dict) and "balance_due_base" in nested:
+        inv = dict(nested)
+        inv["balance_due_base"] = None
+        out["invoice"] = inv
+    return out
+
+
+def apply_sales_invoice_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager sales-invoice JSON redacts (credit-override + emailed_to + currency + exchange_rate + balance_due_base)."""
+    out = payload
+    if omit_sales_invoice_credit_override(managed_ids):
+        out = redact_sales_invoice_credit_override(out)
+    if omit_document_emailed_to(managed_ids):
+        out = redact_document_emailed_to(out)
+    if omit_sales_invoice_currency(managed_ids):
+        out = redact_sales_invoice_currency(out)
+    if omit_sales_invoice_exchange_rate(managed_ids):
+        out = redact_sales_invoice_exchange_rate(out)
+    if omit_sales_invoice_balance_due_base(managed_ids):
+        out = redact_sales_invoice_balance_due_base(out)
+    return out
+
+
+def apply_sales_invoice_manager_redacts_list(
+    rows: list[dict], managed_ids: list[str] | None
+) -> list[dict]:
+    """Map ``apply_sales_invoice_manager_redacts`` across invoice list rows."""
+    return [apply_sales_invoice_manager_redacts(row, managed_ids) for row in rows]
+
+
+def apply_quotation_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager quotation JSON redacts (emailed_to)."""
+    out = payload
+    if omit_document_emailed_to(managed_ids):
+        out = redact_document_emailed_to(out)
+    return out
+
+
+def apply_quotation_manager_redacts_list(
+    rows: list[dict], managed_ids: list[str] | None
+) -> list[dict]:
+    """Map ``apply_quotation_manager_redacts`` across quotation list rows."""
+    return [apply_quotation_manager_redacts(row, managed_ids) for row in rows]
+
+
+def apply_purchase_order_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager purchase-order JSON redacts (emailed_to)."""
+    out = payload
+    if omit_document_emailed_to(managed_ids):
+        out = redact_document_emailed_to(out)
+    return out
+
+
+def apply_purchase_order_manager_redacts_list(
+    rows: list[dict], managed_ids: list[str] | None
+) -> list[dict]:
+    """Map ``apply_purchase_order_manager_redacts`` across PO list rows."""
+    return [apply_purchase_order_manager_redacts(row, managed_ids) for row in rows]
+
+
+def assert_company_level_user_admin_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot export company user/role administration CSVs."
+    ),
+) -> None:
+    """403 when store_manager exports users/roles/permissions matrix CSVs.
+
+    Users list/get also denied (``assert_company_level_user_admin_read_denied``);
+    roles catalog/detail are separately denied. Full roster and matrix dumps are
+    company-level admin surfaces (writes already denied).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_user_admin_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list or read company user roster; "
+        "self profile via /me remains; user writes + CSV export already denied."
+    ),
+) -> None:
+    """403 when store_manager lists/gets ``GET /users`` (company org roster dump).
+
+    Users CSV export + role catalog + membership list already denied; list/get
+    still dumped staff id/name/role/active (PII/org/MFA already redacted). Self
+    profile remains on ``/me`` / ``/workspace``.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_user_permission_matrix(managed_ids: list[str] | None) -> bool:
+    """True when store_manager users list/get must omit permission maps.
+
+    Roles catalog/detail already denied; returning full ``permissions`` on
+    ``GET /users`` would re-expose the same company permission matrix. Users
+    list/get are denied via ``assert_company_level_user_admin_read_denied``;
+    this helper remains defense-in-depth if a read path is reopened. Contact
+    PII + org assignment + MFA status are redacted via ``redact_user_contact_pii``.
+    """
+    return managed_ids is not None
+
+
+def omit_user_contact_pii(managed_ids: list[str] | None) -> bool:
+    """True when store_manager users list/get must redact staff contact + org + MFA fields.
+
+    Users CSV export already denied; list/get denied via
+    ``assert_company_level_user_admin_read_denied``. Contact fields (email/phone),
+    org assignment (branch_id/department_id), MFA status (``totp_enabled``), and
+    email verification (``email_verified``) remain redacted defense-in-depth.
+    Own ``/me`` / auth payloads keep ``totp_enabled`` / ``email_verified`` for
+    the signed-in user.
+    """
+    return managed_ids is not None
+
+
+def redact_user_contact_pii(payload: dict) -> dict:
+    """Null email/phone + branch_id/department_id + totp_enabled + email_verified on user JSON for store_manager."""
+    out = dict(payload)
+    out["email"] = None
+    out["phone"] = None
+    out["branch_id"] = None
+    out["department_id"] = None
+    out["totp_enabled"] = None
+    out["email_verified"] = None
+    return out
+
+
+def assert_company_level_roles_catalog_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view the company roles catalog or role permission details; "
+        "use users list/get for operational staff lookup."
+    ),
+) -> None:
+    """403 when store_manager reads roles catalog or role detail (permission matrix dump).
+
+    ``GET /users`` list/get remain with permission matrices redacted and contact
+    PII (email/phone) plus org assignment (branch_id/department_id) plus MFA status
+    (``totp_enabled``) plus email verification (``email_verified``) redacted; roles
+    CSV / permissions-matrix CSV already denied; role create/patch/delete already denied.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_user_stats_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view company-wide user/role dashboard KPIs; "
+        "use list/get for users."
+    ),
+) -> None:
+    """403 when store_manager reads tenant-wide dashboard user-stats KPIs.
+
+    Dedicated ``/dashboard/user-stats`` (+ export) and main-dashboard
+    ``user_stats`` embed are company-admin surfaces; ``GET /users`` list/get remain
+    with permission matrices redacted (roles catalog/detail separately denied).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_product_import_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot bulk-import company catalog products.",
+) -> None:
+    """403 when store_manager attempts company-level product CSV import (catalog master)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_product_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot export company product catalog CSV; "
+        "product list/get + WH stock ops + POS search remain."
+    ),
+) -> None:
+    """403 when store_manager exports ``GET /products/export`` (company catalog dump).
+
+    Import + template already denied; variants roster/path CSV and images gallery
+    list/export already denied. Catalog CSV still dumped SKU/barcode/name/price
+    roster (cost/catalog codes already blanked). Product list/get + WH stock ops
+    + POS/inventory lookup remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_product_master_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot create or update company catalog products.",
+) -> None:
+    """403 when store_manager attempts product master writes (create/patch/variants/images/barcode)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_product_cost_price(
+    managed_ids: list[str] | None,
+    claims: dict | None = None,
+) -> bool:
+    """True when caller must omit catalog ``cost_price`` on JSON/CSV.
+
+    First-class ``inventory:view_cost`` is authoritative when ``claims`` is
+    provided (store_manager system role omits view_cost by default). Legacy
+    fallback: ``managed_ids is not None`` (store-scoped manager path).
+
+    Product master writes already denied; catalog list/get and per-product
+    variants must not dump company COGS without view_cost. Selling price + WH
+    stock remain for POS. Company ``GET /products/export`` is denied for
+    store_manager separately. Inventory balance/valuation report cost fields
+    are redacted separately via ``redact_inventory_report_cost`` when
+    ``warehouse_ids`` is set. Low-stock alert list/export also omit
+    ``cost_price`` via this helper. AI dead-stock JSON/CSV omit ``cost_price`` /
+    carrying-cost via ``redact_ai_dead_stock_cost`` when ``warehouse_ids`` is
+    set. Stock-count variance reports omit ``unit_cost`` / ``variance_value``
+    via ``redact_stock_count_variance_cost`` when ``warehouse_ids`` is set.
+    """
+    if claims is not None:
+        from app.rbac import claims_has_permission
+
+        return not claims_has_permission(claims, "inventory", "view_cost")
+    return managed_ids is not None
+
+
+def redact_product_cost_price(payload: dict) -> dict:
+    """Null ``cost_price`` on a serialized product or variant dict."""
+    out = dict(payload)
+    if "cost_price" in out:
+        out["cost_price"] = None
+    return out
+
+
+def omit_ai_dead_stock_cost(
+    warehouse_ids: list[str] | None,
+    claims: dict | None = None,
+) -> bool:
+    """True when caller must omit AI dead-stock COGS / carrying-cost.
+
+    First-class ``inventory:view_cost`` is authoritative when ``claims`` is
+    provided. Legacy fallback: ``warehouse_ids is not None`` (store-scoped path).
+
+    Catalog ``cost_price`` + low-stock alert cost already redacted; WH-scoped
+    dead-stock JSON/CSV must not re-dump ``cost_price`` /
+    ``estimated_carrying_cost`` / ``total_carrying_cost``. Qty / days-without-sale
+    remain for ops.
+    """
+    if claims is not None:
+        from app.rbac import claims_has_permission
+
+        return not claims_has_permission(claims, "inventory", "view_cost")
+    return warehouse_ids is not None
+
+
+def redact_ai_dead_stock_cost(payload: dict) -> dict:
+    """Null cost/carrying-cost fields on AI dead-stock payloads."""
+    out = dict(payload)
+    if "total_carrying_cost" in out:
+        out["total_carrying_cost"] = None
+    items = out.get("items")
+    if isinstance(items, list):
+        redacted: list = []
+        for row in items:
+            if not isinstance(row, dict):
+                redacted.append(row)
+                continue
+            item = dict(row)
+            for key in ("cost_price", "estimated_carrying_cost"):
+                if key in item:
+                    item[key] = None
+            redacted.append(item)
+        out["items"] = redacted
+    return out
+
+
+def omit_inventory_report_cost(
+    warehouse_ids: list[str] | None,
+    claims: dict | None = None,
+) -> bool:
+    """True when caller must omit inventory report COGS fields.
+
+    First-class ``inventory:view_cost`` is authoritative when ``claims`` is
+    provided. Legacy fallback: ``warehouse_ids is not None`` (store-scoped path).
+
+    Catalog ``cost_price`` already redacted; WH-scoped balance/valuation JSON/CSV
+    must not re-dump ``cost_price`` / line ``value`` / ``total_value``. Quantity,
+    SKU, and warehouse identity remain for ops.
+    """
+    if claims is not None:
+        from app.rbac import claims_has_permission
+
+        return not claims_has_permission(claims, "inventory", "view_cost")
+    return warehouse_ids is not None
+
+
+def redact_inventory_report_cost(payload: dict) -> dict:
+    """Null cost/value fields on inventory balance or valuation payloads."""
+    out = dict(payload)
+    for key in ("cost_price", "value", "total_value"):
+        if key in out:
+            out[key] = None
+    items = out.get("items")
+    if isinstance(items, list):
+        redacted_items: list = []
+        for row in items:
+            if not isinstance(row, dict):
+                redacted_items.append(row)
+                continue
+            item = dict(row)
+            for key in ("cost_price", "value"):
+                if key in item:
+                    item[key] = None
+            redacted_items.append(item)
+        out["items"] = redacted_items
+    by_wh = out.get("by_warehouse")
+    if isinstance(by_wh, list):
+        redacted_wh: list = []
+        for row in by_wh:
+            if not isinstance(row, dict):
+                redacted_wh.append(row)
+                continue
+            bucket = dict(row)
+            if "total_value" in bucket:
+                bucket["total_value"] = None
+            redacted_wh.append(bucket)
+        out["by_warehouse"] = redacted_wh
+    return out
+
+
+def omit_stock_count_variance_cost(
+    warehouse_ids: list[str] | None,
+    claims: dict | None = None,
+) -> bool:
+    """True when caller must omit stock-count variance COGS fields.
+
+    First-class ``inventory:view_cost`` is authoritative when ``claims`` is
+    provided. Legacy fallback: ``warehouse_ids is not None`` (store-scoped path).
+
+    Catalog ``cost_price`` + inventory balance/valuation cost already redacted;
+    WH-scoped variance JSON/CSV/PDF must not re-dump ``unit_cost`` /
+    ``variance_value`` / ``total_variance_value`` from ``product.cost_price``.
+    Qty variance + SKU/name remain for ops.
+    """
+    if claims is not None:
+        from app.rbac import claims_has_permission
+
+        return not claims_has_permission(claims, "inventory", "view_cost")
+    return warehouse_ids is not None
+
+
+def redact_stock_count_variance_cost(payload: dict) -> dict:
+    """Null unit_cost / variance_value fields on stock-count variance reports."""
+    out = dict(payload)
+    if "total_variance_value" in out:
+        out["total_variance_value"] = None
+    rows = out.get("rows")
+    if isinstance(rows, list):
+        redacted: list = []
+        for row in rows:
+            if not isinstance(row, dict):
+                redacted.append(row)
+                continue
+            item = dict(row)
+            for key in ("unit_cost", "variance_value"):
+                if key in item:
+                    item[key] = None
+            redacted.append(item)
+        out["rows"] = redacted
+    return out
+
+
+def omit_product_catalog_assignment(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit product catalog FK / tax assignment fields.
+
+    Categories/brands/units list GET + tax rates list/detail already denied; product
+    master writes already denied. List/get/export must not re-dump
+    ``category_id`` / ``brand_id`` / ``unit_id`` / ``tax_rate_id`` (or CSV
+    ``category_code`` / ``brand_code`` / ``unit_code``). Sales-by-product
+    report/export also omits ``category_id`` via
+    ``redact_sales_products_category_id``. Name / ``category`` string /
+    selling price / WH stock / ``tax_exempt`` remain; tax apply stays server-side.
+    """
+    return managed_ids is not None
+
+
+def redact_product_catalog_assignment(payload: dict) -> dict:
+    """Null catalog meta + tax assignment FKs on a serialized product dict."""
+    out = dict(payload)
+    for key in ("category_id", "brand_id", "unit_id", "tax_rate_id"):
+        if key in out:
+            out[key] = None
+    return out
+
+
+def redact_sales_products_category_id(payload: dict) -> dict:
+    """Null ``category_id`` on sales-by-product report rows (and nested list).
+
+    Defense-in-depth after product list/get catalog-assignment redacts and
+    categories list GET deny. Revenue / quantity / name / product_id / sku remain
+    for store ops.
+    """
+    out = dict(payload)
+    if "category_id" in out:
+        out["category_id"] = None
+    products = out.get("products")
+    if isinstance(products, list):
+        out["products"] = [
+            redact_sales_products_category_id(row) if isinstance(row, dict) else row
+            for row in products
+        ]
+    items = out.get("items")
+    if isinstance(items, list):
+        out["items"] = [
+            redact_sales_products_category_id(row) if isinstance(row, dict) else row
+            for row in items
+        ]
+    return out
+
+
+def apply_sales_products_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager sales-by-product report redacts (``category_id``)."""
+    out = payload
+    if omit_product_catalog_assignment(managed_ids):
+        out = redact_sales_products_category_id(out)
+    return out
+
+
+def assert_sales_products_category_filter_denied(
+    managed_ids: list[str] | None,
+    *,
+    category_id: str | None,
+    message: str = (
+        "Store managers cannot filter sales-by-product by company catalog category; "
+        "omit category_id, or use scoped product revenue without catalog resolve."
+    ),
+) -> None:
+    """403 when store_manager passes ``category_id`` on sales-by-product report/export.
+
+    Catalog categories list/export/writes already denied; product list/get +
+    sales-by-product rows already redact ``category_id``. Query/export
+    ``category_id`` still called ``get_category`` (company catalog master
+    resolve / existence probe). Unfiltered sales-by-product remains.
+    """
+    if managed_ids is None:
+        return
+    if not (category_id or "").strip():
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_expenses_summary_category_filter_denied(
+    managed_ids: list[str] | None,
+    *,
+    category_id: str | None,
+    message: str = (
+        "Store managers cannot filter expense summary by company expense category; "
+        "omit category_id, or use scoped expense totals without category master filter."
+    ),
+) -> None:
+    """403 when store_manager passes ``category_id`` on expenses summary report/export.
+
+    Expense categories list/export/writes already denied; expense JSON + BI
+    ``expenses.by_category`` already redact ``category_id``. Query/export
+    ``category_id`` on ``/reports/expenses/summary`` (+ ``expenses_summary``
+    report export) still filters by company expense-category master UUID.
+    Unfiltered scoped summary remains.
+    """
+    if managed_ids is None:
+        return
+    if not (category_id or "").strip():
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_expenses_department_filter_denied(
+    managed_ids: list[str] | None,
+    *,
+    department_id: str | None,
+    message: str = (
+        "Store managers cannot filter expenses by company department; "
+        "omit department_id, or use scoped expense lists without org-unit master filter."
+    ),
+) -> None:
+    """403 when store_manager passes ``department_id`` on expense list/export.
+
+    Departments list/export/writes already denied; expense JSON/CSV already
+    redact ``department_id``; assign/clear writes already denied. Query/export
+    ``department_id`` on ``GET /expenses`` (+ ``/expenses/export``) still
+    filters by company department org-unit UUID. Unfiltered scoped list remains.
+    """
+    if managed_ids is None:
+        return
+    if not (department_id or "").strip():
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_accounting_reports_branch_filter_denied(
+    managed_ids: list[str] | None,
+    *,
+    branch_id: str | None,
+    message: str = (
+        "Store managers cannot filter accounting reports by company branch; "
+        "omit branch_id, or use store-scoped P&L / cash-flow / balance-sheet "
+        "without org-unit master filter."
+    ),
+) -> None:
+    """403 when store_manager passes ``branch_id`` on P&L / cash-flow / BS.
+
+    Branches list/export/writes already denied; store ``branch_id`` JSON/CSV
+    already redacted; store↔branch assign/clear already denied. Query/export
+    ``branch_id`` on accounting/reports profit-loss, cash-flow, and
+    balance-sheet (+ ``/reports/export`` for those types) still filters by
+    company branch org-unit UUID (and echoes ``branch_id`` on the payload).
+    Unfiltered store-scoped reports remain.
+    """
+    if managed_ids is None:
+        return
+    if not (branch_id or "").strip():
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_tax_filing_jurisdiction_filter_denied(
+    managed_ids: list[str] | None,
+    *,
+    jurisdiction: str | None,
+    message: str = (
+        "Store managers cannot filter tax filing by jurisdiction; "
+        "omit jurisdiction, or use the default scoped filing pack "
+        "without jurisdiction master probe."
+    ),
+) -> None:
+    """403 when store_manager passes ``jurisdiction`` on tax filing / export.
+
+    ``GET /tenants/me`` already denied (``tax_jurisdiction``); filing JSON/CSV
+    already redact ``jurisdiction`` / ``supported_jurisdictions`` /
+    ``government.jurisdiction``. Query ``jurisdiction`` on
+    ``GET /reports/tax/filing`` (+ ``/reports/export`` ``tax_filing``) still
+    probes company jurisdiction selection (and selects alternate government
+    packs). Unfiltered default scoped filing remains; admin may filter.
+    """
+    if managed_ids is None:
+        return
+    if not (jurisdiction or "").strip():
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_product_variants_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot export company product variants CSV "
+        "(roster or per-product path); variants list/get + product reads remain."
+    ),
+) -> None:
+    """403 when store_manager exports product variants CSV (catalog master dump).
+
+    Covers company-wide ``GET /products/variants/export`` and path-scoped
+    ``GET /products/{id}/variants/export`` (SKU/barcode/attribute roster dump).
+    Variant writes already denied; per-product variants list/get remain for
+    POS/sales. Company ``GET /products/export`` denied separately via
+    ``assert_company_level_product_export_denied``.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_product_images_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list company product image gallery metadata; "
+        "product list/get + WH stock ops remain."
+    ),
+) -> None:
+    """403 when store_manager lists ``GET /products/{id}/images`` (catalog gallery dump).
+
+    Image upload/patch/delete + CSV export already denied; gallery list still dumped
+    ``storage_key`` / filename / sort_order (company catalog media inventory).
+    Primary ``GET /products/{id}/image`` binary denied separately via
+    ``assert_company_level_product_primary_image_read_denied``. Product list/get +
+    WH stock ops remain (``image_url`` / ``has_image`` redacted separately).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_product_primary_image_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot download company catalog primary product images; "
+        "product list/get + WH stock ops remain."
+    ),
+) -> None:
+    """403 when store_manager GETs ``/products/{id}/image`` (catalog primary binary).
+
+    Gallery list/export + image writes already denied; primary binary GET was a
+    leftover company catalog media asset dump (same class as brand logo binary).
+    Product list/get + WH stock ops / POS lookup remain; ``image_url`` and
+    ``has_image`` on list/get are redacted separately via
+    ``redact_product_image_url`` / ``redact_product_has_image``. Company/tenant
+    workspace logo binary GET remains intentionally open.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_product_image_url(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit catalog ``image_url`` storage keys.
+
+    Primary image binary GET + gallery list/export already denied; list/get must
+    not re-dump ``image_url`` (storage_key). ``has_image`` is redacted separately
+    via ``redact_product_has_image``. WH stock ops / POS lookup remain.
+    """
+    return managed_ids is not None
+
+
+def redact_product_image_url(payload: dict) -> dict:
+    """Null ``image_url`` on a serialized product dict."""
+    out = dict(payload)
+    if "image_url" in out:
+        out["image_url"] = None
+    return out
+
+
+def omit_product_has_image(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit catalog ``has_image`` media inventory.
+
+    Primary image binary GET + gallery list/export + ``image_url`` redact already
+    landed; list/get must not re-signal whether catalog media exists.
+    WH stock ops / POS lookup remain.
+    """
+    return managed_ids is not None
+
+
+def redact_product_has_image(payload: dict) -> dict:
+    """Force ``has_image`` false on a serialized product dict."""
+    out = dict(payload)
+    if "has_image" in out:
+        out["has_image"] = False
+    return out
+
+def assert_company_level_product_images_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot export company product images CSV.",
+) -> None:
+    """403 when store_manager exports product images metadata CSV (catalog master dump).
+
+    Gallery list GET also denied (``assert_company_level_product_images_read_denied``);
+    CSV dump is the same company-level administration surface (image writes already
+    denied). Primary product image binary GET denied separately via
+    ``assert_company_level_product_primary_image_read_denied``.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_stock_import_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot bulk-import stock across company warehouses.",
+) -> None:
+    """403 when store_manager attempts company-level stock CSV import (any warehouse / product.stock_qty)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_opening_stock_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot record opening stock (company fiscal inventory init).",
+) -> None:
+    """403 when store_manager attempts opening-stock fiscal init (BR-5.2).
+
+    Day-to-day stock-in/out on managed warehouses remain allowed; opening stock is
+    company inventory-master / fiscal-start seeding (alongside stock CSV import deny).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_ai_report_template_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot create or delete company AI report templates.",
+) -> None:
+    """403 when store_manager attempts company-level AI report template create/delete."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_ai_report_template_export_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot export company AI report templates CSV.",
+) -> None:
+    """403 when store_manager exports AI report templates CSV (company NL template dump).
+
+    Template list/create/delete and NL generate already denied; CSV dump is the same
+    company-level administration surface.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_ai_report_template_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list company AI report templates; "
+        "NL report generation is company-admin only."
+    ),
+) -> None:
+    """403 when store_manager lists AI report templates (company NL template catalog).
+
+    Create/delete/export and ``/ai/reports/generate`` already denied; GET list was a
+    leftover company dump. Store-scoped ``/reports/*`` + Layer-1 AI remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_ai_report_generate_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot run company-level AI NL report generation.",
+) -> None:
+    """403 when store_manager attempts company-wide AI NL report generate/export.
+
+    Store-scoped ``/reports/*`` and Layer-1 AI insights remain available.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_report_schedule_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot manage company report schedules.",
+) -> None:
+    """403 when store_manager attempts company-level report schedule CRUD/run.
+
+    Store-scoped ``/reports/*`` reads remain available; schedule list/export
+    use ``assert_company_level_report_schedule_read_denied``.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_report_schedule_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list or export company report email schedules; "
+        "store-scoped /reports/* reads remain."
+    ),
+) -> None:
+    """403 when store_manager reads GET /reports/schedules or /export.
+
+    Writes already denied; schedule list/export dump company email cadence +
+    recipients. Store-scoped report tabs remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_reports_exportable_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot list company exportable report catalogs; "
+        "scoped /reports/* exports remain."
+    ),
+) -> None:
+    """403 when store_manager reads GET /reports/exportable (company report catalog).
+
+    Report schedule writes already denied; exportable dumped the full EXPORTABLE
+    type/format catalog. Store-scoped report generation/export paths remain.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_bi_settings_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot update company business-insights settings.",
+) -> None:
+    """403 when store_manager attempts company-level BI settings writes (thresholds/formulas)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_bi_settings_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view company business-insights settings; "
+        "scoped overview/history/acknowledge/dismiss remain."
+    ),
+) -> None:
+    """403 when store_manager reads company BI thresholds/settings (admin dump).
+
+    PUT already denied; GET dumped slow_moving_days/health_weights and related
+    thresholds. Scoped BI overview/history/acknowledge/dismiss remain; static
+    ``/formulas`` docs separately denied. Overview/attention bundles also omit
+    embedded settings via ``redact_bi_company_config`` when store-scoped.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_company_level_bi_formulas_read_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = (
+        "Store managers cannot view company business-insights formula docs; "
+        "scoped overview/history/acknowledge/dismiss remain."
+    ),
+) -> None:
+    """403 when store_manager reads company BI formula documentation dump.
+
+    Settings GET/PUT already denied; GET ``/business-insights/formulas`` exposed
+    Layer-1 formula catalog / threshold semantics. Scoped BI overview/history/
+    acknowledge/dismiss remain. Overview bundles also omit embedded formulas via
+    ``redact_bi_company_config`` when store-scoped.
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def omit_bi_company_config(store_ids: list[str] | None) -> bool:
+    """True when store_manager must omit BI settings/formulas embeds.
+
+    Dedicated GET ``/business-insights/settings`` + ``/formulas`` already denied;
+    overview/attention bundles must not re-dump company thresholds or the formula
+    catalog. Scoped metrics/insights/history/acknowledge/dismiss remain; engine
+    still applies thresholds server-side.
+    """
+    return store_ids is not None
+
+
+def redact_bi_company_config(payload: dict) -> dict:
+    """Restrict settings/formulas embeds and null health weights on BI bundles."""
+    out = dict(payload)
+    if "settings" in out:
+        out["settings"] = {"restricted": True}
+    if "formulas" in out:
+        out["formulas"] = {"restricted": True}
+    health = out.get("health")
+    if isinstance(health, dict) and "weights" in health:
+        h = dict(health)
+        h["weights"] = None
+        out["health"] = h
+    return out
+
+
+
+def omit_bi_expense_category_id(store_ids: list[str] | None) -> bool:
+    """True when store_manager must omit BI expense ``by_category.category_id``.
+
+    Expense categories list GET + expense list/get ``category_id`` already
+    denied/redacted. BI overview / ``/business-insights/expenses`` must not
+    re-dump company expense-category master FKs via ``expenses.by_category``.
+    Free-text ``name`` + amounts / MoM remain; engine still groups server-side.
+    """
+    return store_ids is not None
+
+
+def redact_bi_expense_category_id(payload: dict) -> dict:
+    """Null ``category_id`` on BI ``expenses.by_category`` rows."""
+    out = dict(payload)
+    expenses = out.get("expenses")
+    if isinstance(expenses, dict):
+        exp = dict(expenses)
+        rows = exp.get("by_category")
+        if isinstance(rows, list):
+            redacted: list = []
+            for row in rows:
+                if isinstance(row, dict):
+                    item = dict(row)
+                    if "category_id" in item:
+                        item["category_id"] = None
+                    redacted.append(item)
+                else:
+                    redacted.append(row)
+            exp["by_category"] = redacted
+        out["expenses"] = exp
+    return out
+
+
+def omit_bi_cost_fields(
+    store_ids: list[str] | None,
+    claims: dict | None = None,
+) -> bool:
+    """True when caller must omit BI COGS / stock valuation fields.
+
+    First-class ``business_insights:view_cost`` (or ``inventory:view_cost``) is
+    authoritative when ``claims`` is provided. Legacy fallback:
+    ``store_ids is not None`` (store-scoped path).
+
+    Catalog ``cost_price`` + inventory report cost already redacted; overview
+    profit ``cogs`` / ``gross_profit`` / ``net_profit``, inventory ``stock_value``,
+    and expiry ``value_at_risk`` (plus batch ``value``) must not re-dump company
+    COGS. Revenue/expenses/qty counts remain; engine still uses cost server-side
+    for health scoring before redaction.
+    """
+    if claims is not None:
+        from app.rbac import claims_has_permission
+
+        if claims_has_permission(claims, "business_insights", "view_cost"):
+            return False
+        if claims_has_permission(claims, "inventory", "view_cost"):
+            return False
+        return True
+    return store_ids is not None
+
+
+def _redact_bi_profit_period(period: dict) -> dict:
+    out = dict(period)
+    for key in ("cogs", "gross_profit", "gross_margin_pct", "net_profit"):
+        if key in out:
+            out[key] = None
+    return out
+
+
+def _redact_bi_expiry_batch_rows(rows) -> list:
+    if not isinstance(rows, list):
+        return rows
+    redacted: list = []
+    for row in rows:
+        if not isinstance(row, dict):
+            redacted.append(row)
+            continue
+        item = dict(row)
+        if "value" in item:
+            item["value"] = None
+        redacted.append(item)
+    return redacted
+
+
+def _redact_bi_insight_cost_message(item: dict) -> dict:
+    """Drop monetary value-at-risk from expiry insight messages."""
+    out = dict(item)
+    msg = out.get("message")
+    if isinstance(msg, str) and "value at risk" in msg.lower():
+        parts = [p.strip() for p in msg.split(";") if p.strip()]
+        kept = [p for p in parts if "value at risk" not in p.lower()]
+        if kept:
+            out["message"] = "; ".join(kept)
+            if not out["message"].endswith("."):
+                out["message"] += "."
+        else:
+            out["message"] = "Expired or near-expiry stock requires attention."
+    return out
+
+
+def redact_bi_cost_fields(payload: dict) -> dict:
+    """Null BI profit COGS / stock_value / expiry value fields on overview bundles."""
+    out = dict(payload)
+
+    inv = out.get("inventory")
+    if isinstance(inv, dict) and "stock_value" in inv:
+        inventory = dict(inv)
+        inventory["stock_value"] = None
+        out["inventory"] = inventory
+
+    profit = out.get("profit")
+    if isinstance(profit, dict) and profit.get("restricted") is not True:
+        p = dict(profit)
+        if isinstance(p.get("current"), dict):
+            p["current"] = _redact_bi_profit_period(p["current"])
+        if isinstance(p.get("prior"), dict):
+            p["prior"] = _redact_bi_profit_period(p["prior"])
+        for key in (
+            "gross_profit_change_pct",
+            "net_profit_change_pct",
+            "cost_data_incomplete",
+            "formula",
+            "data_source",
+        ):
+            if key in p:
+                p[key] = None
+        out["profit"] = p
+
+    expiry = out.get("expiry")
+    if isinstance(expiry, dict):
+        e = dict(expiry)
+        if "value_at_risk" in e:
+            e["value_at_risk"] = None
+        if "expired" in e:
+            e["expired"] = _redact_bi_expiry_batch_rows(e.get("expired"))
+        windows = e.get("windows")
+        if isinstance(windows, dict):
+            redacted_windows = {}
+            for w, payload_w in windows.items():
+                if not isinstance(payload_w, dict):
+                    redacted_windows[w] = payload_w
+                    continue
+                win = dict(payload_w)
+                if "batches" in win:
+                    win["batches"] = _redact_bi_expiry_batch_rows(win.get("batches"))
+                redacted_windows[w] = win
+            e["windows"] = redacted_windows
+        out["expiry"] = e
+
+    for list_key in ("attention", "insights", "opportunities"):
+        rows = out.get(list_key)
+        if isinstance(rows, list):
+            out[list_key] = [
+                _redact_bi_insight_cost_message(row) if isinstance(row, dict) else row
+                for row in rows
+            ]
+
+    return out
+
+
+async def assert_bi_insight_in_manager_scope(
+    db: AsyncSession,
+    claims: dict,
+    insight: m.BusinessInsight,
+) -> None:
+    """403 when store_manager acknowledges/dismisses BI insight outside managed scope."""
+    managed = await managed_store_ids(db, claims)
+    if managed is None:
+        return
+    if not managed:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": "Business insight is outside your managed store scope.",
+            },
+        )
+
+    tenant_id = claims["tenant_id"]
+    company_id = claims.get("company_id")
+    et = (insight.related_entity_type or "").strip().lower()
+    eid = (insight.related_entity_id or "").strip()
+
+    if et == "store":
+        assert_store_in_manager_scope(managed, eid or None, allow_unset=False)
+        return
+
+    if et == "product" and eid:
+        managed_wh = await managed_warehouse_ids(db, claims)
+        await assert_products_in_manager_warehouse_scope(
+            db,
+            tenant_id,
+            managed_wh,
+            [eid],
+            company_id=company_id,
+            message="Business insight product is outside your managed warehouse scope.",
+        )
+        return
+
+    if et == "customer" and eid:
+        stmt = (
+            select(m.SalesInvoice.id)
+            .where(
+                m.SalesInvoice.tenant_id == tenant_id,
+                m.SalesInvoice.customer_id == eid,
+                m.SalesInvoice.store_id.in_(managed),
+            )
+            .limit(1)
+        )
+        if company_id:
+            stmt = stmt.where(m.SalesInvoice.company_id == company_id)
+        if (await db.execute(stmt)).scalar_one_or_none():
+            return
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": "Business insight customer is outside your managed store scope.",
+            },
+        )
+
+    if et == "supplier" and eid:
+        managed_wh = await managed_warehouse_ids(db, claims)
+        if not managed_wh:
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": "STORE_SCOPE_DENIED",
+                    "message": "Business insight supplier is outside your managed warehouse scope.",
+                },
+            )
+        wh_expr = func.coalesce(
+            m.PurchaseInvoice.warehouse_id,
+            m.GoodsReceipt.warehouse_id,
+            m.PurchaseOrder.warehouse_id,
+        )
+        stmt = (
+            select(m.PurchaseInvoice.id)
+            .outerjoin(
+                m.GoodsReceipt, m.GoodsReceipt.id == m.PurchaseInvoice.goods_receipt_id
+            )
+            .outerjoin(
+                m.PurchaseOrder, m.PurchaseOrder.id == m.PurchaseInvoice.purchase_order_id
+            )
+            .where(
+                m.PurchaseInvoice.tenant_id == tenant_id,
+                m.PurchaseInvoice.supplier_id == eid,
+                wh_expr.in_(managed_wh),
+            )
+            .limit(1)
+        )
+        if company_id:
+            stmt = stmt.where(m.PurchaseInvoice.company_id == company_id)
+        if (await db.execute(stmt)).scalar_one_or_none():
+            return
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": "Business insight supplier is outside your managed warehouse scope.",
+            },
+        )
+
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "STORE_SCOPE_DENIED",
+            "message": "Business insight is outside your managed store scope.",
+            "related_entity_type": et or None,
+        },
+    )
+
+
+def assert_party_master_deactivate_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot deactivate customers or suppliers.",
+) -> None:
+    """403 when store_manager attempts company-level party deactivate (customer/supplier DELETE)."""
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_party_status_write_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    message: str = "Store managers cannot change customer or supplier status.",
+) -> None:
+    """403 when store_manager patches party ``status`` (activate/deactivate lifecycle).
+
+    DELETE deactivate is already denied; PATCH ``status`` must not bypass that
+    company party-master gate. Name remains (phone/email/address/notes gated).
+    """
+    if managed_ids is None:
+        return
+    if "status" not in payload:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_party_master_contact_write_denied(
+    managed_ids: list[str] | None,
+    *,
+    message: str = "Store managers cannot add or remove party contacts.",
+) -> None:
+    """403 when store_manager attempts company-level party contact create/delete.
+
+    Nested ``contacts`` on customer/supplier create use
+    ``assert_party_nested_contacts_create_denied``; dedicated ``/contacts``
+    POST/DELETE endpoints are the same company-level master surface.
+    List/get/patch must not re-dump the roster
+    (``redact_party_contacts_roster``).
+    """
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+def assert_party_nested_contacts_create_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    message: str = "Store managers cannot attach party contacts on create.",
+) -> None:
+    """403 when store_manager supplies ``contacts`` on customer/supplier create.
+
+    Dedicated ``/contacts`` POST/DELETE are already denied; nested create must
+    not bypass that company party-contact master gate. Name-only party create
+    remains allowed. Roster reads are redacted via
+    ``redact_party_contacts_roster``.
+    """
+    if managed_ids is None:
+        return
+    contacts = payload.get("contacts")
+    if not contacts:
+        return
+    if isinstance(contacts, list) and len(contacts) == 0:
+        return
+    assert_company_level_write_denied(managed_ids, message=message)
+
+
+PARTY_CREDIT_MASTER_FIELDS = frozenset(
+    {
+        "credit_limit",
+        "early_pay_discount_pct",
+        "early_pay_discount_days",
+        "payment_terms_days",
+    }
+)
+
+
+def assert_party_credit_master_write_denied(
+    managed_ids: list[str] | None,
+    payload: dict,
+    *,
+    allow_zero_credit_limit: bool = False,
+    allow_zero_payment_terms: bool = False,
+    message: str = (
+        "Store managers cannot update party credit limits, payment terms, "
+        "or early-payment discounts."
+    ),
+) -> None:
+    """403 when store_manager attempts party-level credit/payment-terms master writes.
+
+    List/get/patch JSON redacts the same fields via ``redact_party_credit_master``.
+    Server-side credit / early-pay enforcement still uses DB values (POS ops).
+    """
+    if managed_ids is None:
+        return
+    fields: set[str] = set()
+    if "credit_limit" in payload:
+        val = payload.get("credit_limit")
+        if not (allow_zero_credit_limit and (val is None or float(val or 0) == 0)):
+            fields.add("credit_limit")
+    if "payment_terms_days" in payload:
+        val = payload.get("payment_terms_days")
+        if not (allow_zero_payment_terms and (val is None or int(val or 0) == 0)):
+            fields.add("payment_terms_days")
+    for key in ("early_pay_discount_pct", "early_pay_discount_days"):
+        if key in payload and payload.get(key) is not None:
+            fields.add(key)
+    if not fields:
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "STORE_SCOPE_DENIED",
+            "message": message,
+            "fields": sorted(fields),
+        },
+    )
+
+
+def omit_party_credit_master(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit party credit/payment-terms master on JSON.
+
+    Credit-limit / payment-terms / early-pay writes already denied;
+    customer/supplier list/get/patch must not re-dump company credit master.
+    AI customer insights/assist/export also omit ``credit_limit`` when
+    ``store_ids`` is set (see ``ai_customers`` / ``redact_ai_customer_credit``).
+    Credit AR/AP aging party rows omit ``credit_limit`` via
+    ``redact_credit_aging_party_credit_limit`` (source also nulls under
+    manager_scope). Name/status/balance and scoped history remain; POS credit
+    checks stay server-side on DB ``party.credit_limit``.
+    """
+    return managed_ids is not None
+
+
+def redact_party_credit_master(payload: dict) -> dict:
+    """Null credit_limit / payment_terms_days / early-pay fields on party JSON."""
+    out = dict(payload)
+    for key in PARTY_CREDIT_MASTER_FIELDS:
+        if key in out:
+            out[key] = None
+    return out
+
+
+def omit_credit_aging_party_credit_limit(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit aging party ``credit_limit``.
+
+    Party list/get + AI customer ``credit_limit`` already redacted. Credit AR/AP
+    aging JSON must not re-dump company credit master on party rows. Scoped
+    ``total_due`` / buckets / document lines / ``name`` remain; admin keeps
+    ``credit_limit``. Customer statement JSON/CSV also omit ``credit_limit`` via
+    ``omit_credit_statement_party_credit_limit``.
+    """
+    return managed_ids is not None
+
+
+def redact_credit_aging_party_credit_limit(payload: dict) -> dict:
+    """Null ``credit_limit`` on credit-aging payload party rows."""
+    out = dict(payload)
+    parties = out.get("parties")
+    if isinstance(parties, list):
+        redacted = []
+        for row in parties:
+            if isinstance(row, dict):
+                item = dict(row)
+                if "credit_limit" in item:
+                    item["credit_limit"] = None
+                redacted.append(item)
+            else:
+                redacted.append(row)
+        out["parties"] = redacted
+    return out
+
+
+def omit_credit_aging_document_currency(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit aging document ``currency``.
+
+    Exchange-rates GET already denied; POS receipt + sales/purchase-invoice JSON
+    already redact ``currency``. Credit AR/AP aging JSON/CSV must not re-dump
+    company currency prefs on document rows. Scoped ``balance_due`` / buckets /
+    party name remain; admin keeps ``currency``. ``exchange_rate`` and
+    ``balance_due_base`` are redacted separately (rate-table / FX-base identity).
+    """
+    return managed_ids is not None
+
+
+def redact_credit_aging_document_currency(payload: dict) -> dict:
+    """Null ``currency`` on credit-aging document rows."""
+    out = dict(payload)
+    documents = out.get("documents")
+    if isinstance(documents, list):
+        redacted = []
+        for row in documents:
+            if isinstance(row, dict):
+                item = dict(row)
+                if "currency" in item:
+                    item["currency"] = None
+                redacted.append(item)
+            else:
+                redacted.append(row)
+        out["documents"] = redacted
+    return out
+
+
+def omit_credit_aging_document_exchange_rate(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit aging document ``exchange_rate``.
+
+    Exchange-rates GET already denied; aging document ``currency`` already
+    redacted; sales/purchase-invoice + credit-payment ``exchange_rate`` already
+    redacted. Credit AR/AP aging JSON/CSV must not re-dump company FX rate-table
+    identity on document rows. Scoped ``balance_due`` / buckets / party name
+    remain; admin keeps ``exchange_rate``. ``balance_due_base`` is redacted
+    separately (FX-converted base amount still implies the rate).
+    """
+    return managed_ids is not None
+
+
+def redact_credit_aging_document_exchange_rate(payload: dict) -> dict:
+    """Null ``exchange_rate`` on credit-aging document rows."""
+    out = dict(payload)
+    documents = out.get("documents")
+    if isinstance(documents, list):
+        redacted = []
+        for row in documents:
+            if isinstance(row, dict):
+                item = dict(row)
+                if "exchange_rate" in item:
+                    item["exchange_rate"] = None
+                redacted.append(item)
+            else:
+                redacted.append(row)
+        out["documents"] = redacted
+    return out
+
+
+def omit_credit_aging_document_balance_due_base(
+    managed_ids: list[str] | None,
+) -> bool:
+    """True when store_manager must omit aging document ``balance_due_base``.
+
+    Exchange-rates GET already denied; aging document ``currency`` +
+    ``exchange_rate`` already redacted; sales/purchase-invoice + credit-payment
+    FX fields already redacted. Credit AR/AP aging JSON/CSV must not re-dump
+    FX-converted base amounts that imply the company rate table
+    (``balance_due`` × rate). Scoped ``balance_due`` / buckets / party name
+    remain; admin keeps ``balance_due_base``.
+    """
+    return managed_ids is not None
+
+
+def redact_credit_aging_document_balance_due_base(payload: dict) -> dict:
+    """Null ``balance_due_base`` on credit-aging document rows."""
+    out = dict(payload)
+    documents = out.get("documents")
+    if isinstance(documents, list):
+        redacted = []
+        for row in documents:
+            if isinstance(row, dict):
+                item = dict(row)
+                if "balance_due_base" in item:
+                    item["balance_due_base"] = None
+                redacted.append(item)
+            else:
+                redacted.append(row)
+        out["documents"] = redacted
+    return out
+
+
+def apply_credit_aging_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager credit-aging redacts (limit + currency + rate + base)."""
+    out = payload
+    if omit_credit_aging_party_credit_limit(managed_ids):
+        out = redact_credit_aging_party_credit_limit(out)
+    if omit_credit_aging_document_currency(managed_ids):
+        out = redact_credit_aging_document_currency(out)
+    if omit_credit_aging_document_exchange_rate(managed_ids):
+        out = redact_credit_aging_document_exchange_rate(out)
+    if omit_credit_aging_document_balance_due_base(managed_ids):
+        out = redact_credit_aging_document_balance_due_base(out)
+    return out
+
+
+def omit_credit_payment_currency(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit customer/supplier payment ``currency``.
+
+    Exchange-rates GET already denied; POS receipt + sales/purchase-invoice +
+    credit-aging document JSON already redact ``currency``. Credit payment
+    register list/export (+ create responses) must not re-dump company/tenant
+    (or payment) currency after those redacts. Amount / method / references
+    remain; admin keeps ``currency``. ``fx_gain_loss`` and ``exchange_rate``
+    are redacted separately (FX P&L / rate-table identity).
+    """
+    return managed_ids is not None
+
+
+def redact_credit_payment_currency(payload: dict) -> dict:
+    """Null ``currency`` on a customer/supplier payment JSON/CSV row."""
+    out = dict(payload)
+    if "currency" in out:
+        out["currency"] = None
+    return out
+
+
+def omit_credit_payment_fx_gain_loss(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit payment ``fx_gain_loss``.
+
+    Exchange-rates GET already denied; payment ``currency`` already redacted.
+    Customer/supplier payment register list/export (+ create responses) must
+    not re-dump FX gain/loss derived from the company rate table. Amount /
+    method / references remain; admin keeps ``fx_gain_loss``.
+    ``exchange_rate`` is redacted separately (rate-table identity).
+    """
+    return managed_ids is not None
+
+
+def redact_credit_payment_fx_gain_loss(payload: dict) -> dict:
+    """Null ``fx_gain_loss`` on a customer/supplier payment JSON/CSV row."""
+    out = dict(payload)
+    if "fx_gain_loss" in out:
+        out["fx_gain_loss"] = None
+    return out
+
+
+def omit_credit_payment_exchange_rate(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit payment ``exchange_rate``.
+
+    Exchange-rates GET already denied; payment ``currency`` + ``fx_gain_loss``
+    already redacted. Customer/supplier payment register list/export (+ create
+    responses) must not re-dump company FX rate-table identity. Amount /
+    method / references remain; admin keeps ``exchange_rate``.
+    """
+    return managed_ids is not None
+
+
+def redact_credit_payment_exchange_rate(payload: dict) -> dict:
+    """Null ``exchange_rate`` on a customer/supplier payment JSON/CSV row."""
+    out = dict(payload)
+    if "exchange_rate" in out:
+        out["exchange_rate"] = None
+    return out
+
+
+def apply_credit_payment_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager credit-payment JSON redacts (currency / fx / rate)."""
+    out = payload
+    if omit_credit_payment_currency(managed_ids):
+        out = redact_credit_payment_currency(out)
+    if omit_credit_payment_fx_gain_loss(managed_ids):
+        out = redact_credit_payment_fx_gain_loss(out)
+    if omit_credit_payment_exchange_rate(managed_ids):
+        out = redact_credit_payment_exchange_rate(out)
+    return out
+
+
+def apply_credit_payment_manager_redacts_list(
+    rows: list[dict], managed_ids: list[str] | None
+) -> list[dict]:
+    """Map ``apply_credit_payment_manager_redacts`` across payment list rows."""
+    return [
+        apply_credit_payment_manager_redacts(row, managed_ids) for row in rows
+    ]
+
+
+def omit_credit_statement_party_credit_limit(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit statement party ``credit_limit``.
+
+    Party list/get + AI + credit aging already redact ``credit_limit``. Customer
+    AR statement JSON/CSV must not re-dump company credit master on the nested
+    ``customer`` object. Scoped lines / ``name`` / zeroed ledger ``balance`` /
+    ``scoped_open_due`` remain; admin keeps ``credit_limit``. Supplier statements
+    do not expose ``credit_limit``.
+    """
+    return managed_ids is not None
+
+
+def redact_credit_statement_party_credit_limit(payload: dict) -> dict:
+    """Null ``credit_limit`` on credit-statement nested customer/supplier dicts."""
+    out = dict(payload)
+    for key in ("customer", "supplier"):
+        party = out.get(key)
+        if isinstance(party, dict) and "credit_limit" in party:
+            item = dict(party)
+            item["credit_limit"] = None
+            out[key] = item
+    return out
+
+
+def apply_credit_statement_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager credit-statement redacts (party ``credit_limit``)."""
+    out = payload
+    if omit_credit_statement_party_credit_limit(managed_ids):
+        out = redact_credit_statement_party_credit_limit(out)
+    return out
+
+
+def omit_credit_limit_exceeded_master(role: str | None) -> bool:
+    """True when store_manager must omit credit master fields on limit-exceeded errors.
+
+    Party list/get + AI + aging + AR statement already redact ``credit_limit``
+    (statements also zero party ledger ``balance``). ``CREDIT_LIMIT_EXCEEDED``
+    (409) must not re-dump company credit master / AR ledger via ``credit_limit``
+    / ``available`` / ``current_balance`` / ``projected_balance``. Operational
+    ``exceeded`` / ``code`` / ``message`` remain; ``additional_amount`` and
+    ``currency`` are redacted separately (base FX / rate-table identity);
+    admin keeps full projection.
+    """
+    from app.dashboard_views import dashboard_view_for_role
+
+    return dashboard_view_for_role(role or "") == "store_manager"
+
+
+def redact_credit_limit_exceeded_master(detail: dict) -> dict:
+    """Null credit master + ledger fields on a CREDIT_LIMIT_EXCEEDED detail dict."""
+    out = dict(detail)
+    for key in (
+        "credit_limit",
+        "available",
+        "current_balance",
+        "projected_balance",
+    ):
+        if key in out:
+            out[key] = None
+    return out
+
+
+def omit_credit_limit_exceeded_invoice_total_base(role: str | None) -> bool:
+    """True when store_manager must omit ``invoice_total_base`` on limit-exceeded errors.
+
+    Sales-invoice / purchase-invoice / credit-aging document ``balance_due_base``
+    already redacted. ``CREDIT_LIMIT_EXCEEDED`` (409) ``extra_details`` must not
+    re-dump FX-converted base via ``invoice_total_base`` (document total × rate;
+    rate-table identity). Operational ``exceeded`` / ``code`` / ``message`` /
+    ``invoice_number`` remain; admin keeps ``invoice_total_base``.
+    ``invoice_total`` and ``additional_amount`` are redacted separately.
+    """
+    from app.dashboard_views import dashboard_view_for_role
+
+    return dashboard_view_for_role(role or "") == "store_manager"
+
+
+def redact_credit_limit_exceeded_invoice_total_base(detail: dict) -> dict:
+    """Null ``invoice_total_base`` on a CREDIT_LIMIT_EXCEEDED detail dict."""
+    out = dict(detail)
+    if "invoice_total_base" in out:
+        out["invoice_total_base"] = None
+    return out
+
+
+def omit_credit_limit_exceeded_invoice_total(role: str | None) -> bool:
+    """True when store_manager must omit ``invoice_total`` on limit-exceeded errors.
+
+    ``invoice_total_base`` already redacted; sales/purchase-invoice currency +
+    exchange_rate + balance_due_base already redacted. ``CREDIT_LIMIT_EXCEEDED``
+    (409) must not re-dump document-currency ``invoice_total`` that, paired with
+    base ``additional_amount`` or invoice ``total_amount``, recovers the company
+    FX rate table. Operational ``exceeded`` / ``code`` / ``message`` /
+    ``invoice_number`` remain; admin keeps ``invoice_total``.
+    ``additional_amount`` is redacted separately.
+    """
+    from app.dashboard_views import dashboard_view_for_role
+
+    return dashboard_view_for_role(role or "") == "store_manager"
+
+
+def redact_credit_limit_exceeded_invoice_total(detail: dict) -> dict:
+    """Null ``invoice_total`` on a CREDIT_LIMIT_EXCEEDED detail dict."""
+    out = dict(detail)
+    if "invoice_total" in out:
+        out["invoice_total"] = None
+    return out
+
+
+def omit_credit_limit_exceeded_additional_amount(role: str | None) -> bool:
+    """True when store_manager must omit ``additional_amount`` on limit-exceeded errors.
+
+    ``invoice_total`` + ``invoice_total_base`` already redacted; sales-invoice
+    list/get still exposes document ``total_amount``. ``CREDIT_LIMIT_EXCEEDED``
+    (409) must not re-dump base ``additional_amount`` (invoice total × rate) that,
+    paired with scoped invoice ``total_amount``, recovers the company FX rate
+    table. Operational ``exceeded`` / ``code`` / ``message`` / ``invoice_number``
+    remain; admin keeps ``additional_amount``.
+    """
+    from app.dashboard_views import dashboard_view_for_role
+
+    return dashboard_view_for_role(role or "") == "store_manager"
+
+
+def redact_credit_limit_exceeded_additional_amount(detail: dict) -> dict:
+    """Null ``additional_amount`` on a CREDIT_LIMIT_EXCEEDED detail dict."""
+    out = dict(detail)
+    if "additional_amount" in out:
+        out["additional_amount"] = None
+    return out
+
+
+def omit_credit_limit_exceeded_currency(role: str | None) -> bool:
+    """True when store_manager must omit ``currency`` on limit-exceeded errors.
+
+    Sales/purchase-invoice + credit-payment + aging + POS receipt already redact
+    ``currency``. ``CREDIT_LIMIT_EXCEEDED`` (409) ``extra_details`` must not
+    re-dump document ``currency`` (company FX / rate-table identity) after
+    ``invoice_total`` / ``invoice_total_base`` / ``additional_amount`` redacts.
+    Operational ``exceeded`` / ``code`` / ``message`` / ``invoice_number`` remain;
+    admin keeps ``currency``.
+    """
+    from app.dashboard_views import dashboard_view_for_role
+
+    return dashboard_view_for_role(role or "") == "store_manager"
+
+
+def redact_credit_limit_exceeded_currency(detail: dict) -> dict:
+    """Null ``currency`` on a CREDIT_LIMIT_EXCEEDED detail dict."""
+    out = dict(detail)
+    if "currency" in out:
+        out["currency"] = None
+    return out
+
+
+# Audit detail keys that re-dump company FX / rate-table identity already
+# redacted on sales/purchase invoice, credit payment, aging, and CLE surfaces.
+_AUDIT_FX_DETAIL_KEYS = (
+    "currency",
+    "exchange_rate",
+    "total_base",
+    "invoice_total_base",
+    "balance_due_base",
+    "fx_gain_loss",
+    "settlement_base",
+)
+
+
+def omit_audit_fx_details(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit FX fields inside audit ``details``.
+
+    Sales/purchase-invoice + credit-payment + aging + CLE surfaces already redact
+    ``currency`` / ``exchange_rate`` / ``*_base`` / ``fx_gain_loss``. Scoped
+    ``GET /audit-logs`` (+ CSV export) must not re-dump the same company FX
+    rate-table identity via ``invoice_posted`` / payment / return audit
+    ``details``. Operational amounts / invoice numbers / store_id remain; admin
+    keeps FX fields in details.
+    """
+    return managed_ids is not None
+
+
+def redact_audit_fx_details(details: dict) -> dict:
+    """Null FX / rate-table keys on an audit ``details`` dict."""
+    out = dict(details)
+    for key in _AUDIT_FX_DETAIL_KEYS:
+        if key in out:
+            out[key] = None
+    return out
+
+
+# Audit detail keys that re-dump CREDIT_LIMIT_EXCEEDED master / base projection
+# already redacted on the 409 surface (and statement/aging credit_limit).
+_AUDIT_CLE_MASTER_DETAIL_KEYS = (
+    "credit_limit",
+    "available",
+    "current_balance",
+    "projected_balance",
+    "additional_amount",
+)
+
+
+def omit_audit_cle_master_details(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit CLE master fields inside audit ``details``.
+
+    CREDIT_LIMIT_EXCEEDED 409 already redacts ``credit_limit`` / ``available`` /
+    ``current_balance`` / ``projected_balance`` / ``additional_amount``. Scoped
+    ``GET /audit-logs`` (+ CSV) must not re-dump the same company credit master
+    / base projection via ``credit_limit_override`` (and sibling) audit
+    ``details``. Operational amounts / invoice numbers / store_id / reason remain;
+    admin keeps CLE master fields in details. FX keys already handled by
+    ``omit_audit_fx_details``.
+    """
+    return managed_ids is not None
+
+
+def redact_audit_cle_master_details(details: dict) -> dict:
+    """Null CLE master / base projection keys on an audit ``details`` dict."""
+    out = dict(details)
+    for key in _AUDIT_CLE_MASTER_DETAIL_KEYS:
+        if key in out:
+            out[key] = None
+    return out
+
+
+# Audit detail keys that re-dump company-wide party AR/AP ledger balance already
+# redacted as CLE ``current_balance`` / zeroed on scoped statements + AI.
+_AUDIT_PARTY_LEDGER_DETAIL_KEYS = (
+    "customer_balance",
+    "supplier_balance_before",
+    "supplier_balance_after",
+)
+
+
+def omit_audit_party_ledger_details(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit party ledger balance inside audit ``details``.
+
+    CREDIT_LIMIT_EXCEEDED 409 already redacts ``current_balance`` /
+    ``projected_balance``; credit statements / aging / AI customer scope zero
+    party ledger ``balance``. Scoped ``GET /audit-logs`` (+ CSV) must not
+    re-dump the same company-wide AR/AP ledger via ``invoice_posted`` /
+    credit-note / GRN / payment audit ``customer_balance`` /
+    ``supplier_balance_before`` / ``supplier_balance_after``. Operational
+    document amounts / invoice numbers / ``store_id`` / reason remain; admin
+    keeps party ledger fields in details. FX + CLE master keys already handled
+    by sibling omit helpers.
+    """
+    return managed_ids is not None
+
+
+def redact_audit_party_ledger_details(details: dict) -> dict:
+    """Null party AR/AP ledger balance keys on an audit ``details`` dict."""
+    out = dict(details)
+    for key in _AUDIT_PARTY_LEDGER_DETAIL_KEYS:
+        if key in out:
+            out[key] = None
+    return out
+
+
+# Audit detail keys that re-dump company department org assignment already
+# redacted on expense / recurring JSON/CSV (departments list GET denied).
+_AUDIT_DEPARTMENT_DETAIL_KEYS = ("department_id",)
+
+
+def omit_audit_department_details(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit ``department_id`` inside audit ``details``.
+
+    Expense / recurring list/get/export/patch already redact ``department_id``;
+    departments list GET + assign/clear writes already denied. Scoped
+    ``GET /audit-logs`` (+ CSV) must not re-dump the same company org-unit
+    assignment via ``expense_update`` (and sibling) audit ``details``.
+    Operational amounts / status / ``store_id`` remain; admin keeps
+    ``department_id`` in details. FX + CLE master + party ledger keys already
+    handled by sibling omit helpers.
+    """
+    return managed_ids is not None
+
+
+def redact_audit_department_details(details: dict) -> dict:
+    """Null department org-assignment keys on an audit ``details`` dict."""
+    out = dict(details)
+    for key in _AUDIT_DEPARTMENT_DETAIL_KEYS:
+        if key in out:
+            out[key] = None
+    return out
+
+
+def omit_audit_emailed_to_details(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit send-recipient PII inside audit ``details``.
+
+    Document list/get/send/export already redact ``emailed_to`` and nested send
+    ``delivery.to`` (party master email also redacted). Scoped ``GET /audit-logs``
+    (+ CSV) must not re-dump the same recipient via ``invoice_sent`` top-level
+    ``to``, ``po_sent`` nested ``delivery.to``, or ``pos_receipt_sent`` ``to``.
+    Invoice numbers / PO numbers / totals / ``mode`` / ``channel`` / ``store_id``
+    remain; admin keeps recipient fields. Plan/limit ``from``/``to`` without send
+    ``mode``/``channel`` are left alone. FX + CLE + party ledger + department
+    keys already handled by sibling omit helpers.
+    """
+    return managed_ids is not None
+
+
+def redact_audit_emailed_to_details(details: dict) -> dict:
+    """Null send-recipient contact keys on an audit ``details`` dict.
+
+    Mirrors ``redact_document_emailed_to`` for nested ``delivery.to`` / ``emailed_to``.
+    Top-level ``to`` is cleared only on send-shaped details (``mode`` or ``channel``)
+    so entitlement/plan ``to`` numeric/code dumps stay intact.
+    """
+    out = dict(details)
+    if "emailed_to" in out:
+        out["emailed_to"] = None
+    delivery = out.get("delivery")
+    if isinstance(delivery, dict) and "to" in delivery:
+        delivery_out = dict(delivery)
+        delivery_out["to"] = None
+        out["delivery"] = delivery_out
+    if "to" in out and ("mode" in out or "channel" in out):
+        out["to"] = None
+    return out
+
+
+def omit_audit_attachment_storage_details(managed_ids: list[str] | None) -> bool:
+    """True when store_manager must omit attachment storage keys inside audit ``details``.
+
+    Expense / purchase-invoice / journal list/get/upload already redact
+    ``attachment_url`` and upload echo ``uploaded.key`` (binary download remains
+    scoped). Scoped ``GET /audit-logs`` (+ CSV) must not re-dump the same storage
+    path via ``expense_attachment_upload`` / ``invoice_attachment_upload`` /
+    ``journal_attachment_upload`` (and sibling logo/brand upload) ``details.key``,
+    or cold-archive ``storage_key``. Size / content_type / event counts remain;
+    admin keeps storage keys. FX + CLE + party ledger + department + emailed_to
+    keys already handled by sibling omit helpers. API-key audits use
+    ``key_prefix`` (not ``key``) and stay intact.
+    """
+    return managed_ids is not None
+
+
+def redact_audit_attachment_storage_details(details: dict) -> dict:
+    """Null attachment / media storage keys on an audit ``details`` dict.
+
+    Clears upload-shaped top-level ``key`` (paired with ``size`` / ``content_type``),
+    plus ``storage_key`` / ``attachment_url`` when present. Does not touch
+    ``key_prefix`` (API keys).
+    """
+    out = dict(details)
+    if "storage_key" in out:
+        out["storage_key"] = None
+    if "attachment_url" in out:
+        out["attachment_url"] = None
+    if "key" in out and ("size" in out or "content_type" in out):
+        out["key"] = None
+    return out
+
+
+# Audit detail keys that re-dump company store-manager org assignment already
+# redacted on store / warehouse / stock-transfer JSON surfaces.
+_AUDIT_STORE_MANAGER_DETAIL_KEYS = (
+    "expected_manager_id",
+    "manager_id",
+    "from_store_manager_id",
+    "to_store_manager_id",
+)
+
+
+def omit_audit_store_manager_assignment_details(
+    managed_ids: list[str] | None,
+) -> bool:
+    """True when store_manager must omit store-manager ids inside audit ``details``.
+
+    Store / warehouse ``manager_id`` assign/clear already denied; list/export/patch
+    + stock-transfer ``from_store_manager_id`` / ``to_store_manager_id`` already
+    redacted. Scoped ``GET /audit-logs`` (+ CSV) must not re-dump the same org
+    graph via ``transfer_manager_override`` ``expected_manager_id`` (or sibling
+    ``manager_id`` / transfer manager keys). Transfer numbers / store_id /
+    ``transfer_action`` / ``store_code`` remain; admin keeps manager ids. FX +
+    CLE + party ledger + department + emailed_to + attachment keys already
+    handled by sibling omit helpers.
+    """
+    return managed_ids is not None
+
+
+def redact_audit_store_manager_assignment_details(details: dict) -> dict:
+    """Null store-manager org-assignment keys on an audit ``details`` dict."""
+    out = dict(details)
+    for key in _AUDIT_STORE_MANAGER_DETAIL_KEYS:
+        if key in out:
+            out[key] = None
+    return out
+
+
+# Audit detail keys that re-dump company expense approval threshold already
+# denied on expense settings GET/PATCH/export.
+_AUDIT_EXPENSE_THRESHOLD_DETAIL_KEYS = ("threshold",)
+
+
+def omit_audit_expense_threshold_details(
+    managed_ids: list[str] | None,
+) -> bool:
+    """True when store_manager must omit expense approval ``threshold`` in audit ``details``.
+
+    Expense approval settings GET/PATCH/export already denied (company thresholds /
+    levels / roles). Scoped ``GET /audit-logs`` (+ CSV) must not re-dump the same
+    company auto-approve threshold via ``expense_submitted`` /
+    ``expense_auto_approved`` ``details.threshold`` (self-authored or
+    store-scoped). Amount / category / status / ``store_id`` /
+    ``approval_steps_required`` / reason remain; admin keeps ``threshold``. FX +
+    CLE + party ledger + department + emailed_to + attachment + store manager_id
+    keys already handled by sibling omit helpers.
+    """
+    return managed_ids is not None
+
+
+def redact_audit_expense_threshold_details(details: dict) -> dict:
+    """Null expense approval threshold keys on an audit ``details`` dict."""
+    out = dict(details)
+    for key in _AUDIT_EXPENSE_THRESHOLD_DETAIL_KEYS:
+        if key in out:
+            out[key] = None
+    return out
+
+
+# Historical expense-approval notifications embedded ``(threshold)`` after
+# "exceeds approval threshold"; strip on read for store_manager (source fixed).
+_NOTIF_EXPENSE_THRESHOLD_PAREN_RE = re.compile(
+    r"(exceeds approval threshold)\s*\([^)]*\)",
+    re.IGNORECASE,
+)
+
+
+def omit_notification_expense_threshold(
+    managed_ids: list[str] | None,
+) -> bool:
+    """True when store_manager must omit expense approval threshold in notification ``message``.
+
+    Expense settings GET/PATCH/export already denied; audit ``details.threshold``
+    already redacted. ``DEFAULT_L1_ROLES`` includes ``store_manager``, so
+    ``expense_approval`` inbox/export must not re-dump the company auto-approve
+    threshold via message text ``exceeds approval threshold (N)``. Title /
+    category / amount / level wording remain; admin keeps the parenthetical.
+    """
+    return managed_ids is not None
+
+
+def redact_notification_expense_threshold(payload: dict) -> dict:
+    """Strip embedded expense approval threshold parenthetical from ``message``."""
+    out = dict(payload)
+    msg = out.get("message")
+    if isinstance(msg, str) and msg:
+        out["message"] = _NOTIF_EXPENSE_THRESHOLD_PAREN_RE.sub(r"\1", msg)
+    return out
+
+
+def apply_notification_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager notification JSON redacts (expense approval threshold in ``message``)."""
+    out = dict(payload)
+    if omit_notification_expense_threshold(managed_ids):
+        out = redact_notification_expense_threshold(out)
+    return out
+
+
+def apply_notification_manager_redacts_list(
+    rows: list[dict], managed_ids: list[str] | None
+) -> list[dict]:
+    """Map ``apply_notification_manager_redacts`` across notification list rows."""
+    return [apply_notification_manager_redacts(row, managed_ids) for row in rows]
+
+
+# Audit detail keys that re-dump CREDIT_LIMIT_EXCEEDED document-currency
+# ``invoice_total`` already redacted on the 409 surface (FX base already closed).
+_AUDIT_CLE_INVOICE_TOTAL_DETAIL_KEYS = ("invoice_total",)
+
+
+def omit_audit_cle_invoice_total_details(
+    managed_ids: list[str] | None,
+) -> bool:
+    """True when store_manager must omit CLE ``invoice_total`` in audit ``details``.
+
+    CREDIT_LIMIT_EXCEEDED 409 already redacts document-currency ``invoice_total``
+    (paired with ``invoice_total_base`` it recovers FX rate-table identity;
+    base / currency / CLE master already closed on audit). Scoped
+    ``GET /audit-logs`` (+ CSV) must not re-dump the same via
+    ``credit_limit_override`` (and sibling) ``details.invoice_total``.
+    ``invoice_number`` / reason / ``store_id`` / ``exceeded`` remain; admin keeps
+    ``invoice_total``. FX + CLE master + party + dept + emailed_to + attachment +
+    store manager_id + expense threshold keys already handled by sibling omit
+    helpers.
+    """
+    return managed_ids is not None
+
+
+def redact_audit_cle_invoice_total_details(details: dict) -> dict:
+    """Null CLE document-currency ``invoice_total`` keys on an audit ``details`` dict."""
+    out = dict(details)
+    for key in _AUDIT_CLE_INVOICE_TOTAL_DETAIL_KEYS:
+        if key in out:
+            out[key] = None
+    return out
+
+
+def redact_audit_manager_details(details: dict) -> dict:
+    """Compose store_manager audit ``details`` redacts (FX + CLE + party + dept + emailed_to + attachment key + store manager_id + expense threshold + CLE invoice_total)."""
+    out = redact_audit_fx_details(details)
+    out = redact_audit_cle_master_details(out)
+    out = redact_audit_party_ledger_details(out)
+    out = redact_audit_department_details(out)
+    out = redact_audit_emailed_to_details(out)
+    out = redact_audit_attachment_storage_details(out)
+    out = redact_audit_store_manager_assignment_details(out)
+    out = redact_audit_expense_threshold_details(out)
+    return redact_audit_cle_invoice_total_details(out)
+
+
+def apply_audit_manager_redacts(
+    payload: dict, managed_ids: list[str] | None
+) -> dict:
+    """Apply store_manager audit JSON redacts (FX + CLE + party + dept + emailed_to + attachment key + store manager_id + expense threshold + CLE invoice_total in ``details``)."""
+    out = dict(payload)
+    if not isinstance(out.get("details"), dict):
+        return out
+    details = out["details"]
+    if omit_audit_fx_details(managed_ids):
+        details = redact_audit_fx_details(details)
+    if omit_audit_cle_master_details(managed_ids):
+        details = redact_audit_cle_master_details(details)
+    if omit_audit_party_ledger_details(managed_ids):
+        details = redact_audit_party_ledger_details(details)
+    if omit_audit_department_details(managed_ids):
+        details = redact_audit_department_details(details)
+    if omit_audit_emailed_to_details(managed_ids):
+        details = redact_audit_emailed_to_details(details)
+    if omit_audit_attachment_storage_details(managed_ids):
+        details = redact_audit_attachment_storage_details(details)
+    if omit_audit_store_manager_assignment_details(managed_ids):
+        details = redact_audit_store_manager_assignment_details(details)
+    if omit_audit_expense_threshold_details(managed_ids):
+        details = redact_audit_expense_threshold_details(details)
+    if omit_audit_cle_invoice_total_details(managed_ids):
+        details = redact_audit_cle_invoice_total_details(details)
+    out["details"] = details
+    return out
+
+
+def apply_audit_manager_redacts_list(
+    rows: list[dict], managed_ids: list[str] | None
+) -> list[dict]:
+    """Map ``apply_audit_manager_redacts`` across audit list rows."""
+    return [apply_audit_manager_redacts(row, managed_ids) for row in rows]
+
+
+def redact_ai_customer_credit(payload: dict) -> dict:
+    """Null ``credit_limit`` on AI customer insights/assist nested customer rows.
+
+    Defense-in-depth after ``ai_customers`` omits credit for store_manager scope;
+    strips residual credit-limit phrases from assist ``answer`` text.
+    """
+    out = dict(payload)
+
+    def _row(row: object) -> object:
+        if not isinstance(row, dict):
+            return row
+        item = dict(row)
+        if "credit_limit" in item:
+            item["credit_limit"] = None
+        return item
+
+    for key in ("best_customers", "churn_risks"):
+        rows = out.get(key)
+        if isinstance(rows, list):
+            out[key] = [_row(r) for r in rows]
+    if isinstance(out.get("customer"), dict):
+        out["customer"] = _row(out["customer"])
+    answer = out.get("answer")
+    if isinstance(answer, str) and "credit limit" in answer.lower():
+        # Drop trailing "(credit limit N)" clauses from balance answers.
+        out["answer"] = re.sub(
+            r"\s*\(credit limit [^)]*\)\.?",
+            ".",
+            answer,
+            flags=re.IGNORECASE,
+        ).replace("..", ".")
+    return out
+
+
+def assert_credit_limit_override_denied(
+    managed_ids: list[str] | None,
+    *,
+    override: bool,
+    message: str = "Store managers cannot override customer credit limits.",
+) -> None:
+    """403 when store_manager attempts credit_limit_override on invoice post / POS credit.
+
+    Default role includes ``credit:approve``; override remains company/finance admin.
+    """
+    if managed_ids is None or not override:
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "STORE_SCOPE_DENIED",
+            "message": message,
+        },
+    )
+
+
+async def assert_liquid_account_in_manager_scope(
+    db: AsyncSession,
+    tenant_id: str,
+    account_id: str,
+    store_ids: list[str] | None,
+    *,
+    company_id: str | None = None,
+) -> None:
+    """403 when a store_manager reads a liquid account outside managed-store journals."""
+    if store_ids is None:
+        return
+    allowed = await managed_liquid_account_ids(
+        db, tenant_id, store_ids=store_ids, company_id=company_id
+    )
+    aid = (account_id or "").strip()
+    if not allowed or aid not in allowed:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": "Bank/cash account is outside your managed store scope.",
+                "account_id": aid or None,
+            },
+        )
+
+
+async def assert_optional_liquid_account_in_manager_scope(
+    db: AsyncSession,
+    tenant_id: str,
+    liquid_account_id: str | None,
+    store_ids: list[str] | None,
+    *,
+    company_id: str | None = None,
+) -> None:
+    """403 when store_manager supplies ``liquid_account_id`` outside managed stores."""
+    aid = (liquid_account_id or "").strip()
+    if store_ids is None or not aid:
+        return
+    await assert_liquid_account_in_manager_scope(
+        db, tenant_id, aid, store_ids, company_id=company_id
+    )
+
+
+async def _posted_journal_store_ids_for_account(
+    db: AsyncSession,
+    tenant_id: str,
+    account_id: str,
+    *,
+    company_id: str | None = None,
+) -> list[str | None]:
+    """Distinct journal store_ids with posted activity on one COA account."""
+    aid = (account_id or "").strip()
+    if not aid:
+        return []
+    stmt = (
+        select(m.JournalEntry.store_id)
+        .join(
+            m.JournalEntryLine,
+            m.JournalEntryLine.journal_entry_id == m.JournalEntry.id,
+        )
+        .where(
+            m.JournalEntryLine.tenant_id == tenant_id,
+            m.JournalEntry.tenant_id == tenant_id,
+            m.JournalEntryLine.account_id == aid,
+            m.JournalEntry.status == "posted",
+        )
+        .distinct()
+    )
+    if company_id:
+        stmt = stmt.where(m.JournalEntry.company_id == company_id)
+    return list((await db.execute(stmt)).scalars().all())
+
+
+def _liquid_account_has_managed_journal_activity(
+    activity_stores: list[str | None],
+    store_ids: list[str],
+) -> bool:
+    managed_set = set(store_ids)
+    return any(sid is not None and str(sid) in managed_set for sid in activity_stores)
+
+
+async def _coa_account_readable_by_manager(
+    db: AsyncSession,
+    tenant_id: str,
+    account: m.Account,
+    store_ids: list[str],
+    *,
+    company_id: str | None = None,
+) -> bool:
+    """True when store_manager may read one COA account (liquid-only; first-touch allowed)."""
+    if not (account.is_cash_account or account.is_bank_account):
+        return False
+    allowed_liquid = await managed_liquid_account_ids(
+        db, tenant_id, store_ids=store_ids, company_id=company_id
+    )
+    if allowed_liquid and account.id in allowed_liquid:
+        return True
+    activity_stores = await _posted_journal_store_ids_for_account(
+        db, tenant_id, account.id, company_id=company_id
+    )
+    if not activity_stores:
+        return True
+    return _liquid_account_has_managed_journal_activity(activity_stores, store_ids)
+
+
+async def assert_coa_account_read_in_manager_scope(
+    db: AsyncSession,
+    tenant_id: str,
+    account: m.Account,
+    store_ids: list[str] | None,
+    *,
+    company_id: str | None = None,
+) -> None:
+    """403 when store_manager reads COA outside allowed liquid scope.
+
+    Non-cash/bank accounts are company-level chart structure (denied). Liquid accounts
+    with no prior journal activity are allowed (first-touch). Accounts with only
+    foreign-store liquid activity are fail-closed.
+    """
+    if store_ids is None:
+        return
+    if company_id and account.company_id and str(account.company_id) != str(company_id):
+        return
+    aid = account.id
+    if not (account.is_cash_account or account.is_bank_account):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": (
+                    "Store managers cannot read non-cash/bank chart-of-accounts entries."
+                ),
+                "account_id": aid or None,
+            },
+        )
+    if await _coa_account_readable_by_manager(
+        db, tenant_id, account, store_ids, company_id=company_id
+    ):
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "STORE_SCOPE_DENIED",
+            "message": (
+                "Bank/cash account has activity only outside your managed store scope."
+            ),
+            "account_id": aid or None,
+        },
+    )
+
+
+async def filter_coa_accounts_for_manager_read(
+    db: AsyncSession,
+    tenant_id: str,
+    accounts: list[m.Account],
+    store_ids: list[str] | None,
+    *,
+    company_id: str | None = None,
+) -> list[m.Account]:
+    """Return COA rows readable by store_manager (liquid-only; first-touch allowed)."""
+    if store_ids is None:
+        return accounts
+    readable: list[m.Account] = []
+    for account in accounts:
+        if await _coa_account_readable_by_manager(
+            db, tenant_id, account, store_ids, company_id=company_id
+        ):
+            readable.append(account)
+    return readable
+
+
+async def assert_opening_balance_account_in_manager_scope(
+    db: AsyncSession,
+    tenant_id: str,
+    account_id: str,
+    store_ids: list[str] | None,
+    *,
+    company_id: str | None = None,
+) -> None:
+    """403 when store_manager posts opening balance outside allowed liquid scope.
+
+    Non-cash/bank COA accounts are company-level structure (denied). Cash/bank with
+    no prior journal activity is allowed (first-touch opening balance). Accounts with
+    only foreign-store liquid activity are fail-closed.
+    """
+    if store_ids is None:
+        return
+    aid = (account_id or "").strip()
+    account = await db.get(m.Account, aid)
+    if not account or account.tenant_id != tenant_id:
+        return
+    if company_id and account.company_id and str(account.company_id) != str(company_id):
+        return
+    if not (account.is_cash_account or account.is_bank_account):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": (
+                    "Store managers cannot post opening balances on non-cash/bank accounts."
+                ),
+                "account_id": aid or None,
+            },
+        )
+    activity_stores = await _posted_journal_store_ids_for_account(
+        db, tenant_id, aid, company_id=company_id
+    )
+    if not activity_stores:
+        return
+    if _liquid_account_has_managed_journal_activity(activity_stores, store_ids):
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "STORE_SCOPE_DENIED",
+            "message": (
+                "Bank/cash account has activity only outside your managed store scope."
+            ),
+            "account_id": aid or None,
+        },
+    )
+
+
+async def assert_sales_return_in_manager_scope(
+    db: AsyncSession, claims: dict, sales_return: m.SalesReturn
+) -> None:
+    """403 when return's invoice store is outside managed scope."""
+    managed = await managed_store_ids(db, claims)
+    if managed is None:
+        return
+    inv = await db.get(m.SalesInvoice, sales_return.sales_invoice_id)
+    sid = getattr(inv, "store_id", None) if inv else None
+    assert_store_in_manager_scope(managed, sid, allow_unset=False)
+
+
+def apply_purchase_invoice_warehouse_scope(stmt, managed_wh_ids: list[str] | None):
+    """Scope purchase invoices via direct warehouse_id, else linked GRN/PO warehouse.
+
+    Prefer ``PurchaseInvoice.warehouse_id``, then GRN, then PO. Unlinked invoices with
+    null warehouse remain fail-closed for store_managers.
+    """
+    if managed_wh_ids is None:
+        return stmt
+    if not managed_wh_ids:
+        # sql_false() → ``0 = 1`` on SQLite (func.false() → invalid ``false()``).
+        return stmt.where(sql_false())
+    stmt = stmt.outerjoin(
+        m.GoodsReceipt, m.GoodsReceipt.id == m.PurchaseInvoice.goods_receipt_id
+    ).outerjoin(
+        m.PurchaseOrder, m.PurchaseOrder.id == m.PurchaseInvoice.purchase_order_id
+    )
+    wh_expr = func.coalesce(
+        m.PurchaseInvoice.warehouse_id,
+        m.GoodsReceipt.warehouse_id,
+        m.PurchaseOrder.warehouse_id,
+    )
+    return stmt.where(wh_expr.in_(managed_wh_ids))
+
+
+async def resolve_purchase_invoice_warehouse_id(
+    db: AsyncSession, inv: m.PurchaseInvoice
+) -> str | None:
+    """Prefer direct PI.warehouse_id, then GRN, then PO."""
+    direct = getattr(inv, "warehouse_id", None)
+    if direct:
+        return str(direct)
+    if getattr(inv, "goods_receipt_id", None):
+        grn = await db.get(m.GoodsReceipt, inv.goods_receipt_id)
+        if grn and getattr(grn, "warehouse_id", None):
+            return str(grn.warehouse_id)
+    if getattr(inv, "purchase_order_id", None):
+        po = await db.get(m.PurchaseOrder, inv.purchase_order_id)
+        if po and getattr(po, "warehouse_id", None):
+            return str(po.warehouse_id)
+    return None
+
+
+async def assert_purchase_invoice_in_manager_scope(
+    db: AsyncSession, claims: dict, inv: m.PurchaseInvoice
+) -> None:
+    managed_wh = await managed_warehouse_ids(db, claims)
+    if managed_wh is None:
+        return
+    wid = await resolve_purchase_invoice_warehouse_id(db, inv)
+    assert_warehouse_in_manager_scope(managed_wh, wid, allow_unset=False)
+
+
+async def assert_purchase_invoice_links_in_manager_scope(
+    db: AsyncSession,
+    claims: dict,
+    *,
+    goods_receipt_id: str | None,
+    purchase_order_id: str | None,
+    warehouse_id: str | None = None,
+) -> None:
+    """Create-time gate: managers need a managed warehouse (explicit or via GRN/PO)."""
+    managed_wh = await managed_warehouse_ids(db, claims)
+    if managed_wh is None:
+        return
+    wid = (warehouse_id or "").strip() or None
+    if not wid and goods_receipt_id:
+        grn = await db.get(m.GoodsReceipt, goods_receipt_id)
+        if grn and getattr(grn, "warehouse_id", None):
+            wid = str(grn.warehouse_id)
+    if not wid and purchase_order_id:
+        po = await db.get(m.PurchaseOrder, purchase_order_id)
+        if po and getattr(po, "warehouse_id", None):
+            wid = str(po.warehouse_id)
+    assert_warehouse_in_manager_scope(managed_wh, wid, allow_unset=False)
+
+
 async def scoped_financial_kpis(
     db: AsyncSession,
     *,
@@ -55,7 +6281,7 @@ async def scoped_financial_kpis(
     month_start: datetime,
     prior_month_start: datetime,
 ) -> dict:
-    """Sales / expense KPIs limited to managed stores. Purchases omitted (no store axis on PI)."""
+    """Sales / expense KPIs limited to managed stores. Purchase invoices use PO/GRN WH join elsewhere."""
 
     async def scalar(stmt):
         return (await db.execute(stmt)).scalar() or 0
@@ -247,3 +6473,113 @@ async def scoped_financial_kpis(
         "recent_sales": recent,
         "top_products": top_products,
     }
+
+
+def apply_bank_statement_store_scope(
+    stmt,
+    managed_store_ids: list[str] | None,
+    *,
+    tenant_id: str | None = None,
+):
+    """Filter bank statements to those a store_manager may list/read/reconcile.
+
+    Fail-closed: hide when any matched line points to a null-store or foreign-store
+    journal. Visible when at least one in-scope matched line exists, or the statement
+    account still has unmatched book lines in managed stores.
+    """
+    if managed_store_ids is None:
+        return stmt
+    if not managed_store_ids:
+        # sql_false() → ``0 = 1`` on SQLite (func.false() → invalid ``false()``).
+        return stmt.where(sql_false())
+
+    BS = m.BankStatement
+    BSL = m.BankStatementLine
+    JEL = m.JournalEntryLine
+    JE = m.JournalEntry
+
+    foreign_taint = (
+        select(BSL.id)
+        .select_from(BSL)
+        .join(JEL, JEL.id == BSL.matched_journal_line_id)
+        .join(JE, JE.id == JEL.journal_entry_id)
+        .where(
+            BSL.statement_id == BS.id,
+            BSL.matched_journal_line_id.is_not(None),
+            or_(JE.store_id.is_(None), ~JE.store_id.in_(managed_store_ids)),
+        )
+    )
+    in_scope_match = (
+        select(BSL.id)
+        .select_from(BSL)
+        .join(JEL, JEL.id == BSL.matched_journal_line_id)
+        .join(JE, JE.id == JEL.journal_entry_id)
+        .where(
+            BSL.statement_id == BS.id,
+            BSL.matched_journal_line_id.is_not(None),
+            JE.store_id.in_(managed_store_ids),
+        )
+    )
+    matched_jl = select(BSL.matched_journal_line_id).where(
+        BSL.matched_journal_line_id.is_not(None)
+    )
+    cleared_jl = select(m.BankClearingBookLink.journal_line_id)
+    if tenant_id:
+        foreign_taint = foreign_taint.where(BSL.tenant_id == tenant_id)
+        in_scope_match = in_scope_match.where(BSL.tenant_id == tenant_id)
+        matched_jl = matched_jl.where(BSL.tenant_id == tenant_id)
+        cleared_jl = cleared_jl.where(m.BankClearingBookLink.tenant_id == tenant_id)
+
+    in_scope_book = (
+        select(JEL.id)
+        .select_from(JEL)
+        .join(JE, JE.id == JEL.journal_entry_id)
+        .where(
+            JEL.account_id == BS.account_id,
+            JE.store_id.in_(managed_store_ids),
+            ~JEL.id.in_(matched_jl),
+            ~JEL.id.in_(cleared_jl),
+            or_(JEL.debit > 0, JEL.credit > 0),
+        )
+    )
+    if tenant_id:
+        in_scope_book = in_scope_book.where(JEL.tenant_id == tenant_id)
+
+    return stmt.where(
+        ~exists(foreign_taint.correlate(BS)),
+        or_(
+            exists(in_scope_match.correlate(BS)),
+            exists(in_scope_book.correlate(BS)),
+        ),
+    )
+
+
+async def assert_bank_statement_in_manager_scope(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    statement_id: str,
+    managed_store_ids: list[str] | None,
+    company_id: str | None = None,
+) -> m.BankStatement:
+    """403 when a store_manager accesses a bank statement outside managed-store scope."""
+    stmt = select(m.BankStatement).where(
+        m.BankStatement.id == statement_id,
+        m.BankStatement.tenant_id == tenant_id,
+    )
+    if company_id:
+        stmt = stmt.where(m.BankStatement.company_id == company_id)
+    stmt = apply_bank_statement_store_scope(
+        stmt, managed_store_ids, tenant_id=tenant_id
+    )
+    row = (await db.execute(stmt)).scalar_one_or_none()
+    if not row:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "STORE_SCOPE_DENIED",
+                "message": "Bank statement is outside your managed store scope.",
+                "statement_id": statement_id,
+            },
+        )
+    return row

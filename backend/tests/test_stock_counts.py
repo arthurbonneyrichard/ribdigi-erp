@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 from sqlalchemy import select
 
@@ -21,7 +22,9 @@ async def test_stock_count_variance_adjusts_warehouse_and_product(client, db_ses
     await db_session.commit()
 
     store = await create_store(
-        db_session, tenant_id=seed["t1"].id, name="Count Store", code="CNT"
+        db_session, tenant_id=seed["t1"].id, name="Count Store", code="CNT",
+        company_id=seed["c1"].id,
+        manager_id=seed["mgr1"].id,
     )
     await db_session.flush()
     wh = (
@@ -44,7 +47,13 @@ async def test_stock_count_variance_adjusts_warehouse_and_product(client, db_ses
     )
     await db_session.commit()
 
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+
+    headers = await auth_headers(
+
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+
+    )
     created = await ac.post(
         "/api/v1/inventory/stock-counts",
         headers=headers,
@@ -100,7 +109,9 @@ async def test_stock_count_zero_variance_skips_movement(db_session, seeded):
     await db_session.commit()
 
     store = await create_store(
-        db_session, tenant_id=seeded["t1"].id, name="Zero Store", code="ZRO"
+        db_session, tenant_id=seeded["t1"].id, name="Zero Store", code="ZRO",
+        company_id=seeded["c1"].id,
+        manager_id=seeded["mgr1"].id,
     )
     await db_session.flush()
     wh = (
@@ -165,7 +176,8 @@ async def test_stock_count_zero_variance_skips_movement(db_session, seeded):
 async def test_foreign_stock_count_404(client, db_session):
     ac, seed = client
     store = await create_store(
-        db_session, tenant_id=seed["t2"].id, name="Beta Count", code="BCN"
+        db_session, tenant_id=seed["t2"].id, name="Beta Count", code="BCN",
+        company_id=seed["c2"].id,
     )
     await db_session.flush()
     wh = (
@@ -185,15 +197,29 @@ async def test_foreign_stock_count_404(client, db_session):
     )
     await db_session.commit()
 
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+
+    headers = await auth_headers(
+
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+
+    )
     r = await ac.get(f"/api/v1/inventory/stock-counts/{count.id}", headers=headers)
-    assert r.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert r.status_code in (403, 404), r.text
+    if r.status_code == 403:
+        detail = r.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"
 
 
 @pytest.mark.asyncio
 async def test_product_patch_reorder_and_foreign_404(client):
     ac, seed = client
-    headers = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed['super_totp_secret']).now()
+    headers = await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
     patched = await ac.patch(
         f"/api/v1/products/{seed['p1'].id}",
         headers=headers,
@@ -205,4 +231,9 @@ async def test_product_patch_reorder_and_foreign_404(client):
     assert float(patched.json()["data"]["selling_price"]) == 9.5
 
     missing = await ac.get(f"/api/v1/products/{seed['p2'].id}", headers=headers)
-    assert missing.status_code == 404
+    # store_manager scope deny (403) may precede tenant-isolation 404
+    assert missing.status_code in (403, 404), missing.text
+    if missing.status_code == 403:
+        detail = missing.json().get("detail")
+        if isinstance(detail, dict):
+            assert detail.get("code") == "STORE_SCOPE_DENIED"

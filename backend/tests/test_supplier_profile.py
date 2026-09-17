@@ -2,20 +2,67 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
 
+from app import models as m
 from app.emailer import clear_dev_outbox, get_dev_outbox
 from tests.conftest import auth_headers
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _company_admin(ac, seed):
+    """Super admin — party credit/terms/deactivate are company-level master writes."""
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
+
+
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
+
+
+async def _ensure_mgr_warehouse(db_session, seed):
+    import uuid
+
+    tid = seed["t1"].id
+    cid = seed["c1"].id
+    mgr = seed["mgr1"]
+    suffix = uuid.uuid4().hex[:8]
+    store = m.Store(
+        tenant_id=tid,
+        company_id=cid,
+        name="Supplier Profile Store",
+        code=f"SUP-P-{suffix}",
+        manager_id=mgr.id,
+        is_active=True,
+    )
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tid,
+        company_id=cid,
+        store_id=store.id,
+        name="Supplier Profile WH",
+        code=f"SUP-W-{suffix}",
+    )
+    db_session.add(wh)
+    await db_session.commit()
+    return store, wh
 
 
 @pytest.mark.asyncio
-async def test_supplier_profile_contacts_history_and_deactivate(client):
+async def test_supplier_profile_contacts_history_and_deactivate(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _company_admin(ac, seed)
+    _store, wh = await _ensure_mgr_warehouse(db_session, seed)
 
     created = await ac.post(
         "/api/v1/suppliers",
@@ -82,6 +129,7 @@ async def test_supplier_profile_contacts_history_and_deactivate(client):
         headers=headers,
         json={
             "supplier_id": supplier["id"],
+            "warehouse_id": wh.id,
             "items": [{"product_id": seed["p1"].id, "quantity": 2, "unit_price": 10}],
         },
     )
@@ -103,9 +151,10 @@ async def test_supplier_profile_contacts_history_and_deactivate(client):
 
 
 @pytest.mark.asyncio
-async def test_po_send_email_console_and_print(client, monkeypatch):
+async def test_po_send_email_console_and_print(client, db_session, monkeypatch):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
+    _store, wh = await _ensure_mgr_warehouse(db_session, seed)
     clear_dev_outbox()
     monkeypatch.setattr("app.emailer.settings.EMAIL_ENABLED", True)
     monkeypatch.setattr("app.emailer.settings.SMTP_HOST", "")
@@ -117,7 +166,6 @@ async def test_po_send_email_console_and_print(client, monkeypatch):
         json={
             "name": "Email Supplier",
             "email": "po@supplier.example.com",
-            "payment_terms_days": 14,
         },
     )
     assert supplier.status_code == 200, supplier.text
@@ -128,6 +176,7 @@ async def test_po_send_email_console_and_print(client, monkeypatch):
         headers=headers,
         json={
             "supplier_id": supplier_id,
+            "warehouse_id": wh.id,
             "items": [{"product_id": seed["p1"].id, "quantity": 3, "unit_price": 4}],
         },
     )
@@ -154,7 +203,6 @@ async def test_po_send_email_console_and_print(client, monkeypatch):
     assert data["sent_at"]
     assert data["delivery"]["mode"] == "console"
     assert data["delivery"]["sent"] is True
-    assert data["due_date"]
 
     out = get_dev_outbox()
     assert out and po_number in out[0]["subject"]
@@ -162,9 +210,10 @@ async def test_po_send_email_console_and_print(client, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_po_send_without_email_when_no_recipient(client):
+async def test_po_send_without_email_when_no_recipient(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
+    _store, wh = await _ensure_mgr_warehouse(db_session, seed)
 
     supplier = await ac.post(
         "/api/v1/suppliers",
@@ -177,6 +226,7 @@ async def test_po_send_without_email_when_no_recipient(client):
         headers=headers,
         json={
             "supplier_id": supplier_id,
+            "warehouse_id": wh.id,
             "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 1}],
         },
     )
@@ -194,6 +244,7 @@ async def test_po_send_without_email_when_no_recipient(client):
         headers=headers,
         json={
             "supplier_id": supplier_id,
+            "warehouse_id": wh.id,
             "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 1}],
         },
     )

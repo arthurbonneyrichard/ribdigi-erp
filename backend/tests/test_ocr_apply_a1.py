@@ -4,20 +4,28 @@ from __future__ import annotations
 
 from datetime import datetime
 
+import pyotp
 import pytest
 
 from app import models as m
 from tests.conftest import auth_headers
 
 
-async def _mgr(ac):
-    return await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+async def _mgr(ac, seed=None):
+    """Elevated actor for company-admin happy paths (store_manager catalog writes denied)."""
+    if seed is None:
+        # backward-compat: some call sites pass only ac — fall back to admin without totp if possible
+        return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
 
 
 @pytest.mark.asyncio
 async def test_expense_ocr_apply_requires_confirm(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant = seed["t1"]
     tenant.expense_approval_threshold = 10
     await db_session.commit()
@@ -68,7 +76,7 @@ async def test_expense_ocr_apply_requires_confirm(client, db_session):
 @pytest.mark.asyncio
 async def test_purchase_invoice_ocr_apply_draft_only(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
 
     supplier = await ac.post(
         "/api/v1/suppliers",
@@ -136,7 +144,7 @@ async def test_purchase_invoice_ocr_apply_draft_only(client, db_session):
 @pytest.mark.asyncio
 async def test_ocr_apply_tenant_isolation(client, db_session):
     ac, seed = client
-    headers = await _mgr(ac)
+    headers = await _mgr(ac, seed)
     tenant = seed["t1"]
     tenant.expense_approval_threshold = 10
     await db_session.commit()

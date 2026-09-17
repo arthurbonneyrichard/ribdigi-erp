@@ -1,0 +1,196 @@
+{
+  "id": "store-scope-rbac-matrix",
+  "version": 1,
+  "title": "Living store-scoped RBAC test matrix",
+  "doc": "docs/STORE_SCOPED_RBAC_TEST_MATRIX.md",
+  "remaining_checklist": "docs/STORE_SCOPED_RBAC_COMPLETE_REMAINING.md",
+  "suite": "backend/tests/test_store_scope_rbac_matrix.py",
+  "ci_marker": "store_scope",
+  "ci_target": "cd backend && PYTHONPATH=. pytest -q tests/test_store_scope_rbac_matrix.py",
+  "ci_marker_pass": "cd backend && PYTHONPATH=. pytest -q -m \"security or isolation or store_scope\"",
+  "store_scoped_rbac_complete_claimed": true,
+  "adr005_complete_claimed": true,
+  "export_view_cost_complete_claimed": true,
+  "temp_membership_expires_at_complete_claimed": true,
+  "elevation_break_glass_mvp_complete_claimed": true,
+  "overall_rbac_complete_claimed": false,
+  "classes": {
+    "cross_store_deny": "store_manager cannot read/write foreign-store or null-store commerce rows (STORE_SCOPE_DENIED)",
+    "membership_on_soak": "STORE_MEMBERSHIP_SCOPE_ENABLED=true automated soak (ADR-005 Complete evidence; flag default OFF)",
+    "cashier_fail_closed": "Flag ON: cashiers without membership get empty visibility + POS denied; with membership foreign POS denied",
+    "manager_union": "Flag ON: store_manager managed_store_ids = manager_id ∪ active memberships; foreign excluded",
+    "intentional_allow": "Product-accepted ALLOWs (logo binary GET; caller-scoped sessions; notification settings) — docs/STORE_SCOPED_RBAC_INTENTIONAL_ALLOWS.md",
+    "breadth_index": "Indexed deep coverage in ops hardening / soak modules (not re-executed here; files must exist)"
+  },
+  "cases": [
+    {
+      "id": "ss-cross-sales-list-deny",
+      "class": "cross_store_deny",
+      "title": "store_manager sales invoices list/get exclude foreign + null store",
+      "expected": "deny",
+      "living": true,
+      "evidence_tests": [
+        "backend/tests/test_store_scope_ops_hardening.py::test_store_manager_sales_invoices_scoped"
+      ]
+    },
+    {
+      "id": "ss-cross-sales-query-deny",
+      "class": "cross_store_deny",
+      "title": "store_manager cannot filter sales invoices by foreign store_id",
+      "expected": "deny",
+      "living": true,
+      "evidence_tests": [
+        "backend/tests/test_store_scope_ops_hardening.py::test_store_manager_sales_invoices_scoped"
+      ]
+    },
+    {
+      "id": "ss-mgr-union-flag-on",
+      "class": "manager_union",
+      "title": "Flag ON manager_id ∪ membership stores on GET /stores; foreign excluded",
+      "expected": "union",
+      "living": true,
+      "evidence_tests": [
+        "backend/tests/test_adr005_membership_scope_soak.py::test_adr005_soak_flag_on_store_manager_union_scope"
+      ]
+    },
+    {
+      "id": "ss-membership-soak-honesty",
+      "class": "membership_on_soak",
+      "title": "ADR-005 + store-scoped RBAC honesty Complete; flag default OFF",
+      "expected": "honesty",
+      "living": true,
+      "evidence_tests": [
+        "backend/tests/test_adr005_membership_scope_soak.py::test_adr005_soak_honesty_complete_flags",
+        "backend/tests/test_adr005_membership_scope_soak.py::test_adr005_soak_flag_still_defaults_off_ops_enable",
+        "backend/tests/test_store_scoped_rbac_demo_soak.py::test_store_scoped_complete_honesty_true_flag_default_off"
+      ]
+    },
+    {
+      "id": "ss-cashier-empty-fail-closed",
+      "class": "cashier_fail_closed",
+      "title": "Flag ON cashier with no memberships: empty GET /stores + POS denied",
+      "expected": "deny",
+      "living": true,
+      "evidence_tests": [
+        "backend/tests/test_adr005_membership_scope_soak.py::test_adr005_soak_flag_on_cashier_without_membership_empty_denied"
+      ]
+    },
+    {
+      "id": "ss-cashier-assigned-foreign-deny",
+      "class": "cashier_fail_closed",
+      "title": "Flag ON cashier with membership: assigned POS OK; foreign POS STORE_SCOPE_DENIED",
+      "expected": "deny",
+      "living": true,
+      "evidence_tests": [
+        "backend/tests/test_adr005_membership_scope_soak.py::test_adr005_soak_flag_on_cashier_with_membership_only_assigned"
+      ]
+    },
+    {
+      "id": "ss-allow-logo-binary-get",
+      "class": "intentional_allow",
+      "title": "Company + tenant logo binary GET allowed for store_manager (workspace chrome)",
+      "expected": "allow",
+      "living": true,
+      "evidence_tests": [
+        "backend/tests/test_store_scope_ops_hardening.py::test_store_manager_company_tenant_logo_binary_get_allowed"
+      ]
+    },
+    {
+      "id": "ss-allow-own-sessions",
+      "class": "intentional_allow",
+      "title": "Caller-scoped /auth/sessions list+export allowed; tenant-sessions denied",
+      "expected": "allow",
+      "living": true,
+      "evidence_tests": [
+        "backend/tests/test_store_scope_ops_hardening.py::test_store_manager_own_sessions_and_notification_settings_allowed"
+      ]
+    },
+    {
+      "id": "ss-allow-notification-settings",
+      "class": "intentional_allow",
+      "title": "Caller-scoped /notifications/settings GET/PATCH/export allowed",
+      "expected": "allow",
+      "living": true,
+      "evidence_tests": [
+        "backend/tests/test_store_scope_ops_hardening.py::test_store_manager_own_sessions_and_notification_settings_allowed"
+      ]
+    },
+    {
+      "id": "ss-breadth-ops-hardening",
+      "class": "breadth_index",
+      "title": "Deep store_manager ops/reports/AI/admin continuum coverage module present",
+      "expected": "index",
+      "living": false,
+      "evidence_tests": [
+        "backend/tests/test_store_scope_ops_hardening.py"
+      ]
+    },
+    {
+      "id": "ss-breadth-adr005-soak",
+      "class": "breadth_index",
+      "title": "ADR-005 automated flag-ON soak module present",
+      "expected": "index",
+      "living": false,
+      "evidence_tests": [
+        "backend/tests/test_adr005_membership_scope_soak.py"
+      ]
+    },
+    {
+      "id": "ss-breadth-membership-scaffold",
+      "class": "breadth_index",
+      "title": "ADR-005 membership scaffold + honesty module present",
+      "expected": "index",
+      "living": false,
+      "evidence_tests": [
+        "backend/tests/test_store_membership_scaffold.py"
+      ]
+    },
+    {
+      "id": "ss-breadth-manager-s1",
+      "class": "breadth_index",
+      "title": "Stage 81 store-scoped manager isolation module present",
+      "expected": "index",
+      "living": false,
+      "evidence_tests": [
+        "backend/tests/test_store_scoped_manager_s1.py"
+      ]
+    },
+    {
+      "id": "ss-breadth-expires-at",
+      "class": "breadth_index",
+      "title": "Temp membership expires_at Complete evidence module present",
+      "expected": "index",
+      "living": false,
+      "evidence_tests": [
+        "backend/tests/test_membership_expires_at.py"
+      ]
+    },
+    {
+      "id": "ss-breadth-elevation",
+      "class": "breadth_index",
+      "title": "Elevation / break-glass MVP Complete evidence module present",
+      "expected": "index",
+      "living": false,
+      "evidence_tests": [
+        "backend/tests/test_rbac_elevation_break_glass.py"
+      ]
+    }
+  ],
+  "complete_criteria_met": [
+    "Residual continuum field-leak backlog empty (NONE)",
+    "Product acceptance of intentional ALLOWs (docs/STORE_SCOPED_RBAC_INTENTIONAL_ALLOWS.md)",
+    "Living store-scope test matrix landed",
+    "Automated flag-ON membership soak + local demo-seed soak (docs/STORE_SCOPED_RBAC_LOCAL_SOAK_EVIDENCE.md)",
+    "Staging enable of STORE_MEMBERSHIP_SCOPE_ENABLED remains ops cutover (flag default OFF; does not reopen Complete)"
+  ],
+  "complete_criteria_not_met": [],
+  "never_claim_from_matrix_alone": [
+    "overall RBAC Complete",
+    "Offline Complete",
+    "7-day VERIFIED",
+    "go-live",
+    "paid billing Complete"
+  ],
+  "continuum_honesty_touched_at": "2026-09-17T01:30:00Z",
+  "continuum_honesty_note": "Complete — residual dump NONE + product-accepted ALLOWs + living matrix + automated/local soak; flag default OFF; overall RBAC / Offline / billing / go-live still MISSING"
+}

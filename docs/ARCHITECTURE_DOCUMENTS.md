@@ -614,7 +614,12 @@ Request → Auth Middleware → JWT Decode → Tenant Validation
 
 ### 9.1 Database Schema Strategy
 
-**Schema-per-Tenant with Shared Catalog:**
+> **Historical / SUPERSEDED sample below.** Live MVP tenancy is **shared-schema**
+> with `tenant_id` (+ `company_id`) row filters — see `docs/ADR_001_TENANCY.md`,
+> `docs/DATABASE_DOCUMENTATION.md` §1 overview, and `docs/MIGRATION_GUIDE.md`.
+> Do **not** provision `CREATE SCHEMA tenant_*` from this section.
+
+**Schema-per-Tenant with Shared Catalog (not implemented):**
 
 ```sql
 -- Public schema: Global metadata
@@ -704,7 +709,7 @@ CREATE POLICY tenant_isolation ON tenant_abc123.products
 | Component | Technology | Rationale |
 |-----------|------------|-----------|
 | **Backend Framework** | FastAPI | Async-native, automatic OpenAPI docs, Pydantic validation, high performance |
-| **ORM** | SQLAlchemy 2.0 | Mature, supports async, schema-per-tenant, Alembic migrations |
+| **ORM** | SQLAlchemy 2.0 | Mature, supports async, shared-schema `tenant_id` filters, Alembic migrations |
 | **Database** | PostgreSQL 15 | ACID compliance, JSON support, RLS, excellent relational model fit |
 | **Cache** | Redis 7 | In-memory speed, pub/sub, TTL support, session storage |
 | **Task Queue** | Celery + RabbitMQ | Reliable task distribution, scheduling (beat), retry logic |
@@ -818,7 +823,7 @@ Istio or Linkerd will be introduced post-MVP for:
 | **Slow Reports** | Materialized views; pre-aggregated tables; background generation |
 | **AI Inference Latency** | Model caching in Redis; batch predictions; lightweight models |
 | **File Uploads** | Direct-to-S3 signed URLs; async processing |
-| **Tenant Provisioning** | Async schema creation; template databases |
+| **Tenant Provisioning** | Shared-schema row bootstrap; no per-tenant PostgreSQL schemas |
 
 ---
 
