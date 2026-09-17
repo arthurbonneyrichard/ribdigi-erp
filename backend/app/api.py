@@ -2688,9 +2688,10 @@ async def put_user_stores(
     await audit_svc.record_event(
         db,
         tenant_id=claims["tenant_id"],
-        actor_user_id=claims.get("sub"),
+        user_id=claims.get("sub"),
+        module="users",
         action="user.stores.replace",
-        entity_type="user",
+        entity="user",
         entity_id=user_id,
         details={"store_ids": [r.store_id for r in rows]},
     )
@@ -7360,6 +7361,31 @@ async def pos_sale(
     claims=Depends(require_permission("pos", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    # Idempotent offline/retry: same client_request_id → original sale, never a duplicate.
+    client_request_id = (payload.client_request_id or "").strip() or None
+    if client_request_id:
+        existing = (
+            await db.execute(
+                select(m.Transaction).where(
+                    m.Transaction.tenant_id == claims["tenant_id"],
+                    m.Transaction.client_request_id == client_request_id,
+                    m.Transaction.tx_type == "pos_sale",
+                )
+            )
+        ).scalar_one_or_none()
+        if existing:
+            return env(
+                {
+                    "id": existing.id,
+                    "reference": existing.reference,
+                    "total": money_json(existing.total or 0),
+                    "status": existing.status,
+                    "idempotent_replay": True,
+                    "client_request_id": client_request_id,
+                },
+                "POS sale already recorded",
+            )
+
     session = await pos_svc.require_open_session(
         db,
         tenant_id=claims["tenant_id"],
@@ -7470,6 +7496,7 @@ async def pos_sale(
     body.pop("discount_amount", None)
     body.pop("override_credit_limit", None)
     body.pop("override_reason", None)
+    body.pop("client_request_id", None)
     body["payload"] = {
         "items": priced_items,
         "payment_method": payment_method,
@@ -7478,6 +7505,7 @@ async def pos_sale(
         "customer_name": customer_name,
         "discount_amount": cart_discount,
         "line_discounts": money_json(round(line_discounts, 2)),
+        "client_request_id": client_request_id,
     }
     tx = m.Transaction(
         tenant_id=claims["tenant_id"],
@@ -7485,6 +7513,7 @@ async def pos_sale(
         reference=ref,
         party_id=payload.party_id,
         session_id=session.id,
+        client_request_id=client_request_id,
         subtotal=money_json(round(subtotal, 2)),
         tax=money_json(round(tax_total, 2)),
         total=money_json(total),
@@ -7616,6 +7645,8 @@ async def pos_sale(
         "customer_name": customer_name,
         "party_id": payload.party_id,
         "credit_limit_overridden": bool(pos_override_info),
+        "client_request_id": client_request_id,
+        "idempotent_replay": False,
     }
     if drawer is not None:
         payload_out["drawer"] = drawer

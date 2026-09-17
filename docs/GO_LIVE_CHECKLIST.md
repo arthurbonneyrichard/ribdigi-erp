@@ -10,7 +10,7 @@ Legend: **PASS** | **FAIL** | **BLOCKED** | **NOT REQUIRED FOR MVP**
 |----------|------|--------|------------------|
 | Architecture | Shared schema + `tenant_id` | PASS | `docs/ADR_001_TENANCY.md`; models |
 | Architecture | Tenant == Company (1:1 MVP) | PASS | `store_entitlements.py`; multi-company under one tenant = POST-MVP |
-| Database | Migrations apply | PASS | Alembic tree incl. `20260917_0105_user_store_memberships` |
+| Database | Migrations apply | PASS | Alembic tree incl. `20260917_0105_user_store_memberships`, `20260917_0106_transaction_client_request_id` |
 | Tenant Isolation | JWT + query filters | PASS | `security.py`, isolation tests |
 | Company Isolation | Multi-company child orgs | NOT REQUIRED FOR MVP | Company profile = Tenant; no second Company entity |
 | Store Isolation | Entitlement + membership | PASS | `store_entitlements.py`; `store_access.py`; POS filter |
@@ -22,7 +22,7 @@ Legend: **PASS** | **FAIL** | **BLOCKED** | **NOT REQUIRED FOR MVP**
 | Accounting | CoA / journals / P&L | PASS | Accounting module |
 | Tax | Tax rates / reports | PASS | Tax module |
 | Credit | Customer credit | PASS | Credit module |
-| Offline | IndexedDB / 7-day / SW | FAIL | Not implemented — do not market as live |
+| Offline | IndexedDB / 7-day / SW | PARTIAL | `frontend/lib/posOffline.ts`, `/sw.js`, `client_request_id` idempotency; endurance NOT RUN |
 | POS Devices | Heartbeat / lockdown | FAIL | Not implemented — POST-MVP unless marketed |
 | Backup | Logical backup API | PASS | `/backup`, DR runbook |
 | Restore | Logical restore tested in CI | PASS | `test_logical_dr_drill_b1.py` |
@@ -37,7 +37,7 @@ Legend: **PASS** | **FAIL** | **BLOCKED** | **NOT REQUIRED FOR MVP**
 ## Launch blockers (must close or explicitly defer marketing)
 
 1. **Production deployment** (OWNER) — domain, TLS, secrets, Postgres, workers  
-2. **Offline POS claims** — code **FAIL**; either remove marketing claims or fund offline epic  
+2. **Offline POS marketing** — foundation **PARTIAL** in code; do not claim certified 7-day endurance until physical tests + recovery export + heartbeat  
 3. **Physical POS verification** (OWNER) — Windows/Android devices  
 4. **Staging restore + load drill** (OWNER)  
 5. **External pen test** (EXTERNAL)
@@ -46,6 +46,6 @@ Legend: **PASS** | **FAIL** | **BLOCKED** | **NOT REQUIRED FOR MVP**
 
 - Multi-company under one Tenant  
 - User↔POS terminal binding (`ASSIGNED_POS_ONLY`)  
-- 7-day offline, device heartbeat dashboard, OS lockdown guides  
+- Offline endurance certification, recovery export package, device heartbeat dashboard, OS lockdown guides  
 - PITR live drill, paid payment provider  
 - HR / MRP / Open Banking  

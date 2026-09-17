@@ -4,6 +4,20 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 import { useStoreContext } from '../../lib/storeContext';
+import {
+  cacheCatalogProducts,
+  countPendingSales,
+  enqueueOfflineSale,
+  flushOfflineQueue,
+  formatCacheAge,
+  getCachedCatalogMeta,
+  getCachedProducts,
+  getOfflineAuthEnvelope,
+  isOfflineAuthValid,
+  newClientRequestId,
+  saveOfflineAuthEnvelope,
+  touchLastOnline,
+} from '../../lib/posOffline';
 
 type TaxComponent = {
   code?: string;
@@ -267,6 +281,12 @@ export default function Page() {
   const [posPreview, setPosPreview] = useState('');
   const [shiftPrefix, setShiftPrefix] = useState('SHIFT');
   const [shiftNext, setShiftNext] = useState('1');
+  const [online, setOnline] = useState(
+    typeof navigator === 'undefined' ? true : navigator.onLine
+  );
+  const [pendingOffline, setPendingOffline] = useState(0);
+  const [catalogCachedAt, setCatalogCachedAt] = useState<string | null>(null);
+  const [offlineAuthUntil, setOfflineAuthUntil] = useState<string | null>(null);
   const [shiftPreview, setShiftPreview] = useState('');
   const [sessions, setSessions] = useState<Session[]>([]);
   const [shiftManageFilter, setShiftManageFilter] = useState<'all' | 'open' | 'closed'>('all');
@@ -332,10 +352,74 @@ export default function Page() {
 
 
   const browse = useCallback(async (query = '') => {
-    const r = await api('/pos/products/search?q=' + encodeURIComponent(query));
-    setRows(r.data || []);
-    return (r.data || []) as Product[];
+    try {
+      const r = await api('/pos/products/search?q=' + encodeURIComponent(query));
+      const list = (r.data || []) as Product[];
+      setRows(list);
+      if (!query.trim()) {
+        await cacheCatalogProducts(list as any[]);
+        const meta = await getCachedCatalogMeta();
+        setCatalogCachedAt(meta?.cached_at || new Date().toISOString());
+      }
+      await touchLastOnline();
+      return list;
+    } catch (err) {
+      if (!navigator.onLine || query === '') {
+        const cached = (await getCachedProducts()) as Product[];
+        const filtered = query.trim()
+          ? cached.filter(
+              (p) =>
+                String(p.name || '').toLowerCase().includes(query.toLowerCase()) ||
+                String(p.sku || '').toLowerCase().includes(query.toLowerCase())
+            )
+          : cached;
+        setRows(filtered);
+        const meta = await getCachedCatalogMeta();
+        setCatalogCachedAt(meta?.cached_at || null);
+        return filtered;
+      }
+      throw err;
+    }
   }, []);
+
+  async function refreshPendingCount() {
+    try {
+      setPendingOffline(await countPendingSales());
+    } catch {
+      setPendingOffline(0);
+    }
+  }
+
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
+    refreshPendingCount();
+    getOfflineAuthEnvelope()
+      .then((e) => setOfflineAuthUntil(e?.offline_valid_until || null))
+      .catch(() => setOfflineAuthUntil(null));
+    getCachedCatalogMeta()
+      .then((m) => setCatalogCachedAt(m?.cached_at || null))
+      .catch(() => null);
+    return () => {
+      window.removeEventListener('online', on);
+      window.removeEventListener('offline', off);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!online) return;
+    flushOfflineQueue(api)
+      .then(async (r) => {
+        if (r.synced > 0) {
+          setMessage(`Synced ${r.synced} offline sale(s)`);
+          await refreshSession();
+        }
+        await refreshPendingCount();
+      })
+      .catch(() => undefined);
+  }, [online]);
 
   useEffect(() => {
     refreshSession()
@@ -420,8 +504,22 @@ export default function Page() {
       });
       setSession(r.data);
       setMessage('Shift opened');
+      try {
+        const me = await api('/me');
+        const tenant = localStorage.getItem('tenant') || me.data?.tenant_id || '';
+        const env = await saveOfflineAuthEnvelope({
+          tenant_id: String(tenant),
+          store_id: r.data?.store_id || storeId.trim() || null,
+          user_id: String(me.data?.id || me.data?.user_id || ''),
+          permissions: ['pos:write'],
+        });
+        setOfflineAuthUntil(env.offline_valid_until);
+      } catch {
+        /* offline envelope best-effort */
+      }
       await browse(q);
       await loadSessions();
+      await refreshPendingCount();
     } catch (err: any) {
       setError(err.message);
     }
@@ -701,6 +799,43 @@ export default function Page() {
     }
     setBusy(true);
     try {
+      const clientRequestId = newClientRequestId();
+      body.client_request_id = clientRequestId;
+
+      // Offline cash sales queue locally; card/momo never fabricate provider success.
+      if (!navigator.onLine) {
+        if (splitTender || paymentMethod !== 'cash') {
+          throw new Error(
+            'While offline, only cash sales can be completed. Card/mobile money require confirmation when online.'
+          );
+        }
+        if (!isOfflineAuthValid(await getOfflineAuthEnvelope())) {
+          throw new Error('Offline authorization expired — reconnect before selling');
+        }
+        const store = stores.find((s) => s.id === (session.store_id || storeId));
+        const queued = await enqueueOfflineSale({
+          tenant_id: localStorage.getItem('tenant') || '',
+          store_id: session.store_id || storeId || null,
+          store_code: store?.code || 'STORE',
+          payload: { ...body, total: cartTotal },
+        });
+        setCart([]);
+        setCartDiscount('');
+        setCustomerId('');
+        setCustomerName('');
+        setCreditOverrideReason('');
+        setPaymentReference('');
+        setSplitTender(false);
+        setCashTender('');
+        setCardTender('');
+        setLastSale({ id: queued.id, reference: queued.local_receipt_number });
+        setMessage(
+          `Queued offline sale ${queued.local_receipt_number} (will sync when online). Cached stock is not live.`
+        );
+        await refreshPendingCount();
+        return;
+      }
+
       let r;
       try {
         r = await api('/pos/sales', {
@@ -818,6 +953,15 @@ export default function Page() {
             <h1>Point of Sale</h1>
             <p className="muted">
               {cashierName ? `Cashier: ${cashierName}` : 'Tap tiles or scan a barcode'}
+              {' · '}
+              <strong>{online ? 'Online' : 'Offline'}</strong>
+              {pendingOffline > 0 ? ` · Pending sync: ${pendingOffline}` : ''}
+              {!online && catalogCachedAt
+                ? ` · Catalog cached ${formatCacheAge(catalogCachedAt)}`
+                : ''}
+              {offlineAuthUntil
+                ? ` · Offline auth until ${new Date(offlineAuthUntil).toLocaleString()}`
+                : ''}
             </p>
           </div>
           <div className="tpos-shift">
@@ -1316,7 +1460,11 @@ export default function Page() {
                             <span className="tpos-price-value">{money(Number(r.selling_price))}</span>
                           </span>
                         </div>
-                        <span className="tpos-stock">{r.stock_qty} in stock</span>
+                        <span className="tpos-stock">
+                          {online
+                            ? `${r.stock_qty} in stock`
+                            : `Cached: ${r.stock_qty} · ${formatCacheAge(catalogCachedAt)}`}
+                        </span>
                       </div>
                     </div>
                   </button>

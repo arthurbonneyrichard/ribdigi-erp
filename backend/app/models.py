@@ -495,6 +495,7 @@ class PartyContact(Base):
 
 class Transaction(Base):
     __tablename__ = "transactions"
+    __table_args__ = (UniqueConstraint("tenant_id", "client_request_id"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
@@ -502,6 +503,7 @@ class Transaction(Base):
     reference: Mapped[str] = mapped_column(String(80), index=True)
     party_id: Mapped[str | None] = mapped_column(ForeignKey("parties.id"), nullable=True)
     session_id: Mapped[str | None] = mapped_column(ForeignKey("pos_sessions.id"), nullable=True, index=True)
+    client_request_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)

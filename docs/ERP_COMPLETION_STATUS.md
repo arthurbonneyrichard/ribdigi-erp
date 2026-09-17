@@ -1,8 +1,8 @@
 # ERP Completion Status — Market readiness
 
-**Last updated:** 2026-09-17 (commercial readiness: Main Store seed + User↔Store RBAC)  
-**Overall estimate (SMB retail / wholesale online core):** ~**94%**  
-**Go-Live:** **NOT READY** until production deploy + (if marketed) offline epic — see `docs/COMMERCIAL_READINESS_REPORT.md`
+**Last updated:** 2026-09-17 (offline POS foundation + commercial readiness)  
+**Overall estimate (SMB retail / wholesale online core):** ~**95%**  
+**Go-Live:** **NOT READY** until production deploy + (if marketed) offline endurance certification — see `docs/COMMERCIAL_READINESS_REPORT.md`
 
 ## This session (commercial)
 
@@ -17,9 +17,18 @@
 
 Dashboard/Accounting/Reports/Inventory/Purchasing/Expenses header store wiring; auth gate.
 
-## Intentionally out of scope / FAIL until built
+## This session (offline foundation)
 
-- 7-day offline POS, device heartbeat/lockdown
+- `client_request_id` on POS sales (DB unique + idempotent replay) — migration `20260917_0106`
+- IndexedDB catalog/queue/device_state + 7-day offline auth envelope (`frontend/lib/posOffline.ts`)
+- POS UI: online/offline banner, cash-only offline checkout, cached stock honesty, auto-flush queue
+- Basic service worker shell cache (`public/sw.js`)
+
+## Intentionally out of scope / FAIL until built or certified
+
+- Physical 7-day offline endurance + multi-device reconnect certification
+- Offline recovery export/import package; device heartbeat dashboard; OS lockdown guides
 - Multi-company under one Tenant (MVP = Tenant is the company profile)
 - Paid payment gateway
-- Physical platform certification
+- Physical platform certification (Windows / Android / iPadOS / macOS)
+

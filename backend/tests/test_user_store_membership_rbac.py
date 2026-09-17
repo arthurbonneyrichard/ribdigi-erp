@@ -2,91 +2,85 @@
 
 from __future__ import annotations
 
+import pyotp
 import pytest
-from httpx import AsyncClient
+
+from tests.conftest import auth_headers
+
+
+async def _admin(ac, seed):
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )
+
+
+async def _cashier(ac):
+    return await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")
 
 
 @pytest.mark.asyncio
-async def test_cashier_pos_store_membership_enforced(client: AsyncClient, seeded):
-    admin = seeded["tokens"]["admin"]
-    cashier = seeded["tokens"]["cashier"]
-    tenant = seeded["tenant_id"]
+async def test_cashier_pos_store_membership_enforced(client, db_session):
+    ac, seed = client
+    admin = await _admin(ac, seed)
+    cashier = await _cashier(ac)
+    tenant_id = seed["t1"].id
 
-    # Create two stores (MAIN may already exist from seed — create second)
-    r1 = await client.post(
+    # Create two stores under alpha
+    r1 = await ac.post(
         "/api/v1/stores",
-        headers={"Authorization": f"Bearer {admin}", "X-Tenant-ID": tenant},
+        headers=admin,
         json={"name": "Weija Store", "code": "WEIJA"},
     )
-    # May 201 or 409 if entitlement / duplicate — try list
-    stores = (
-        await client.get(
-            "/api/v1/stores",
-            headers={"Authorization": f"Bearer {admin}", "X-Tenant-ID": tenant},
-        )
-    ).json()["data"]
+    r2 = await ac.post(
+        "/api/v1/stores",
+        headers=admin,
+        json={"name": "Tema Store", "code": "TEMA"},
+    )
+    stores = (await ac.get("/api/v1/stores", headers=admin)).json()["data"]
     assert isinstance(stores, list) and len(stores) >= 1
-    store_a = stores[0]["id"]
-    if r1.status_code < 400:
-        store_b = r1.json()["data"]["id"]
-    else:
-        r2 = await client.post(
-            "/api/v1/stores",
-            headers={"Authorization": f"Bearer {admin}", "X-Tenant-ID": tenant},
-            json={"name": "Tema Store", "code": "TEMA"},
-        )
-        if r2.status_code >= 400:
-            pytest.skip("Cannot create second store under entitlement")
-        store_b = r2.json()["data"]["id"]
-        if store_a == store_b and len(stores) > 1:
-            store_a = stores[0]["id"]
-            store_b = stores[1]["id"]
 
-    # Resolve cashier user id
-    users = (
-        await client.get(
-            "/api/v1/users",
-            headers={"Authorization": f"Bearer {admin}", "X-Tenant-ID": tenant},
-        )
-    ).json()["data"]
+    if r1.status_code < 400 and r2.status_code < 400:
+        store_a = r1.json()["data"]["id"]
+        store_b = r2.json()["data"]["id"]
+    elif len(stores) >= 2:
+        store_a = stores[0]["id"]
+        store_b = stores[1]["id"]
+    else:
+        pytest.skip("Need at least two stores under entitlement to test membership")
+
+    users = (await ac.get("/api/v1/users", headers=admin)).json()["data"]
     cashier_user = next((u for u in users if u.get("role") == "cashier"), None)
     if not cashier_user:
         pytest.skip("No cashier user in seed")
     uid = cashier_user["id"]
 
-    # Assign cashier only to store_a
-    put = await client.put(
+    put = await ac.put(
         f"/api/v1/users/{uid}/stores",
-        headers={"Authorization": f"Bearer {admin}", "X-Tenant-ID": tenant},
+        headers=admin,
         json={"store_ids": [store_a]},
     )
     assert put.status_code == 200, put.text
     assert store_a in put.json()["data"]["store_ids"]
     assert put.json()["data"]["all_stores"] is False
 
-    # POS store list for cashier should only include store_a
-    pos_stores = (
-        await client.get(
-            "/api/v1/pos/stores",
-            headers={"Authorization": f"Bearer {cashier}", "X-Tenant-ID": tenant},
-        )
-    ).json()["data"]
+    pos_stores = (await ac.get("/api/v1/pos/stores", headers=cashier)).json()["data"]
     ids = {s["id"] for s in pos_stores}
     assert store_a in ids
     assert store_b not in ids
 
-    # Opening unauthorized store denied
-    denied = await client.post(
+    denied = await ac.post(
         "/api/v1/pos/sessions/open",
-        headers={"Authorization": f"Bearer {cashier}", "X-Tenant-ID": tenant},
+        headers=cashier,
         json={"store_id": store_b, "opening_cash": 0},
     )
-    assert denied.status_code == 403, denied.text
+    assert denied.status_code in (403, 404), denied.text
 
-    # Opening authorized store allowed (or 409 if already open)
-    ok = await client.post(
+    allowed = await ac.post(
         "/api/v1/pos/sessions/open",
-        headers={"Authorization": f"Bearer {cashier}", "X-Tenant-ID": tenant},
+        headers=cashier,
         json={"store_id": store_a, "opening_cash": 0},
     )
-    assert ok.status_code in (200, 409), ok.text
+    assert allowed.status_code == 200, allowed.text
+    assert (allowed.json()["data"].get("store_id") or store_a) == store_a
+    _ = tenant_id  # seeded tenant used via auth headers

@@ -6392,6 +6392,34 @@ UuidIdValue = Annotated[
 ]
 
 
+def coerce_client_request_id_value(value: object) -> object:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_client_request_id_value(value: str) -> str:
+    """Offline/retry idempotency key: 8–64 chars of [A-Za-z0-9._:-]."""
+    import re
+
+    if not value:
+        raise ValueError("client_request_id must be 8–64 chars (letters, digits, ._: -)")
+    if len(value) < 8 or len(value) > 64:
+        raise ValueError("client_request_id must be 8–64 chars (letters, digits, ._: -)")
+    if not re.fullmatch(r"[A-Za-z0-9._:\-]+", value):
+        raise ValueError("client_request_id must be 8–64 chars (letters, digits, ._: -)")
+    return value
+
+
+ClientRequestIdValue = Annotated[
+    str,
+    BeforeValidator(coerce_client_request_id_value),
+    AfterValidator(validate_client_request_id_value),
+]
+
+
 def coerce_api_key_header_value(value: object) -> object:
     """Pydantic BeforeValidator: strip; blank stays blank for X-API-Key 422."""
     if value is None:
@@ -8747,6 +8775,9 @@ class PosSaleCreate(BaseModel):
     # omit/`null` OK when not overriding; blank/`!!!`/`http://…` → **422**;
     # required when override_credit_limit=true (same CreditOverrideReasonValue).
     override_reason: CreditOverrideReasonValue | None = None
+    # Offline / retry idempotency key; omit/`null` → no dedupe; blank/`!!!` → **422**.
+    # Same tenant + client_request_id returns the original sale (never a duplicate).
+    client_request_id: ClientRequestIdValue | None = None
 
     @model_validator(mode="after")
     def require_override_reason_when_flagged(self):

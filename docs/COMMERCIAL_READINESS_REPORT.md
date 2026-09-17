@@ -24,11 +24,11 @@
 | Accounting | **PASS** |
 | Tax | **PASS** |
 | Credit | **PASS** |
-| Offline Foundation | **FAIL** (not built) |
-| 7-Day Offline | **NOT RUN** / **FAIL** (absent) |
-| Offline Recovery | **FAIL** (absent) |
+| Offline Foundation | **PARTIAL** (IndexedDB queue + 7-day envelope + idempotent `client_request_id`; endurance/device certification NOT RUN) |
+| 7-Day Offline | **NOT RUN** (auth window implemented; physical 7-day endurance not executed) |
+| Offline Recovery | **PARTIAL** (queue + sync; recovery export/import package not yet) |
 | POS Device Monitoring | **FAIL** (absent) |
-| POS Device Lockdown | **FAIL** (absent) |
+| POS Device Lockdown | **PARTIAL** (app blocks unsafe cash-offline rules + reset guard helper; OS lockdown guides pending) |
 | Windows / Android / iPadOS / macOS POS | **NOT VERIFIED** |
 | Backup | **PASS** (logical) |
 | Restore | **PASS** (logical CI drill) / prod restore **NOT RUN** |
@@ -50,7 +50,8 @@
 3. **Store RBAC** — `GET/PUT /users/{id}/stores`; POS store list + open session enforce membership  
 4. **Docs honesty** — SUPERSEDED markers for database-per-tenant claims  
 5. **Auth gate / store parity** (prior commits on this branch)  
-6. **This checklist + report**
+6. **Offline POS foundation** — IndexedDB queue + 7-day auth envelope (`frontend/lib/posOffline.ts`), SW shell cache (`public/sw.js`), POS cash-only offline checkout + auto-flush, `client_request_id` idempotency (migration `20260917_0106`)  
+7. **This checklist + report**
 
 ---
 
@@ -63,11 +64,11 @@
 - **Cursor:** Can prepare compose/K8s; **cannot** operate your VPS alone without credentials  
 - **Owner:** Required
 
-### BLOCKER 2 — Offline POS not implemented (if marketed)
-- **Why:** No IndexedDB queue / SW / 7-day auth / idempotent offline sync  
-- **Work:** Multi-week epic OR remove offline claims from sales materials  
-- **Test:** Physical offline 50+ sales + reconnect idempotency  
-- **Cursor:** Can implement in follow-on epic  
+### BLOCKER 2 — Offline POS endurance / marketing claims
+- **Why:** Code foundation is PARTIAL; physical 7-day endurance, multi-device reconnect, recovery export package, and device heartbeat are NOT RUN / absent  
+- **Work:** Device certification + recovery package + heartbeat OR remove offline claims from sales materials  
+- **Test:** Physical offline 50+ sales + reconnect idempotency + 7-day window  
+- **Cursor:** Foundation shipped; remaining is certification + monitoring epic  
 - **Owner:** Product decision + physical tests
 
 ### BLOCKER 3 — Physical device / platform certification
@@ -94,8 +95,8 @@
 
 1. Deploy release candidate to staging/production VPS.  
 2. Configure production domain / HTTPS / secrets / SMTP.  
-3. Run DB migrations including `20260917_0105`.  
-4. Decide: **defer offline marketing** OR fund offline epic before launch.  
+3. Run DB migrations including `20260917_0105` and `20260917_0106`.  
+4. Decide: **defer offline marketing** OR fund endurance/device-monitoring epic before launch (foundation already in code).  
 5. Connect physical Windows POS; run online sale + (if claiming offline) offline protocol.  
 6. Connect Android tablet; repeat.  
 7. Perform staging restore drill; record RPO/RTO.  
@@ -109,4 +110,4 @@
 
 **Ship now as:** Multi-tenant online ERP — inventory, purchasing, sales, POS, accounting, tax, credit, multi-store entitlements, store membership RBAC, platform-assigned subscriptions.
 
-**Do not claim yet:** 7-day offline POS, multi-company under one login, paid self-serve checkout, platform pen-test complete, hardware universal compatibility.
+**Do not claim yet:** Certified 7-day offline POS endurance, multi-company under one login, paid self-serve checkout, platform pen-test complete, hardware universal compatibility, device heartbeat monitoring.

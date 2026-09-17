@@ -31,11 +31,14 @@ export const metadata = {
 // preference if present, otherwise follows the device (prefers-color-scheme).
 const themeInit = `(function(){try{var t=localStorage.getItem('theme');var m=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.setAttribute('data-theme',(t==='light'||t==='dark')?t:(m?'dark':'light'));}catch(e){}})();`;
 
+const swInit = `(function(){try{if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(function(){})}}catch(e){}})();`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInit }} />
+        <script dangerouslySetInnerHTML={{ __html: swInit }} />
       </head>
       <body>{children}</body>
     </html>
