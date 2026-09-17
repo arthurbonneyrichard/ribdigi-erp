@@ -276,6 +276,98 @@ export async function clearSyncedQueue(): Promise<void> {
   });
 }
 
+export type RecoveryPackage = {
+  version: 1;
+  kind: 'ribdigi-pos-recovery';
+  exported_at: string;
+  device_id: string;
+  envelope: OfflineAuthEnvelope | null;
+  catalog_meta: { cached_at: string; count: number } | null;
+  pending: QueuedSale[];
+  /** Never includes JWT / passwords / refresh tokens. */
+  secrets_included: false;
+};
+
+export async function buildRecoveryPackage(): Promise<RecoveryPackage> {
+  const pending = (await listQueuedSales()).filter(
+    (s) => s.state === 'pending' || s.state === 'failed_retryable' || s.state === 'syncing' || s.state === 'conflict'
+  );
+  return {
+    version: 1,
+    kind: 'ribdigi-pos-recovery',
+    exported_at: new Date().toISOString(),
+    device_id: getOrCreateDeviceId(),
+    envelope: await getOfflineAuthEnvelope(),
+    catalog_meta: await getCachedCatalogMeta(),
+    pending,
+    secrets_included: false,
+  };
+}
+
+export async function downloadRecoveryPackage(): Promise<RecoveryPackage> {
+  const pkg = await buildRecoveryPackage();
+  const blob = new Blob([JSON.stringify(pkg, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const day = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `ribdigi-pos-recovery-${pkg.device_id}-${day}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  return pkg;
+}
+
+export async function importRecoveryPackage(
+  raw: unknown
+): Promise<{ imported: number; skipped: number }> {
+  if (!raw || typeof raw !== 'object') {
+    throw new Error('Invalid recovery package');
+  }
+  const pkg = raw as RecoveryPackage;
+  if (pkg.kind !== 'ribdigi-pos-recovery' || pkg.version !== 1) {
+    throw new Error('Unsupported recovery package version');
+  }
+  if (!Array.isArray(pkg.pending)) {
+    throw new Error('Recovery package missing pending queue');
+  }
+  const existing = await listQueuedSales();
+  const byCrid = new Set(existing.map((s) => s.client_request_id));
+  let imported = 0;
+  let skipped = 0;
+  for (const sale of pkg.pending) {
+    if (!sale?.client_request_id || !sale.payload) {
+      skipped += 1;
+      continue;
+    }
+    if (byCrid.has(sale.client_request_id)) {
+      skipped += 1;
+      continue;
+    }
+    const row: QueuedSale = {
+      ...sale,
+      id: sale.id || crypto.randomUUID(),
+      state:
+        sale.state === 'synced'
+          ? 'pending'
+          : sale.state === 'syncing'
+            ? 'pending'
+            : sale.state || 'pending',
+      retry_count: Number(sale.retry_count) || 0,
+      device_id: sale.device_id || getOrCreateDeviceId(),
+    };
+    await idbPut('sync_queue', row);
+    byCrid.add(row.client_request_id);
+    imported += 1;
+  }
+  if (pkg.envelope && isOfflineAuthValid(pkg.envelope)) {
+    const current = await getOfflineAuthEnvelope();
+    if (!current || !isOfflineAuthValid(current)) {
+      await idbPut('device_state', { key: 'offline_auth', value: pkg.envelope });
+    }
+  }
+  return { imported, skipped };
+}
+
 type ApiFn = (path: string, opts?: RequestInit) => Promise<any>;
 
 export async function flushOfflineQueue(api: ApiFn): Promise<{ synced: number; failed: number }> {

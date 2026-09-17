@@ -8782,3 +8782,43 @@ class PosSaleCreate(BaseModel):
     @model_validator(mode="after")
     def require_override_reason_when_flagged(self):
         return _require_credit_override_reason(self)
+
+
+def coerce_pos_device_id_value(value: object) -> object:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip()
+
+
+def validate_pos_device_id_value(value: str) -> str:
+    """Stable POS terminal id from the browser (localStorage); 8–64 safe chars."""
+    import re
+
+    if not value:
+        raise ValueError("device_id must be 8–64 chars (letters, digits, ._: -)")
+    if len(value) < 8 or len(value) > 64:
+        raise ValueError("device_id must be 8–64 chars (letters, digits, ._: -)")
+    if not re.fullmatch(r"[A-Za-z0-9._:\-]+", value):
+        raise ValueError("device_id must be 8–64 chars (letters, digits, ._: -)")
+    return value
+
+
+PosDeviceIdValue = Annotated[
+    str,
+    BeforeValidator(coerce_pos_device_id_value),
+    AfterValidator(validate_pos_device_id_value),
+]
+
+
+class PosDeviceHeartbeat(BaseModel):
+    """POST /pos/devices/heartbeat — upsert last-seen for a POS terminal."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    device_id: PosDeviceIdValue
+    label: Annotated[str, Field(max_length=120)] | None = None
+    store_id: UuidIdValue | None = None
+    app_version: Annotated[str, Field(max_length=40)] | None = None
+    pending_queue_count: Annotated[int, Field(ge=0, le=100000)] = 0

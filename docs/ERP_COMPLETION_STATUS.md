@@ -23,11 +23,13 @@ Dashboard/Accounting/Reports/Inventory/Purchasing/Expenses header store wiring; 
 - IndexedDB catalog/queue/device_state + 7-day offline auth envelope (`frontend/lib/posOffline.ts`)
 - POS UI: online/offline banner, cash-only offline checkout, cached stock honesty, auto-flush queue
 - Basic service worker shell cache (`public/sw.js`)
+- Recovery JSON export/import (pending queue + envelope metadata; **no secrets**)
+- POS device heartbeat table + API (`20260917_0107`, `POST /pos/devices/heartbeat`, `GET /pos/devices`)
 
 ## Intentionally out of scope / FAIL until built or certified
 
 - Physical 7-day offline endurance + multi-device reconnect certification
-- Offline recovery export/import package; device heartbeat dashboard; OS lockdown guides
+- Device alert dashboard / MDM; OS lockdown guides
 - Multi-company under one Tenant (MVP = Tenant is the company profile)
 - Paid payment gateway
 - Physical platform certification (Windows / Android / iPadOS / macOS)

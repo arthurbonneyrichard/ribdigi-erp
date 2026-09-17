@@ -1121,6 +1121,26 @@ class PosPayment(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class PosDevice(Base):
+    """POS terminal last-seen heartbeat (application monitoring; not OS MDM)."""
+
+    __tablename__ = "pos_devices"
+    __table_args__ = (UniqueConstraint("tenant_id", "device_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    device_id: Mapped[str] = mapped_column(String(64), index=True)
+    label: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    app_version: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    user_agent: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    pending_queue_count: Mapped[int] = mapped_column(Integer, default=0)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class JournalEntry(Base):
     __tablename__ = "journal_entries"
     __table_args__ = (UniqueConstraint("tenant_id", "entry_number"),)

@@ -26,8 +26,8 @@
 | Credit | **PASS** |
 | Offline Foundation | **PARTIAL** (IndexedDB queue + 7-day envelope + idempotent `client_request_id`; endurance/device certification NOT RUN) |
 | 7-Day Offline | **NOT RUN** (auth window implemented; physical 7-day endurance not executed) |
-| Offline Recovery | **PARTIAL** (queue + sync; recovery export/import package not yet) |
-| POS Device Monitoring | **FAIL** (absent) |
+| Offline Recovery | **PARTIAL** (JSON export/import of pending queue + envelope metadata; no secrets; physical recover drill NOT RUN) |
+| POS Device Monitoring | **PARTIAL** (`pos_devices` heartbeat upsert + list API; no alert dashboard / MDM) |
 | POS Device Lockdown | **PARTIAL** (app blocks unsafe cash-offline rules + reset guard helper; OS lockdown guides pending) |
 | Windows / Android / iPadOS / macOS POS | **NOT VERIFIED** |
 | Backup | **PASS** (logical) |
@@ -51,7 +51,9 @@
 4. **Docs honesty** — SUPERSEDED markers for database-per-tenant claims  
 5. **Auth gate / store parity** (prior commits on this branch)  
 6. **Offline POS foundation** — IndexedDB queue + 7-day auth envelope (`frontend/lib/posOffline.ts`), SW shell cache (`public/sw.js`), POS cash-only offline checkout + auto-flush, `client_request_id` idempotency (migration `20260917_0106`)  
-7. **This checklist + report**
+7. **Offline recovery package** — export/import pending queue JSON (no tokens) from POS UI  
+8. **POS device heartbeat** — `pos_devices` table (migration `20260917_0107`), `POST /pos/devices/heartbeat`, `GET /pos/devices`  
+9. **This checklist + report**
 
 ---
 
@@ -65,10 +67,10 @@
 - **Owner:** Required
 
 ### BLOCKER 2 — Offline POS endurance / marketing claims
-- **Why:** Code foundation is PARTIAL; physical 7-day endurance, multi-device reconnect, recovery export package, and device heartbeat are NOT RUN / absent  
-- **Work:** Device certification + recovery package + heartbeat OR remove offline claims from sales materials  
-- **Test:** Physical offline 50+ sales + reconnect idempotency + 7-day window  
-- **Cursor:** Foundation shipped; remaining is certification + monitoring epic  
+- **Why:** Code foundation + recovery export + heartbeat are PARTIAL; physical 7-day endurance, multi-device reconnect certification, and alert dashboard are NOT RUN / absent  
+- **Work:** Device certification + alert UX + OS lockdown OR remove offline claims from sales materials  
+- **Test:** Physical offline 50+ sales + reconnect idempotency + 7-day window + recovery restore drill  
+- **Cursor:** Foundation + recovery JSON + heartbeat API shipped; remaining is certification + ops UX  
 - **Owner:** Product decision + physical tests
 
 ### BLOCKER 3 — Physical device / platform certification
@@ -95,9 +97,9 @@
 
 1. Deploy release candidate to staging/production VPS.  
 2. Configure production domain / HTTPS / secrets / SMTP.  
-3. Run DB migrations including `20260917_0105` and `20260917_0106`.  
-4. Decide: **defer offline marketing** OR fund endurance/device-monitoring epic before launch (foundation already in code).  
-5. Connect physical Windows POS; run online sale + (if claiming offline) offline protocol.  
+3. Run DB migrations including `20260917_0105`, `20260917_0106`, and `20260917_0107`.  
+4. Decide: **defer offline marketing** OR fund endurance/device-alert epic before launch (foundation + recovery + heartbeat already in code).  
+5. Connect physical Windows POS; run online sale + (if claiming offline) offline protocol + recovery export drill.  
 6. Connect Android tablet; repeat.  
 7. Perform staging restore drill; record RPO/RTO.  
 8. Execute load test against staging.  
@@ -110,4 +112,4 @@
 
 **Ship now as:** Multi-tenant online ERP — inventory, purchasing, sales, POS, accounting, tax, credit, multi-store entitlements, store membership RBAC, platform-assigned subscriptions.
 
-**Do not claim yet:** Certified 7-day offline POS endurance, multi-company under one login, paid self-serve checkout, platform pen-test complete, hardware universal compatibility, device heartbeat monitoring.
+**Do not claim yet:** Certified 7-day offline POS endurance, multi-company under one login, paid self-serve checkout, platform pen-test complete, hardware universal compatibility, device alert/MDM lockdown.

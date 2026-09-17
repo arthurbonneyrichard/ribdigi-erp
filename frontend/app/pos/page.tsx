@@ -7,12 +7,15 @@ import { useStoreContext } from '../../lib/storeContext';
 import {
   cacheCatalogProducts,
   countPendingSales,
+  downloadRecoveryPackage,
   enqueueOfflineSale,
   flushOfflineQueue,
   formatCacheAge,
   getCachedCatalogMeta,
   getCachedProducts,
+  getOrCreateDeviceId,
   getOfflineAuthEnvelope,
+  importRecoveryPackage,
   isOfflineAuthValid,
   newClientRequestId,
   saveOfflineAuthEnvelope,
@@ -290,6 +293,15 @@ export default function Page() {
   const [shiftPreview, setShiftPreview] = useState('');
   const [sessions, setSessions] = useState<Session[]>([]);
   const [shiftManageFilter, setShiftManageFilter] = useState<'all' | 'open' | 'closed'>('all');
+  const [posDevices, setPosDevices] = useState<
+    Array<{
+      device_id: string;
+      label?: string | null;
+      last_seen_at?: string | null;
+      pending_queue_count?: number;
+      app_version?: string | null;
+    }>
+  >([]);
 
   const groupDiscountPct = useMemo(() => {
     const match = customers.find((c) => c.id === customerId);
@@ -420,6 +432,63 @@ export default function Page() {
       })
       .catch(() => undefined);
   }, [online]);
+
+  useEffect(() => {
+    if (!online) return;
+    let cancelled = false;
+    async function beat() {
+      try {
+        const pending = await countPendingSales();
+        await api('/pos/devices/heartbeat', {
+          method: 'POST',
+          body: JSON.stringify({
+            device_id: getOrCreateDeviceId(),
+            store_id: storeId.trim() || session?.store_id || null,
+            app_version: 'web-mvp',
+            pending_queue_count: pending,
+          }),
+        });
+        const listed = await api('/pos/devices');
+        setPosDevices(listed.data || []);
+      } catch {
+        /* heartbeat best-effort */
+      }
+    }
+    beat();
+    const t = window.setInterval(() => {
+      if (!cancelled && navigator.onLine) beat();
+    }, 60000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(t);
+    };
+  }, [online, storeId, session?.store_id]);
+
+  async function exportRecovery() {
+    setError('');
+    try {
+      const pkg = await downloadRecoveryPackage();
+      setMessage(
+        `Recovery package downloaded (${pkg.pending.length} pending sale(s)). Contains no passwords or tokens.`
+      );
+    } catch (err: any) {
+      setError(err.message || 'Recovery export failed');
+    }
+  }
+
+  async function importRecoveryFile(file: File | null) {
+    if (!file) return;
+    setError('');
+    try {
+      const text = await file.text();
+      const raw = JSON.parse(text);
+      const r = await importRecoveryPackage(raw);
+      await refreshPendingCount();
+      setMessage(`Imported ${r.imported} queued sale(s) (${r.skipped} skipped). Sync when online.`);
+    } catch (err: any) {
+      setError(err.message || 'Recovery import failed');
+    }
+  }
 
   useEffect(() => {
     refreshSession()
@@ -963,6 +1032,31 @@ export default function Page() {
                 ? ` · Offline auth until ${new Date(offlineAuthUntil).toLocaleString()}`
                 : ''}
             </p>
+            <div className="tpos-recovery" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
+              <button
+                type="button"
+                className="tpos-btn"
+                onClick={exportRecovery}
+                aria-label="Export offline recovery package"
+              >
+                Export recovery
+              </button>
+              <label className="tpos-btn" style={{ cursor: 'pointer' }}>
+                Import recovery
+                <input
+                  type="file"
+                  accept="application/json,.json"
+                  aria-label="Import offline recovery package"
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] || null;
+                    importRecoveryFile(f).finally(() => {
+                      e.target.value = '';
+                    });
+                  }}
+                />
+              </label>
+            </div>
           </div>
           <div className="tpos-shift">
             {!session ? (
@@ -1144,6 +1238,47 @@ export default function Page() {
               Save numbering
             </button>
           </div>
+        </div>
+
+        <div className="card" style={{ margin: '12px 0' }}>
+          <strong>POS devices (last seen)</strong>
+          <p className="muted" style={{ marginTop: 4 }}>
+            Application heartbeat only — not OS lockdown or MDM. Pending count is reported by each
+            browser terminal.
+          </p>
+          {posDevices.length === 0 ? (
+            <p className="muted">No heartbeats yet (open POS while online).</p>
+          ) : (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Device</th>
+                  <th>Label</th>
+                  <th>Pending</th>
+                  <th>Last seen</th>
+                </tr>
+              </thead>
+              <tbody>
+                {posDevices.slice(0, 20).map((d) => (
+                  <tr key={d.device_id}>
+                    <td>
+                      <code>{d.device_id}</code>
+                      {d.app_version ? (
+                        <span className="muted"> · {d.app_version}</span>
+                      ) : null}
+                    </td>
+                    <td>{d.label || '—'}</td>
+                    <td>{d.pending_queue_count ?? 0}</td>
+                    <td>
+                      {d.last_seen_at
+                        ? new Date(d.last_seen_at).toLocaleString()
+                        : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
 
         <div className="card" style={{ margin: '12px 0' }}>

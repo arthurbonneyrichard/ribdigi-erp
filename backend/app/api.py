@@ -196,6 +196,7 @@ from app.schemas import (
     PasswordResetConfirm,
     PasswordResetRequest,
     PosSaleCreate,
+    PosDeviceHeartbeat,
     PosSessionClose,
     PosSessionOpen,
     PosDrawerOpen,
@@ -7353,6 +7354,88 @@ async def update_pos_settings(
         },
         "POS document numbering updated",
     )
+
+
+def _serialize_pos_device(row: m.PosDevice) -> dict:
+    return {
+        "id": row.id,
+        "device_id": row.device_id,
+        "label": row.label,
+        "store_id": row.store_id,
+        "user_id": row.user_id,
+        "app_version": row.app_version,
+        "user_agent": row.user_agent,
+        "pending_queue_count": int(row.pending_queue_count or 0),
+        "last_seen_at": row.last_seen_at.isoformat() + "Z" if row.last_seen_at else None,
+        "created_at": row.created_at.isoformat() + "Z" if row.created_at else None,
+        "updated_at": row.updated_at.isoformat() + "Z" if row.updated_at else None,
+    }
+
+
+@api.post("/pos/devices/heartbeat")
+async def pos_device_heartbeat(
+    payload: PosDeviceHeartbeat,
+    request: Request,
+    claims=Depends(require_permission("pos", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Upsert POS terminal last-seen (application monitoring only; not MDM)."""
+    now = datetime.utcnow()
+    row = (
+        await db.execute(
+            select(m.PosDevice).where(
+                m.PosDevice.tenant_id == claims["tenant_id"],
+                m.PosDevice.device_id == payload.device_id,
+            )
+        )
+    ).scalar_one_or_none()
+    ua = (request.headers.get("user-agent") or "")[:300] or None
+    if row is None:
+        row = m.PosDevice(
+            tenant_id=claims["tenant_id"],
+            device_id=payload.device_id,
+            label=(payload.label or None),
+            store_id=payload.store_id,
+            user_id=claims.get("sub"),
+            app_version=payload.app_version,
+            user_agent=ua,
+            pending_queue_count=payload.pending_queue_count,
+            last_seen_at=now,
+            created_at=now,
+            updated_at=now,
+        )
+        db.add(row)
+    else:
+        row.label = payload.label if payload.label is not None else row.label
+        if payload.store_id is not None:
+            row.store_id = payload.store_id
+        row.user_id = claims.get("sub") or row.user_id
+        if payload.app_version is not None:
+            row.app_version = payload.app_version
+        row.user_agent = ua or row.user_agent
+        row.pending_queue_count = payload.pending_queue_count
+        row.last_seen_at = now
+        row.updated_at = now
+    await db.commit()
+    await db.refresh(row)
+    return env(_serialize_pos_device(row), "Device heartbeat recorded")
+
+
+@api.get("/pos/devices")
+async def list_pos_devices(
+    claims=Depends(require_permission("pos", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """List POS terminals by last-seen (managers/admins with pos:read)."""
+    rows = (
+        await db.execute(
+            select(m.PosDevice)
+            .where(m.PosDevice.tenant_id == claims["tenant_id"])
+            .order_by(m.PosDevice.last_seen_at.desc())
+            .limit(200)
+        )
+    ).scalars().all()
+    return env([_serialize_pos_device(r) for r in rows])
 
 
 @api.post("/pos/sales")
