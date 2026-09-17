@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
+import { useStoreContext } from '../../lib/storeContext';
 
 export default function Page() {
+  const { storeId: ctxStoreId, setStoreId: setCtxStoreId } = useStoreContext();
   const [q, setQ] = useState('');
   const [a, setA] = useState('');
   const [error, setError] = useState('');
@@ -64,6 +66,18 @@ export default function Page() {
       .then((r) => setCustomers(r.data || []))
       .catch(() => setCustomers([]));
   }, []);
+
+  // Prefer header store for AI draft expense/invoice attribution.
+  useEffect(() => {
+    if (!ctxStoreId) return;
+    setDraftDocStoreId((prev) => prev || ctxStoreId);
+  }, [ctxStoreId]);
+
+  useEffect(() => {
+    if (!draftDocStoreId) return;
+    const st = stores.find((s) => s.id === draftDocStoreId);
+    if (st?.branch_id) setDraftDocBranchId(st.branch_id);
+  }, [draftDocStoreId, stores]);
 
   async function go() {
     const message = q.trim();
@@ -709,7 +723,11 @@ export default function Page() {
           </select>
           <select
             value={draftDocStoreId}
-            onChange={(e) => setDraftDocStoreId(e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value;
+              setDraftDocStoreId(next);
+              if (next) setCtxStoreId(next);
+            }}
             aria-label="AI document expense store"
             title="Optional store (UuidIdValue); blank → no store"
           >

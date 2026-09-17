@@ -322,6 +322,13 @@ export default function Page() {
 
   const effectiveStoreId = storeId || ctxStoreId || '';
 
+  // When a store is selected, align branch filter to that store's branch.
+  useEffect(() => {
+    if (!effectiveStoreId || !stores.length) return;
+    const st = stores.find((s) => s.id === effectiveStoreId);
+    if (st?.branch_id) setBranchId(st.branch_id);
+  }, [effectiveStoreId, stores]);
+
   // Clear warehouse when it is not attached to the active store filter.
   useEffect(() => {
     if (!warehouseId || !effectiveStoreId) return;
@@ -330,6 +337,15 @@ export default function Page() {
       setWarehouseId('');
     }
   }, [effectiveStoreId, warehouseId, warehouses]);
+
+  // Clear department when it does not belong to the active branch.
+  useEffect(() => {
+    if (!departmentId || !branchId) return;
+    const dep = departments.find((d) => d.id === departmentId);
+    if (dep?.branch_id && dep.branch_id !== branchId) {
+      setDepartmentId('');
+    }
+  }, [branchId, departmentId, departments]);
 
   function switchTab(t: Tab) {
     setTab(t);

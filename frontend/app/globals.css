@@ -310,6 +310,19 @@
 .login-logo{
   display:block;width:min(179px,100%);height:auto;margin:0 auto;object-fit:contain;
 }
+
+.auth-gate{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:var(--forest-deep);color:var(--muted-on-dark);font-weight:600;font-size:15px
+}
+.shell-secure,.shell-secure .main,.shell-secure .side{
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none
+}
+.shell-secure input,.shell-secure textarea,.shell-secure select,
+.shell-secure [contenteditable="true"]{
+  -webkit-user-select:text;user-select:text
+}
+.shell-secure img{-webkit-user-drag:none}
 .login-badge{display:none}
 .login h1{display:none}
 .login-tagline{display:none}

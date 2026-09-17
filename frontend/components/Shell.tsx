@@ -341,7 +341,14 @@ type BellNote = {
   created_at: string;
 };
 
+function isEditableTarget(target: EventTarget | null) {
+  const el = target as HTMLElement | null;
+  if (!el) return false;
+  return Boolean(el.closest('input, textarea, select, [contenteditable="true"]'));
+}
+
 export default function Shell({ children }: { children: React.ReactNode }) {
+  const [authReady, setAuthReady] = useState(false);
   const [unread, setUnread] = useState(0);
   const [permissions, setPermissions] = useState<Record<string, string[]> | null>(null);
   const [enabledModules, setEnabledModules] = useState<string[] | null>(null);
@@ -358,6 +365,51 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [bellBusy, setBellBusy] = useState(false);
   const pathname = usePathname();
   const isPlatformOwner = PLATFORM_ROLES.has(role);
+
+  // Market readiness: no anonymous browsing of /pos, /inventory, etc.
+  useEffect(() => {
+    let active = true;
+    async function requireAccount() {
+      const token = (localStorage.getItem('token') || '').trim();
+      if (!token) {
+        clearSessionAndRedirect();
+        return;
+      }
+      try {
+        await api('/me');
+        if (active) setAuthReady(true);
+      } catch {
+        clearSessionAndRedirect();
+      }
+    }
+    requireAccount();
+    return () => {
+      active = false;
+    };
+  }, [pathname]);
+
+  // Discourage copying app content (form fields stay selectable).
+  useEffect(() => {
+    if (!authReady) return;
+    const block = (e: Event) => {
+      if (isEditableTarget(e.target)) return;
+      e.preventDefault();
+    };
+    const blockDrag = (e: DragEvent) => {
+      if (isEditableTarget(e.target)) return;
+      e.preventDefault();
+    };
+    document.addEventListener('copy', block, true);
+    document.addEventListener('cut', block, true);
+    document.addEventListener('contextmenu', block, true);
+    document.addEventListener('dragstart', blockDrag, true);
+    return () => {
+      document.removeEventListener('copy', block, true);
+      document.removeEventListener('cut', block, true);
+      document.removeEventListener('contextmenu', block, true);
+      document.removeEventListener('dragstart', blockDrag, true);
+    };
+  }, [authReady]);
 
   useEffect(() => {
     const el = document.documentElement;
@@ -445,6 +497,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
+    if (!authReady) return;
     let active = true;
     async function load() {
       try {
@@ -465,15 +518,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         const mins = Number(meRes.data?.inactivity_timeout_minutes);
         if (Number.isFinite(mins)) setIdleMinutes(mins);
       } catch {
-        if (active) {
-          setUnread(0);
-          setPermissions({});
-          setEnabledModules(null);
-          setRole('');
-          setCompanyName('');
-          setHasLogo(false);
-          setCompanyLogoUrl(null);
-        }
+        clearSessionAndRedirect();
       }
     }
     load();
@@ -482,7 +527,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       active = false;
       clearInterval(id);
     };
-  }, []);
+  }, [authReady]);
 
   useEffect(() => {
     if (!bellOpen) return;
@@ -544,7 +589,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   // BR-19.3: auto-logout after tenant-configured idle period (default 30 minutes).
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !authReady) return;
     const limitMs = idleTimeoutMs(idleMinutes);
     let last = Date.now();
     const bump = () => {
@@ -573,7 +618,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       document.removeEventListener('visibilitychange', onVis);
       window.clearInterval(id);
     };
-  }, [idleMinutes]);
+  }, [idleMinutes, authReady]);
 
   const visible = useMemo(
     () => navItemsForRole(role, permissions, enabledModules),
@@ -585,15 +630,24 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     ? companyName || 'Company logo'
     : 'RIBDIGI ERP';
 
+  if (!authReady) {
+    return (
+      <div className="auth-gate" role="status" aria-live="polite">
+        <p>Checking your account…</p>
+      </div>
+    );
+  }
+
   return (
     <StoreProvider enabled={Boolean(role) && !isPlatformOwner}>
-      <div className={`shell${menuOpen ? ' nav-open' : ''}`}>
+      <div className={`shell shell-secure${menuOpen ? ' nav-open' : ''}`}>
       <aside className="side">
         <div className="brand" aria-label="Company brand">
           <img
             className="brand-logo"
             src={sidebarLogoSrc}
             alt={sidebarLogoAlt}
+            draggable={false}
           />
           {companyName ? (
             <div className="brand-name">{companyName}</div>
