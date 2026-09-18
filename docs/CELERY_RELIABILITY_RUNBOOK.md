@@ -1,7 +1,7 @@
 # Celery / Redis / RabbitMQ reliability runbook (MVP)
 
 **Workstream:** Celery reliability R1  
-**Evidence:** `/opt/cursor/artifacts/ops/celery_reliability_r1.json` (`backend/tests/test_celery_reliability_r1.py`)  
+**Evidence:** `/opt/ribdigi/artifacts/ops/celery_reliability_r1.json` (`backend/tests/test_celery_reliability_r1.py`)  
 **Checklist:** `ops/celery/celery-reliability-checklist.json`
 
 ## Topology

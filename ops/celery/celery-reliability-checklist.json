@@ -53,7 +53,7 @@
     "Sync job run succeeds for at least one handler",
     "AI nightly and CI queue-drain are not falsely claimed"
   ],
-  "evidence_artifact": "/opt/cursor/artifacts/ops/celery_reliability_r1.json",
+  "evidence_artifact": "/opt/ribdigi/artifacts/ops/celery_reliability_r1.json",
   "deferred": [
     "AI nightly Celery jobs",
     "Live multi-hour broker soak certificate",

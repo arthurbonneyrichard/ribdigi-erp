@@ -14,7 +14,7 @@ from loadtest.config import TARGETS
 from loadtest.runner import run_baseline
 
 ROOT = Path(__file__).resolve().parents[2]
-EVIDENCE_DIR = Path("/opt/cursor/artifacts/loadtest")
+EVIDENCE_DIR = Path("/opt/ribdigi/artifacts/loadtest")
 EVIDENCE_FILE = EVIDENCE_DIR / "stage26_c1_capacity_evidence.json"
 
 

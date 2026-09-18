@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-EVIDENCE_DIR = Path("/opt/cursor/artifacts/k8s")
+EVIDENCE_DIR = Path("/opt/ribdigi/artifacts/k8s")
 EVIDENCE_FILE = EVIDENCE_DIR / "stage26_k1_deploy_fidelity.json"
 
 

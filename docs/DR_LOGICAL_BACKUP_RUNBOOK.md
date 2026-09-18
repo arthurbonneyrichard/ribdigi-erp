@@ -5,7 +5,7 @@
 **Out of scope (post-MVP for this logical runbook):** schema-per-tenant isolation (ADR-001); restore-to-new-tenant. Infrastructure WAL/PITR operator staging drill remains Remaining under Stage 26 W1.
 
 Stage 19 R1 automated packaging check: `backend/tests/test_reliability_cache_r1.py` (asserts this runbook + dry-run / `confirm_text=RESTORE` / WAL-PITR deferral).  
-Stage 23 B1 commercial MVP gate proof: `backend/tests/test_logical_dr_drill_b1.py` → evidence artifact `/opt/cursor/artifacts/dr/stage23_b1_logical_drill.json` (create → dry-run → apply → verify + foreign-tenant 404).
+Stage 23 B1 commercial MVP gate proof: `backend/tests/test_logical_dr_drill_b1.py` → evidence artifact `/opt/ribdigi/artifacts/dr/stage23_b1_logical_drill.json` (create → dry-run → apply → verify + foreign-tenant 404).
 
 ## Purpose
 
@@ -74,4 +74,4 @@ Automated coverage: `backend/tests/test_backup_restore_proof_b1.py`, `backend/te
 
 Record date, operator, `backup_id`, checksum, dry-run/apply/verify outcomes, and any mismatches in the ops incident or change log after each quarterly drill.
 
-Stage 23 B1 CI/harness evidence: when `test_logical_dr_drill_b1.py` passes, it writes `/opt/cursor/artifacts/dr/stage23_b1_logical_drill.json` with `passed`, `backup_id`, checksum, proof flags, and `wal_pitr_deferred=true`.
+Stage 23 B1 CI/harness evidence: when `test_logical_dr_drill_b1.py` passes, it writes `/opt/ribdigi/artifacts/dr/stage23_b1_logical_drill.json` with `passed`, `backup_id`, checksum, proof flags, and `wal_pitr_deferred=true`.

@@ -1,7 +1,7 @@
 # Grafana / Alertmanager Pack MVP — Operator Observability Packaging
 
 **Status:** Complete (MVP) — Stage 28 A1  
-**Evidence:** `backend/tests/test_grafana_pack_a1.py` · `/opt/cursor/artifacts/monitoring/stage28_a1_grafana_pack.json`  
+**Evidence:** `backend/tests/test_grafana_pack_a1.py` · `/opt/ribdigi/artifacts/monitoring/stage28_a1_grafana_pack.json`  
 **Assets:** `ops/grafana/dashboard-ribdigi-mvp.json.example` · `ops/grafana/alertmanager.yml.example`  
 **Related:** [OPS_MONITORING_MVP.md](OPS_MONITORING_MVP.md) (Stage 26 M1) · `ops/prometheus/`
 

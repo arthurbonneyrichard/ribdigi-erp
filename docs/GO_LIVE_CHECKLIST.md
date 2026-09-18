@@ -1,7 +1,7 @@
 # RIBDIGI ERP — GO-LIVE CHECKLIST (authoritative)
 
 **Date:** 2026-09-17  
-**Branch evidence:** commercial readiness work on `cursor/ai-expense-store-filters-7aae`  
+**Branch evidence:** commercial readiness work on the production release branch  
 **Rule:** Evidence required. Docs ≠ implementation. Local Docker ≠ production.
 
 Legend: **PASS** | **FAIL** | **BLOCKED** | **NOT REQUIRED FOR MVP**

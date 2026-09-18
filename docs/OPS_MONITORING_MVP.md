@@ -106,4 +106,4 @@ Docker `json-file` / journald drivers also capture process stdout when `REQUEST_
 5. Optionally mount `ops/prometheus` into a local Prometheus container per `ops/prometheus/README.md`.
 6. Optionally import `ops/grafana/dashboard-ribdigi-mvp.json.example` and dry-run `ops/grafana/alertmanager.yml.example` (Stage 28 A1) — not hosted SaaS Complete.
 
-Evidence: `/opt/cursor/artifacts/monitoring/ops_monitoring_m1.json` (`test_ops_monitoring_m1.py`), `/opt/cursor/artifacts/monitoring/stage28_a1_grafana_pack.json` (`test_grafana_pack_a1.py`).
+Evidence: `/opt/ribdigi/artifacts/monitoring/ops_monitoring_m1.json` (`test_ops_monitoring_m1.py`), `/opt/ribdigi/artifacts/monitoring/stage28_a1_grafana_pack.json` (`test_grafana_pack_a1.py`).

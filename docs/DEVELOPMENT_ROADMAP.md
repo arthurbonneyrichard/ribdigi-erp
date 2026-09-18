@@ -153,7 +153,7 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 - [ ] Database migration system (Alembic) tested across multiple tenant schemas
 - [ ] API documentation (OpenAPI/Swagger) auto-generated
 
-### 2.8 AI/Cursor Implementation Prompt
+### 2.8 AI Implementation Prompt
 
 ```
 Implement Phase 1 of RIBDIGI ERP MVP:
@@ -286,7 +286,7 @@ Build the complete inventory management and purchasing system. This includes pro
 - [ ] Supplier balance tracking with aging report
 - [x] CSV bulk import for products and stock
 
-### 3.8 AI/Cursor Implementation Prompt
+### 3.8 AI Implementation Prompt
 
 ```
 Implement Phase 2 of RIBDIGI ERP MVP — Inventory & Supply Chain:
@@ -437,7 +437,7 @@ Build the revenue-generating side of the platform: customer management, sales pi
 - [ ] Customer & supplier credit management with aging reports
 - [ ] Recurring expense automation (Celery beat)
 
-### 4.8 AI/Cursor Implementation Prompt
+### 4.8 AI Implementation Prompt
 
 ```
 Implement Phase 3 of RIBDIGI ERP MVP — Sales, POS & Financials:
@@ -588,7 +588,7 @@ Add advanced capabilities that differentiate RIBDIGI from basic ERPs: AI-driven 
 - [ ] Materialized views for fast report loading
 - [ ] Global store context switcher in UI header
 
-### 5.8 AI/Cursor Implementation Prompt
+### 5.8 AI Implementation Prompt
 
 ```
 Implement Phase 4 of RIBDIGI ERP MVP — Intelligence, Multi-Store & Scale:
@@ -725,7 +725,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 - [ ] Complete documentation set: API docs, User Manual, Admin Manual, Security Guide
 - [ ] Launch checklist completed and signed off
 
-### 6.8 AI/Cursor Implementation Prompt
+### 6.8 AI Implementation Prompt
 
 ```
 Implement Phase 5 of RIBDIGI ERP MVP — Polish, Security & Launch:

@@ -1,8 +1,8 @@
 # RIBDIGI ERP COMMERCIAL READINESS REPORT
 
 **Date:** 2026-09-17  
-**Code HEAD (this workstream):** see branch `cursor/ai-expense-store-filters-7aae`  
-**Principle:** No false completion. Cursor cannot execute physical POS / VPS / pen tests.
+**Code HEAD (this workstream):** see branch `production`  
+**Principle:** No false completion. Automation cannot execute physical POS / VPS / pen tests.
 
 ---
 
@@ -43,7 +43,7 @@
 
 ---
 
-## What Cursor completed this phase (code)
+## What this phase completed (code)
 
 1. **Default Main Store** on tenant seed (entitlement-aware via `create_store`)  
 2. **UserStoreMembership** model + migration `20260917_0105`  
@@ -64,32 +64,32 @@
 - **Why:** No live HTTPS tenant endpoint proven from this environment  
 - **Work:** Deploy RC to VPS; env secrets; migrations; workers; health checks  
 - **Test:** `/health/ready` 200; login; one POS sale  
-- **Cursor:** Can prepare compose/K8s; **cannot** operate your VPS alone without credentials  
+- **Automation:** Can prepare compose/K8s; **cannot** operate your VPS alone without credentials  
 - **Owner:** Required
 
 ### BLOCKER 2 — Offline POS endurance / marketing claims
 - **Why:** Code foundation + recovery export + heartbeat are PARTIAL; physical 7-day endurance, multi-device reconnect certification, and alert dashboard are NOT RUN / absent  
 - **Work:** Device certification + alert UX + OS lockdown OR remove offline claims from sales materials  
 - **Test:** Physical offline 50+ sales + reconnect idempotency + 7-day window + recovery restore drill  
-- **Cursor:** Foundation + recovery JSON + heartbeat API shipped; remaining is certification + ops UX  
+- **Automation:** Foundation + recovery JSON + heartbeat API shipped; remaining is certification + ops UX  
 - **Owner:** Product decision + physical tests
 
 ### BLOCKER 3 — Physical device / platform certification
 - **Why:** No Windows/Android/iPad/macOS verification evidence  
 - **Work:** Run §51–§53 device tests  
-- **Cursor:** Cannot  
+- **Automation:** Cannot  
 - **Owner:** Required
 
 ### BLOCKER 4 — Staging restore + load + pen test
 - **Why:** Operational proof missing  
 - **Work:** Execute DR restore drill, load suite, schedule external pen test  
-- **Cursor:** Scripts/docs only  
+- **Automation:** Scripts/docs only  
 - **Owner / external:** Required
 
 ### BLOCKER 5 — Multi-company (only if sold as multi-company SaaS)
 - **Why:** Tenant has one company profile today  
 - **Work:** New Company entity under Tenant + switcher + isolation — large redesign  
-- **Cursor:** Possible as dedicated epic  
+- **Automation:** Possible as dedicated epic  
 - **Owner:** Scope decision — **NOT required** if you sell one-company-per-tenant MVP
 
 ---

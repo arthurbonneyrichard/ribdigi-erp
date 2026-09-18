@@ -15,7 +15,7 @@ from app.main import app
 from app.rate_limit import rate_limiter
 
 ROOT = Path(__file__).resolve().parents[2]
-EVIDENCE_DIR = Path("/opt/cursor/artifacts/ops")
+EVIDENCE_DIR = Path("/opt/ribdigi/artifacts/ops")
 EVIDENCE_FILE = EVIDENCE_DIR / "celery_reliability_r1.json"
 CHECKLIST = ROOT / "ops" / "celery" / "celery-reliability-checklist.json"
 

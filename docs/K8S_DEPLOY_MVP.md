@@ -3,7 +3,7 @@
 **Status:** Complete (MVP packaging) — chart / manifest / smoke fidelity  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Related:** Stage 26 K1 (`test_k8s_deploy_k1.py`); health/metrics from ops monitoring  
-**Evidence:** `/opt/cursor/artifacts/k8s/stage26_k1_deploy_fidelity.json`
+**Evidence:** `/opt/ribdigi/artifacts/k8s/stage26_k1_deploy_fidelity.json`
 
 This is the **MVP Kubernetes deploy surface**: versioned Helm chart + hardened `k8s/` manifests with correct health probes, secret refs, and operator staging smoke scripts. It is **not** a claim that CI deploys to a live cluster or that managed data-plane services are provisioned by the chart.
 

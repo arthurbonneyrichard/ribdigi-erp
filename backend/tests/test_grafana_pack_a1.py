@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 DASHBOARD = ROOT / "ops" / "grafana" / "dashboard-ribdigi-mvp.json.example"
 ALERTMANAGER = ROOT / "ops" / "grafana" / "alertmanager.yml.example"
-EVIDENCE_DIR = Path("/opt/cursor/artifacts/monitoring")
+EVIDENCE_DIR = Path("/opt/ribdigi/artifacts/monitoring")
 EVIDENCE_FILE = EVIDENCE_DIR / "stage28_a1_grafana_pack.json"
 
 

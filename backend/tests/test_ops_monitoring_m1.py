@@ -8,7 +8,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 ROOT = Path(__file__).resolve().parents[2]
-EVIDENCE_DIR = Path("/opt/cursor/artifacts/monitoring")
+EVIDENCE_DIR = Path("/opt/ribdigi/artifacts/monitoring")
 EVIDENCE_FILE = EVIDENCE_DIR / "ops_monitoring_m1.json"
 
 

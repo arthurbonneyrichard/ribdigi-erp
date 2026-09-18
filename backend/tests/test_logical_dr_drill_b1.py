@@ -19,7 +19,7 @@ from app import models as m
 from tests.conftest import auth_headers
 
 ROOT = Path(__file__).resolve().parents[2]
-EVIDENCE_DIR = Path("/opt/cursor/artifacts/dr")
+EVIDENCE_DIR = Path("/opt/ribdigi/artifacts/dr")
 EVIDENCE_FILE = EVIDENCE_DIR / "stage23_b1_logical_drill.json"
 READINESS = ROOT / "PRODUCTION_READINESS.md"
 RUNBOOK = ROOT / "docs" / "DR_LOGICAL_BACKUP_RUNBOOK.md"

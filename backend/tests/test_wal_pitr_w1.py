@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-EVIDENCE_DIR = Path("/opt/cursor/artifacts/dr")
+EVIDENCE_DIR = Path("/opt/ribdigi/artifacts/dr")
 EVIDENCE_FILE = EVIDENCE_DIR / "stage26_w1_wal_pitr_strategy.json"
 
 

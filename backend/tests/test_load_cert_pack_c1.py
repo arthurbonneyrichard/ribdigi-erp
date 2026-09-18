@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 CHECKLIST = ROOT / "ops" / "loadtest" / "1000vu-cert-checklist.json"
 RUN_EXAMPLE = ROOT / "ops" / "loadtest" / "operator_1000vu_run.example.json"
-EVIDENCE_DIR = Path("/opt/cursor/artifacts/loadtest")
+EVIDENCE_DIR = Path("/opt/ribdigi/artifacts/loadtest")
 EVIDENCE_FILE = EVIDENCE_DIR / "stage28_c1_load_cert_pack.json"
 
 

@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 CHECKLIST = ROOT / "ops" / "postgres" / "pitr-drill-checklist.json"
-EVIDENCE_DIR = Path("/opt/cursor/artifacts/dr")
+EVIDENCE_DIR = Path("/opt/ribdigi/artifacts/dr")
 EVIDENCE_FILE = EVIDENCE_DIR / "stage28_r1_pitr_drill_pack.json"
 
 

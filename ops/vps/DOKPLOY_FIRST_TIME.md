@@ -118,7 +118,7 @@ Details: https://docs.dokploy.com/docs/core/installation
 3. **General** tab:
    - **Source:** GitHub
    - **Repository:** your `ribdigi-erp`
-   - **Branch:** `cursor/production-docker-compose-vps` (or your release branch)
+   - **Branch:** `production` (or your release branch)
    - **Compose path:** `docker-compose.dokploy.yml`
    - **Compose type:** Docker Compose (not Stack)
 

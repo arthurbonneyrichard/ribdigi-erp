@@ -76,12 +76,12 @@ CI / agent runs write a JSON evidence file for launch fidelity:
 
 | Path | Contents |
 |------|----------|
-| `/opt/cursor/artifacts/loadtest/stage18_t1_baseline_smoke.json` | Smoke baseline report (`passed`, scenario stats, p50/p95) |
+| `/opt/ribdigi/artifacts/loadtest/stage18_t1_baseline_smoke.json` | Smoke baseline report (`passed`, scenario stats, p50/p95) |
 
 Also supported by the CLI:
 
 ```bash
-python -m loadtest.run_baseline --smoke --output /opt/cursor/artifacts/loadtest/stage18_t1_baseline_smoke.json
+python -m loadtest.run_baseline --smoke --output /opt/ribdigi/artifacts/loadtest/stage18_t1_baseline_smoke.json
 ```
 
 Automated proof: `backend/tests/test_loadtest_baseline_l1.py` + `test_load_capacity_c1.py`. This is **harness evidence**, not a certified 1000-VU capacity certificate (still deferred).
@@ -90,13 +90,13 @@ Automated proof: `backend/tests/test_loadtest_baseline_l1.py` + `test_load_capac
 
 | Path | Contents |
 |------|----------|
-| `/opt/cursor/artifacts/loadtest/stage26_c1_capacity_evidence.json` | Smoke + CI capacity profiles (`passed`, scenario stats, `operator_1000vu_required`) |
+| `/opt/ribdigi/artifacts/loadtest/stage26_c1_capacity_evidence.json` | Smoke + CI capacity profiles (`passed`, scenario stats, `operator_1000vu_required`) |
 
 ```bash
 python -m loadtest.run_baseline --ci-capacity \
   --email "$LOADTEST_EMAIL" --password "$LOADTEST_PASSWORD" \
   --tenant "$LOADTEST_TENANT" \
-  --output /opt/cursor/artifacts/loadtest/stage26_c1_capacity_cli.json
+  --output /opt/ribdigi/artifacts/loadtest/stage26_c1_capacity_cli.json
 ```
 
 Automated proof: `backend/tests/test_load_capacity_c1.py`. Authoritative MVP doc: `docs/LOAD_CAPACITY_MVP.md`. Stage 28 C1 packages the operator ~1000-VU checklist/schema (`docs/LOAD_CERT_PACK_MVP.md`, `ops/loadtest/`, `test_load_cert_pack_c1.py`) — live staging ~1000-VU **execution** remains Remaining.

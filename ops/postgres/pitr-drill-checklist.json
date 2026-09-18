@@ -49,7 +49,7 @@
     "Login + one tenant spot-check succeed",
     "Ops change log entry recorded"
   ],
-  "evidence_artifact": "/opt/cursor/artifacts/dr/stage28_r1_pitr_drill_pack.json",
+  "evidence_artifact": "/opt/ribdigi/artifacts/dr/stage28_r1_pitr_drill_pack.json",
   "deferred": [
     "CI-executed pg_basebackup / WAL replay certificate",
     "Managed-cloud PITR automation",

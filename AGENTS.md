@@ -1,11 +1,11 @@
 # Agent notes
 
 ## Tip / brand stream status (PR #300)
-- **OpenAPI honesty tips:** exhausted at **#1884–#1894** on `cursor/tenant-status-query-openapi-dd71`. No further non-trivial Values / `money_json` / FE aria tips without inventing thin work. Intentional OOS: health/request-log ms, onboarding %, AI display "N%", coded enums, system backup notify strips.
+- **OpenAPI honesty tips:** exhausted at **#1884–#1894** on the tenant-status OpenAPI honesty workstream. No further non-trivial Values / `money_json` / FE aria tips without inventing thin work. Intentional OOS: health/request-log ms, onboarding %, AI display "N%", coded enums, system backup notify strips.
 - **Brand refresh:** logo wordmark + logo greens (CSS/email/print/PDF/PWA/OG) shipped; interim favicon from green R mark — replace when a dedicated favicon file is supplied.
 - **CI:** backend + frontend green on tip after honesty 422 / email-verify / jobs DB fixture repairs. PR ready for human review/merge.
 
-## Cursor Cloud specific instructions
+## Cloud / automation environment instructions
 
 ### Services
 - **Backend** (FastAPI): typically `cd backend && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000` with `DATABASE_URL`, `REDIS_URL`, `RABBITMQ_URL` pointing at localhost in this VM.
@@ -14,7 +14,7 @@
 - Standard lint/test/run commands: see root README / `backend` and `frontend` package scripts. Reliability packaging: `docs/CELERY_RELIABILITY_RUNBOOK.md`, `docs/DR_WAL_PITR_RUNBOOK.md`.
 
 ### Non-obvious gotchas
-- **Disk full from stuck `ffmpeg`:** Screen recordings can leave an `ffmpeg` process holding a deleted multi‑GB file under `/opt/cursor/recording-staging/...` (space not freed until that PID exits). If `df` shows ~100% but `du -x /` is tiny, find the PID with `lsof` + `(deleted)` and `kill <pid>` (then `kill -9` if needed). Clear `/opt/cursor/recording-staging` after saves. Also wipe Chrome ML caches under `~/.config/google-chrome/OptGuideOnDeviceModel` if they balloon.
+- **Disk full from stuck `ffmpeg`:** Screen recordings can leave an `ffmpeg` process holding a deleted multi‑GB file under `/opt/ribdigi/recording-staging/...` (space not freed until that PID exits). If `df` shows ~100% but `du -x /` is tiny, find the PID with `lsof` + `(deleted)` and `kill <pid>` (then `kill -9` if needed). Clear `/opt/ribdigi/recording-staging` after saves. Also wipe Chrome ML caches under `~/.config/google-chrome/OptGuideOnDeviceModel` if they balloon.
 - **Next.js static chunk 404s:** If Multi-Store/Inventory buttons stay SSR-`disabled` despite filled inputs, check DevTools for `/_next/static/chunks/*.js` **404** (React never hydrates). Restart `cd frontend && npm run dev`.
 - **Next.js stale / no live updates:** A long-lived `next dev` (esp. orphan under pid 1) can stop reflecting edits in the browser. `frontend/next.config.mjs` enables webpack **poll** watching for cloud VMs. If the UI still looks stale: stop the old process, `rm -rf frontend/.next`, then `cd frontend && WATCHPACK_POLLING=true npm run dev`, and hard-refresh the tab (Ctrl/Cmd+Shift+R).
 - **Cloud VM infra:** Docker is often unavailable here. Use host **Postgres / Redis / RabbitMQ** with `.env` URLs pointed at `localhost` (not compose hostnames). Start API with `cd backend && PYTHONPATH=. .venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`, frontend with `cd frontend && npm run dev`, Celery worker/beat from `backend` against the same `.env`.

@@ -3,8 +3,8 @@
 **Status:** Documented — Stage 26 C1 CI capacity evidence; Stage 28 C1 operator ~1000-VU cert packaging  
 **Product:** RIBDIGI BUSINESS ERP — Commercial MVP  
 **Related:** Stage 5 L1 (`test_loadtest_baseline_l1.py`), Stage 26 C1 (`test_load_capacity_c1.py`), Stage 28 C1 (`test_load_cert_pack_c1.py`)  
-**Evidence (C1 CI):** `/opt/cursor/artifacts/loadtest/stage26_c1_capacity_evidence.json`  
-**Evidence (C1 pack):** `/opt/cursor/artifacts/loadtest/stage28_c1_load_cert_pack.json` · [LOAD_CERT_PACK_MVP.md](LOAD_CERT_PACK_MVP.md)  
+**Evidence (C1 CI):** `/opt/ribdigi/artifacts/loadtest/stage26_c1_capacity_evidence.json`  
+**Evidence (C1 pack):** `/opt/ribdigi/artifacts/loadtest/stage28_c1_load_cert_pack.json` · [LOAD_CERT_PACK_MVP.md](LOAD_CERT_PACK_MVP.md)  
 **Targets:** [LOAD_TEST_BASELINE.md](LOAD_TEST_BASELINE.md)
 
 This is the **MVP load capacity surface**: httpx harness + CI smoke + CI capacity profiles with durable artifacts, plus Stage 28 C1 operator ~1000-VU **packaging**. It is **not** a claim that a ~1000-VU staging Locust/httpx run has been certified in CI.
@@ -22,13 +22,13 @@ This is the **MVP load capacity surface**: httpx harness + CI smoke + CI capacit
 ```bash
 cd backend
 python -m loadtest.run_baseline --smoke \
-  --output /opt/cursor/artifacts/loadtest/stage18_t1_baseline_smoke.json
+  --output /opt/ribdigi/artifacts/loadtest/stage18_t1_baseline_smoke.json
 
 # Stage 26 C1 profile (needs LOADTEST_* creds against a live API)
 python -m loadtest.run_baseline --ci-capacity \
   --email "$LOADTEST_EMAIL" --password "$LOADTEST_PASSWORD" \
   --tenant "$LOADTEST_TENANT" --totp "$LOADTEST_TOTP" \
-  --output /opt/cursor/artifacts/loadtest/stage26_c1_capacity_cli.json
+  --output /opt/ribdigi/artifacts/loadtest/stage26_c1_capacity_cli.json
 ```
 
 Automated CI proof writes `stage26_c1_capacity_evidence.json` via `test_load_capacity_c1.py` (ASGI transport — no invented 1000-VU certificate).

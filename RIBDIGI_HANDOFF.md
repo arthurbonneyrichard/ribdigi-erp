@@ -1,4 +1,4 @@
-# Cursor AI Handoff
+# Ribdigi ERP agent handoff
 
 Start by reading `README.md`, then `docs/BUSINESS_REQUIREMENTS_DOCUMENT.md`, `docs/ARCHITECTURE_DOCUMENTS.md`, `docs/DATABASE_DOCUMENTATION.md`, `docs/API_DOCUMENTATION.md`, `docs/SECURITY_GUIDE.md`, and `docs/DEVELOPMENT_ROADMAP.md`.
 
