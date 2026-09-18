@@ -126,9 +126,10 @@ Details: https://docs.dokploy.com/docs/core/installation
 
 ## 6. Paste environment variables
 
-1. Open `ops/vps/env.production.example` in the repo (or copy from GitHub).
+1. Open repo-root **`.env.production.example`** (canonical Dokploy env template).
 2. Dokploy Compose service → **Environment** tab.
-3. Paste **all** variables, then replace every `REPLACE_ME_*` and set your real domain:
+3. Paste **all** variables, then replace every `REPLACE_ME_*` value.
+   Domain defaults already target `https://erp.ribdigihouse.com`.
 
 ```env
 APP_ENV=production
