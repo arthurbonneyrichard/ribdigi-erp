@@ -4,9 +4,11 @@ Revision ID: 20260917_0106
 Revises: 20260917_0105
 Create Date: 2026-09-17
 
-Idempotent on PostgreSQL: production DBs that previously ran main's
-20260813_0092 (sync_queue_and_pos_idempotency) already have
-transactions.client_request_id and related indexes/constraints.
+Production-safe / idempotent:
+Earlier production lineage already added transactions.client_request_id
+(and related indexes/constraints). This revision must not fail with
+DuplicateColumn / DuplicateTable when those objects already exist.
+Incompatible existing column types raise instead of being silently accepted.
 """
 
 from __future__ import annotations
@@ -19,84 +21,193 @@ down_revision = "20260917_0105"
 branch_labels = None
 depends_on = None
 
-
-def _column_names(insp: sa.Inspector, table: str) -> set[str]:
-    return {c["name"] for c in insp.get_columns(table)}
+_EXPECTED_MIN_LENGTH = 64
 
 
-def _index_names(insp: sa.Inspector, table: str) -> set[str]:
-    names: set[str] = set()
-    for ix in insp.get_indexes(table) or []:
-        if ix.get("name"):
-            names.add(ix["name"])
-    # Unique constraints appear separately from indexes on PostgreSQL.
-    for uq in insp.get_unique_constraints(table) or []:
-        if uq.get("name"):
-            names.add(uq["name"])
-    return names
+def _pg_column_info(bind, table: str, column: str) -> dict | None:
+    """Return information_schema row for table.column, or None if missing."""
+    row = bind.execute(
+        sa.text(
+            """
+            SELECT data_type, character_maximum_length, is_nullable, udt_name
+            FROM information_schema.columns
+            WHERE table_schema = current_schema()
+              AND table_name = :table
+              AND column_name = :column
+            """
+        ),
+        {"table": table, "column": column},
+    ).mappings().first()
+    return dict(row) if row else None
 
 
-def _has_unique_on_cols(insp: sa.Inspector, table: str, cols: set[str]) -> bool:
-    want = set(cols)
-    for uq in insp.get_unique_constraints(table) or []:
-        if set(uq.get("column_names") or []) == want:
-            return True
-    for ix in insp.get_indexes(table) or []:
-        if ix.get("unique") and set(ix.get("column_names") or []) == want:
-            return True
-    return False
+def _pg_index_exists(bind, index_name: str) -> bool:
+    return bool(
+        bind.execute(
+            sa.text(
+                """
+                SELECT 1
+                FROM pg_class c
+                JOIN pg_namespace n ON n.oid = c.relnamespace
+                WHERE c.relkind IN ('i', 'I')
+                  AND c.relname = :name
+                  AND n.nspname = current_schema()
+                """
+            ),
+            {"name": index_name},
+        ).scalar()
+    )
 
 
-def upgrade() -> None:
-    bind = op.get_bind()
+def _pg_constraint_exists(bind, constraint_name: str) -> bool:
+    return bool(
+        bind.execute(
+            sa.text(
+                """
+                SELECT 1
+                FROM pg_constraint c
+                JOIN pg_namespace n ON n.oid = c.connamespace
+                WHERE c.conname = :name
+                  AND n.nspname = current_schema()
+                """
+            ),
+            {"name": constraint_name},
+        ).scalar()
+    )
+
+
+def _pg_has_unique_on_cols(bind, table: str, cols: list[str]) -> bool:
+    """True if a unique constraint or unique index covers exactly these columns."""
+    row = bind.execute(
+        sa.text(
+            """
+            SELECT 1
+            FROM pg_index i
+            JOIN pg_class t ON t.oid = i.indrelid
+            JOIN pg_namespace n ON n.oid = t.relnamespace
+            WHERE t.relname = :table
+              AND n.nspname = current_schema()
+              AND i.indisunique
+              AND (
+                SELECT array_agg(a.attname::text ORDER BY x.ordinality)
+                FROM unnest(i.indkey) WITH ORDINALITY AS x(attnum, ordinality)
+                JOIN pg_attribute a
+                  ON a.attrelid = t.oid AND a.attnum = x.attnum
+              ) = CAST(:cols AS text[])
+            LIMIT 1
+            """
+        ),
+        {"table": table, "cols": cols},
+    ).scalar()
+    return bool(row)
+
+
+def _assert_compatible_client_request_id(info: dict) -> None:
+    """Raise if an existing column cannot satisfy String(64) nullable semantics."""
+    data_type = (info.get("data_type") or "").lower()
+    udt = (info.get("udt_name") or "").lower()
+    ok_types = {"character varying", "varchar", "text", "character"}
+    if data_type not in ok_types and udt not in {"varchar", "text", "bpchar"}:
+        raise RuntimeError(
+            "transactions.client_request_id already exists with incompatible type "
+            f"{info.get('data_type')!r} (udt={info.get('udt_name')!r}); "
+            f"expected VARCHAR/TEXT nullable string (min length {_EXPECTED_MIN_LENGTH})"
+        )
+    max_len = info.get("character_maximum_length")
+    # TEXT has NULL length; VARCHAR(n) with n < 64 cannot hold app values up to 64.
+    if max_len is not None and int(max_len) < _EXPECTED_MIN_LENGTH:
+        raise RuntimeError(
+            "transactions.client_request_id already exists with insufficient length "
+            f"{max_len} (need >= {_EXPECTED_MIN_LENGTH}); refusing to silently alter"
+        )
+
+
+def _upgrade_postgresql(bind) -> None:
+    info = _pg_column_info(bind, "transactions", "client_request_id")
+    if info is None:
+        bind.execute(
+            sa.text(
+                "ALTER TABLE transactions "
+                "ADD COLUMN IF NOT EXISTS client_request_id VARCHAR(64)"
+            )
+        )
+    else:
+        _assert_compatible_client_request_id(info)
+
+    # Non-unique supporting index (same name used historically).
+    if not _pg_index_exists(bind, "ix_transactions_client_request_id"):
+        bind.execute(
+            sa.text(
+                "CREATE INDEX IF NOT EXISTS ix_transactions_client_request_id "
+                "ON transactions (client_request_id)"
+            )
+        )
+
+    # Partial unique for non-null client_request_id values.
+    # Skip when this name, an equivalent unique, or the company-scoped unique exists.
+    if (
+        not _pg_index_exists(bind, "uq_transactions_tenant_client_request")
+        and not _pg_constraint_exists(bind, "uq_transactions_tenant_client_request")
+        and not _pg_constraint_exists(bind, "uq_transactions_tenant_client_request_id")
+        and not _pg_index_exists(bind, "uq_transactions_tenant_client_request_id")
+        and not _pg_index_exists(bind, "uq_transactions_tenant_company_client_request_id")
+        and not _pg_has_unique_on_cols(bind, "transactions", ["tenant_id", "client_request_id"])
+    ):
+        bind.execute(
+            sa.text(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS uq_transactions_tenant_client_request
+                ON transactions (tenant_id, client_request_id)
+                WHERE client_request_id IS NOT NULL
+                """
+            )
+        )
+
+
+def _upgrade_other(bind) -> None:
     insp = sa.inspect(bind)
-    cols = _column_names(insp, "transactions")
-    existing = _index_names(insp, "transactions")
+    cols = {c["name"] for c in insp.get_columns("transactions")}
+    indexes = {ix["name"] for ix in (insp.get_indexes("transactions") or []) if ix.get("name")}
+    uniques = {
+        uq["name"] for uq in (insp.get_unique_constraints("transactions") or []) if uq.get("name")
+    }
 
     if "client_request_id" not in cols:
         op.add_column(
             "transactions",
             sa.Column("client_request_id", sa.String(length=64), nullable=True),
         )
-        # Refresh inspector view after DDL.
-        insp = sa.inspect(bind)
-        existing = _index_names(insp, "transactions")
+    else:
+        # Best-effort type gate for non-Postgres dialects used in tests.
+        col = next(c for c in insp.get_columns("transactions") if c["name"] == "client_request_id")
+        col_type = col.get("type")
+        if col_type is not None and not isinstance(col_type, (sa.String, sa.Text)):
+            raise RuntimeError(
+                "transactions.client_request_id already exists with incompatible type "
+                f"{col_type!r}"
+            )
 
-    if "ix_transactions_client_request_id" not in existing:
+    if "ix_transactions_client_request_id" not in indexes:
         op.create_index(
             "ix_transactions_client_request_id",
             "transactions",
             ["client_request_id"],
         )
-        insp = sa.inspect(bind)
-        existing = _index_names(insp, "transactions")
 
-    # Partial unique: only when client_request_id is set (Postgres).
-    # SQLite tests use create_all from models UniqueConstraint.
-    # Skip if this index/constraint name already exists, or an equivalent
-    # unique on (tenant_id, client_request_id) is already present (e.g. from
-    # main's uq_transactions_tenant_client_request_id).
-    if bind.dialect.name == "postgresql":
-        if (
-            "uq_transactions_tenant_client_request" not in existing
-            and not _has_unique_on_cols(
-                insp, "transactions", {"tenant_id", "client_request_id"}
-            )
-        ):
-            # Also skip when a stricter company-scoped partial unique already
-            # covers idempotency (main ADR-490 phase 21).
-            if "uq_transactions_tenant_company_client_request_id" not in existing:
-                op.execute(
-                    """
-                    CREATE UNIQUE INDEX IF NOT EXISTS uq_transactions_tenant_client_request
-                    ON transactions (tenant_id, client_request_id)
-                    WHERE client_request_id IS NOT NULL
-                    """
-                )
-    else:
-        if "uq_transactions_tenant_client_request" not in existing and not _has_unique_on_cols(
-            insp, "transactions", {"tenant_id", "client_request_id"}
-        ):
+    if "uq_transactions_tenant_client_request" not in indexes | uniques:
+        already = False
+        for uq in insp.get_unique_constraints("transactions") or []:
+            if set(uq.get("column_names") or []) == {"tenant_id", "client_request_id"}:
+                already = True
+                break
+        for ix in insp.get_indexes("transactions") or []:
+            if ix.get("unique") and set(ix.get("column_names") or []) == {
+                "tenant_id",
+                "client_request_id",
+            }:
+                already = True
+                break
+        if not already:
             op.create_unique_constraint(
                 "uq_transactions_tenant_client_request",
                 "transactions",
@@ -104,24 +215,40 @@ def upgrade() -> None:
             )
 
 
+def upgrade() -> None:
+    bind = op.get_bind()
+    if bind.dialect.name == "postgresql":
+        _upgrade_postgresql(bind)
+    else:
+        _upgrade_other(bind)
+
+
 def downgrade() -> None:
     bind = op.get_bind()
-    insp = sa.inspect(bind)
-    existing = _index_names(insp, "transactions")
-    cols = _column_names(insp, "transactions")
-
     if bind.dialect.name == "postgresql":
-        if "uq_transactions_tenant_client_request" in existing:
-            op.execute("DROP INDEX IF EXISTS uq_transactions_tenant_client_request")
-    else:
-        if "uq_transactions_tenant_client_request" in existing:
-            op.drop_constraint(
-                "uq_transactions_tenant_client_request",
-                "transactions",
-                type_="unique",
-            )
+        bind.execute(sa.text("DROP INDEX IF EXISTS uq_transactions_tenant_client_request"))
+        bind.execute(sa.text("DROP INDEX IF EXISTS ix_transactions_client_request_id"))
+        info = _pg_column_info(bind, "transactions", "client_request_id")
+        if info is not None:
+            # Only drop if we would own a VARCHAR(64) column; leave longer legacy columns.
+            max_len = info.get("character_maximum_length")
+            if max_len is None or int(max_len) == _EXPECTED_MIN_LENGTH:
+                bind.execute(sa.text("ALTER TABLE transactions DROP COLUMN IF EXISTS client_request_id"))
+        return
 
-    if "ix_transactions_client_request_id" in existing:
+    insp = sa.inspect(bind)
+    indexes = {ix["name"] for ix in (insp.get_indexes("transactions") or []) if ix.get("name")}
+    uniques = {
+        uq["name"] for uq in (insp.get_unique_constraints("transactions") or []) if uq.get("name")
+    }
+    cols = {c["name"] for c in insp.get_columns("transactions")}
+    if "uq_transactions_tenant_client_request" in indexes | uniques:
+        op.drop_constraint(
+            "uq_transactions_tenant_client_request",
+            "transactions",
+            type_="unique",
+        )
+    if "ix_transactions_client_request_id" in indexes:
         op.drop_index("ix_transactions_client_request_id", table_name="transactions")
     if "client_request_id" in cols:
         op.drop_column("transactions", "client_request_id")
