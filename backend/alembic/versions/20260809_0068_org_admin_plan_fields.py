@@ -33,7 +33,7 @@ def upgrade() -> None:
         batch.add_column(sa.Column("manager_id", sa.String(length=36), nullable=True))
         batch.add_column(sa.Column("address", sa.String(length=255), nullable=True))
         batch.add_column(sa.Column("capacity", sa.Numeric(14, 3), nullable=True))
-        batch.add_column(sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.text("1")))
+        batch.add_column(sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.text("true")))
         batch.create_foreign_key("fk_warehouses_manager_id_users", "users", ["manager_id"], ["id"])
 
     with op.batch_alter_table("tenants") as batch:

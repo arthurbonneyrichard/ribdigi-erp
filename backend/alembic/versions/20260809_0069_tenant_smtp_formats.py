@@ -19,15 +19,15 @@ def upgrade() -> None:
         batch.add_column(sa.Column("date_format", sa.String(length=20), nullable=False, server_default="DD/MM/YYYY"))
         batch.add_column(sa.Column("number_format", sa.String(length=20), nullable=False, server_default="1,234.56"))
         batch.add_column(sa.Column("time_format", sa.String(length=20), nullable=False, server_default="24h"))
-        batch.add_column(sa.Column("smtp_enabled", sa.Boolean(), nullable=False, server_default=sa.text("0")))
+        batch.add_column(sa.Column("smtp_enabled", sa.Boolean(), nullable=False, server_default=sa.text("false")))
         batch.add_column(sa.Column("smtp_host", sa.String(length=255), nullable=True))
         batch.add_column(sa.Column("smtp_port", sa.Integer(), nullable=True))
         batch.add_column(sa.Column("smtp_username", sa.String(length=255), nullable=True))
         batch.add_column(sa.Column("smtp_password_enc", sa.Text(), nullable=True))
         batch.add_column(sa.Column("smtp_from_email", sa.String(length=255), nullable=True))
         batch.add_column(sa.Column("smtp_from_name", sa.String(length=150), nullable=True))
-        batch.add_column(sa.Column("smtp_use_tls", sa.Boolean(), nullable=False, server_default=sa.text("1")))
-        batch.add_column(sa.Column("smtp_use_ssl", sa.Boolean(), nullable=False, server_default=sa.text("0")))
+        batch.add_column(sa.Column("smtp_use_tls", sa.Boolean(), nullable=False, server_default=sa.text("true")))
+        batch.add_column(sa.Column("smtp_use_ssl", sa.Boolean(), nullable=False, server_default=sa.text("false")))
 
 
 def downgrade() -> None:
