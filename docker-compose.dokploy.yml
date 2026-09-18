@@ -105,7 +105,11 @@ services:
     command:
       - sh
       - -c
-      - exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers $${UVICORN_WORKERS:-2} --proxy-headers --forwarded-allow-ips='*' --log-level $${LOG_LEVEL:-info}
+      - >-
+        exec uvicorn app.main:app --host 0.0.0.0 --port 8000
+        --workers $${UVICORN_WORKERS:-2}
+        --proxy-headers --forwarded-allow-ips='*'
+        --log-level $$(echo "$${LOG_LEVEL:-info}" | tr '[:upper:]' '[:lower:]')
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/api/v1/health"]
       interval: 30s
