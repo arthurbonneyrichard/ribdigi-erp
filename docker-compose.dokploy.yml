@@ -231,6 +231,15 @@ services:
       - worker
       - --loglevel=${CELERY_LOG_LEVEL:-INFO}
       - --concurrency=${CELERY_CONCURRENCY:-2}
+    # Inherit backend image HEALTHCHECK would curl :8000 (FastAPI) — wrong for Celery.
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - celery -A app.celery_app.celery inspect ping --timeout 10 2>/dev/null | grep -qi pong
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 60s
     logging:
       driver: json-file
       options:
@@ -268,6 +277,16 @@ services:
       - beat
       - --loglevel=${CELERY_LOG_LEVEL:-INFO}
       - --schedule=/tmp/celerybeat-schedule
+      - --pidfile=/tmp/celerybeat.pid
+    # Beat has no HTTP server; Dockerfile HEALTHCHECK (curl :8000) is invalid here.
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - test -f /tmp/celerybeat.pid && kill -0 "$$(cat /tmp/celerybeat.pid)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
     logging:
       driver: json-file
       options:
