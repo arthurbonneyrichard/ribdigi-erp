@@ -60,4 +60,20 @@ Never enable this flag in staging or production.
 
 ## Production deployment
 
-Use production secrets, production CORS origins, managed infrastructure, TLS, migrations, backup/restore, monitoring and security controls as defined in the deployment and security documentation. Do not use development Docker credentials in production.
+### Option A — Dokploy (recommended for VPS)
+
+Step-by-step: **`ops/vps/DOKPLOY_FIRST_TIME.md`**
+
+- Compose file: **`docker-compose.dokploy.yml`** (standalone; Traefik handles HTTPS)
+- Env template: **`.env.production.example`** → paste into Dokploy Environment
+- Target host example: `https://erp.ribdigihouse.com`
+
+### Option B — Manual Compose overlay
+
+```bash
+cp .env.production.example .env.production   # fill real secrets; never commit
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.production up -d --build
+```
+
+Do not run Option A and Option B on the same VPS (both need ports 80/443).  
+Do not use development Docker credentials in production. Never set `ALLOW_DEVELOPMENT_SEED=true` on a public host.

@@ -1,0 +1,13 @@
+# DEPRECATED for new deploys.
+# Use the standalone production stack at repo root:
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Do not combine this override with docker-compose.yml — the root
+# docker-compose.prod.yml already hardens ports, restarts, networks,
+# healthchecks, and production commands.
+#
+# Kept only so existing docs that referenced this path still resolve.
+# See ops/vps/README.md for the current procedure.
+
+services: {}

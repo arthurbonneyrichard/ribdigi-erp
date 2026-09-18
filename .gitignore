@@ -74,6 +74,8 @@ backend/data/
 *.ribbak
 /data/backups/
 /data/media/
+/backups/
+*.sql.gz
 
 # --- OS / IDE ---
 .DS_Store
