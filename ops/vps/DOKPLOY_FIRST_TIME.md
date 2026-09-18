@@ -44,8 +44,8 @@ Suggested providers: Hetzner, DigitalOcean, Linode, Vultr, Contabo, etc.
 Wait until DNS resolves:
 
 ```bash
-dig +short erp.YOURDOMAIN.com
-dig +short panel.YOURDOMAIN.com
+dig +short erp.ribdigihouse.com
+dig +short panel.ribdigihouse.com
 ```
 
 ---
@@ -91,7 +91,7 @@ http://YOUR_VPS_IP:3000
 
 ### Secure the Dokploy panel with HTTPS (strongly recommended)
 
-In Dokploy → settings / domains for the **Dokploy panel itself**, attach something like `panel.YOURDOMAIN.com` with Let's Encrypt.
+In Dokploy → settings / domains for the **Dokploy panel itself**, attach something like `panel.ribdigihouse.com` with Let's Encrypt.
 
 Only after HTTPS panel works, you may remove public `:3000` access (optional):
 
@@ -151,12 +151,12 @@ MINIO_ROOT_PASSWORD=
 S3_ACCESS_KEY=   # same as MINIO_ROOT_USER
 S3_SECRET_KEY=   # same as MINIO_ROOT_PASSWORD
 
-CORS_ORIGINS=https://erp.YOURDOMAIN.com
-FRONTEND_URL=https://erp.YOURDOMAIN.com
-NEXT_PUBLIC_API_URL=https://erp.YOURDOMAIN.com/api/v1
-TRUSTED_HOSTS=erp.YOURDOMAIN.com,localhost,127.0.0.1
-WEBAUTHN_RP_ID=erp.YOURDOMAIN.com
-WEBAUTHN_ORIGIN=https://erp.YOURDOMAIN.com
+CORS_ORIGINS=https://erp.ribdigihouse.com
+FRONTEND_URL=https://erp.ribdigihouse.com
+NEXT_PUBLIC_API_URL=https://erp.ribdigihouse.com/api/v1
+TRUSTED_HOSTS=erp.ribdigihouse.com,localhost,127.0.0.1
+WEBAUTHN_RP_ID=erp.ribdigihouse.com
+WEBAUTHN_ORIGIN=https://erp.ribdigihouse.com
 
 EMAIL_ENABLED=false
 SMS_ENABLED=false
@@ -185,7 +185,7 @@ Add **two** routes on the **same host** (path-based, like our Caddy setup):
 ### Domain A — API
 | Field | Value |
 |-------|--------|
-| Host | `erp.YOURDOMAIN.com` |
+| Host | `erp.ribdigihouse.com` |
 | Path | `/api` |
 | Service name | `backend` |
 | Container port | `8000` |
@@ -196,7 +196,7 @@ Add **two** routes on the **same host** (path-based, like our Caddy setup):
 ### Domain B — UI
 | Field | Value |
 |-------|--------|
-| Host | `erp.YOURDOMAIN.com` |
+| Host | `erp.ribdigihouse.com` |
 | Path | `/` |
 | Service name | `frontend` |
 | Container port | `3000` |
@@ -220,11 +220,11 @@ In Dokploy:
 From your laptop:
 
 ```bash
-curl -fsS https://erp.YOURDOMAIN.com/api/v1/health
-curl -fsS https://erp.YOURDOMAIN.com/api/v1/health/ready
+curl -fsS https://erp.ribdigihouse.com/api/v1/health
+curl -fsS https://erp.ribdigihouse.com/api/v1/health/ready
 ```
 
-Open `https://erp.YOURDOMAIN.com` in the browser.
+Open `https://erp.ribdigihouse.com` in the browser.
 
 ---
 
@@ -238,13 +238,13 @@ docker ps --format '{{.Names}}' | grep -i backend
 
 docker exec -it CONTAINER_NAME \
   env ALLOW_PLATFORM_OWNER_BOOTSTRAP=true \
-      PLATFORM_OWNER_EMAIL='you@YOURDOMAIN.com' \
+      PLATFORM_OWNER_EMAIL='you@ribdigihouse.com' \
       PLATFORM_OWNER_PASSWORD='YourStrongPass1!' \
       PLATFORM_OWNER_FULL_NAME='Platform Owner' \
   python scripts/create_platform_owner.py
 ```
 
-Then log in at `https://erp.YOURDOMAIN.com` and change the password.  
+Then log in at `https://erp.ribdigihouse.com` and change the password.  
 Do **not** leave `ALLOW_PLATFORM_OWNER_BOOTSTRAP=true` in Dokploy env.
 
 ---

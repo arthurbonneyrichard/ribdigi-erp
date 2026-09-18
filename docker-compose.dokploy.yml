@@ -1,25 +1,28 @@
-# Ribdigi ERP — Docker Compose for Dokploy
+# Ribdigi ERP — standalone production Compose for Dokploy
 #
-# Use this file INSIDE Dokploy (Compose service), NOT docker-compose.prod.yml.
-# Dokploy already runs Traefik on ports 80/443 — do not add Caddy here.
+# ONE file. No overlay. No second -f argument.
 #
-# Dokploy UI settings:
-#   Compose path:  docker-compose.dokploy.yml
-#   Compose type:  docker-compose
-#   Environment:   paste contents of ops/vps/env.production.example (edited)
+# Dokploy settings:
+#   Compose Path : docker-compose.dokploy.yml
+#   Compose Type : docker-compose
+#   Environment  : paste .env.production.example (edited) into Dokploy → Environment
 #
-# Domains (add in Dokploy → Domains, then Redeploy):
-#   1) Host: erp.example.com  Path: /api  Service: backend   Port: 8000  HTTPS + Let's Encrypt
-#      Strip Path: OFF  (FastAPI routes are /api/v1/...)
-#   2) Host: erp.example.com  Path: /     Service: frontend  Port: 3000  HTTPS + Let's Encrypt
+# Domains (Dokploy → Domains → Redeploy after changes):
+#   Host: erp.ribdigihouse.com  Path: /api  Service: backend   Port: 8000
+#     HTTPS + Let's Encrypt, Strip Path OFF (API routes are /api/v1/...)
+#   Host: erp.ribdigihouse.com  Path: /     Service: frontend  Port: 3000
+#     HTTPS + Let's Encrypt
 #
-# Guide: ops/vps/DOKPLOY_FIRST_TIME.md
+# Traefik is provided by Dokploy — do NOT add Caddy/nginx/Traefik here.
+# Postgres / Redis / RabbitMQ / MinIO publish NO host ports.
 
 name: ribdigi
 
 networks:
+  # External network created by Dokploy; Traefik reaches frontend/backend here.
   dokploy-network:
     external: true
+  # Private data plane (no host ports). Not internal:true so Celery/backend keep egress.
   ribdigi_internal:
     driver: bridge
 
@@ -32,22 +35,38 @@ volumes:
   media_data:
 
 services:
+  # ---------------------------------------------------------------------------
+  # Edge (routable via Dokploy Traefik only — no host port bindings)
+  # ---------------------------------------------------------------------------
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       target: runner
       args:
+        # Baked at image build time — must match public HTTPS API URL
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL}
     restart: unless-stopped
     environment:
       NODE_ENV: production
       PORT: "3000"
       HOSTNAME: 0.0.0.0
-    # No host ports — Traefik reaches this via dokploy-network
+    expose:
+      - "3000"
     networks:
       - dokploy-network
       - ribdigi_internal
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - node -e "require('http').get('http://127.0.0.1:3000/',(r)=>process.exit(r.statusCode&&r.statusCode<500?0:1)).on('error',()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
     logging:
       driver: json-file
       options:
@@ -69,6 +88,8 @@ services:
     volumes:
       - backup_data:/data/backups
       - media_data:/data/media
+    expose:
+      - "8000"
     networks:
       - dokploy-network
       - ribdigi_internal
@@ -85,12 +106,21 @@ services:
       - sh
       - -c
       - exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers $${UVICORN_WORKERS:-2} --proxy-headers --forwarded-allow-ips='*' --log-level $${LOG_LEVEL:-info}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 45s
     logging:
       driver: json-file
       options:
         max-size: "10m"
         max-file: "5"
 
+  # ---------------------------------------------------------------------------
+  # One-shot schema migration (Alembic). Refuses create_all in production.
+  # ---------------------------------------------------------------------------
   migrate:
     build:
       context: ./backend
@@ -116,6 +146,9 @@ services:
         max-size: "5m"
         max-file: "3"
 
+  # ---------------------------------------------------------------------------
+  # Background jobs (RabbitMQ broker, Redis results — see app.config)
+  # ---------------------------------------------------------------------------
   celery_worker:
     build:
       context: ./backend
@@ -187,12 +220,15 @@ services:
         max-size: "5m"
         max-file: "3"
 
+  # ---------------------------------------------------------------------------
+  # Data plane — NO ports: published to the host / public internet
+  # ---------------------------------------------------------------------------
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-ribdigi}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:-ribdigi_erp}
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -201,7 +237,7 @@ services:
     healthcheck:
       test:
         - CMD-SHELL
-        - pg_isready -U ${POSTGRES_USER:-ribdigi} -d ${POSTGRES_DB:-ribdigi_erp}
+        - pg_isready -U $${POSTGRES_USER:-ribdigi} -d $${POSTGRES_DB:-ribdigi_erp}
       interval: 10s
       timeout: 5s
       retries: 10
@@ -237,11 +273,12 @@ services:
         max-file: "3"
 
   rabbitmq:
+    # Management plugin stays internal-only (15672 is NOT published)
     image: rabbitmq:3.13-management-alpine
     restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-ribdigi}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:?set RABBITMQ_DEFAULT_PASS in .env}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:?set RABBITMQ_DEFAULT_PASS}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
@@ -263,12 +300,13 @@ services:
     restart: unless-stopped
     command: server /data --console-address :9001
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in .env}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD}
     volumes:
       - minio_data:/data
     networks:
       - ribdigi_internal
+    # MinIO server image may lack curl/wget; readiness is covered by minio-init retries.
     logging:
       driver: json-file
       options:
