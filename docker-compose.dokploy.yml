@@ -91,7 +91,7 @@ services:
       dockerfile: Dockerfile
       args:
         # Bump to force Dokploy/BuildKit to rebuild app+alembic layers
-        RIBDIGI_BUILD_ID: "20260918-production-erp-v4"
+        RIBDIGI_BUILD_ID: "20260918-production-erp-v5"
     restart: unless-stopped
     env_file: .env
     environment:
@@ -101,7 +101,7 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       UVICORN_WORKERS: ${UVICORN_WORKERS:-2}
       RIBDIGI_RELEASE_CHANNEL: production
-      RIBDIGI_BUILD_ID: "20260918-production-erp-v4"
+      RIBDIGI_BUILD_ID: "20260918-production-erp-v5"
     volumes:
       - backup_data:/data/backups
       - media_data:/data/media
@@ -147,14 +147,14 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       args:
-        RIBDIGI_BUILD_ID: "20260918-production-erp-v4"
+        RIBDIGI_BUILD_ID: "20260918-production-erp-v5"
     env_file: .env
     environment:
       PYTHONPATH: /app
       APP_ENV: ${APP_ENV:-production}
       DEBUG: ${DEBUG:-false}
       RIBDIGI_RELEASE_CHANNEL: production
-      RIBDIGI_BUILD_ID: "20260918-production-erp-v4"
+      RIBDIGI_BUILD_ID: "20260918-production-erp-v5"
     volumes:
       - backup_data:/data/backups
       - media_data:/data/media
@@ -200,7 +200,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       args:
-        RIBDIGI_BUILD_ID: "20260918-production-erp-v4"
+        RIBDIGI_BUILD_ID: "20260918-production-erp-v5"
     restart: unless-stopped
     env_file: .env
     environment:
@@ -209,7 +209,7 @@ services:
       DEBUG: ${DEBUG:-false}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       RIBDIGI_RELEASE_CHANNEL: production
-      RIBDIGI_BUILD_ID: "20260918-production-erp-v4"
+      RIBDIGI_BUILD_ID: "20260918-production-erp-v5"
     volumes:
       - backup_data:/data/backups
       - media_data:/data/media
@@ -242,7 +242,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       args:
-        RIBDIGI_BUILD_ID: "20260918-production-erp-v4"
+        RIBDIGI_BUILD_ID: "20260918-production-erp-v5"
     restart: unless-stopped
     env_file: .env
     environment:
@@ -251,7 +251,7 @@ services:
       DEBUG: ${DEBUG:-false}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       RIBDIGI_RELEASE_CHANNEL: production
-      RIBDIGI_BUILD_ID: "20260918-production-erp-v4"
+      RIBDIGI_BUILD_ID: "20260918-production-erp-v5"
     networks:
       - ribdigi_internal
     depends_on:

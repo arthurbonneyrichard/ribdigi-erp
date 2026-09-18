@@ -133,7 +133,7 @@ Details: https://docs.dokploy.com/docs/core/installation
    pulling commits that change `backend/alembic/` or `RIBDIGI_BUILD_ID`, use
    **Redeploy** with image rebuild (no cache) so `migrate` logs show
    `bootstrap: 0106 idempotent markers OK` and
-   `RIBDIGI_BUILD_ID=20260918-production-erp-v4`. A stale image will exit
+   `RIBDIGI_BUILD_ID=20260918-production-erp-v5`. A stale image will exit
    early with a clear bootstrap error instead of `DuplicateColumn`.
 
 ---

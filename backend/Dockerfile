@@ -31,16 +31,17 @@ COPY alembic ./alembic
 COPY app ./app
 COPY scripts ./scripts
 
-# Fail the image build if the production-critical idempotent marker is missing.
-RUN grep -q 'RIBDIGI_0106_IF_NOT_EXISTS_V3' \
-      /app/alembic/versions/20260917_0106_transaction_client_request_id.py \
-    && grep -q 'ADD COLUMN IF NOT EXISTS client_request_id' \
-      /app/alembic/versions/20260917_0106_transaction_client_request_id.py \
-    && ! grep -E 'op\.add_column\(|batch\.add_column\(' \
-      /app/alembic/versions/20260917_0106_transaction_client_request_id.py \
-    && ! grep -F 'ADD COLUMN client_request_id' \
-      /app/alembic/versions/20260917_0106_transaction_client_request_id.py
-
+# Fail the image build if the production-critical idempotent marker is missing
+# in BOTH the alembic tree and the runtime overlay used by entrypoint.
+RUN MIG=alembic/versions/20260917_0106_transaction_client_request_id.py \
+    && OVL=scripts/migrations_overlay/20260917_0106_transaction_client_request_id.py \
+    && test -f "$MIG" && test -f "$OVL" \
+    && grep -q 'RIBDIGI_0106_IF_NOT_EXISTS_V3' "$MIG" \
+    && grep -q 'ADD COLUMN IF NOT EXISTS client_request_id' "$MIG" \
+    && ! grep -E 'op\.add_column\(|batch\.add_column\(' "$MIG" \
+    && ! grep -F 'ADD COLUMN client_request_id' "$MIG" \
+    && cmp -s "$MIG" "$OVL" \
+    && chmod +x scripts/docker-entrypoint.sh
 
 RUN useradd --create-home --uid 10001 --shell /usr/sbin/nologin appuser \
     && mkdir -p /data/media /data/backups \
@@ -49,6 +50,10 @@ RUN useradd --create-home --uid 10001 --shell /usr/sbin/nologin appuser \
 USER appuser
 
 EXPOSE 8000
+
+# Always validate/install idempotent 0106 before any service command
+# (survives Dokploy UI command overrides that skip compose `command:`).
+ENTRYPOINT ["/app/scripts/docker-entrypoint.sh"]
 
 # Shallow liveness — deep readiness is /api/v1/health/ready
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
