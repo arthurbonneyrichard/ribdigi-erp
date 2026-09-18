@@ -1,0 +1,39 @@
+# Caddy reverse proxy for Ribdigi ERP (Docker Compose production).
+# Upstream hostnames are Compose service names on network ribdigi_edge.
+#
+# Replace erp.example.com with your public hostname (must match .env CORS / FRONTEND_URL).
+# Let's Encrypt certificates are obtained automatically when ports 80/443 are reachable.
+
+{
+	email REPLACE_ME_LETSENCRYPT_EMAIL@example.com
+}
+
+erp.example.com {
+	encode gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# FastAPI (all routes under /api/...)
+	handle /api/* {
+		reverse_proxy backend:8000 {
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Forwarded-Host {host}
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
+	# Next.js UI
+	handle {
+		reverse_proxy frontend:3000 {
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Forwarded-Host {host}
+			header_up X-Real-IP {remote_host}
+		}
+	}
+}
