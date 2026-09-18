@@ -79,7 +79,7 @@ services:
       dockerfile: Dockerfile
       args:
         # Bump to force Dokploy/BuildKit to rebuild app+alembic layers
-        RIBDIGI_BUILD_ID: "20260918-0106-if-not-exists-v2"
+        RIBDIGI_BUILD_ID: "20260918-0106-if-not-exists-v3"
     restart: unless-stopped
     env_file: .env
     environment:
@@ -133,7 +133,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       args:
-        RIBDIGI_BUILD_ID: "20260918-0106-if-not-exists-v2"
+        RIBDIGI_BUILD_ID: "20260918-0106-if-not-exists-v3"
     env_file: .env
     environment:
       PYTHONPATH: /app
@@ -147,8 +147,27 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    # Fingerprint + alembic upgrade (bootstrap refuses stale 0106 images)
-    command: ["python", "scripts/bootstrap.py"]
+    # Prove the image embeds IF NOT EXISTS 0106, then run Alembic.
+    command:
+      - sh
+      - -c
+      - |
+        set -eu
+        echo "migrate: build-id=$$(cat /app/.build-id)"
+        MIG=/app/alembic/versions/20260917_0106_transaction_client_request_id.py
+        test -f "$$MIG"
+        grep -F 'RIBDIGI_0106_IF_NOT_EXISTS_V3' "$$MIG"
+        grep -F 'ADD COLUMN IF NOT EXISTS client_request_id' "$$MIG"
+        if grep -E 'op\.add_column\(|batch\.add_column\(' "$$MIG"; then
+          echo "migrate: FATAL stale 0106 still has op/batch.add_column(" >&2
+          exit 3
+        fi
+        if grep -F 'ADD COLUMN client_request_id' "$$MIG"; then
+          echo "migrate: FATAL stale 0106 still has unconditional ADD COLUMN" >&2
+          exit 4
+        fi
+        echo "migrate: 0106 on-disk proof OK"
+        exec python scripts/bootstrap.py
     restart: "on-failure"
     logging:
       driver: json-file
@@ -164,7 +183,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       args:
-        RIBDIGI_BUILD_ID: "20260918-0106-if-not-exists-v2"
+        RIBDIGI_BUILD_ID: "20260918-0106-if-not-exists-v3"
     restart: unless-stopped
     env_file: .env
     environment:
@@ -204,7 +223,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       args:
-        RIBDIGI_BUILD_ID: "20260918-0106-if-not-exists-v2"
+        RIBDIGI_BUILD_ID: "20260918-0106-if-not-exists-v3"
     restart: unless-stopped
     env_file: .env
     environment:

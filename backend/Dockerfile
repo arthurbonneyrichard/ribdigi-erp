@@ -32,10 +32,15 @@ COPY app ./app
 COPY scripts ./scripts
 
 # Fail the image build if the production-critical idempotent marker is missing.
-RUN grep -q 'RIBDIGI_0106_IF_NOT_EXISTS_V2' \
+RUN grep -q 'RIBDIGI_0106_IF_NOT_EXISTS_V3' \
       /app/alembic/versions/20260917_0106_transaction_client_request_id.py \
     && grep -q 'ADD COLUMN IF NOT EXISTS client_request_id' \
+      /app/alembic/versions/20260917_0106_transaction_client_request_id.py \
+    && ! grep -E 'op\.add_column\(|batch\.add_column\(' \
+      /app/alembic/versions/20260917_0106_transaction_client_request_id.py \
+    && ! grep -F 'ADD COLUMN client_request_id' \
       /app/alembic/versions/20260917_0106_transaction_client_request_id.py
+
 
 RUN useradd --create-home --uid 10001 --shell /usr/sbin/nologin appuser \
     && mkdir -p /data/media /data/backups \

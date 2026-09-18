@@ -17,8 +17,13 @@ _MIG_0106 = Path(__file__).resolve().parents[1] / "alembic" / "versions" / (
 )
 _BUILD_ID = Path("/app/.build-id")
 _REQUIRED_MARKERS = (
-    "RIBDIGI_0106_IF_NOT_EXISTS_V2",
+    "RIBDIGI_0106_IF_NOT_EXISTS_V3",
     "ADD COLUMN IF NOT EXISTS client_request_id",
+)
+_FORBIDDEN_SNIPPETS = (
+    "op.add_column(",
+    "batch.add_column(",
+    "ADD COLUMN client_request_id",  # unconditional; IF NOT EXISTS form is required
 )
 
 
@@ -40,11 +45,19 @@ def _print_migration_fingerprint() -> None:
         )
         print(
             "bootstrap: Rebuild the backend/migrate image without cache "
-            "(Dokploy → Redeploy with rebuild) so Alembic ships IF NOT EXISTS.",
+            "so Alembic ships IF NOT EXISTS (not op.add_column).",
             file=sys.stderr,
         )
         sys.exit(3)
-    print("bootstrap: 0106 idempotent markers OK")
+    forbidden = [s for s in _FORBIDDEN_SNIPPETS if s in text]
+    if forbidden:
+        print(
+            "bootstrap: ERROR 0106 still contains forbidden APIs that emit "
+            "plain ADD COLUMN: " + ", ".join(forbidden),
+            file=sys.stderr,
+        )
+        sys.exit(4)
+    print("bootstrap: 0106 idempotent markers OK (no op.add_column/batch.add_column)")
 
 
 def run_alembic() -> bool:

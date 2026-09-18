@@ -4,14 +4,13 @@ Revision ID: 20260917_0106
 Revises: 20260917_0105
 Create Date: 2026-09-17
 
-Idempotent marker: RIBDIGI_0106_IF_NOT_EXISTS_V2
+Idempotent marker: RIBDIGI_0106_IF_NOT_EXISTS_V3
 
-Production-safe:
-- Never emit plain ``ALTER TABLE ... ADD COLUMN client_request_id`` without
-  ``IF NOT EXISTS`` on PostgreSQL (avoids DuplicateColumn when the column
-  already exists from an earlier production lineage).
-- Preserve compatible existing VARCHAR/TEXT columns (including longer widths).
-- Raise on incompatible existing types instead of silently accepting them.
+PostgreSQL production path never uses Alembic column-add helpers that emit an
+unconditional ADD COLUMN (those raise DuplicateColumn when production already
+has the column, often as a longer VARCHAR from an earlier lineage).
+
+Adds only via: ADD COLUMN IF NOT EXISTS
 """
 
 from __future__ import annotations
@@ -25,11 +24,10 @@ branch_labels = None
 depends_on = None
 
 _EXPECTED_MIN_LENGTH = 64
-_IDEM_MARKER = "RIBDIGI_0106_IF_NOT_EXISTS_V2"
+_IDEM_MARKER = "RIBDIGI_0106_IF_NOT_EXISTS_V3"
 
 
 def _pg_column_info(bind, table: str, column: str) -> dict | None:
-    """Look up column across all non-system schemas (search_path safe)."""
     row = bind.execute(
         sa.text(
             """
@@ -128,25 +126,75 @@ def _assert_compatible_client_request_id(info: dict) -> None:
         )
 
 
-def _upgrade_postgresql(bind) -> None:
-    print(f"alembic 20260917_0106: {_IDEM_MARKER} dialect={bind.dialect.name}")
-    info = _pg_column_info(bind, "transactions", "client_request_id")
-    if info is None:
-        # IF NOT EXISTS is mandatory — never use op.add_column on PostgreSQL.
-        bind.execute(
-            sa.text(
-                "ALTER TABLE transactions "
-                "ADD COLUMN IF NOT EXISTS client_request_id VARCHAR(64)"
+def upgrade() -> None:
+    bind = op.get_bind()
+    dialect = (bind.dialect.name or "").lower()
+    inspector = sa.inspect(bind)
+    existing_columns = {column["name"] for column in inspector.get_columns("transactions")}
+
+    print(
+        f"alembic 20260917_0106: {_IDEM_MARKER} dialect={dialect} "
+        f"inspector_has_client_request_id={('client_request_id' in existing_columns)}"
+    )
+
+    # All dialects: IF NOT EXISTS only (never unconditional ADD COLUMN).
+    if "client_request_id" in existing_columns:
+        if dialect != "sqlite":
+            info = _pg_column_info(bind, "transactions", "client_request_id")
+            if info is not None:
+                _assert_compatible_client_request_id(info)
+            print(
+                "alembic 20260917_0106: preserving existing client_request_id "
+                f"info={info if dialect != 'sqlite' else 'sqlite-inspector'}"
             )
-        )
-        print("alembic 20260917_0106: added client_request_id (or already present)")
+        else:
+            print("alembic 20260917_0106: preserving existing client_request_id (sqlite)")
     else:
-        _assert_compatible_client_request_id(info)
-        print(
-            "alembic 20260917_0106: preserving existing client_request_id "
-            f"type={info.get('data_type')} len={info.get('character_maximum_length')} "
-            f"schema={info.get('table_schema')}"
+        print("alembic 20260917_0106: column absent — ADD COLUMN IF NOT EXISTS")
+
+    bind.execute(
+        sa.text(
+            "ALTER TABLE transactions "
+            "ADD COLUMN IF NOT EXISTS client_request_id VARCHAR(64)"
         )
+    )
+
+    if dialect == "sqlite":
+        indexes = {
+            ix["name"]
+            for ix in (inspector.get_indexes("transactions") or [])
+            if ix.get("name")
+        }
+        uniques = {
+            uq["name"]
+            for uq in (inspector.get_unique_constraints("transactions") or [])
+            if uq.get("name")
+        }
+        if "ix_transactions_client_request_id" not in indexes:
+            op.create_index(
+                "ix_transactions_client_request_id",
+                "transactions",
+                ["client_request_id"],
+            )
+        if "uq_transactions_tenant_client_request" not in indexes | uniques:
+            already = any(
+                set(uq.get("column_names") or []) == {"tenant_id", "client_request_id"}
+                for uq in (inspector.get_unique_constraints("transactions") or [])
+            )
+            if not already:
+                op.create_unique_constraint(
+                    "uq_transactions_tenant_client_request",
+                    "transactions",
+                    ["tenant_id", "client_request_id"],
+                )
+        return
+
+    info_after = _pg_column_info(bind, "transactions", "client_request_id")
+    if info_after is None:
+        raise RuntimeError(
+            "transactions.client_request_id missing after ADD COLUMN IF NOT EXISTS"
+        )
+    _assert_compatible_client_request_id(info_after)
 
     if not _pg_index_exists(bind, "ix_transactions_client_request_id"):
         bind.execute(
@@ -162,7 +210,9 @@ def _upgrade_postgresql(bind) -> None:
         and not _pg_constraint_exists(bind, "uq_transactions_tenant_client_request_id")
         and not _pg_index_exists(bind, "uq_transactions_tenant_client_request_id")
         and not _pg_index_exists(bind, "uq_transactions_tenant_company_client_request_id")
-        and not _pg_has_unique_on_cols(bind, "transactions", ["tenant_id", "client_request_id"])
+        and not _pg_has_unique_on_cols(
+            bind, "transactions", ["tenant_id", "client_request_id"]
+        )
     ):
         bind.execute(
             sa.text(
@@ -175,89 +225,34 @@ def _upgrade_postgresql(bind) -> None:
         )
 
 
-def _upgrade_other(bind) -> None:
-    """Non-Postgres (local SQLite tests): inspect-then-create; never for production."""
-    insp = sa.inspect(bind)
-    cols = {c["name"] for c in insp.get_columns("transactions")}
-    indexes = {ix["name"] for ix in (insp.get_indexes("transactions") or []) if ix.get("name")}
-    uniques = {
-        uq["name"] for uq in (insp.get_unique_constraints("transactions") or []) if uq.get("name")
-    }
-
-    if "client_request_id" not in cols:
-        # SQLite has no reliable IF NOT EXISTS for ADD COLUMN on older versions;
-        # production always uses PostgreSQL and never reaches this branch.
-        with op.batch_alter_table("transactions") as batch:
-            batch.add_column(sa.Column("client_request_id", sa.String(length=64), nullable=True))
-    else:
-        col = next(c for c in insp.get_columns("transactions") if c["name"] == "client_request_id")
-        col_type = col.get("type")
-        if col_type is not None and not isinstance(col_type, (sa.String, sa.Text)):
-            raise RuntimeError(
-                "transactions.client_request_id already exists with incompatible type "
-                f"{col_type!r}"
-            )
-
-    if "ix_transactions_client_request_id" not in indexes:
-        op.create_index(
-            "ix_transactions_client_request_id",
-            "transactions",
-            ["client_request_id"],
-        )
-
-    if "uq_transactions_tenant_client_request" not in indexes | uniques:
-        already = False
-        for uq in insp.get_unique_constraints("transactions") or []:
-            if set(uq.get("column_names") or []) == {"tenant_id", "client_request_id"}:
-                already = True
-                break
-        for ix in insp.get_indexes("transactions") or []:
-            if ix.get("unique") and set(ix.get("column_names") or []) == {
-                "tenant_id",
-                "client_request_id",
-            }:
-                already = True
-                break
-        if not already:
-            op.create_unique_constraint(
-                "uq_transactions_tenant_client_request",
-                "transactions",
-                ["tenant_id", "client_request_id"],
-            )
-
-
-def upgrade() -> None:
-    bind = op.get_bind()
-    dialect = (bind.dialect.name or "").lower()
-    # Treat any postgres* dialect as PostgreSQL (never op.add_column).
-    if dialect.startswith("postgres"):
-        _upgrade_postgresql(bind)
-    else:
-        _upgrade_other(bind)
-
-
 def downgrade() -> None:
     bind = op.get_bind()
     dialect = (bind.dialect.name or "").lower()
-    if dialect.startswith("postgres"):
+    if dialect != "sqlite":
         bind.execute(sa.text("DROP INDEX IF EXISTS uq_transactions_tenant_client_request"))
         bind.execute(sa.text("DROP INDEX IF EXISTS ix_transactions_client_request_id"))
         info = _pg_column_info(bind, "transactions", "client_request_id")
         if info is not None:
             max_len = info.get("character_maximum_length")
-            # Do not drop longer legacy production columns on downgrade.
             if max_len is None or int(max_len) == _EXPECTED_MIN_LENGTH:
                 bind.execute(
-                    sa.text("ALTER TABLE transactions DROP COLUMN IF EXISTS client_request_id")
+                    sa.text(
+                        "ALTER TABLE transactions "
+                        "DROP COLUMN IF EXISTS client_request_id"
+                    )
                 )
         return
 
-    insp = sa.inspect(bind)
-    indexes = {ix["name"] for ix in (insp.get_indexes("transactions") or []) if ix.get("name")}
-    uniques = {
-        uq["name"] for uq in (insp.get_unique_constraints("transactions") or []) if uq.get("name")
+    inspector = sa.inspect(bind)
+    indexes = {
+        ix["name"] for ix in (inspector.get_indexes("transactions") or []) if ix.get("name")
     }
-    cols = {c["name"] for c in insp.get_columns("transactions")}
+    uniques = {
+        uq["name"]
+        for uq in (inspector.get_unique_constraints("transactions") or [])
+        if uq.get("name")
+    }
+    cols = {c["name"] for c in inspector.get_columns("transactions")}
     if "uq_transactions_tenant_client_request" in indexes | uniques:
         op.drop_constraint(
             "uq_transactions_tenant_client_request",
