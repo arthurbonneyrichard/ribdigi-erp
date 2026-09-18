@@ -85,6 +85,8 @@ export default function Page() {
     store_limit: number;
     remaining: number | null;
     can_create_store?: boolean;
+    store_limit_unlimited?: boolean;
+    tenant?: { over_entitlement?: boolean; over_allocated?: boolean };
   } | null>(null);
   const [branches, setBranches] = useState<{ id: string; code: string; name: string }[]>([]);
   const [users, setUsers] = useState<{ id: string; full_name?: string; email?: string }[]>([]);
@@ -508,17 +510,29 @@ export default function Page() {
         Stores / Warehouse).
       </p>
       {storeEntitlement && (
-        <p>
-          <strong>
-            {storeEntitlement.used} of {storeEntitlement.store_limit} Stores Used
-          </strong>
-          {storeEntitlement.remaining != null ? (
-            <span className="muted"> · {storeEntitlement.remaining} Stores Remaining</span>
+        <div style={{ marginBottom: 12 }}>
+          <p>
+            <strong>
+              {storeEntitlement.used} of{' '}
+              {storeEntitlement.store_limit_unlimited
+                ? 'Unlimited'
+                : storeEntitlement.store_limit}{' '}
+              Stores Used
+            </strong>
+            {storeEntitlement.remaining != null ? (
+              <span className="muted"> · {storeEntitlement.remaining} Stores Remaining</span>
+            ) : null}
+            {storeEntitlement.can_create_store === false ? (
+              <span className="error"> · Store limit reached</span>
+            ) : null}
+          </p>
+          {storeEntitlement.tenant?.over_entitlement ? (
+            <p className="error">
+              Tenant is over entitlement. Existing stores are preserved; new creates and
+              reactivations are blocked until capacity is resolved.
+            </p>
           ) : null}
-          {storeEntitlement.can_create_store === false ? (
-            <span className="error"> · Store limit reached</span>
-          ) : null}
-        </p>
+        </div>
       )}
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
@@ -579,7 +593,14 @@ export default function Page() {
               onChange={(e) => setHoursNote(e.target.value)}
               placeholder="Hours note (optional)"
             />
-            <button onClick={createStore}>Create store</button>
+            <button
+              onClick={createStore}
+              disabled={storeEntitlement?.can_create_store === false}
+            >
+              {storeEntitlement?.can_create_store === false
+                ? 'Store limit reached'
+                : 'Create store'}
+            </button>
           </div>
         </div>
         <div className="card">

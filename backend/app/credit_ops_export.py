@@ -13,6 +13,7 @@ from app import credit as credit_svc
 from app import models as m
 from app.rbac import apply_created_by_scope
 from app.session_passkey_doc_export import _cell
+from app.workspace import company_id_match
 
 CUSTOMER_PAYMENT_EXPORT_COLUMNS = [
     "payment_number",
@@ -84,6 +85,23 @@ PAYMENT_SCHEDULE_EXPORT_COLUMNS = [
     "due_date",
     "status",
     "days_until_due",
+    "is_overdue",
+    "schedule_bucket",
+    "early_discount_eligible",
+    "early_discount_amount",
+    "cash_to_settle",
+]
+
+COLLECTION_SCHEDULE_EXPORT_COLUMNS = [
+    "customer_id",
+    "document_type",
+    "document_id",
+    "document_number",
+    "amount",
+    "due_date",
+    "status",
+    "days_until_due",
+    "days_overdue",
     "is_overdue",
     "schedule_bucket",
     "early_discount_eligible",
@@ -182,8 +200,9 @@ async def list_customer_payments(
         .limit(min(max(limit, 1), 500))
     )
     company_id = claims.get("company_id")
-    if company_id:
-        stmt = stmt.where(m.CustomerPayment.company_id == company_id)
+    match = company_id_match(m.CustomerPayment.company_id, company_id)
+    if match is not None:
+        stmt = stmt.where(match)
     if customer_id:
         stmt = stmt.where(m.CustomerPayment.customer_id == customer_id.strip())
     if method:
@@ -209,8 +228,9 @@ async def list_supplier_payments(
         .limit(min(max(limit, 1), 500))
     )
     company_id = claims.get("company_id")
-    if company_id:
-        stmt = stmt.where(m.SupplierPayment.company_id == company_id)
+    match = company_id_match(m.SupplierPayment.company_id, company_id)
+    if match is not None:
+        stmt = stmt.where(match)
     if supplier_id:
         stmt = stmt.where(m.SupplierPayment.supplier_id == supplier_id.strip())
     if method:
@@ -401,6 +421,52 @@ async def export_supplier_payment_schedule_csv(
                 "due_date": _cell(item.get("due_date")),
                 "status": _cell(item.get("status")),
                 "days_until_due": _cell(item.get("days_until_due")),
+                "is_overdue": _cell(item.get("is_overdue")),
+                "schedule_bucket": _cell(item.get("schedule_bucket")),
+                "early_discount_eligible": _cell(bool(early.get("eligible"))),
+                "early_discount_amount": _cell(early.get("discount_amount")),
+                "cash_to_settle": _cell(early.get("cash_to_settle")),
+            }
+        )
+    return buf.getvalue()
+
+
+async def export_customer_collection_schedule_csv(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    customer_id: str,
+    schedule_bucket: str | None = None,
+    company_id: str | None = None,
+) -> str:
+    """Open AR collection schedule CSV with optional bucket filter."""
+    bucket = (schedule_bucket or "").strip().lower() or None
+    if bucket and bucket not in SCHEDULE_BUCKETS:
+        raise HTTPException(
+            status_code=400,
+            detail="schedule_bucket must be overdue, due_today, upcoming, or unscheduled",
+        )
+    schedule = await credit_svc.customer_collection_schedule(
+        db, tenant_id, customer_id, company_id=company_id
+    )
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=COLLECTION_SCHEDULE_EXPORT_COLUMNS)
+    writer.writeheader()
+    for item in schedule.get("items") or []:
+        if bucket and (item.get("schedule_bucket") or "") != bucket:
+            continue
+        early = item.get("early_discount") or {}
+        writer.writerow(
+            {
+                "customer_id": _cell(customer_id),
+                "document_type": _cell(item.get("document_type") or "sales_invoice"),
+                "document_id": _cell(item.get("sales_invoice_id")),
+                "document_number": _cell(item.get("invoice_number")),
+                "amount": _cell(item.get("amount")),
+                "due_date": _cell(item.get("due_date")),
+                "status": _cell(item.get("status")),
+                "days_until_due": _cell(item.get("days_until_due")),
+                "days_overdue": _cell(item.get("days_overdue")),
                 "is_overdue": _cell(item.get("is_overdue")),
                 "schedule_bucket": _cell(item.get("schedule_bucket")),
                 "early_discount_eligible": _cell(bool(early.get("eligible"))),

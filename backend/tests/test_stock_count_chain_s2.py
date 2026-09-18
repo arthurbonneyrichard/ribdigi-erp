@@ -173,6 +173,8 @@ def test_inventory_ui_surfaces_stock_counts():
     assert "/inventory/stock-counts" in page
     assert "variance-report" in page
     assert "complete" in page.lower()
+    assert "/cancel" in page
+    assert "Add selected product" in page
 
 
 def test_stock_count_s2_docs():

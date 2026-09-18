@@ -31,3 +31,7 @@ Stage 1627 requires CONTINUE/NEXT with a distinct product outline after this fre
 ## Non-claims
 
 Packaging ≠ live Completes for Offline, Transfer Shodoyaglaze Gate, Transfer Shodoyaglaze Gate honesty, go-live, or attestation.
+
+## Amendment (2026-08-14) — CONTINUE/NEXT
+
+Stage 1627 opened under **ADR-3261** after CONTINUE/NEXT (Tenant MVP Transfer Inuyamaglaze Gate Honesty Pack Remaining-Gate Index Fidelity) and is frozen under **ADR-3262**. Stage 1626 feature scope remains frozen.

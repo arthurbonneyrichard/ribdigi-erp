@@ -218,10 +218,14 @@ export default function Page() {
   }
 
   async function loadPaymentSchedule() {
-    if (!partyId || kind !== 'payable') return;
+    if (!partyId) return;
     setError('');
     try {
-      const r = await api(`/suppliers/${partyId}/payment-schedule`);
+      const path =
+        kind === 'receivable'
+          ? `/customers/${partyId}/collection-schedule`
+          : `/suppliers/${partyId}/payment-schedule`;
+      const r = await api(path);
       clearDetailPanels();
       setPaymentSchedule(r.data);
     } catch (err: any) {
@@ -388,8 +392,8 @@ export default function Page() {
         {kind === 'receivable' ? 'Accounts Receivable' : 'Accounts Payable'}
       </h1>
       <p className="muted">
-        Credit &amp; aging — outstanding bills, statements, supplier payment schedule, payments, and
-        early-payment discounts (Stage 22 engine; Stage 232 Accounting surface)
+        Credit &amp; aging — outstanding bills, statements, AR collection schedule, supplier payment
+        schedule, payments, and early-payment discounts (Stage 22 engine; Stage 232 Accounting surface)
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: '#047857' }}>{message}</p>}
@@ -546,11 +550,9 @@ export default function Page() {
               Outstanding
             </button>
             <button onClick={loadStatement}>Statement</button>
-            {kind === 'payable' && (
-              <button type="button" onClick={loadPaymentSchedule}>
-                Payment schedule
-              </button>
-            )}
+            <button type="button" onClick={loadPaymentSchedule}>
+              {kind === 'receivable' ? 'Collection schedule' : 'Payment schedule'}
+            </button>
             <select
               value={allocateKey}
               onChange={(e) => setAllocateKey(e.target.value)}
@@ -895,11 +897,13 @@ export default function Page() {
 
       <div className="card" style={{ marginTop: 16 }} id="payment-schedule">
         <h3>
-          Payment schedule
-          {kind === 'payable' && paymentSchedule ? (
+          {kind === 'receivable' ? 'Collection schedule' : 'Payment schedule'}
+          {paymentSchedule ? (
             <>
               {' '}
-              — {paymentSchedule.supplier_name}{' '}
+              — {kind === 'receivable'
+                ? paymentSchedule.customer_name
+                : paymentSchedule.supplier_name}{' '}
               <span className="muted">
                 (as of {paymentSchedule.as_of} · due {paymentSchedule.total_due} · overdue{' '}
                 {paymentSchedule.overdue_total})
@@ -907,13 +911,21 @@ export default function Page() {
             </>
           ) : null}
         </h3>
-        {kind !== 'payable' ? (
-          <p className="muted">Switch to Payables to load a supplier payment schedule.</p>
-        ) : paymentSchedule ? (
+        {paymentSchedule ? (
           <>
             <p className="muted" style={{ marginBottom: 8 }}>
-              Schedule CSV via <code>GET /suppliers/&#123;id&#125;/payment-schedule/export</code>{' '}
-              (Stage 141 P1; optional <code>schedule_bucket=</code>).
+              {kind === 'receivable' ? (
+                <>
+                  Schedule CSV via{' '}
+                  <code>GET /customers/&#123;id&#125;/collection-schedule/export</code>{' '}
+                  (optional <code>schedule_bucket=</code>).
+                </>
+              ) : (
+                <>
+                  Schedule CSV via <code>GET /suppliers/&#123;id&#125;/payment-schedule/export</code>{' '}
+                  (Stage 141 P1; optional <code>schedule_bucket=</code>).
+                </>
+              )}
             </p>
             <button
               type="button"
@@ -921,9 +933,15 @@ export default function Page() {
               disabled={!partyId}
               onClick={() =>
                 downloadCreditExport(
-                  `/suppliers/${partyId}/payment-schedule/export`,
-                  'supplier_payment_schedule_export.csv',
-                  'Payment schedule CSV downloaded (Stage 141 P1)',
+                  kind === 'receivable'
+                    ? `/customers/${partyId}/collection-schedule/export`
+                    : `/suppliers/${partyId}/payment-schedule/export`,
+                  kind === 'receivable'
+                    ? 'customer_collection_schedule_export.csv'
+                    : 'supplier_payment_schedule_export.csv',
+                  kind === 'receivable'
+                    ? 'Collection schedule CSV downloaded'
+                    : 'Payment schedule CSV downloaded (Stage 141 P1)',
                 )
               }
             >
@@ -941,11 +959,11 @@ export default function Page() {
             </thead>
             <tbody>
               {(paymentSchedule.items || []).map((item: any, idx: number) => (
-                <tr key={`${item.document_type}-${item.purchase_invoice_id || item.purchase_order_id}-${idx}`}>
+                <tr
+                  key={`${item.document_type}-${item.sales_invoice_id || item.purchase_invoice_id || item.purchase_order_id}-${idx}`}
+                >
                   <td>
-                    {item.document_type === 'purchase_invoice'
-                      ? item.invoice_number
-                      : item.po_number}{' '}
+                    {item.invoice_number || item.po_number}{' '}
                     <span className="muted">({item.document_type})</span>
                   </td>
                   <td>
@@ -976,7 +994,9 @@ export default function Page() {
               {!paymentSchedule.items?.length && (
                 <tr>
                   <td colSpan={5} className="muted">
-                    No open bills on the schedule
+                    {kind === 'receivable'
+                      ? 'No open invoices on the collection schedule'
+                      : 'No open bills on the schedule'}
                   </td>
                 </tr>
               )}
@@ -984,7 +1004,10 @@ export default function Page() {
           </table>
           </>
         ) : (
-          <p className="muted">Select a supplier and load schedule from Party actions.</p>
+          <p className="muted">
+            Select a {kind === 'receivable' ? 'customer' : 'supplier'} and load schedule from Party
+            actions.
+          </p>
         )}
       </div>
     </Shell>

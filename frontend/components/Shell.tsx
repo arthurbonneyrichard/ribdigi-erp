@@ -1643,7 +1643,7 @@ const primaryNavSpec: NavEntry[] = [
   },
   {
     kind: 'link',
-    label: 'Offline & Sync',
+    label: 'Offline sync',
     href: '/company#offline-sync',
     modules: ['company'],
   },

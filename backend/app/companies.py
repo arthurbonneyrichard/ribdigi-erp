@@ -195,17 +195,10 @@ async def create_company(
         if bt:
             business_type_id = bt.id
 
-    # Initial store allocation: honor payload, else 1 if tenant has unallocated capacity.
+    # Initial allocation is always locked + validated (never frontend-only).
     requested_limit = payload.get("store_limit", None)
     if requested_limit is not None:
-        initial_store_limit = int(requested_limit)
-    else:
-        ent = await store_ent_svc.get_tenant_store_entitlement(db, tenant)
-        if ent["max_stores_unlimited"]:
-            initial_store_limit = 1
-        else:
-            unalloc = int(ent.get("unallocated") or 0)
-            initial_store_limit = 1 if unalloc >= 1 else 0
+        requested_limit = int(requested_limit)
 
     co = m.Company(
         tenant_id=tenant.id,
@@ -232,17 +225,14 @@ async def create_company(
         document_footer=getattr(tenant, "document_footer", None),
         is_active=True,
         is_default=False,
-        store_limit=initial_store_limit,
+        store_limit=0,
         updated_at=datetime.utcnow(),
     )
     db.add(co)
     await db.flush()
-
-    # If caller requested an explicit allocation, validate against tenant entitlement.
-    if requested_limit is not None:
-        await store_ent_svc.set_company_store_limit(
-            db, tenant=tenant, company=co, store_limit=initial_store_limit
-        )
+    await store_ent_svc.assign_initial_company_store_limit(
+        db, tenant=tenant, company=co, requested_limit=requested_limit
+    )
 
     # Creator gets company_admin membership
     db.add(

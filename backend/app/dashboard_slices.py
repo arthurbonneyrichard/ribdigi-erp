@@ -58,8 +58,12 @@ async def top_products(
         m.SalesInvoice.status.in_(["posted", "partial", "paid"]),
     ]
     if company_id:
-        filters.append(m.Product.company_id == company_id)
-        filters.append(m.SalesInvoice.company_id == company_id)
+        from sqlalchemy import or_
+
+        filters.append(or_(m.Product.company_id == company_id, m.Product.company_id.is_(None)))
+        filters.append(
+            or_(m.SalesInvoice.company_id == company_id, m.SalesInvoice.company_id.is_(None))
+        )
     if managed_ids is not None:
         if not managed_ids:
             payload = {
@@ -187,7 +191,7 @@ async def expenses_by_category(
         .order_by(func.coalesce(func.sum(m.Expense.amount), 0).desc())
     )
     if company_id:
-        stmt = stmt.where(m.Expense.company_id == company_id)
+        stmt = apply_company_filter(stmt, m.Expense.company_id, company_id)
     rows = (await db.execute(stmt)).all()
     return [
         {"category": str(row.category or "Uncategorized"), "total": float(row.total or 0)}

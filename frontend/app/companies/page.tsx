@@ -34,6 +34,7 @@ type StoreEntitlement = {
   allocated_to_companies?: number;
   unallocated?: number | null;
   over_entitlement?: boolean;
+  over_allocated?: boolean;
 };
 
 type BusinessType = { id: string; code: string; label: string };
@@ -69,13 +70,16 @@ export default function CompaniesPage() {
     ]);
     setRows(list.data || []);
     setTypes(bt.data || []);
+    const tenantPayload = tenantStores?.data;
     const ent =
-      tenantStores?.data ||
+      tenantPayload?.entitlement ||
       dash?.data?.subscription?.store_entitlement ||
       null;
     setStoreEnt(ent);
     const allocRows: StoreAllocation[] =
-      dash?.data?.subscription?.store_allocations || [];
+      tenantPayload?.companies ||
+      dash?.data?.subscription?.store_allocations ||
+      [];
     const map: Record<string, StoreAllocation> = {};
     for (const row of allocRows) {
       map[row.company_id] = row;
@@ -175,8 +179,14 @@ export default function CompaniesPage() {
             </p>
             {storeEnt.over_entitlement && (
               <p className="error" style={{ marginTop: 8 }}>
-                Over entitlement — existing stores are preserved; new creates are blocked until
-                capacity is resolved.
+                Over entitlement — existing stores are preserved; new creates and reactivations are
+                blocked until the subscription is increased or stores are deactivated.
+              </p>
+            )}
+            {storeEnt.over_allocated && !storeEnt.over_entitlement && (
+              <p className="error" style={{ marginTop: 8 }}>
+                Company allocations exceed the tenant entitlement. Reduce allocations on the tenant
+                dashboard. Existing stores are not deleted.
               </p>
             )}
             <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>

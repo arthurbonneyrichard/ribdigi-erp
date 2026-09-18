@@ -88,3 +88,13 @@ purchases, expenses, credit, expiry, etc.) with tenant/company/store RBAC.
 RBAC module: `business_insights` (`read` / `write`). Financial/credit sections
 also require existing `accounting`/`reports`/`credit` permissions. Layer 2
 generative AI adapters are out of scope; Layer 1 must remain fully usable alone.
+
+`POST /api/v1/business-insights/reorder-requests` (requires `purchasing:write` +
+`business_insights:read`) converts Smart Reorder Recommendation lines into draft
+purchase requests, grouped by last PO supplier or an explicit `supplier_id`.
+Products with no supplier, zero qty, or an existing open PR are skipped. The
+existing `generate_ai_insights` job also persists Layer 1 CRITICAL/WARNING rows
+per company (duplicate unread notifications are suppressed). The Insights UI
+exposes history (acknowledge/dismiss), company threshold settings, and formula
+docs. Recommended reorder qty subtracts remaining qty on sent / partially
+received purchase orders.

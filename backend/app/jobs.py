@@ -186,9 +186,12 @@ async def job_generate_ai_low_stock_predictions() -> dict:
 
 async def job_generate_ai_insights() -> dict:
     from app import ai_insights as ai_insights_svc
+    from app.bi_service import scan_tenant_business_insights
 
     async def work(db: AsyncSession, tenant_id: str) -> dict:
-        return await ai_insights_svc.publish_insights(db, tenant_id)
+        ai = await ai_insights_svc.publish_insights(db, tenant_id)
+        bi = await scan_tenant_business_insights(db, tenant_id)
+        return {**ai, "business_intelligence": bi}
 
     return await _for_each_tenant(work)
 

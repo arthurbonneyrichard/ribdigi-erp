@@ -727,7 +727,14 @@ async def build_report_payload(
             compare=compare,
         )
     if report_type == "trial_balance":
-        return await accounting_svc.trial_balance(db, tenant_id, as_of=as_of)
+        return await accounting_svc.trial_balance(
+            db,
+            tenant_id,
+            as_of=as_of,
+            store_id=store_id,
+            branch_id=branch_id,
+            company_id=company_id,
+        )
     if report_type == "profit_loss":
         return await reports_svc.profit_loss_with_optional_compare(
             db,

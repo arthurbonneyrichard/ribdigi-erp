@@ -834,11 +834,12 @@ async def platform_set_tenant_store_entitlement(
     )
     await db.commit()
     data = await platform_svc.get_customer_tenant(db, tenant_id)
-    data["store_entitlement"] = {
-        "max_stores": row.max_stores,
-        "max_stores_override": row.max_stores_override,
-        "effective": store_ent_svc.effective_tenant_store_limit(row),
-    }
+    if not data.get("store_entitlement"):
+        data["store_entitlement"] = {
+            "max_stores": row.max_stores,
+            "max_stores_override": row.max_stores_override,
+            "effective": store_ent_svc.effective_tenant_store_limit(row),
+        }
     return env(data, message="Store entitlement updated")
 
 

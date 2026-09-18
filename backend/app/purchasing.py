@@ -1586,6 +1586,98 @@ async def serialize_grn(db: AsyncSession, grn: m.GoodsReceipt) -> dict:
     }
 
 
+def _fmt_print_date(value) -> str:
+    if value is None or value == "":
+        return ""
+    if isinstance(value, datetime):
+        return value.date().isoformat()
+    text = str(value).strip()
+    return text[:10] if text else ""
+
+
+def render_grn_text(
+    grn_data: dict,
+    *,
+    supplier_name: str,
+    company_name: str,
+    po_number: str | None = None,
+    warehouse_name: str | None = None,
+    product_labels: dict[str, str] | None = None,
+) -> str:
+    """Warehouse GRN slip: quantities, batch/expiry, and rejected lines."""
+    labels = product_labels or {}
+    lines = [
+        f"{company_name}",
+        f"GOODS RECEIVED NOTE {grn_data.get('grn_number')}",
+        f"Supplier: {supplier_name}",
+        f"Status: {grn_data.get('status')}",
+    ]
+    if po_number:
+        lines.append(f"PO: {po_number}")
+    if warehouse_name:
+        lines.append(f"Warehouse: {warehouse_name}")
+    created = _fmt_print_date(grn_data.get("created_at"))
+    if created:
+        lines.append(f"Received: {created}")
+    lines.extend(
+        [
+            "",
+            f"{'Product':<28} {'Recv':>8} {'Acc':>8} {'Rej':>8} {'Batch':<14} {'Expiry':<10}",
+            "-" * 80,
+        ]
+    )
+    for item in grn_data.get("items") or []:
+        pid = str(item.get("product_id") or "")
+        label = (labels.get(pid) or pid)[:28]
+        expiry = _fmt_print_date(item.get("expiry_date")) or "—"
+        batch = str(item.get("batch_number") or "—")[:14]
+        lines.append(
+            f"{label:<28} {float(item.get('received_qty') or 0):>8.3f} "
+            f"{float(item.get('accepted_qty') or 0):>8.3f} "
+            f"{float(item.get('rejected_qty') or 0):>8.3f} "
+            f"{batch:<14} {expiry:<10}"
+        )
+        reason = (item.get("rejection_reason") or "").strip()
+        if float(item.get("rejected_qty") or 0) > 0 and reason:
+            lines.append(f"  Rejected: {reason}")
+    lines.append("-" * 80)
+    if grn_data.get("notes"):
+        lines.extend(["", f"Notes: {grn_data['notes']}"])
+    from app.print_branding import platform_print_footer_text_lines
+
+    lines.extend(platform_print_footer_text_lines(width=80))
+    return "\n".join(lines)
+
+
+async def product_print_labels(
+    db: AsyncSession, *, tenant_id: str, product_ids: list[str]
+) -> dict[str, str]:
+    ids = [pid for pid in product_ids if pid]
+    if not ids:
+        return {}
+    rows = (
+        (
+            await db.execute(
+                select(m.Product).where(
+                    m.Product.tenant_id == tenant_id,
+                    m.Product.id.in_(ids),
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    out: dict[str, str] = {}
+    for product in rows:
+        sku = (product.sku or "").strip()
+        name = (product.name or "").strip()
+        if sku and name:
+            out[product.id] = f"{sku} {name}"
+        else:
+            out[product.id] = sku or name or product.id
+    return out
+
+
 async def record_supplier_payment(
     db: AsyncSession,
     *,

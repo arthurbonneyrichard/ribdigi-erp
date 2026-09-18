@@ -51,6 +51,7 @@ from app import catalog_meta as catalog_meta_svc
 from app import product_images as product_images_svc
 from app import barcodes as barcode_svc
 from app import product_import as product_import_svc
+from app import variant_import as variant_import_svc
 from app import party_export as party_export_svc
 from app import tenant_ops_export as tenant_ops_export_svc
 from app import print_preview as print_preview_svc
@@ -209,6 +210,7 @@ from app.schemas import (
     DepartmentUpdate,
     ProductUpdate,
     StockCountCreate,
+    StockCountItemAdd,
     StockCountItemsUpdate,
     WarehouseCreate,
     WarehouseUpdate,
@@ -5512,6 +5514,37 @@ async def patch_stock_count_items(
     return env(await stock_counts_svc.serialize_count(db, count), "Count lines updated")
 
 
+@api.post("/inventory/stock-counts/{count_id}/items")
+async def add_stock_count_item(
+    count_id: str,
+    payload: StockCountItemAdd,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Add a product found during a draft physical count (not on the original sheet)."""
+    count = await stock_counts_svc.add_count_item(
+        db,
+        tenant_id=claims["tenant_id"],
+        count_id=count_id,
+        product_id=payload.product_id,
+        counted_qty=payload.counted_qty,
+        notes=payload.notes,
+        company_id=claims.get("company_id"),
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="inventory",
+        action="stock_count_add_item",
+        entity="stock_count",
+        entity_id=count.id,
+        details={"count_number": count.count_number, "product_id": payload.product_id},
+    )
+    await db.commit()
+    return env(await stock_counts_svc.serialize_count(db, count), "Count line added")
+
+
 @api.post("/inventory/stock-counts/{count_id}/complete")
 async def complete_stock_count(
     count_id: str,
@@ -5548,6 +5581,16 @@ async def cancel_stock_count(
     count = await stock_counts_svc.cancel_count(
         db, tenant_id=claims["tenant_id"], count_id=count_id,
         company_id=claims.get("company_id"),
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="inventory",
+        action="stock_count_cancel",
+        entity="stock_count",
+        entity_id=count.id,
+        details={"count_number": count.count_number, "warehouse_id": count.warehouse_id},
     )
     await db.commit()
     return env(await stock_counts_svc.serialize_count(db, count), "Stock count cancelled")
@@ -5695,6 +5738,65 @@ async def stock_out(
     )
     await db.commit()
     return env(result, "Stock out recorded")
+
+
+@api.get("/products/variants/import/template")
+async def products_variants_import_template(
+    claims=Depends(require_permission("inventory", "read")),
+):
+    text = variant_import_svc.template_csv()
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="variant_import_template.csv"'},
+    )
+
+
+@api.post("/products/variants/import")
+async def products_variants_import(
+    file: UploadFile = File(...),
+    dry_run: bool = True,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status_code=400, detail="Empty upload")
+    try:
+        content = raw.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        content = raw.decode("latin-1")
+    result = await variant_import_svc.import_variants_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        content=content,
+        dry_run=dry_run,
+        company_id=claims.get("company_id"),
+    )
+    if not dry_run and result["valid_rows"]:
+        await audit_svc.record_event(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            module="inventory",
+            action="variant_import",
+            entity="product_variant",
+            entity_id=None,
+            details={
+                "created": result["create_count"],
+                "updated": result["update_count"],
+                "errors": result["error_rows"],
+                "filename": file.filename,
+            },
+        )
+        await db.commit()
+        await cache_svc.app_cache.invalidate_tenant(claims["tenant_id"])
+    elif not dry_run:
+        await db.commit()
+    return env(
+        result,
+        "Dry-run complete" if dry_run else f"Imported {result['valid_rows']} variants",
+    )
 
 
 @api.get("/products/variants/export")
@@ -6978,6 +7080,7 @@ async def send_sales_invoice(
         user_id=claims["sub"],
         invoice_id=invoice_id,
         to=payload.to if payload else None,
+        template=payload.template if payload else None,
     )
     await db.commit()
     data = await sales_svc.serialize_invoice(db, invoice)
@@ -7220,6 +7323,7 @@ async def print_sales_quotation(
 @api.post("/sales/quotations/{quotation_id}/send")
 async def send_quotation(
     quotation_id: str,
+    payload: InvoiceSendRequest | None = None,
     to: str | None = None,
     claims=Depends(require_permission("sales", "write")),
     db: AsyncSession = Depends(get_db),
@@ -7228,7 +7332,11 @@ async def send_quotation(
     assert_record_access(claims, existing.created_by)
     workspace_svc.assert_record_company(claims, existing)
     quote, delivery = await sales_docs_svc.send_quotation(
-        db, claims["tenant_id"], quotation_id, to=to
+        db,
+        claims["tenant_id"],
+        quotation_id,
+        to=(payload.to if payload else None) or to,
+        template=payload.template if payload else None,
     )
     await audit_svc.record_event(
         db,
@@ -8361,6 +8469,60 @@ async def get_grn(
     workspace_svc.assert_record_company(claims, grn)
     assert_record_access(claims, grn.created_by)
     return env(await purchasing_svc.serialize_grn(db, grn))
+
+
+@api.get("/purchasing/grn/{grn_id}/print")
+async def print_goods_receipt(
+    grn_id: str,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import tenants as tenants_svc
+
+    grn = await purchasing_svc.get_grn(db, claims["tenant_id"], grn_id)
+    workspace_svc.assert_record_company(claims, grn)
+    assert_record_access(claims, grn.created_by)
+    supplier = await purchasing_svc.get_supplier(db, claims["tenant_id"], grn.supplier_id)
+    po = await purchasing_svc.get_po(db, claims["tenant_id"], grn.purchase_order_id)
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    company = None
+    cid = claims.get("company_id") or getattr(grn, "company_id", None)
+    if cid:
+        company = await db.get(m.Company, cid)
+        if not company or company.tenant_id != claims["tenant_id"]:
+            company = None
+    warehouse_name = None
+    if grn.warehouse_id:
+        warehouse = await db.get(m.Warehouse, grn.warehouse_id)
+        if warehouse and warehouse.tenant_id == claims["tenant_id"]:
+            warehouse_name = warehouse.name
+    from app.print_branding import tenant_document_brand
+
+    doc_brand = tenant_document_brand(tenant, company)
+    data = await purchasing_svc.serialize_grn(db, grn)
+    labels = await purchasing_svc.product_print_labels(
+        db,
+        tenant_id=claims["tenant_id"],
+        product_ids=[str(i.get("product_id") or "") for i in data.get("items") or []],
+    )
+    text = purchasing_svc.render_grn_text(
+        data,
+        supplier_name=supplier.name,
+        company_name=doc_brand["company_name"],
+        po_number=po.po_number,
+        warehouse_name=warehouse_name,
+        product_labels=labels,
+    )
+    return env(
+        {
+            "grn": data,
+            "text": text,
+            "supplier_name": supplier.name,
+            "company_name": doc_brand["company_name"],
+            "po_number": po.po_number,
+            "warehouse_name": warehouse_name,
+        }
+    )
 
 
 @api.get("/purchasing/returns")
@@ -10059,6 +10221,30 @@ async def reject_expense(
     return env(await expenses_svc.serialize_expense_full(db, expense), "Expense rejected")
 
 
+@api.post("/expenses/{expense_id}/resubmit")
+async def resubmit_expense(
+    expense_id: str,
+    payload: ExpenseDecision = ExpenseDecision(),
+    claims=Depends(require_permission("expenses", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    existing = await expenses_svc.get_expense(db, claims["tenant_id"], expense_id)
+    workspace_svc.assert_record_company(claims, existing)
+    assert_record_access(claims, existing.created_by)
+    expense = await expenses_svc.resubmit_expense(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        expense_id=expense_id,
+        comment=payload.comment or payload.reason,
+    )
+    await db.commit()
+    if expense.status == "approved":
+        await cache_svc.app_cache.invalidate_dashboard(claims["tenant_id"])
+        return env(await expenses_svc.serialize_expense_full(db, expense), "Expense approved")
+    return env(await expenses_svc.serialize_expense_full(db, expense), "Expense resubmitted")
+
+
 @api.delete("/expenses/{expense_id}")
 async def delete_expense(
     expense_id: str,
@@ -11434,6 +11620,8 @@ async def delete_journal_attachment(
 @api.get("/accounting/trial-balance")
 async def get_trial_balance(
     as_of_date: str | None = None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11448,6 +11636,8 @@ async def get_trial_balance(
             db,
             claims["tenant_id"],
             as_of=reports_svc.parse_date(as_of_date, end_of_day=True),
+            store_id=store_id,
+            branch_id=branch_id,
             company_id=claims.get("company_id"),
         )
     )
@@ -11456,6 +11646,8 @@ async def get_trial_balance(
 @api.get("/accounting/trial-balance/export")
 async def accounting_trial_balance_export(
     as_of_date: str | None = None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
     claims=Depends(require_permission("accounting", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11464,6 +11656,8 @@ async def accounting_trial_balance_export(
         db,
         tenant_id=claims["tenant_id"],
         as_of=reports_svc.parse_date(as_of_date, end_of_day=True),
+        store_id=store_id,
+        branch_id=branch_id,
         company_id=claims.get("company_id"),
     )
     return Response(
@@ -11579,15 +11773,19 @@ async def reports_profit_loss_export(
 @api.get("/reports/trial-balance")
 async def report_trial_balance(
     as_of_date: str | None = None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    return await get_trial_balance(as_of_date, claims, db)
+    return await get_trial_balance(as_of_date, store_id, branch_id, claims, db)
 
 
 @api.get("/reports/trial-balance/export")
 async def reports_trial_balance_export(
     as_of_date: str | None = None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -11596,6 +11794,8 @@ async def reports_trial_balance_export(
         db,
         tenant_id=claims["tenant_id"],
         as_of=reports_svc.parse_date(as_of_date, end_of_day=True),
+        store_id=store_id,
+        branch_id=branch_id,
         company_id=claims.get("company_id"),
     )
     return Response(
@@ -12676,6 +12876,47 @@ async def export_customer_outstanding(
         media_type="text/csv",
         headers={
             "Content-Disposition": 'attachment; filename="customer_outstanding_export.csv"'
+        },
+    )
+
+
+@api.get("/customers/{customer_id}/collection-schedule")
+async def customer_collection_schedule(
+    customer_id: str,
+    claims=Depends(require_permission("credit", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """AR collection schedule — overdue / due today / upcoming open invoices."""
+    return env(
+        await credit_svc.customer_collection_schedule(
+            db,
+            claims["tenant_id"],
+            customer_id,
+            company_id=claims.get("company_id"),
+        )
+    )
+
+
+@api.get("/customers/{customer_id}/collection-schedule/export")
+async def export_customer_collection_schedule(
+    customer_id: str,
+    schedule_bucket: str | None = None,
+    claims=Depends(require_permission("credit", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Customer AR collection schedule CSV (optional schedule_bucket)."""
+    text = await credit_ops_export_svc.export_customer_collection_schedule_csv(
+        db,
+        tenant_id=claims["tenant_id"],
+        customer_id=customer_id,
+        schedule_bucket=schedule_bucket,
+        company_id=claims.get("company_id"),
+    )
+    return Response(
+        content=text,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="customer_collection_schedule_export.csv"'
         },
     )
 
@@ -13919,6 +14160,67 @@ async def export_inventory_stock_transfers_csv(
     )
 
 
+@api.get("/inventory/stock-transfers/{transfer_id}/print")
+async def print_inventory_stock_transfer(
+    transfer_id: str,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import tenants as tenants_svc
+    from app.print_branding import tenant_document_brand
+
+    transfer = await stores_svc.get_transfer(
+        db,
+        claims["tenant_id"],
+        transfer_id,
+        company_id=claims.get("company_id"),
+    )
+    workspace_svc.assert_record_company(claims, transfer)
+    assert_record_access(claims, transfer.created_by)
+    data = await stores_svc.serialize_transfer(db, transfer)
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    company = None
+    cid = claims.get("company_id") or getattr(transfer, "company_id", None)
+    if cid:
+        company = await db.get(m.Company, cid)
+        if not company or company.tenant_id != claims["tenant_id"]:
+            company = None
+    doc_brand = tenant_document_brand(tenant, company)
+    from_label = await stores_svc.transfer_location_label(
+        db,
+        tenant_id=claims["tenant_id"],
+        store_id=transfer.from_store_id,
+        warehouse_id=transfer.from_warehouse_id,
+    )
+    to_label = await stores_svc.transfer_location_label(
+        db,
+        tenant_id=claims["tenant_id"],
+        store_id=transfer.to_store_id,
+        warehouse_id=transfer.to_warehouse_id,
+    )
+    labels = await purchasing_svc.product_print_labels(
+        db,
+        tenant_id=claims["tenant_id"],
+        product_ids=[str(i.get("product_id") or "") for i in data.get("items") or []],
+    )
+    text = stores_svc.render_stock_transfer_text(
+        data,
+        company_name=doc_brand["company_name"],
+        from_label=from_label,
+        to_label=to_label,
+        product_labels=labels,
+    )
+    return env(
+        {
+            "transfer": data,
+            "text": text,
+            "company_name": doc_brand["company_name"],
+            "from_label": from_label,
+            "to_label": to_label,
+        }
+    )
+
+
 @api.post("/inventory/stock-transfers")
 async def create_inventory_stock_transfer(
     payload: WarehouseStockTransferCreate,
@@ -14230,6 +14532,22 @@ async def scan_due_notifications(
             "recurring_expense": recurring_scan,
         },
         f"Created {total} due notification(s)",
+    )
+
+
+@api.post("/notifications/scan-low-stock")
+async def scan_low_stock_notifications(
+    claims=Depends(require_permission("notifications", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Tenant leftover of Celery `scan_low_stock`: company-scoped, not all-tenant admin job."""
+    created = await notifications_svc.scan_low_stock(
+        db, claims["tenant_id"], company_id=claims.get("company_id")
+    )
+    await db.commit()
+    return env(
+        {"created": int(created), "low_stock": int(created)},
+        f"Created {int(created)} low-stock notification(s)",
     )
 
 

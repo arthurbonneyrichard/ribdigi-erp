@@ -397,6 +397,7 @@ Stage 10 T1: optional `tax_rate_id` on the category. Tax resolution for a produc
 **Get:** `GET /products/{product_id}`  
 **Update:** `PATCH /products/{product_id}` (set `is_active=false` to soft-deactivate)  
 **Import:** `GET /products/import/template`, `POST /products/import?dry_run=true|false`  
+**Variant import:** `GET /products/variants/import/template`, `POST /products/variants/import?dry_run=true|false` (create or update catalog fields by SKU; `stock_qty` is not imported)  
 **Warehouse stock:** `GET /products/{product_id}/warehouse-stock`  
 **Barcode lookup:** `GET /inventory/products/lookup?q=&barcode=`
 
@@ -458,6 +459,7 @@ Stage 17 W1: inter-warehouse create → submit/ship → receive updates `Warehou
 ```
 
 **List:** `GET /inventory/stock-transfers` (filters: `status`, `store_id`, dates, `scope`, `limit`)  
+**Print:** `GET /inventory/stock-transfers/{transfer_id}/print` — branded text slip (`inventory:read`) with from/to locations, requested/shipped/received qty.  
 **Submit / Ship / Receive / Cancel:** `POST /inventory/stock-transfers/{transfer_id}/submit|ship|receive|cancel`  
 (No status PATCH — use action POSTs.)
 
@@ -470,6 +472,7 @@ Stage 17 S2 proves create → enter counted qty → complete (posts `adjustment`
 **List:** `GET /inventory/stock-counts`  
 **Get:** `GET /inventory/stock-counts/{count_id}` — includes items + line `variance`  
 **Update counts:** `PATCH /inventory/stock-counts/{count_id}/items` — `{ items: [{ product_id, counted_qty, notes? }] }` (draft only)  
+**Add found product:** `POST /inventory/stock-counts/{count_id}/items` — `{ product_id, counted_qty?, notes? }` (draft only; `409 COUNT_LINE_EXISTS` if already on the sheet)  
 **Complete:** `POST /inventory/stock-counts/{count_id}/complete` — posts non-zero variances; `status=completed`  
 **Cancel:** `POST /inventory/stock-counts/{count_id}/cancel` — draft only → `cancelled`  
 **Variance report:** `GET /inventory/stock-counts/{count_id}/variance-report?format=csv|pdf|json` — requires `completed` (`409 COUNT_NOT_COMPLETED` otherwise)
@@ -619,7 +622,8 @@ Stage 19 S1 purchasing fidelity: `test_sales_purchases_api_s1.py` (BR-18.5).
 ### 6.4 Goods Received Note (GRN)
 **List:** `GET /purchasing/grn`  
 **Create:** `POST /purchasing/grn`  
-**Get:** `GET /purchasing/grn/{grn_id}`
+**Get:** `GET /purchasing/grn/{grn_id}`  
+**Print:** `GET /purchasing/grn/{grn_id}/print` — branded text slip (`purchasing:read`) with PO, warehouse, accepted/rejected qty, batch number, and expiry.
 
 **Create GRN** (posts immediately — stock ↑, supplier balance ↑, Dr 1200 / Cr 2000):
 ```json
@@ -713,6 +717,8 @@ Stage 19 P1 proves customers/groups CRUD + balance + history via JWT and X-API-K
 **List:** `GET /sales/quotations`  
 **Create:** `POST /sales/quotations`  
 **Get:** `GET /sales/quotations/{quote_id}`  
+**Print:** `GET /sales/quotations/{quote_id}/print` — `format=text|html|pdf`, `template=a4|thermal_80|thermal_58`  
+**Send:** `POST /sales/quotations/{quote_id}/send` — emails the customer and attaches the branded print PDF. Optional JSON `{ "to", "template" }`. Query `to=` remains accepted.  
 **Convert to Order:** `POST /sales/quotations/{quote_id}/convert-to-order`
 
 **Create Quotation:**
@@ -749,7 +755,8 @@ Stage 19 P1 proves customers/groups CRUD + balance + history via JWT and X-API-K
 **Get:** `GET /sales/invoices/{invoice_id}`  
 **Post:** `POST /sales/invoices/{invoice_id}/post`  
 **Pay:** `POST /sales/invoices/{invoice_id}/payments`  
-**Print:** `GET /sales/invoices/{invoice_id}/print`
+**Print:** `GET /sales/invoices/{invoice_id}/print` — `format=text|html|pdf`, `template=a4|thermal_80|thermal_58`  
+**Send:** `POST /sales/invoices/{invoice_id}/send` — emails the customer and attaches the branded print PDF (same renderer as print). Optional JSON `{ "to", "template" }`. Posted invoices become `sent`. Honors tenant SMTP override.
 
 **Post stock integrity (Stage 15 H1):** Aggregated line quantities are checked before stock-out / AR / journal. Insufficient available stock → `409` with `detail.code = INSUFFICIENT_STOCK`; invoice stays `draft` (no movements, AR bump, or JE).
 
@@ -913,12 +920,13 @@ Create/update accept optional `account_id` (tenant expense-type COA; Stage 14 E1
 **Update:** `PATCH /expenses/{expense_id}`  
 **Approve:** `POST /expenses/{expense_id}/approve`  
 **Reject:** `POST /expenses/{expense_id}/reject` — body `{ "reason" }`  
+**Resubmit:** `POST /expenses/{expense_id}/resubmit` — `expenses:write`; rejected only; body `{ "comment" }` optional; re-notifies approvers or auto-approves under threshold  
 **Delete:** `DELETE /expenses/{expense_id}`  
 **Approval settings (Stage 22 A1):** `GET/PATCH /expenses/settings` — levels, thresholds, role gates (expense approval matrix)  
 **OCR suggest:** `POST /expenses/{expense_id}/ocr-suggest` — requires `expenses:write`  
 **OCR apply (Stage 10 A1):** `POST /expenses/{expense_id}/ocr-apply` — requires `expenses:write`
 
-Create/update accept optional `store_id`, `department_id`, `payee` (Stage 14 E2). Foreign store/department → `404`. Approve/reject emit domain audit `expense_approved` / `expense_rejected` (`module=expenses`); submit pending → `expense_submitted`; under-threshold → `expense_auto_approved`; mid-level → `expense_level_approved` (Stage 14 A3). Final/auto approve also posts `journal_posted` with `source_type=expense`.
+Create/update accept optional `store_id`, `department_id`, `payee` (Stage 14 E2). Foreign store/department → `404`. Approve/reject emit domain audit `expense_approved` / `expense_rejected` (`module=expenses`); submit pending → `expense_submitted`; under-threshold → `expense_auto_approved`; mid-level → `expense_level_approved`; rejected resubmit → `expense_resubmitted` (Stage 14 A3). Final/auto approve also posts `journal_posted` with `source_type=expense`. Reject/final approve notify the submitter (`expense_decision`); resubmit re-notifies approvers (`expense_approval`).
 
 ```json
 {
@@ -1043,9 +1051,9 @@ Returns period totals from **posted** journal lines: `revenue`, `cogs`, `gross_p
 
 Liquid (cash/bank) movements classified as `operating` / `investing` / `financing` / `transfer` by journal `source_type`. Includes `opening_cash`, `closing_cash`, `net_change` (excludes cash↔bank transfers). Optional `store_id` / `branch_id` (Stage 14 A1 / Stage 23 F1). Stage 23 C1: `compare=true` prior-period `comparison` block (same semantics as P&L).
 
-**Trial Balance:** `GET /reports/trial-balance?as_of_date=` (also `GET /accounting/trial-balance`)  
+**Trial Balance (Stage 14 A2):** `GET /reports/trial-balance?as_of_date=&store_id=&branch_id=` (also `GET /accounting/trial-balance`)  
 
-When `as_of_date` is set, balances are rebuilt from **posted** journal lines with `entry_date` through that day; omit for live account balances. Response includes `as_of` (Stage 14 A2).
+When `as_of_date` is set, balances are rebuilt from **posted** journal lines with `entry_date` through that day; omit for live account balances (tenant-wide only). Optional `store_id` / `branch_id` rebuild from posted journals tagged with those stores (same semantics as balance sheet; Stage 23 F1 leftover). Foreign store/branch → `404`. Store not in branch → `400 STORE_BRANCH_MISMATCH`. Empty branch (no stores) returns a zeroed balanced trial. Response includes `as_of`, `store_id`, `branch_id`. Path CSV exports accept the same filters.
 
 **Balance Sheet (Stage 23 F1/C1):** `GET /reports/balance-sheet?as_of_date=&store_id=&branch_id=&compare=`  
 
@@ -1087,6 +1095,10 @@ Stage 22 D1 fidelity for BR-11: `docs/STAGE_22_FIDELITY.md` (`test_stage22_fidel
 **Get Outstanding Bills (Stage 8 S2):** `GET /customers/{customer_id}/outstanding`
 
 Returns open AR invoices (`posted` / `partial` / `sent` / `overdue` with balance > 0): `{ invoice_id, invoice_number, amount, due_date, status, document_type: "sales_invoice" }`. Requires `credit:read`; 404 if customer missing.
+
+**Collection Schedule:** `GET /customers/{customer_id}/collection-schedule`
+
+Returns `{ customer_id, customer_name, as_of, total_due, overdue_total, upcoming_total, early_pay, items[] }`. Each item is an open sales invoice with `days_until_due`, `days_overdue`, `is_overdue`, `schedule_bucket` (`overdue` | `due_today` | `upcoming` | `unscheduled`), and `early_discount` quote. Sorted overdue → due today → upcoming. Export: `GET /customers/{customer_id}/collection-schedule/export?schedule_bucket=`. Requires `credit:read`. AR aging (`GET /credit/aging?kind=receivable`) includes `sent` and `overdue` open invoices and `overdue_total`.
 
 **Record Payment:** `POST /customers/{customer_id}/payments` (alias `POST /sales/payments`)
 
@@ -1301,7 +1313,7 @@ Preference keys include `new_order`, `low_stock`, `purchase_received`, `payment_
 }
 ```
 
-Outline alert categories (`low_stock`, `new_order`, `credit_limit`, `purchase_received`, `shift_variance`, `transfer`) default **email/sms false**; enable per user via this API. `payment_due` / `expense_approval` default email on.
+Outline alert categories (`low_stock`, `new_order`, `credit_limit`, `purchase_received`, `shift_variance`, `transfer`) default **email/sms false**; enable per user via this API. `payment_due` / `expense_approval` / `expense_decision` default email on.
 
 **Channel delivery (Stage 16 N2):** After the dashboard notification is written, `create_notification` best-effort sends email/SMS to recipients with that channel enabled for the category. Broadcast alerts (`user_id` null) target active `company_admin` / `super_admin`. SMTP unset → email `mode=console` outbox attempt; Twilio unset → SMS `mode=console`. Carrier `delivered` is only recorded for real SMTP/Twilio sends.
 ---
@@ -1862,6 +1874,93 @@ Stage 311 D1 — `docs/STAGE_311_FIDELITY.md` (`test_stage311_fidelity_d1.py`): 
 Stage 312 D1 — `docs/STAGE_312_FIDELITY.md` (`test_stage312_fidelity_d1.py`): status uptime pack remaining-gate index packaging only — blocker matrix / Stage 40/311/310/36 pointers; no new public API Completes; live status page / measured uptime / go-live remain deferred.
 Stage 313 D1 — `docs/STAGE_313_FIDELITY.md` (`test_stage313_fidelity_d1.py`): commercial liability pack remaining-gate index packaging only — blocker matrix / Stage 77/312/311/310 pointers; no new public API Completes; liability-cap signed / indemnity / go-live remain deferred.
 Stage 314 D1 — `docs/STAGE_314_FIDELITY.md` (`test_stage314_fidelity_d1.py`): SBOM disclosure pack remaining-gate index packaging only — blocker matrix / Stage 40/313/312/38 pointers; no new public API Completes; live SBOM pipeline / Cosign / go-live remain deferred.
+Stage 1713 Transfer Kinrandeyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1713_FIDELITY.md` / `test_stage1713_fidelity_d1.py` (packaging; no live Completes).
+Stage 1712 Transfer Iroeyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1712_FIDELITY.md` / `test_stage1712_fidelity_d1.py` (packaging; no live Completes).
+Stage 1711 Transfer Hiradoyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1711_FIDELITY.md` / `test_stage1711_fidelity_d1.py` (packaging; no live Completes).
+Stage 1710 Transfer Koimariyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1710_FIDELITY.md` / `test_stage1710_fidelity_d1.py` (packaging; no live Completes).
+Stage 1709 Transfer Kakiemonyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1709_FIDELITY.md` / `test_stage1709_fidelity_d1.py` (packaging; no live Completes).
+Stage 1708 Transfer Hizenyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1708_FIDELITY.md` / `test_stage1708_fidelity_d1.py` (packaging; no live Completes).
+Stage 1707 Transfer Aritayuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1707_FIDELITY.md` / `test_stage1707_fidelity_d1.py` (packaging; no live Completes).
+Stage 1706 Transfer Imariyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1706_FIDELITY.md` / `test_stage1706_fidelity_d1.py` (packaging; no live Completes).
+Stage 1705 Transfer Kutaniyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1705_FIDELITY.md` / `test_stage1705_fidelity_d1.py` (packaging; no live Completes).
+Stage 1704 Transfer Nabeshimayuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1704_FIDELITY.md` / `test_stage1704_fidelity_d1.py` (packaging; no live Completes).
+Stage 1703 Transfer Kyoyakiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1703_FIDELITY.md` / `test_stage1703_fidelity_d1.py` (packaging; no live Completes).
+Stage 1702 Transfer Satsumayuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1702_FIDELITY.md` / `test_stage1702_fidelity_d1.py` (packaging; no live Completes).
+Stage 1701 Transfer Minoyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1701_FIDELITY.md` / `test_stage1701_fidelity_d1.py` (packaging; no live Completes).
+Stage 1700 Transfer Shigarakiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1700_FIDELITY.md` / `test_stage1700_fidelity_d1.py` (packaging; no live Completes).
+Stage 1699 Transfer Tokonameyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1699_FIDELITY.md` / `test_stage1699_fidelity_d1.py` (packaging; no live Completes).
+Stage 1698 Transfer Bankoyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1698_FIDELITY.md` / `test_stage1698_fidelity_d1.py` (packaging; no live Completes).
+Stage 1697 Transfer Echizenyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1697_FIDELITY.md` / `test_stage1697_fidelity_d1.py` (packaging; no live Completes).
+Stage 1696 Transfer Tambayuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1696_FIDELITY.md` / `test_stage1696_fidelity_d1.py` (packaging; no live Completes).
+Stage 1695 Transfer Iwayuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1695_FIDELITY.md` / `test_stage1695_fidelity_d1.py` (packaging; no live Completes).
+Stage 1694 Transfer Kasamayuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1694_FIDELITY.md` / `test_stage1694_fidelity_d1.py` (packaging; no live Completes).
+Stage 1693 Transfer Ontayuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1693_FIDELITY.md` / `test_stage1693_fidelity_d1.py` (packaging; no live Completes).
+Stage 1692 Transfer Koishiwarayuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1692_FIDELITY.md` / `test_stage1692_fidelity_d1.py` (packaging; no live Completes).
+Stage 1691 Transfer Hasamiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1691_FIDELITY.md` / `test_stage1691_fidelity_d1.py` (packaging; no live Completes).
+Stage 1690 Transfer Tsuboyayuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1690_FIDELITY.md` / `test_stage1690_fidelity_d1.py` (packaging; no live Completes).
+Stage 1689 Transfer Izumoyakiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1689_FIDELITY.md` / `test_stage1689_fidelity_d1.py` (packaging; no live Completes).
+Stage 1688 Transfer Mikawachiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1688_FIDELITY.md` / `test_stage1688_fidelity_d1.py` (packaging; no live Completes).
+Stage 1687 Transfer Oboriyakiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1687_FIDELITY.md` / `test_stage1687_fidelity_d1.py` (packaging; no live Completes).
+Stage 1686 Transfer Awayuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1686_FIDELITY.md` / `test_stage1686_fidelity_d1.py` (packaging; no live Completes).
+Stage 1685 Transfer Awajiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1685_FIDELITY.md` / `test_stage1685_fidelity_d1.py` (packaging; no live Completes).
+Stage 1684 Transfer Shodoyayuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1684_FIDELITY.md` / `test_stage1684_fidelity_d1.py` (packaging; no live Completes).
+Stage 1683 Transfer Inuyamayuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1683_FIDELITY.md` / `test_stage1683_fidelity_d1.py` (packaging; no live Completes).
+Stage 1682 Transfer Ofukeyakiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1682_FIDELITY.md` / `test_stage1682_fidelity_d1.py` (packaging; no live Completes).
+Stage 1681 Transfer Setoshidayuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1681_FIDELITY.md` / `test_stage1681_fidelity_d1.py` (packaging; no live Completes).
+Stage 1680 Transfer Oribeyakiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1680_FIDELITY.md` / `test_stage1680_fidelity_d1.py` (packaging; no live Completes).
+Stage 1679 Transfer Shinoyakiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1679_FIDELITY.md` / `test_stage1679_fidelity_d1.py` (packaging; no live Completes).
+Stage 1678 Transfer Bizenyakiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1678_FIDELITY.md` / `test_stage1678_fidelity_d1.py` (packaging; no live Completes).
+Stage 1677 Transfer Kibiyakiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1677_FIDELITY.md` / `test_stage1677_fidelity_d1.py` (packaging; no live Completes).
+Stage 1676 Transfer Akazuyakiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1676_FIDELITY.md` / `test_stage1676_fidelity_d1.py` (packaging; no live Completes).
+Stage 1675 Transfer Kisetoyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1675_FIDELITY.md` / `test_stage1675_fidelity_d1.py` (packaging; no live Completes).
+Stage 1674 Transfer Nezumishinoyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1674_FIDELITY.md` / `test_stage1674_fidelity_d1.py` (packaging; no live Completes).
+Stage 1673 Transfer Setoguroyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1673_FIDELITY.md` / `test_stage1673_fidelity_d1.py` (packaging; no live Completes).
+Stage 1672 Transfer Kuromonoyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1672_FIDELITY.md` / `test_stage1672_fidelity_d1.py` (packaging; no live Completes).
+Stage 1671 Transfer Shinooribeyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1671_FIDELITY.md` / `test_stage1671_fidelity_d1.py` (packaging; no live Completes).
+Stage 1670 Transfer Narumioribeyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1670_FIDELITY.md` / `test_stage1670_fidelity_d1.py` (packaging; no live Completes).
+Stage 1669 Transfer Kissetoyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1669_FIDELITY.md` / `test_stage1669_fidelity_d1.py` (packaging; no live Completes).
+Stage 1668 Transfer Aooribeyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1668_FIDELITY.md` / `test_stage1668_fidelity_d1.py` (packaging; no live Completes).
+Stage 1667 Transfer Benishinoglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1667_FIDELITY.md` / `test_stage1667_fidelity_d1.py` (packaging; no live Completes).
+Stage 1666 Transfer Chojigiroyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1666_FIDELITY.md` / `test_stage1666_fidelity_d1.py` (packaging; no live Completes).
+Stage 1665 Transfer Madaragarakeglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1665_FIDELITY.md` / `test_stage1665_fidelity_d1.py` (packaging; no live Completes).
+Stage 1664 Transfer Eshinoglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1664_FIDELITY.md` / `test_stage1664_fidelity_d1.py` (packaging; no live Completes).
+Stage 1663 Transfer Wariaburaglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1663_FIDELITY.md` / `test_stage1663_fidelity_d1.py` (packaging; no live Completes).
+Stage 1662 Transfer Karatsuyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1662_FIDELITY.md` / `test_stage1662_fidelity_d1.py` (packaging; no live Completes).
+Stage 1661 Transfer Nigoshiglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1661_FIDELITY.md` / `test_stage1661_fidelity_d1.py` (packaging; no live Completes).
+Stage 1660 Transfer Sometsukeglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1660_FIDELITY.md` / `test_stage1660_fidelity_d1.py` (packaging; no live Completes).
+Stage 1659 Transfer Kinutaglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1659_FIDELITY.md` / `test_stage1659_fidelity_d1.py` (packaging; no live Completes).
+Stage 1658 Transfer Gosuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1658_FIDELITY.md` / `test_stage1658_fidelity_d1.py` (packaging; no live Completes).
+Stage 1657 Transfer Tobikannaglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1657_FIDELITY.md` / `test_stage1657_fidelity_d1.py` (packaging; no live Completes).
+Stage 1656 Transfer Hakemeglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1656_FIDELITY.md` / `test_stage1656_fidelity_d1.py` (packaging; no live Completes).
+Stage 1655 Transfer Mattglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1655_FIDELITY.md` / `test_stage1655_fidelity_d1.py` (packaging; no live Completes).
+Stage 1654 Transfer Kissetoglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1654_FIDELITY.md` / `test_stage1654_fidelity_d1.py` (packaging; no live Completes).
+Stage 1653 Transfer Temmokuyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1653_FIDELITY.md` / `test_stage1653_fidelity_d1.py` (packaging; no live Completes).
+Stage 1652 Transfer Bidoroglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1652_FIDELITY.md` / `test_stage1652_fidelity_d1.py` (packaging; no live Completes).
+Stage 1651 Transfer Kofukiglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1651_FIDELITY.md` / `test_stage1651_fidelity_d1.py` (packaging; no live Completes).
+Stage 1650 Transfer Ironglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1650_FIDELITY.md` / `test_stage1650_fidelity_d1.py` (packaging; no live Completes).
+Stage 1649 Transfer Namakoglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1649_FIDELITY.md` / `test_stage1649_fidelity_d1.py` (packaging; no live Completes).
+Stage 1648 Transfer Yohenglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1648_FIDELITY.md` / `test_stage1648_fidelity_d1.py` (packaging; no live Completes).
+Stage 1647 Transfer Seijiglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1647_FIDELITY.md` / `test_stage1647_fidelity_d1.py` (packaging; no live Completes).
+Stage 1646 Transfer Kaiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1646_FIDELITY.md` / `test_stage1646_fidelity_d1.py` (packaging; no live Completes).
+Stage 1645 Transfer Tetsuyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1645_FIDELITY.md` / `test_stage1645_fidelity_d1.py` (packaging; no live Completes).
+Stage 1644 Transfer Haiyuglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1644_FIDELITY.md` / `test_stage1644_fidelity_d1.py` (packaging; no live Completes).
+Stage 1643 Transfer Amenagashiglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1643_FIDELITY.md` / `test_stage1643_fidelity_d1.py` (packaging; no live Completes).
+Stage 1642 Transfer Chojigiroglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1642_FIDELITY.md` / `test_stage1642_fidelity_d1.py` (packaging; no live Completes).
+Stage 1641 Transfer Shinooribeglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1641_FIDELITY.md` / `test_stage1641_fidelity_d1.py` (packaging; no live Completes).
+Stage 1640 Transfer Kuromonoglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1640_FIDELITY.md` / `test_stage1640_fidelity_d1.py` (packaging; no live Completes).
+Stage 1639 Transfer Narumioribeglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1639_FIDELITY.md` / `test_stage1639_fidelity_d1.py` (packaging; no live Completes).
+Stage 1638 Transfer Aooribeglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1638_FIDELITY.md` / `test_stage1638_fidelity_d1.py` (packaging; no live Completes).
+Stage 1637 Transfer Nezumishinoglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1637_FIDELITY.md` / `test_stage1637_fidelity_d1.py` (packaging; no live Completes).
+Stage 1636 Transfer Setoguroglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1636_FIDELITY.md` / `test_stage1636_fidelity_d1.py` (packaging; no live Completes).
+Stage 1635 Transfer Kisetoglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1635_FIDELITY.md` / `test_stage1635_fidelity_d1.py` (packaging; no live Completes).
+Stage 1634 Transfer Oribeyakiglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1634_FIDELITY.md` / `test_stage1634_fidelity_d1.py` (packaging; no live Completes).
+Stage 1633 Transfer Shinoyakiglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1633_FIDELITY.md` / `test_stage1633_fidelity_d1.py` (packaging; no live Completes).
+Stage 1632 Transfer Bizenyakiglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1632_FIDELITY.md` / `test_stage1632_fidelity_d1.py` (packaging; no live Completes).
+Stage 1631 Transfer Kibiyakiglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1631_FIDELITY.md` / `test_stage1631_fidelity_d1.py` (packaging; no live Completes).
+Stage 1630 Transfer Akazuyakiglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1630_FIDELITY.md` / `test_stage1630_fidelity_d1.py` (packaging; no live Completes).
+Stage 1629 Transfer Setoshidaglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1629_FIDELITY.md` / `test_stage1629_fidelity_d1.py` (packaging; no live Completes).
+Stage 1628 Transfer Ofukeyakiglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1628_FIDELITY.md` / `test_stage1628_fidelity_d1.py` (packaging; no live Completes).
+Stage 1627 Transfer Inuyamaglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1627_FIDELITY.md` / `test_stage1627_fidelity_d1.py` (packaging; no live Completes).
 Stage 1626 Transfer Shodoyaglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1626_FIDELITY.md` / `test_stage1626_fidelity_d1.py` (packaging; no live Completes).
 Stage 1625 Transfer Awajiglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1625_FIDELITY.md` / `test_stage1625_fidelity_d1.py` (packaging; no live Completes).
 Stage 1624 Transfer Awaglaze Gate Honesty Pack Remaining-Gate Index Fidelity — see `docs/STAGE_1624_FIDELITY.md` / `test_stage1624_fidelity_d1.py` (packaging; no live Completes).

@@ -13,12 +13,17 @@ from app.inventory import apply_stock_change
 from app.sales import (
     INVOICE_PRINT_FORMATS,
     INVOICE_PRINT_TEMPLATES,
+    branded_pdf_attachment,
     calc_sale_line_amounts,
     create_sales_invoice,
     get_customer,
     get_invoice,
     list_invoice_items,
+    print_brand_kwargs,
+    product_item_labels,
     render_branded_lines_pdf,
+    resolve_sales_print_template,
+    workspace_company,
 )
 from app.tax import resolve_product_tax
 from app.catalog import get_variant, resolve_sale_line
@@ -456,9 +461,11 @@ async def send_quotation(
     quotation_id: str,
     *,
     to: str | None = None,
+    template: str | None = None,
 ) -> tuple[m.SalesQuotation, dict]:
     """Email quotation to customer, then mark status=sent. Delivery must succeed first."""
     from app import emailer
+    from app.print_branding import tenant_document_brand
 
     quote = await get_quotation(db, tenant_id, quotation_id)
     if quote.status not in {"draft", "sent"}:
@@ -477,9 +484,30 @@ async def send_quotation(
         )
 
     tenant = await db.get(m.Tenant, tenant_id)
-    company_name = tenant.company_name if tenant else "RIBDIGI ERP"
-    currency = (tenant.currency if tenant else None) or "GHS"
+    company = await workspace_company(db, tenant_id, getattr(quote, "company_id", None))
+    doc_brand = tenant_document_brand(tenant, company)
     payload = await serialize_quotation(db, quote)
+    currency = (
+        (company.currency if company and getattr(company, "currency", None) else None)
+        or (tenant.currency if tenant else None)
+        or "GHS"
+    )
+    tpl = resolve_sales_print_template(template, doc_brand, QUOTATION_PRINT_TEMPLATES)
+    labels = await product_item_labels(db, tenant_id, payload.get("items"))
+    brand = print_brand_kwargs(
+        doc_brand,
+        customer_name=customer.name,
+        template=tpl,
+        currency=currency,
+        customer_address=getattr(customer, "address", None),
+        item_labels=labels,
+    )
+    pdf = render_quotation_pdf(payload, **brand)
+    attachment = branded_pdf_attachment(
+        filename=f"quotation_{(payload.get('quotation_number') or quotation_id)}.pdf",
+        content=pdf,
+    )
+    company_name = doc_brand["company_name"] or (tenant.company_name if tenant else None) or "RIBDIGI ERP"
 
     result = await emailer.send_quotation_email(
         to=recipient,
@@ -487,6 +515,9 @@ async def send_quotation(
         currency=currency,
         customer_name=customer.name,
         quotation=payload,
+        item_labels=labels,
+        attachments=[attachment],
+        tenant=tenant,
     )
     if not result.sent:
         if result.mode == "disabled":
@@ -499,11 +530,18 @@ async def send_quotation(
     quote.emailed_to = recipient
     quote.updated_at = now
     await db.flush()
+    attachment_meta = {
+        "filename": attachment["filename"],
+        "content_type": "application/pdf",
+        "size_bytes": len(pdf),
+    }
     delivery = {
         "sent": result.sent,
         "mode": result.mode,
         "to": recipient,
-        "emailed_at": quote.emailed_at,
+        "emailed_at": quote.emailed_at.isoformat() + "Z" if quote.emailed_at else None,
+        "template": tpl,
+        "attachment": attachment_meta,
     }
     return quote, delivery
 

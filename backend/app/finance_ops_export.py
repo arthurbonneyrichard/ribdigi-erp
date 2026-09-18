@@ -284,6 +284,8 @@ async def export_fiscal_period_csv(
 
 TRIAL_BALANCE_EXPORT_COLUMNS = [
     "as_of",
+    "store_id",
+    "branch_id",
     "account_id",
     "code",
     "name",
@@ -302,17 +304,28 @@ async def export_trial_balance_csv(
     *,
     tenant_id: str,
     as_of=None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
     company_id: str | None = None,
 ) -> str:
     """Stage 159 B1 — accounting trial-balance CSV (path-scoped; distinct from reports/export)."""
     from app.accounting import ensure_default_accounts, trial_balance
 
     await ensure_default_accounts(db, tenant_id, company_id=company_id)
-    data = await trial_balance(db, tenant_id, as_of=as_of, company_id=company_id)
+    data = await trial_balance(
+        db,
+        tenant_id,
+        as_of=as_of,
+        store_id=store_id,
+        branch_id=branch_id,
+        company_id=company_id,
+    )
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=TRIAL_BALANCE_EXPORT_COLUMNS)
     writer.writeheader()
     as_of_v = data.get("as_of")
+    store_v = data.get("store_id")
+    branch_v = data.get("branch_id")
     total_debit = data.get("total_debit")
     total_credit = data.get("total_credit")
     balanced = data.get("balanced")
@@ -321,6 +334,8 @@ async def export_trial_balance_csv(
         writer.writerow(
             {
                 "as_of": _cell(as_of_v),
+                "store_id": _cell(store_v),
+                "branch_id": _cell(branch_v),
                 "account_id": "",
                 "code": "",
                 "name": "",
@@ -338,6 +353,8 @@ async def export_trial_balance_csv(
         writer.writerow(
             {
                 "as_of": _cell(as_of_v),
+                "store_id": _cell(store_v),
+                "branch_id": _cell(branch_v),
                 "account_id": _cell(row.get("account_id")),
                 "code": _cell(row.get("code")),
                 "name": _cell(row.get("name")),

@@ -88,6 +88,8 @@ function notificationHref(note: Note): string | null {
   if (t === 'purchase_order') return '/purchasing?tab=orders';
   // Stage 101 E1 — expense / approval → pending queue; recurring → #recurring
   if (t === 'expense' || t === 'expense_approval') return '/expenses?status=pending';
+  if (t === 'expense_rejected') return '/expenses?status=rejected';
+  if (t === 'expense_approved') return '/expenses?status=approved';
   if (t === 'recurring_expense') return '/expenses#recurring';
   if (t.includes('stock') || t.includes('batch')) return '/inventory?tab=lowstock';
   return null;
