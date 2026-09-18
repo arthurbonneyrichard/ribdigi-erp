@@ -105,7 +105,11 @@ services:
     command:
       - sh
       - -c
-      - exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers $${UVICORN_WORKERS:-2} --proxy-headers --forwarded-allow-ips='*' --log-level $${LOG_LEVEL:-info}
+      - >-
+        exec uvicorn app.main:app --host 0.0.0.0 --port 8000
+        --workers $${UVICORN_WORKERS:-2}
+        --proxy-headers --forwarded-allow-ips='*'
+        --log-level $$(echo "$${LOG_LEVEL:-info}" | tr '[:upper:]' '[:lower:]')
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/api/v1/health"]
       interval: 30s
@@ -296,7 +300,7 @@ services:
         max-file: "3"
 
   minio:
-    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    image: quay.io/minio/minio:RELEASE.2024-12-18T13-15-44Z
     restart: unless-stopped
     command: server /data --console-address :9001
     environment:
@@ -314,7 +318,7 @@ services:
         max-file: "3"
 
   minio-init:
-    image: minio/mc:RELEASE.2024-11-17T19-35-56Z
+    image: quay.io/minio/mc:RELEASE.2024-11-21T17-21-54Z
     depends_on:
       minio:
         condition: service_started
