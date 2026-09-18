@@ -58,6 +58,10 @@ services:
       args:
         # Baked at image build time — must match public HTTPS API URL
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL}
+        # Umami is off until WEBSITE_ID is set, then rebuild the frontend image.
+        NEXT_PUBLIC_UMAMI_SRC: ${NEXT_PUBLIC_UMAMI_SRC:-https://cloud.umami.is/script.js}
+        NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${NEXT_PUBLIC_UMAMI_WEBSITE_ID:-}
+        NEXT_PUBLIC_UMAMI_DOMAINS: ${NEXT_PUBLIC_UMAMI_DOMAINS:-erp.ribdigihouse.com}
     restart: unless-stopped
     environment:
       NODE_ENV: production

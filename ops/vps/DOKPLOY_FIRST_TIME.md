@@ -189,6 +189,8 @@ Dokploy writes these into a `.env` next to the compose file. Our compose already
 
 **Important:** `NEXT_PUBLIC_API_URL` is baked into the frontend **at build time**. If you change it later, Redeploy / rebuild.
 
+Umami stats use the same bake-time rule. Set `NEXT_PUBLIC_UMAMI_WEBSITE_ID` (and `NEXT_PUBLIC_UMAMI_SRC` if you are not on Umami Cloud) in the Dokploy environment, then rebuild the frontend. Leave the website ID empty to keep tracking off. Query strings are excluded so password-reset tokens are not stored.
+
 ---
 
 ## 7. Add domains (Traefik) — then Redeploy

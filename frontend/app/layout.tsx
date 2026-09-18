@@ -1,3 +1,4 @@
+import UmamiScript from '../components/UmamiScript';
 import './globals.css';
 
 export const metadata = {
@@ -40,7 +41,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: themeInit }} />
         <script dangerouslySetInnerHTML={{ __html: swInit }} />
       </head>
-      <body>{children}</body>
+      <body>
+        <UmamiScript />
+        {children}
+      </body>
     </html>
   );
 }
