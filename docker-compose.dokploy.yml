@@ -77,6 +77,9 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        # Bump to force Dokploy/BuildKit to rebuild app+alembic layers
+        RIBDIGI_BUILD_ID: "20260918-0106-if-not-exists-v2"
     restart: unless-stopped
     env_file: .env
     environment:
@@ -129,6 +132,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        RIBDIGI_BUILD_ID: "20260918-0106-if-not-exists-v2"
     env_file: .env
     environment:
       PYTHONPATH: /app
@@ -142,6 +147,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    # Fingerprint + alembic upgrade (bootstrap refuses stale 0106 images)
     command: ["python", "scripts/bootstrap.py"]
     restart: "on-failure"
     logging:
@@ -157,6 +163,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        RIBDIGI_BUILD_ID: "20260918-0106-if-not-exists-v2"
     restart: unless-stopped
     env_file: .env
     environment:
@@ -195,6 +203,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        RIBDIGI_BUILD_ID: "20260918-0106-if-not-exists-v2"
     restart: unless-stopped
     env_file: .env
     environment:

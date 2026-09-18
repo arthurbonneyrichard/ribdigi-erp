@@ -20,10 +20,22 @@ RUN apt-get update \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Build arg busts Dokploy/BuildKit cache for application layers after deps.
+# Bump RIBDIGI_BUILD_ID in docker-compose.dokploy.yml when migrations must ship.
+ARG RIBDIGI_BUILD_ID=unknown
+LABEL org.ribdigi.build_id="${RIBDIGI_BUILD_ID}"
+RUN printf '%s\n' "${RIBDIGI_BUILD_ID}" > /app/.build-id
+
 COPY alembic.ini .
 COPY alembic ./alembic
 COPY app ./app
 COPY scripts ./scripts
+
+# Fail the image build if the production-critical idempotent marker is missing.
+RUN grep -q 'RIBDIGI_0106_IF_NOT_EXISTS_V2' \
+      /app/alembic/versions/20260917_0106_transaction_client_request_id.py \
+    && grep -q 'ADD COLUMN IF NOT EXISTS client_request_id' \
+      /app/alembic/versions/20260917_0106_transaction_client_request_id.py
 
 RUN useradd --create-home --uid 10001 --shell /usr/sbin/nologin appuser \
     && mkdir -p /data/media /data/backups \

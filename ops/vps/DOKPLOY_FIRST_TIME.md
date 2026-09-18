@@ -122,6 +122,14 @@ Details: https://docs.dokploy.com/docs/core/installation
    - **Compose path:** `docker-compose.dokploy.yml`
    - **Compose type:** Docker Compose (not Stack)
 
+4. **Always rebuild images on Alembic/schema fixes.** Dokploy can reuse a cached
+   `migrate`/`backend` image that still contains an old migration file. After
+   pulling commits that change `backend/alembic/` or `RIBDIGI_BUILD_ID`, use
+   **Redeploy** with image rebuild (no cache) so `migrate` logs show
+   `bootstrap: 0106 idempotent markers OK` and
+   `RIBDIGI_BUILD_ID=20260918-0106-if-not-exists-v2`. A stale image will exit
+   early with a clear bootstrap error instead of `DuplicateColumn`.
+
 ---
 
 ## 6. Paste environment variables

@@ -4,11 +4,14 @@ Revision ID: 20260917_0106
 Revises: 20260917_0105
 Create Date: 2026-09-17
 
-Production-safe / idempotent:
-Earlier production lineage already added transactions.client_request_id
-(and related indexes/constraints). This revision must not fail with
-DuplicateColumn / DuplicateTable when those objects already exist.
-Incompatible existing column types raise instead of being silently accepted.
+Idempotent marker: RIBDIGI_0106_IF_NOT_EXISTS_V2
+
+Production-safe:
+- Never emit plain ``ALTER TABLE ... ADD COLUMN client_request_id`` without
+  ``IF NOT EXISTS`` on PostgreSQL (avoids DuplicateColumn when the column
+  already exists from an earlier production lineage).
+- Preserve compatible existing VARCHAR/TEXT columns (including longer widths).
+- Raise on incompatible existing types instead of silently accepting them.
 """
 
 from __future__ import annotations
@@ -22,18 +25,22 @@ branch_labels = None
 depends_on = None
 
 _EXPECTED_MIN_LENGTH = 64
+_IDEM_MARKER = "RIBDIGI_0106_IF_NOT_EXISTS_V2"
 
 
 def _pg_column_info(bind, table: str, column: str) -> dict | None:
-    """Return information_schema row for table.column, or None if missing."""
+    """Look up column across all non-system schemas (search_path safe)."""
     row = bind.execute(
         sa.text(
             """
-            SELECT data_type, character_maximum_length, is_nullable, udt_name
+            SELECT data_type, character_maximum_length, is_nullable, udt_name,
+                   table_schema
             FROM information_schema.columns
-            WHERE table_schema = current_schema()
-              AND table_name = :table
+            WHERE table_name = :table
               AND column_name = :column
+              AND table_schema NOT IN ('pg_catalog', 'information_schema')
+            ORDER BY CASE WHEN table_schema = current_schema() THEN 0 ELSE 1 END
+            LIMIT 1
             """
         ),
         {"table": table, "column": column},
@@ -51,7 +58,8 @@ def _pg_index_exists(bind, index_name: str) -> bool:
                 JOIN pg_namespace n ON n.oid = c.relnamespace
                 WHERE c.relkind IN ('i', 'I')
                   AND c.relname = :name
-                  AND n.nspname = current_schema()
+                  AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+                LIMIT 1
                 """
             ),
             {"name": index_name},
@@ -68,7 +76,8 @@ def _pg_constraint_exists(bind, constraint_name: str) -> bool:
                 FROM pg_constraint c
                 JOIN pg_namespace n ON n.oid = c.connamespace
                 WHERE c.conname = :name
-                  AND n.nspname = current_schema()
+                  AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+                LIMIT 1
                 """
             ),
             {"name": constraint_name},
@@ -77,7 +86,6 @@ def _pg_constraint_exists(bind, constraint_name: str) -> bool:
 
 
 def _pg_has_unique_on_cols(bind, table: str, cols: list[str]) -> bool:
-    """True if a unique constraint or unique index covers exactly these columns."""
     row = bind.execute(
         sa.text(
             """
@@ -86,7 +94,7 @@ def _pg_has_unique_on_cols(bind, table: str, cols: list[str]) -> bool:
             JOIN pg_class t ON t.oid = i.indrelid
             JOIN pg_namespace n ON n.oid = t.relnamespace
             WHERE t.relname = :table
-              AND n.nspname = current_schema()
+              AND n.nspname NOT IN ('pg_catalog', 'information_schema')
               AND i.indisunique
               AND (
                 SELECT array_agg(a.attname::text ORDER BY x.ordinality)
@@ -103,7 +111,6 @@ def _pg_has_unique_on_cols(bind, table: str, cols: list[str]) -> bool:
 
 
 def _assert_compatible_client_request_id(info: dict) -> None:
-    """Raise if an existing column cannot satisfy String(64) nullable semantics."""
     data_type = (info.get("data_type") or "").lower()
     udt = (info.get("udt_name") or "").lower()
     ok_types = {"character varying", "varchar", "text", "character"}
@@ -111,10 +118,9 @@ def _assert_compatible_client_request_id(info: dict) -> None:
         raise RuntimeError(
             "transactions.client_request_id already exists with incompatible type "
             f"{info.get('data_type')!r} (udt={info.get('udt_name')!r}); "
-            f"expected VARCHAR/TEXT nullable string (min length {_EXPECTED_MIN_LENGTH})"
+            f"expected VARCHAR/TEXT (min length {_EXPECTED_MIN_LENGTH})"
         )
     max_len = info.get("character_maximum_length")
-    # TEXT has NULL length; VARCHAR(n) with n < 64 cannot hold app values up to 64.
     if max_len is not None and int(max_len) < _EXPECTED_MIN_LENGTH:
         raise RuntimeError(
             "transactions.client_request_id already exists with insufficient length "
@@ -123,18 +129,25 @@ def _assert_compatible_client_request_id(info: dict) -> None:
 
 
 def _upgrade_postgresql(bind) -> None:
+    print(f"alembic 20260917_0106: {_IDEM_MARKER} dialect={bind.dialect.name}")
     info = _pg_column_info(bind, "transactions", "client_request_id")
     if info is None:
+        # IF NOT EXISTS is mandatory — never use op.add_column on PostgreSQL.
         bind.execute(
             sa.text(
                 "ALTER TABLE transactions "
                 "ADD COLUMN IF NOT EXISTS client_request_id VARCHAR(64)"
             )
         )
+        print("alembic 20260917_0106: added client_request_id (or already present)")
     else:
         _assert_compatible_client_request_id(info)
+        print(
+            "alembic 20260917_0106: preserving existing client_request_id "
+            f"type={info.get('data_type')} len={info.get('character_maximum_length')} "
+            f"schema={info.get('table_schema')}"
+        )
 
-    # Non-unique supporting index (same name used historically).
     if not _pg_index_exists(bind, "ix_transactions_client_request_id"):
         bind.execute(
             sa.text(
@@ -143,8 +156,6 @@ def _upgrade_postgresql(bind) -> None:
             )
         )
 
-    # Partial unique for non-null client_request_id values.
-    # Skip when this name, an equivalent unique, or the company-scoped unique exists.
     if (
         not _pg_index_exists(bind, "uq_transactions_tenant_client_request")
         and not _pg_constraint_exists(bind, "uq_transactions_tenant_client_request")
@@ -165,6 +176,7 @@ def _upgrade_postgresql(bind) -> None:
 
 
 def _upgrade_other(bind) -> None:
+    """Non-Postgres (local SQLite tests): inspect-then-create; never for production."""
     insp = sa.inspect(bind)
     cols = {c["name"] for c in insp.get_columns("transactions")}
     indexes = {ix["name"] for ix in (insp.get_indexes("transactions") or []) if ix.get("name")}
@@ -173,12 +185,11 @@ def _upgrade_other(bind) -> None:
     }
 
     if "client_request_id" not in cols:
-        op.add_column(
-            "transactions",
-            sa.Column("client_request_id", sa.String(length=64), nullable=True),
-        )
+        # SQLite has no reliable IF NOT EXISTS for ADD COLUMN on older versions;
+        # production always uses PostgreSQL and never reaches this branch.
+        with op.batch_alter_table("transactions") as batch:
+            batch.add_column(sa.Column("client_request_id", sa.String(length=64), nullable=True))
     else:
-        # Best-effort type gate for non-Postgres dialects used in tests.
         col = next(c for c in insp.get_columns("transactions") if c["name"] == "client_request_id")
         col_type = col.get("type")
         if col_type is not None and not isinstance(col_type, (sa.String, sa.Text)):
@@ -217,7 +228,9 @@ def _upgrade_other(bind) -> None:
 
 def upgrade() -> None:
     bind = op.get_bind()
-    if bind.dialect.name == "postgresql":
+    dialect = (bind.dialect.name or "").lower()
+    # Treat any postgres* dialect as PostgreSQL (never op.add_column).
+    if dialect.startswith("postgres"):
         _upgrade_postgresql(bind)
     else:
         _upgrade_other(bind)
@@ -225,15 +238,18 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     bind = op.get_bind()
-    if bind.dialect.name == "postgresql":
+    dialect = (bind.dialect.name or "").lower()
+    if dialect.startswith("postgres"):
         bind.execute(sa.text("DROP INDEX IF EXISTS uq_transactions_tenant_client_request"))
         bind.execute(sa.text("DROP INDEX IF EXISTS ix_transactions_client_request_id"))
         info = _pg_column_info(bind, "transactions", "client_request_id")
         if info is not None:
-            # Only drop if we would own a VARCHAR(64) column; leave longer legacy columns.
             max_len = info.get("character_maximum_length")
+            # Do not drop longer legacy production columns on downgrade.
             if max_len is None or int(max_len) == _EXPECTED_MIN_LENGTH:
-                bind.execute(sa.text("ALTER TABLE transactions DROP COLUMN IF EXISTS client_request_id"))
+                bind.execute(
+                    sa.text("ALTER TABLE transactions DROP COLUMN IF EXISTS client_request_id")
+                )
         return
 
     insp = sa.inspect(bind)
