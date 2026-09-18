@@ -138,6 +138,8 @@ async def assemble_health(
         "status": "ok",
         "service": "ribdigi-erp",
         "deep": bool(deep),
+        "release_channel": settings.RIBDIGI_RELEASE_CHANNEL,
+        "build_id": settings.RIBDIGI_BUILD_ID,
     }
     if not deep:
         return body, 200

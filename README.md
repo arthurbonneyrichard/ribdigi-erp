@@ -50,6 +50,19 @@ Never enable this flag in staging or production.
 
 ### Option A — Dokploy (recommended for first VPS)
 
+**Deploy the latest commercial ERP from Git branch `production` (not `main`).**  
+GitHub `main` is an older ERP lineage; Dokploy must use:
+
+| Setting | Value |
+|---------|--------|
+| Repository | `ribdigi-erp` |
+| **Branch** | **`production`** |
+| Compose file | `docker-compose.dokploy.yml` |
+
+After switching branch, **Redeploy with image rebuild (no cache)**. Confirm the live API:
+
+`GET /api/v1/health` → `release_channel: "production"` and a current `build_id`.
+
 Step-by-step (buy VPS → install Dokploy → GitHub → domains → Platform Owner):
 
 - **`ops/vps/DOKPLOY_FIRST_TIME.md`**

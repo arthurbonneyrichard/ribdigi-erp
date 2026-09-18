@@ -3,6 +3,12 @@
 This guide is for a **first VPS** and **Dokploy**.  
 Dokploy is a control panel that installs Docker + Traefik and deploys your Git repo with a UI.
 
+> **CRITICAL:** For the **latest commercial ERP**, set the Dokploy Git **Branch** to  
+> **`production`**. Do **not** deploy from GitHub **`main`** — that is the older ERP  
+> lineage. After changing the branch, Redeploy with **image rebuild (no cache)**.  
+> Confirm: `GET https://erp.ribdigihouse.com/api/v1/health` shows  
+> `"release_channel":"production"`.
+
 | Deploy style | Compose file | Who handles HTTPS |
 |--------------|--------------|-------------------|
 | **Dokploy (this guide)** | `docker-compose.dokploy.yml` | Dokploy Traefik |
@@ -127,7 +133,7 @@ Details: https://docs.dokploy.com/docs/core/installation
    pulling commits that change `backend/alembic/` or `RIBDIGI_BUILD_ID`, use
    **Redeploy** with image rebuild (no cache) so `migrate` logs show
    `bootstrap: 0106 idempotent markers OK` and
-   `RIBDIGI_BUILD_ID=20260918-0106-if-not-exists-v3`. A stale image will exit
+   `RIBDIGI_BUILD_ID=20260918-production-erp-v4`. A stale image will exit
    early with a clear bootstrap error instead of `DuplicateColumn`.
 
 ---

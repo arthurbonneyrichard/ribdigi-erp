@@ -15,6 +15,9 @@ from app.models import Base
 _MIG_0106 = Path(__file__).resolve().parents[1] / "alembic" / "versions" / (
     "20260917_0106_transaction_client_request_id.py"
 )
+_MIG_0107 = Path(__file__).resolve().parents[1] / "alembic" / "versions" / (
+    "20260917_0107_pos_devices.py"
+)
 _BUILD_ID = Path("/app/.build-id")
 _REQUIRED_MARKERS = (
     "RIBDIGI_0106_IF_NOT_EXISTS_V3",
@@ -29,7 +32,25 @@ _FORBIDDEN_SNIPPETS = (
 
 def _print_migration_fingerprint() -> None:
     build = _BUILD_ID.read_text(encoding="utf-8").strip() if _BUILD_ID.is_file() else "missing"
-    print(f"bootstrap: RIBDIGI_BUILD_ID={build}")
+    channel = (settings.RIBDIGI_RELEASE_CHANNEL or "").strip() or "unset"
+    runtime_build = (settings.RIBDIGI_BUILD_ID or "").strip() or "unset"
+    print(f"bootstrap: RIBDIGI_RELEASE_CHANNEL={channel}")
+    print(f"bootstrap: RIBDIGI_BUILD_ID(runtime)={runtime_build}")
+    print(f"bootstrap: RIBDIGI_BUILD_ID(image)={build}")
+    if settings.APP_ENV.lower() == "production" and channel != "production":
+        print(
+            "bootstrap: ERROR production APP_ENV requires RIBDIGI_RELEASE_CHANNEL=production "
+            "(Dokploy must deploy Git branch `production`, not `main`).",
+            file=sys.stderr,
+        )
+        sys.exit(5)
+    if not _MIG_0107.is_file():
+        print(
+            "bootstrap: ERROR missing commercial migration 20260917_0107 — "
+            "this image is not the latest ERP (deploy branch `production`).",
+            file=sys.stderr,
+        )
+        sys.exit(6)
     if not _MIG_0106.is_file():
         print(f"bootstrap: ERROR missing {_MIG_0106}", file=sys.stderr)
         sys.exit(2)
@@ -57,6 +78,7 @@ def _print_migration_fingerprint() -> None:
             file=sys.stderr,
         )
         sys.exit(4)
+    print("bootstrap: commercial ERP migrations 0106/0107 present")
     print("bootstrap: 0106 idempotent markers OK (no op.add_column/batch.add_column)")
 
 
