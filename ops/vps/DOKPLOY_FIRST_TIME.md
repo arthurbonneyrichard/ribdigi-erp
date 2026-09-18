@@ -189,7 +189,7 @@ Dokploy writes these into a `.env` next to the compose file. Our compose already
 
 **Important:** `NEXT_PUBLIC_API_URL` is baked into the frontend **at build time**. If you change it later, Redeploy / rebuild.
 
-Umami stats use the same bake-time rule. Set `NEXT_PUBLIC_UMAMI_WEBSITE_ID` (and `NEXT_PUBLIC_UMAMI_SRC` if you are not on Umami Cloud) in the Dokploy environment, then rebuild the frontend. Leave the website ID empty to keep tracking off. Query strings are excluded so password-reset tokens are not stored.
+Umami stats use the same bake-time rule. Production defaults to `https://analytics.ribdigihouse.com/script.js` with website ID `0d5b3d4e-fe16-47bf-91f2-6ce564fb2e0e`. Rebuild the frontend after changing them. Query strings are excluded so password-reset tokens are not stored.
 
 ---
 

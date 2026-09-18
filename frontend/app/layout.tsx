@@ -40,11 +40,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInit }} />
         <script dangerouslySetInnerHTML={{ __html: swInit }} />
-      </head>
-      <body>
         <UmamiScript />
-        {children}
-      </body>
+      </head>
+      <body>{children}</body>
     </html>
   );
 }
