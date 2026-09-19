@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'One System. Total Business Control. A Ribdigi House Product.',
     start_url: '/',
     display: 'standalone',
-    background_color: '#FFFFFF',
-    theme_color: '#FFFFFF',
+    background_color: '#003D1F',
+    theme_color: '#4AB012',
     icons: [
       {
         src: '/icon.png',

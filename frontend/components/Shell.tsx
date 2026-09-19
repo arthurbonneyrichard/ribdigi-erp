@@ -416,6 +416,18 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const el = document.documentElement;
     setTheme((el.getAttribute('data-theme') as 'light' | 'dark') || 'light');
+    const mql = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = (e: MediaQueryListEvent) => {
+      // Only follow the device when this signed-in user has no saved preference.
+      if (!userId) return;
+      const scoped = localStorage.getItem(`ribdigi.theme.${userId}`);
+      if (scoped === 'light' || scoped === 'dark') return;
+      const eff = e.matches ? 'dark' : 'light';
+      applyTheme(eff);
+      setTheme(eff);
+    };
+    mql.addEventListener?.('change', onChange);
+    return () => mql.removeEventListener?.('change', onChange);
   }, [userId]);
 
   async function logout() {

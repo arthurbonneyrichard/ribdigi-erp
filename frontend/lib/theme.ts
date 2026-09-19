@@ -15,7 +15,12 @@ export function applyTheme(mode: ThemeMode): void {
 }
 
 function systemTheme(): ThemeMode {
-  return 'light';
+  if (typeof window === 'undefined') return 'light';
+  try {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  } catch {
+    return 'light';
+  }
 }
 
 /** Apply and persist theme for one authenticated user only. */
@@ -55,14 +60,13 @@ export function loadUserTheme(userId: string): ThemeMode {
     return legacy;
   }
 
-  const mode = 'light';
-  localStorage.setItem(themeKeyForUser(id), mode);
+  const mode = systemTheme();
   localStorage.setItem(ACTIVE_USER_KEY, id);
   applyTheme(mode);
   return mode;
 }
 
-/** After logout: forget the active user and return the login page to the white theme. */
+/** After logout: forget active user and return login UI to system preference. */
 export function clearSessionTheme(): void {
   if (typeof localStorage === 'undefined') return;
   localStorage.removeItem(ACTIVE_USER_KEY);
