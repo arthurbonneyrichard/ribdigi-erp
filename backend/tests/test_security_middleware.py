@@ -12,6 +12,8 @@ def test_production_rejects_wildcard_cors():
             JWT_SECRET_KEY="x" * 32,
             DEBUG=False,
             CORS_ORIGINS="*",
+            TRUSTED_HOSTS="app.example.com",
+            LOGIN_2FA_ENABLED=True,
             RATE_LIMIT_ENABLED=True,
             EMAIL_ENABLED=False,
             SMS_ENABLED=False,
@@ -28,6 +30,8 @@ def test_production_requires_rate_limit():
             JWT_SECRET_KEY="x" * 32,
             DEBUG=False,
             CORS_ORIGINS="https://app.example.com",
+            TRUSTED_HOSTS="app.example.com",
+            LOGIN_2FA_ENABLED=True,
             RATE_LIMIT_ENABLED=False,
             EMAIL_ENABLED=False,
             SMS_ENABLED=False,
@@ -44,6 +48,8 @@ def test_production_rejects_require_redis_with_memory():
             JWT_SECRET_KEY="x" * 32,
             DEBUG=False,
             CORS_ORIGINS="https://app.example.com",
+            TRUSTED_HOSTS="app.example.com",
+            LOGIN_2FA_ENABLED=True,
             RATE_LIMIT_ENABLED=True,
             RATE_LIMIT_BACKEND="memory",
             RATE_LIMIT_REQUIRE_REDIS=True,
@@ -53,6 +59,42 @@ def test_production_rejects_require_redis_with_memory():
         assert False, "expected validation error"
     except Exception as exc:
         assert "RATE_LIMIT_REQUIRE_REDIS" in str(exc) or "memory" in str(exc).lower()
+
+
+def test_production_requires_trusted_hosts():
+    try:
+        Settings(
+            APP_ENV="production",
+            JWT_SECRET_KEY="x" * 32,
+            DEBUG=False,
+            CORS_ORIGINS="https://app.example.com",
+            TRUSTED_HOSTS="",
+            LOGIN_2FA_ENABLED=True,
+            RATE_LIMIT_ENABLED=True,
+            EMAIL_ENABLED=False,
+            SMS_ENABLED=False,
+        )
+        assert False, "expected validation error"
+    except Exception as exc:
+        assert "TRUSTED_HOSTS" in str(exc)
+
+
+def test_production_requires_login_2fa():
+    try:
+        Settings(
+            APP_ENV="production",
+            JWT_SECRET_KEY="x" * 32,
+            DEBUG=False,
+            CORS_ORIGINS="https://app.example.com",
+            TRUSTED_HOSTS="app.example.com",
+            LOGIN_2FA_ENABLED=False,
+            RATE_LIMIT_ENABLED=True,
+            EMAIL_ENABLED=False,
+            SMS_ENABLED=False,
+        )
+        assert False, "expected validation error"
+    except Exception as exc:
+        assert "LOGIN_2FA" in str(exc)
 
 
 def test_auth_path_prefixes_cover_login():

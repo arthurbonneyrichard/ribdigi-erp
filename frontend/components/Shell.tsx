@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { api, clearSessionAndRedirect, idleTimeoutMs } from '../lib/api';
+import { applyTheme, clearSessionTheme, loadUserTheme, writeUserTheme } from '../lib/theme';
 import { StoreProvider } from '../lib/storeContext';
 import OnboardingChecklist from './OnboardingChecklist';
 import StoreSwitcher from './StoreSwitcher';
@@ -360,6 +361,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
   const [idleMinutes, setIdleMinutes] = useState(30);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [userId, setUserId] = useState('');
   const [bellOpen, setBellOpen] = useState(false);
   const [bellNotes, setBellNotes] = useState<BellNote[]>([]);
   const [bellBusy, setBellBusy] = useState(false);
@@ -416,23 +418,17 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     setTheme((el.getAttribute('data-theme') as 'light' | 'dark') || 'light');
     const mql = window.matchMedia('(prefers-color-scheme: dark)');
     const onChange = (e: MediaQueryListEvent) => {
-      // Only follow the device when the user hasn't set an explicit preference.
-      if (!localStorage.getItem('theme')) {
-        const eff = e.matches ? 'dark' : 'light';
-        el.setAttribute('data-theme', eff);
-        setTheme(eff);
-      }
+      // Only follow the device when this signed-in user has no saved preference.
+      if (!userId) return;
+      const scoped = localStorage.getItem(`ribdigi.theme.${userId}`);
+      if (scoped === 'light' || scoped === 'dark') return;
+      const eff = e.matches ? 'dark' : 'light';
+      applyTheme(eff);
+      setTheme(eff);
     };
     mql.addEventListener?.('change', onChange);
     return () => mql.removeEventListener?.('change', onChange);
-  }, []);
-
-  function toggleTheme() {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-    localStorage.setItem('theme', next);
-    setTheme(next);
-  }
+  }, [userId]);
 
   async function logout() {
     try {
@@ -443,7 +439,15 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('tenant');
+    clearSessionTheme();
     window.location.href = '/';
+  }
+
+  function toggleTheme() {
+    if (!userId) return;
+    const next = theme === 'dark' ? 'light' : 'dark';
+    writeUserTheme(userId, next);
+    setTheme(next);
   }
 
   async function refreshUnread() {
@@ -515,6 +519,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         setFullName(meRes.data?.full_name || '');
         setCompanyName(meRes.data?.company_name || '');
         setHasLogo(Boolean(meRes.data?.has_logo));
+        const uid = String(meRes.data?.id || '').trim();
+        if (uid) {
+          setUserId(uid);
+          setTheme(loadUserTheme(uid));
+        }
         const mins = Number(meRes.data?.inactivity_timeout_minutes);
         if (Number.isFinite(mins)) setIdleMinutes(mins);
       } catch {

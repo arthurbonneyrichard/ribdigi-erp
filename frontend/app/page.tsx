@@ -5,6 +5,7 @@ import { api } from '../lib/api';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import LoginBrandLogo from '../components/LoginBrandLogo';
+import { loadUserTheme } from '../lib/theme';
 
 function bufferToBase64url(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
@@ -49,6 +50,8 @@ export default function Login() {
     } else {
       localStorage.removeItem('tenant');
     }
+    const uid = String(data.user?.id || '').trim();
+    if (uid) loadUserTheme(uid);
     if (data.must_enroll_2fa) {
       router.push('/security');
     } else if (

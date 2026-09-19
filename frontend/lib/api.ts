@@ -1,3 +1,5 @@
+import { clearSessionTheme } from './theme';
+
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 // Backend X-Tenant-ID is UuidIdValue — slugs like ribdigi-platform must not be sent
@@ -20,6 +22,7 @@ export function clearSessionAndRedirect() {
   localStorage.removeItem('token');
   localStorage.removeItem('refresh_token');
   localStorage.removeItem('tenant');
+  clearSessionTheme();
   if (window.location.pathname !== '/') {
     window.location.href = '/';
   }

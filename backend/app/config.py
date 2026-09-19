@@ -165,6 +165,16 @@ class Settings(BaseSettings):
                 raise ValueError("RATE_LIMIT_ENABLED must be true in production")
             if self.RATE_LIMIT_PER_MINUTE < 1 or self.RATE_LIMIT_AUTH_PER_MINUTE < 1:
                 raise ValueError("Rate limit values must be positive in production")
+            if not self.trusted_hosts:
+                raise ValueError(
+                    "Production TRUSTED_HOSTS must list at least one host "
+                    "(e.g. erp.ribdigihouse.com,localhost,127.0.0.1)"
+                )
+            if not self.LOGIN_2FA_ENABLED:
+                raise ValueError(
+                    "Production LOGIN_2FA_ENABLED must be true "
+                    "(password-only login is not allowed in production)"
+                )
             backend = (self.RATE_LIMIT_BACKEND or "auto").lower()
             if backend not in {"auto", "redis", "memory"}:
                 raise ValueError("RATE_LIMIT_BACKEND must be auto, redis, or memory")
