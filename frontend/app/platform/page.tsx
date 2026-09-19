@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
@@ -129,11 +129,22 @@ export default function PlatformConsole() {
   const [moduleDraft, setModuleDraft] = useState<string[]>([]);
   const [suspendReason, setSuspendReason] = useState('');
   const [overrideDraft, setOverrideDraft] = useState('');
+  const managePanelRef = useRef<HTMLDivElement | null>(null);
 
   const selected = useMemo(
     () => tenants.find((t) => t.id === selectedId) || null,
     [tenants, selectedId]
   );
+
+  function openManage(row: TenantRow) {
+    setError('');
+    setSelectedId(row.id);
+    setMessage(`Managing ${row.company_name} (workspace: ${row.slug})`);
+    // Defer scroll until the panel has rendered.
+    window.setTimeout(() => {
+      managePanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  }
 
   async function refresh() {
     const me = await api('/me');
@@ -188,12 +199,18 @@ export default function PlatformConsole() {
           : ''
     );
     setModuleDraft(sel.enabled_modules || sel.subscription?.enabled_modules || []);
-    api(`/tenants/${sel.slug || sel.id}/usage`)
+    api(`/tenants/${encodeURIComponent(sel.slug || sel.id)}/usage`)
       .then((r) => {
         const row = r.data as TenantRow;
-        setTenants((prev) => prev.map((t) => (t.id === sel.id ? { ...t, ...row } : t)));
+        if (!row || typeof row !== 'object') return;
+        setTenants((prev) =>
+          prev.map((t) => (t.id === sel.id ? { ...t, ...row, id: t.id, slug: t.slug || row.slug } : t))
+        );
       })
       .catch(() => undefined);
+    window.setTimeout(() => {
+      managePanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
 
@@ -237,11 +254,21 @@ export default function PlatformConsole() {
         }),
       });
       setForm(emptyCreate);
+      const createdSlug = String(r.data?.slug || form.slug).trim().toLowerCase();
       setMessage(
-        `Created tenant ${r.data?.slug || form.slug} (trial). Assign a paid package below when ready.`
+        `Created tenant "${createdSlug}" (trial). Company admin login workspace/slug is "${createdSlug}". ` +
+          `Platform owner still uses workspace "ribdigi-platform". Assign a paid package with Manage when ready.`
       );
       setFilter('all');
       await refresh();
+      if (r.data?.id) {
+        openManage({
+          id: r.data.id,
+          slug: createdSlug,
+          company_name: r.data.company_name || form.company_name,
+          status: r.data.status || 'trial',
+        } as TenantRow);
+      }
     } catch (err: any) {
       setError(err.message || 'Create tenant failed');
     } finally {
@@ -532,6 +559,11 @@ export default function PlatformConsole() {
 
         <div className="plat-panel">
           <h2>Tenant management</h2>
+          <p className="muted" style={{ marginTop: 0, marginBottom: 12 }}>
+            Click <strong>Manage</strong> on a company row to open subscription, modules, and store
+            limits. Platform owner login workspace is <code>ribdigi-platform</code>. Each company
+            admin logs in with that company&apos;s <strong>slug</strong>.
+          </p>
           <div className="card" style={{ marginBottom: 12 }}>
             <label>
               Suspend reason{' '}
@@ -548,6 +580,19 @@ export default function PlatformConsole() {
               Used by Suspend on non-suspended tenants (stored as <code>suspended_reason</code>).
             </p>
           </div>
+
+          {selected ? (
+            <div
+              className="plat-msg"
+              style={{ marginBottom: 12 }}
+              role="status"
+            >
+              Managing <strong>{selected.company_name}</strong> — workspace/slug:{' '}
+              <code>{selected.slug}</code>. Scroll to the panel below or use the highlighted
+              section under the table.
+            </div>
+          ) : null}
+
           <table className="table">
             <thead>
               <tr>
@@ -606,8 +651,17 @@ export default function PlatformConsole() {
                     </td>
                     <td>
                       <div className="plat-actions">
-                        <button type="button" disabled={busy === t.id} onClick={() => setSelectedId(t.id)} aria-label={`Manage tenant ${t.id}`}>
-                          Manage
+                        <button
+                          type="button"
+                          disabled={busy === t.id}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            openManage(t);
+                          }}
+                          aria-label={`Manage tenant ${t.slug || t.id}`}
+                        >
+                          {selectedId === t.id ? 'Managing…' : 'Manage'}
                         </button>
                         {t.status === 'suspended' ? (
                           <button type="button" className="btn-ok" disabled={busy === t.id} onClick={() => activateTenant(t)} aria-label={`Activate tenant ${t.id}`}>
@@ -634,14 +688,27 @@ export default function PlatformConsole() {
         </div>
 
         {selected && (
-          <div className="plat-panel" id="subscription-panel">
+          <div
+            className="plat-panel plat-manage-panel"
+            id="subscription-panel"
+            ref={managePanelRef}
+            tabIndex={-1}
+            style={{ borderColor: 'var(--brand)', boxShadow: '0 0 0 2px #4AB01233' }}
+          >
             <h2>
               Subscription & features — {selected.company_name}
+              <span className="muted" style={{ fontWeight: 600, fontSize: 13, marginLeft: 8 }}>
+                slug: {selected.slug}
+              </span>
               <button
                 type="button"
                 style={{ float: 'right', fontSize: 13 }}
-                onClick={() => setSelectedId(null)}
-               aria-label="Close tenant management panel">
+                onClick={() => {
+                  setSelectedId(null);
+                  setMessage('');
+                }}
+                aria-label="Close tenant management panel"
+              >
                 Close
               </button>
             </h2>
