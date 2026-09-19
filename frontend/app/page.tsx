@@ -40,7 +40,14 @@ export default function Login() {
   function finishLogin(data: any) {
     localStorage.setItem('token', data.access_token);
     if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
-    localStorage.setItem('tenant', data.user.tenant_id);
+    // Only persist UUID tenant ids — slug values (e.g. ribdigi-platform) cause
+    // X-Tenant-ID 422s and bounce the session back to login.
+    const tenantId = String(data.user?.tenant_id || '').trim();
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(tenantId)) {
+      localStorage.setItem('tenant', tenantId);
+    } else {
+      localStorage.removeItem('tenant');
+    }
     if (data.must_enroll_2fa) {
       router.push('/security');
     } else if (
