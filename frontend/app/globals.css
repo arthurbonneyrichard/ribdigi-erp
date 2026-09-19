@@ -247,8 +247,7 @@
 [data-theme="dark"] .tpos-sku,[data-theme="dark"] .tpos-stock,[data-theme="dark"] .tpos-empty,
 [data-theme="dark"] .tpos-shift-meta span,[data-theme="dark"] .tpos-report-kpis span,
 [data-theme="dark"] .tpos-report-table th,[data-theme="dark"] .bell-empty,
-[data-theme="dark"] .bell-item-msg,[data-theme="dark"] .login-tagline,
-[data-theme="dark"] .login-hint,[data-theme="dark"] .login-ghost{
+[data-theme="dark"] .bell-item-msg{
   color:var(--muted-on-dark)!important
 }
 
@@ -325,10 +324,7 @@
 .login-logo{
   display:block;width:min(224px,100%);height:auto;margin:0 auto;object-fit:contain;
 }
-/* White card (default): black wordmark. Dark card: original white wordmark. */
-.login-logo-on-dark{display:none}
-[data-theme="dark"] .login-logo-on-light{display:none}
-[data-theme="dark"] .login-logo-on-dark{display:block}
+/* Sign-in stays the green stage and white card in light and dark mode. */
 
 .auth-gate{
   min-height:100vh;display:flex;align-items:center;justify-content:center;
@@ -410,32 +406,6 @@
 }
 .login-foot a:hover{
   color:var(--brand);border-bottom-color:var(--brand)
-}
-
-[data-theme="dark"] .login{
-  background:rgba(0,29,15,.94);border-color:#0a3d30;
-  box-shadow:0 24px 60px #00000080;
-}
-[data-theme="dark"] .login h1{color:var(--sand)}
-[data-theme="dark"] .login-tagline,[data-theme="dark"] .login-hint,[data-theme="dark"] .login-foot{color:var(--muted-on-dark)}
-[data-theme="dark"] .login-field>span{color:var(--white)}
-[data-theme="dark"] .login input{
-  background:var(--forest-deep);border-color:#0a3d30;color:var(--white);
-}
-[data-theme="dark"] .login input::placeholder{color:#E8F5D8;opacity:.85}
-[data-theme="dark"] .login input:focus{
-  border-color:var(--brand);box-shadow:0 0 0 3px var(--focus-ring);background:var(--forest);
-}
-[data-theme="dark"] .login-primary{background:var(--brand)}
-[data-theme="dark"] .login-primary:hover{background:var(--brand-dark)}
-[data-theme="dark"] .login-secondary{
-  background:var(--forest);color:var(--white);border-color:#0a3d30;
-}
-[data-theme="dark"] .login-secondary:hover{background:#005028}
-[data-theme="dark"] .login-ghost{color:var(--muted-on-dark)}
-[data-theme="dark"] .login-ghost:hover{color:var(--white)}
-[data-theme="dark"] .login-error{
-  background:#450a0a;border-color:#7f1d1d;color:#fecaca;
 }
 
 @media(max-width:480px){
