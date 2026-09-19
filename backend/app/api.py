@@ -1149,11 +1149,13 @@ async def platform_staff_update(
         actor_role=claims.get("role") or "",
         user_id=user_id,
         full_name=payload.full_name,
+        email=str(payload.email) if payload.email is not None else None,
         role=payload.role,
         phone=payload.phone,
         is_active=payload.is_active,
+        password=payload.password,
     )
-    if payload.is_active is False:
+    if payload.is_active is False or payload.password is not None:
         rows = (
             await db.execute(
                 select(m.AuthSession).where(
@@ -1173,7 +1175,12 @@ async def platform_staff_update(
         action="update",
         entity="user",
         entity_id=user.id,
-        details={"role": user.role, "is_active": user.is_active},
+        details={
+            "role": user.role,
+            "is_active": user.is_active,
+            "email_changed": payload.email is not None,
+            "password_changed": payload.password is not None,
+        },
     )
     await db.commit()
     return env(platform_staff_svc.serialize_staff(user), "Platform staff updated")

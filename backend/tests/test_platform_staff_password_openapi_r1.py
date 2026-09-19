@@ -9,7 +9,7 @@ import pyotp
 import pytest
 from pydantic import TypeAdapter, ValidationError
 
-from app.schemas import PlatformStaffCreate, PlatformStaffPasswordValue
+from app.schemas import PlatformStaffCreate, PlatformStaffPasswordValue, PlatformStaffUpdate
 from tests.conftest import auth_headers
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -47,6 +47,12 @@ def test_platform_staff_password_value_schema():
                 "full_name": "No Password",
             }
         )
+    omitted = PlatformStaffUpdate.model_validate({})
+    assert omitted.password is None
+    changed = PlatformStaffUpdate.model_validate({"password": "  Tip246Pass!  "})
+    assert changed.password == "Tip246Pass!"
+    with pytest.raises(ValidationError):
+        PlatformStaffUpdate.model_validate({"password": "!!!"})
 
 
 def test_platform_staff_password_ui_and_docs():
@@ -98,3 +104,18 @@ async def test_platform_staff_password_api_blank_invalid_422(client, seeded):
     assert ok.status_code == 200, ok.text
     assert ok.json()["data"]["email"] == f"tip246-{suffix}@example.com"
     assert "password" not in ok.json()["data"]
+    staff_id = ok.json()["data"]["id"]
+    renamed = await ac.patch(
+        f"/api/v1/platform/staff/{staff_id}",
+        headers=admin,
+        json={"full_name": f"Tip246 Renamed {suffix}", "password": "NewTip246Pass!"},
+    )
+    assert renamed.status_code == 200, renamed.text
+    assert "password" not in renamed.json()["data"]
+    assert renamed.json()["data"]["full_name"] == f"Tip246 Renamed {suffix}"
+    bad_pw = await ac.patch(
+        f"/api/v1/platform/staff/{staff_id}",
+        headers=admin,
+        json={"password": "!!!"},
+    )
+    assert bad_pw.status_code == 422, bad_pw.text

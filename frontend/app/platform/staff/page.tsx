@@ -41,6 +41,17 @@ export default function PlatformStaffPage() {
   });
   const [grantRole, setGrantRole] = useState('platform_support');
   const [busy, setBusy] = useState(false);
+  const [meRole, setMeRole] = useState('');
+  const [editingId, setEditingId] = useState('');
+  const [editForm, setEditForm] = useState({
+    full_name: '',
+    email: '',
+    phone: '',
+    role: 'platform_support',
+    password: '',
+  });
+
+  const canEditStaff = meRole === 'platform_owner' || meRole === 'super_admin';
 
   async function refresh() {
     const me = await api('/me');
@@ -48,6 +59,7 @@ export default function PlatformStaffPage() {
       router.replace('/dashboard');
       return;
     }
+    setMeRole(me.data?.role || '');
     const [s, r, a] = await Promise.all([
       api('/platform/staff'),
       api('/platform/roles'),
@@ -97,6 +109,62 @@ export default function PlatformStaffPage() {
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Create failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function openEdit(row: Staff) {
+    setEditingId(row.id);
+    setEditForm({
+      full_name: row.full_name || '',
+      email: row.email || '',
+      phone: row.phone || '',
+      role: row.role,
+      password: '',
+    });
+    setError('');
+    setMessage('');
+  }
+
+  async function saveEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingId) return;
+    const fullName = editForm.full_name.trim();
+    const email = editForm.email.trim();
+    const password = editForm.password.trim();
+    if (!fullName) {
+      setError('Staff full name is required.');
+      setMessage('');
+      return;
+    }
+    if (!email) {
+      setError('Staff email is required.');
+      setMessage('');
+      return;
+    }
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      const body: Record<string, string> = {
+        full_name: fullName,
+        email,
+        role: editForm.role,
+      };
+      const phone = editForm.phone.trim();
+      if (phone) body.phone = phone;
+      if (password) body.password = password;
+      await api(`/platform/staff/${editingId.trim()}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      });
+      setEditingId('');
+      setEditForm({ full_name: '', email: '', phone: '', role: 'platform_support', password: '' });
+      setMessage(password ? 'Staff user and password updated' : 'Staff user updated');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message || 'Update failed');
     } finally {
       setBusy(false);
     }
@@ -331,6 +399,83 @@ export default function PlatformStaffPage() {
 
         <div className="plat-panel">
           <h2>Staff directory</h2>
+          <p className="muted" style={{ marginTop: 0 }}>
+            The platform owner can edit a staff account and set a new password. Leave the password
+            blank to keep the current one.
+          </p>
+          {canEditStaff && editingId ? (
+            <form className="plat-form" onSubmit={saveEdit} style={{ marginBottom: 16 }}>
+              <h3 style={{ margin: '0 0 4px', fontSize: 16 }}>Edit staff</h3>
+              <label>
+                <span>Full name</span>
+                <input
+                  value={editForm.full_name}
+                  onChange={(e) => setEditForm((f) => ({ ...f, full_name: e.target.value }))}
+                  aria-label="Edit platform staff full name"
+                  required
+                />
+              </label>
+              <label>
+                <span>Email</span>
+                <input
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
+                  aria-label="Edit platform staff email"
+                  required
+                />
+              </label>
+              <label>
+                <span>New password</span>
+                <input
+                  type="password"
+                  value={editForm.password}
+                  onChange={(e) => setEditForm((f) => ({ ...f, password: e.target.value }))}
+                  placeholder="Leave blank to keep current password"
+                  aria-label="Edit platform staff password"
+                  autoComplete="new-password"
+                />
+              </label>
+              <label>
+                <span>Role</span>
+                <select
+                  value={editForm.role}
+                  onChange={(e) => setEditForm((f) => ({ ...f, role: e.target.value }))}
+                  aria-label="Edit platform staff role"
+                >
+                  {roles
+                    .filter((r) => r.key !== 'super_admin' || editForm.role === 'super_admin')
+                    .map((r) => (
+                      <option key={r.key} value={r.key}>
+                        {r.label}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <label>
+                <span>Phone</span>
+                <input
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
+                  placeholder="Phone (E.164 e.g. +233...). Leave blank to keep current."
+                  aria-label="Edit platform staff phone"
+                />
+              </label>
+              <div className="plat-actions">
+                <button type="submit" disabled={busy || !editForm.full_name.trim()} aria-label="Save platform staff">
+                  {busy ? 'Saving…' : 'Save staff'}
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setEditingId('')}
+                  aria-label="Cancel platform staff edit"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : null}
           <table className="table">
             <thead>
               <tr>
@@ -363,6 +508,16 @@ export default function PlatformStaffPage() {
                   <td>{u.is_active === false ? 'inactive' : 'active'}</td>
                   <td>
                     <div className="plat-actions">
+                      {canEditStaff && (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => openEdit(u)}
+                          aria-label={`Edit platform staff ${u.email}`}
+                        >
+                          Edit
+                        </button>
+                      )}
                       {u.is_active === false ? (
                         <button
                           type="button"

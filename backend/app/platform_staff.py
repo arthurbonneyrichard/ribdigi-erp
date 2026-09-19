@@ -11,6 +11,7 @@ from app.honesty import require_honest_narrative
 from app.rbac import (
     PLATFORM_ROLES,
     can_assign_platform_role,
+    is_platform_owner_role,
     is_platform_role,
     permissions_for_role,
     serialize_user,
@@ -192,9 +193,11 @@ async def update_platform_staff(
     actor_role: str,
     user_id: str,
     full_name: str | None = None,
+    email: str | None = None,
     role: str | None = None,
     phone: str | None = None,
     is_active: bool | None = None,
+    password: str | None = None,
 ) -> m.User:
     user = (
         await db.execute(
@@ -207,6 +210,10 @@ async def update_platform_staff(
         raise HTTPException(status_code=400, detail="Cannot change your own role")
     if user.id == actor_id and is_active is False:
         raise HTTPException(status_code=400, detail="Cannot deactivate yourself")
+    if password is not None and not is_platform_owner_role(actor_role):
+        raise HTTPException(status_code=403, detail="Only the platform owner can set a staff password")
+    if email is not None and not is_platform_owner_role(actor_role):
+        raise HTTPException(status_code=403, detail="Only the platform owner can change a staff email")
 
     if role is not None:
         # Defense in depth: PlatformStaffUpdate.role Literal → 422 on blank/unknown.
@@ -221,8 +228,29 @@ async def update_platform_staff(
         user.full_name = require_honest_narrative(
             full_name, label="full name", max_length=150
         )
+    if email is not None:
+        normalized = email.lower().strip()
+        if normalized != (user.email or "").lower():
+            taken = (
+                await db.execute(
+                    select(m.User).where(
+                        m.User.tenant_id == tenant_id,
+                        m.User.email == normalized,
+                        m.User.id != user.id,
+                    )
+                )
+            ).scalar_one_or_none()
+            if taken:
+                raise HTTPException(
+                    status_code=409,
+                    detail="User email already exists on this workspace",
+                )
+            user.email = normalized
     if phone is not None:
         user.phone = phone.strip() or None
+    if password is not None:
+        validate_password_strength(password)
+        user.password_hash = hash_password(password)
     if is_active is not None:
         user.is_active = bool(is_active)
     await db.flush()

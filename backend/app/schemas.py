@@ -936,11 +936,16 @@ class PlatformStaffUpdate(BaseModel):
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`
     # min_length=1; whitespace/`!!!`/URL could persist).
     full_name: PlatformStaffFullNameValue | None = None
+    # omit/`null` → no change. Owner edit form sends the current or new address.
+    email: EmailStr | None = None
     role: PlatformRoleValue | None = None
     # omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`;
     # blank/garbage could persist on platform staff PATCH).
     phone: E164PhoneValue | None = None
     is_active: bool | None = None
+    # omit/`null` → keep the current password. Blank/`!!!`/`http://…` → **422**.
+    # Strength (8+ upper/lower/digit/symbol) is still validate_password_strength → **400**.
+    password: PlatformStaffPasswordValue | None = None
 
 
 class PlatformRevokeAccess(BaseModel):
