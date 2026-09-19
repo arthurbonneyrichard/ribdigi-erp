@@ -688,12 +688,6 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
         <div className="side-foot">
-          <a href="/guides/RIBDIGI-ERP-Customer-User-Guide.pdf" download>
-            Download user guide (PDF)
-          </a>
-          <a href="/guides/RIBDIGI-ERP-Platform-and-Company-Guide.pdf" download>
-            Platform and company guide (PDF)
-          </a>
           <a href="https://ribdigihouse.com" target="_blank" rel="noopener noreferrer">
             A Ribdigi House Product
           </a>

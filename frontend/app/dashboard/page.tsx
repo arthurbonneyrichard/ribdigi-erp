@@ -286,6 +286,9 @@ export default function Page() {
   const [d, setD] = useState<Dash>({});
   const [now, setNow] = useState<Date | null>(null);
   const [fullName, setFullName] = useState('');
+  const [role, setRole] = useState('');
+  const [guideBusy, setGuideBusy] = useState(false);
+  const [guideError, setGuideError] = useState('');
 
   useEffect(() => {
     setNow(new Date());
@@ -297,9 +300,41 @@ export default function Page() {
 
   useEffect(() => {
     api('/me')
-      .then((r) => setFullName(r.data?.full_name || ''))
+      .then((r) => {
+        setFullName(r.data?.full_name || '');
+        setRole(r.data?.role || '');
+      })
       .catch(() => {});
   }, []);
+
+  async function downloadStaffGuide() {
+    setGuideError('');
+    setGuideBusy(true);
+    try {
+      const token = localStorage.getItem('token') || '';
+      const response = await fetch('/guides/customer', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        cache: 'no-store',
+      });
+      if (!response.ok) {
+        setGuideError('Only the company administrator can download this guide.');
+        return;
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'RIBDIGI-ERP-Customer-User-Guide.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setGuideError('Could not download the guide.');
+    } finally {
+      setGuideBusy(false);
+    }
+  }
 
   const firstName = fullName.trim().split(/\s+/)[0] || '';
 
@@ -407,6 +442,30 @@ export default function Page() {
             <p className="greet-date">Grace period ends {fmtDate(sub.grace_ends_at)}</p>
           )}
         </section>
+
+        {role === 'company_admin' && (
+          <section className="card" style={{ marginTop: 16 }}>
+            <h2 style={{ margin: '0 0 6px', fontSize: 18 }}>Staff user guide</h2>
+            <p className="muted" style={{ marginTop: 0 }}>
+              Step-by-step for adding products, stock, sales, the till, and purchasing.
+              Download this file and share it with your team. Cashiers and other roles do not see this button.
+            </p>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={downloadStaffGuide}
+              disabled={guideBusy}
+              aria-label="Download staff user guide PDF"
+            >
+              {guideBusy ? 'Preparing…' : 'Download user guide (PDF)'}
+            </button>
+            {guideError && (
+              <p className="login-error" role="alert" style={{ marginTop: 8 }}>
+                {guideError}
+              </p>
+            )}
+          </section>
+        )}
 
         <section className="stat-grid">
           {stats.map((s) => (

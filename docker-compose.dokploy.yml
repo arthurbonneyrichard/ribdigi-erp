@@ -67,6 +67,8 @@ services:
       NODE_ENV: production
       PORT: "3000"
       HOSTNAME: 0.0.0.0
+      # Server-side guide check calls /me on the compose network, not the public URL.
+      API_INTERNAL_URL: http://backend:8000/api/v1
     expose:
       - "3000"
     networks:

@@ -7,8 +7,7 @@ from pathlib import Path
 SRC = Path(__file__).resolve().parent / "build_customer_user_guide.py"
 OUT = (
     Path(__file__).resolve().parents[1]
-    / "frontend"
-    / "public"
+    / "docs"
     / "guides"
     / "RIBDIGI-ERP-Platform-and-Company-Guide.pdf"
 )

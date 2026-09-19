@@ -5,7 +5,8 @@ from pathlib import Path
 
 from fpdf import FPDF
 
-OUT = Path(__file__).resolve().parents[1] / "frontend" / "public" / "guides" / "RIBDIGI-ERP-Customer-User-Guide.pdf"
+# Not under frontend/public — the file is served only to a company admin.
+OUT = Path(__file__).resolve().parents[1] / "frontend" / "guides" / "RIBDIGI-ERP-Customer-User-Guide.pdf"
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 FONT_B = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 
@@ -95,9 +96,10 @@ def build() -> None:
 
     pdf.h2("Who this guide is for")
     pdf.p(
-        "This guide is for company users: owners, managers, cashiers, and staff who sign in "
-        "to their company workspace. It explains everyday work in Ribdigi ERP. Your company "
-        "administrator controls which menus you can see."
+        "This guide is for company staff: administrators, managers, cashiers, and everyone "
+        "who sells, stocks, or buys in a company workspace. It is a step-by-step for setup "
+        "and for a normal day. Your company administrator downloads it from the Dashboard "
+        "and can share this file. Other roles do not see a download in the app."
     )
 
     pdf.h1("1. Sign in")
@@ -142,107 +144,160 @@ def build() -> None:
         "Invoice numbering and print header or footer, where your role allows it.",
     ])
 
-    pdf.h1("5. Inventory")
-    pdf.p("Inventory is the product catalog and stock.")
-    pdf.h2("Set up products")
+    pdf.h1("5. Catalog, before the first product")
+    pdf.p("Open Inventory, then the Catalog tab. Do this once. Products pick from these lists.")
+    pdf.h2("Units")
     pdf.steps([
-        "Create categories, brands, and units first if you use them.",
-        "Add a product with a name, SKU or barcode, cost price, and selling price.",
-        "Set reorder level so low-stock alerts can fire.",
-        "Add an expiry date for items that expire.",
-        "Upload a product image if you use one at the till.",
+        "Code, for example PCS, and Name, for example Piece.",
+        "Leave Base unit blank for a root unit. For a pack, choose the base and the ratio, such as 1 box = 12 pieces.",
+        "Click Add unit.",
     ])
-    pdf.h2("Stock")
-    pdf.bullets([
-        "A purchase receipt increases stock.",
-        "A sale or POS checkout decreases stock.",
-        "A sales return puts stock back when the return is completed.",
-        "A purchase return reduces stock when goods go back to the supplier.",
-        "Stock adjustment corrects counts after a count.",
-        "Stock transfer moves quantity from one store or warehouse to another. The source goes down and the destination goes up together.",
-    ])
-    pdf.p("Use low-stock, out-of-stock, and expiring filters before you reorder.")
-
-    pdf.h1("6. Sales")
-    pdf.p("Sales covers quotations, invoices, and sales returns.")
+    pdf.h2("Categories")
     pdf.steps([
-        "Choose the customer, or leave a walk-in sale if your process allows it.",
-        "Add products, quantities, discounts, and tax.",
-        "Check the subtotal, tax, and grand total before you save.",
-        "Record the amount paid. Any unpaid balance stays as credit until a later payment is recorded.",
-        "Save. Stock for sold items decreases.",
-        "For a return, open Sales return, select the sale, and complete the return so stock is restored.",
+        "Code and Name, for example BEV and Beverages.",
+        "Parent — leave blank for a top-level category, or choose a parent to nest it.",
+        "Tax rate — optional. A product with its own rate overrides the category.",
+        "Click Add category.",
     ])
-    pdf.p(
-        "A quotation is a price offer. It does not reduce stock until you convert it to a sale. "
-        "Credit sales leave an outstanding balance until later payments are recorded."
-    )
-
-    pdf.h1("7. Point of Sale")
-    pdf.p("POS is the till for counter sales.")
+    pdf.h2("Brands")
     pdf.steps([
-        "Open POS and confirm the correct store and shift.",
-        "Search or scan a product and add it to the cart.",
-        "Adjust quantity or a line discount if needed.",
-        "Take payment as Cash, Card, Digital wallet, or Credit. You can split a payment between cash and card.",
-        "Complete the sale. A receipt can be printed or shared from the success screen.",
-        "Close the shift and review the shift report at the end of the day.",
+        "Code, name, and an optional description.",
+        "Click Add brand. You can add a logo on the brand after it exists.",
     ])
-    pdf.p("Do not leave a shift open on a shared device after you log out.")
 
-    pdf.h1("8. Purchasing")
-    pdf.p("Purchasing covers suppliers, purchase orders, goods receipts, and purchase returns.")
+    pdf.h1("6. Add a product")
+    pdf.p("Stay on Inventory. Open the Products tab. Use Add product.")
     pdf.steps([
-        "Create or select a supplier.",
-        "Raise a purchase order with items, quantities, and cost.",
-        "When goods arrive, receive them. Stock increases by the received quantity.",
-        "Record the supplier payment against the purchase. Partial payments are allowed.",
-        "If you send goods back, complete a purchase return so stock decreases.",
+        "Name — required. Create product stays disabled until the name is filled.",
+        "SKU — leave blank and the system assigns one, or type your own.",
+        "Barcode — optional. 4 to 48 characters: letters, numbers, hyphen, dot, or underscore.",
+        "Description — optional.",
+        "Actual price — what the item costs you.",
+        "Selling price — what you charge.",
+        "Weight and size — optional, in kilograms and centimetres.",
+        "Category, Brand, and Unit — choose what you created. Brand and unit can stay blank.",
+        "Tax class — standard-rated, zero-rated, or exempt.",
+        "Tax rate — choose a rate, or leave blank to use the category or company default.",
+        "Click Create product.",
+    ])
+    pdf.p(
+        "The new row appears in the product table. Quantity on hand is still zero until you "
+        "post opening stock or receive a purchase."
+    )
+
+    pdf.h1("7. Picture, barcode, and deactivate")
+    pdf.steps([
+        "At the top of Inventory, open Selected product and choose the item.",
+        "Add gallery image — PNG, JPEG, WebP, or GIF, up to 5 pictures. The first one is primary. Use Set primary to change it.",
+        "Type or scan a barcode, or click Generate, then Print to make a shelf label.",
+        "Change cost, selling price, reorder level, category, or tax, then click Save product.",
+        "Click Deactivate to hide the item from sales, purchasing, and POS. Stock tools still work. Click Activate to bring it back.",
+    ])
+    pdf.p("Lookup tab: scan a barcode or search name or SKU, then Select. That loads warehouse stock.")
+
+    pdf.h1("8. Put quantity on hand")
+    pdf.p("Use Opening stock when the shop already holds goods on the first day. Select the product first.")
+    pdf.steps([
+        "Selected product — choose the item. Posting refuses to run if this is blank.",
+        "Open the Opening stock tab.",
+        "Warehouse — choose the store warehouse, or leave blank.",
+        "Quantity, and unit if it is not the product default.",
+        "Unit cost — blank uses the product actual price.",
+        "Batch number, manufacturing date, and expiry — only for items you track that way. Dates are YYYY-MM-DD.",
+        "Reference — leave blank to take the next opening-stock number.",
+        "Click Post opening stock.",
+    ])
+    pdf.p(
+        "Later: Stock counts to count the shelf, then complete the count. Adjust for a one-off correction. "
+        "Stock Out for goods that leave without a sale. Transfers move quantity between warehouses. "
+        "Do not create a second product to fix a count."
+    )
+
+    pdf.h1("9. Many products at once")
+    pdf.steps([
+        "Create categories, brands, and units first. The file cannot invent them.",
+        "Inventory, Import tab, Download CSV template.",
+        "Fill one row per product. Do not rename the columns.",
+        "Choose the file, click Validate, and fix every error row.",
+        "When validation can be committed, click Import valid rows. One bad row blocks the file.",
+        "Export products CSV any time you want a copy of the catalog.",
     ])
 
-    pdf.h1("9. Customers, suppliers, and credit")
+    pdf.h1("10. Customer, then a sale")
+    pdf.p("Open Sales.")
+    pdf.steps([
+        "Under Customer, enter the name and the other fields you use, then click Add customer.",
+        "Under Create sale, choose the product, quantity, and price. Tax fills from the product when a rate exists.",
+        "Click Create invoice. That saves a draft. Stock does not move yet.",
+        "On the draft row, click Post. Stock decreases when the invoice is posted.",
+        "Record what was paid. Any unpaid balance stays on Credit until a later payment is recorded.",
+    ])
     pdf.p(
-        "Keep customer and supplier records so invoices and purchases stay tied to the right party. "
-        "Credit shows who still owes you and what you still owe suppliers. Record a payment against "
-        "the open document. The outstanding balance falls by the amount you enter. Do not delete a "
-        "paid document to 'clear' a balance."
+        "A quotation is only a price offer. It does not reduce stock. A return is created under "
+        "Create return. Stock comes back when that return is posted, not while it is a draft. "
+        "Do not delete a paid document to clear a balance."
     )
 
-    pdf.h1("10. Expenses")
-    pdf.p(
-        "Expenses records money the company spends that is not a product purchase: rent, utilities, "
-        "transport, and similar costs. Enter the amount, category, date, and payment method: Cash, Bank transfer, Card, or Cheque. "
-        "Recurring expenses can be scheduled by an administrator. Expenses appear on the dashboard "
-        "and in reports."
-    )
+    pdf.h1("11. Sell at the till")
+    pdf.steps([
+        "Open POS. Confirm the store at the top of the screen.",
+        "Enter opening cash if asked, then click Open shift.",
+        "Search or scan a product and add it to the cart. Change quantity or a line discount if needed.",
+        "Payment: Cash, Card, Digital wallet, or Credit. Split tender is cash plus card.",
+        "Click Charge · Complete sale. Print or share the receipt from the success screen.",
+        "At the end of the day click Shift report, then Close shift.",
+        "Sign out. Do not leave a shift open on a shared till.",
+    ])
 
-    pdf.h1("11. Accounting and tax")
-    pdf.p(
-        "Accounting holds the chart of accounts, journals, money transfers between accounts, and "
-        "statements such as trial balance, balance sheet, and cash flow, according to your package. "
-        "Tax holds tax rates used on sales and purchases. Set the rate on the product or category "
-        "so invoices calculate tax for you. Do not type tax by hand if a rate already exists."
-    )
-    pdf.p(
-        "Ribdigi ERP records payment information. It does not receive, hold, or settle customer "
-        "funds. Cash, card, digital wallet, bank transfer, and credit are records of how the customer paid your business."
-    )
+    pdf.h1("12. Buy stock from a supplier")
+    pdf.p("Open Purchasing. The tabs are Requests, Orders, GRNs, Invoices, and Returns.")
+    pdf.steps([
+        "On Orders, Quick add supplier: name, optional code, and type (Registered, Trade, Manufacturer, or Service). Click Add.",
+        "Create purchase order: select the supplier and the product, quantity, and cost. Click Create draft PO.",
+        "Send or approve the order with the actions on that row when your process requires it.",
+        "When goods arrive, open the order and click Post GRN (accept / reject), or Receive all accepted. Stock increases by the accepted quantity.",
+        "On Invoices, create the supplier bill from the goods receipt, or a manual invoice, and record the payment. Partial payments are allowed.",
+        "On Returns, create a purchase return when goods go back. Stock decreases when that return is completed.",
+    ])
 
-    pdf.h1("12. Multi-store")
-    pdf.p(
-        "Multi-Store is for companies with more than one shop or warehouse. Create the store, "
-        "assign staff who may sell there, and switch store in the top bar before selling or counting "
-        "stock. A transfer is the correct way to move goods between stores."
-    )
+    pdf.h1("13. Expenses")
+    pdf.steps([
+        "Open Expenses. Add a category first if you need one, such as rent, utilities, or transport.",
+        "Enter the amount, category, date, and payment method: Cash, Bank transfer, Card, or Cheque.",
+        "Click Submit expense.",
+        "If approval is on, a manager approves it before it is final.",
+    ])
 
-    pdf.h1("13. Reports")
+    pdf.h1("14. Tax, accounting, and stores")
+    pdf.p("Open Tax before you price products, if the company charges tax.")
+    pdf.steps([
+        "Under Create rate, enter a name, for example VAT, and the percent.",
+        "Type: VAT, GST, Sales tax, or Custom.",
+        "Exclusive adds tax on top of the price. Inclusive means the price already includes tax.",
+        "Click Add rate. Then set that rate on the product or category so invoices calculate it. Do not type tax by hand if a rate exists.",
+    ])
+    pdf.p(
+        "Accounting holds the chart of accounts, journals, transfers between accounts, and statements "
+        "such as trial balance, where your package includes them. Ribdigi ERP records how the customer "
+        "paid. It does not receive, hold, or settle funds."
+    )
+    pdf.p("Open Multi-Store when the company has more than one shop. The package limits how many stores you can create.")
+    pdf.steps([
+        "Create a branch if you group shops, then a department if you use departments.",
+        "New store: code, name, address, and phone. Click Create store.",
+        "New warehouse for that store if stock sits in a named warehouse. Click Create warehouse.",
+        "Use the store switcher in the top bar before you sell, count, or receive.",
+        "Move goods with a transfer. Do not edit the product quantity by hand to fake a move.",
+    ])
+
+    pdf.h1("15. Reports")
     pdf.p("Reports & Analytics summarizes sales, profit, stock, tax, and other lists for the current company and, where selected, the current store. Open a report, set the date range, then export or print if the button is shown. Reports never include another company's data.")
 
-    pdf.h1("14. Users and roles")
+    pdf.h1("16. Users and roles")
     pdf.p("Company administrators use Users to add staff.")
     pdf.steps([
         "Create the user with name, email, and a strong password.",
-        "Assign a role such as company admin, store manager, cashier, or a custom role.",
+        "Role — company admin, store manager, sales officer, inventory officer, accountant, cashier, or a custom role. Cashiers usually see Dashboard, Inventory, POS, Sales, Notifications, and Security.",
         "Limit the user to a branch or store when they should not see the whole company.",
         "Deactivate a user who leaves. Do not share one login among several people.",
     ])
@@ -251,7 +306,7 @@ def build() -> None:
         "is refused, ask an administrator to grant the role. Do not share the company admin password."
     )
 
-    pdf.h1("15. Security and preferences")
+    pdf.h1("17. Security and preferences")
     pdf.bullets([
         "Change your password from Security if you were given a temporary one.",
         "Turn on authenticator (TOTP) or a passkey if your company requires it. Save backup codes in a private place.",
@@ -260,14 +315,14 @@ def build() -> None:
         "The app signs you out after a period of inactivity set by the company.",
     ])
 
-    pdf.h1("16. Notifications, audit, and backups")
+    pdf.h1("18. Notifications, audit, and backups")
     pdf.bullets([
         "Notifications lists low stock, payment due dates, and similar alerts. Mark items read when you have acted.",
         "Audit is a history of important changes. It is for review, not for editing transactions.",
         "Backup, when your role includes it, downloads an encrypted company backup. Store that file safely. It is not a substitute for your host's database backups.",
     ])
 
-    pdf.h1("17. A normal selling day")
+    pdf.h1("19. A normal selling day")
     pdf.steps([
         "Sign in with your company workspace, email, and password.",
         "Confirm the store at the top of the screen.",
@@ -279,19 +334,21 @@ def build() -> None:
         "Sign out.",
     ])
 
-    pdf.h1("18. Jobs, integrations, and AI")
+    pdf.h1("20. Jobs, integrations, and AI")
     pdf.bullets([
         "Jobs shows scheduled work such as low-stock alerts, payment-due reminders, and backups. Company administrators can review status. Starting a job is limited to the platform owner.",
         "Integrations is for API keys and webhooks that connect Ribdigi ERP to another system. Only a company administrator should create a key. Treat the key like a password.",
         "AI Assistant, when your package includes it, can answer questions about your company data and draft notes. Check the numbers in the original report or invoice before you act on a draft.",
     ])
 
-    pdf.h1("19. If something does not work")
+    pdf.h1("21. If something does not work")
     pdf.bullets([
         "Workspace, email, or password rejected: confirm the company slug and that the user is active.",
         "You return to the sign-in page: sign in again. If it repeats, ask an administrator to check your account.",
         "A button is missing: your role or package does not include that module.",
-        "Stock did not change: confirm the document was saved, not left as a draft or quotation.",
+        "Stock did not change: the invoice, return, or goods receipt is still a draft. Click Post. A quotation does not move stock.",
+        "Create product is disabled: the name is empty. Opening stock says select a product: choose Selected product first.",
+        "Import is blocked: Validate still has error rows, or a category, brand, or unit in the file does not exist.",
         "Totals look wrong: check quantity, discount, and tax rate on each line before saving.",
     ])
     pdf.p("For product questions, contact your company administrator or Ribdigi House.")
