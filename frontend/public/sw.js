@@ -1,5 +1,5 @@
 /* Ribdigi POS offline shell cache — application security only; not OS lockdown. */
-const CACHE = 'ribdigi-pos-shell-v2';
+const CACHE = 'ribdigi-pos-shell-v1';
 const ASSETS = ['/', '/pos', '/manifest.webmanifest', '/icon.png'];
 
 self.addEventListener('install', (event) => {
@@ -10,11 +10,7 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)))
-    ).then(() => self.clients.claim())
-  );
+  event.waitUntil(self.clients.claim());
 });
 
 self.addEventListener('fetch', (event) => {
