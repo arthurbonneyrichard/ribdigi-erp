@@ -2,7 +2,7 @@ import { clearSessionTheme } from './theme';
 
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
-// Backend X-Tenant-ID is UuidIdValue — slugs like ribdigi-platform must not be sent
+// Backend X-Tenant-ID is UuidIdValue — slugs like platform must not be sent
 // or /me returns 422 and Shell clears the session back to login.
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

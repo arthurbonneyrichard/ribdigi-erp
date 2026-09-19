@@ -155,7 +155,7 @@ docker compose -f docker-compose.prod.yml exec \
   -e PLATFORM_OWNER_EMAIL='owner@yourdomain.com' \
   -e PLATFORM_OWNER_PASSWORD='YourStrongPass1!' \
   -e PLATFORM_OWNER_FULL_NAME='Platform Owner' \
-  -e PLATFORM_TENANT_SLUG='ribdigi-platform' \
+  -e PLATFORM_TENANT_SLUG='platform' \
   backend python scripts/create_platform_owner.py
 ```
 

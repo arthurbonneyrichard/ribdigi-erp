@@ -44,7 +44,7 @@ async def main() -> None:
     email = _env("PLATFORM_OWNER_EMAIL").lower()
     password = os.environ.get("PLATFORM_OWNER_PASSWORD") or ""
     full_name = _env("PLATFORM_OWNER_FULL_NAME", "Platform Owner")
-    slug = _env("PLATFORM_TENANT_SLUG", "ribdigi-platform")
+    slug = _env("PLATFORM_TENANT_SLUG", "platform")
     company_name = _env("PLATFORM_TENANT_NAME", "Ribdigi Platform")
     currency = _env("PLATFORM_TENANT_CURRENCY", "GHS")
 

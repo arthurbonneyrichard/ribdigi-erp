@@ -257,7 +257,7 @@ export default function PlatformConsole() {
       const createdSlug = String(r.data?.slug || form.slug).trim().toLowerCase();
       setMessage(
         `Created tenant "${createdSlug}" (trial). Company admin login workspace/slug is "${createdSlug}". ` +
-          `Platform owner still uses workspace "ribdigi-platform". Assign a paid package with Manage when ready.`
+          `Platform owner still uses workspace "platform". Assign a paid package with Manage when ready.`
       );
       setFilter('all');
       await refresh();
@@ -561,7 +561,7 @@ export default function PlatformConsole() {
           <h2>Tenant management</h2>
           <p className="muted" style={{ marginTop: 0, marginBottom: 12 }}>
             Click <strong>Manage</strong> on a company row to open subscription, modules, and store
-            limits. Platform owner login workspace is <code>ribdigi-platform</code>. Each company
+            limits. Platform owner login workspace is <code>platform</code>. Each company
             admin logs in with that company&apos;s <strong>slug</strong>.
           </p>
           <div className="card" style={{ marginBottom: 12 }}>
