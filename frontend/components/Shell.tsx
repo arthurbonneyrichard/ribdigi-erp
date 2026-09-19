@@ -297,6 +297,17 @@ function canReadModule(permissions: Record<string, string[]> | null | undefined,
   return actions.includes('*') || actions.includes('read') || actions.includes('write');
 }
 
+/** Highlight only the most specific menu item. /platform must not stay active on /platform/staff. */
+function isNavActive(pathname: string, href: string, items: NavItem[]): boolean {
+  const path = pathname.split('?')[0].replace(/\/$/, '') || '/';
+  const matches = (candidate: string) => {
+    const item = candidate.replace(/\/$/, '') || '/';
+    return path === item || path.startsWith(`${item}/`);
+  };
+  if (!matches(href)) return false;
+  return !items.some(([, other]) => other !== href && other.length > href.length && matches(other));
+}
+
 function navItemsForRole(
   role: string,
   permissions: Record<string, string[]> | null,
@@ -667,7 +678,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         {isPlatformOwner ? <div className="brand-sub">Platform owner console</div> : null}
         <nav className="nav" aria-label={isPlatformOwner ? 'Platform navigation' : 'Tenant navigation'}>
           {visible.map(([n, h, module]) => {
-            const active = pathname === h || pathname.startsWith(`${h}/`);
+            const active = isNavActive(pathname || '', h, visible);
             return (
               <Link
                 key={h}
