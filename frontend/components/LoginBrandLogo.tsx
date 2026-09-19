@@ -13,10 +13,10 @@ export default function LoginBrandLogo({
     <div className="login-brand">
       <img
         className="login-logo login-logo-on-light"
-        src="/brand/logo-full-dark.png"
+        src="/brand/logo-mark-light.png"
         alt={alt}
-        width={1024}
-        height={341}
+        width={512}
+        height={512}
       />
       <img
         className="login-logo login-logo-on-dark"

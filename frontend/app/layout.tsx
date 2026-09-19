@@ -4,7 +4,7 @@ import './globals.css';
 export const metadata = {
   title: 'RIBDIGI ERP',
   description: 'One System. Total Business Control. A Ribdigi House Product.',
-  themeColor: '#4AB012',
+  themeColor: '#FFFFFF',
   applicationName: 'RIBDIGI ERP',
   icons: {
     icon: [
@@ -30,7 +30,7 @@ export const metadata = {
 
 // Runs before paint to avoid a flash of the wrong theme.
 // Prefer the active signed-in user's scoped key when present; otherwise system.
-const themeInit = `(function(){try{var uid=localStorage.getItem('ribdigi.theme.userId');var t=uid?localStorage.getItem('ribdigi.theme.'+uid):null;if(t!=='light'&&t!=='dark'){t=null}var m=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.setAttribute('data-theme',(t==='light'||t==='dark')?t:(m?'dark':'light'));}catch(e){}})();`;
+const themeInit = `(function(){try{var uid=localStorage.getItem('ribdigi.theme.userId');var t=uid?localStorage.getItem('ribdigi.theme.'+uid):null;if(t!=='light'&&t!=='dark'){t='light'}document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','light');}})();`;
 
 const swInit = `(function(){try{if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(function(){})}}catch(e){}})();`;
 
