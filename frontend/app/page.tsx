@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { api } from '../lib/api';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import LoginBrandLogo from '../components/LoginBrandLogo';
 
 function bufferToBase64url(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
@@ -209,15 +210,7 @@ export default function Login() {
       </div>
 
       <div className="login">
-        <div className="login-brand">
-          <img
-            className="login-logo"
-            src="/brand/logo-full.png"
-            alt="RIBDIGI ERP — One System. Total Business Control."
-            width={1024}
-            height={341}
-          />
-        </div>
+        <LoginBrandLogo />
 
         <form className="login-form" onSubmit={go}>
           {!needs2fa && (

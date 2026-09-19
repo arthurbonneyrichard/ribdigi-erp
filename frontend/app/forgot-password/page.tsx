@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '../../lib/api';
 import { useSearchParams } from 'next/navigation';
+import LoginBrandLogo from '../../components/LoginBrandLogo';
 
 function ForgotPasswordForm() {
   const params = useSearchParams();
@@ -60,15 +61,7 @@ function ForgotPasswordForm() {
       </div>
 
       <div className="login">
-        <div className="login-brand">
-          <img
-            className="login-logo"
-            src="/brand/logo-full.png"
-            alt="RIBDIGI ERP — One System. Total Business Control."
-            width={1024}
-            height={341}
-          />
-        </div>
+        <LoginBrandLogo />
 
         <h1 className="login-heading">Forgot password</h1>
         <p className="login-hint" style={{ marginBottom: 12 }}>
