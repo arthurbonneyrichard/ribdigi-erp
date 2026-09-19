@@ -1,5 +1,16 @@
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
+// Backend X-Tenant-ID is UuidIdValue — slugs like ribdigi-platform must not be sent
+// or /me returns 422 and Shell clears the session back to login.
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function tenantHeaderValue(raw: string | null): string | null {
+  const value = (raw || '').trim();
+  if (!value || !UUID_RE.test(value)) return null;
+  return value;
+}
+
 // Shared in-flight refresh so concurrent 401s trigger a single token refresh.
 let refreshPromise: Promise<boolean> | null = null;
 
@@ -66,7 +77,8 @@ export async function api(path: string, opts: RequestInit = {}, retryOn401 = tru
     ...(opts.headers as Record<string, string> | undefined),
   };
   if (token) headers.Authorization = `Bearer ${token}`;
-  if (tenant) headers['X-Tenant-ID'] = tenant;
+  const tenantId = tenantHeaderValue(tenant);
+  if (tenantId) headers['X-Tenant-ID'] = tenantId;
   // Let the browser set multipart boundary for FormData
   if (isFormData) delete headers['Content-Type'];
 
