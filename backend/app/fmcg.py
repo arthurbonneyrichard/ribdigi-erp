@@ -487,8 +487,30 @@ async def list_near_expiry(db: AsyncSession, *, tenant_id: str, within_days: int
 
     days = max(1, min(365, int(within_days or 30)))
     rows = await catalog_svc.list_expiring_batches(db, tenant_id, within_days=days)
+    product_ids = {b.product_id for b in rows if b.product_id}
+    names: dict[str, str] = {}
+    if product_ids:
+        products = (
+            await db.execute(
+                select(m.Product).where(
+                    m.Product.tenant_id == tenant_id,
+                    m.Product.id.in_(product_ids),
+                )
+            )
+        ).scalars().all()
+        names = {p.id: p.name for p in products}
+    batches = []
+    for b in rows:
+        data = catalog_svc.serialize_batch(b)
+        data["product_name"] = names.get(b.product_id)
+        # serialize_batch may return date objects — normalize for JSON
+        if hasattr(data.get("expiry_date"), "isoformat"):
+            data["expiry_date"] = data["expiry_date"].isoformat()
+        if hasattr(data.get("manufacturing_date"), "isoformat"):
+            data["manufacturing_date"] = data["manufacturing_date"].isoformat()
+        batches.append(data)
     return {
         "within_days": days,
-        "count": len(rows),
-        "batches": [catalog_svc.serialize_batch(b) for b in rows],
+        "count": len(batches),
+        "batches": batches,
     }
