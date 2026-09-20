@@ -130,12 +130,14 @@ export default function PlatformConsole() {
   const [moduleDraft, setModuleDraft] = useState<string[]>([]);
   const [suspendReason, setSuspendReason] = useState('');
   const [overrideDraft, setOverrideDraft] = useState('');
+  const [meRole, setMeRole] = useState('');
   const managePanelRef = useRef<HTMLDivElement | null>(null);
 
   const selected = useMemo(
     () => tenants.find((t) => t.id === selectedId) || null,
     [tenants, selectedId]
   );
+  const canDeleteTenant = meRole === 'platform_owner' || meRole === 'super_admin';
 
   function openManage(row: TenantRow) {
     setError('');
@@ -166,6 +168,7 @@ export default function PlatformConsole() {
       router.replace('/dashboard');
       return;
     }
+    setMeRole(role);
     setTenants(res.data || []);
     setPackages(pkgs.data?.packages || []);
     setPackageable(pkgs.data?.packageable_modules || []);
@@ -356,6 +359,48 @@ export default function PlatformConsole() {
       await refresh({ force: true });
     } catch (err: any) {
       setError(err.message || 'Activate failed');
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function deleteTenant(row: TenantRow) {
+    const slug = String(row.slug || '').trim();
+    if (!slug) {
+      setError('This tenant has no slug to confirm deletion.');
+      return;
+    }
+    if (slug === 'platform' || slug === 'ribdigi-platform') {
+      setError('The platform owner workspace cannot be deleted.');
+      return;
+    }
+    if (
+      !window.confirm(
+        `Delete ${row.company_name} permanently?\n\nThis removes the company workspace and all of its data. This cannot be undone.`
+      )
+    ) {
+      return;
+    }
+    const typed = window.prompt(`Type the workspace slug to confirm:\n\n${slug}`);
+    if (typed == null) return;
+    if (typed.trim() !== slug) {
+      setError(`Slug did not match. Type exactly: ${slug}`);
+      setMessage('');
+      return;
+    }
+    setBusy(row.id);
+    setError('');
+    setMessage('');
+    try {
+      await api(`/tenants/${encodeURIComponent(slug)}/delete`, {
+        method: 'POST',
+        body: JSON.stringify({ confirm_slug: slug }),
+      });
+      if (selectedId === row.id) setSelectedId(null);
+      setMessage(`Deleted ${row.company_name}`);
+      await refresh({ force: true });
+    } catch (err: any) {
+      setError(err.message || 'Delete failed');
     } finally {
       setBusy(null);
     }
@@ -741,6 +786,17 @@ export default function PlatformConsole() {
                             Suspend
                           </button>
                         )}
+                        {canDeleteTenant && t.slug !== 'platform' && t.slug !== 'ribdigi-platform' ? (
+                          <button
+                            type="button"
+                            className="btn-danger"
+                            disabled={busy === t.id}
+                            onClick={() => deleteTenant(t)}
+                            aria-label={`Delete tenant ${t.slug || t.id}`}
+                          >
+                            Delete
+                          </button>
+                        ) : null}
                       </div>
                     </td>
                   </tr>

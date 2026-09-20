@@ -22,9 +22,13 @@ def test_platform_suspend_reason_ui_wired():
     assert "Required before Suspend" in plat
     assert 'aria-label="Tenant suspend reason"' in plat
     assert "aria-label={`Suspend tenant ${t.id}`}" in plat
-    # Suspend path must not use window.prompt
-    assert "window.prompt" not in plat
+    # Suspend path must not use window.prompt (delete uses prompt for slug confirm)
     assert "window.confirm(`Suspend ${row.company_name}?`)" in plat
+    suspend_fn = plat.split("async function suspendTenant")[1].split("async function activateTenant")[0]
+    assert "window.prompt" not in suspend_fn
+    assert "async function deleteTenant" in plat
+    assert 'aria-label={`Delete tenant ${t.slug || t.id}`}' in plat
+    assert "/delete" in plat and "confirm_slug" in plat
 
 
 async def _super(ac, seed):

@@ -495,6 +495,91 @@ async def activate_tenant(db: AsyncSession, tenant: m.Tenant) -> m.Tenant:
     return tenant
 
 
+PROTECTED_TENANT_SLUGS = frozenset({"platform", "ribdigi-platform"})
+
+
+def _tenant_scoped_tables():
+    """ORM tables that carry tenant_id (deleted before the tenant row)."""
+    tables = []
+    for name in dir(m):
+        obj = getattr(m, name)
+        if not isinstance(obj, type) or not hasattr(obj, "__table__"):
+            continue
+        cols = {c.name for c in obj.__table__.columns}
+        if "tenant_id" in cols:
+            tables.append(obj.__table__)
+    return tables
+
+
+async def delete_tenant(
+    db: AsyncSession,
+    tenant: m.Tenant,
+    *,
+    actor_role: str,
+    actor_tenant_id: str,
+    confirm_slug: str,
+) -> dict:
+    """Permanently remove a company tenant and all of its scoped data (owner only)."""
+    from app.rbac import is_platform_owner_role
+    from sqlalchemy import delete
+    from sqlalchemy.schema import sort_tables
+
+    if not is_platform_owner_role(actor_role):
+        raise HTTPException(
+            status_code=403,
+            detail="Only the platform owner can delete a tenant",
+        )
+    slug = (tenant.slug or "").strip().lower()
+    if slug in PROTECTED_TENANT_SLUGS:
+        raise HTTPException(
+            status_code=400,
+            detail="The platform owner workspace cannot be deleted",
+        )
+    if tenant.id == actor_tenant_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete your own workspace",
+        )
+    expected = (tenant.slug or "").strip()
+    provided = (confirm_slug or "").strip()
+    if not provided or provided != expected:
+        raise HTTPException(
+            status_code=400,
+            detail=f'Type the tenant slug "{expected}" to confirm deletion',
+        )
+
+    snapshot = {
+        "id": tenant.id,
+        "slug": tenant.slug,
+        "company_name": tenant.company_name,
+        "status": tenant.status,
+    }
+
+    # Parents first from sort_tables → reverse so children (dependents) go first.
+    try:
+        ordered = list(reversed(sort_tables(_tenant_scoped_tables())))
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Unable to order tenant tables for delete: {exc}",
+        ) from exc
+
+    try:
+        for table in ordered:
+            await db.execute(delete(table).where(table.c.tenant_id == tenant.id))
+        await db.delete(tenant)
+        await db.flush()
+    except Exception as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Cannot delete this tenant because some records could not be removed. "
+                "Suspend the tenant instead, or contact support."
+            ),
+        ) from exc
+    return snapshot
+
+
 async def ensure_trial_state(db: AsyncSession, tenant: m.Tenant) -> m.Tenant:
     """Apply overdue trial→grace or grace→suspend transitions (idempotent)."""
     now = datetime.utcnow()

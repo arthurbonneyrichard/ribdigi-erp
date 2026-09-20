@@ -777,6 +777,14 @@ class TenantSuspendRequest(BaseModel):
     reason: TenantSuspendReasonValue
 
 
+class TenantDeleteConfirm(BaseModel):
+    """Platform owner hard-delete — must re-type the tenant slug to confirm."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    confirm_slug: Annotated[str, Field(min_length=1, max_length=80)]
+
+
 class TenantSubscriptionAssign(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

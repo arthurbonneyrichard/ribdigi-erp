@@ -265,6 +265,7 @@ from app.schemas import (
     TenantCreate,
     TenantProfileUpdate,
     TenantSuspendRequest,
+    TenantDeleteConfirm,
     TenantSubscriptionAssign,
     TenantModulesUpdate,
     TenantStoreLimitUpdate,
@@ -860,6 +861,45 @@ async def tenant_activate_by_ref(
     )
     await db.commit()
     return env(tenants_svc.serialize_tenant(tenant), "Tenant activated")
+
+
+@api.post("/tenants/{tenant_ref}/delete")
+async def tenant_delete_by_ref(
+    tenant_ref: TenantRefValue,
+    payload: TenantDeleteConfirm,
+    claims=Depends(require_platform_permission("platform_tenants", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Permanently delete a company tenant (platform owner only)."""
+    if not is_platform_owner_role(claims.get("role")):
+        raise HTTPException(
+            status_code=403,
+            detail="Only the platform owner can delete a tenant",
+        )
+    tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
+    snapshot = await tenants_svc.delete_tenant(
+        db,
+        tenant,
+        actor_role=claims.get("role") or "",
+        actor_tenant_id=claims["tenant_id"],
+        confirm_slug=payload.confirm_slug,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="tenants",
+        action="delete",
+        entity="tenant",
+        entity_id=snapshot["id"],
+        details={
+            "target_tenant": snapshot["id"],
+            "slug": snapshot["slug"],
+            "company_name": snapshot["company_name"],
+        },
+    )
+    await db.commit()
+    return env(snapshot, "Tenant deleted")
 
 
 @api.post("/tenants/{tenant_ref}/verify-admin")
