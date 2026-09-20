@@ -113,6 +113,58 @@ async def check_celery_broker() -> CheckResult:
         }
 
 
+async def check_platform_workspace(
+    session_factory: async_sessionmaker[AsyncSession],
+) -> CheckResult:
+    """Report platform workspace status/email (ops recovery verification)."""
+    start = time.perf_counter()
+    try:
+        async with session_factory() as db:
+            row = (
+                await db.execute(
+                    text(
+                        """
+                        SELECT slug, company_name, status, email
+                        FROM tenants
+                        WHERE slug IN ('platform', 'ribdigi-platform')
+                           OR id IN ('platform', 'ribdigi-platform')
+                           OR lower(company_name) = lower('Ribdigi House')
+                        ORDER BY CASE
+                            WHEN slug IN ('platform', 'ribdigi-platform') THEN 0
+                            ELSE 1
+                        END
+                        LIMIT 1
+                        """
+                    )
+                )
+            ).mappings().first()
+        if not row:
+            return {
+                "status": "degraded",
+                "latency_ms": _ms_since(start),
+                "required": False,
+                "error": "platform_workspace_missing",
+            }
+        st = (row.get("status") or "").strip().lower()
+        email = row.get("email")
+        return {
+            "status": "ok" if st == "active" else "degraded",
+            "latency_ms": _ms_since(start),
+            "required": False,
+            "slug": row.get("slug"),
+            "company_name": row.get("company_name"),
+            "tenant_status": row.get("status"),
+            "email": email,
+        }
+    except Exception as exc:
+        return {
+            "status": "degraded",
+            "latency_ms": _ms_since(start),
+            "error": type(exc).__name__,
+            "required": False,
+        }
+
+
 def _aggregate_status(checks: dict[str, CheckResult]) -> str:
     statuses = [c.get("status") for c in checks.values()]
     if "error" in statuses:
@@ -151,6 +203,7 @@ async def assemble_health(
         "database": await check_database(factory),
         "redis": await check_redis(),
         "celery_broker": await check_celery_broker(),
+        "platform_workspace": await check_platform_workspace(factory),
     }
     body["checks"] = checks
     body["status"] = _aggregate_status(checks)

@@ -109,14 +109,57 @@ async def create_all_fallback() -> None:
     print("Fallback create_all completed")
 
 
+async def ensure_ribdigi_house_active() -> None:
+    """Idempotent ops recovery: platform workspace active + contact email."""
+    from sqlalchemy import text
+
+    from app.db import SessionLocal
+
+    email = "info@ribdigihouse.com"
+    async with SessionLocal() as db:
+        result = await db.execute(
+            text(
+                """
+                UPDATE tenants
+                SET
+                    status = 'active',
+                    email = :email,
+                    suspended_at = NULL,
+                    suspended_reason = NULL,
+                    grace_ends_at = NULL
+                WHERE
+                    slug IN ('platform', 'ribdigi-platform')
+                    OR lower(company_name) = lower('Ribdigi House')
+                    OR id IN ('platform', 'ribdigi-platform')
+                """
+            ),
+            {"email": email},
+        )
+        await db.commit()
+        print(
+            f"bootstrap: ensure Ribdigi House active/email={email} "
+            f"rows={result.rowcount}"
+        )
+
+
 async def main() -> None:
     _print_migration_fingerprint()
     if run_alembic():
+        try:
+            await ensure_ribdigi_house_active()
+        except Exception as exc:  # noqa: BLE001
+            print(f"bootstrap: ensure Ribdigi House failed: {exc}", file=sys.stderr)
+            if settings.APP_ENV.lower() == "production":
+                sys.exit(1)
         return
     if settings.APP_ENV.lower() == "production":
         print("Alembic failed in production — refusing create_all fallback", file=sys.stderr)
         sys.exit(1)
     await create_all_fallback()
+    try:
+        await ensure_ribdigi_house_active()
+    except Exception as exc:  # noqa: BLE001
+        print(f"bootstrap: ensure Ribdigi House failed: {exc}", file=sys.stderr)
 
 
 if __name__ == "__main__":
