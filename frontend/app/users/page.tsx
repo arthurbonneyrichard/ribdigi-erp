@@ -26,6 +26,7 @@ type UserRow = {
   full_name: string;
   email: string;
   role: string;
+  email_verified?: boolean;
   is_active: boolean;
   phone?: string | null;
   branch_id?: string | null;
@@ -208,7 +209,7 @@ export default function Page() {
         }),
       });
       setForm(emptyForm);
-      setMessage('User created');
+      setMessage('User created. They can sign in with this workspace.');
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -337,6 +338,18 @@ export default function Page() {
       );
     } catch (err: any) {
       setError(err.message);
+    }
+  }
+
+  async function allowSignIn(userId: string, email: string) {
+    setError('');
+    setMessage('');
+    try {
+      await api(`/users/${userId}/confirm-email`, { method: 'POST', body: '{}' });
+      setMessage(`${email} can sign in now.`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message || 'Could not enable sign-in');
     }
   }
 
@@ -864,6 +877,16 @@ export default function Page() {
               <td>{r.is_active ? 'Yes' : 'No'}</td>
               {canWrite && (
                 <td>
+                  {r.email_verified === false ? (
+                    <button
+                      type="button"
+                      className="btn-ok"
+                      onClick={() => allowSignIn(r.id, r.email)}
+                      aria-label={`Allow sign-in for ${r.email}`}
+                    >
+                      Allow sign-in
+                    </button>
+                  ) : null}
                   {r.is_active ? (
                     <button type="button" className="btn-danger" onClick={() => setActive(r.id, false)} aria-label={`Deactivate user ${r.id}`}>
                       Deactivate

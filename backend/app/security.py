@@ -121,6 +121,47 @@ async def _claims_from_api_key(
     return claims
 
 
+async def optional_platform_tenant_writer(
+    db: AsyncSession,
+    creds: HTTPAuthorizationCredentials | None,
+) -> dict | None:
+    """Active platform staff with tenant-write permission, or None.
+
+    A missing or invalid token is ignored so public company signup stays
+    email-verified. The platform console sends the owner's access token when
+    it creates a company, and that path may sign the admin in immediately.
+    """
+    raw = (creds.credentials if creds else "") or ""
+    if not raw.strip():
+        return None
+    try:
+        data = jwt.decode(raw, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+    except JWTError:
+        return None
+    if data.get("type") not in (None, "access"):
+        return None
+    role = str(data.get("role") or "")
+    user_id = data.get("sub")
+    tenant_id = data.get("tenant_id")
+    if not user_id or not tenant_id or not is_platform_role(role):
+        return None
+    user = (
+        await db.execute(
+            select(m.User).where(
+                m.User.id == user_id,
+                m.User.tenant_id == tenant_id,
+                m.User.is_active == True,  # noqa: E712
+            )
+        )
+    ).scalar_one_or_none()
+    if not user or not is_platform_role(user.role):
+        return None
+    overrides = user.permissions if isinstance(user.permissions, dict) else None
+    if not has_permission(user.role, "platform_tenants", "write", overrides=overrides):
+        return None
+    return {"sub": user.id, "tenant_id": user.tenant_id, "role": user.role}
+
+
 async def current_claims(
     request: Request,
     creds: HTTPAuthorizationCredentials | None = Depends(bearer),

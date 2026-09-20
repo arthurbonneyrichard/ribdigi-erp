@@ -255,9 +255,11 @@ export default function PlatformConsole() {
       });
       setForm(emptyCreate);
       const createdSlug = String(r.data?.slug || form.slug).trim().toLowerCase();
+      const verified = r.data?.admin_email_verified !== false;
       setMessage(
-        `Created tenant "${createdSlug}" (trial). Company admin login workspace/slug is "${createdSlug}". ` +
-          `Platform owner still uses workspace "platform". Assign a paid package with Manage when ready.`
+        verified
+          ? `Created tenant "${createdSlug}". The company admin can sign in now. Workspace is "${createdSlug}", not "platform".`
+          : `Created tenant "${createdSlug}". Verify the admin email before they sign in. Workspace is "${createdSlug}".`
       );
       setFilter('all');
       await refresh();
@@ -273,6 +275,26 @@ export default function PlatformConsole() {
       setError(err.message || 'Create tenant failed');
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function allowAdminSignIn(row: TenantRow) {
+    setBusy(row.id);
+    setError('');
+    setMessage('');
+    try {
+      const r = await api(`/tenants/${encodeURIComponent(row.slug || row.id)}/verify-admin`, {
+        method: 'POST',
+        body: '{}',
+      });
+      setMessage(
+        r.message ||
+          `Company admin for "${row.slug}" can sign in. Use workspace "${row.slug}", not "platform".`
+      );
+    } catch (err: any) {
+      setError(err.message || 'Could not enable admin sign-in');
+    } finally {
+      setBusy(null);
     }
   }
 
@@ -561,8 +583,9 @@ export default function PlatformConsole() {
           <h2>Tenant management</h2>
           <p className="muted" style={{ marginTop: 0, marginBottom: 12 }}>
             Click <strong>Manage</strong> on a company row to open subscription, modules, and store
-            limits. Platform owner login workspace is <code>platform</code>. Each company
-            admin logs in with that company&apos;s <strong>slug</strong>.
+            limits. If a company admin still sees “Verify your email”, click{' '}
+            <strong>Allow sign-in</strong>. They sign in with that company&apos;s <strong>slug</strong>,
+            not <code>platform</code>. Platform staff use workspace <code>platform</code>.
           </p>
           <div className="card" style={{ marginBottom: 12 }}>
             <label>
@@ -662,6 +685,15 @@ export default function PlatformConsole() {
                           aria-label={`Manage tenant ${t.slug || t.id}`}
                         >
                           {selectedId === t.id ? 'Managing…' : 'Manage'}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-ok"
+                          disabled={busy === t.id}
+                          onClick={() => allowAdminSignIn(t)}
+                          aria-label={`Allow sign-in for tenant ${t.slug || t.id}`}
+                        >
+                          Allow sign-in
                         </button>
                         {t.status === 'suspended' ? (
                           <button type="button" className="btn-ok" disabled={busy === t.id} onClick={() => activateTenant(t)} aria-label={`Activate tenant ${t.id}`}>

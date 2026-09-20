@@ -289,13 +289,17 @@ from app.schemas import (
     WarehouseCreate,
     WarehouseUpdate,
 )
+from fastapi.security import HTTPAuthorizationCredentials
+
 from app.security import (
+    bearer,
     create_access_token,
     current_claims,
     hash_password,
     hash_token,
     issue_one_time_token,
     issue_refresh_token,
+    optional_platform_tenant_writer,
     require_permission,
     require_platform_permission,
     require_roles,
@@ -484,8 +488,15 @@ async def metrics_endpoint():
 
 
 @api.post("/tenants")
-async def create_tenant(payload: TenantCreate, db: AsyncSession = Depends(get_db)):
+async def create_tenant(
+    payload: TenantCreate,
+    creds: HTTPAuthorizationCredentials | None = Depends(bearer),
+    db: AsyncSession = Depends(get_db),
+):
     validate_password_strength(payload.admin_password)
+    # Platform console sets the admin password itself. That admin can sign in
+    # immediately. Anonymous public signup still requires email verification.
+    owner_provisioned = await optional_platform_tenant_writer(db, creds) is not None
     # OpenAPI TenantSlugValue / CompanyNameValue → 422; service defense-in-depth → 400.
     slug = tenants_svc.require_tenant_slug(payload.slug)
     company_name = tenants_svc.require_company_name(payload.company_name)
@@ -522,12 +533,35 @@ async def create_tenant(payload: TenantCreate, db: AsyncSession = Depends(get_db
         full_name="Company Administrator",
         password_hash=hash_password(payload.admin_password),
         role="company_admin",
-        email_verified=False,
+        email_verified=owner_provisioned,
         permissions=permissions_for_role("company_admin"),
     )
     db.add(admin)
     await db.flush()
     await seed_tenant_defaults(db, tenant.id)
+
+    if owner_provisioned:
+        await audit_svc.record_event(
+            db,
+            tenant_id=tenant.id,
+            user_id=admin.id,
+            module="tenants",
+            action="tenant_created",
+            entity="tenant",
+            entity_id=tenant.id,
+            details={"slug": tenant.slug, "admin_email_verified": True, "source": "platform_console"},
+        )
+        await db.commit()
+        await db.refresh(tenant)
+        return env(
+            {
+                "tenant_id": tenant.id,
+                "slug": tenant.slug,
+                "status": tenant.status,
+                "admin_email_verified": True,
+            },
+            "Tenant created. Company admin can sign in with this workspace slug.",
+        )
 
     raw, token_hash, expires = issue_one_time_token()
     db.add(
@@ -805,6 +839,56 @@ async def tenant_activate_by_ref(
     )
     await db.commit()
     return env(tenants_svc.serialize_tenant(tenant), "Tenant activated")
+
+
+@api.post("/tenants/{tenant_ref}/verify-admin")
+async def tenant_verify_admin(
+    tenant_ref: TenantRefValue,
+    claims=Depends(require_platform_permission("platform_tenants", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Let a company admin created earlier sign in without the email link.
+
+    Owner-console creates now verify the admin immediately. This covers
+    companies already saved while verification mail was not delivered.
+    """
+    tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
+    users = (
+        await db.execute(
+            select(m.User).where(
+                m.User.tenant_id == tenant.id,
+                m.User.role == "company_admin",
+                m.User.is_active == True,  # noqa: E712
+            )
+        )
+    ).scalars().all()
+    if not users:
+        raise HTTPException(status_code=404, detail="No active company admin on this tenant")
+    changed = 0
+    for user in users:
+        if not user.email_verified:
+            user.email_verified = True
+            changed += 1
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="tenants",
+        action="admin_email_verified",
+        entity="tenant",
+        entity_id=tenant.id,
+        details={"target_tenant": tenant.id, "admins": len(users), "newly_verified": changed},
+    )
+    await db.commit()
+    return env(
+        {
+            "tenant_id": tenant.id,
+            "slug": tenant.slug,
+            "admins": len(users),
+            "newly_verified": changed,
+        },
+        "Company admin can sign in with this workspace slug.",
+    )
 
 
 @api.get("/packages")
@@ -2772,21 +2856,12 @@ async def add_user(
         permissions=role_perms,
         branch_id=branch_id,
         department_id=department_id,
-        email_verified=False,
+        # The signed-in admin chose this password and will hand it to the user.
+        email_verified=True,
         is_active=True,
     )
     db.add(user)
     await db.flush()
-    raw, token_hash, expires = issue_one_time_token()
-    db.add(
-        m.AuthToken(
-            tenant_id=claims["tenant_id"],
-            user_id=user.id,
-            purpose="email_verify",
-            token_hash=token_hash,
-            expires_at=expires,
-        )
-    )
     await audit_svc.record_event(
         db,
         tenant_id=claims["tenant_id"],
@@ -2795,26 +2870,36 @@ async def add_user(
         action="user_created",
         entity="user",
         entity_id=user.id,
-        details={"email": user.email, "role": user.role},
-    )
-    from app import emailer
-
-    tenant = await db.get(m.Tenant, claims["tenant_id"])
-    email_result = await emailer.send_verification_email(
-        to=user.email,
-        token=raw,
-        company_name=tenant.company_name if tenant else None,
-        tenant=tenant,
+        details={"email": user.email, "role": user.role, "email_verified": True},
     )
     await db.commit()
-    data = {
-        "id": user.id,
-        "user": serialize_user(user),
-        "email": {"sent": email_result.sent, "mode": email_result.mode},
-    }
-    if settings.DEBUG or settings.APP_ENV.lower() != "production":
-        data["email_verification_token"] = raw
-    return env(data, "User created; verification email dispatched")
+    return env(
+        {"id": user.id, "user": serialize_user(user)},
+        "User created. They can sign in with this workspace.",
+    )
+
+
+@api.post("/users/{user_id}/confirm-email")
+async def confirm_user_email(
+    user_id: UuidIdValue,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Clear the email gate for a user an admin already provisioned."""
+    user = await _get_tenant_user(db, claims["tenant_id"], user_id)
+    user.email_verified = True
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="users",
+        action="email_confirmed",
+        entity="user",
+        entity_id=user.id,
+        details={"email": user.email},
+    )
+    await db.commit()
+    return env(serialize_user(user), "User can sign in. Email verification is not required.")
 
 
 @api.patch("/users/{user_id}")

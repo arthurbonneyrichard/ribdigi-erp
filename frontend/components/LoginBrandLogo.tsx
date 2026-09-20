@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * Sign-in wordmark. The login card stays light on the green stage in every theme,
- * so the dark logo is always the one shown.
+ * Sign-in wordmark. The login card is always the dark green card, so the
+ * white wordmark is the one shown in light and dark app themes.
  */
 export default function LoginBrandLogo({
   alt = 'RIBDIGI ERP — One System. Total Business Control.',
@@ -13,7 +13,7 @@ export default function LoginBrandLogo({
     <div className="login-brand">
       <img
         className="login-logo"
-        src="/brand/logo-full-dark.png"
+        src="/brand/logo-full.png"
         alt={alt}
         width={1024}
         height={341}

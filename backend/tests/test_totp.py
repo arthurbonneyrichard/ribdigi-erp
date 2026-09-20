@@ -54,4 +54,5 @@ def test_enforced_roles_and_enrollment_paths(monkeypatch):
     assert path_allowed_during_enrollment("/api/v1/auth/2fa/setup") is True
     assert path_allowed_during_enrollment("/api/v1/auth/webauthn/register/options") is True
     assert path_allowed_during_enrollment("/api/v1/me") is True
+    assert path_allowed_during_enrollment("/api/v1/notifications/unread-count") is True
     assert path_allowed_during_enrollment("/api/v1/products") is False

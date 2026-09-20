@@ -359,6 +359,12 @@ function isEditableTarget(target: EventTarget | null) {
   return Boolean(el.closest('input, textarea, select, [contenteditable="true"]'));
 }
 
+/** New admins must enroll 2FA. That 403 is not an expired session. */
+function enrollmentRequired(err: unknown): boolean {
+  const e = err as { status?: number; message?: string };
+  return e?.status === 403 && /2fa enrollment/i.test(String(e?.message || ''));
+}
+
 export default function Shell({ children }: { children: React.ReactNode }) {
   const [authReady, setAuthReady] = useState(false);
   const [unread, setUnread] = useState(0);
@@ -391,7 +397,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       try {
         await api('/me');
         if (active) setAuthReady(true);
-      } catch {
+      } catch (err) {
+        if (enrollmentRequired(err)) {
+          if (active) setAuthReady(true);
+          return;
+        }
         clearSessionAndRedirect();
       }
     }
@@ -516,12 +526,16 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     let active = true;
     async function load() {
       try {
-        const [countRes, meRes] = await Promise.all([
-          api('/notifications/unread-count').catch(() => ({ data: { count: 0 } })),
-          api('/me'),
-        ]);
+        const meRes = await api('/me');
+        let unreadCount = 0;
+        try {
+          const countRes = await api('/notifications/unread-count');
+          unreadCount = countRes.data?.count || 0;
+        } catch (err) {
+          if (!enrollmentRequired(err)) unreadCount = 0;
+        }
         if (!active) return;
-        setUnread(countRes.data?.count || 0);
+        setUnread(unreadCount);
         setPermissions(meRes.data?.permissions || {});
         setEnabledModules(
           Array.isArray(meRes.data?.enabled_modules) ? meRes.data.enabled_modules : null
@@ -537,7 +551,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         }
         const mins = Number(meRes.data?.inactivity_timeout_minutes);
         if (Number.isFinite(mins)) setIdleMinutes(mins);
-      } catch {
+      } catch (err) {
+        if (enrollmentRequired(err)) return;
         clearSessionAndRedirect();
       }
     }
