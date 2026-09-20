@@ -836,7 +836,16 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             canManage={role === 'company_admin' || role === 'super_admin'}
           />
         )}
-        {children}
+        <div
+          key={pathname || '/'}
+          className="page-view"
+          onAnimationStart={() => {
+            const main = document.querySelector('.main');
+            if (main instanceof HTMLElement) main.scrollTop = 0;
+          }}
+        >
+          {children}
+        </div>
       </main>
     </div>
     </StoreProvider>
