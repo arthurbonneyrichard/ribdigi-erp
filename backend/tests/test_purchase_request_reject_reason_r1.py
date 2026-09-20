@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_purchase_request_reject_reason_ui_wired():
-    page = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert "prRejectReason" in page
     assert "Rejected from purchasing UI" not in page
     assert "Enter a reject reason before rejecting a purchase request" in page

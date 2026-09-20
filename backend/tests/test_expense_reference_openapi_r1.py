@@ -40,7 +40,7 @@ def test_expense_reference_schema():
 
 
 def test_expense_reference_ui_and_docs():
-    page = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Expense reference"' in page
     assert "reference.trim() || null" in page
     assert 'aria-label="Edit reference"' in page

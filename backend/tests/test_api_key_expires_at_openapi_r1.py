@@ -40,7 +40,7 @@ def test_api_key_expires_at_parse_datetime_keeps_clock():
 
 
 def test_api_key_expires_at_ui_and_docs():
-    page = (ROOT / "frontend/app/integrations/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/integrations/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="API key expiry"' in page
     assert "keyExpires.trim()" in page
     assert "YYYY-MM-DD or ISO datetime" in page

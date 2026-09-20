@@ -23,7 +23,7 @@ def test_iso_date_query_schema_for_movements():
 
 
 def test_movement_date_ui_and_docs():
-    page = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Movement from date"' in page
     assert 'aria-label="Movement to date"' in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

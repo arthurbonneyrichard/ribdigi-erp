@@ -42,7 +42,7 @@ def test_subscription_package_code_literal_schema():
 
 
 def test_subscription_package_code_ui_and_docs():
-    platform = (ROOT / "frontend/app/platform/page.tsx").read_text(encoding="utf-8")
+    platform = (ROOT / "frontend/app/(dashboard)/platform/page.tsx").read_text(encoding="utf-8")
     assert "package_code" in platform
     assert "packages.map" in platform
     api = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")

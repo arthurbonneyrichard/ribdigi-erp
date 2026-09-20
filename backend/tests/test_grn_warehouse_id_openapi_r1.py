@@ -48,7 +48,7 @@ def test_grn_warehouse_id_ui_and_docs():
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
     assert "warehouse_id" in docs
     assert "grn" in docs.lower()
-    page = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Post GRN"' in page
 
 

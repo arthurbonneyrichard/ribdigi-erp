@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_journal_unpost_reason_ui_wired():
-    page = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert "unpostReason" in page
     assert "Required before Unpost" in page
     assert "Enter an unpost reason before unposting" in page

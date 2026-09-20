@@ -31,7 +31,7 @@ def test_department_update_head_user_id_schema():
 
 
 def test_department_update_head_user_id_ui_and_docs():
-    page = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert "Edit department head" in page
     assert "head_user_id: deptHeadId.trim() || null" in page
     assert "clear_head: !deptHeadId.trim()" in page

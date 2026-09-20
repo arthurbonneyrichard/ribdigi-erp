@@ -48,7 +48,7 @@ def test_product_sku_value_schema():
 
 
 def test_product_sku_ui_and_docs():
-    page = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Product SKU"' in page
     assert 'aria-label="Variant SKU"' in page
     assert "sku: productSku.trim() || null" in page

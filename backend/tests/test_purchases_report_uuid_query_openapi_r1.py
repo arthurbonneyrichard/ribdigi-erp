@@ -35,7 +35,7 @@ def test_purchases_report_uuid_query_schema():
 
 
 def test_purchases_report_uuid_query_ui_and_docs():
-    reports = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    reports = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Report purchases store filter"' in reports
     assert 'aria-label="Report purchases warehouse filter"' in reports
     assert "params.set('warehouse_id', warehouseTrim)" in reports

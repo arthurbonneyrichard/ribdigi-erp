@@ -36,7 +36,7 @@ def test_expenses_report_uuid_query_schema():
 def test_expenses_report_uuid_query_ui_and_docs():
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Expenses report UUID Query OpenAPI" in agents
-    reports = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    reports = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Report financial store filter"' in reports
     assert 'aria-label="Report department filter"' in reports
 

@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_store_soft_deactivate_ui_wired():
-    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    stores = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert "setStoreActive" in stores
     assert "Deactivate" in stores
     assert "Activate" in stores
@@ -21,7 +21,7 @@ def test_store_soft_deactivate_ui_wired():
     assert "storeManageFilter" in stores
     assert 'aria-label="Store status filter"' in stores
     assert "managedStores" in stores
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert "s.is_active !== false" in sales
 
 

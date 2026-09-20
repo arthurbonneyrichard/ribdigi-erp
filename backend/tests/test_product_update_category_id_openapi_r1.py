@@ -31,7 +31,7 @@ def test_product_update_category_id_schema():
 
 
 def test_product_update_category_id_ui_and_docs():
-    page = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Edit product category"' in page
     assert "category_id: editCategoryId.trim() || null" in page
     assert 'aria-label="Save product"' in page

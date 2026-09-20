@@ -40,8 +40,8 @@ def test_approval_level_label_schema():
 
 
 def test_approval_level_label_ui_and_docs():
-    expenses = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    expenses = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
+    purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label={`Expense approval level ${idx + 1} label`}' in expenses
     assert "(l.label || '').trim() || null" in expenses
     assert 'aria-label="Save expense approval matrix"' in expenses

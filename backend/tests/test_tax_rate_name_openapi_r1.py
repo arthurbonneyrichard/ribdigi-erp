@@ -33,7 +33,7 @@ def test_tax_rate_name_schema():
 
 
 def test_tax_rate_name_ui_and_docs():
-    tax = (ROOT / "frontend/app/tax/page.tsx").read_text(encoding="utf-8")
+    tax = (ROOT / "frontend/app/(dashboard)/tax/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Tax rate name"' in tax
     assert "name.trim()" in tax
     assert 'aria-label="Add tax rate"' in tax

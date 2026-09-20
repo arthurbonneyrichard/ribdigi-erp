@@ -79,11 +79,11 @@ def test_approval_level_roles_schema():
 
 
 def test_approval_matrix_roles_ui_and_docs():
-    expenses = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    expenses = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert "SYSTEM_ROLES" in expenses
     assert 'aria-label="Save expense approval matrix"' in expenses
     assert "expense-approval-system-roles" in expenses
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert "SYSTEM_ROLES" in purchasing
     assert 'aria-label="Save PR approval matrix"' in purchasing
     assert "pr-approval-system-roles" in purchasing

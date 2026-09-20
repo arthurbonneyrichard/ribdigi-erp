@@ -43,7 +43,7 @@ def test_ai_reports_export_body_schema_forbid():
 
 
 def test_ai_reports_export_ui_and_docs():
-    page = (ROOT / "frontend/app/ai/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/ai/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Export AI report"' in page
     assert "exportReport" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

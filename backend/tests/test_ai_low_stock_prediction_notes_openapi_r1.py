@@ -34,7 +34,7 @@ def test_ai_low_stock_prediction_notes_schema():
 
 
 def test_ai_low_stock_prediction_notes_ui_and_docs():
-    page = (ROOT / "frontend/app/ai/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/ai/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="AI low-stock prediction notes"' in page
     assert "predictionNotes.trim() || null" in page
     assert 'aria-label="Create draft purchase requests from predictions"' in page

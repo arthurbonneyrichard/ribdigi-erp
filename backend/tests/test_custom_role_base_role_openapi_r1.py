@@ -47,7 +47,7 @@ def test_custom_role_base_role_literal_schema():
 
 
 def test_custom_role_base_role_ui_and_docs():
-    users = (ROOT / "frontend/app/users/page.tsx").read_text(encoding="utf-8")
+    users = (ROOT / "frontend/app/(dashboard)/users/page.tsx").read_text(encoding="utf-8")
     assert "base_role" in users
     assert "Clone from" in users
     assert "super_admin" in users

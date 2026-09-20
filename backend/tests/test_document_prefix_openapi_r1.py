@@ -40,7 +40,7 @@ def test_document_prefix_schema():
 
 
 def test_document_prefix_ui_and_docs():
-    page = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Journal number prefix"' in page
     assert 'aria-label="Cash transfer number prefix"' in page
     assert 'aria-label="Save accounting numbering"' in page

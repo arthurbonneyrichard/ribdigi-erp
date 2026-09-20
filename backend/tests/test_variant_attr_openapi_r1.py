@@ -59,7 +59,7 @@ def test_variant_attr_value_schema():
 
 
 def test_variant_attr_ui_and_docs():
-    inv = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inv = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Variant size"' in inv
     assert 'aria-label="Variant color"' in inv
     assert 'aria-label="Variant flavor"' in inv

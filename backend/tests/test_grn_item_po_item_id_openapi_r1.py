@@ -31,7 +31,7 @@ def test_grn_item_po_item_id_schema():
 
 
 def test_grn_item_po_item_id_ui_and_docs():
-    page = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert "po_item_id: String(i.id).trim()" in page
     assert 'aria-label="Post GRN"' in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

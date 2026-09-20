@@ -23,7 +23,7 @@ def test_iso_date_query_schema_for_export():
 
 
 def test_export_date_ui_and_docs():
-    reports = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    reports = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Report from date"' in reports
     assert 'aria-label="Report to date"' in reports
     assert 'aria-label="Report as of date"' in reports

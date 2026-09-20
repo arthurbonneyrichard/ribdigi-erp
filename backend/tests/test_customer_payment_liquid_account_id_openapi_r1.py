@@ -34,7 +34,7 @@ def test_customer_payment_liquid_account_id_schema():
 
 
 def test_customer_payment_liquid_account_id_ui_and_docs():
-    page = (ROOT / "frontend/app/credit/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/credit/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Credit payment liquid account"' in page
     assert "liquid_account_id: liquidAccountId.trim() || null" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

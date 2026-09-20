@@ -67,24 +67,24 @@ def test_honesty_batch13_docs_and_agents():
     assert "stock.low" in standards
     assert "bank feed" in standards.lower()
 
-    users_page = (ROOT / "frontend/app/users/page.tsx").read_text(encoding="utf-8")
+    users_page = (ROOT / "frontend/app/(dashboard)/users/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Validate user CSV import"' in users_page
     assert 'aria-label="Import valid user CSV rows"' in users_page
 
-    inv_page = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inv_page = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Generate product barcode"' in inv_page
     assert 'aria-label="Print product barcode label"' in inv_page
     assert 'aria-label="Validate product CSV import"' in inv_page
     assert 'aria-label="Import valid product CSV rows"' in inv_page
 
-    integ = (ROOT / "frontend/app/integrations/page.tsx").read_text(encoding="utf-8")
+    integ = (ROOT / "frontend/app/(dashboard)/integrations/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Copy API key"' in integ
     assert 'aria-label="Refresh webhook deliveries"' in integ
 
-    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    accounting = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert "Sync bank connection" in accounting
 
-    notif = (ROOT / "frontend/app/notifications/page.tsx").read_text(encoding="utf-8")
+    notif = (ROOT / "frontend/app/(dashboard)/notifications/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Scan due notification alerts"' in notif
 
     login = (ROOT / "frontend/app/page.tsx").read_text(encoding="utf-8")

@@ -34,7 +34,7 @@ def test_two_factor_disable_password_value_schema():
 
 
 def test_two_factor_disable_password_ui_and_docs():
-    page = (ROOT / "frontend/app/security/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/security/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Disable 2FA password"' in page
     assert "trimmedPassword" in page
     assert 'aria-label="Disable 2FA"' in page

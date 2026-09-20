@@ -34,7 +34,7 @@ def test_cash_transfer_to_account_id_schema():
 
 
 def test_cash_transfer_to_account_id_ui_and_docs():
-    page = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Cash transfer to account"' in page
     assert "body.to_account_id = xferTo.trim() || null" in page
     assert 'aria-label="Post cash transfer"' in page

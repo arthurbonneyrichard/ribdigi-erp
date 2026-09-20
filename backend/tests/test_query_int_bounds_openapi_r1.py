@@ -30,9 +30,9 @@ def test_query_int_bounds_ui_and_docs():
     assert "copies` ∈ 1–40" in docs or "copies` ∈ 1-40" in docs or "Query `copies` ∈ 1–40" in docs
     assert "Inventory expiry days" in docs or "days` ∈ 1–365" in docs
 
-    inv = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inv = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Label copies"' in inv
-    reports = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    reports = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Inventory expiry days"' in reports
     assert "Math.min(365" in reports
 

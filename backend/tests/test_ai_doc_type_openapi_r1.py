@@ -50,7 +50,7 @@ def test_ai_document_type_literal_schema():
 
 
 def test_ai_document_type_ui_and_docs():
-    page = (ROOT / "frontend/app/ai/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/ai/page.tsx").read_text(encoding="utf-8")
     assert 'value="auto"' in page
     assert 'value="receipt"' in page
     assert 'value="invoice"' in page

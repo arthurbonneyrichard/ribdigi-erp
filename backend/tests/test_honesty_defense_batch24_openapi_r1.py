@@ -72,20 +72,20 @@ def test_honesty_batch24_docs_and_agents():
     assert "journal_line_signed_amount" in standards
     assert "_month_revenue" in standards or "apply_discount" in standards or "sales_monthly_total" in standards or "churn_risk" in standards
 
-    expenses = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    expenses = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Save expense numbering"' in expenses
     assert 'aria-label="Expense category status filter"' in expenses
     assert 'aria-label="Recurring expense status filter"' in expenses
 
-    users = (ROOT / "frontend/app/users/page.tsx").read_text(encoding="utf-8")
+    users = (ROOT / "frontend/app/(dashboard)/users/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Custom role status filter"' in users
     assert 'aria-label="User status filter"' in users
 
-    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    stores = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Branch status filter"' in stores
     assert 'aria-label="Warehouse status filter"' in stores
 
-    credit = (ROOT / "frontend/app/credit/page.tsx").read_text(encoding="utf-8")
+    credit = (ROOT / "frontend/app/(dashboard)/credit/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="FX currency code"' in credit
     assert 'aria-label="Load party history"' in credit
 

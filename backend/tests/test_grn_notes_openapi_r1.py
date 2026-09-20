@@ -39,7 +39,7 @@ def test_grn_notes_schema():
 
 
 def test_grn_notes_ui_and_docs():
-    page = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="GRN notes"' in page
     assert "grnNotes.trim() || null" in page
     assert 'aria-label="Post GRN"' in page

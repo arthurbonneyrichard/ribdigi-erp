@@ -31,7 +31,7 @@ def test_ai_prediction_line_product_id_schema():
 
 
 def test_ai_prediction_line_product_id_ui_and_docs():
-    page = (ROOT / "frontend/app/ai/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/ai/page.tsx").read_text(encoding="utf-8")
     assert "product_id: String(x.product_id || '').trim()" in page
     assert 'aria-label="Create draft purchase requests from predictions"' in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

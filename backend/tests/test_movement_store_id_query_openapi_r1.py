@@ -26,7 +26,7 @@ def test_movement_store_id_query_schema():
 
 
 def test_movement_store_id_query_ui_and_docs():
-    reports = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    reports = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Report inventory store filter"' in reports
     assert "params.set('store_id', storeTrim)" in reports
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

@@ -31,7 +31,7 @@ def test_store_update_branch_id_schema():
 
 
 def test_store_update_branch_id_ui_and_docs():
-    page = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Edit store branch"' in page
     assert "branch_id: editBranchId.trim() || null" in page
     assert "clear_branch: !editBranchId.trim()" in page

@@ -36,7 +36,7 @@ def test_account_type_liquid_kind_literal_schema():
 
 
 def test_account_type_liquid_kind_ui_and_docs():
-    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    accounting = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert "newAcctKind" in accounting
     assert 'value="cash"' in accounting
     assert 'value="bank"' in accounting

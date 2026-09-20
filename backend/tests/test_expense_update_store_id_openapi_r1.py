@@ -31,7 +31,7 @@ def test_expense_update_store_id_schema():
 
 
 def test_expense_update_store_id_ui_and_docs():
-    page = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Edit expense store"' in page
     assert "body.store_id = storeTrim" in page
     assert "body.clear_store = true" in page

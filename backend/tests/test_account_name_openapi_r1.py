@@ -37,7 +37,7 @@ def test_account_name_schema():
 
 
 def test_account_name_ui_and_docs():
-    page = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Account name"' in page
     assert 'aria-label="Edit account name"' in page
     assert "newAcctName.trim()" in page

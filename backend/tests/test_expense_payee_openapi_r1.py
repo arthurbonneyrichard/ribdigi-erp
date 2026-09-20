@@ -55,7 +55,7 @@ def test_expense_payee_schema():
 
 
 def test_expense_payee_ui_and_docs():
-    page = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Expense payee"' in page
     assert "payee.trim() || null" in page
     assert 'aria-label="Recurring payee"' in page

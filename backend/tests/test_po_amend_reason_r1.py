@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_po_amend_reason_ui_wired():
-    page = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert "amendReason" in page
     assert "Required amendment reason" in page
     assert 'aria-label="Purchase order amend reason"' in page

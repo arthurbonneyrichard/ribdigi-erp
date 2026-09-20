@@ -114,20 +114,20 @@ def test_money_value_ui_and_docs():
     assert "PositiveMoneyValue" in docs
     assert "NonNegativeMoneyValue" in docs
 
-    exp = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    exp = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Expense amount"' in exp
     assert 'aria-label="OCR expense amount"' in exp
     assert 'aria-label="Recurring amount"' in exp
 
-    credit = (ROOT / "frontend/app/credit/page.tsx").read_text(encoding="utf-8")
+    credit = (ROOT / "frontend/app/(dashboard)/credit/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Payment amount"' in credit
 
-    acct = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    acct = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Opening balance amount"' in acct
     assert 'aria-label="Cash transfer amount"' in acct
     assert 'aria-label="Statement line amount"' in acct
 
-    pos = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
+    pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Opening cash"' in pos
     assert 'aria-label="Counted cash"' in pos
 

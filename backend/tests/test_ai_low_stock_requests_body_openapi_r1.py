@@ -54,7 +54,7 @@ def test_ai_low_stock_requests_body_schema_forbid():
 
 
 def test_ai_low_stock_requests_ui_and_docs():
-    page = (ROOT / "frontend/app/ai/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/ai/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Create draft purchase requests from predictions"' in page
     assert 'aria-label="Include open purchase requests"' in page
     assert 'aria-label="AI low-stock prediction notes"' in page

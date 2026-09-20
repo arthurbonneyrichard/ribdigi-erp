@@ -13,13 +13,13 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_coa_account_soft_deactivate_ui_wired():
-    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    accounting = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert "accountManageFilter" in accounting
     assert 'aria-label="Account status filter"' in accounting
     assert "managedAccounts" in accounting
     assert "setAccountActive" in accounting
     assert "activeAccounts" in accounting
-    expenses = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    expenses = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert "a.is_active !== false" in expenses
 
 

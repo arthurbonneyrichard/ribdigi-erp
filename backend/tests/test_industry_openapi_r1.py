@@ -85,7 +85,7 @@ def test_coerce_and_normalize_industry_defense():
 
 
 def test_industry_ui_and_docs():
-    company = (ROOT / "frontend/app/company/page.tsx").read_text(encoding="utf-8")
+    company = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
     assert "tenant.industry" in company
     for value in (
         "retail",

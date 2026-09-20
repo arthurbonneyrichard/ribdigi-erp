@@ -42,7 +42,7 @@ def test_ai_prediction_line_preferred_supplier_id_schema():
 
 
 def test_ai_prediction_line_preferred_supplier_id_ui_and_docs():
-    page = (ROOT / "frontend/app/ai/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/ai/page.tsx").read_text(encoding="utf-8")
     assert "preferred_supplier_id: x.preferred_supplier_id" in page
     assert "String(x.preferred_supplier_id).trim()" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

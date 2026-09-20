@@ -31,7 +31,7 @@ def test_stock_count_item_product_id_schema():
 
 
 def test_stock_count_item_product_id_ui_and_docs():
-    page = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert "product_id: String(item.product_id).trim()" in page
     assert 'aria-label="Save count lines"' in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

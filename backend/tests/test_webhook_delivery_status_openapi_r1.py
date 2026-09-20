@@ -37,7 +37,7 @@ def test_webhook_delivery_status_filter_literal_schema():
 
 
 def test_webhook_delivery_status_filter_ui_and_docs():
-    page = (ROOT / "frontend/app/integrations/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/integrations/page.tsx").read_text(encoding="utf-8")
     assert "deliveryStatusFilter" in page
     assert "managedDeliveries" in page
     assert 'aria-label="Webhook delivery status filter"' in page

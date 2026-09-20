@@ -72,22 +72,22 @@ def test_honesty_batch29_docs_and_agents():
     assert "dashboard month/daily accumulate" in standards or "cheque reverse AR/AP" in standards
     assert "AI expenses by_cat" in standards or "purchase suggestion/PR qty" in standards
 
-    tax = (ROOT / "frontend/app/tax/page.tsx").read_text(encoding="utf-8")
+    tax = (ROOT / "frontend/app/(dashboard)/tax/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Add tax rate"' in tax
 
-    inventory = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inventory = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Create draft count"' in inventory
     assert 'aria-label="Create stock transfer"' in inventory
     assert 'aria-label="Create variant"' in inventory
 
-    pos = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
+    pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Charge complete sale"' in pos
     assert 'aria-label="Clear POS cart"' in pos
 
-    integrations = (ROOT / "frontend/app/integrations/page.tsx").read_text(encoding="utf-8")
+    integrations = (ROOT / "frontend/app/(dashboard)/integrations/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Create API key"' in integrations
 
-    expenses = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    expenses = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Cancel recurring expense edit"' in expenses
 
 

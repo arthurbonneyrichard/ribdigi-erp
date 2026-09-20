@@ -386,6 +386,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const isPlatformOwner = PLATFORM_ROLES.has(role);
 
   // Market readiness: no anonymous browsing of /pos, /inventory, etc.
+  // Run once while this Shell stays mounted across dashboard navigations.
   useEffect(() => {
     let active = true;
     async function requireAccount() {
@@ -409,7 +410,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     return () => {
       active = false;
     };
-  }, [pathname]);
+  }, []);
 
   // Discourage copying app content (form fields stay selectable).
   useEffect(() => {

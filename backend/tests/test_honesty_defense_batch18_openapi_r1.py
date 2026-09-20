@@ -73,23 +73,23 @@ def test_honesty_batch18_docs_and_agents():
     assert "Document" in standards or "prefix" in standards.lower()
     assert "tax" in standards.lower() and "component" in standards.lower()
 
-    staff = (ROOT / "frontend/app/platform/staff/page.tsx").read_text(encoding="utf-8")
+    staff = (ROOT / "frontend/app/(dashboard)/platform/staff/page.tsx").read_text(encoding="utf-8")
     assert "Activate platform staff" in staff
     assert "Deactivate platform staff" in staff
     assert "Revoke dashboard access" in staff
 
-    integrations = (ROOT / "frontend/app/integrations/page.tsx").read_text(encoding="utf-8")
+    integrations = (ROOT / "frontend/app/(dashboard)/integrations/page.tsx").read_text(encoding="utf-8")
     assert "View API key usage" in integrations
     assert "Rotate webhook secret" in integrations
 
-    notifications = (ROOT / "frontend/app/notifications/page.tsx").read_text(encoding="utf-8")
+    notifications = (ROOT / "frontend/app/(dashboard)/notifications/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Mark all notifications read"' in notifications
 
-    security = (ROOT / "frontend/app/security/page.tsx").read_text(encoding="utf-8")
+    security = (ROOT / "frontend/app/(dashboard)/security/page.tsx").read_text(encoding="utf-8")
     assert "Remove passkey" in security
     assert 'aria-label="Start 2FA setup"' in security
 
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert "View quotation" in sales
     assert "View sales order" in sales
     assert "View sales invoice" in sales

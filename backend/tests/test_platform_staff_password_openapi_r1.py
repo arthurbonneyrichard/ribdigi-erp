@@ -56,7 +56,7 @@ def test_platform_staff_password_value_schema():
 
 
 def test_platform_staff_password_ui_and_docs():
-    staff = (ROOT / "frontend/app/platform/staff/page.tsx").read_text(encoding="utf-8")
+    staff = (ROOT / "frontend/app/(dashboard)/platform/staff/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Platform staff password"' in staff
     assert "trimmedPassword" in staff
     assert 'aria-label="Create platform staff"' in staff

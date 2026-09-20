@@ -29,7 +29,7 @@ def test_bank_match_journal_line_id_schema():
 
 
 def test_bank_match_journal_line_id_ui_and_docs():
-    page = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert "journal_line_id: String(journalLineId).trim()" in page
     assert 'aria-label="Match bank line to journal line"' in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

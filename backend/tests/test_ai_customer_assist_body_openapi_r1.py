@@ -47,7 +47,7 @@ def test_ai_customer_assist_body_schema_forbid():
 
 
 def test_ai_customer_assist_ui_and_docs():
-    page = (ROOT / "frontend/app/ai/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/ai/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Customer assist"' in page
     assert 'aria-label="AI customer assist customer"' in page
     assert "customer_id: assistCustomerId.trim() || null" in page

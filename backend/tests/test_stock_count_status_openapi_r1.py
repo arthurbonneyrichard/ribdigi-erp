@@ -35,7 +35,7 @@ def test_stock_count_report_status_literal_schema():
 
 
 def test_stock_count_report_status_ui_and_docs():
-    page = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert 'value="completed"' in page
     assert 'value="draft"' in page
     assert 'value="cancelled"' in page

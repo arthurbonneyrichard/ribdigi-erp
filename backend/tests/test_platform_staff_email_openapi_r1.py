@@ -60,7 +60,7 @@ def test_platform_staff_email_schema():
 
 
 def test_platform_staff_email_ui_and_docs():
-    staff = (ROOT / "frontend/app/platform/staff/page.tsx").read_text(encoding="utf-8")
+    staff = (ROOT / "frontend/app/(dashboard)/platform/staff/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Platform staff email"' in staff
     assert 'aria-label="Create platform staff"' in staff
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

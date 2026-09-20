@@ -33,7 +33,7 @@ def test_expense_category_name_schema():
 
 
 def test_expense_category_name_ui_and_docs():
-    expenses = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    expenses = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Expense category name"' in expenses
     assert "newCatName.trim()" in expenses
     assert 'aria-label="Add expense category"' in expenses

@@ -156,7 +156,7 @@ def test_user_status_filter_ui_wired():
     from pathlib import Path
 
     users = (
-        Path(__file__).resolve().parents[2] / "frontend/app/users/page.tsx"
+        Path(__file__).resolve().parents[2] / "frontend/app/(dashboard)/users/page.tsx"
     ).read_text(encoding="utf-8")
     assert "userManageFilter" in users
     assert 'aria-label="User status filter"' in users

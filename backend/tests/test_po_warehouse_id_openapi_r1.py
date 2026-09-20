@@ -50,7 +50,7 @@ def test_po_warehouse_id_ui_and_docs():
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
     assert "warehouse_id" in docs
     assert "POST /purchasing/orders" in docs
-    page = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="PO supplier"' in page
 
 

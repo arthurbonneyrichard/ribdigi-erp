@@ -38,7 +38,7 @@ def test_notification_channel_prefs_forbid_unknown():
 
 
 def test_notification_preferences_ui_and_docs():
-    page = (ROOT / "frontend/app/notifications/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/notifications/page.tsx").read_text(encoding="utf-8")
     assert "Channel preferences" in page
     assert "togglePref" in page
     assert 'aria-label="Channel preferences"' in page

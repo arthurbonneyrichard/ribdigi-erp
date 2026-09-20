@@ -27,7 +27,7 @@ def test_pi_manage_status_literal_covers_lifecycle():
 
 
 def test_pi_manage_status_ui_and_docs():
-    page = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert "piManageFilter" in page
     assert "managedInvoices" in page
     assert 'aria-label="Purchase invoice status filter"' in page

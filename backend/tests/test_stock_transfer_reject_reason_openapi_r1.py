@@ -29,8 +29,8 @@ def test_stock_transfer_reject_reason_schema():
 
 
 def test_stock_transfer_reject_reason_ui_and_docs():
-    inv = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
-    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    inv = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
+    stores = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Stock transfer reject reason"' in inv
     assert 'aria-label="Stock transfer reject reason"' in stores
     assert "xferRejectReason" in inv

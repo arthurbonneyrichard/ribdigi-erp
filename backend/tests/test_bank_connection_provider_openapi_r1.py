@@ -35,7 +35,7 @@ def test_bank_connection_provider_literal_schema():
 
 
 def test_bank_connection_provider_ui_and_docs():
-    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    accounting = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert "connProvider" in accounting
     assert 'value="mock"' in accounting
     assert 'value="http_json"' in accounting

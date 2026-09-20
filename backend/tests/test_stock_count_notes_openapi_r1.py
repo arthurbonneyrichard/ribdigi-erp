@@ -32,7 +32,7 @@ def test_stock_count_notes_schema():
 
 
 def test_stock_count_notes_ui_and_docs():
-    page = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Stock count notes"' in page
     assert "countNotes.trim() || null" in page
     assert 'aria-label="Create draft count"' in page

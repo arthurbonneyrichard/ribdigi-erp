@@ -28,7 +28,7 @@ def test_iso_date_query_schema_for_sales_products_customers():
 
 
 def test_sales_products_customers_date_ui_and_docs():
-    reports = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    reports = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Report from date"' in reports
     assert 'aria-label="Report to date"' in reports
     assert "/reports/sales/products" in reports or "sales/products" in reports

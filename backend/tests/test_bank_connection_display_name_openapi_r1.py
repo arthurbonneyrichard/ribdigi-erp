@@ -37,7 +37,7 @@ def test_bank_connection_display_name_schema():
 
 
 def test_bank_connection_display_name_ui_and_docs():
-    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    accounting = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Bank connection display name"' in accounting
     assert "connName.trim()" in accounting
     assert 'aria-label="Connect bank account"' in accounting

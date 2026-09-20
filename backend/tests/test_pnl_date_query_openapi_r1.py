@@ -23,10 +23,10 @@ def test_iso_date_query_schema_for_pnl():
 
 
 def test_pnl_date_ui_and_docs():
-    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    accounting = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="P&L from date"' in accounting
     assert 'aria-label="P&L to date"' in accounting
-    reports = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    reports = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Report from date"' in reports
     assert 'aria-label="Report to date"' in reports
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

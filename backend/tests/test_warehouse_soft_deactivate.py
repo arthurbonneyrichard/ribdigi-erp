@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_warehouse_soft_deactivate_ui_wired():
-    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    stores = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert "setWarehouseActive" in stores
     assert "Warehouse reactivated" in stores or "Warehouse deactivated" in stores
     assert "/warehouses/" in stores
@@ -24,7 +24,7 @@ def test_warehouse_soft_deactivate_ui_wired():
     assert 'aria-label="Branch status filter"' in stores
     assert "departmentManageFilter" in stores
     assert 'aria-label="Department status filter"' in stores
-    inventory = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inventory = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert "w.is_active !== false" in inventory
 
 

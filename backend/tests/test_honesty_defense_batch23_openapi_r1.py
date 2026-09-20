@@ -68,10 +68,10 @@ def test_honesty_batch23_docs_and_agents():
     assert "years_assigned" in standards
     assert "forecast_next_month" in standards or "RFM monetary" in standards
 
-    inventory = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inventory = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label={`Show inventory ${id} tab`}' in inventory
 
-    reports = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    reports = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label={`Show reports ${id} tab`}' in reports
 
 

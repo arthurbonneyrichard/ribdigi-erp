@@ -73,25 +73,25 @@ def test_honesty_batch27_docs_and_agents():
     assert "resolve_rate" in standards
     assert "counted" in standards or "expected_qty" in standards
 
-    inventory = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inventory = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Catalog brand status filter"' in inventory
     assert 'aria-label="Catalog category status filter"' in inventory
     assert 'aria-label="Catalog unit status filter"' in inventory
     assert 'aria-label="Product variant status filter"' in inventory
 
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Purchase return status filter"' in purchasing
 
-    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    accounting = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Cheque status filter"' in accounting
 
-    tax = (ROOT / "frontend/app/tax/page.tsx").read_text(encoding="utf-8")
+    tax = (ROOT / "frontend/app/(dashboard)/tax/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Tax rate status filter"' in tax
 
-    integrations = (ROOT / "frontend/app/integrations/page.tsx").read_text(encoding="utf-8")
+    integrations = (ROOT / "frontend/app/(dashboard)/integrations/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Webhook status filter"' in integrations
 
-    pos = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
+    pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Close POS shift report"' in pos
     assert "Load POS shift report" in pos
     assert "Hide POS shift report" in pos

@@ -29,7 +29,7 @@ def test_bank_statement_status_filter_literal_schema():
 
 
 def test_bank_statement_status_filter_ui_and_docs():
-    page = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert "statementManageFilter" in page
     assert "managedStatements" in page
     assert 'aria-label="Bank statement status filter"' in page

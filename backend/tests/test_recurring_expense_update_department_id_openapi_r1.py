@@ -31,7 +31,7 @@ def test_recurring_expense_update_department_id_schema():
 
 
 def test_recurring_expense_update_department_id_ui_and_docs():
-    page = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert "Edit recurring expense department" in page
     assert "department_id: recDepartmentId.trim() || null" in page
     assert "clear_department: !recDepartmentId.trim()" in page

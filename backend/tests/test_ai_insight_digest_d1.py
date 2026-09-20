@@ -118,8 +118,8 @@ async def test_scheduled_digest_targets_only_active_tenant_admins(db_session, se
 
 
 def test_ai_digest_frontend_is_packaged():
-    ai_page = (ROOT / "frontend/app/ai/page.tsx").read_text(encoding="utf-8")
-    jobs_page = (ROOT / "frontend/app/jobs/page.tsx").read_text(encoding="utf-8")
+    ai_page = (ROOT / "frontend/app/(dashboard)/ai/page.tsx").read_text(encoding="utf-8")
+    jobs_page = (ROOT / "frontend/app/(dashboard)/jobs/page.tsx").read_text(encoding="utf-8")
 
     assert "/ai/insights/digest" in ai_page
     assert "Email digest to me" in ai_page

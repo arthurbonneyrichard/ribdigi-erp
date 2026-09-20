@@ -76,7 +76,7 @@ def test_honesty_batch16_docs_and_agents():
     assert "ProductBarcodeValue" in standards
     assert "StoreCodeValue" in standards or "store/warehouse" in standards.lower()
 
-    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    accounting = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert "Activate account" in accounting
     assert "Deactivate account" in accounting
     assert 'aria-label="Apply bank match suggestion"' in accounting
@@ -84,14 +84,14 @@ def test_honesty_batch16_docs_and_agents():
     assert "Auto-clear medium confidence matches" in accounting
     assert "Auto-clear low confidence matches" in accounting
 
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Save purchasing numbering"' in purchasing
     assert "Submit purchase request" in purchasing
     assert "Receive all for purchase order" in purchasing
     assert "Approve purchase invoice" in purchasing
     assert "Post purchase return" in purchasing
 
-    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    stores = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Create and request stock transfer"' in stores
     assert "Submit stock transfer" in stores
     assert "Ship stock transfer" in stores
@@ -100,21 +100,21 @@ def test_honesty_batch16_docs_and_agents():
     assert "Cancel stock transfer" in stores
     assert "Open inventory reorder for store" in stores
 
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert "Save customer group discount" in sales
 
-    expenses = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    expenses = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Save recurring expense schedule"' in expenses
     assert 'aria-label="Create recurring expense schedule"' in expenses
     assert "Edit recurring expense schedule" in expenses
 
-    platform = (ROOT / "frontend/app/platform/page.tsx").read_text(encoding="utf-8")
+    platform = (ROOT / "frontend/app/(dashboard)/platform/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Save feature modules"' in platform
 
-    credit = (ROOT / "frontend/app/credit/page.tsx").read_text(encoding="utf-8")
+    credit = (ROOT / "frontend/app/(dashboard)/credit/page.tsx").read_text(encoding="utf-8")
     assert "Remove exchange rate" in credit
 
-    pos = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
+    pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="POS scan or search products"' in pos
 
 

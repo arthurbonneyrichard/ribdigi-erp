@@ -208,7 +208,7 @@ def test_bank_connection_status_filter_ui_wired():
     from pathlib import Path
 
     accounting = (
-        Path(__file__).resolve().parents[2] / "frontend/app/accounting/page.tsx"
+        Path(__file__).resolve().parents[2] / "frontend/app/(dashboard)/accounting/page.tsx"
     ).read_text(encoding="utf-8")
     assert "connectionManageFilter" in accounting
     assert 'aria-label="Bank connection status filter"' in accounting

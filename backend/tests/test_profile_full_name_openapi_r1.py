@@ -26,7 +26,7 @@ def test_profile_full_name_schema():
 
 
 def test_profile_full_name_ui_and_docs():
-    page = (ROOT / "frontend/app/company/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Profile full name"' in page
     assert 'aria-label="Save my profile"' in page
     assert "profileFullName.trim()" in page

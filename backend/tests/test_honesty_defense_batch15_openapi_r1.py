@@ -75,7 +75,7 @@ def test_honesty_batch15_docs_and_agents():
     assert "money_json" in standards
     assert "User CSV" in standards
 
-    inventory = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inventory = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Save inventory numbering"' in inventory
     assert "Set primary product image" in inventory
     assert "Remove product gallery image" in inventory
@@ -96,14 +96,14 @@ def test_honesty_batch15_docs_and_agents():
     assert "Receive stock transfer" in inventory
     assert "Cancel stock transfer" in inventory
 
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Save sales numbering"' in sales
     assert 'aria-label="Assign customer group"' in sales
 
-    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    stores = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Save branch"' in stores
 
-    users = (ROOT / "frontend/app/users/page.tsx").read_text(encoding="utf-8")
+    users = (ROOT / "frontend/app/(dashboard)/users/page.tsx").read_text(encoding="utf-8")
     assert "Activate user" in users
 
 

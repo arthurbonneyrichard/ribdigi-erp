@@ -44,7 +44,7 @@ def test_pr_warehouse_id_ui_and_docs():
     assert "warehouse_id" in docs
     assert "POST /purchasing/requests" in docs
     # Create form does not yet expose warehouse; preferred supplier select remains.
-    page = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Purchase request preferred supplier"' in page
 
 

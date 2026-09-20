@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_pos_receipt_to_ui_and_docs():
-    pos = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
+    pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="POS receipt override to"' in pos
     assert 'aria-label="Email last receipt"' in pos
     assert 'aria-label="SMS last receipt"' in pos

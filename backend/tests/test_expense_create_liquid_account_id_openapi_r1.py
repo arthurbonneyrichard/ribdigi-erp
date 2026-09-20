@@ -33,7 +33,7 @@ def test_expense_create_liquid_account_id_schema():
 
 
 def test_expense_create_liquid_account_id_ui_and_docs():
-    page = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Expense liquid account"' in page
     assert "liquid_account_id: liquidAccountId.trim() || null" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

@@ -56,7 +56,7 @@ def test_bank_statement_date_schema_rejects_invalid():
 
 
 def test_bank_statement_date_ui_and_docs():
-    page = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Statement date"' in page
     assert 'aria-label="Statement line txn date"' in page
     assert "stmtDate" in page

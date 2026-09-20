@@ -28,7 +28,7 @@ def test_report_export_uuid_query_ui_and_docs():
     assert "Report export category_id Query OpenAPI" in agents
     assert "Report export department_id Query OpenAPI" in agents
     assert "Report export warehouse_id Query OpenAPI" in agents
-    reports = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    reports = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert "params.set('department_id', departmentTrim)" in reports
 
 

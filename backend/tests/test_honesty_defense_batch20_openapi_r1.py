@@ -73,7 +73,7 @@ def test_honesty_batch20_docs_and_agents():
     forgot = (ROOT / "frontend/app/forgot-password/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Send password reset link"' in forgot
 
-    notif = (ROOT / "frontend/app/notifications/page.tsx").read_text(encoding="utf-8")
+    notif = (ROOT / "frontend/app/(dashboard)/notifications/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Filter unread notifications"' in notif
     assert 'aria-label="Filter all notifications"' in notif
 
@@ -83,16 +83,16 @@ def test_honesty_batch20_docs_and_agents():
     assert "Expand onboarding checklist" in onboarding
     assert 'aria-label="Dismiss onboarding checklist"' in onboarding
 
-    inventory = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inventory = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Run product lookup"' in inventory
 
-    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    stores = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Cancel branch edit"' in stores
     assert 'aria-label="Cancel department edit"' in stores
     assert 'aria-label="Cancel store edit"' in stores
     assert 'aria-label="Cancel warehouse edit"' in stores
 
-    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    accounting = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Show accounting ledger tab"' in accounting
     assert 'aria-label="Show accounting cash and bank tab"' in accounting
     assert 'aria-label="Show accounting reconcile tab"' in accounting

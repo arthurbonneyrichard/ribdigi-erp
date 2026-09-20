@@ -67,7 +67,7 @@ def test_honesty_batch10_docs_and_agents():
     assert "money_json" in standards
     assert "unmatched journal" in standards.lower()
 
-    reports_page = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    reports_page = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Export sales returns Excel"' in reports_page
     assert 'aria-label="Export sales returns CSV"' in reports_page
     assert 'aria-label="Export inventory valuation Excel"' in reports_page

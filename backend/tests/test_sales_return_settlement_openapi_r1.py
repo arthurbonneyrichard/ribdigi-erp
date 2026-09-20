@@ -33,7 +33,7 @@ def test_sales_return_settlement_method_literal_schema():
 
 
 def test_sales_return_settlement_ui_and_docs():
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert "settlement_method: 'adjust'" in sales
     assert "settlement_method: 'refund'" in sales
     assert "Post credit" in sales

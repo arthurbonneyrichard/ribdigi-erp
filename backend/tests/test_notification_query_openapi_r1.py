@@ -36,7 +36,7 @@ def test_notification_query_literal_schema():
 
 
 def test_notification_query_ui_and_docs():
-    page = (ROOT / "frontend/app/notifications/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/notifications/page.tsx").read_text(encoding="utf-8")
     assert "CATEGORY_CHIPS" in page
     assert "quotation_expiry" in page
     assert "recurring_expense_due" in page

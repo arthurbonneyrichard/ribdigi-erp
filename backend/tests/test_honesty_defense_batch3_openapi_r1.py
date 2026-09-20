@@ -61,19 +61,19 @@ def test_honesty_batch3_docs_and_agents():
     assert "sales order" in standards.lower()
     assert "bank statement" in standards.lower()
 
-    company = (ROOT / "frontend/app/company/page.tsx").read_text(encoding="utf-8")
+    company = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Company inactivity timeout minutes"' in company
 
-    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    stores = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Company store allocation"' in stores
 
-    reports = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    reports = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Report schedule hour UTC"' in reports
 
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Customer payment terms days"' in sales
 
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Purchase order line discount"' in purchasing
     assert 'aria-label="PO amend unit price"' in purchasing
     assert 'aria-label="PO amend line discount"' in purchasing

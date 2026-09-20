@@ -88,7 +88,7 @@ def test_normalize_record_scope_defense():
 
 
 def test_record_scope_ui_and_docs():
-    users = (ROOT / "frontend/app/users/page.tsx").read_text(encoding="utf-8")
+    users = (ROOT / "frontend/app/(dashboard)/users/page.tsx").read_text(encoding="utf-8")
     assert "RECORD_SCOPES" in users
     assert "record_scope" in users
     assert "own" in users and "department" in users and "branch" in users and "all" in users

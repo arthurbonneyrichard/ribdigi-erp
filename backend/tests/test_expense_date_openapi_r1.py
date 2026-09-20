@@ -35,7 +35,7 @@ def test_expense_date_schema():
 
 
 def test_expense_date_ui_and_docs():
-    page = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Expense date"' in page
     assert 'aria-label="Expense OCR date"' in page
     assert "IsoDateQueryValue" in page or "expenseDate.trim() || null" in page

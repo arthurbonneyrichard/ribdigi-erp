@@ -33,7 +33,7 @@ def test_store_name_schema():
 
 
 def test_store_name_ui_and_docs():
-    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    stores = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Store name"' in stores
     assert 'aria-label="Edit store name"' in stores
     assert "name.trim()" in stores

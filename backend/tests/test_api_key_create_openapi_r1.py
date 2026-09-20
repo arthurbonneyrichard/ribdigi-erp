@@ -62,7 +62,7 @@ def test_api_key_create_schema_forbid_and_bounds():
 
 
 def test_api_key_create_ui_and_docs():
-    page = (ROOT / "frontend/app/integrations/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/integrations/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="API key name"' in page
     assert "keyName.trim()" in page
     assert 'aria-label="API key expiry"' in page

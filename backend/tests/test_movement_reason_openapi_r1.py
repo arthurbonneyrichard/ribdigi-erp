@@ -35,7 +35,7 @@ def test_stock_adjust_reason_literal_schema():
 
 
 def test_movement_reason_ui_and_docs():
-    page = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Movement reason filter"' in page
     for v in ("damage", "theft", "expiry", "found", "lost"):
         assert f'value="{v}"' in page

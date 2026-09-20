@@ -26,7 +26,7 @@ def test_query_int_bounds_batch2_ui_and_docs():
     ):
         assert title in agents, title
 
-    audit = (ROOT / "frontend/app/audit/page.tsx").read_text(encoding="utf-8")
+    audit = (ROOT / "frontend/app/(dashboard)/audit/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Archive cold audit logs"' in audit
 
     api = (ROOT / "backend/app/api.py").read_text(encoding="utf-8")

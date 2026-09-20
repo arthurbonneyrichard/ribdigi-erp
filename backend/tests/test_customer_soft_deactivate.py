@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_customer_deactivate_ui_wired():
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert "setCustomerActive" in sales
     assert "Deactivate" in sales
     assert "Activate" in sales
@@ -21,7 +21,7 @@ def test_customer_deactivate_ui_wired():
     assert "[inactive]" in sales
     assert "customerManageFilter" in sales
     assert 'aria-label="Customer status filter"' in sales
-    pos = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
+    pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert "status !== 'inactive'" in pos
 
 

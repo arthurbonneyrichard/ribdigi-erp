@@ -55,7 +55,7 @@ def test_honesty_batch9_docs_and_agents():
     assert "money_json" in standards
     assert "expense OCR" in standards.lower() or "OCR suggestion" in standards
 
-    reports_page = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    reports_page = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Export sales daily CSV"' in reports_page
     assert 'aria-label="Export salespeople Excel"' in reports_page
     assert 'aria-label="Export trial balance Excel"' in reports_page

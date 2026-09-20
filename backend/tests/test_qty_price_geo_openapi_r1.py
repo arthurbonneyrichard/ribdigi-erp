@@ -118,22 +118,22 @@ def test_qty_price_geo_ui_and_docs():
     assert "LatitudeValue" in docs
     assert "FiniteQtyValue" in docs
 
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Line quantity"' in sales
     assert 'aria-label="Line unit price"' in sales
     assert 'aria-label="Customer latitude"' in sales
 
-    inv = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inv = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Product selling price"' in inv
     assert 'aria-label="Product weight"' in inv
     assert 'aria-label="Warehouse reorder level"' in inv
     assert 'aria-label="Unit conversion ratio"' in inv
 
-    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    stores = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Warehouse capacity"' in stores
     assert 'aria-label="Store reorder level"' in stores
 
-    purch = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    purch = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Supplier latitude"' in purch
 
 

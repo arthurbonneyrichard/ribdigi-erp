@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_quotation_reject_reason_ui_wired():
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert "quoteRejectReason" in sales
     assert "Enter a reject reason before rejecting a quotation" in sales
     assert "rejection_reason" in sales

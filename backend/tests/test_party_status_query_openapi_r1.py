@@ -34,8 +34,8 @@ def test_party_status_literal_schema():
 
 
 def test_party_status_ui_and_docs():
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
+    purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Customer status filter"' in sales
     assert 'value="active"' in sales and 'value="inactive"' in sales
     assert 'aria-label="Supplier status filter"' in purchasing

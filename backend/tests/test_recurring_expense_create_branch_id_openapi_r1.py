@@ -33,7 +33,7 @@ def test_recurring_expense_create_branch_id_schema():
 
 
 def test_recurring_expense_create_branch_id_ui_and_docs():
-    page = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert "Recurring expense branch" in page
     assert "branch_id: recBranchId.trim() || null" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

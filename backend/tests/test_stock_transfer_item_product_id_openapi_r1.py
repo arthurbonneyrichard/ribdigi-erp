@@ -50,11 +50,11 @@ def test_stock_transfer_item_product_id_schema():
 
 
 def test_stock_transfer_item_product_id_ui_and_docs():
-    inv = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inv = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Selected product"' in inv
     assert "product_id: selectedId.trim()" in inv
     assert 'aria-label="Create stock transfer"' in inv
-    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    stores = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Stock transfer product"' in stores
     assert "product_id: productId.trim()" in stores
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

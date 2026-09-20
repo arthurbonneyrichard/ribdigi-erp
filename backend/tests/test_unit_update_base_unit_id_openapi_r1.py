@@ -38,7 +38,7 @@ def test_unit_update_base_unit_id_ui_and_docs():
     assert "base_unit_id" in docs
     assert "PATCH /catalog/units/{unit_id}" in docs
     # Create form owns the select; update honesty is API-only in Catalog manage.
-    page = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Unit base unit"' in page
 
 

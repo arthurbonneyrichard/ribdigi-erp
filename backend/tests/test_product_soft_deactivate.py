@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_product_deactivate_ui_wired():
-    inventory = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inventory = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert "setProductActive" in inventory
     assert "Deactivate" in inventory
     assert "Activate" in inventory
@@ -22,10 +22,10 @@ def test_product_deactivate_ui_wired():
     assert 'aria-label="Product status filter"' in inventory
     assert "managedProducts" in inventory
 
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert "is_active !== false" in sales
 
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert "is_active !== false" in purchasing
 
 

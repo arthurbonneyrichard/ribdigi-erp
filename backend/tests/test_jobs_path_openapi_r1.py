@@ -52,7 +52,7 @@ def test_job_name_literal_schema_matches_handlers():
 
 
 def test_job_name_ui_and_docs():
-    page = (ROOT / "frontend/app/jobs/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/jobs/page.tsx").read_text(encoding="utf-8")
     assert "aria-label={`Run sync ${name}`}" in page
     assert "aria-label={`Enqueue ${name}`}" in page
     assert "Run sync" in page

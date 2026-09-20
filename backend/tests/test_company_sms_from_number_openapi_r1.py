@@ -46,7 +46,7 @@ def test_sms_settings_from_number_schema():
 
 
 def test_sms_from_number_ui_and_docs():
-    page = (ROOT / "frontend/app/company/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Company SMS from number"' in page
     assert 'aria-label="Save SMS settings"' in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

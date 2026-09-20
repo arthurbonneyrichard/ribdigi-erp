@@ -26,8 +26,8 @@ def test_tenant_suspend_reason_schema():
 
 
 def test_tenant_suspend_reason_ui_and_docs():
-    plat = (ROOT / "frontend/app/platform/page.tsx").read_text(encoding="utf-8")
-    company = (ROOT / "frontend/app/company/page.tsx").read_text(encoding="utf-8")
+    plat = (ROOT / "frontend/app/(dashboard)/platform/page.tsx").read_text(encoding="utf-8")
+    company = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Tenant suspend reason"' in plat
     assert 'aria-label="Tenant suspend reason"' in company
     assert "aria-label={`Suspend tenant ${t.id}`}" in plat

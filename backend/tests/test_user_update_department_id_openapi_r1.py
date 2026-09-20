@@ -32,7 +32,7 @@ def test_user_update_department_id_schema():
 
 
 def test_user_update_department_id_ui_and_docs():
-    page = (ROOT / "frontend/app/users/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/users/page.tsx").read_text(encoding="utf-8")
     assert "Edit user department for" in page
     assert "department_id: trimmed" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

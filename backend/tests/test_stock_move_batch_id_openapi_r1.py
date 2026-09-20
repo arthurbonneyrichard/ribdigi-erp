@@ -35,7 +35,7 @@ def test_stock_move_batch_id_ui_and_docs():
     assert "Stock-in batch_id OpenAPI" in agents
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
     assert "batch_id" in docs
-    page = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Stock-in unit"' in page
 
 

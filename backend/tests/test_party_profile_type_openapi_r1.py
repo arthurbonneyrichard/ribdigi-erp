@@ -38,10 +38,10 @@ def test_party_profile_type_status_literal_schema():
 
 
 def test_party_profile_type_ui_and_docs():
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert "customerProfileType" in sales
     assert 'value="walk_in"' in sales
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert "supplierProfileType" in purchasing
     assert 'value="manufacturer"' in purchasing
     api = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")

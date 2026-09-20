@@ -31,7 +31,7 @@ def test_tenant_profile_registration_number_schema():
 
 
 def test_company_registration_number_ui_and_docs():
-    page = (ROOT / "frontend/app/company/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Company registration number"' in page
     assert "Omit blank registration" in page or "RegistrationNumberValue" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

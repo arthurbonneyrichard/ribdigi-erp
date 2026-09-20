@@ -33,7 +33,7 @@ def test_stock_out_reference_type_literal_schema():
 
 
 def test_stock_out_ui_and_docs_mention_literal():
-    inv = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inv = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert "Select reference type" in inv
     api = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
     assert "StockOut" in api or "omit/blank/invalid → **422**" in api

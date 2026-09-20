@@ -27,7 +27,7 @@ def test_qt_manage_status_literal_covers_lifecycle():
 
 
 def test_qt_manage_status_ui_and_docs():
-    page = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert "quotationManageFilter" in page
     assert "managedQuotations" in page
     assert 'aria-label="Quotation status filter"' in page

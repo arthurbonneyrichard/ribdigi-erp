@@ -61,7 +61,7 @@ def test_payment_cheque_bank_name_schema():
 
 
 def test_payment_cheque_bank_name_ui_and_docs():
-    page = (ROOT / "frontend/app/credit/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/credit/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Payment cheque bank name"' in page
     assert "payChequeBankName.trim() || null" in page
     assert 'aria-label="Payment cheque number"' in page

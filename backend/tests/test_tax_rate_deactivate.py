@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_tax_rate_deactivate_ui_wired():
-    tax = (ROOT / "frontend/app/tax/page.tsx").read_text(encoding="utf-8")
+    tax = (ROOT / "frontend/app/(dashboard)/tax/page.tsx").read_text(encoding="utf-8")
     assert "setRateActive" in tax
     assert "Deactivate" in tax
     assert "Activate" in tax

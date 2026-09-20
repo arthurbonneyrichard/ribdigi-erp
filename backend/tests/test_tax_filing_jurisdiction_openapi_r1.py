@@ -48,7 +48,7 @@ def test_tax_filing_jurisdiction_literal_matches_supported():
 
 
 def test_tax_filing_jurisdiction_ui_and_docs():
-    page = (ROOT / "frontend/app/tax/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/tax/page.tsx").read_text(encoding="utf-8")
     assert "filingJurisdictionFilter" in page
     assert 'aria-label="Tax filing jurisdiction filter"' in page
     assert 'value="GH"' in page

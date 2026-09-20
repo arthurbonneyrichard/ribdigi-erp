@@ -55,7 +55,7 @@ def test_platform_staff_phone_schema():
 
 
 def test_platform_staff_phone_ui_and_docs():
-    staff = (ROOT / "frontend/app/platform/staff/page.tsx").read_text(encoding="utf-8")
+    staff = (ROOT / "frontend/app/(dashboard)/platform/staff/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Platform staff phone"' in staff
     assert "form.phone.trim() || null" in staff
     assert "E.164" in staff

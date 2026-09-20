@@ -89,13 +89,13 @@ def test_action_bodies_forbid_ui_and_docs():
     assert "JournalUnpost" in docs
 
     assert 'aria-label="Grant dashboard"' in (
-        ROOT / "frontend/app/platform/staff/page.tsx"
+        ROOT / "frontend/app/(dashboard)/platform/staff/page.tsx"
     ).read_text(encoding="utf-8")
     assert 'aria-label="Skip next reason"' in (
-        ROOT / "frontend/app/expenses/page.tsx"
+        ROOT / "frontend/app/(dashboard)/expenses/page.tsx"
     ).read_text(encoding="utf-8")
     assert 'aria-label="Journal unpost reason"' in (
-        ROOT / "frontend/app/accounting/page.tsx"
+        ROOT / "frontend/app/(dashboard)/accounting/page.tsx"
     ).read_text(encoding="utf-8")
 
 

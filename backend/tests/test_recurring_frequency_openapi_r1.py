@@ -37,7 +37,7 @@ def test_recurring_frequency_literal_update():
 
 
 def test_recurring_frequency_ui_and_docs():
-    expenses = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    expenses = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert "recFrequency" in expenses
     assert "weekly" in expenses and "yearly" in expenses
     api = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")

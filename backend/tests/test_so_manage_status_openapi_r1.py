@@ -27,7 +27,7 @@ def test_so_manage_status_literal_covers_lifecycle():
 
 
 def test_so_manage_status_ui_and_docs():
-    page = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert "orderManageFilter" in page
     assert "managedOrders" in page
     assert 'aria-label="Sales order status filter"' in page

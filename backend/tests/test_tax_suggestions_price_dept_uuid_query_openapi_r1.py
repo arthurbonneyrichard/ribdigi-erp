@@ -29,12 +29,12 @@ def test_misc_uuid_query_ui_and_docs():
     assert "Purchasing suggestions location Query OpenAPI" in agents
     assert "Product price Query OpenAPI" in agents
     assert "Departments list branch_id Query OpenAPI" in agents
-    tax = (ROOT / "frontend/app/tax/page.tsx").read_text(encoding="utf-8")
+    tax = (ROOT / "frontend/app/(dashboard)/tax/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Tax report store filter"' in tax
     assert "storeTrim" in tax and "store_id" in tax
-    reports = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    reports = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert "/purchasing/suggestions/low-stock${qs()}" in reports
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert "customerTrim" in sales and "variantTrim" in sales
     assert 'aria-label="Sale customer"' in sales
     assert 'aria-label="Sales variant"' in sales

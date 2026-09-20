@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_store_transfer_reject_reason_ui_wired():
-    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    stores = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert "xferRejectReason" in stores
     assert "Enter a reject reason before rejecting a store transfer" in stores
     assert "JSON.stringify({ reason: xferRejectReason.trim() })" in stores

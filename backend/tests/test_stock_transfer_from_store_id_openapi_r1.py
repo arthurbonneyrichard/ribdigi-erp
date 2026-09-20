@@ -60,7 +60,7 @@ def test_stock_transfer_from_store_id_schema():
 
 
 def test_stock_transfer_from_store_id_ui_and_docs():
-    page = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Stock transfer from store"' in page
     assert "from_store_id: fromStore.trim()" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

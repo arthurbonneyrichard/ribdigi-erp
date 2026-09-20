@@ -30,7 +30,7 @@ def test_api_key_status_filter_literal_schema():
 
 
 def test_api_key_status_filter_ui_and_docs():
-    page = (ROOT / "frontend/app/integrations/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/integrations/page.tsx").read_text(encoding="utf-8")
     assert "apiKeyManageFilter" in page
     assert "managedKeys" in page
     assert 'aria-label="API key status filter"' in page

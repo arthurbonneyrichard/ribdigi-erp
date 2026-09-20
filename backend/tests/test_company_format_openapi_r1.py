@@ -59,7 +59,7 @@ def test_company_format_literal_schema():
 
 
 def test_company_format_ui_and_docs():
-    company = (ROOT / "frontend/app/company/page.tsx").read_text(encoding="utf-8")
+    company = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
     assert "tax_filing_period" in company
     assert 'value="monthly"' in company and 'value="quarterly"' in company
     assert "DD/MM/YYYY" in company and "MM/DD/YYYY" in company and "YYYY-MM-DD" in company

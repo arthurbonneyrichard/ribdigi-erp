@@ -31,7 +31,7 @@ def test_po_manage_status_literal_covers_lifecycle():
 
 
 def test_po_manage_status_ui_and_docs():
-    page = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert "poManageFilter" in page
     assert "managedOrders" in page
     assert 'aria-label="Purchase order status filter"' in page

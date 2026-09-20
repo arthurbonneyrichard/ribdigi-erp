@@ -31,7 +31,7 @@ def test_expense_create_store_id_schema():
 
 
 def test_expense_create_store_id_ui_and_docs():
-    page = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Expense store"' in page
     assert "store_id: storeId.trim() || null" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

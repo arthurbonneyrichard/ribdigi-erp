@@ -65,8 +65,8 @@ def test_credit_override_reason_schema(cls, extra):
 
 
 def test_credit_override_reason_ui_and_docs():
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
-    pos = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
+    pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Credit override reason"' in sales
     assert "aria-label={`Post sales invoice ${inv.id}`}" in sales
     assert 'aria-label="Credit override reason"' in pos

@@ -37,8 +37,8 @@ def test_party_category_value_schema():
 
 
 def test_party_category_ui_and_docs():
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Supplier category"' in purchasing
     assert "supplierCategory.trim() || null" in purchasing
     assert 'aria-label="Customer category"' in sales

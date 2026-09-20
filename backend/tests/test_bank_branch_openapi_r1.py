@@ -53,7 +53,7 @@ def test_bank_branch_schema():
 
 
 def test_bank_branch_ui_and_docs():
-    page = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Bank branch"' in page
     assert "newBankBranch.trim() || null" in page
     assert 'aria-label="Create liquid account"' in page

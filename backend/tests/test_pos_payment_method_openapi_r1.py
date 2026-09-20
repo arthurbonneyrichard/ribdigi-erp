@@ -70,7 +70,7 @@ def test_normalize_payment_method_strict_rejects_unknown():
 
 
 def test_pos_payment_method_ui_and_docs():
-    pos = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
+    pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert "paymentMethod" in pos
     assert 'value="wallet"' in pos
     assert 'value="credit"' in pos

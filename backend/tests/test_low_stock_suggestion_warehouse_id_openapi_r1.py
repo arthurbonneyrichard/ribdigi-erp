@@ -40,7 +40,7 @@ def test_low_stock_suggestion_warehouse_id_schema():
 
 
 def test_low_stock_suggestion_warehouse_id_ui_and_docs():
-    page = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert "warehouse_id: ln.warehouse_id ? String(ln.warehouse_id).trim() : null" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Low-stock suggestion warehouse_id OpenAPI" in agents

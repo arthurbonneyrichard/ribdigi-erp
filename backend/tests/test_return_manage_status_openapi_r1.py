@@ -26,8 +26,8 @@ def test_return_manage_status_reuses_report_literal():
 
 
 def test_return_manage_status_ui_and_docs():
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
+    purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert "returnManageFilter" in sales
     assert "managedReturns" in sales
     assert 'aria-label="Sales return status filter"' in sales

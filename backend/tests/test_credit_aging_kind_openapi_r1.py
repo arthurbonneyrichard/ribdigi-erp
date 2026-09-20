@@ -29,7 +29,7 @@ def test_credit_aging_kind_literal_schema():
 
 
 def test_credit_aging_kind_ui_and_docs():
-    page = (ROOT / "frontend/app/credit/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/credit/page.tsx").read_text(encoding="utf-8")
     assert "setKind('receivable')" in page
     assert "setKind('payable')" in page
     assert "Receivables" in page

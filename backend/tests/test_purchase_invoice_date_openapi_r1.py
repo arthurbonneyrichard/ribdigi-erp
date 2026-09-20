@@ -31,7 +31,7 @@ def test_purchase_invoice_date_schema():
 
 
 def test_purchase_invoice_date_ui_and_docs():
-    page = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Purchase invoice OCR date"' in page
     assert "invoiceDate.trim()" in page or "ocrDraft.invoice_date.trim()" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

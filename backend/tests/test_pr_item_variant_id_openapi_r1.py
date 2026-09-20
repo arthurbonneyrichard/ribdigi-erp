@@ -50,7 +50,7 @@ def test_pr_item_variant_id_ui_and_docs():
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
     assert "variant_id" in docs
     assert "POST /purchasing/requests" in docs
-    page = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Purchase request product"' in page
 
 

@@ -37,7 +37,7 @@ def test_warehouse_create_store_id_schema():
 
 
 def test_warehouse_create_store_id_ui_and_docs():
-    page = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert "Warehouse store" in page
     assert "store_id: whStoreId.trim() || null" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

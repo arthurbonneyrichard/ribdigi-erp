@@ -58,7 +58,7 @@ def test_user_password_value_schema():
 
 
 def test_user_password_ui_and_docs():
-    users = (ROOT / "frontend/app/users/page.tsx").read_text(encoding="utf-8")
+    users = (ROOT / "frontend/app/(dashboard)/users/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="User password"' in users
     assert "trimmedPassword" in users
     assert 'aria-label="Create user"' in users

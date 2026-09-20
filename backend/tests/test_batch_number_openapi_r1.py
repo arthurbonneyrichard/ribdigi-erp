@@ -44,12 +44,12 @@ def test_batch_number_value_schema():
 
 
 def test_batch_number_ui_and_docs():
-    inv = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inv = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Stock-in batch number"' in inv
     assert 'aria-label="Opening stock batch number"' in inv
     assert "batch_number: batchNumber.trim()" in inv
     assert "batch_number: openingBatch.trim() || null" in inv
-    purch = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    purch = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="GRN batch number"' in purch
     assert "batch_number: d.batch.trim() || undefined" in purch
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

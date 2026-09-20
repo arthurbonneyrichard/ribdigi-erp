@@ -59,9 +59,9 @@ def test_document_payment_currency_schema():
 
 
 def test_document_payment_currency_ui_and_docs():
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Sales invoice currency"' in sales
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert purchasing.count('aria-label="Purchase invoice currency"') >= 2
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Document/payment currency OpenAPI" in agents

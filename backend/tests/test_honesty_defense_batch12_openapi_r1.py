@@ -59,23 +59,23 @@ def test_honesty_batch12_docs_and_agents():
     assert "tax_breakdown" in standards
     assert "statement arithmetic" in standards.lower() or "stock amount" in standards.lower()
 
-    users_page = (ROOT / "frontend/app/users/page.tsx").read_text(encoding="utf-8")
+    users_page = (ROOT / "frontend/app/(dashboard)/users/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Download user CSV template"' in users_page
 
-    sales_page = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales_page = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Print sales invoice A4"' in sales_page
     assert 'aria-label="Print sales invoice thermal"' in sales_page
 
-    backup_page = (ROOT / "frontend/app/backup/page.tsx").read_text(encoding="utf-8")
+    backup_page = (ROOT / "frontend/app/(dashboard)/backup/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Download backup"' in backup_page
 
-    expenses_page = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    expenses_page = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Download expense attachment"' in expenses_page
 
-    purchasing_page = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    purchasing_page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Download purchase invoice attachment"' in purchasing_page
 
-    accounting_page = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    accounting_page = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Download journal attachment"' in accounting_page
     assert 'aria-label="Import bank statement CSV or OFX"' in accounting_page
 

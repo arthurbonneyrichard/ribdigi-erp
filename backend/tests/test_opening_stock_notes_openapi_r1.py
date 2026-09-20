@@ -38,7 +38,7 @@ def test_opening_stock_notes_schema():
 
 
 def test_opening_stock_notes_ui_and_docs():
-    page = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Opening stock notes"' in page
     assert "openingNotes.trim() || null" in page
     assert 'aria-label="Post opening stock"' in page

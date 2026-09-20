@@ -196,13 +196,13 @@ def test_webauthn_ext_forbid_ui_and_docs():
     assert "extra=forbid" in docs
     assert "StockCountItemsUpdate" in docs
 
-    sec = (ROOT / "frontend/app/security/page.tsx").read_text(encoding="utf-8")
+    sec = (ROOT / "frontend/app/(dashboard)/security/page.tsx").read_text(encoding="utf-8")
     assert "credentialToJson" in sec
     assert "smart-card" in sec
     assert "cable" in sec
     assert "clientExtensionResults" in sec
 
-    inv = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inv = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Save count lines"' in inv
 
 

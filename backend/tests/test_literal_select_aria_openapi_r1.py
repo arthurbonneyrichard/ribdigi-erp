@@ -38,30 +38,30 @@ def test_literal_select_aria_ui_and_docs():
     ):
         assert label in docs, label
 
-    tax = (ROOT / "frontend/app/tax/page.tsx").read_text(encoding="utf-8")
+    tax = (ROOT / "frontend/app/(dashboard)/tax/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Tax rate type"' in tax
     assert 'aria-label="Tax pricing mode"' in tax
 
-    inventory = (ROOT / "frontend/app/inventory/page.tsx").read_text(
+    inventory = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(
         encoding="utf-8"
     )
     assert 'aria-label="Product supply class"' in inventory
     assert 'aria-label="Edit product supply class"' in inventory
 
-    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    stores = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Warehouse type"' in stores
     assert 'aria-label="Cash drawer mode"' in stores
 
-    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(
+    accounting = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(
         encoding="utf-8"
     )
     assert 'aria-label="Liquid account kind"' in accounting
     assert 'aria-label="Cash transfer kind"' in accounting
     assert 'aria-label="Bank connection provider"' in accounting
 
-    users = (ROOT / "frontend/app/users/page.tsx").read_text(encoding="utf-8")
+    users = (ROOT / "frontend/app/(dashboard)/users/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="User record scope"' in users
     assert "Edit user record scope for" in users
 
-    pos = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
+    pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="POS payment method"' in pos

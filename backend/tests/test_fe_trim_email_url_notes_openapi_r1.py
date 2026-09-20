@@ -26,13 +26,13 @@ def test_fe_trim_email_url_notes_ui_and_docs():
     assert "email.trim()" in docs
     assert "String(x.notes || '').trim() || null" in docs
 
-    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(
+    accounting = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(
         encoding="utf-8"
     )
     assert "connFeedUrl.trim() || null" in accounting
     assert 'aria-label="Bank feed URL"' in accounting
 
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert "email: customerEmail.trim() || null" in sales
     assert 'aria-label="Customer email"' in sales
 
@@ -47,6 +47,6 @@ def test_fe_trim_email_url_notes_ui_and_docs():
     assert 'aria-label="Password reset email"' in forgot
     assert "email: email.trim()" in forgot
 
-    ai = (ROOT / "frontend/app/ai/page.tsx").read_text(encoding="utf-8")
+    ai = (ROOT / "frontend/app/(dashboard)/ai/page.tsx").read_text(encoding="utf-8")
     assert "notes: String(x.notes || '').trim() || null" in ai
     assert "predictionNotes.trim() || null" in ai

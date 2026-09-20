@@ -35,7 +35,7 @@ def test_transfer_report_status_literal_schema():
 
 
 def test_transfer_report_status_ui_and_docs():
-    page = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert 'value="received"' in page
     assert 'value="requested"' in page
     assert 'value="in_transit"' in page

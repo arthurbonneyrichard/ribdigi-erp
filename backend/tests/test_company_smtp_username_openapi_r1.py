@@ -29,7 +29,7 @@ def test_email_settings_smtp_username_schema():
 
 
 def test_email_settings_smtp_username_ui_and_docs():
-    page = (ROOT / "frontend/app/company/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Company SMTP username"' in page
     assert "trimmedUser" in page
     assert 'aria-label="Save email settings"' in page

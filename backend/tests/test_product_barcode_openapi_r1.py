@@ -47,7 +47,7 @@ def test_product_barcode_schema():
 
 
 def test_product_barcode_ui_and_docs():
-    page = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Product barcode"' in page
     assert 'aria-label="Edit product barcode"' in page
     assert 'aria-label="Variant barcode"' in page

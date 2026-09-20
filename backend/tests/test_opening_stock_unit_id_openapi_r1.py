@@ -33,7 +33,7 @@ def test_opening_stock_unit_id_schema():
 
 
 def test_opening_stock_unit_id_ui_and_docs():
-    page = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Opening stock unit"' in page
     assert "unit_id: openingUnitId.trim() || null" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

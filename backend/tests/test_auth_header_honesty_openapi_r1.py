@@ -33,10 +33,10 @@ def test_auth_header_aria_and_docs():
     assert "ApiKeyHeaderValue" in docs
     assert "UuidIdValue" in appendix
 
-    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    stores = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Cash drawer store"' in stores
 
-    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(
+    accounting = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(
         encoding="utf-8"
     )
     assert 'aria-label="Edit account"' in accounting

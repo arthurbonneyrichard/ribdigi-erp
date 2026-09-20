@@ -23,17 +23,17 @@ def test_attachment_preview_component_and_helpers():
 
 
 def test_expenses_purchasing_accounting_preview_wired():
-    expenses = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    expenses = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert "AttachmentPreview" in expenses
     assert "Preview" in expenses
     assert "/expenses/${r.id}/attachment" in expenses
     assert "setAttachPreview" in expenses
 
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert "AttachmentPreview" in purchasing
     assert "Preview" in purchasing
 
-    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    accounting = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert "AttachmentPreview" in accounting
     assert "Preview" in accounting
 

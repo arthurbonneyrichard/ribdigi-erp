@@ -6,7 +6,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_ai_page_draft_pr_button_wired():
-    ai = (ROOT / "frontend/app/ai/page.tsx").read_text(encoding="utf-8")
+    ai = (ROOT / "frontend/app/(dashboard)/ai/page.tsx").read_text(encoding="utf-8")
     assert "Create draft PR(s)" in ai
     assert "createDraftPrsFromPredictions" in ai
     assert "/ai/inventory/low-stock-prediction/requests" in ai

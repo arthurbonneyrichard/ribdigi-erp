@@ -114,13 +114,13 @@ def test_sale_payload_webauthn_ui_and_docs():
     assert "EmailTestRequest" in docs
     assert "no client `payload`" in docs or "no client `payload` bag" in docs
 
-    sec = (ROOT / "frontend/app/security/page.tsx").read_text(encoding="utf-8")
+    sec = (ROOT / "frontend/app/(dashboard)/security/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Passkey name"' in sec
     assert "type: cred.type" in sec
     assert "credentialToJson" in sec
     assert "clientExtensionResults" in sec
 
-    pos = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
+    pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert "const body: Record<string, unknown>" in pos
     sale_body = pos.split("const body: Record<string, unknown>")[1].split("};")[0]
     assert "payload" not in sale_body

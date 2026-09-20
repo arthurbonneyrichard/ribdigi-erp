@@ -35,7 +35,7 @@ def test_sales_document_notes_schema():
 
 
 def test_sales_document_notes_ui_and_docs():
-    page = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Sales document notes"' in page
     assert "docNotes.trim() || null" in page
     assert 'aria-label="Create invoice"' in page

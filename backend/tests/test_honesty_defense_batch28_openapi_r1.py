@@ -71,21 +71,21 @@ def test_honesty_batch28_docs_and_agents():
     assert "tax component/breakdown" in standards or "UoM conversion" in standards
     assert "purchase OCR" in standards or "emailer PO" in standards
 
-    expenses = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    expenses = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Approve expense"' in expenses
     assert 'aria-label="Save expense changes"' in expenses
     assert 'aria-label="Cancel expense edit"' in expenses
     assert 'aria-label="Edit payment method"' in expenses
 
-    inventory = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inventory = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Product status filter"' in inventory
     assert 'aria-label="Add brand"' in inventory
 
-    reports = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    reports = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Report schedule enabled filter"' in reports
     assert 'aria-label="Report schedule frequency filter"' in reports
 
-    credit = (ROOT / "frontend/app/credit/page.tsx").read_text(encoding="utf-8")
+    credit = (ROOT / "frontend/app/(dashboard)/credit/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Payment method"' in credit
 
 

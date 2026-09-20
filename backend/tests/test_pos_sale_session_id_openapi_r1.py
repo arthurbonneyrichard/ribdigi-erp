@@ -32,7 +32,7 @@ def test_pos_sale_session_id_schema():
 
 
 def test_pos_sale_session_id_ui_and_docs():
-    page = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert "session_id: String(session.session_id).trim()" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "POS sale session_id OpenAPI" in agents

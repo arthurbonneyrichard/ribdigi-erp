@@ -65,7 +65,7 @@ def test_honesty_batch6_docs_and_agents():
     assert "dashboard" in standards.lower()
     assert "sales daily" in standards.lower() or "inventory balance" in standards.lower()
 
-    tax_page = (ROOT / "frontend/app/tax/page.tsx").read_text(encoding="utf-8")
+    tax_page = (ROOT / "frontend/app/(dashboard)/tax/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Tax reverse charge"' in tax_page
     assert 'aria-label="Calculate tax"' in tax_page
 

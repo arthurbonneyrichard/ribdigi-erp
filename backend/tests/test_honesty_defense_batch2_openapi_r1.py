@@ -58,20 +58,20 @@ def test_honesty_batch2_docs_and_agents():
     assert "money_json" in standards
     assert "quotation" in standards.lower() or "purchase order" in standards.lower()
 
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Customer credit limit"' in sales
 
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Purchase request quantity"' in purchasing
     assert 'aria-label="Purchase order quantity"' in purchasing
     assert 'aria-label="Purchase order unit price"' in purchasing
     assert 'aria-label="Purchase invoice quantity"' in purchasing
     assert 'aria-label="Purchase invoice unit price"' in purchasing
 
-    tax = (ROOT / "frontend/app/tax/page.tsx").read_text(encoding="utf-8")
+    tax = (ROOT / "frontend/app/(dashboard)/tax/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Tax calculator amount"' in tax
 
-    credit = (ROOT / "frontend/app/credit/page.tsx").read_text(encoding="utf-8")
+    credit = (ROOT / "frontend/app/(dashboard)/credit/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Payment FX rate"' in credit
     assert 'aria-label="Customer payment terms days"' in credit
     assert 'aria-label="Supplier payment terms days"' in credit

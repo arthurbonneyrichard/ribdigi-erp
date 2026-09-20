@@ -36,7 +36,7 @@ def test_store_address_schema():
 
 
 def test_store_address_ui_and_docs():
-    page = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert page.count('aria-label="Store address"') >= 2
     assert "AddressValue" in page or "Omit blank address" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

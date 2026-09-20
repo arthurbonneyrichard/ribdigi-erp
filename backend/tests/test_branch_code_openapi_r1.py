@@ -31,7 +31,7 @@ def test_branch_code_value_schema():
 
 
 def test_branch_code_ui_and_docs():
-    page = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Branch code"' in page
     assert "code: brCode.trim()" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

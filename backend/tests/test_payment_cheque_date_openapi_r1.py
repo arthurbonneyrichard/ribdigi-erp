@@ -69,7 +69,7 @@ def test_payment_cheque_date_schema():
 
 
 def test_payment_cheque_date_ui_and_docs():
-    page = (ROOT / "frontend/app/credit/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/credit/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Payment cheque date"' in page
     assert "payChequeDate.trim() || null" in page
     assert 'aria-label="Payment cheque number"' in page

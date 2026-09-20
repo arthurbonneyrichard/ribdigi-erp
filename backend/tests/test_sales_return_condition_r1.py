@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_sales_return_condition_ui_wired():
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert "const [returnCondition, setReturnCondition] = useState('');" in sales
     assert "Select a return condition" in sales
     assert "Select condition" in sales

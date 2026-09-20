@@ -44,7 +44,7 @@ def test_low_stock_suggestion_preferred_supplier_id_schema():
 
 
 def test_low_stock_suggestion_preferred_supplier_id_ui_and_docs():
-    page = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert "preferred_supplier_id: ln.preferred_supplier_id" in page
     assert "String(ln.preferred_supplier_id).trim()" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

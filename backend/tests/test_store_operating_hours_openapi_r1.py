@@ -47,7 +47,7 @@ def test_store_operating_hours_schema():
 
 
 def test_store_operating_hours_ui_and_docs():
-    page = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert "HoursEditor" in page
     assert 'aria-label={`Store ${label} open time`}' in page
     assert 'aria-label="Save store"' in page

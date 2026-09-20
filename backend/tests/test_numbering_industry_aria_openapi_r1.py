@@ -27,7 +27,7 @@ def test_numbering_industry_aria_ui_and_docs():
     assert "Tenant industry" in docs
     assert "POS (Sale/Shift)" in docs or "POS sale number prefix" in docs
 
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     for label in (
         "Invoice number prefix",
         "Quotation number prefix",
@@ -39,7 +39,7 @@ def test_numbering_industry_aria_ui_and_docs():
     ):
         assert f'aria-label="{label}"' in sales, label
 
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(
+    purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(
         encoding="utf-8"
     )
     for label in (
@@ -53,11 +53,11 @@ def test_numbering_industry_aria_ui_and_docs():
     ):
         assert f'aria-label="{label}"' in purchasing, label
 
-    expenses = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    expenses = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Expense number prefix"' in expenses
     assert 'aria-label="Expense next number"' in expenses
 
-    inventory = (ROOT / "frontend/app/inventory/page.tsx").read_text(
+    inventory = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(
         encoding="utf-8"
     )
     for label in (
@@ -67,12 +67,12 @@ def test_numbering_industry_aria_ui_and_docs():
     ):
         assert f'aria-label="{label}"' in inventory, label
 
-    pos = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
+    pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="POS sale number prefix"' in pos
     assert 'aria-label="POS session number prefix"' in pos
 
-    company = (ROOT / "frontend/app/company/page.tsx").read_text(encoding="utf-8")
+    company = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Company industry"' in company
 
-    platform = (ROOT / "frontend/app/platform/page.tsx").read_text(encoding="utf-8")
+    platform = (ROOT / "frontend/app/(dashboard)/platform/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Tenant industry"' in platform

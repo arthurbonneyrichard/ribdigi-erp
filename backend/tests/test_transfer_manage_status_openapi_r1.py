@@ -30,8 +30,8 @@ def test_transfer_manage_status_reuses_report_literal():
 
 
 def test_transfer_manage_status_ui_and_docs():
-    inv = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
-    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    inv = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
+    stores = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     for page in (inv, stores):
         assert "transferManageFilter" in page
         assert "managedTransfers" in page

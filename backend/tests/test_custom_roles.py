@@ -253,7 +253,7 @@ async def test_custom_role_soft_deactivate_and_reactivate(client):
 def test_custom_role_soft_deactivate_ui_wired():
     from pathlib import Path
 
-    users = (Path(__file__).resolve().parents[2] / "frontend/app/users/page.tsx").read_text(
+    users = (Path(__file__).resolve().parents[2] / "frontend/app/(dashboard)/users/page.tsx").read_text(
         encoding="utf-8"
     )
     assert "setCustomRoleActive" in users

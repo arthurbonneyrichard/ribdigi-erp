@@ -40,29 +40,29 @@ def test_party_receipt_platform_aria_ui_and_docs():
     ):
         assert label in docs, label
 
-    pos = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
+    pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="POS receipt paper"' in pos
 
-    reports = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    reports = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Balance sheet compare"' in reports
     assert 'aria-label="Report schedule weekday"' in reports
 
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Customer profile type"' in sales
     assert 'aria-label="Customer status"' in sales
 
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(
+    purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(
         encoding="utf-8"
     )
     assert 'aria-label="Supplier profile type"' in purchasing
     assert 'aria-label="Supplier status"' in purchasing
     assert 'aria-label="Purchase return reason"' in purchasing
 
-    platform = (ROOT / "frontend/app/platform/page.tsx").read_text(encoding="utf-8")
+    platform = (ROOT / "frontend/app/(dashboard)/platform/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Subscription package"' in platform
     assert 'aria-label="Subscription term unit"' in platform
 
-    staff = (ROOT / "frontend/app/platform/staff/page.tsx").read_text(
+    staff = (ROOT / "frontend/app/(dashboard)/platform/staff/page.tsx").read_text(
         encoding="utf-8"
     )
     assert 'aria-label="Platform grant role"' in staff

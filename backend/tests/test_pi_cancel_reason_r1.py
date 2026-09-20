@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_pi_cancel_reason_ui_wired():
-    page = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert "piCancelReason" in page
     assert "Enter a cancel reason before cancelling a purchase invoice" in page
     assert "JSON.stringify({ reason })" in page

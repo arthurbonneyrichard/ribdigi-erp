@@ -78,7 +78,7 @@ def test_honesty_batch14_docs_and_agents():
     assert "insight" in standards.lower()
     assert "audit" in standards.lower()
 
-    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    accounting = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Add opening balance line"' in accounting
     assert "Open bank statement" in accounting
     assert "Dissolve clearing group" in accounting
@@ -88,28 +88,28 @@ def test_honesty_batch14_docs_and_agents():
     assert 'aria-label="Mark bank statement reconciled"' in accounting
     assert "Remove bank connection" in accounting
 
-    ai_page = (ROOT / "frontend/app/ai/page.tsx").read_text(encoding="utf-8")
+    ai_page = (ROOT / "frontend/app/(dashboard)/ai/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Load AI insights"' in ai_page
     assert 'aria-label="Email AI insight digest"' in ai_page
     assert 'aria-label="Load AI security alerts"' in ai_page
 
-    audit = (ROOT / "frontend/app/audit/page.tsx").read_text(encoding="utf-8")
+    audit = (ROOT / "frontend/app/(dashboard)/audit/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Verify audit chain"' in audit
 
-    backup = (ROOT / "frontend/app/backup/page.tsx").read_text(encoding="utf-8")
+    backup = (ROOT / "frontend/app/(dashboard)/backup/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Save backup settings"' in backup
 
-    company = (ROOT / "frontend/app/company/page.tsx").read_text(encoding="utf-8")
+    company = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Activate company"' in company
 
-    credit = (ROOT / "frontend/app/credit/page.tsx").read_text(encoding="utf-8")
+    credit = (ROOT / "frontend/app/(dashboard)/credit/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Load party statement"' in credit
 
-    expenses = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    expenses = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Submit expense"' in expenses
     assert 'aria-label="Apply expense OCR suggestion"' in expenses
 
-    integ = (ROOT / "frontend/app/integrations/page.tsx").read_text(encoding="utf-8")
+    integ = (ROOT / "frontend/app/(dashboard)/integrations/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Create webhook"' in integ
     assert "Revoke API key" in integ
 

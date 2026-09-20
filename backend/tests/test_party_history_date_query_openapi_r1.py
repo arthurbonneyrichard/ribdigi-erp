@@ -23,7 +23,7 @@ def test_iso_date_query_schema_for_party_history():
 
 
 def test_party_history_date_ui_and_docs():
-    credit = (ROOT / "frontend/app/credit/page.tsx").read_text(encoding="utf-8")
+    credit = (ROOT / "frontend/app/(dashboard)/credit/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Credit history from date"' in credit
     assert 'aria-label="Credit history to date"' in credit
     assert "histFromDate" in credit

@@ -50,7 +50,7 @@ def test_honesty_defense_money_docs_and_agents():
     assert "money_json" in standards
     assert "Decimal" in standards
 
-    platform = (ROOT / "frontend/app/platform/page.tsx").read_text(encoding="utf-8")
+    platform = (ROOT / "frontend/app/(dashboard)/platform/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Tenant company name"' in platform
     assert 'aria-label="Tenant currency"' in platform
     assert 'aria-label="Tenant admin email"' in platform
@@ -58,18 +58,18 @@ def test_honesty_defense_money_docs_and_agents():
     assert 'aria-label="Store entitlement override"' in platform
     assert 'aria-label="Store entitlement override draft"' in platform
 
-    backup = (ROOT / "frontend/app/backup/page.tsx").read_text(encoding="utf-8")
+    backup = (ROOT / "frontend/app/(dashboard)/backup/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Backup retention count"' in backup
     assert 'aria-label="Backup hour UTC"' in backup
 
-    pos = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
+    pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="POS cash tender"' in pos
     assert 'aria-label="POS card tender"' in pos
 
-    company = (ROOT / "frontend/app/company/page.tsx").read_text(encoding="utf-8")
+    company = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Company SMTP port"' in company
 
-    inventory = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inventory = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Stock-in quantity"' in inventory
     assert 'aria-label="Opening stock quantity"' in inventory
     assert 'aria-label="Stock adjustment quantity"' in inventory

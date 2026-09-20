@@ -33,7 +33,7 @@ def test_stock_in_reference_type_value_schema():
 
 
 def test_stock_in_reference_type_ui_and_docs():
-    inv = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inv = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Stock-in reference type"' in inv
     assert "reference_type: stockRefType.trim() || null" in inv
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

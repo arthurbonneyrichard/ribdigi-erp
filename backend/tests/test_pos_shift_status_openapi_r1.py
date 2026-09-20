@@ -29,7 +29,7 @@ def test_pos_shift_status_literal_schema():
 
 
 def test_pos_shift_status_ui_and_docs():
-    page = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert "shiftManageFilter" in page
     assert "managedShifts" in page
     assert 'aria-label="POS shift status filter"' in page

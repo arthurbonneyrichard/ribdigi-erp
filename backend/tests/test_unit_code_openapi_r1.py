@@ -35,7 +35,7 @@ def test_unit_code_value_schema():
 
 
 def test_unit_code_ui_and_docs():
-    page = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Unit code"' in page
     assert "code: unitCode.trim()" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

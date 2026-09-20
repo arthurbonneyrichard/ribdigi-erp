@@ -46,7 +46,7 @@ def test_webhook_secret_value_schema():
 
 
 def test_webhook_secret_ui_and_docs():
-    integrations = (ROOT / "frontend/app/integrations/page.tsx").read_text(encoding="utf-8")
+    integrations = (ROOT / "frontend/app/(dashboard)/integrations/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Webhook signing secret"' in integrations
     assert "hookSecret" in integrations
     assert "secret: hookSecret.trim() || null" in integrations

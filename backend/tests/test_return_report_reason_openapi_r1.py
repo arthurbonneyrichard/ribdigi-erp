@@ -51,7 +51,7 @@ def test_purchase_return_report_reason_literal_schema():
 
 
 def test_return_report_reason_ui_and_docs():
-    page = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert "salesReturnReason" in page
     assert "purchaseReturnReason" in page
     assert 'aria-label="Sales return reason"' in page

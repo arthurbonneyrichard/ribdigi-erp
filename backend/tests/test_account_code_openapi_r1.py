@@ -31,7 +31,7 @@ def test_account_code_schema():
 
 
 def test_account_code_ui_and_docs():
-    page = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Account code"' in page
     assert "newAcctCode.trim()" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

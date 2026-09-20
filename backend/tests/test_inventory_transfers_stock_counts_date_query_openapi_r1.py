@@ -28,7 +28,7 @@ def test_iso_date_query_schema_for_inventory_transfers_stock_counts():
 
 
 def test_inventory_transfers_stock_counts_date_ui_and_docs():
-    reports = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    reports = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Report from date"' in reports
     assert 'aria-label="Report to date"' in reports
     assert "inventory/transfers" in reports

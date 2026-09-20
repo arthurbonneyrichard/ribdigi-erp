@@ -33,8 +33,8 @@ def test_party_name_schema():
 
 
 def test_party_name_ui_and_docs():
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
-    purch = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
+    purch = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Customer name"' in sales
     assert "customerName.trim()" in sales
     assert 'aria-label="Supplier name"' in purch

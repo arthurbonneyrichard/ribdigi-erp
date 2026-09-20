@@ -41,7 +41,7 @@ def test_stock_movement_reference_id_value_schema():
 
 
 def test_stock_movement_reference_id_ui_and_docs():
-    inv = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inv = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Stock-out reference id"' in inv
     assert "reference_id: outRefId.trim() || null" in inv
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

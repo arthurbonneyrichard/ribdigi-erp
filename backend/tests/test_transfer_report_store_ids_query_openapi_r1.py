@@ -32,7 +32,7 @@ def test_transfer_report_store_ids_query_ui_and_docs():
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
     assert "/reports/inventory/transfers" in docs
     assert "UuidIdValue" in docs
-    reports = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    reports = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert "params.set('store_id', storeTrim)" in reports
 
 

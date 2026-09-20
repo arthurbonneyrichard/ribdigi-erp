@@ -88,7 +88,7 @@ def test_two_factor_code_value_schema():
 
 
 def test_two_factor_code_ui_and_docs():
-    security = (ROOT / "frontend/app/security/page.tsx").read_text(encoding="utf-8")
+    security = (ROOT / "frontend/app/(dashboard)/security/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="2FA setup code"' in security
     assert 'aria-label="2FA code"' in security
     assert 'aria-label="Confirm 2FA setup"' in security

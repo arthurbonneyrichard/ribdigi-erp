@@ -45,7 +45,7 @@ def test_webhook_events_literal_schema():
 
 
 def test_webhook_events_ui_and_docs():
-    page = (ROOT / "frontend/app/integrations/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/integrations/page.tsx").read_text(encoding="utf-8")
     assert "WEBHOOK_EVENTS" in page
     assert "sale.created" in page
     assert "webhook.test" in page

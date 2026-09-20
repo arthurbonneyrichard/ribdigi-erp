@@ -43,7 +43,7 @@ def test_pr_goods_receipt_id_schema():
 
 
 def test_pr_goods_receipt_id_ui_and_docs():
-    page = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Return from GRN"' in page
     assert "goods_receipt_id: grnId.trim()" in page
     assert 'aria-label="Create purchase return"' in page

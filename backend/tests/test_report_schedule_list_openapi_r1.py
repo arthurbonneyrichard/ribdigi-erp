@@ -29,7 +29,7 @@ def test_schedule_frequency_literal_schema():
 
 
 def test_schedule_list_filters_ui_and_docs():
-    page = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert "scheduleManageFilter" in page
     assert "scheduleFrequencyFilter" in page
     assert "managedSchedules" in page

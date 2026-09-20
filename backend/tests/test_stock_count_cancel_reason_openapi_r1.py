@@ -28,7 +28,7 @@ def test_stock_count_cancel_reason_schema():
 
 
 def test_stock_count_cancel_reason_ui_and_docs():
-    page = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Stock count cancel reason"' in page
     assert "countCancelReason" in page
     assert "aria-label={`Cancel stock count ${c.id}`}" in page

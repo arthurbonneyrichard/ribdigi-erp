@@ -46,7 +46,7 @@ def test_bank_access_token_value_schema():
 
 
 def test_bank_access_token_ui_and_docs():
-    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    accounting = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Bank connection access token"' in accounting
     assert "connAccessToken" in accounting
     assert 'aria-label="Connect bank account"' in accounting

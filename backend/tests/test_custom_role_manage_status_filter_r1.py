@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_custom_role_manage_status_filter_ui_and_docs():
-    page = (ROOT / "frontend/app/users/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/users/page.tsx").read_text(encoding="utf-8")
     assert "roleManageFilter" in page
     assert "managedCustomRoles" in page
     assert 'aria-label="Custom role status filter"' in page

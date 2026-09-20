@@ -44,7 +44,7 @@ def test_warehouse_type_literal_update():
 
 
 def test_warehouse_type_ui_and_docs():
-    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    stores = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert "cold_storage" in stores
     assert 'value="retail"' in stores
     api = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")

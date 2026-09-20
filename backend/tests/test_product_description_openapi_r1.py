@@ -39,7 +39,7 @@ def test_product_description_schema():
 
 
 def test_product_description_ui_and_docs():
-    page = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Product description"' in page
     assert 'aria-label="Edit product description"' in page
     assert "productDescription.trim() || null" in page

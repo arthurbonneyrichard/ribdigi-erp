@@ -52,11 +52,11 @@ def test_honesty_batch11_docs_and_agents():
     assert "money_json" in standards
     assert "POS sale create" in standards or "product search" in standards.lower()
 
-    inventory_page = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inventory_page = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Export products CSV"' in inventory_page
     assert 'aria-label="Download product CSV template"' in inventory_page
 
-    audit_page = (ROOT / "frontend/app/audit/page.tsx").read_text(encoding="utf-8")
+    audit_page = (ROOT / "frontend/app/(dashboard)/audit/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Export audit CSV"' in audit_page
 
 

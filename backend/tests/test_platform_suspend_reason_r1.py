@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_platform_suspend_reason_ui_wired():
-    plat = (ROOT / "frontend/app/platform/page.tsx").read_text(encoding="utf-8")
+    plat = (ROOT / "frontend/app/(dashboard)/platform/page.tsx").read_text(encoding="utf-8")
     assert "suspendReason" in plat
     assert "Enter a suspend reason before suspending a tenant" in plat
     assert "JSON.stringify({ reason })" in plat

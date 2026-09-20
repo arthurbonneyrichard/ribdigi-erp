@@ -133,26 +133,26 @@ def test_budget_discount_credit_tax_fx_ui_and_docs():
     assert "PercentRateValue" in docs
     assert "PositiveMoneyValue" in docs
 
-    exp = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    exp = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Expense category monthly budget"' in exp
 
-    credit = (ROOT / "frontend/app/credit/page.tsx").read_text(encoding="utf-8")
+    credit = (ROOT / "frontend/app/(dashboard)/credit/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Credit limit"' in credit
     assert 'aria-label="Early pay discount percent"' in credit
     assert 'aria-label="FX rate to base"' in credit
 
-    tax = (ROOT / "frontend/app/tax/page.tsx").read_text(encoding="utf-8")
+    tax = (ROOT / "frontend/app/(dashboard)/tax/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Tax rate percent"' in tax
 
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Header discount"' in sales
     assert 'aria-label="Line discount"' in sales
     assert 'aria-label="Customer group discount percent"' in sales
 
-    pos = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
+    pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="POS cart discount"' in pos
 
-    purch = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    purch = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Purchase invoice header discount"' in purch
 
 

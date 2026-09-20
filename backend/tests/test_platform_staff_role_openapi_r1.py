@@ -79,7 +79,7 @@ def test_platform_staff_role_literal_schema():
 
 
 def test_platform_staff_role_ui_and_docs():
-    staff = (ROOT / "frontend/app/platform/staff/page.tsx").read_text(encoding="utf-8")
+    staff = (ROOT / "frontend/app/(dashboard)/platform/staff/page.tsx").read_text(encoding="utf-8")
     assert "Create staff" in staff or "createStaff" in staff
     assert "role" in staff
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

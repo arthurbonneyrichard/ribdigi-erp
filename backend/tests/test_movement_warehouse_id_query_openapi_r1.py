@@ -26,10 +26,10 @@ def test_movement_warehouse_id_query_schema():
 
 
 def test_movement_warehouse_id_query_ui_and_docs():
-    inv = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inv = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Movement warehouse filter"' in inv
     assert "params.set('warehouse_id', warehouseTrim)" in inv
-    reports = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    reports = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Report inventory warehouse filter"' in reports
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Movement warehouse_id Query OpenAPI" in agents

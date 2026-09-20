@@ -38,7 +38,7 @@ def test_purchase_order_notes_schema():
 
 
 def test_purchase_order_notes_ui_and_docs():
-    page = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="PO notes"' in page
     assert "poNotes.trim() || null" in page
     assert 'aria-label="Create draft PO"' in page

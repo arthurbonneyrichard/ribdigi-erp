@@ -27,7 +27,7 @@ def test_balance_sheet_compare_literal_schema():
 
 
 def test_balance_sheet_compare_ui_and_docs():
-    page = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert 'value="prior_period"' in page
     assert 'value="prior_year"' in page
     assert "No compare" in page

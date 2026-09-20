@@ -45,7 +45,7 @@ Admin APIs:
 - `GET /api/v1/jobs` — lists handlers + full beat interval map (`celery_enabled`, broker, result backend). Roles: `company_admin`, `super_admin`, `platform_owner`.
 - `POST /api/v1/jobs/{name}/run` — sync run (default) or `?enqueue=true` (requires `CELERY_ENABLED`). Roles: `super_admin`, `platform_owner`.
 
-**UI:** tenant/platform Shell → **Jobs** (`frontend/app/jobs/page.tsx`) — company admins view handlers/beat; super_admin / platform_owner can Run sync or Enqueue.
+**UI:** tenant/platform Shell → **Jobs** (`frontend/app/(dashboard)/jobs/page.tsx`) — company admins view handlers/beat; super_admin / platform_owner can Run sync or Enqueue.
 
 ## Health probes
 

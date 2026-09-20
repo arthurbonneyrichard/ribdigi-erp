@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_stock_transfer_reject_reason_ui_wired():
-    inv = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inv = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert "xferRejectReason" in inv
     assert "Enter a reject reason before rejecting a stock transfer" in inv
     assert "JSON.stringify({ reason: xferRejectReason.trim() })" in inv

@@ -52,7 +52,7 @@ def test_passkey_name_value_schema():
 
 
 def test_passkey_name_ui_and_docs():
-    page = (ROOT / "frontend/app/security/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/security/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Passkey name"' in page
     assert 'aria-label="Add passkey"' in page
     assert "passkeyName.trim() ? passkeyName.trim() : null" in page

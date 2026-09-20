@@ -161,17 +161,17 @@ def test_webauthn_base64url_fe_omit_ui_and_docs():
     assert "Save omits blank `phone`" in docs or "omits blank `phone`" in docs
     assert "name.trim() || null" in docs
 
-    company = (ROOT / "frontend/app/company/page.tsx").read_text(encoding="utf-8")
+    company = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Profile phone for SMS test"' in company
     assert "const trimmedPhone = profilePhone.trim();" in company
     assert "if (trimmedPhone) body.phone = trimmedPhone;" in company
     assert "if (trimmedName) body.full_name = trimmedName;" in company
 
-    pos = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
+    pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="POS customer name"' in pos
     assert "customer_name: name.trim() || null" in pos
 
-    sec = (ROOT / "frontend/app/security/page.tsx").read_text(encoding="utf-8")
+    sec = (ROOT / "frontend/app/(dashboard)/security/page.tsx").read_text(encoding="utf-8")
     assert "bufferToBase64url" in sec or "credentialToJson" in sec
 
 

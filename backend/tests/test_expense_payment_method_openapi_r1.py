@@ -73,7 +73,7 @@ def test_normalize_expense_payment_method_defense():
 
 
 def test_expense_payment_method_ui_and_docs():
-    expenses = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    expenses = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert 'value="cash"' in expenses
     assert 'value="bank_transfer"' in expenses
     assert 'value="card"' in expenses

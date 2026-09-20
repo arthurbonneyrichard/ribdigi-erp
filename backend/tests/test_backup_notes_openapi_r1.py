@@ -28,7 +28,7 @@ def test_backup_notes_schema():
 
 
 def test_backup_notes_ui_and_docs():
-    page = (ROOT / "frontend/app/backup/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/backup/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Backup notes"' in page
     assert "backupNotes.trim() || null" in page
     assert 'aria-label="Create backup now"' in page

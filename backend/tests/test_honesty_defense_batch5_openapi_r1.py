@@ -71,7 +71,7 @@ def test_honesty_batch5_docs_and_agents():
     assert "invoice print" in standards.lower()
     assert "warehouse stock" in standards.lower()
 
-    inventory = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inventory = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Product cost price"' in inventory
     assert 'aria-label="Edit product cost price"' in inventory
     assert "aria-label={`Variant cost price" in inventory

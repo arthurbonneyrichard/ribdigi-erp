@@ -28,15 +28,15 @@ def test_frequency_format_payment_aria_ui_and_docs():
     dr = (ROOT / "docs/DR_LOGICAL_BACKUP_RUNBOOK.md").read_text(encoding="utf-8")
     assert "Backup frequency" in dr
 
-    backup = (ROOT / "frontend/app/backup/page.tsx").read_text(encoding="utf-8")
+    backup = (ROOT / "frontend/app/(dashboard)/backup/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Backup frequency"' in backup
 
-    expenses = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    expenses = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Recurring frequency"' in expenses
     assert 'aria-label="Recurring payment method"' in expenses
     assert 'aria-label="Expense payment method"' in expenses
 
-    reports = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    reports = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Report schedule report type"' in reports
     assert 'aria-label="Report schedule format"' in reports
     assert 'aria-label="Report schedule frequency"' in reports

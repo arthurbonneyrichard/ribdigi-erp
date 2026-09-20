@@ -76,50 +76,50 @@ def test_honesty_batch35_docs_and_agents():
     )
     assert 'aria-label="Party contact primary"' in contacts
 
-    platform = (ROOT / "frontend/app/platform/page.tsx").read_text(encoding="utf-8")
+    platform = (ROOT / "frontend/app/(dashboard)/platform/page.tsx").read_text(encoding="utf-8")
     assert "Platform feature module ${mod}" in platform
 
-    reports = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    reports = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Low-stock suggestion select"' in reports
     assert 'aria-label="Report schedule enabled"' in reports
 
-    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    stores = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="FEFO strict warehouse"' in stores
     assert 'aria-label="Cash drawer open on cash sale"' in stores
 
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Use customer group price"' in sales
     assert 'aria-label="Sales invoice reverse charge"' in sales
     assert 'aria-label="Sales return restock"' in sales
 
-    credit = (ROOT / "frontend/app/credit/page.tsx").read_text(encoding="utf-8")
+    credit = (ROOT / "frontend/app/(dashboard)/credit/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="FX auto-refresh"' in credit
     assert 'aria-label="Apply early payment discount"' in credit
 
-    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    accounting = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert "Bank reconcile pick statement line ${ln.id}" in accounting
     assert "Bank reconcile pick book line ${jl.journal_line_id}" in accounting
 
-    integrations = (ROOT / "frontend/app/integrations/page.tsx").read_text(
+    integrations = (ROOT / "frontend/app/(dashboard)/integrations/page.tsx").read_text(
         encoding="utf-8"
     )
     assert "Webhook event ${ev}" in integrations
 
-    inventory = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inventory = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Opening stock post journal"' in inventory
     assert 'aria-label="Warehouse stock include zero"' in inventory
 
-    backup = (ROOT / "frontend/app/backup/page.tsx").read_text(encoding="utf-8")
+    backup = (ROOT / "frontend/app/(dashboard)/backup/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Backup schedule enabled"' in backup
 
-    pos = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
+    pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="POS split tender"' in pos
 
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="PO amend notify supplier"' in purchasing
     assert 'aria-label="Purchase invoice reverse charge"' in purchasing
 
-    company = (ROOT / "frontend/app/company/page.tsx").read_text(encoding="utf-8")
+    company = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Company SMTP use TLS"' in company
     assert 'aria-label="Company SMTP use SSL"' in company
 

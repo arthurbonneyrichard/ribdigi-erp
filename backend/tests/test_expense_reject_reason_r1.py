@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_expense_reject_reason_ui_wired():
-    expenses = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    expenses = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert "rejectReason" in expenses
     assert "Enter a reject reason before rejecting an expense" in expenses
     assert "Required before Reject" in expenses

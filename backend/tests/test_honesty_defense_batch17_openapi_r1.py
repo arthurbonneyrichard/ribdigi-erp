@@ -70,13 +70,13 @@ def test_honesty_batch17_docs_and_agents():
     assert "Branch/department/account" in standards or "AccountCodeValue" in standards
     assert "bank account number" in standards.lower() or "account_number" in standards
 
-    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    stores = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert "Reactivate department" in stores
     assert "Deactivate department" in stores
     assert "Activate warehouse" in stores
     assert "Deactivate warehouse" in stores
 
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert "Activate customer group" in sales
     assert "Accept quotation" in sales
     assert "Convert quotation to order" in sales
@@ -87,27 +87,27 @@ def test_honesty_batch17_docs_and_agents():
     assert "Deliver sales order" in sales
     assert "Convert sales order to invoice" in sales
 
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert "Approve purchase request" in purchasing
 
-    tax = (ROOT / "frontend/app/tax/page.tsx").read_text(encoding="utf-8")
+    tax = (ROOT / "frontend/app/(dashboard)/tax/page.tsx").read_text(encoding="utf-8")
     assert "Activate tax rate" in tax
 
-    integrations = (ROOT / "frontend/app/integrations/page.tsx").read_text(encoding="utf-8")
+    integrations = (ROOT / "frontend/app/(dashboard)/integrations/page.tsx").read_text(encoding="utf-8")
     assert "Test webhook" in integrations
 
-    platform = (ROOT / "frontend/app/platform/page.tsx").read_text(encoding="utf-8")
+    platform = (ROOT / "frontend/app/(dashboard)/platform/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Assign package and term"' in platform
     assert 'aria-label="Save store entitlement override"' in platform
     assert "Reset feature modules to package default" in platform
 
-    expenses = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    expenses = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert "Edit expense" in expenses
 
-    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    accounting = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Add journal line"' in accounting
 
-    reports = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    reports = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Apply report filters"' in reports
 
 

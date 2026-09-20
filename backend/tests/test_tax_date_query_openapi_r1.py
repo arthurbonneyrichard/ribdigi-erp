@@ -28,7 +28,7 @@ def test_iso_date_query_schema_for_tax():
 
 
 def test_tax_date_ui_and_docs():
-    page = (ROOT / "frontend/app/tax/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/tax/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Tax from date"' in page
     assert 'aria-label="Tax to date"' in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

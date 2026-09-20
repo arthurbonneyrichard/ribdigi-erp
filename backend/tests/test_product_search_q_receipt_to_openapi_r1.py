@@ -49,11 +49,11 @@ def test_product_search_q_receipt_to_ui_and_docs():
     assert "/inventory/products/lookup" in docs
     assert "Integrator lookup" in docs
 
-    inv = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inv = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Product lookup search"' in inv
     assert "params.set('q', q)" in inv
 
-    pos = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
+    pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Barcode scan or product search"' in pos
     assert 'aria-label="POS receipt override to"' in pos
     assert "receiptTo.trim()" in pos

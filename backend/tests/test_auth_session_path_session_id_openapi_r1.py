@@ -18,7 +18,7 @@ def test_auth_session_path_session_id_ui_and_docs():
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
     assert "DELETE /auth/sessions/{session_id}" in docs
     assert "UuidIdValue" in docs
-    sec = (ROOT / "frontend/app/security/page.tsx").read_text(encoding="utf-8")
+    sec = (ROOT / "frontend/app/(dashboard)/security/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label={s.current ? \'Sign out this device\' : \'Revoke session\'}' in sec
     assert "String(s.id).trim()" in sec
     api = (ROOT / "backend/app/api.py").read_text(encoding="utf-8")

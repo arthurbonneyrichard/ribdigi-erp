@@ -37,7 +37,7 @@ def test_warehouse_create_manager_id_schema():
 
 
 def test_warehouse_create_manager_id_ui_and_docs():
-    page = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert "Warehouse manager" in page
     assert "manager_id: whManagerId.trim() || null" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

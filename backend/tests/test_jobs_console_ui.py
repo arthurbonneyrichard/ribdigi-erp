@@ -44,7 +44,7 @@ async def test_jobs_list_and_run_sync(client, seeded):
 
 
 def test_jobs_console_fe_packaged():
-    page = (ROOT / "frontend/app/jobs/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/jobs/page.tsx").read_text(encoding="utf-8")
     assert "/jobs" in page
     assert "Run sync" in page
     assert "Enqueue" in page

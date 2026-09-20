@@ -32,7 +32,7 @@ def test_customer_group_code_value_schema():
 
 
 def test_customer_group_code_ui_and_docs():
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Customer group code"' in sales
     assert "newGroupCode.trim() || null" in sales
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

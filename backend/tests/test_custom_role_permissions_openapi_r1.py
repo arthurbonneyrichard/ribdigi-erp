@@ -67,7 +67,7 @@ def test_custom_role_permissions_schema_forbid():
 
 
 def test_custom_role_permissions_ui_and_docs():
-    page = (ROOT / "frontend/app/users/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/users/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Custom role key"' in page
     assert 'aria-label="Custom role label"' in page
     assert 'aria-label="Clone from system role"' in page

@@ -92,11 +92,11 @@ def test_unit_interval_sale_totals_step_ui_and_docs():
     assert "UnitIntervalValue" in docs
     assert "POS cart totals" in docs
 
-    ai = (ROOT / "frontend/app/ai/page.tsx").read_text(encoding="utf-8")
+    ai = (ROOT / "frontend/app/(dashboard)/ai/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="AI prediction min confidence"' in ai
     assert "body.min_confidence" in ai or "min_confidence" in ai
 
-    pos = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
+    pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="POS cart totals"' in pos
 
 

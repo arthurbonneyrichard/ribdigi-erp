@@ -55,7 +55,7 @@ def test_ai_report_template_create_body_schema_forbid():
 
 
 def test_ai_report_template_create_ui_and_docs():
-    page = (ROOT / "frontend/app/ai/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/ai/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="AI report template name"' in page
     assert "tmplName.trim()" in page
     assert "AI report prompt is required" in page

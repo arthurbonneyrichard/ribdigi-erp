@@ -59,11 +59,11 @@ def test_effective_limit_override_and_allocation():
 
 
 def test_stores_entitlement_ui_wired():
-    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    stores = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert "/stores/entitlement" in stores
     assert "Stores Used" in stores
     assert "store-limit" in stores
-    platform = (ROOT / "frontend/app/platform/page.tsx").read_text(encoding="utf-8")
+    platform = (ROOT / "frontend/app/(dashboard)/platform/page.tsx").read_text(encoding="utf-8")
     assert "max_stores_override" in platform
     assert "store-entitlement" in platform
 

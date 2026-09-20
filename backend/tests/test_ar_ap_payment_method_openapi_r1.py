@@ -55,7 +55,7 @@ def test_ar_ap_payment_method_literal_schema():
 
 
 def test_ar_ap_payment_method_ui_and_docs():
-    credit = (ROOT / "frontend/app/credit/page.tsx").read_text(encoding="utf-8")
+    credit = (ROOT / "frontend/app/(dashboard)/credit/page.tsx").read_text(encoding="utf-8")
     assert "payMethod" in credit
     assert 'value="cash"' in credit
     assert 'value="bank_transfer"' in credit

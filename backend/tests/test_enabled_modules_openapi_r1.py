@@ -58,7 +58,7 @@ def test_enabled_modules_literal_schema():
 
 
 def test_enabled_modules_ui_and_docs():
-    platform = (ROOT / "frontend/app/platform/page.tsx").read_text(encoding="utf-8")
+    platform = (ROOT / "frontend/app/(dashboard)/platform/page.tsx").read_text(encoding="utf-8")
     assert "enabled_modules" in platform
     assert "packageable" in platform
     api = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")

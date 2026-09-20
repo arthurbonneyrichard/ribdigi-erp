@@ -35,7 +35,7 @@ def test_twilio_auth_token_value_schema():
 
 
 def test_sms_settings_auth_token_ui_and_docs():
-    page = (ROOT / "frontend/app/company/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Company SMS auth token"' in page
     assert "trimmedToken" in page
     assert 'aria-label="Save SMS settings"' in page

@@ -33,7 +33,7 @@ def test_bank_clear_group_journal_line_ids_schema():
 
 
 def test_bank_clear_group_journal_line_ids_ui_and_docs():
-    page = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert "pickBook.map((id) => String(id).trim())" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Bank clear-group journal_line_ids OpenAPI" in agents

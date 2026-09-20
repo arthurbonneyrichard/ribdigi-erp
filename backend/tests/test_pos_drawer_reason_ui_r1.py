@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_pos_drawer_reason_ui_wired():
-    pos = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
+    pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert "drawerReason" in pos
     assert "Drawer reason (required)" in pos
     assert 'aria-label="Cash drawer open reason"' in pos

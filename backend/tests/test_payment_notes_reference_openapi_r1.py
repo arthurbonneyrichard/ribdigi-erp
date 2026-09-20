@@ -86,7 +86,7 @@ def test_payment_reference_notes_schema():
 
 
 def test_payment_reference_notes_ui_and_docs():
-    page = (ROOT / "frontend/app/credit/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/credit/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Payment reference"' in page
     assert 'aria-label="Payment notes"' in page
     assert 'aria-label="Record payment"' in page

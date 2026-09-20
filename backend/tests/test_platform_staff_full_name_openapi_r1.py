@@ -45,7 +45,7 @@ def test_platform_staff_full_name_schema():
 
 
 def test_platform_staff_full_name_ui_and_docs():
-    staff = (ROOT / "frontend/app/platform/staff/page.tsx").read_text(encoding="utf-8")
+    staff = (ROOT / "frontend/app/(dashboard)/platform/staff/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Platform staff full name"' in staff
     assert "form.full_name.trim()" in staff
     assert 'aria-label="Create platform staff"' in staff

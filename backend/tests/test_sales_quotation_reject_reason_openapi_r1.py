@@ -25,7 +25,7 @@ def test_sales_quotation_reject_reason_schema():
 
 
 def test_sales_quotation_reject_reason_ui_and_docs():
-    page = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Quotation reject reason"' in page
     assert "quoteRejectReason" in page
     assert 'aria-label={`Reject quotation ${q.id}`}' in page

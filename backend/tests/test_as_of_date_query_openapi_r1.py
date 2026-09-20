@@ -30,9 +30,9 @@ def test_iso_date_query_schema_for_as_of():
 
 
 def test_as_of_date_ui_and_docs():
-    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    accounting = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Trial balance as of date"' in accounting
-    reports = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    reports = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Report as of date"' in reports
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "BS/TB as_of Query OpenAPI" in agents

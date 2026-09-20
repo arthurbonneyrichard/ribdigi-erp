@@ -63,32 +63,32 @@ def test_honesty_batch33_docs_and_agents():
     assert "Product CSV export/commit" in standards
     assert "receipts `_money`" in standards or "receipts _money" in standards
 
-    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    stores = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Branch email"' in stores
 
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert "GRN received qty ${i.id}" in purchasing
     assert "Upload purchase invoice attachment ${inv.id}" in purchasing
 
-    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    accounting = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert "Attach journal file ${j.id}" in accounting
     assert 'aria-label="Bank statement import file"' in accounting
 
-    ai = (ROOT / "frontend/app/ai/page.tsx").read_text(encoding="utf-8")
+    ai = (ROOT / "frontend/app/(dashboard)/ai/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="AI analyze document file"' in ai
 
-    company = (ROOT / "frontend/app/company/page.tsx").read_text(encoding="utf-8")
+    company = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Company logo file"' in company
 
-    expenses = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    expenses = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert "Upload expense attachment ${r.id}" in expenses
 
-    inventory = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inventory = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Product gallery image file"' in inventory
     assert 'aria-label="Product CSV import file"' in inventory
     assert "Brand logo file ${b.id}" in inventory
 
-    users = (ROOT / "frontend/app/users/page.tsx").read_text(encoding="utf-8")
+    users = (ROOT / "frontend/app/(dashboard)/users/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="User CSV import file"' in users
 
 

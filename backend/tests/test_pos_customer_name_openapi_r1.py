@@ -36,7 +36,7 @@ def test_pos_customer_name_schema():
 
 
 def test_pos_customer_name_ui_and_docs():
-    pos = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
+    pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="POS customer name"' in pos
     assert "customerName.trim()" in pos
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

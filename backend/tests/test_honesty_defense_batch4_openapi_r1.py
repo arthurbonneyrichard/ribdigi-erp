@@ -79,20 +79,20 @@ def test_honesty_batch4_docs_and_agents():
     assert "product/variant/batch" in standards.lower() or "product" in standards.lower()
     assert "warehouse capacity" in standards.lower()
 
-    inventory = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inventory = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert "aria-label={`Variant selling price" in inventory
     assert 'aria-label="Opening stock unit cost"' in inventory
     assert 'aria-label="Stock transfer quantity"' in inventory
 
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Supplier payment terms days"' in purchasing
     assert 'aria-label="Purchase return quantity"' in purchasing
 
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Sales invoice FX rate"' in sales
     assert "aria-label={`Sales invoice pay amount" in sales
 
-    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    stores = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Stock transfer quantity"' in stores
 
 

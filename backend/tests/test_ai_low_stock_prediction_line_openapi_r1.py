@@ -71,7 +71,7 @@ def test_ai_low_stock_prediction_line_schema_forbid():
 
 
 def test_ai_low_stock_prediction_line_ui_and_docs():
-    page = (ROOT / "frontend/app/ai/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/ai/page.tsx").read_text(encoding="utf-8")
     assert "suggested_order_qty: x.suggested_order_qty" in page
     assert "predictionRiskReason.trim()" in page or "risk_reason:" in page
     assert 'aria-label="Create draft purchase requests from predictions"' in page

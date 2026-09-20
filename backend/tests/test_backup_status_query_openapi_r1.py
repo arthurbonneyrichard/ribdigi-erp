@@ -31,7 +31,7 @@ def test_backup_job_status_filter_literal_schema():
 
 
 def test_backup_job_status_filter_ui_and_docs():
-    page = (ROOT / "frontend/app/backup/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/backup/page.tsx").read_text(encoding="utf-8")
     assert "backupManageFilter" in page
     assert "managedBackups" in page
     assert 'aria-label="Backup job status filter"' in page

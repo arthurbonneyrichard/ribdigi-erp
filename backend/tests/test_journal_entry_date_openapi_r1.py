@@ -34,7 +34,7 @@ def test_journal_entry_date_schema():
 
 
 def test_journal_entry_date_ui_and_docs():
-    page = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Journal entry date"' in page
     assert "entryDate.trim() || null" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

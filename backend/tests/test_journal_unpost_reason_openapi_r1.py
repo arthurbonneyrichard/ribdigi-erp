@@ -25,7 +25,7 @@ def test_journal_unpost_reason_schema():
 
 
 def test_journal_unpost_reason_ui_and_docs():
-    page = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Journal unpost reason"' in page
     assert "unpostReason" in page
     assert "aria-label={`Unpost journal ${j.id}`}" in page

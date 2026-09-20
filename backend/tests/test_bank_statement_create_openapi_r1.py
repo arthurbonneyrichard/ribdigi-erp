@@ -59,7 +59,7 @@ def test_bank_statement_create_schema_forbid_and_bounds():
 
 
 def test_bank_statement_create_ui_and_docs():
-    page = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Reconcile liquid account"' in page
     assert "account_id: reconAccountId.trim()" in page
     assert 'aria-label="Statement opening balance"' in page

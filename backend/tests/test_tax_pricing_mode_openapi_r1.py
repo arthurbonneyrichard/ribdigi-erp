@@ -49,7 +49,7 @@ def test_tax_pricing_mode_and_type_literal_schema():
 
 
 def test_tax_pricing_mode_ui_and_docs():
-    tax = (ROOT / "frontend/app/tax/page.tsx").read_text(encoding="utf-8")
+    tax = (ROOT / "frontend/app/(dashboard)/tax/page.tsx").read_text(encoding="utf-8")
     assert "pricingMode" in tax
     assert 'value="exclusive"' in tax
     assert 'value="inclusive"' in tax

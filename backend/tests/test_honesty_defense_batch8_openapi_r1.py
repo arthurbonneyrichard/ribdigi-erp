@@ -55,7 +55,7 @@ def test_honesty_batch8_docs_and_agents():
     assert "filing pack" in standards.lower() or "GH VAT" in standards
     assert "low-stock purchase suggestions" in standards.lower() or "suggestions" in standards.lower()
 
-    tax_page = (ROOT / "frontend/app/tax/page.tsx").read_text(encoding="utf-8")
+    tax_page = (ROOT / "frontend/app/(dashboard)/tax/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Export tax filing CSV"' in tax_page
     assert 'aria-label="Export tax filing Excel"' in tax_page
     assert 'aria-label="Export tax filing PDF"' in tax_page

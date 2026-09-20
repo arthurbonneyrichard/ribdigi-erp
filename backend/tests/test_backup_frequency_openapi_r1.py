@@ -39,7 +39,7 @@ def test_backup_frequency_literal_schema():
 
 
 def test_backup_frequency_ui_and_docs():
-    page = (ROOT / "frontend/app/backup/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/backup/page.tsx").read_text(encoding="utf-8")
     assert "frequency" in page
     assert 'value="daily"' in page
     assert 'value="weekly"' in page

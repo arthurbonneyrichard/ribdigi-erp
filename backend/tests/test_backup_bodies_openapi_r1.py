@@ -46,7 +46,7 @@ def test_backup_bodies_schema_forbid():
 
 
 def test_backup_bodies_ui_and_docs():
-    page = (ROOT / "frontend/app/backup/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/backup/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Create backup now"' in page
     assert 'aria-label="Backup dry-run restore"' in page
     assert 'aria-label="Apply backup restore"' in page

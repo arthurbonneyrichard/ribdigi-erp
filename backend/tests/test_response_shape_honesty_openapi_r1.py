@@ -39,12 +39,12 @@ def test_final_aria_and_response_shape_docs():
     assert "`detail`" in errors
     assert "JSON number" in docs
 
-    staff = (ROOT / "frontend/app/platform/staff/page.tsx").read_text(
+    staff = (ROOT / "frontend/app/(dashboard)/platform/staff/page.tsx").read_text(
         encoding="utf-8"
     )
     assert "Change platform staff role for" in staff
 
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(
+    purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(
         encoding="utf-8"
     )
     assert purchasing.count('aria-label="PO unit"') >= 2

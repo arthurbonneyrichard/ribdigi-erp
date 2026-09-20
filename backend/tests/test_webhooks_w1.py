@@ -204,7 +204,7 @@ def test_webhook_status_filter_ui_wired():
     from pathlib import Path
 
     integrations = (
-        Path(__file__).resolve().parents[2] / "frontend/app/integrations/page.tsx"
+        Path(__file__).resolve().parents[2] / "frontend/app/(dashboard)/integrations/page.tsx"
     ).read_text(encoding="utf-8")
     assert "webhookManageFilter" in integrations
     assert 'aria-label="Webhook status filter"' in integrations

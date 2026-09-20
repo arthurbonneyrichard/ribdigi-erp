@@ -40,7 +40,7 @@ def test_platform_grant_role_literal_schema():
 
 
 def test_platform_grant_role_ui_and_docs():
-    staff = (ROOT / "frontend/app/platform/staff/page.tsx").read_text(encoding="utf-8")
+    staff = (ROOT / "frontend/app/(dashboard)/platform/staff/page.tsx").read_text(encoding="utf-8")
     assert "grantRole" in staff
     assert "/platform/staff/grant" in staff
     assert "Grant as" in staff

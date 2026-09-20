@@ -53,7 +53,7 @@ def test_honesty_batch7_docs_and_agents():
     assert "cash-flow" in standards.lower() or "balance sheet" in standards.lower()
     assert "trial balance" in standards.lower() or "p&l" in standards.lower() or "P&L" in standards
 
-    reports_page = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    reports_page = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Export report CSV"' in reports_page
     assert 'aria-label="Export report Excel"' in reports_page
     assert 'aria-label="Export report PDF"' in reports_page

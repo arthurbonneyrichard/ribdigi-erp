@@ -29,12 +29,12 @@ def test_purchase_order_amend_to_emailstr():
 
 
 def test_document_email_to_ui_and_docs():
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Document email override to"' in sales
     assert 'aria-label="Email quotation"' in sales
     assert 'aria-label="Email invoice"' in sales or 'aria-label={inv.emailed_at' in sales
     assert "docEmailTo" in sales
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Purchase order email override to"' in purchasing
     assert 'aria-label="Email purchase order"' in purchasing
     assert 'aria-label="PO amend email override to"' in purchasing

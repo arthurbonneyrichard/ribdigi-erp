@@ -49,7 +49,7 @@ def test_normalize_supply_class_strict_rejects_garbage():
 
 
 def test_tax_supply_class_ui_and_docs():
-    inventory = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inventory = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert "productSupplyClass" in inventory
     assert 'value="zero_rated"' in inventory
     assert 'value="exempt"' in inventory

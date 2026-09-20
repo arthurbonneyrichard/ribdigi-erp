@@ -50,8 +50,8 @@ def test_print_query_literal_schema():
 
 
 def test_print_query_ui_and_docs():
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
-    pos = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
+    pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert "/print" in sales or "print?" in sales.lower() or "invoice" in sales.lower()
     assert "58mm" in pos and "80mm" in pos
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

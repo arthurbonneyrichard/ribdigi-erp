@@ -29,7 +29,7 @@ def test_stock_count_manage_status_reuses_report_literal():
 
 
 def test_stock_count_manage_status_ui_and_docs():
-    page = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert "countManageFilter" in page
     assert "managedCounts" in page
     assert 'aria-label="Stock count status filter"' in page

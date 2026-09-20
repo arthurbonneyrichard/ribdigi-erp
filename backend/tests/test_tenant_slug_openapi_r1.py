@@ -51,7 +51,7 @@ def test_tenant_slug_value_schema():
 
 
 def test_tenant_slug_ui_and_docs():
-    page = (ROOT / "frontend/app/platform/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/platform/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Tenant slug"' in page
     assert "slug: form.slug.trim().toLowerCase()" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

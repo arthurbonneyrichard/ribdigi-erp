@@ -65,13 +65,13 @@ def test_honesty_batch22_docs_and_agents():
     assert "money_json" in standards
     assert "change_pct" in standards or "variance_pct" in standards
 
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label={`Show purchasing ${id} tab`}' in purchasing
 
-    inventory = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inventory = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label={`Show inventory ${id} tab`}' in inventory
 
-    reports = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    reports = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label={`Show reports ${id} tab`}' in reports
 
 

@@ -46,7 +46,7 @@ def test_bank_clear_group_notes_schema():
 
 
 def test_bank_clear_group_notes_ui_and_docs():
-    page = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Clear-group notes"' in page
     assert "clearGroupNotes.trim() || null" in page
     assert 'aria-label="Clear selected as group"' in page

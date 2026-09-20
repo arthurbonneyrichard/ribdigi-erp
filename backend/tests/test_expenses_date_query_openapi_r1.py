@@ -28,7 +28,7 @@ def test_iso_date_query_schema_for_expenses():
 
 
 def test_expenses_date_ui_and_docs():
-    reports = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    reports = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Report from date"' in reports
     assert 'aria-label="Report to date"' in reports
     assert "expenses" in reports.lower() or "budget-vs-actual" in reports

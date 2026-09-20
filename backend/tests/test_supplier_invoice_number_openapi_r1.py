@@ -51,7 +51,7 @@ def test_supplier_invoice_number_value_schema():
 
 
 def test_supplier_invoice_number_ui_and_docs():
-    page = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert page.count('aria-label="Supplier invoice number"') >= 3
     assert "supplierInvoiceNo.trim() || null" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

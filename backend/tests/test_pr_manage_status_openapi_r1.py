@@ -27,7 +27,7 @@ def test_pr_manage_status_literal_covers_lifecycle():
 
 
 def test_pr_manage_status_ui_and_docs():
-    page = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert "prManageFilter" in page
     assert "managedRequests" in page
     assert 'aria-label="Purchase request status filter"' in page

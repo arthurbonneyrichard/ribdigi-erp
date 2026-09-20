@@ -25,7 +25,7 @@ def test_company_regional_format_aria_ui_and_docs():
     assert "Company thousand separator" in docs
     assert "Company time format" in docs
 
-    company = (ROOT / "frontend/app/company/page.tsx").read_text(encoding="utf-8")
+    company = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
     for label in (
         "Company date format",
         "Company decimal separator",

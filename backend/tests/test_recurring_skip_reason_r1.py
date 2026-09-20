@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_recurring_skip_reason_ui_wired():
-    page = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert "skipNextReason" in page
     assert "Enter a skip reason before skipping the next occurrence" in page
     assert "Required before Skip next" in page

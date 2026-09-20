@@ -33,7 +33,7 @@ def test_customer_group_name_schema():
 
 
 def test_customer_group_name_ui_and_docs():
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Customer group name"' in sales
     assert "newGroupName.trim()" in sales
     assert 'aria-label="Add group"' in sales

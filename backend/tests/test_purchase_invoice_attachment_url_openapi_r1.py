@@ -39,7 +39,7 @@ def test_purchase_invoice_attachment_url_value_schema():
 
 
 def test_purchase_invoice_attachment_url_ui_and_docs():
-    page = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert page.count('aria-label="Purchase invoice attachment URL"') >= 2
     assert "invAttachmentUrl.trim() || null" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

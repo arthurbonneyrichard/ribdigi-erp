@@ -34,8 +34,8 @@ def test_party_phone_schema():
 
 
 def test_party_phone_ui_and_docs():
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
+    purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Customer phone"' in sales
     assert "customerPhone.trim() || null" in sales
     assert 'aria-label="Supplier phone"' in purchasing

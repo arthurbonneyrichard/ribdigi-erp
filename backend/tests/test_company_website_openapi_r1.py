@@ -39,7 +39,7 @@ def test_tenant_profile_website_schema():
 
 
 def test_company_website_ui_and_docs():
-    page = (ROOT / "frontend/app/company/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Company website"' in page
     assert "Omit blank website" in page or "tenant.website" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

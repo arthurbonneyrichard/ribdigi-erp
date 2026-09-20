@@ -75,7 +75,7 @@ def test_honesty_batch19_docs_and_agents():
     assert "slug" in standards.lower()
     assert "category label" in standards.lower() or "category" in standards.lower()
 
-    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    accounting = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert "Remove journal line" in accounting
     assert "Remove opening balance line" in accounting
     assert 'aria-label="Apply trial balance filters"' in accounting
@@ -84,7 +84,7 @@ def test_honesty_batch19_docs_and_agents():
     assert "Remove journal attachment" in accounting
     assert "Unmatch bank statement line" in accounting
 
-    credit = (ROOT / "frontend/app/credit/page.tsx").read_text(encoding="utf-8")
+    credit = (ROOT / "frontend/app/(dashboard)/credit/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Show receivables aging"' in credit
     assert 'aria-label="Show payables aging"' in credit
 
@@ -92,7 +92,7 @@ def test_honesty_batch19_docs_and_agents():
     assert "Mark bell notification" in shell
     assert 'aria-label="Mark all bell notifications read"' in shell
 
-    company = (ROOT / "frontend/app/company/page.tsx").read_text(encoding="utf-8")
+    company = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Remove company logo"' in company
 
     party = (ROOT / "frontend/components/PartyContactsPanel.tsx").read_text(encoding="utf-8")
@@ -104,7 +104,7 @@ def test_honesty_batch19_docs_and_agents():
     )
     assert "Open onboarding step" in onboarding
 
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert "View purchase invoice" in purchasing
 
 

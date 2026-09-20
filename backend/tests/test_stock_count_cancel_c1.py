@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_stock_count_cancel_ui_wired():
-    inv = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inv = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert "/inventory/stock-counts/${id}/cancel" in inv
     assert "Cancel count" in inv
     assert "cancelStockCount" in inv

@@ -27,7 +27,7 @@ def test_drawer_mode_literal_schema():
 
 
 def test_drawer_mode_ui_and_docs():
-    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    stores = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert "drawerMode" in stores
     assert 'value="browser_bridge"' in stores
     assert 'value="mock"' in stores

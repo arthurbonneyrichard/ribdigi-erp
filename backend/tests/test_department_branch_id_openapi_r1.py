@@ -37,7 +37,7 @@ def test_department_branch_id_schema():
 
 
 def test_department_branch_id_ui_and_docs():
-    page = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert "Department branch" in page
     assert "branch_id: deptBranchId.trim() || null" in page
     assert 'aria-label="Create department"' in page

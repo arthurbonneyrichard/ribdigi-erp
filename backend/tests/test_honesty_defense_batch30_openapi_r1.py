@@ -64,20 +64,20 @@ def test_honesty_batch30_docs_and_agents():
     assert "accounting stock_qty_for_cogs" in standards or "POS sale+tender+COGS" in standards
     assert "purchasing line-tax" in standards or "sales SI create+post" in standards
 
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Create quotation"' in sales
     assert 'aria-label="Create order"' in sales
     assert 'aria-label="Create invoice"' in sales
     assert 'aria-label="Add customer"' in sales
 
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Create draft PO"' in purchasing
     assert 'aria-label="Post GRN"' in purchasing
 
-    credit = (ROOT / "frontend/app/credit/page.tsx").read_text(encoding="utf-8")
+    credit = (ROOT / "frontend/app/(dashboard)/credit/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Record payment"' in credit
 
-    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    accounting = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Post balanced entry"' in accounting
 
 

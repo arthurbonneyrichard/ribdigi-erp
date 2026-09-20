@@ -15,8 +15,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_credit_override_reason_ui_wired():
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
-    pos = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
+    pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert "creditOverrideReason" in sales
     assert 'aria-label="Credit override reason"' in sales
     assert "aria-label={`Post sales invoice ${inv.id}`}" in sales

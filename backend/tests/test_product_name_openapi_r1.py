@@ -33,7 +33,7 @@ def test_product_name_schema():
 
 
 def test_product_name_ui_and_docs():
-    inv = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inv = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Product name"' in inv
     assert "productName.trim()" in inv
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

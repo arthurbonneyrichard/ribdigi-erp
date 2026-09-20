@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_company_suspend_reason_ui_wired():
-    company = (ROOT / "frontend/app/company/page.tsx").read_text(encoding="utf-8")
+    company = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
     assert "suspendReason" in company
     assert "Enter a suspend reason before suspending this company" in company
     assert "JSON.stringify({ reason })" in company

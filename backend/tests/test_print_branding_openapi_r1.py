@@ -68,7 +68,7 @@ def test_print_branding_read_path_coerces_garbage():
 
 
 def test_print_branding_ui_and_docs():
-    company = (ROOT / "frontend/app/company/page.tsx").read_text(encoding="utf-8")
+    company = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
     assert "invTemplate" in company and "receiptPaper" in company
     assert 'aria-label="Print branding header text"' in company
     assert 'aria-label="Print branding footer text"' in company

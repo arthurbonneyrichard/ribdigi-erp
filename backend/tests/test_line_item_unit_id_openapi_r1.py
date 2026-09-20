@@ -43,7 +43,7 @@ def test_line_item_unit_id_schema():
 
 
 def test_line_item_unit_id_ui_and_docs():
-    page = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Sales unit"' in page
     assert "unit_id: unitId.trim() || null" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

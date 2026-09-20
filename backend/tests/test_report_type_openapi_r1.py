@@ -65,7 +65,7 @@ def test_report_schedule_report_type_literal_schema():
 
 
 def test_report_schedule_report_type_ui_and_docs():
-    page = (ROOT / "frontend/app/reports/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/reports/page.tsx").read_text(encoding="utf-8")
     assert "REPORT_TYPES" in page
     for key in (
         "profit_loss",

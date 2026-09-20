@@ -37,7 +37,7 @@ def test_subscription_term_unit_literal_schema():
 
 
 def test_subscription_term_unit_ui_and_docs():
-    platform = (ROOT / "frontend/app/platform/page.tsx").read_text(encoding="utf-8")
+    platform = (ROOT / "frontend/app/(dashboard)/platform/page.tsx").read_text(encoding="utf-8")
     assert "term_unit" in platform
     assert 'value="months"' in platform
     assert 'value="years"' in platform

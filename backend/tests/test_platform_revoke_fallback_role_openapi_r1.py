@@ -35,7 +35,7 @@ def test_platform_revoke_fallback_role_literal_schema():
 
 
 def test_platform_revoke_fallback_role_ui_and_docs():
-    staff = (ROOT / "frontend/app/platform/staff/page.tsx").read_text(encoding="utf-8")
+    staff = (ROOT / "frontend/app/(dashboard)/platform/staff/page.tsx").read_text(encoding="utf-8")
     assert "/revoke" in staff
     assert "fallback_role" in staff
     assert "company_admin" in staff

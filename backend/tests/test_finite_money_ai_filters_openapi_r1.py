@@ -73,10 +73,10 @@ def test_finite_money_ai_filters_ui_and_docs():
     assert "FiniteMoneyValue" in docs
     assert "AiReportFilters" in docs
 
-    acct = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    acct = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Statement opening balance"' in acct
     assert 'aria-label="Statement closing balance"' in acct
-    ai = (ROOT / "frontend/app/ai/page.tsx").read_text(encoding="utf-8")
+    ai = (ROOT / "frontend/app/(dashboard)/ai/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="AI document expected amount"' in ai
     assert "fd.append('expected_amount'" in ai
 

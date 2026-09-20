@@ -117,7 +117,7 @@ def test_audit_cold_archive_ui_packaged():
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[2]
-    page = (root / "frontend/app/audit/page.tsx").read_text(encoding="utf-8")
+    page = (root / "frontend/app/(dashboard)/audit/page.tsx").read_text(encoding="utf-8")
     assert "/audit-logs/retention" in page
     assert "/audit-logs/archives" in page
     assert "/audit-logs/archive-cold" in page

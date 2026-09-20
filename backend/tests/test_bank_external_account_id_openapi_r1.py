@@ -41,7 +41,7 @@ def test_bank_external_account_id_schema():
 
 
 def test_bank_external_account_id_ui_and_docs():
-    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    accounting = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Bank external account id"' in accounting
     assert "connExtId.trim()" in accounting
     assert 'aria-label="Connect bank account"' in accounting

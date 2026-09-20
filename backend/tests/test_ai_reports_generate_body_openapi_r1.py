@@ -63,7 +63,7 @@ def test_ai_reports_generate_body_schema_forbid():
 
 
 def test_ai_reports_generate_ui_and_docs():
-    page = (ROOT / "frontend/app/ai/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/ai/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Generate AI report"' in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "AI reports generate body OpenAPI" in agents

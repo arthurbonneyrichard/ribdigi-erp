@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_ai_doc_draft_expense_ui_wired():
-    ai = (ROOT / "frontend/app/ai/page.tsx").read_text(encoding="utf-8")
+    ai = (ROOT / "frontend/app/(dashboard)/ai/page.tsx").read_text(encoding="utf-8")
     assert "createDraftExpenseFromDoc" in ai
     assert "Create draft expense" in ai
     assert "/ai/documents/create-expense" in ai

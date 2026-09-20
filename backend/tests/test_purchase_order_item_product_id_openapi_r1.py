@@ -35,7 +35,7 @@ def test_purchase_order_item_product_id_schema():
 
 
 def test_purchase_order_item_product_id_ui_and_docs():
-    page = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="PO product"' in page
     assert "product_id: productId.trim()" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

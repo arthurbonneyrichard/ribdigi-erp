@@ -70,7 +70,7 @@ def test_numbering_forbid_fe_omit_ui_and_docs():
     assert "form.phone.trim() || null" in docs
     assert "totpCode.trim()" in docs
 
-    company = (ROOT / "frontend/app/company/page.tsx").read_text(encoding="utf-8")
+    company = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Company email"' in company
     assert "String(tenant.email || '').trim()" in company
     assert "email: String(tenant.email).trim()" in company
@@ -79,14 +79,14 @@ def test_numbering_forbid_fe_omit_ui_and_docs():
     assert "code: totpCode.trim()" in login
     assert "totp_code: totpCode.trim() || null" in login
 
-    security = (ROOT / "frontend/app/security/page.tsx").read_text(encoding="utf-8")
+    security = (ROOT / "frontend/app/(dashboard)/security/page.tsx").read_text(encoding="utf-8")
     assert "code: code.trim()" in security
     assert security.count("code: code.trim()") >= 2
 
-    users = (ROOT / "frontend/app/users/page.tsx").read_text(encoding="utf-8")
+    users = (ROOT / "frontend/app/(dashboard)/users/page.tsx").read_text(encoding="utf-8")
     assert "phone: form.phone.trim() || null" in users
 
-    integrations = (ROOT / "frontend/app/integrations/page.tsx").read_text(
+    integrations = (ROOT / "frontend/app/(dashboard)/integrations/page.tsx").read_text(
         encoding="utf-8"
     )
     assert "url: hookUrl.trim()" in integrations

@@ -33,7 +33,7 @@ def test_department_name_schema():
 
 
 def test_department_name_ui_and_docs():
-    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    stores = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert "Department name" in stores
     assert "Edit department name" in stores
     assert "deptName.trim()" in stores

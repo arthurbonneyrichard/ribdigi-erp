@@ -20,11 +20,11 @@ def test_store_context_switcher_packaged():
     assert "StoreSwitcher" in shell
 
     for rel in (
-        "frontend/app/pos/page.tsx",
-        "frontend/app/sales/page.tsx",
-        "frontend/app/reports/page.tsx",
-        "frontend/app/tax/page.tsx",
-        "frontend/app/expenses/page.tsx",
+        "frontend/app/(dashboard)/pos/page.tsx",
+        "frontend/app/(dashboard)/sales/page.tsx",
+        "frontend/app/(dashboard)/reports/page.tsx",
+        "frontend/app/(dashboard)/tax/page.tsx",
+        "frontend/app/(dashboard)/expenses/page.tsx",
     ):
         text = (ROOT / rel).read_text(encoding="utf-8")
         assert "useStoreContext" in text, rel

@@ -32,7 +32,7 @@ def test_sq_customer_id_schema():
 
 
 def test_sq_customer_id_ui_and_docs():
-    page = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Sale customer"' in page
     assert "customer_id: customerId.trim()" in page
     assert 'aria-label="Create quotation"' in page

@@ -36,7 +36,7 @@ def test_journal_line_description_schema():
 
 
 def test_journal_line_description_ui_and_docs():
-    page = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert "l.description.trim() || null" in page
     assert "Journal line ${idx + 1} description" in page or 'Journal line ${idx + 1} description' in page
     assert 'aria-label={`Journal line ${idx + 1} description`}' in page

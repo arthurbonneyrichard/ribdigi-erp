@@ -73,13 +73,13 @@ def test_honesty_batch26_docs_and_agents():
     assert "scale_monthly_budget" in standards or "expected_closing" in standards
     assert "active_reserved_qty" in standards or "reserved_qty" in standards
 
-    accounting = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    accounting = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Cash transfer next number"' in accounting
     assert 'aria-label="Account status filter"' in accounting
     assert 'aria-label="Cheque direction filter"' in accounting
     assert 'aria-label="P&L from date"' in accounting
 
-    stores = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    stores = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Cash drawer port"' in stores
     assert 'aria-label="Store reorder level"' in stores
     assert 'aria-label="Store reorder qty"' in stores

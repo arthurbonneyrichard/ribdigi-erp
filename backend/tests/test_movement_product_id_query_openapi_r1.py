@@ -26,7 +26,7 @@ def test_movement_product_id_query_schema():
 
 
 def test_movement_product_id_query_ui_and_docs():
-    page = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Movement selected product only"' in page
     assert "params.set('product_id', productTrim)" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

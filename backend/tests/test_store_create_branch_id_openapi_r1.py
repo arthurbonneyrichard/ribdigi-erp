@@ -37,7 +37,7 @@ def test_store_create_branch_id_schema():
 
 
 def test_store_create_branch_id_ui_and_docs():
-    page = (ROOT / "frontend/app/stores/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Store branch"' in page
     assert "branch_id: branchId.trim() || null" in page
     assert 'aria-label="Create store"' in page

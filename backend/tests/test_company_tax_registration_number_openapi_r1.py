@@ -31,7 +31,7 @@ def test_tenant_profile_tax_registration_number_schema():
 
 
 def test_company_tax_registration_number_ui_and_docs():
-    page = (ROOT / "frontend/app/company/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="TIN / VAT registration number"' in page
     assert "TaxRegistrationNumberValue" in page or "Omit blank TIN" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

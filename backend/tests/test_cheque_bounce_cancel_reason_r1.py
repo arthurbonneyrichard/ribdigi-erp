@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_cheque_bounce_cancel_reason_ui_wired():
-    page = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert "chequeActionReason" in page
     assert "Required before Bounce or Cancel" in page
     assert "JSON.stringify({ reason })" in page

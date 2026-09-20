@@ -68,12 +68,12 @@ def test_audit_entity_barcode_notes_path_ui_and_docs():
         "Tenant path tenant_ref OpenAPI",
     ):
         assert title in agents, title
-    audit = (ROOT / "frontend/app/audit/page.tsx").read_text(encoding="utf-8")
+    audit = (ROOT / "frontend/app/(dashboard)/audit/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Audit entity filter"' in audit
     assert "params.set('entity', entityQ)" in audit
-    inv = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inv = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Product lookup barcode"' in inv
-    acct = (ROOT / "frontend/app/accounting/page.tsx").read_text(encoding="utf-8")
+    acct = (ROOT / "frontend/app/(dashboard)/accounting/page.tsx").read_text(encoding="utf-8")
     assert "qs.set('notes', notesTrim)" in acct
 
 

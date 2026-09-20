@@ -28,7 +28,7 @@ def test_iso_date_query_schema_for_ai_analysis():
 
 
 def test_ai_analysis_date_ui_and_docs():
-    ai = (ROOT / "frontend/app/ai/page.tsx").read_text(encoding="utf-8")
+    ai = (ROOT / "frontend/app/(dashboard)/ai/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="AI analysis from date"' in ai
     assert 'aria-label="AI analysis to date"' in ai
     assert "analysisFromDate" in ai

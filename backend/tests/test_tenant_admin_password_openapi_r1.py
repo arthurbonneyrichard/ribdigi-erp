@@ -51,7 +51,7 @@ def test_tenant_admin_password_value_schema():
 
 
 def test_tenant_admin_password_ui_and_docs():
-    platform = (ROOT / "frontend/app/platform/page.tsx").read_text(encoding="utf-8")
+    platform = (ROOT / "frontend/app/(dashboard)/platform/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Tenant admin password"' in platform
     assert "trimmedPassword" in platform
     assert 'aria-label="Create tenant"' in platform

@@ -61,7 +61,7 @@ def test_pos_sale_status_literal_schema():
 
 
 def test_pos_sale_status_ui_and_docs():
-    pos = (ROOT / "frontend/app/pos/page.tsx").read_text(encoding="utf-8")
+    pos = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert "status: 'completed'" in pos
     api = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
     assert 'Literal["completed"]' in api

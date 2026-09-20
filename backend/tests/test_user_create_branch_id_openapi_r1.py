@@ -37,7 +37,7 @@ def test_user_create_branch_id_schema():
 
 
 def test_user_create_branch_id_ui_and_docs():
-    page = (ROOT / "frontend/app/users/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/users/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="User branch"' in page
     assert "branch_id: form.branch_id.trim()" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")

@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_so_cancel_reason_ui_wired():
-    page = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert "soCancelReason" in page
     assert "Required before Cancel" in page
     assert "Enter a cancel reason before cancelling a sales order" in page

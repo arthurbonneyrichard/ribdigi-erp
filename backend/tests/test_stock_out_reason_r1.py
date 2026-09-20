@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_stock_out_adjust_reason_ui_wired():
-    inv = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inv = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert "const [outRefType, setOutRefType] = useState('');" in inv
     assert "const [adjReason, setAdjReason] = useState('');" in inv
     assert "Select a stock-out reference type" in inv

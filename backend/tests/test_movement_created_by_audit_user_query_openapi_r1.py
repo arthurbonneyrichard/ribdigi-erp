@@ -29,7 +29,7 @@ def test_created_by_user_id_query_ui_and_docs():
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Movement created_by Query OpenAPI" in agents
     assert "Audit user_id Query OpenAPI" in agents
-    audit = (ROOT / "frontend/app/audit/page.tsx").read_text(encoding="utf-8")
+    audit = (ROOT / "frontend/app/(dashboard)/audit/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Audit user filter"' in audit
     assert "params.set('user_id', userTrim)" in audit
 

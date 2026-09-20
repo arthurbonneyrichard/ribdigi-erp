@@ -70,7 +70,7 @@ def test_honesty_batch32_docs_and_agents():
     assert "opening-balance plug" in standards or "stock-count complete" in standards
     assert "tax calculate rate_pct" in standards or "list_price preview" in standards
 
-    inventory = (ROOT / "frontend/app/inventory/page.tsx").read_text(encoding="utf-8")
+    inventory = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert "Activate category ${c.id}" in inventory
     assert "Deactivate category ${c.id}" in inventory
     assert "Activate brand ${b.id}" in inventory
@@ -78,23 +78,23 @@ def test_honesty_batch32_docs_and_agents():
     assert "Activate unit ${u.id}" in inventory
     assert "Deactivate unit ${u.id}" in inventory
 
-    sales = (ROOT / "frontend/app/sales/page.tsx").read_text(encoding="utf-8")
+    sales = (ROOT / "frontend/app/(dashboard)/sales/page.tsx").read_text(encoding="utf-8")
     assert "Post sales return credit ${r.id}" in sales
     assert "Post sales return refund ${r.id}" in sales
 
-    expenses = (ROOT / "frontend/app/expenses/page.tsx").read_text(encoding="utf-8")
+    expenses = (ROOT / "frontend/app/(dashboard)/expenses/page.tsx").read_text(encoding="utf-8")
     assert "Preview expense attachment ${r.id}" in expenses
 
-    purchasing = (ROOT / "frontend/app/purchasing/page.tsx").read_text(encoding="utf-8")
+    purchasing = (ROOT / "frontend/app/(dashboard)/purchasing/page.tsx").read_text(encoding="utf-8")
     assert "Preview purchase invoice attachment ${inv.id}" in purchasing
 
-    integrations = (ROOT / "frontend/app/integrations/page.tsx").read_text(encoding="utf-8")
+    integrations = (ROOT / "frontend/app/(dashboard)/integrations/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Copy Python webhook verifier"' in integrations
 
-    notifications = (ROOT / "frontend/app/notifications/page.tsx").read_text(encoding="utf-8")
+    notifications = (ROOT / "frontend/app/(dashboard)/notifications/page.tsx").read_text(encoding="utf-8")
     assert "Filter notifications by ${c.label}" in notifications
 
-    audit = (ROOT / "frontend/app/audit/page.tsx").read_text(encoding="utf-8")
+    audit = (ROOT / "frontend/app/(dashboard)/audit/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Apply audit filters"' in audit
 
     login = (ROOT / "frontend/app/page.tsx").read_text(encoding="utf-8")
