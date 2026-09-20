@@ -2,6 +2,9 @@
 
 export type ThemeMode = 'light' | 'dark';
 
+/** Default dashboard theme for new users (and login when no preference). */
+export const DEFAULT_THEME: ThemeMode = 'light';
+
 const LEGACY_KEY = 'theme';
 const ACTIVE_USER_KEY = 'ribdigi.theme.userId';
 
@@ -12,15 +15,6 @@ export function themeKeyForUser(userId: string): string {
 export function applyTheme(mode: ThemeMode): void {
   if (typeof document === 'undefined') return;
   document.documentElement.setAttribute('data-theme', mode);
-}
-
-function systemTheme(): ThemeMode {
-  if (typeof window === 'undefined') return 'light';
-  try {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  } catch {
-    return 'light';
-  }
 }
 
 /** Apply and persist theme for one authenticated user only. */
@@ -38,11 +32,15 @@ export function writeUserTheme(userId: string, mode: ThemeMode): void {
 /**
  * Load theme for the signed-in user. Migrates a one-time legacy `theme` value
  * into that user's scoped key, then removes the global key.
+ * New users (no saved preference) get light/white mode by default.
  */
 export function loadUserTheme(userId: string): ThemeMode {
-  if (typeof localStorage === 'undefined') return 'light';
+  if (typeof localStorage === 'undefined') return DEFAULT_THEME;
   const id = String(userId || '').trim();
-  if (!id) return systemTheme();
+  if (!id) {
+    applyTheme(DEFAULT_THEME);
+    return DEFAULT_THEME;
+  }
 
   const scoped = localStorage.getItem(themeKeyForUser(id));
   if (scoped === 'light' || scoped === 'dark') {
@@ -60,16 +58,18 @@ export function loadUserTheme(userId: string): ThemeMode {
     return legacy;
   }
 
-  const mode = systemTheme();
+  // First login / no preference: white (light) dashboard by default.
+  localStorage.setItem(themeKeyForUser(id), DEFAULT_THEME);
   localStorage.setItem(ACTIVE_USER_KEY, id);
-  applyTheme(mode);
-  return mode;
+  localStorage.removeItem(LEGACY_KEY);
+  applyTheme(DEFAULT_THEME);
+  return DEFAULT_THEME;
 }
 
-/** After logout: forget active user and return login UI to system preference. */
+/** After logout: forget active user and return UI to the light default. */
 export function clearSessionTheme(): void {
   if (typeof localStorage === 'undefined') return;
   localStorage.removeItem(ACTIVE_USER_KEY);
   localStorage.removeItem(LEGACY_KEY);
-  applyTheme(systemTheme());
+  applyTheme(DEFAULT_THEME);
 }
