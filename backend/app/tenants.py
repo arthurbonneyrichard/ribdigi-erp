@@ -15,7 +15,17 @@ from app.honesty import money_json, optional_honest_narrative, require_honest_na
 
 VALID_STATUSES = frozenset({"trial", "active", "grace", "suspended"})
 VALID_INDUSTRIES = frozenset(
-    {"retail", "pharmacy", "restaurant", "bakery", "wholesale", "manufacturing", "mart", "hotel"}
+    {
+        "retail",
+        "pharmacy",
+        "restaurant",
+        "bakery",
+        "wholesale",
+        "manufacturing",
+        "mart",
+        "hotel",
+        "fmcg",
+    }
 )
 VALID_DATE_FORMATS = frozenset({"DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"})
 VALID_DECIMAL_SEPARATORS = frozenset({".", ","})

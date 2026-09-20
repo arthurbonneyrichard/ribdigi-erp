@@ -50,6 +50,7 @@ IndustryValue = Annotated[
         "manufacturing",
         "mart",
         "hotel",
+        "fmcg",
     ],
     BeforeValidator(coerce_industry_value),
 ]
@@ -302,6 +303,7 @@ PackageableModuleValue = Annotated[
         "tax",
         "stores",
         "hotel",
+        "fmcg",
         "reports",
         "notifications",
         "audit",
@@ -4071,6 +4073,7 @@ AuditModuleValue = Annotated[
         "credit",
         "dashboard",
         "expenses",
+        "fmcg",
         "hotel",
         "inventory",
         "notifications",
@@ -8927,4 +8930,72 @@ class HotelReservationCreate(BaseModel):
     adults: Annotated[int, Field(ge=1, le=20)] = 1
     children: Annotated[int, Field(ge=0, le=20)] = 0
     nightly_rate: NonNegativeMoneyValue | None = None
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+# --- FMCG module (trade schemes / routes / stops) ---
+
+
+def coerce_fmcg_scheme_type_value(value: object) -> object:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().lower()
+
+
+def coerce_fmcg_visit_day_value(value: object) -> object:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().lower()
+
+
+FmcgSchemeTypeValue = Annotated[
+    Literal["percent", "fixed", "bxgy"],
+    BeforeValidator(coerce_fmcg_scheme_type_value),
+]
+FmcgVisitDayValue = Annotated[
+    Literal["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+    BeforeValidator(coerce_fmcg_visit_day_value),
+]
+
+
+class FmcgTradeSchemeCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: Annotated[str, Field(min_length=1, max_length=40)]
+    name: Annotated[str, Field(min_length=1, max_length=150)]
+    scheme_type: FmcgSchemeTypeValue = "percent"
+    value: NonNegativeMoneyValue = 0
+    buy_qty: Annotated[int, Field(ge=0, le=100000)] = 0
+    get_qty: Annotated[int, Field(ge=0, le=100000)] = 0
+    starts_on: IsoDateQueryValue | None = None
+    ends_on: IsoDateQueryValue | None = None
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+class FmcgTradeSchemeActiveUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    is_active: bool
+
+
+class FmcgRouteCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: Annotated[str, Field(min_length=1, max_length=40)]
+    name: Annotated[str, Field(min_length=1, max_length=150)]
+    driver_name: Annotated[str, Field(min_length=1, max_length=150)] | None = None
+    vehicle: Annotated[str, Field(min_length=1, max_length=80)] | None = None
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+class FmcgRouteStopCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    customer_id: UuidIdValue
+    sequence: Annotated[int, Field(ge=1, le=10000)] = 1
+    visit_day: FmcgVisitDayValue | None = None
     notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None

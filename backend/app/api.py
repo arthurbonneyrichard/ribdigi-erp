@@ -173,6 +173,10 @@ from app.schemas import (
     ExpenseThresholdUpdate,
     ExpenseUpdate,
     GrnCreate,
+    FmcgRouteCreate,
+    FmcgRouteStopCreate,
+    FmcgTradeSchemeActiveUpdate,
+    FmcgTradeSchemeCreate,
     HotelGuestCreate,
     HotelReservationCreate,
     HotelRoomCreate,
@@ -318,6 +322,7 @@ from app import platform_staff as platform_staff_svc
 from app import platform_reports as platform_reports_svc
 from app import user_accounts as user_accounts_svc
 from app import hotel as hotel_svc
+from app import fmcg as fmcg_svc
 from app.rbac import PLATFORM_ROLES, is_platform_owner_role, is_platform_role
 
 api = APIRouter(prefix="/api/v1")
@@ -13661,3 +13666,174 @@ async def hotel_reservation_cancel(
     )
     await db.commit()
     return env(hotel_svc.serialize_reservation(row, room=room, guest=guest), "Reservation cancelled")
+
+
+@api.get("/fmcg/summary")
+async def fmcg_summary(
+    claims=Depends(require_permission("fmcg", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(await fmcg_svc.summary(db, tenant_id=claims["tenant_id"]))
+
+
+@api.get("/fmcg/schemes")
+async def fmcg_schemes_list(
+    is_active: bool | None = None,
+    claims=Depends(require_permission("fmcg", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await fmcg_svc.list_schemes(
+        db, tenant_id=claims["tenant_id"], is_active=is_active
+    )
+    return env([fmcg_svc.serialize_scheme(r) for r in rows])
+
+
+@api.post("/fmcg/schemes")
+async def fmcg_schemes_create(
+    payload: FmcgTradeSchemeCreate,
+    claims=Depends(require_permission("fmcg", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await fmcg_svc.create_scheme(
+        db,
+        tenant_id=claims["tenant_id"],
+        code=payload.code,
+        name=payload.name,
+        scheme_type=payload.scheme_type,
+        value=float(payload.value or 0),
+        buy_qty=payload.buy_qty,
+        get_qty=payload.get_qty,
+        starts_on=payload.starts_on,
+        ends_on=payload.ends_on,
+        notes=payload.notes,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="fmcg",
+        action="scheme_created",
+        entity="fmcg_trade_scheme",
+        entity_id=row.id,
+        details={"code": row.code, "scheme_type": row.scheme_type},
+    )
+    await db.commit()
+    return env(fmcg_svc.serialize_scheme(row), "Trade scheme created")
+
+
+@api.patch("/fmcg/schemes/{scheme_id}")
+async def fmcg_schemes_set_active(
+    scheme_id: UuidIdValue,
+    payload: FmcgTradeSchemeActiveUpdate,
+    claims=Depends(require_permission("fmcg", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await fmcg_svc.set_scheme_active(
+        db,
+        tenant_id=claims["tenant_id"],
+        scheme_id=scheme_id,
+        is_active=payload.is_active,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="fmcg",
+        action="scheme_activated" if row.is_active else "scheme_deactivated",
+        entity="fmcg_trade_scheme",
+        entity_id=row.id,
+        details={"code": row.code, "is_active": row.is_active},
+    )
+    await db.commit()
+    return env(
+        fmcg_svc.serialize_scheme(row),
+        "Trade scheme activated" if row.is_active else "Trade scheme deactivated",
+    )
+
+
+@api.get("/fmcg/routes")
+async def fmcg_routes_list(
+    is_active: bool | None = None,
+    claims=Depends(require_permission("fmcg", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await fmcg_svc.list_routes(
+        db, tenant_id=claims["tenant_id"], is_active=is_active
+    )
+    return env([fmcg_svc.serialize_route(route, stop_count=count) for route, count in rows])
+
+
+@api.post("/fmcg/routes")
+async def fmcg_routes_create(
+    payload: FmcgRouteCreate,
+    claims=Depends(require_permission("fmcg", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await fmcg_svc.create_route(
+        db,
+        tenant_id=claims["tenant_id"],
+        code=payload.code,
+        name=payload.name,
+        driver_name=payload.driver_name,
+        vehicle=payload.vehicle,
+        notes=payload.notes,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="fmcg",
+        action="route_created",
+        entity="fmcg_route",
+        entity_id=row.id,
+        details={"code": row.code},
+    )
+    await db.commit()
+    return env(fmcg_svc.serialize_route(row, stop_count=0), "Route created")
+
+
+@api.get("/fmcg/routes/{route_id}/stops")
+async def fmcg_route_stops_list(
+    route_id: UuidIdValue,
+    claims=Depends(require_permission("fmcg", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await fmcg_svc.list_stops(
+        db, tenant_id=claims["tenant_id"], route_id=route_id
+    )
+    return env(
+        [fmcg_svc.serialize_stop(stop, customer_name=name) for stop, name in rows]
+    )
+
+
+@api.post("/fmcg/routes/{route_id}/stops")
+async def fmcg_route_stops_create(
+    route_id: UuidIdValue,
+    payload: FmcgRouteStopCreate,
+    claims=Depends(require_permission("fmcg", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row, customer_name = await fmcg_svc.add_stop(
+        db,
+        tenant_id=claims["tenant_id"],
+        route_id=route_id,
+        customer_id=payload.customer_id,
+        sequence=payload.sequence,
+        visit_day=payload.visit_day,
+        notes=payload.notes,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="fmcg",
+        action="route_stop_added",
+        entity="fmcg_route_stop",
+        entity_id=row.id,
+        details={"route_id": route_id, "customer_id": row.customer_id},
+    )
+    await db.commit()
+    return env(
+        fmcg_svc.serialize_stop(row, customer_name=customer_name),
+        "Route stop added",
+    )
