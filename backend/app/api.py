@@ -309,6 +309,7 @@ from app.security import (
 from app import totp as totp_svc
 from app import platform_staff as platform_staff_svc
 from app import platform_reports as platform_reports_svc
+from app import user_accounts as user_accounts_svc
 from app.rbac import PLATFORM_ROLES, is_platform_owner_role, is_platform_role
 
 api = APIRouter(prefix="/api/v1")
@@ -3181,6 +3182,33 @@ async def deactivate_user(
     )
     await db.commit()
     return env(serialize_user(user), "User deactivated")
+
+
+@api.delete("/users/{user_id}/account")
+async def delete_user_account(
+    user_id: UuidIdValue,
+    claims=Depends(require_permission("users", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Permanently delete a tenant staff account (company admin / users write)."""
+    snapshot = await user_accounts_svc.delete_tenant_user(
+        db,
+        tenant_id=claims["tenant_id"],
+        actor_id=claims["sub"],
+        user_id=user_id,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="users",
+        action="user_deleted",
+        entity="user",
+        entity_id=snapshot["id"],
+        details={"email": snapshot["email"], "role": snapshot["role"], "full_name": snapshot["full_name"]},
+    )
+    await db.commit()
+    return env(snapshot, "User account deleted")
 
 
 @api.get("/dashboard")

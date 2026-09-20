@@ -92,6 +92,7 @@ export default function Page() {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [canWrite, setCanWrite] = useState(false);
+  const [meId, setMeId] = useState('');
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importReport, setImportReport] = useState<ImportReport | null>(null);
   const [importBusy, setImportBusy] = useState(false);
@@ -113,6 +114,7 @@ export default function Page() {
     setStores((storesRes.data || []).filter((s: StoreRow) => s.is_active !== false));
     const perms = meRes.data?.permissions || {};
     const role = meRes.data?.role || '';
+    setMeId(String(meRes.data?.id || '').trim());
     setCanWrite(
       role === 'super_admin' ||
         role === 'company_admin' ||
@@ -373,6 +375,27 @@ export default function Page() {
     }
   }
 
+  async function deleteUser(row: UserRow) {
+    if (meId && row.id === meId) {
+      setError('You cannot delete your own account.');
+      setMessage('');
+      return;
+    }
+    const ok = window.confirm(
+      `Delete ${row.full_name} (${row.email}) permanently?\n\nThis removes the staff account. This cannot be undone.`
+    );
+    if (!ok) return;
+    setError('');
+    setMessage('');
+    try {
+      await api(`/users/${String(row.id).trim()}/account`, { method: 'DELETE' });
+      setMessage(`Deleted ${row.full_name}`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message || 'Delete failed');
+    }
+  }
+
   async function downloadImportTemplate() {
     setError('');
     try {
@@ -458,8 +481,9 @@ export default function Page() {
     <>
       <h1>User Management</h1>
       <p className="muted">
-        Create users, assign roles, branch/department, and record scope; activate or deactivate
-        accounts (BR-3.1). Soft-deactivate custom roles without deleting assignees (BR-3.2).
+        Create users, assign roles, branch/department, and record scope; activate, deactivate, or
+        permanently delete staff accounts (BR-3.1). Soft-deactivate custom roles without deleting
+        assignees (BR-3.2). Deactivate keeps the account; Delete removes it.
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
@@ -896,6 +920,16 @@ export default function Page() {
                       Activate
                     </button>
                   )}
+                  {r.id !== meId ? (
+                    <button
+                      type="button"
+                      className="btn-danger"
+                      onClick={() => deleteUser(r)}
+                      aria-label={`Delete user ${r.email}`}
+                    >
+                      Delete
+                    </button>
+                  ) : null}
                 </td>
               )}
             </tr>
