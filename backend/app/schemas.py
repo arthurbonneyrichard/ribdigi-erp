@@ -8843,7 +8843,7 @@ class PosDeviceHeartbeat(BaseModel):
     pending_queue_count: Annotated[int, Field(ge=0, le=100000)] = 0
 
 
-# --- Hotel module (rooms / guests / reservations) ---
+# --- Hotel module (rooms / guests / reservations / folio / HK / maintenance) ---
 
 
 def coerce_hotel_room_type_value(value: object) -> object:
@@ -8870,16 +8870,72 @@ def coerce_hotel_reservation_status_value(value: object) -> object:
     return value.strip().lower()
 
 
+def coerce_hotel_booking_source_value(value: object) -> object:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().lower()
+
+
+def coerce_hotel_payment_method_value(value: object) -> object:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().lower()
+
+
 HotelRoomTypeValue = Annotated[
     Literal["standard", "deluxe", "suite", "family", "other"],
     BeforeValidator(coerce_hotel_room_type_value),
 ]
 HotelRoomStatusValue = Annotated[
-    Literal["available", "occupied", "maintenance", "out_of_order"],
+    Literal[
+        "available",
+        "reserved",
+        "occupied",
+        "dirty",
+        "clean",
+        "inspected",
+        "maintenance",
+        "out_of_order",
+        "blocked",
+    ],
+    BeforeValidator(coerce_hotel_room_status_value),
+]
+HotelHousekeepingStatusValue = Annotated[
+    Literal["dirty", "clean", "inspected"],
     BeforeValidator(coerce_hotel_room_status_value),
 ]
 HotelReservationStatusValue = Annotated[
     Literal["booked", "checked_in", "checked_out", "cancelled", "no_show"],
+    BeforeValidator(coerce_hotel_reservation_status_value),
+]
+HotelBookingSourceValue = Annotated[
+    Literal["direct", "walk_in", "ota", "corporate", "phone", "other"],
+    BeforeValidator(coerce_hotel_booking_source_value),
+]
+HotelPaymentMethodValue = Annotated[
+    Literal["cash", "momo", "card", "bank", "credit", "other"],
+    BeforeValidator(coerce_hotel_payment_method_value),
+]
+HotelChargeTypeValue = Annotated[
+    Literal[
+        "room",
+        "restaurant",
+        "laundry",
+        "service",
+        "damage",
+        "extra",
+        "tax",
+        "discount",
+        "adjustment",
+    ],
+    BeforeValidator(coerce_hotel_room_status_value),
+]
+HotelListKindValue = Annotated[
+    Literal["arrivals", "departures", "in_house", "upcoming", "cancelled", "no_show"],
     BeforeValidator(coerce_hotel_reservation_status_value),
 ]
 
@@ -8891,8 +8947,13 @@ class HotelRoomCreate(BaseModel):
     name: Annotated[str, Field(min_length=1, max_length=120)]
     room_type: HotelRoomTypeValue = "standard"
     floor: Annotated[str, Field(min_length=1, max_length=40)] | None = None
+    bed_type: Annotated[str, Field(min_length=1, max_length=40)] | None = None
     max_occupancy: Annotated[int, Field(ge=1, le=20)] = 2
     rate_amount: NonNegativeMoneyValue = 0
+    weekend_rate: NonNegativeMoneyValue | None = None
+    extra_person_charge: NonNegativeMoneyValue = 0
+    amenities: dict | None = None
+    description: Annotated[str, Field(min_length=1, max_length=2000)] | None = None
     status: HotelRoomStatusValue = "available"
     notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
 
@@ -8903,9 +8964,15 @@ class HotelRoomUpdate(BaseModel):
     name: Annotated[str, Field(min_length=1, max_length=120)] | None = None
     room_type: HotelRoomTypeValue | None = None
     floor: Annotated[str, Field(min_length=1, max_length=40)] | None = None
+    bed_type: Annotated[str, Field(min_length=1, max_length=40)] | None = None
     max_occupancy: Annotated[int, Field(ge=1, le=20)] | None = None
     rate_amount: NonNegativeMoneyValue | None = None
+    weekend_rate: NonNegativeMoneyValue | None = None
+    extra_person_charge: NonNegativeMoneyValue | None = None
+    amenities: dict | None = None
+    description: Annotated[str, Field(min_length=1, max_length=2000)] | None = None
     status: HotelRoomStatusValue | None = None
+    housekeeping_status: HotelHousekeepingStatusValue | None = None
     notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
     is_active: bool | None = None
 
@@ -8916,8 +8983,31 @@ class HotelGuestCreate(BaseModel):
     full_name: Annotated[str, Field(min_length=1, max_length=150)]
     email: EmailStr | None = None
     phone: E164PhoneValue | None = None
+    address: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+    nationality: Annotated[str, Field(min_length=1, max_length=80)] | None = None
+    id_type: Annotated[str, Field(min_length=1, max_length=40)] | None = None
     id_document: Annotated[str, Field(min_length=1, max_length=80)] | None = None
+    emergency_contact: Annotated[str, Field(min_length=1, max_length=200)] | None = None
+    company_name: Annotated[str, Field(min_length=1, max_length=150)] | None = None
+    preferences: Annotated[str, Field(min_length=1, max_length=1000)] | None = None
     notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+class HotelGuestUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    full_name: Annotated[str, Field(min_length=1, max_length=150)] | None = None
+    email: EmailStr | None = None
+    phone: E164PhoneValue | None = None
+    address: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+    nationality: Annotated[str, Field(min_length=1, max_length=80)] | None = None
+    id_type: Annotated[str, Field(min_length=1, max_length=40)] | None = None
+    id_document: Annotated[str, Field(min_length=1, max_length=80)] | None = None
+    emergency_contact: Annotated[str, Field(min_length=1, max_length=200)] | None = None
+    company_name: Annotated[str, Field(min_length=1, max_length=150)] | None = None
+    preferences: Annotated[str, Field(min_length=1, max_length=1000)] | None = None
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+    is_active: bool | None = None
 
 
 class HotelReservationCreate(BaseModel):
@@ -8930,6 +9020,82 @@ class HotelReservationCreate(BaseModel):
     adults: Annotated[int, Field(ge=1, le=20)] = 1
     children: Annotated[int, Field(ge=0, le=20)] = 0
     nightly_rate: NonNegativeMoneyValue | None = None
+    booking_source: HotelBookingSourceValue = "direct"
+    special_requests: Annotated[str, Field(min_length=1, max_length=1000)] | None = None
+    deposit_amount: NonNegativeMoneyValue = 0
+    deposit_method: HotelPaymentMethodValue | None = None
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+    walk_in: bool = False
+
+
+class HotelExtendStay(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    new_check_out_date: IsoDateQueryValue
+
+
+class HotelMoveRoom(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    new_room_id: UuidIdValue
+
+
+class HotelCheckoutBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    allow_balance: bool = False
+
+
+class HotelFolioChargeCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    charge_type: HotelChargeTypeValue = "extra"
+    description: Annotated[str, Field(min_length=1, max_length=255)]
+    quantity: Annotated[float, Field(gt=0, le=100000)] = 1
+    unit_amount: NonNegativeMoneyValue = 0
+    tax_amount: NonNegativeMoneyValue = 0
+    discount_amount: NonNegativeMoneyValue = 0
+
+
+class HotelFolioChargeVoid(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    void_reason: Annotated[str, Field(min_length=1, max_length=255)]
+
+
+class HotelFolioPaymentCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    method: HotelPaymentMethodValue = "cash"
+    amount: Annotated[float, Field(gt=0, le=1_000_000_000)]
+    reference: Annotated[str, Field(min_length=1, max_length=120)] | None = None
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+class HotelHousekeepingCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    room_id: UuidIdValue
+    task_type: Annotated[str, Field(min_length=1, max_length=40)] = "cleaning"
+    priority: Literal["low", "normal", "high", "urgent"] = "normal"
+    assigned_to: Annotated[str, Field(min_length=1, max_length=150)] | None = None
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+class HotelHousekeepingComplete(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    mark_inspected: bool = False
+
+
+class HotelMaintenanceCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    room_id: UuidIdValue
+    title: Annotated[str, Field(min_length=1, max_length=150)]
+    priority: Literal["low", "normal", "high", "urgent"] = "normal"
+    block_room: bool = True
+    assigned_to: Annotated[str, Field(min_length=1, max_length=150)] | None = None
     notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
 
 
@@ -8960,6 +9126,10 @@ FmcgVisitDayValue = Annotated[
     Literal["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
     BeforeValidator(coerce_fmcg_visit_day_value),
 ]
+FmcgDeliveryStatusValue = Annotated[
+    Literal["pending", "delivered", "failed", "skipped"],
+    BeforeValidator(coerce_fmcg_visit_day_value),
+]
 
 
 class FmcgTradeSchemeCreate(BaseModel):
@@ -8971,6 +9141,8 @@ class FmcgTradeSchemeCreate(BaseModel):
     value: NonNegativeMoneyValue = 0
     buy_qty: Annotated[int, Field(ge=0, le=100000)] = 0
     get_qty: Annotated[int, Field(ge=0, le=100000)] = 0
+    product_id: UuidIdValue | None = None
+    category_id: UuidIdValue | None = None
     starts_on: IsoDateQueryValue | None = None
     ends_on: IsoDateQueryValue | None = None
     notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
@@ -8980,6 +9152,14 @@ class FmcgTradeSchemeActiveUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     is_active: bool
+
+
+class FmcgSchemePreview(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    line_qty: Annotated[float, Field(gt=0, le=1000000)] = 1
+    line_amount: NonNegativeMoneyValue = 0
+    product_id: UuidIdValue | None = None
 
 
 class FmcgRouteCreate(BaseModel):
@@ -8999,3 +9179,10 @@ class FmcgRouteStopCreate(BaseModel):
     sequence: Annotated[int, Field(ge=1, le=10000)] = 1
     visit_day: FmcgVisitDayValue | None = None
     notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+class FmcgRouteStopDeliveryUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    delivery_status: FmcgDeliveryStatusValue
+    fail_reason: Annotated[str, Field(min_length=1, max_length=255)] | None = None

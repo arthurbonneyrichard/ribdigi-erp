@@ -33,6 +33,7 @@ type Stop = {
   customer_name?: string | null;
   sequence: number;
   visit_day?: string | null;
+  delivery_status?: string;
   is_active: boolean;
 };
 
@@ -48,6 +49,28 @@ type Summary = {
   route_stops: number;
   customers_active: number;
   batches_expiring_30d: number;
+  deliveries_pending?: number;
+  deliveries_completed?: number;
+  deliveries_failed?: number;
+};
+
+type ExpiringBatch = {
+  id?: string;
+  batch_number?: string;
+  product_name?: string;
+  expiry_date?: string;
+  quantity?: number;
+};
+
+type RoutePerf = {
+  route_id: string;
+  code: string;
+  name: string;
+  stops_total: number;
+  delivered: number;
+  failed: number;
+  pending: number;
+  delivery_rate: number;
 };
 
 const SCHEME_TYPES = ['percent', 'fixed', 'bxgy'];
@@ -60,6 +83,8 @@ export default function FmcgPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedRouteId, setSelectedRouteId] = useState('');
   const [stops, setStops] = useState<Stop[]>([]);
+  const [expiring, setExpiring] = useState<ExpiringBatch[]>([]);
+  const [perf, setPerf] = useState<RoutePerf[]>([]);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -87,17 +112,21 @@ export default function FmcgPage() {
 
   async function refresh(routeId?: string) {
     const activeRoute = routeId ?? selectedRouteId;
-    const [s, sch, rt, cust] = await Promise.all([
+    const [s, sch, rt, cust, exp, pf] = await Promise.all([
       api('/fmcg/summary'),
       api('/fmcg/schemes'),
       api('/fmcg/routes?is_active=true'),
       api('/customers'),
+      api('/fmcg/expiring?days=30'),
+      api('/fmcg/routes/performance'),
     ]);
     setSummary(s.data || null);
     setSchemes(sch.data || []);
     setRoutes(rt.data || []);
     const custList = Array.isArray(cust.data) ? cust.data : [];
     setCustomers(custList.filter((c: Customer) => (c.status || 'active') === 'active'));
+    setExpiring(exp.data?.batches || []);
+    setPerf(pf.data || []);
     if (activeRoute) {
       const st = await api(`/fmcg/routes/${activeRoute}/stops`);
       setStops(st.data || []);
@@ -265,7 +294,9 @@ export default function FmcgPage() {
           <div className="card">
             <div className="muted">Near expiry (30d)</div>
             <div className="kpi">{summary.batches_expiring_30d}</div>
-            <div className="muted">Batches needing attention</div>
+            <div className="muted">
+              Deliveries {summary.deliveries_completed ?? 0} done · {summary.deliveries_pending ?? 0} pending
+            </div>
           </div>
         </div>
       )}
@@ -581,7 +612,8 @@ export default function FmcgPage() {
                   <th>#</th>
                   <th>Customer</th>
                   <th>Visit day</th>
-                  <th>Status</th>
+                  <th>Delivery</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -590,12 +622,67 @@ export default function FmcgPage() {
                     <td>{st.sequence}</td>
                     <td>{st.customer_name || st.customer_id}</td>
                     <td>{st.visit_day || 'any'}</td>
-                    <td>{st.is_active ? 'active' : 'inactive'}</td>
+                    <td>{st.delivery_status || 'pending'}</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          className="btn-ok"
+                          disabled={busy || st.delivery_status === 'delivered'}
+                          onClick={async () => {
+                            setBusy(true);
+                            setError('');
+                            try {
+                              await api(`/fmcg/stops/${st.id}/delivery`, {
+                                method: 'PATCH',
+                                body: JSON.stringify({ delivery_status: 'delivered' }),
+                              });
+                              setMessage('Stop marked delivered');
+                              await refresh(selectedRouteId);
+                            } catch (err: any) {
+                              setError(err.message || 'Update failed');
+                            } finally {
+                              setBusy(false);
+                            }
+                          }}
+                          aria-label={`Mark delivered ${st.customer_name || st.id}`}
+                        >
+                          Delivered
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-danger"
+                          disabled={busy || st.delivery_status === 'failed'}
+                          onClick={async () => {
+                            setBusy(true);
+                            setError('');
+                            try {
+                              await api(`/fmcg/stops/${st.id}/delivery`, {
+                                method: 'PATCH',
+                                body: JSON.stringify({
+                                  delivery_status: 'failed',
+                                  fail_reason: 'Customer closed / refused',
+                                }),
+                              });
+                              setMessage('Stop marked failed');
+                              await refresh(selectedRouteId);
+                            } catch (err: any) {
+                              setError(err.message || 'Update failed');
+                            } finally {
+                              setBusy(false);
+                            }
+                          }}
+                          aria-label={`Mark failed ${st.customer_name || st.id}`}
+                        >
+                          Failed
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
                 {!stops.length && (
                   <tr>
-                    <td colSpan={4} className="muted">
+                    <td colSpan={5} className="muted">
                       No stops on this route yet.
                     </td>
                   </tr>
@@ -604,6 +691,77 @@ export default function FmcgPage() {
             </table>
           </>
         )}
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <h2>Route performance</h2>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Route</th>
+              <th>Stops</th>
+              <th>Delivered</th>
+              <th>Failed</th>
+              <th>Pending</th>
+              <th>Rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            {perf.map((p) => (
+              <tr key={p.route_id}>
+                <td>
+                  <code>{p.code}</code> {p.name}
+                </td>
+                <td>{p.stops_total}</td>
+                <td>{p.delivered}</td>
+                <td>{p.failed}</td>
+                <td>{p.pending}</td>
+                <td>{Number(p.delivery_rate || 0).toFixed(1)}%</td>
+              </tr>
+            ))}
+            {!perf.length && (
+              <tr>
+                <td colSpan={6} className="muted">
+                  No route performance data yet.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <h2>Near-expiry batches (30 days)</h2>
+        <p className="muted">
+          Uses core inventory FEFO/expiry data. Strict FEFO is configured under Multi-Store inventory settings.
+        </p>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Batch</th>
+              <th>Product</th>
+              <th>Expiry</th>
+              <th>Qty</th>
+            </tr>
+          </thead>
+          <tbody>
+            {expiring.map((b, idx) => (
+              <tr key={b.id || idx}>
+                <td>{b.batch_number || '—'}</td>
+                <td>{b.product_name || '—'}</td>
+                <td>{b.expiry_date || '—'}</td>
+                <td>{b.quantity ?? '—'}</td>
+              </tr>
+            ))}
+            {!expiring.length && (
+              <tr>
+                <td colSpan={4} className="muted">
+                  No batches expiring within 30 days.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </>
   );

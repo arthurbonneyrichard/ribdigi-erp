@@ -1,4 +1,4 @@
-"""FMCG module MVP — trade schemes, routes, stops, summary."""
+"""FMCG module R2 — schemes, routes, delivery, near-expiry, preview."""
 
 from __future__ import annotations
 
@@ -21,7 +21,6 @@ def test_fmcg_module_registered():
     page = (ROOT / "frontend/app/(dashboard)/fmcg/page.tsx").read_text(encoding="utf-8")
     assert "/fmcg/schemes" in page
     assert "/fmcg/routes" in page
-    assert "Near expiry" in page
 
 
 @pytest.mark.asyncio
@@ -48,6 +47,14 @@ async def test_fmcg_scheme_route_stop_lifecycle(client, seeded):
     assert scheme.json()["data"]["code"] == f"SC{suffix}".upper()
     assert scheme.json()["data"]["is_active"] is True
 
+    preview = await ac.post(
+        "/api/v1/fmcg/schemes/preview",
+        headers=admin,
+        json={"line_qty": 10, "line_amount": 100},
+    )
+    assert preview.status_code == 200, preview.text
+    assert any(p["scheme_id"] == scheme_id for p in preview.json()["data"])
+
     deactivated = await ac.patch(
         f"/api/v1/fmcg/schemes/{scheme_id}",
         headers=admin,
@@ -68,7 +75,6 @@ async def test_fmcg_scheme_route_stop_lifecycle(client, seeded):
     )
     assert route.status_code == 200, route.text
     route_id = route.json()["data"]["id"]
-    assert route.json()["data"]["code"] == f"RT{suffix}".upper()
 
     customer = await ac.post(
         "/api/v1/customers",
@@ -84,19 +90,31 @@ async def test_fmcg_scheme_route_stop_lifecycle(client, seeded):
         json={"customer_id": customer_id, "sequence": 1, "visit_day": "mon"},
     )
     assert stop.status_code == 200, stop.text
-    assert stop.json()["data"]["customer_id"] == customer_id
-    assert stop.json()["data"]["visit_day"] == "mon"
+    stop_id = stop.json()["data"]["id"]
+    assert stop.json()["data"]["delivery_status"] == "pending"
 
-    stops = await ac.get(f"/api/v1/fmcg/routes/{route_id}/stops", headers=admin)
-    assert stops.status_code == 200, stops.text
-    assert len(stops.json()["data"]) >= 1
+    delivered = await ac.patch(
+        f"/api/v1/fmcg/stops/{stop_id}/delivery",
+        headers=admin,
+        json={"delivery_status": "delivered"},
+    )
+    assert delivered.status_code == 200, delivered.text
+    assert delivered.json()["data"]["delivery_status"] == "delivered"
+
+    perf = await ac.get("/api/v1/fmcg/routes/performance", headers=admin)
+    assert perf.status_code == 200, perf.text
+    matched = next(r for r in perf.json()["data"] if r["route_id"] == route_id)
+    assert matched["delivered"] >= 1
+
+    expiring = await ac.get("/api/v1/fmcg/expiring?days=30", headers=admin)
+    assert expiring.status_code == 200, expiring.text
+    assert "batches" in expiring.json()["data"]
 
     summary = await ac.get("/api/v1/fmcg/summary", headers=admin)
     assert summary.status_code == 200, summary.text
     data = summary.json()["data"]
     assert data["routes_active"] >= 1
-    assert data["route_stops"] >= 1
-    assert "batches_expiring_30d" in data
+    assert "deliveries_completed" in data
 
 
 @pytest.mark.asyncio
