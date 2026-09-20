@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../../lib/api';
+import { getMe } from '../../../lib/meCache';
 
 const JOB_LABELS: Record<string, string> = {
   scan_low_stock: 'Low stock alerts',
@@ -44,7 +45,7 @@ export default function Page() {
   const canRun = RUN_ROLES.has(role);
 
   const refresh = useCallback(async () => {
-    const [jobsRes, meRes] = await Promise.all([api('/jobs'), api('/me')]);
+    const [jobsRes, meRes] = await Promise.all([api('/jobs'), getMe()]);
     setInfo(jobsRes.data || null);
     setRole(meRes.data?.role || '');
   }, []);

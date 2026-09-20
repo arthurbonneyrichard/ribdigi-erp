@@ -1,9 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { api, clearSessionAndRedirect, idleTimeoutMs } from '../lib/api';
+import { getMe } from '../lib/meCache';
+import { prefetchGet } from '../lib/prefetchCache';
 import { applyTheme, clearSessionTheme, loadUserTheme, writeUserTheme } from '../lib/theme';
 import { StoreProvider } from '../lib/storeContext';
 import OnboardingChecklist from './OnboardingChecklist';
@@ -383,6 +385,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [bellNotes, setBellNotes] = useState<BellNote[]>([]);
   const [bellBusy, setBellBusy] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
   const isPlatformOwner = PLATFORM_ROLES.has(role);
 
   // Market readiness: no anonymous browsing of /pos, /inventory, etc.
@@ -396,7 +399,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         return;
       }
       try {
-        await api('/me');
+        await getMe({ force: true });
         if (active) setAuthReady(true);
       } catch (err) {
         if (enrollmentRequired(err)) {
@@ -458,11 +461,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     } catch {
       /* revoke best-effort; clear client session regardless */
     }
-    localStorage.removeItem('token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('tenant');
-    clearSessionTheme();
-    window.location.href = '/';
+    clearSessionAndRedirect();
   }
 
   function toggleTheme() {
@@ -527,7 +526,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     let active = true;
     async function load() {
       try {
-        const meRes = await api('/me');
+        const meRes = await getMe();
         let unreadCount = 0;
         try {
           const countRes = await api('/notifications/unread-count');
@@ -672,6 +671,44 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     ? companyName || 'Company logo'
     : 'RIBDIGI ERP';
 
+  // Warm the Next.js route and API payloads for sidebar destinations.
+  useEffect(() => {
+    if (!authReady || !visible.length) return;
+    for (const [, href] of visible) {
+      try {
+        router.prefetch(href);
+      } catch {
+        /* ignore */
+      }
+    }
+    if (isPlatformOwner) {
+      void prefetchGet('/tenants');
+      void prefetchGet('/packages');
+      void prefetchGet('/platform/staff');
+      void prefetchGet('/platform/roles');
+      void prefetchGet('/platform/app-users');
+      void prefetchGet('/platform/reports');
+    }
+  }, [authReady, visible, router, isPlatformOwner]);
+
+  function warmDestination(href: string) {
+    try {
+      router.prefetch(href);
+    } catch {
+      /* ignore */
+    }
+    if (href === '/platform') {
+      void prefetchGet('/tenants');
+      void prefetchGet('/packages');
+    } else if (href === '/platform/staff') {
+      void prefetchGet('/platform/staff');
+      void prefetchGet('/platform/roles');
+      void prefetchGet('/platform/app-users');
+    } else if (href === '/platform/reports') {
+      void prefetchGet('/platform/reports');
+    }
+  }
+
   if (!authReady) {
     return (
       <div className="auth-gate" role="status" aria-live="polite">
@@ -705,9 +742,13 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               <Link
                 key={h}
                 href={h}
+                prefetch
                 className={active ? 'active' : undefined}
                 aria-current={active ? 'page' : undefined}
                 onClick={() => setMenuOpen(false)}
+                onMouseEnter={() => warmDestination(h)}
+                onFocus={() => warmDestination(h)}
+                onTouchStart={() => warmDestination(h)}
               >
                 <span className="nav-ico">
                   <NavIcon name={module} />

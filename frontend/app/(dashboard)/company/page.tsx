@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '../../../lib/api';
+import { getMe } from '../../../lib/meCache';
 import { formatDateTime, formatNumber } from '../../../lib/format';
 
 export default function Page() {
@@ -63,7 +64,7 @@ export default function Page() {
       api('/tenants/me'),
       api('/settings/email'),
       api('/settings/sms'),
-      api('/me'),
+      getMe(),
       api('/settings/storage').catch(() => ({ data: null })),
       api('/settings/print').catch(() => ({ data: null })),
     ]);

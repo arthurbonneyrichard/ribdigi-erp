@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../../../lib/api';
+import { getMe } from '../../../../lib/meCache';
+import { getPrefetched } from '../../../../lib/prefetchCache';
 
 type Staff = {
   id: string;
@@ -53,18 +55,19 @@ export default function PlatformStaffPage() {
 
   const canEditStaff = meRole === 'platform_owner' || meRole === 'super_admin';
 
-  async function refresh() {
-    const me = await api('/me');
+  async function refresh(options?: { force?: boolean }) {
+    const force = Boolean(options?.force);
+    const [me, s, r, a] = await Promise.all([
+      getMe({ force }),
+      getPrefetched('/platform/staff', { force }),
+      getPrefetched('/platform/roles', { force }),
+      getPrefetched('/platform/app-users', { force }),
+    ]);
     if (!PLATFORM_ROLES.includes(me.data?.role)) {
       router.replace('/dashboard');
       return;
     }
     setMeRole(me.data?.role || '');
-    const [s, r, a] = await Promise.all([
-      api('/platform/staff'),
-      api('/platform/roles'),
-      api('/platform/app-users'),
-    ]);
     setStaff(s.data || []);
     setRoles((r.data || []).map((x: any) => ({ key: x.key, label: x.label })));
     setAppUsers(a.data || []);
@@ -111,7 +114,7 @@ export default function PlatformStaffPage() {
           ? 'Staff user created. They must open the verification email before signing in with workspace "platform".'
           : 'Staff user created, but the verification email was not sent. Use Resend email after SMTP is on, or Verify account.'
       );
-      await refresh();
+      await refresh({ force: true });
     } catch (err: any) {
       setError(err.message || 'Create failed');
     } finally {
@@ -167,7 +170,7 @@ export default function PlatformStaffPage() {
       setEditingId('');
       setEditForm({ full_name: '', email: '', phone: '', role: 'platform_support', password: '' });
       setMessage(password ? 'Staff user and password updated' : 'Staff user updated');
-      await refresh();
+      await refresh({ force: true });
     } catch (err: any) {
       setError(err.message || 'Update failed');
     } finally {
@@ -182,7 +185,7 @@ export default function PlatformStaffPage() {
     try {
       const r = await api(`/platform/staff/${row.id}/verify-email`, { method: 'POST', body: '{}' });
       setMessage(r.message || `${row.email} can sign in.`);
-      await refresh();
+      await refresh({ force: true });
     } catch (err: any) {
       setError(err.message || 'Could not verify this account');
     } finally {
@@ -216,7 +219,7 @@ export default function PlatformStaffPage() {
         body: JSON.stringify({ is_active }),
       });
       setMessage(`${row.full_name} ${is_active ? 'activated' : 'deactivated'}`);
-      await refresh();
+      await refresh({ force: true });
     } catch (err: any) {
       setError(err.message || 'Update failed');
     } finally {
@@ -233,7 +236,7 @@ export default function PlatformStaffPage() {
         body: JSON.stringify({ role }),
       });
       setMessage(`Updated role for ${row.full_name}`);
-      await refresh();
+      await refresh({ force: true });
     } catch (err: any) {
       setError(err.message || 'Role update failed');
     } finally {
@@ -252,7 +255,7 @@ export default function PlatformStaffPage() {
         body: JSON.stringify({ user_id: String(row.id).trim(), role: grantRole }),
       });
       setMessage(`Granted software owner dashboard to ${row.full_name}`);
-      await refresh();
+      await refresh({ force: true });
     } catch (err: any) {
       setError(err.message || 'Grant failed');
     } finally {
@@ -270,7 +273,7 @@ export default function PlatformStaffPage() {
         body: JSON.stringify({ fallback_role: 'company_admin' }),
       });
       setMessage(`Revoked dashboard access for ${row.full_name}`);
-      await refresh();
+      await refresh({ force: true });
     } catch (err: any) {
       setError(err.message || 'Revoke failed');
     } finally {

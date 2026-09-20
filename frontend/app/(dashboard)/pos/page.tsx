@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../../../lib/api';
+import { getMe } from '../../../lib/meCache';
 import { useStoreContext } from '../../../lib/storeContext';
 import {
   cacheCatalogProducts,
@@ -497,7 +498,7 @@ export default function Page() {
     api('/customers')
       .then((r) => setCustomers(r.data || []))
       .catch(() => setCustomers([]));
-    api('/me')
+    getMe()
       .then((r) => setCashierName(r.data?.full_name || r.data?.email || ''))
       .catch(() => setCashierName(''));
     api('/pos/settings')
@@ -573,7 +574,7 @@ export default function Page() {
       setSession(r.data);
       setMessage('Shift opened');
       try {
-        const me = await api('/me');
+        const me = await getMe();
         const tenant = localStorage.getItem('tenant') || me.data?.tenant_id || '';
         const env = await saveOfflineAuthEnvelope({
           tenant_id: String(tenant),

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '../../../lib/api';
+import { getMe } from '../../../lib/meCache';
 
 type RoleRow = {
   role: string;
@@ -100,7 +101,7 @@ export default function Page() {
       api('/users'),
       // Manage list needs inactive custom roles for Activate / Deactivate (BR-3.2).
       api('/roles?include_inactive=true'),
-      api('/me'),
+      getMe(),
       api('/branches').catch(() => ({ data: [] })),
       api('/departments').catch(() => ({ data: [] })),
       api('/stores').catch(() => ({ data: [] })),

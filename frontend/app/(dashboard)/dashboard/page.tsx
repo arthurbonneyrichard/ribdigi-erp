@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { api } from '../../../lib/api';
+import { getMe } from '../../../lib/meCache';
 import { useStoreContext } from '../../../lib/storeContext';
 
 type Subscription = {
@@ -298,7 +299,7 @@ export default function Page() {
   }, [headerStoreId]);
 
   useEffect(() => {
-    api('/me')
+    getMe()
       .then((r) => {
         setFullName(r.data?.full_name || '');
         setRole(r.data?.role || '');

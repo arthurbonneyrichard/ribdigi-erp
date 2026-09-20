@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { api } from '../../../../lib/api';
+import { getMe } from '../../../../lib/meCache';
+import { getPrefetched } from '../../../../lib/prefetchCache';
 
 const PLATFORM_ROLES = [
   'super_admin',
@@ -34,12 +35,11 @@ export default function PlatformReportsPage() {
   useEffect(() => {
     (async () => {
       try {
-        const me = await api('/me');
+        const [me, r] = await Promise.all([getMe(), getPrefetched('/platform/reports')]);
         if (!PLATFORM_ROLES.includes(me.data?.role)) {
           router.replace('/dashboard');
           return;
         }
-        const r = await api('/platform/reports');
         setData(r.data);
         setReady(true);
       } catch (e: any) {

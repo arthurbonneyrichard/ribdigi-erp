@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../../lib/api';
+import { getMe } from '../../../lib/meCache';
+import { getPrefetched } from '../../../lib/prefetchCache';
 
 type SubscriptionInfo = {
   package_code?: string;
@@ -145,8 +147,13 @@ export default function PlatformConsole() {
     }, 50);
   }
 
-  async function refresh() {
-    const me = await api('/me');
+  async function refresh(options?: { force?: boolean }) {
+    const force = Boolean(options?.force);
+    const [me, res, pkgs] = await Promise.all([
+      getMe({ force }),
+      getPrefetched('/tenants', { force }),
+      getPrefetched('/packages', { force }),
+    ]);
     const role = me.data?.role || '';
     const platformRoles = [
       'super_admin',
@@ -159,7 +166,6 @@ export default function PlatformConsole() {
       router.replace('/dashboard');
       return;
     }
-    const [res, pkgs] = await Promise.all([api('/tenants'), api('/packages')]);
     setTenants(res.data || []);
     setPackages(pkgs.data?.packages || []);
     setPackageable(pkgs.data?.packageable_modules || []);
@@ -261,7 +267,7 @@ export default function PlatformConsole() {
           : `Created tenant "${createdSlug}". The verification email was not sent. Turn on SMTP, then click Resend email, or click Verify account. Workspace is "${createdSlug}", not "platform".`
       );
       setFilter('all');
-      await refresh();
+      await refresh({ force: true });
       if (r.data?.id) {
         openManage({
           id: r.data.id,
@@ -331,7 +337,7 @@ export default function PlatformConsole() {
       });
       setSuspendReason('');
       setMessage(`Suspended ${row.company_name}`);
-      await refresh();
+      await refresh({ force: true });
     } catch (err: any) {
       setError(err.message || 'Suspend failed');
     } finally {
@@ -347,7 +353,7 @@ export default function PlatformConsole() {
     try {
       await api(`/tenants/${row.slug || row.id}/activate`, { method: 'POST', body: '{}' });
       setMessage(`Activated ${row.company_name}`);
-      await refresh();
+      await refresh({ force: true });
     } catch (err: any) {
       setError(err.message || 'Activate failed');
     } finally {
@@ -379,7 +385,7 @@ export default function PlatformConsole() {
       setMessage(
         `Assigned ${r.data?.subscription?.package_name || subForm.package_code} for ${subForm.term_value} ${subForm.term_unit} to ${selected.company_name}`
       );
-      await refresh();
+      await refresh({ force: true });
       setSelectedId(r.data?.id || selected.id);
     } catch (err: any) {
       setError(err.message || 'Assign subscription failed');
@@ -399,7 +405,7 @@ export default function PlatformConsole() {
         body: JSON.stringify({ enabled_modules: moduleDraft }),
       });
       setMessage(`Updated feature modules for ${selected.company_name}`);
-      await refresh();
+      await refresh({ force: true });
     } catch (err: any) {
       setError(err.message || 'Update modules failed');
     } finally {
@@ -419,7 +425,7 @@ export default function PlatformConsole() {
         body: JSON.stringify({ reset_to_package: true }),
       });
       setMessage(`Reset modules to package default for ${selected.company_name}`);
-      await refresh();
+      await refresh({ force: true });
     } catch (err: any) {
       setError(err.message || 'Reset modules failed');
     } finally {
@@ -916,7 +922,7 @@ export default function PlatformConsole() {
                       ),
                     });
                     setMessage('Store entitlement override updated');
-                    await refresh();
+                    await refresh({ force: true });
                   } catch (err: any) {
                     setError(err.message || 'Override failed');
                   } finally {

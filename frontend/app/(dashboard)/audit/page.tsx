@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../../lib/api';
+import { getMe } from '../../../lib/meCache';
 
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -89,7 +90,7 @@ export default function Page() {
   }, [module, appliedAction, appliedEntity, fromDate, toDate, userId]);
 
   const refreshPolicy = useCallback(async () => {
-    const [policy, me] = await Promise.all([api('/audit-logs/retention'), api('/me')]);
+    const [policy, me] = await Promise.all([api('/audit-logs/retention'), getMe()]);
     setRetention(policy.data || null);
     const role = me.data?.role || '';
     const admin = ARCHIVE_ROLES.has(role);
