@@ -44,6 +44,7 @@ export default function PlatformStaffPage() {
   const [grantRole, setGrantRole] = useState('platform_support');
   const [busy, setBusy] = useState(false);
   const [meRole, setMeRole] = useState('');
+  const [meId, setMeId] = useState('');
   const [editingId, setEditingId] = useState('');
   const [editForm, setEditForm] = useState({
     full_name: '',
@@ -68,6 +69,7 @@ export default function PlatformStaffPage() {
       return;
     }
     setMeRole(me.data?.role || '');
+    setMeId(String(me.data?.id || '').trim());
     setStaff(s.data || []);
     setRoles((r.data || []).map((x: any) => ({ key: x.key, label: x.label })));
     setAppUsers(a.data || []);
@@ -281,6 +283,31 @@ export default function PlatformStaffPage() {
     }
   }
 
+  async function deleteStaff(row: Staff) {
+    if (meId && row.id === meId) {
+      setError('You cannot delete your own account.');
+      setMessage('');
+      return;
+    }
+    const ok = window.confirm(
+      `Delete ${row.full_name} (${row.email}) permanently?\n\nThis removes the account from the staff directory. This cannot be undone.`
+    );
+    if (!ok) return;
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      await api(`/platform/staff/${String(row.id).trim()}`, { method: 'DELETE' });
+      if (editingId === row.id) setEditingId('');
+      setMessage(`Deleted ${row.full_name}`);
+      await refresh({ force: true });
+    } catch (err: any) {
+      setError(err.message || 'Delete failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (!ready && !error) {
     return (
       <>
@@ -440,8 +467,9 @@ export default function PlatformStaffPage() {
         <div className="plat-panel">
           <h2>Staff directory</h2>
           <p className="muted" style={{ marginTop: 0 }}>
-            The platform owner can edit a staff account and set a new password. Leave the password
-            blank to keep the current one.
+            The platform owner can edit a staff account, set a new password, or delete the account.
+            Leave the password blank when editing to keep the current one. Deactivate keeps the
+            account; Delete removes it permanently.
           </p>
           {canEditStaff && editingId ? (
             <form className="plat-form" onSubmit={saveEdit} style={{ marginBottom: 16 }}>
@@ -611,6 +639,17 @@ export default function PlatformStaffPage() {
                           aria-label={`Revoke dashboard access ${u.id}`}
                         >
                           Revoke dashboard
+                        </button>
+                      )}
+                      {canEditStaff && u.id !== meId && (
+                        <button
+                          type="button"
+                          className="btn-danger"
+                          disabled={busy}
+                          onClick={() => deleteStaff(u)}
+                          aria-label={`Delete platform staff ${u.email}`}
+                        >
+                          Delete
                         </button>
                       )}
                     </div>

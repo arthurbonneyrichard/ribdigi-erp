@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import delete, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.honesty import require_honest_narrative
 from app.rbac import (
+    PLATFORM_OWNER_ROLES,
     PLATFORM_ROLES,
     can_assign_platform_role,
     is_platform_owner_role,
@@ -255,6 +257,120 @@ async def update_platform_staff(
         user.is_active = bool(is_active)
     await db.flush()
     return user
+
+
+async def delete_platform_staff(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    actor_id: str,
+    actor_role: str,
+    user_id: str,
+) -> dict:
+    """Permanently remove a platform staff account (owner only)."""
+    if not is_platform_owner_role(actor_role):
+        raise HTTPException(
+            status_code=403,
+            detail="Only the platform owner can delete a staff account",
+        )
+    user = (
+        await db.execute(
+            select(m.User).where(m.User.id == user_id, m.User.tenant_id == tenant_id)
+        )
+    ).scalar_one_or_none()
+    if not user or not is_platform_role(user.role):
+        raise HTTPException(status_code=404, detail="Platform staff user not found")
+    if user.id == actor_id:
+        raise HTTPException(status_code=400, detail="Cannot delete your own account")
+    if not can_assign_platform_role(actor_role, user.role):
+        raise HTTPException(
+            status_code=403,
+            detail="You cannot delete a staff user with this role",
+        )
+    if user.role in PLATFORM_OWNER_ROLES:
+        other_owners = (
+            await db.execute(
+                select(m.User).where(
+                    m.User.tenant_id == tenant_id,
+                    m.User.id != user.id,
+                    m.User.role.in_(tuple(PLATFORM_OWNER_ROLES)),
+                    m.User.is_active.is_(True),
+                )
+            )
+        ).scalars().all()
+        if not other_owners:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot delete the last active platform owner",
+            )
+
+    snapshot = {
+        "id": user.id,
+        "email": user.email,
+        "full_name": user.full_name,
+        "role": user.role,
+    }
+
+    # Auth / MFA / prefs owned by this user.
+    for model in (
+        m.AuthSession,
+        m.AuthToken,
+        m.WebAuthnCredential,
+        m.WebAuthnChallenge,
+        m.TwoFactorBackupCode,
+        m.UserStoreMembership,
+        m.NotificationPreference,
+    ):
+        await db.execute(delete(model).where(model.user_id == user.id))
+
+    # Optional references — clear instead of blocking delete.
+    await db.execute(
+        update(m.Notification).where(m.Notification.user_id == user.id).values(user_id=None)
+    )
+    if hasattr(m, "PosDevice"):
+        await db.execute(
+            update(m.PosDevice).where(m.PosDevice.user_id == user.id).values(user_id=None)
+        )
+    await db.execute(
+        update(m.Branch).where(m.Branch.manager_id == user.id).values(manager_id=None)
+    )
+    await db.execute(
+        update(m.Department)
+        .where(m.Department.head_user_id == user.id)
+        .values(head_user_id=None)
+    )
+    await db.execute(
+        update(m.Store).where(m.Store.manager_id == user.id).values(manager_id=None)
+    )
+    if hasattr(m, "Warehouse"):
+        await db.execute(
+            update(m.Warehouse).where(m.Warehouse.manager_id == user.id).values(manager_id=None)
+        )
+
+    pos_sessions = (
+        await db.execute(select(m.PosSession.id).where(m.PosSession.user_id == user.id).limit(1))
+    ).first()
+    if pos_sessions:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Cannot delete this account because it has POS shift history. "
+                "Deactivate the account instead."
+            ),
+        )
+
+    try:
+        await db.delete(user)
+        await db.flush()
+    except IntegrityError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Cannot delete this account because it is linked to business records. "
+                "Deactivate the account instead."
+            ),
+        ) from exc
+    return snapshot
 
 
 def serialize_staff(user: m.User) -> dict:

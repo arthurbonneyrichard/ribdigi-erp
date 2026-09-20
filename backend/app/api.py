@@ -1386,6 +1386,34 @@ async def platform_staff_update(
     return env(platform_staff_svc.serialize_staff(user), "Platform staff updated")
 
 
+@api.delete("/platform/staff/{user_id}")
+async def platform_staff_delete(
+    user_id: UuidIdValue,
+    claims=Depends(require_platform_permission("platform_staff", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Permanently delete a platform staff account (platform owner / super_admin only)."""
+    snapshot = await platform_staff_svc.delete_platform_staff(
+        db,
+        tenant_id=claims["tenant_id"],
+        actor_id=claims["sub"],
+        actor_role=claims.get("role") or "",
+        user_id=user_id,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="platform_staff",
+        action="delete",
+        entity="user",
+        entity_id=snapshot["id"],
+        details={"email": snapshot["email"], "role": snapshot["role"], "full_name": snapshot["full_name"]},
+    )
+    await db.commit()
+    return env(snapshot, "Platform staff account deleted")
+
+
 @api.get("/platform/reports")
 async def platform_reports_all(
     claims=Depends(require_platform_permission("platform_reports", "read")),
