@@ -235,7 +235,17 @@ async def current_claims(
 
     tenant = await tenants_svc.ensure_trial_state(db, tenant)
     if tenant.status == "suspended":
-        raise HTTPException(status_code=403, detail="Tenant suspended or missing")
+        from app.tenants import PROTECTED_TENANT_SLUGS
+        from app.rbac import is_platform_role
+
+        slug = (tenant.slug or "").strip().lower()
+        tid = (tenant.id or "").strip().lower()
+        # Allow platform staff on the protected workspace to recover from lockout.
+        if not (
+            (slug in PROTECTED_TENANT_SLUGS or tid in PROTECTED_TENANT_SLUGS)
+            and is_platform_role(user.role)
+        ):
+            raise HTTPException(status_code=403, detail="Tenant suspended or missing")
 
     data["permissions"] = user.permissions or permissions_for_role(user.role)
     data["email_verified"] = user.email_verified

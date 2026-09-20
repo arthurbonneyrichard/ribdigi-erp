@@ -776,7 +776,7 @@ export default function PlatformConsole() {
                           <button type="button" className="btn-ok" disabled={busy === t.id} onClick={() => activateTenant(t)} aria-label={`Activate tenant ${t.id}`}>
                             Activate
                           </button>
-                        ) : (
+                        ) : t.slug !== 'platform' && t.slug !== 'ribdigi-platform' ? (
                           <button
                             type="button"
                             className="btn-danger"
@@ -786,7 +786,7 @@ export default function PlatformConsole() {
                           >
                             Suspend
                           </button>
-                        )}
+                        ) : null}
                         {canDeleteTenant && t.slug !== 'platform' && t.slug !== 'ribdigi-platform' ? (
                           <button
                             type="button"

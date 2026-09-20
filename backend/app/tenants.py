@@ -14,6 +14,8 @@ from app.config import settings
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
 VALID_STATUSES = frozenset({"trial", "active", "grace", "suspended"})
+# Platform owner workspace — never suspend/delete (lockout recovery).
+PROTECTED_TENANT_SLUGS = frozenset({"platform", "ribdigi-platform"})
 VALID_INDUSTRIES = frozenset(
     {
         "retail",
@@ -422,6 +424,11 @@ async def resolve_tenant(db: AsyncSession, tenant_ref: str) -> m.Tenant:
 
 def assert_tenant_active_for_login(tenant: m.Tenant) -> None:
     if tenant.status == "suspended":
+        # Platform workspace must remain sign-in capable so owners can recover.
+        slug = (tenant.slug or "").strip().lower()
+        tid = (tenant.id or "").strip().lower()
+        if slug in PROTECTED_TENANT_SLUGS or tid in PROTECTED_TENANT_SLUGS:
+            return
         raise HTTPException(status_code=403, detail="Tenant is suspended")
 
 
@@ -461,6 +468,12 @@ async def suspend_tenant(
 ) -> m.Tenant:
     if tenant.status == "suspended":
         raise HTTPException(status_code=400, detail="Tenant is already suspended")
+    slug = (tenant.slug or "").strip().lower()
+    if slug in PROTECTED_TENANT_SLUGS or (tenant.id or "") in PROTECTED_TENANT_SLUGS:
+        raise HTTPException(
+            status_code=400,
+            detail="The platform owner workspace cannot be suspended",
+        )
     reason_s = require_honest_narrative(reason, label="suspend reason")
     tenant.status = "suspended"
     tenant.suspended_at = datetime.utcnow()
@@ -512,9 +525,6 @@ async def activate_tenant(db: AsyncSession, tenant: m.Tenant) -> m.Tenant:
     tenant.grace_ends_at = None
     await db.flush()
     return tenant
-
-
-PROTECTED_TENANT_SLUGS = frozenset({"platform", "ribdigi-platform"})
 
 
 def _tenant_scoped_tables():

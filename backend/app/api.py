@@ -726,16 +726,27 @@ async def tenant_me_suspend(
 
 @api.post("/tenants/me/activate")
 async def tenant_me_activate(
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_roles("company_admin", "super_admin", "platform_owner")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Activate own tenant when already authenticated (trial/grace → active). Suspended cannot self-activate."""
+    """Activate own tenant when already authenticated (trial/grace → active).
+
+    Platform owner may also reactivate the protected platform workspace if it
+    was mistakenly suspended (recovery path).
+    """
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
     if tenant.status == "suspended":
-        raise HTTPException(
-            status_code=403,
-            detail="Suspended tenants cannot self-activate; contact platform support",
+        slug = (tenant.slug or "").strip().lower()
+        tid = (tenant.id or "").strip().lower()
+        is_platform_ws = (
+            slug in tenants_svc.PROTECTED_TENANT_SLUGS
+            or tid in tenants_svc.PROTECTED_TENANT_SLUGS
         )
+        if not (is_platform_ws and is_platform_owner_role(claims.get("role"))):
+            raise HTTPException(
+                status_code=403,
+                detail="Suspended tenants cannot self-activate; contact platform support",
+            )
     tenant = await tenants_svc.activate_tenant(db, tenant)
     await audit_svc.record_event(
         db,
