@@ -64,7 +64,7 @@ class Settings(BaseSettings):
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
     SMTP_FROM_EMAIL: str = "noreply@localhost"
-    SMTP_FROM_NAME: str = "RIBDIGI ERP"
+    SMTP_FROM_NAME: str = "Ribdigi House"
     SMTP_USE_TLS: bool = True
     SMTP_USE_SSL: bool = False
     SMTP_TIMEOUT_SECONDS: float = 15.0

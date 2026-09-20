@@ -59,6 +59,21 @@ async def test_verification_email_content():
     html_body = emailer.get_dev_outbox()[0]["html_body"]
     assert "ribdigi-email-brand" in html_body
     assert "Acme" in html_body
+    assert "ribdigi-house-logo" in html_body
+    assert "data:image/" in html_body
+
+
+@pytest.mark.asyncio
+async def test_verification_email_platform_logo_replaces_ribdigi_house_text():
+    result = await emailer.send_verification_email(
+        to="a@example.com", token="abc", company_name="Ribdigi House"
+    )
+    assert result.sent is True
+    html_body = emailer.get_dev_outbox()[0]["html_body"]
+    assert "ribdigi-house-logo" in html_body
+    assert 'alt="Ribdigi House"' in html_body
+    assert "ribdigi-email-company" not in html_body
+    assert "Sent via Ribdigi House" in html_body
 
 
 @pytest.mark.asyncio
@@ -110,7 +125,8 @@ def test_render_branded_html_includes_chrome_and_escapes():
     assert "Thanks &lt;team&gt;" in html_body
     assert "Welcome &lt;user&gt;" in html_body
     assert "<p>Hello <b>world</b></p>" in html_body
-    assert "Sent via RIBDIGI ERP" in html_body
+    assert "Sent via Ribdigi House" in html_body
+    assert "ribdigi-house-logo" in html_body
     # Logo-aligned chrome (forest header + brand accent)
     assert "background:#003d1f" in html_body
     assert "border-bottom:3px solid #4ab012" in html_body

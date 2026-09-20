@@ -110,8 +110,14 @@ function VerifyEmailForm() {
         </form>
 
         <p className="login-foot">
-          <a href="https://ribdigihouse.com" target="_blank" rel="noopener noreferrer">
-            A Ribdigi House Product
+          <a href="https://ribdigihouse.com" target="_blank" rel="noopener noreferrer" aria-label="Ribdigi House">
+            <img
+              src="/brand/ribdigi-house-logo.png"
+              alt="Ribdigi House"
+              width={180}
+              height={117}
+              style={{ display: 'block', margin: '12px auto 0', maxWidth: 160, height: 'auto' }}
+            />
           </a>
         </p>
       </div>

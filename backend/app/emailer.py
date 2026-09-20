@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import html
 import logging
 import smtplib
 import ssl
 from dataclasses import dataclass, field
 from email.message import EmailMessage
+from functools import lru_cache
+from pathlib import Path
 from typing import Any
 
 from fastapi import HTTPException
@@ -21,6 +24,19 @@ logger = logging.getLogger(__name__)
 
 # In-memory outbox for tests / development inspection
 _DEV_OUTBOX: list[dict[str, Any]] = []
+
+# Platform sender names that should be shown as the Ribdigi House logo, not text.
+_PLATFORM_BRAND_ALIASES = frozenset(
+    {
+        "ribdigi",
+        "ribdigi erp",
+        "ribdigi house",
+        "ribdigihouse",
+        "ribdigi-house",
+    }
+)
+
+_BRANDING_DIR = Path(__file__).resolve().parent / "branding"
 
 
 @dataclass
@@ -59,6 +75,38 @@ def _delivery_mode(cfg: SmtpConfig | None = None) -> str:
     return "console"
 
 
+def _is_platform_brand_name(name: str | None) -> bool:
+    key = " ".join(str(name or "").strip().lower().split())
+    return key in _PLATFORM_BRAND_ALIASES
+
+
+@lru_cache(maxsize=1)
+def _platform_house_logo_data_uri() -> tuple[str, int, int] | None:
+    """Return (data_uri, width, height) for the Ribdigi House noreply brand mark."""
+    jpg = _BRANDING_DIR / "ribdigi-house-email.jpg"
+    png = _BRANDING_DIR / "ribdigi-house-logo.png"
+    path = jpg if jpg.is_file() else png if png.is_file() else None
+    if path is None:
+        return None
+    try:
+        from PIL import Image
+
+        raw = path.read_bytes()
+        with Image.open(path) as img:
+            width, height = img.size
+        # Keep email headers readable (~220px wide)
+        max_w = 220
+        if width > max_w:
+            height = max(1, int(round(height * (max_w / width))))
+            width = max_w
+        mime = "image/jpeg" if path.suffix.lower() in {".jpg", ".jpeg"} else "image/png"
+        b64 = base64.b64encode(raw).decode("ascii")
+        return f"data:{mime};base64,{b64}", width, height
+    except Exception:
+        logger.exception("Failed to load Ribdigi House email logo")
+        return None
+
+
 def render_branded_html(
     *,
     body_html: str,
@@ -66,15 +114,16 @@ def render_branded_html(
     tenant: Any | None = None,
     title: str | None = None,
 ) -> str:
-    """Wrap inner HTML in a tenant-branded email chrome (logo, header, footer).
+    """Wrap inner HTML in branded email chrome (logo, header, footer).
 
-    Uses company name + optional ``print_branding`` header/footer and logo from the
-    tenant record. Safe for console outbox inspection (logo as data-URI JPEG).
+    Prefer the tenant company logo when configured. Otherwise embed the Ribdigi
+    House platform mark so noreply verification mail shows the logo instead of
+    plain \"Ribdigi House\" / \"RIBDIGI ERP\" text.
     """
     from app.print_branding import load_logo_jpeg, print_branding_settings
 
     company = (
-        (company_name or getattr(tenant, "company_name", None) or "RIBDIGI ERP") or "RIBDIGI ERP"
+        (company_name or getattr(tenant, "company_name", None) or "Ribdigi House") or "Ribdigi House"
     ).strip()
     company_esc = html.escape(company)
     branding = print_branding_settings(tenant)
@@ -82,12 +131,11 @@ def render_branded_html(
     footer = str(branding.get("footer_text") or "").strip()
 
     logo_html = ""
+    used_platform_logo = False
     logo = None
     if tenant is not None and getattr(tenant, "logo_url", None):
         logo = load_logo_jpeg(tenant, max_width_px=240, max_height_px=80)
     if logo:
-        import base64
-
         jpeg, width_px, height_px = logo
         b64 = base64.b64encode(jpeg).decode("ascii")
         logo_html = (
@@ -95,6 +143,25 @@ def render_branded_html(
             f'width="{int(width_px)}" height="{int(height_px)}" alt="{company_esc}" '
             'style="display:block;max-width:240px;height:auto;margin:0 auto 12px;" />'
         )
+    else:
+        platform = _platform_house_logo_data_uri()
+        if platform:
+            data_uri, width_px, height_px = platform
+            logo_html = (
+                f'<img class="ribdigi-email-logo ribdigi-house-logo" src="{data_uri}" '
+                f'width="{int(width_px)}" height="{int(height_px)}" alt="Ribdigi House" '
+                'style="display:block;max-width:220px;height:auto;margin:0 auto 8px;" />'
+            )
+            used_platform_logo = True
+
+    # Logo replaces the Ribdigi House / RIBDIGI ERP text brand mark.
+    show_company_text = not (used_platform_logo and _is_platform_brand_name(company))
+    company_html = (
+        f'<div class="ribdigi-email-company" style="font-size:18px;font-weight:700;'
+        f'letter-spacing:.02em;">{company_esc}</div>'
+        if show_company_text
+        else ""
+    )
 
     header_html = (
         f'<p class="ribdigi-email-header" style="margin:8px 0 0;color:#c8e86a;font-size:13px;">'
@@ -130,8 +197,7 @@ def render_branded_html(
         '<tr><td style="padding:20px 24px;background:#003d1f;color:#ffffff;text-align:center;'
         'font-family:Arial,Helvetica,sans-serif;border-bottom:3px solid #4ab012;">'
         f"{logo_html}"
-        f'<div class="ribdigi-email-company" style="font-size:18px;font-weight:700;'
-        f'letter-spacing:.02em;">{company_esc}</div>'
+        f"{company_html}"
         f"{header_html}"
         "</td></tr>"
         '<tr><td style="padding:24px;font-family:Arial,Helvetica,sans-serif;color:#10211b;'
@@ -141,7 +207,7 @@ def render_branded_html(
         '<tr><td style="padding:16px 24px;background:#f5f7ec;border-top:1px solid #d4e5c4;'
         'text-align:center;font-family:Arial,Helvetica,sans-serif;">'
         f"{footer_html}"
-        '<p style="margin:0;color:#4d5d56;font-size:11px;">Sent via RIBDIGI ERP</p>'
+        '<p style="margin:0;color:#4d5d56;font-size:11px;">Sent via Ribdigi House</p>'
         "</td></tr></table></td></tr></table></body></html>"
     )
 
@@ -193,7 +259,7 @@ def build_message(
     c = cfg or resolve_smtp_config(None)
     msg = EmailMessage()
     msg["Subject"] = subject
-    from_name = (c.from_name or "RIBDIGI ERP").strip()
+    from_name = (c.from_name or "Ribdigi House").strip()
     from_email = (c.from_email or "noreply@localhost").strip()
     msg["From"] = f"{from_name} <{from_email}>"
     msg["To"] = ", ".join(recipients)
@@ -303,20 +369,23 @@ async def send_verification_email(
     *, to: str, token: str, company_name: str | None = None, tenant: Any | None = None
 ) -> EmailResult:
     link = verification_link(token)
-    company = company_name or getattr(tenant, "company_name", None) or "RIBDIGI ERP"
+    company = company_name or getattr(tenant, "company_name", None) or "Ribdigi House"
     subject = f"Verify your {company} email"
     text = (
         f"Welcome to {company}.\n\n"
         f"Verify your email by opening this link:\n{link}\n\n"
         f"If you did not create an account, ignore this message.\n"
     )
+    # Platform noreply chrome uses the Ribdigi House logo (not plain text brand).
+    # Tenant company name still appears in the welcome line when present.
+    brand_company = company if not _is_platform_brand_name(company) else "Ribdigi House"
     inner = (
         f"<p>Welcome to <strong>{html.escape(company)}</strong>.</p>"
         f'<p><a href="{html.escape(link)}">Verify your email</a></p>'
         f"<p>Or paste: {html.escape(link)}</p>"
     )
     branded = render_branded_html(
-        body_html=inner, company_name=company, tenant=tenant, title="Verify your email"
+        body_html=inner, company_name=brand_company, tenant=tenant, title="Verify your email"
     )
     return await send_email(to=to, subject=subject, text_body=text, html_body=branded, tenant=tenant)
 
