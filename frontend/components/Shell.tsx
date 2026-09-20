@@ -587,6 +587,12 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const main = document.querySelector('.main');
+    if (main instanceof HTMLElement) main.scrollTop = 0;
+  }, [pathname]);
+
+  useEffect(() => {
     let revoked = false;
     let objectUrl: string | null = null;
     async function loadLogo() {
@@ -836,14 +842,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             canManage={role === 'company_admin' || role === 'super_admin'}
           />
         )}
-        <div
-          key={pathname || '/'}
-          className="page-view"
-          onAnimationStart={() => {
-            const main = document.querySelector('.main');
-            if (main instanceof HTMLElement) main.scrollTop = 0;
-          }}
-        >
+        <div key={pathname || '/'} className="page-view">
           {children}
         </div>
       </main>
