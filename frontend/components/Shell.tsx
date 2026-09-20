@@ -26,6 +26,7 @@ const TENANT_ITEMS: NavItem[] = [
   ['Credit', '/credit', 'credit'],
   ['Tax', '/tax', 'tax'],
   ['Multi-Store', '/stores', 'stores'],
+  ['Hotel', '/hotel', 'hotel'],
   ['Reports', '/reports', 'reports'],
   ['Notifications', '/notifications', 'notifications'],
   ['Audit', '/audit', 'audit'],
@@ -75,6 +76,7 @@ const ROLE_NAV_MODULES: Record<string, string[] | '*'> = {
     'credit',
     'tax',
     'stores',
+    'hotel',
     'reports',
     'notifications',
     'users',
@@ -88,6 +90,7 @@ const ROLE_NAV_MODULES: Record<string, string[] | '*'> = {
     'sales',
     'pos',
     'credit',
+    'hotel',
     'reports',
     'notifications',
     'ai',
@@ -196,6 +199,18 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
       <line x1="3" y1="6" x2="21" y2="6" />
       <path d="M16 10a4 4 0 0 1-8 0" />
+    </>
+  ),
+  hotel: (
+    <>
+      <path d="M3 21h18" />
+      <path d="M5 21V7l7-4 7 4v14" />
+      <path d="M9 10h.01" />
+      <path d="M15 10h.01" />
+      <path d="M9 14h.01" />
+      <path d="M15 14h.01" />
+      <path d="M9 18h.01" />
+      <path d="M15 18h.01" />
     </>
   ),
   reports: (

@@ -75,7 +75,7 @@ const emptyCreate = {
   admin_password: '',
 };
 
-const INDUSTRIES = ['retail', 'mart', 'pharmacy', 'restaurant', 'bakery', 'wholesale', 'manufacturing'];
+const INDUSTRIES = ['retail', 'mart', 'pharmacy', 'restaurant', 'bakery', 'wholesale', 'manufacturing', 'hotel'];
 
 function statusClass(status: string) {
   if (status === 'active') return 'st-active';

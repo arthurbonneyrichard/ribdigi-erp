@@ -28,6 +28,7 @@ AUDIT_MODULES = frozenset(
         "credit",
         "dashboard",
         "expenses",
+        "hotel",
         "inventory",
         "notifications",
         "onboarding",

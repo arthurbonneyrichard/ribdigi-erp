@@ -1719,3 +1719,67 @@ class AiReportTemplate(Base):
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HotelRoom(Base):
+    """Guest room inventory for the Hotel module."""
+
+    __tablename__ = "hotel_rooms"
+    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    code: Mapped[str] = mapped_column(String(40))
+    name: Mapped[str] = mapped_column(String(120))
+    room_type: Mapped[str] = mapped_column(String(40), default="standard")
+    floor: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    max_occupancy: Mapped[int] = mapped_column(Integer, default=2)
+    rate_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    status: Mapped[str] = mapped_column(String(20), default="available", index=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HotelGuest(Base):
+    """Hotel guest profile (separate from retail customers for MVP)."""
+
+    __tablename__ = "hotel_guests"
+    __table_args__ = (UniqueConstraint("tenant_id", "email"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    full_name: Mapped[str] = mapped_column(String(150))
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    id_document: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HotelReservation(Base):
+    """Room reservation with check-in / check-out lifecycle."""
+
+    __tablename__ = "hotel_reservations"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    reservation_number: Mapped[str] = mapped_column(String(40), index=True)
+    room_id: Mapped[str] = mapped_column(ForeignKey("hotel_rooms.id"), index=True)
+    guest_id: Mapped[str] = mapped_column(ForeignKey("hotel_guests.id"), index=True)
+    check_in_date: Mapped[date] = mapped_column(Date, index=True)
+    check_out_date: Mapped[date] = mapped_column(Date, index=True)
+    adults: Mapped[int] = mapped_column(Integer, default=1)
+    children: Mapped[int] = mapped_column(Integer, default=0)
+    status: Mapped[str] = mapped_column(String(20), default="booked", index=True)
+    nightly_rate: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    checked_in_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    checked_out_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

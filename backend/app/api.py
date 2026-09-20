@@ -173,6 +173,12 @@ from app.schemas import (
     ExpenseThresholdUpdate,
     ExpenseUpdate,
     GrnCreate,
+    HotelGuestCreate,
+    HotelReservationCreate,
+    HotelRoomCreate,
+    HotelRoomUpdate,
+    HotelReservationStatusValue,
+    HotelRoomStatusValue,
     JournalCreate,
     JournalUnpost,
     ChequeLifecycleReason,
@@ -310,6 +316,7 @@ from app import totp as totp_svc
 from app import platform_staff as platform_staff_svc
 from app import platform_reports as platform_reports_svc
 from app import user_accounts as user_accounts_svc
+from app import hotel as hotel_svc
 from app.rbac import PLATFORM_ROLES, is_platform_owner_role, is_platform_role
 
 api = APIRouter(prefix="/api/v1")
@@ -13372,3 +13379,245 @@ async def ai_report_templates_delete(
     )
     await db.commit()
     return env({"id": template_id}, "Report template deleted")
+
+
+# --- Hotel module ---
+
+
+@api.get("/hotel/summary")
+async def hotel_summary(
+    claims=Depends(require_permission("hotel", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(await hotel_svc.summary(db, tenant_id=claims["tenant_id"]))
+
+
+@api.get("/hotel/rooms")
+async def hotel_rooms_list(
+    is_active: bool | None = None,
+    status: Annotated[HotelRoomStatusValue | None, Query()] = None,
+    claims=Depends(require_permission("hotel", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await hotel_svc.list_rooms(
+        db, tenant_id=claims["tenant_id"], is_active=is_active, status=status
+    )
+    return env([hotel_svc.serialize_room(r) for r in rows])
+
+
+@api.post("/hotel/rooms")
+async def hotel_rooms_create(
+    payload: HotelRoomCreate,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await hotel_svc.create_room(
+        db,
+        tenant_id=claims["tenant_id"],
+        code=payload.code,
+        name=payload.name,
+        room_type=payload.room_type,
+        floor=payload.floor,
+        max_occupancy=payload.max_occupancy,
+        rate_amount=float(payload.rate_amount or 0),
+        status=payload.status,
+        notes=payload.notes,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="hotel",
+        action="room_created",
+        entity="hotel_room",
+        entity_id=row.id,
+        details={"code": row.code, "status": row.status},
+    )
+    await db.commit()
+    return env(hotel_svc.serialize_room(row), "Room created")
+
+
+@api.patch("/hotel/rooms/{room_id}")
+async def hotel_rooms_update(
+    room_id: UuidIdValue,
+    payload: HotelRoomUpdate,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    data = payload.model_dump(exclude_unset=True)
+    row = await hotel_svc.update_room(db, tenant_id=claims["tenant_id"], room_id=room_id, **data)
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="hotel",
+        action="room_updated",
+        entity="hotel_room",
+        entity_id=row.id,
+        details=data,
+    )
+    await db.commit()
+    return env(hotel_svc.serialize_room(row), "Room updated")
+
+
+@api.get("/hotel/guests")
+async def hotel_guests_list(
+    is_active: bool | None = None,
+    claims=Depends(require_permission("hotel", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await hotel_svc.list_guests(db, tenant_id=claims["tenant_id"], is_active=is_active)
+    return env([hotel_svc.serialize_guest(r) for r in rows])
+
+
+@api.post("/hotel/guests")
+async def hotel_guests_create(
+    payload: HotelGuestCreate,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await hotel_svc.create_guest(
+        db,
+        tenant_id=claims["tenant_id"],
+        full_name=payload.full_name,
+        email=str(payload.email) if payload.email else None,
+        phone=payload.phone,
+        id_document=payload.id_document,
+        notes=payload.notes,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="hotel",
+        action="guest_created",
+        entity="hotel_guest",
+        entity_id=row.id,
+        details={"email": row.email},
+    )
+    await db.commit()
+    return env(hotel_svc.serialize_guest(row), "Guest created")
+
+
+@api.get("/hotel/reservations")
+async def hotel_reservations_list(
+    status: Annotated[HotelReservationStatusValue | None, Query()] = None,
+    claims=Depends(require_permission("hotel", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await hotel_svc.list_reservations(db, tenant_id=claims["tenant_id"], status=status)
+    return env(
+        [
+            hotel_svc.serialize_reservation(r, room=room, guest=guest)
+            for r, room, guest in rows
+        ]
+    )
+
+
+@api.post("/hotel/reservations")
+async def hotel_reservations_create(
+    payload: HotelReservationCreate,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row, room, guest = await hotel_svc.create_reservation(
+        db,
+        tenant_id=claims["tenant_id"],
+        room_id=payload.room_id,
+        guest_id=payload.guest_id,
+        check_in_date=payload.check_in_date,
+        check_out_date=payload.check_out_date,
+        adults=payload.adults,
+        children=payload.children,
+        nightly_rate=float(payload.nightly_rate) if payload.nightly_rate is not None else None,
+        notes=payload.notes,
+        created_by=claims.get("sub"),
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="hotel",
+        action="reservation_created",
+        entity="hotel_reservation",
+        entity_id=row.id,
+        details={
+            "reservation_number": row.reservation_number,
+            "room_id": row.room_id,
+            "guest_id": row.guest_id,
+        },
+    )
+    await db.commit()
+    return env(
+        hotel_svc.serialize_reservation(row, room=room, guest=guest),
+        "Reservation created",
+    )
+
+
+@api.post("/hotel/reservations/{reservation_id}/check-in")
+async def hotel_reservation_check_in(
+    reservation_id: UuidIdValue,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row, room, guest = await hotel_svc.check_in(
+        db, tenant_id=claims["tenant_id"], reservation_id=reservation_id
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="hotel",
+        action="checked_in",
+        entity="hotel_reservation",
+        entity_id=row.id,
+        details={"reservation_number": row.reservation_number, "room_id": row.room_id},
+    )
+    await db.commit()
+    return env(hotel_svc.serialize_reservation(row, room=room, guest=guest), "Guest checked in")
+
+
+@api.post("/hotel/reservations/{reservation_id}/check-out")
+async def hotel_reservation_check_out(
+    reservation_id: UuidIdValue,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row, room, guest = await hotel_svc.check_out(
+        db, tenant_id=claims["tenant_id"], reservation_id=reservation_id
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="hotel",
+        action="checked_out",
+        entity="hotel_reservation",
+        entity_id=row.id,
+        details={"reservation_number": row.reservation_number, "room_id": row.room_id},
+    )
+    await db.commit()
+    return env(hotel_svc.serialize_reservation(row, room=room, guest=guest), "Guest checked out")
+
+
+@api.post("/hotel/reservations/{reservation_id}/cancel")
+async def hotel_reservation_cancel(
+    reservation_id: UuidIdValue,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row, room, guest = await hotel_svc.cancel_reservation(
+        db, tenant_id=claims["tenant_id"], reservation_id=reservation_id
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="hotel",
+        action="reservation_cancelled",
+        entity="hotel_reservation",
+        entity_id=row.id,
+        details={"reservation_number": row.reservation_number},
+    )
+    await db.commit()
+    return env(hotel_svc.serialize_reservation(row, room=room, guest=guest), "Reservation cancelled")

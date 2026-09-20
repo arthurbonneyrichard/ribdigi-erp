@@ -19,6 +19,7 @@ const AUDIT_MODULES = [
   'credit',
   'dashboard',
   'expenses',
+  'hotel',
   'inventory',
   'notifications',
   'onboarding',

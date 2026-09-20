@@ -95,6 +95,7 @@ def test_industry_ui_and_docs():
         "bakery",
         "wholesale",
         "manufacturing",
+        "hotel",
     ):
         assert f"'{value}'" in company or f'"{value}"' in company
     api = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
