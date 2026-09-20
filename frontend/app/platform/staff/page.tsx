@@ -12,6 +12,7 @@ type Staff = {
   role: string;
   is_active?: boolean;
   phone?: string | null;
+  email_verified?: boolean;
 };
 
 type RoleOpt = { key: string; label: string };
@@ -94,7 +95,7 @@ export default function PlatformStaffPage() {
     setError('');
     setMessage('');
     try {
-      await api('/platform/staff', {
+      const r = await api('/platform/staff', {
         method: 'POST',
         body: JSON.stringify({
           email: form.email.trim(),
@@ -105,7 +106,12 @@ export default function PlatformStaffPage() {
         }),
       });
       setForm({ email: '', full_name: '', password: '', role: 'platform_support', phone: '' });
-      setMessage('Staff user created');
+      const sent = Boolean(r.data?.verification_email?.sent);
+      setMessage(
+        sent
+          ? 'Staff user created. They must open the verification email before signing in with workspace "platform".'
+          : 'Staff user created, but the verification email was not sent. Use Resend email after SMTP is on, or Verify account.'
+      );
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Create failed');
@@ -165,6 +171,38 @@ export default function PlatformStaffPage() {
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Update failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function verifyStaff(row: Staff) {
+    setError('');
+    setMessage('');
+    setBusy(true);
+    try {
+      const r = await api(`/platform/staff/${row.id}/verify-email`, { method: 'POST', body: '{}' });
+      setMessage(r.message || `${row.email} can sign in.`);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message || 'Could not verify this account');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resendStaffEmail(row: Staff) {
+    setError('');
+    setMessage('');
+    setBusy(true);
+    try {
+      const r = await api(`/platform/staff/${row.id}/resend-verification`, {
+        method: 'POST',
+        body: '{}',
+      });
+      setMessage(r.message || `Verification email sent to ${row.email}.`);
+    } catch (err: any) {
+      setError(err.message || 'Could not resend the verification email');
     } finally {
       setBusy(false);
     }
@@ -505,9 +543,33 @@ export default function PlatformStaffPage() {
                       ))}
                     </select>
                   </td>
-                  <td>{u.is_active === false ? 'inactive' : 'active'}</td>
+                  <td>
+                    {u.is_active === false ? 'inactive' : 'active'}
+                    {u.email_verified === false ? ' · unverified' : ''}
+                  </td>
                   <td>
                     <div className="plat-actions">
+                      {canEditStaff && u.email_verified === false && (
+                        <>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => resendStaffEmail(u)}
+                            aria-label={`Resend verification email for ${u.email}`}
+                          >
+                            Resend email
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-ok"
+                            disabled={busy}
+                            onClick={() => verifyStaff(u)}
+                            aria-label={`Verify account for ${u.email}`}
+                          >
+                            Verify account
+                          </button>
+                        </>
+                      )}
                       {canEditStaff && (
                         <button
                           type="button"

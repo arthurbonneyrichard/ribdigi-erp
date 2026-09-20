@@ -46,7 +46,7 @@ async def test_public_signup_still_requires_email_verification(client):
 
 
 @pytest.mark.asyncio
-async def test_platform_console_admin_can_sign_in(client):
+async def test_platform_console_admin_must_verify_email(client):
     ac, seed = client
     headers = await _super(ac, seed)
     created = await ac.post(
@@ -55,11 +55,16 @@ async def test_platform_console_admin_can_sign_in(client):
         json=_tenant_body("owner-co", "admin@owner-co.example"),
     )
     assert created.status_code == 200, created.text
-    assert created.json()["data"]["admin_email_verified"] is True
+    assert created.json()["data"]["admin_email_verified"] is False
+    assert "email" in created.json()["data"]
 
+    blocked = await _login(ac, email="admin@owner-co.example", slug="owner-co")
+    assert blocked.status_code == 403, blocked.text
+
+    opened = await ac.post("/api/v1/tenants/owner-co/verify-admin", headers=headers)
+    assert opened.status_code == 200, opened.text
     login = await _login(ac, email="admin@owner-co.example", slug="owner-co")
     assert login.status_code == 200, login.text
-    assert login.json()["data"]["access_token"]
 
 
 @pytest.mark.asyncio

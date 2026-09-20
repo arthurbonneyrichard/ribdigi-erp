@@ -176,7 +176,7 @@ async def create_platform_staff(
         password_hash=hash_password(password),
         role=role_key,
         phone=phone,
-        email_verified=True,
+        email_verified=False,
         permissions=permissions_for_role(role_key),
         is_active=True,
     )

@@ -85,7 +85,11 @@ async def test_platform_staff_create_and_reports(client, db_session):
     assert "trials" in body
 
     # Support staff can read tenants + reports, not create staff
-    # Login as new support — may need email_verified already true
+    # Login as new support — email verification is required until the owner verifies.
+    created_id = created.json()["data"]["id"]
+    assert created.json()["data"]["email_verified"] is False
+    verified = await ac.post(f"/api/v1/platform/staff/{created_id}/verify-email", headers=headers)
+    assert verified.status_code == 200, verified.text
     support_headers = await auth_headers(
         ac, email="support@alpha.example.com", tenant_slug="alpha"
     )

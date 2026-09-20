@@ -309,7 +309,7 @@ from app.security import (
 from app import totp as totp_svc
 from app import platform_staff as platform_staff_svc
 from app import platform_reports as platform_reports_svc
-from app.rbac import PLATFORM_ROLES, is_platform_role
+from app.rbac import PLATFORM_ROLES, is_platform_owner_role, is_platform_role
 
 api = APIRouter(prefix="/api/v1")
 
@@ -326,6 +326,45 @@ def _optional_user_phone(value: str | None) -> str | None:
 
 def env(data=None, message: str = "Operation completed successfully"):
     return {"success": True, "data": data, "message": message}
+
+
+async def _issue_email_verification(db: AsyncSession, user: m.User, tenant: m.Tenant | None) -> dict:
+    """Issue a one-time link and send it. The user row must already be flushed."""
+    now = datetime.utcnow()
+    prior = (
+        await db.execute(
+            select(m.AuthToken).where(
+                m.AuthToken.user_id == user.id,
+                m.AuthToken.purpose == "email_verify",
+                m.AuthToken.used_at.is_(None),
+            )
+        )
+    ).scalars().all()
+    for row in prior:
+        row.used_at = now
+    raw, token_hash, expires = issue_one_time_token()
+    db.add(
+        m.AuthToken(
+            tenant_id=user.tenant_id,
+            user_id=user.id,
+            purpose="email_verify",
+            token_hash=token_hash,
+            expires_at=expires,
+        )
+    )
+    await db.commit()
+    from app import emailer
+
+    result = await emailer.send_verification_email(
+        to=user.email,
+        token=raw,
+        company_name=getattr(tenant, "company_name", None) if tenant else None,
+        tenant=tenant,
+    )
+    data = {"sent": bool(result.sent), "mode": result.mode, "error": result.error}
+    if settings.DEBUG or settings.APP_ENV.lower() != "production":
+        data["email_verification_token"] = raw
+    return data
 
 
 async def tenant_pk(db: AsyncSession, tenant_ref: str) -> str:
@@ -533,7 +572,7 @@ async def create_tenant(
         full_name="Company Administrator",
         password_hash=hash_password(payload.admin_password),
         role="company_admin",
-        email_verified=owner_provisioned,
+        email_verified=False,
         permissions=permissions_for_role("company_admin"),
     )
     db.add(admin)
@@ -549,47 +588,21 @@ async def create_tenant(
             action="tenant_created",
             entity="tenant",
             entity_id=tenant.id,
-            details={"slug": tenant.slug, "admin_email_verified": True, "source": "platform_console"},
-        )
-        await db.commit()
-        await db.refresh(tenant)
-        return env(
-            {
-                "tenant_id": tenant.id,
-                "slug": tenant.slug,
-                "status": tenant.status,
-                "admin_email_verified": True,
-            },
-            "Tenant created. Company admin can sign in with this workspace slug.",
+            details={"slug": tenant.slug, "admin_email_verified": False, "source": "platform_console"},
         )
 
-    raw, token_hash, expires = issue_one_time_token()
-    db.add(
-        m.AuthToken(
-            tenant_id=tenant.id,
-            user_id=admin.id,
-            purpose="email_verify",
-            token_hash=token_hash,
-            expires_at=expires,
-        )
-    )
-    await db.commit()
+    email_info = await _issue_email_verification(db, admin, tenant)
     await db.refresh(tenant)
-
-    data = {"tenant_id": tenant.id, "slug": tenant.slug, "status": tenant.status}
-    from app import emailer
-
-    email_result = await emailer.send_verification_email(
-        to=payload.admin_email, token=raw, company_name=tenant.company_name, tenant=tenant
+    return env(
+        {
+            "tenant_id": tenant.id,
+            "slug": tenant.slug,
+            "status": tenant.status,
+            "admin_email_verified": False,
+            "email": email_info,
+        },
+        "Tenant created. The company admin must verify their email before signing in.",
     )
-    data["email"] = {
-        "sent": email_result.sent,
-        "mode": email_result.mode,
-        "error": email_result.error,
-    }
-    if settings.DEBUG or settings.APP_ENV.lower() != "production":
-        data["email_verification_token"] = raw
-    return env(data, "Tenant created. Verify admin email before production use.")
 
 
 @api.get("/tenants/me")
@@ -847,11 +860,12 @@ async def tenant_verify_admin(
     claims=Depends(require_platform_permission("platform_tenants", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    """Let a company admin created earlier sign in without the email link.
-
-    Owner-console creates now verify the admin immediately. This covers
-    companies already saved while verification mail was not delivered.
-    """
+    """Platform owner override: mark the company admin verified without the email link."""
+    if not is_platform_owner_role(claims.get("role")):
+        raise HTTPException(
+            status_code=403,
+            detail="Only the platform owner can verify an account without the email link",
+        )
     tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
     users = (
         await db.execute(
@@ -887,7 +901,50 @@ async def tenant_verify_admin(
             "admins": len(users),
             "newly_verified": changed,
         },
-        "Company admin can sign in with this workspace slug.",
+        "Company admin verified by the platform owner. They can sign in with this workspace slug.",
+    )
+
+
+@api.post("/tenants/{tenant_ref}/resend-admin-verification")
+async def tenant_resend_admin_verification(
+    tenant_ref: TenantRefValue,
+    claims=Depends(require_platform_permission("platform_tenants", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Send a fresh verification email to each unverified company admin."""
+    tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
+    users = (
+        await db.execute(
+            select(m.User).where(
+                m.User.tenant_id == tenant.id,
+                m.User.role == "company_admin",
+                m.User.is_active == True,  # noqa: E712
+                m.User.email_verified == False,  # noqa: E712
+            )
+        )
+    ).scalars().all()
+    if not users:
+        raise HTTPException(status_code=404, detail="No unverified company admin on this tenant")
+    sent = 0
+    last: dict = {}
+    for user in users:
+        last = await _issue_email_verification(db, user, tenant)
+        if last.get("sent"):
+            sent += 1
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="tenants",
+        action="admin_verification_resent",
+        entity="tenant",
+        entity_id=tenant.id,
+        details={"target_tenant": tenant.id, "admins": len(users), "sent": sent},
+    )
+    await db.commit()
+    return env(
+        {"tenant_id": tenant.id, "slug": tenant.slug, "admins": len(users), "sent": sent, "email": last},
+        "Verification email sent." if sent else "Verification email was not delivered. Check SMTP, or verify the account yourself.",
     )
 
 
@@ -1128,10 +1185,69 @@ async def platform_staff_create(
         action="create",
         entity="user",
         entity_id=user.id,
-        details={"email": user.email, "role": user.role},
+        details={"email": user.email, "role": user.role, "email_verified": False},
+    )
+    tenant = await db.get(m.Tenant, claims["tenant_id"])
+    email_info = await _issue_email_verification(db, user, tenant)
+    data = platform_staff_svc.serialize_staff(user)
+    data["verification_email"] = email_info
+    return env(data, "Platform staff created. They must verify their email before signing in.")
+
+
+@api.post("/platform/staff/{user_id}/verify-email")
+async def platform_staff_verify_email(
+    user_id: UuidIdValue,
+    claims=Depends(require_platform_permission("platform_staff", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Platform owner override: activate a staff account without the email link."""
+    if not is_platform_owner_role(claims.get("role")):
+        raise HTTPException(status_code=403, detail="Only the platform owner can verify a staff account")
+    user = (
+        await db.execute(
+            select(m.User).where(m.User.id == user_id, m.User.tenant_id == claims["tenant_id"])
+        )
+    ).scalar_one_or_none()
+    if not user or not is_platform_role(user.role):
+        raise HTTPException(status_code=404, detail="Platform staff user not found")
+    user.email_verified = True
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="platform_staff",
+        action="email_verified",
+        entity="user",
+        entity_id=user.id,
+        details={"email": user.email},
     )
     await db.commit()
-    return env(platform_staff_svc.serialize_staff(user), "Platform staff created")
+    return env(platform_staff_svc.serialize_staff(user), "Staff account verified. They can sign in.")
+
+
+@api.post("/platform/staff/{user_id}/resend-verification")
+async def platform_staff_resend_verification(
+    user_id: UuidIdValue,
+    claims=Depends(require_platform_permission("platform_staff", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    user = (
+        await db.execute(
+            select(m.User).where(m.User.id == user_id, m.User.tenant_id == claims["tenant_id"])
+        )
+    ).scalar_one_or_none()
+    if not user or not is_platform_role(user.role):
+        raise HTTPException(status_code=404, detail="Platform staff user not found")
+    if user.email_verified:
+        raise HTTPException(status_code=400, detail="This staff account is already verified")
+    tenant = await db.get(m.Tenant, claims["tenant_id"])
+    email_info = await _issue_email_verification(db, user, tenant)
+    return env(
+        {"id": user.id, "email": email_info},
+        "Verification email sent."
+        if email_info.get("sent")
+        else "Verification email was not delivered. Check SMTP, or verify the account yourself.",
+    )
 
 
 @api.post("/platform/staff/grant")

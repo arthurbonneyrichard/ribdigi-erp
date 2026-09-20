@@ -255,11 +255,11 @@ export default function PlatformConsole() {
       });
       setForm(emptyCreate);
       const createdSlug = String(r.data?.slug || form.slug).trim().toLowerCase();
-      const verified = r.data?.admin_email_verified !== false;
+      const sent = Boolean(r.data?.email?.sent);
       setMessage(
-        verified
-          ? `Created tenant "${createdSlug}". The company admin can sign in now. Workspace is "${createdSlug}", not "platform".`
-          : `Created tenant "${createdSlug}". Verify the admin email before they sign in. Workspace is "${createdSlug}".`
+        sent
+          ? `Created tenant "${createdSlug}". A verification email was sent to the company admin. They sign in with workspace "${createdSlug}" after they open that email. You can also click Verify account.`
+          : `Created tenant "${createdSlug}". The verification email was not sent. Turn on SMTP, then click Resend email, or click Verify account. Workspace is "${createdSlug}", not "platform".`
       );
       setFilter('all');
       await refresh();
@@ -275,6 +275,23 @@ export default function PlatformConsole() {
       setError(err.message || 'Create tenant failed');
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function resendAdminEmail(row: TenantRow) {
+    setBusy(row.id);
+    setError('');
+    setMessage('');
+    try {
+      const r = await api(
+        `/tenants/${encodeURIComponent(row.slug || row.id)}/resend-admin-verification`,
+        { method: 'POST', body: '{}' }
+      );
+      setMessage(r.message || `Verification email resent for "${row.slug}".`);
+    } catch (err: any) {
+      setError(err.message || 'Could not resend the verification email');
+    } finally {
+      setBusy(null);
     }
   }
 
@@ -582,10 +599,11 @@ export default function PlatformConsole() {
         <div className="plat-panel">
           <h2>Tenant management</h2>
           <p className="muted" style={{ marginTop: 0, marginBottom: 12 }}>
-            Click <strong>Manage</strong> on a company row to open subscription, modules, and store
-            limits. If a company admin still sees “Verify your email”, click{' '}
-            <strong>Allow sign-in</strong>. They sign in with that company&apos;s <strong>slug</strong>,
-            not <code>platform</code>. Platform staff use workspace <code>platform</code>.
+            Click <strong>Manage</strong> for subscription and modules. A new company admin stays
+            inactive until they open the verification email. <strong>Resend email</strong> sends that
+            link again. <strong>Verify account</strong> is the platform owner override, so they can
+            sign in without the email. They use that company&apos;s <strong>slug</strong>, not{' '}
+            <code>platform</code>.
           </p>
           <div className="card" style={{ marginBottom: 12 }}>
             <label>
@@ -688,12 +706,20 @@ export default function PlatformConsole() {
                         </button>
                         <button
                           type="button"
+                          disabled={busy === t.id}
+                          onClick={() => resendAdminEmail(t)}
+                          aria-label={`Resend verification email for tenant ${t.slug || t.id}`}
+                        >
+                          Resend email
+                        </button>
+                        <button
+                          type="button"
                           className="btn-ok"
                           disabled={busy === t.id}
                           onClick={() => allowAdminSignIn(t)}
-                          aria-label={`Allow sign-in for tenant ${t.slug || t.id}`}
+                          aria-label={`Verify account for tenant ${t.slug || t.id}`}
                         >
-                          Allow sign-in
+                          Verify account
                         </button>
                         {t.status === 'suspended' ? (
                           <button type="button" className="btn-ok" disabled={busy === t.id} onClick={() => activateTenant(t)} aria-label={`Activate tenant ${t.id}`}>
