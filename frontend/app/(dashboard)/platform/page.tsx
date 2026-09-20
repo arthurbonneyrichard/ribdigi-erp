@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { getPrefetched } from '../../../lib/prefetchCache';
+import { industryAllowsModule, INDUSTRY_SPECIFIC_MODULES } from '../../../lib/industryModules';
 
 type SubscriptionInfo = {
   package_code?: string;
@@ -993,6 +994,8 @@ export default function PlatformConsole() {
             <h3 style={{ marginTop: 20, fontSize: 15 }}>Feature modules (package control)</h3>
             <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>
               Toggle which modules this tenant can use. Dashboard, notifications, and security stay on.
+              Industry-specific modules (hotel, fmcg) can only be enabled when the tenant industry
+              matches — backend rejects mismatches even if checked here.
             </p>
             <div
               style={{
@@ -1004,10 +1007,18 @@ export default function PlatformConsole() {
             >
               {packageable.map((mod) => {
                 const locked = ['dashboard', 'notifications', 'security'].includes(mod);
-                const on = moduleDraft.includes(mod) || locked;
+                const industryBlocked =
+                  (INDUSTRY_SPECIFIC_MODULES as readonly string[]).includes(mod) &&
+                  !industryAllowsModule(selected.industry, mod);
+                const on = (moduleDraft.includes(mod) || locked) && !industryBlocked;
                 return (
                   <label
                     key={mod}
+                    title={
+                      industryBlocked
+                        ? `Not available for industry "${selected.industry || 'retail'}"`
+                        : undefined
+                    }
                     style={{
                       display: 'flex',
                       gap: 8,
@@ -1016,17 +1027,18 @@ export default function PlatformConsole() {
                       padding: '6px 8px',
                       border: '1px solid var(--line, #D4E5C4)',
                       borderRadius: 8,
-                      opacity: locked ? 0.7 : 1,
+                      opacity: locked || industryBlocked ? 0.7 : 1,
                     }}
                   >
                     <input
                       type="checkbox"
                       aria-label={`Platform feature module ${mod}`}
                       checked={on}
-                      disabled={locked}
+                      disabled={locked || industryBlocked}
                       onChange={() => toggleModule(mod)}
                     />
                     {mod}
+                    {industryBlocked ? ' (industry)' : ''}
                   </label>
                 );
               })}

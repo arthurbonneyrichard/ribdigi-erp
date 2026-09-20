@@ -107,6 +107,35 @@ PACKAGES: dict[str, dict[str, Any]] = {
 VALID_PACKAGE_CODES = frozenset(PACKAGES.keys())
 VALID_TERM_UNITS = frozenset({"months", "years"})
 
+# Industry-specific modules are packageable but only activate for matching business types.
+# Core modules (inventory, sales, POS, …) stay shared across industries.
+INDUSTRY_SPECIFIC_MODULES: frozenset[str] = frozenset({"hotel", "fmcg"})
+
+# Business type → industry modules that may activate (in addition to shared core).
+# Industries omitted here get no industry-specific modules (retail/mart/pharmacy/…).
+INDUSTRY_MODULE_ALLOWLIST: dict[str, frozenset[str]] = {
+    "hotel": frozenset({"hotel"}),
+    "fmcg": frozenset({"fmcg"}),
+}
+
+
+def industry_allows_module(industry: str | None, module: str) -> bool:
+    """Whether a module is allowed for the tenant's business type.
+
+    Non-industry-specific (shared/core) modules always pass. Industry-specific
+    modules require a matching industry allowlist entry.
+    """
+    mod = (module or "").strip().lower()
+    if not mod or mod not in INDUSTRY_SPECIFIC_MODULES:
+        return True
+    ind = (industry or "retail").strip().lower()
+    return mod in INDUSTRY_MODULE_ALLOWLIST.get(ind, frozenset())
+
+
+def filter_modules_for_industry(modules: list[str], industry: str | None) -> list[str]:
+    """Drop industry-specific modules that do not belong to this business type."""
+    return [m for m in modules if industry_allows_module(industry, m)]
+
 
 def list_packages() -> list[dict[str, Any]]:
     return [
@@ -152,7 +181,12 @@ def term_to_months(term_value: int, term_unit: str) -> int:
 
 
 def resolve_enabled_modules(tenant) -> list[str]:
-    """Effective module allowlist for a tenant (custom override or package default)."""
+    """Effective module allowlist: package (or custom) ∩ business-type allowlist.
+
+    Industry-specific modules (hotel, fmcg) only appear when the tenant's
+    industry matches — even if the commercial package lists them. Frontend
+    menus and backend ``require_permission`` both consume this list.
+    """
     custom = getattr(tenant, "enabled_modules", None)
     if isinstance(custom, list) and custom:
         mods = [str(m).strip().lower() for m in custom if str(m).strip()]
@@ -160,8 +194,10 @@ def resolve_enabled_modules(tenant) -> list[str]:
         for m in ALWAYS_ON_MODULES:
             if m not in mods:
                 mods.append(m)
-        return mods
-    return package_modules(getattr(tenant, "package_code", None))
+    else:
+        mods = package_modules(getattr(tenant, "package_code", None))
+    industry = getattr(tenant, "industry", None)
+    return filter_modules_for_industry(mods, industry)
 
 
 def module_allowed(tenant, module: str) -> bool:
@@ -170,6 +206,8 @@ def module_allowed(tenant, module: str) -> bool:
         return True  # platform gated by role elsewhere
     if mod in ALWAYS_ON_MODULES:
         return True
+    if not industry_allows_module(getattr(tenant, "industry", None), mod):
+        return False
     return mod in resolve_enabled_modules(tenant)
 
 

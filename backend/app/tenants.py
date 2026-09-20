@@ -364,6 +364,7 @@ async def set_enabled_modules(
 ) -> m.Tenant:
     cleaned: list[str] = []
     seen: set[str] = set()
+    industry = getattr(tenant, "industry", None) or "retail"
     # Defense in depth: TenantModulesUpdate / TenantSubscriptionAssign.enabled_modules
     # Literals reject blank/unknown/platform with 422 before this runs.
     for raw in modules or []:
@@ -374,6 +375,14 @@ async def set_enabled_modules(
             continue
         if mod not in packages_svc.PACKAGEABLE_MODULES:
             raise HTTPException(status_code=422, detail=f"Unknown module: {mod}")
+        if not packages_svc.industry_allows_module(industry, mod):
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Module '{mod}' is not available for business type '{industry}'. "
+                    f"Change the tenant industry before enabling this module."
+                ),
+            )
         seen.add(mod)
         cleaned.append(mod)
     for m_on in packages_svc.ALWAYS_ON_MODULES:
@@ -715,6 +724,14 @@ async def update_profile(
         )
     if industry is not None:
         tenant.industry = normalize_industry(industry)
+        # Prune custom module overrides that no longer match the business type.
+        custom = getattr(tenant, "enabled_modules", None)
+        if isinstance(custom, list) and custom:
+            pruned = packages_svc.filter_modules_for_industry(custom, tenant.industry)
+            for m_on in packages_svc.ALWAYS_ON_MODULES:
+                if m_on not in pruned:
+                    pruned.append(m_on)
+            tenant.enabled_modules = pruned
     if currency is not None:
         # Defense in depth: TenantProfileUpdate CurrencyCodeValue → 422 on blank/non-ISO.
         from app.fx import normalize_currency

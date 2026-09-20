@@ -344,6 +344,11 @@ export default function Page() {
             </option>
           ))}
         </select>
+        <p className="muted" style={{ fontSize: 12, gridColumn: '1 / -1', marginTop: -8 }}>
+          Business type controls industry modules: Hotel activates Hotel ops; FMCG activates trade
+          schemes/routes. Other types use shared core ERP only. Changing industry requires re-login
+          for session claims to refresh.
+        </p>
         <select
           value={tenant.currency || 'GHS'}
           onChange={(e) => setTenant({ ...tenant, currency: e.target.value })}

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '../../../lib/api';
+import { getMe } from '../../../lib/meCache';
+import { moduleEnabledForTenant } from '../../../lib/industryModules';
 
 type Scheme = {
   id: string;
@@ -77,6 +79,7 @@ const SCHEME_TYPES = ['percent', 'fixed', 'bxgy'];
 const VISIT_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
 export default function FmcgPage() {
+  const [moduleAllowed, setModuleAllowed] = useState<boolean | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [schemes, setSchemes] = useState<Scheme[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
@@ -143,7 +146,31 @@ export default function FmcgPage() {
   }
 
   useEffect(() => {
-    refresh().catch((err) => setError(err.message || 'Failed to load FMCG'));
+    let active = true;
+    (async () => {
+      try {
+        const me = await getMe();
+        const ok = moduleEnabledForTenant(
+          me.data?.enabled_modules,
+          me.data?.industry,
+          'fmcg'
+        );
+        if (!active) return;
+        setModuleAllowed(ok);
+        if (!ok) {
+          setError(
+            'FMCG module is not available for this business type. It activates only for FMCG industry tenants (package entitlement still required).'
+          );
+          return;
+        }
+        await refresh();
+      } catch (err: any) {
+        if (active) setError(err.message || 'Failed to load FMCG');
+      }
+    })();
+    return () => {
+      active = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -271,6 +298,18 @@ export default function FmcgPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  if (moduleAllowed === false) {
+    return (
+      <>
+        <h1>FMCG</h1>
+        <p className="login-error" role="alert">
+          {error ||
+            'FMCG module is not available for this business type. Switch the company industry to FMCG (and ensure the package includes fmcg) to use trade schemes and routes.'}
+        </p>
+      </>
+    );
   }
 
   return (

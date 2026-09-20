@@ -13,7 +13,11 @@ import StoreSwitcher from './StoreSwitcher';
 
 type NavItem = [label: string, href: string, module: string];
 
-/** Tenant ERP navigation (business workspace). */
+/** Tenant ERP navigation (business workspace).
+ * Hotel/FMCG nav items are packageable but only appear when `/me.enabled_modules`
+ * includes them — backend intersects package entitlements with business-type
+ * (industry) allowlists, so menus alone are never the security boundary.
+ */
 const TENANT_ITEMS: NavItem[] = [
   ['Dashboard', '/dashboard', 'dashboard'],
   ['Company', '/company', 'company'],

@@ -2487,6 +2487,9 @@ async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db))
             "package_code": claims.get("package_code") or (getattr(tenant, "package_code", None) if tenant else "trial"),
             "enabled_modules": claims.get("enabled_modules")
             or (packages_svc.resolve_enabled_modules(tenant) if tenant else []),
+            "industry": claims.get("industry")
+            or (getattr(tenant, "industry", None) if tenant else "retail")
+            or "retail",
             "subscription": usage,
             "inactivity_timeout_minutes": int(
                 getattr(tenant, "inactivity_timeout_minutes", None) or 30

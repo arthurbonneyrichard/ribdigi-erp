@@ -9,7 +9,7 @@ import pyotp
 import pytest
 
 from app.packages import PACKAGEABLE_MODULES
-from tests.conftest import auth_headers
+from tests.conftest import auth_headers, set_tenant_industry
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -24,8 +24,9 @@ def test_fmcg_module_registered():
 
 
 @pytest.mark.asyncio
-async def test_fmcg_scheme_route_stop_lifecycle(client, seeded):
+async def test_fmcg_scheme_route_stop_lifecycle(client, seeded, db_session):
     ac, seed = client
+    await set_tenant_industry(db_session, seed["t1"], "fmcg")
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
     admin = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
@@ -118,8 +119,9 @@ async def test_fmcg_scheme_route_stop_lifecycle(client, seeded):
 
 
 @pytest.mark.asyncio
-async def test_fmcg_duplicate_scheme_code_blocked(client, seeded):
+async def test_fmcg_duplicate_scheme_code_blocked(client, seeded, db_session):
     ac, seed = client
+    await set_tenant_industry(db_session, seed["t1"], "fmcg")
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
     admin = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code

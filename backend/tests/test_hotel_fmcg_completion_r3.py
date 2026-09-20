@@ -8,12 +8,13 @@ from uuid import uuid4
 import pyotp
 import pytest
 
-from tests.conftest import auth_headers
+from tests.conftest import auth_headers, set_tenant_industry
 
 
 @pytest.mark.asyncio
-async def test_hotel_settings_group_reports_confirmation(client, seeded):
+async def test_hotel_settings_group_reports_confirmation(client, seeded, db_session):
     ac, seed = client
+    await set_tenant_industry(db_session, seed["t1"], "hotel")
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
     admin = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
@@ -94,8 +95,9 @@ async def test_hotel_settings_group_reports_confirmation(client, seeded):
 
 
 @pytest.mark.asyncio
-async def test_fmcg_scheme_applies_on_sales_order_and_dispatch(client, seeded):
+async def test_fmcg_scheme_applies_on_sales_order_and_dispatch(client, seeded, db_session):
     ac, seed = client
+    await set_tenant_industry(db_session, seed["t1"], "fmcg")
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
     admin = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code

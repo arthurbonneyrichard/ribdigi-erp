@@ -108,6 +108,7 @@ async def _claims_from_api_key(
         "read_only": tenants_svc.is_read_only(tenant),
         "package_code": getattr(tenant, "package_code", None) or "trial",
         "enabled_modules": packages_svc.resolve_enabled_modules(tenant),
+        "industry": getattr(tenant, "industry", None) or "retail",
         "branch_id": None,
         "department_id": None,
         "record_scope": "all",
@@ -245,6 +246,7 @@ async def current_claims(
 
     data["package_code"] = getattr(tenant, "package_code", None) or "trial"
     data["enabled_modules"] = packages_svc.resolve_enabled_modules(tenant)
+    data["industry"] = getattr(tenant, "industry", None) or "retail"
     data["branch_id"] = getattr(user, "branch_id", None)
     data["department_id"] = getattr(user, "department_id", None)
     from app.rbac import record_scope_from_permissions
@@ -313,11 +315,29 @@ def require_permission(module: str, action: str = "read"):
                     "message": "Trial expired; account is read-only during the grace period. Activate to restore write access.",
                 },
             )
-        # Package feature gate (software-owner controlled modules)
+        # Package + business-type feature gate (software-owner controlled modules)
         if not is_platform_role(claims.get("role")):
             from app import packages as packages_svc
 
             mod = (module or "").strip().lower()
+            industry = (claims.get("industry") or "retail").strip().lower()
+            if (
+                mod
+                and mod in packages_svc.INDUSTRY_SPECIFIC_MODULES
+                and not packages_svc.industry_allows_module(industry, mod)
+            ):
+                raise HTTPException(
+                    status_code=403,
+                    detail={
+                        "code": "INDUSTRY_MODULE_DISABLED",
+                        "message": (
+                            f"Module '{mod}' is not available for business type '{industry}'. "
+                            "Industry-specific modules activate only for matching tenants."
+                        ),
+                        "module": mod,
+                        "industry": industry,
+                    },
+                )
             enabled = claims.get("enabled_modules")
             if (
                 enabled is not None

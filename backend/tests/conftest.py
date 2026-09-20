@@ -191,6 +191,14 @@ async def seeded(db_session):
     return await _seed_two_tenants(db_session)
 
 
+async def set_tenant_industry(db_session, tenant, industry: str):
+    """Set tenant business type and persist (re-login required for JWT claims)."""
+    tenant.industry = industry
+    await db_session.commit()
+    await db_session.refresh(tenant)
+    return tenant
+
+
 @pytest_asyncio.fixture
 async def client(db_engine, seeded, _disable_rate_limit):
     session_factory = async_sessionmaker(db_engine, expire_on_commit=False, class_=AsyncSession)

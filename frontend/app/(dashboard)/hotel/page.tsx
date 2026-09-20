@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../../lib/api';
+import { getMe } from '../../../lib/meCache';
+import { moduleEnabledForTenant } from '../../../lib/industryModules';
 
 type Room = {
   id: string;
@@ -106,6 +108,7 @@ const ROOM_STATUSES = [
 ];
 
 export default function HotelPage() {
+  const [moduleAllowed, setModuleAllowed] = useState<boolean | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [guests, setGuests] = useState<Guest[]>([]);
@@ -208,7 +211,31 @@ export default function HotelPage() {
   }
 
   useEffect(() => {
-    refresh().catch((err) => setError(err.message || 'Failed to load hotel'));
+    let active = true;
+    (async () => {
+      try {
+        const me = await getMe();
+        const ok = moduleEnabledForTenant(
+          me.data?.enabled_modules,
+          me.data?.industry,
+          'hotel'
+        );
+        if (!active) return;
+        setModuleAllowed(ok);
+        if (!ok) {
+          setError(
+            'Hotel module is not available for this business type. It activates only for Hotel industry tenants (package entitlement still required).'
+          );
+          return;
+        }
+        await refresh();
+      } catch (err: any) {
+        if (active) setError(err.message || 'Failed to load hotel');
+      }
+    })();
+    return () => {
+      active = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listKind]);
 
@@ -443,6 +470,18 @@ export default function HotelPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  if (moduleAllowed === false) {
+    return (
+      <>
+        <h1>Hotel</h1>
+        <p className="login-error" role="alert">
+          {error ||
+            'Hotel module is not available for this business type. Switch the company industry to Hotel (and ensure the package includes hotel) to use rooms and reservations.'}
+        </p>
+      </>
+    );
   }
 
   return (

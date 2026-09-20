@@ -10,7 +10,7 @@ import pyotp
 import pytest
 
 from app.packages import PACKAGEABLE_MODULES
-from tests.conftest import auth_headers
+from tests.conftest import auth_headers, set_tenant_industry
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -25,8 +25,9 @@ def test_hotel_module_registered():
 
 
 @pytest.mark.asyncio
-async def test_hotel_room_guest_reservation_lifecycle(client, seeded):
+async def test_hotel_room_guest_reservation_lifecycle(client, seeded, db_session):
     ac, seed = client
+    await set_tenant_industry(db_session, seed["t1"], "hotel")
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
     admin = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
@@ -136,8 +137,9 @@ async def test_hotel_room_guest_reservation_lifecycle(client, seeded):
 
 
 @pytest.mark.asyncio
-async def test_hotel_reservation_overlap_blocked(client, seeded):
+async def test_hotel_reservation_overlap_blocked(client, seeded, db_session):
     ac, seed = client
+    await set_tenant_industry(db_session, seed["t1"], "hotel")
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
     admin = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
@@ -182,8 +184,9 @@ async def test_hotel_reservation_overlap_blocked(client, seeded):
 
 
 @pytest.mark.asyncio
-async def test_hotel_extend_move_maintenance_housekeeping(client, seeded):
+async def test_hotel_extend_move_maintenance_housekeeping(client, seeded, db_session):
     ac, seed = client
+    await set_tenant_industry(db_session, seed["t1"], "hotel")
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
     admin = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
@@ -290,9 +293,10 @@ async def test_hotel_extend_move_maintenance_housekeeping(client, seeded):
 
 
 @pytest.mark.asyncio
-async def test_hotel_tenant_isolation(client, seeded):
+async def test_hotel_tenant_isolation(client, seeded, db_session):
     """Cross-tenant room id must 404."""
     ac, seed = client
+    await set_tenant_industry(db_session, seed["t1"], "hotel")
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
     admin = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code

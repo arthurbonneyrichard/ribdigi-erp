@@ -12,13 +12,14 @@ import pytest
 from app import models as m
 from app.rbac import permissions_for_role
 from app.security import hash_password
-from tests.conftest import auth_headers
+from tests.conftest import auth_headers, set_tenant_industry
 
 
-async def _beta_hotel_admin(ac, seed, db_session):
-    """Ensure beta has a company_admin with hotel/fmcg module access."""
+async def _beta_hotel_admin(ac, seed, db_session, *, industry: str = "hotel"):
+    """Ensure beta has a company_admin with matching industry for hotel/fmcg APIs."""
     from sqlalchemy import select
 
+    await set_tenant_industry(db_session, seed["t2"], industry)
     row = (
         await db_session.execute(select(m.User).where(m.User.email == "admin@beta.example.com"))
     ).scalar_one_or_none()
@@ -41,6 +42,7 @@ async def _beta_hotel_admin(ac, seed, db_session):
 @pytest.mark.asyncio
 async def test_hotel_e2e_reservation_folio_invoice_checkout(client, seeded, db_session):
     ac, seed = client
+    await set_tenant_industry(db_session, seed["t1"], "hotel")
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
     admin = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
@@ -123,9 +125,10 @@ async def test_hotel_e2e_reservation_folio_invoice_checkout(client, seeded, db_s
 
 
 @pytest.mark.asyncio
-async def test_hotel_concurrent_double_booking_blocked(client, seeded):
+async def test_hotel_concurrent_double_booking_blocked(client, seeded, db_session):
     """Two overlapping bookings for the same room — only one may succeed."""
     ac, seed = client
+    await set_tenant_industry(db_session, seed["t1"], "hotel")
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
     admin = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
@@ -182,11 +185,12 @@ async def test_hotel_concurrent_double_booking_blocked(client, seeded):
 @pytest.mark.asyncio
 async def test_hotel_cross_tenant_isolation(client, seeded, db_session):
     ac, seed = client
+    await set_tenant_industry(db_session, seed["t1"], "hotel")
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
     alpha = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
     )
-    beta = await _beta_hotel_admin(ac, seed, db_session)
+    beta = await _beta_hotel_admin(ac, seed, db_session, industry="hotel")
     suffix = uuid4().hex[:6]
 
     room = await ac.post(
@@ -241,11 +245,12 @@ async def test_hotel_cross_tenant_isolation(client, seeded, db_session):
 @pytest.mark.asyncio
 async def test_fmcg_cross_tenant_isolation_and_e2e(client, seeded, db_session):
     ac, seed = client
+    await set_tenant_industry(db_session, seed["t1"], "fmcg")
     code = pyotp.TOTP(seed["super_totp_secret"]).now()
     alpha = await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
     )
-    beta = await _beta_hotel_admin(ac, seed, db_session)
+    beta = await _beta_hotel_admin(ac, seed, db_session, industry="fmcg")
     suffix = uuid4().hex[:6]
 
     scheme = await ac.post(
