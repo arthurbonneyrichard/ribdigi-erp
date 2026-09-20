@@ -113,6 +113,34 @@ async def check_celery_broker() -> CheckResult:
         }
 
 
+async def _outlook_staff_absent(
+    session_factory: async_sessionmaker[AsyncSession],
+) -> bool:
+    """True when arthurbonneyrichard@outlook.com is not on the platform workspace."""
+    target = "arthurbonneyrichard@outlook.com"
+    async with session_factory() as db:
+        row = (
+            await db.execute(
+                text(
+                    """
+                    SELECT 1
+                    FROM users u
+                    JOIN tenants t ON t.id = u.tenant_id
+                    WHERE lower(u.email) = lower(:email)
+                      AND (
+                        t.slug IN ('platform', 'ribdigi-platform')
+                        OR t.id IN ('platform', 'ribdigi-platform')
+                        OR lower(t.company_name) = lower('Ribdigi House')
+                      )
+                    LIMIT 1
+                    """
+                ),
+                {"email": target},
+            )
+        ).first()
+    return row is None
+
+
 async def check_platform_workspace(
     session_factory: async_sessionmaker[AsyncSession],
 ) -> CheckResult:
@@ -155,6 +183,7 @@ async def check_platform_workspace(
             "company_name": row.get("company_name"),
             "tenant_status": row.get("status"),
             "email": email,
+            "removed_outlook_staff": await _outlook_staff_absent(session_factory),
         }
     except Exception as exc:
         return {

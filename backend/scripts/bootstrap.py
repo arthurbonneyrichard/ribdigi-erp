@@ -142,13 +142,98 @@ async def ensure_ribdigi_house_active() -> None:
         )
 
 
+async def ensure_remove_outlook_platform_staff() -> None:
+    """Idempotent: hard-delete revoked platform staff by email."""
+    from sqlalchemy import text
+
+    from app.db import SessionLocal
+
+    target = "arthurbonneyrichard@outlook.com"
+    async with SessionLocal() as db:
+        rows = (
+            await db.execute(
+                text(
+                    """
+                    SELECT u.id
+                    FROM users u
+                    JOIN tenants t ON t.id = u.tenant_id
+                    WHERE lower(u.email) = lower(:email)
+                      AND (
+                        t.slug IN ('platform', 'ribdigi-platform')
+                        OR t.id IN ('platform', 'ribdigi-platform')
+                        OR lower(t.company_name) = lower('Ribdigi House')
+                      )
+                    """
+                ),
+                {"email": target},
+            )
+        ).fetchall()
+        ids = [r[0] for r in rows]
+        if not ids:
+            print(f"bootstrap: platform staff {target} already absent")
+            return
+
+        existing = {
+            r[0]
+            for r in (
+                await db.execute(
+                    text(
+                        """
+                        SELECT table_name
+                        FROM information_schema.tables
+                        WHERE table_schema = 'public'
+                        """
+                    )
+                )
+            ).fetchall()
+        }
+
+        child_tables = (
+            "auth_sessions",
+            "auth_tokens",
+            "webauthn_credentials",
+            "webauthn_challenges",
+            "two_factor_backup_codes",
+            "user_store_memberships",
+            "notification_preferences",
+        )
+        null_updates = (
+            ("notifications", "user_id"),
+            ("pos_devices", "user_id"),
+            ("branches", "manager_id"),
+            ("departments", "head_user_id"),
+            ("stores", "manager_id"),
+            ("warehouses", "manager_id"),
+        )
+
+        for uid in ids:
+            for table in child_tables:
+                if table not in existing:
+                    continue
+                await db.execute(
+                    text(f"DELETE FROM {table} WHERE user_id = :uid"),
+                    {"uid": uid},
+                )
+            for table, col in null_updates:
+                if table not in existing:
+                    continue
+                await db.execute(
+                    text(f"UPDATE {table} SET {col} = NULL WHERE {col} = :uid"),
+                    {"uid": uid},
+                )
+            await db.execute(text("DELETE FROM users WHERE id = :uid"), {"uid": uid})
+        await db.commit()
+        print(f"bootstrap: deleted platform staff {target} ids={ids}")
+
+
 async def main() -> None:
     _print_migration_fingerprint()
     if run_alembic():
         try:
             await ensure_ribdigi_house_active()
+            await ensure_remove_outlook_platform_staff()
         except Exception as exc:  # noqa: BLE001
-            print(f"bootstrap: ensure Ribdigi House failed: {exc}", file=sys.stderr)
+            print(f"bootstrap: platform ops ensure failed: {exc}", file=sys.stderr)
             if settings.APP_ENV.lower() == "production":
                 sys.exit(1)
         return
@@ -158,8 +243,9 @@ async def main() -> None:
     await create_all_fallback()
     try:
         await ensure_ribdigi_house_active()
+        await ensure_remove_outlook_platform_staff()
     except Exception as exc:  # noqa: BLE001
-        print(f"bootstrap: ensure Ribdigi House failed: {exc}", file=sys.stderr)
+        print(f"bootstrap: platform ops ensure failed: {exc}", file=sys.stderr)
 
 
 if __name__ == "__main__":
