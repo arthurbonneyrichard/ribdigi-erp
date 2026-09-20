@@ -121,7 +121,10 @@ def build() -> None:
 
     pdf.h1("2. After you sign in")
     pdf.bullets([
-        "The left menu is your navigation. Only modules included in your package and role appear.",
+        "The left menu is your navigation. Only modules included in your package, your role, "
+        "and your company's business type appear.",
+        "Hotel and FMCG are industry modules. A Hotel company does not see FMCG routes and schemes. "
+        "An FMCG company does not see Hotel rooms and reservations. Retail and other types use the shared core only.",
         "The top bar shows notifications, your name, theme (light or dark), and Log out.",
         "Theme is personal. Your choice does not change anyone else's screen.",
         "If your company has more than one store, use the store switcher so reports and stock match the store you are working in.",
@@ -139,6 +142,8 @@ def build() -> None:
     pdf.p("Company holds the business profile used on documents and the sidebar:")
     pdf.bullets([
         "Legal name, registration, contact person, phone, email, and website.",
+        "Business type (industry) — retail, mart, pharmacy, restaurant, bakery, hotel, FMCG, and others. "
+        "Hotel and FMCG modules activate only for matching types.",
         "Billing and shipping addresses.",
         "Logo, date format, and currency display.",
         "Invoice numbering and print header or footer, where your role allows it.",
@@ -290,23 +295,92 @@ def build() -> None:
         "Move goods with a transfer. Do not edit the product quantity by hand to fake a move.",
     ])
 
-    pdf.h1("15. Reports")
-    pdf.p("Reports & Analytics summarizes sales, profit, stock, tax, and other lists for the current company and, where selected, the current store. Open a report, set the date range, then export or print if the button is shown. Reports never include another company's data.")
+    pdf.h1("15. Hotel")
+    pdf.p(
+        "Hotel appears when the company business type is Hotel and the package includes the hotel "
+        "module. It reuses customers (guests), invoices, recorded payments, expenses, and reports "
+        "from the shared core. Ribdigi ERP records payment information only. It does not receive "
+        "or settle guest funds."
+    )
+    pdf.h2("Rooms and status")
+    pdf.steps([
+        "Open Hotel. Create a room with code (room number), name, type, rate, capacity, and status.",
+        "Statuses include available, reserved, occupied, dirty, clean, inspected, maintenance, "
+        "and out of order. Keep maintenance and out-of-order rooms out of new bookings.",
+        "Housekeeping tasks and maintenance tickets update room readiness after checkout or repair.",
+    ])
+    pdf.h2("Guests and reservations")
+    pdf.steps([
+        "Add a guest with name and contact details. Guests stay inside your company only.",
+        "Create a reservation: guest, room, arrival date, departure date, and number of adults or children.",
+        "The system blocks overlapping bookings for the same room. Do not rely on the screen alone — "
+        "a second overlapping booking is refused even if two people book at the same time.",
+        "You can extend a stay, move a guest to another room, cancel, or mark a no-show when that is correct.",
+    ])
+    pdf.h2("Check-in, folio, and check-out")
+    pdf.steps([
+        "Check in a booked reservation for today. The room becomes occupied and a folio opens.",
+        "Post room charges and extras on the folio (restaurant, laundry, service, and similar).",
+        "Record payments on the folio (cash, MoMo, card, bank, and similar). This is a payment record, not a payment gateway.",
+        "Settle any outstanding folio balance, then check out. Checkout creates a sales invoice from "
+        "folio charges and marks the room dirty for housekeeping.",
+        "Use Hotel reports for occupancy, arrivals, departures, and related summaries for your company.",
+    ])
 
-    pdf.h1("16. Users and roles")
+    pdf.h1("16. FMCG")
+    pdf.p(
+        "FMCG appears when the company business type is FMCG and the package includes the fmcg "
+        "module. Products, warehouses, purchases, sales, returns, batches, and expiry still use "
+        "Inventory, Purchasing, and Sales. FMCG adds trade schemes and distribution routes on top."
+    )
+    pdf.h2("Catalog and stock (shared core)")
+    pdf.steps([
+        "Create products, categories, brands, and units as in Inventory. Use tenant-defined units "
+        "(piece, pack, carton, and so on) — do not invent a second catalog.",
+        "Turn on batch tracking and expiry only for products that need it. Not every FMCG item expires.",
+        "Purchase into a warehouse, transfer between warehouse and store or depot, then sell. "
+        "Transfers must finish completely; a failed transfer must not change stock.",
+        "Sales returns restore stock. Purchase returns reduce stock. Keep batch and location correct when batches are on.",
+    ])
+    pdf.h2("Trade schemes")
+    pdf.steps([
+        "Open FMCG. Create a scheme with code, name, and type: percent, fixed, or buy-X-get-Y.",
+        "Set value, optional product scope, and start or end dates. Keep the scheme active when it should apply.",
+        "When the FMCG module is on and a line has no manual discount, sales orders and POS can apply "
+        "the best matching scheme. Always check the line total before you post.",
+    ])
+    pdf.h2("Routes, dispatch, and delivery")
+    pdf.steps([
+        "Create a route with code and name. Optionally note driver or vehicle.",
+        "Add stops: customer, sequence, and visit day. Assign salespeople to customers and routes when you use territory coverage.",
+        "Open a dispatch for a route, update stop delivery status (for example delivered), then close the dispatch.",
+        "Near-expiry lists help you act on batches that are approaching expiry. Use Inventory reports for stock, movement, and low stock.",
+    ])
+
+    pdf.h1("17. Reports")
+    pdf.p(
+        "Reports & Analytics summarizes sales, profit, stock, tax, and other lists for the current "
+        "company and, where selected, the current store. Hotel companies also use Hotel reports for "
+        "occupancy and stay activity. FMCG companies use Inventory and Sales reports plus FMCG route "
+        "and near-expiry views. Open a report, set the date range, then export or print if the button "
+        "is shown. Reports never include another company's data."
+    )
+
+    pdf.h1("18. Users and roles")
     pdf.p("Company administrators use Users to add staff.")
     pdf.steps([
         "Create the user with name, email, and a strong password.",
-        "Role — company admin, store manager, sales officer, inventory officer, accountant, cashier, or a custom role. Cashiers usually see Dashboard, Inventory, POS, Sales, Notifications, and Security.",
+        "Role — company admin, store manager, sales officer, inventory officer, accountant, cashier, or a custom role. Cashiers usually see Dashboard, Inventory, POS, Sales, Notifications, and Security. Hotel and FMCG permissions follow the existing role map when those modules are on.",
         "Limit the user to a branch or store when they should not see the whole company.",
         "Deactivate a user who leaves. Do not share one login among several people.",
     ])
     pdf.p(
-        "Hiding a menu is not the only control. The server also checks permission. If an action "
-        "is refused, ask an administrator to grant the role. Do not share the company admin password."
+        "Hiding a menu is not the only control. The server also checks permission and business type. "
+        "If an action is refused, ask an administrator to grant the role or confirm the company industry. "
+        "Do not share the company admin password."
     )
 
-    pdf.h1("17. Security and preferences")
+    pdf.h1("19. Security and preferences")
     pdf.bullets([
         "Change your password from Security if you were given a temporary one.",
         "Turn on authenticator (TOTP) or a passkey if your company requires it. Save backup codes in a private place.",
@@ -315,41 +389,44 @@ def build() -> None:
         "The app signs you out after a period of inactivity set by the company.",
     ])
 
-    pdf.h1("18. Notifications, audit, and backups")
+    pdf.h1("20. Notifications, audit, and backups")
     pdf.bullets([
         "Notifications lists low stock, payment due dates, and similar alerts. Mark items read when you have acted.",
         "Audit is a history of important changes. It is for review, not for editing transactions.",
         "Backup, when your role includes it, downloads an encrypted company backup. Store that file safely. It is not a substitute for your host's database backups.",
     ])
 
-    pdf.h1("19. A normal selling day")
+    pdf.h1("21. A normal selling day")
     pdf.steps([
         "Sign in with your company workspace, email, and password.",
         "Confirm the store at the top of the screen.",
         "Check Dashboard for low stock or amounts due.",
-        "Sell on POS or Sales.",
+        "Sell on POS or Sales. Hotel staff work arrivals, in-house stays, and departures in Hotel. FMCG staff run routes and schemes in FMCG when that is the day's work.",
         "Receive supplier deliveries in Purchasing if goods arrive.",
         "Record expenses paid from the till or bank.",
-        "Close the POS shift.",
+        "Close the POS shift when you use the till.",
         "Sign out.",
     ])
 
-    pdf.h1("20. Jobs, integrations, and AI")
+    pdf.h1("22. Jobs, integrations, and AI")
     pdf.bullets([
         "Jobs shows scheduled work such as low-stock alerts, payment-due reminders, and backups. Company administrators can review status. Starting a job is limited to the platform owner.",
         "Integrations is for API keys and webhooks that connect Ribdigi ERP to another system. Only a company administrator should create a key. Treat the key like a password.",
         "AI Assistant, when your package includes it, can answer questions about your company data and draft notes. Check the numbers in the original report or invoice before you act on a draft.",
     ])
 
-    pdf.h1("21. If something does not work")
+    pdf.h1("23. If something does not work")
     pdf.bullets([
         "Workspace, email, or password rejected: confirm the company slug and that the user is active.",
         "You return to the sign-in page: sign in again. If it repeats, ask an administrator to check your account.",
-        "A button is missing: your role or package does not include that module.",
+        "A button is missing: your role, package, or business type does not include that module. Hotel and FMCG only appear for matching industries.",
         "Stock did not change: the invoice, return, or goods receipt is still a draft. Click Post. A quotation does not move stock.",
         "Create product is disabled: the name is empty. Opening stock says select a product: choose Selected product first.",
         "Import is blocked: Validate still has error rows, or a category, brand, or unit in the file does not exist.",
         "Totals look wrong: check quantity, discount, and tax rate on each line before saving.",
+        "Hotel booking refused: the room overlaps another reservation, or the room is dirty, in maintenance, or out of order.",
+        "Hotel checkout refused: settle the folio balance first, or follow your company rule for outstanding balances.",
+        "FMCG scheme did not apply: confirm the scheme is active, dates cover today, the product matches if scoped, and the line has no manual discount that overrides it.",
     ])
     pdf.p("For product questions, contact your company administrator or Ribdigi House.")
 
@@ -360,7 +437,7 @@ def build() -> None:
         0,
         5,
         "This guide describes the customer workspace. It does not replace your company procedures "
-        "or tax advice. Menus you do not see are switched off for your role or subscription.",
+        "or tax advice. Menus you do not see are switched off for your role, subscription, or business type.",
         new_x="LMARGIN",
         new_y="NEXT",
     )

@@ -134,11 +134,16 @@ def build() -> None:
     pdf.steps([
         "Stay on the same Manage panel. Scroll to Feature modules.",
         "Tick the modules this company should use: inventory, sales, pos, purchasing, and the rest.",
+        "Hotel and FMCG are industry modules. They only activate when the company industry is Hotel or FMCG. "
+        "You cannot enable Hotel for a retail company or FMCG for a hotel company.",
         "Dashboard, notifications, and security stay on. You cannot turn those off.",
         "Click Save feature modules.",
         "Click Reset to package default if you want the plan's standard set back.",
     ])
-    pdf.p("A company user will not see a menu you leave unticked, even if their role would allow it.")
+    pdf.p(
+        "A company user will not see a menu you leave unticked, even if their role would allow it. "
+        "Hiding a menu is not enough on its own — the server also enforces package and business type."
+    )
 
     pdf.h2("6. Suspend or activate a company")
     pdf.steps([
