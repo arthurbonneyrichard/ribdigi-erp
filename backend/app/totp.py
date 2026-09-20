@@ -34,13 +34,48 @@ CHALLENGE_TTL_MINUTES = 5
 ISSUER = "RIBDIGI ERP"
 
 
+def _fernet_from_configured_key(raw: str, *, label: str) -> Fernet:
+    """Accept a Fernet key, or common openssl formats (hex / standard base64)."""
+    value = (raw or "").strip()
+    if not value:
+        raise ValueError("empty key")
+
+    # Already a Fernet key (url-safe base64 of 32 bytes).
+    try:
+        return Fernet(value.encode("utf-8"))
+    except Exception:
+        pass
+
+    # openssl rand -hex 32 → 64 hex chars → 32 raw bytes.
+    if len(value) == 64:
+        try:
+            return Fernet(base64.urlsafe_b64encode(bytes.fromhex(value)))
+        except Exception:
+            pass
+
+    # openssl rand -base64 32 → standard base64 of 32 bytes.
+    try:
+        decoded = base64.b64decode(value, validate=False)
+        if len(decoded) == 32:
+            return Fernet(base64.urlsafe_b64encode(decoded))
+    except Exception:
+        pass
+
+    raise HTTPException(
+        status_code=500,
+        detail=(
+            f"Invalid {label}: use a Fernet key from "
+            '`python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` '
+            "or a 64-character hex value from `openssl rand -hex 32`. "
+            "Do not leave REPLACE_ME placeholders."
+        ),
+    )
+
+
 def _fernet() -> Fernet:
     raw = (settings.TOTP_ENCRYPTION_KEY or settings.BACKUP_ENCRYPTION_KEY or "").strip()
     if raw:
-        try:
-            return Fernet(raw.encode("utf-8"))
-        except Exception as exc:
-            raise HTTPException(status_code=500, detail=f"Invalid TOTP encryption key: {exc}") from exc
+        return _fernet_from_configured_key(raw, label="TOTP encryption key")
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,

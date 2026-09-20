@@ -90,13 +90,45 @@ def backup_root() -> Path:
     return root
 
 
+def _fernet_from_configured_key(raw: str, *, label: str) -> Fernet:
+    """Accept a Fernet key, or common openssl formats (hex / standard base64)."""
+    value = (raw or "").strip()
+    if not value:
+        raise ValueError("empty key")
+
+    try:
+        return Fernet(value.encode("utf-8") if isinstance(value, str) else value)
+    except Exception:
+        pass
+
+    if len(value) == 64:
+        try:
+            return Fernet(base64.urlsafe_b64encode(bytes.fromhex(value)))
+        except Exception:
+            pass
+
+    try:
+        decoded = base64.b64decode(value, validate=False)
+        if len(decoded) == 32:
+            return Fernet(base64.urlsafe_b64encode(decoded))
+    except Exception:
+        pass
+
+    raise HTTPException(
+        status_code=500,
+        detail=(
+            f"Invalid {label}: use a Fernet key from "
+            '`python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` '
+            "or a 64-character hex value from `openssl rand -hex 32`. "
+            "Do not leave REPLACE_ME placeholders."
+        ),
+    )
+
+
 def _fernet() -> Fernet:
     raw = (settings.BACKUP_ENCRYPTION_KEY or "").strip()
     if raw:
-        try:
-            return Fernet(raw.encode("utf-8") if isinstance(raw, str) else raw)
-        except Exception as exc:
-            raise HTTPException(status_code=500, detail=f"Invalid BACKUP_ENCRYPTION_KEY: {exc}") from exc
+        return _fernet_from_configured_key(raw, label="BACKUP_ENCRYPTION_KEY")
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,

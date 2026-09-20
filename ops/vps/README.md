@@ -105,8 +105,10 @@ nano ops/vps/Caddyfile   # replace erp.example.com + Let's Encrypt email
 
 # Generate secrets
 openssl rand -hex 32   # JWT_SECRET_KEY
-openssl rand -hex 32   # BACKUP_ENCRYPTION_KEY
-openssl rand -hex 32   # TOTP_ENCRYPTION_KEY
+# Fernet keys (preferred) — paste the full printed string, including trailing =
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"  # BACKUP_ENCRYPTION_KEY
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"  # TOTP_ENCRYPTION_KEY
+# Also accepted: openssl rand -hex 32 for BACKUP_ENCRYPTION_KEY / TOTP_ENCRYPTION_KEY
 openssl rand -hex 16   # POSTGRES_PASSWORD / RABBITMQ / MINIO
 
 # 6) Build & start
@@ -120,8 +122,8 @@ docker compose -f docker-compose.prod.yml ps
 | Variable | Notes |
 |----------|--------|
 | `JWT_SECRET_KEY` | ≥32 chars, random |
-| `BACKUP_ENCRYPTION_KEY` | random; required for `.ribbak` crypto |
-| `TOTP_ENCRYPTION_KEY` | random |
+| `BACKUP_ENCRYPTION_KEY` | Fernet key or 64-char hex; required for `.ribbak` crypto |
+| `TOTP_ENCRYPTION_KEY` | Fernet key or 64-char hex (not a REPLACE_ME placeholder) |
 | `POSTGRES_PASSWORD` | strong; must match `DATABASE_URL` |
 | `DATABASE_URL` | `postgresql+asyncpg://…@postgres:5432/…` |
 | `RABBITMQ_DEFAULT_PASS` | strong; must match `RABBITMQ_URL` / `CELERY_BROKER_URL` |

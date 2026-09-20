@@ -151,6 +151,8 @@ DEBUG=false
 ALLOW_DEVELOPMENT_SEED=false
 
 JWT_SECRET_KEY=   # openssl rand -hex 32
+# Prefer Fernet keys (not REPLACE_ME text):
+# python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 BACKUP_ENCRYPTION_KEY=
 TOTP_ENCRYPTION_KEY=
 
