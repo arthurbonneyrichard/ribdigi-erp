@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api, clearSessionAndRedirect, idleTimeoutMs } from '../lib/api';
 import { getMe } from '../lib/meCache';
 import { prefetchGet } from '../lib/prefetchCache';
-import { applyTheme, clearSessionTheme, loadUserTheme, writeUserTheme } from '../lib/theme';
+import { loadUserTheme, writeUserTheme } from '../lib/theme';
 import { StoreProvider } from '../lib/storeContext';
 import OnboardingChecklist from './OnboardingChecklist';
 import StoreSwitcher from './StoreSwitcher';
