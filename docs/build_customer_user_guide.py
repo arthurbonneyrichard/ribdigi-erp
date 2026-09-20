@@ -6,18 +6,38 @@ from pathlib import Path
 from fpdf import FPDF
 
 # Not under frontend/public — the file is served only to a company admin.
-OUT = Path(__file__).resolve().parents[1] / "frontend" / "guides" / "RIBDIGI-ERP-Customer-User-Guide.pdf"
+ROOT = Path(__file__).resolve().parents[1]
+OUT = ROOT / "frontend" / "guides" / "RIBDIGI-ERP-Customer-User-Guide.pdf"
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 FONT_B = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+LOGO_COVER = Path(__file__).resolve().parent / "assets" / "ribdigi-erp-logo-cover.jpg"
+LOGO_PNG = Path(__file__).resolve().parent / "assets" / "ribdigi-erp-logo.png"
+LOGO_FALLBACK = ROOT / "frontend" / "public" / "brand" / "logo-full.png"
 
 GREEN = (0, 107, 46)
 INK = (16, 33, 27)
 MUTED = (58, 86, 72)
 
 
+def resolve_logo() -> Path | None:
+    for path in (LOGO_COVER, LOGO_PNG, LOGO_FALLBACK):
+        if path.is_file():
+            return path
+    return None
+
+
 class Guide(FPDF):
     def header(self):
         if self.page_no() == 1:
+            return
+        logo = resolve_logo()
+        if logo is not None:
+            self.image(str(logo), x=14, y=6, h=8)
+            self.set_xy(14, 16)
+            self.set_font("DejaVu", "", 8)
+            self.set_text_color(*MUTED)
+            self.cell(0, 5, "Customer User Guide", align="R")
+            self.ln(8)
             return
         self.set_font("DejaVu", "B", 9)
         self.set_text_color(*GREEN)
@@ -29,6 +49,38 @@ class Guide(FPDF):
         self.set_font("DejaVu", "", 8)
         self.set_text_color(*MUTED)
         self.cell(0, 8, f"A Ribdigi House Product   ·   Page {self.page_no()}", align="C")
+
+    def cover_banner(self, subtitle: str, tagline: str | None = None) -> None:
+        """Green cover strip with Ribdigi ERP logo + guide subtitle."""
+        self.set_fill_color(*GREEN)
+        self.rect(0, 0, 210, 48, "F")
+        logo = resolve_logo()
+        if logo is not None:
+            logo_w = 90
+            self.image(str(logo), x=(210 - logo_w) / 2, y=6, w=logo_w)
+            self.set_xy(14, 34)
+        else:
+            self.set_xy(14, 12)
+            self.set_font("DejaVu", "B", 22)
+            self.set_text_color(255, 255, 255)
+            self.cell(0, 10, "RIBDIGI ERP", align="C")
+            self.ln(9)
+            self.set_x(14)
+        self.set_font("DejaVu", "", 12)
+        self.set_text_color(255, 255, 255)
+        self.cell(0, 8, subtitle, align="C")
+        self.ln(18)
+        self.set_text_color(*MUTED)
+        self.set_font("DejaVu", "", 10)
+        self.set_x(14)
+        self.cell(
+            0,
+            6,
+            tagline
+            or "One System. Total Business Control.   ·   A Ribdigi House Product",
+            align="C",
+        )
+        self.ln(12)
 
     def h1(self, text: str):
         self.ln(2)
@@ -77,22 +129,7 @@ def build() -> None:
     pdf.add_font("DejaVu", "B", FONT_B)
     pdf.add_page()
 
-    pdf.set_fill_color(*GREEN)
-    pdf.rect(0, 0, 210, 42, "F")
-    pdf.set_xy(14, 12)
-    pdf.set_font("DejaVu", "B", 22)
-    pdf.set_text_color(255, 255, 255)
-    pdf.cell(0, 10, "RIBDIGI ERP")
-    pdf.ln(9)
-    pdf.set_x(14)
-    pdf.set_font("DejaVu", "", 12)
-    pdf.cell(0, 8, "Customer User Guide")
-    pdf.ln(18)
-    pdf.set_text_color(*MUTED)
-    pdf.set_font("DejaVu", "", 10)
-    pdf.set_x(14)
-    pdf.cell(0, 6, "One System. Total Business Control.   ·   A Ribdigi House Product")
-    pdf.ln(12)
+    pdf.cover_banner("Customer User Guide")
 
     pdf.h2("Who this guide is for")
     pdf.p(

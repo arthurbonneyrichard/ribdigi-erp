@@ -25,6 +25,15 @@ class Guide(_mod.Guide):
     def header(self):
         if self.page_no() == 1:
             return
+        logo = _mod.resolve_logo()
+        if logo is not None:
+            self.image(str(logo), x=14, y=6, h=8)
+            self.set_xy(14, 16)
+            self.set_font("DejaVu", "", 8)
+            self.set_text_color(*MUTED)
+            self.cell(0, 5, "Platform and Company Guide", align="R")
+            self.ln(8)
+            return
         self.set_font("DejaVu", "B", 9)
         self.set_text_color(*GREEN)
         self.cell(0, 8, "RIBDIGI ERP  ·  Platform and Company Guide", align="L")
@@ -38,22 +47,10 @@ def build() -> None:
     pdf.add_font("DejaVu", "B", _mod.FONT_B)
     pdf.add_page()
 
-    pdf.set_fill_color(*GREEN)
-    pdf.rect(0, 0, 210, 42, "F")
-    pdf.set_xy(14, 12)
-    pdf.set_font("DejaVu", "B", 22)
-    pdf.set_text_color(255, 255, 255)
-    pdf.cell(0, 10, "RIBDIGI ERP")
-    pdf.ln(9)
-    pdf.set_x(14)
-    pdf.set_font("DejaVu", "", 12)
-    pdf.cell(0, 8, "Platform Console and Company Setup")
-    pdf.ln(18)
-    pdf.set_text_color(*MUTED)
-    pdf.set_font("DejaVu", "", 10)
-    pdf.set_x(14)
-    pdf.cell(0, 6, "Step by step.   ·   A Ribdigi House Product")
-    pdf.ln(12)
+    pdf.cover_banner(
+        "Platform Console and Company Setup",
+        tagline="Step by step.   ·   A Ribdigi House Product",
+    )
 
     pdf.h2("How to use this guide")
     pdf.p(
