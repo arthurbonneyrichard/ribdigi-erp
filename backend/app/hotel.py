@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
+from contextlib import asynccontextmanager
 from datetime import date, datetime
 from decimal import Decimal
+from typing import AsyncIterator
 
 from fastapi import HTTPException
 from sqlalchemy import func, or_, select
@@ -11,6 +14,29 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
+
+# In-process serialization for same-room bookings (SQLite tests + single-worker).
+# Postgres multi-worker still relies on SELECT … FOR UPDATE on the room row.
+_room_booking_locks: dict[str, asyncio.Lock] = {}
+_room_booking_locks_guard = asyncio.Lock()
+
+
+async def _booking_lock_for(tenant_id: str, room_id: str) -> asyncio.Lock:
+    key = f"{tenant_id}:{room_id}"
+    async with _room_booking_locks_guard:
+        lock = _room_booking_locks.get(key)
+        if lock is None:
+            lock = asyncio.Lock()
+            _room_booking_locks[key] = lock
+        return lock
+
+
+@asynccontextmanager
+async def room_booking_lock(tenant_id: str, room_id: str) -> AsyncIterator[None]:
+    """Hold through flush+commit so concurrent overlapping bookings cannot both succeed."""
+    lock = await _booking_lock_for(tenant_id, room_id)
+    async with lock:
+        yield
 
 ROOM_STATUSES = frozenset(
     {
@@ -188,6 +214,7 @@ def serialize_folio(
         "guest_id": row.guest_id,
         "folio_number": row.folio_number,
         "status": row.status,
+        "sales_invoice_id": getattr(row, "sales_invoice_id", None),
         "notes": row.notes,
         "charges_total": money_json(charge_total),
         "payments_total": money_json(payment_total),
@@ -569,12 +596,13 @@ async def _next_folio_number(db: AsyncSession, tenant_id: str) -> str:
     return f"{prefix}{int(count or 0) + 1:04d}"
 
 
-async def _get_room(db: AsyncSession, tenant_id: str, room_id: str) -> m.HotelRoom:
-    row = (
-        await db.execute(
-            select(m.HotelRoom).where(m.HotelRoom.id == room_id, m.HotelRoom.tenant_id == tenant_id)
-        )
-    ).scalar_one_or_none()
+async def _get_room(
+    db: AsyncSession, tenant_id: str, room_id: str, *, for_update: bool = False
+) -> m.HotelRoom:
+    stmt = select(m.HotelRoom).where(m.HotelRoom.id == room_id, m.HotelRoom.tenant_id == tenant_id)
+    if for_update:
+        stmt = stmt.with_for_update()
+    row = (await db.execute(stmt)).scalar_one_or_none()
     if not row or not row.is_active:
         raise HTTPException(status_code=404, detail="Room not found")
     return row
@@ -604,12 +632,16 @@ async def _assert_room_available(
 ) -> None:
     if check_out <= check_in:
         raise HTTPException(status_code=400, detail="check_out_date must be after check_in_date")
-    stmt = select(m.HotelReservation).where(
-        m.HotelReservation.tenant_id == tenant_id,
-        m.HotelReservation.room_id == room_id,
-        m.HotelReservation.status.in_(("booked", "checked_in")),
-        m.HotelReservation.check_in_date < check_out,
-        m.HotelReservation.check_out_date > check_in,
+    stmt = (
+        select(m.HotelReservation)
+        .where(
+            m.HotelReservation.tenant_id == tenant_id,
+            m.HotelReservation.room_id == room_id,
+            m.HotelReservation.status.in_(("booked", "checked_in")),
+            m.HotelReservation.check_in_date < check_out,
+            m.HotelReservation.check_out_date > check_in,
+        )
+        .with_for_update()
     )
     if exclude_id:
         stmt = stmt.where(m.HotelReservation.id != exclude_id)
@@ -684,7 +716,8 @@ async def create_reservation(
     created_by: str | None = None,
     walk_in: bool = False,
 ) -> tuple[m.HotelReservation, m.HotelRoom, m.HotelGuest]:
-    room = await _get_room(db, tenant_id, room_id)
+    # Lock room row first so concurrent bookings for the same room serialize.
+    room = await _get_room(db, tenant_id, room_id, for_update=True)
     guest = await _get_guest(db, tenant_id, guest_id)
     check_in = _as_date(check_in_date)
     check_out = _as_date(check_out_date)
@@ -745,6 +778,15 @@ async def create_reservation(
         room.status = "reserved"
         room.updated_at = datetime.utcnow()
     await db.flush()
+    # Post-insert overlap re-check (catches races that slipped past the lock).
+    await _assert_room_available(
+        db,
+        tenant_id=tenant_id,
+        room_id=room.id,
+        check_in=check_in,
+        check_out=check_out,
+        exclude_id=row.id,
+    )
     return row, room, guest
 
 
@@ -1026,12 +1068,156 @@ async def check_in(
     return row, room, guest, folio
 
 
+
+async def _ensure_guest_party(db: AsyncSession, *, tenant_id: str, guest: m.HotelGuest) -> m.Party:
+    """Link hotel guest to a tenant customer Party for invoicing (Payment Model 1)."""
+    if guest.email:
+        existing = (
+            await db.execute(
+                select(m.Party).where(
+                    m.Party.tenant_id == tenant_id,
+                    m.Party.kind == "customer",
+                    m.Party.email == guest.email,
+                )
+            )
+        ).scalar_one_or_none()
+        if existing:
+            return existing
+    # Prefer exact name match among active customers when no email hit.
+    by_name = (
+        await db.execute(
+            select(m.Party).where(
+                m.Party.tenant_id == tenant_id,
+                m.Party.kind == "customer",
+                m.Party.name == guest.full_name,
+                m.Party.status == "active",
+            )
+        )
+    ).scalar_one_or_none()
+    if by_name and not guest.email:
+        return by_name
+    party = m.Party(
+        tenant_id=tenant_id,
+        kind="customer",
+        name=guest.full_name,
+        email=guest.email,
+        phone=guest.phone,
+        profile_type="registered",
+        status="active",
+        credit_limit=0,
+    )
+    db.add(party)
+    await db.flush()
+    return party
+
+
+async def create_invoice_from_folio(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str | None,
+    folio: m.HotelFolio,
+    guest: m.HotelGuest,
+    reservation: m.HotelReservation,
+) -> m.SalesInvoice | None:
+    """Create a sales invoice from non-void folio charges (Payment Model 1 records only)."""
+    if getattr(folio, "sales_invoice_id", None):
+        from app.sales import get_invoice
+
+        return await get_invoice(db, tenant_id, folio.sales_invoice_id)
+    charges = (
+        await db.execute(
+            select(m.HotelFolioCharge).where(
+                m.HotelFolioCharge.tenant_id == tenant_id,
+                m.HotelFolioCharge.folio_id == folio.id,
+                m.HotelFolioCharge.is_void.is_(False),
+            )
+        )
+    ).scalars().all()
+    if not charges:
+        return None
+    total = sum(float(c.line_total or 0) for c in charges)
+    if total <= 0:
+        return None
+    party = await _ensure_guest_party(db, tenant_id=tenant_id, guest=guest)
+    product = (
+        await db.execute(
+            select(m.Product).where(
+                m.Product.tenant_id == tenant_id,
+                m.Product.sku == "HOTEL-SERVICE",
+            )
+        )
+    ).scalar_one_or_none()
+    if not product:
+        product = m.Product(
+            tenant_id=tenant_id,
+            name="Hotel services",
+            sku="HOTEL-SERVICE",
+            cost_price=0,
+            selling_price=0,
+            stock_qty=0,
+            tracks_batches=False,
+        )
+        db.add(product)
+        await db.flush()
+    from app.doc_numbers import next_sales_invoice_number
+
+    payments = (
+        await db.execute(
+            select(m.HotelFolioPayment).where(
+                m.HotelFolioPayment.tenant_id == tenant_id,
+                m.HotelFolioPayment.folio_id == folio.id,
+            )
+        )
+    ).scalars().all()
+    paid = sum(float(p.amount or 0) for p in payments)
+    inv_number = await next_sales_invoice_number(db, tenant_id)
+    status = "paid" if paid + 1e-9 >= total else ("partial" if paid > 0 else "posted")
+    invoice = m.SalesInvoice(
+        tenant_id=tenant_id,
+        invoice_number=inv_number,
+        customer_id=party.id,
+        status=status,
+        subtotal=total,
+        tax_amount=0,
+        discount_amount=0,
+        total_amount=total,
+        paid_amount=min(paid, total),
+        notes=(
+            f"Hotel folio {folio.folio_number} / reservation {reservation.reservation_number}. "
+            f"Payment information recorded on folio (not a payment gateway)."
+        ),
+        created_by=user_id,
+        posted_at=datetime.utcnow(),
+    )
+    db.add(invoice)
+    await db.flush()
+    for charge in charges:
+        db.add(
+            m.SalesInvoiceItem(
+                tenant_id=tenant_id,
+                sales_invoice_id=invoice.id,
+                product_id=product.id,
+                quantity=float(charge.quantity or 1),
+                unit_price=float(charge.unit_amount or 0),
+                tax_rate=0,
+                discount=float(charge.discount_amount or 0),
+                line_total=float(charge.line_total or 0),
+            )
+        )
+    folio.sales_invoice_id = invoice.id
+    await db.flush()
+    return invoice
+
+
+
 async def check_out(
     db: AsyncSession,
     *,
     tenant_id: str,
     reservation_id: str,
     allow_balance: bool = False,
+    user_id: str | None = None,
 ) -> tuple[m.HotelReservation, m.HotelRoom, m.HotelGuest, m.HotelFolio | None]:
     row, room, guest = await _get_reservation(db, tenant_id, reservation_id)
     if row.status != "checked_in":
@@ -1044,6 +1230,14 @@ async def check_out(
                 status_code=400,
                 detail=f"Folio balance outstanding ({money_json(bal)}). Record payment or allow_balance.",
             )
+        await create_invoice_from_folio(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            folio=folio,
+            guest=guest,
+            reservation=row,
+        )
         folio.status = "closed"
         folio.closed_at = datetime.utcnow()
         folio.updated_at = datetime.utcnow()

@@ -13672,35 +13672,37 @@ async def hotel_reservations_create(
     claims=Depends(require_permission("hotel", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    row, room, guest = await hotel_svc.create_reservation(
-        db,
-        tenant_id=claims["tenant_id"],
-        room_id=payload.room_id,
-        guest_id=payload.guest_id,
-        check_in_date=payload.check_in_date,
-        check_out_date=payload.check_out_date,
-        adults=payload.adults,
-        children=payload.children,
-        nightly_rate=float(payload.nightly_rate) if payload.nightly_rate is not None else None,
-        booking_source=payload.booking_source,
-        special_requests=payload.special_requests,
-        deposit_amount=float(payload.deposit_amount or 0),
-        deposit_method=payload.deposit_method,
-        notes=payload.notes,
-        created_by=claims["sub"],
-        walk_in=payload.walk_in,
-    )
-    await audit_svc.record_event(
-        db,
-        tenant_id=claims["tenant_id"],
-        user_id=claims["sub"],
-        module="hotel",
-        action="reservation_created",
-        entity="hotel_reservation",
-        entity_id=row.id,
-        details={"reservation_number": row.reservation_number, "room_id": row.room_id},
-    )
-    await db.commit()
+    # Hold lock through commit so overlapping concurrent bookings serialize.
+    async with hotel_svc.room_booking_lock(claims["tenant_id"], payload.room_id):
+        row, room, guest = await hotel_svc.create_reservation(
+            db,
+            tenant_id=claims["tenant_id"],
+            room_id=payload.room_id,
+            guest_id=payload.guest_id,
+            check_in_date=payload.check_in_date,
+            check_out_date=payload.check_out_date,
+            adults=payload.adults,
+            children=payload.children,
+            nightly_rate=float(payload.nightly_rate) if payload.nightly_rate is not None else None,
+            booking_source=payload.booking_source,
+            special_requests=payload.special_requests,
+            deposit_amount=float(payload.deposit_amount or 0),
+            deposit_method=payload.deposit_method,
+            notes=payload.notes,
+            created_by=claims["sub"],
+            walk_in=payload.walk_in,
+        )
+        await audit_svc.record_event(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            module="hotel",
+            action="reservation_created",
+            entity="hotel_reservation",
+            entity_id=row.id,
+            details={"reservation_number": row.reservation_number, "room_id": row.room_id},
+        )
+        await db.commit()
     return env(
         hotel_svc.serialize_reservation(row, room=room, guest=guest),
         "Reservation created",
@@ -13751,6 +13753,7 @@ async def hotel_reservation_check_out(
         tenant_id=claims["tenant_id"],
         reservation_id=reservation_id,
         allow_balance=allow,
+        user_id=claims["sub"],
     )
     await audit_svc.record_event(
         db,
@@ -13760,7 +13763,11 @@ async def hotel_reservation_check_out(
         action="checked_out",
         entity="hotel_reservation",
         entity_id=row.id,
-        details={"reservation_number": row.reservation_number, "room_id": row.room_id},
+        details={
+            "reservation_number": row.reservation_number,
+            "room_id": row.room_id,
+            "sales_invoice_id": getattr(folio, "sales_invoice_id", None) if folio else None,
+        },
     )
     await db.commit()
     return env(
@@ -13852,23 +13859,24 @@ async def hotel_reservation_move(
     claims=Depends(require_permission("hotel", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    row, room, guest = await hotel_svc.move_room(
-        db,
-        tenant_id=claims["tenant_id"],
-        reservation_id=reservation_id,
-        new_room_id=payload.new_room_id,
-    )
-    await audit_svc.record_event(
-        db,
-        tenant_id=claims["tenant_id"],
-        user_id=claims["sub"],
-        module="hotel",
-        action="room_moved",
-        entity="hotel_reservation",
-        entity_id=row.id,
-        details={"new_room_id": row.room_id},
-    )
-    await db.commit()
+    async with hotel_svc.room_booking_lock(claims["tenant_id"], payload.new_room_id):
+        row, room, guest = await hotel_svc.move_room(
+            db,
+            tenant_id=claims["tenant_id"],
+            reservation_id=reservation_id,
+            new_room_id=payload.new_room_id,
+        )
+        await audit_svc.record_event(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            module="hotel",
+            action="room_moved",
+            entity="hotel_reservation",
+            entity_id=row.id,
+            details={"new_room_id": row.room_id},
+        )
+        await db.commit()
     return env(hotel_svc.serialize_reservation(row, room=room, guest=guest), "Guest moved")
 
 

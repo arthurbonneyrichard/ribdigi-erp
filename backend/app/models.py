@@ -1856,6 +1856,9 @@ class HotelFolio(Base):
     guest_id: Mapped[str] = mapped_column(ForeignKey("hotel_guests.id"), index=True)
     folio_number: Mapped[str] = mapped_column(String(40), index=True)
     status: Mapped[str] = mapped_column(String(20), default="open", index=True)
+    sales_invoice_id: Mapped[str | None] = mapped_column(
+        ForeignKey("sales_invoices.id"), nullable=True, index=True
+    )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     opened_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
