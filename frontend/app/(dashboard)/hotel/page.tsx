@@ -150,6 +150,15 @@ export default function HotelPage() {
   const [maintForm, setMaintForm] = useState({ room_id: '', title: '', priority: 'normal' });
   const [extendDate, setExtendDate] = useState('');
   const [moveRoomId, setMoveRoomId] = useState('');
+  const [report, setReport] = useState<any>(null);
+  const [calendar, setCalendar] = useState<any>(null);
+  const [settings, setSettings] = useState<any>(null);
+  const [groupRooms, setGroupRooms] = useState<string[]>([]);
+  const [settingsForm, setSettingsForm] = useState({
+    check_in_time: '14:00',
+    check_out_time: '11:00',
+    cancellation_hours: '24',
+  });
 
   const availableRooms = useMemo(
     () =>
@@ -163,13 +172,22 @@ export default function HotelPage() {
 
   async function refresh() {
     const qs = listKind ? `?list_kind=${listKind}` : '';
-    const [s, r, g, res, hk, mt] = await Promise.all([
+    const today = new Date();
+    const start = new Date(today);
+    start.setDate(start.getDate() - 7);
+    const end = new Date(today);
+    end.setDate(end.getDate() + 14);
+    const iso = (d: Date) => d.toISOString().slice(0, 10);
+    const [s, r, g, res, hk, mt, rep, cal, set] = await Promise.all([
       api('/hotel/summary'),
       api('/hotel/rooms?is_active=true'),
       api('/hotel/guests?is_active=true'),
       api(`/hotel/reservations${qs}`),
       api('/hotel/housekeeping'),
       api('/hotel/maintenance'),
+      api(`/hotel/reports?start_date=${iso(start)}&end_date=${iso(today)}`),
+      api(`/hotel/calendar?start_date=${iso(today)}&end_date=${iso(end)}`),
+      api('/hotel/settings'),
     ]);
     setSummary(s.data || null);
     setRooms(r.data || []);
@@ -177,6 +195,16 @@ export default function HotelPage() {
     setReservations(res.data || []);
     setHkTasks(hk.data || []);
     setMaint(mt.data || []);
+    setReport(rep.data || null);
+    setCalendar(cal.data || null);
+    setSettings(set.data || null);
+    if (set.data) {
+      setSettingsForm({
+        check_in_time: set.data.check_in_time || '14:00',
+        check_out_time: set.data.check_out_time || '11:00',
+        cancellation_hours: String(set.data.cancellation_hours ?? 24),
+      });
+    }
   }
 
   useEffect(() => {
@@ -647,6 +675,21 @@ export default function HotelPage() {
                     {(r.can_check_out || r.status === 'checked_in' || r.status === 'checked_out') && (
                       <button type="button" disabled={busy} onClick={() => openFolio(r.id)} aria-label={`Open folio ${r.reservation_number}`}>Folio</button>
                     )}
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={async () => {
+                        try {
+                          const conf = await api(`/hotel/reservations/${r.id}/confirmation`);
+                          window.alert(conf.data?.text || 'Confirmation loaded');
+                        } catch (err: any) {
+                          setError(err.message || 'Could not load confirmation');
+                        }
+                      }}
+                      aria-label={`Print confirmation ${r.reservation_number}`}
+                    >
+                      Confirm
+                    </button>
                     {r.can_extend && (
                       <button
                         type="button"
@@ -795,6 +838,150 @@ export default function HotelPage() {
           </tbody>
         </table>
       </div>
+
+
+      {report && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h2>Hotel reports</h2>
+          <p className="muted">
+            Occupancy {report.occupancy_rate}% · ADR {Number(report.adr || 0).toFixed(2)} · RevPAR{' '}
+            {Number(report.revpar || 0).toFixed(2)} · Room revenue {Number(report.room_revenue || 0).toFixed(2)}
+          </p>
+          <p className="muted">
+            Cancellations {report.cancellations} · No-shows {report.no_shows} · Occupied nights{' '}
+            {report.occupied_nights}/{report.room_nights_available}
+          </p>
+        </div>
+      )}
+
+      {settings && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h2>Property settings</h2>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setBusy(true);
+              setError('');
+              try {
+                await api('/hotel/settings', {
+                  method: 'PATCH',
+                  body: JSON.stringify({
+                    check_in_time: settingsForm.check_in_time,
+                    check_out_time: settingsForm.check_out_time,
+                    cancellation_hours: Number(settingsForm.cancellation_hours) || 24,
+                  }),
+                });
+                setMessage('Hotel settings saved');
+                await refresh();
+              } catch (err: any) {
+                setError(err.message || 'Could not save settings');
+              } finally {
+                setBusy(false);
+              }
+            }}
+            style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))' }}
+          >
+            <label>
+              <span>Check-in time</span>
+              <input value={settingsForm.check_in_time} onChange={(e) => setSettingsForm((f) => ({ ...f, check_in_time: e.target.value }))} aria-label="Hotel check-in time" />
+            </label>
+            <label>
+              <span>Check-out time</span>
+              <input value={settingsForm.check_out_time} onChange={(e) => setSettingsForm((f) => ({ ...f, check_out_time: e.target.value }))} aria-label="Hotel check-out time" />
+            </label>
+            <label>
+              <span>Cancel hours</span>
+              <input type="number" min={0} value={settingsForm.cancellation_hours} onChange={(e) => setSettingsForm((f) => ({ ...f, cancellation_hours: e.target.value }))} aria-label="Hotel cancellation hours" />
+            </label>
+            <div style={{ alignSelf: 'end' }}>
+              <button type="submit" disabled={busy}>Save settings</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h2>Group / multi-room booking</h2>
+        <p className="muted">Select multiple rooms then book with the reservation form dates and guest.</p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+          {availableRooms.map((r) => (
+            <label key={r.id} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              <input
+                type="checkbox"
+                checked={groupRooms.includes(r.id)}
+                onChange={(e) =>
+                  setGroupRooms((ids) =>
+                    e.target.checked ? [...ids, r.id] : ids.filter((id) => id !== r.id)
+                  )
+                }
+                aria-label={`Group room ${r.code}`}
+              />
+              {r.code}
+            </label>
+          ))}
+        </div>
+        <button
+          type="button"
+          disabled={busy || groupRooms.length < 2 || !resForm.guest_id || !resForm.check_in_date || !resForm.check_out_date}
+          onClick={async () => {
+            setBusy(true);
+            setError('');
+            try {
+              await api('/hotel/reservation-groups', {
+                method: 'POST',
+                body: JSON.stringify({
+                  guest_id: resForm.guest_id,
+                  room_ids: groupRooms,
+                  check_in_date: resForm.check_in_date,
+                  check_out_date: resForm.check_out_date,
+                  adults: Number(resForm.adults) || 1,
+                  children: Number(resForm.children) || 0,
+                  booking_source: 'corporate',
+                  name: 'Group stay',
+                }),
+              });
+              setGroupRooms([]);
+              setMessage('Group reservation created');
+              await refresh();
+            } catch (err: any) {
+              setError(err.message || 'Group booking failed');
+            } finally {
+              setBusy(false);
+            }
+          }}
+          aria-label="Create group reservation"
+        >
+          Book group ({groupRooms.length} rooms)
+        </button>
+      </div>
+
+      {calendar && (
+        <div className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
+          <h2>Availability calendar</h2>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Room</th>
+                {(calendar.days || []).slice(0, 14).map((d: string) => (
+                  <th key={d}>{d.slice(5)}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {(calendar.rooms || []).map((row: any) => (
+                <tr key={row.room.id}>
+                  <td><code>{row.room.code}</code></td>
+                  {(calendar.days || []).slice(0, 14).map((d: string) => (
+                    <td key={d} title={row.days?.[d]?.guest_name || ''}>
+                      {row.days?.[d] ? (row.days[d].status === 'checked_in' ? '●' : '○') : '·'}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <div className="card">
         <h2>Maintenance</h2>

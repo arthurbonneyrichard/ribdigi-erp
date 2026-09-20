@@ -348,6 +348,25 @@ async def create_sales_invoice(
         else:
             line_total = money_json(breakdown["gross"])
         discount = money_json(item.get("discount") or 0)
+        if discount <= 0:
+            try:
+                from app import fmcg as fmcg_svc
+                from app import packages as packages_svc
+                from app import tenants as tenants_svc
+
+                tenant = await tenants_svc.get_tenant(db, tenant_id)
+                if packages_svc.module_allowed(tenant, "fmcg"):
+                    scheme_disc, _meta = await fmcg_svc.best_line_scheme_discount(
+                        db,
+                        tenant_id=tenant_id,
+                        product_id=product.id,
+                        line_qty=float(qty),
+                        line_amount=float(line_amount),
+                    )
+                    if scheme_disc > 0:
+                        discount = money_json(min(scheme_disc, line_amount))
+            except Exception:
+                pass
         line_total = max(line_total - discount, 0)
         subtotal += line_sub
         if line_is_rc:

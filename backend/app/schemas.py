@@ -9186,3 +9186,48 @@ class FmcgRouteStopDeliveryUpdate(BaseModel):
 
     delivery_status: FmcgDeliveryStatusValue
     fail_reason: Annotated[str, Field(min_length=1, max_length=255)] | None = None
+
+
+class HotelSettingsUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    check_in_time: Annotated[str, Field(min_length=4, max_length=8)] | None = None
+    check_out_time: Annotated[str, Field(min_length=4, max_length=8)] | None = None
+    cancellation_hours: Annotated[int, Field(ge=0, le=720)] | None = None
+    no_show_fee_percent: NonNegativeMoneyValue | None = None
+    early_checkin_fee: NonNegativeMoneyValue | None = None
+    late_checkout_fee: NonNegativeMoneyValue | None = None
+    tax_percent: NonNegativeMoneyValue | None = None
+    service_charge_percent: NonNegativeMoneyValue | None = None
+    notes: Annotated[str, Field(min_length=1, max_length=1000)] | None = None
+
+
+class HotelGroupReservationCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    guest_id: UuidIdValue
+    room_ids: Annotated[list[UuidIdValue], Field(min_length=1, max_length=50)]
+    check_in_date: IsoDateQueryValue
+    check_out_date: IsoDateQueryValue
+    adults: Annotated[int, Field(ge=1, le=20)] = 1
+    children: Annotated[int, Field(ge=0, le=20)] = 0
+    booking_source: HotelBookingSourceValue = "corporate"
+    name: Annotated[str, Field(min_length=1, max_length=150)] | None = None
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+class FmcgDispatchCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    route_id: UuidIdValue
+    dispatch_date: IsoDateQueryValue | None = None
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+class FmcgCustomerAssignmentUpsert(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    customer_id: UuidIdValue
+    route_id: UuidIdValue | None = None
+    salesperson_name: Annotated[str, Field(min_length=1, max_length=150)] | None = None
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None

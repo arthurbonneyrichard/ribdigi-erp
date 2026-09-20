@@ -67,6 +67,27 @@ async def _prepare_lines(
             quantity=money_json(item["quantity"]),
         )
         discount = money_json(item.get("discount") or 0)
+        # Auto-apply best FMCG trade scheme when no explicit line discount.
+        if discount <= 0 and item.get("apply_fmcg_scheme", True) is not False:
+            try:
+                from app import fmcg as fmcg_svc
+                from app import packages as packages_svc
+                from app import tenants as tenants_svc
+
+                tenant = await tenants_svc.get_tenant(db, tenant_id)
+                if packages_svc.module_allowed(tenant, "fmcg"):
+                    gross = money_json(qty * unit)
+                    scheme_disc, _meta = await fmcg_svc.best_line_scheme_discount(
+                        db,
+                        tenant_id=tenant_id,
+                        product_id=product.id,
+                        line_qty=float(qty),
+                        line_amount=float(gross),
+                    )
+                    if scheme_disc > 0:
+                        discount = money_json(min(scheme_disc, gross))
+            except Exception:
+                pass
         explicit = item.get("tax_rate")
         if explicit is not None:
             spec = await resolve_product_tax(

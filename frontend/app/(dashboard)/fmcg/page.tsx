@@ -85,6 +85,9 @@ export default function FmcgPage() {
   const [stops, setStops] = useState<Stop[]>([]);
   const [expiring, setExpiring] = useState<ExpiringBatch[]>([]);
   const [perf, setPerf] = useState<RoutePerf[]>([]);
+  const [dispatches, setDispatches] = useState<any[]>([]);
+  const [assignments, setAssignments] = useState<any[]>([]);
+  const [assignForm, setAssignForm] = useState({ customer_id: '', route_id: '', salesperson_name: '' });
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -112,13 +115,15 @@ export default function FmcgPage() {
 
   async function refresh(routeId?: string) {
     const activeRoute = routeId ?? selectedRouteId;
-    const [s, sch, rt, cust, exp, pf] = await Promise.all([
+    const [s, sch, rt, cust, exp, pf, disp, asg] = await Promise.all([
       api('/fmcg/summary'),
       api('/fmcg/schemes'),
       api('/fmcg/routes?is_active=true'),
       api('/customers'),
       api('/fmcg/expiring?days=30'),
       api('/fmcg/routes/performance'),
+      api('/fmcg/dispatches'),
+      api('/fmcg/assignments'),
     ]);
     setSummary(s.data || null);
     setSchemes(sch.data || []);
@@ -127,6 +132,8 @@ export default function FmcgPage() {
     setCustomers(custList.filter((c: Customer) => (c.status || 'active') === 'active'));
     setExpiring(exp.data?.batches || []);
     setPerf(pf.data || []);
+    setDispatches(disp.data || []);
+    setAssignments(asg.data || []);
     if (activeRoute) {
       const st = await api(`/fmcg/routes/${activeRoute}/stops`);
       setStops(st.data || []);
@@ -763,6 +770,152 @@ export default function FmcgPage() {
           </tbody>
         </table>
       </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <h2>Dispatches</h2>
+        <button
+          type="button"
+          disabled={busy || !selectedRouteId}
+          onClick={async () => {
+            setBusy(true);
+            setError('');
+            try {
+              await api('/fmcg/dispatches', {
+                method: 'POST',
+                body: JSON.stringify({ route_id: selectedRouteId }),
+              });
+              setMessage('Dispatch created');
+              await refresh(selectedRouteId);
+            } catch (err: any) {
+              setError(err.message || 'Dispatch failed');
+            } finally {
+              setBusy(false);
+            }
+          }}
+          aria-label="Create FMCG dispatch"
+        >
+          Create dispatch for selected route
+        </button>
+        <table className="table" style={{ marginTop: 12 }}>
+          <thead>
+            <tr>
+              <th>Number</th>
+              <th>Route</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {dispatches.map((d) => (
+              <tr key={d.id}>
+                <td><code>{d.dispatch_number}</code></td>
+                <td>{d.route_code || d.route_id}</td>
+                <td>{d.dispatch_date}</td>
+                <td>{d.status}</td>
+                <td>
+                  {d.status !== 'closed' && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={async () => {
+                        setBusy(true);
+                        try {
+                          await api(`/fmcg/dispatches/${d.id}/close`, { method: 'POST', body: '{}' });
+                          setMessage('Dispatch closed');
+                          await refresh();
+                        } catch (err: any) {
+                          setError(err.message || 'Close failed');
+                        } finally {
+                          setBusy(false);
+                        }
+                      }}
+                    >
+                      Close
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {!dispatches.length && (
+              <tr><td colSpan={5} className="muted">No dispatches yet.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <h2>Customer route / salesperson assignment</h2>
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setBusy(true);
+            setError('');
+            try {
+              await api('/fmcg/assignments', {
+                method: 'POST',
+                body: JSON.stringify({
+                  customer_id: assignForm.customer_id,
+                  route_id: assignForm.route_id || null,
+                  salesperson_name: assignForm.salesperson_name.trim() || null,
+                }),
+              });
+              setAssignForm({ customer_id: '', route_id: '', salesperson_name: '' });
+              setMessage('Assignment saved');
+              await refresh();
+            } catch (err: any) {
+              setError(err.message || 'Assignment failed');
+            } finally {
+              setBusy(false);
+            }
+          }}
+          style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' }}
+        >
+          <label>
+            <span>Customer</span>
+            <select value={assignForm.customer_id} onChange={(e) => setAssignForm((f) => ({ ...f, customer_id: e.target.value }))} required aria-label="Assign customer">
+              <option value="">Select</option>
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Route</span>
+            <select value={assignForm.route_id} onChange={(e) => setAssignForm((f) => ({ ...f, route_id: e.target.value }))} aria-label="Assign route">
+              <option value="">None</option>
+              {routes.map((r) => (
+                <option key={r.id} value={r.id}>{r.code}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Salesperson</span>
+            <input value={assignForm.salesperson_name} onChange={(e) => setAssignForm((f) => ({ ...f, salesperson_name: e.target.value }))} aria-label="Salesperson name" />
+          </label>
+          <div style={{ alignSelf: 'end' }}>
+            <button type="submit" disabled={busy}>Save assignment</button>
+          </div>
+        </form>
+        <table className="table" style={{ marginTop: 12 }}>
+          <thead>
+            <tr><th>Customer</th><th>Route</th><th>Salesperson</th></tr>
+          </thead>
+          <tbody>
+            {assignments.map((a) => (
+              <tr key={a.id}>
+                <td>{a.customer_name || a.customer_id}</td>
+                <td>{a.route_code || '—'}</td>
+                <td>{a.salesperson_name || '—'}</td>
+              </tr>
+            ))}
+            {!assignments.length && (
+              <tr><td colSpan={3} className="muted">No assignments yet.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
     </>
   );
 }

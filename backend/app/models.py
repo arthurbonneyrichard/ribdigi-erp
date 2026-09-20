@@ -1774,6 +1774,43 @@ class HotelGuest(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
+class HotelSettings(Base):
+    """Per-tenant hotel property defaults (times, fees, tax)."""
+
+    __tablename__ = "hotel_settings"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), unique=True, index=True)
+    check_in_time: Mapped[str] = mapped_column(String(8), default="14:00", server_default="14:00")
+    check_out_time: Mapped[str] = mapped_column(String(8), default="11:00", server_default="11:00")
+    cancellation_hours: Mapped[int] = mapped_column(Integer, default=24, server_default="24")
+    no_show_fee_percent: Mapped[float] = mapped_column(Numeric(7, 4), default=100)
+    early_checkin_fee: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    late_checkout_fee: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    tax_percent: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
+    service_charge_percent: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HotelReservationGroup(Base):
+    """Multi-room / group / corporate reservation header."""
+
+    __tablename__ = "hotel_reservation_groups"
+    __table_args__ = (UniqueConstraint("tenant_id", "group_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    group_number: Mapped[str] = mapped_column(String(40), index=True)
+    guest_id: Mapped[str] = mapped_column(ForeignKey("hotel_guests.id"), index=True)
+    name: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    booking_source: Mapped[str] = mapped_column(String(40), default="corporate", server_default="corporate")
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class HotelReservation(Base):
     """Room reservation with check-in / check-out lifecycle."""
 
@@ -1799,6 +1836,9 @@ class HotelReservation(Base):
     checked_out_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     no_show_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    group_id: Mapped[str | None] = mapped_column(
+        ForeignKey("hotel_reservation_groups.id"), nullable=True, index=True
+    )
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -1962,5 +2002,41 @@ class FmcgRouteStop(Base):
     fail_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class FmcgDispatch(Base):
+    """Daily dispatch note for an FMCG delivery route."""
+
+    __tablename__ = "fmcg_dispatches"
+    __table_args__ = (UniqueConstraint("tenant_id", "dispatch_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    route_id: Mapped[str] = mapped_column(ForeignKey("fmcg_routes.id"), index=True)
+    dispatch_number: Mapped[str] = mapped_column(String(40), index=True)
+    dispatch_date: Mapped[date] = mapped_column(Date, index=True)
+    status: Mapped[str] = mapped_column(String(20), default="open", server_default="open")
+    driver_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    vehicle: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class FmcgCustomerAssignment(Base):
+    """Customer → route / salesperson assignment for FMCG distribution."""
+
+    __tablename__ = "fmcg_customer_assignments"
+    __table_args__ = (UniqueConstraint("tenant_id", "customer_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    customer_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
+    route_id: Mapped[str | None] = mapped_column(ForeignKey("fmcg_routes.id"), nullable=True, index=True)
+    salesperson_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

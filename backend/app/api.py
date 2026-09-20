@@ -175,11 +175,15 @@ from app.schemas import (
     GrnCreate,
     FmcgRouteCreate,
     FmcgRouteStopCreate,
+    FmcgCustomerAssignmentUpsert,
+    FmcgDispatchCreate,
     FmcgRouteStopDeliveryUpdate,
     FmcgSchemePreview,
     FmcgTradeSchemeActiveUpdate,
     FmcgTradeSchemeCreate,
     HotelCheckoutBody,
+    HotelGroupReservationCreate,
+    HotelSettingsUpdate,
     HotelExtendStay,
     HotelFolioChargeCreate,
     HotelFolioChargeVoid,
@@ -7827,6 +7831,25 @@ async def pos_sale(
         gross_before_discount = money_json(round(
             money_json(item["quantity"]) * money_json(unit_price), 2
         ))
+        if line_discount <= 0:
+            try:
+                from app import fmcg as fmcg_svc
+                from app import packages as packages_svc
+                from app import tenants as tenants_svc
+
+                tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+                if packages_svc.module_allowed(tenant, "fmcg"):
+                    scheme_disc, _meta = await fmcg_svc.best_line_scheme_discount(
+                        db,
+                        tenant_id=claims["tenant_id"],
+                        product_id=product.id,
+                        line_qty=float(item["quantity"]),
+                        line_amount=float(gross_before_discount),
+                    )
+                    if scheme_disc > 0:
+                        line_discount = money_json(min(scheme_disc, gross_before_discount))
+            except Exception:
+                pass
         if line_discount > gross_before_discount + 1e-9:
             raise HTTPException(status_code=400, detail="Line discount exceeds line amount")
         taxable_base = money_json(round(gross_before_discount - line_discount, 2))
@@ -14371,3 +14394,236 @@ async def fmcg_stop_delivery_update(
         fmcg_svc.serialize_stop(row, customer_name=customer_name),
         "Delivery status updated",
     )
+
+
+
+@api.get("/hotel/settings")
+async def hotel_settings_get(
+    claims=Depends(require_permission("hotel", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await hotel_svc.get_or_create_settings(db, tenant_id=claims["tenant_id"])
+    await db.commit()
+    return env(hotel_svc.serialize_settings(row))
+
+
+@api.patch("/hotel/settings")
+async def hotel_settings_update(
+    payload: HotelSettingsUpdate,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await hotel_svc.update_settings(
+        db, tenant_id=claims["tenant_id"], **payload.model_dump(exclude_unset=True)
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="hotel",
+        action="settings_updated",
+        entity="hotel_settings",
+        entity_id=row.id,
+        details={},
+    )
+    await db.commit()
+    return env(hotel_svc.serialize_settings(row), "Hotel settings updated")
+
+
+@api.post("/hotel/reservation-groups")
+async def hotel_group_create(
+    payload: HotelGroupReservationCreate,
+    claims=Depends(require_permission("hotel", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    group, created = await hotel_svc.create_group_reservation(
+        db,
+        tenant_id=claims["tenant_id"],
+        guest_id=payload.guest_id,
+        room_ids=list(payload.room_ids),
+        check_in_date=payload.check_in_date,
+        check_out_date=payload.check_out_date,
+        adults=payload.adults,
+        children=payload.children,
+        booking_source=payload.booking_source,
+        name=payload.name,
+        notes=payload.notes,
+        created_by=claims["sub"],
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="hotel",
+        action="group_reservation_created",
+        entity="hotel_reservation_group",
+        entity_id=group.id,
+        details={"group_number": group.group_number, "rooms": len(created)},
+    )
+    await db.commit()
+    reservations = [
+        hotel_svc.serialize_reservation(r, room=room, guest=guest)
+        for r, room, guest in created
+    ]
+    return env(hotel_svc.serialize_group(group, reservations=reservations), "Group reservation created")
+
+
+@api.get("/hotel/calendar")
+async def hotel_calendar(
+    start_date: IsoDateQueryValue,
+    end_date: IsoDateQueryValue,
+    claims=Depends(require_permission("hotel", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(
+        await hotel_svc.calendar(
+            db,
+            tenant_id=claims["tenant_id"],
+            start_date=start_date,
+            end_date=end_date,
+        )
+    )
+
+
+@api.get("/hotel/reports")
+async def hotel_reports(
+    start_date: IsoDateQueryValue | None = None,
+    end_date: IsoDateQueryValue | None = None,
+    claims=Depends(require_permission("hotel", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    return env(
+        await hotel_svc.reports(
+            db,
+            tenant_id=claims["tenant_id"],
+            start_date=start_date,
+            end_date=end_date,
+        )
+    )
+
+
+@api.get("/hotel/reservations/{reservation_id}/confirmation")
+async def hotel_reservation_confirmation(
+    reservation_id: UuidIdValue,
+    format: Annotated[str, Query()] = "json",
+    claims=Depends(require_permission("hotel", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    data = await hotel_svc.reservation_confirmation(
+        db, tenant_id=claims["tenant_id"], reservation_id=reservation_id
+    )
+    fmt = (format or "json").strip().lower()
+    if fmt == "text":
+        return PlainTextResponse(data["text"], media_type="text/plain; charset=utf-8")
+    return env(data)
+
+
+@api.get("/fmcg/dispatches")
+async def fmcg_dispatches_list(
+    route_id: UuidIdValue | None = None,
+    claims=Depends(require_permission("fmcg", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await fmcg_svc.list_dispatches(
+        db, tenant_id=claims["tenant_id"], route_id=route_id
+    )
+    return env(
+        [fmcg_svc.serialize_dispatch(d, route_code=code) for d, code in rows]
+    )
+
+
+@api.post("/fmcg/dispatches")
+async def fmcg_dispatches_create(
+    payload: FmcgDispatchCreate,
+    claims=Depends(require_permission("fmcg", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await fmcg_svc.create_dispatch(
+        db,
+        tenant_id=claims["tenant_id"],
+        route_id=payload.route_id,
+        dispatch_date=payload.dispatch_date,
+        notes=payload.notes,
+        created_by=claims["sub"],
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="fmcg",
+        action="dispatch_created",
+        entity="fmcg_dispatch",
+        entity_id=row.id,
+        details={"dispatch_number": row.dispatch_number},
+    )
+    await db.commit()
+    return env(fmcg_svc.serialize_dispatch(row), "Dispatch created")
+
+
+@api.post("/fmcg/dispatches/{dispatch_id}/close")
+async def fmcg_dispatches_close(
+    dispatch_id: UuidIdValue,
+    claims=Depends(require_permission("fmcg", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row = await fmcg_svc.close_dispatch(
+        db, tenant_id=claims["tenant_id"], dispatch_id=dispatch_id
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="fmcg",
+        action="dispatch_closed",
+        entity="fmcg_dispatch",
+        entity_id=row.id,
+        details={"dispatch_number": row.dispatch_number},
+    )
+    await db.commit()
+    return env(fmcg_svc.serialize_dispatch(row), "Dispatch closed")
+
+
+@api.get("/fmcg/assignments")
+async def fmcg_assignments_list(
+    claims=Depends(require_permission("fmcg", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await fmcg_svc.list_assignments(db, tenant_id=claims["tenant_id"])
+    return env(
+        [
+            fmcg_svc.serialize_assignment(a, customer_name=cn, route_code=rc)
+            for a, cn, rc in rows
+        ]
+    )
+
+
+@api.post("/fmcg/assignments")
+async def fmcg_assignments_upsert(
+    payload: FmcgCustomerAssignmentUpsert,
+    claims=Depends(require_permission("fmcg", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    row, cn, rc = await fmcg_svc.upsert_customer_assignment(
+        db,
+        tenant_id=claims["tenant_id"],
+        customer_id=payload.customer_id,
+        route_id=payload.route_id,
+        salesperson_name=payload.salesperson_name,
+        notes=payload.notes,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="fmcg",
+        action="customer_assigned",
+        entity="fmcg_customer_assignment",
+        entity_id=row.id,
+        details={"customer_id": row.customer_id, "route_id": row.route_id},
+    )
+    await db.commit()
+    return env(
+        fmcg_svc.serialize_assignment(row, customer_name=cn, route_code=rc),
+        "Customer assignment saved",
+    )
+

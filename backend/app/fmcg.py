@@ -222,10 +222,9 @@ async def preview_active_schemes(
             continue
         if scheme.ends_on and scheme.ends_on < today:
             continue
-        if scheme.product_id and product_id and scheme.product_id != product_id:
-            continue
-        if scheme.product_id and not product_id:
-            continue
+        if scheme.product_id:
+            if not product_id or scheme.product_id != product_id:
+                continue
         out.append(preview_scheme_discount(scheme, line_qty=line_qty, line_amount=line_amount))
     return out
 
@@ -514,3 +513,209 @@ async def list_near_expiry(db: AsyncSession, *, tenant_id: str, within_days: int
         "count": len(batches),
         "batches": batches,
     }
+
+
+
+async def best_line_scheme_discount(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    product_id: str | None,
+    line_qty: float,
+    line_amount: float,
+) -> tuple[float, dict | None]:
+    """Return (discount_amount, scheme_meta) for the best active scheme on a line."""
+    previews = await preview_active_schemes(
+        db,
+        tenant_id=tenant_id,
+        line_qty=line_qty,
+        line_amount=line_amount,
+        product_id=product_id,
+    )
+    # Also include schemes with no product scope
+    all_active = await list_schemes(db, tenant_id=tenant_id, is_active=True)
+    today = date.today()
+    for scheme in all_active:
+        if scheme.starts_on and scheme.starts_on > today:
+            continue
+        if scheme.ends_on and scheme.ends_on < today:
+            continue
+        if scheme.product_id and product_id and scheme.product_id != product_id:
+            continue
+        if scheme.product_id and not product_id:
+            continue
+        # unscoped schemes always considered
+        if not scheme.product_id:
+            meta = preview_scheme_discount(scheme, line_qty=line_qty, line_amount=line_amount)
+            if not any(p["scheme_id"] == scheme.id for p in previews):
+                previews.append(meta)
+    if not previews:
+        return 0.0, None
+    best = max(previews, key=lambda p: float(p.get("discount_amount") or 0))
+    return float(best.get("discount_amount") or 0), best
+
+
+async def _next_dispatch_number(db: AsyncSession, tenant_id: str) -> str:
+    year = datetime.utcnow().year
+    prefix = f"FD-{year}-"
+    count = (
+        await db.execute(
+            select(m.FmcgDispatch).where(
+                m.FmcgDispatch.tenant_id == tenant_id,
+                m.FmcgDispatch.dispatch_number.like(f"{prefix}%"),
+            )
+        )
+    ).scalars().all()
+    return f"{prefix}{len(count) + 1:04d}"
+
+
+def serialize_dispatch(row: m.FmcgDispatch, *, route_code: str | None = None) -> dict:
+    return {
+        "id": row.id,
+        "route_id": row.route_id,
+        "route_code": route_code,
+        "dispatch_number": row.dispatch_number,
+        "dispatch_date": row.dispatch_date.isoformat() if row.dispatch_date else None,
+        "status": row.status,
+        "driver_name": row.driver_name,
+        "vehicle": row.vehicle,
+        "notes": row.notes,
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+        "closed_at": row.closed_at.isoformat() if row.closed_at else None,
+    }
+
+
+async def create_dispatch(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    route_id: str,
+    dispatch_date: date | str | None = None,
+    notes: str | None = None,
+    created_by: str | None = None,
+) -> m.FmcgDispatch:
+    route = await _get_route(db, tenant_id, route_id)
+    day = _as_date(dispatch_date) or date.today()
+    row = m.FmcgDispatch(
+        tenant_id=tenant_id,
+        route_id=route.id,
+        dispatch_number=await _next_dispatch_number(db, tenant_id),
+        dispatch_date=day,
+        status="open",
+        driver_name=route.driver_name,
+        vehicle=route.vehicle,
+        notes=optional_honest_narrative(notes, label="notes", max_length=500),
+        created_by=created_by,
+    )
+    db.add(row)
+    await db.flush()
+    return row
+
+
+async def list_dispatches(
+    db: AsyncSession, *, tenant_id: str, route_id: str | None = None
+) -> list[tuple[m.FmcgDispatch, str | None]]:
+    stmt = (
+        select(m.FmcgDispatch, m.FmcgRoute)
+        .outerjoin(m.FmcgRoute, m.FmcgRoute.id == m.FmcgDispatch.route_id)
+        .where(m.FmcgDispatch.tenant_id == tenant_id)
+        .order_by(m.FmcgDispatch.dispatch_date.desc(), m.FmcgDispatch.created_at.desc())
+    )
+    if route_id:
+        stmt = stmt.where(m.FmcgDispatch.route_id == route_id)
+    return [(d, r.code if r else None) for d, r in (await db.execute(stmt)).all()]
+
+
+async def close_dispatch(db: AsyncSession, *, tenant_id: str, dispatch_id: str) -> m.FmcgDispatch:
+    row = (
+        await db.execute(
+            select(m.FmcgDispatch).where(
+                m.FmcgDispatch.id == dispatch_id,
+                m.FmcgDispatch.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Dispatch not found")
+    if row.status == "closed":
+        raise HTTPException(status_code=400, detail="Dispatch already closed")
+    row.status = "closed"
+    row.closed_at = datetime.utcnow()
+    await db.flush()
+    return row
+
+
+def serialize_assignment(row: m.FmcgCustomerAssignment, *, customer_name: str | None = None, route_code: str | None = None) -> dict:
+    return {
+        "id": row.id,
+        "customer_id": row.customer_id,
+        "customer_name": customer_name,
+        "route_id": row.route_id,
+        "route_code": route_code,
+        "salesperson_name": row.salesperson_name,
+        "notes": row.notes,
+    }
+
+
+async def upsert_customer_assignment(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    customer_id: str,
+    route_id: str | None = None,
+    salesperson_name: str | None = None,
+    notes: str | None = None,
+) -> tuple[m.FmcgCustomerAssignment, str | None, str | None]:
+    customer = (
+        await db.execute(
+            select(m.Party).where(
+                m.Party.id == customer_id,
+                m.Party.tenant_id == tenant_id,
+                m.Party.kind == "customer",
+            )
+        )
+    ).scalar_one_or_none()
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    route_code = None
+    if route_id:
+        route = await _get_route(db, tenant_id, route_id)
+        route_code = route.code
+    row = (
+        await db.execute(
+            select(m.FmcgCustomerAssignment).where(
+                m.FmcgCustomerAssignment.tenant_id == tenant_id,
+                m.FmcgCustomerAssignment.customer_id == customer_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not row:
+        row = m.FmcgCustomerAssignment(tenant_id=tenant_id, customer_id=customer_id)
+        db.add(row)
+    row.route_id = route_id
+    row.salesperson_name = optional_honest_narrative(
+        salesperson_name, label="salesperson name", max_length=150
+    )
+    row.notes = optional_honest_narrative(notes, label="notes", max_length=500)
+    row.updated_at = datetime.utcnow()
+    await db.flush()
+    return row, customer.name, route_code
+
+
+async def list_assignments(
+    db: AsyncSession, *, tenant_id: str
+) -> list[tuple[m.FmcgCustomerAssignment, str | None, str | None]]:
+    rows = (
+        await db.execute(
+            select(m.FmcgCustomerAssignment, m.Party, m.FmcgRoute)
+            .outerjoin(m.Party, m.Party.id == m.FmcgCustomerAssignment.customer_id)
+            .outerjoin(m.FmcgRoute, m.FmcgRoute.id == m.FmcgCustomerAssignment.route_id)
+            .where(m.FmcgCustomerAssignment.tenant_id == tenant_id)
+            .order_by(m.Party.name.asc())
+        )
+    ).all()
+    return [
+        (a, p.name if p else None, r.code if r else None)
+        for a, p, r in rows
+    ]
+

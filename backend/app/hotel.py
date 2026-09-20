@@ -124,6 +124,7 @@ def serialize_reservation(
         "nightly_rate": money_json(row.nightly_rate or 0),
         "deposit_amount": money_json(getattr(row, "deposit_amount", 0) or 0),
         "deposit_method": getattr(row, "deposit_method", None),
+        "group_id": getattr(row, "group_id", None),
         "estimated_total": money_json(Decimal(str(row.nightly_rate or 0)) * nights),
         "notes": row.notes,
         "folio_id": folio_id,
@@ -705,7 +706,20 @@ async def create_reservation(
         raise HTTPException(status_code=422, detail="Invalid booking_source")
     if deposit_method and deposit_method.strip().lower() not in PAYMENT_METHODS:
         raise HTTPException(status_code=422, detail="Invalid deposit_method")
-    rate = nightly_rate if nightly_rate is not None else float(room.rate_amount or 0)
+    if nightly_rate is not None:
+        rate = float(nightly_rate)
+    else:
+        # Prefer weekend rate for stays that include Sat/Sun nights when configured.
+        rate = float(room.rate_amount or 0)
+        weekend = getattr(room, "weekend_rate", None)
+        if weekend is not None:
+            d = check_in
+            while d < check_out:
+                if d.weekday() >= 5:  # Sat/Sun
+                    rate = float(weekend)
+                    break
+                from datetime import timedelta as _td
+                d = d + _td(days=1)
     row = m.HotelReservation(
         tenant_id=tenant_id,
         reservation_number=await _next_reservation_number(db, tenant_id),
@@ -1414,3 +1428,293 @@ async def summary(db: AsyncSession, *, tenant_id: str) -> dict:
         "outstanding_folio_balance": money_json(outstanding),
         "guests_total": len(await list_guests(db, tenant_id=tenant_id, is_active=True)),
     }
+
+
+
+# --- R3: settings, multi-room groups, calendar, reports, print ---
+
+
+def serialize_settings(row: m.HotelSettings) -> dict:
+    return {
+        "id": row.id,
+        "check_in_time": row.check_in_time,
+        "check_out_time": row.check_out_time,
+        "cancellation_hours": int(row.cancellation_hours or 24),
+        "no_show_fee_percent": money_json(row.no_show_fee_percent or 0),
+        "early_checkin_fee": money_json(row.early_checkin_fee or 0),
+        "late_checkout_fee": money_json(row.late_checkout_fee or 0),
+        "tax_percent": money_json(row.tax_percent or 0),
+        "service_charge_percent": money_json(row.service_charge_percent or 0),
+        "notes": row.notes,
+        "updated_at": row.updated_at.isoformat() if row.updated_at else None,
+    }
+
+
+async def get_or_create_settings(db: AsyncSession, *, tenant_id: str) -> m.HotelSettings:
+    row = (
+        await db.execute(select(m.HotelSettings).where(m.HotelSettings.tenant_id == tenant_id))
+    ).scalar_one_or_none()
+    if row:
+        return row
+    row = m.HotelSettings(tenant_id=tenant_id)
+    db.add(row)
+    await db.flush()
+    return row
+
+
+async def update_settings(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    check_in_time: str | None = None,
+    check_out_time: str | None = None,
+    cancellation_hours: int | None = None,
+    no_show_fee_percent: float | None = None,
+    early_checkin_fee: float | None = None,
+    late_checkout_fee: float | None = None,
+    tax_percent: float | None = None,
+    service_charge_percent: float | None = None,
+    notes: str | None = None,
+) -> m.HotelSettings:
+    row = await get_or_create_settings(db, tenant_id=tenant_id)
+    if check_in_time is not None:
+        row.check_in_time = require_honest_narrative(check_in_time, label="check_in_time", max_length=8)
+    if check_out_time is not None:
+        row.check_out_time = require_honest_narrative(check_out_time, label="check_out_time", max_length=8)
+    if cancellation_hours is not None:
+        row.cancellation_hours = max(0, int(cancellation_hours))
+    if no_show_fee_percent is not None:
+        row.no_show_fee_percent = float(no_show_fee_percent)
+    if early_checkin_fee is not None:
+        row.early_checkin_fee = float(early_checkin_fee)
+    if late_checkout_fee is not None:
+        row.late_checkout_fee = float(late_checkout_fee)
+    if tax_percent is not None:
+        row.tax_percent = float(tax_percent)
+    if service_charge_percent is not None:
+        row.service_charge_percent = float(service_charge_percent)
+    if notes is not None:
+        row.notes = optional_honest_narrative(notes, label="notes", max_length=1000)
+    row.updated_at = datetime.utcnow()
+    await db.flush()
+    return row
+
+
+async def _next_group_number(db: AsyncSession, tenant_id: str) -> str:
+    year = datetime.utcnow().year
+    prefix = f"HG-{year}-"
+    count = (
+        await db.execute(
+            select(func.count())
+            .select_from(m.HotelReservationGroup)
+            .where(
+                m.HotelReservationGroup.tenant_id == tenant_id,
+                m.HotelReservationGroup.group_number.like(f"{prefix}%"),
+            )
+        )
+    ).scalar_one()
+    return f"{prefix}{int(count or 0) + 1:04d}"
+
+
+async def create_group_reservation(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    guest_id: str,
+    room_ids: list[str],
+    check_in_date: date,
+    check_out_date: date,
+    adults: int = 1,
+    children: int = 0,
+    booking_source: str = "corporate",
+    name: str | None = None,
+    notes: str | None = None,
+    created_by: str | None = None,
+) -> tuple[m.HotelReservationGroup, list[tuple[m.HotelReservation, m.HotelRoom, m.HotelGuest]]]:
+    if not room_ids:
+        raise HTTPException(status_code=422, detail="At least one room_id is required")
+    if len(set(room_ids)) != len(room_ids):
+        raise HTTPException(status_code=400, detail="Duplicate room_ids in group booking")
+    guest = await _get_guest(db, tenant_id, guest_id)
+    group = m.HotelReservationGroup(
+        tenant_id=tenant_id,
+        group_number=await _next_group_number(db, tenant_id),
+        guest_id=guest.id,
+        name=optional_honest_narrative(name, label="group name", max_length=150),
+        booking_source=(booking_source or "corporate").strip().lower(),
+        notes=optional_honest_narrative(notes, label="notes", max_length=500),
+        created_by=created_by,
+    )
+    db.add(group)
+    await db.flush()
+    created: list[tuple[m.HotelReservation, m.HotelRoom, m.HotelGuest]] = []
+    for room_id in room_ids:
+        row, room, g = await create_reservation(
+            db,
+            tenant_id=tenant_id,
+            room_id=room_id,
+            guest_id=guest_id,
+            check_in_date=check_in_date,
+            check_out_date=check_out_date,
+            adults=adults,
+            children=children,
+            booking_source=booking_source,
+            notes=notes,
+            created_by=created_by,
+        )
+        row.group_id = group.id
+        created.append((row, room, g))
+    await db.flush()
+    return group, created
+
+
+def serialize_group(
+    group: m.HotelReservationGroup,
+    *,
+    reservations: list[dict] | None = None,
+) -> dict:
+    return {
+        "id": group.id,
+        "group_number": group.group_number,
+        "guest_id": group.guest_id,
+        "name": group.name,
+        "booking_source": group.booking_source,
+        "notes": group.notes,
+        "reservations": reservations or [],
+        "created_at": group.created_at.isoformat() if group.created_at else None,
+    }
+
+
+async def calendar(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    start_date: date,
+    end_date: date,
+) -> dict:
+    start = _as_date(start_date)
+    end = _as_date(end_date)
+    if not start or not end or end < start:
+        raise HTTPException(status_code=400, detail="Invalid calendar date range")
+    if (end - start).days > 62:
+        raise HTTPException(status_code=400, detail="Calendar range max 62 days")
+    rooms = await list_rooms(db, tenant_id=tenant_id, is_active=True)
+    reservations = await list_reservations(db, tenant_id=tenant_id)
+    days = []
+    d = start
+    from datetime import timedelta as _td
+    while d <= end:
+        days.append(d.isoformat())
+        d = d + _td(days=1)
+    grid = []
+    for room in rooms:
+        cells = {}
+        for r, _, guest in reservations:
+            if r.room_id != room.id or r.status in {"cancelled", "no_show"}:
+                continue
+            cur = r.check_in_date
+            while cur < r.check_out_date:
+                key = cur.isoformat()
+                if start <= cur <= end:
+                    cells[key] = {
+                        "reservation_id": r.id,
+                        "reservation_number": r.reservation_number,
+                        "status": r.status,
+                        "guest_name": guest.full_name if guest else None,
+                    }
+                cur = cur + _td(days=1)
+        grid.append({"room": serialize_room(room), "days": cells})
+    return {"start_date": start.isoformat(), "end_date": end.isoformat(), "days": days, "rooms": grid}
+
+
+async def reports(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    start_date: date | None = None,
+    end_date: date | None = None,
+) -> dict:
+    start = _as_date(start_date) or date.today().replace(day=1)
+    end = _as_date(end_date) or date.today()
+    if end < start:
+        raise HTTPException(status_code=400, detail="end_date must be on or after start_date")
+    rooms = await list_rooms(db, tenant_id=tenant_id, is_active=True)
+    reservations = await list_reservations(db, tenant_id=tenant_id)
+    room_nights_available = max(1, len(rooms) * max(1, (end - start).days + 1))
+    occupied_nights = 0
+    room_revenue = 0.0
+    by_source: dict[str, float] = {}
+    by_type: dict[str, float] = {}
+    cancellations = 0
+    no_shows = 0
+    for r, room, _guest in reservations:
+        if r.status == "cancelled":
+            if start <= r.check_in_date <= end:
+                cancellations += 1
+            continue
+        if r.status == "no_show":
+            if start <= r.check_in_date <= end:
+                no_shows += 1
+            continue
+        # Count nights overlapping report window for checked_in/out/booked
+        night = max(r.check_in_date, start)
+        last = min(r.check_out_date, end + __import__("datetime").timedelta(days=1))
+        while night < last and night <= end:
+            if night >= start:
+                occupied_nights += 1
+                room_revenue += float(r.nightly_rate or 0)
+                src = getattr(r, "booking_source", None) or "direct"
+                by_source[src] = by_source.get(src, 0) + float(r.nightly_rate or 0)
+                rtype = room.room_type if room else "unknown"
+                by_type[rtype] = by_type.get(rtype, 0) + float(r.nightly_rate or 0)
+            night = night + __import__("datetime").timedelta(days=1)
+    occupancy = round(100.0 * occupied_nights / room_nights_available, 2)
+    adr = round(room_revenue / occupied_nights, 2) if occupied_nights else 0.0
+    revpar = round(room_revenue / room_nights_available, 2)
+    return {
+        "start_date": start.isoformat(),
+        "end_date": end.isoformat(),
+        "rooms_total": len(rooms),
+        "room_nights_available": room_nights_available,
+        "occupied_nights": occupied_nights,
+        "occupancy_rate": occupancy,
+        "room_revenue": money_json(room_revenue),
+        "adr": money_json(adr),
+        "revpar": money_json(revpar),
+        "cancellations": cancellations,
+        "no_shows": no_shows,
+        "revenue_by_source": {k: money_json(v) for k, v in sorted(by_source.items())},
+        "revenue_by_room_type": {k: money_json(v) for k, v in sorted(by_type.items())},
+    }
+
+
+async def reservation_confirmation(
+    db: AsyncSession, *, tenant_id: str, reservation_id: str
+) -> dict:
+    row, room, guest = await _get_reservation(db, tenant_id, reservation_id)
+    settings = await get_or_create_settings(db, tenant_id=tenant_id)
+    nights = max(0, (row.check_out_date - row.check_in_date).days)
+    total = float(row.nightly_rate or 0) * nights
+    lines = [
+        f"RESERVATION CONFIRMATION",
+        f"Number: {row.reservation_number}",
+        f"Guest: {guest.full_name}",
+        f"Room: {room.code} — {room.name} ({room.room_type})",
+        f"Check-in: {row.check_in_date.isoformat()} from {settings.check_in_time}",
+        f"Check-out: {row.check_out_date.isoformat()} by {settings.check_out_time}",
+        f"Nights: {nights}",
+        f"Adults/Children: {row.adults}/{row.children}",
+        f"Nightly rate: {money_json(row.nightly_rate or 0)}",
+        f"Estimated total: {money_json(total)}",
+        f"Deposit: {money_json(getattr(row, 'deposit_amount', 0) or 0)}",
+        f"Status: {row.status}",
+        f"Cancellation: cancel at least {settings.cancellation_hours}h before check-in",
+    ]
+    if row.special_requests:
+        lines.append(f"Special requests: {row.special_requests}")
+    return {
+        "reservation": serialize_reservation(row, room=room, guest=guest),
+        "settings": serialize_settings(settings),
+        "text": "\n".join(lines),
+    }
+
