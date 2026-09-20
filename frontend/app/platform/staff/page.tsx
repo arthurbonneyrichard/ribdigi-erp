@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Shell from '../../../components/Shell';
 import { api } from '../../../lib/api';
 
 type Staff = {
@@ -281,14 +280,14 @@ export default function PlatformStaffPage() {
 
   if (!ready && !error) {
     return (
-      <Shell>
+      <>
         <p className="muted">Loading platform staff…</p>
-      </Shell>
+      </>
     );
   }
 
   return (
-    <Shell>
+    <>
       <div className="plat">
         <header className="plat-hero">
           <div>
@@ -619,6 +618,6 @@ export default function PlatformStaffPage() {
           </table>
         </div>
       </div>
-    </Shell>
+    </>
   );
 }

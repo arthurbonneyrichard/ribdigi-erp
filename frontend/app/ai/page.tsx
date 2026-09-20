@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 import { useStoreContext } from '../../lib/storeContext';
 
@@ -590,7 +589,7 @@ export default function Page() {
   const hasPoMatch = Boolean(draftDocPurchaseOrderId.trim());
 
   return (
-    <Shell>
+    <>
       <h1>AI Business Assistant</h1>
       <p className="muted">
         Chat requires a configured AI provider. Rule-based insights, inventory/sales/expense analysis, report generator, customer/document assistants, and the Security Monitor are available now.
@@ -930,6 +929,6 @@ export default function Page() {
           </ul>
         )}
       </div>
-    </Shell>
+    </>
   );
 }

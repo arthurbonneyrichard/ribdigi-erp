@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 import { useStoreContext } from '../../lib/storeContext';
 
@@ -418,7 +417,7 @@ export default function Page() {
   ];
 
   return (
-    <Shell>
+    <>
       <div className="dash">
         <section className="dash-hero">
           <div className="sun" />
@@ -773,6 +772,6 @@ export default function Page() {
           )}
         </section>
       </div>
-    </Shell>
+    </>
   );
 }

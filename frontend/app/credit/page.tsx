@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
 export default function Page() {
@@ -342,7 +341,7 @@ export default function Page() {
   const totals = report?.totals || {};
 
   return (
-    <Shell>
+    <>
       <h1>Credit & Aging</h1>
       <p className="muted">
         AR/AP aging, statements, payments, and early-payment discounts. Over-limit credit sales are
@@ -877,6 +876,6 @@ export default function Page() {
           </table>
         </div>
       )}
-    </Shell>
+    </>
   );
 }

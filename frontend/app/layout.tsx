@@ -1,4 +1,5 @@
 import UmamiScript from '../components/UmamiScript';
+import ShellGate from '../components/ShellGate';
 import './globals.css';
 
 export const metadata = {
@@ -42,7 +43,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: swInit }} />
         <UmamiScript />
       </head>
-      <body>{children}</body>
+      <body>
+        <ShellGate>{children}</ShellGate>
+      </body>
     </html>
   );
 }

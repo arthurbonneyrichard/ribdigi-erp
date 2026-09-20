@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 import { formatDateTime, formatNumber } from '../../lib/format';
 
@@ -205,16 +204,16 @@ export default function Page() {
 
   if (!tenant) {
     return (
-      <Shell>
+      <>
         <h1>Company</h1>
         {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
         <p className="muted">Loading…</p>
-      </Shell>
+      </>
     );
   }
 
   return (
-    <Shell>
+    <>
       <h1>Company</h1>
       <p className="muted">
         Status: {tenant.status} · Slug: {tenant.slug}
@@ -927,6 +926,6 @@ export default function Page() {
           </div>
         </div>
       )}
-    </Shell>
+    </>
   );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
 const JOB_LABELS: Record<string, string> = {
@@ -74,7 +73,7 @@ export default function Page() {
   const beat = info?.beat || {};
 
   return (
-    <Shell>
+    <>
       <h1>Jobs</h1>
       <p className="muted">
         Scheduled Celery handlers and beat intervals. Company admins can view;{' '}
@@ -186,6 +185,6 @@ export default function Page() {
           </pre>
         </div>
       )}
-    </Shell>
+    </>
   );
 }

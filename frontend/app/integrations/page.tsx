@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
 const WEBHOOK_EVENTS = [
@@ -301,7 +300,7 @@ export default function Page() {
   });
 
   return (
-    <Shell>
+    <>
       <h1>Integrations</h1>
       <p className="muted">
         API keys and outbound webhooks for company admins (BR-18.1 / BR-18.6). Secrets are shown
@@ -728,6 +727,6 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
           </div>
         )}
       </div>
-    </Shell>
+    </>
   );
 }

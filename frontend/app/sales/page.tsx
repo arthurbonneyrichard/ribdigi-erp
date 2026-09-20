@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Shell from '../../components/Shell';
 import PartyContactsPanel from '../../components/PartyContactsPanel';
 import { api } from '../../lib/api';
 import { formatNumber, type FormatPrefs } from '../../lib/format';
@@ -770,7 +769,7 @@ export default function Page() {
   });
 
   return (
-    <Shell>
+    <>
       <h1>Sales</h1>
       <p className="muted">Quotations → orders → invoices → returns</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
@@ -2208,6 +2207,6 @@ export default function Page() {
           )}
         </div>
       )}
-    </Shell>
+    </>
   );
 }

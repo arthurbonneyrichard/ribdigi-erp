@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 import { useStoreContext } from '../../lib/storeContext';
 import {
@@ -1015,7 +1014,7 @@ export default function Page() {
   }
 
   return (
-    <Shell>
+    <>
       <div className="tpos">
         <header className="tpos-top">
           <div>
@@ -1882,6 +1881,6 @@ export default function Page() {
 
 
       </div>
-    </Shell>
+    </>
   );
 }

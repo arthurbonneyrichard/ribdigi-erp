@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
 function bufferToBase64url(buf: ArrayBuffer): string {
@@ -245,7 +244,7 @@ export default function Page() {
   }
 
   return (
-    <Shell>
+    <>
       <h1>Security / 2FA</h1>
       <p className="muted">TOTP authenticator, passkeys, recovery codes, and active sessions</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
@@ -413,6 +412,6 @@ export default function Page() {
           </ul>
         </div>
       )}
-    </Shell>
+    </>
   );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Shell from '../../components/Shell';
 import AttachmentPreview from '../../components/AttachmentPreview';
 import { api } from '../../lib/api';
 import { useStoreContext } from '../../lib/storeContext';
@@ -959,7 +958,7 @@ export default function Page() {
   const activeAccounts = accounts.filter((a) => a.is_active !== false);
 
   return (
-    <Shell>
+    <>
       <h1>Accounting</h1>
       <p className="muted">Chart of accounts, journals, trial balance, P&amp;L, bank reconciliation, and cheques</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
@@ -2637,6 +2636,6 @@ export default function Page() {
           onError={(msg) => setError(msg)}
         />
       )}
-    </Shell>
+    </>
   );
 }

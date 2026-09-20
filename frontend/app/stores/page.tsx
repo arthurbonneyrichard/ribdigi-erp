@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
 type DayHours = { open?: string; close?: string; closed?: boolean };
@@ -805,7 +804,7 @@ export default function Page() {
   const storeName = (id: string) => stores.find((s) => s.id === id)?.name || id;
 
   return (
-    <Shell>
+    <>
       <h1>Multi-Store</h1>
       <p className="muted">Branches, departments, stores, warehouses, FEFO mode, and transfers</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
@@ -1817,6 +1816,6 @@ export default function Page() {
           )}
         </tbody>
       </table>
-    </Shell>
+    </>
   );
 }

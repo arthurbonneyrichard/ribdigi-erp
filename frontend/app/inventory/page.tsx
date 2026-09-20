@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 import { useStoreContext } from '../../lib/storeContext';
 
@@ -1543,7 +1542,7 @@ export default function Page() {
   });
 
   return (
-    <Shell>
+    <>
       <h1>Inventory</h1>
       <p className="muted">
         Products, catalog, variants, batches, stock out, warehouse stock, transfers, expiry, stock
@@ -4260,6 +4259,6 @@ export default function Page() {
           </table>
         </>
       )}
-    </Shell>
+    </>
   );
 }

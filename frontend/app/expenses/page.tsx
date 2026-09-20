@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Shell from '../../components/Shell';
 import AttachmentPreview from '../../components/AttachmentPreview';
 import { api } from '../../lib/api';
 import { useStoreContext } from '../../lib/storeContext';
@@ -789,7 +788,7 @@ export default function Page() {
   });
 
   return (
-    <Shell>
+    <>
       <h1>Expenses</h1>
       <p className="muted">
         Auto-approve ≤ {threshold}
@@ -1795,6 +1794,6 @@ export default function Page() {
           onError={(msg) => setError(msg)}
         />
       )}
-    </Shell>
+    </>
   );
 }

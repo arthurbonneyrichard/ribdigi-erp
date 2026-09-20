@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Shell from '../../../components/Shell';
 import { api } from '../../../lib/api';
 
 const PLATFORM_ROLES = [
@@ -51,9 +50,9 @@ export default function PlatformReportsPage() {
 
   if (!ready && !error) {
     return (
-      <Shell>
+      <>
         <p className="muted">Loading platform reports…</p>
-      </Shell>
+      </>
     );
   }
 
@@ -63,7 +62,7 @@ export default function PlatformReportsPage() {
   const trials = data?.trials?.rows || [];
 
   return (
-    <Shell>
+    <>
       <div className="plat">
         <header className="plat-hero">
           <div>
@@ -199,6 +198,6 @@ export default function PlatformReportsPage() {
           </table>
         </div>
       </div>
-    </Shell>
+    </>
   );
 }

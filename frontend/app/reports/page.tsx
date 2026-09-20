@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 import { useStoreContext } from '../../lib/storeContext';
 
@@ -535,7 +534,7 @@ export default function Page() {
   }
 
   return (
-    <Shell>
+    <>
       <h1>Reports & Analytics</h1>
       <p className="muted">Sales, inventory, purchases, expenses, cash flow, and balance sheet</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
@@ -2447,6 +2446,6 @@ export default function Page() {
           {!schedules.length && !loading && <p className="muted">No schedules yet.</p>}
         </>
       )}
-    </Shell>
+    </>
   );
 }

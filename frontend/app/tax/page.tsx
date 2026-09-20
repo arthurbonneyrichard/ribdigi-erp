@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 import { useStoreContext } from '../../lib/storeContext';
 
@@ -227,7 +226,7 @@ export default function Page() {
   const boxes = filing?.filing_boxes?.boxes || [];
 
   return (
-    <Shell>
+    <>
       <h1>Tax</h1>
       <p className="muted">Rates, calculator, period summary, and filing export pack</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
@@ -531,6 +530,6 @@ export default function Page() {
           ))}
         </tbody>
       </table>
-    </Shell>
+    </>
   );
 }

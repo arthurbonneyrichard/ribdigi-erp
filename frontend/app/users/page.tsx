@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
 type RoleRow = {
@@ -455,7 +454,7 @@ export default function Page() {
   }
 
   return (
-    <Shell>
+    <>
       <h1>User Management</h1>
       <p className="muted">
         Create users, assign roles, branch/department, and record scope; activate or deactivate
@@ -902,6 +901,6 @@ export default function Page() {
           ))}
         </tbody>
       </table>
-    </Shell>
+    </>
   );
 }

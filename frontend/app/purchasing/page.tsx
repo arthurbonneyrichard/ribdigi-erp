@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Shell from '../../components/Shell';
 import PartyContactsPanel from '../../components/PartyContactsPanel';
 import AttachmentPreview from '../../components/AttachmentPreview';
 import { api } from '../../lib/api';
@@ -1273,7 +1272,7 @@ export default function Page() {
   });
 
   return (
-    <Shell>
+    <>
       <h1>Purchasing</h1>
       <p className="muted">Requests → purchase orders → GRN → invoices → returns</p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
@@ -3241,6 +3240,6 @@ export default function Page() {
           onError={(msg) => setError(msg)}
         />
       )}
-    </Shell>
+    </>
   );
 }

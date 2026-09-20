@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -129,7 +128,7 @@ export default function Page() {
   }
 
   return (
-    <Shell>
+    <>
       <h1>Backup &amp; Recovery</h1>
       <p className="muted">
         Encrypted tenant logical backups with checksum verification. Schedule failures raise an in-app
@@ -268,6 +267,6 @@ export default function Page() {
           )}
         </tbody>
       </table>
-    </Shell>
+    </>
   );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
 type Note = {
@@ -128,7 +127,7 @@ export default function Page() {
   }
 
   return (
-    <Shell>
+    <>
       <h1>Notifications</h1>
       <p className="muted">
         In-app notification center — unread badge, category filters, mark read/unread, and 90-day
@@ -238,6 +237,6 @@ export default function Page() {
           </p>
         </div>
       )}
-    </Shell>
+    </>
   );
 }

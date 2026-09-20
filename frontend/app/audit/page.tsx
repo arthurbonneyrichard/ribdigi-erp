@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -191,7 +190,7 @@ export default function Page() {
   }
 
   return (
-    <Shell>
+    <>
       <h1>Audit Logs</h1>
       <p className="muted">
         Append-only activity trail with integrity verification and 7-year retention (BR-17.2).
@@ -391,6 +390,6 @@ export default function Page() {
           ))}
         </tbody>
       </table>
-    </Shell>
+    </>
   );
 }

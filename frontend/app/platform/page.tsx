@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Shell from '../../components/Shell';
 import { api } from '../../lib/api';
 
 type SubscriptionInfo = {
@@ -442,16 +441,16 @@ export default function PlatformConsole() {
 
   if (!ready && !error) {
     return (
-      <Shell>
+      <>
         <p className="muted">Loading platform console…</p>
-      </Shell>
+      </>
     );
   }
 
   const sub = selected?.subscription;
 
   return (
-    <Shell>
+    <>
       <div className="plat">
         <header className="plat-hero">
           <div>
@@ -986,6 +985,6 @@ export default function PlatformConsole() {
           </div>
         )}
       </div>
-    </Shell>
+    </>
   );
 }
