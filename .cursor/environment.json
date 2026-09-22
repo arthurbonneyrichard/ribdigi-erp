@@ -1,0 +1,28 @@
+{
+  "name": "RIBDIGI BUSINESS ERP",
+  "user": "ubuntu",
+  "install": "bash .cursor/install.sh",
+  "start": "bash .cursor/start.sh",
+  "terminals": [
+    {
+      "name": "backend",
+      "command": "cd backend && source .venv/bin/activate && export PYTHONPATH=$PWD && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir $PWD"
+    },
+    {
+      "name": "frontend",
+      "command": "cd frontend && export NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1 NEXT_TELEMETRY_DISABLED=1 && npm run dev"
+    },
+    {
+      "name": "celery-worker",
+      "command": "cd backend && source .venv/bin/activate && export PYTHONPATH=$PWD && celery -A app.celery_app.celery worker --loglevel=info --concurrency=2"
+    },
+    {
+      "name": "celery-beat",
+      "command": "cd backend && source .venv/bin/activate && export PYTHONPATH=$PWD && celery -A app.celery_app.celery beat --loglevel=info --schedule ../.localdata/celerybeat-schedule"
+    }
+  ],
+  "ports": [
+    { "name": "backend", "port": 8000 },
+    { "name": "frontend", "port": 3000 }
+  ]
+}
