@@ -404,6 +404,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [enabledModules, setEnabledModules] = useState<string[] | null>(null);
   const [role, setRole] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileNav, setMobileNav] = useState(false);
   const [fullName, setFullName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [hasLogo, setHasLogo] = useState(false);
@@ -444,6 +445,37 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(max-width: 900px)');
+    const sync = () => {
+      const isMobile = mq.matches;
+      setMobileNav(isMobile);
+      if (!isMobile) setMenuOpen(false);
+    };
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const body = document.body;
+    if (!menuOpen) {
+      body.classList.remove('ribdigi-nav-lock');
+      body.style.removeProperty('overflow');
+      return;
+    }
+    const previousOverflow = body.style.overflow;
+    body.classList.add('ribdigi-nav-lock');
+    body.style.overflow = 'hidden';
+    return () => {
+      body.classList.remove('ribdigi-nav-lock');
+      if (previousOverflow) body.style.overflow = previousOverflow;
+      else body.style.removeProperty('overflow');
+    };
+  }, [menuOpen]);
 
   // Discourage copying app content (form fields stay selectable).
   useEffect(() => {
@@ -738,7 +770,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   return (
     <StoreProvider enabled={Boolean(role) && !isPlatformOwner}>
       <div className={`shell shell-secure${menuOpen ? ' nav-open' : ''}`}>
-      <aside className="side">
+      <aside
+        className="side"
+        aria-hidden={mobileNav && !menuOpen}
+        {...(mobileNav && !menuOpen ? { inert: true } : {})}
+      >
         <div className="brand" aria-label="Company brand">
           <img
             className="brand-logo"

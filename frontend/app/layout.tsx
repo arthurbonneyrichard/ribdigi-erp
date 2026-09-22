@@ -1,6 +1,12 @@
 import UmamiScript from '../components/UmamiScript';
 import './globals.css';
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#4AB012',
+};
+
 export const metadata = {
   title: 'RIBDIGI ERP',
   description: 'One System. Total Business Control. A Ribdigi House Product.',
