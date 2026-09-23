@@ -78,9 +78,9 @@ def _default_for_required_column(col, table_name: str = "", values: dict | None 
     if name == "fiscal_year_start":
         return "01-01"
     if name == "invoice_print_template":
-        return "standard"
+        return "a4"
     if name == "receipt_print_template":
-        return "standard"
+        return "thermal_80"
     if name == "drawer_mode":
         return "none"
     if name == "warehouse_type":
@@ -123,10 +123,9 @@ def _prepare_payload(sync_session, table_name: str, values: dict) -> dict:
         payload["id"] = uid()
     if "company_id" in tbl.c and payload.get("company_id") in (None, ""):
         payload.pop("company_id", None)
-        if not tbl.c.company_id.nullable:
-            company_id = _resolve_company_id(sync_session, values.get("tenant_id"))
-            if company_id:
-                payload["company_id"] = company_id
+        company_id = _resolve_company_id(sync_session, values.get("tenant_id"))
+        if company_id:
+            payload["company_id"] = company_id
     for col in tbl.columns:
         if col.name in payload:
             continue
@@ -171,34 +170,52 @@ async def existing_codes(db: AsyncSession, table_name: str, tenant_id: str, code
     cols = await table_column_names(db, table_name)
     if code_column not in cols or "tenant_id" not in cols:
         return set()
-    result = await db.execute(
-        text(f"SELECT {code_column} FROM {table_name} WHERE tenant_id = :tid"),
-        {"tid": tenant_id},
-    )
-    return {str(row[0]) for row in result if row[0] is not None}
+    try:
+        result = await db.execute(
+            text(f"SELECT {code_column} FROM {table_name} WHERE tenant_id = :tid"),
+            {"tid": tenant_id},
+        )
+        return {str(row[0]) for row in result if row[0] is not None}
+    except Exception:
+        return set()
 
 
 async def existing_names(db: AsyncSession, table_name: str, tenant_id: str) -> set[str]:
     cols = await table_column_names(db, table_name)
     if "name" not in cols or "tenant_id" not in cols:
         return set()
-    result = await db.execute(
-        text(f"SELECT name FROM {table_name} WHERE tenant_id = :tid"),
-        {"tid": tenant_id},
-    )
-    return {str(row[0]) for row in result if row[0] is not None}
+    try:
+        result = await db.execute(
+            text(f"SELECT name FROM {table_name} WHERE tenant_id = :tid"),
+            {"tid": tenant_id},
+        )
+        return {str(row[0]) for row in result if row[0] is not None}
+    except Exception:
+        return set()
 
 
-async def ensure_tenant_company(db: AsyncSession, tenant_id: str, *, name: str | None = None, industry: str | None = None, currency: str | None = None) -> None:
+async def resolve_tenant_company_id(db: AsyncSession, tenant_id: str) -> str | None:
     cols = await table_column_names(db, "companies")
     if not cols:
-        return
-    existing = await db.execute(
-        text("SELECT id FROM companies WHERE tenant_id = :tid LIMIT 1"),
-        {"tid": tenant_id},
-    )
-    if existing.first():
-        return
+        return None
+    try:
+        existing = await db.execute(
+            text("SELECT id FROM companies WHERE tenant_id = :tid LIMIT 1"),
+            {"tid": tenant_id},
+        )
+        row = existing.first()
+        return str(row[0]) if row and row[0] else None
+    except Exception:
+        return None
+
+
+async def ensure_tenant_company(db: AsyncSession, tenant_id: str, *, name: str | None = None, industry: str | None = None, currency: str | None = None) -> str | None:
+    cols = await table_column_names(db, "companies")
+    if not cols:
+        return None
+    found = await resolve_tenant_company_id(db, tenant_id)
+    if found:
+        return found
     await insert_matching_row(
         db,
         "companies",
@@ -212,8 +229,10 @@ async def ensure_tenant_company(db: AsyncSession, tenant_id: str, *, name: str |
             "fiscal_year_start": "01-01",
             "is_active": True,
             "is_default": True,
-            "invoice_print_template": "standard",
-            "receipt_print_template": "standard",
+            "invoice_print_template": "a4",
+            "receipt_print_template": "thermal_80",
+            "store_limit": 5,
         },
     )
     await db.flush()
+    return await resolve_tenant_company_id(db, tenant_id)

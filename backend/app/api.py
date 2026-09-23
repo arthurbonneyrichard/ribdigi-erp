@@ -458,7 +458,11 @@ async def seed_tenant_defaults(db: AsyncSession, tenant_id: str) -> None:
     await _seed_step("chart of accounts", lambda: ensure_default_accounts(db, tenant_id), db)
     await _seed_step("expense categories", lambda: expenses_svc.ensure_default_categories(db, tenant_id), db)
     await _seed_step("product catalog", lambda: catalog_meta_svc.ensure_default_catalog(db, tenant_id), db)
-    await _seed_step("customer groups", lambda: customer_groups_svc.ensure_default_groups(db, tenant_id), db)
+    await _seed_optional(
+        "customer groups",
+        lambda: customer_groups_svc.ensure_default_groups(db, tenant_id),
+        db,
+    )
     await _seed_optional(
         "welcome notification",
         lambda: create_notification(

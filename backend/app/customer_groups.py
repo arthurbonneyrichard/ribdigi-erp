@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 import re
 
 from fastapi import HTTPException
@@ -30,45 +31,31 @@ async def ensure_default_groups(db: AsyncSession, tenant_id: str) -> list[m.Cust
         known = await schema_compat.existing_codes(db, "customer_groups", tenant_id)
     else:
         known = await schema_compat.existing_names(db, "customer_groups", tenant_id)
-    if known:
-        try:
-            existing = (
-                await db.execute(
-                    select(m.CustomerGroup).where(m.CustomerGroup.tenant_id == tenant_id)
-                )
-            ).scalars().all()
-            if existing:
-                return list(existing)
-        except Exception:
-            return []
+    company_id = await schema_compat.resolve_tenant_company_id(db, tenant_id)
     for code, name, pct in DEFAULT_GROUPS:
         marker = code if "code" in cols else name
         if marker in known:
             continue
-        await schema_compat.insert_matching_row(
-            db,
-            "customer_groups",
-            {
-                "tenant_id": tenant_id,
-                "code": code,
-                "name": name,
-                "discount_percent": pct,
-                "is_active": True,
-                "company_id": None,
-            },
-        )
-        known.add(marker)
-    await db.flush()
-    try:
-        return list(
-            (
-                await db.execute(
-                    select(m.CustomerGroup).where(m.CustomerGroup.tenant_id == tenant_id)
+        try:
+            async with db.begin_nested():
+                await schema_compat.insert_matching_row(
+                    db,
+                    "customer_groups",
+                    {
+                        "tenant_id": tenant_id,
+                        "code": code,
+                        "name": name,
+                        "discount_percent": pct,
+                        "is_active": True,
+                        "company_id": company_id,
+                        "created_at": datetime.utcnow(),
+                    },
                 )
-            ).scalars().all()
-        )
-    except Exception:
-        return []
+            known.add(marker)
+        except Exception:
+            continue
+    await db.flush()
+    return []
 
 
 def serialize_group(row: m.CustomerGroup) -> dict:

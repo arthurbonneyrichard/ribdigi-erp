@@ -430,6 +430,50 @@ async def test_create_tenant_seeds_tax_when_code_is_required(client, db_session)
 
 
 @pytest.mark.asyncio
+async def test_create_tenant_succeeds_when_customer_groups_fail(client, db_session, monkeypatch):
+    ac, seed = client
+    headers = await platform_owner_headers(ac, seed)
+
+    async def boom(*_a, **_k):
+        raise RuntimeError("customer_groups.code does not exist")
+
+    monkeypatch.setattr("app.customer_groups.ensure_default_groups", boom)
+    ok = await ac.post(
+        "/api/v1/tenants",
+        headers=headers,
+        json={**PAYLOAD, "slug": "groups-skip", "admin_email": "groups.skip@example.com"},
+    )
+    assert ok.status_code == 200, ok.text
+    leftover = (
+        await db_session.execute(select(m.Tenant).where(m.Tenant.slug == "groups-skip"))
+    ).scalar_one_or_none()
+    assert leftover is not None
+
+
+@pytest.mark.asyncio
+async def test_create_tenant_seeds_customer_groups_by_name(client, db_session):
+    ac, seed = client
+    headers = await platform_owner_headers(ac, seed)
+    ok = await ac.post(
+        "/api/v1/tenants",
+        headers=headers,
+        json={**PAYLOAD, "slug": "groups-ok", "admin_email": "groups.ok@example.com"},
+    )
+    assert ok.status_code == 200, ok.text
+    names = (
+        await db_session.execute(
+            text(
+                "SELECT name FROM customer_groups WHERE tenant_id = "
+                "(SELECT id FROM tenants WHERE slug = :slug)"
+            ),
+            {"slug": "groups-ok"},
+        )
+    ).scalars().all()
+    assert "Retail" in names
+    assert "Wholesale" in names
+
+
+@pytest.mark.asyncio
 async def test_create_tenant_seeds_units_with_conversion_factor(client, db_session):
     await db_session.execute(text("ALTER TABLE units_of_measure ADD COLUMN conversion_factor NUMERIC NOT NULL DEFAULT 1"))
     await db_session.commit()
