@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { api } from '../../../lib/api';
+import { api, apiOptional } from '../../../lib/api';
 import { useStoreContext } from '../../../lib/storeContext';
 
 type Tab =
@@ -293,17 +293,20 @@ export default function Page() {
 
   async function refresh() {
     const [p, e, c, b, u, w, sc, os, rates, settings] = await Promise.all([
-      api('/products'),
-      api('/inventory/batches/expiring?days=60'),
-      api('/catalog/categories'),
-      api('/catalog/brands'),
-      api('/catalog/units'),
-      api('/warehouses'),
-      api('/inventory/stock-counts'),
-      api('/inventory/opening-stock').catch(() => ({ data: [] })),
-      api('/tax/rates').catch(() => ({ data: [] })),
-      api('/inventory/settings').catch(() => ({ data: null })),
+      apiOptional('/products'),
+      apiOptional('/inventory/batches/expiring?days=60'),
+      apiOptional('/catalog/categories'),
+      apiOptional('/catalog/brands'),
+      apiOptional('/catalog/units'),
+      apiOptional('/warehouses'),
+      apiOptional('/inventory/stock-counts'),
+      apiOptional('/inventory/opening-stock'),
+      apiOptional('/tax/rates'),
+      apiOptional('/inventory/settings'),
     ]);
+    const loadError = [p, e, c, b, u, w, sc].map((x) => x.error).filter(Boolean).join(' ');
+    if (loadError) setError(loadError);
+    else setError('');
     setProducts(p.data || []);
     setExpiring(e.data?.batches || []);
     setCategories(c.data || []);
@@ -392,10 +395,12 @@ export default function Page() {
   async function refreshSelected(id: string) {
     if (!id) return;
     const [v, b, g] = await Promise.all([
-      api(`/products/${id}/variants`),
-      api(`/products/${id}/batches`),
-      api(`/products/${id}/images`),
+      apiOptional(`/products/${id}/variants`),
+      apiOptional(`/products/${id}/batches`),
+      apiOptional(`/products/${id}/images`),
     ]);
+    const selectedError = [v, b, g].map((x) => x.error).filter(Boolean).join(' ');
+    if (selectedError) setError(selectedError);
     setVariants(v.data || []);
     setBatches(b.data || []);
     setGallery(g.data || []);

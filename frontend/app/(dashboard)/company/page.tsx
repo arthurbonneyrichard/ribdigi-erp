@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api } from '../../../lib/api';
+import { api, apiOptional } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { formatDateTime, formatNumber } from '../../../lib/format';
 
@@ -31,6 +31,7 @@ export default function Page() {
   const [smsAuthToken, setSmsAuthToken] = useState('');
   const [smsFromNumber, setSmsFromNumber] = useState('');
   const [suspendReason, setSuspendReason] = useState('');
+  const [loadBusy, setLoadBusy] = useState(true);
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -60,15 +61,22 @@ export default function Page() {
   }
 
   async function refresh() {
+    setLoadBusy(true);
     const [r, e, s, me, st, print] = await Promise.all([
-      api('/tenants/me'),
-      api('/settings/email'),
-      api('/settings/sms'),
-      getMe(),
-      api('/settings/storage').catch(() => ({ data: null })),
-      api('/settings/print').catch(() => ({ data: null })),
+      apiOptional('/tenants/me'),
+      apiOptional('/settings/email'),
+      apiOptional('/settings/sms'),
+      getMe().then((body) => ({ ...body, error: null as string | null })).catch((err: any) => ({
+        data: null,
+        error: err?.message || 'Could not load your profile',
+      })),
+      apiOptional('/settings/storage'),
+      apiOptional('/settings/print'),
     ]);
-    setTenant(r.data);
+    const loadError = [r, e, s, me].map((x) => x.error).filter(Boolean).join(' ');
+    if (r.data) {
+      setTenant(r.data);
+    }
     setEmailStatus(e.data);
     if (e.data) {
       setEmailHost(e.data.host || '');
@@ -95,11 +103,18 @@ export default function Page() {
       setInvTemplate(print.data.default_invoice_template || 'a4');
       setReceiptPaper(print.data.default_receipt_paper || '80mm');
     }
-    await loadLogoPreview(!!r.data?.has_logo);
+    setError(loadError);
+    setLoadBusy(false);
+    if (r.data) {
+      await loadLogoPreview(!!r.data.has_logo);
+    }
   }
 
   useEffect(() => {
-    refresh().catch((err) => setError(err.message));
+    refresh().catch((err) => {
+      setError(err.message);
+      setLoadBusy(false);
+    });
   }, []);
 
   async function save() {
@@ -208,7 +223,18 @@ export default function Page() {
       <>
         <h1>Company</h1>
         {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-        <p className="muted">Loading…</p>
+        {loadBusy ? (
+          <p className="muted">Loading…</p>
+        ) : (
+          <>
+            <p className="muted">Company profile could not be loaded.</p>
+            <p>
+              <button type="button" className="primary" onClick={() => refresh().catch((err) => setError(err.message))}>
+                Retry
+              </button>
+            </p>
+          </>
+        )}
       </>
     );
   }

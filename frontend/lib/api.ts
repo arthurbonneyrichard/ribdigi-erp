@@ -178,3 +178,14 @@ export async function api(path: string, opts: RequestInit = {}, retryOn401 = tru
   }
   return body;
 }
+
+/** Load a GET without failing sibling Promise.all calls (pages must not stay on Loading). */
+export async function apiOptional(path: string, opts: RequestInit = {}) {
+  try {
+    const body = await api(path, opts);
+    return { ...body, error: null as string | null };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Request failed';
+    return { data: null, message: undefined, error: message };
+  }
+}

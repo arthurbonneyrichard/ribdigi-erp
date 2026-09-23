@@ -236,6 +236,15 @@ async def main() -> None:
             print(f"bootstrap: platform ops ensure failed: {exc}", file=sys.stderr)
             if settings.APP_ENV.lower() == "production":
                 sys.exit(1)
+        try:
+            from app.schema_align import align_async_engine
+
+            await align_async_engine(engine)
+            print("bootstrap: schema align complete")
+        except Exception as exc:  # noqa: BLE001
+            print(f"bootstrap: schema align failed: {exc}", file=sys.stderr)
+            if settings.APP_ENV.lower() == "production":
+                sys.exit(1)
         return
     if settings.APP_ENV.lower() == "production":
         print("Alembic failed in production — refusing create_all fallback", file=sys.stderr)
@@ -246,6 +255,13 @@ async def main() -> None:
         await ensure_remove_outlook_platform_staff()
     except Exception as exc:  # noqa: BLE001
         print(f"bootstrap: platform ops ensure failed: {exc}", file=sys.stderr)
+    try:
+        from app.schema_align import align_async_engine
+
+        await align_async_engine(engine)
+        print("bootstrap: schema align complete (create_all path)")
+    except Exception as exc:  # noqa: BLE001
+        print(f"bootstrap: schema align failed: {exc}", file=sys.stderr)
 
 
 if __name__ == "__main__":

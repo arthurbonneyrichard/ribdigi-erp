@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api } from '../../../lib/api';
+import { api, apiOptional } from '../../../lib/api';
 
 type DayHours = { open?: string; close?: string; closed?: boolean };
 type OperatingHours = Partial<Record<'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun', DayHours>>;
@@ -196,16 +196,18 @@ export default function Page() {
 
   async function refresh() {
     const [s, p, t, settings, wh, u, br, dep, ent] = await Promise.all([
-      api('/stores'),
-      api('/products'),
-      api('/stores/transfers'),
-      api('/inventory/settings').catch(() => ({ data: { fefo_strict_warehouse: false } })),
-      api('/warehouses').catch(() => ({ data: [] })),
-      api('/users').catch(() => ({ data: [] })),
-      api('/branches').catch(() => ({ data: [] })),
-      api('/departments').catch(() => ({ data: [] })),
-      api('/stores/entitlement').catch(() => ({ data: null })),
+      apiOptional('/stores'),
+      apiOptional('/products'),
+      apiOptional('/stores/transfers'),
+      apiOptional('/inventory/settings'),
+      apiOptional('/warehouses'),
+      apiOptional('/users'),
+      apiOptional('/branches'),
+      apiOptional('/departments'),
+      apiOptional('/stores/entitlement'),
     ]);
+    const loadError = [s, p, t].map((x) => x.error).filter(Boolean).join(' ');
+    if (loadError) setError(loadError);
     setStores(s.data || []);
     setProducts(p.data || []);
     setTransfers(t.data || []);
