@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app import schema_compat
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
 DEFAULT_UNITS = (
@@ -195,28 +196,35 @@ def serialize_product(row: m.Product) -> dict:
 
 
 async def ensure_default_catalog(db: AsyncSession, tenant_id: str) -> None:
-    existing_units = (
-        await db.execute(select(m.UnitOfMeasure.id).where(m.UnitOfMeasure.tenant_id == tenant_id).limit(1))
-    ).scalar_one_or_none()
-    if not existing_units:
+    unit_codes = await schema_compat.existing_codes(db, "units_of_measure", tenant_id)
+    if not unit_codes:
         for code, name in DEFAULT_UNITS:
-            db.add(m.UnitOfMeasure(tenant_id=tenant_id, code=code, name=name, is_active=True))
-
-    existing_cats = (
-        await db.execute(
-            select(m.ProductCategory.id).where(m.ProductCategory.tenant_id == tenant_id).limit(1)
-        )
-    ).scalar_one_or_none()
-    if not existing_cats:
+            await schema_compat.insert_matching_row(
+                db,
+                "units_of_measure",
+                {
+                    "tenant_id": tenant_id,
+                    "code": code,
+                    "name": name,
+                    "is_active": True,
+                    "conversion_ratio": 1,
+                    "company_id": None,
+                },
+            )
+    cat_codes = await schema_compat.existing_codes(db, "product_categories", tenant_id)
+    if not cat_codes:
         for code, name, _parent in DEFAULT_CATEGORIES:
-            db.add(
-                m.ProductCategory(
-                    tenant_id=tenant_id,
-                    code=code,
-                    name=name,
-                    parent_id=None,
-                    is_active=True,
-                )
+            await schema_compat.insert_matching_row(
+                db,
+                "product_categories",
+                {
+                    "tenant_id": tenant_id,
+                    "code": code,
+                    "name": name,
+                    "parent_id": None,
+                    "is_active": True,
+                    "company_id": None,
+                },
             )
     await db.flush()
 

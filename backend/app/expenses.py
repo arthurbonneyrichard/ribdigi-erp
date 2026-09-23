@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app import schema_compat
 from app.doc_numbers import next_expense_number
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
@@ -254,15 +255,22 @@ def serialize_recurring(row: m.RecurringExpense) -> dict:
 
 
 async def ensure_default_categories(db: AsyncSession, tenant_id: str) -> None:
-    existing = {
-        c.code
-        for c in (
-            await db.execute(select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == tenant_id))
-        ).scalars().all()
-    }
+    existing = await schema_compat.existing_codes(db, "expense_categories", tenant_id)
     for code, name in DEFAULT_CATEGORIES:
-        if code not in existing:
-            db.add(m.ExpenseCategory(tenant_id=tenant_id, code=code, name=name, budget_amount=0))
+        if code in existing:
+            continue
+        await schema_compat.insert_matching_row(
+            db,
+            "expense_categories",
+            {
+                "tenant_id": tenant_id,
+                "code": code,
+                "name": name,
+                "budget_amount": 0,
+                "is_active": True,
+                "company_id": None,
+            },
+        )
     await db.flush()
 
 

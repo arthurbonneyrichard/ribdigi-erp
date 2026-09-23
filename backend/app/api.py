@@ -321,6 +321,7 @@ from app.schemas import (
 )
 
 from app.http_errors import TenantSeedError, http_exception_for_tenant_create_failure
+from app import schema_compat
 from app.security import (
     create_access_token,
     current_claims,
@@ -420,9 +421,9 @@ async def _seed_step(step: str, factory) -> None:
         await factory()
     except TenantSeedError:
         raise
-    except Exception:
+    except Exception as exc:
         logger.exception("tenant seed failed step=%s", step)
-        raise TenantSeedError(step) from None
+        raise TenantSeedError(step) from exc
 
 
 async def seed_tenant_defaults(db: AsyncSession, tenant_id: str) -> None:
@@ -449,18 +450,24 @@ async def seed_tenant_defaults(db: AsyncSession, tenant_id: str) -> None:
     )
 
     async def _default_tax() -> None:
-        db.add(
-            m.TaxRate(
-                tenant_id=tenant_id,
-                name="VAT",
-                rate=15,
-                tax_type="vat",
-                pricing_mode="exclusive",
-                is_default=True,
-                is_active=True,
-            )
+        existing = await schema_compat.existing_names(db, "tax_rates", tenant_id)
+        if "VAT" in existing:
+            return
+        await schema_compat.insert_matching_row(
+            db,
+            "tax_rates",
+            {
+                "tenant_id": tenant_id,
+                "name": "VAT",
+                "rate": 15,
+                "tax_type": "vat",
+                "pricing_mode": "exclusive",
+                "is_reverse_charge": False,
+                "is_default": True,
+                "is_active": True,
+                "company_id": None,
+            },
         )
-        await db.flush()
 
     await _seed_step("default tax rate", _default_tax)
     # Default Main Store (consumes store entitlement). create_store also adds WH-MAIN warehouse.

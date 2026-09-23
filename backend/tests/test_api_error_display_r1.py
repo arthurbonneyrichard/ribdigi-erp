@@ -11,6 +11,10 @@ def test_api_formats_fastapi_422_detail_array():
     assert "Array.isArray(detail)" in api_ts
     assert "rec.msg" in api_ts
     assert "Request failed" in api_ts
+    assert "Your session expired" in api_ts
+    assert "You do not have permission" in api_ts
+    assert "That record already exists" in api_ts
+    assert "typeof detail === 'string'" in api_ts
     staff = (ROOT / "frontend/app/(dashboard)/platform/staff/page.tsx").read_text(encoding="utf-8")
     assert "api('/platform/staff'" in staff
     assert "method: 'POST'" in staff

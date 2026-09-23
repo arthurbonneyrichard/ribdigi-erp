@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app import schema_compat
 from app.doc_numbers import next_journal_entry_number
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
@@ -177,32 +178,28 @@ def assert_account_active(account: m.Account) -> None:
 
 
 async def ensure_default_accounts(db: AsyncSession, tenant_id: str) -> None:
-    existing = {
-        a.code: a
-        for a in (
-            await db.execute(select(m.Account).where(m.Account.tenant_id == tenant_id))
-        ).scalars().all()
-    }
+    existing_codes = await schema_compat.existing_codes(db, "accounts", tenant_id)
     for code, name, account_type, is_cash, is_bank in DEFAULT_ACCOUNTS:
-        if code not in existing:
-            db.add(
-                m.Account(
-                    tenant_id=tenant_id,
-                    code=code,
-                    name=name,
-                    account_type=account_type,
-                    balance=0,
-                    is_cash_account=is_cash,
-                    is_bank_account=is_bank,
-                )
-            )
-        else:
-            row = existing[code]
-            # Keep flags aligned for seeded liquid accounts without clobbering custom flags on others
-            if code == "1000":
-                row.is_cash_account = True
-            if code == "1010":
-                row.is_bank_account = True
+        if code in existing_codes:
+            continue
+        await schema_compat.insert_matching_row(
+            db,
+            "accounts",
+            {
+                "tenant_id": tenant_id,
+                "code": code,
+                "name": name,
+                "account_type": account_type,
+                "balance": 0,
+                "opening_balance": 0,
+                "is_cash_account": is_cash,
+                "is_bank_account": is_bank,
+                "is_system": True,
+                "is_active": True,
+                "parent_id": None,
+                "company_id": None,
+            },
+        )
     await db.flush()
 
 

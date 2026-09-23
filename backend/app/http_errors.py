@@ -46,21 +46,26 @@ def tenant_seed_failed_message(step: str) -> str:
 
 def http_exception_for_tenant_create_failure(exc: BaseException) -> HTTPException:
     """Map tenant-create failures to a safe client message. SQL stays in logs."""
-    if isinstance(exc, TenantSeedError):
-        return HTTPException(status_code=500, detail=tenant_seed_failed_message(exc.step))
-    if isinstance(exc, IntegrityError):
-        raw = str(getattr(exc, "orig", None) or exc).lower()
+    probe: BaseException = exc
+    if isinstance(exc, TenantSeedError) and exc.__cause__ is not None:
+        probe = exc.__cause__
+    if isinstance(probe, IntegrityError):
+        raw = str(getattr(probe, "orig", None) or probe).lower()
         if "tenants.slug" in raw or "ix_tenants_slug" in raw or "tenants_slug" in raw:
             return HTTPException(status_code=409, detail=TENANT_CREATE_SLUG_EXISTS)
         if "users.email" in raw or "ix_users_email" in raw or "users_email" in raw:
             return HTTPException(status_code=409, detail=TENANT_CREATE_EMAIL_EXISTS)
+        if isinstance(exc, TenantSeedError):
+            return HTTPException(status_code=500, detail=tenant_seed_failed_message(exc.step))
         return HTTPException(status_code=409, detail=TENANT_CREATE_CONSTRAINT)
-    if isinstance(exc, ProgrammingError):
+    if isinstance(probe, ProgrammingError):
         return HTTPException(status_code=500, detail=TENANT_CREATE_SCHEMA)
-    if isinstance(exc, OperationalError):
+    if isinstance(probe, OperationalError):
         return HTTPException(status_code=503, detail=TENANT_CREATE_UNAVAILABLE)
-    if isinstance(exc, DataError):
+    if isinstance(probe, DataError):
         return HTTPException(status_code=400, detail="One of the workspace fields is not valid for the database.")
+    if isinstance(exc, TenantSeedError):
+        return HTTPException(status_code=500, detail=tenant_seed_failed_message(exc.step))
     return HTTPException(status_code=500, detail=TENANT_CREATE_FAILED)
 
 

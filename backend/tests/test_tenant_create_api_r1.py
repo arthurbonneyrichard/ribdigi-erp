@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app import models as m
 from app.rbac import permissions_for_role
@@ -249,3 +249,81 @@ def test_tenant_create_failure_maps_programming_error():
     mapped = http_exception_for_tenant_create_failure(exc)
     assert mapped.status_code == 500
     assert mapped.detail == TENANT_CREATE_SCHEMA
+
+
+def test_tenant_create_seed_integrity_is_not_slug_conflict():
+    from sqlalchemy.exc import IntegrityError
+
+    from app.http_errors import TenantSeedError, http_exception_for_tenant_create_failure
+
+    cause = IntegrityError("INSERT", {}, Exception("UNIQUE constraint failed: accounts.code"))
+    wrapped = TenantSeedError("chart of accounts")
+    wrapped.__cause__ = cause
+    mapped = http_exception_for_tenant_create_failure(wrapped)
+    assert mapped.status_code == 500
+    assert "chart of accounts" in mapped.detail
+    assert "slug" not in mapped.detail.lower()
+
+
+@pytest.mark.asyncio
+async def test_create_tenant_seeds_coa_without_opening_balance_column(client, db_session):
+    await db_session.execute(text("ALTER TABLE accounts DROP COLUMN opening_balance"))
+    await db_session.commit()
+    ac, seed = client
+    headers = await platform_owner_headers(ac, seed)
+    ok = await ac.post(
+        "/api/v1/tenants",
+        headers=headers,
+        json={**PAYLOAD, "slug": "coa-no-open", "admin_email": "coa.noopen@example.com"},
+    )
+    assert ok.status_code == 200, ok.text
+    codes = (
+        await db_session.execute(
+            text("SELECT code FROM accounts WHERE tenant_id = (SELECT id FROM tenants WHERE slug = :slug)"),
+            {"slug": "coa-no-open"},
+        )
+    ).scalars().all()
+    assert "1000" in codes
+    assert "1010" in codes
+
+
+@pytest.mark.asyncio
+async def test_create_tenant_seeds_coa_when_is_system_is_required(client, db_session):
+    await db_session.execute(text("ALTER TABLE accounts ADD COLUMN is_system BOOLEAN NOT NULL DEFAULT 0"))
+    await db_session.commit()
+    ac, seed = client
+    headers = await platform_owner_headers(ac, seed)
+    ok = await ac.post(
+        "/api/v1/tenants",
+        headers=headers,
+        json={**PAYLOAD, "slug": "coa-is-system", "admin_email": "coa.system@example.com"},
+    )
+    assert ok.status_code == 200, ok.text
+    flagged = (
+        await db_session.execute(
+            text(
+                "SELECT is_system FROM accounts WHERE tenant_id = "
+                "(SELECT id FROM tenants WHERE slug = :slug) AND code = '1000'"
+            ),
+            {"slug": "coa-is-system"},
+        )
+    ).scalar_one()
+    assert bool(flagged) is True
+
+
+@pytest.mark.asyncio
+async def test_create_tenant_retry_does_not_duplicate_slug(client):
+    ac, seed = client
+    headers = await platform_owner_headers(ac, seed)
+    first = await ac.post(
+        "/api/v1/tenants",
+        headers=headers,
+        json={**PAYLOAD, "slug": "retry-slug", "admin_email": "retry.one@example.com"},
+    )
+    assert first.status_code == 200, first.text
+    second = await ac.post(
+        "/api/v1/tenants",
+        headers=headers,
+        json={**PAYLOAD, "slug": "retry-slug", "admin_email": "retry.two@example.com"},
+    )
+    assert second.status_code == 409, second.text

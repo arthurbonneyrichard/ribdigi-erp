@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app import schema_compat
 from app.honesty import money_json, require_honest_narrative
 
 DEFAULT_GROUPS = (
@@ -24,26 +25,50 @@ def _slug_code(name: str) -> str:
 
 
 async def ensure_default_groups(db: AsyncSession, tenant_id: str) -> list[m.CustomerGroup]:
-    existing = (
-        await db.execute(
-            select(m.CustomerGroup).where(m.CustomerGroup.tenant_id == tenant_id)
-        )
-    ).scalars().all()
-    if existing:
-        return list(existing)
-    rows = []
+    cols = await schema_compat.table_column_names(db, "customer_groups")
+    if "code" in cols:
+        known = await schema_compat.existing_codes(db, "customer_groups", tenant_id)
+    else:
+        known = await schema_compat.existing_names(db, "customer_groups", tenant_id)
+    if known:
+        try:
+            existing = (
+                await db.execute(
+                    select(m.CustomerGroup).where(m.CustomerGroup.tenant_id == tenant_id)
+                )
+            ).scalars().all()
+            if existing:
+                return list(existing)
+        except Exception:
+            return []
     for code, name, pct in DEFAULT_GROUPS:
-        row = m.CustomerGroup(
-            tenant_id=tenant_id,
-            code=code,
-            name=name,
-            discount_percent=pct,
-            is_active=True,
+        marker = code if "code" in cols else name
+        if marker in known:
+            continue
+        await schema_compat.insert_matching_row(
+            db,
+            "customer_groups",
+            {
+                "tenant_id": tenant_id,
+                "code": code,
+                "name": name,
+                "discount_percent": pct,
+                "is_active": True,
+                "company_id": None,
+            },
         )
-        db.add(row)
-        rows.append(row)
+        known.add(marker)
     await db.flush()
-    return rows
+    try:
+        return list(
+            (
+                await db.execute(
+                    select(m.CustomerGroup).where(m.CustomerGroup.tenant_id == tenant_id)
+                )
+            ).scalars().all()
+        )
+    except Exception:
+        return []
 
 
 def serialize_group(row: m.CustomerGroup) -> dict:
