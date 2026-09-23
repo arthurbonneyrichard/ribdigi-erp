@@ -416,14 +416,23 @@ async def tenant_pk(db: AsyncSession, tenant_ref: str) -> str:
     return tenant.id
 
 
-async def _seed_step(step: str, factory) -> None:
+async def _seed_step(step: str, factory, db: AsyncSession) -> None:
     try:
-        await factory()
+        async with db.begin_nested():
+            await factory()
     except TenantSeedError:
         raise
     except Exception as exc:
         logger.exception("tenant seed failed step=%s", step)
         raise TenantSeedError(step) from exc
+
+
+async def _seed_optional(step: str, factory, db: AsyncSession) -> None:
+    try:
+        async with db.begin_nested():
+            await factory()
+    except Exception:
+        logger.exception("tenant seed skipped step=%s", step)
 
 
 async def seed_tenant_defaults(db: AsyncSession, tenant_id: str) -> None:
@@ -434,23 +443,33 @@ async def seed_tenant_defaults(db: AsyncSession, tenant_id: str) -> None:
     from app import customer_groups as customer_groups_svc
     from app.notifications import create_notification
 
-    await _seed_step("chart of accounts", lambda: ensure_default_accounts(db, tenant_id))
-    await _seed_step("expense categories", lambda: expenses_svc.ensure_default_categories(db, tenant_id))
-    await _seed_step("product catalog", lambda: catalog_meta_svc.ensure_default_catalog(db, tenant_id))
-    await _seed_step("customer groups", lambda: customer_groups_svc.ensure_default_groups(db, tenant_id))
-    async def _welcome_notification() -> None:
-        await create_notification(
+    tenant = await db.get(m.Tenant, tenant_id)
+    await _seed_optional(
+        "company",
+        lambda: schema_compat.ensure_tenant_company(
+            db,
+            tenant_id,
+            name=getattr(tenant, "company_name", None),
+            industry=getattr(tenant, "industry", None),
+            currency=getattr(tenant, "currency", None),
+        ),
+        db,
+    )
+    await _seed_step("chart of accounts", lambda: ensure_default_accounts(db, tenant_id), db)
+    await _seed_step("expense categories", lambda: expenses_svc.ensure_default_categories(db, tenant_id), db)
+    await _seed_step("product catalog", lambda: catalog_meta_svc.ensure_default_catalog(db, tenant_id), db)
+    await _seed_step("customer groups", lambda: customer_groups_svc.ensure_default_groups(db, tenant_id), db)
+    await _seed_optional(
+        "welcome notification",
+        lambda: create_notification(
             db,
             tenant_id=tenant_id,
             category="system",
             title="Welcome to RIBDIGI ERP",
             message="Your tenant was provisioned. Complete company setup and add products to begin.",
-        )
-
-    try:
-        await _welcome_notification()
-    except Exception:
-        logger.exception("welcome notification seed skipped tenant_id=%s", tenant_id)
+        ),
+        db,
+    )
 
     async def _default_tax() -> None:
         existing = await schema_compat.existing_names(db, "tax_rates", tenant_id)
@@ -462,6 +481,7 @@ async def seed_tenant_defaults(db: AsyncSession, tenant_id: str) -> None:
             {
                 "tenant_id": tenant_id,
                 "name": "VAT",
+                "code": "VAT",
                 "rate": 15,
                 "tax_type": "vat",
                 "pricing_mode": "exclusive",
@@ -472,24 +492,29 @@ async def seed_tenant_defaults(db: AsyncSession, tenant_id: str) -> None:
             },
         )
 
-    await _seed_step("default tax rate", _default_tax)
-    # Default Main Store (consumes store entitlement). create_store also adds WH-MAIN warehouse.
-    existing_store = (
-        await db.execute(select(m.Store).where(m.Store.tenant_id == tenant_id).limit(1))
-    ).scalar_one_or_none()
-    if existing_store is None:
-        tenant = await db.get(m.Tenant, tenant_id)
-        if tenant is not None:
-            try:
-                await store_ent_svc.assert_can_create_store(db, tenant)
-                await stores_svc.create_store(
-                    db,
-                    tenant_id=tenant_id,
-                    name="Main Store",
-                    code="MAIN",
-                )
-            except Exception:
-                logger.exception("default store seed skipped tenant_id=%s", tenant_id)
+    await _seed_step("default tax rate", _default_tax, db)
+
+    async def _default_store() -> None:
+        existing_store = None
+        try:
+            existing_store = (
+                await db.execute(select(m.Store).where(m.Store.tenant_id == tenant_id).limit(1))
+            ).scalar_one_or_none()
+        except Exception:
+            existing_store = None
+        if existing_store is not None:
+            return
+        if tenant is None:
+            return
+        await store_ent_svc.assert_can_create_store(db, tenant)
+        await stores_svc.create_store(
+            db,
+            tenant_id=tenant_id,
+            name="Main Store",
+            code="MAIN",
+        )
+
+    await _seed_optional("default store", _default_store, db)
 
 
 

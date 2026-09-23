@@ -208,6 +208,7 @@ async def ensure_default_catalog(db: AsyncSession, tenant_id: str) -> None:
                     "name": name,
                     "is_active": True,
                     "conversion_ratio": 1,
+                    "conversion_factor": 1,
                     "company_id": None,
                 },
             )

@@ -9,10 +9,12 @@ import json
 from datetime import datetime
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app import schema_compat
+from app.models import uid
 
 GENESIS_HASH = "0" * 64
 
@@ -98,18 +100,23 @@ def serialize_audit(row: m.AuditLog) -> dict:
 
 
 async def latest_integrity_hash(db: AsyncSession, tenant_id: str) -> str:
-    row = (
-        await db.execute(
-            select(m.AuditLog)
-            .where(
-                m.AuditLog.tenant_id == tenant_id,
-                m.AuditLog.integrity_hash.is_not(None),
-            )
-            .order_by(m.AuditLog.created_at.desc(), m.AuditLog.id.desc())
-            .limit(1)
+    try:
+        cols = await schema_compat.table_column_names(db, "audit_logs")
+        if "integrity_hash" not in cols or "tenant_id" not in cols:
+            return GENESIS_HASH
+        order = "created_at DESC" if "created_at" in cols else "id DESC"
+        result = await db.execute(
+            text(
+                f"SELECT integrity_hash FROM audit_logs "
+                f"WHERE tenant_id = :tid AND integrity_hash IS NOT NULL "
+                f"ORDER BY {order} LIMIT 1"
+            ),
+            {"tid": tenant_id},
         )
-    ).scalar_one_or_none()
-    return row.integrity_hash if row and row.integrity_hash else GENESIS_HASH
+        value = result.scalar()
+        return str(value) if value else GENESIS_HASH
+    except Exception:
+        return GENESIS_HASH
 
 
 async def record_event(
@@ -139,7 +146,9 @@ async def record_event(
         created_at=created_at,
     )
     integrity = compute_integrity_hash(prev, payload)
+    row_id = uid()
     row = m.AuditLog(
+        id=row_id,
         tenant_id=tenant_id,
         user_id=user_id,
         module=module,
@@ -153,7 +162,26 @@ async def record_event(
         integrity_hash=integrity,
         created_at=created_at,
     )
-    db.add(row)
+    await schema_compat.insert_matching_row(
+        db,
+        "audit_logs",
+        {
+            "id": row_id,
+            "tenant_id": tenant_id,
+            "user_id": user_id,
+            "module": module,
+            "action": action,
+            "entity": entity,
+            "entity_id": entity_id,
+            "details": details,
+            "ip_address": ip_address,
+            "user_agent": user_agent,
+            "prev_hash": prev,
+            "integrity_hash": integrity,
+            "created_at": created_at,
+            "company_id": None,
+        },
+    )
     await db.flush()
     return row
 

@@ -374,3 +374,70 @@ async def test_create_tenant_succeeds_when_welcome_notification_insert_fails(
         await db_session.execute(select(m.Tenant).where(m.Tenant.slug == "welcome-skip"))
     ).scalar_one_or_none()
     assert leftover is not None
+
+
+@pytest.mark.asyncio
+async def test_create_tenant_continues_after_welcome_integrity_error(client, db_session, monkeypatch):
+    from sqlalchemy.exc import IntegrityError
+
+    ac, seed = client
+    headers = await platform_owner_headers(ac, seed)
+
+    async def boom(*_a, **_k):
+        raise IntegrityError("INSERT", {}, Exception("UNIQUE constraint failed: notifications.id"))
+
+    monkeypatch.setattr("app.notifications.create_notification", boom)
+    ok = await ac.post(
+        "/api/v1/tenants",
+        headers=headers,
+        json={**PAYLOAD, "slug": "welcome-integ", "admin_email": "welcome.integ@example.com"},
+    )
+    assert ok.status_code == 200, ok.text
+    vat = (
+        await db_session.execute(
+            text(
+                "SELECT name FROM tax_rates WHERE tenant_id = "
+                "(SELECT id FROM tenants WHERE slug = :slug)"
+            ),
+            {"slug": "welcome-integ"},
+        )
+    ).scalars().all()
+    assert "VAT" in vat
+
+
+@pytest.mark.asyncio
+async def test_create_tenant_seeds_tax_when_code_is_required(client, db_session):
+    await db_session.execute(text("ALTER TABLE tax_rates ADD COLUMN code VARCHAR(40) NOT NULL DEFAULT 'TAX'"))
+    await db_session.commit()
+    ac, seed = client
+    headers = await platform_owner_headers(ac, seed)
+    ok = await ac.post(
+        "/api/v1/tenants",
+        headers=headers,
+        json={**PAYLOAD, "slug": "tax-code", "admin_email": "tax.code@example.com"},
+    )
+    assert ok.status_code == 200, ok.text
+    codes = (
+        await db_session.execute(
+            text(
+                "SELECT code FROM tax_rates WHERE tenant_id = "
+                "(SELECT id FROM tenants WHERE slug = :slug)"
+            ),
+            {"slug": "tax-code"},
+        )
+    ).scalars().all()
+    assert "VAT" in codes
+
+
+@pytest.mark.asyncio
+async def test_create_tenant_seeds_units_with_conversion_factor(client, db_session):
+    await db_session.execute(text("ALTER TABLE units_of_measure ADD COLUMN conversion_factor NUMERIC NOT NULL DEFAULT 1"))
+    await db_session.commit()
+    ac, seed = client
+    headers = await platform_owner_headers(ac, seed)
+    ok = await ac.post(
+        "/api/v1/tenants",
+        headers=headers,
+        json={**PAYLOAD, "slug": "uom-factor", "admin_email": "uom.factor@example.com"},
+    )
+    assert ok.status_code == 200, ok.text
