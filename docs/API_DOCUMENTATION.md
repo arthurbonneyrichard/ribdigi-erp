@@ -208,7 +208,7 @@ Client idle auto-logout uses tenant `inactivity_timeout_minutes` (default `30`, 
 ## 3. Tenant Management
 
 ### 3.1 Register Company (Tenant)
-**Endpoint:** `POST /tenants` — typed `TenantCreate` (`extra=forbid`; unknown keys → **422**; `TenantProfileUpdate` / `TenantSuspendRequest` / `TenantModulesUpdate` / store-limit overrides same)
+**Endpoint:** `POST /tenants` — **platform staff only** (`platform_tenants:write`; missing/invalid token → **401**; company user or staff without write → **403**). There is no public self-registration. Typed `TenantCreate` (`extra=forbid`; unknown keys → **422**; `TenantProfileUpdate` / `TenantSuspendRequest` / `TenantModulesUpdate` / store-limit overrides same)
 
 **Request:**
 ```json

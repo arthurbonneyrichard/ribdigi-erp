@@ -240,3 +240,12 @@ async def auth_headers(client: AsyncClient, *, email: str, tenant_slug: str, tot
     token = data["access_token"]
     tenant_id = data["user"]["tenant_id"]
     return {"Authorization": f"Bearer {token}", "X-Tenant-ID": tenant_id}
+
+
+async def platform_owner_headers(client: AsyncClient, seed: dict) -> dict:
+    import pyotp
+
+    code = pyotp.TOTP(seed["super_totp_secret"]).now()
+    return await auth_headers(
+        client, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
+    )

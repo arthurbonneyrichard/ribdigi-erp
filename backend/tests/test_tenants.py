@@ -13,6 +13,7 @@ from app.tenants import (
 from app import models as m
 from fastapi import HTTPException
 import pytest
+from tests.conftest import platform_owner_headers
 
 
 def test_assert_suspended_blocks_login():
@@ -88,9 +89,11 @@ def test_normalize_industry_accepts_and_rejects():
 
 @pytest.mark.asyncio
 async def test_create_tenant_rejects_invalid_industry(client):
-    ac, _seed = client
+    ac, seed = client
+    headers = await platform_owner_headers(ac, seed)
     bad = await ac.post(
         "/api/v1/tenants",
+        headers=headers,
         json={
             "company_name": "Bad Industry Co",
             "slug": "bad-industry-co",
@@ -105,6 +108,7 @@ async def test_create_tenant_rejects_invalid_industry(client):
 
     ok = await ac.post(
         "/api/v1/tenants",
+        headers=headers,
         json={
             "company_name": "Good Industry Co",
             "slug": "good-industry-co",

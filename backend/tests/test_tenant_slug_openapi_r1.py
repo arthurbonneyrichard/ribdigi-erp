@@ -9,6 +9,7 @@ import pytest
 from pydantic import TypeAdapter, ValidationError
 
 from app.schemas import TenantCreate, TenantSlugValue
+from tests.conftest import platform_owner_headers
 
 ROOT = Path(__file__).resolve().parents[2]
 _slug = TypeAdapter(TenantSlugValue)
@@ -64,12 +65,14 @@ def test_tenant_slug_ui_and_docs():
 
 @pytest.mark.asyncio
 async def test_tenant_slug_api_blank_invalid_422(client):
-    ac, _seed = client
+    ac, seed = client
+    headers = await platform_owner_headers(ac, seed)
     suffix = uuid4().hex[:8]
 
     for bad in ("!!!", "", "a b", "http://evil.example/p", "X", "-bad"):
         r = await ac.post(
             "/api/v1/tenants",
+            headers=headers,
             json={
                 "company_name": f"TIP235 Bad {suffix}",
                 "slug": bad,
@@ -83,6 +86,7 @@ async def test_tenant_slug_api_blank_invalid_422(client):
 
     hello = await ac.post(
         "/api/v1/tenants",
+        headers=headers,
         json={
             "company_name": f"TIP235 Hello {suffix}",
             "slug": f"  Tip235-{suffix}  ",

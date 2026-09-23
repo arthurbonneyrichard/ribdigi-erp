@@ -163,36 +163,6 @@ async def optional_platform_tenant_writer(
     return {"sub": user.id, "tenant_id": user.tenant_id, "role": user.role}
 
 
-async def resolve_tenant_create_actor(
-    db: AsyncSession,
-    creds: HTTPAuthorizationCredentials | None,
-) -> dict | None:
-    """Public signup (no/invalid token) or a platform tenant writer.
-
-    A decoded platform-staff token without tenant-write permission is rejected
-    with 403 so Platform Console roles cannot silently create companies.
-    """
-    raw = (creds.credentials if creds else "") or ""
-    if not raw.strip():
-        return None
-    try:
-        data = jwt.decode(raw, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
-    except JWTError:
-        return None
-    if data.get("type") not in (None, "access"):
-        return None
-    role = str(data.get("role") or "")
-    if not is_platform_role(role):
-        return None
-    writer = await optional_platform_tenant_writer(db, creds)
-    if writer is None:
-        raise HTTPException(
-            status_code=403,
-            detail="You do not have permission to create tenants.",
-        )
-    return writer
-
-
 async def current_claims(
     request: Request,
     creds: HTTPAuthorizationCredentials | None = Depends(bearer),

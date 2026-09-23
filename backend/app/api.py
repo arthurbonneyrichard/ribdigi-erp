@@ -320,18 +320,14 @@ from app.schemas import (
     WarehouseCreate,
     WarehouseUpdate,
 )
-from fastapi.security import HTTPAuthorizationCredentials
 
 from app.security import (
-    bearer,
     create_access_token,
     current_claims,
     hash_password,
     hash_token,
     issue_one_time_token,
     issue_refresh_token,
-    optional_platform_tenant_writer,
-    resolve_tenant_create_actor,
     require_permission,
     require_platform_permission,
     require_roles,
@@ -569,12 +565,10 @@ async def metrics_endpoint():
 @api.post("/tenants")
 async def create_tenant(
     payload: TenantCreate,
-    creds: HTTPAuthorizationCredentials | None = Depends(bearer),
+    claims=Depends(require_platform_permission("platform_tenants", "write")),
     db: AsyncSession = Depends(get_db),
 ):
     validate_password_strength(payload.admin_password)
-    # Platform console sends a staff token. Missing/invalid tokens stay public signup.
-    owner_provisioned = await resolve_tenant_create_actor(db, creds) is not None
     # OpenAPI TenantSlugValue / CompanyNameValue → 422; service defense-in-depth → 400.
     slug = tenants_svc.require_tenant_slug(payload.slug)
     company_name = tenants_svc.require_company_name(payload.company_name)
@@ -619,21 +613,21 @@ async def create_tenant(
         await db.flush()
         await seed_tenant_defaults(db, tenant.id)
 
-        if owner_provisioned:
-            await audit_svc.record_event(
-                db,
-                tenant_id=tenant.id,
-                user_id=admin.id,
-                module="tenants",
-                action="tenant_created",
-                entity="tenant",
-                entity_id=tenant.id,
-                details={
-                    "slug": tenant.slug,
-                    "admin_email_verified": False,
-                    "source": "platform_console",
-                },
-            )
+        await audit_svc.record_event(
+            db,
+            tenant_id=tenant.id,
+            user_id=claims.get("sub"),
+            module="tenants",
+            action="tenant_created",
+            entity="tenant",
+            entity_id=tenant.id,
+            details={
+                "slug": tenant.slug,
+                "admin_email_verified": False,
+                "admin_user_id": admin.id,
+                "source": "platform_console",
+            },
+        )
         await db.flush()
     except HTTPException:
         await db.rollback()

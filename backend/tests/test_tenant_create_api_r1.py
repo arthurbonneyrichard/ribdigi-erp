@@ -8,7 +8,7 @@ from sqlalchemy import select
 from app import models as m
 from app.rbac import permissions_for_role
 from app.security import hash_password
-from tests.conftest import auth_headers
+from tests.conftest import auth_headers, platform_owner_headers
 
 PAYLOAD = {
     "company_name": "Retail Demo",
@@ -21,9 +21,29 @@ PAYLOAD = {
 
 
 @pytest.mark.asyncio
-async def test_create_tenant_success(client):
+async def test_create_tenant_unauthorized_without_token(client):
     ac, _seed = client
-    ok = await ac.post("/api/v1/tenants", json=PAYLOAD)
+    denied = await ac.post("/api/v1/tenants", json=PAYLOAD)
+    assert denied.status_code == 401, denied.text
+
+
+@pytest.mark.asyncio
+async def test_create_tenant_company_admin_forbidden(client):
+    ac, _seed = client
+    headers = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    denied = await ac.post(
+        "/api/v1/tenants",
+        headers=headers,
+        json={**PAYLOAD, "slug": "company-admin-denied"},
+    )
+    assert denied.status_code == 403, denied.text
+
+
+@pytest.mark.asyncio
+async def test_create_tenant_success(client):
+    ac, seed = client
+    headers = await platform_owner_headers(ac, seed)
+    ok = await ac.post("/api/v1/tenants", headers=headers, json=PAYLOAD)
     assert ok.status_code == 200, ok.text
     data = ok.json()["data"]
     assert data["slug"] == "retail-demo"
@@ -35,11 +55,13 @@ async def test_create_tenant_success(client):
 
 @pytest.mark.asyncio
 async def test_create_tenant_duplicate_slug(client):
-    ac, _seed = client
-    first = await ac.post("/api/v1/tenants", json=PAYLOAD)
+    ac, seed = client
+    headers = await platform_owner_headers(ac, seed)
+    first = await ac.post("/api/v1/tenants", headers=headers, json=PAYLOAD)
     assert first.status_code == 200, first.text
     dup = await ac.post(
         "/api/v1/tenants",
+        headers=headers,
         json={**PAYLOAD, "admin_email": "other.admin@example.com"},
     )
     assert dup.status_code == 409, dup.text
@@ -48,11 +70,13 @@ async def test_create_tenant_duplicate_slug(client):
 
 @pytest.mark.asyncio
 async def test_create_tenant_same_email_different_slug_is_isolated(client):
-    ac, _seed = client
-    first = await ac.post("/api/v1/tenants", json=PAYLOAD)
+    ac, seed = client
+    headers = await platform_owner_headers(ac, seed)
+    first = await ac.post("/api/v1/tenants", headers=headers, json=PAYLOAD)
     assert first.status_code == 200, first.text
     second = await ac.post(
         "/api/v1/tenants",
+        headers=headers,
         json={**PAYLOAD, "slug": "retail-demo-two", "company_name": "Retail Demo Two"},
     )
     assert second.status_code == 200, second.text
@@ -61,19 +85,23 @@ async def test_create_tenant_same_email_different_slug_is_isolated(client):
 
 @pytest.mark.asyncio
 async def test_create_tenant_invalid_industry_and_currency(client):
-    ac, _seed = client
+    ac, seed = client
+    headers = await platform_owner_headers(ac, seed)
     bad_ind = await ac.post(
         "/api/v1/tenants",
+        headers=headers,
         json={**PAYLOAD, "slug": "bad-industry-tenant", "industry": "spaceships"},
     )
     assert bad_ind.status_code == 422, bad_ind.text
     bad_cur = await ac.post(
         "/api/v1/tenants",
+        headers=headers,
         json={**PAYLOAD, "slug": "bad-currency-tenant", "currency": "NOTISO"},
     )
     assert bad_cur.status_code == 422, bad_cur.text
     weak = await ac.post(
         "/api/v1/tenants",
+        headers=headers,
         json={**PAYLOAD, "slug": "weak-pass-tenant", "admin_password": "short"},
     )
     assert weak.status_code in {400, 422}, weak.text
@@ -105,7 +133,8 @@ async def test_create_tenant_platform_finance_forbidden(client, db_session):
 
 @pytest.mark.asyncio
 async def test_create_tenant_rolls_back_when_seed_fails(client, monkeypatch):
-    ac, _seed = client
+    ac, seed = client
+    headers = await platform_owner_headers(ac, seed)
 
     async def boom(*_a, **_k):
         raise RuntimeError("seed failed")
@@ -113,6 +142,7 @@ async def test_create_tenant_rolls_back_when_seed_fails(client, monkeypatch):
     monkeypatch.setattr("app.api.seed_tenant_defaults", boom)
     failed = await ac.post(
         "/api/v1/tenants",
+        headers=headers,
         json={**PAYLOAD, "slug": "rollback-demo", "admin_email": "rollback@example.com"},
     )
     assert failed.status_code == 500, failed.text
@@ -121,6 +151,7 @@ async def test_create_tenant_rolls_back_when_seed_fails(client, monkeypatch):
     monkeypatch.undo()
     retry = await ac.post(
         "/api/v1/tenants",
+        headers=headers,
         json={**PAYLOAD, "slug": "rollback-demo", "admin_email": "rollback@example.com"},
     )
     assert retry.status_code == 200, retry.text
@@ -128,7 +159,8 @@ async def test_create_tenant_rolls_back_when_seed_fails(client, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_create_tenant_email_send_failure_still_persists(client, monkeypatch):
-    ac, _seed = client
+    ac, seed = client
+    headers = await platform_owner_headers(ac, seed)
 
     async def boom(*_a, **_k):
         raise RuntimeError("smtp down")
@@ -136,6 +168,7 @@ async def test_create_tenant_email_send_failure_still_persists(client, monkeypat
     monkeypatch.setattr("app.emailer.send_email", boom)
     ok = await ac.post(
         "/api/v1/tenants",
+        headers=headers,
         json={**PAYLOAD, "slug": "email-fail-co", "admin_email": "email.fail@example.com"},
     )
     assert ok.status_code == 200, ok.text
@@ -146,8 +179,10 @@ async def test_create_tenant_email_send_failure_still_persists(client, monkeypat
 @pytest.mark.asyncio
 async def test_created_tenant_cannot_read_other_tenant_products(client):
     ac, seed = client
+    headers = await platform_owner_headers(ac, seed)
     created = await ac.post(
         "/api/v1/tenants",
+        headers=headers,
         json={
             **PAYLOAD,
             "slug": "iso-retail",
@@ -155,17 +190,17 @@ async def test_created_tenant_cannot_read_other_tenant_products(client):
         },
     )
     assert created.status_code == 200, created.text
-    # New admin is unverified; platform-style isolation still holds for existing cashier.
-    headers = await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")
-    other = await ac.get(f"/api/v1/products/{seed['p2'].id}", headers=headers)
+    cashier = await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")
+    other = await ac.get(f"/api/v1/products/{seed['p2'].id}", headers=cashier)
     assert other.status_code in {403, 404}, other.text
-    own = await ac.get(f"/api/v1/products/{seed['p1'].id}", headers=headers)
+    own = await ac.get(f"/api/v1/products/{seed['p1'].id}", headers=cashier)
     assert own.status_code == 200, own.text
 
 
 @pytest.mark.asyncio
 async def test_create_tenant_rollback_leaves_no_user_row(client, db_session, monkeypatch):
-    ac, _seed = client
+    ac, seed = client
+    headers = await platform_owner_headers(ac, seed)
 
     async def boom(*_a, **_k):
         raise RuntimeError("seed failed")
@@ -173,6 +208,7 @@ async def test_create_tenant_rollback_leaves_no_user_row(client, db_session, mon
     monkeypatch.setattr("app.api.seed_tenant_defaults", boom)
     await ac.post(
         "/api/v1/tenants",
+        headers=headers,
         json={**PAYLOAD, "slug": "no-partial", "admin_email": "nopartial@example.com"},
     )
     leftover = (

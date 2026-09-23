@@ -34,15 +34,10 @@ async def _login(ac, *, email: str, slug: str):
 
 
 @pytest.mark.asyncio
-async def test_public_signup_still_requires_email_verification(client):
+async def test_unauthenticated_tenant_create_is_rejected(client):
     ac, _seed = client
     created = await ac.post("/api/v1/tenants", json=_tenant_body("public-co", "admin@public-co.example"))
-    assert created.status_code == 200, created.text
-    assert created.json()["data"].get("admin_email_verified") is not True
-
-    login = await _login(ac, email="admin@public-co.example", slug="public-co")
-    assert login.status_code == 403, login.text
-    assert login.json()["detail"]["code"] == "EMAIL_NOT_VERIFIED"
+    assert created.status_code == 401, created.text
 
 
 @pytest.mark.asyncio
@@ -68,7 +63,7 @@ async def test_platform_console_admin_must_verify_email(client):
 
 
 @pytest.mark.asyncio
-async def test_company_token_does_not_skip_verification(client):
+async def test_company_token_cannot_create_tenant(client):
     ac, _seed = client
     headers = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
     created = await ac.post(
@@ -76,21 +71,22 @@ async def test_company_token_does_not_skip_verification(client):
         headers=headers,
         json=_tenant_body("shop-co", "admin@shop-co.example"),
     )
-    assert created.status_code == 200, created.text
-    assert created.json()["data"].get("admin_email_verified") is not True
-    login = await _login(ac, email="admin@shop-co.example", slug="shop-co")
-    assert login.status_code == 403, login.text
+    assert created.status_code == 403, created.text
 
 
 @pytest.mark.asyncio
 async def test_verify_admin_unlocks_existing_company(client):
     ac, seed = client
-    created = await ac.post("/api/v1/tenants", json=_tenant_body("old-co", "admin@old-co.example"))
+    headers = await _super(ac, seed)
+    created = await ac.post(
+        "/api/v1/tenants",
+        headers=headers,
+        json=_tenant_body("old-co", "admin@old-co.example"),
+    )
     assert created.status_code == 200, created.text
     blocked = await _login(ac, email="admin@old-co.example", slug="old-co")
     assert blocked.status_code == 403
 
-    headers = await _super(ac, seed)
     opened = await ac.post("/api/v1/tenants/old-co/verify-admin", headers=headers)
     assert opened.status_code == 200, opened.text
     assert opened.json()["data"]["newly_verified"] == 1
