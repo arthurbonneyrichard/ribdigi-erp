@@ -97,7 +97,7 @@ services:
       dockerfile: Dockerfile
       args:
         # Bump to force Dokploy/BuildKit to rebuild app+alembic layers
-        RIBDIGI_BUILD_ID: "20260923-production-fix-tenant-create"
+        RIBDIGI_BUILD_ID: "20260923-production-tenant-create-errors"
     restart: unless-stopped
     env_file: .env
     environment:
@@ -107,7 +107,7 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       UVICORN_WORKERS: ${UVICORN_WORKERS:-2}
       RIBDIGI_RELEASE_CHANNEL: production
-      RIBDIGI_BUILD_ID: "20260923-production-fix-tenant-create"
+      RIBDIGI_BUILD_ID: "20260923-production-tenant-create-errors"
     volumes:
       - backup_data:/data/backups
       - media_data:/data/media
@@ -153,14 +153,14 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       args:
-        RIBDIGI_BUILD_ID: "20260923-production-fix-tenant-create"
+        RIBDIGI_BUILD_ID: "20260923-production-tenant-create-errors"
     env_file: .env
     environment:
       PYTHONPATH: /app
       APP_ENV: ${APP_ENV:-production}
       DEBUG: ${DEBUG:-false}
       RIBDIGI_RELEASE_CHANNEL: production
-      RIBDIGI_BUILD_ID: "20260923-production-fix-tenant-create"
+      RIBDIGI_BUILD_ID: "20260923-production-tenant-create-errors"
     volumes:
       - backup_data:/data/backups
       - media_data:/data/media
@@ -206,7 +206,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       args:
-        RIBDIGI_BUILD_ID: "20260923-production-fix-tenant-create"
+        RIBDIGI_BUILD_ID: "20260923-production-tenant-create-errors"
     restart: unless-stopped
     env_file: .env
     environment:
@@ -215,7 +215,7 @@ services:
       DEBUG: ${DEBUG:-false}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       RIBDIGI_RELEASE_CHANNEL: production
-      RIBDIGI_BUILD_ID: "20260923-production-fix-tenant-create"
+      RIBDIGI_BUILD_ID: "20260923-production-tenant-create-errors"
     volumes:
       - backup_data:/data/backups
       - media_data:/data/media
@@ -257,7 +257,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       args:
-        RIBDIGI_BUILD_ID: "20260923-production-fix-tenant-create"
+        RIBDIGI_BUILD_ID: "20260923-production-tenant-create-errors"
     restart: unless-stopped
     env_file: .env
     environment:
@@ -266,7 +266,7 @@ services:
       DEBUG: ${DEBUG:-false}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       RIBDIGI_RELEASE_CHANNEL: production
-      RIBDIGI_BUILD_ID: "20260923-production-fix-tenant-create"
+      RIBDIGI_BUILD_ID: "20260923-production-tenant-create-errors"
     networks:
       - ribdigi_internal
     depends_on:

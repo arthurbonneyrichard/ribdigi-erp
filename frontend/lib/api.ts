@@ -85,6 +85,7 @@ export function formatApiError(body: unknown, status: number): string {
     if (code === 404) return 'Not found.';
     if (code === 409) return 'That record already exists.';
     if (code === 422) return 'Some fields are invalid. Check email, role, phone (E.164), and password.';
+    if (code === 503) return 'The service is busy. Try again in a moment.';
     if (code >= 500) return 'The server could not complete this request.';
     return 'Request failed';
   };

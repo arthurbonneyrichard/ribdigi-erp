@@ -6,7 +6,6 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Path, Query, 
 from fastapi.responses import PlainTextResponse, Response
 from pydantic import EmailStr, TypeAdapter, ValidationError as PydanticValidationError
 from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
 import logging
@@ -321,6 +320,7 @@ from app.schemas import (
     WarehouseUpdate,
 )
 
+from app.http_errors import TenantSeedError, http_exception_for_tenant_create_failure
 from app.security import (
     create_access_token,
     current_claims,
@@ -415,38 +415,54 @@ async def tenant_pk(db: AsyncSession, tenant_ref: str) -> str:
     return tenant.id
 
 
+async def _seed_step(step: str, factory) -> None:
+    try:
+        await factory()
+    except TenantSeedError:
+        raise
+    except Exception:
+        logger.exception("tenant seed failed step=%s", step)
+        raise TenantSeedError(step) from None
+
+
 async def seed_tenant_defaults(db: AsyncSession, tenant_id: str) -> None:
     from app.accounting import ensure_default_accounts
     from app import catalog_meta as catalog_meta_svc
     from app import stores as stores_svc
     from app import store_entitlements as store_ent_svc
-
-    await ensure_default_accounts(db, tenant_id)
-    await expenses_svc.ensure_default_categories(db, tenant_id)
-    await catalog_meta_svc.ensure_default_catalog(db, tenant_id)
     from app import customer_groups as customer_groups_svc
-
-    await customer_groups_svc.ensure_default_groups(db, tenant_id)
     from app.notifications import create_notification
 
-    await create_notification(
-        db,
-        tenant_id=tenant_id,
-        category="system",
-        title="Welcome to RIBDIGI ERP",
-        message="Your tenant was provisioned. Complete company setup and add products to begin.",
-    )
-    db.add(
-        m.TaxRate(
+    await _seed_step("chart of accounts", lambda: ensure_default_accounts(db, tenant_id))
+    await _seed_step("expense categories", lambda: expenses_svc.ensure_default_categories(db, tenant_id))
+    await _seed_step("product catalog", lambda: catalog_meta_svc.ensure_default_catalog(db, tenant_id))
+    await _seed_step("customer groups", lambda: customer_groups_svc.ensure_default_groups(db, tenant_id))
+    await _seed_step(
+        "welcome notification",
+        lambda: create_notification(
+            db,
             tenant_id=tenant_id,
-            name="VAT",
-            rate=15,
-            tax_type="vat",
-            pricing_mode="exclusive",
-            is_default=True,
-            is_active=True,
-        )
+            category="system",
+            title="Welcome to RIBDIGI ERP",
+            message="Your tenant was provisioned. Complete company setup and add products to begin.",
+        ),
     )
+
+    async def _default_tax() -> None:
+        db.add(
+            m.TaxRate(
+                tenant_id=tenant_id,
+                name="VAT",
+                rate=15,
+                tax_type="vat",
+                pricing_mode="exclusive",
+                is_default=True,
+                is_active=True,
+            )
+        )
+        await db.flush()
+
+    await _seed_step("default tax rate", _default_tax)
     # Default Main Store (consumes store entitlement). create_store also adds WH-MAIN warehouse.
     existing_store = (
         await db.execute(select(m.Store).where(m.Store.tenant_id == tenant_id).limit(1))
@@ -569,6 +585,13 @@ async def create_tenant(
     db: AsyncSession = Depends(get_db),
 ):
     validate_password_strength(payload.admin_password)
+    try:
+        password_hash = hash_password(payload.admin_password)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail="Password is too long. Use 72 characters or fewer.",
+        ) from None
     # OpenAPI TenantSlugValue / CompanyNameValue → 422; service defense-in-depth → 400.
     slug = tenants_svc.require_tenant_slug(payload.slug)
     company_name = tenants_svc.require_company_name(payload.company_name)
@@ -604,7 +627,7 @@ async def create_tenant(
             tenant_id=tenant.id,
             email=str(payload.admin_email).strip().lower(),
             full_name="Company Administrator",
-            password_hash=hash_password(payload.admin_password),
+            password_hash=password_hash,
             role="company_admin",
             email_verified=False,
             permissions=permissions_for_role("company_admin"),
@@ -632,23 +655,17 @@ async def create_tenant(
     except HTTPException:
         await db.rollback()
         raise
-    except IntegrityError:
-        await db.rollback()
-        logger.exception("tenant create constraint failed slug=%s", slug)
-        raise HTTPException(
-            status_code=409,
-            detail="Tenant slug or admin email already exists",
-        ) from None
-    except Exception:
+    except Exception as exc:
         await db.rollback()
         logger.exception("tenant create failed slug=%s", slug)
-        raise HTTPException(
-            status_code=500,
-            detail="The server could not complete this request.",
-        ) from None
+        raise http_exception_for_tenant_create_failure(exc) from None
 
-    email_info = await _issue_email_verification(db, admin, tenant)
-    await db.refresh(tenant)
+    try:
+        email_info = await _issue_email_verification(db, admin, tenant)
+        await db.refresh(tenant)
+    except Exception as exc:
+        logger.exception("tenant create persist/email failed slug=%s", slug)
+        raise http_exception_for_tenant_create_failure(exc) from None
     return env(
         {
             "tenant_id": tenant.id,

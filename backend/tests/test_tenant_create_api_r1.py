@@ -146,7 +146,7 @@ async def test_create_tenant_rolls_back_when_seed_fails(client, monkeypatch):
         json={**PAYLOAD, "slug": "rollback-demo", "admin_email": "rollback@example.com"},
     )
     assert failed.status_code == 500, failed.text
-    assert failed.json()["detail"] == "The server could not complete this request."
+    assert "Could not create the workspace" in failed.json()["detail"]
 
     monkeypatch.undo()
     retry = await ac.post(
@@ -219,3 +219,33 @@ async def test_create_tenant_rollback_leaves_no_user_row(client, db_session, mon
         await db_session.execute(select(m.User).where(m.User.email == "nopartial@example.com"))
     ).scalar_one_or_none()
     assert leftover_user is None
+
+
+@pytest.mark.asyncio
+async def test_create_tenant_seed_step_returns_named_error(client, monkeypatch):
+    ac, seed = client
+    headers = await platform_owner_headers(ac, seed)
+
+    async def boom(*_a, **_k):
+        raise RuntimeError("accounts insert failed")
+
+    monkeypatch.setattr("app.accounting.ensure_default_accounts", boom)
+    failed = await ac.post(
+        "/api/v1/tenants",
+        headers=headers,
+        json={**PAYLOAD, "slug": "seed-coa-fail", "admin_email": "seed.coa@example.com"},
+    )
+    assert failed.status_code == 500, failed.text
+    assert "chart of accounts" in failed.json()["detail"]
+    assert "Nothing was saved" in failed.json()["detail"]
+
+
+def test_tenant_create_failure_maps_programming_error():
+    from sqlalchemy.exc import ProgrammingError
+
+    from app.http_errors import TENANT_CREATE_SCHEMA, http_exception_for_tenant_create_failure
+
+    exc = ProgrammingError("INSERT", {}, Exception("column foo does not exist"))
+    mapped = http_exception_for_tenant_create_failure(exc)
+    assert mapped.status_code == 500
+    assert mapped.detail == TENANT_CREATE_SCHEMA
