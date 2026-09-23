@@ -368,26 +368,30 @@ def password_reset_link(token: str) -> str:
 async def send_verification_email(
     *, to: str, token: str, company_name: str | None = None, tenant: Any | None = None
 ) -> EmailResult:
-    link = verification_link(token)
-    company = company_name or getattr(tenant, "company_name", None) or "Ribdigi House"
-    subject = f"Verify your {company} email"
-    text = (
-        f"Welcome to {company}.\n\n"
-        f"Verify your email by opening this link:\n{link}\n\n"
-        f"If you did not create an account, ignore this message.\n"
-    )
-    # Platform noreply chrome uses the Ribdigi House logo (not plain text brand).
-    # Tenant company name still appears in the welcome line when present.
-    brand_company = company if not _is_platform_brand_name(company) else "Ribdigi House"
-    inner = (
-        f"<p>Welcome to <strong>{html.escape(company)}</strong>.</p>"
-        f'<p><a href="{html.escape(link)}">Verify your email</a></p>'
-        f"<p>Or paste: {html.escape(link)}</p>"
-    )
-    branded = render_branded_html(
-        body_html=inner, company_name=brand_company, tenant=tenant, title="Verify your email"
-    )
-    return await send_email(to=to, subject=subject, text_body=text, html_body=branded, tenant=tenant)
+    try:
+        link = verification_link(token)
+        company = company_name or getattr(tenant, "company_name", None) or "Ribdigi House"
+        subject = f"Verify your {company} email"
+        text = (
+            f"Welcome to {company}.\n\n"
+            f"Verify your email by opening this link:\n{link}\n\n"
+            f"If you did not create an account, ignore this message.\n"
+        )
+        # Platform noreply chrome uses the Ribdigi House logo (not plain text brand).
+        # Tenant company name still appears in the welcome line when present.
+        brand_company = company if not _is_platform_brand_name(company) else "Ribdigi House"
+        inner = (
+            f"<p>Welcome to <strong>{html.escape(company)}</strong>.</p>"
+            f'<p><a href="{html.escape(link)}">Verify your email</a></p>'
+            f"<p>Or paste: {html.escape(link)}</p>"
+        )
+        branded = render_branded_html(
+            body_html=inner, company_name=brand_company, tenant=tenant, title="Verify your email"
+        )
+        return await send_email(to=to, subject=subject, text_body=text, html_body=branded, tenant=tenant)
+    except Exception:
+        logger.exception("verification email failed")
+        return EmailResult(sent=False, mode="error", error="send_failed")
 
 
 async def send_password_reset_email(*, to: str, token: str, tenant: Any | None = None) -> EmailResult:

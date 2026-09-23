@@ -6,6 +6,7 @@ from app.api import api
 from app.audit_middleware import AuditMutationMiddleware
 from app.config import settings
 from app.db import SessionLocal
+from app.http_errors import register_exception_handlers
 from app.middleware import MetricsMiddleware, RateLimitMiddleware, SecurityHeadersMiddleware
 from app.request_logging import RequestLoggingMiddleware
 import logging
@@ -63,6 +64,7 @@ app.add_middleware(CORSMiddleware, **cors_kwargs)
 app.add_middleware(RequestLoggingMiddleware)
 
 app.include_router(api)
+register_exception_handlers(app)
 # Used by AuditMutationMiddleware (overridable in tests via app.state.session_factory).
 app.state.session_factory = SessionLocal
 

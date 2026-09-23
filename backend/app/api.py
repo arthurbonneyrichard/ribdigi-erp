@@ -6,8 +6,10 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Path, Query, 
 from fastapi.responses import PlainTextResponse, Response
 from pydantic import EmailStr, TypeAdapter, ValidationError as PydanticValidationError
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
+import logging
 
 from app import models as m
 from app.db import get_db
@@ -329,6 +331,7 @@ from app.security import (
     issue_one_time_token,
     issue_refresh_token,
     optional_platform_tenant_writer,
+    resolve_tenant_create_actor,
     require_permission,
     require_platform_permission,
     require_roles,
@@ -344,6 +347,7 @@ from app import fmcg as fmcg_svc
 from app.rbac import PLATFORM_ROLES, is_platform_owner_role, is_platform_role
 
 api = APIRouter(prefix="/api/v1")
+logger = logging.getLogger("ribdigi.api")
 
 
 def _optional_user_phone(value: str | None) -> str | None:
@@ -387,14 +391,19 @@ async def _issue_email_verification(db: AsyncSession, user: m.User, tenant: m.Te
     await db.commit()
     from app import emailer
 
-    result = await emailer.send_verification_email(
-        to=user.email,
-        token=raw,
-        company_name=getattr(tenant, "company_name", None) if tenant else None,
-        tenant=tenant,
-    )
-    data = {"sent": bool(result.sent), "mode": result.mode, "error": result.error}
+    try:
+        result = await emailer.send_verification_email(
+            to=user.email,
+            token=raw,
+            company_name=getattr(tenant, "company_name", None) if tenant else None,
+            tenant=tenant,
+        )
+    except Exception:
+        logger.exception("verification email send failed user_id=%s", user.id)
+        result = emailer.EmailResult(sent=False, mode="error", error="send_failed")
+    data = {"sent": bool(result.sent), "mode": result.mode}
     if settings.DEBUG or settings.APP_ENV.lower() != "production":
+        data["error"] = result.error
         data["email_verification_token"] = raw
     return data
 
@@ -458,8 +467,7 @@ async def seed_tenant_defaults(db: AsyncSession, tenant_id: str) -> None:
                     code="MAIN",
                 )
             except Exception:
-                # Entitlement or race — leave tenant without a store rather than half-create.
-                pass
+                logger.exception("default store seed skipped tenant_id=%s", tenant_id)
 
 
 
@@ -565,9 +573,8 @@ async def create_tenant(
     db: AsyncSession = Depends(get_db),
 ):
     validate_password_strength(payload.admin_password)
-    # Platform console sets the admin password itself. That admin can sign in
-    # immediately. Anonymous public signup still requires email verification.
-    owner_provisioned = await optional_platform_tenant_writer(db, creds) is not None
+    # Platform console sends a staff token. Missing/invalid tokens stay public signup.
+    owner_provisioned = await resolve_tenant_create_actor(db, creds) is not None
     # OpenAPI TenantSlugValue / CompanyNameValue → 422; service defense-in-depth → 400.
     slug = tenants_svc.require_tenant_slug(payload.slug)
     company_name = tenants_svc.require_company_name(payload.company_name)
@@ -580,54 +587,78 @@ async def create_tenant(
     industry = tenants_svc.normalize_industry(payload.industry)
     trial_end = tenants_svc.default_trial_ends_at()
     now = datetime.utcnow()
-    tenant = m.Tenant(
-        slug=slug,
-        company_name=company_name,
-        industry=industry,
-        currency=payload.currency,
-        status="trial",
-        trial_ends_at=trial_end,
-        trial_notices={},
-        package_code="trial",
-        subscription_term_unit="months",
-        subscription_term_value=max(1, int(settings.TRIAL_DAYS) // 30 or 1),
-        subscription_starts_at=now,
-        subscription_ends_at=trial_end,
-        package_assigned_at=now,
-    )
-    db.add(tenant)
-    await db.flush()
-
-    admin = m.User(
-        tenant_id=tenant.id,
-        email=payload.admin_email,
-        full_name="Company Administrator",
-        password_hash=hash_password(payload.admin_password),
-        role="company_admin",
-        email_verified=False,
-        permissions=permissions_for_role("company_admin"),
-    )
-    db.add(admin)
-    await db.flush()
-    await seed_tenant_defaults(db, tenant.id)
-
-    if owner_provisioned:
-        await audit_svc.record_event(
-            db,
-            tenant_id=tenant.id,
-            user_id=admin.id,
-            module="tenants",
-            action="tenant_created",
-            entity="tenant",
-            entity_id=tenant.id,
-            details={"slug": tenant.slug, "admin_email_verified": False, "source": "platform_console"},
+    try:
+        tenant = m.Tenant(
+            slug=slug,
+            company_name=company_name,
+            industry=industry,
+            currency=payload.currency,
+            status="trial",
+            trial_ends_at=trial_end,
+            trial_notices={},
+            package_code="trial",
+            subscription_term_unit="months",
+            subscription_term_value=max(1, int(settings.TRIAL_DAYS) // 30 or 1),
+            subscription_starts_at=now,
+            subscription_ends_at=trial_end,
+            package_assigned_at=now,
         )
+        db.add(tenant)
+        await db.flush()
+
+        admin = m.User(
+            tenant_id=tenant.id,
+            email=str(payload.admin_email).strip().lower(),
+            full_name="Company Administrator",
+            password_hash=hash_password(payload.admin_password),
+            role="company_admin",
+            email_verified=False,
+            permissions=permissions_for_role("company_admin"),
+        )
+        db.add(admin)
+        await db.flush()
+        await seed_tenant_defaults(db, tenant.id)
+
+        if owner_provisioned:
+            await audit_svc.record_event(
+                db,
+                tenant_id=tenant.id,
+                user_id=admin.id,
+                module="tenants",
+                action="tenant_created",
+                entity="tenant",
+                entity_id=tenant.id,
+                details={
+                    "slug": tenant.slug,
+                    "admin_email_verified": False,
+                    "source": "platform_console",
+                },
+            )
+        await db.flush()
+    except HTTPException:
+        await db.rollback()
+        raise
+    except IntegrityError:
+        await db.rollback()
+        logger.exception("tenant create constraint failed slug=%s", slug)
+        raise HTTPException(
+            status_code=409,
+            detail="Tenant slug or admin email already exists",
+        ) from None
+    except Exception:
+        await db.rollback()
+        logger.exception("tenant create failed slug=%s", slug)
+        raise HTTPException(
+            status_code=500,
+            detail="The server could not complete this request.",
+        ) from None
 
     email_info = await _issue_email_verification(db, admin, tenant)
     await db.refresh(tenant)
     return env(
         {
             "tenant_id": tenant.id,
+            "id": tenant.id,
             "slug": tenant.slug,
             "status": tenant.status,
             "admin_email_verified": False,

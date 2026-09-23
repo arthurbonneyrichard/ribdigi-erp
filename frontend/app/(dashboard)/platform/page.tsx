@@ -265,6 +265,7 @@ export default function PlatformConsole() {
       setForm(emptyCreate);
       const createdSlug = String(r.data?.slug || form.slug).trim().toLowerCase();
       const sent = Boolean(r.data?.email?.sent);
+      const createdId = String(r.data?.tenant_id || r.data?.id || '').trim();
       setMessage(
         sent
           ? `Created tenant "${createdSlug}". A verification email was sent to the company admin. They sign in with workspace "${createdSlug}" after they open that email. You can also click Verify account.`
@@ -272,9 +273,9 @@ export default function PlatformConsole() {
       );
       setFilter('all');
       await refresh({ force: true });
-      if (r.data?.id) {
+      if (createdId) {
         openManage({
-          id: r.data.id,
+          id: createdId,
           slug: createdSlug,
           company_name: r.data.company_name || form.company_name,
           status: r.data.status || 'trial',
