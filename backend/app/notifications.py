@@ -9,7 +9,9 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app import schema_compat
 from app.honesty import money_json
+from app.models import uid
 
 DEFAULT_PREFERENCES = {
     "low_stock": {"dashboard": True, "email": True, "sms": False},
@@ -185,6 +187,7 @@ async def create_notification(
     ):
         return None
     note = m.Notification(
+        id=uid(),
         tenant_id=tenant_id,
         user_id=user_id,
         category=category,
@@ -193,8 +196,25 @@ async def create_notification(
         status="unread",
         entity_type=entity_type,
         entity_id=entity_id,
+        created_at=datetime.utcnow(),
     )
-    db.add(note)
+    await schema_compat.insert_matching_row(
+        db,
+        "notifications",
+        {
+            "id": note.id,
+            "tenant_id": tenant_id,
+            "user_id": user_id,
+            "category": category,
+            "title": title,
+            "message": message,
+            "status": "unread",
+            "entity_type": entity_type,
+            "entity_id": entity_id,
+            "created_at": note.created_at,
+            "company_id": None,
+        },
+    )
     await db.flush()
 
     # Best-effort email + SMS channels (do not fail the notification write)

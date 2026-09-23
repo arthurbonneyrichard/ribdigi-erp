@@ -327,3 +327,50 @@ async def test_create_tenant_retry_does_not_duplicate_slug(client):
         json={**PAYLOAD, "slug": "retry-slug", "admin_email": "retry.two@example.com"},
     )
     assert second.status_code == 409, second.text
+
+
+@pytest.mark.asyncio
+async def test_create_tenant_seeds_welcome_with_optional_company_id(client, db_session):
+    await db_session.execute(text("ALTER TABLE notifications ADD COLUMN company_id VARCHAR(36)"))
+    await db_session.commit()
+    ac, seed = client
+    headers = await platform_owner_headers(ac, seed)
+    ok = await ac.post(
+        "/api/v1/tenants",
+        headers=headers,
+        json={**PAYLOAD, "slug": "welcome-co", "admin_email": "welcome.co@example.com"},
+    )
+    assert ok.status_code == 200, ok.text
+    titles = (
+        await db_session.execute(
+            text(
+                "SELECT title FROM notifications WHERE tenant_id = "
+                "(SELECT id FROM tenants WHERE slug = :slug)"
+            ),
+            {"slug": "welcome-co"},
+        )
+    ).scalars().all()
+    assert any("Welcome" in (t or "") for t in titles)
+
+
+@pytest.mark.asyncio
+async def test_create_tenant_succeeds_when_welcome_notification_insert_fails(
+    client, db_session, monkeypatch
+):
+    ac, seed = client
+    headers = await platform_owner_headers(ac, seed)
+
+    async def boom(*_a, **_k):
+        raise RuntimeError("notifications insert failed")
+
+    monkeypatch.setattr("app.notifications.create_notification", boom)
+    ok = await ac.post(
+        "/api/v1/tenants",
+        headers=headers,
+        json={**PAYLOAD, "slug": "welcome-skip", "admin_email": "welcome.skip@example.com"},
+    )
+    assert ok.status_code == 200, ok.text
+    leftover = (
+        await db_session.execute(select(m.Tenant).where(m.Tenant.slug == "welcome-skip"))
+    ).scalar_one_or_none()
+    assert leftover is not None

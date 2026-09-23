@@ -438,16 +438,19 @@ async def seed_tenant_defaults(db: AsyncSession, tenant_id: str) -> None:
     await _seed_step("expense categories", lambda: expenses_svc.ensure_default_categories(db, tenant_id))
     await _seed_step("product catalog", lambda: catalog_meta_svc.ensure_default_catalog(db, tenant_id))
     await _seed_step("customer groups", lambda: customer_groups_svc.ensure_default_groups(db, tenant_id))
-    await _seed_step(
-        "welcome notification",
-        lambda: create_notification(
+    async def _welcome_notification() -> None:
+        await create_notification(
             db,
             tenant_id=tenant_id,
             category="system",
             title="Welcome to RIBDIGI ERP",
             message="Your tenant was provisioned. Complete company setup and add products to begin.",
-        ),
-    )
+        )
+
+    try:
+        await _welcome_notification()
+    except Exception:
+        logger.exception("welcome notification seed skipped tenant_id=%s", tenant_id)
 
     async def _default_tax() -> None:
         existing = await schema_compat.existing_names(db, "tax_rates", tenant_id)

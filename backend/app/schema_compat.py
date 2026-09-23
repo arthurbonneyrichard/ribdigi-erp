@@ -22,7 +22,7 @@ def _python_type(col) -> type | None:
         return None
 
 
-def _default_for_required_column(col):
+def _default_for_required_column(col, table_name: str = ""):
     name = col.name
     py = _python_type(col)
     if py is datetime:
@@ -39,7 +39,9 @@ def _default_for_required_column(col):
     }:
         return 0
     if name == "status":
-        return "active"
+        return "unread" if table_name == "notifications" else "active"
+    if name == "category" and table_name == "notifications":
+        return "system"
     return None
 
 
@@ -84,7 +86,7 @@ def _prepare_payload(sync_session, table_name: str, values: dict) -> dict:
             continue
         if col.default is not None or col.server_default is not None:
             continue
-        filled = _default_for_required_column(col)
+        filled = _default_for_required_column(col, table_name)
         if filled is not None:
             payload[col.name] = filled
     clean = {}
