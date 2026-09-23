@@ -183,7 +183,12 @@ async def create_platform_staff(
         is_active=True,
     )
     db.add(user)
-    await db.flush()
+    try:
+        await db.flush()
+    except IntegrityError as exc:
+        raise HTTPException(
+            status_code=409, detail="User email already exists on this workspace"
+        ) from exc
     return user
 
 

@@ -95,6 +95,12 @@ export default function PlatformStaffPage() {
       setMessage('');
       return;
     }
+    const phone = form.phone.trim();
+    if (phone && !/^\+[1-9]\d{7,14}$/.test(phone.replace(/[^\d+]/g, '').replace(/^00/, '+'))) {
+      setError('Phone must be E.164 (e.g. +233241111111). Leave blank if you have no number.');
+      setMessage('');
+      return;
+    }
     setBusy(true);
     setError('');
     setMessage('');
