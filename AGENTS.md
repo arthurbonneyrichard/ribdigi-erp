@@ -1,5 +1,11 @@
 # Agent notes
 
+## Git branches (permanent)
+
+- **`main`** is the development/source branch. New work starts here.
+- **`production`** is the Dokploy deploy branch (`origin/production`, compose `./docker-compose.dokploy.yml`). Auto-deploy stays on this branch.
+- Promote only tested `main` commits onto `production` with a normal merge or cherry-pick. Never force-push. Never replace `production` with an untested `main` tree.
+
 ## Tip / brand stream status (PR #300)
 - **OpenAPI honesty tips:** exhausted at **#1884–#1894** on the tenant-status OpenAPI honesty workstream. No further non-trivial Values / `money_json` / FE aria tips without inventing thin work. Intentional OOS: health/request-log ms, onboarding %, AI display "N%", coded enums, system backup notify strips.
 - **Brand refresh:** logo wordmark + logo greens (CSS/email/print/PDF/PWA/OG) shipped; interim favicon from green R mark — replace when a dedicated favicon file is supplied.
