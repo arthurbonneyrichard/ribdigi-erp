@@ -85,7 +85,6 @@ def serialize_audit(row: m.AuditLog) -> dict:
     return {
         "id": row.id,
         "user_id": row.user_id,
-        "company_id": getattr(row, "company_id", None),
         "module": row.module or "system",
         "action": row.action,
         "entity": row.entity,
@@ -97,7 +96,6 @@ def serialize_audit(row: m.AuditLog) -> dict:
         "integrity_hash": row.integrity_hash,
         "archived_at": getattr(row, "archived_at", None),
         "created_at": row.created_at,
-        "archived_at": getattr(row, "archived_at", None),
     }
 
 
@@ -133,7 +131,6 @@ async def record_event(
     module: str = "system",
     ip_address: str | None = None,
     user_agent: str | None = None,
-    company_id: str | None = None,
 ) -> m.AuditLog:
     created_at = datetime.utcnow()
     details = details or {}
@@ -153,7 +150,6 @@ async def record_event(
     row = m.AuditLog(
         id=row_id,
         tenant_id=tenant_id,
-        company_id=company_id,
         user_id=user_id,
         module=module,
         action=action,
@@ -201,7 +197,6 @@ async def query_logs(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     limit: int = 200,
-    company_id: str | None = None,
 ) -> list[m.AuditLog]:
     stmt = select(m.AuditLog).where(m.AuditLog.tenant_id == tenant_id)
     if user_id:
@@ -224,11 +219,6 @@ async def query_logs(
         stmt = stmt.where(m.AuditLog.created_at >= from_date)
     if to_date:
         stmt = stmt.where(m.AuditLog.created_at <= to_date)
-    # Company workspace: company-scoped rows plus null-company auth/system events.
-    if company_id:
-        stmt = stmt.where(
-            or_(m.AuditLog.company_id == company_id, m.AuditLog.company_id.is_(None))
-        )
     stmt = stmt.order_by(m.AuditLog.created_at.desc()).limit(min(limit, 1000))
     return (await db.execute(stmt)).scalars().all()
 
@@ -263,20 +253,12 @@ async def verify_chain(db: AsyncSession, tenant_id: str) -> dict:
                 "valid": False,
                 "checked": checked,
                 "broken_at": row.id,
-                "broken_created_at": row.created_at.isoformat() + "Z" if row.created_at else None,
                 "action": row.action,
                 "created_at": row.created_at,
-                "verified_at": datetime.utcnow().isoformat() + "Z",
             }
         expected_prev = row.integrity_hash or expected_prev
         checked += 1
-    return {
-        "valid": True,
-        "checked": checked,
-        "broken_at": None,
-        "broken_created_at": None,
-        "verified_at": datetime.utcnow().isoformat() + "Z",
-    }
+    return {"valid": True, "checked": checked, "broken_at": None}
 
 
 def to_csv(rows: list[m.AuditLog]) -> str:
@@ -286,7 +268,6 @@ def to_csv(rows: list[m.AuditLog]) -> str:
         [
             "created_at",
             "user_id",
-            "company_id",
             "module",
             "action",
             "entity",
@@ -301,7 +282,6 @@ def to_csv(rows: list[m.AuditLog]) -> str:
             [
                 row.created_at.isoformat() if row.created_at else "",
                 row.user_id or "",
-                getattr(row, "company_id", None) or "",
                 row.module or "",
                 row.action,
                 row.entity,
@@ -312,19 +292,6 @@ def to_csv(rows: list[m.AuditLog]) -> str:
             ]
         )
     return buf.getvalue()
-
-
-def to_pdf(rows: list[m.AuditLog], *, title: str = "Audit Logs") -> bytes:
-    from app.report_export import to_pdf as build_pdf
-
-    lines = [
-        f"{(r.created_at.isoformat() if r.created_at else '')} | {r.module or '-'} | "
-        f"{r.action} | {r.entity}:{r.entity_id or '-'} | user={r.user_id or '-'}"
-        for r in rows
-    ]
-    if not lines:
-        lines = ["No audit events in selection."]
-    return build_pdf(title, lines, subtitle=f"{len(rows)} event(s)")
 
 
 def reject_mutation() -> None:

@@ -1522,13 +1522,6 @@ class BrandUpdate(BaseModel):
     is_active: bool | None = None
 
 
-class BrandUpdate(BaseModel):
-    code: str | None = None
-    name: str | None = None
-    description: str | None = None
-    is_active: bool | None = None
-
-
 class UnitOfMeasureCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -1634,22 +1627,6 @@ class ProductVariantUpdate(BaseModel):
 class ProductImagePrimaryUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    is_primary: bool = True
-
-
-class ProductVariantUpdate(BaseModel):
-    name: str | None = None
-    sku: str | None = None
-    barcode: str | None = None
-    size: str | None = None
-    color: str | None = None
-    flavor: str | None = None
-    cost_price: float | None = None
-    selling_price: float | None = None
-    is_active: bool | None = None
-
-
-class ProductImagePrimaryUpdate(BaseModel):
     is_primary: bool = True
 
 
@@ -2047,35 +2024,6 @@ class OpeningStockCreate(BaseModel):
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silently dropped / garbage could persist on movement notes).
     notes: OpeningStockNotesValue | None = None
-
-
-class OpeningStockLine(BaseModel):
-    product_id: str
-    quantity: float = Field(ge=0)
-    mode: str = "add"
-    notes: str | None = None
-    warehouse_id: str | None = None
-    variant_id: str | None = None
-    batch_number: str | None = None
-    manufacturing_date: datetime | None = None
-    expiry_date: datetime | None = None
-    fiscal_period: str | None = None
-
-
-class OpeningStockRequest(BaseModel):
-    """Single-line or multi-line opening stock (BR-5.2)."""
-
-    product_id: str | None = None
-    quantity: float | None = Field(default=None, ge=0)
-    mode: str = "add"
-    notes: str | None = None
-    warehouse_id: str | None = None
-    variant_id: str | None = None
-    batch_number: str | None = None
-    manufacturing_date: datetime | None = None
-    expiry_date: datetime | None = None
-    fiscal_period: str | None = None
-    items: list[OpeningStockLine] = Field(default_factory=list)
 
 
 class ExpenseCreate(BaseModel):
@@ -2900,23 +2848,6 @@ class TaxComponent(BaseModel):
     name: TaxComponentNameValue | None = None
 
 
-class WarehouseStockTransferCreate(BaseModel):
-    from_warehouse_id: str
-    to_warehouse_id: str
-    notes: str | None = None
-    submit: bool = False
-    items: list[StockTransferItemCreate] = Field(min_length=1)
-
-
-class LowStockReorderPoCreate(BaseModel):
-    product_id: str
-    supplier_id: str
-    quantity: float | None = Field(default=None, gt=0)
-    warehouse_id: str | None = None
-    unit_price: float | None = Field(default=None, ge=0)
-    notes: str | None = None
-
-
 class TaxCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -2991,11 +2922,6 @@ class PasswordResetConfirm(BaseModel):
     new_password: PasswordResetNewPasswordValue
 
 
-class ChangePasswordRequest(BaseModel):
-    current_password: str
-    new_password: str
-
-
 class EmailVerifyConfirm(BaseModel):
     """POST /auth/verify-email — unknown keys → **422** (`extra=forbid`)."""
 
@@ -3015,11 +2941,6 @@ class ResendVerificationRequest(BaseModel):
     # Required workspace ∈ TenantRefValue (UUID or slug); blank/`!!!`/`http://…` → **422**
     # (was free `str`; whitespace/`!!!`/URL reached resolve_tenant as **404**).
     tenant_id: TenantRefValue
-
-
-class EmailVerificationResend(BaseModel):
-    email: EmailStr
-    tenant_id: str
 
 
 class PurchaseOrderItemCreate(BaseModel):
@@ -3531,16 +3452,6 @@ class PurchaseInvoiceCancel(BaseModel):
 
 
     reason: PurchaseInvoiceCancelReasonValue
-
-
-class PurchaseInvoiceOcrApply(BaseModel):
-    """Stage 10 A1 — human-confirmed OCR header apply on draft purchase invoices."""
-
-    confirm: bool = False
-    supplier_invoice_number: str | None = None
-    notes: str | None = None
-    invoice_date: datetime | None = None
-    due_date: datetime | None = None
 
 
 class SalesInvoiceItemCreate(BaseModel):
@@ -8854,22 +8765,6 @@ class PosPaymentLine(BaseModel):
     # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could
     # reach liquid-account lookup). Existence remains tenant-scoped (**404**/400).
     liquid_account_id: UuidIdValue | None = None
-
-
-class PosPaymentLine(BaseModel):
-    """One tender toward a POS sale total (BR-8.1 split payments)."""
-
-    payment_method: str = "cash"
-    amount: float = Field(gt=0)
-    reference: str | None = None
-    liquid_account_id: str | None = None
-
-
-class CreditLimitOverrideRequest(BaseModel):
-    """Optional body for invoice post / credit sale when exceeding the limit (BR-11.1)."""
-
-    credit_limit_override: bool = False
-    credit_override_reason: str | None = None
 
 
 class PosSaleCreate(BaseModel):

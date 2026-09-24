@@ -109,30 +109,6 @@ def early_pay_settings(tenant: m.Tenant) -> dict:
         "early_pay_discount_pct": pct,
         "early_pay_discount_days": days,
         "enabled": pct > 0 and days > 0,
-        "source": "tenant",
-    }
-
-
-def resolve_early_pay_settings(tenant: m.Tenant, party: m.Party | None = None) -> dict:
-    """Prefer party early-pay override when either field is set; otherwise tenant defaults."""
-    tenant_ep = early_pay_settings(tenant)
-    if party is None:
-        return tenant_ep
-    pct_raw = getattr(party, "early_pay_discount_pct", None)
-    days_raw = getattr(party, "early_pay_discount_days", None)
-    if pct_raw is None and days_raw is None:
-        return tenant_ep
-    pct = float(pct_raw or 0)
-    days = int(days_raw or 0)
-    if pct < 0 or pct > 100:
-        raise HTTPException(status_code=400, detail="early_pay_discount_pct must be between 0 and 100")
-    if days < 0 or days > 365:
-        raise HTTPException(status_code=400, detail="early_pay_discount_days must be between 0 and 365")
-    return {
-        "early_pay_discount_pct": pct,
-        "early_pay_discount_days": days,
-        "enabled": pct > 0 and days > 0,
-        "source": "supplier" if party.kind == "supplier" else "party",
     }
 
 
@@ -233,13 +209,7 @@ def add_to_bucket(buckets: dict[str, float], days: int, amount: float) -> None:
     buckets[key] = money_json(round(buckets.get(key, 0.0) + money_json(amount), 2))
 
 
-async def ar_aging(
-    db: AsyncSession,
-    tenant_id: str,
-    as_of: datetime | None = None,
-    *,
-    company_id: str | None = None,
-) -> dict:
+async def ar_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = None) -> dict:
     as_of = as_of or datetime.utcnow()
     invoices = (
         await db.execute(
@@ -251,7 +221,11 @@ async def ar_aging(
     ).scalars().all()
     customers = {
         p.id: p
-        for p in (await db.execute(party_q)).scalars().all()
+        for p in (
+            await db.execute(
+                select(m.Party).where(m.Party.tenant_id == tenant_id, m.Party.kind == "customer")
+            )
+        ).scalars().all()
     }
 
     by_customer: dict[str, dict] = {}
@@ -309,36 +283,33 @@ async def ar_aging(
     }
 
 
-async def ap_aging(
-    db: AsyncSession,
-    tenant_id: str,
-    as_of: datetime | None = None,
-    *,
-    company_id: str | None = None,
-) -> dict:
+async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = None) -> dict:
     as_of = as_of or datetime.utcnow()
-    inv_q = select(m.PurchaseInvoice).where(
-        m.PurchaseInvoice.tenant_id == tenant_id,
-        m.PurchaseInvoice.status.in_(["unpaid", "partial", "overdue"]),
-    )
-    if company_id:
-        inv_q = inv_q.where(m.PurchaseInvoice.company_id == company_id)
-    invoices = (await db.execute(inv_q)).scalars().all()
+    invoices = (
+        await db.execute(
+            select(m.PurchaseInvoice).where(
+                m.PurchaseInvoice.tenant_id == tenant_id,
+                m.PurchaseInvoice.status.in_(["unpaid", "partial", "overdue"]),
+            )
+        )
+    ).scalars().all()
     invoiced_po_ids = {i.purchase_order_id for i in invoices if i.purchase_order_id}
 
-    po_q = select(m.PurchaseOrder).where(
-        m.PurchaseOrder.tenant_id == tenant_id,
-        m.PurchaseOrder.status.in_(["sent", "partially_received", "received"]),
-    )
-    if company_id:
-        po_q = po_q.where(m.PurchaseOrder.company_id == company_id)
-    orders = (await db.execute(po_q)).scalars().all()
-    party_q = select(m.Party).where(m.Party.tenant_id == tenant_id, m.Party.kind == "supplier")
-    if company_id:
-        party_q = party_q.where(m.Party.company_id == company_id)
+    orders = (
+        await db.execute(
+            select(m.PurchaseOrder).where(
+                m.PurchaseOrder.tenant_id == tenant_id,
+                m.PurchaseOrder.status.in_(["sent", "partially_received", "received"]),
+            )
+        )
+    ).scalars().all()
     suppliers = {
         p.id: p
-        for p in (await db.execute(party_q)).scalars().all()
+        for p in (
+            await db.execute(
+                select(m.Party).where(m.Party.tenant_id == tenant_id, m.Party.kind == "supplier")
+            )
+        ).scalars().all()
     }
 
     by_supplier: dict[str, dict] = {}
@@ -390,9 +361,6 @@ async def ap_aging(
             }
         )
 
-    # Stage 11 C1 — uninvoiced AP exposure = accepted GRN value (not full PO total).
-    from app.purchasing import po_received_accepted_value
-
     for po in orders:
         if po.id in invoiced_po_ids:
             continue
@@ -429,14 +397,7 @@ async def ap_aging(
     }
 
 
-async def customer_outstanding_bills(
-    db: AsyncSession,
-    tenant_id: str,
-    customer_id: str,
-    *,
-    company_id: str | None = None,
-) -> list[dict]:
-    """Open AR invoices for a customer (Stage 8 S2 / BR-11.1)."""
+async def customer_statement(db: AsyncSession, tenant_id: str, customer_id: str) -> dict:
     customer = (
         await db.execute(
             select(m.Party).where(
@@ -448,85 +409,27 @@ async def customer_outstanding_bills(
     ).scalar_one_or_none()
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
-    if company_id and customer.company_id and customer.company_id != company_id:
-        raise HTTPException(status_code=404, detail="Customer not found")
 
-    inv_q = select(m.SalesInvoice).where(
-        m.SalesInvoice.tenant_id == tenant_id,
-        m.SalesInvoice.customer_id == customer_id,
-        m.SalesInvoice.status.in_(["posted", "partial", "sent", "overdue"]),
-    )
-    if company_id:
-        inv_q = inv_q.where(m.SalesInvoice.company_id == company_id)
-    invoices = (await db.execute(inv_q)).scalars().all()
-    rows: list[dict] = []
-    for inv in invoices:
-        due = max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
-        if due <= 0:
-            continue
-        rows.append(
-            {
-                "invoice_id": inv.id,
-                "invoice_number": inv.invoice_number,
-                "amount": round(due, 2),
-                "due_date": inv.due_date,
-                "status": inv.status,
-                "document_type": "sales_invoice",
-            }
-        )
-    rows.sort(
-        key=lambda r: (
-            r["due_date"] is None,
-            r["due_date"] or datetime.max,
-            -float(r["amount"]),
-        )
-    )
-    return rows
-
-
-async def customer_statement(
-    db: AsyncSession,
-    tenant_id: str,
-    customer_id: str,
-    *,
-    company_id: str | None = None,
-) -> dict:
-    customer = (
+    invoices = (
         await db.execute(
-            select(m.Party).where(
-                m.Party.id == customer_id,
-                m.Party.tenant_id == tenant_id,
-                m.Party.kind == "customer",
+            select(m.SalesInvoice)
+            .where(
+                m.SalesInvoice.tenant_id == tenant_id,
+                m.SalesInvoice.customer_id == customer_id,
             )
+            .order_by(m.SalesInvoice.created_at.asc())
         )
-    ).scalar_one_or_none()
-    if not customer:
-        raise HTTPException(status_code=404, detail="Customer not found")
-    if company_id and customer.company_id and customer.company_id != company_id:
-        raise HTTPException(status_code=404, detail="Customer not found")
-
-    inv_q = (
-        select(m.SalesInvoice)
-        .where(
-            m.SalesInvoice.tenant_id == tenant_id,
-            m.SalesInvoice.customer_id == customer_id,
+    ).scalars().all()
+    payments = (
+        await db.execute(
+            select(m.CustomerPayment)
+            .where(
+                m.CustomerPayment.tenant_id == tenant_id,
+                m.CustomerPayment.customer_id == customer_id,
+            )
+            .order_by(m.CustomerPayment.created_at.asc())
         )
-        .order_by(m.SalesInvoice.created_at.asc())
-    )
-    if company_id:
-        inv_q = inv_q.where(m.SalesInvoice.company_id == company_id)
-    invoices = (await db.execute(inv_q)).scalars().all()
-    pay_q = (
-        select(m.CustomerPayment)
-        .where(
-            m.CustomerPayment.tenant_id == tenant_id,
-            m.CustomerPayment.customer_id == customer_id,
-        )
-        .order_by(m.CustomerPayment.created_at.asc())
-    )
-    if company_id:
-        pay_q = pay_q.where(m.CustomerPayment.company_id == company_id)
-    payments = (await db.execute(pay_q)).scalars().all()
+    ).scalars().all()
 
     lines = []
     for inv in invoices:
@@ -569,13 +472,7 @@ async def customer_statement(
     }
 
 
-async def supplier_statement(
-    db: AsyncSession,
-    tenant_id: str,
-    supplier_id: str,
-    *,
-    company_id: str | None = None,
-) -> dict:
+async def supplier_statement(db: AsyncSession, tenant_id: str, supplier_id: str) -> dict:
     supplier = (
         await db.execute(
             select(m.Party).where(
@@ -587,31 +484,27 @@ async def supplier_statement(
     ).scalar_one_or_none()
     if not supplier:
         raise HTTPException(status_code=404, detail="Supplier not found")
-    if company_id and supplier.company_id and supplier.company_id != company_id:
-        raise HTTPException(status_code=404, detail="Supplier not found")
 
-    po_q = (
-        select(m.PurchaseOrder)
-        .where(
-            m.PurchaseOrder.tenant_id == tenant_id,
-            m.PurchaseOrder.supplier_id == supplier_id,
+    orders = (
+        await db.execute(
+            select(m.PurchaseOrder)
+            .where(
+                m.PurchaseOrder.tenant_id == tenant_id,
+                m.PurchaseOrder.supplier_id == supplier_id,
+            )
+            .order_by(m.PurchaseOrder.created_at.asc())
         )
-        .order_by(m.PurchaseOrder.created_at.asc())
-    )
-    if company_id:
-        po_q = po_q.where(m.PurchaseOrder.company_id == company_id)
-    orders = (await db.execute(po_q)).scalars().all()
-    pay_q = (
-        select(m.SupplierPayment)
-        .where(
-            m.SupplierPayment.tenant_id == tenant_id,
-            m.SupplierPayment.supplier_id == supplier_id,
+    ).scalars().all()
+    payments = (
+        await db.execute(
+            select(m.SupplierPayment)
+            .where(
+                m.SupplierPayment.tenant_id == tenant_id,
+                m.SupplierPayment.supplier_id == supplier_id,
+            )
+            .order_by(m.SupplierPayment.created_at.asc())
         )
-        .order_by(m.SupplierPayment.created_at.asc())
-    )
-    if company_id:
-        pay_q = pay_q.where(m.SupplierPayment.company_id == company_id)
-    payments = (await db.execute(pay_q)).scalars().all()
+    ).scalars().all()
 
     lines = []
     for po in orders:

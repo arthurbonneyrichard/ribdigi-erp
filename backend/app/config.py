@@ -5,9 +5,6 @@ from pydantic import model_validator
 class Settings(BaseSettings):
     APP_ENV: str = "development"
     DEBUG: bool = False
-    # Stage 94 H1 — release identity for protected health/evidence (honest null when unset).
-    APP_VERSION: str = "1.0.0"
-    APP_BUILD_ID: str = ""
     DATABASE_URL: str = "postgresql+asyncpg://ribdigi:ribdigi@postgres:5432/ribdigi_erp"
     JWT_SECRET_KEY: str = "change-me"
     JWT_ALGORITHM: str = "HS256"
@@ -21,7 +18,6 @@ class Settings(BaseSettings):
     RATE_LIMIT_PER_MINUTE: int = 120
     RATE_LIMIT_AUTH_PER_MINUTE: int = 20
     RATE_LIMIT_BACKEND: str = "auto"  # auto | redis | memory
-    # Production recommendation: set True so multi-instance deploys share sliding windows.
     RATE_LIMIT_REQUIRE_REDIS: bool = False
     RATE_LIMIT_REDIS_PREFIX: str = "ribdigi:ratelimit"
     # Auto-log successful POST/PUT/PATCH/DELETE under /api/v1 (BR-17.1 catch-all).
@@ -54,14 +50,6 @@ class Settings(BaseSettings):
     S3_FORCE_PATH_STYLE: bool = True
     BACKUP_RETENTION_COUNT: int = 30
     BACKUP_ENCRYPTION_KEY: str = ""
-    # Stage 27 B1 — opt-in auto .ribbak upload after create_backup (Stage 26 env names)
-    BACKUP_OFFSITE_UPLOAD_ENABLED: bool = False
-    BACKUP_OFFSITE_S3_BUCKET: str = ""
-    BACKUP_OFFSITE_S3_PREFIX: str = "ribdigi/logical/ribbak"
-    # Stage 27 P1 — PgBouncer transaction mode (also auto-detected for host pgbouncer / :6432)
-    PGBOUNCER_TRANSACTION_MODE: bool = False
-    DB_POOL_SIZE: int = 5
-    DB_MAX_OVERFLOW: int = 10
     TOTP_ENCRYPTION_KEY: str = ""
     TOTP_ENFORCED_ROLES: str = "company_admin,super_admin"
     # When false, login skips TOTP/passkey challenge and enrollment gates (password + tenant only).
@@ -107,8 +95,6 @@ class Settings(BaseSettings):
     BANK_FEED_SYNC_ENABLED: bool = True
     BANK_FEED_TIMEOUT_SECONDS: float = 30.0
     CELERY_BANK_FEED_INTERVAL_MINUTES: int = 360
-    CELERY_AI_PREDICTION_INTERVAL_MINUTES: int = 360
-    CELERY_AI_INSIGHTS_INTERVAL_MINUTES: int = 1440
     # POS cash drawer (store-level mode; fallback when shift has no store)
     POS_DRAWER_FALLBACK_MODE: str = "mock"  # none|mock|network|browser_bridge
     POS_DRAWER_DEFAULT_PORT: int = 9100

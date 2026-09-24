@@ -115,9 +115,6 @@ def normalize_approval_matrix(raw: dict | list | None) -> list[dict]:
     VALID_ROLES allow-list defense-in-depth here.
     """
     from app.rbac import VALID_ROLES
-    from app.roles import SLUG_RE
-
-    allowed = set(VALID_ROLES) | set(known_roles or ())
 
     if raw is None:
         return default_approval_levels()
@@ -157,8 +154,7 @@ def normalize_approval_matrix(raw: dict | list | None) -> list[dict]:
             role = str(r or "").strip()
             if not role:
                 continue
-            # System roles, known custom roles, or well-formed custom slugs.
-            if role not in allowed and not SLUG_RE.fullmatch(role):
+            if role not in VALID_ROLES:
                 raise HTTPException(status_code=400, detail=f"unknown role '{role}' in level {i + 1}")
             if role not in roles:
                 roles.append(role)
@@ -221,53 +217,6 @@ def assert_actor_may_act(*, levels: list[dict], step: int, actor_role: str | Non
             status_code=403,
             detail=f"Level-{step} approval requires one of: {', '.join(allowed)}",
         )
-
-
-async def notify_expense_approvers(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    expense: m.Expense,
-    step: int,
-    title: str,
-    message: str,
-    exclude_user_ids: set[str] | frozenset[str] | None = None,
-) -> int:
-    """Dashboard + email (default on) to active users whose role can act at this step."""
-    settings = await get_approval_settings(db, tenant_id)
-    roles = roles_for_step(settings["levels"], step)
-    if not roles:
-        return 0
-    exclude = set(exclude_user_ids or ())
-    users = (
-        await db.execute(
-            select(m.User).where(
-                m.User.tenant_id == tenant_id,
-                m.User.is_active == True,  # noqa: E712
-                m.User.role.in_(list(roles)),
-            )
-        )
-    ).scalars().all()
-    from app.notifications import create_notification
-
-    notified = 0
-    for user in users:
-        if user.id in exclude:
-            continue
-        note = await create_notification(
-            db,
-            tenant_id=tenant_id,
-            user_id=user.id,
-            category="expense_approval",
-            title=title,
-            message=message,
-            entity_type="expense",
-            entity_id=expense.id,
-            company_id=getattr(expense, "company_id", None),
-        )
-        if note is not None:
-            notified += 1
-    return notified
 
 
 def next_run_date(from_dt: datetime, frequency: str) -> datetime:
@@ -541,7 +490,6 @@ async def list_approval_actions(
 def serialize_approval_action(row: m.ExpenseApprovalAction) -> dict:
     return {
         "id": row.id,
-        "company_id": getattr(row, "company_id", None),
         "expense_id": row.expense_id,
         "step": int(row.step),
         "action": row.action,
@@ -556,7 +504,6 @@ def serialize_expense(expense: m.Expense, actions: list[m.ExpenseApprovalAction]
     required = int(getattr(expense, "approval_steps_required", 1) or 1)
     return {
         "id": expense.id,
-        "company_id": getattr(expense, "company_id", None),
         "category_id": expense.category_id,
         "category": expense.category,
         "description": expense.description,
@@ -602,7 +549,6 @@ async def resolve_category(
     *,
     category_id: str | None,
     category: str | None,
-    company_id: str | None = None,
 ) -> tuple[str | None, str]:
     if category_id:
         cat = (
@@ -623,32 +569,6 @@ async def resolve_category(
         category, label="expense category label", max_length=100
     )
     return None, name
-
-
-async def resolve_org_dimensions(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    store_id: str | None,
-    department_id: str | None,
-    company_id: str | None = None,
-) -> tuple[str | None, str | None]:
-    """Validate optional store/department are tenant/company-scoped (404 on foreign ids)."""
-    resolved_store = None
-    resolved_dept = None
-    if store_id:
-        from app.stores import get_store
-
-        store = await get_store(db, tenant_id, store_id, company_id=company_id)
-        resolved_store = store.id
-    if department_id:
-        from app.org_units import get_department
-
-        dept = await get_department(db, tenant_id, department_id, company_id=company_id)
-        if not bool(dept.is_active):
-            raise HTTPException(status_code=409, detail="Department is not active")
-        resolved_dept = dept.id
-    return resolved_store, resolved_dept
 
 
 async def get_expense(db: AsyncSession, tenant_id: str, expense_id: str) -> m.Expense:
@@ -675,11 +595,9 @@ async def _record_action(
     actor_id: str | None,
     comment: str | None = None,
 ) -> None:
-    expense = await db.get(m.Expense, expense_id)
     db.add(
         m.ExpenseApprovalAction(
             tenant_id=tenant_id,
-            company_id=getattr(expense, "company_id", None) if expense else None,
             expense_id=expense_id,
             step=step,
             action=action,
@@ -727,15 +645,10 @@ async def create_expense(
     branch_id: str | None = None,
     department_id: str | None = None,
     expense_date: datetime | None = None,
-    company_id: str | None = None,
 ) -> m.Expense:
-    await ensure_default_categories(db, tenant_id, company_id=company_id)
+    await ensure_default_categories(db, tenant_id)
     cat_id, cat_name = await resolve_category(
-        db,
-        tenant_id,
-        category_id=category_id,
-        category=category,
-        company_id=company_id,
+        db, tenant_id, category_id=category_id, category=category
     )
     from app import org_units as org_units_svc
 
@@ -765,7 +678,6 @@ async def create_expense(
             method,
             liquid_account_id=liquid_account_id,
             outflow=True,
-            company_id=company_id,
         )
 
     # OpenAPI ExpenseReferenceValue / ExpenseDescriptionValue / ExpensePayeeValue → 422;
@@ -778,7 +690,6 @@ async def create_expense(
 
     expense = m.Expense(
         tenant_id=tenant_id,
-        company_id=company_id,
         category_id=cat_id,
         category=cat_name,
         description=desc,
@@ -802,28 +713,20 @@ async def create_expense(
     db.add(expense)
     await db.flush()
 
-    from app import audit as audit_svc
-
     if needs_approval:
-        await notify_expense_approvers(
+        from app.notifications import create_notification
+
+        await create_notification(
             db,
             tenant_id=tenant_id,
-            expense=expense,
-            step=1,
+            category="expense_approval",
             title="Expense Approval Required",
             message=(
                 f"Expense {cat_name} of {expense.amount:.2f} exceeds approval threshold "
                 f"({auto_t:.2f}) and awaits level-1 review"
                 + (f" (of {steps} levels)." if steps > 1 else ".")
             ),
-            exclude_user_ids={user_id},
-        )
-        await audit_svc.record_event(
-            db,
-            tenant_id=tenant_id,
-            user_id=user_id,
-            action="expense_submitted",
-            entity="expense",
+            entity_type="expense",
             entity_id=expense.id,
             roles=roles_for_step(levels, 1),
             exclude_user_ids={user_id} if user_id else None,
@@ -841,21 +744,6 @@ async def create_expense(
         from app.accounting import post_expense_journal
 
         await post_expense_journal(db, tenant_id=tenant_id, user_id=user_id, expense=expense)
-        await audit_svc.record_event(
-            db,
-            tenant_id=tenant_id,
-            user_id=user_id,
-            action="expense_auto_approved",
-            entity="expense",
-            entity_id=expense.id,
-            details={
-                "category": cat_name,
-                "amount": float(expense.amount),
-                "threshold": float(auto_t),
-                "reason": "under_threshold",
-            },
-            module="expenses",
-        )
     return expense
 
 
@@ -904,8 +792,6 @@ async def approve_expense(
         comment=comment,
     )
 
-    from app import audit as audit_svc
-
     if step < required:
         expense.approval_step = step + 1
         expense.approval_comment = comment or f"Level {step} approved; awaiting level {step + 1}"
@@ -915,21 +801,13 @@ async def approve_expense(
         await create_notification(
             db,
             tenant_id=tenant_id,
-            expense=expense,
-            step=step + 1,
+            category="expense_approval",
             title="Expense Needs Next-Level Approval",
             message=(
                 f"Expense {expense.category} of {money_json(expense.amount):.2f} passed level {step} "
                 f"and awaits level {next_step} approval."
             ),
-            exclude_user_ids={user_id, expense.created_by} if expense.created_by else {user_id},
-        )
-        await audit_svc.record_event(
-            db,
-            tenant_id=tenant_id,
-            user_id=user_id,
-            action="expense_level_approved",
-            entity="expense",
+            entity_type="expense",
             entity_id=expense.id,
             roles=roles_for_step(settings["levels"], next_step),
             exclude_user_ids={user_id, expense.created_by} - {None},
@@ -947,21 +825,6 @@ async def approve_expense(
     from app.accounting import post_expense_journal
 
     await post_expense_journal(db, tenant_id=tenant_id, user_id=user_id, expense=expense)
-    await audit_svc.record_event(
-        db,
-        tenant_id=tenant_id,
-        user_id=user_id,
-        action="expense_approved",
-        entity="expense",
-        entity_id=expense.id,
-        details={
-            "category": expense.category,
-            "amount": float(expense.amount),
-            "steps": required,
-            "comment": comment,
-        },
-        module="expenses",
-    )
     await db.flush()
     return expense
 
@@ -1055,11 +918,7 @@ async def update_expense(
 
     if category_id is not None or category is not None:
         cat_id, cat_name = await resolve_category(
-            db,
-            tenant_id,
-            category_id=category_id,
-            category=category,
-            company_id=getattr(expense, "company_id", None),
+            db, tenant_id, category_id=category_id, category=category
         )
         expense.category_id = cat_id
         expense.category = cat_name
@@ -1112,29 +971,6 @@ async def update_expense(
                 db, tenant_id, expense.store_id, branch_id=resolved_branch
             )
 
-    if clear_store:
-        expense.store_id = None
-    elif store_id is not None:
-        resolved_store, _ = await resolve_org_dimensions(
-            db,
-            tenant_id=tenant_id,
-            store_id=store_id,
-            department_id=None,
-            company_id=getattr(expense, "company_id", None),
-        )
-        expense.store_id = resolved_store
-    if clear_department:
-        expense.department_id = None
-    elif department_id is not None:
-        _, resolved_dept = await resolve_org_dimensions(
-            db,
-            tenant_id=tenant_id,
-            store_id=None,
-            department_id=department_id,
-            company_id=getattr(expense, "company_id", None),
-        )
-        expense.department_id = resolved_dept
-
     if amount is not None:
         new_amount = money_json(round(money_json(amount), 2))
         if new_amount <= 0:
@@ -1161,23 +997,8 @@ async def update_expense(
                     comment="Auto-approved under threshold after edit",
                 )
                 from app.accounting import post_expense_journal
-                from app import audit as audit_svc
 
                 await post_expense_journal(db, tenant_id=tenant_id, user_id=user_id, expense=expense)
-                await audit_svc.record_event(
-                    db,
-                    tenant_id=tenant_id,
-                    user_id=user_id,
-                    action="expense_auto_approved",
-                    entity="expense",
-                    entity_id=expense.id,
-                    details={
-                        "category": expense.category,
-                        "amount": float(expense.amount),
-                        "reason": "under_threshold_after_edit",
-                    },
-                    module="expenses",
-                )
             else:
                 expense.approval_steps_required = steps
                 expense.approval_step = 1
@@ -1204,23 +1025,8 @@ async def update_expense(
                     comment="Auto-approved under threshold after edit",
                 )
                 from app.accounting import post_expense_journal
-                from app import audit as audit_svc
 
                 await post_expense_journal(db, tenant_id=tenant_id, user_id=user_id, expense=expense)
-                await audit_svc.record_event(
-                    db,
-                    tenant_id=tenant_id,
-                    user_id=user_id,
-                    action="expense_auto_approved",
-                    entity="expense",
-                    entity_id=expense.id,
-                    details={
-                        "category": expense.category,
-                        "amount": float(expense.amount),
-                        "reason": "under_threshold_after_edit",
-                    },
-                    module="expenses",
-                )
             else:
                 expense.status = "pending"
                 expense.approval_steps_required = steps
@@ -1245,27 +1051,14 @@ async def create_recurring(
     category: str | None = None,
     payment_method: str = "bank_transfer",
     payee: str | None = None,
-    store_id: str | None = None,
-    department_id: str | None = None,
     start_date: datetime | None = None,
     end_date: datetime | None = None,
     branch_id: str | None = None,
     department_id: str | None = None,
 ) -> m.RecurringExpense:
-    await ensure_default_categories(db, tenant_id, company_id=company_id)
+    await ensure_default_categories(db, tenant_id)
     cat_id, cat_name = await resolve_category(
-        db,
-        tenant_id,
-        category_id=category_id,
-        category=category,
-        company_id=company_id,
-    )
-    resolved_store, resolved_dept = await resolve_org_dimensions(
-        db,
-        tenant_id=tenant_id,
-        store_id=store_id,
-        department_id=department_id,
-        company_id=company_id,
+        db, tenant_id, category_id=category_id, category=category
     )
     freq = (frequency or "monthly").strip().lower()
     if freq not in RECURRING_FREQUENCIES:
@@ -1287,7 +1080,6 @@ async def create_recurring(
     start = start_date or datetime.utcnow()
     row = m.RecurringExpense(
         tenant_id=tenant_id,
-        company_id=company_id,
         category_id=cat_id,
         category=cat_name,
         description=optional_honest_narrative(description, label="expense description")
@@ -1490,17 +1282,17 @@ async def generate_due_recurring(
     *,
     tenant_id: str,
     user_id: str,
-    company_id: str | None = None,
 ) -> list[m.Expense]:
     now = datetime.utcnow()
-    stmt = select(m.RecurringExpense).where(
-        m.RecurringExpense.tenant_id == tenant_id,
-        m.RecurringExpense.is_active == True,  # noqa: E712
-        m.RecurringExpense.next_run_at <= now,
-    )
-    if company_id:
-        stmt = stmt.where(m.RecurringExpense.company_id == company_id)
-    rows = (await db.execute(stmt)).scalars().all()
+    rows = (
+        await db.execute(
+            select(m.RecurringExpense).where(
+                m.RecurringExpense.tenant_id == tenant_id,
+                m.RecurringExpense.is_active == True,  # noqa: E712
+                m.RecurringExpense.next_run_at <= now,
+            )
+        )
+    ).scalars().all()
     created: list[m.Expense] = []
     for row in rows:
         if row.end_date and row.end_date < now:
@@ -1526,8 +1318,6 @@ async def generate_due_recurring(
             department_id=getattr(row, "department_id", None),
         )
         created.append(expense)
-        _clear_occurrence_overrides(row)
         row.next_run_at = next_run_date(now, row.frequency)
-        row.last_notified_for = None
     await db.flush()
     return created

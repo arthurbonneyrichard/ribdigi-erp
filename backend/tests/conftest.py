@@ -72,27 +72,6 @@ async def _seed_two_tenants(db: AsyncSession) -> dict:
     db.add_all([t1, t2])
     await db.flush()
 
-    c1 = m.Company(
-        tenant_id=t1.id,
-        code="MAIN",
-        name="Alpha Co",
-        industry="retail",
-        is_active=True,
-        is_default=True,
-        store_limit=5,
-    )
-    c2 = m.Company(
-        tenant_id=t2.id,
-        code="MAIN",
-        name="Beta Co",
-        industry="retail",
-        is_active=True,
-        is_default=True,
-        store_limit=5,
-    )
-    db.add_all([c1, c2])
-    await db.flush()
-
     u1 = m.User(
         tenant_id=t1.id,
         email="cashier@alpha.example.com",
@@ -153,22 +132,8 @@ async def _seed_two_tenants(db: AsyncSession) -> dict:
     db.add_all([u1, u2, admin1, mgr1, super_u])
     await db.flush()
 
-    for user, company in ((u1, c1), (u2, c2), (admin1, c1), (mgr1, c1), (super_u, c1)):
-        db.add(
-            m.UserCompanyMembership(
-                tenant_id=user.tenant_id,
-                user_id=user.id,
-                company_id=company.id,
-                role=user.role,
-                permissions=user.permissions if isinstance(user.permissions, dict) else None,
-                is_active=True,
-            )
-        )
-    await db.flush()
-
     p1 = m.Product(
         tenant_id=t1.id,
-        company_id=c1.id,
         name="Alpha Widget",
         sku="A-1",
         cost_price=1,
@@ -177,7 +142,6 @@ async def _seed_two_tenants(db: AsyncSession) -> dict:
     )
     p2 = m.Product(
         tenant_id=t2.id,
-        company_id=c2.id,
         name="Beta Widget",
         sku="B-1",
         cost_price=1,
@@ -194,7 +158,6 @@ async def _seed_two_tenants(db: AsyncSession) -> dict:
 
     inv2 = m.SalesInvoice(
         tenant_id=t2.id,
-        company_id=c2.id,
         invoice_number="INV-B-1",
         customer_id=party2.id,
         status="draft",
@@ -208,8 +171,6 @@ async def _seed_two_tenants(db: AsyncSession) -> dict:
     return {
         "t1": t1,
         "t2": t2,
-        "c1": c1,
-        "c2": c2,
         "u1": u1,
         "u2": u2,
         "mgr1": mgr1,
@@ -265,7 +226,6 @@ async def client(db_engine, seeded, _disable_rate_limit):
     jobs_mod.SessionLocal = previous_jobs_session_local
     app.state.session_factory = previous_factory
     app.dependency_overrides.clear()
-    app.state.session_factory = previous_factory
 
 
 async def auth_headers(client: AsyncClient, *, email: str, tenant_slug: str, totp_code: str | None = None):

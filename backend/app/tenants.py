@@ -52,52 +52,6 @@ VALID_THOUSAND_SEPARATORS = frozenset({",", ".", " ", ""})
 VALID_TIME_FORMATS = frozenset({"12h", "24h"})
 TRIAL_REMINDER_DAYS = (7, 3, 1)
 
-# Stage 89 C1 — commercial metadata catalog only (no prices / checkout / fabricated MRR).
-PLAN_CATALOG: dict[str, dict] = {
-    "trial": {
-        "code": "trial",
-        "label": "Trial",
-        "blurb": "Evaluation window for new customer tenants.",
-        "soft_limits": {"stores": 1, "users": 5},
-    },
-    "starter": {
-        "code": "starter",
-        "label": "Starter",
-        "blurb": "Single-location retail operations metadata tier.",
-        "soft_limits": {"stores": 2, "users": 15},
-    },
-    "growth": {
-        "code": "growth",
-        "label": "Growth",
-        "blurb": "Multi-store growth metadata tier.",
-        "soft_limits": {"stores": 10, "users": 50},
-    },
-    "enterprise": {
-        "code": "enterprise",
-        "label": "Enterprise",
-        "blurb": "Large-org metadata tier (limits negotiated offline).",
-        "soft_limits": {"stores": None, "users": None},
-    },
-}
-
-
-def plan_catalog_items() -> list[dict]:
-    return [dict(PLAN_CATALOG[code]) for code in sorted(VALID_PLAN_CODES)]
-
-
-def industry_catalog_items() -> list[dict]:
-    """Stage 93 M1 — canonical industry catalog for House roster filters/provisioning."""
-    return [{"code": code, "label": code.replace("_", " ").title()} for code in sorted(VALID_INDUSTRIES)]
-
-
-def assert_mutable_customer_tenant(tenant: m.Tenant) -> None:
-    """Refuse lifecycle mutations against the reserved Ribdigi House tenant (ADR-137)."""
-    if tenant.id == PLATFORM_TENANT_ID or (tenant.slug or "") == PLATFORM_TENANT_ID:
-        raise HTTPException(
-            status_code=400,
-            detail="Cannot suspend or alter lifecycle of the Ribdigi House platform tenant",
-        )
-
 
 def coerce_industry_value(value: object) -> object:
     """Pydantic BeforeValidator: strip/lowercase; blank stays blank for Literal 422."""
@@ -240,11 +194,7 @@ def is_read_only(tenant: m.Tenant) -> bool:
     return tenant.status == "grace"
 
 
-def serialize_tenant(tenant: m.Tenant, *, company: m.Company | None = None) -> dict:
-    numbering_raw = numbering_source_for_serialize(tenant, company)
-    from app.print_branding import print_templates_for_serialize
-
-    print_tpl = print_templates_for_serialize(tenant, company)
+def serialize_tenant(tenant: m.Tenant) -> dict:
     now = datetime.utcnow()
     days_left = None
     if tenant.status == "trial":
@@ -267,12 +217,6 @@ def serialize_tenant(tenant: m.Tenant, *, company: m.Company | None = None) -> d
         "tax_registration_number": getattr(tenant, "tax_registration_number", None),
         "tax_filing_period": getattr(tenant, "tax_filing_period", None) or "monthly",
         "status": tenant.status,
-        "plan_code": getattr(tenant, "plan_code", None) or "trial",
-        "billing_deferred": True,
-        "billing_provider": None,
-        "plan_codes": sorted(VALID_PLAN_CODES),
-        "legal_name": getattr(tenant, "legal_name", None),
-        "registration_number": getattr(tenant, "registration_number", None),
         "phone": tenant.phone,
         "email": tenant.email,
         "website": tenant.website,
@@ -311,16 +255,6 @@ def serialize_tenant(tenant: m.Tenant, *, company: m.Company | None = None) -> d
         "grace_days": int(settings.TRIAL_GRACE_DAYS),
         "logo_url": tenant.logo_url,
         "has_logo": bool(tenant.logo_url),
-        "document_numbering": normalize_document_numbering(numbering_raw),
-        "document_numbering_preview": preview_document_numbering(numbering_raw),
-        "document_numbering_scope": "company" if company is not None else "tenant",
-        "document_numbering_company_id": company.id if company is not None else None,
-        "invoice_print_template": print_tpl["invoice_print_template"],
-        "receipt_print_template": print_tpl["receipt_print_template"],
-        "document_header": print_tpl["document_header"],
-        "document_footer": print_tpl["document_footer"],
-        "print_templates_scope": "company" if company is not None else "tenant",
-        "print_templates_company_id": company.id if company is not None else None,
         "suspended_at": tenant.suspended_at,
         "suspended_reason": tenant.suspended_reason,
         "package_code": getattr(tenant, "package_code", None) or "trial",
@@ -573,7 +507,6 @@ async def suspend_tenant(
     reason: str | None = None,
     suspended_by: str | None = None,
 ) -> m.Tenant:
-    assert_mutable_customer_tenant(tenant)
     if tenant.status == "suspended":
         raise HTTPException(status_code=400, detail="Tenant is already suspended")
     slug = (tenant.slug or "").strip().lower()
@@ -608,8 +541,6 @@ async def suspend_tenant(
 
 async def enter_grace(db: AsyncSession, tenant: m.Tenant, *, now: datetime | None = None) -> m.Tenant:
     now = now or datetime.utcnow()
-    if tenant.id == PLATFORM_TENANT_ID:
-        return tenant
     if tenant.status == "grace":
         return tenant
     if tenant.status not in {"trial"}:
@@ -625,7 +556,6 @@ async def enter_grace(db: AsyncSession, tenant: m.Tenant, *, now: datetime | Non
 
 
 async def activate_tenant(db: AsyncSession, tenant: m.Tenant) -> m.Tenant:
-    assert_mutable_customer_tenant(tenant)
     if tenant.status == "active":
         raise HTTPException(status_code=400, detail="Tenant is already active")
     if tenant.status not in {"suspended", "trial", "grace"}:
@@ -722,15 +652,6 @@ async def delete_tenant(
 
 async def ensure_trial_state(db: AsyncSession, tenant: m.Tenant) -> m.Tenant:
     """Apply overdue trial→grace or grace→suspend transitions (idempotent)."""
-    if tenant.id == PLATFORM_TENANT_ID:
-        # Platform tenant must remain operable for Ribdigi House staff (ADR-137).
-        if tenant.status != "active":
-            tenant.status = "active"
-            tenant.suspended_at = None
-            tenant.suspended_reason = None
-            tenant.grace_ends_at = None
-            await db.flush()
-        return tenant
     now = datetime.utcnow()
     if tenant.status == "trial" and tenant.trial_ends_at and tenant.trial_ends_at <= now:
         await enter_grace(db, tenant, now=now)

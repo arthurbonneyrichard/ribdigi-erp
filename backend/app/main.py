@@ -11,14 +11,7 @@ from app.middleware import MetricsMiddleware, RateLimitMiddleware, SecurityHeade
 from app.request_logging import RequestLoggingMiddleware
 import logging
 
-is_prod = is_production()
-_docs = openapi_enabled()
-
-# Stage 18 L1 — apply LOG_LEVEL for structured request logger (and root if unset).
-_level = getattr(logging, str(settings.LOG_LEVEL or "INFO").upper(), logging.INFO)
-logging.getLogger("ribdigi.request").setLevel(_level)
-if not logging.getLogger().handlers:
-    logging.basicConfig(level=_level)
+is_prod = settings.APP_ENV.lower() == "production"
 
 _level = getattr(logging, str(settings.LOG_LEVEL or "INFO").upper(), logging.INFO)
 logging.getLogger("ribdigi.request").setLevel(_level)
@@ -27,10 +20,10 @@ if not logging.getLogger().handlers:
 
 app = FastAPI(
     title="RIBDIGI BUSINESS ERP API",
-    version=settings.APP_VERSION or "1.0.0",
-    docs_url="/docs" if _docs else None,
-    redoc_url="/redoc" if _docs else None,
-    openapi_url="/openapi.json" if _docs else None,
+    version="1.0.0",
+    docs_url=None if is_prod else "/docs",
+    redoc_url=None if is_prod else "/redoc",
+    openapi_url=None if is_prod else "/openapi.json",
 )
 
 # Middleware order: last added runs first on request.
@@ -93,9 +86,4 @@ async def _align_hybrid_schema_on_startup() -> None:
 
 @app.get("/")
 async def root():
-    return {
-        "name": "RIBDIGI BUSINESS ERP",
-        "version": settings.APP_VERSION or "1.0.0",
-        "build_id": (settings.APP_BUILD_ID or "").strip() or None,
-        "docs": "/docs" if openapi_enabled() else None,
-    }
+    return {"name": "RIBDIGI BUSINESS ERP", "version": "1.0.0", "docs": None if is_prod else "/docs"}

@@ -18,10 +18,6 @@ type TaxRate = {
   is_active: boolean;
 };
 
-function isoDate(d: Date) {
-  return d.toISOString().slice(0, 10);
-}
-
 export default function Page() {
   const [rows, setRows] = useState<TaxRate[]>([]);
   const [report, setReport] = useState<any>(null);
@@ -37,7 +33,6 @@ export default function Page() {
   const [pricingMode, setPricingMode] = useState('exclusive');
   const [reverseCharge, setReverseCharge] = useState(false);
   const [componentsJson, setComponentsJson] = useState('');
-  const [editId, setEditId] = useState<string | null>(null);
   const [calcAmount, setCalcAmount] = useState('100');
   const [calcResult, setCalcResult] = useState<any>(null);
   const [message, setMessage] = useState('');
@@ -51,20 +46,7 @@ export default function Page() {
     return taxRateManageFilter === 'inactive' ? !active : active;
   });
 
-  function writeTaxPeriodUrl(nextFrom?: string, nextTo?: string) {
-    if (typeof window === 'undefined') return;
-    const url = new URL(window.location.href);
-    const fd = nextFrom !== undefined ? nextFrom : fromDate;
-    const td = nextTo !== undefined ? nextTo : toDate;
-    if (fd) url.searchParams.set('from_date', fd);
-    else url.searchParams.delete('from_date');
-    if (td) url.searchParams.set('to_date', td);
-    else url.searchParams.delete('to_date');
-    const qs = url.searchParams.toString();
-    window.history.replaceState({}, '', qs ? `${url.pathname}?${qs}${url.hash}` : `${url.pathname}${url.hash}`);
-  }
-
-  function qs(presetOverride?: string) {
+  function qs() {
     const params = new URLSearchParams();
     if (fromDate) params.set('from_date', fromDate);
     if (toDate) params.set('to_date', toDate);
@@ -76,31 +58,16 @@ export default function Page() {
     return s ? `?${s}` : '';
   }
 
-  async function refresh(presetOverride?: string, opts?: { taxActive?: string }) {
-    const q = qs(presetOverride);
-    const taxActive = opts?.taxActive !== undefined ? opts.taxActive : taxActiveFilter;
-    const taxQs =
-      taxActive === 'true'
-        ? '?is_active=true'
-        : taxActive === 'false'
-          ? '?is_active=false'
-          : '';
+  async function refresh() {
+    const q = qs();
     const [rates, taxReport, filingPack] = await Promise.all([
-      api(`/tax/rates${taxQs}`),
+      api('/tax/rates'),
       api(`/reports/tax${q}`),
       api(`/reports/tax/filing${q}`),
     ]);
     setRows(rates.data || []);
     setReport(taxReport.data);
     setFiling(filingPack.data);
-    if (taxReport.data?.from_date) {
-      const fd = String(taxReport.data.from_date).slice(0, 10);
-      if (fd) setFromDate(fd);
-    }
-    if (taxReport.data?.to_date) {
-      const td = String(taxReport.data.to_date).slice(0, 10);
-      if (td) setToDate(td);
-    }
   }
 
   useEffect(() => {
@@ -208,10 +175,7 @@ export default function Page() {
     }
   }
 
-  async function downloadFiling(
-    format: 'csv' | 'pdf' | 'xlsx',
-    reportType: 'tax_filing' | 'tax_filing_gh' | 'tax_filing_ke' | 'tax_filing_ng' = 'tax_filing',
-  ) {
+  async function downloadFiling(format: 'csv' | 'pdf' | 'xlsx', reportType: 'tax_filing' | 'tax_filing_gh' = 'tax_filing') {
     setError('');
     setMessage('');
     try {
@@ -230,7 +194,10 @@ export default function Page() {
         params.set('jurisdiction', filingJurisdictionFilter);
       }
       const res = await fetch(`${base}/reports/export?${params}`, {
-        headers: authHeaders(),
+        headers: {
+          Authorization: token ? `Bearer ${token}` : '',
+          'X-Tenant-ID': tenant || '',
+        },
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -246,13 +213,11 @@ export default function Page() {
       a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
-      const labels: Record<string, string> = {
-        tax_filing_gh: 'Ghana VAT return',
-        tax_filing_ke: 'Kenya VAT return',
-        tax_filing_ng: 'Nigeria VAT return',
-        tax_filing: 'Filing pack',
-      };
-      setMessage(`${labels[reportType] || 'Filing pack'} ${format.toUpperCase()} downloaded`);
+      setMessage(
+        reportType === 'tax_filing_gh'
+          ? `Ghana VAT return ${format.toUpperCase()} downloaded`
+          : `Filing pack ${format.toUpperCase()} downloaded`,
+      );
     } catch (err: any) {
       setError(err.message);
     }
@@ -319,19 +284,11 @@ export default function Page() {
             Apply
           </button>
         </div>
-        {report?.period && (
-          <p className="muted" style={{ marginTop: 8 }}>
-            Preset: {report.period}
-            {report.period_year != null ? ` ${report.period_year}` : ''}
-            {report.period_month != null ? `-${String(report.period_month).padStart(2, '0')}` : ''}
-            {report.period_quarter != null ? ` Q${report.period_quarter}` : ''}
-          </p>
-        )}
       </div>
 
       <div className="grid">
-        <div className="card" id="rates">
-          <h3>{editId ? 'Edit rate' : 'Create rate'}</h3>
+        <div className="card">
+          <h3>Create rate</h3>
           <div style={{ display: 'grid', gap: 8 }}>
             <input aria-label="Tax rate name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
             <input value={rate} onChange={(e) => setRate(e.target.value)} placeholder="Rate %" aria-label="Tax rate percent" />
@@ -376,7 +333,7 @@ export default function Page() {
             </button>
           </div>
         </div>
-        <div className="card" id="calculator">
+        <div className="card">
           <h3>Calculator</h3>
           <input
             value={calcAmount}
@@ -407,48 +364,10 @@ export default function Page() {
           <p className="muted">Source: {report?.input_tax_source ?? '—'}</p>
           <div className="kpi">{report?.net_tax_payable ?? '—'}</div>
           <p className="muted">Net payable / refundable</p>
-          <p className="muted" style={{ marginTop: 8 }}>
-            Path export via <code>GET /reports/tax/export</code> (Stage 161 X1; distinct from
-            generic <code>/reports/export</code>).
-          </p>
-          <button
-            type="button"
-            style={{ marginTop: 8 }}
-            onClick={async () => {
-              setError('');
-              setMessage('');
-              try {
-                const token = localStorage.getItem('token') || '';
-                const tenant = localStorage.getItem('tenant') || '';
-                const params = new URLSearchParams();
-                if (fromDate) params.set('from_date', fromDate);
-                if (toDate) params.set('to_date', toDate);
-                const qs = params.toString() ? `?${params}` : '';
-                const res = await fetch(`${base}/reports/tax/export${qs}`, {
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                    'X-Tenant-ID': tenant,
-                  },
-                });
-                if (!res.ok) throw new Error(await res.text());
-                const blob = await res.blob();
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = 'reports_tax_export.csv';
-                a.click();
-                URL.revokeObjectURL(a.href);
-                setMessage('Tax path CSV downloaded (Stage 161 X1)');
-              } catch (err: any) {
-                setError(err.message);
-              }
-            }}
-          >
-            Export tax path CSV
-          </button>
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: 16 }} id="filing">
+      <div className="card" style={{ marginTop: 16 }}>
         <h3>Filing pack</h3>
         <p className="muted">
           Jurisdiction-neutral boxes + output/input schedules
@@ -487,10 +406,6 @@ export default function Page() {
             Export Ghana VAT (PDF)
           </button>
         </div>
-        <p className="muted" style={{ marginBottom: 12 }}>
-          Government exports are manual filing workbooks only — they do not e-file to GRA, KRA iTax, or
-          FIRS portals.
-        </p>
         {!!filing?.government?.warnings?.length && (
           <p style={{ color: '#b45309' }}>{filing.government.warnings.join(' · ')}</p>
         )}

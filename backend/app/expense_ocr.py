@@ -61,10 +61,7 @@ def extract_text_from_pdf(data: bytes) -> str:
         ) from exc
     from io import BytesIO
 
-    try:
-        reader = PdfReader(BytesIO(data))
-    except Exception:  # noqa: BLE001 — corrupt/unsupported PDFs
-        return ""
+    reader = PdfReader(BytesIO(data))
     parts: list[str] = []
     for page in reader.pages:
         try:
@@ -219,23 +216,17 @@ def suggest_from_media(media: storage_svc.MediaObject) -> dict[str, Any]:
         "confidence": parsed["confidence"],
         "raw_text_preview": parsed["raw_text_preview"],
         "warnings": warnings,
-        "apply_hint": (
-            "Review suggestions then POST /expenses/{id}/ocr-apply with confirm=true "
-            "and the fields to apply (Stage 10 A1)"
-        ),
+        "apply_hint": "Review suggestions then PATCH /expenses/{id} with confirmed fields",
     }
 
 
-async def suggest_for_expense(
-    db, *, tenant_id: str, expense_id: str, company_id: str | None = None
-) -> dict[str, Any]:
+async def suggest_for_expense(db, *, tenant_id: str, expense_id: str) -> dict[str, Any]:
     from app import expenses as expenses_svc
     from app import ai_expenses as ai_expenses_svc
     from sqlalchemy import select
     from app import models as m
 
     expense = await expenses_svc.get_expense(db, tenant_id, expense_id)
-    scope_cid = company_id or getattr(expense, "company_id", None)
     if not expense.attachment_url:
         raise HTTPException(status_code=400, detail="Upload a receipt attachment before OCR")
     if "://" in expense.attachment_url:

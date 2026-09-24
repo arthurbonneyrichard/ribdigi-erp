@@ -199,7 +199,7 @@ export async function api(path: string, opts: RequestInit = {}, retryOn401 = tru
     err.status = response.status;
     throw err;
   }
-  return body as T;
+  return body;
 }
 
 /** Load a GET without failing sibling Promise.all calls (pages must not stay on Loading). */

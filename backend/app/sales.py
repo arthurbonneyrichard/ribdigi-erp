@@ -96,33 +96,7 @@ async def refresh_overdue_sales_invoices(
     return changed
 
 
-def refresh_invoice_overdue(invoice: m.SalesInvoice, *, now: datetime | None = None) -> bool:
-    """Mark unpaid posted/sent invoices past due_date as overdue. Returns True if changed."""
-    now = now or datetime.utcnow()
-    balance = max(float(invoice.total_amount or 0) - float(invoice.paid_amount or 0), 0)
-    if invoice.status not in {"posted", "sent", "overdue", "partial"}:
-        return False
-    if balance <= 1e-9:
-        return False
-    if not invoice.due_date or invoice.due_date.date() >= now.date():
-        return False
-    if invoice.status == "partial":
-        # Keep partial for partially paid past-due; expose via is_overdue flag in serialize.
-        return False
-    if invoice.status != "overdue":
-        invoice.status = "overdue"
-        invoice.updated_at = now
-        return True
-    return False
-
-
-async def get_customer(
-    db: AsyncSession,
-    tenant_id: str,
-    customer_id: str,
-    *,
-    company_id: str | None = None,
-) -> m.Party:
+async def get_customer(db: AsyncSession, tenant_id: str, customer_id: str) -> m.Party:
     customer = (
         await db.execute(
             select(m.Party).where(
@@ -134,9 +108,6 @@ async def get_customer(
     ).scalar_one_or_none()
     if not customer:
         raise HTTPException(status_code=404, detail="Customer not found")
-    from app.workspace import assert_fk_company
-
-    assert_fk_company(customer, company_id, detail="Customer not found")
     return customer
 
 
@@ -175,7 +146,6 @@ async def list_invoice_items(db: AsyncSession, tenant_id: str, invoice_id: str) 
 
 
 async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
-    refresh_invoice_overdue(invoice)
     items = await list_invoice_items(db, invoice.tenant_id, invoice.id)
     status = invoice.status
     if status not in {"draft", "cancelled"}:
@@ -198,7 +168,6 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
     fx = money_json(getattr(invoice, "exchange_rate", None), default=1.0)
     return {
         "id": invoice.id,
-        "company_id": getattr(invoice, "company_id", None),
         "invoice_number": invoice.invoice_number,
         "customer_id": invoice.customer_id,
         "store_id": invoice.store_id,
@@ -215,10 +184,6 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
         "exchange_rate": fx,
         "balance_due_base": money_json(round(balance_due * fx, 2)),
         "notes": invoice.notes,
-        "credit_limit_overridden": bool(getattr(invoice, "credit_limit_overridden", False)),
-        "credit_override_reason": getattr(invoice, "credit_override_reason", None),
-        "credit_override_by": getattr(invoice, "credit_override_by", None),
-        "credit_override_at": getattr(invoice, "credit_override_at", None),
         "posted_at": invoice.posted_at,
         "due_date": invoice.due_date,
         "emailed_at": invoice.emailed_at,
@@ -231,7 +196,6 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
         "items": [
             {
                 "id": i.id,
-                "company_id": getattr(i, "company_id", None),
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
                 "quantity": money_json(i.quantity),
@@ -355,8 +319,6 @@ async def create_sales_invoice(
     tax_total = 0.0
     reverse_charge_tax = 0.0
     prepared: list[tuple[dict, float]] = []
-    from app.workspace import assert_fk_company
-
     for item in items:
         product, variant, unit_price = await resolve_sale_line(
             db, tenant_id, item, customer_id=customer_id
@@ -434,11 +396,6 @@ async def create_sales_invoice(
     discount_amount = money_json(discount_amount or 0)
     total = max(subtotal + tax_total - discount_amount, 0)
 
-    from app.document_numbering import allocate_document_number
-
-    invoice_number = await allocate_document_number(
-        db, tenant_id=tenant_id, doc_key="sales_invoice", company_id=company_id
-    )
     invoice = m.SalesInvoice(
         tenant_id=tenant_id,
         invoice_number=await next_sales_invoice_number(db, tenant_id),
@@ -464,7 +421,6 @@ async def create_sales_invoice(
         db.add(
             m.SalesInvoiceItem(
                 tenant_id=tenant_id,
-                company_id=company_id,
                 sales_invoice_id=invoice.id,
                 product_id=item["product_id"],
                 variant_id=item.get("variant_id"),
@@ -479,7 +435,6 @@ async def create_sales_invoice(
                 is_reverse_charge=bool(item.get("is_reverse_charge")),
                 tax_components=item.get("tax_components"),
                 line_total=line_total,
-                supply_category=item.get("supply_category") or "standard",
             )
         )
 
@@ -545,9 +500,7 @@ async def post_sales_invoice(
         from app.stores import warehouse_for_store
         from app.inventory import allocate_unlocated_stock
 
-        wh = await warehouse_for_store(
-            db, tenant_id, invoice.store_id, company_id=getattr(invoice, "company_id", None)
-        )
+        wh = await warehouse_for_store(db, tenant_id, invoice.store_id)
         warehouse_id = wh.id
 
     if invoice.sales_order_id:
@@ -586,11 +539,6 @@ async def post_sales_invoice(
     )
     apply_invoice_status(invoice, leave_draft=True)
     invoice.updated_at = datetime.utcnow()
-    if credit_gate.get("overridden"):
-        invoice.credit_limit_overridden = True
-        invoice.credit_override_reason = credit_gate.get("override_reason")
-        invoice.credit_override_by = user_id
-        invoice.credit_override_at = datetime.utcnow()
 
     from app.accounting import post_sales_invoice_journal
 
@@ -620,7 +568,6 @@ async def post_sales_invoice(
                 ),
                 entity_type="customer",
                 entity_id=customer.id,
-                company_id=getattr(customer, "company_id", None),
             )
 
     from app.notifications import create_notification
@@ -633,7 +580,6 @@ async def post_sales_invoice(
         message=f"Invoice {invoice.invoice_number} posted for {money_json(invoice.total_amount):.2f}.",
         entity_type="sales_invoice",
         entity_id=invoice.id,
-        company_id=getattr(invoice, "company_id", None),
     )
     if override_info:
         db.add(
@@ -787,7 +733,6 @@ async def record_customer_payment(
     liquid_account_id: str | None = None,
     currency: str | None = None,
     exchange_rate: float | None = None,
-    company_id: str | None = None,
 ) -> m.CustomerPayment:
     from app.expenses import normalize_expense_payment_method
 
@@ -796,21 +741,7 @@ async def record_customer_payment(
         raise HTTPException(status_code=400, detail="Payment amount must be positive")
     payment_method = normalize_expense_payment_method(payment_method, default="cash")
 
-    if liquid_account_id:
-        from app.accounting import resolve_settlement_gl
-
-        await resolve_settlement_gl(
-            db,
-            tenant_id,
-            payment_method or "cash",
-            liquid_account_id=liquid_account_id,
-            outflow=False,
-            company_id=company_id,
-        )
-
     customer = await get_customer(db, tenant_id, customer_id)
-    if company_id and getattr(customer, "company_id", None) and customer.company_id != company_id:
-        raise HTTPException(status_code=404, detail="Customer not found")
     tenant = (
         await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id))
     ).scalar_one()
@@ -828,8 +759,6 @@ async def record_customer_payment(
 
     if sales_invoice_id:
         invoice = await get_invoice(db, tenant_id, sales_invoice_id)
-        if company_id and getattr(invoice, "company_id", None) and invoice.company_id != company_id:
-            raise HTTPException(status_code=404, detail="Sales invoice not found")
         if invoice.customer_id != customer_id:
             raise HTTPException(status_code=400, detail="Invoice does not belong to this customer")
         if invoice.status not in SALES_INVOICE_OPEN:
@@ -862,13 +791,6 @@ async def record_customer_payment(
                 raise HTTPException(status_code=409, detail="Payment exceeds invoice balance due")
             allocations.append((invoice, amount, 0.0))
     else:
-        open_q = select(m.SalesInvoice).where(
-            m.SalesInvoice.tenant_id == tenant_id,
-            m.SalesInvoice.customer_id == customer_id,
-            m.SalesInvoice.status.in_(["posted", "partial"]),
-        )
-        if company_id:
-            open_q = open_q.where(m.SalesInvoice.company_id == company_id)
         open_invoices = (
             await db.execute(
                 select(m.SalesInvoice)

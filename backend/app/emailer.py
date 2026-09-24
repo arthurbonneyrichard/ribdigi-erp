@@ -312,7 +312,6 @@ async def send_email(
     if mode == "disabled":
         return EmailResult(sent=False, mode="disabled", recipients=recipients)
 
-    cfg = resolve_smtp_config(tenant)
     msg = build_message(
         to=recipients,
         subject=subject,
@@ -339,7 +338,6 @@ async def send_email(
         "html_body": html_body,
         "attachments": attachment_meta,
         "mode": mode,
-        "source": cfg.get("source"),
     }
 
     if mode == "console":

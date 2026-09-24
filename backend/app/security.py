@@ -45,23 +45,13 @@ def hash_token(raw: str) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
-def create_access_token(
-    user_id: str,
-    tenant_id: str,
-    role: str,
-    jti: str | None = None,
-    *,
-    principal: str | None = None,
-) -> str:
-    from app.platform_const import principal_for
-
+def create_access_token(user_id: str, tenant_id: str, role: str, jti: str | None = None) -> str:
     now = datetime.now(timezone.utc)
     exp = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {
         "sub": user_id,
         "tenant_id": tenant_id,
         "role": role,
-        "principal": principal or principal_for(tenant_id=tenant_id, role=role),
         "type": "access",
         "jti": jti or secrets.token_hex(16),
         "iat": int(now.timestamp()),
@@ -242,11 +232,6 @@ async def current_claims(
     if not tenant:
         raise HTTPException(status_code=403, detail="Tenant suspended or missing")
     from app import tenants as tenants_svc
-    from app.platform_const import (
-        is_platform_tenant_id,
-        path_allowed_for_platform_principal,
-        principal_for,
-    )
 
     tenant = await tenants_svc.ensure_trial_state(db, tenant)
     if tenant.status == "suspended":
@@ -262,7 +247,7 @@ async def current_claims(
         ):
             raise HTTPException(status_code=403, detail="Tenant suspended or missing")
 
-    data["permissions"] = await resolve_user_permissions(db, user)
+    data["permissions"] = user.permissions or permissions_for_role(user.role)
     data["email_verified"] = user.email_verified
     data["totp_enabled"] = bool(user.totp_enabled)
     data["tenant_status"] = tenant.status
@@ -296,50 +281,9 @@ async def current_claims(
             status_code=403,
             detail="2FA enrollment required for this role. Complete setup at /security",
         )
-    # ADR-490 — workspace context (tenant vs company). Never trust client company_id alone.
-    if live_principal != "platform":
-        from app import workspace as workspace_svc
-
-        ws = await workspace_svc.resolve_workspace(
-            db,
-            tenant=tenant,
-            user=user,
-            requested_kind=x_workspace_kind,
-            requested_company_id=x_company_id,
-        )
-        data["workspace_kind"] = ws["workspace_kind"]
-        data["company_id"] = ws.get("company_id")
-        # When in company workspace, membership role/permissions may refine effective RBAC.
-        if ws["workspace_kind"] == "company" and ws.get("membership_permissions"):
-            data["permissions"] = ws["membership_permissions"]
-        elif ws["workspace_kind"] == "company" and ws.get("membership_role"):
-            mem_role = ws["membership_role"]
-            # Prefer explicit membership role map when user.permissions empty.
-            if not data.get("permissions"):
-                from app.rbac import permissions_for_role
-
-                data["permissions"] = permissions_for_role(mem_role)
-            data["membership_role"] = mem_role
-        if ws["workspace_kind"] == "tenant" and is_tenant_admin_like(user.role):
-            # Tenant workspace: strip operational wildcards for non-platform tenant admins
-            # by keeping permissions but gating modules in require_permission via workspace.
-            data["tenant_admin"] = True
-    else:
-        data["workspace_kind"] = "platform"
-        data["company_id"] = None
-
     request.state.user_id = user_id
     request.state.tenant_id = tenant_id
-    request.state.principal = data["principal"]
-    request.state.workspace_kind = data.get("workspace_kind")
-    request.state.company_id = data.get("company_id")
     return data
-
-
-def is_tenant_admin_like(role: str | None) -> bool:
-    from app.workspace import is_tenant_admin_role
-
-    return is_tenant_admin_role(role)
 
 
 def require_roles(*roles: str):
@@ -373,15 +317,6 @@ def require_platform_permission(module: str, action: str = "read"):
 
 def require_permission(module: str, action: str = "read"):
     async def dep(claims: dict = Depends(current_claims)) -> dict:
-        # Defense in depth — allowlist already enforced in current_claims for platform.
-        if claims.get("principal") == "platform" and module not in {"security"}:
-            raise HTTPException(
-                status_code=403,
-                detail={
-                    "code": "PLATFORM_USE_PLATFORM_API",
-                    "message": "Platform principals cannot access tenant ERP modules. Use /api/v1/platform/*.",
-                },
-            )
         if claims.get("read_only") and action != "read":
             raise HTTPException(
                 status_code=403,

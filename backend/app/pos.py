@@ -68,13 +68,7 @@ async def next_session_number(db: AsyncSession, tenant_id: str) -> str:
     return await next_pos_session_number(db, tenant_id)
 
 
-async def get_session(
-    db: AsyncSession,
-    tenant_id: str,
-    session_id: str,
-    *,
-    company_id: str | None = None,
-) -> m.PosSession:
+async def get_session(db: AsyncSession, tenant_id: str, session_id: str) -> m.PosSession:
     session = (
         await db.execute(
             select(m.PosSession).where(
@@ -85,26 +79,21 @@ async def get_session(
     ).scalar_one_or_none()
     if not session:
         raise HTTPException(status_code=404, detail="POS session not found")
-    if company_id and session.company_id and session.company_id != company_id:
-        raise HTTPException(status_code=404, detail="POS session not found")
     return session
 
 
 async def get_open_session_for_user(
-    db: AsyncSession,
-    tenant_id: str,
-    user_id: str,
-    *,
-    company_id: str | None = None,
+    db: AsyncSession, tenant_id: str, user_id: str
 ) -> m.PosSession | None:
-    stmt = select(m.PosSession).where(
-        m.PosSession.tenant_id == tenant_id,
-        m.PosSession.user_id == user_id,
-        m.PosSession.status == "open",
-    )
-    if company_id:
-        stmt = stmt.where(m.PosSession.company_id == company_id)
-    return (await db.execute(stmt)).scalar_one_or_none()
+    return (
+        await db.execute(
+            select(m.PosSession).where(
+                m.PosSession.tenant_id == tenant_id,
+                m.PosSession.user_id == user_id,
+                m.PosSession.status == "open",
+            )
+        )
+    ).scalar_one_or_none()
 
 
 async def require_open_session(
@@ -113,21 +102,16 @@ async def require_open_session(
     tenant_id: str,
     user_id: str,
     session_id: str | None = None,
-    company_id: str | None = None,
 ) -> m.PosSession:
     if session_id:
-        session = await get_session(
-            db, tenant_id, session_id, company_id=company_id
-        )
+        session = await get_session(db, tenant_id, session_id)
         if session.status != "open":
             raise HTTPException(status_code=409, detail="POS session is not open")
         if session.user_id != user_id:
             raise HTTPException(status_code=403, detail="POS session belongs to another cashier")
         return session
 
-    session = await get_open_session_for_user(
-        db, tenant_id, user_id, company_id=company_id
-    )
+    session = await get_open_session_for_user(db, tenant_id, user_id)
     if not session:
         raise HTTPException(status_code=409, detail="Open a POS shift before recording sales")
     return session
@@ -140,11 +124,8 @@ async def open_session(
     user_id: str,
     store_id: str | None,
     opening_cash: float,
-    company_id: str | None = None,
 ) -> m.PosSession:
-    existing = await get_open_session_for_user(
-        db, tenant_id, user_id, company_id=company_id
-    )
+    existing = await get_open_session_for_user(db, tenant_id, user_id)
     if existing:
         raise HTTPException(status_code=409, detail="Cashier already has an open POS shift")
 
@@ -159,10 +140,9 @@ async def open_session(
 
     session = m.PosSession(
         tenant_id=tenant_id,
-        company_id=company_id,
         store_id=store_id,
         user_id=user_id,
-        session_number=await next_session_number(db, tenant_id, company_id),
+        session_number=await next_session_number(db, tenant_id),
         status="open",
         opening_cash=cash,
         expected_cash=cash,
@@ -175,22 +155,6 @@ async def open_session(
     )
     db.add(session)
     await db.flush()
-    from app import audit as audit_svc
-
-    await audit_svc.record_event(
-        db,
-        tenant_id=tenant_id,
-        user_id=user_id,
-        action="pos_session_opened",
-        entity="pos_session",
-        entity_id=session.id,
-        details={
-            "session_number": session.session_number,
-            "store_id": store_id,
-            "opening_cash": cash,
-        },
-        module="pos",
-    )
     return session
 
 
@@ -339,7 +303,6 @@ async def close_session(
     session_id: str,
     actual_cash: float,
     notes: str | None = None,
-    company_id: str | None = None,
 ) -> m.PosSession:
     # OpenAPI PosSessionCloseNotesValue → 422; service defense-in-depth → 400.
     notes_s = optional_honest_narrative(notes, label="close notes")
@@ -373,28 +336,7 @@ async def close_session(
             ),
             entity_type="pos_session",
             entity_id=session.id,
-            company_id=getattr(session, "company_id", None),
         )
-    from app import audit as audit_svc
-
-    await audit_svc.record_event(
-        db,
-        tenant_id=tenant_id,
-        user_id=user_id,
-        action="pos_session_closed",
-        entity="pos_session",
-        entity_id=session.id,
-        details={
-            "session_number": session.session_number,
-            "opening_cash": float(session.opening_cash or 0),
-            "cash_sales": float(session.cash_sales or 0),
-            "expected_cash": expected,
-            "actual_cash": actual,
-            "variance": variance,
-            "sale_count": int(session.sale_count or 0),
-        },
-        module="pos",
-    )
     await db.flush()
     return session
 
@@ -435,7 +377,6 @@ async def serialize_session(db: AsyncSession, session: m.PosSession) -> dict:
             store_address = store.address
     return {
         **drawer,
-        "company_id": session.company_id,
         "store_id": session.store_id,
         "store_name": store_name,
         "store_address": store_address,

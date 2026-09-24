@@ -23,7 +23,6 @@ EXPORTABLE = frozenset(
         "sales_daily",
         "sales_monthly",
         "sales_products",
-        "sales_customers",
         "sales_salesperson",
         "sales_customers",
         "sales_returns",
@@ -46,13 +45,9 @@ EXPORTABLE = frozenset(
         "trial_balance",
         "profit_loss",
         "balance_sheet",
-        "credit_aging",
         "tax",
         "tax_filing",
         "tax_filing_gh",
-        "tax_filing_ke",
-        "tax_filing_ng",
-        "transfer_history",
     }
 )
 
@@ -64,16 +59,7 @@ def to_csv(rows: list[dict[str, Any]], fieldnames: list[str] | None = None) -> s
         writer = csv.DictWriter(buf, fieldnames=headers, extrasaction="ignore")
         writer.writeheader()
         return buf.getvalue()
-    if fieldnames:
-        headers = fieldnames
-    else:
-        headers: list[str] = []
-        seen: set[str] = set()
-        for row in rows:
-            for key in row.keys():
-                if key not in seen:
-                    seen.add(key)
-                    headers.append(key)
+    headers = fieldnames or list(rows[0].keys())
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=headers, extrasaction="ignore")
     writer.writeheader()
@@ -240,15 +226,6 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
             for r in rows[:50]
         ]
         return rows or [{"note": "no rows"}], lines, "Sales by Product"
-
-    if report_type == "sales_customers":
-        items = payload.get("customers") or []
-        rows = [dict(x) for x in items]
-        lines = _kv_lines(payload if isinstance(payload, dict) else {}) + [
-            f"{r.get('name')}: sales={r.get('sale_count')} revenue={r.get('revenue')} avg={r.get('avg_ticket')}"
-            for r in rows[:50]
-        ]
-        return rows or [{"note": "no rows"}], lines, "Sales by Customer"
 
     if report_type == "sales_salesperson":
         items = payload.get("salespeople") or []
@@ -432,79 +409,14 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
         return rows or [{"note": "no rows"}], lines, "Trial Balance"
 
     if report_type == "profit_loss":
-        accounts = payload.get("accounts") or []
-        rows = [dict(x) for x in accounts] if accounts else [dict(payload)]
-        comparison = payload.get("comparison") or {}
-        for metric, vals in (comparison.get("metrics") or {}).items():
-            rows.append(
-                {
-                    "section": "comparison",
-                    "metric": metric,
-                    "current": vals.get("current"),
-                    "prior": vals.get("prior"),
-                    "change_pct": vals.get("change_pct"),
-                }
-            )
-        lines = _kv_lines(
-            {
-                k: payload.get(k)
-                for k in (
-                    "from_date",
-                    "to_date",
-                    "revenue",
-                    "cogs",
-                    "gross_profit",
-                    "operating_expenses",
-                    "other_income",
-                    "income",
-                    "expense",
-                    "net_profit",
-                )
-                if k in payload
-            }
-        )
-        if comparison:
-            lines.append(
-                f"Compare prior {comparison.get('from_date')} → {comparison.get('to_date')}"
-            )
-            for metric, vals in (comparison.get("metrics") or {}).items():
-                lines.append(
-                    f"  {metric}: current={vals.get('current')} prior={vals.get('prior')} "
-                    f"change_pct={vals.get('change_pct')}"
-                )
-        lines.extend(
-            f"{r.get('code')} {r.get('name')} [{r.get('bucket')}]: {r.get('balance')}"
-            for r in accounts[:50]
-        )
-        return rows, lines, "Profit and Loss"
+        return [dict(payload)], _kv_lines(payload), "Profit and Loss"
 
     if report_type == "balance_sheet":
         rows = []
         for section in ("assets", "liabilities", "equity"):
             for item in payload.get(section) or []:
                 rows.append({"section": section, **dict(item)})
-        comparison = payload.get("comparison") or {}
-        for metric, vals in (comparison.get("metrics") or {}).items():
-            rows.append(
-                {
-                    "section": "comparison",
-                    "metric": metric,
-                    "current": vals.get("current"),
-                    "prior": vals.get("prior"),
-                    "change_pct": vals.get("change_pct"),
-                }
-            )
-        lines = _kv_lines(
-            {k: v for k, v in payload.items() if k != "comparison" and not isinstance(v, (list, dict))}
-        )
-        if comparison:
-            lines.append(
-                f"Compare prior as_of {comparison.get('as_of')}: "
-                + ", ".join(
-                    f"{k} {v.get('change_pct')}%"
-                    for k, v in (comparison.get("metrics") or {}).items()
-                )
-            )
+        lines = _kv_lines(payload)
         for section in ("assets", "liabilities", "equity"):
             lines.append(f"-- {section.upper()} --")
             for item in payload.get(section) or []:
@@ -517,27 +429,6 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
                     f"  {item.get('code')} {item.get('name')}: {item.get('balance')}{extra}"
                 )
         return rows or [{"note": "no rows"}], lines, "Balance Sheet"
-
-    if report_type == "credit_aging":
-        parties = payload.get("parties") or []
-        docs = payload.get("documents") or []
-        rows = [
-            *[{"section": "party", **{k: v for k, v in p.items() if not isinstance(v, (list, dict))}} for p in parties],
-            *[{"section": "document", **{k: v for k, v in d.items() if not isinstance(v, (list, dict))}} for d in docs],
-        ]
-        lines = _kv_lines(
-            {
-                k: v
-                for k, v in payload.items()
-                if k not in {"parties", "documents", "totals"} and not isinstance(v, (list, dict))
-            }
-        )
-        totals = payload.get("totals") or {}
-        lines.append(f"Kind: {payload.get('kind')}")
-        lines.append(f"Total due: {payload.get('total_due')}")
-        for k, v in totals.items():
-            lines.append(f"Bucket {k}: {v}")
-        return rows or [{"note": "no outstanding"}], lines, "Credit Aging"
 
     if report_type == "tax":
         items = payload.get("lines") or payload.get("items") or []
@@ -571,17 +462,15 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
         lines.append(f"Input schedule lines: {len(in_sched)}")
         return rows or [{"note": "no rows"}], lines, "Tax Filing Pack"
 
-    if report_type in {"tax_filing_gh", "tax_filing_ke", "tax_filing_ng"}:
+    if report_type == "tax_filing_gh":
         gov = payload.get("government") or {}
         header = gov.get("header") or {}
         boxes = gov.get("boxes") or []
         out_sched = (gov.get("schedules") or {}).get("output") or []
         in_sched = (gov.get("schedules") or {}).get("input") or []
-        juris = report_type.rsplit("_", 1)[-1]  # gh | ke | ng
-        box_section = f"{juris}_box"
         rows = [
             {"section": "header", **{k: v for k, v in header.items() if not isinstance(v, (list, dict))}},
-            *[{"section": box_section, **b} for b in boxes],
+            *[{"section": "gh_box", **b} for b in boxes],
             *[{"section": "output", **r} for r in out_sched],
             *[{"section": "input", **r} for r in in_sched],
         ]
@@ -594,65 +483,12 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
         ]
         for w in gov.get("warnings") or []:
             lines.append(f"WARNING: {w}")
-        label = f"{juris.upper()} VAT BOXES"
-        lines.append(f"-- {label} --")
+        lines.append("-- GH VAT BOXES --")
         for b in boxes:
             lines.append(f"Box {b.get('box')} {b.get('label')}: {b.get('amount')}")
         lines.append(f"Output schedule lines: {len(out_sched)}")
         lines.append(f"Input schedule lines: {len(in_sched)}")
-        titles = {
-            "tax_filing_gh": "Ghana GRA VAT Return",
-            "tax_filing_ke": "Kenya KRA VAT Return",
-            "tax_filing_ng": "Nigeria FIRS VAT Return",
-        }
-        title = titles.get(report_type, "Government VAT Return")
-        return rows or [{"note": "no rows"}], lines, title
-
-    if report_type == "transfer_history":
-        transfers = payload.get("transfers") or []
-        rows = []
-        for t in transfers:
-            items = t.get("items") or []
-            rows.append(
-                {
-                    "id": t.get("id"),
-                    "transfer_number": t.get("transfer_number"),
-                    "from_store_id": t.get("from_store_id"),
-                    "to_store_id": t.get("to_store_id"),
-                    "from_warehouse_id": t.get("from_warehouse_id"),
-                    "to_warehouse_id": t.get("to_warehouse_id"),
-                    "status": t.get("status"),
-                    "notes": t.get("notes"),
-                    "created_by": t.get("created_by"),
-                    "created_at": t.get("created_at"),
-                    "shipped_at": t.get("shipped_at"),
-                    "received_at": t.get("received_at"),
-                    "item_count": len(items),
-                    "qty_requested": sum(float(i.get("quantity") or 0) for i in items),
-                    "qty_shipped": sum(float(i.get("shipped_qty") or 0) for i in items),
-                    "qty_received": sum(float(i.get("received_qty") or 0) for i in items),
-                }
-            )
-        summary = {
-            k: payload.get(k)
-            for k in (
-                "scope",
-                "status",
-                "store_id",
-                "count",
-                "total_qty_requested",
-                "total_qty_shipped",
-                "total_qty_received",
-            )
-            if k in payload
-        }
-        by_status = payload.get("by_status") or {}
-        lines = _kv_lines(summary) + [f"status {k}: {v}" for k, v in by_status.items()]
-        lines += [
-            f"{r.get('transfer_number')}: {r.get('status')} qty={r.get('qty_requested')}"
-            for r in rows[:60]
-        ]
-        return rows or [{"note": "no transfers"}], lines, "Transfer History"
+        return rows or [{"note": "no rows"}], lines, "Ghana GRA VAT Return"
 
     raise HTTPException(status_code=400, detail=f"Unsupported report type: {report_type}")
 
@@ -678,13 +514,9 @@ async def build_report_payload(
     from_date: str | None = None,
     to_date: str | None = None,
     date: str | None = None,
-    as_of_date: str | None = None,
     year: int | None = None,
     month: int | None = None,
     warehouse_id: str | None = None,
-    store_id: str | None = None,
-    branch_id: str | None = None,
-    category_id: str | None = None,
     jurisdiction: str | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
@@ -703,7 +535,6 @@ async def build_report_payload(
 
     fd = reports_svc.parse_date(from_date)
     td = reports_svc.parse_date(to_date, end_of_day=True)
-    as_of = reports_svc.parse_date(as_of_date, end_of_day=True)
     now = datetime.utcnow()
 
     if report_type == "summary":
@@ -1000,9 +831,7 @@ async def export_report(
                     ("InputSchedule", in_sched, None),
                 ]
             )
-        elif report_type in {"tax_filing_gh", "tax_filing_ke", "tax_filing_ng"} and isinstance(
-            payload, dict
-        ):
+        elif report_type == "tax_filing_gh" and isinstance(payload, dict):
             gov = payload.get("government") or {}
             header = gov.get("header") or {}
             header_rows = [{"field": k, "value": v} for k, v in header.items()]
@@ -1011,16 +840,10 @@ async def export_report(
             boxes = gov.get("boxes") or []
             out_sched = (gov.get("schedules") or {}).get("output") or []
             in_sched = (gov.get("schedules") or {}).get("input") or []
-            sheet_map = {
-                "tax_filing_gh": "GHBoxes",
-                "tax_filing_ke": "KEBoxes",
-                "tax_filing_ng": "NGBoxes",
-            }
-            box_sheet = sheet_map[report_type]
             raw = to_xlsx_sheets(
                 [
                     ("ReturnHeader", header_rows, None),
-                    (box_sheet, boxes, None),
+                    ("GHBoxes", boxes, None),
                     ("OutputSchedule", out_sched, None),
                     ("InputSchedule", in_sched, None),
                 ]

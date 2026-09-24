@@ -94,9 +94,6 @@ export default function Page() {
   const [passkeyName, setPasskeyName] = useState('My passkey');
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [disablePassword, setDisablePassword] = useState('');
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [revokingId, setRevokingId] = useState('');
@@ -113,50 +110,7 @@ export default function Page() {
   }
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    let whActive = webhookActiveFilter;
-    const wa = params.get('webhook_active')?.trim().toLowerCase() || '';
-    if (wa === 'true' || wa === 'false') {
-      whActive = wa;
-      setWebhookActiveFilter(wa);
-    }
-    let keyStatus = apiKeyStatusFilter;
-    const ks = params.get('api_key_status')?.trim().toLowerCase() || '';
-    if (['active', 'revoked', 'expired'].includes(ks)) {
-      keyStatus = ks;
-      setApiKeyStatusFilter(ks);
-    }
-    let sessStatus = sessionStatusFilter;
-    const ss = params.get('session_status')?.trim().toLowerCase() || '';
-    if (['active', 'revoked', 'all'].includes(ss)) {
-      sessStatus = ss;
-      setSessionStatusFilter(ss);
-    }
-    let tenantSessStatus = tenantSessionStatusFilter;
-    const tss = params.get('tenant_session_status')?.trim().toLowerCase() || '';
-    if (['active', 'revoked', 'all'].includes(tss)) {
-      tenantSessStatus = tss;
-      setTenantSessionStatusFilter(tss);
-    }
-    refresh({
-      webhookActive: whActive,
-      apiKeyStatus: keyStatus,
-      sessionStatus: sessStatus,
-      tenantSessionStatus: tenantSessStatus,
-    }).catch((err) => setError(err.message));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Stage 103 S1 — honor Shell #passkeys / #totp / #webhooks / #api-keys / #sessions
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const hash = (window.location.hash || '').replace(/^#/, '');
-    if (!hash) return;
-    const t = window.setTimeout(() => {
-      const el = document.getElementById(hash);
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 80);
-    return () => window.clearTimeout(t);
+    refresh().catch((err) => setError(err.message));
   }, []);
 
   async function revokeSession(id: string, isCurrent: boolean) {
@@ -289,9 +243,6 @@ export default function Page() {
     }
   }
 
-  const ConsoleShell = ({ children }: { children: ReactNode }) =>
-    principal === 'platform' ? <PlatformShell>{children}</PlatformShell> : <Shell>{children}</Shell>;
-
   return (
     <>
       <h1>Security / 2FA</h1>
@@ -361,10 +312,7 @@ export default function Page() {
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h2>Passkeys (WebAuthn)</h2>
-        <p className="muted">
-          Register a platform or security-key passkey for passwordless second factor. Export via{' '}
-          <code>GET /auth/webauthn/credentials/export</code> (Stage 128 P1 — no public keys).
-        </p>
+        <p className="muted">Register a platform or security-key passkey for passwordless second factor.</p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
           <input
             aria-label="Passkey name"
@@ -376,28 +324,6 @@ export default function Page() {
           />
           <button type="button" onClick={registerPasskey} aria-label="Add passkey">
             Add passkey
-          </button>
-          <button
-            type="button"
-            onClick={async () => {
-              const token = localStorage.getItem('token') || '';
-              const res = await fetch(`${apiBase}/auth/webauthn/credentials/export`, {
-                headers: { Authorization: `Bearer ${token}` },
-              });
-              if (!res.ok) {
-                setError(await res.text());
-                return;
-              }
-              const blob = await res.blob();
-              const a = document.createElement('a');
-              a.href = URL.createObjectURL(blob);
-              a.download = 'passkeys_export.csv';
-              a.click();
-              URL.revokeObjectURL(a.href);
-              setMessage('Passkeys CSV downloaded');
-            }}
-          >
-            Export passkeys CSV
           </button>
         </div>
         <ul>
@@ -414,7 +340,7 @@ export default function Page() {
       </div>
 
       {!status?.enabled && (
-        <div className="card" style={{ marginBottom: 16 }} id="totp">
+        <div className="card" style={{ marginBottom: 16 }}>
           <h2>Enable TOTP</h2>
           {!setup ? (
             <button onClick={startSetup} aria-label="Start 2FA setup">Start setup</button>
@@ -445,7 +371,7 @@ export default function Page() {
       )}
 
       {status?.enabled && (
-        <div className="card" style={{ marginBottom: 16 }} id="totp">
+        <div className="card" style={{ marginBottom: 16 }}>
           <h2>Backup codes</h2>
           <input
             aria-label="2FA code"
@@ -475,7 +401,7 @@ export default function Page() {
       )}
 
       {backupCodes.length > 0 && (
-        <div className="card" style={{ marginBottom: 16 }}>
+        <div className="card">
           <h2>Save these codes now</h2>
           <ul>
             {backupCodes.map((c) => (

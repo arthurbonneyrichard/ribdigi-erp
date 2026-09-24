@@ -32,10 +32,6 @@ DEFAULT_ACCOUNTS = [
     ("6000", "Operating Expenses", "expense", False, False),
 ]
 
-ACCOUNT_TYPES = frozenset({"asset", "liability", "equity", "income", "expense"})
-OPENING_BALANCE_EQUITY_CODE = "3900"
-SYSTEM_ACCOUNT_CODES = frozenset(code for code, *_ in DEFAULT_ACCOUNTS)
-
 
 def lines_are_balanced(lines: list[dict], tolerance: float = 0.01) -> bool:
     debit = sum(money_json(x.get("debit") or 0) for x in lines)
@@ -120,12 +116,9 @@ async def resolve_settlement_gl(
     *,
     liquid_account_id: str | None = None,
     outflow: bool = False,
-    company_id: str | None = None,
 ) -> tuple[str, str]:
     """Resolve (account_code, label), honoring optional per-payment liquid account override."""
-    from app.workspace import assert_fk_company
-
-    await ensure_default_accounts(db, tenant_id, company_id=company_id)
+    await ensure_default_accounts(db, tenant_id)
     if liquid_account_id:
         account = (
             await db.execute(
@@ -137,7 +130,6 @@ async def resolve_settlement_gl(
         ).scalar_one_or_none()
         if not account:
             raise HTTPException(status_code=404, detail="Settlement account not found")
-        assert_fk_company(account, company_id, detail="Settlement account not found")
         if not _account_is_settlement_eligible(account, outflow=outflow):
             raise HTTPException(
                 status_code=400,
@@ -209,628 +201,6 @@ async def ensure_default_accounts(db: AsyncSession, tenant_id: str) -> None:
             },
         )
     await db.flush()
-
-
-def serialize_coa_account(account: m.Account) -> dict:
-    return {
-        "id": account.id,
-        "company_id": getattr(account, "company_id", None),
-        "code": account.code,
-        "name": account.name,
-        "account_type": account.account_type,
-        "parent_id": account.parent_id,
-        "balance": float(account.balance or 0),
-        "is_cash_account": bool(account.is_cash_account),
-        "is_bank_account": bool(account.is_bank_account),
-        "is_system": bool(getattr(account, "is_system", False)),
-        "is_active": bool(getattr(account, "is_active", True)),
-        "bank_name": account.bank_name,
-        "account_number": account.account_number,
-        "bank_branch": getattr(account, "bank_branch", None),
-    }
-
-
-def build_account_tree(rows: list[m.Account]) -> list[dict]:
-    """Nest accounts by parent_id; orphans with missing parents become roots."""
-    by_id = {r.id: {**serialize_coa_account(r), "children": []} for r in rows}
-    roots: list[dict] = []
-    for r in rows:
-        node = by_id[r.id]
-        parent_id = r.parent_id
-        if parent_id and parent_id in by_id:
-            by_id[parent_id]["children"].append(node)
-        else:
-            roots.append(node)
-
-    def sort_rec(nodes: list[dict]) -> None:
-        nodes.sort(key=lambda n: n["code"])
-        for n in nodes:
-            sort_rec(n["children"])
-
-    sort_rec(roots)
-    return roots
-
-
-async def get_tenant_account(
-    db: AsyncSession,
-    tenant_id: str,
-    account_id: str,
-    *,
-    company_id: str | None = None,
-) -> m.Account:
-    row = (
-        await db.execute(
-            select(m.Account).where(
-                m.Account.id == account_id,
-                m.Account.tenant_id == tenant_id,
-            )
-        )
-    ).scalar_one_or_none()
-    if not row:
-        raise HTTPException(status_code=404, detail="Account not found")
-    if company_id and row.company_id and row.company_id != company_id:
-        raise HTTPException(status_code=404, detail="Account not found")
-    return row
-
-
-def _natural_side_delta(account_type: str, debit: float, credit: float) -> float:
-    """Signed movement on the account's natural balance side."""
-    if account_type in {"asset", "expense"}:
-        return float(debit) - float(credit)
-    return float(credit) - float(debit)
-
-
-async def account_transactions(
-    db: AsyncSession,
-    tenant_id: str,
-    account_id: str,
-    *,
-    from_date: datetime | None = None,
-    to_date: datetime | None = None,
-    include_unposted: bool = False,
-    company_id: str | None = None,
-) -> dict:
-    """Ledger drill-down for one COA account (Stage 8 A1)."""
-    account = await get_tenant_account(db, tenant_id, account_id, company_id=company_id)
-    stmt = (
-        select(m.JournalEntryLine, m.JournalEntry)
-        .join(m.JournalEntry, m.JournalEntry.id == m.JournalEntryLine.journal_entry_id)
-        .where(
-            m.JournalEntryLine.tenant_id == tenant_id,
-            m.JournalEntry.tenant_id == tenant_id,
-            m.JournalEntryLine.account_id == account_id,
-        )
-    )
-    if not include_unposted:
-        stmt = stmt.where(m.JournalEntry.status == "posted")
-    stmt = stmt.order_by(
-        m.JournalEntry.entry_date.asc(),
-        m.JournalEntry.entry_number.asc(),
-        m.JournalEntryLine.id.asc(),
-    )
-    rows = (await db.execute(stmt)).all()
-
-    opening = 0.0
-    period_rows: list[tuple[m.JournalEntryLine, m.JournalEntry]] = []
-    for line, entry in rows:
-        entry_dt = entry.entry_date or entry.created_at or datetime.utcnow()
-        if from_date and entry_dt < from_date:
-            opening = round(
-                opening
-                + _natural_side_delta(
-                    account.account_type, float(line.debit or 0), float(line.credit or 0)
-                ),
-                2,
-            )
-            continue
-        if to_date and entry_dt > to_date:
-            continue
-        period_rows.append((line, entry))
-
-    running = opening
-    transactions: list[dict] = []
-    total_debit = 0.0
-    total_credit = 0.0
-    for line, entry in period_rows:
-        debit = float(line.debit or 0)
-        credit = float(line.credit or 0)
-        total_debit = round(total_debit + debit, 2)
-        total_credit = round(total_credit + credit, 2)
-        running = round(
-            running + _natural_side_delta(account.account_type, debit, credit), 2
-        )
-        transactions.append(
-            {
-                "line_id": line.id,
-                "journal_entry_id": entry.id,
-                "entry_number": entry.entry_number,
-                "entry_date": entry.entry_date,
-                "reference": entry.reference,
-                "description": line.description or entry.description,
-                "source_type": entry.source_type,
-                "source_id": entry.source_id,
-                "status": entry.status,
-                "debit": debit,
-                "credit": credit,
-                "balance": running,
-            }
-        )
-
-    return {
-        "account": serialize_coa_account(account),
-        "from_date": from_date.date().isoformat() if from_date else None,
-        "to_date": to_date.date().isoformat() if to_date else None,
-        "include_unposted": bool(include_unposted),
-        "opening_balance": opening,
-        "closing_balance": running,
-        "total_debit": total_debit,
-        "total_credit": total_credit,
-        "transaction_count": len(transactions),
-        "transactions": transactions,
-    }
-
-
-async def _validate_parent(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    account_type: str,
-    parent_id: str | None,
-    self_id: str | None = None,
-    company_id: str | None = None,
-) -> None:
-    if not parent_id:
-        return
-    if self_id and parent_id == self_id:
-        raise HTTPException(status_code=400, detail="Account cannot be its own parent")
-    parent = await get_tenant_account(db, tenant_id, parent_id, company_id=company_id)
-    if parent.account_type != account_type:
-        raise HTTPException(
-            status_code=400,
-            detail="Parent account must have the same account_type",
-        )
-    if self_id:
-        cursor = parent
-        seen = {self_id}
-        while cursor is not None:
-            if cursor.id in seen:
-                raise HTTPException(
-                    status_code=400, detail="Account parent would create a cycle"
-                )
-            seen.add(cursor.id)
-            if not cursor.parent_id:
-                break
-            cursor = (
-                await db.execute(
-                    select(m.Account).where(
-                        m.Account.id == cursor.parent_id,
-                        m.Account.tenant_id == tenant_id,
-                    )
-                )
-            ).scalar_one_or_none()
-
-
-async def create_coa_account(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    code: str,
-    name: str,
-    account_type: str,
-    parent_id: str | None = None,
-    company_id: str | None = None,
-) -> m.Account:
-    await ensure_default_accounts(db, tenant_id, company_id=company_id)
-    type_norm = (account_type or "").strip().lower()
-    if type_norm not in ACCOUNT_TYPES:
-        raise HTTPException(
-            status_code=400,
-            detail=f"account_type must be one of {sorted(ACCOUNT_TYPES)}",
-        )
-    code_norm = (code or "").strip()
-    name_norm = (name or "").strip()
-    if not code_norm or not name_norm:
-        raise HTTPException(status_code=400, detail="code and name are required")
-
-    existing_q = select(m.Account).where(
-        m.Account.tenant_id == tenant_id, m.Account.code == code_norm
-    )
-    if company_id:
-        existing_q = existing_q.where(m.Account.company_id == company_id)
-    existing = (await db.execute(existing_q)).scalar_one_or_none()
-    if existing:
-        raise HTTPException(status_code=409, detail=f"Account code {code_norm} already exists")
-
-    await _validate_parent(
-        db,
-        tenant_id=tenant_id,
-        account_type=type_norm,
-        parent_id=parent_id,
-        company_id=company_id,
-    )
-
-    row = m.Account(
-        tenant_id=tenant_id,
-        company_id=company_id,
-        code=code_norm,
-        name=name_norm,
-        account_type=type_norm,
-        parent_id=parent_id,
-        balance=0,
-        is_system=False,
-        is_active=True,
-    )
-    db.add(row)
-    await db.flush()
-    return row
-
-
-async def update_coa_account(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    account_id: str,
-    code: str | None = None,
-    name: str | None = None,
-    account_type: str | None = None,
-    parent_id: str | None = None,
-    is_active: bool | None = None,
-    clear_parent: bool = False,
-    company_id: str | None = None,
-) -> m.Account:
-    row = await get_tenant_account(db, tenant_id, account_id, company_id=company_id)
-    if row.is_system and (code is not None or account_type is not None or name is not None):
-        # System accounts: only parent/active structural fields may change via dedicated paths.
-        # Name/code/type edits are reserved for non-system accounts (BR-10.1).
-        if code is not None or account_type is not None:
-            raise HTTPException(
-                status_code=409,
-                detail={
-                    "code": "SYSTEM_ACCOUNT",
-                    "message": "Cannot change code or type of a system account",
-                },
-            )
-        if name is not None:
-            raise HTTPException(
-                status_code=409,
-                detail={
-                    "code": "SYSTEM_ACCOUNT",
-                    "message": "Cannot edit name of a system account",
-                },
-            )
-
-    if code is not None:
-        code_norm = code.strip()
-        if not code_norm:
-            raise HTTPException(status_code=400, detail="code cannot be empty")
-        dup_q = select(m.Account).where(
-            m.Account.tenant_id == tenant_id,
-            m.Account.code == code_norm,
-            m.Account.id != row.id,
-        )
-        scope_cid = company_id or getattr(row, "company_id", None)
-        if scope_cid:
-            dup_q = dup_q.where(m.Account.company_id == scope_cid)
-        dup = (await db.execute(dup_q)).scalar_one_or_none()
-        if dup:
-            raise HTTPException(status_code=409, detail=f"Account code {code_norm} already exists")
-        row.code = code_norm
-
-    if name is not None:
-        name_norm = name.strip()
-        if not name_norm:
-            raise HTTPException(status_code=400, detail="name cannot be empty")
-        row.name = name_norm
-
-    if account_type is not None:
-        type_norm = account_type.strip().lower()
-        if type_norm not in ACCOUNT_TYPES:
-            raise HTTPException(
-                status_code=400,
-                detail=f"account_type must be one of {sorted(ACCOUNT_TYPES)}",
-            )
-        row.account_type = type_norm
-
-    if clear_parent:
-        row.parent_id = None
-    elif parent_id is not None:
-        await _validate_parent(
-            db,
-            tenant_id=tenant_id,
-            account_type=row.account_type,
-            parent_id=parent_id,
-            self_id=row.id,
-            company_id=company_id or getattr(row, "company_id", None),
-        )
-        row.parent_id = parent_id
-
-    if is_active is not None:
-        if row.is_system and not is_active:
-            raise HTTPException(
-                status_code=409,
-                detail={
-                    "code": "SYSTEM_ACCOUNT",
-                    "message": "Cannot deactivate a system account",
-                },
-            )
-        row.is_active = bool(is_active)
-
-    await db.flush()
-    return row
-
-
-async def post_account_opening_balance(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    user_id: str | None,
-    account_id: str,
-    amount: float,
-    description: str | None = None,
-    company_id: str | None = None,
-) -> m.JournalEntry:
-    """Post a balanced opening-balance journal for one account (BR-10.1)."""
-    await ensure_default_accounts(db, tenant_id, company_id=company_id)
-    account = await get_tenant_account(db, tenant_id, account_id, company_id=company_id)
-    if not account.is_active:
-        raise HTTPException(status_code=400, detail="Account is inactive")
-    if account.code == OPENING_BALANCE_EQUITY_CODE:
-        raise HTTPException(
-            status_code=400,
-            detail="Cannot set an opening balance on the Opening Balances Equity account",
-        )
-
-    amt = round(float(amount), 2)
-    if amt == 0:
-        raise HTTPException(status_code=400, detail="amount must be non-zero")
-
-    prior = (
-        await db.execute(
-            select(m.JournalEntry).where(
-                m.JournalEntry.tenant_id == tenant_id,
-                m.JournalEntry.source_type == "opening_balance",
-                m.JournalEntry.source_id == account.id,
-                m.JournalEntry.status == "posted",
-            )
-        )
-    ).scalar_one_or_none()
-    if prior:
-        raise HTTPException(
-            status_code=409,
-            detail={
-                "code": "OPENING_BALANCE_EXISTS",
-                "message": "Posted opening balance already exists for this account; unpost it first",
-                "journal_entry_id": prior.id,
-            },
-        )
-
-    equity = await get_account_by_code(
-        db, tenant_id, OPENING_BALANCE_EQUITY_CODE, company_id=company_id
-    )
-    abs_amt = abs(amt)
-    # Natural side: assets/expenses debit-positive; liability/equity/income credit-positive.
-    # Negative amount flips the side (e.g. credit balance on an asset).
-    natural_debit = account.account_type in {"asset", "expense"}
-    account_debit = natural_debit if amt > 0 else not natural_debit
-
-    if account_debit:
-        lines = [
-            {
-                "account_id": account.id,
-                "debit": abs_amt,
-                "credit": 0,
-                "description": "Opening balance",
-            },
-            {
-                "account_id": equity.id,
-                "debit": 0,
-                "credit": abs_amt,
-                "description": f"Opening balance offset {account.code}",
-            },
-        ]
-    else:
-        lines = [
-            {
-                "account_id": equity.id,
-                "debit": abs_amt,
-                "credit": 0,
-                "description": f"Opening balance offset {account.code}",
-            },
-            {
-                "account_id": account.id,
-                "debit": 0,
-                "credit": abs_amt,
-                "description": "Opening balance",
-            },
-        ]
-
-    desc = (description or "").strip() or f"Opening balance {account.code} {account.name}"
-    return await post_journal_entry(
-        db,
-        tenant_id=tenant_id,
-        user_id=user_id,
-        description=desc,
-        reference=f"OB-{account.code}",
-        source_type="opening_balance",
-        source_id=account.id,
-        company_id=company_id,
-        lines=lines,
-    )
-
-
-def _infer_liquid_move_kind(from_acct: m.Account, to_acct: m.Account) -> str:
-    if from_acct.is_cash_account and to_acct.is_bank_account:
-        return "deposit"
-    if from_acct.is_bank_account and to_acct.is_cash_account:
-        return "withdrawal"
-    return "transfer"
-
-
-async def create_liquid_account(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    kind: str,
-    code: str,
-    name: str,
-    bank_name: str | None = None,
-    account_number: str | None = None,
-    bank_branch: str | None = None,
-    company_id: str | None = None,
-) -> m.Account:
-    await ensure_default_accounts(db, tenant_id, company_id=company_id)
-    kind_norm = (kind or "").strip().lower()
-    if kind_norm not in {"cash", "bank"}:
-        raise HTTPException(status_code=400, detail="kind must be cash or bank")
-    code_norm = (code or "").strip()
-    name_norm = (name or "").strip()
-    if not code_norm or not name_norm:
-        raise HTTPException(status_code=400, detail="code and name are required")
-
-    existing_q = select(m.Account).where(
-        m.Account.tenant_id == tenant_id, m.Account.code == code_norm
-    )
-    if company_id:
-        existing_q = existing_q.where(m.Account.company_id == company_id)
-    existing = (await db.execute(existing_q)).scalar_one_or_none()
-    if existing:
-        raise HTTPException(status_code=409, detail=f"Account code {code_norm} already exists")
-
-    is_cash = kind_norm == "cash"
-    is_bank = kind_norm == "bank"
-    if is_bank and not (bank_name or "").strip():
-        raise HTTPException(status_code=400, detail="bank_name is required for bank accounts")
-
-    row = m.Account(
-        tenant_id=tenant_id,
-        company_id=company_id,
-        code=code_norm,
-        name=name_norm,
-        account_type="asset",
-        balance=0,
-        is_cash_account=is_cash,
-        is_bank_account=is_bank,
-        is_system=False,
-        is_active=True,
-        bank_name=((bank_name or "").strip() or None) if is_bank else None,
-        account_number=((account_number or "").strip() or None) if is_bank else None,
-        bank_branch=((bank_branch or "").strip() or None) if is_bank else None,
-    )
-    db.add(row)
-    await db.flush()
-    return row
-
-
-async def update_liquid_account(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    account_id: str,
-    name: str | None = None,
-    bank_name: str | None = None,
-    account_number: str | None = None,
-    bank_branch: str | None = None,
-    clear_bank_details: bool | None = None,
-    is_active: bool | None = None,
-    company_id: str | None = None,
-) -> m.Account:
-    from app.bank_recon import get_liquid_account
-
-    row = await get_liquid_account(db, tenant_id, account_id, company_id=company_id)
-    if name is not None:
-        name_norm = name.strip()
-        if not name_norm:
-            raise HTTPException(status_code=400, detail="name cannot be empty")
-        row.name = name_norm
-    if clear_bank_details:
-        row.bank_name = None
-        row.account_number = None
-        row.bank_branch = None
-    if bank_name is not None:
-        row.bank_name = bank_name.strip() or None
-    if account_number is not None:
-        row.account_number = account_number.strip() or None
-    if bank_branch is not None:
-        row.bank_branch = bank_branch.strip() or None
-    if is_active is not None:
-        row.is_active = bool(is_active)
-    if row.is_bank_account and not (row.bank_name or "").strip() and row.is_active:
-        raise HTTPException(status_code=400, detail="bank_name is required for bank accounts")
-    await db.flush()
-    return row
-
-
-async def transfer_liquid_funds(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    user_id: str | None,
-    from_account_id: str,
-    to_account_id: str,
-    amount: float,
-    description: str | None = None,
-    reference: str | None = None,
-    kind: str | None = None,
-    company_id: str | None = None,
-) -> m.JournalEntry:
-    """Move funds between cash/bank accounts (deposit, withdrawal, or transfer)."""
-    from app.bank_recon import get_liquid_account
-
-    await ensure_default_accounts(db, tenant_id, company_id=company_id)
-    amt = round(float(amount), 2)
-    if amt <= 0:
-        raise HTTPException(status_code=400, detail="amount must be positive")
-    if from_account_id == to_account_id:
-        raise HTTPException(status_code=400, detail="from_account_id and to_account_id must differ")
-
-    from_acct = await get_liquid_account(
-        db, tenant_id, from_account_id, company_id=company_id
-    )
-    to_acct = await get_liquid_account(db, tenant_id, to_account_id, company_id=company_id)
-
-    inferred = _infer_liquid_move_kind(from_acct, to_acct)
-    kind_norm = (kind or inferred).strip().lower()
-    if kind_norm not in {"deposit", "withdrawal", "transfer"}:
-        raise HTTPException(
-            status_code=400,
-            detail="kind must be deposit, withdrawal, or transfer",
-        )
-    if kind_norm == "deposit" and not (from_acct.is_cash_account and to_acct.is_bank_account):
-        raise HTTPException(status_code=400, detail="deposit requires cash → bank")
-    if kind_norm == "withdrawal" and not (from_acct.is_bank_account and to_acct.is_cash_account):
-        raise HTTPException(status_code=400, detail="withdrawal requires bank → cash")
-
-    default_desc = {
-        "deposit": f"Deposit {from_acct.code} → {to_acct.code}",
-        "withdrawal": f"Withdrawal {from_acct.code} → {to_acct.code}",
-        "transfer": f"Transfer {from_acct.code} → {to_acct.code}",
-    }[kind_norm]
-    desc = (description or "").strip() or default_desc
-
-    return await post_journal_entry(
-        db,
-        tenant_id=tenant_id,
-        user_id=user_id,
-        description=desc,
-        reference=reference,
-        source_type=f"liquid_{kind_norm}",
-        source_id=None,
-        company_id=company_id,
-        lines=[
-            {
-                "account_id": to_acct.id,
-                "debit": amt,
-                "credit": 0,
-                "description": desc,
-            },
-            {
-                "account_id": from_acct.id,
-                "debit": 0,
-                "credit": amt,
-                "description": desc,
-            },
-        ],
-    )
 
 
 def _signed_balance_delta(account_type: str, debit: float, credit: float) -> float:
@@ -1097,9 +467,6 @@ async def post_journal_entry(
 
     total_debit = sum(x["debit"] for x in normalized)
     total_credit = sum(x["credit"] for x in normalized)
-    resolved_store = await resolve_journal_store_id(
-        db, tenant_id=tenant_id, store_id=store_id, company_id=company_id
-    )
 
     if isinstance(when, date) and not isinstance(when, datetime):
         when_dt = datetime.combine(when, time.min)
@@ -1114,7 +481,6 @@ async def post_journal_entry(
         description=description,
         source_type=source_type,
         source_id=source_id,
-        store_id=resolved_store,
         total_debit=total_debit,
         total_credit=total_credit,
         status="posted",
@@ -1134,17 +500,8 @@ async def post_journal_entry(
                     )
                 )
             ).scalar_one_or_none()
-            if (
-                account
-                and company_id
-                and account.company_id
-                and account.company_id != company_id
-            ):
-                account = None
         else:
-            account = await get_account_by_code(
-                db, tenant_id, line["account_code"], company_id=company_id
-            )
+            account = await get_account_by_code(db, tenant_id, line["account_code"])
         if not account:
             raise HTTPException(status_code=404, detail="Account not found")
         assert_account_active(account)
@@ -1152,7 +509,6 @@ async def post_journal_entry(
         db.add(
             m.JournalEntryLine(
                 tenant_id=tenant_id,
-                company_id=company_id,
                 journal_entry_id=entry.id,
                 account_id=account.id,
                 debit=line["debit"],
@@ -1196,7 +552,6 @@ async def serialize_journal(db: AsyncSession, entry: m.JournalEntry) -> dict:
     ).scalar_one_or_none()
     return {
         "id": entry.id,
-        "company_id": getattr(entry, "company_id", None),
         "entry_number": entry.entry_number,
         "entry_date": entry.entry_date,
         "reference": entry.reference,
@@ -1214,7 +569,6 @@ async def serialize_journal(db: AsyncSession, entry: m.JournalEntry) -> dict:
         "lines": [
             {
                 "id": ln.id,
-                "company_id": getattr(ln, "company_id", None),
                 "account_id": ln.account_id,
                 "debit": money_json(ln.debit),
                 "credit": money_json(ln.credit),
@@ -1526,7 +880,6 @@ async def post_sales_invoice_journal(
         reference=invoice.invoice_number,
         source_type="sales_invoice",
         source_id=invoice.id,
-        store_id=getattr(invoice, "store_id", None),
         lines=lines,
     )
 
@@ -1537,7 +890,6 @@ async def post_sales_return_journal(
     tenant_id: str,
     user_id: str,
     sales_return: m.SalesReturn,
-    invoice: m.SalesInvoice | None = None,
 ) -> m.JournalEntry:
     await ensure_default_accounts(db, tenant_id)
     from app.sales_docs import list_return_items
@@ -1579,7 +931,6 @@ async def post_sales_return_journal(
         reference=cn,
         source_type="sales_return",
         source_id=sales_return.id,
-        store_id=getattr(invoice, "store_id", None) if invoice is not None else None,
         lines=lines,
     )
 
@@ -1649,7 +1000,6 @@ async def post_customer_payment_journal(
         payment.payment_method,
         liquid_account_id=getattr(payment, "liquid_account_id", None),
         outflow=False,
-        company_id=getattr(payment, "company_id", None),
     )
 
     cash_base = to_base(amount, pay_rate)
@@ -1733,7 +1083,6 @@ async def post_supplier_payment_journal(
         payment.payment_method,
         liquid_account_id=getattr(payment, "liquid_account_id", None),
         outflow=True,
-        company_id=getattr(payment, "company_id", None),
     )
     cash_base = to_base(amount, pay_rate)
     if allocations:
@@ -1874,14 +1223,8 @@ async def post_purchase_invoice_journal(
     tenant_id: str,
     user_id: str,
     purchase_invoice: m.PurchaseInvoice,
-    skip_inventory_ap: bool = False,
-) -> m.JournalEntry | None:
-    """Purchase bill journal.
-
-    Manual path: Dr Inventory (+ Input Tax if RC) / Cr AP (+ Tax Payable if RC).
-    Stage 11 C2 GRN-linked RC: Inv/AP already posted by GRN — post self-assess
-    Dr 1300 / Cr 2100 only when ``skip_inventory_ap`` is true.
-    """
+) -> m.JournalEntry:
+    """Manual purchase bill: Dr Inventory (+ Input Tax if RC) / Cr AP (+ Tax Payable if RC)."""
     await ensure_default_accounts(db, tenant_id)
     from app.fx import doc_rate, to_base
 
@@ -1898,19 +1241,7 @@ async def post_purchase_invoice_journal(
         money_json(getattr(purchase_invoice, "reverse_charge_tax", 0) or 0), rate
     )
     is_rc = bool(getattr(purchase_invoice, "is_reverse_charge", False)) and rc > 0
-    if skip_inventory_ap:
-        if not is_rc:
-            return None
-        lines = [
-            {"account_code": "1300", "debit": rc, "credit": 0, "description": "Input tax (RC)"},
-            {
-                "account_code": "2100",
-                "debit": 0,
-                "credit": rc,
-                "description": "Tax payable (RC self-assess)",
-            },
-        ]
-    elif is_rc:
+    if is_rc:
         lines = [
             {"account_code": "1200", "debit": net, "credit": 0, "description": "Inventory/purchases"},
             {"account_code": "1300", "debit": rc, "credit": 0, "description": "Input tax (RC)"},
@@ -1949,8 +1280,7 @@ async def post_purchase_invoice_reversal_journal(
     tenant_id: str,
     user_id: str,
     purchase_invoice: m.PurchaseInvoice,
-    skip_inventory_ap: bool = False,
-) -> m.JournalEntry | None:
+) -> m.JournalEntry:
     await ensure_default_accounts(db, tenant_id)
     from app.fx import doc_rate, to_base
 
@@ -1967,15 +1297,7 @@ async def post_purchase_invoice_reversal_journal(
         money_json(getattr(purchase_invoice, "reverse_charge_tax", 0) or 0), rate
     )
     is_rc = bool(getattr(purchase_invoice, "is_reverse_charge", False)) and rc > 0
-    if skip_inventory_ap:
-        # Stage 11 C2 — reverse only RC self-assess posted for GRN-linked invoices.
-        if not is_rc:
-            return None
-        lines = [
-            {"account_code": "2100", "debit": rc, "credit": 0, "description": "Tax payable reverse"},
-            {"account_code": "1300", "debit": 0, "credit": rc, "description": "Input tax reverse"},
-        ]
-    elif is_rc:
+    if is_rc:
         lines = [
             {"account_code": "2000", "debit": net, "credit": 0, "description": "AP reverse"},
             {"account_code": "2100", "debit": rc, "credit": 0, "description": "Tax payable reverse"},
@@ -2023,7 +1345,6 @@ async def post_expense_journal(
         expense.payment_method,
         liquid_account_id=getattr(expense, "liquid_account_id", None),
         outflow=True,
-        company_id=getattr(expense, "company_id", None),
     )
     debit_code = "6000"
     debit_desc = expense.category
@@ -2047,7 +1368,6 @@ async def post_expense_journal(
         reference=expense.id,
         source_type="expense",
         source_id=expense.id,
-        store_id=getattr(expense, "store_id", None),
         lines=[
             {
                 "account_code": debit_code,
@@ -2145,8 +1465,6 @@ async def post_pos_sale_journal(
         reference=tx.reference,
         source_type="pos_sale",
         source_id=tx.id,
-        store_id=store_id,
-        company_id=cid,
         lines=lines,
     )
 
@@ -2248,7 +1566,6 @@ async def trial_balance(
                 "balance": bal,
             }
         )
-    as_of_date = (as_of or datetime.utcnow()).date().isoformat()
     return {
         "as_of": as_of_day.isoformat(),
         "mode": mode,

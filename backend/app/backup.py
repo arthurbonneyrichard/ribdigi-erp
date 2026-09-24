@@ -8,7 +8,6 @@ import hashlib
 import json
 from datetime import datetime
 from decimal import Decimal
-from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -26,7 +25,6 @@ from app.config import settings
 
 FORMAT_NAME = "ribdigi-logical-backup"
 FORMAT_VERSION = 1
-OFFSITE_META_KEY = "__offsite__"
 
 # Restore order respects FK dependencies (parents before children).
 DATASET_SPECS: list[tuple[str, type]] = [
@@ -41,7 +39,6 @@ DATASET_SPECS: list[tuple[str, type]] = [
     ("product_batches", m.ProductBatch),
     ("warehouse_stocks", m.WarehouseStock),
     ("parties", m.Party),
-    ("party_contacts", m.PartyContact),
     ("tax_rates", m.TaxRate),
     ("exchange_rates", m.ExchangeRate),
     ("accounts", m.Account),
@@ -84,16 +81,6 @@ DATASET_SPECS: list[tuple[str, type]] = [
     ("party_contacts", m.PartyContact),
     ("notification_preferences", m.NotificationPreference),
     ("report_schedules", m.ReportSchedule),
-]
-
-# Stage 10 B1 — DB columns that hold tenant-scoped media keys (bytes in payload.media).
-MEDIA_FIELD_SOURCES: list[tuple[str, str]] = [
-    ("brands", "logo_url"),
-    ("products", "image_url"),
-    ("product_images", "storage_key"),
-    ("expenses", "attachment_url"),
-    ("purchase_invoices", "attachment_url"),
-    ("journal_entries", "attachment_url"),
 ]
 
 
@@ -170,11 +157,6 @@ def row_to_dict(obj: Any) -> dict:
 
 
 def serialize_job(job: m.BackupJob) -> dict:
-    raw_counts = dict(job.record_counts or {})
-    offsite = raw_counts.pop(OFFSITE_META_KEY, None) or {}
-    offsite_uri = None
-    if offsite.get("uploaded") and offsite.get("bucket") and offsite.get("key"):
-        offsite_uri = f"s3://{offsite['bucket']}/{offsite['key']}"
     return {
         "id": job.id,
         "tenant_id": job.tenant_id,
@@ -183,76 +165,12 @@ def serialize_job(job: m.BackupJob) -> dict:
         "size_bytes": job.size_bytes,
         "checksum_sha256": job.checksum_sha256,
         "encrypted": job.encrypted,
-        "record_counts": raw_counts,
+        "record_counts": job.record_counts or {},
         "created_by": job.created_by,
         "created_at": job.created_at,
         "error_message": job.error_message,
         "notes": job.notes,
-        "offsite_uploaded": bool(offsite.get("uploaded")) if offsite else False,
-        "offsite_uri": offsite_uri,
     }
-
-
-def offsite_upload_enabled() -> bool:
-    return bool(getattr(settings, "BACKUP_OFFSITE_UPLOAD_ENABLED", False))
-
-
-@lru_cache(maxsize=1)
-def _backup_offsite_s3_client():
-    """S3 client for .ribbak offsite bucket (does not require media S3_BUCKET)."""
-    try:
-        import boto3
-        from botocore.client import Config
-    except ImportError as exc:
-        raise RuntimeError(
-            "Offsite backup upload requires boto3 (install backend requirements)"
-        ) from exc
-
-    endpoint = (settings.S3_ENDPOINT or settings.S3_ENDPOINT_URL or "").strip() or None
-    access = (settings.S3_ACCESS_KEY or "").strip()
-    secret = (settings.S3_SECRET_KEY or "").strip()
-    region = (settings.S3_REGION or "us-east-1").strip()
-    if not access or not secret:
-        raise RuntimeError(
-            "S3_ACCESS_KEY and S3_SECRET_KEY are required when "
-            "BACKUP_OFFSITE_UPLOAD_ENABLED=true"
-        )
-    addressing = "path" if settings.S3_FORCE_PATH_STYLE else "auto"
-    return boto3.client(
-        "s3",
-        endpoint_url=endpoint,
-        aws_access_key_id=access,
-        aws_secret_access_key=secret,
-        region_name=region,
-        config=Config(s3={"addressing_style": addressing}, signature_version="s3v4"),
-    )
-
-
-def reset_backup_offsite_s3_client_cache() -> None:
-    """Test helper: clear cached offsite boto3 client after settings monkeypatch."""
-    clear = getattr(_backup_offsite_s3_client, "cache_clear", None)
-    if callable(clear):
-        clear()
-
-
-def upload_ribbak_offsite(*, tenant_id: str, local_path: Path, filename: str) -> dict:
-    """Upload a local .ribbak to BACKUP_OFFSITE_S3_BUCKET. Raises on misconfig/upload error."""
-    bucket = (settings.BACKUP_OFFSITE_S3_BUCKET or "").strip()
-    if not bucket:
-        raise RuntimeError(
-            "BACKUP_OFFSITE_S3_BUCKET is required when BACKUP_OFFSITE_UPLOAD_ENABLED=true"
-        )
-    prefix = (settings.BACKUP_OFFSITE_S3_PREFIX or "ribdigi/logical/ribbak").strip().strip("/")
-    key = f"{prefix}/{tenant_id}/{filename}"
-    body = local_path.read_bytes()
-    client = _backup_offsite_s3_client()
-    client.put_object(
-        Bucket=bucket,
-        Key=key,
-        Body=body,
-        ContentType="application/octet-stream",
-    )
-    return {"bucket": bucket, "key": key, "bytes": len(body)}
 
 
 def serialize_settings(row: m.BackupSettings) -> dict:
@@ -315,94 +233,6 @@ async def update_settings(
     return row
 
 
-def _is_managed_media_key(key: str | None, tenant_id: str) -> bool:
-    """True for tenant-scoped storage keys (not external http(s) URLs)."""
-    if not key or not isinstance(key, str):
-        return False
-    if "://" in key or ".." in key or key.startswith(("/", "\\")):
-        return False
-    normalized = key.replace("\\", "/")
-    return normalized.startswith(f"{tenant_id}/")
-
-
-def collect_media_objects(
-    tenant_id: str,
-    datasets: dict[str, list],
-    *,
-    tenant_logo_url: str | None = None,
-) -> tuple[dict[str, dict[str, Any]], dict[str, int]]:
-    """Read uploaded media bytes for keys referenced by backup datasets (Stage 10 B1)."""
-    from app import storage as storage_svc
-
-    keys: set[str] = set()
-    if _is_managed_media_key(tenant_logo_url, tenant_id):
-        keys.add(tenant_logo_url.replace("\\", "/"))
-    for dataset_name, field in MEDIA_FIELD_SOURCES:
-        for row in datasets.get(dataset_name) or []:
-            val = (row or {}).get(field)
-            if _is_managed_media_key(val, tenant_id):
-                keys.add(str(val).replace("\\", "/"))
-
-    media: dict[str, dict[str, Any]] = {}
-    missing: list[str] = []
-    for key in sorted(keys):
-        try:
-            obj = storage_svc.read_object(key, tenant_id=tenant_id)
-        except HTTPException:
-            missing.append(key)
-            continue
-        data = obj.data
-        media[key] = {
-            "content_type": obj.content_type,
-            "size": len(data),
-            "sha256": hashlib.sha256(data).hexdigest(),
-            "data_b64": base64.b64encode(data).decode("ascii"),
-        }
-    counts = {
-        "media_objects": len(media),
-        "media_keys_referenced": len(keys),
-        "media_missing": len(missing),
-    }
-    return media, counts
-
-
-def apply_media_restore(tenant_id: str, media: dict | None) -> dict[str, Any]:
-    """Write media blobs from a backup payload back into object storage (Stage 10 B1)."""
-    from app import storage as storage_svc
-
-    restored = 0
-    skipped = 0
-    errors: list[dict[str, str]] = []
-    for key, meta in (media or {}).items():
-        if not _is_managed_media_key(key, tenant_id):
-            skipped += 1
-            continue
-        try:
-            storage_svc.validate_key(key, tenant_id=tenant_id)
-            raw_b64 = (meta or {}).get("data_b64")
-            if not raw_b64:
-                errors.append({"key": key, "error": "missing_data"})
-                continue
-            data = base64.b64decode(raw_b64)
-            expected = (meta or {}).get("sha256")
-            if expected and hashlib.sha256(data).hexdigest() != expected:
-                errors.append({"key": key, "error": "sha256_mismatch"})
-                continue
-            content_type = (meta or {}).get("content_type") or storage_svc.content_type_for_key(
-                key
-            )
-            storage_svc._put_bytes(key, data, content_type)
-            restored += 1
-        except Exception as exc:  # noqa: BLE001 — collect per-object failures
-            errors.append({"key": key, "error": str(exc)[:200]})
-    return {
-        "media_restored": restored,
-        "media_skipped": skipped,
-        "media_error_count": len(errors),
-        "media_errors": errors[:20],
-    }
-
-
 async def collect_tenant_payload(db: AsyncSession, tenant_id: str) -> tuple[dict, dict[str, int]]:
     tenant = await db.get(m.Tenant, tenant_id)
     if not tenant:
@@ -416,12 +246,6 @@ async def collect_tenant_payload(db: AsyncSession, tenant_id: str) -> tuple[dict
         ).scalars().all()
         datasets[name] = [row_to_dict(r) for r in rows]
         counts[name] = len(datasets[name])
-
-    logo_url = getattr(tenant, "logo_url", None)
-    media, media_counts = collect_media_objects(
-        tenant_id, datasets, tenant_logo_url=logo_url
-    )
-    counts.update(media_counts)
 
     payload = {
         "format": FORMAT_NAME,
@@ -441,9 +265,6 @@ async def collect_tenant_payload(db: AsyncSession, tenant_id: str) -> tuple[dict
                 getattr(tenant, "expense_l2_threshold", None), default=1000.0
             ),
             "expense_approval_matrix": getattr(tenant, "expense_approval_matrix", None),
-            "purchase_request_approval_matrix": getattr(
-                tenant, "purchase_request_approval_matrix", None
-            ),
             "tax_jurisdiction": getattr(tenant, "tax_jurisdiction", None) or "GH",
             "tax_registration_number": getattr(tenant, "tax_registration_number", None),
             "tax_filing_period": getattr(tenant, "tax_filing_period", None) or "monthly",
@@ -454,7 +275,6 @@ async def collect_tenant_payload(db: AsyncSession, tenant_id: str) -> tuple[dict
         },
         "created_at": datetime.utcnow().isoformat(),
         "datasets": datasets,
-        "media": media,
     }
     return payload, counts
 
@@ -508,53 +328,6 @@ def decrypt_archive(file_bytes: bytes, expected_file_checksum: str | None = None
     return payload
 
 
-async def notify_backup_failure(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    error_message: str,
-    backup_id: str | None = None,
-) -> m.Notification | None:
-    """Surface backup failure to tenant admins (dashboard + preferred channels)."""
-    from app.notifications import create_notification
-
-    try:
-        return await create_notification(
-            db,
-            tenant_id=tenant_id,
-            category="system",
-            title="Backup failed",
-            message=(error_message or "Backup failed")[:500],
-            entity_type="backup_job" if backup_id else "backup",
-            entity_id=backup_id,
-        )
-    except Exception:  # noqa: BLE001 — never mask the original backup failure
-        return None
-
-
-async def _persist_backup_failure(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    job: m.BackupJob,
-    error_message: str,
-) -> None:
-    """Mark job failed, notify admins, and commit so evidence survives request rollback."""
-    job.status = "failed"
-    job.error_message = (error_message or "Backup failed")[:500]
-    await db.flush()
-    await notify_backup_failure(
-        db,
-        tenant_id=tenant_id,
-        backup_id=job.id,
-        error_message=job.error_message,
-    )
-    try:
-        await db.commit()
-    except Exception:  # noqa: BLE001
-        pass
-
-
 async def create_backup(
     db: AsyncSession,
     *,
@@ -599,32 +372,6 @@ async def create_backup(
         settings_row.last_run_at = datetime.utcnow()
         await prune_retention(db, tenant_id, settings_row.retention_count)
         await db.flush()
-
-        # Stage 27 B1: opt-in offsite mirror after local write (extends Stage 26 env names).
-        if offsite_upload_enabled():
-            try:
-                meta = upload_ribbak_offsite(
-                    tenant_id=tenant_id, local_path=path, filename=filename
-                )
-                merged = dict(job.record_counts or {})
-                merged[OFFSITE_META_KEY] = {
-                    "uploaded": True,
-                    "bucket": meta["bucket"],
-                    "key": meta["key"],
-                    "bytes": meta["bytes"],
-                }
-                job.record_counts = merged
-                await db.flush()
-            except Exception as exc:
-                # Local .ribbak remains on disk for operator recovery; do not claim success.
-                detail = (
-                    f"Local backup written but offsite upload failed: {exc}"
-                )[:500]
-                await _persist_backup_failure(
-                    db, tenant_id=tenant_id, job=job, error_message=detail
-                )
-                raise HTTPException(status_code=502, detail=detail) from exc
-
         return job
     except HTTPException as exc:
         job.status = "failed"
@@ -727,8 +474,6 @@ async def validate_restore_payload(payload: dict, tenant_id: str) -> dict:
         )
     datasets = payload.get("datasets") or {}
     counts = {name: len(datasets.get(name) or []) for name, _ in DATASET_SPECS}
-    media = payload.get("media") or {}
-    counts["media_objects"] = len(media)
     unknown = sorted(set(datasets.keys()) - {name for name, _ in DATASET_SPECS})
     return {
         "valid": True,
@@ -738,141 +483,7 @@ async def validate_restore_payload(payload: dict, tenant_id: str) -> dict:
         "record_counts": counts,
         "unknown_datasets": unknown,
         "company_name": (payload.get("tenant") or {}).get("company_name"),
-        "media_objects": len(media),
     }
-
-
-_PROOF_FIELDS: dict[str, tuple[str, ...]] = {
-    "products": ("name", "sku", "stock_qty"),
-    "parties": ("name", "kind", "status"),
-    "stores": ("name", "code", "is_active"),
-    "warehouses": ("name", "code", "is_active"),
-    "accounts": ("code", "name", "account_type"),
-    "sales_invoices": ("invoice_number", "status", "total_amount"),
-    "purchase_orders": ("po_number", "status"),
-}
-
-
-def _proof_values_equal(expected: Any, actual: Any) -> bool:
-    if expected is None and actual is None:
-        return True
-    if isinstance(expected, (int, float, Decimal)) or isinstance(actual, (int, float, Decimal)):
-        try:
-            return float(expected or 0) == float(actual or 0)
-        except (TypeError, ValueError):
-            return str(expected) == str(actual)
-    return str(expected) == str(actual)
-
-
-async def prove_restore_integrity(
-    db: AsyncSession,
-    tenant_id: str,
-    payload: dict,
-    *,
-    sample_limit: int = 100,
-) -> dict:
-    """Compare live tenant rows to a decrypted backup payload (restore proof).
-
-    Logical restore is upsert-only: rows created after the backup may remain.
-    Proof checks that every sampled backup row is present with matching fields.
-    """
-    datasets = payload.get("datasets") or {}
-    mismatches: list[dict[str, Any]] = []
-    checked = 0
-    by_dataset: dict[str, dict[str, int]] = {}
-
-    for name, model in DATASET_SPECS:
-        rows = datasets.get(name) or []
-        dataset_checked = 0
-        dataset_bad = 0
-        fields = _PROOF_FIELDS.get(name, ("name", "status"))
-        for raw in rows[:sample_limit]:
-            pk = (raw or {}).get("id")
-            if not pk:
-                continue
-            checked += 1
-            dataset_checked += 1
-            live = await db.get(model, pk)
-            if live is None or getattr(live, "tenant_id", None) != tenant_id:
-                dataset_bad += 1
-                mismatches.append({"dataset": name, "id": pk, "error": "missing"})
-                continue
-            for field in fields:
-                if field not in raw or not hasattr(live, field):
-                    continue
-                actual = getattr(live, field)
-                if not _proof_values_equal(raw[field], actual):
-                    dataset_bad += 1
-                    mismatches.append(
-                        {
-                            "dataset": name,
-                            "id": pk,
-                            "field": field,
-                            "expected": raw[field],
-                            "actual": actual if not isinstance(actual, Decimal) else float(actual),
-                        }
-                    )
-                    break
-        by_dataset[name] = {"checked": dataset_checked, "mismatches": dataset_bad}
-
-    from app import storage as storage_svc
-
-    media = payload.get("media") or {}
-    media_checked = 0
-    media_bad = 0
-    for key, meta in list(media.items())[:sample_limit]:
-        if not _is_managed_media_key(key, tenant_id):
-            continue
-        media_checked += 1
-        checked += 1
-        try:
-            obj = storage_svc.read_object(key, tenant_id=tenant_id)
-            expected = (meta or {}).get("sha256")
-            if expected and hashlib.sha256(obj.data).hexdigest() != expected:
-                media_bad += 1
-                mismatches.append(
-                    {
-                        "dataset": "media",
-                        "id": key,
-                        "error": "sha256_mismatch",
-                    }
-                )
-        except HTTPException:
-            media_bad += 1
-            mismatches.append({"dataset": "media", "id": key, "error": "missing"})
-    by_dataset["media"] = {"checked": media_checked, "mismatches": media_bad}
-
-    return {
-        "ok": len(mismatches) == 0,
-        "checked": checked,
-        "mismatch_count": len(mismatches),
-        "mismatches": mismatches[:50],
-        "by_dataset": by_dataset,
-        "sample_limit": sample_limit,
-        "mode": "upsert_field_match",
-    }
-
-
-async def verify_backup(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    backup_id: str,
-    sample_limit: int = 100,
-) -> dict:
-    """Decrypt backup, validate tenant binding, and prove against live data."""
-    job = await get_backup(db, tenant_id, backup_id)
-    file_bytes = await read_backup_bytes(job)
-    payload = decrypt_archive(file_bytes, expected_file_checksum=job.checksum_sha256)
-    report = await validate_restore_payload(payload, tenant_id)
-    proof = await prove_restore_integrity(
-        db, tenant_id, payload, sample_limit=sample_limit
-    )
-    report["proof"] = proof
-    report["backup_id"] = backup_id
-    report["checksum_sha256"] = job.checksum_sha256
-    report["filename"] = job.filename
-    return report
 
 
 async def apply_restore(db: AsyncSession, tenant_id: str, payload: dict) -> dict:
@@ -904,18 +515,7 @@ async def apply_restore(db: AsyncSession, tenant_id: str, payload: dict) -> dict
         restored[name] = count
         await db.flush()
 
-    # Rehydrate company logo key on the tenant row when present in the snapshot.
-    tenant_snap = payload.get("tenant") or {}
-    logo_url = tenant_snap.get("logo_url")
-    if _is_managed_media_key(logo_url, tenant_id):
-        tenant = await db.get(m.Tenant, tenant_id)
-        if tenant:
-            tenant.logo_url = logo_url
-            await db.flush()
-
-    media_report = apply_media_restore(tenant_id, payload.get("media"))
     report["restored"] = restored
-    report["media"] = media_report
     report["applied"] = True
     report["proof"] = await prove_restore_integrity(db, tenant_id, payload)
     return report
@@ -1049,7 +649,6 @@ async def restore_backup(
     await db.flush()
     try:
         report = await apply_restore(db, tenant_id, payload)
-        report["proof"] = await prove_restore_integrity(db, tenant_id, payload)
         job.status = "completed"
         await db.flush()
         report["dry_run"] = False

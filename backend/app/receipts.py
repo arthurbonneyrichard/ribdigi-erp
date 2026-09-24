@@ -13,26 +13,6 @@ from app.honesty import money_json
 
 # Typical 80mm thermal width (~48 monospace chars); 58mm ~32
 THERMAL_WIDTHS = {"80mm": 42, "58mm": 32}
-RECEIPT_PRINT_TEMPLATES = frozenset({"thermal_80", "thermal_58"})
-RECEIPT_TEMPLATE_TO_PAPER = {"thermal_80": "80mm", "thermal_58": "58mm"}
-PAPER_TO_RECEIPT_TEMPLATE = {"80mm": "thermal_80", "58mm": "thermal_58"}
-
-
-def resolve_receipt_paper(
-    tenant: m.Tenant | None,
-    paper: str | None = None,
-    company: m.Company | None = None,
-) -> str:
-    """Resolve POS receipt paper width from explicit paper or company/tenant default template."""
-    if paper in THERMAL_WIDTHS:
-        return paper  # type: ignore[return-value]
-    from app.print_branding import print_templates_for_serialize
-
-    tpl = print_templates_for_serialize(tenant, company)["receipt_print_template"]
-    tpl = (tpl or "thermal_80").strip().lower()
-    if tpl not in RECEIPT_PRINT_TEMPLATES:
-        tpl = "thermal_80"
-    return RECEIPT_TEMPLATE_TO_PAPER[tpl]
 
 
 def _money(value: float) -> str:
@@ -85,8 +65,6 @@ def build_receipt_payload(
     cashier_name: str | None = None,
     store: m.Store | None = None,
 ) -> dict[str, Any]:
-    from app.print_branding import tenant_document_brand
-
     payload = tx.payload or {}
     items = payload.get("items") or []
     normalized_items = []
@@ -176,8 +154,6 @@ def build_receipt_payload(
 
 
 def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
-    from app.print_branding import header_footer_text_lines
-
     width = THERMAL_WIDTHS.get(paper, THERMAL_WIDTHS["80mm"])
     lines: list[str] = []
     lines.append(_center(str(receipt.get("company_name") or "RIBDIGI ERP"), width))
@@ -283,7 +259,6 @@ async def build_sale_receipt(
     tenant_id: str,
     sale_id: str,
     user_id: str | None = None,
-    company_id: str | None = None,
 ) -> dict[str, Any]:
     from sqlalchemy import select
 
@@ -298,15 +273,7 @@ async def build_sale_receipt(
     ).scalar_one_or_none()
     if not tx:
         raise HTTPException(status_code=404, detail="POS sale not found")
-    if company_id and tx.company_id and tx.company_id != company_id:
-        raise HTTPException(status_code=404, detail="POS sale not found")
     tenant = await db.get(m.Tenant, tenant_id)
-    company = None
-    cid = company_id or getattr(tx, "company_id", None)
-    if cid:
-        company = await db.get(m.Company, cid)
-        if company and company.tenant_id != tenant_id:
-            company = None
     cashier_name = None
     if user_id:
         user = await db.get(m.User, user_id)

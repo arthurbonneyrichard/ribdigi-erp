@@ -303,42 +303,6 @@ def compute_line_total(
     )
 
 
-SUPPLY_CATEGORIES = frozenset({"standard", "zero", "exempt"})
-
-
-def classify_supply_category(*, tax_exempt: bool = False, rate_pct: float = 0) -> str:
-    """Classify a supply for VAT filing: exempt product, zero-rated, or standard."""
-    if tax_exempt:
-        return "exempt"
-    if float(rate_pct or 0) <= 0:
-        return "zero"
-    return "standard"
-
-
-def normalize_supply_category(value: str | None, *, fallback: str = "standard") -> str:
-    cat = (value or fallback).strip().lower()
-    if cat not in SUPPLY_CATEGORIES:
-        return fallback
-    return cat
-
-
-def resolve_line_supply_category(stored: str | None, *, tax_rate: float = 0) -> str:
-    """Prefer persisted category; legacy lines fall back to rate-based classify."""
-    if stored and str(stored).strip():
-        return normalize_supply_category(str(stored))
-    return classify_supply_category(rate_pct=tax_rate)
-
-
-def _accumulate_supply_net(
-    buckets: dict[str, float],
-    *,
-    net: float,
-    category: str,
-) -> None:
-    cat = normalize_supply_category(category, fallback="standard")
-    buckets[cat] = buckets.get(cat, 0.0) + float(net or 0)
-
-
 @dataclass(frozen=True)
 class TaxSpec:
     rate_pct: float
@@ -367,44 +331,35 @@ class TaxSpec:
         )
 
 
-async def get_default_tax_rate(
-    db: AsyncSession, tenant_id: str, *, company_id: str | None = None
-) -> m.TaxRate | None:
-    stmt = select(m.TaxRate).where(
-        m.TaxRate.tenant_id == tenant_id,
-        m.TaxRate.is_active == True,  # noqa: E712
-        m.TaxRate.is_default == True,  # noqa: E712
-    )
-    if company_id:
-        stmt = stmt.where(m.TaxRate.company_id == company_id)
-    return (await db.execute(stmt)).scalar_one_or_none()
+async def get_default_tax_rate(db: AsyncSession, tenant_id: str) -> m.TaxRate | None:
+    return (
+        await db.execute(
+            select(m.TaxRate).where(
+                m.TaxRate.tenant_id == tenant_id,
+                m.TaxRate.is_active == True,  # noqa: E712
+                m.TaxRate.is_default == True,  # noqa: E712
+            )
+        )
+    ).scalar_one_or_none()
 
 
-async def get_tax_rate(
-    db: AsyncSession,
-    tenant_id: str,
-    tax_rate_id: str,
-    *,
-    company_id: str | None = None,
-) -> m.TaxRate:
-    stmt = select(m.TaxRate).where(m.TaxRate.id == tax_rate_id, m.TaxRate.tenant_id == tenant_id)
-    if company_id:
-        stmt = stmt.where(m.TaxRate.company_id == company_id)
-    row = (await db.execute(stmt)).scalar_one_or_none()
+async def get_tax_rate(db: AsyncSession, tenant_id: str, tax_rate_id: str) -> m.TaxRate:
+    row = (
+        await db.execute(
+            select(m.TaxRate).where(m.TaxRate.id == tax_rate_id, m.TaxRate.tenant_id == tenant_id)
+        )
+    ).scalar_one_or_none()
     if not row:
         raise HTTPException(status_code=404, detail="Tax rate not found")
     return row
 
 
-async def clear_default_flags(
-    db: AsyncSession, tenant_id: str, *, company_id: str | None = None
-) -> None:
-    stmt = select(m.TaxRate).where(
-        m.TaxRate.tenant_id == tenant_id, m.TaxRate.is_default == True  # noqa: E712
-    )
-    if company_id:
-        stmt = stmt.where(m.TaxRate.company_id == company_id)
-    rows = (await db.execute(stmt)).scalars().all()
+async def clear_default_flags(db: AsyncSession, tenant_id: str) -> None:
+    rows = (
+        await db.execute(
+            select(m.TaxRate).where(m.TaxRate.tenant_id == tenant_id, m.TaxRate.is_default == True)  # noqa: E712
+        )
+    ).scalars().all()
     for row in rows:
         row.is_default = False
 
@@ -454,7 +409,6 @@ async def update_tax_rate(
 
 def tax_spec_from_rate(rate: m.TaxRate, *, supply_class: str = "standard") -> TaxSpec:
     comps = normalize_components(rate.components) if rate.components else None
-    rate_pct = float(rate.rate)
     return TaxSpec(
         rate_pct=money_json(rate.rate),
         pricing_mode=rate.pricing_mode or "exclusive",
@@ -517,9 +471,8 @@ async def resolve_product_tax(
     if supply in {"exempt", "zero_rated"}:
         return TaxSpec(rate_pct=0.0, pricing_mode="exclusive", supply_class=supply)
     if explicit_rate is not None:
-        default = await get_default_tax_rate(db, tenant_id, company_id=company_id)
+        default = await get_default_tax_rate(db, tenant_id)
         mode = default.pricing_mode if default else "exclusive"
-        rate_pct = float(explicit_rate)
         # Explicit override uses single-rate path (no compound legs).
         return TaxSpec(
             rate_pct=money_json(explicit_rate),
@@ -556,7 +509,6 @@ def serialize_tax_rate(rate: m.TaxRate) -> dict:
     comps = normalize_components(rate.components) if rate.components else None
     return {
         "id": rate.id,
-        "company_id": getattr(rate, "company_id", None),
         "name": rate.name,
         "rate": money_json(rate.rate),
         "tax_type": rate.tax_type,
@@ -649,8 +601,6 @@ async def tax_filing_pack(
         m.SalesInvoice.tenant_id == tenant_id,
         m.SalesInvoice.status.in_(["posted", "sent", "partial", "paid", "overdue"]),
     )
-    if company_id:
-        inv_stmt = inv_stmt.where(m.SalesInvoice.company_id == company_id)
     if from_date:
         inv_stmt = inv_stmt.where(m.SalesInvoice.posted_at >= from_date)
     if to_date:
@@ -658,20 +608,6 @@ async def tax_filing_pack(
     if store_id:
         inv_stmt = inv_stmt.where(m.SalesInvoice.store_id == store_id)
     invoices = (await db.execute(inv_stmt)).scalars().all()
-
-    items_by_invoice: dict[str, list[m.SalesInvoiceItem]] = {}
-    if invoices:
-        inv_ids = [inv.id for inv in invoices]
-        item_rows = (
-            await db.execute(
-                select(m.SalesInvoiceItem).where(
-                    m.SalesInvoiceItem.tenant_id == tenant_id,
-                    m.SalesInvoiceItem.sales_invoice_id.in_(inv_ids),
-                )
-            )
-        ).scalars().all()
-        for row in item_rows:
-            items_by_invoice.setdefault(row.sales_invoice_id, []).append(row)
 
     output_schedule = []
     output_invoices = 0.0
@@ -784,17 +720,11 @@ async def tax_filing_pack(
         )
     taxable_outputs = standard_outputs
 
-    taxable_outputs = supply_nets["standard"]
-    zero_rated_outputs = supply_nets["zero"]
-    exempt_outputs = supply_nets["exempt"]
-
     # Prefer approved purchase invoices for input tax; fall back to POs.
     pi_stmt = select(m.PurchaseInvoice).where(
         m.PurchaseInvoice.tenant_id == tenant_id,
         m.PurchaseInvoice.status.in_(["unpaid", "partial", "paid", "overdue"]),
     )
-    if company_id:
-        pi_stmt = pi_stmt.where(m.PurchaseInvoice.company_id == company_id)
     if from_date:
         pi_stmt = pi_stmt.where(m.PurchaseInvoice.invoice_date >= from_date)
     if to_date:
@@ -857,8 +787,6 @@ async def tax_filing_pack(
             m.PurchaseOrder.tenant_id == tenant_id,
             m.PurchaseOrder.status.in_(["received", "partial", "sent", "closed"]),
         )
-        if company_id:
-            po_stmt = po_stmt.where(m.PurchaseOrder.company_id == company_id)
         if from_date:
             po_stmt = po_stmt.where(m.PurchaseOrder.created_at >= from_date)
         if to_date:
@@ -918,18 +846,6 @@ async def tax_filing_pack(
             "code": "exempt_outputs_net",
             "label": "Exempt outputs (net)",
             "amount": money_json(exempt_outputs),
-        },
-        {
-            "box": "1z",
-            "code": "zero_rated_outputs_net",
-            "label": "Zero-rated outputs (net)",
-            "amount": zero_rated_outputs,
-        },
-        {
-            "box": "1e",
-            "code": "exempt_outputs_net",
-            "label": "Exempt outputs (net)",
-            "amount": exempt_outputs,
         },
         {
             "box": "2",

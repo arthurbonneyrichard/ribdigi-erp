@@ -40,9 +40,6 @@ SO_MANAGE_STATUSES = frozenset(
     }
 )
 
-QUOTATION_PRINT_TEMPLATES = INVOICE_PRINT_TEMPLATES
-QUOTATION_PRINT_FORMATS = INVOICE_PRINT_FORMATS
-
 
 async def _prepare_lines(
     db: AsyncSession,
@@ -55,8 +52,6 @@ async def _prepare_lines(
 
     if not items:
         raise HTTPException(status_code=400, detail="At least one line item is required")
-    from app.workspace import assert_fk_company
-
     subtotal = 0.0
     tax_total = 0.0
     prepared: list[tuple[dict, float]] = []
@@ -100,10 +95,8 @@ async def _prepare_lines(
             )
         else:
             spec = await resolve_product_tax(db, tenant_id, product, explicit_rate=None)
-        # Stage 12 C1 — tax on net after line discount (same as POS / invoices).
-        line_sub, line_tax, line_total, discount = calc_sale_line_amounts(
-            spec, qty, unit, discount
-        )
+        line_sub, line_tax, line_total = spec.compute_amounts(qty * unit)
+        line_total = max(line_total - discount, 0)
         subtotal += line_sub
         if not spec.is_reverse_charge:
             tax_total += line_tax
@@ -125,14 +118,8 @@ async def _prepare_lines(
     return money_json(round(subtotal, 2)), money_json(round(tax_total, 2)), prepared
 
 
-async def _allocate(
-    db: AsyncSession, tenant_id: str, doc_key: str, *, company_id: str | None = None
-) -> str:
-    from app.document_numbering import allocate_document_number
-
-    return await allocate_document_number(
-        db, tenant_id=tenant_id, doc_key=doc_key, company_id=company_id
-    )
+def _stamp(prefix: str) -> str:
+    return f"{prefix}-{datetime.utcnow():%Y%m%d%H%M%S%f}"
 
 
 # --- Quotations ---
@@ -167,7 +154,6 @@ async def serialize_quotation(db: AsyncSession, quote: m.SalesQuotation) -> dict
     items = await list_quotation_items(db, quote.tenant_id, quote.id)
     return {
         "id": quote.id,
-        "company_id": getattr(quote, "company_id", None),
         "quotation_number": quote.quotation_number,
         "customer_id": quote.customer_id,
         "status": quote.status,
@@ -186,7 +172,6 @@ async def serialize_quotation(db: AsyncSession, quote: m.SalesQuotation) -> dict
         "items": [
             {
                 "id": i.id,
-                "company_id": getattr(i, "company_id", None),
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
                 "quantity": money_json(i.quantity),
@@ -201,253 +186,6 @@ async def serialize_quotation(db: AsyncSession, quote: m.SalesQuotation) -> dict
     }
 
 
-def render_quotation_text(
-    quotation_data: dict,
-    *,
-    company_name: str,
-    customer_name: str,
-    template: str = "a4",
-    currency: str = "GHS",
-    company_address: str | None = None,
-    company_phone: str | None = None,
-    company_email: str | None = None,
-    tax_registration_number: str | None = None,
-    customer_address: str | None = None,
-    item_labels: dict[str, str] | None = None,
-    logo_data_url: str | None = None,
-    trading_name: str | None = None,
-    legal_name: str | None = None,
-    has_logo: bool = False,
-    document_header: str | None = None,
-    document_footer: str | None = None,
-) -> str:
-    from app.print_branding import header_footer_text_lines
-
-    tpl = template if template in QUOTATION_PRINT_TEMPLATES else "a4"
-    width = 48 if tpl == "thermal_80" else 32 if tpl == "thermal_58" else 72
-    cur = currency or "GHS"
-    labels = item_labels or {}
-    lines = [company_name[:width]]
-    if company_address:
-        lines.append(str(company_address)[:width])
-    if company_phone:
-        lines.append(f"Tel: {company_phone}"[:width])
-    if company_email:
-        lines.append(str(company_email)[:width])
-    if tax_registration_number:
-        lines.append(f"Tax #: {tax_registration_number}"[:width])
-    for part in header_footer_text_lines(document_header, width):
-        lines.append(part[:width])
-    lines.extend(
-        [
-            "",
-            f"QUOTATION {quotation_data.get('quotation_number')}"[:width],
-            f"Customer: {customer_name}"[:width],
-        ]
-    )
-    if customer_address:
-        lines.append(str(customer_address)[:width])
-    lines.append(f"Status: {quotation_data.get('status')}"[:width])
-    if quotation_data.get("valid_until"):
-        lines.append(f"Valid until: {str(quotation_data['valid_until'])[:10]}"[:width])
-    lines.extend(
-        ["", f"{'Item':<{max(width - 28, 8)}} {'Qty':>6} {'Total':>10}"[:width], "-" * width]
-    )
-    for item in quotation_data.get("items") or []:
-        pid = str(item.get("product_id") or "")
-        desc = str(labels.get(pid) or pid or "Item")[: max(width - 28, 8)]
-        lines.append(
-            f"{desc:<{max(width - 28, 8)}} {float(item.get('quantity') or 0):>6.2f} "
-            f"{float(item.get('line_total') or 0):>10.2f}"[:width]
-        )
-    lines.extend(
-        [
-            "-" * width,
-            f"Subtotal: {cur} {float(quotation_data.get('subtotal') or 0):.2f}"[:width],
-            f"Tax: {cur} {float(quotation_data.get('tax_amount') or 0):.2f}"[:width],
-            f"Discount: {cur} {float(quotation_data.get('discount_amount') or 0):.2f}"[:width],
-            f"TOTAL: {cur} {float(quotation_data.get('total_amount') or 0):.2f}"[:width],
-        ]
-    )
-    if quotation_data.get("notes"):
-        lines.extend(["", f"Notes: {quotation_data['notes']}"[:width]])
-    footer_lines = header_footer_text_lines(document_footer, width)
-    if footer_lines:
-        lines.append("")
-        lines.extend(part[:width] for part in footer_lines)
-    elif tpl.startswith("thermal"):
-        lines.extend(["", "Thank you!"[:width]])
-    from app.print_branding import platform_print_footer_text_lines
-
-    lines.extend(platform_print_footer_text_lines(width=width, center=tpl.startswith("thermal")))
-    return "\n".join(lines)
-
-
-def render_quotation_html(
-    quotation_data: dict,
-    *,
-    company_name: str,
-    customer_name: str,
-    template: str = "a4",
-    currency: str = "GHS",
-    company_address: str | None = None,
-    company_phone: str | None = None,
-    company_email: str | None = None,
-    tax_registration_number: str | None = None,
-    customer_address: str | None = None,
-    item_labels: dict[str, str] | None = None,
-    logo_data_url: str | None = None,
-    trading_name: str | None = None,
-    legal_name: str | None = None,
-    has_logo: bool = False,
-    document_header: str | None = None,
-    document_footer: str | None = None,
-) -> str:
-    from html import escape
-
-    from app.print_branding import brand_html_block, header_footer_html, platform_print_footer_html
-
-    tpl = template if template in QUOTATION_PRINT_TEMPLATES else "a4"
-    cur = escape(currency or "GHS")
-    labels = item_labels or {}
-    max_width = "80mm" if tpl == "thermal_80" else "58mm" if tpl == "thermal_58" else "720px"
-    font = "12px/1.4 monospace" if tpl.startswith("thermal") else "15px/1.45 Georgia, 'Times New Roman', serif"
-    rows = []
-    for item in quotation_data.get("items") or []:
-        pid = str(item.get("product_id") or "")
-        desc = escape(str(labels.get(pid) or pid or "Item"))
-        rows.append(
-            "<tr>"
-            f"<td>{desc}</td>"
-            f"<td style='text-align:right'>{float(item.get('quantity') or 0):.2f}</td>"
-            f"<td style='text-align:right'>{float(item.get('unit_price') or 0):.2f}</td>"
-            f"<td style='text-align:right'>{float(item.get('line_total') or 0):.2f}</td>"
-            "</tr>"
-        )
-    meta = []
-    if company_address:
-        meta.append(escape(str(company_address)))
-    if company_phone:
-        meta.append(f"Tel: {escape(str(company_phone))}")
-    if company_email:
-        meta.append(escape(str(company_email)))
-    if tax_registration_number:
-        meta.append(f"Tax #: {escape(str(tax_registration_number))}")
-    valid = str(quotation_data.get("valid_until") or "")[:10]
-    valid_line = f" · Valid until {escape(valid)}" if valid else ""
-    customer_addr_html = f"<br>{escape(str(customer_address))}" if customer_address else ""
-    notes_html = (
-        f"<p class='muted'>Notes: {escape(str(quotation_data.get('notes')))}</p>"
-        if quotation_data.get("notes")
-        else ""
-    )
-    header_html = header_footer_html(document_header, css_class="doc-header")
-    footer_html = header_footer_html(document_footer, css_class="doc-footer") or (
-        '<p class="muted" style="margin-top:28px">Thank you for considering us.</p>'
-    )
-    footer_html = f"{footer_html}{platform_print_footer_html()}"
-    q_no = escape(str(quotation_data.get("quotation_number") or ""))
-    status = escape(str(quotation_data.get("status") or ""))
-    rows_html = "".join(rows) or "<tr><td colspan='4' class='muted'>No lines</td></tr>"
-    meta_html = "<br>".join(meta)
-    brand_block = brand_html_block(
-        company_name=company_name,
-        logo_data_url=logo_data_url,
-        trading_name=trading_name,
-        meta_html=meta_html,
-    )
-    return f"""<!doctype html>
-<html><head><meta charset="utf-8"><title>Quotation {q_no}</title>
-<style>
-  body {{ margin:0; background:#f3f0ea; color:#1c1917; font:{font}; }}
-  .sheet {{ max-width:{max_width}; margin:0 auto; min-height:100vh; padding:28px 32px 40px;
-    background:linear-gradient(180deg,#fffdf8 0%,#f7f1e8 100%); }}
-  h1 {{ font-size:1.8rem; letter-spacing:.04em; margin:0 0 6px; font-weight:700; }}
-  h2 {{ font-size:1.15rem; margin:24px 0 8px; font-weight:600; }}
-  .muted {{ color:#57534e; }}
-  .brand {{ border-bottom:2px solid #292524; padding-bottom:14px; margin-bottom:18px; }}
-  .brand .logo {{ display:block; max-height:72px; max-width:220px; margin:0 0 10px; object-fit:contain; }}
-  .doc-header {{ margin:8px 0 0; }}
-  .doc-footer {{ margin-top:28px; }}
-  table {{ width:100%; border-collapse:collapse; margin-top:12px; }}
-  th, td {{ padding:8px 4px; border-bottom:1px solid #d6d3d1; text-align:left; }}
-  th {{ font-size:.85rem; text-transform:uppercase; letter-spacing:.06em; color:#44403c; }}
-  .totals {{ margin-top:18px; width:100%; max-width:280px; margin-left:auto; }}
-  .totals div {{ display:flex; justify-content:space-between; padding:4px 0; }}
-  .totals .grand {{ font-weight:700; border-top:2px solid #292524; margin-top:6px; padding-top:8px; }}
-  .toolbar {{ position:sticky; top:0; background:#fffdf8cc; padding:8px 0 12px; }}
-  @media print {{ body {{ background:#fff; }} .toolbar {{ display:none; }} .sheet {{ max-width:none; background:#fff; }} }}
-</style></head><body><div class="sheet">
-  <div class="toolbar"><button onclick="window.print()">Print</button></div>
-  {brand_block}
-  {header_html}
-  <h2>Quotation {q_no}</h2>
-  <div class="muted">Status: {status}{valid_line}</div>
-  <p><strong>Quote for</strong><br>{escape(customer_name)}{customer_addr_html}</p>
-  <table>
-    <thead><tr><th>Item</th><th style="text-align:right">Qty</th><th style="text-align:right">Price</th><th style="text-align:right">Total</th></tr></thead>
-    <tbody>{rows_html}</tbody>
-  </table>
-  <div class="totals">
-    <div><span>Subtotal</span><span>{cur} {float(quotation_data.get("subtotal") or 0):.2f}</span></div>
-    <div><span>Tax</span><span>{cur} {float(quotation_data.get("tax_amount") or 0):.2f}</span></div>
-    <div><span>Discount</span><span>{cur} {float(quotation_data.get("discount_amount") or 0):.2f}</span></div>
-    <div class="grand"><span>Total</span><span>{cur} {float(quotation_data.get("total_amount") or 0):.2f}</span></div>
-  </div>
-  {notes_html}
-  {footer_html}
-</div></body></html>"""
-
-
-def render_quotation_pdf(
-    quotation_data: dict,
-    *,
-    company_name: str,
-    customer_name: str,
-    template: str = "a4",
-    currency: str = "GHS",
-    company_address: str | None = None,
-    company_phone: str | None = None,
-    company_email: str | None = None,
-    tax_registration_number: str | None = None,
-    customer_address: str | None = None,
-    item_labels: dict[str, str] | None = None,
-    logo_data_url: str | None = None,
-    trading_name: str | None = None,
-    legal_name: str | None = None,
-    has_logo: bool = False,
-    document_header: str | None = None,
-    document_footer: str | None = None,
-) -> bytes:
-    tpl = template if template in QUOTATION_PRINT_TEMPLATES else "a4"
-    text = render_quotation_text(
-        quotation_data,
-        company_name=company_name,
-        customer_name=customer_name,
-        template=tpl,
-        currency=currency,
-        company_address=company_address,
-        company_phone=company_phone,
-        company_email=company_email,
-        tax_registration_number=tax_registration_number,
-        customer_address=customer_address,
-        item_labels=item_labels,
-        logo_data_url=logo_data_url,
-        trading_name=trading_name,
-        legal_name=legal_name,
-        has_logo=has_logo,
-        document_header=document_header,
-        document_footer=document_footer,
-    )
-    title = f"QUOTATION {quotation_data.get('quotation_number') or ''}"
-    return render_branded_lines_pdf(
-        text.splitlines() or [""],
-        template=tpl,
-        company_name=company_name,
-        title=title,
-    )
-
-
 async def create_quotation(
     db: AsyncSession,
     *,
@@ -458,7 +196,6 @@ async def create_quotation(
     discount_amount: float = 0,
     notes: str | None = None,
     valid_days: int = 14,
-    company_id: str | None = None,
 ) -> m.SalesQuotation:
     await require_active_customer(db, tenant_id, customer_id)
     subtotal, tax_total, prepared = await _prepare_lines(
@@ -484,7 +221,7 @@ async def create_quotation(
     db.add(quote)
     await db.flush()
     for line, _ in prepared:
-        db.add(m.SalesQuotationItem(tenant_id=tenant_id, company_id=company_id, quotation_id=quote.id, **line))
+        db.add(m.SalesQuotationItem(tenant_id=tenant_id, quotation_id=quote.id, **line))
     await db.flush()
     return quote
 
@@ -609,19 +346,6 @@ async def list_order_items(db: AsyncSession, tenant_id: str, order_id: str) -> l
     ).scalars().all()
 
 
-async def list_order_reservations(
-    db: AsyncSession, tenant_id: str, order_id: str
-) -> list[m.StockReservation]:
-    return (
-        await db.execute(
-            select(m.StockReservation).where(
-                m.StockReservation.tenant_id == tenant_id,
-                m.StockReservation.sales_order_id == order_id,
-            )
-        )
-    ).scalars().all()
-
-
 async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
     items = await list_order_items(db, order.tenant_id, order.id)
     from app.reservations import list_order_reservations
@@ -633,7 +357,6 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
     }
     return {
         "id": order.id,
-        "company_id": getattr(order, "company_id", None),
         "order_number": order.order_number,
         "customer_id": order.customer_id,
         "quotation_id": order.quotation_id,
@@ -646,8 +369,6 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
         "discount_amount": money_json(order.discount_amount),
         "total_amount": money_json(order.total_amount),
         "notes": order.notes,
-        "delivery_date": order.delivery_date,
-        "delivery_address": order.delivery_address,
         "converted_invoice_id": order.converted_invoice_id,
         "confirmed_at": order.confirmed_at,
         "processing_at": getattr(order, "processing_at", None),
@@ -668,7 +389,6 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
         "items": [
             {
                 "id": i.id,
-                "company_id": getattr(i, "company_id", None),
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
                 "quantity": money_json(i.quantity),
@@ -681,89 +401,7 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
             }
             for i in items
         ],
-        "reservations": [
-            {
-                "id": r.id,
-                "product_id": r.product_id,
-                "variant_id": r.variant_id,
-                "warehouse_id": r.warehouse_id,
-                "sales_order_item_id": r.sales_order_item_id,
-                "quantity": float(r.quantity or 0),
-                "status": r.status,
-            }
-            for r in reservations
-        ],
     }
-
-
-async def _resolve_order_warehouse(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    store_id: str | None,
-    warehouse_id: str | None,
-    company_id: str | None = None,
-) -> tuple[str | None, str | None]:
-    resolved_store = None
-    resolved_wh = None
-    if store_id:
-        from app.stores import get_store, warehouse_for_store
-
-        store = await get_store(db, tenant_id, store_id, company_id=company_id)
-        resolved_store = store.id
-        wh = await warehouse_for_store(
-            db, tenant_id, store.id, company_id=company_id
-        )
-        resolved_wh = wh.id
-    if warehouse_id:
-        from app.inventory import get_warehouse
-
-        wh = await get_warehouse(db, tenant_id, warehouse_id, company_id=company_id)
-        if resolved_wh and resolved_wh != wh.id:
-            raise HTTPException(
-                status_code=400,
-                detail="warehouse_id does not match the selected store warehouse",
-            )
-        resolved_wh = wh.id
-    return resolved_store, resolved_wh
-
-
-async def reserve_order_stock(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    order: m.SalesOrder,
-    user_id: str | None = None,
-) -> None:
-    from app.inventory import reserve_product_stock
-
-    existing = (
-        await db.execute(
-            select(m.StockReservation.id).where(
-                m.StockReservation.tenant_id == tenant_id,
-                m.StockReservation.sales_order_id == order.id,
-                m.StockReservation.status == "active",
-            )
-        )
-    ).scalars().all()
-    if existing:
-        return
-    items = await list_order_items(db, tenant_id, order.id)
-    if not items:
-        raise HTTPException(status_code=400, detail="Cannot reserve an empty order")
-    for item in items:
-        await reserve_product_stock(
-            db,
-            tenant_id=tenant_id,
-            product_id=item.product_id,
-            quantity=float(item.quantity),
-            sales_order_id=order.id,
-            sales_order_item_id=item.id,
-            warehouse_id=order.warehouse_id,
-            variant_id=item.variant_id,
-            user_id=user_id,
-            company_id=getattr(order, "company_id", None),
-        )
 
 
 async def create_order(
@@ -782,10 +420,7 @@ async def create_order(
 ) -> m.SalesOrder:
     await require_active_customer(db, tenant_id, customer_id)
     if quotation_id:
-        from app.workspace import assert_fk_company
-
         quote = await get_quotation(db, tenant_id, quotation_id)
-        assert_fk_company(quote, company_id, detail="Quotation not found")
         if quote.customer_id != customer_id:
             raise HTTPException(status_code=400, detail="Quotation customer mismatch")
     resolved_store_id = None
@@ -820,124 +455,7 @@ async def create_order(
     db.add(order)
     await db.flush()
     for line, _ in prepared:
-        db.add(m.SalesOrderItem(tenant_id=tenant_id, company_id=company_id, sales_order_id=order.id, **line))
-    await db.flush()
-
-    from app.notifications import create_notification
-
-    await create_notification(
-        db,
-        tenant_id=tenant_id,
-        category="new_order",
-        title="New sales order",
-        message=(
-            f"Order {order.order_number} created for {customer.name} "
-            f"({float(order.total_amount):.2f})."
-        ),
-        entity_type="sales_order",
-        entity_id=order.id,
-        company_id=getattr(order, "company_id", None),
-    )
-    return order
-
-
-async def update_order(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    order_id: str,
-    notes: str | None = None,
-    delivery_date: datetime | None = None,
-    delivery_address: str | None = None,
-    store_id: str | None = None,
-    warehouse_id: str | None = None,
-    clear_delivery_date: bool = False,
-) -> m.SalesOrder:
-    order = await get_order(db, tenant_id, order_id)
-    if order.status not in {"draft", "confirmed", "processing"}:
-        raise HTTPException(
-            status_code=409,
-            detail=f"Cannot update order in status {order.status}",
-        )
-    if notes is not None:
-        order.notes = notes
-    if clear_delivery_date:
-        order.delivery_date = None
-    elif delivery_date is not None:
-        order.delivery_date = delivery_date
-    if delivery_address is not None:
-        order.delivery_address = delivery_address.strip() or None
-    if store_id is not None or warehouse_id is not None:
-        if order.status != "draft":
-            raise HTTPException(
-                status_code=409,
-                detail="Store/warehouse can only be changed while the order is draft",
-            )
-        resolved_store, resolved_wh = await _resolve_order_warehouse(
-            db,
-            tenant_id=tenant_id,
-            store_id=store_id if store_id is not None else order.store_id,
-            warehouse_id=warehouse_id if warehouse_id is not None else order.warehouse_id,
-            company_id=getattr(order, "company_id", None),
-        )
-        order.store_id = resolved_store
-        order.warehouse_id = resolved_wh
-    order.updated_at = datetime.utcnow()
-    await db.flush()
-    return order
-
-
-ORDER_LOGISTICS_TRANSITIONS = {
-    "processing": {"from": {"confirmed"}, "ts_field": "processing_at"},
-    "shipped": {"from": {"processing"}, "ts_field": "shipped_at"},
-    "delivered": {"from": {"shipped"}, "ts_field": "delivered_at"},
-}
-
-
-async def advance_order_status(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    order_id: str,
-    target_status: str,
-    user_id: str | None = None,
-) -> m.SalesOrder:
-    meta = ORDER_LOGISTICS_TRANSITIONS.get(target_status)
-    if not meta:
-        raise HTTPException(status_code=400, detail=f"Unsupported status transition to {target_status}")
-    order = await get_order(db, tenant_id, order_id)
-    if order.status not in meta["from"]:
-        raise HTTPException(
-            status_code=409,
-            detail=f"Cannot mark order {target_status} from status {order.status}",
-        )
-    now = datetime.utcnow()
-    order.status = target_status
-    setattr(order, meta["ts_field"], now)
-    order.updated_at = now
-    from app import audit as audit_svc
-    from app.notifications import create_notification
-
-    await audit_svc.record_event(
-        db,
-        tenant_id=tenant_id,
-        user_id=user_id,
-        module="sales",
-        action=f"order_{target_status}",
-        entity="sales_order",
-        entity_id=order.id,
-        details={"order_number": order.order_number, "status": target_status},
-    )
-    await create_notification(
-        db,
-        tenant_id=tenant_id,
-        category="system",
-        title=f"Sales order {target_status}",
-        message=f"Order {order.order_number} marked {target_status}.",
-        entity_type="sales_order",
-        entity_id=order.id,
-        company_id=getattr(order, "company_id", None),
-    )
+        db.add(m.SalesOrderItem(tenant_id=tenant_id, sales_order_id=order.id, **line))
     await db.flush()
 
     from app.notifications import create_notification
@@ -989,7 +507,6 @@ async def convert_quotation_to_order(
         discount_amount=money_json(quote.discount_amount or 0),
         notes=quote.notes,
         quotation_id=quote.id,
-        company_id=getattr(quote, "company_id", None),
     )
     quote.status = "converted"
     quote.converted_order_id = order.id
@@ -1047,7 +564,6 @@ async def confirm_order(
         message=f"Order {order.order_number} confirmed; inventory reserved.",
         entity_type="sales_order",
         entity_id=order.id,
-        company_id=getattr(order, "company_id", None),
     )
     await db.flush()
     return order
@@ -1176,9 +692,6 @@ async def convert_order_to_invoice(
     order = await get_order(db, tenant_id, order_id)
     if order.status not in ORDER_INVOICEABLE:
         raise HTTPException(status_code=409, detail=f"Cannot invoice order in status {order.status}")
-    if order.status == "draft":
-        await reserve_order_stock(db, tenant_id=tenant_id, order=order, user_id=user_id)
-        order.confirmed_at = order.confirmed_at or datetime.utcnow()
     items = await list_order_items(db, tenant_id, order.id)
     invoice = await create_sales_invoice(
         db,
@@ -1200,7 +713,6 @@ async def convert_order_to_invoice(
         ],
         discount_amount=money_json(order.discount_amount or 0),
         notes=order.notes,
-        company_id=getattr(order, "company_id", None),
     )
     invoice.sales_order_id = order.id
     invoice.quotation_id = order.quotation_id
@@ -1258,7 +770,6 @@ async def serialize_return(db: AsyncSession, ret: m.SalesReturn) -> dict:
     items = await list_return_items(db, ret.tenant_id, ret.id)
     return {
         "id": ret.id,
-        "company_id": getattr(ret, "company_id", None),
         "return_number": ret.return_number,
         "credit_note_number": getattr(ret, "credit_note_number", None),
         "customer_id": ret.customer_id,
@@ -1279,7 +790,6 @@ async def serialize_return(db: AsyncSession, ret: m.SalesReturn) -> dict:
         "items": [
             {
                 "id": i.id,
-                "company_id": getattr(i, "company_id", None),
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
                 "quantity": money_json(i.quantity),
@@ -1330,7 +840,6 @@ async def create_return(
     reason: str,
     restock: bool = True,
     notes: str | None = None,
-    company_id: str | None = None,
 ) -> m.SalesReturn:
     reason = (reason or "").strip()
     if not reason:
@@ -1408,7 +917,7 @@ async def create_return(
     db.add(ret)
     await db.flush()
     for line in prepared:
-        db.add(m.SalesReturnItem(tenant_id=tenant_id, company_id=ret.company_id, sales_return_id=ret.id, **line))
+        db.add(m.SalesReturnItem(tenant_id=tenant_id, sales_return_id=ret.id, **line))
     await db.flush()
     return ret
 
@@ -1430,18 +939,6 @@ async def post_return(
     if not items:
         raise HTTPException(status_code=400, detail="Cannot post empty return")
 
-    invoice = await get_invoice(db, tenant_id, ret.sales_invoice_id)
-    from app.fx import doc_rate, to_base
-
-    warehouse_id = None
-    if invoice.store_id:
-        from app.stores import warehouse_for_store
-
-        wh = await warehouse_for_store(
-            db, tenant_id, invoice.store_id, company_id=getattr(invoice, "company_id", None)
-        )
-        warehouse_id = wh.id
-
     for item in items:
         if ret.restock and item.condition == "sellable":
             qty = money_json(item.quantity)
@@ -1456,7 +953,6 @@ async def post_return(
                 reference_id=ret.id,
                 notes=f"Return {ret.return_number}",
                 variant_id=item.variant_id,
-                warehouse_id=warehouse_id,
             )
             if item.variant_id:
                 variant = await get_variant(db, tenant_id, item.variant_id)
@@ -1528,53 +1024,10 @@ async def post_return(
     ret.refunded_amount = 0
     ret.status = "posted"
     ret.posted_at = datetime.utcnow()
-    ret.credit_note_number = await _allocate(db, tenant_id, "sales_credit_note", company_id=getattr(ret, "company_id", None))
 
     from app.accounting import post_sales_return_journal, post_sales_return_refund_journal
 
-    await post_sales_return_journal(
-        db,
-        tenant_id=tenant_id,
-        user_id=user_id,
-        sales_return=ret,
-        invoice=invoice,
-    )
-
-    from app import audit as audit_svc
-
-    restock_qty = round(
-        sum(
-            float(i.quantity or 0)
-            for i in items
-            if ret.restock and (getattr(i, "condition", None) or "sellable") == "sellable"
-        ),
-        3,
-    )
-    await audit_svc.record_event(
-        db,
-        tenant_id=tenant_id,
-        user_id=user_id,
-        action="sales_return_posted",
-        entity="sales_return",
-        entity_id=ret.id,
-        details={
-            "return_number": ret.return_number,
-            "credit_note_number": ret.credit_note_number,
-            "sales_invoice_id": invoice.id,
-            "invoice_number": invoice.invoice_number,
-            "customer_id": ret.customer_id,
-            "customer_balance": float(customer.balance or 0),
-            "total": float(ret.total_amount),
-            "total_base": ret_base,
-            "tax_amount": float(ret.tax_amount or 0),
-            "restock": bool(ret.restock),
-            "restock_qty": restock_qty,
-            "store_id": getattr(invoice, "store_id", None),
-            "warehouse_id": warehouse_id,
-            "line_count": len(items),
-        },
-        module="sales",
-    )
+    await post_sales_return_journal(db, tenant_id=tenant_id, user_id=user_id, sales_return=ret)
 
     if method == "refund" and excess > 1e-9:
         pay_method = (payment_method or "cash").strip().lower() or "cash"
@@ -1608,7 +1061,6 @@ async def post_return(
         ),
         entity_type="sales_return",
         entity_id=ret.id,
-        company_id=getattr(ret, "company_id", None),
     )
     db.add(
         m.AuditLog(
@@ -1629,260 +1081,3 @@ async def post_return(
     )
     await db.flush()
     return ret
-
-
-CREDIT_NOTE_PRINT_TEMPLATES = QUOTATION_PRINT_TEMPLATES
-CREDIT_NOTE_PRINT_FORMATS = QUOTATION_PRINT_FORMATS
-
-
-def render_credit_note_text(
-    return_data: dict,
-    *,
-    company_name: str,
-    customer_name: str,
-    template: str = "a4",
-    currency: str = "GHS",
-    company_address: str | None = None,
-    company_phone: str | None = None,
-    company_email: str | None = None,
-    tax_registration_number: str | None = None,
-    customer_address: str | None = None,
-    invoice_number: str | None = None,
-    item_labels: dict[str, str] | None = None,
-    logo_data_url: str | None = None,
-    trading_name: str | None = None,
-    legal_name: str | None = None,
-    has_logo: bool = False,
-    document_header: str | None = None,
-    document_footer: str | None = None,
-) -> str:
-    from app.print_branding import header_footer_text_lines
-
-    tpl = template if template in CREDIT_NOTE_PRINT_TEMPLATES else "a4"
-    width = 48 if tpl == "thermal_80" else 32 if tpl == "thermal_58" else 72
-    cur = currency or "GHS"
-    labels = item_labels or {}
-    cn = return_data.get("credit_note_number") or "—"
-    lines = [company_name[:width]]
-    if company_address:
-        lines.append(str(company_address)[:width])
-    if company_phone:
-        lines.append(f"Tel: {company_phone}"[:width])
-    if company_email:
-        lines.append(str(company_email)[:width])
-    if tax_registration_number:
-        lines.append(f"Tax #: {tax_registration_number}"[:width])
-    for part in header_footer_text_lines(document_header, width):
-        lines.append(part[:width])
-    lines.extend(
-        [
-            "",
-            f"CREDIT NOTE {cn}"[:width],
-            f"Return: {return_data.get('return_number')}"[:width],
-            f"Customer: {customer_name}"[:width],
-        ]
-    )
-    if customer_address:
-        lines.append(str(customer_address)[:width])
-    if invoice_number:
-        lines.append(f"Invoice: {invoice_number}"[:width])
-    lines.append(f"Status: {return_data.get('status')}"[:width])
-    lines.append(f"Reason: {return_data.get('reason')}"[:width])
-    if return_data.get("posted_at"):
-        lines.append(f"Posted: {str(return_data['posted_at'])[:19]}"[:width])
-    lines.extend(
-        ["", f"{'Item':<{max(width - 28, 8)}} {'Qty':>6} {'Total':>10}"[:width], "-" * width]
-    )
-    for item in return_data.get("items") or []:
-        pid = str(item.get("product_id") or "")
-        desc = str(labels.get(pid) or pid or "Item")[: max(width - 28, 8)]
-        lines.append(
-            f"{desc:<{max(width - 28, 8)}} {float(item.get('quantity') or 0):>6.2f} "
-            f"{float(item.get('line_total') or 0):>10.2f}"[:width]
-        )
-    lines.extend(
-        [
-            "-" * width,
-            f"Subtotal: {cur} {float(return_data.get('subtotal') or 0):.2f}"[:width],
-            f"Tax: {cur} {float(return_data.get('tax_amount') or 0):.2f}"[:width],
-            f"TOTAL CREDIT: {cur} {float(return_data.get('total_amount') or 0):.2f}"[:width],
-        ]
-    )
-    if return_data.get("notes"):
-        lines.extend(["", f"Notes: {return_data['notes']}"[:width]])
-    footer_lines = header_footer_text_lines(document_footer, width)
-    if footer_lines:
-        lines.append("")
-        lines.extend(part[:width] for part in footer_lines)
-    elif tpl.startswith("thermal"):
-        lines.extend(["", "Thank you!"[:width]])
-    from app.print_branding import platform_print_footer_text_lines
-
-    lines.extend(platform_print_footer_text_lines(width=width, center=tpl.startswith("thermal")))
-    return "\n".join(lines)
-
-
-def render_credit_note_html(
-    return_data: dict,
-    *,
-    company_name: str,
-    customer_name: str,
-    template: str = "a4",
-    currency: str = "GHS",
-    company_address: str | None = None,
-    company_phone: str | None = None,
-    company_email: str | None = None,
-    tax_registration_number: str | None = None,
-    customer_address: str | None = None,
-    invoice_number: str | None = None,
-    item_labels: dict[str, str] | None = None,
-    logo_data_url: str | None = None,
-    trading_name: str | None = None,
-    legal_name: str | None = None,
-    has_logo: bool = False,
-    document_header: str | None = None,
-    document_footer: str | None = None,
-) -> str:
-    from html import escape
-
-    from app.print_branding import brand_html_block, header_footer_html, platform_print_footer_html
-
-    tpl = template if template in CREDIT_NOTE_PRINT_TEMPLATES else "a4"
-    cur = escape(currency or "GHS")
-    labels = item_labels or {}
-    max_width = "80mm" if tpl == "thermal_80" else "58mm" if tpl == "thermal_58" else "720px"
-    font = "12px/1.4 monospace" if tpl.startswith("thermal") else "15px/1.45 Georgia, 'Times New Roman', serif"
-    rows = []
-    for item in return_data.get("items") or []:
-        pid = str(item.get("product_id") or "")
-        desc = escape(str(labels.get(pid) or pid or "Item"))
-        rows.append(
-            "<tr>"
-            f"<td>{desc}</td>"
-            f"<td style='text-align:right'>{float(item.get('quantity') or 0):.2f}</td>"
-            f"<td style='text-align:right'>{float(item.get('unit_price') or 0):.2f}</td>"
-            f"<td style='text-align:right'>{float(item.get('line_total') or 0):.2f}</td>"
-            "</tr>"
-        )
-    meta = []
-    if company_address:
-        meta.append(escape(str(company_address)))
-    if company_phone:
-        meta.append(f"Tel: {escape(str(company_phone))}")
-    if company_email:
-        meta.append(escape(str(company_email)))
-    if tax_registration_number:
-        meta.append(f"Tax #: {escape(str(tax_registration_number))}")
-    cn = escape(str(return_data.get("credit_note_number") or "—"))
-    rn = escape(str(return_data.get("return_number") or ""))
-    status = escape(str(return_data.get("status") or ""))
-    reason = escape(str(return_data.get("reason") or ""))
-    customer_addr_html = f"<br>{escape(str(customer_address))}" if customer_address else ""
-    inv_html = f"<br>Invoice: {escape(str(invoice_number))}" if invoice_number else ""
-    notes_html = (
-        f"<p class='muted'>Notes: {escape(str(return_data.get('notes')))}</p>"
-        if return_data.get("notes")
-        else ""
-    )
-    header_html = header_footer_html(document_header, css_class="doc-header")
-    footer_html = header_footer_html(document_footer, css_class="doc-footer")
-    footer_html = f"{footer_html}{platform_print_footer_html()}"
-    rows_html = "".join(rows) or "<tr><td colspan='4' class='muted'>No lines</td></tr>"
-    meta_html = "<br>".join(meta)
-    brand_block = brand_html_block(
-        company_name=company_name,
-        logo_data_url=logo_data_url,
-        trading_name=trading_name,
-        meta_html=meta_html,
-    )
-    return f"""<!doctype html>
-<html><head><meta charset="utf-8"><title>Credit Note {cn}</title>
-<style>
-  body {{ margin:0; background:#f3f0ea; color:#1c1917; font:{font}; }}
-  .sheet {{ max-width:{max_width}; margin:0 auto; min-height:100vh; padding:28px 32px 40px;
-    background:linear-gradient(180deg,#fffdf8 0%,#f7f1e8 100%); }}
-  h1 {{ font-size:1.8rem; letter-spacing:.04em; margin:0 0 6px; font-weight:700; }}
-  h2 {{ font-size:1.15rem; margin:24px 0 8px; font-weight:600; }}
-  .muted {{ color:#57534e; }}
-  .brand {{ border-bottom:2px solid #292524; padding-bottom:14px; margin-bottom:18px; }}
-  .brand .logo {{ display:block; max-height:72px; max-width:220px; margin:0 0 10px; object-fit:contain; }}
-  .doc-header {{ margin:8px 0 0; }}
-  .doc-footer {{ margin-top:28px; }}
-  table {{ width:100%; border-collapse:collapse; margin-top:12px; }}
-  th, td {{ padding:8px 4px; border-bottom:1px solid #d6d3d1; text-align:left; }}
-  th {{ font-size:.85rem; text-transform:uppercase; letter-spacing:.06em; color:#44403c; }}
-  .totals {{ margin-top:18px; width:100%; max-width:280px; margin-left:auto; }}
-  .totals div {{ display:flex; justify-content:space-between; padding:4px 0; }}
-  .totals .grand {{ font-weight:700; border-top:2px solid #292524; margin-top:6px; padding-top:8px; }}
-  .toolbar {{ position:sticky; top:0; background:#fffdf8cc; padding:8px 0 12px; }}
-  @media print {{ body {{ background:#fff; }} .toolbar {{ display:none; }} .sheet {{ max-width:none; background:#fff; }} }}
-</style></head><body><div class="sheet">
-  <div class="toolbar"><button onclick="window.print()">Print</button></div>
-  {brand_block}
-  {header_html}
-  <h2>Credit Note {cn}</h2>
-  <div class="muted">Return {rn} · Status: {status} · Reason: {reason}</div>
-  <p><strong>Credit to</strong><br>{escape(customer_name)}{customer_addr_html}{inv_html}</p>
-  <table>
-    <thead><tr><th>Item</th><th style="text-align:right">Qty</th><th style="text-align:right">Price</th><th style="text-align:right">Total</th></tr></thead>
-    <tbody>{rows_html}</tbody>
-  </table>
-  <div class="totals">
-    <div><span>Subtotal</span><span>{cur} {float(return_data.get("subtotal") or 0):.2f}</span></div>
-    <div><span>Tax</span><span>{cur} {float(return_data.get("tax_amount") or 0):.2f}</span></div>
-    <div class="grand"><span>Total credit</span><span>{cur} {float(return_data.get("total_amount") or 0):.2f}</span></div>
-  </div>
-  {notes_html}
-  {footer_html}
-</div></body></html>"""
-
-
-def render_credit_note_pdf(
-    return_data: dict,
-    *,
-    company_name: str,
-    customer_name: str,
-    template: str = "a4",
-    currency: str = "GHS",
-    company_address: str | None = None,
-    company_phone: str | None = None,
-    company_email: str | None = None,
-    tax_registration_number: str | None = None,
-    customer_address: str | None = None,
-    invoice_number: str | None = None,
-    item_labels: dict[str, str] | None = None,
-    logo_data_url: str | None = None,
-    trading_name: str | None = None,
-    legal_name: str | None = None,
-    has_logo: bool = False,
-    document_header: str | None = None,
-    document_footer: str | None = None,
-) -> bytes:
-    tpl = template if template in CREDIT_NOTE_PRINT_TEMPLATES else "a4"
-    text = render_credit_note_text(
-        return_data,
-        company_name=company_name,
-        customer_name=customer_name,
-        template=tpl,
-        currency=currency,
-        company_address=company_address,
-        company_phone=company_phone,
-        company_email=company_email,
-        tax_registration_number=tax_registration_number,
-        customer_address=customer_address,
-        invoice_number=invoice_number,
-        item_labels=item_labels,
-        logo_data_url=logo_data_url,
-        trading_name=trading_name,
-        legal_name=legal_name,
-        has_logo=has_logo,
-        document_header=document_header,
-        document_footer=document_footer,
-    )
-    title = f"CREDIT NOTE {return_data.get('credit_note_number') or ''}"
-    return render_branded_lines_pdf(
-        text.splitlines() or [""],
-        template=tpl,
-        company_name=company_name,
-        title=title,
-    )

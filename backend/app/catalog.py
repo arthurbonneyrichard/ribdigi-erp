@@ -81,7 +81,6 @@ async def allocate_sku(db: AsyncSession, tenant_id: str, *, prefix: str = "SKU")
 def serialize_variant(v: m.ProductVariant) -> dict:
     return {
         "id": v.id,
-        "company_id": getattr(v, "company_id", None),
         "product_id": v.product_id,
         "name": v.name,
         "sku": v.sku,
@@ -101,7 +100,6 @@ def serialize_variant(v: m.ProductVariant) -> dict:
 def serialize_batch(b: m.ProductBatch) -> dict:
     return {
         "id": b.id,
-        "company_id": getattr(b, "company_id", None),
         "product_id": b.product_id,
         "variant_id": b.variant_id,
         "warehouse_id": b.warehouse_id,
@@ -372,23 +370,21 @@ async def list_expiring_batches(
     tenant_id: str,
     *,
     within_days: int = 30,
-    company_id: str | None = None,
 ) -> list[m.ProductBatch]:
     within_days = max(0, min(int(within_days), 3650))
     horizon = datetime.utcnow() + timedelta(days=within_days)
-    stmt = (
-        select(m.ProductBatch)
-        .where(
-            m.ProductBatch.tenant_id == tenant_id,
-            m.ProductBatch.quantity > 0,
-            m.ProductBatch.expiry_date.is_not(None),
-            m.ProductBatch.expiry_date <= horizon,
+    return (
+        await db.execute(
+            select(m.ProductBatch)
+            .where(
+                m.ProductBatch.tenant_id == tenant_id,
+                m.ProductBatch.quantity > 0,
+                m.ProductBatch.expiry_date.is_not(None),
+                m.ProductBatch.expiry_date <= horizon,
+            )
+            .order_by(m.ProductBatch.expiry_date.asc())
         )
-        .order_by(m.ProductBatch.expiry_date.asc())
-    )
-    if company_id:
-        stmt = stmt.where(m.ProductBatch.company_id == company_id)
-    return list((await db.execute(stmt)).scalars().all())
+    ).scalars().all()
 
 
 async def _find_batch(
@@ -434,8 +430,6 @@ async def stock_in_with_batch(
     entered_qty = money_json(quantity)
     if entered_qty <= 0:
         raise HTTPException(status_code=400, detail="quantity must be positive")
-    if movement_type not in {"stock_in", "opening_stock"}:
-        raise HTTPException(status_code=400, detail="Invalid inbound movement type")
     product = await get_product(db, tenant_id, product_id)
     quantity_base, entered_unit_id, entered_qty = await to_stock_qty(
         db,
@@ -479,7 +473,6 @@ async def stock_in_with_batch(
         if not batch:
             batch = m.ProductBatch(
                 tenant_id=tenant_id,
-                company_id=getattr(product, "company_id", None),
                 product_id=product.id,
                 variant_id=variant.id if variant else None,
                 warehouse_id=warehouse_id,
@@ -533,141 +526,7 @@ async def stock_in_with_batch(
         "cost_price": money_json(product.cost_price),
         "variant": serialize_variant(variant) if variant else None,
         "batch": serialize_batch(batch) if batch else None,
-        "movement_type": movement_type,
-        "quantity_delta": quantity,
     }
-
-
-async def record_opening_stock(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    user_id: str,
-    product_id: str,
-    quantity: float,
-    mode: str = "add",
-    notes: str | None = None,
-    warehouse_id: str | None = None,
-    variant_id: str | None = None,
-    batch_number: str | None = None,
-    manufacturing_date: datetime | None = None,
-    expiry_date: datetime | None = None,
-    fiscal_period: str | None = None,
-    company_id: str | None = None,
-) -> dict:
-    """Initialize stock for go-live / fiscal year start (BR-5.2 Opening Stock)."""
-    from app.inventory import get_or_create_warehouse_stock, get_warehouse
-
-    mode_norm = (mode or "add").strip().lower()
-    if mode_norm not in {"add", "set"}:
-        raise HTTPException(status_code=400, detail="mode must be add or set")
-
-    quantity = float(quantity)
-    if quantity < 0:
-        raise HTTPException(status_code=400, detail="quantity cannot be negative")
-
-    product = await get_product(db, tenant_id, product_id)
-    scope_cid = company_id or getattr(product, "company_id", None)
-    if warehouse_id:
-        await get_warehouse(db, tenant_id, warehouse_id, company_id=scope_cid)
-        wh_row = await get_or_create_warehouse_stock(
-            db, tenant_id=tenant_id, warehouse_id=warehouse_id, product_id=product.id
-        )
-        current = float(wh_row.quantity or 0)
-    else:
-        current = float(product.stock_qty or 0)
-
-    if mode_norm == "add":
-        if quantity <= 0:
-            raise HTTPException(status_code=400, detail="quantity must be positive for add mode")
-        delta = quantity
-    else:
-        delta = quantity - current
-        if abs(delta) < 1e-9:
-            raise HTTPException(status_code=400, detail="set mode would not change stock")
-        if delta < 0:
-            raise HTTPException(
-                status_code=400,
-                detail={
-                    "code": "OPENING_STOCK_CANNOT_REDUCE",
-                    "message": "Opening stock cannot reduce on-hand; use stock adjustment or stock count",
-                    "current_qty": current,
-                    "target_qty": quantity,
-                },
-            )
-
-    note_parts = [notes.strip()] if notes and notes.strip() else []
-    if fiscal_period and fiscal_period.strip():
-        note_parts.append(f"fiscal_period={fiscal_period.strip()}")
-    if mode_norm == "set":
-        note_parts.append(f"opening set target={quantity:g} (was {current:g})")
-    combined_notes = "; ".join(note_parts) if note_parts else "Opening stock entry"
-
-    result = await stock_in_with_batch(
-        db,
-        tenant_id=tenant_id,
-        user_id=user_id,
-        product_id=product.id,
-        quantity=delta,
-        notes=combined_notes,
-        warehouse_id=warehouse_id,
-        variant_id=variant_id,
-        batch_number=batch_number,
-        manufacturing_date=manufacturing_date,
-        expiry_date=expiry_date,
-        reference_type="opening_stock",
-        reference_id=fiscal_period.strip() if fiscal_period and fiscal_period.strip() else None,
-        movement_type="opening_stock",
-        company_id=scope_cid,
-    )
-    result["mode"] = mode_norm
-    result["current_qty_before"] = current
-    result["target_qty"] = quantity if mode_norm == "set" else current + delta
-    result["fiscal_period"] = fiscal_period.strip() if fiscal_period and fiscal_period.strip() else None
-    return result
-
-
-async def record_opening_stock_batch(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    user_id: str,
-    items: list[dict],
-    fiscal_period: str | None = None,
-    company_id: str | None = None,
-) -> dict:
-    if not items:
-        raise HTTPException(status_code=400, detail="items required")
-    if len(items) > 500:
-        raise HTTPException(status_code=400, detail="Maximum 500 opening stock lines per request")
-    results: list[dict] = []
-    for idx, item in enumerate(items, start=1):
-        try:
-            results.append(
-                await record_opening_stock(
-                    db,
-                    tenant_id=tenant_id,
-                    user_id=user_id,
-                    product_id=item["product_id"],
-                    quantity=float(item["quantity"]),
-                    mode=item.get("mode") or "add",
-                    notes=item.get("notes"),
-                    warehouse_id=item.get("warehouse_id"),
-                    variant_id=item.get("variant_id"),
-                    batch_number=item.get("batch_number"),
-                    manufacturing_date=item.get("manufacturing_date"),
-                    expiry_date=item.get("expiry_date"),
-                    fiscal_period=item.get("fiscal_period") or fiscal_period,
-                    company_id=company_id,
-                )
-            )
-        except HTTPException as exc:
-            detail = exc.detail
-            raise HTTPException(
-                status_code=exc.status_code,
-                detail={"line": idx, "product_id": item.get("product_id"), "error": detail},
-            ) from exc
-    return {"count": len(results), "items": results}
 
 
 async def stock_out_with_batch(
@@ -684,7 +543,6 @@ async def stock_out_with_batch(
     batch_id: str | None = None,
     reference_type: str | None = None,
     reference_id: str | None = None,
-    company_id: str | None = None,
 ) -> dict:
     from app.uom import to_stock_qty
 
@@ -809,7 +667,6 @@ async def stock_out_with_batch(
         batch_id=primary_batch_id,
         reference_type=reference_type,
         reference_id=reference_id,
-        company_id=company_id or getattr(product, "company_id", None),
     )
     if variant:
         variant.stock_qty = max(money_json(variant.stock_qty or 0) - quantity, 0)
