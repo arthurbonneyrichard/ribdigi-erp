@@ -69,6 +69,21 @@ register_exception_handlers(app)
 app.state.session_factory = SessionLocal
 
 
+@app.on_event("startup")
+async def _align_hybrid_schema_on_startup() -> None:
+    if settings.APP_ENV.lower() != "production":
+        return
+    if "sqlite" in (settings.DATABASE_URL or "").lower():
+        return
+    from app.db import engine
+    from app.schema_align import align_async_engine
+
+    try:
+        await align_async_engine(engine)
+    except Exception:
+        logging.getLogger("ribdigi.schema_align").exception("startup schema align failed")
+
+
 @app.get("/")
 async def root():
     return {"name": "RIBDIGI BUSINESS ERP", "version": "1.0.0", "docs": None if is_prod else "/docs"}

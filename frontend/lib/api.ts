@@ -155,7 +155,25 @@ export async function api(path: string, opts: RequestInit = {}, retryOn401 = tru
   // Let the browser set multipart boundary for FormData
   if (isFormData) delete headers['Content-Type'];
 
-  const response = await fetch(base + path, { ...opts, headers, cache: 'no-store' });
+  const controller = new AbortController();
+  const timeoutMs = 20000;
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let response: Response;
+  try {
+    response = await fetch(base + path, {
+      ...opts,
+      headers,
+      cache: 'no-store',
+      signal: opts.signal ?? controller.signal,
+    });
+  } catch (err: unknown) {
+    clearTimeout(timer);
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new Error('The request timed out. Check your connection and try again.');
+    }
+    throw err;
+  }
+  clearTimeout(timer);
 
   // Session expired: try a one-time refresh + retry, otherwise send back to login.
   // Auth endpoints are excluded so the login/2FA flow is never disrupted.

@@ -3395,14 +3395,16 @@ async def products(
 ):
     """List products. Optional is_active filters soft-deactivated rows (Inventory manage UI)."""
     await catalog_meta_svc.ensure_default_catalog(db, claims["tenant_id"])
-    stmt = (
-        select(m.Product)
-        .where(m.Product.tenant_id == claims["tenant_id"])
-        .order_by(m.Product.name)
-    )
+    extra = ""
+    params: dict = {}
     if is_active is not None:
-        stmt = stmt.where(m.Product.is_active.is_(bool(is_active)))
-    rows = (await db.execute(stmt)).scalars().all()
+        extra = "is_active = :ia"
+        params["ia"] = bool(is_active)
+    from app import schema_compat
+
+    rows = await schema_compat.list_mapped(
+        db, m.Product, tenant_id=claims["tenant_id"], extra=extra, extra_params=params, order_by="name"
+    )
     return env([catalog_meta_svc.serialize_product(p) for p in rows])
 
 
@@ -3460,9 +3462,22 @@ async def add_product(
     else:
         await catalog_svc.assert_sku_available(db, claims["tenant_id"], sku_norm)
     data["sku"] = sku_norm
-    product = m.Product(tenant_id=claims["tenant_id"], **data)
-    sync_product_tax_flags(product, supply_class=supply)
-    db.add(product)
+    from app import schema_compat
+    from app.models import uid
+
+    product = await schema_compat.insert_and_get(
+        db,
+        m.Product,
+        {
+            **data,
+            "id": uid(),
+            "tenant_id": claims["tenant_id"],
+            "reserved_qty": 0,
+            "minimum_stock": data.get("reorder_level") or 0,
+        },
+    )
+    if product is None:
+        raise HTTPException(status_code=500, detail="The server could not complete this request.")
     await db.flush()
     if money_json(product.stock_qty or 0) > 0:
         opening = money_json(product.stock_qty)
@@ -3479,8 +3494,8 @@ async def add_product(
             notes="Opening stock on product create",
         )
     await db.commit()
-    await db.refresh(product)
-    return env(catalog_meta_svc.serialize_product(product), "Product created")
+    fresh = await schema_compat.get_mapped(db, m.Product, product.id)
+    return env(catalog_meta_svc.serialize_product(fresh or product), "Product created")
 
 
 @api.get("/products/import/template")
@@ -4002,10 +4017,12 @@ async def catalog_create_unit(
         conversion_ratio=payload.conversion_ratio,
     )
     await db.commit()
-    await db.refresh(row)
+    from app import schema_compat
+
+    row = await schema_compat.get_mapped(db, m.UnitOfMeasure, row.id) or row
     base = None
     if row.base_unit_id:
-        base = await db.get(m.UnitOfMeasure, row.base_unit_id)
+        base = await schema_compat.get_mapped(db, m.UnitOfMeasure, row.base_unit_id)
     return env(catalog_meta_svc.serialize_unit(row, base=base), "Unit created")
 
 
@@ -4057,10 +4074,12 @@ async def catalog_patch_unit(
         clear_base=bool(data.get("clear_base")),
     )
     await db.commit()
-    await db.refresh(row)
+    from app import schema_compat
+
+    row = await schema_compat.get_mapped(db, m.UnitOfMeasure, row.id) or row
     base = None
     if row.base_unit_id:
-        base = await db.get(m.UnitOfMeasure, row.base_unit_id)
+        base = await schema_compat.get_mapped(db, m.UnitOfMeasure, row.base_unit_id)
     return env(catalog_meta_svc.serialize_unit(row, base=base), "Unit updated")
 
 @api.delete("/catalog/units/{unit_id}")

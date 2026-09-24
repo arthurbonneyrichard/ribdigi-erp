@@ -12,6 +12,7 @@ import re
 
 from sqlalchemy import MetaData, Table, insert, inspect, text
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.attributes import set_committed_value
 
 from app.models import uid
 
@@ -20,7 +21,18 @@ COLUMN_ALIASES = (
     ("conversion_factor", "conversion_ratio"),
     ("account_type", "type"),
     ("rate", "percentage"),
+    ("package_code", "plan_code"),
+    ("plan_code", "package_code"),
+    ("contact_person", "contact_person_name"),
+    ("contact_person_name", "contact_person"),
 )
+
+_IDENT = re.compile(r"^[a-z_][a-z0-9_]*$")
+_COL_CACHE: dict[str, set[str]] = {}
+
+
+def clear_column_cache() -> None:
+    _COL_CACHE.clear()
 
 
 def _python_type(col) -> type | None:
@@ -53,16 +65,28 @@ def _default_for_required_column(col, table_name: str = "", values: dict | None 
         "rate",
         "percentage",
         "drawer_port",
+        "reorder_level",
+        "reserved_qty",
+        "minimum_stock",
+        "stock_qty",
+        "cost_price",
+        "selling_price",
     }:
         if name == "drawer_port":
             return 9100
         if name in {"conversion_ratio", "conversion_factor"}:
             return 1
+        if name in {"reserved_qty", "minimum_stock"}:
+            return 0
         return 0
     if name == "status":
         return "unread" if table_name == "notifications" else "active"
     if name == "category" and table_name == "notifications":
         return "system"
+    if name == "package_code":
+        return values.get("plan_code") or "trial"
+    if name == "tax_supply_class":
+        return "standard"
     if name == "code":
         return _slug_code(values.get("code") or values.get("name") or table_name)
     if name == "tax_type":
@@ -148,13 +172,19 @@ def _prepare_payload(sync_session, table_name: str, values: dict) -> dict:
 
 
 async def table_column_names(db: AsyncSession, table_name: str) -> set[str]:
+    cached = _COL_CACHE.get(table_name)
+    if cached is not None:
+        return cached
+
     def _names(sync_session) -> set[str]:
         insp = inspect(_session_connection(sync_session))
         if not insp.has_table(table_name):
             return set()
         return {c["name"] for c in insp.get_columns(table_name)}
 
-    return await db.run_sync(_names)
+    names = await db.run_sync(_names)
+    _COL_CACHE[table_name] = names
+    return names
 
 
 async def insert_matching_row(db: AsyncSession, table_name: str, values: dict) -> None:
@@ -236,3 +266,90 @@ async def ensure_tenant_company(db: AsyncSession, tenant_id: str, *, name: str |
     )
     await db.flush()
     return await resolve_tenant_company_id(db, tenant_id)
+
+
+def apply_column_aliases(data: dict) -> dict:
+    out = dict(data)
+    for src, dst in COLUMN_ALIASES:
+        if src in out and dst not in out:
+            out[dst] = out[src]
+    return out
+
+
+async def fetch_live_dicts(
+    db: AsyncSession, table_name: str, where_sql: str, params: dict
+) -> list[dict]:
+    if not _IDENT.match(table_name):
+        raise ValueError(f"unsafe table {table_name}")
+    names = await table_column_names(db, table_name)
+    cols = [n for n in names if _IDENT.match(n)]
+    if not cols:
+        return []
+    sql = f"SELECT {', '.join(sorted(cols))} FROM {table_name} WHERE {where_sql}"
+    result = await db.execute(text(sql), params)
+    return [dict(row) for row in result.mappings()]
+
+
+async def attach_mapped(db: AsyncSession, model, data: dict):
+    data = apply_column_aliases(data)
+    obj = model()
+    for col in model.__table__.columns:
+        key = col.name
+        if key in data:
+            val = data[key]
+        elif col.nullable:
+            val = None
+        else:
+            val = _default_for_required_column(col, model.__tablename__, data)
+        try:
+            set_committed_value(obj, key, val)
+        except Exception:
+            try:
+                object.__setattr__(obj, key, val)
+            except Exception:
+                continue
+    return obj
+
+
+async def get_mapped(db: AsyncSession, model, pk: str):
+    table = model.__tablename__
+    pkcol = list(model.__table__.primary_key.columns)[0].name
+    if not _IDENT.match(pkcol):
+        return None
+    rows = await fetch_live_dicts(db, table, f"{pkcol} = :id", {"id": pk})
+    if not rows:
+        return None
+    return await attach_mapped(db, model, rows[0])
+
+
+async def list_mapped(
+    db: AsyncSession,
+    model,
+    *,
+    tenant_id: str,
+    extra: str = "",
+    extra_params: dict | None = None,
+    order_by: str | None = "name",
+):
+    table = model.__tablename__
+    names = await table_column_names(db, table)
+    params = {"tid": tenant_id, **(extra_params or {})}
+    where = "tenant_id = :tid"
+    if extra:
+        where = f"{where} AND ({extra})"
+    if order_by and order_by in names and _IDENT.match(order_by):
+        where = f"{where} ORDER BY {order_by}"
+    rows = await fetch_live_dicts(db, table, where, params)
+    out = []
+    for row in rows:
+        out.append(await attach_mapped(db, model, row))
+    return out
+
+
+async def insert_and_get(db: AsyncSession, model, values: dict):
+    table = model.__tablename__
+    if "id" not in values:
+        values = {**values, "id": uid()}
+    await insert_matching_row(db, table, values)
+    await db.flush()
+    return await get_mapped(db, model, values["id"])

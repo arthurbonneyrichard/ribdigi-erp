@@ -15,15 +15,10 @@ from app.honesty import money_json
 
 
 async def get_unit(db: AsyncSession, tenant_id: str, unit_id: str) -> m.UnitOfMeasure:
-    row = (
-        await db.execute(
-            select(m.UnitOfMeasure).where(
-                m.UnitOfMeasure.id == unit_id,
-                m.UnitOfMeasure.tenant_id == tenant_id,
-            )
-        )
-    ).scalar_one_or_none()
-    if not row:
+    from app import schema_compat
+
+    row = await schema_compat.get_mapped(db, m.UnitOfMeasure, unit_id)
+    if not row or row.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Unit of measure not found")
     return row
 

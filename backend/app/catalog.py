@@ -10,6 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app import schema_compat
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 from app.inventory import apply_stock_change
 
@@ -123,12 +124,8 @@ def serialize_batch(b: m.ProductBatch) -> dict:
 
 
 async def get_product(db: AsyncSession, tenant_id: str, product_id: str) -> m.Product:
-    product = (
-        await db.execute(
-            select(m.Product).where(m.Product.id == product_id, m.Product.tenant_id == tenant_id)
-        )
-    ).scalar_one_or_none()
-    if not product:
+    product = await schema_compat.get_mapped(db, m.Product, product_id)
+    if not product or product.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Product not found")
     return product
 
@@ -195,17 +192,19 @@ async def list_variants(
     is_active: bool | None = None,
 ) -> list[m.ProductVariant]:
     await get_product(db, tenant_id, product_id)
-    stmt = (
-        select(m.ProductVariant)
-        .where(
-            m.ProductVariant.tenant_id == tenant_id,
-            m.ProductVariant.product_id == product_id,
-        )
-        .order_by(m.ProductVariant.name)
-    )
+    extra = "product_id = :pid"
+    params = {"pid": product_id}
     if is_active is not None:
-        stmt = stmt.where(m.ProductVariant.is_active.is_(bool(is_active)))
-    return (await db.execute(stmt)).scalars().all()
+        extra += " AND is_active = :ia"
+        params["ia"] = bool(is_active)
+    return await schema_compat.list_mapped(
+        db,
+        m.ProductVariant,
+        tenant_id=tenant_id,
+        extra=extra,
+        extra_params=params,
+        order_by="name",
+    )
 
 
 def _clean_attr(value: str | None) -> str | None:
@@ -245,25 +244,29 @@ async def create_variant(
             db, tenant_id=tenant_id, barcode_value=barcode_norm
         )
 
-    variant = m.ProductVariant(
-        tenant_id=tenant_id,
-        product_id=product.id,
-        name=name,
-        sku=sku,
-        barcode=barcode_norm,
-        size=_clean_attr(size),
-        color=_clean_attr(color),
-        flavor=_clean_attr(flavor),
-        dosage=_clean_attr(dosage),
-        cost_price=money_json(cost_price if cost_price is not None else product.cost_price or 0),
-        selling_price=money_json(
-            selling_price if selling_price is not None else product.selling_price or 0
-        ),
-        stock_qty=0,
-        is_active=True,
+    variant = await schema_compat.insert_and_get(
+        db,
+        m.ProductVariant,
+        {
+            "tenant_id": tenant_id,
+            "product_id": product.id,
+            "name": name,
+            "sku": sku,
+            "barcode": barcode_norm,
+            "size": _clean_attr(size),
+            "color": _clean_attr(color),
+            "flavor": _clean_attr(flavor),
+            "dosage": _clean_attr(dosage),
+            "cost_price": money_json(cost_price if cost_price is not None else product.cost_price or 0),
+            "selling_price": money_json(
+                selling_price if selling_price is not None else product.selling_price or 0
+            ),
+            "stock_qty": 0,
+            "is_active": True,
+        },
     )
-    db.add(variant)
-    await db.flush()
+    if variant is None:
+        raise HTTPException(status_code=500, detail="The server could not complete this request.")
     return variant
 
 

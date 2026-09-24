@@ -7,6 +7,8 @@ from pathlib import Path
 import pytest
 from sqlalchemy import text
 
+from app import schema_compat
+from app import models as m
 from app.schema_align import align_async_engine
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -53,3 +55,44 @@ def test_bootstrap_calls_schema_align():
     text_src = (ROOT / "backend/scripts/bootstrap.py").read_text(encoding="utf-8")
     assert "align_async_engine" in text_src
     assert "schema align complete" in text_src
+
+
+@pytest.mark.asyncio
+async def test_get_mapped_tenant_without_package_code(db_engine, db_session, seeded):
+    tenant_id = str(seeded["t1"].id)
+    await db_session.rollback()
+    async with db_engine.begin() as conn:
+        await conn.execute(text("DROP INDEX IF EXISTS ix_tenants_package_code"))
+        await conn.execute(text("ALTER TABLE tenants DROP COLUMN package_code"))
+    schema_compat.clear_column_cache()
+    row = await schema_compat.get_mapped(db_session, m.Tenant, tenant_id)
+    assert row is not None
+    assert object.__getattribute__(row, "slug") == "alpha"
+    assert object.__getattribute__(row, "package_code") == "trial"
+
+
+@pytest.mark.asyncio
+async def test_insert_product_without_description_column(db_engine, db_session, seeded):
+    await db_session.rollback()
+    async with db_engine.begin() as conn:
+        await conn.execute(text("ALTER TABLE products DROP COLUMN description"))
+    schema_compat.clear_column_cache()
+    product = await schema_compat.insert_and_get(
+        db_session,
+        m.Product,
+        {
+            "tenant_id": seeded["t1"].id,
+            "name": "Hybrid Cola",
+            "sku": "HYB-COLA",
+            "category": "General",
+            "cost_price": 1,
+            "selling_price": 2,
+            "stock_qty": 0,
+            "reorder_level": 0,
+            "reserved_qty": 0,
+            "minimum_stock": 0,
+        },
+    )
+    assert product is not None
+    assert product.sku == "HYB-COLA"
+    assert product.name == "Hybrid Cola"

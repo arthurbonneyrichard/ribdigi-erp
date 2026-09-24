@@ -189,3 +189,6 @@ def align_connection(sync_conn: Connection) -> None:
 async def align_async_engine(engine) -> None:
     async with engine.begin() as conn:
         await conn.run_sync(align_connection)
+    from app.schema_compat import clear_column_cache
+
+    clear_column_cache()

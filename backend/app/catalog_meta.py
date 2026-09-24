@@ -233,14 +233,14 @@ async def ensure_default_catalog(db: AsyncSession, tenant_id: str) -> None:
 async def list_categories(
     db: AsyncSession, tenant_id: str, *, is_active: bool | None = None
 ) -> list[m.ProductCategory]:
-    stmt = (
-        select(m.ProductCategory)
-        .where(m.ProductCategory.tenant_id == tenant_id)
-        .order_by(m.ProductCategory.name)
-    )
+    extra = ""
+    params: dict = {}
     if is_active is not None:
-        stmt = stmt.where(m.ProductCategory.is_active.is_(bool(is_active)))
-    return list((await db.execute(stmt)).scalars().all())
+        extra = "is_active = :ia"
+        params["ia"] = bool(is_active)
+    return await schema_compat.list_mapped(
+        db, m.ProductCategory, tenant_id=tenant_id, extra=extra, extra_params=params, order_by="name"
+    )
 
 
 async def _validate_category_tax_rate(
@@ -271,30 +271,26 @@ async def create_category(
     )
     name = require_honest_narrative(name, label="category name", max_length=120)
     if parent_id:
-        parent = await db.get(m.ProductCategory, parent_id)
+        parent = await schema_compat.get_mapped(db, m.ProductCategory, parent_id)
         if not parent or parent.tenant_id != tenant_id:
             raise HTTPException(status_code=404, detail="Parent category not found")
     tax_rate_id = await _validate_category_tax_rate(db, tenant_id=tenant_id, tax_rate_id=tax_rate_id)
-    dup = (
-        await db.execute(
-            select(m.ProductCategory).where(
-                m.ProductCategory.tenant_id == tenant_id,
-                m.ProductCategory.code == code,
-            )
-        )
-    ).scalar_one_or_none()
-    if dup:
+    if code in await schema_compat.existing_codes(db, "product_categories", tenant_id):
         raise HTTPException(status_code=409, detail="Category code exists")
-    row = m.ProductCategory(
-        tenant_id=tenant_id,
-        code=code,
-        name=name,
-        parent_id=parent_id,
-        tax_rate_id=tax_rate_id,
-        is_active=True,
+    row = await schema_compat.insert_and_get(
+        db,
+        m.ProductCategory,
+        {
+            "tenant_id": tenant_id,
+            "code": code,
+            "name": name,
+            "parent_id": parent_id,
+            "tax_rate_id": tax_rate_id,
+            "is_active": True,
+        },
     )
-    db.add(row)
-    await db.flush()
+    if row is None:
+        raise HTTPException(status_code=500, detail="The server could not complete this request.")
     return row
 
 
@@ -363,10 +359,14 @@ async def deactivate_category(
 async def list_brands(
     db: AsyncSession, tenant_id: str, *, is_active: bool | None = None
 ) -> list[m.Brand]:
-    stmt = select(m.Brand).where(m.Brand.tenant_id == tenant_id).order_by(m.Brand.name)
+    extra = ""
+    params: dict = {}
     if is_active is not None:
-        stmt = stmt.where(m.Brand.is_active.is_(bool(is_active)))
-    return list((await db.execute(stmt)).scalars().all())
+        extra = "is_active = :ia"
+        params["ia"] = bool(is_active)
+    return await schema_compat.list_mapped(
+        db, m.Brand, tenant_id=tenant_id, extra=extra, extra_params=params, order_by="name"
+    )
 
 
 async def create_brand(
@@ -382,22 +382,21 @@ async def create_brand(
         (code or "").strip().upper(), label="brand code", max_length=40
     )
     name = require_honest_narrative(name, label="brand name", max_length=120)
-    dup = (
-        await db.execute(
-            select(m.Brand).where(m.Brand.tenant_id == tenant_id, m.Brand.code == code)
-        )
-    ).scalar_one_or_none()
-    if dup:
+    if code in await schema_compat.existing_codes(db, "brands", tenant_id):
         raise HTTPException(status_code=409, detail="Brand code exists")
-    row = m.Brand(
-        tenant_id=tenant_id,
-        code=code,
-        name=name,
-        description=optional_honest_narrative(description, label="brand description"),
-        is_active=True,
+    row = await schema_compat.insert_and_get(
+        db,
+        m.Brand,
+        {
+            "tenant_id": tenant_id,
+            "code": code,
+            "name": name,
+            "description": optional_honest_narrative(description, label="brand description"),
+            "is_active": True,
+        },
     )
-    db.add(row)
-    await db.flush()
+    if row is None:
+        raise HTTPException(status_code=500, detail="The server could not complete this request.")
     return row
 
 
@@ -453,31 +452,25 @@ async def deactivate_brand(db: AsyncSession, *, tenant_id: str, brand_id: str) -
 async def list_units(
     db: AsyncSession, tenant_id: str, *, is_active: bool | None = None
 ) -> list[m.UnitOfMeasure]:
-    stmt = (
-        select(m.UnitOfMeasure)
-        .where(m.UnitOfMeasure.tenant_id == tenant_id)
-        .order_by(m.UnitOfMeasure.code)
-    )
+    extra = ""
+    params: dict = {}
     if is_active is not None:
-        stmt = stmt.where(m.UnitOfMeasure.is_active.is_(bool(is_active)))
-    return list((await db.execute(stmt)).scalars().all())
+        extra = "is_active = :ia"
+        params["ia"] = bool(is_active)
+    return await schema_compat.list_mapped(
+        db, m.UnitOfMeasure, tenant_id=tenant_id, extra=extra, extra_params=params, order_by="code"
+    )
 
 
 async def serialize_units(db: AsyncSession, tenant_id: str, rows: list[m.UnitOfMeasure]) -> list[dict]:
     base_ids = {r.base_unit_id for r in rows if r.base_unit_id}
     bases: dict[str, m.UnitOfMeasure] = {}
     if base_ids:
-        bases = {
-            u.id: u
-            for u in (
-                await db.execute(
-                    select(m.UnitOfMeasure).where(
-                        m.UnitOfMeasure.tenant_id == tenant_id,
-                        m.UnitOfMeasure.id.in_(base_ids),
-                    )
-                )
-            ).scalars().all()
-        }
+        bases = {}
+        for bid in base_ids:
+            unit = await schema_compat.get_mapped(db, m.UnitOfMeasure, bid)
+            if unit and unit.tenant_id == tenant_id:
+                bases[unit.id] = unit
     return [serialize_unit(r, base=bases.get(r.base_unit_id)) for r in rows]
 
 
@@ -497,15 +490,7 @@ async def create_unit(
         (code or "").strip().upper(), label="unit code", max_length=20
     )
     name = require_honest_narrative(name, label="unit name", max_length=80)
-    dup = (
-        await db.execute(
-            select(m.UnitOfMeasure).where(
-                m.UnitOfMeasure.tenant_id == tenant_id,
-                m.UnitOfMeasure.code == code,
-            )
-        )
-    ).scalar_one_or_none()
-    if dup:
+    if code in await schema_compat.existing_codes(db, "units_of_measure", tenant_id):
         raise HTTPException(status_code=409, detail="Unit code exists")
     base_id, ratio = await validate_unit_base(
         db,
@@ -514,16 +499,21 @@ async def create_unit(
         base_unit_id=base_unit_id,
         conversion_ratio=conversion_ratio,
     )
-    row = m.UnitOfMeasure(
-        tenant_id=tenant_id,
-        code=code,
-        name=name,
-        base_unit_id=base_id,
-        conversion_ratio=ratio,
-        is_active=True,
+    row = await schema_compat.insert_and_get(
+        db,
+        m.UnitOfMeasure,
+        {
+            "tenant_id": tenant_id,
+            "code": code,
+            "name": name,
+            "base_unit_id": base_id,
+            "conversion_ratio": ratio,
+            "conversion_factor": ratio,
+            "is_active": True,
+        },
     )
-    db.add(row)
-    await db.flush()
+    if row is None:
+        raise HTTPException(status_code=500, detail="The server could not complete this request.")
     return row
 
 

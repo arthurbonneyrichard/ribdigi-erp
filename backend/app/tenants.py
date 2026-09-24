@@ -6,10 +6,12 @@ from datetime import datetime, timedelta
 
 from fastapi import HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app import packages as packages_svc
+from app import schema_compat
 from app.config import settings
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
@@ -405,21 +407,35 @@ async def clear_module_override(db: AsyncSession, tenant: m.Tenant) -> m.Tenant:
 
 
 async def get_tenant(db: AsyncSession, tenant_id: str) -> m.Tenant:
-    tenant = await db.get(m.Tenant, tenant_id)
+    try:
+        tenant = await db.get(m.Tenant, tenant_id)
+        if tenant:
+            return tenant
+    except SQLAlchemyError:
+        await db.rollback()
+    tenant = await schema_compat.get_mapped(db, m.Tenant, tenant_id)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
     return tenant
 
 
 async def resolve_tenant(db: AsyncSession, tenant_ref: str) -> m.Tenant:
-    tenant = (
-        await db.execute(
-            select(m.Tenant).where((m.Tenant.id == tenant_ref) | (m.Tenant.slug == tenant_ref))
-        )
-    ).scalar_one_or_none()
-    if not tenant:
+    try:
+        tenant = (
+            await db.execute(
+                select(m.Tenant).where((m.Tenant.id == tenant_ref) | (m.Tenant.slug == tenant_ref))
+            )
+        ).scalar_one_or_none()
+        if tenant:
+            return tenant
+    except SQLAlchemyError:
+        await db.rollback()
+    rows = await schema_compat.fetch_live_dicts(
+        db, "tenants", "id = :ref OR slug = :ref", {"ref": tenant_ref}
+    )
+    if not rows:
         raise HTTPException(status_code=404, detail="Tenant not found")
-    return tenant
+    return await schema_compat.attach_mapped(db, m.Tenant, rows[0])
 
 
 def assert_tenant_active_for_login(tenant: m.Tenant) -> None:
