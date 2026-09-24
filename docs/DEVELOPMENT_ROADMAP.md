@@ -610,7 +610,7 @@ Establish the technical foundation of the platform: multi-tenant architecture, a
 - [ ] Database migration system (Alembic) tested across multiple tenant schemas
 - [ ] API documentation (OpenAPI/Swagger) auto-generated
 
-### 2.8 AI/Cursor Implementation Prompt
+### 2.8 AI Implementation Prompt
 
 ```
 Implement Phase 1 of RIBDIGI ERP MVP:
@@ -738,14 +738,14 @@ Build the complete inventory management and purchasing system. This includes pro
 
 - [ ] Complete product catalog with variants, images, barcodes
 - [ ] Real-time stock tracking across multiple warehouses
-- [ ] Full purchasing workflow: Request → PO → GRN → Invoice → Return
+- [x] Full purchasing workflow: Request → PO → GRN → Invoice → Return
 - [ ] Low stock alert system with configurable thresholds
 - [ ] Stock movement audit trail (who, what, when, why)
 - [ ] Physical stock count module with variance reporting
 - [ ] Supplier balance tracking with aging report
-- [ ] CSV bulk import for products and stock
+- [x] CSV bulk import for products and stock
 
-### 3.8 AI/Cursor Implementation Prompt
+### 3.8 AI Implementation Prompt
 
 ```
 Implement Phase 2 of RIBDIGI ERP MVP — Inventory & Supply Chain:
@@ -898,7 +898,7 @@ Build the revenue-generating side of the platform: customer management, sales pi
 - [ ] Customer & supplier credit management with aging reports
 - [ ] Recurring expense automation (Celery beat)
 
-### 4.8 AI/Cursor Implementation Prompt
+### 4.8 AI Implementation Prompt
 
 ```
 Implement Phase 3 of RIBDIGI ERP MVP — Sales, POS & Financials:
@@ -1010,23 +1010,18 @@ Add advanced capabilities that differentiate RIBDIGI from basic ERPs: AI-driven 
 | `/ai/chat/history` | GET | Chat history |
 | `/ai/insights` | GET | Dashboard insights (Stage 20 I1) |
 | `/ai/inventory/predictions` | GET | Inventory predictions |
-| `/ai/inventory/demand-forecast` | GET | Demand 7/30/90 + reorder (Stage 20 V1) |
-| `/ai/inventory/dead-stock` | GET | Dead stock (Stage 20 V1) |
-| `/ai/inventory/low-stock-prediction` | GET | Low stock prediction (Stage 20 L1) |
-| `/ai/sales/analysis` | GET | Sales analysis (Stage 20 S1) |
-| `/ai/expenses/analysis` | GET | Expense analysis (BR-21.6 / Stage 10) |
-| `/ai/reports/generate` | POST | AI report generation (+ `?export=true`) (Stage 20 R1) |
-| `/ai/reports/templates` | GET/POST | Saved NL report templates (Stage 20 R1) |
-| `/ai/documents/analyze` | POST | Document OCR analysis (BR-21.8 / Stage 10) |
-| `/ai/customer/assist` | POST | Customer AI assistant (Stage 20 U1) |
-| `/ai/customers/insights` | GET | Churn / best / promos (Stage 20 U1) |
-| `/ai/security/alerts` | GET | AI security alerts (Stage 20 U1) |
-
-Stage 20 D1 fidelity: `docs/STAGE_20_FIDELITY.md`.
+| `/ai/inventory/low-stock-prediction` | GET | Low stock prediction |
+| `/ai/inventory/low-stock-prediction/requests` | POST | Draft PRs from predictions (AI UI) |
+| `/ai/sales/analysis` | GET | Sales analysis |
+| `/ai/expenses/analysis` | GET | Expense analysis |
+| `/ai/reports/generate` | POST | AI report generation |
+| `/ai/documents/analyze` | POST | Document OCR analysis |
+| `/ai/customer/assist` | POST | Customer AI assistant |
+| `/ai/security/alerts` | GET | AI security alerts |
 
 ### 5.5 UI Requirements
 
-- **Multi-Store Dashboard:** Store selector dropdown (global context switch). Per-store inventory and sales views. Transfer request form with source/destination store pickers.
+- **Multi-Store Dashboard:** Store selector dropdown (global context switch) — **Done (MVP):** Shell `StoreSwitcher` + `storeContext` persisted per tenant; seeds POS / Sales / Reports / Tax / Expenses. Per-store inventory and sales views. Transfer request form with source/destination store pickers.
 - **Reports Center:** Sidebar with report categories. Date range picker with presets (Today, This Week, This Month, Last Month, Custom). Tables with sortable columns, export to PDF/Excel. Charts (line for trends, pie for breakdowns).
 - **Notification Center:** Bell icon with unread badge. Dropdown panel with notification list, mark-all-read. Settings page with per-type channel toggles (Dashboard/Email/SMS).
 - **AI Chat Assistant:** Floating chat widget (bottom-right) or dedicated page. Natural language input, suggested prompts, response with data cards and "View Details" links. Conversation history.
@@ -1060,7 +1055,7 @@ Stage 20 D1 fidelity: `docs/STAGE_20_FIDELITY.md`.
 - [ ] Materialized views for fast report loading
 - [ ] Global store context switcher in UI header
 
-### 5.8 AI/Cursor Implementation Prompt
+### 5.8 AI Implementation Prompt
 
 ```
 Implement Phase 4 of RIBDIGI ERP MVP — Intelligence, Multi-Store & Scale:
@@ -1123,10 +1118,10 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 | 5.2 | Database Restore | Backup & Recovery | P0 |
 | 5.3 | Audit Logs (Login, Logout, Product Changes, Sales, Purchases, User Activity) | Audit Logs | P0 |
 | 5.4 | Authentication API | API | P0 |
-| 5.5 | Products API | API | P0 |
-| 5.6 | Customers API | API | P0 |
-| 5.7 | Sales API | API | P0 |
-| 5.8 | Purchases API | API | P0 |
+| 5.5 | Products API | API | P0 | Complete (MVP) — BR-18.2; `GET /inventory/products/lookup`, `GET /products/{id}/warehouse-stock` |
+| 5.6 | Customers API | API | P0 | Complete (MVP) — BR-18.3 balance/history |
+| 5.7 | Sales API | API | P0 | Complete (MVP) — BR-18.4 QT/SO/INV/payments/returns/POS |
+| 5.8 | Purchases API | API | P0 | Complete (MVP) — BR-18.5 PR/PO/GRN/PI/suppliers/payments |
 | 5.9 | Two-Factor Authentication (Optional) | Authentication & Security | P1 |
 | 5.10 | Email Verification | Authentication & Security | P0 |
 | 5.11 | Password Reset | Authentication & Security | P0 |
@@ -1171,7 +1166,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 - **Security Settings:** 2FA setup wizard (QR code display, verification code input). Active sessions list with "Revoke" buttons per device. Password policy configuration.
 - **API Keys:** Generate/revoke API keys for third-party integrations. Usage statistics (requests, last used) — **COMPLETE (Stage 7 K2).**
 - **Performance Dashboard:** Admin-only page showing query slow log, cache hit rates, average response times, error rates.
-- **Onboarding Checklist:** New tenant sees progress checklist (Setup company → Add products → Create supplier → Make first sale) with skip/complete actions. **COMPLETE (Stage 6 N2):** `GET /onboarding/checklist` + Shell banner; dismissible at ≥80%.
+- **Onboarding Checklist:** New tenant sees progress checklist (Setup company → Add products → Create supplier → Stock → Make first sale) with skip/complete/dismiss/restore; Shell banner Complete (MVP).
 
 ### 6.6 Testing Requirements
 
@@ -1191,7 +1186,8 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 - [ ] Point-in-time database restore capability
 - [ ] Immutable audit log for all sensitive operations
 - [ ] Complete REST API for external integrations (Products, Customers, Sales, Purchases)
-- [ ] Webhook system with signature verification
+- [x] Webhook system with signature verification
+  - Complete (MVP): HMAC `X-Ribdigi-Signature`; Integrations deliveries/retry; verify samples in API docs §17.4
 - [ ] Two-factor authentication (TOTP)
 - [ ] Email verification and password reset flows
 - [ ] Session management with revoke capability
@@ -1202,7 +1198,7 @@ Harden the platform for production readiness: implement backup/recovery, audit l
 - [ ] Complete documentation set: API docs, User Manual, Admin Manual, Security Guide
 - [x] Launch checklist documented (Stage 7 L7x — `docs/LAUNCH_CHECKLIST.md`); operator environment sign-off remains ops
 
-### 6.8 AI/Cursor Implementation Prompt
+### 6.8 AI Implementation Prompt
 
 ```
 Implement Phase 5 of RIBDIGI ERP MVP — Polish, Security & Launch:
@@ -1220,8 +1216,8 @@ FRONTEND (Next.js):
 1. Backup page: admin-only. Table of backups with download/restore buttons. Schedule config form (cron expression picker). Restore confirmation with "Type RESTORE to confirm" safety.
 2. Audit log viewer: filter sidebar (date range, user dropdown, event type checkboxes). Table with expandable rows showing old/new value diff (green for added, red for removed).
 3. Security settings: 2FA setup modal with QR code and 6-digit input. Active sessions table showing device, IP, location, last active, revoke button.
-4. API Keys: generate button, copy-to-clipboard, revoke button. Usage chart (requests per day). **COMPLETE (Stage 7 K2).**
-5. Onboarding checklist: persistent banner for new tenants. 5 steps with progress bar. Each step links to relevant page. Dismissible after 80% complete.
+4. API Keys: generate button, copy-to-clipboard, revoke button. Usage chart (requests per day).
+5. Onboarding checklist: persistent banner for new tenants. 5 steps with progress bar. Each step links to relevant page. Dismissible after 80% complete. **Done (MVP):** `OnboardingChecklist` in Shell + API skip/dismiss/restore.
 
 DEVOPS:
 1. Production Kubernetes deployment: Helm charts with values-production.yaml. Ingress with TLS 1.3. Cert-manager for Let's Encrypt. HPA for backend (5-20 pods), frontend (3-10 pods), Celery (3-15 pods).

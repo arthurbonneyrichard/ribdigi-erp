@@ -7,6 +7,39 @@ from copy import deepcopy
 
 ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
     "super_admin": {"*": ["*"]},
+    # Software-owner / RIBDIGI platform staff (home tenant = platform workspace)
+    "platform_owner": {"*": ["*"]},
+    "platform_admin": {
+        "platform": ["read", "write"],
+        "platform_tenants": ["read", "write"],
+        "platform_packages": ["read", "write"],
+        "platform_staff": ["read", "write"],
+        "platform_reports": ["read"],
+        "users": ["read", "write"],
+        "notifications": ["read", "write"],
+        "audit": ["read"],
+        "security": ["read", "write"],
+    },
+    "platform_support": {
+        "platform": ["read"],
+        "platform_tenants": ["read", "write"],
+        "platform_packages": ["read"],
+        "platform_reports": ["read"],
+        "users": ["read"],
+        "notifications": ["read"],
+        "audit": ["read"],
+        "security": ["read", "write"],
+    },
+    "platform_finance": {
+        "platform": ["read"],
+        "platform_tenants": ["read"],
+        "platform_packages": ["read", "write"],
+        "platform_reports": ["read"],
+        "users": ["read"],
+        "notifications": ["read"],
+        "audit": ["read"],
+        "security": ["read", "write"],
+    },
     "company_admin": {"*": ["*"]},
     # ADR-490 — tenant workspace administrators (no automatic company ops without membership+context)
     "tenant_owner": {
@@ -55,19 +88,21 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "inventory": ["read", "write"],
         "sales": ["read", "write"],
         "pos": ["read", "write"],
-        "purchasing": ["read", "write", "approve"],
+        "purchasing": ["read", "approve"],
         "expenses": ["read", "write", "approve"],
         "accounting": ["read"],
         "credit": ["read", "write", "approve"],
         "tax": ["read"],
         "stores": ["read", "write"],
+        "hotel": ["read", "write"],
+        "fmcg": ["read", "write"],
         "reports": ["read"],
         "notifications": ["read", "write"],
         "users": ["read"],
         "audit": ["read"],
         "ai": ["read", "write"],
-        "business_insights": ["read", "write"],
         "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
     },
     "sales_officer": {
         "dashboard": ["read"],
@@ -76,11 +111,13 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "pos": ["read", "write"],
         "credit": ["read", "write"],
         "customers": ["read", "write"],
+        "hotel": ["read", "write"],
+        "fmcg": ["read", "write"],
         "reports": ["read"],
         "notifications": ["read", "write"],
         "ai": ["read"],
-        "business_insights": ["read"],
         "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
     },
     "inventory_officer": {
         "dashboard": ["read"],
@@ -90,8 +127,8 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "reports": ["read"],
         "notifications": ["read", "write"],
         "ai": ["read"],
-        "business_insights": ["read"],
         "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
     },
     "accountant": {
         "dashboard": ["read"],
@@ -108,6 +145,7 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "business_insights": ["read", "write"],
         "audit": ["read"],
         "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
     },
     "cashier": {
         "dashboard": ["read"],
@@ -116,16 +154,17 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "sales": ["read"],
         "notifications": ["read", "write"],
         "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
     },
 }
 
 ROLE_LABELS: dict[str, str] = {
     "super_admin": "Super Admin",
-    "company_admin": "Tenant Admin",
-    "tenant_owner": "Tenant Owner",
-    "tenant_admin": "Tenant Administrator",
-    "platform_super_admin": "Platform Super Admin",
+    "platform_owner": "Platform Owner",
     "platform_admin": "Platform Admin",
+    "platform_support": "Platform Support",
+    "platform_finance": "Platform Finance",
+    "company_admin": "Company Admin",
     "store_manager": "Store Manager",
     "sales_officer": "Sales Officer",
     "inventory_officer": "Inventory Officer",
@@ -133,23 +172,27 @@ ROLE_LABELS: dict[str, str] = {
     "cashier": "Cashier",
 }
 
-# Stage 85 L1 — org-chart display names (slug unchanged; Manager ≡ store_manager)
-ROLE_ORG_CHART_LABELS: dict[str, str] = {
-    "company_admin": "Tenant Admin",
-    "store_manager": "Manager",
-    "cashier": "Cashier",
-    "accountant": "Accountant",
-    "inventory_officer": "Inventory Officer",
-    "sales_officer": "Sales Officer",
-    "super_admin": "Super Admin",
-}
+PLATFORM_ROLES = frozenset(
+    {
+        "super_admin",
+        "platform_owner",
+        "platform_admin",
+        "platform_support",
+        "platform_finance",
+    }
+)
+
+PLATFORM_OWNER_ROLES = frozenset({"super_admin", "platform_owner"})
 
 # Frontend nav href → required module (read). Used for menu filtering.
-# Stage 95 N1 — Settings alias (/company) + Stores (/stores); deep-link query/hash
-# paths resolve via pathname (Shell also allows sales|customers / purchasing|suppliers).
+# Platform owner (super_admin) UI only surfaces /platform + a small ops set;
+# tenant roles use the business modules below (see frontend Shell ROLE_NAV_MODULES).
 MENU_MODULE_BY_PATH: dict[str, str] = {
+    "/platform": "platform",
+    "/platform/staff": "platform_staff",
+    "/platform/reports": "platform_reports",
     "/dashboard": "dashboard",
-    "/company": "company",  # Settings (MVP Navigation alias)
+    "/company": "company",
     "/inventory": "inventory",
     "/sales": "sales",
     "/pos": "pos",
@@ -158,28 +201,28 @@ MENU_MODULE_BY_PATH: dict[str, str] = {
     "/accounting": "accounting",
     "/credit": "credit",
     "/tax": "tax",
-    "/stores": "stores",  # Stores + Warehouse discoverability
+    "/stores": "stores",
+    "/hotel": "hotel",
+    "/fmcg": "fmcg",
     "/reports": "reports",
     "/notifications": "notifications",
     "/audit": "audit",
-    "/activity": "audit",
     "/backup": "backup",
+    "/jobs": "company",
+    "/integrations": "company",
     "/security": "security",
     "/ai": "ai",
-    "/business-insights": "business_insights",
     "/users": "users",
-    "/admin/roles": "users",
-    "/admin/permissions": "users",
+    "/departments": "users",
 }
 
 VALID_ROLES = set(ROLE_PERMISSIONS.keys())
 SYSTEM_ROLES = frozenset(VALID_ROLES)
 
-# Modules that custom roles may grant (no tenant/backup/users wildcards by default list).
+# Modules that may appear on API keys / custom role permission maps.
 SYSTEM_MODULES = frozenset(
     {
         "dashboard",
-        "company",
         "inventory",
         "sales",
         "pos",
@@ -189,103 +232,50 @@ SYSTEM_MODULES = frozenset(
         "credit",
         "tax",
         "stores",
+        "hotel",
+        "fmcg",
         "reports",
         "notifications",
         "audit",
         "backup",
         "ai",
-        "business_insights",
-        "security",
         "users",
+        "staff_guide",
+        "security",
+        "company",
         "customers",
         "suppliers",
-        "platform_dashboard",
+        "platform",
         "platform_tenants",
-        "platform_users",
-        "platform_plans",
-        "platform_billing",
-        "platform_audit",
-        "platform_health",
-        "platform_settings",
+        "platform_packages",
+        "platform_staff",
+        "platform_reports",
     }
 )
-ALLOWED_ACTIONS = frozenset({"read", "write", "approve", "*"})
-_MODULE_KEY_RE = re.compile(r"^[a-z][a-z0-9_]{0,39}$")
-# Stage 84 A1 — common dotted/colon aliases → canonical actions
-_ACTION_ALIASES = {
-    "view": "read",
-    "edit": "write",
-    "update": "write",
-    "create": "write",
-    "delete": "write",
-}
+ALLOWED_ACTIONS = frozenset({"read", "write", "create", "download", "approve", "*"})
 
 
-def canonicalize_action(action: str) -> str:
-    """Map aliased actions (e.g. view→read) to ALLOWED_ACTIONS names."""
-    a = str(action or "").strip().lower()
-    return _ACTION_ALIASES.get(a, a)
+def is_system_role(role: str | None) -> bool:
+    return (role or "") in SYSTEM_ROLES
 
 
-def _split_permission_key(key: str) -> tuple[str, list[str] | None]:
-    """Parse module-only or dotted/colon keys.
-
-    Returns ``(module, None)`` for plain modules, or
-    ``(module, [action])`` for ``inventory.view`` / ``inventory:read``.
-    """
-    key = str(key or "").strip().lower()
-    if not key:
-        return "", None
-    if ":" in key:
-        module, _, action = key.partition(":")
-        module, action = module.strip(), action.strip()
-        if module and action and "." not in module:
-            return module, [canonicalize_action(action)]
-    if "." in key:
-        module, _, action = key.partition(".")
-        module, action = module.strip(), action.strip()
-        # Only treat as module.action when the right side looks like an action alias
-        if module and action and (
-            action in ALLOWED_ACTIONS or action in _ACTION_ALIASES
-        ):
-            return module, [canonicalize_action(action)]
-    return key, None
+def is_platform_role(role: str | None) -> bool:
+    return (role or "") in PLATFORM_ROLES
 
 
-def expand_permission_aliases(raw: dict | None) -> dict[str, list[str]]:
-    """Best-effort expand dotted/colon keys and action aliases for runtime checks.
+def is_platform_owner_role(role: str | None) -> bool:
+    return (role or "") in PLATFORM_OWNER_ROLES
 
-    Never raises — invalid entries are skipped.
-    """
-    if not isinstance(raw, dict):
-        return {}
-    out: dict[str, list[str]] = {}
 
-    def _add(module: str, actions: list[str]) -> None:
-        if not module:
-            return
-        bucket = out.setdefault(module, [])
-        for act in actions:
-            if act and act not in bucket:
-                bucket.append(act)
-
-    for key, actions in raw.items():
-        module, dotted = _split_permission_key(str(key or ""))
-        if not module or module == RECORD_SCOPE_KEY:
-            continue
-        if dotted is not None:
-            _add(module, dotted)
-        if isinstance(actions, str):
-            action_list = [canonicalize_action(actions)]
-        elif isinstance(actions, list):
-            action_list = [canonicalize_action(a) for a in actions if str(a).strip()]
-        elif actions in (True, 1, "1"):
-            action_list = ["read"] if dotted is None else []
-        else:
-            action_list = []
-        if action_list:
-            _add(module, action_list)
-    return out
+def can_assign_platform_role(actor_role: str, target_role: str) -> bool:
+    """Only platform owners can mint owners; admins can mint admin/support/finance."""
+    if target_role not in PLATFORM_ROLES:
+        return False
+    if target_role in PLATFORM_OWNER_ROLES:
+        return is_platform_owner_role(actor_role)
+    if target_role == "platform_admin":
+        return is_platform_owner_role(actor_role) or actor_role == "platform_admin"
+    return actor_role in {"super_admin", "platform_owner", "platform_admin"}
 
 
 # Record-level scope (BR-3.3). department/branch use peer users in the same org unit.
@@ -295,11 +285,11 @@ RECORD_SCOPE_KEY = "_record_scope"
 # Default record visibility by role. Approver/admin roles use `all`.
 ROLE_RECORD_SCOPE: dict[str, str] = {
     "super_admin": "all",
-    "company_admin": "all",
-    "tenant_owner": "all",
-    "tenant_admin": "all",
-    "platform_super_admin": "all",
+    "platform_owner": "all",
     "platform_admin": "all",
+    "platform_support": "all",
+    "platform_finance": "all",
+    "company_admin": "all",
     "store_manager": "all",
     "accountant": "all",
     "inventory_officer": "all",
@@ -483,25 +473,129 @@ def serialize_user(user) -> dict:
     }
 
 
+def normalize_record_scope(value: str | None, *, default: str = "all") -> str:
+    """Normalize record scope (BR-3.3).
+
+    Defense in depth: User*/CustomRole* schema Literals already reject blank/unknown
+    with 422. Blank used to become silent default ``all`` (most permissive).
+    """
+    scope = (value or default).strip().lower()
+    if scope not in RECORD_SCOPES:
+        raise ValueError(f"record_scope must be one of {sorted(RECORD_SCOPES)}")
+    return scope
+
+
+def record_scope_for_role(role: str) -> str:
+    return ROLE_RECORD_SCOPE.get(role, "own")
+
+
+def record_scope_from_permissions(role: str, permissions: dict | None) -> str:
+    """Resolve effective record scope: user override wins, else role default."""
+    if isinstance(permissions, dict) and RECORD_SCOPE_KEY in permissions:
+        raw = permissions.get(RECORD_SCOPE_KEY)
+        if isinstance(raw, list) and raw:
+            raw = raw[0]
+        try:
+            return normalize_record_scope(str(raw) if raw is not None else None)
+        except ValueError:
+            pass
+    return record_scope_for_role(role)
+
+
+def record_scope_for_claims(claims: dict) -> str:
+    role = claims.get("role") or "cashier"
+    perms = claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
+    return record_scope_from_permissions(role, perms)
+
+
+def assert_record_access(claims: dict, created_by: str | None) -> None:
+    """Enforce record scope on a single record. Raises 404 to avoid IDOR enumeration."""
+    from fastapi import HTTPException
+
+    scope_ids = claims.get("scope_user_ids")
+    if scope_ids is None and record_scope_for_claims(claims) == "all":
+        return
+    if scope_ids is None:
+        # Backward compatible: treat missing peer list as own-scope.
+        if created_by and created_by == claims.get("sub"):
+            return
+        raise HTTPException(status_code=404, detail="Record not found")
+    if created_by and created_by in scope_ids:
+        return
+    raise HTTPException(status_code=404, detail="Record not found")
+
+
+def apply_created_by_scope(stmt, model, claims: dict):
+    """Restrict a SQLAlchemy select to rows created by users in the claim scope."""
+    scope_ids = claims.get("scope_user_ids")
+    if scope_ids is None:
+        if record_scope_for_claims(claims) == "all":
+            return stmt
+        return stmt.where(model.created_by == claims.get("sub"))
+    return stmt.where(model.created_by.in_(list(scope_ids)))
+
+
+def list_role_catalog() -> list[dict]:
+    """System roles with permission maps for admin UI."""
+    rows = []
+    for role in sorted(ROLE_PERMISSIONS.keys()):
+        rows.append(
+            {
+                "role": role,
+                "label": ROLE_LABELS.get(role, role),
+                "permissions": permissions_for_role(role),
+                "record_scope": record_scope_for_role(role),
+                "system": True,
+            }
+        )
+    return rows
+
+
+def serialize_user(user) -> dict:
+    """Safe user payload — never include password hashes or TOTP secrets."""
+    perms = user.permissions or permissions_for_role(user.role)
+    return {
+        "id": user.id,
+        "tenant_id": user.tenant_id,
+        "email": user.email,
+        "full_name": user.full_name,
+        "phone": user.phone,
+        "role": user.role,
+        "branch_id": getattr(user, "branch_id", None),
+        "department_id": getattr(user, "department_id", None),
+        "is_active": bool(user.is_active),
+        "email_verified": bool(user.email_verified),
+        "permissions": perms,
+        "record_scope": record_scope_from_permissions(user.role, perms if isinstance(perms, dict) else None),
+        "totp_enabled": bool(getattr(user, "totp_enabled", False)),
+        "created_at": user.created_at,
+    }
+
+
+def strip_meta_permissions(permissions: dict | None) -> dict:
+    if not isinstance(permissions, dict):
+        return {}
+    return {k: v for k, v in permissions.items() if k != RECORD_SCOPE_KEY and isinstance(v, list)}
+
+
 def has_permission(
     role: str,
     module: str,
     action: str,
     overrides: dict | None = None,
 ) -> bool:
-    """Check module/action permission.
+    """Check module/action permission. Role catalog is base; user overrides win.
 
-    When ``overrides`` is provided (typically ``user.permissions``), it is the
-    authoritative map so custom roles cannot inherit cashier defaults by mistake.
+    Custom (non-system) roles use overrides as the full permission map — never merge
+    onto a system default, or denied modules would leak from cashier defaults.
     """
-    action = canonicalize_action(action)
-    if overrides is not None:
-        # Stage 84 A1 — expand dotted/colon aliases before check
-        perms = expand_permission_aliases(dict(overrides))
-        if not perms:
-            perms = {k: v for k, v in dict(overrides).items() if k != RECORD_SCOPE_KEY}
+    clean_overrides = strip_meta_permissions(overrides)
+    if not is_system_role(role):
+        perms = clean_overrides
     else:
         perms = permissions_for_role(role)
+        if clean_overrides:
+            perms = {**perms, **clean_overrides}
 
     if perms.get("*") == ["*"] or "*" in (perms.get("*") or []):
         return True
@@ -513,6 +607,15 @@ def has_permission(
         module_perms = [canonicalize_action(a) for a in (module_perms or [])]
     if "*" in module_perms or action in module_perms:
         return True
-    if action == "read" and "write" in module_perms:
+    if action == "read" and ("write" in module_perms or "create" in module_perms):
+        return True
+    if action == "download" and (
+        "download" in module_perms or "read" in module_perms or "write" in module_perms
+    ):
+        return True
+    # User Management create/edit uses users:write; accept users:create as the same grant.
+    if action in {"write", "create"} and (
+        "write" in module_perms or "create" in module_perms
+    ):
         return True
     return False

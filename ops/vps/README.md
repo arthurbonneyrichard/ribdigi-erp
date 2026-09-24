@@ -46,7 +46,7 @@ PostgreSQL data: Docker volume `postgres_data`.
 | `docker-compose.prod.yml` | Production Compose stack |
 | `backend/.dockerignore` | Slimmer backend image |
 | `frontend/.dockerignore` | Slimmer frontend image |
-| `backend/scripts/bootstrap_platform_admin.py (on main)` | Initial Platform Owner bootstrap |
+| `backend/scripts/create_platform_owner.py` | Initial Platform Owner bootstrap |
 | `ops/vps/env.production.example` | Production `.env` template |
 | `ops/vps/Caddyfile` | TLS reverse proxy config |
 | `ops/vps/backup-postgres.sh` | `pg_dump` → gzip on host |
@@ -105,8 +105,10 @@ nano ops/vps/Caddyfile   # replace erp.example.com + Let's Encrypt email
 
 # Generate secrets
 openssl rand -hex 32   # JWT_SECRET_KEY
-openssl rand -hex 32   # BACKUP_ENCRYPTION_KEY
-openssl rand -hex 32   # TOTP_ENCRYPTION_KEY
+# Fernet keys (preferred) — paste the full printed string, including trailing =
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"  # BACKUP_ENCRYPTION_KEY
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"  # TOTP_ENCRYPTION_KEY
+# Also accepted: openssl rand -hex 32 for BACKUP_ENCRYPTION_KEY / TOTP_ENCRYPTION_KEY
 openssl rand -hex 16   # POSTGRES_PASSWORD / RABBITMQ / MINIO
 
 # 6) Build & start
@@ -120,8 +122,8 @@ docker compose -f docker-compose.prod.yml ps
 | Variable | Notes |
 |----------|--------|
 | `JWT_SECRET_KEY` | ≥32 chars, random |
-| `BACKUP_ENCRYPTION_KEY` | random; required for `.ribbak` crypto |
-| `TOTP_ENCRYPTION_KEY` | random |
+| `BACKUP_ENCRYPTION_KEY` | Fernet key or 64-char hex; required for `.ribbak` crypto |
+| `TOTP_ENCRYPTION_KEY` | Fernet key or 64-char hex (not a REPLACE_ME placeholder) |
 | `POSTGRES_PASSWORD` | strong; must match `DATABASE_URL` |
 | `DATABASE_URL` | `postgresql+asyncpg://…@postgres:5432/…` |
 | `RABBITMQ_DEFAULT_PASS` | strong; must match `RABBITMQ_URL` / `CELERY_BROKER_URL` |
@@ -147,19 +149,20 @@ docker compose -f docker-compose.prod.yml run --rm migrate
 docker compose -f docker-compose.prod.yml run --rm backend python -m alembic upgrade head
 ```
 
-### F. Platform Admin creation command
+### F. Platform Owner creation command
 
 ```bash
-docker compose -f docker-compose.dokploy.yml exec \
-  -e PLATFORM_ADMIN_EMAIL='owner@ribdigihouse.com' \
-  -e PLATFORM_ADMIN_PASSWORD='YourStrongPass1!' \
-  -e PLATFORM_ADMIN_FULL_NAME='Platform Super Admin' \
-  -e PLATFORM_ADMIN_ROLE=platform_super_admin \
-  backend python scripts/bootstrap_platform_admin.py
+docker compose -f docker-compose.prod.yml exec \
+  -e ALLOW_PLATFORM_OWNER_BOOTSTRAP=true \
+  -e PLATFORM_OWNER_EMAIL='owner@yourdomain.com' \
+  -e PLATFORM_OWNER_PASSWORD='YourStrongPass1!' \
+  -e PLATFORM_OWNER_FULL_NAME='Platform Owner' \
+  -e PLATFORM_TENANT_SLUG='platform' \
+  backend python scripts/create_platform_owner.py
 ```
 
 Password rules: ≥8 chars with upper, lower, number, and symbol.  
-Do not leave `PLATFORM_ADMIN_PASSWORD` in long-lived env after bootstrap.
+Unset/never leave `ALLOW_PLATFORM_OWNER_BOOTSTRAP=true` in `.env`. Change the password after first login.
 
 ### G. Docker deployment command
 
@@ -230,7 +233,7 @@ Tenant-level encrypted `.ribbak` backups remain available in-app (`docs/DR_LOGIC
 - [ ] Compose publishes only Caddy `80`/`443` (verify: `docker compose -f docker-compose.prod.yml ps`)
 - [ ] TLS works (`https://` and HSTS header present)
 - [ ] `/docs` and `/openapi.json` disabled (production FastAPI settings)
-- [ ] Platform admin created once; PLATFORM_ADMIN_PASSWORD not left in env
+- [ ] Platform Owner created once; bootstrap flag not left enabled
 - [ ] `EMAIL_ENABLED`/`SMS_ENABLED`/`AI_ENABLED` only when credentials are real
 - [ ] `LOGIN_2FA_ENABLED=true` for production
 - [ ] Off-box copy of Postgres dumps tested with restore drill

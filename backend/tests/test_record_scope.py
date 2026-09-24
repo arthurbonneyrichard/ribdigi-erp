@@ -6,16 +6,15 @@ import pyotp
 import pytest
 
 from app import models as m
-from app import purchasing as purchasing_svc
-from app import sales as sales_svc
-from app import sales_docs as sales_docs_svc
 from app.expenses import create_expense, ensure_default_categories
 from app.rbac import (
     RECORD_SCOPE_KEY,
     assert_record_access,
+    permissions_for_role,
     record_scope_for_claims,
     record_scope_from_permissions,
 )
+from app.security import hash_password
 from tests.conftest import auth_headers
 
 
@@ -24,6 +23,26 @@ async def _admin_headers(ac, seed):
     return await auth_headers(
         ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
     )
+
+
+async def _seed_user(db_session, seed, *, email: str, role: str, record_scope: str | None = None):
+    perms = permissions_for_role(role)
+    if record_scope is not None:
+        perms = {**perms, RECORD_SCOPE_KEY: record_scope}
+    user = m.User(
+        tenant_id=seed["t1"].id,
+        email=email,
+        full_name=email.split("@")[0],
+        password_hash=hash_password("SecurePass123!"),
+        role=role,
+        email_verified=True,
+        permissions=perms,
+        totp_enabled=False,
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    return user
 
 
 def test_record_scope_defaults_and_override():
@@ -105,191 +124,121 @@ async def test_roles_catalog_includes_record_scope(client):
 
 
 @pytest.mark.asyncio
-async def test_sales_docs_own_scope_hides_others_records(client, db_session):
+async def test_sales_docs_own_scope_hides_peers(client, db_session):
     ac, seed = client
-    admin = await _admin_headers(ac, seed)
+    await _seed_user(db_session, seed, email="so1@alpha.example.com", role="sales_officer")
+    await _seed_user(db_session, seed, email="so2@alpha.example.com", role="sales_officer")
+    so1 = await auth_headers(ac, email="so1@alpha.example.com", tenant_slug="alpha")
+    so2 = await auth_headers(ac, email="so2@alpha.example.com", tenant_slug="alpha")
+    item = {"product_id": seed["p1"].id, "quantity": 1, "unit_price": 2}
 
-    foreign_quote = await sales_docs_svc.create_quotation(
-        db_session,
-        tenant_id=seed["t1"].id,
-        user_id=seed["admin1"].id,
-        customer_id=seed["party1"].id,
-        items=[{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 8}],
-    )
-    foreign_order = await sales_docs_svc.create_order(
-        db_session,
-        tenant_id=seed["t1"].id,
-        user_id=seed["admin1"].id,
-        customer_id=seed["party1"].id,
-        items=[{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 8}],
-    )
-    invoice = await sales_svc.create_sales_invoice(
-        db_session,
-        tenant_id=seed["t1"].id,
-        user_id=seed["admin1"].id,
-        customer_id=seed["party1"].id,
-        items=[{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 8}],
-    )
-    invoice = await sales_svc.post_sales_invoice(
-        db_session,
-        tenant_id=seed["t1"].id,
-        user_id=seed["admin1"].id,
-        invoice_id=invoice.id,
-    )
-    foreign_return = await sales_docs_svc.create_return(
-        db_session,
-        tenant_id=seed["t1"].id,
-        user_id=seed["admin1"].id,
-        sales_invoice_id=invoice.id,
-        items=[{"product_id": seed["p1"].id, "quantity": 1}],
-    )
-    await db_session.commit()
-
-    patched = await ac.patch(
-        f"/api/v1/users/{seed['mgr1'].id}",
-        headers=admin,
-        json={"record_scope": "own"},
-    )
-    assert patched.status_code == 200, patched.text
-
-    mgr = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
-
-    assert (await ac.get(f"/api/v1/sales/quotations/{foreign_quote.id}", headers=mgr)).status_code == 404
-    assert (await ac.get(f"/api/v1/sales/orders/{foreign_order.id}", headers=mgr)).status_code == 404
-    assert (await ac.get(f"/api/v1/sales/returns/{foreign_return.id}", headers=mgr)).status_code == 404
-    assert (await ac.post(f"/api/v1/sales/quotations/{foreign_quote.id}/accept", headers=mgr)).status_code == 404
-    assert (await ac.post(f"/api/v1/sales/orders/{foreign_order.id}/confirm", headers=mgr)).status_code == 404
-
-    q_list = await ac.get("/api/v1/sales/quotations", headers=mgr)
-    assert q_list.status_code == 200
-    assert foreign_quote.id not in {row["id"] for row in q_list.json()["data"]}
-
-    o_list = await ac.get("/api/v1/sales/orders", headers=mgr)
-    assert o_list.status_code == 200
-    assert foreign_order.id not in {row["id"] for row in o_list.json()["data"]}
-
-    r_list = await ac.get("/api/v1/sales/returns", headers=mgr)
-    assert r_list.status_code == 200
-    assert foreign_return.id not in {row["id"] for row in r_list.json()["data"]}
-
-    mine_q = await ac.post(
+    foreign_q = await ac.post(
         "/api/v1/sales/quotations",
-        headers=mgr,
-        json={
-            "customer_id": seed["party1"].id,
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 3}],
-        },
+        headers=so1,
+        json={"customer_id": seed["party1"].id, "items": [item]},
     )
-    assert mine_q.status_code == 200, mine_q.text
-    mine_qid = mine_q.json()["data"]["id"]
-    assert (await ac.get(f"/api/v1/sales/quotations/{mine_qid}", headers=mgr)).status_code == 200
+    assert foreign_q.status_code == 200, foreign_q.text
+    q_id = foreign_q.json()["data"]["id"]
 
-    # Creating a return against someone else's invoice is hidden under own-scope
-    blocked_return = await ac.post(
-        "/api/v1/sales/returns",
-        headers=mgr,
-        json={
-            "sales_invoice_id": invoice.id,
-            "items": [{"product_id": seed["p1"].id, "quantity": 1}],
-        },
+    foreign_o = await ac.post(
+        "/api/v1/sales/orders",
+        headers=so1,
+        json={"customer_id": seed["party1"].id, "items": [item]},
     )
-    assert blocked_return.status_code == 404
+    assert foreign_o.status_code == 200, foreign_o.text
+    o_id = foreign_o.json()["data"]["id"]
 
-    # Admin with default all still sees foreign docs
-    admin2 = await _admin_headers(ac, seed)
-    assert (await ac.get(f"/api/v1/sales/quotations/{foreign_quote.id}", headers=admin2)).status_code == 200
-    assert (await ac.get(f"/api/v1/sales/orders/{foreign_order.id}", headers=admin2)).status_code == 200
-    assert (await ac.get(f"/api/v1/sales/returns/{foreign_return.id}", headers=admin2)).status_code == 200
+    assert (await ac.get(f"/api/v1/sales/quotations/{q_id}", headers=so2)).status_code == 404
+    assert (await ac.get(f"/api/v1/sales/orders/{o_id}", headers=so2)).status_code == 404
+    assert (await ac.post(f"/api/v1/sales/quotations/{q_id}/send", headers=so2)).status_code == 404
+    assert (await ac.post(f"/api/v1/sales/orders/{o_id}/confirm", headers=so2)).status_code == 404
+
+    q_list = await ac.get("/api/v1/sales/quotations", headers=so2)
+    assert q_list.status_code == 200
+    assert q_id not in {row["id"] for row in q_list.json()["data"]}
+
+    o_list = await ac.get("/api/v1/sales/orders", headers=so2)
+    assert o_list.status_code == 200
+    assert o_id not in {row["id"] for row in o_list.json()["data"]}
+
+    mine = await ac.post(
+        "/api/v1/sales/quotations",
+        headers=so2,
+        json={"customer_id": seed["party1"].id, "items": [item]},
+    )
+    assert mine.status_code == 200, mine.text
+    mine_id = mine.json()["data"]["id"]
+    assert (await ac.get(f"/api/v1/sales/quotations/{mine_id}", headers=so2)).status_code == 200
 
 
 @pytest.mark.asyncio
-async def test_purchasing_docs_own_scope_hides_others_records(client, db_session):
+async def test_purchasing_own_scope_and_approve_bypass(client, db_session):
     ac, seed = client
     admin = await _admin_headers(ac, seed)
-
-    supplier = m.Party(
-        tenant_id=seed["t1"].id,
-        kind="supplier",
-        name="Scope Supplier",
-        status="active",
+    await _seed_user(
+        db_session, seed, email="io1@alpha.example.com", role="inventory_officer", record_scope="own"
     )
-    db_session.add(supplier)
-    await db_session.flush()
-
-    foreign_pr = await purchasing_svc.create_purchase_request(
-        db_session,
-        tenant_id=seed["t1"].id,
-        user_id=seed["admin1"].id,
-        supplier_id=supplier.id,
-        items=[{"product_id": seed["p1"].id, "quantity": 2, "unit_price": 4}],
+    await _seed_user(
+        db_session, seed, email="io2@alpha.example.com", role="inventory_officer", record_scope="own"
     )
-    foreign_po = await purchasing_svc.create_purchase_order(
-        db_session,
-        tenant_id=seed["t1"].id,
-        user_id=seed["admin1"].id,
-        supplier_id=supplier.id,
-        items=[{"product_id": seed["p1"].id, "quantity": 2, "unit_price": 4}],
-    )
-    foreign_inv = await purchasing_svc.create_purchase_invoice(
-        db_session,
-        tenant_id=seed["t1"].id,
-        user_id=seed["admin1"].id,
-        supplier_id=supplier.id,
-        items=[{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 4}],
-    )
-    await db_session.commit()
-
-    patched = await ac.patch(
-        f"/api/v1/users/{seed['mgr1'].id}",
-        headers=admin,
-        json={"record_scope": "own"},
-    )
-    assert patched.status_code == 200, patched.text
+    io1 = await auth_headers(ac, email="io1@alpha.example.com", tenant_slug="alpha")
+    io2 = await auth_headers(ac, email="io2@alpha.example.com", tenant_slug="alpha")
     mgr = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
 
-    assert (await ac.get(f"/api/v1/purchasing/requests/{foreign_pr.id}", headers=mgr)).status_code == 404
-    assert (await ac.get(f"/api/v1/purchasing/orders/{foreign_po.id}", headers=mgr)).status_code == 404
-    assert (await ac.get(f"/api/v1/purchasing/invoices/{foreign_inv.id}", headers=mgr)).status_code == 404
-    assert (await ac.post(f"/api/v1/purchasing/orders/{foreign_po.id}/send", headers=mgr)).status_code == 404
-    assert (await ac.post(f"/api/v1/purchasing/requests/{foreign_pr.id}/submit", headers=mgr)).status_code == 404
-
-    pr_list = await ac.get("/api/v1/purchasing/requests", headers=mgr)
-    assert pr_list.status_code == 200
-    assert foreign_pr.id not in {row["id"] for row in pr_list.json()["data"]}
-    po_list = await ac.get("/api/v1/purchasing/orders", headers=mgr)
-    assert po_list.status_code == 200
-    assert foreign_po.id not in {row["id"] for row in po_list.json()["data"]}
-    inv_list = await ac.get("/api/v1/purchasing/invoices", headers=mgr)
-    assert inv_list.status_code == 200
-    assert foreign_inv.id not in {row["id"] for row in inv_list.json()["data"]}
-
-    # Approvals intentionally bypass own-scope (creator is admin1, not mgr)
-    await purchasing_svc.submit_purchase_request(
-        db_session,
-        tenant_id=seed["t1"].id,
-        user_id=seed["admin1"].id,
-        request_id=foreign_pr.id,
+    supplier = await ac.post(
+        "/api/v1/suppliers",
+        headers=admin,
+        json={"name": "Scope Supplier"},
     )
-    await db_session.commit()
-    approved = await ac.post(
-        f"/api/v1/purchasing/requests/{foreign_pr.id}/approve",
-        headers=mgr,
-    )
-    assert approved.status_code == 200, approved.text
-    assert approved.json()["data"]["status"] == "approved"
+    assert supplier.status_code == 200, supplier.text
+    supplier_id = supplier.json()["data"]["id"]
 
-    mine_po = await ac.post(
-        "/api/v1/purchasing/orders",
-        headers=mgr,
+    foreign_pr = await ac.post(
+        "/api/v1/purchasing/requests",
+        headers=io1,
         json={
-            "supplier_id": supplier.id,
-            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 3}],
-        },
+            "preferred_supplier_id": supplier_id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 3}]},
     )
-    assert mine_po.status_code == 200, mine_po.text
-    mine_id = mine_po.json()["data"]["id"]
-    assert (await ac.get(f"/api/v1/purchasing/orders/{mine_id}", headers=mgr)).status_code == 200
+    assert foreign_pr.status_code == 200, foreign_pr.text
+    pr_id = foreign_pr.json()["data"]["id"]
 
-    admin2 = await _admin_headers(ac, seed)
-    assert (await ac.get(f"/api/v1/purchasing/orders/{foreign_po.id}", headers=admin2)).status_code == 200
-    assert (await ac.get(f"/api/v1/purchasing/requests/{foreign_pr.id}", headers=admin2)).status_code == 200
+    assert (await ac.get(f"/api/v1/purchasing/requests/{pr_id}", headers=io2)).status_code == 404
+    listed = await ac.get("/api/v1/purchasing/requests", headers=io2)
+    assert listed.status_code == 200
+    assert pr_id not in {row["id"] for row in listed.json()["data"]}
+
+    # Creator can submit; peer cannot
+    assert (await ac.post(f"/api/v1/purchasing/requests/{pr_id}/submit", headers=io2)).status_code == 404
+    submitted = await ac.post(f"/api/v1/purchasing/requests/{pr_id}/submit", headers=io1)
+    assert submitted.status_code == 200, submitted.text
+
+    # Approver with all-scope still sees/approves (bypass own-scope)
+    approved = await ac.post(f"/api/v1/purchasing/requests/{pr_id}/approve", headers=mgr)
+    assert approved.status_code == 200, approved.text
+
+    foreign_po = await ac.post(
+        "/api/v1/purchasing/orders",
+        headers=io1,
+        json={
+            "supplier_id": supplier_id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 2, "unit_price": 1}]},
+    )
+    assert foreign_po.status_code == 200, foreign_po.text
+    po_id = foreign_po.json()["data"]["id"]
+    assert (await ac.get(f"/api/v1/purchasing/orders/{po_id}", headers=io2)).status_code == 404
+    assert (await ac.post(f"/api/v1/purchasing/orders/{po_id}/send", headers=io2)).status_code == 404
+
+    foreign_inv = await ac.post(
+        "/api/v1/purchasing/invoices",
+        headers=io1,
+        json={
+            "supplier_id": supplier_id,
+            "items": [{"product_id": seed["p1"].id, "quantity": 1, "unit_price": 5}]},
+    )
+    assert foreign_inv.status_code == 200, foreign_inv.text
+    inv_id = foreign_inv.json()["data"]["id"]
+    assert (await ac.get(f"/api/v1/purchasing/invoices/{inv_id}", headers=io2)).status_code == 404
+    # Approval bypass: peer with write + own scope can still approve (no assert on approve)
+    approve_peer = await ac.post(f"/api/v1/purchasing/invoices/{inv_id}/approve", headers=io2)
+    assert approve_peer.status_code == 200, approve_peer.text

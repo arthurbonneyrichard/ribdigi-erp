@@ -3802,6 +3802,15 @@ Evidence: `test_production_security_s1.py`, `test_auth_api_fidelity_k1.py` (tena
 - Deprecated versions receive 6-month sunset notice
 - Security patches backported to supported versions
 
+### 8.5 Outbound webhooks (HMAC)
+
+- Endpoints require HTTPS (localhost `http://` allowed for development).
+- Signing secret `whsec_…` is encrypted at rest and shown **once** on create/rotate.
+- Deliveries include `X-Ribdigi-Signature: t=<unix>,v1=<hmac-sha256-hex>` over `f"{t}.".encode() + raw_body`.
+- Subscribers must reject signatures outside a **300s** timestamp skew and use constant-time compare.
+- Failed deliveries enter `pending_retry` with exponential backoff (`retry_due_webhooks`); admins can inspect/retry from **Integrations → Deliveries**.
+- Verify samples: `docs/API_DOCUMENTATION.md` §17.4.
+
 ---
 
 ## 9. Session Management
@@ -3987,26 +3996,33 @@ All security-relevant events are captured in an immutable audit log:
 
 The MVP includes AI capabilities across 10 modules. Security controls include:
 
+**Provider gate (implemented packaging):**
+- Chat is fail-closed until `AI_ENABLED` + approved `AI_PROVIDER` + strong `AI_API_KEY`
+- Production rejects `mock` and placeholder keys (see `docs/AI_SECURITY_MVP.md`)
+
 **Input Sanitization:**
-- All free-text user inputs to AI endpoints sanitized for prompt injection attacks (`app.ai_guard`)
-- Maximum input length enforced (chat 2000 chars; other NL prompts 4000 chars)
-- Blocked keywords and patterns for sensitive data exfiltration / jailbreak attempts
-- AI usage audited (`module=ai`) with secret/email redaction in stored prompt previews; rejections audited as `ai_prompt_rejected`
+- All user inputs to AI endpoints sanitized for prompt injection attacks
+- Maximum input length enforced (`AI_MAX_MESSAGE_CHARS`, default ~4096 tokens)
+- Blocked keywords and patterns for sensitive data exfiltration attempts
 
 **Context Isolation:**
 - AI assistant receives only data the user has permission to access
 - Tenant context strictly enforced; AI cannot access cross-tenant data
 - Session context scoped to current conversation only
 
-**Output Filtering:**
+**Audit:**
+- Tenant-scoped `ai_queries` + `audit_logs` (`module=ai`) store prompt SHA-256 and redacted preview only — never raw API keys
+
+**Output Filtering (aspirational / post-MVP for LLM replies):**
 - AI responses scanned for PII leakage
 - Financial figures validated against actual database records before display
 - Disallowed content patterns blocked
 
-**AI Security Monitor (Basic):**
-- Monitors AI query patterns for anomalies
-- Flags unusual data access volumes or suspicious prompt patterns
-- Alerts security team on potential abuse
+**AI Security Monitor (Basic) — implemented (rule-based MVP):**
+- Detectors on login failures, lockouts, unusual hour, new IP, write/AI bursts
+- Risk score per alert; admins notified when score ≥ threshold
+- Endpoints: `GET /ai/security/alerts`, `POST /ai/security/scan` (see `docs/AI_SECURITY_MVP.md`)
+- Remaining post-MVP: ML Isolation Forest / advanced fraud graphs
 
 ### 13.2 Model Security
 

@@ -17,14 +17,22 @@ logger = logging.getLogger(__name__)
 ACTIVE_TENANT_STATUSES = frozenset({"trial", "active"})
 SYSTEM_USER_ID = "system"
 
+# Prefer one event loop per Celery worker process so the shared async SQLAlchemy
+# engine is not rebound across asyncio.run() cycles (different-loop Futures).
+_worker_loop: asyncio.AbstractEventLoop | None = None
+
 
 def run_async(coro: Awaitable[Any]) -> Any:
     """Run an async coroutine from a sync Celery worker process."""
     try:
-        loop = asyncio.get_running_loop()
+        asyncio.get_running_loop()
     except RuntimeError:
-        return asyncio.run(coro)
-    # Should not happen in standard Celery workers; fall back to a new loop in a thread.
+        global _worker_loop
+        if _worker_loop is None or _worker_loop.is_closed():
+            _worker_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(_worker_loop)
+        return _worker_loop.run_until_complete(coro)
+    # Nested running loop (unusual in Celery) — run on a fresh loop in a thread.
     import concurrent.futures
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
@@ -83,6 +91,26 @@ async def job_scan_payment_due() -> dict:
 
 async def job_scan_quotation_expiry() -> dict:
     from app import notifications as notifications_svc
+
+    async def work(db: AsyncSession, tenant_id: str) -> dict:
+        created = await notifications_svc.scan_quotation_expiry(db, tenant_id)
+        return {"created": created}
+
+    return await _for_each_tenant(work)
+
+
+async def job_scan_recurring_expense_due() -> dict:
+    from app import notifications as notifications_svc
+
+    async def work(db: AsyncSession, tenant_id: str) -> dict:
+        created = await notifications_svc.scan_recurring_expense_due(db, tenant_id)
+        return {"created": created}
+
+    return await _for_each_tenant(work)
+
+
+async def job_generate_recurring_expenses() -> dict:
+    from app import expenses as expenses_svc
 
     async def work(db: AsyncSession, tenant_id: str) -> dict:
         return await notifications_svc.scan_quotation_expiry(db, tenant_id)
@@ -175,24 +203,6 @@ async def job_sync_bank_feeds() -> dict:
     return await _for_each_tenant(work)
 
 
-async def job_generate_ai_low_stock_predictions() -> dict:
-    from app import ai_inventory as ai_inventory_svc
-
-    async def work(db: AsyncSession, tenant_id: str) -> dict:
-        return await ai_inventory_svc.notify_predicted_stockouts(db, tenant_id)
-
-    return await _for_each_tenant(work)
-
-
-async def job_generate_ai_insights() -> dict:
-    from app import ai_insights as ai_insights_svc
-
-    async def work(db: AsyncSession, tenant_id: str) -> dict:
-        return await ai_insights_svc.publish_insights(db, tenant_id)
-
-    return await _for_each_tenant(work)
-
-
 async def job_archive_cold_audit_logs() -> dict:
     from app import audit as audit_svc
 
@@ -205,7 +215,7 @@ async def job_archive_cold_audit_logs() -> dict:
 
 
 async def job_retry_due_webhooks() -> dict:
-    """Stage 7 W2 — re-attempt pending_retry webhook deliveries that are due."""
+    """Re-attempt pending_retry webhook deliveries that are due (BR-18.6)."""
     from app import webhooks as webhooks_svc
 
     async def work(db: AsyncSession, tenant_id: str) -> dict:
@@ -214,20 +224,53 @@ async def job_retry_due_webhooks() -> dict:
     return await _for_each_tenant(work)
 
 
+async def job_scan_ai_security_alerts() -> dict:
+    """Rule-based AI Security Monitor scan (BR-21.10)."""
+    from app import ai_security as ai_security_svc
+
+    async def work(db: AsyncSession, tenant_id: str) -> dict:
+        summary = await ai_security_svc.scan_tenant(
+            db, tenant_id=tenant_id, actor_user_id=SYSTEM_USER_ID, notify=True
+        )
+        return {
+            "created": summary.get("created", 0),
+            "updated": summary.get("updated", 0),
+            "notified": summary.get("notified", 0),
+            "enabled": summary.get("enabled", False),
+        }
+
+    return await _for_each_tenant(work)
+
+
+async def job_send_weekly_ai_insight_digest() -> dict:
+    """Email dashboard-rule insights to each active tenant's admins (BR-21.2)."""
+    from app import ai_digest as ai_digest_svc
+
+    async def work(db: AsyncSession, tenant_id: str) -> dict:
+        return await ai_digest_svc.send_tenant_digest(
+            db,
+            tenant_id=tenant_id,
+            actor_user_id=SYSTEM_USER_ID,
+        )
+
+    return await _for_each_tenant(work)
+
+
 JOB_HANDLERS: dict[str, Callable[[], Awaitable[dict]]] = {
     "scan_low_stock": job_scan_low_stock,
     "scan_payment_due": job_scan_payment_due,
     "scan_quotation_expiry": job_scan_quotation_expiry,
+    "scan_recurring_expense_due": job_scan_recurring_expense_due,
     "generate_recurring_expenses": job_generate_recurring_expenses,
     "run_due_backups": job_run_due_backups,
     "scan_trial_lifecycle": job_scan_trial_lifecycle,
     "run_due_report_emails": job_run_due_report_emails,
     "refresh_fx_rates": job_refresh_fx_rates,
     "sync_bank_feeds": job_sync_bank_feeds,
-    "generate_ai_low_stock_predictions": job_generate_ai_low_stock_predictions,
-    "generate_ai_insights": job_generate_ai_insights,
     "archive_cold_audit_logs": job_archive_cold_audit_logs,
     "retry_due_webhooks": job_retry_due_webhooks,
+    "scan_ai_security_alerts": job_scan_ai_security_alerts,
+    "send_weekly_ai_insight_digest": job_send_weekly_ai_insight_digest,
 }
 
 

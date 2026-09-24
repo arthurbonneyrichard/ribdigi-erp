@@ -9,7 +9,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
-from app.report_export import _pdf_escape
+from app.honesty import money_json
 
 # Typical 80mm thermal width (~48 monospace chars); 58mm ~32
 THERMAL_WIDTHS = {"80mm": 42, "58mm": 32}
@@ -36,7 +36,7 @@ def resolve_receipt_paper(
 
 
 def _money(value: float) -> str:
-    return f"{float(value):.2f}"
+    return f"{money_json(value or 0):.2f}"
 
 
 def _wrap(text: str, width: int) -> list[str]:
@@ -71,12 +71,19 @@ def _lr(left: str, right: str, width: int) -> str:
     return left + (" " * gap) + right
 
 
+def _clean_text(value: Any) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
 def build_receipt_payload(
     *,
     tx: m.Transaction,
     tenant: m.Tenant | None,
     cashier_name: str | None = None,
-    company: m.Company | None = None,
+    store: m.Store | None = None,
 ) -> dict[str, Any]:
     from app.print_branding import tenant_document_brand
 
@@ -91,14 +98,16 @@ def build_receipt_payload(
             or raw.get("product_id")
             or "Item"
         )
-        qty = float(raw.get("quantity") or 0)
-        unit = float(
+        qty = money_json(raw.get("quantity") or 0)
+        unit = money_json(
             raw.get("unit_price")
             if raw.get("unit_price") is not None
             else raw.get("selling_price")
             or 0
         )
-        line_total = float(raw.get("line_total") if raw.get("line_total") is not None else qty * unit)
+        line_total = money_json(
+            raw.get("line_total") if raw.get("line_total") is not None else qty * unit
+        )
         normalized_items.append(
             {
                 "name": str(name),
@@ -110,38 +119,57 @@ def build_receipt_payload(
                 "variant_id": raw.get("variant_id"),
             }
         )
-    brand = tenant_document_brand(tenant, company)
-    default_paper = resolve_receipt_paper(tenant, company=company)
+    customer_name = payload.get("customer_name")
+    if isinstance(customer_name, str):
+        customer_name = customer_name.strip() or None
+    else:
+        customer_name = None
+
+    company_name = _clean_text(tenant.company_name if tenant else None) or "RIBDIGI ERP"
+    store_name = _clean_text(store.name if store else None)
+    # Prefer the selling store's contact/location; fall back to company profile.
+    company_phone = _clean_text(store.phone if store else None) or _clean_text(
+        tenant.phone if tenant else None
+    )
+    company_email = _clean_text(tenant.email if tenant else None)
+    company_website = _clean_text(tenant.website if tenant else None)
+    company_address = _clean_text(store.address if store else None) or _clean_text(
+        tenant.address if tenant else None
+    )
+
+    from app.print_branding import branding_fields_for_payload
+
+    branding = branding_fields_for_payload(tenant)
+
     return {
         "sale_id": tx.id,
         "reference": tx.reference,
-        "company_name": brand["company_name"],
-        "legal_name": brand["legal_name"],
-        "trading_name": brand["trading_name"],
-        "has_logo": brand["has_logo"],
-        "logo_data_url": brand["logo_data_url"],
-        "document_header": brand["document_header"],
-        "document_footer": brand["document_footer"],
-        "receipt_print_template": PAPER_TO_RECEIPT_TEMPLATE.get(default_paper, "thermal_80"),
-        "default_paper": default_paper,
-        "company_phone": brand["company_phone"]
-        or (getattr(company, "phone", None) if company else None)
-        or (tenant.phone if tenant else None),
-        "company_address": brand["company_address"]
-        or (getattr(company, "address", None) if company else None)
-        or (tenant.address if tenant else None),
-        "currency": (getattr(company, "currency", None) if company else None)
-        or (tenant.currency if tenant else "GHS"),
+        "company_name": company_name,
+        "store_name": store_name,
+        "store_id": store.id if store else None,
+        "company_phone": company_phone,
+        "company_email": company_email,
+        "company_website": company_website,
+        "company_address": company_address,
+        "print_header": branding["print_header"],
+        "print_footer": branding["print_footer"],
+        "has_logo": branding["has_logo"],
+        "default_invoice_template": branding["default_invoice_template"],
+        "default_receipt_paper": branding["default_receipt_paper"],
+        "tenant_id": getattr(tx, "tenant_id", None) or getattr(tenant, "id", None),
+        "logo_key": getattr(tenant, "logo_url", None) if tenant else None,
+        "currency": tenant.currency if tenant else "GHS",
         "cashier_name": cashier_name,
-        "customer_name": payload.get("customer_name"),
-        "subtotal": float(tx.subtotal or 0),
-        "tax": float(tx.tax or 0),
-        "discount_amount": float(payload.get("discount_amount") or 0),
-        "total": float(tx.total or 0),
+        "customer_name": customer_name,
+        "subtotal": money_json(tx.subtotal),
+        "tax": money_json(tx.tax),
+        "discount_amount": money_json(payload.get("discount_amount") or 0),
+        "line_discounts": money_json(payload.get("line_discounts") or 0),
+        "total": money_json(tx.total),
         "items": normalized_items,
         "payment_method": payload.get("payment_method", "cash"),
         "payments": payload.get("payments") or [],
-        "session_id": payload.get("session_id"),
+        "session_id": payload.get("session_id") or getattr(tx, "session_id", None),
         "created_at": tx.created_at,
         "format": "json",
     }
@@ -153,16 +181,20 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     width = THERMAL_WIDTHS.get(paper, THERMAL_WIDTHS["80mm"])
     lines: list[str] = []
     lines.append(_center(str(receipt.get("company_name") or "RIBDIGI ERP"), width))
-    if receipt.get("trading_name"):
-        lines.append(_center(f"T/A {receipt['trading_name']}", width))
-    if receipt.get("has_logo") or receipt.get("logo_data_url"):
-        lines.append(_center("[Company logo on file]", width))
+    if receipt.get("store_name"):
+        lines.append(_center(str(receipt["store_name"]), width))
     if receipt.get("company_address"):
-        lines.extend(_wrap(str(receipt["company_address"]), width))
+        for part in _wrap(str(receipt["company_address"]), width):
+            lines.append(_center(part, width))
     if receipt.get("company_phone"):
-        lines.append(_center(str(receipt["company_phone"]), width))
-    for part in header_footer_text_lines(receipt.get("document_header"), width):
-        lines.append(_center(part, width))
+        lines.append(_center(f"Tel: {receipt['company_phone']}", width))
+    if receipt.get("company_email"):
+        lines.append(_center(str(receipt["company_email"]), width))
+    if receipt.get("company_website"):
+        lines.append(_center(str(receipt["company_website"]), width))
+    if receipt.get("print_header"):
+        for part in _wrap(str(receipt["print_header"]), width):
+            lines.append(_center(part, width))
     lines.append("-" * width)
     lines.append(_lr("Sale", str(receipt.get("reference") or ""), width))
     created = receipt.get("created_at")
@@ -177,9 +209,9 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     lines.append("-" * width)
     for item in receipt.get("items") or []:
         name = str(item.get("name") or "Item")
-        qty = float(item.get("quantity") or 0)
-        unit = float(item.get("unit_price") or 0)
-        total = float(item.get("line_total") or qty * unit)
+        qty = money_json(item.get("quantity") or 0)
+        unit = money_json(item.get("unit_price") or 0)
+        total = money_json(item.get("line_total") or qty * unit)
         for i, part in enumerate(_wrap(name, width)):
             lines.append(part if i == 0 else ("  " + part)[:width])
         lines.append(_lr(f"  {qty:g} x {_money(unit)}", _money(total), width))
@@ -187,9 +219,9 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     currency = receipt.get("currency") or ""
     lines.append(_lr("Subtotal", _money(receipt.get("subtotal") or 0), width))
     lines.append(_lr("Tax", _money(receipt.get("tax") or 0), width))
-    discount = float(receipt.get("discount_amount") or 0)
-    if discount > 0:
-        lines.append(_lr("Discount", _money(discount), width))
+    discount_amount = money_json(receipt.get("discount_amount") or 0)
+    if discount_amount > 0:
+        lines.append(_lr("Discount", f"-{_money(discount_amount)}", width))
     lines.append(_lr(f"TOTAL {currency}".strip(), _money(receipt.get("total") or 0), width))
     payments = receipt.get("payments") or []
     if len(payments) > 1:
@@ -200,17 +232,10 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     else:
         lines.append(_lr("Payment", str(receipt.get("payment_method") or "cash").upper(), width))
     lines.append("-" * width)
-    footer_lines = header_footer_text_lines(receipt.get("document_footer"), width)
-    if footer_lines:
-        for part in footer_lines:
-            lines.append(_center(part, width))
-    else:
-        lines.append(_center("Thank you", width))
-    from app.print_branding import platform_print_footer_text_lines
-
-    for part in platform_print_footer_text_lines(width=width, center=True):
-        if part:
-            lines.append(part)
+    footer = receipt.get("print_footer") or "Thank you"
+    for part in _wrap(str(footer), width):
+        lines.append(_center(part, width))
+    lines.append(_center("Powered by RIBDIGI", width))
     lines.append("")
     return "\n".join(lines)
 
@@ -224,58 +249,32 @@ def escpos_drawer_kick() -> bytes:
 
 def to_thermal_pdf(receipt: dict[str, Any], *, paper: str = "80mm") -> bytes:
     """Narrow receipt PDF suitable for 58/80mm thermal printers (or browser print)."""
+    from app.print_branding import build_text_pdf, load_logo_jpeg, style_powered_by_line
+
     text = render_thermal_text(receipt, paper=paper)
-    lines = text.splitlines() or [""]
-    page_width = 226 if paper == "80mm" else 164  # ~80mm / ~58mm at 72dpi
+    lines = [style_powered_by_line(line, 8) for line in (text.splitlines() or [""])]
+    page_width = 226 if paper == "80mm" else 164
     line_height = 11
     top = 20
     bottom = 20
-    page_height = max(top + bottom + line_height * (len(lines) + 2), 200)
+    page_height = max(top + bottom + line_height * (len(lines) + 8), 200)
+    logo = None
+    if receipt.get("logo_key") and receipt.get("tenant_id"):
 
-    content: list[str] = []
-    y = page_height - top
-    for line in lines:
-        content.append(
-            f"BT /F1 8 Tf 8 {y} Td ({_pdf_escape(line[:80])}) Tj ET"
-        )
-        y -= line_height
-        if y < bottom:
-            break
-    stream = "\n".join(content).encode("latin-1", errors="replace")
+        class _T:
+            id = receipt["tenant_id"]
+            logo_url = receipt["logo_key"]
 
-    objects: list[bytes] = []
-    objects.append(b"1 0 obj<< /Type /Catalog /Pages 2 0 R >>endobj\n")
-    objects.append(b"2 0 obj<< /Type /Pages /Kids [3 0 R] /Count 1 >>endobj\n")
-    objects.append(
-        (
-            f"3 0 obj<< /Type /Page /Parent 2 0 R "
-            f"/MediaBox [0 0 {page_width} {page_height}] "
-            f"/Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>endobj\n"
-        ).encode("ascii")
+        logo = load_logo_jpeg(_T(), max_width_px=240, max_height_px=80)
+    return build_text_pdf(
+        lines,
+        page_width=page_width,
+        page_height=page_height,
+        margin=8 if paper == "58mm" else 10,
+        mono=True,
+        logo=logo,
+        logo_max_pt=48 if paper == "58mm" else 64,
     )
-    objects.append(
-        f"4 0 obj<< /Length {len(stream)} >>stream\n".encode("ascii")
-        + stream
-        + b"\nendstream\nendobj\n"
-    )
-    objects.append(b"5 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>endobj\n")
-
-    out = bytearray(b"%PDF-1.4\n")
-    offsets = [0]
-    for obj in objects:
-        offsets.append(len(out))
-        out.extend(obj)
-    xref_pos = len(out)
-    out.extend(f"xref\n0 {len(objects) + 1}\n".encode("ascii"))
-    out.extend(b"0000000000 65535 f \n")
-    for off in offsets[1:]:
-        out.extend(f"{off:010d} 00000 n \n".encode("ascii"))
-    out.extend(
-        f"trailer<< /Size {len(objects) + 1} /Root 1 0 R >>\nstartxref\n{xref_pos}\n%%EOF\n".encode(
-            "ascii"
-        )
-    )
-    return bytes(out)
 
 
 async def build_sale_receipt(
@@ -312,6 +311,21 @@ async def build_sale_receipt(
     if user_id:
         user = await db.get(m.User, user_id)
         cashier_name = user.full_name if user else None
+
+    store = None
+    session_id = tx.session_id or (tx.payload or {}).get("session_id")
+    if session_id:
+        session = await db.get(m.PosSession, session_id)
+        if session and session.tenant_id == tenant_id and session.store_id:
+            store = (
+                await db.execute(
+                    select(m.Store).where(
+                        m.Store.id == session.store_id,
+                        m.Store.tenant_id == tenant_id,
+                    )
+                )
+            ).scalar_one_or_none()
+
     return build_receipt_payload(
-        tx=tx, tenant=tenant, cashier_name=cashier_name, company=company
+        tx=tx, tenant=tenant, cashier_name=cashier_name, store=store
     )

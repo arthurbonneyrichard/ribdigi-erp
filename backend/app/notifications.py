@@ -9,53 +9,36 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app import schema_compat
+from app.honesty import money_json
+from app.models import uid
 
 DEFAULT_PREFERENCES = {
-    "low_stock": {"dashboard": True, "email": False, "sms": False},
+    "low_stock": {"dashboard": True, "email": True, "sms": False},
     "expense_approval": {"dashboard": True, "email": True, "sms": False},
     "shift_variance": {"dashboard": True, "email": False, "sms": False},
     "credit_limit": {"dashboard": True, "email": False, "sms": False},
     "new_order": {"dashboard": True, "email": False, "sms": False},
     "purchase_received": {"dashboard": True, "email": False, "sms": False},
     "payment_due": {"dashboard": True, "email": True, "sms": False},
-    "quotation_expiry": {"dashboard": True, "email": True, "sms": False},
-    "recurring_expense": {"dashboard": True, "email": True, "sms": False},
-    "ai_insight": {"dashboard": True, "email": True, "sms": False},
-    "business_insight": {"dashboard": True, "email": False, "sms": False},
-    "security": {"dashboard": True, "email": True, "sms": False},
+    "quotation_expiry": {"dashboard": True, "email": False, "sms": False},
+    "recurring_expense_due": {"dashboard": True, "email": True, "sms": False},
+    "new_order": {"dashboard": True, "email": False, "sms": False},
     "transfer": {"dashboard": True, "email": False, "sms": False},
     "billing": {"dashboard": True, "email": True, "sms": False},
+    "security": {"dashboard": True, "email": True, "sms": False},
     "system": {"dashboard": True, "email": False, "sms": False},
 }
 
 VALID_CATEGORIES = set(DEFAULT_PREFERENCES.keys())
 
-# BR-4.4 display groups → underlying category keys
-CATEGORY_GROUPS: dict[str, frozenset[str]] = {
-    "stock": frozenset({"low_stock", "transfer"}),
-    "orders": frozenset(
-        {
-            "new_order",
-            "purchase_received",
-            "quotation_expiry",
-            "expense_approval",
-            "recurring_expense",
-        }
-    ),
-    "payments": frozenset({"payment_due", "credit_limit", "billing", "shift_variance"}),
-    "system": frozenset({"system", "security", "ai_insight", "business_insight"}),
-}
-VALID_CATEGORY_GROUPS = frozenset(CATEGORY_GROUPS.keys())
-HISTORY_DAYS = 90
-
-
-def category_group(category: str | None) -> str:
-    cat = category or "system"
-    for group, members in CATEGORY_GROUPS.items():
-        if cat in members:
-            return group
-    return "system"
-
+# BR-5.5 — low-stock alerts target inventory + store managers (admins included for visibility).
+LOW_STOCK_NOTIFY_ROLES = (
+    "inventory_officer",
+    "store_manager",
+    "company_admin",
+    "super_admin",
+)
 
 def merge_preferences(raw: dict | None) -> dict:
     merged = {k: dict(v) for k, v in DEFAULT_PREFERENCES.items()}
@@ -99,6 +82,34 @@ async def get_preferences(db: AsyncSession, tenant_id: str, user_id: str) -> dic
 async def update_preferences(
     db: AsyncSession, tenant_id: str, user_id: str, preferences: dict
 ) -> dict:
+    # Schema NotificationPreferencesMap rejects unknown category/channel → 422;
+    # keep allow-list defense-in-depth (no silent drop of garbage keys).
+    if preferences is None or not isinstance(preferences, dict):
+        raise HTTPException(status_code=422, detail="preferences must be an object")
+    for key, channels in preferences.items():
+        if key not in VALID_CATEGORIES:
+            raise HTTPException(
+                status_code=422,
+                detail=f"unknown preference category: {key}",
+            )
+        if channels is None:
+            continue
+        if not isinstance(channels, dict):
+            raise HTTPException(
+                status_code=422,
+                detail=f"channels for {key} must be an object",
+            )
+        for ch, val in channels.items():
+            if ch not in {"dashboard", "email", "sms"}:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"unknown channel '{ch}' for category {key}",
+                )
+            if val is not None and not isinstance(val, bool):
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"channel '{ch}' for {key} must be a boolean",
+                )
     merged = merge_preferences(preferences)
     row = (
         await db.execute(
@@ -137,6 +148,30 @@ async def channel_enabled(
     return bool(cat.get(channel, True))
 
 
+async def users_for_roles(
+    db: AsyncSession,
+    tenant_id: str,
+    roles: list[str],
+    *,
+    exclude_user_ids: set[str] | None = None,
+) -> list[m.User]:
+    """Active tenant users whose role is in ``roles`` (BR-9.3 approver fan-out)."""
+    cleaned = [str(r).strip() for r in (roles or []) if str(r).strip()]
+    if not cleaned:
+        return []
+    exclude = exclude_user_ids or set()
+    rows = (
+        await db.execute(
+            select(m.User).where(
+                m.User.tenant_id == tenant_id,
+                m.User.is_active == True,  # noqa: E712
+                m.User.role.in_(cleaned),
+            )
+        )
+    ).scalars().all()
+    return [u for u in rows if u.id not in exclude]
+
+
 async def create_notification(
     db: AsyncSession,
     *,
@@ -145,6 +180,8 @@ async def create_notification(
     message: str,
     category: str = "system",
     user_id: str | None = None,
+    roles: list[str] | None = None,
+    exclude_user_ids: set[str] | list[str] | None = None,
     entity_type: str | None = None,
     entity_id: str | None = None,
     company_id: str | None = None,
@@ -155,6 +192,7 @@ async def create_notification(
     ):
         return None
     note = m.Notification(
+        id=uid(),
         tenant_id=tenant_id,
         company_id=company_id,
         user_id=user_id,
@@ -164,8 +202,25 @@ async def create_notification(
         status="unread",
         entity_type=entity_type,
         entity_id=entity_id,
+        created_at=datetime.utcnow(),
     )
-    db.add(note)
+    await schema_compat.insert_matching_row(
+        db,
+        "notifications",
+        {
+            "id": note.id,
+            "tenant_id": tenant_id,
+            "user_id": user_id,
+            "category": category,
+            "title": title,
+            "message": message,
+            "status": "unread",
+            "entity_type": entity_type,
+            "entity_id": entity_id,
+            "created_at": note.created_at,
+            "company_id": None,
+        },
+    )
     await db.flush()
 
     # Best-effort email + SMS channels (do not fail the notification write)
@@ -173,40 +228,58 @@ async def create_notification(
         from app import emailer
         from app import sms as sms_svc
 
+        excluded = {str(x) for x in (exclude_user_ids or []) if x}
+
         async def _recipients_for_channel(channel: str) -> list[m.User]:
             if user_id:
+                if user_id in excluded:
+                    return []
                 if await channel_enabled(
                     db, tenant_id=tenant_id, user_id=user_id, category=category, channel=channel
                 ):
                     user = await db.get(m.User, user_id)
                     return [user] if user else []
                 return []
-            admins = (
-                await db.execute(
-                    select(m.User).where(
-                        m.User.tenant_id == tenant_id,
-                        m.User.is_active == True,  # noqa: E712
-                        m.User.role.in_(["company_admin", "super_admin"]),
-                    )
+            candidates: list[m.User]
+            if roles:
+                candidates = await users_for_roles(
+                    db, tenant_id, roles, exclude_user_ids=excluded
                 )
-            ).scalars().all()
+            else:
+                candidates = (
+                    await db.execute(
+                        select(m.User).where(
+                            m.User.tenant_id == tenant_id,
+                            m.User.is_active == True,  # noqa: E712
+                            m.User.role.in_(["company_admin", "super_admin"]),
+                        )
+                    )
+                ).scalars().all()
+                candidates = [u for u in candidates if u.id not in excluded]
             out: list[m.User] = []
-            for admin in admins:
+            for user in candidates:
                 if await channel_enabled(
-                    db, tenant_id=tenant_id, user_id=admin.id, category=category, channel=channel
+                    db, tenant_id=tenant_id, user_id=user.id, category=category, channel=channel
                 ):
-                    out.append(admin)
+                    out.append(user)
             return out
 
+        tenant = await db.get(m.Tenant, tenant_id)
         for admin in await _recipients_for_channel("email"):
             if admin.email:
                 await emailer.send_notification_email(
-                    to=admin.email, title=title, message=message, category=category
+                    to=admin.email,
+                    title=title,
+                    message=message,
+                    category=category,
+                    tenant=tenant,
                 )
         for admin in await _recipients_for_channel("sms"):
             phone = getattr(admin, "phone", None)
             if phone:
-                await sms_svc.send_notification_sms(to=phone, title=title, message=message)
+                await sms_svc.send_notification_sms(
+                    to=phone, title=title, message=message, tenant=tenant
+                )
     except Exception:
         pass
 
@@ -232,19 +305,22 @@ async def list_notifications(
             or_(m.Notification.user_id == user_id, m.Notification.user_id.is_(None))
         )
     if status:
-        stmt = stmt.where(m.Notification.status == status)
+        # Defense in depth: NotificationStatusValue Query Literal → 422 on blank/unknown.
+        key = (status or "").strip().lower()
+        if key not in {"unread", "read"}:
+            raise HTTPException(status_code=422, detail="status must be unread or read")
+        stmt = stmt.where(m.Notification.status == key)
     if category:
-        stmt = stmt.where(m.Notification.category == category)
-    if group:
-        g = group.strip().lower()
-        if g not in VALID_CATEGORY_GROUPS:
+        # Defense in depth: NotificationCategoryValue Query Literal → 422 on blank/unknown.
+        cat = (category or "").strip().lower()
+        if cat not in VALID_CATEGORIES:
             raise HTTPException(
-                status_code=400,
-                detail=f"group must be one of: {sorted(VALID_CATEGORY_GROUPS)}",
+                status_code=422,
+                detail=f"category must be one of {sorted(VALID_CATEGORIES)}",
             )
-        stmt = stmt.where(m.Notification.category.in_(sorted(CATEGORY_GROUPS[g])))
-    # Keep last ~90 days (BR-4.4 history window)
-    cutoff = datetime.utcnow() - timedelta(days=HISTORY_DAYS)
+        stmt = stmt.where(m.Notification.category == cat)
+    # Keep last ~90 days
+    cutoff = datetime.utcnow() - timedelta(days=90)
     stmt = stmt.where(m.Notification.created_at >= cutoff)
     stmt = stmt.order_by(m.Notification.created_at.desc()).limit(limit)
     return (await db.execute(stmt)).scalars().all()
@@ -316,32 +392,26 @@ async def mark_read(
 
 
 async def mark_unread(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    notification_id: str,
-    user_id: str | None = None,
-    company_id: str | None = None,
+    db: AsyncSession, *, tenant_id: str, notification_id: str, user_id: str | None = None
 ) -> m.Notification:
-    note = await _get_owned_notification(
-        db,
-        tenant_id=tenant_id,
-        notification_id=notification_id,
-        user_id=user_id,
-        company_id=company_id,
-    )
+    note = (
+        await db.execute(
+            select(m.Notification).where(
+                m.Notification.id == notification_id,
+                m.Notification.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not note:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    if user_id and note.user_id and note.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Notification belongs to another user")
     note.status = "unread"
     await db.flush()
     return note
 
 
-async def mark_all_read(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    user_id: str | None = None,
-    company_id: str | None = None,
-) -> int:
+async def mark_all_read(db: AsyncSession, *, tenant_id: str, user_id: str | None = None) -> int:
     rows = await list_notifications(
         db,
         tenant_id=tenant_id,
@@ -362,13 +432,9 @@ async def notify_low_stock_if_needed(
     tenant_id: str,
     product: m.Product,
 ) -> m.Notification | None:
-    from app.inventory import compute_stock_status
-
-    stock = float(product.stock_qty or 0)
-    minimum = float(getattr(product, "minimum_stock", 0) or 0)
-    reorder = float(product.reorder_level or 0)
-    status = compute_stock_status(stock, minimum, reorder)
-    if status == "green":
+    stock = money_json(product.stock_qty)
+    reorder = money_json(product.reorder_level)
+    if stock > reorder:
         return None
     # Avoid duplicate unread low-stock alerts for same product
     existing = (
@@ -383,7 +449,7 @@ async def notify_low_stock_if_needed(
     ).scalar_one_or_none()
     if existing:
         return None
-    return await create_notification(
+    note = await create_notification(
         db,
         tenant_id=tenant_id,
         category="low_stock",
@@ -394,8 +460,23 @@ async def notify_low_stock_if_needed(
         ),
         entity_type="product",
         entity_id=product.id,
-        company_id=getattr(product, "company_id", None),
+        roles=list(LOW_STOCK_NOTIFY_ROLES),
     )
+    from app import webhooks as webhooks_svc
+
+    await webhooks_svc.emit_event(
+        db,
+        tenant_id=tenant_id,
+        event="stock.low",
+        data={
+            "product_id": product.id,
+            "sku": product.sku,
+            "name": product.name,
+            "stock_qty": stock,
+            "reorder_level": reorder,
+        },
+    )
+    return note
 
 
 async def notify_warehouse_low_stock_if_needed(
@@ -405,16 +486,11 @@ async def notify_warehouse_low_stock_if_needed(
     product: m.Product,
     stock: m.WarehouseStock,
 ) -> m.Notification | None:
-    from app.inventory import compute_stock_status, effective_warehouse_thresholds
-
-    qty = float(stock.quantity or 0)
-    minimum, reorder = effective_warehouse_thresholds(stock, product)
-    status = compute_stock_status(qty, minimum, reorder)
-    w_min = float(getattr(stock, "minimum_stock", 0) or 0)
-    w_ro = float(getattr(stock, "reorder_level", 0) or 0)
-    if (w_min <= 0 and w_ro <= 0) or status == "green":
+    qty = money_json(stock.quantity)
+    reorder = money_json(getattr(stock, "reorder_level", 0) or 0)
+    if reorder <= 0 or qty > reorder:
         return None
-    entity_id = f"{stock.warehouse_id}:{product.id}"
+    entity_id = stock.id
     existing = (
         await db.execute(
             select(m.Notification).where(
@@ -436,8 +512,10 @@ async def notify_warehouse_low_stock_if_needed(
         )
     ).scalar_one_or_none()
     loc = wh.code if wh else stock.warehouse_id[:8]
-    suggested = float(getattr(stock, "reorder_qty", 0) or 0) or max(round(reorder - qty, 3), 0)
-    return await create_notification(
+    suggested = money_json(getattr(stock, "reorder_qty", 0) or 0) or max(
+        money_json(round(reorder - qty, 3)), 0
+    )
+    note = await create_notification(
         db,
         tenant_id=tenant_id,
         category="low_stock",
@@ -448,8 +526,25 @@ async def notify_warehouse_low_stock_if_needed(
         ),
         entity_type="warehouse_stock",
         entity_id=entity_id,
-        company_id=getattr(stock, "company_id", None) or getattr(product, "company_id", None),
+        roles=list(LOW_STOCK_NOTIFY_ROLES),
     )
+    from app import webhooks as webhooks_svc
+
+    await webhooks_svc.emit_event(
+        db,
+        tenant_id=tenant_id,
+        event="stock.low",
+        data={
+            "product_id": product.id,
+            "sku": product.sku,
+            "name": product.name,
+            "stock_qty": qty,
+            "reorder_level": reorder,
+            "warehouse_id": stock.warehouse_id,
+            "suggested_order_qty": suggested,
+        },
+    )
+    return note
 
 
 async def scan_low_stock(db: AsyncSession, tenant_id: str) -> int:
@@ -482,29 +577,28 @@ async def scan_low_stock(db: AsyncSession, tenant_id: str) -> int:
     return created
 
 
-async def scan_payment_due(
-    db: AsyncSession,
-    tenant_id: str,
-    within_days: int = 3,
-    *,
-    company_id: str | None = None,
-) -> int:
-    """Notify when AR invoices or AP bills approach/pass due date (BR-10.4 / 10.5 / 15.1)."""
+async def scan_payment_due(db: AsyncSession, tenant_id: str, within_days: int = 3) -> int:
+    from app.purchasing import PURCHASE_INVOICE_OPEN, refresh_overdue_purchase_invoices
+    from app.sales import refresh_overdue_sales_invoices
+
+    await refresh_overdue_sales_invoices(db, tenant_id)
+    await refresh_overdue_purchase_invoices(db, tenant_id)
     now = datetime.utcnow()
     horizon = now + timedelta(days=within_days)
     created = 0
 
-    ar_q = select(m.SalesInvoice).where(
-        m.SalesInvoice.tenant_id == tenant_id,
-        m.SalesInvoice.status.in_(["posted", "partial"]),
-        m.SalesInvoice.due_date.is_not(None),
-        m.SalesInvoice.due_date <= horizon,
-    )
-    if company_id:
-        ar_q = ar_q.where(m.SalesInvoice.company_id == company_id)
-    ar_invoices = (await db.execute(ar_q)).scalars().all()
+    ar_invoices = (
+        await db.execute(
+            select(m.SalesInvoice).where(
+                m.SalesInvoice.tenant_id == tenant_id,
+                m.SalesInvoice.status.in_(["posted", "sent", "partial", "overdue"]),
+                m.SalesInvoice.due_date.is_not(None),
+                m.SalesInvoice.due_date <= horizon,
+            )
+        )
+    ).scalars().all()
     for inv in ar_invoices:
-        due = max(float(inv.total_amount) - float(inv.paid_amount or 0), 0)
+        due = max(money_json(inv.total_amount) - money_json(inv.paid_amount or 0), 0)
         if due <= 0:
             continue
         existing = (
@@ -523,7 +617,7 @@ async def scan_payment_due(
             db,
             tenant_id=tenant_id,
             category="payment_due",
-            title="Payment Due",
+            title="Customer payment due",
             message=(
                 f"Invoice {inv.invoice_number} has {due:.2f} due "
                 f"by {inv.due_date.date().isoformat()}."
@@ -534,17 +628,18 @@ async def scan_payment_due(
         )
         created += 1
 
-    ap_q = select(m.PurchaseInvoice).where(
-        m.PurchaseInvoice.tenant_id == tenant_id,
-        m.PurchaseInvoice.status.in_(["unpaid", "partial", "overdue"]),
-        m.PurchaseInvoice.due_date.is_not(None),
-        m.PurchaseInvoice.due_date <= horizon,
-    )
-    if company_id:
-        ap_q = ap_q.where(m.PurchaseInvoice.company_id == company_id)
-    ap_bills = (await db.execute(ap_q)).scalars().all()
-    for bill in ap_bills:
-        due = max(float(bill.total_amount) - float(bill.paid_amount or 0), 0)
+    ap_invoices = (
+        await db.execute(
+            select(m.PurchaseInvoice).where(
+                m.PurchaseInvoice.tenant_id == tenant_id,
+                m.PurchaseInvoice.status.in_(list(PURCHASE_INVOICE_OPEN)),
+                m.PurchaseInvoice.due_date.is_not(None),
+                m.PurchaseInvoice.due_date <= horizon,
+            )
+        )
+    ).scalars().all()
+    for inv in ap_invoices:
+        due = max(money_json(inv.total_amount) - money_json(inv.paid_amount or 0), 0)
         if due <= 0:
             continue
         existing = (
@@ -552,7 +647,7 @@ async def scan_payment_due(
                 select(m.Notification).where(
                     m.Notification.tenant_id == tenant_id,
                     m.Notification.category == "payment_due",
-                    m.Notification.entity_id == bill.id,
+                    m.Notification.entity_id == inv.id,
                     m.Notification.status == "unread",
                 )
             )
@@ -563,17 +658,137 @@ async def scan_payment_due(
             db,
             tenant_id=tenant_id,
             category="payment_due",
-            title="Bill Payment Due",
+            title="Supplier payment due",
             message=(
-                f"Bill {bill.invoice_number} has {due:.2f} due "
-                f"by {bill.due_date.date().isoformat()}."
+                f"Bill {inv.invoice_number} has {due:.2f} due "
+                f"by {inv.due_date.date().isoformat()}."
             ),
             entity_type="purchase_invoice",
-            entity_id=bill.id,
-            company_id=getattr(bill, "company_id", None),
+            entity_id=inv.id,
         )
         created += 1
 
+    return created
+
+
+async def scan_quotation_expiry(db: AsyncSession, tenant_id: str, within_days: int = 1) -> int:
+    """Notify for draft/sent quotations expiring within ``within_days`` (BR-7.2).
+
+    Default is 1 day before ``valid_until`` (also covers already-past validity while
+    still open). Past-due open quotations are soft-lifecycle flipped to ``expired``
+    even when an unread T−1 notification already exists (dedupe only skips a second
+    alert). Dedupes unread notifications per quotation.
+    """
+    now = datetime.utcnow()
+    horizon = now + timedelta(days=max(0, int(within_days)))
+    quotes = (
+        await db.execute(
+            select(m.SalesQuotation).where(
+                m.SalesQuotation.tenant_id == tenant_id,
+                m.SalesQuotation.status.in_(["draft", "sent"]),
+                m.SalesQuotation.valid_until.is_not(None),
+                m.SalesQuotation.valid_until <= horizon,
+            )
+        )
+    ).scalars().all()
+    created = 0
+    for quote in quotes:
+        until = quote.valid_until
+        past = bool(until and until < now)
+        if past and quote.status in {"draft", "sent"}:
+            quote.status = "expired"
+            quote.updated_at = now
+        existing = (
+            await db.execute(
+                select(m.Notification).where(
+                    m.Notification.tenant_id == tenant_id,
+                    m.Notification.category == "quotation_expiry",
+                    m.Notification.entity_id == quote.id,
+                    m.Notification.status == "unread",
+                )
+            )
+        ).scalar_one_or_none()
+        if existing:
+            continue
+        until_label = until.date().isoformat() if until else "unknown"
+        title = "Quotation expired" if past else "Quotation expiring soon"
+        message = (
+            f"Quotation {quote.quotation_number} "
+            + (f"expired on {until_label}." if past else f"expires on {until_label}.")
+        )
+        await create_notification(
+            db,
+            tenant_id=tenant_id,
+            category="quotation_expiry",
+            title=title,
+            message=message,
+            entity_type="sales_quotation",
+            entity_id=quote.id,
+        )
+        created += 1
+    await db.flush()
+    return created
+
+
+async def scan_recurring_expense_due(db: AsyncSession, tenant_id: str, within_days: int = 1) -> int:
+    """Notify before active recurring schedules auto-generate (BR-9.5).
+
+    Default window is T−1 day on ``next_run_at`` (includes already-due schedules not yet
+    generated). Dedupes unread notifications per recurring template.
+    """
+    now = datetime.utcnow()
+    horizon = now + timedelta(days=max(0, int(within_days)))
+    rows = (
+        await db.execute(
+            select(m.RecurringExpense).where(
+                m.RecurringExpense.tenant_id == tenant_id,
+                m.RecurringExpense.is_active == True,  # noqa: E712
+                m.RecurringExpense.next_run_at.is_not(None),
+                m.RecurringExpense.next_run_at <= horizon,
+            )
+        )
+    ).scalars().all()
+    created = 0
+    for row in rows:
+        if row.end_date and row.end_date < now:
+            continue
+        existing = (
+            await db.execute(
+                select(m.Notification).where(
+                    m.Notification.tenant_id == tenant_id,
+                    m.Notification.category == "recurring_expense_due",
+                    m.Notification.entity_id == row.id,
+                    m.Notification.status == "unread",
+                )
+            )
+        ).scalar_one_or_none()
+        if existing:
+            continue
+        when = row.next_run_at
+        when_label = when.date().isoformat() if when else "unknown"
+        past = bool(when and when <= now)
+        title = "Recurring expense due" if past else "Recurring expense due soon"
+        amount = money_json(row.amount or 0)
+        message = (
+            f"Recurring {row.category} ({amount:.2f}) "
+            + (
+                f"is due to generate (scheduled {when_label})."
+                if past
+                else f"will auto-generate on {when_label}."
+            )
+        )
+        if row.description:
+            message = f"{message} {row.description[:80]}"
+        await create_notification(
+            db,
+            tenant_id=tenant_id,
+            category="recurring_expense_due",
+            title=title,
+            message=message,
+            entity_type="recurring_expense",
+            entity_id=row.id,
+        )
+        created += 1
     return created
 
 

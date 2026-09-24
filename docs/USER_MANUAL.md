@@ -70,7 +70,17 @@ If you're setting up RIBDIGI for the first time:
    - Review the pre-loaded industry-agnostic system Chart of Accounts (Stage 22 C1)
    - Adjust opening balances if migrating mid-year
 
-Stage 21 (ADR-047) proves tenant lifecycle, org units, users/roles, and executive dashboard fidelity — see `docs/STAGE_21_FIDELITY.md`.
+#### Getting started checklist
+
+New tenants see a **Getting started** banner at the top of the main workspace (not on the platform owner console). It tracks five steps with a progress bar:
+
+1. Setup company profile → Company
+2. Add products → Inventory
+3. Create a supplier → Purchasing
+4. Stock on hand → Inventory
+5. Make first sale → Sales
+
+Steps auto-complete when the system detects matching data. Company admins can **Skip** / **Undo skip** individual steps. The banner is **Dismiss**ible at ≥80% progress (skips count). After dismiss, admins can **Restore checklist** until progress reaches 100%.
 
 ### 1.3 Understanding the Interface
 
@@ -1777,207 +1787,10 @@ Stage 396 Offline Synchronizing Status Pack remaining-gate — `docs/OFFLINE_SYN
 **Launch cert remaining-gate index (Stage 204):** Status index is `docs/LAUNCH_CERT_REMAINING_GATE_MVP.md` → blockers `docs/LAUNCH_CERT_BLOCKERS_MVP.md` → Stage 27/28 pointers `docs/LAUNCH_CERT_PACK_POINTERS_MVP.md`. LAUNCH certification Complete remains MISSING (not claimed).
 
 #### Top Bar
-- **Menu (mobile):** Collapse/expand the sidebar under ~800px viewport width
-- **Connectivity:** ONLINE / OFFLINE badge from browser network status (Stage 163 C1) — not sync-queue health
-- **Global Search:** Products and customers (`GET /search`) — RBAC-gated; navigates to Inventory / Sales deep-links (Stage 96 G1)
-- **Invoice status filters:** Sales invoices filter by status including unpaid (posted/sent); quotation → Invoice creates draft — Post required (Stage 97 S1)
-- **Outstanding Purchases / Purchase Settings:** Purchasing deep-links + Settings tab; Opening Balances / Fiscal Period anchors (Stage 97 P1)
-- **QR labels & Sub Categories:** Inventory catalog Sub Categories labeling; product QR labels via `code_type=qr`; Settings Email/SMS/Backup aliases (Stage 97 I1)
-- **Pending Expenses:** Filter expenses by approval status; Shell Pending Expenses + Approval Matrix anchor (Stage 98 Q1)
-- **Sales / Purchase Returns:** Shell deep-links; draft→post honesty for credit/debit notes; `return_status` filter (Stage 98 R1)
-- **Stock Counts / Bank Reconciliation / Cheques:** Shell discoverability; Credit Outstanding Receivables/Payables via `?kind=` (Stage 98 O1)
-- **Quotations / Customer Groups:** Shell deep-links; quotation status filter; → Order creates draft — Confirm reserves stock (Stage 99 T1)
-- **Purchase Requests / Open POs / GRN:** Shell + status filters; purchase order notifications open Orders tab (Stage 99 C1)
-- **Variants / Batches / Expiry / Stock Adjustments:** Shell leaves; Catalog Brands/Units anchors (Stage 99 L1)
-- **Profit & Loss / Cash Flow / Balance Sheet:** Shell deep-links to Reports statement tabs (Stage 100 R1)
-- **Chart of Accounts / Journals / Trial Balance:** Accounting ledger anchors; journal status filter (Stage 100 G1)
-- **Users & Audit discovery:** Filter users by search/role/active; Audit module/action URL sync (Stage 100 U1)
-- **Opening Stock / Movements:** Shell deep-links; Catalog Categories anchor; movement type URL filter (Stage 101 O1)
-- **Recurring Expenses / Budgets:** Shell anchors; expense notifications open pending queue or recurring section (Stage 101 E1)
-- **POS Sessions:** Session history and shift reports on POS; Shell POS Sessions leaf (Stage 101 P1)
-- **Reports Summary / Sales / Customers / Stores / Transfers / Schedules:** Shell deep-links to remaining report tabs (Stage 102 R1)
-- **Tax Calculator / Filing Pack / Company Tax / Inter-store Transfers:** Shell anchors on Tax, Company, and Stores (Stage 102 T1)
-- **AI Chat / Forecast / Dead Stock / Insights / Security:** Shell deep-links; Audit date-range filters; Sales Invoices leaf (Stage 102 A1)
-- **Passkeys / TOTP / Webhooks / API keys / Active sessions:** Security Shell deep-links (Stage 103 S1)
-- **Backup Schedule / Backup & Restore:** Distinct Admin backup leaves (Stage 103 B1)
-- **Branches / Document numbering / Media storage:** Company Settings Shell deep-links (Stage 103 C1)
-- **Unposted / Posted Journals; Pending / Received / Issued Cheques:** Accounting filter deep-links (Stage 104 A1)
-- **Products / Purchase Invoices / Draft & Overdue Sales Invoices:** Commerce Shell leaves (Stage 104 I1)
-- **Credit Aging / Early Pay / FX / Payment Schedule; Custom & System Roles:** Credit and Admin Roles deep-links (Stage 104 R1)
-- **Custom / System Permissions matrix:** Admin Permissions deep-links and shareable `?role=` (Stage 105 P1)
-- **FEFO Policy / Reorder Policies:** Stores Shell deep-links; reorder panel honors `store_id` (Stage 105 S1)
-- **Platform Audit filters / Delivery Audit:** Shareable house audit URL filters (Stage 105 A1)
-- **Expense store/department filters; Purchase Settings hash:** Shareable expense scope + PR approval settings scroll (Stage 106 E1)
-- **Company Profile / Logo / Locale / Departments:** Settings Shell deep-links (Stage 106 C1)
-- **Unread / Stock / Order / Payment / System notification inbox:** Notifications Shell leaves (Stage 106 N1)
-- **POS Shift / Cart / Receipt:** POS Shell deep-links and section scroll (Stage 107 P1)
-- **Active Customers / Groups; Product Search filters:** Shareable commerce list filters (Stage 107 S1)
-- **At-risk / New Tenants; Backup History:** Platform and Backup ops leaves (Stage 107 O1)
-- **AI Sales Analysis / Expense / Purchases / Cross-Domain / Document / Customer / Report / AI Low Stock:** AI Shell deep-links (Stage 108 A1)
-- **Credit Party Actions / By Party / Credit Statement:** Credit Shell deep-links (Stage 108 C1)
-- **Active Users / Inactive Users (tenant & platform):** Users directory Shell leaves (Stage 108 U1)
-- **Report period / store / branch / category filters:** Shareable report filters; tax filing & movement dates (Stage 109 R1)
-- **Draft Quotations / Confirmed Orders / Draft Sales Returns:** Sales document status Shell leaves (Stage 109 S1)
-- **Active / Trial / Grace / Suspended Tenants; Bank Reconciliation hash:** Platform status + accounting deep-link (Stage 109 O1)
-- **Draft/Posted GRN & Purchase Returns; Draft/Overdue Purchases:** Purchasing status Shell leaves (Stage 110 P1)
-- **Approved / Rejected Expenses:** Expense decision queue Shell leaves (Stage 110 E1)
-- **Create Role; Auth Audit / Sales Audit:** Admin Roles hash + tenant Audit module leaves (Stage 110 A1)
-- **Stock In / Out / Opening / Adjustment / Transfer Movements:** Inventory movement type Shell leaves (Stage 111 I1)
-- **Posted Sales Returns:** Sales returns status Shell leaf (Stage 111 S1)
-- **Deposited / Cleared Cheques; Cheques hash:** Accounting cheque deep-links (Stage 111 C1)
-- **Daily / Weekly / Enabled Report Schedules:** Report schedule Shell leaves (Stage 112 R1)
-- **Cash Drawer:** Stores Shell deep-link (Stage 112 S1)
-- **Trial / Starter / Growth / Enterprise Plan Tenants:** Platform plan_code Shell leaves (Stage 112 P1)
-- **Read Notifications:** Notifications status Shell leaf (Stage 113 N1)
-- **Bounced / Cancelled Cheques:** Accounting cheque exception Shell leaves (Stage 113 C1)
-- **Shipped / Delivered Orders; Paid Invoices; Transfer status reports:** Sales fulfillment & transfer-report Shell leaves (Stage 113 S1)
-- **Sent / Rejected / Expired Quotations; Cancelled Orders; Unpaid / Partial / Cancelled Invoices:** Residual sales status Shell leaves (Stage 114 Q1)
-- **Draft / Approved / Rejected / Cancelled / Converted PRs; Draft / Sent / Partially Received / Received / Cancelled POs; Paid Purchases:** Residual purchasing status Shell leaves (Stage 114 P1)
-- **Inter-store / Warehouse Transfer Reports; Retail+ industry Tenants; Cashier+ role Users; Purchasing+ Audit modules:** Ops filter Shell leaves (Stage 114 O1)
-- **Notification History:** Durable `?status=all` deep-link + Shell leaf (Stage 115 N1)
-- **Unpaid / Partial / Cancelled Purchases:** Purchase invoice status Shell leaves (Stage 115 P1)
-- **Draft Orders; Platform Admins / Super Admins:** Draft order + platform role Shell leaves (Stage 115 O1)
-- **Inventory / Sales Officer Users:** Remaining tenant officer role Shell leaves (Stage 116 U1)
-- **Posted / Sent Invoices:** Exact sales invoice status Shell leaves (Stage 116 S1)
-- **Credit / POS / Tax / Users / Company / Stores / Security Audit:** Residual audit module Shell leaves (Stage 116 A1)
-- **Cashier+ / Super Admin Permissions:** Permissions matrix `?role=` Shell leaves (Stage 117 P1)
-- **Tenants / Plans / Platform Users / Settings / Email Audit:** Platform audit module Shell leaves (Stage 117 A1)
-- **Notifications / Backup / AI / Reports / Dashboard Audit:** Stretch tenant audit Shell leaves (Stage 117 S1)
-- **Fiscal period Close / Reopen:** Company `#fiscal-period` console closes the open year for journal post/unpost (Stage 118 F1)
-- **Inactive Customers:** Sales customer list inactive-only filter + Shell leaf (Stage 118 C1)
-- **Export products CSV:** Inventory catalog export aligned with import template (Stage 118 E1)
-- **Inactive Suppliers:** Purchasing supplier list inactive-only filter + Shell leaves (Stage 119 S1)
-- **Export customers / suppliers CSV:** Party CSV export from Sales and Purchasing (Stage 119 E1)
-- **Preview sample invoice / receipt:** Company Document Templates sample print preview (Stage 119 T1)
-- **Inactive Products:** Inventory product list active/inactive filter + Shell leaves (Stage 120 P1)
-- **Export users CSV:** Users directory export aligned with import columns (Stage 120 U1)
-- **Export expenses CSV:** Expenses list export (record-scope aware) (Stage 120 X1)
-- **Inactive Stores:** Stores list active/inactive filter + Shell leaves (Stage 121 S1)
-- **Inactive Warehouses:** Warehouses list active/inactive filter + Shell leaves (Stage 121 W1)
-- **Export stores / warehouses / tax rates CSV:** Location CSV export buttons (Stage 121 X1)
-- **Inactive Branches / Departments:** Company org-unit active/inactive filters + Shell leaves (Stage 122 O1)
-- **Inactive Categories / Brands / Units:** Inventory catalog meta filters + Shell leaves (Stage 122 M1)
-- **Export branches / departments / catalog-meta CSV:** Org & catalog-meta export buttons (Stage 122 X1)
-- **Inactive Tax Rates / Accounts / Expense Categories:** Finance master active/inactive filters + Shell leaves (Stage 123 F1)
-- **Inactive Customer Groups:** Sales groups inactive filter + Shell leaf (Stage 123 G1)
-- **Export accounts / expense categories / customer groups CSV:** Finance & party-meta export buttons (Stage 123 X1)
-- **Inactive Product Variants:** Inventory Variants active/inactive filter + Shell leaves (Stage 124 V1)
-- **Inactive Custom Roles:** Admin Roles active/inactive filter + Shell leaves (Stage 124 R1)
-- **Export variants / custom roles CSV:** Inventory & Admin Roles export buttons (Stage 124 X1)
-- **Inactive Liquid Accounts:** Accounting Cash & Bank active/inactive filter + Shell leaves (Stage 125 L1)
-- **Paused Recurring Expenses:** Expenses Recurring active/paused filter + Shell leaves (Stage 125 R1)
-- **Export liquid accounts / recurring CSV:** Accounting & Expenses export buttons (Stage 125 X1)
-- **Inactive Bank Connections:** Accounting Bank API connections filter + Shell leaves (Stage 126 C1)
-- **Paused Webhooks:** Security Webhooks active/paused filter + Shell leaves (Stage 126 W1)
-- **Export bank connections / webhooks CSV:** Accounting & Security export buttons (Stage 126 X1)
-- **API Key Status Filters:** Security API keys active/revoked/expired filter + Shell leaves (Stage 127 K1)
-- **Session Status Filters:** Security sessions active/revoked filter + Shell leaves + CSV export (Stage 128 S1)
-- **Passkey Inventory CSV:** Security Export passkeys CSV (Stage 128 P1)
-- **Document Settings CSV:** Company Document numbering Export (Stage 128 N1)
-- **Tenant Session Inventory:** Security Tenant sessions filter + Shell leaves + CSV (Stage 129 A1)
-- **Notifications CSV:** Notifications Export CSV (Stage 129 N1)
-- **Backup Job History Filters:** Backup status filter + Shell Completed/Failed + CSV metadata export (Stage 129 B1)
-- **Cheques CSV:** Accounting Export cheques CSV (Stage 130 C1)
-- **POS Session Status Filters:** POS open/closed filter + Shell leaves + CSV (Stage 130 P1)
-- **Stock Count List Filters:** Inventory draft/completed/cancelled filter + Shell leaves + list CSV (Stage 130 S1)
-- **Journal Entry CSV:** Accounting Export journals CSV (Stage 131 J1)
-- **Bank Statement Status Filters:** Draft/in progress/reconciled filter + Shell leaves + header CSV (Stage 131 B1)
-- **Email Settings CSV:** Company Export email settings CSV — password excluded (Stage 131 E1)
-- **Sales Invoice CSV:** Sales Export invoices CSV (Stage 132 I1)
-- **Warehouse Transfer Status Filters:** Inventory draft/requested/in-transit/received/cancelled filter + Shell leaves + list CSV (Stage 132 T1)
-- **Purchase Invoice CSV:** Purchasing Export invoices CSV (Stage 132 P1)
-- **Sales Quotation CSV:** Sales Export quotations CSV (Stage 133 Q1)
-- **Sales Order CSV:** Sales Export orders CSV (Stage 133 O1)
-- **Sales Return CSV:** Sales Export returns CSV (Stage 133 R1)
-- **Purchase Request CSV:** Purchasing Export requests CSV (Stage 134 R1)
-- **Purchase Order CSV:** Purchasing Export orders CSV (Stage 134 O1)
-- **GRN CSV:** Purchasing Export GRNs CSV (Stage 134 G1)
-- **Purchase Return CSV:** Purchasing Export returns CSV (Stage 135 R1)
-- **SMS Settings CSV:** Company Export SMS settings CSV — secrets excluded (Stage 135 S1)
-- **Inter-store Transfer Status Filters:** Stores draft/requested/in-transit/received/cancelled filter + Shell leaves + list CSV (Stage 135 T1)
-- **Customer Payment Register CSV:** Credit Export customer payments CSV (Stage 136 C1)
-- **Supplier Payment Register CSV:** Credit Export supplier payments CSV (Stage 136 S1)
-- **Credit Aging CSV:** Credit Export aging CSV (Stage 136 A1)
-- **Stock Movements CSV:** Inventory Export movements CSV (Stage 137 M1)
-- **Low-Stock Alert Filters:** Inventory red/yellow filter + Shell leaves + list CSV (Stage 137 L1)
-- **Expiring Batches CSV:** Inventory Export expiring batches CSV + 30/60/90 Shell leaves (Stage 137 E1)
-- **Early-Pay Settings CSV:** Credit Export early-pay settings CSV (Stage 138 C1)
-- **Expense Approval Settings CSV:** Expenses Export approval settings CSV (Stage 138 E1)
-- **Purchasing Approval Settings CSV:** Purchasing Export approval settings CSV (Stage 138 P1)
-- **Expense Budgets CSV:** Expenses Export budgets CSV (Stage 139 B1)
-- **Account Ledger CSV:** Accounting Export account ledger CSV (Stage 139 A1)
-- **Fiscal Period CSV:** Company Export fiscal period CSV (Stage 139 F1)
-- **Storage Settings CSV:** Company Export storage settings CSV — secrets excluded (Stage 140 S1)
-- **Notification Preferences CSV:** Notifications Export preferences CSV (Stage 140 N1)
-- **Backup Settings CSV:** Backup Export backup settings CSV (Stage 140 B1)
-- **Outstanding Bills CSV:** Credit Export outstanding CSV (Stage 141 O1)
-- **Supplier Payment Schedule CSV:** Credit Export schedule CSV (Stage 141 P1)
-- **Party Statement CSV:** Credit Export statement CSV (Stage 141 T1)
-- **POS Sales Register CSV:** POS Export sales CSV (Stage 142 S1)
-- **Session Z-Report CSV:** POS Export Z-report CSV (Stage 142 Z1)
-- **Cash Drawer Settings CSV:** Stores Export drawer settings CSV — kick bytes excluded (Stage 142 C1)
-- **Company Profile CSV:** Company Export profile CSV (Stage 143 P1)
-- **Jobs Catalog CSV:** Company Export jobs catalog CSV — broker URLs excluded (Stage 143 J1)
-- **Onboarding Checklist CSV:** Shell Export checklist CSV (Stage 143 O1)
-- **Webhook Deliveries CSV:** Security Export deliveries CSV — payload excluded (Stage 144 W1)
-- **FEFO Settings CSV:** Stores Export FEFO settings CSV (Stage 144 F1)
-- **Audit Archives CSV:** Audit Export archives CSV — blob download excluded (Stage 144 A1)
-- **AI Security Alerts CSV:** AI Export security alerts CSV (Stage 145 S1)
-- **AI Report Templates CSV:** AI Export templates CSV (Stage 145 T1)
-- **Business Insights CSV:** AI Export insights CSV (Stage 145 I1)
-- **Low-Stock Prediction CSV:** AI Export low-stock CSV (Stage 146 L1)
-- **Demand Forecast CSV:** AI Export forecast CSV (Stage 146 F1)
-- **Dead-Stock CSV:** AI Export dead stock CSV (Stage 146 K1)
-- **Sales Analysis CSV:** AI Export sales analysis CSV (Stage 147 S1)
-- **Expense Analysis CSV:** AI Export expense analysis CSV (Stage 147 E1)
-- **Purchases Analysis CSV:** AI Export purchases analysis CSV (Stage 147 P1)
-- **Chat History CSV:** AI Export chat history CSV (Stage 148 C1)
-- **Customer Insights CSV:** AI Export customer insights CSV (Stage 148 I1)
-- **Cross-Domain Analysis CSV:** AI Export cross-domain CSV (Stage 148 X1)
-- **Document Analyze CSV:** AI Export analyze CSV (Stage 149 A1)
-- **Platform Staff Users CSV:** Platform Users Export users CSV (Stage 149 U1)
-- **Platform Staff Sessions CSV:** Platform Users Export sessions CSV (Stage 149 S1)
-- **Platform Plans Catalog CSV:** Platform Plans Export plans CSV (Stage 150 P1)
-- **Platform Subscriptions Roster CSV:** Platform Billing Export subscriptions CSV (Stage 150 R1)
-- **Platform House Settings CSV:** Platform Settings Export settings CSV (Stage 150 S1)
-- **Platform Health Checks CSV:** Platform Health Export health CSV (Stage 151 H1)
-- **Platform Operator Evidence CSV:** Platform Health Export evidence CSV (Stage 151 E1)
-- **Platform At-Risk Tenants CSV:** Platform Tenants Export at-risk CSV (Stage 151 A1)
-- **Platform Dashboard Aggregates CSV:** Platform Dashboard Export aggregates CSV (Stage 152 G1)
-- **Platform Industries Catalog CSV:** Platform Tenants Export industries CSV (Stage 152 I1)
-- **Admin Permissions Matrix CSV:** Admin Permissions Export permissions matrix CSV (Stage 152 M1)
-- **Tenant Dashboard Aggregates CSV:** Dashboard Export aggregates CSV (Stage 153 B1)
-- **Customer History CSV:** Sales Export history CSV (Stage 153 C1)
-- **Supplier History CSV:** Purchasing Export history CSV (Stage 153 S1)
-- **PO Amendments CSV:** Purchasing Export amendments CSV (Stage 154 A1)
-- **Product Batches CSV:** Inventory Export product batches CSV (Stage 154 K1)
-- **API-Key Usage CSV:** Security Export usage CSV (Stage 154 U1)
-- **Store Inventory CSV:** Stores Inventory Export inventory CSV (Stage 155 I1)
-- **Store Sales CSV:** Stores Sales Export sales CSV (Stage 155 S1)
-- **Product Warehouse-Stock CSV:** Inventory Stock Export warehouse-stock CSV (Stage 155 W1)
-- **Product Images CSV:** Inventory gallery Export images CSV (Stage 156 G1)
-- **Per-Product Variants CSV:** Inventory Variants Export product variants CSV (Stage 156 V1)
-- **Bank-Feed Settings CSV:** Accounting Export bank-feed settings CSV (Stage 156 F1)
-- **AI Inventory Predictions CSV:** AI Export predictions CSV (Stage 157 P1)
-- **Dashboard Sales-Trend CSV:** Dashboard Export sales-trend CSV (Stage 157 S1)
-- **Dashboard Top-Products CSV:** Dashboard Export top-products CSV (Stage 157 T1)
-- **Dashboard Stock-Alerts CSV:** Dashboard Export stock-alerts CSV (Stage 158 A1)
-- **Dashboard Expenses CSV:** Dashboard Export expenses CSV (Stage 158 E1)
-- **Dashboard Credit CSV:** Dashboard Export credit CSV (Stage 158 C1)
-- **Dashboard User-Stats CSV:** Dashboard Export user-stats CSV (Stage 159 U1)
-- **Dashboard Summary CSV:** Dashboard Export summary CSV (Stage 159 M1)
-- **Accounting Trial-Balance CSV:** Accounting Export trial-balance CSV (Stage 159 B1)
-- **Accounting Profit-Loss CSV:** Accounting Export profit-loss CSV (Stage 160 P1)
-- **Reports Cash-Flow Path CSV:** Reports Export cash-flow path CSV (Stage 160 C1)
-- **Reports Balance-Sheet Path CSV:** Reports Export balance-sheet path CSV (Stage 160 S1)
-- **Reports Profit-Loss Path CSV:** Reports Export profit-loss path CSV (Stage 161 L1)
-- **Reports Trial-Balance Path CSV:** Reports Export trial-balance path CSV (Stage 161 B1)
-- **Reports Tax Path CSV:** Reports/Tax Export tax path CSV (Stage 161 X1)
-- **Export API keys / FX rates / report schedules CSV:** Security, Credit & Reports export buttons (Stage 127 K1 / F1 / S1)
-- **Store Selector:** Switch between stores (if you have access to multiple)
+- **Store Selector:** Switch the active store context in the header (persisted per tenant). Seeds POS, Sales, Reports, Tax, and Expenses store pickers; choose **All stores** for company-wide views when multiple stores exist.
 - **Notification Bell:** View alerts and messages
-- **Profile Menu:** Security / 2FA and log out
-
+- **Profile Menu:** Access your profile, change password, or log out
+- Theme toggle (light/dark)
 #### Common UI Patterns
 | Element | Action |
 |---------|--------|
@@ -2188,7 +2001,7 @@ Stage 17 L1: product list and **Inventory → Low stock** show traffic-light `st
 3. Add products:
    - Search by name/SKU/barcode
    - Quantity and unit price auto-filled (editable)
-   - Apply line-item discounts if needed
+   - Apply **Line discount** and optional **Header discount** on Create sale (tax before line discount)
 4. Set **Validity Period** (e.g., 7 days)
 5. Add notes/terms
 6. Click **Save** (draft) or **Send** (email to customer)
@@ -2201,7 +2014,7 @@ Stage 17 L1: product list and **Inventory → Low stock** show traffic-light `st
 1. Go to **Sales → Sales Orders → + New Order**
    - Or convert from a quotation: Open quotation → **Convert to Order**
 2. Select **Customer**
-3. Add products and quantities
+3. Add products and quantities (optional **Line discount** / **Header discount** on Create sale)
 4. Set **Expected Delivery Date**
 5. Click **Confirm Order**
 6. System reserves inventory
@@ -2225,7 +2038,7 @@ Stage 17 L1: product list and **Inventory → Low stock** show traffic-light `st
 4. Review:
    - Subtotal
    - Tax (auto-calculated)
-   - Discount (percentage or fixed)
+   - Line + header **Discount** (Create sale fields; detail KPI)
    - **Total Amount**
 5. Select **Payment Method**:
    - **Cash:** Immediate payment
@@ -2513,10 +2326,11 @@ Stage 22 (ADR-049) proves expense categories, budgets, approval matrix, and recu
    - **Store** and **Department** (optional org dimensions; Stage 14 E2)
 3. **Attach Receipt:** Upload photo or PDF of receipt
 4. Click **Submit**
+5. After upload, use **Preview** (image/PDF modal) or **Download**; **OCR** can suggest amount/date/payee
 
-> **Category GL:** Under **Expenses → Categories**, link each category to an expense Chart of Accounts account so approvals post to the right GL (Stage 14 E1; unmapped categories use Operating Expenses `6000`). Set **budget amount** per category for period variance (Stage 22 E1).
+> **Categories:** On Expenses → Category budgets, set monthly budgets / GL, and **Deactivate** obsolete categories (history kept). Inactive categories are hidden from new expense / recurring pickers until **Activate** again.
 
-> **OCR Tip:** Attach a receipt, run **OCR suggest**, review the fields, then **Apply** (`confirm=true`). Nothing is written until you confirm (Stage 10 A1).
+> **OCR Tip:** The AI Document Assistant can auto-extract amount, date, and vendor from receipt images. Expenses also has per-row **OCR** + **Preview**.
 
 ### 7.2 Expense Approval
 
@@ -2524,7 +2338,7 @@ If the expense exceeds your company's approval threshold:
 
 1. Expense status becomes **Pending Approval**
 2. Approver (usually Store Manager or Company Admin) receives notification
-3. Approver reviews and clicks **Approve** or **Reject** with comments
+3. Approver reviews — use **Edit** on pending (or rejected) rows to fix amount/payee/description/reference before deciding — then clicks **Approve** or **Reject** with comments
 4. Approved expenses are posted to accounting automatically
 
 > **Approval matrix:** Configure multi-level thresholds and role gates under expense approval settings (Stage 22 A1).
@@ -2535,14 +2349,16 @@ If the expense exceeds your company's approval threshold:
 
 For regular payments like rent or subscriptions:
 
-1. Go to **Expenses → Recurring Expenses → + New**
+1. Go to **Expenses** and open the **Recurring expenses** card
 2. Set:
    - **Frequency:** Daily, Weekly, Monthly, Yearly
-   - **Start Date** and **End Date** (optional)
-   - **Amount** and **Category**
-   - **Store** / **Department** (carried into generated expenses; Stage 14 E2)
-3. System auto-generates expense entries on schedule
-4. You can skip or modify individual occurrences (Stage 22 A1 — `skip_next` / next amount or description)
+   - **Amount**, **Category**, optional payee / branch / department
+3. Click **Create schedule** — the system stores `next_run_at` and Celery generates due expenses automatically
+4. Use **Generate due now** to run the same job immediately (generated expenses use EXP numbering)
+5. **Skip next** advances `next_run_at` by one period without creating an expense — enter a **Skip next reason** first (required; stored on audit only, e.g. skip a holiday cycle)
+6. **Deactivate** / **Activate** a schedule from the list when you need to pause it
+
+> Advance notifications (category `recurring_expense_due`) fire about one day before `next_run_at` via Notifications → Scan due / Celery. To change one occurrence’s amount/payee: **Generate due**, then **Edit** that pending expense before approve. To change the schedule’s default amount/payee for future runs: **Edit schedule** on the Recurring card (does not rewrite past expenses).
 
 ### 7.4 Expense Reports
 
@@ -2968,7 +2784,13 @@ On the AI / inventory prediction views you can see:
 - Dead-stock candidates
 - One-click **Create draft PO** from low-stock / prediction suggestions (`POST /inventory/low-stock/reorder-po`)
 
-### 14.4 Sales analysis & NL reports
+Go to **AI → Inventory predictions** to see at-risk SKUs (14-day window), then **Create draft PR(s)** for one-click draft purchase requests:
+- Predicted stockout timing (`days_to_stockout`)
+- Recommended order quantity
+- Confidence score
+- Draft PRs appear under **Purchasing → Requests** (requires purchasing write permission)
+
+> Reports → Inventory also has threshold-based low-stock suggestions with a separate draft-PR action.
 
 **Sales analysis** (`/ai/sales/analysis` via the AI page) shows trend forecast, RFM customer segments, products frequently bought together, and peak hour/day patterns.
 
@@ -3032,10 +2854,17 @@ Go to **Settings → Templates** (or Company numbering) to customize:
 
 ### 15.4 Email Settings
 
-Go to **Settings → Email** to configure:
-- SMTP server for sending emails
-- Default sender name and email
-- Email templates for invoices, quotations, and notifications
+Go to **Company → Email / SMTP** to configure tenant SMTP (overrides process env when host + from email are set):
+- SMTP host, port, username, and password (password is stored encrypted; leave blank on save to keep the current password)
+- STARTTLS or SSL
+- Default sender name and from email
+- **Send test email to me** to verify delivery (console mode when SMTP is unset)
+
+### 15.5 SMS / Twilio Settings
+
+Go to **Company → SMS / Twilio** to configure tenant Twilio credentials (overrides process env when Account SID + From + Auth token are set):
+- Account SID, Auth token (encrypted; leave blank on save to keep), From number (E.164)
+- Save your profile phone, then **Send test SMS to me** (console mode when Twilio is unset)
 
 ### 15.5 Backup & logical restore (Company Admin)
 

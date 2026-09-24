@@ -1,0 +1,415 @@
+"""Document number helpers: daily sequences and configurable year series."""
+
+from __future__ import annotations
+
+import re
+from datetime import datetime
+from typing import Any
+
+from fastapi import HTTPException
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app import models as m
+from app.honesty import require_honest_narrative
+
+_SEQ_RE = re.compile(r"-(\d+)$")
+_PREFIX_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,19}$")
+SERIES_PAD = 4
+
+# kind -> default prefix + uniqueness model/column (JSON kinds use document_numbering)
+SERIES_KINDS: dict[str, dict[str, Any]] = {
+    "sales_invoice": {
+        "default_prefix": "INV",
+        "storage": "columns",
+        "model": m.SalesInvoice,
+        "field": "invoice_number",
+    },
+    "quotation": {
+        "default_prefix": "QT",
+        "storage": "json",
+        "model": m.SalesQuotation,
+        "field": "quotation_number",
+    },
+    "purchase_order": {
+        "default_prefix": "PO",
+        "storage": "json",
+        "model": m.PurchaseOrder,
+        "field": "po_number",
+    },
+    "grn": {
+        "default_prefix": "GRN",
+        "storage": "json",
+        "model": m.GoodsReceipt,
+        "field": "grn_number",
+    },
+    "purchase_invoice": {
+        "default_prefix": "PINV",
+        "storage": "json",
+        "model": m.PurchaseInvoice,
+        "field": "invoice_number",
+    },
+    "purchase_return": {
+        "default_prefix": "PR",
+        "storage": "json",
+        "model": m.PurchaseReturn,
+        "field": "return_number",
+    },
+    "debit_note": {
+        "default_prefix": "DN",
+        "storage": "json",
+        "model": m.PurchaseReturn,
+        "field": "debit_note_number",
+    },
+    "sales_return": {
+        "default_prefix": "SR",
+        "storage": "json",
+        "model": m.SalesReturn,
+        "field": "return_number",
+    },
+    "credit_note": {
+        "default_prefix": "CN",
+        "storage": "json",
+        "model": m.SalesReturn,
+        "field": "credit_note_number",
+    },
+    "sales_order": {
+        "default_prefix": "SO",
+        "storage": "json",
+        "model": m.SalesOrder,
+        "field": "order_number",
+    },
+    "purchase_request": {
+        "default_prefix": "PREQ",
+        "storage": "json",
+        "model": m.PurchaseRequest,
+        "field": "request_number",
+    },
+    "customer_payment": {
+        "default_prefix": "RCP",
+        "storage": "json",
+        "model": m.CustomerPayment,
+        "field": "payment_number",
+    },
+    "supplier_payment": {
+        "default_prefix": "SPY",
+        "storage": "json",
+        "model": m.SupplierPayment,
+        "field": "payment_number",
+    },
+    "journal_entry": {
+        "default_prefix": "JE",
+        "storage": "json",
+        "model": m.JournalEntry,
+        "field": "entry_number",
+    },
+    "pos_sale": {
+        "default_prefix": "POS",
+        "storage": "json",
+        "model": m.Transaction,
+        "field": "reference",
+    },
+    "pos_session": {
+        "default_prefix": "SHIFT",
+        "storage": "json",
+        "model": m.PosSession,
+        "field": "session_number",
+    },
+    "stock_transfer": {
+        "default_prefix": "TR",
+        "storage": "json",
+        "model": m.StockTransfer,
+        "field": "transfer_number",
+    },
+    "stock_count": {
+        "default_prefix": "SC",
+        "storage": "json",
+        "model": m.StockCount,
+        "field": "count_number",
+    },
+    "expense": {
+        "default_prefix": "EXP",
+        "storage": "json",
+        "model": m.Expense,
+        "field": "reference",
+    },
+    "cash_transfer": {
+        "default_prefix": "XFER",
+        "storage": "json",
+        "model": m.CashTransfer,
+        "field": "reference",
+    },
+    # No dedicated opening-stock table; uniqueness checked on journal reference
+    # when a GL entry is posted (audit/response still carry the allocated label).
+    "opening_stock": {
+        "default_prefix": "OS",
+        "storage": "json",
+        "model": m.JournalEntry,
+        "field": "reference",
+    },
+}
+
+# Back-compat aliases
+DEFAULT_INVOICE_PREFIX = SERIES_KINDS["sales_invoice"]["default_prefix"]
+INVOICE_SERIES_PAD = SERIES_PAD
+
+
+def format_daily_number(prefix: str, day: str | None = None, seq: int = 1) -> str:
+    """Build a short number like S260811-001."""
+    day_part = day or datetime.utcnow().strftime("%y%m%d")
+    return f"{prefix}{day_part}-{max(int(seq), 1):03d}"
+
+
+def format_series_number(prefix: str, year: int, seq: int, *, pad: int = SERIES_PAD) -> str:
+    """Build INV-2026-0001 style series numbers."""
+    return f"{prefix}-{int(year)}-{max(int(seq), 1):0{int(pad)}d}"
+
+
+def normalize_prefix(prefix: str | None, *, default: str = "INV") -> str:
+    # OpenAPI DocumentPrefixValue → 422; service defense-in-depth → 400.
+    raw = prefix if prefix is not None and str(prefix).strip() else default
+    text = require_honest_narrative(
+        raw, label="document prefix", max_length=20
+    ).strip().upper()
+    if not _PREFIX_RE.match(text):
+        raise HTTPException(
+            status_code=400,
+            detail="Document prefix must be 1–20 chars: letters, digits, underscore, or hyphen",
+        )
+    return text
+
+
+def normalize_invoice_prefix(prefix: str | None) -> str:
+    return normalize_prefix(prefix, default=DEFAULT_INVOICE_PREFIX)
+
+
+def _json_bucket(tenant: m.Tenant) -> dict:
+    raw = getattr(tenant, "document_numbering", None) or {}
+    return dict(raw) if isinstance(raw, dict) else {}
+
+
+def _read_state(tenant: m.Tenant, kind: str) -> tuple[str, int, int | None]:
+    meta = SERIES_KINDS[kind]
+    default_prefix = meta["default_prefix"]
+    if meta["storage"] == "columns":
+        prefix = getattr(tenant, "sales_invoice_number_prefix", None) or default_prefix
+        next_seq = int(getattr(tenant, "sales_invoice_number_next", None) or 1)
+        year = getattr(tenant, "sales_invoice_number_year", None)
+        return prefix, next_seq, year
+    bucket = _json_bucket(tenant).get(kind) or {}
+    prefix = bucket.get("prefix") or default_prefix
+    next_seq = int(bucket.get("next") or 1)
+    year = bucket.get("year")
+    return prefix, next_seq, int(year) if year is not None else None
+
+
+def _write_state(tenant: m.Tenant, kind: str, *, prefix: str, next_seq: int, year: int) -> None:
+    meta = SERIES_KINDS[kind]
+    if meta["storage"] == "columns":
+        tenant.sales_invoice_number_prefix = prefix
+        tenant.sales_invoice_number_next = next_seq
+        tenant.sales_invoice_number_year = year
+        return
+    data = _json_bucket(tenant)
+    data[kind] = {"prefix": prefix, "next": next_seq, "year": year}
+    tenant.document_numbering = data
+
+
+def numbering_settings(tenant: m.Tenant, kind: str, *, as_of: datetime | None = None) -> dict:
+    """Serialize numbering config + next preview for one document kind (no side effects)."""
+    if kind not in SERIES_KINDS:
+        raise HTTPException(status_code=400, detail=f"Unknown numbering kind: {kind}")
+    now = as_of or datetime.utcnow()
+    year = now.year
+    raw_prefix, next_seq, stored_year = _read_state(tenant, kind)
+    prefix = normalize_prefix(raw_prefix, default=SERIES_KINDS[kind]["default_prefix"])
+    if stored_year is not None and int(stored_year) != year:
+        next_seq = 1
+    next_seq = max(int(next_seq), 1)
+    return {
+        "kind": kind,
+        "prefix": prefix,
+        "next_number": next_seq,
+        "year": year,
+        "pad": SERIES_PAD,
+        "pattern": f"{prefix}-{{YYYY}}-{{NNNN}}",
+        "preview": format_series_number(prefix, year, next_seq),
+    }
+
+
+def invoice_numbering_settings(tenant: m.Tenant, *, as_of: datetime | None = None) -> dict:
+    return numbering_settings(tenant, "sales_invoice", as_of=as_of)
+
+
+def all_numbering_settings(tenant: m.Tenant, *, as_of: datetime | None = None) -> dict:
+    return {kind: numbering_settings(tenant, kind, as_of=as_of) for kind in SERIES_KINDS}
+
+
+def apply_numbering_update(
+    tenant: m.Tenant,
+    kind: str,
+    *,
+    prefix: str,
+    next_number: int,
+    as_of: datetime | None = None,
+) -> dict:
+    if kind not in SERIES_KINDS:
+        raise HTTPException(status_code=400, detail=f"Unknown numbering kind: {kind}")
+    year = (as_of or datetime.utcnow()).year
+    clean = normalize_prefix(prefix, default=SERIES_KINDS[kind]["default_prefix"])
+    _write_state(tenant, kind, prefix=clean, next_seq=max(int(next_number), 1), year=year)
+    return numbering_settings(tenant, kind, as_of=as_of)
+
+
+def _max_seq(references: list[str], prefix: str) -> int:
+    seq = 0
+    for ref in references:
+        text = str(ref or "")
+        if not text.startswith(prefix):
+            continue
+        match = _SEQ_RE.search(text)
+        if not match:
+            continue
+        try:
+            seq = max(seq, int(match.group(1)))
+        except ValueError:
+            continue
+    return seq
+
+
+async def next_daily_number(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    prefix: str,
+    references: list[str],
+) -> str:
+    day = datetime.utcnow().strftime("%y%m%d")
+    full_prefix = f"{prefix}{day}-"
+    seq = _max_seq(references, full_prefix) + 1
+    return format_daily_number(prefix, day, seq)
+
+
+async def next_pos_sale_number(db: AsyncSession, tenant_id: str) -> str:
+    """Allocate next POS sale reference from tenant year series (default POS-YYYY-NNNN)."""
+    return await next_series_document_number(db, tenant_id, "pos_sale")
+
+
+async def next_pos_session_number(db: AsyncSession, tenant_id: str) -> str:
+    """Allocate next POS shift session number (default SHIFT-YYYY-NNNN)."""
+    return await next_series_document_number(db, tenant_id, "pos_session")
+
+
+async def next_stock_transfer_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "stock_transfer")
+
+
+async def next_stock_count_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "stock_count")
+
+
+async def next_expense_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "expense")
+
+
+async def next_cash_transfer_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "cash_transfer")
+
+
+async def next_opening_stock_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "opening_stock")
+
+
+async def next_series_document_number(db: AsyncSession, tenant_id: str, kind: str) -> str:
+    """Allocate next `{prefix}-{YYYY}-{NNNN}` for the given document kind."""
+    if kind not in SERIES_KINDS:
+        raise HTTPException(status_code=400, detail=f"Unknown numbering kind: {kind}")
+    meta = SERIES_KINDS[kind]
+    model = meta["model"]
+    field_name = meta["field"]
+    number_col = getattr(model, field_name)
+
+    tenant = (
+        await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id).with_for_update())
+    ).scalar_one()
+    year = datetime.utcnow().year
+    raw_prefix, next_seq, stored_year = _read_state(tenant, kind)
+    prefix = normalize_prefix(raw_prefix, default=meta["default_prefix"])
+    if stored_year is None or int(stored_year) != year:
+        next_seq = 1
+        stored_year = year
+
+    for _ in range(10_000):
+        seq = max(int(next_seq), 1)
+        candidate = format_series_number(prefix, year, seq)
+        next_seq = seq + 1
+        _write_state(tenant, kind, prefix=prefix, next_seq=next_seq, year=year)
+        exists = (
+            await db.execute(
+                select(model.id).where(
+                    model.tenant_id == tenant_id,
+                    number_col == candidate,
+                )
+            )
+        ).scalar_one_or_none()
+        if not exists:
+            await db.flush()
+            return candidate
+
+    raise HTTPException(status_code=500, detail=f"Unable to allocate {kind} number")
+
+
+async def next_sales_invoice_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "sales_invoice")
+
+
+async def next_quotation_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "quotation")
+
+
+async def next_purchase_order_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "purchase_order")
+
+
+async def next_grn_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "grn")
+
+
+async def next_purchase_invoice_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "purchase_invoice")
+
+
+async def next_purchase_return_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "purchase_return")
+
+
+async def next_debit_note_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "debit_note")
+
+
+async def next_sales_return_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "sales_return")
+
+
+async def next_credit_note_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "credit_note")
+
+
+async def next_sales_order_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "sales_order")
+
+
+async def next_purchase_request_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "purchase_request")
+
+
+async def next_customer_payment_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "customer_payment")
+
+
+async def next_supplier_payment_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "supplier_payment")
+
+
+async def next_journal_entry_number(db: AsyncSession, tenant_id: str) -> str:
+    return await next_series_document_number(db, tenant_id, "journal_entry")

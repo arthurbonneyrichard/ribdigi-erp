@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime
 
 from fastapi import HTTPException
@@ -9,24 +10,101 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
+from app.schemas import validate_e164_phone_value
 from app.inventory import allocate_unlocated_stock, apply_warehouse_stock_change, get_or_create_warehouse_stock
 
 TRANSFER_EDITABLE = {"draft"}
 TRANSFER_SUBMITTABLE = {"draft"}
-TRANSFER_SHIPPABLE = {"requested", "draft"}
+TRANSFER_APPROVABLE = frozenset({"requested"})
+TRANSFER_SHIPPABLE = frozenset({"requested"})
 TRANSFER_RECEIVABLE = {"in_transit"}
 TRANSFER_CANCELLABLE = {"draft", "requested", "in_transit"}
-TRANSFER_HISTORY_SCOPES = frozenset({"all", "inter_store", "warehouse"})
+TRANSFER_ADMIN_ROLES = frozenset({"company_admin", "super_admin"})
+TRANSFER_MANAGER_ROLES = frozenset({"store_manager"}) | TRANSFER_ADMIN_ROLES
+
+WEEKDAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+_TIME_RE = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
 
 
-async def next_transfer_number(
-    db: AsyncSession, tenant_id: str, company_id: str | None = None
-) -> str:
-    stmt = select(m.StockTransfer.id).where(m.StockTransfer.tenant_id == tenant_id)
-    if company_id:
-        stmt = stmt.where(m.StockTransfer.company_id == company_id)
-    count = len((await db.execute(stmt)).scalars().all())
-    return f"TR-{datetime.utcnow():%Y%m%d}-{count + 1:04d}"
+def _optional_store_phone(value: str | None) -> str | None:
+    """OpenAPI E164PhoneValue → 422; service defense-in-depth → 400."""
+    if value is None:
+        return None
+    try:
+        return validate_e164_phone_value(str(value).strip())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+def normalize_operating_hours(value: dict | None) -> dict | None:
+    """Validate weekly hours map; return normalized dict or None.
+
+    Schema StoreOperatingHours / StoreDayHours rejects unknown days and bad
+    HH:MM → 422; keep allow-list + time defense-in-depth here.
+    """
+    if value is None:
+        return None
+    if not isinstance(value, dict):
+        raise HTTPException(status_code=400, detail="operating_hours must be an object")
+    if not value:
+        return None
+    unknown = set(value.keys()) - set(WEEKDAYS)
+    if unknown:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid operating_hours day keys: {sorted(unknown)}",
+        )
+    cleaned: dict[str, dict] = {}
+    for day in WEEKDAYS:
+        if day not in value:
+            continue
+        entry = value[day]
+        if entry is None:
+            continue
+        if not isinstance(entry, dict):
+            raise HTTPException(status_code=400, detail=f"operating_hours.{day} must be an object")
+        closed = bool(entry.get("closed"))
+        if closed:
+            cleaned[day] = {"closed": True}
+            continue
+        open_t = str(entry.get("open") or "").strip()
+        close_t = str(entry.get("close") or "").strip()
+        if not _TIME_RE.fullmatch(open_t) or not _TIME_RE.fullmatch(close_t):
+            raise HTTPException(
+                status_code=400,
+                detail=f"operating_hours.{day} requires open/close as HH:MM (24h)",
+            )
+        if open_t >= close_t:
+            raise HTTPException(
+                status_code=400,
+                detail=f"operating_hours.{day} open must be before close",
+            )
+        cleaned[day] = {"open": open_t, "close": close_t, "closed": False}
+    return cleaned or None
+
+
+def serialize_store(row: m.Store, *, drawer: dict | None = None) -> dict:
+    data = {
+        "id": row.id,
+        "name": row.name,
+        "code": row.code,
+        "address": row.address,
+        "phone": row.phone,
+        "manager_id": row.manager_id,
+        "branch_id": getattr(row, "branch_id", None),
+        "is_active": bool(row.is_active),
+        "operating_hours": getattr(row, "operating_hours", None),
+    }
+    if drawer:
+        data.update({k: v for k, v in drawer.items() if k != "source"})
+    return data
+
+
+async def next_transfer_number(db: AsyncSession, tenant_id: str) -> str:
+    from app.doc_numbers import next_stock_transfer_number
+
+    return await next_stock_transfer_number(db, tenant_id)
 
 
 async def get_store(
@@ -45,14 +123,15 @@ async def get_store(
     return store
 
 
-async def warehouse_for_store(
-    db: AsyncSession,
-    tenant_id: str,
-    store_id: str,
-    *,
-    company_id: str | None = None,
-) -> m.Warehouse:
-    store = await get_store(db, tenant_id, store_id, company_id=company_id)
+async def require_active_store(db: AsyncSession, tenant_id: str, store_id: str) -> m.Store:
+    """Resolve store for new POS/sales/expense assignment; inactive stores cannot be newly used."""
+    store = await get_store(db, tenant_id, store_id)
+    if not bool(store.is_active):
+        raise HTTPException(status_code=400, detail="Store is inactive")
+    return store
+
+
+async def warehouse_for_store(db: AsyncSession, tenant_id: str, store_id: str) -> m.Warehouse:
     wh = (
         await db.execute(
             select(m.Warehouse).where(
@@ -86,17 +165,53 @@ async def create_store(
     manager_id: str | None = None,
     branch_id: str | None = None,
     operating_hours: dict | None = None,
-    company_id: str | None = None,
 ) -> m.Store:
     from app import store_entitlements as store_ent_svc
 
-    if not company_id:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "code": "COMPANY_WORKSPACE_REQUIRED",
-                "message": "Store creation requires an active company workspace.",
-            },
+    # Lock tenant row so concurrent creates cannot both pass the quota check.
+    tenant = await store_ent_svc.lock_tenant_for_store_quota(db, tenant_id)
+    await store_ent_svc.assert_can_create_store(db, tenant)
+
+    if branch_id:
+        from app import org_units as org_units_svc
+
+        branch = await org_units_svc.get_branch(db, tenant_id, branch_id)
+        if not branch.is_active:
+            raise HTTPException(status_code=400, detail="Branch is inactive")
+        branch_id = branch.id
+    if manager_id:
+        user = (
+            await db.execute(
+                select(m.User).where(m.User.id == manager_id, m.User.tenant_id == tenant_id)
+            )
+        ).scalar_one_or_none()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found in tenant")
+    # OpenAPI StoreNameValue → 422; service defense-in-depth → 400.
+    name_clean = require_honest_narrative(name, label="store name", max_length=150)
+    # OpenAPI StoreCodeValue → 422; service defense-in-depth → 400.
+    code_clean = require_honest_narrative(
+        (code or "").strip().upper(), label="store code", max_length=50
+    )
+    store = m.Store(
+        tenant_id=tenant_id,
+        name=name_clean,
+        code=code_clean,
+        address=optional_honest_narrative(address, label="store address", max_length=500),
+        phone=_optional_store_phone(phone),
+        manager_id=manager_id,
+        branch_id=branch_id,
+        operating_hours=normalize_operating_hours(operating_hours),
+        is_active=True,
+    )
+    db.add(store)
+    await db.flush()
+    db.add(
+        m.Warehouse(
+            tenant_id=tenant_id,
+            store_id=store.id,
+            name=f"{store.name} Warehouse",
+            code=f"WH-{store.code}",
         )
     tenant = await db.get(m.Tenant, tenant_id)
     company = await db.get(m.Company, company_id)
@@ -267,79 +382,65 @@ async def update_store(
     return store
 
 
-def serialize_warehouse(row: m.Warehouse) -> dict:
-    return {
-        "id": row.id,
-        "company_id": getattr(row, "company_id", None),
-        "store_id": row.store_id,
-        "name": row.name,
-        "code": row.code,
-        "warehouse_type": getattr(row, "warehouse_type", None) or "retail",
-        "manager_id": getattr(row, "manager_id", None),
-        "address": getattr(row, "address", None),
-        "capacity": float(row.capacity) if getattr(row, "capacity", None) is not None else None,
-        "is_active": bool(getattr(row, "is_active", True)),
-    }
-
-
-async def update_warehouse(
+async def update_store(
     db: AsyncSession,
     *,
     tenant_id: str,
-    warehouse_id: str,
+    store_id: str,
     name: str | None = None,
-    store_id: str | None = None,
-    clear_store: bool = False,
-    warehouse_type: str | None = None,
+    address: str | None = None,
+    phone: str | None = None,
     manager_id: str | None = None,
     clear_manager: bool = False,
-    address: str | None = None,
-    capacity: float | None = None,
+    branch_id: str | None = None,
+    clear_branch: bool = False,
     is_active: bool | None = None,
-    company_id: str | None = None,
-) -> m.Warehouse:
-    from app.inventory import get_warehouse
-
-    row = await get_warehouse(db, tenant_id, warehouse_id, company_id=company_id)
+    operating_hours: dict | None = None,
+    set_operating_hours: bool = False,
+) -> m.Store:
+    store = await get_store(db, tenant_id, store_id)
     if name is not None:
-        clean = name.strip()
-        if len(clean) < 2:
-            raise HTTPException(status_code=400, detail="name must be at least 2 characters")
-        row.name = clean
-    if clear_store:
-        row.store_id = None
-    elif store_id is not None:
-        await get_store(db, tenant_id, store_id, company_id=company_id)
-        row.store_id = store_id
-    if warehouse_type is not None:
-        wtype = warehouse_type.strip().lower()
-        if wtype not in {"retail", "main", "cold", "bulk", "transit"}:
-            raise HTTPException(
-                status_code=400,
-                detail="warehouse_type must be one of: retail, main, cold, bulk, transit",
-            )
-        row.warehouse_type = wtype
+        # OpenAPI StoreNameValue → 422; service defense-in-depth → 400.
+        store.name = require_honest_narrative(name, label="store name", max_length=150)
+    if address is not None:
+        store.address = optional_honest_narrative(
+            address, label="store address", max_length=500
+        )
+    if phone is not None:
+        # Defense in depth: StoreUpdate E164PhoneValue → 422 on blank/invalid.
+        store.phone = _optional_store_phone(phone)
     if clear_manager:
-        row.manager_id = None
+        store.manager_id = None
     elif manager_id is not None:
-        manager = (
+        user = (
             await db.execute(
                 select(m.User).where(m.User.id == manager_id, m.User.tenant_id == tenant_id)
             )
         ).scalar_one_or_none()
-        if not manager:
-            raise HTTPException(status_code=404, detail="Manager user not found")
-        row.manager_id = manager_id
-    if address is not None:
-        row.address = address.strip() or None
-    if capacity is not None:
-        if float(capacity) < 0:
-            raise HTTPException(status_code=400, detail="capacity must be >= 0")
-        row.capacity = float(capacity)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found in tenant")
+        store.manager_id = manager_id
+    if clear_branch:
+        store.branch_id = None
+    elif branch_id is not None:
+        from app import org_units as org_units_svc
+
+        branch = await org_units_svc.get_branch(db, tenant_id, branch_id)
+        if not branch.is_active:
+            raise HTTPException(status_code=400, detail="Branch is inactive")
+        store.branch_id = branch.id
     if is_active is not None:
-        row.is_active = bool(is_active)
+        from app import store_entitlements as store_ent_svc
+
+        new_active = bool(is_active)
+        if new_active and not bool(store.is_active):
+            tenant = await store_ent_svc.lock_tenant_for_store_quota(db, tenant_id)
+            await store_ent_svc.assert_can_activate_store(db, tenant, store)
+        store.is_active = new_active
+    if set_operating_hours:
+        store.operating_hours = normalize_operating_hours(operating_hours)
     await db.flush()
-    return row
+    return store
 
 
 async def store_inventory(
@@ -369,9 +470,9 @@ async def store_inventory(
     rows = (await db.execute(stmt)).all()
     out = []
     for stock, product in rows:
-        qty = float(stock.quantity or 0)
-        reorder = float(getattr(stock, "reorder_level", 0) or 0)
-        reorder_qty = float(getattr(stock, "reorder_qty", 0) or 0)
+        qty = money_json(stock.quantity)
+        reorder = money_json(getattr(stock, "reorder_level", 0) or 0)
+        reorder_qty = money_json(getattr(stock, "reorder_qty", 0) or 0)
         out.append(
             {
                 "product_id": product.id,
@@ -381,11 +482,13 @@ async def store_inventory(
                 "reorder_level": reorder,
                 "reorder_qty": reorder_qty,
                 "below_reorder": reorder > 0 and qty <= reorder,
-                "suggested_order_qty": max(reorder_qty, round(reorder - qty, 3))
-                if reorder > 0 and qty <= reorder
-                else reorder_qty,
+                "suggested_order_qty": (
+                    money_json(max(reorder_qty, money_json(round(reorder - qty, 3))))
+                    if reorder > 0 and qty <= reorder
+                    else reorder_qty
+                ),
                 "warehouse_id": wh.id,
-                "consolidated_stock": float(product.stock_qty or 0),
+                "consolidated_stock": money_json(product.stock_qty),
             }
         )
     return out
@@ -527,13 +630,11 @@ async def set_store_reorder_policy(
     row = await get_or_create_warehouse_stock(
         db, tenant_id=tenant_id, warehouse_id=wh.id, product_id=product_id
     )
-    row.minimum_stock = max(float(minimum_stock or 0), 0)
-    row.reorder_level = max(float(reorder_level or 0), 0)
-    row.reorder_qty = max(float(reorder_qty or 0), 0)
+    row.reorder_level = max(money_json(reorder_level or 0), 0)
+    row.reorder_qty = max(money_json(reorder_qty or 0), 0)
     await db.flush()
-    qty = float(row.quantity or 0)
-    minimum = float(row.minimum_stock or 0)
-    reorder = float(row.reorder_level or 0)
+    qty = money_json(row.quantity or 0)
+    reorder = money_json(row.reorder_level or 0)
     return {
         "product_id": product.id,
         "sku": product.sku,
@@ -541,8 +642,7 @@ async def set_store_reorder_policy(
         "quantity": qty,
         "minimum_stock": minimum,
         "reorder_level": reorder,
-        "reorder_qty": float(row.reorder_qty or 0),
-        "stock_status": compute_stock_status(qty, minimum, reorder),
+        "reorder_qty": money_json(row.reorder_qty or 0),
         "below_reorder": reorder > 0 and qty <= reorder,
         "warehouse_id": wh.id,
         "store_id": store_id,
@@ -568,6 +668,41 @@ async def get_transfer(
     return row
 
 
+async def list_transfers(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    status: str | None = None,
+    limit: int = 100,
+) -> list[m.StockTransfer]:
+    """Manage list for Inventory / Multi-Store transfer tabs (BR-5.2 / BR-13.2)."""
+    from app.reports import TRANSFER_REPORT_STATUSES
+
+    stmt = (
+        select(m.StockTransfer)
+        .where(m.StockTransfer.tenant_id == tenant_id)
+        .order_by(m.StockTransfer.created_at.desc())
+        .limit(limit)
+    )
+    if status is not None:
+        # Schema TransferReportStatusValue rejects blank/invalid → 422;
+        # keep allow-list defense-in-depth (no silent empty filter / blank→all).
+        wanted = (status or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in TRANSFER_REPORT_STATUSES:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Invalid transfer status '{wanted}'. "
+                    f"Allowed: {sorted(TRANSFER_REPORT_STATUSES)}"
+                ),
+            )
+        else:
+            stmt = stmt.where(m.StockTransfer.status == wanted)
+    return list((await db.execute(stmt)).scalars().all())
+
+
 async def list_transfer_items(
     db: AsyncSession, tenant_id: str, transfer_id: str
 ) -> list[m.StockTransferItem]:
@@ -583,28 +718,16 @@ async def list_transfer_items(
 
 async def serialize_transfer(db: AsyncSession, transfer: m.StockTransfer) -> dict:
     items = await list_transfer_items(db, transfer.tenant_id, transfer.id)
-    from_manager_id = None
-    to_manager_id = None
-    if transfer.from_store_id:
-        from_store = (
-            await db.execute(
-                select(m.Store).where(
-                    m.Store.id == transfer.from_store_id,
-                    m.Store.tenant_id == transfer.tenant_id,
-                )
-            )
-        ).scalar_one_or_none()
-        from_manager_id = getattr(from_store, "manager_id", None) if from_store else None
-    if transfer.to_store_id:
-        to_store = (
-            await db.execute(
-                select(m.Store).where(
-                    m.Store.id == transfer.to_store_id,
-                    m.Store.tenant_id == transfer.tenant_id,
-                )
-            )
-        ).scalar_one_or_none()
-        to_manager_id = getattr(to_store, "manager_id", None) if to_store else None
+    step = int(getattr(transfer, "approval_step", 0) or 0)
+    required = int(getattr(transfer, "approval_steps_required", 2) or 2)
+    fully_approved = _transfer_fully_approved(transfer)
+    can_ship = transfer.status == "requested" and fully_approved
+    awaiting = None
+    if transfer.status == "requested" and not fully_approved:
+        if required <= 1:
+            awaiting = "source"
+        else:
+            awaiting = "source" if step <= 1 else "dest"
     return {
         "id": transfer.id,
         "company_id": getattr(transfer, "company_id", None),
@@ -618,8 +741,17 @@ async def serialize_transfer(db: AsyncSession, transfer: m.StockTransfer) -> dic
         "status": transfer.status,
         "notes": transfer.notes,
         "created_by": transfer.created_by,
-        "shipped_by": transfer.shipped_by,
-        "received_by": transfer.received_by,
+        "approval_step": step,
+        "approval_steps_required": required,
+        "awaiting_approval": awaiting,
+        "source_approved_by": getattr(transfer, "source_approved_by", None),
+        "source_approved_at": getattr(transfer, "source_approved_at", None),
+        "dest_approved_by": getattr(transfer, "dest_approved_by", None),
+        "dest_approved_at": getattr(transfer, "dest_approved_at", None),
+        "rejected_by": getattr(transfer, "rejected_by", None),
+        "rejection_reason": getattr(transfer, "rejection_reason", None),
+        "fully_approved": fully_approved,
+        "can_ship": can_ship,
         "shipped_at": transfer.shipped_at,
         "received_at": transfer.received_at,
         "created_at": transfer.created_at,
@@ -628,9 +760,9 @@ async def serialize_transfer(db: AsyncSession, transfer: m.StockTransfer) -> dic
                 "id": i.id,
                 "company_id": getattr(i, "company_id", None),
                 "product_id": i.product_id,
-                "quantity": float(i.quantity),
-                "shipped_qty": float(i.shipped_qty or 0),
-                "received_qty": float(i.received_qty or 0),
+                "quantity": money_json(i.quantity),
+                "shipped_qty": money_json(i.shipped_qty),
+                "received_qty": money_json(i.received_qty),
             }
             for i in items
         ],
@@ -741,13 +873,73 @@ async def _add_transfer_items(
     db: AsyncSession,
     *,
     tenant_id: str,
-    transfer_id: str,
+    user_id: str,
     items: list[dict],
-    company_id: str | None = None,
-) -> None:
+    from_store_id: str | None = None,
+    to_store_id: str | None = None,
+    from_warehouse_id: str | None = None,
+    to_warehouse_id: str | None = None,
+    notes: str | None = None,
+    submit: bool = False,
+) -> m.StockTransfer:
+    if not items:
+        raise HTTPException(status_code=400, detail="Transfer requires at least one item")
+
+    from app.warehouses import get_warehouse
+
+    if from_warehouse_id and to_warehouse_id:
+        from_wh = await get_warehouse(db, tenant_id, from_warehouse_id)
+        to_wh = await get_warehouse(db, tenant_id, to_warehouse_id)
+        if from_wh.id == to_wh.id:
+            raise HTTPException(
+                status_code=400, detail="Source and destination warehouses must differ"
+            )
+        if not from_wh.store_id or not to_wh.store_id:
+            raise HTTPException(
+                status_code=400,
+                detail="Both warehouses must be linked to a store for transfers",
+            )
+        from_store_id = from_wh.store_id
+        to_store_id = to_wh.store_id
+        await get_store(db, tenant_id, from_store_id)
+        await get_store(db, tenant_id, to_store_id)
+    elif from_store_id and to_store_id:
+        if from_store_id == to_store_id:
+            raise HTTPException(
+                status_code=400, detail="Source and destination stores must differ"
+            )
+        await get_store(db, tenant_id, from_store_id)
+        await get_store(db, tenant_id, to_store_id)
+        from_wh = await warehouse_for_store(db, tenant_id, from_store_id)
+        to_wh = await warehouse_for_store(db, tenant_id, to_store_id)
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Provide from_store_id/to_store_id or from_warehouse_id/to_warehouse_id",
+        )
+
+    same_store = from_store_id == to_store_id
+    steps_required = 1 if same_store else 2
+
+    transfer = m.StockTransfer(
+        tenant_id=tenant_id,
+        transfer_number=await next_transfer_number(db, tenant_id),
+        from_store_id=from_store_id,
+        to_store_id=to_store_id,
+        from_warehouse_id=from_wh.id,
+        to_warehouse_id=to_wh.id,
+        status="requested" if submit else "draft",
+        notes=optional_honest_narrative(notes, label="stock transfer notes"),
+        created_by=user_id,
+        approval_step=1 if submit else 0,
+        approval_steps_required=steps_required,
+    )
+    db.add(transfer)
+    await db.flush()
+
     for item in items:
         product_id = item["product_id"]
-        qty = float(item["quantity"])
+        qty = money_json(item["quantity"])
         if qty <= 0:
             raise HTTPException(status_code=400, detail="Transfer quantities must be positive")
         product = (
@@ -874,6 +1066,169 @@ async def submit_transfer(
     if transfer.status not in TRANSFER_SUBMITTABLE:
         raise HTTPException(status_code=409, detail=f"Cannot submit transfer in status {transfer.status}")
     transfer.status = "requested"
+    transfer.approval_step = 1
+    # keep approval_steps_required (1 for same-store WH, 2 for inter-store)
+    if not transfer.approval_steps_required:
+        transfer.approval_steps_required = (
+            1 if transfer.from_store_id == transfer.to_store_id else 2
+        )
+    transfer.source_approved_by = None
+    transfer.source_approved_at = None
+    transfer.dest_approved_by = None
+    transfer.dest_approved_at = None
+    transfer.rejected_by = None
+    transfer.rejection_reason = None
+    await db.flush()
+    return transfer
+
+
+def _transfer_fully_approved(transfer: m.StockTransfer) -> bool:
+    required = int(getattr(transfer, "approval_steps_required", 2) or 2)
+    if required <= 1:
+        return bool(transfer.source_approved_by)
+    return bool(transfer.source_approved_by and transfer.dest_approved_by)
+
+
+async def _assert_may_approve_store(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    store_id: str,
+    user_id: str,
+    actor_role: str | None,
+    step_label: str,
+) -> None:
+    role = (actor_role or "").strip()
+    if role in TRANSFER_ADMIN_ROLES:
+        return
+    if role not in TRANSFER_MANAGER_ROLES:
+        raise HTTPException(
+            status_code=403,
+            detail=f"{step_label} approval requires store_manager or company_admin",
+        )
+    store = await get_store(db, tenant_id, store_id)
+    if store.manager_id and store.manager_id != user_id:
+        raise HTTPException(
+            status_code=403,
+            detail=f"Only the assigned {step_label} store manager can approve this step",
+        )
+
+
+async def approve_transfer(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    transfer_id: str,
+    actor_role: str | None = None,
+) -> m.StockTransfer:
+    transfer = await get_transfer(db, tenant_id, transfer_id)
+    if transfer.status not in TRANSFER_APPROVABLE:
+        raise HTTPException(status_code=409, detail=f"Cannot approve transfer in status {transfer.status}")
+    if _transfer_fully_approved(transfer):
+        raise HTTPException(status_code=409, detail="Transfer already fully approved")
+
+    step = int(transfer.approval_step or 1)
+    now = datetime.utcnow()
+    required = int(transfer.approval_steps_required or 2)
+    if step <= 1 and not transfer.source_approved_by:
+        await _assert_may_approve_store(
+            db,
+            tenant_id=tenant_id,
+            store_id=transfer.from_store_id,
+            user_id=user_id,
+            actor_role=actor_role,
+            step_label="source",
+        )
+        transfer.source_approved_by = user_id
+        transfer.source_approved_at = now
+        from app.notifications import create_notification
+
+        if required <= 1:
+            # Same-store warehouse transfer: single approval unlocks ship
+            transfer.approval_step = required
+            await create_notification(
+                db,
+                tenant_id=tenant_id,
+                category="transfer",
+                title="Transfer approved for shipping",
+                message=f"Transfer {transfer.transfer_number} is approved and ready to ship.",
+                entity_type="stock_transfer",
+                entity_id=transfer.id,
+            )
+        else:
+            transfer.approval_step = 2
+            await create_notification(
+                db,
+                tenant_id=tenant_id,
+                category="transfer",
+                title="Transfer needs destination approval",
+                message=f"Transfer {transfer.transfer_number} passed source approval.",
+                entity_type="stock_transfer",
+                entity_id=transfer.id,
+            )
+    elif required > 1 and not transfer.dest_approved_by:
+        await _assert_may_approve_store(
+            db,
+            tenant_id=tenant_id,
+            store_id=transfer.to_store_id,
+            user_id=user_id,
+            actor_role=actor_role,
+            step_label="destination",
+        )
+        if transfer.source_approved_by == user_id and (actor_role or "") not in TRANSFER_ADMIN_ROLES:
+            raise HTTPException(
+                status_code=403,
+                detail="Same manager cannot approve both source and destination steps",
+            )
+        transfer.dest_approved_by = user_id
+        transfer.dest_approved_at = now
+        transfer.approval_step = required
+        from app.notifications import create_notification
+
+        await create_notification(
+            db,
+            tenant_id=tenant_id,
+            category="transfer",
+            title="Transfer approved for shipping",
+            message=f"Transfer {transfer.transfer_number} is fully approved and ready to ship.",
+            entity_type="stock_transfer",
+            entity_id=transfer.id,
+        )
+    else:
+        raise HTTPException(status_code=409, detail="No pending approval step")
+    await db.flush()
+    return transfer
+
+
+async def reject_transfer(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    transfer_id: str,
+    reason: str | None = None,
+    actor_role: str | None = None,
+) -> m.StockTransfer:
+    transfer = await get_transfer(db, tenant_id, transfer_id)
+    if transfer.status not in TRANSFER_APPROVABLE:
+        raise HTTPException(status_code=409, detail=f"Cannot reject transfer in status {transfer.status}")
+    role = (actor_role or "").strip()
+    if role not in TRANSFER_MANAGER_ROLES:
+        raise HTTPException(status_code=403, detail="Role cannot reject transfers")
+    # Either store's manager (or admin) may reject while pending
+    if role not in TRANSFER_ADMIN_ROLES:
+        from_store = await get_store(db, tenant_id, transfer.from_store_id)
+        to_store = await get_store(db, tenant_id, transfer.to_store_id)
+        allowed = {from_store.manager_id, to_store.manager_id} - {None}
+        if allowed and user_id not in allowed:
+            # If neither store has a manager assigned, any store_manager may reject
+            if from_store.manager_id or to_store.manager_id:
+                raise HTTPException(status_code=403, detail="Not an assigned store manager for this transfer")
+    reason_s = require_honest_narrative(reason, label="rejection reason")
+    transfer.status = "cancelled"
+    transfer.rejected_by = user_id
+    transfer.rejection_reason = reason_s
     await db.flush()
     return transfer
 
@@ -957,14 +1312,14 @@ async def ship_transfer(
     transfer = await get_transfer(db, tenant_id, transfer_id, company_id=company_id)
     if transfer.status not in TRANSFER_SHIPPABLE:
         raise HTTPException(status_code=409, detail=f"Cannot ship transfer in status {transfer.status}")
-    await assert_inter_store_manager_action(
-        db,
-        tenant_id=tenant_id,
-        user_id=user_id,
-        role=role,
-        transfer=transfer,
-        action="ship",
-    )
+    if not _transfer_fully_approved(transfer):
+        required = int(transfer.approval_steps_required or 2)
+        detail = (
+            "Transfer requires approval before shipping"
+            if required <= 1
+            else "Transfer requires source and destination manager approval before shipping"
+        )
+        raise HTTPException(status_code=409, detail=detail)
     items = await list_transfer_items(db, tenant_id, transfer_id)
     for item in items:
         await allocate_unlocated_stock(
@@ -978,10 +1333,10 @@ async def ship_transfer(
             tenant_id=tenant_id,
             warehouse_id=transfer.from_warehouse_id,
             product_id=item.product_id,
-            quantity_delta=-float(item.quantity),
+            quantity_delta=-money_json(item.quantity),
         )
         product = await db.get(m.Product, item.product_id)
-        before = float(product.stock_qty or 0) if product else 0
+        before = money_json(product.stock_qty or 0) if product else 0
         db.add(
             m.StockMovement(
                 tenant_id=tenant_id,
@@ -989,7 +1344,7 @@ async def ship_transfer(
                 product_id=item.product_id,
                 warehouse_id=transfer.from_warehouse_id,
                 movement_type="transfer_out",
-                quantity=-float(item.quantity),
+                quantity=-money_json(item.quantity),
                 quantity_before=before,
                 quantity_after=before,
                 reference_type="stock_transfer",
@@ -998,7 +1353,7 @@ async def ship_transfer(
                 created_by=user_id,
             )
         )
-        item.shipped_qty = float(item.quantity)
+        item.shipped_qty = money_json(item.quantity)
 
     transfer.status = "in_transit"
     transfer.shipped_by = user_id
@@ -1041,7 +1396,7 @@ async def receive_transfer(
     )
     items = await list_transfer_items(db, tenant_id, transfer_id)
     for item in items:
-        qty = float(item.shipped_qty or item.quantity)
+        qty = money_json(item.shipped_qty or item.quantity)
         await apply_warehouse_stock_change(
             db,
             tenant_id=tenant_id,
@@ -1050,7 +1405,7 @@ async def receive_transfer(
             quantity_delta=qty,
         )
         product = await db.get(m.Product, item.product_id)
-        before = float(product.stock_qty or 0) if product else 0
+        before = money_json(product.stock_qty or 0) if product else 0
         db.add(
             m.StockMovement(
                 tenant_id=tenant_id,
@@ -1082,16 +1437,17 @@ async def cancel_transfer(
     tenant_id: str,
     user_id: str,
     transfer_id: str,
-    company_id: str | None = None,
+    reason: str | None = None,
 ) -> m.StockTransfer:
     transfer = await get_transfer(db, tenant_id, transfer_id, company_id=company_id)
     if transfer.status not in TRANSFER_CANCELLABLE:
         raise HTTPException(status_code=409, detail=f"Cannot cancel transfer in status {transfer.status}")
+    reason_s = require_honest_narrative(reason, label="cancel reason")
 
     if transfer.status == "in_transit":
         items = await list_transfer_items(db, tenant_id, transfer_id)
         for item in items:
-            qty = float(item.shipped_qty or item.quantity)
+            qty = money_json(item.shipped_qty or item.quantity)
             await apply_warehouse_stock_change(
                 db,
                 tenant_id=tenant_id,
@@ -1100,7 +1456,7 @@ async def cancel_transfer(
                 quantity_delta=qty,
             )
             product = await db.get(m.Product, item.product_id)
-            before = float(product.stock_qty or 0) if product else 0
+            before = money_json(product.stock_qty or 0) if product else 0
             db.add(
                 m.StockMovement(
                     tenant_id=tenant_id,
@@ -1113,11 +1469,13 @@ async def cancel_transfer(
                     quantity_after=before,
                     reference_type="stock_transfer",
                     reference_id=transfer.id,
-                    notes=f"Cancelled {transfer.transfer_number}",
+                    notes=f"Cancelled {transfer.transfer_number}: {reason_s}",
                     created_by=user_id,
                 )
             )
 
     transfer.status = "cancelled"
+    transfer.rejected_by = user_id
+    transfer.rejection_reason = reason_s
     await db.flush()
     return transfer

@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { api } from '../lib/api';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import LoginBrandLogo from '../components/LoginBrandLogo';
+import { loadUserTheme } from '../lib/theme';
 
 function bufferToBase64url(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
@@ -31,30 +34,33 @@ export default function Login() {
   const [challengeToken, setChallengeToken] = useState('');
   const [methods, setMethods] = useState<string[]>([]);
   const [needs2fa, setNeeds2fa] = useState(false);
-  const [remember, setRemember] = useState(true);
-  const [showReset, setShowReset] = useState(false);
-  const [resetMsg, setResetMsg] = useState('');
-  const [needsVerify, setNeedsVerify] = useState(false);
-  const [verifyMsg, setVerifyMsg] = useState('');
+  const [needsEmailVerify, setNeedsEmailVerify] = useState(false);
+  const [verifyMessage, setVerifyMessage] = useState('');
+  const [debugVerifyToken, setDebugVerifyToken] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
 
   function finishLogin(data: any) {
     localStorage.setItem('token', data.access_token);
     if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
-    localStorage.setItem('tenant', data.user.tenant_id);
-    const principal = data.principal || data.user?.principal || 'tenant';
-    localStorage.setItem('principal', principal);
-    // Stage 87 Z1 — cookie for Next middleware console boundary (readable server-side)
-    document.cookie = `ribdigi_principal=${encodeURIComponent(principal)}; path=/; SameSite=Lax`;
-    if (!remember) {
-      // Session-only preference marker for future idle logout UX.
-      sessionStorage.setItem('ribdigi_session_only', '1');
+    // Only persist UUID tenant ids — slug values (e.g. platform) cause
+    // X-Tenant-ID 422s and bounce the session back to login.
+    const tenantId = String(data.user?.tenant_id || '').trim();
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(tenantId)) {
+      localStorage.setItem('tenant', tenantId);
     } else {
-      sessionStorage.removeItem('ribdigi_session_only');
+      localStorage.removeItem('tenant');
     }
+    const uid = String(data.user?.id || '').trim();
+    if (uid) loadUserTheme(uid);
     if (data.must_enroll_2fa) {
       router.push('/security');
+    } else if (
+      ['super_admin', 'platform_owner', 'platform_admin', 'platform_support', 'platform_finance'].includes(
+        data.user?.role
+      )
+    ) {
+      router.push('/platform');
     } else {
       const dest =
         data.redirect_path ||
@@ -87,9 +93,14 @@ export default function Login() {
       if (!window.PublicKeyCredential) {
         throw new Error('This browser does not support passkeys');
       }
+      const trimmedChallenge = challengeToken.trim();
+      if (!trimmedChallenge) {
+        setError('2FA challenge token is required');
+        return;
+      }
       const opt = await api('/auth/webauthn/login/options', {
         method: 'POST',
-        body: JSON.stringify({ challenge_token: challengeToken }),
+        body: JSON.stringify({ challenge_token: trimmedChallenge }),
       });
       const publicKey = { ...opt.data };
       publicKey.challenge = base64urlToBuffer(publicKey.challenge);
@@ -116,7 +127,7 @@ export default function Login() {
       };
       const r = await api('/auth/webauthn/login/verify', {
         method: 'POST',
-        body: JSON.stringify({ challenge_token: challengeToken, credential }),
+        body: JSON.stringify({ challenge_token: trimmedChallenge, credential }),
       });
       finishLogin(r.data);
     } catch (err: any) {
@@ -149,21 +160,39 @@ export default function Login() {
           await verifyPasskey();
           return;
         }
+        const trimmedChallenge = challengeToken.trim();
+        if (!trimmedChallenge) {
+          setError('2FA challenge token is required');
+          return;
+        }
         const r = await api('/auth/2fa/verify', {
           method: 'POST',
-          body: JSON.stringify({ challenge_token: challengeToken, code: totpCode }),
+          body: JSON.stringify({
+            challenge_token: trimmedChallenge,
+            code: totpCode.trim(),
+          }),
         });
         finishLogin(r.data);
         return;
       }
 
+      const trimmedPassword = password.trim();
+      if (!trimmedPassword) {
+        setError('Password is required');
+        return;
+      }
+      const trimmedTenant = tenant.trim();
+      if (!trimmedTenant) {
+        setError('Login tenant is required');
+        return;
+      }
       const r = await api('/auth/login', {
         method: 'POST',
         body: JSON.stringify({
-          email,
-          password,
-          tenant_id: tenant,
-          totp_code: totpCode || null,
+          email: email.trim(),
+          password: trimmedPassword,
+          tenant_id: trimmedTenant,
+          totp_code: totpCode.trim() || null,
         }),
       });
       if (r.data?.requires_2fa) {
@@ -175,10 +204,38 @@ export default function Login() {
       }
       finishLogin(r.data);
     } catch (err: any) {
-      if (err?.code === 'EMAIL_NOT_VERIFIED') {
-        setNeedsVerify(true);
+      const detail = err.detail;
+      const code = typeof detail === 'object' && detail ? detail.code : null;
+      if (err.status === 403 && code === 'EMAIL_NOT_VERIFIED') {
+        setNeedsEmailVerify(true);
+        setVerifyMessage('');
+        setError(detail?.message || 'Verify your email before signing in');
+        return;
       }
       setError(err.message || 'Login failed');
+    }
+  }
+
+  async function resendVerification() {
+    setError('');
+    setVerifyMessage('');
+    setDebugVerifyToken('');
+    const trimmedTenant = tenant.trim();
+    if (!trimmedTenant) {
+      setError('Login tenant is required');
+      return;
+    }
+    try {
+      const r = await api('/auth/resend-verification', {
+        method: 'POST',
+        body: JSON.stringify({ email: email.trim(), tenant_id: trimmedTenant }),
+      });
+      setVerifyMessage(r.message || 'If verification is needed, a link was sent');
+      if (r.data?.verification_token) {
+        setDebugVerifyToken(String(r.data.verification_token));
+      }
+    } catch (err: any) {
+      setError(err.message || 'Unable to resend verification');
     }
   }
 
@@ -186,60 +243,112 @@ export default function Login() {
   const showPasskey = needs2fa && methods.includes('webauthn');
 
   return (
-    <div className="login">
-      <h1>RIBDIGI ERP</h1>
-      <p className="muted">One ERP Platform. Unlimited Business.</p>
-      {showReset ? (
-        <form onSubmit={requestReset}>
-          <p className="muted">Enter your tenant and email to request a password reset.</p>
-          <input value={tenant} onChange={(e) => setTenant(e.target.value)} placeholder="Tenant slug or ID" required />
-          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" type="email" required />
-          <button type="submit">Send reset link</button>
-          <button type="button" onClick={() => setShowReset(false)}>
-            Back to sign in
-          </button>
-          {resetMsg && <p style={{ color: '#047857' }}>{resetMsg}</p>}
-          {error && <p>{error}</p>}
-        </form>
-      ) : (
-        <form onSubmit={go}>
+    <div className="login-stage">
+      <div className="login-stage-bg" aria-hidden>
+        <span className="login-orb login-orb-a" />
+        <span className="login-orb login-orb-b" />
+        <span className="login-grid" />
+      </div>
+
+      <div className="login">
+        <LoginBrandLogo />
+
+        <form className="login-form" onSubmit={go}>
           {!needs2fa && (
             <>
-              <input value={tenant} onChange={(e) => setTenant(e.target.value)} placeholder="Tenant slug or ID" required />
-              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" type="email" required />
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" required />
-              <label className="muted" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-                Remember me on this device
+              <label className="login-field">
+                <span>Workspace</span>
+                <input
+                  aria-label="Login tenant"
+                  value={tenant}
+                  onChange={(e) => setTenant(e.target.value)}
+                  placeholder="Tenant slug or ID"
+                  autoComplete="organization"
+                  required
+                />
               </label>
+              <label className="login-field">
+                <span>Email</span>
+                <input
+                  aria-label="Login email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@company.com"
+                  type="email"
+                  autoComplete="username"
+                  required
+                />
+              </label>
+              <label className="login-field">
+                <span>Password</span>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  aria-label="Login password"
+                  required
+                />
+              </label>
+              <p className="login-forgot">
+                <Link
+                  href={`/forgot-password${tenant ? `?tenant=${encodeURIComponent(tenant)}` : ''}${email ? `${tenant ? '&' : '?'}email=${encodeURIComponent(email)}` : ''}`}
+                >
+                  Forgot password?
+                </Link>
+              </p>
             </>
           )}
+
+          {needs2fa && (
+            <input
+              type="hidden"
+              value={challengeToken}
+              readOnly
+              aria-label="2FA challenge token"
+            />
+          )}
+
           {needs2fa && showTotp && (
-            <>
-              <p className="muted">Enter the 6-digit code from your authenticator app (or a backup code).</p>
+            <label className="login-field">
+              <span>Authenticator code</span>
+              <p className="login-hint">Enter the 6-digit code from your authenticator app, or a backup code.</p>
               <input
+                aria-label="2FA code"
                 value={totpCode}
                 onChange={(e) => setTotpCode(e.target.value)}
-                placeholder="Authenticator or backup code"
+                placeholder="000000"
+                inputMode="numeric"
+                autoComplete="one-time-code"
                 required={methods.includes('totp') && !methods.includes('webauthn')}
                 autoFocus
               />
-            </>
+            </label>
           )}
-          {showPasskey && (
-            <p className="muted">Or use a registered passkey for this account.</p>
-          )}
-          <button type="submit">
-            {needs2fa ? (methods.includes('totp') ? 'Verify 2FA' : 'Continue') : 'Sign in'}
+
+          {showPasskey && <p className="login-hint">Or continue with a registered passkey.</p>}
+
+          <button className="login-primary" type="submit" aria-label="Sign in">
+            {needs2fa ? (methods.includes('totp') ? 'Verify & continue' : 'Continue') : 'Sign in'}
           </button>
+
           {showPasskey && (
-            <button type="button" onClick={verifyPasskey}>
+            <button
+              className="login-secondary"
+              type="button"
+              onClick={verifyPasskey}
+              aria-label="Use passkey"
+            >
               Use passkey
             </button>
           )}
+
           {needs2fa && (
             <button
+              className="login-ghost"
               type="button"
+              aria-label="Back to sign in"
               onClick={() => {
                 setNeeds2fa(false);
                 setChallengeToken('');
@@ -247,34 +356,50 @@ export default function Login() {
                 setMethods([]);
               }}
             >
-              Back
+              Back to sign in
             </button>
           )}
-          {!needs2fa && (
-            <>
-              <button type="button" onClick={() => setShowReset(true)}>
-                Forgot password?
-              </button>
-              <p className="muted">
-                New company? <Link href="/register">Register</Link>
+
+          {error && <p className="login-error" role="alert">{error}</p>}
+          {needsEmailVerify && (
+            <div className="login-verify-box">
+              <p className="login-hint">
+                Check your inbox for a verification link, or resend one below.
               </p>
-            </>
-          )}
-          {error && <p>{error}</p>}
-          {needsVerify && !needs2fa && (
-            <div>
-              <p className="muted">
-                Verify your email before signing in.{' '}
-                <Link href="/verify-email">Have a token?</Link>
-              </p>
-              <button type="button" onClick={resendVerification}>
+              <button
+                className="login-secondary"
+                type="button"
+                onClick={resendVerification}
+                aria-label="Resend verification email"
+              >
                 Resend verification email
               </button>
-              {verifyMsg && <p style={{ color: '#047857' }}>{verifyMsg}</p>}
+              <Link className="login-ghost" href="/verify-email" style={{ display: 'block', textAlign: 'center' }}>
+                Open verify page
+              </Link>
+              {verifyMessage && (
+                <p className="login-success" role="status">
+                  {verifyMessage}
+                </p>
+              )}
+              {debugVerifyToken && (
+                <p className="login-hint">
+                  Dev verify link:{' '}
+                  <Link href={`/verify-email?token=${encodeURIComponent(debugVerifyToken)}`}>
+                    Open verify form
+                  </Link>
+                </p>
+              )}
             </div>
           )}
         </form>
-      )}
+
+        <p className="login-foot">
+          <a href="https://ribdigihouse.com" target="_blank" rel="noopener noreferrer">
+            A Ribdigi House Product
+          </a>
+        </p>
+      </div>
     </div>
   );
 }

@@ -1,287 +1,230 @@
-"""CSV bulk import for users (template + dry-run/commit)."""
+"""User CSV bulk import (validate + all-or-nothing commit)."""
 
 from __future__ import annotations
 
 import csv
 import io
 import re
-import secrets
-import string
 from typing import Any
 
 from fastapi import HTTPException
-from pydantic import EmailStr, TypeAdapter, ValidationError
-from sqlalchemy import select
+from pydantic import TypeAdapter, ValidationError
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app import audit as audit_svc
 from app import models as m
-from app import org_units as org_units_svc
-from app import roles as roles_svc
-from app.rbac import RECORD_SCOPE_KEY, normalize_record_scope, record_scope_from_permissions
+from app.config import settings
+from app.rbac import VALID_ROLES, permissions_for_role, serialize_user
+from app.schemas import E164PhoneValue, UserFullNameValue, UserPasswordValue
 from app.security import hash_password, issue_one_time_token, validate_password_strength
 
-TEMPLATE_COLUMNS = [
+TEMPLATE_HEADERS = (
     "full_name",
     "email",
     "phone",
     "role",
-    "branch_code",
-    "department_code",
-    "password",
-    "record_scope",
-]
+    "temporary_password",
+)
 
-EXPORT_COLUMNS = [
-    "full_name",
-    "email",
-    "phone",
-    "role",
-    "branch_code",
-    "department_code",
-    "record_scope",
-    "is_active",
-    "email_verified",
-]
+SAMPLE_ROW = {
+    "full_name": "Ada Cashier",
+    "email": "ada.cashier@example.com",
+    "phone": "",
+    "role": "cashier",
+    "temporary_password": "TempPass1!",
+}
 
-_EMAIL = TypeAdapter(EmailStr)
-
-
-def generate_temp_password() -> str:
-    """Generate a password that satisfies validate_password_strength."""
-    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
-    while True:
-        chars = [
-            secrets.choice(string.ascii_uppercase),
-            secrets.choice(string.ascii_lowercase),
-            secrets.choice(string.digits),
-            secrets.choice("!@#$%^&*"),
-            *[secrets.choice(alphabet) for _ in range(8)],
-        ]
-        secrets.SystemRandom().shuffle(chars)
-        password = "".join(chars)
-        try:
-            validate_password_strength(password)
-            return password
-        except HTTPException:
-            continue
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+# Tenant operators may assign these via CSV; super_admin blocked unless actor is super_admin.
+ASSIGNABLE_ROLES = frozenset(VALID_ROLES) - {"super_admin"}
 
 
 def template_csv() -> str:
     buf = io.StringIO()
-    writer = csv.DictWriter(buf, fieldnames=TEMPLATE_COLUMNS)
+    writer = csv.DictWriter(buf, fieldnames=list(TEMPLATE_HEADERS))
     writer.writeheader()
-    writer.writerow(
-        {
-            "full_name": "Ada Cashier",
-            "email": "ada.cashier@example.com",
-            "phone": "+233200000000",
-            "role": "cashier",
-            "branch_code": "",
-            "department_code": "",
-            "password": "",
-            "record_scope": "own",
-        }
-    )
+    writer.writerow(SAMPLE_ROW)
     return buf.getvalue()
 
 
-def _norm_header(h: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "_", (h or "").strip().lower()).strip("_")
+def _norm_header(name: str) -> str:
+    return (name or "").strip().lower().replace(" ", "_")
 
 
-def parse_user_csv(content: str) -> list[dict[str, str]]:
-    sample = content.lstrip("\ufeff")
-    if not sample.strip():
+def parse_csv_rows(content: str) -> list[dict[str, str]]:
+    text = (content or "").lstrip("\ufeff")
+    if not text.strip():
         raise HTTPException(status_code=400, detail="Empty CSV")
-    try:
-        dialect = csv.Sniffer().sniff(sample[:4096], delimiters=",;\t|")
-    except csv.Error:
-        dialect = csv.excel
-    reader = csv.DictReader(io.StringIO(sample), dialect=dialect)
+    reader = csv.DictReader(io.StringIO(text))
     if not reader.fieldnames:
-        raise HTTPException(status_code=400, detail="CSV has no header row")
-
-    aliases = {
-        "name": "full_name",
-        "full_name": "full_name",
-        "email": "email",
-        "phone": "phone",
-        "role": "role",
-        "branch": "branch_code",
-        "branch_code": "branch_code",
-        "department": "department_code",
-        "department_code": "department_code",
-        "password": "password",
-        "record_scope": "record_scope",
-        "scope": "record_scope",
-    }
-    header_map: dict[str, str] = {}
-    for raw in reader.fieldnames:
-        key = aliases.get(_norm_header(raw))
-        if key and key not in header_map:
-            header_map[key] = raw
-    if "full_name" not in header_map or "email" not in header_map:
-        raise HTTPException(status_code=400, detail="CSV must include full_name and email columns")
-
+        raise HTTPException(status_code=400, detail="CSV is missing a header row")
+    mapping = {_norm_header(h): h for h in reader.fieldnames if h}
+    # Accept password as alias for temporary_password
+    if "password" in mapping and "temporary_password" not in mapping:
+        mapping["temporary_password"] = mapping["password"]
+    required = ("full_name", "email", "role", "temporary_password")
+    missing = [c for c in required if c not in mapping]
+    if missing:
+        raise HTTPException(
+            status_code=400,
+            detail=f"CSV must include columns: {', '.join(required)}",
+        )
     rows: list[dict[str, str]] = []
-    for raw_row in reader:
-        if not any((v or "").strip() for v in raw_row.values()):
+    for raw in reader:
+        if not any((v or "").strip() for v in raw.values()):
             continue
         rows.append(
             {
-                col: (raw_row.get(header_map[col]) or "").strip() if col in header_map else ""
-                for col in TEMPLATE_COLUMNS
+                key: (raw.get(mapping[key]) or "").strip() if key in mapping else ""
+                for key in TEMPLATE_HEADERS
             }
         )
     if not rows:
         raise HTTPException(status_code=400, detail="CSV has no data rows")
-    if len(rows) > 1000:
-        raise HTTPException(status_code=400, detail="CSV exceeds maximum of 1000 rows")
+    if len(rows) > 500:
+        raise HTTPException(status_code=400, detail="CSV exceeds 500 row limit")
     return rows
 
 
-async def import_users_csv(
+async def _email_exists(db: AsyncSession, tenant_id: str, email: str) -> bool:
+    hit = (
+        await db.execute(
+            select(m.User.id).where(
+                m.User.tenant_id == tenant_id,
+                func.lower(m.User.email) == email.lower(),
+            )
+        )
+    ).scalar_one_or_none()
+    return hit is not None
+
+
+async def validate_import_rows(
     db: AsyncSession,
     *,
     tenant_id: str,
-    actor_id: str,
-    actor_role: str | None,
-    content: str,
-    dry_run: bool = True,
+    rows: list[dict[str, str]],
+    actor_role: str | None = None,
 ) -> dict[str, Any]:
-    rows = parse_user_csv(content)
-    branches = {
-        b.code.upper(): b
-        for b in (
-            await db.execute(select(m.Branch).where(m.Branch.tenant_id == tenant_id))
-        ).scalars().all()
-    }
-    departments = {
-        d.code.upper(): d
-        for d in (
-            await db.execute(select(m.Department).where(m.Department.tenant_id == tenant_id))
-        ).scalars().all()
-    }
-    existing_emails = {
-        (e or "").strip().lower()
-        for e in (
-            await db.execute(select(m.User.email).where(m.User.tenant_id == tenant_id))
-        ).scalars().all()
-    }
-
+    report_rows: list[dict[str, Any]] = []
     seen_emails: set[str] = set()
-    errors: list[dict[str, Any]] = []
-    valid_rows: list[dict[str, Any]] = []
-    created: list[dict[str, Any]] = []
+    prepared: list[dict[str, Any]] = []
+    actor = (actor_role or "").strip()
 
-    for idx, row in enumerate(rows, start=2):
-        row_errors: list[str] = []
-        full_name = row["full_name"].strip()
-        email_raw = row["email"].strip().lower()
-        phone = row["phone"].strip() or None
-        role_raw = (row["role"] or "cashier").strip().lower() or "cashier"
-        branch_code = row["branch_code"].strip().upper()
-        department_code = row["department_code"].strip().upper()
-        password = row["password"].strip()
-        record_scope = row["record_scope"].strip().lower() or None
+    for idx, raw in enumerate(rows, start=2):
+        errors: list[str] = []
+        full_name = (raw.get("full_name") or "").strip()
+        email = (raw.get("email") or "").strip().lower()
+        phone = (raw.get("phone") or "").strip() or None
+        role = (raw.get("role") or "").strip().lower()
+        password = raw.get("temporary_password") or ""
 
-        if len(full_name) < 2:
-            row_errors.append("full_name must be at least 2 characters")
-        if not email_raw:
-            row_errors.append("email is required")
+        if not full_name:
+            errors.append("full_name is required")
         else:
             try:
-                email_raw = str(_EMAIL.validate_python(email_raw)).lower()
+                full_name = TypeAdapter(UserFullNameValue).validate_python(full_name)
             except ValidationError:
-                row_errors.append("invalid email")
-        if email_raw in seen_emails:
-            row_errors.append("duplicate email in CSV")
-        if email_raw in existing_emails:
-            row_errors.append("email already exists in tenant")
-
-        role = role_raw
-        try:
-            role = await roles_svc.assert_assignable_role(
-                db, tenant_id, role_raw, actor_role=actor_role
-            )
-        except HTTPException as exc:
-            row_errors.append(str(exc.detail))
-
-        branch_id = None
-        department_id = None
-        if branch_code:
-            branch = branches.get(branch_code)
-            if not branch:
-                row_errors.append(f"unknown branch_code {branch_code}")
-            else:
-                branch_id = branch.id
-        if department_code:
-            department = departments.get(department_code)
-            if not department:
-                row_errors.append(f"unknown department_code {department_code}")
-            else:
-                department_id = department.id
-
-        if branch_id or department_id:
-            try:
-                branch_id, department_id = await org_units_svc.assert_user_org_assignment(
-                    db,
-                    tenant_id,
-                    branch_id=branch_id,
-                    department_id=department_id,
+                errors.append(
+                    "full_name must be a plain person name (no URL/punctuation-only)"
                 )
-            except HTTPException as exc:
-                row_errors.append(str(exc.detail))
 
-        if password:
+        if not email:
+            errors.append("email is required")
+        elif not EMAIL_RE.match(email):
+            errors.append("email is invalid")
+        if email and email in seen_emails:
+            errors.append("duplicate email in file")
+        if email:
+            seen_emails.add(email)
+
+        if phone is not None:
             try:
-                validate_password_strength(password)
-            except HTTPException as exc:
-                row_errors.append(str(exc.detail))
+                phone = TypeAdapter(E164PhoneValue).validate_python(phone)
+            except ValidationError:
+                errors.append("phone must be E.164 (+ and 8–15 digits)")
+                phone = None
+
+        if not role:
+            errors.append("role is required")
+        elif role == "super_admin":
+            if actor != "super_admin":
+                errors.append("only super_admin can assign super_admin")
+            elif role not in VALID_ROLES:
+                errors.append("unknown role")
+        elif role not in ASSIGNABLE_ROLES:
+            errors.append(f"unknown role (allowed: {', '.join(sorted(ASSIGNABLE_ROLES))})")
+
+        if not password:
+            errors.append("temporary_password is required")
         else:
-            password = generate_temp_password()
-
-        scope_value = None
-        if record_scope:
             try:
-                scope_value = normalize_record_scope(record_scope)
-            except ValueError as exc:
-                row_errors.append(str(exc))
+                password = TypeAdapter(UserPasswordValue).validate_python(password)
+            except ValidationError:
+                errors.append(
+                    "temporary_password must be a plain secret (no URL/@/spaces)"
+                )
+            else:
+                try:
+                    validate_password_strength(password)
+                except HTTPException as exc:
+                    errors.append(str(exc.detail))
 
-        if row_errors:
-            errors.append({"row": idx, "email": email_raw, "errors": row_errors})
-            continue
+        if email and await _email_exists(db, tenant_id, email):
+            errors.append("email already exists")
 
-        seen_emails.add(email_raw)
-        preview = {
-            "row": idx,
-            "full_name": full_name,
-            "email": email_raw,
-            "phone": phone,
-            "role": role,
-            "branch_id": branch_id,
-            "department_id": department_id,
-            "record_scope": scope_value,
-            "password_generated": not bool(row["password"].strip()),
-        }
-        valid_rows.append(preview)
+        ok = not errors
+        report_rows.append(
+            {
+                "line": idx,
+                "email": email,
+                "full_name": full_name,
+                "role": role,
+                "ok": ok,
+                "errors": errors,
+            }
+        )
+        if ok:
+            prepared.append(
+                {
+                    "full_name": full_name,
+                    "email": email,
+                    "phone": phone,
+                    "role": role,
+                    "password": password,
+                }
+            )
 
-        if dry_run:
-            continue
+    error_count = sum(1 for r in report_rows if not r["ok"])
+    return {
+        "total_rows": len(report_rows),
+        "valid_rows": len(prepared),
+        "error_rows": error_count,
+        "can_commit": error_count == 0 and len(prepared) > 0,
+        "rows": report_rows,
+        "_prepared": prepared,
+    }
 
-        perms = await roles_svc.permissions_for_assignment(db, tenant_id, role)
-        if scope_value is not None:
-            perms[RECORD_SCOPE_KEY] = scope_value
+
+async def commit_import(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    actor_user_id: str,
+    prepared: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    from app import emailer
+
+    created: list[dict[str, Any]] = []
+    for data in prepared:
         user = m.User(
             tenant_id=tenant_id,
-            email=email_raw,
-            full_name=full_name,
-            phone=phone,
-            password_hash=hash_password(password),
-            role=role,
-            branch_id=branch_id,
-            department_id=department_id,
-            permissions=perms,
+            email=data["email"],
+            full_name=data["full_name"],
+            phone=data.get("phone"),
+            password_hash=hash_password(data["password"]),
+            role=data["role"],
+            permissions=permissions_for_role(data["role"]),
             email_verified=False,
             is_active=True,
         )
@@ -297,75 +240,23 @@ async def import_users_csv(
                 expires_at=expires,
             )
         )
-        created_row = {
+        await audit_svc.record_event(
+            db,
+            tenant_id=tenant_id,
+            user_id=actor_user_id,
+            module="users",
+            action="user_imported",
+            entity="user",
+            entity_id=user.id,
+            details={"email": user.email, "role": user.role},
+        )
+        email_result = await emailer.send_verification_email(to=user.email, token=raw)
+        row_out = {
             "id": user.id,
-            "email": user.email,
-            "role": user.role,
-            "full_name": user.full_name,
-            "password_generated": preview["password_generated"],
+            "user": serialize_user(user),
+            "email": {"sent": email_result.sent, "mode": email_result.mode},
         }
-        # Temporary passwords only returned outside production (same pattern as verify tokens).
-        from app.config import settings
-
         if settings.DEBUG or settings.APP_ENV.lower() != "production":
-            created_row["temporary_password"] = password
-            created_row["email_verification_token"] = raw
-        created.append(created_row)
-        existing_emails.add(email_raw)
-
-    return {
-        "dry_run": dry_run,
-        "total_rows": len(rows),
-        "valid_rows": len(valid_rows),
-        "error_rows": len(errors),
-        "errors": errors,
-        "preview": valid_rows[:50],
-        "created": created,
-    }
-
-
-async def export_users_csv(db: AsyncSession, *, tenant_id: str) -> str:
-    """Stage 120 U1 — export tenant users (import-aligned columns; never include passwords)."""
-    users = (
-        await db.execute(
-            select(m.User).where(m.User.tenant_id == tenant_id).order_by(m.User.email)
-        )
-    ).scalars().all()
-    branches = {
-        b.id: b.code
-        for b in (
-            await db.execute(select(m.Branch).where(m.Branch.tenant_id == tenant_id))
-        ).scalars().all()
-    }
-    departments = {
-        d.id: d.code
-        for d in (
-            await db.execute(select(m.Department).where(m.Department.tenant_id == tenant_id))
-        ).scalars().all()
-    }
-    buf = io.StringIO()
-    writer = csv.DictWriter(buf, fieldnames=EXPORT_COLUMNS)
-    writer.writeheader()
-    for user in users:
-        perms = (
-            user.permissions
-            if isinstance(user.permissions, dict) and user.permissions
-            else None
-        )
-        scope = record_scope_from_permissions(user.role, perms)
-        writer.writerow(
-            {
-                "full_name": user.full_name or "",
-                "email": user.email or "",
-                "phone": user.phone or "",
-                "role": user.role or "",
-                "branch_code": branches.get(getattr(user, "branch_id", None) or "", "") or "",
-                "department_code": departments.get(getattr(user, "department_id", None) or "", "")
-                or "",
-                "record_scope": scope or "own",
-                "is_active": "true" if bool(user.is_active) else "false",
-                "email_verified": "true" if bool(user.email_verified) else "false",
-            }
-        )
-    return buf.getvalue()
-
+            row_out["email_verification_token"] = raw
+        created.append(row_out)
+    return created

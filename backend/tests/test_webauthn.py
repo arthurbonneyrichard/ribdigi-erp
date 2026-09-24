@@ -33,6 +33,7 @@ async def test_webauthn_register_list_login_delete(client, monkeypatch):
     monkeypatch.setattr("app.webauthn_svc.settings.WEBAUTHN_ORIGIN", "http://localhost:3000")
     monkeypatch.setattr("app.config.settings.WEBAUTHN_RP_ID", "localhost")
     monkeypatch.setattr("app.config.settings.WEBAUTHN_ORIGIN", "http://localhost:3000")
+    monkeypatch.setattr("app.config.settings.LOGIN_2FA_ENABLED", True)
 
     ac, seeded = client
     headers = await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")

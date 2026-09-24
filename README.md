@@ -60,19 +60,36 @@ Never enable this flag in staging or production.
 
 ## Production deployment
 
-### Option A — Dokploy (recommended for VPS)
+### Option A — Dokploy (recommended for first VPS)
 
-Step-by-step: **`ops/vps/DOKPLOY_FIRST_TIME.md`**
+**Deploy the latest commercial ERP from Git branch `production` (not `main`).**  
+GitHub `main` is an older ERP lineage; Dokploy must use:
 
-- Compose file: **`docker-compose.dokploy.yml`** (standalone; Traefik handles HTTPS)
-- Env template: **`.env.production.example`** → paste into Dokploy Environment
-- Target host example: `https://erp.ribdigihouse.com`
+| Setting | Value |
+|---------|--------|
+| Repository | `ribdigi-erp` |
+| **Branch** | **`production`** |
+| Compose file | `docker-compose.dokploy.yml` |
 
-### Option B — Manual Compose overlay
+After switching branch, **Redeploy with image rebuild (no cache)**. Confirm the live API:
+
+`GET /api/v1/health` → `release_channel: "production"` and a current `build_id`.
+
+Step-by-step (buy VPS → install Dokploy → GitHub → domains → Platform Owner):
+
+- **`ops/vps/DOKPLOY_FIRST_TIME.md`**
+- Compose file: **`docker-compose.dokploy.yml`** (Traefik handles HTTPS — no Caddy)
+
+### Option B — Manual Docker Compose + Caddy
+
+- **`ops/vps/README.md`** — full A–L operator guide
+- **`docker-compose.prod.yml`** — production stack with Caddy
+- **`ops/vps/env.production.example`** — copy to `.env` and replace all `REPLACE_ME_*` values
 
 ```bash
-cp .env.production.example .env.production   # fill real secrets; never commit
-docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.production up -d --build
+cp ops/vps/env.production.example .env
+# edit .env and ops/vps/Caddyfile for your domain
+docker compose -f docker-compose.prod.yml up -d --build
 ```
 
 Do not run Option A and Option B on the same VPS (both need ports 80/443).  

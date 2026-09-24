@@ -10,6 +10,7 @@ from typing import Any
 from fastapi import HTTPException
 
 from app import storage as storage_svc
+from app.honesty import money_json
 
 # Common total labels (case-insensitive)
 _AMOUNT_PATTERNS = [
@@ -112,7 +113,7 @@ def _parse_amount(text: str) -> float | None:
         # Prefer last match (often the grand total)
         raw = matches[-1] if isinstance(matches[-1], str) else matches[-1][0]
         try:
-            return round(float(str(raw).replace(",", "")), 2)
+            return money_json(round(float(str(raw).replace(",", "")), 2))
         except ValueError:
             continue
     return None
@@ -173,7 +174,7 @@ def parse_receipt_text(text: str) -> dict[str, Any]:
         description = "Receipt capture"
 
     fields = {
-        "amount": amount,
+        "amount": money_json(amount) if amount is not None else None,
         "expense_date": expense_date,
         "payee": payee,
         "description": description,
@@ -187,7 +188,7 @@ def parse_receipt_text(text: str) -> dict[str, Any]:
             confidence = min(0.95, confidence + 0.15)
     return {
         "fields": fields,
-        "confidence": round(confidence, 2),
+        "confidence": money_json(round(confidence, 2)),
         "raw_text_preview": cleaned[:2000] if cleaned else "",
     }
 
@@ -229,7 +230,7 @@ async def suggest_for_expense(
     db, *, tenant_id: str, expense_id: str, company_id: str | None = None
 ) -> dict[str, Any]:
     from app import expenses as expenses_svc
-    from app.ai_expenses import suggest_category_from_text
+    from app import ai_expenses as ai_expenses_svc
     from sqlalchemy import select
     from app import models as m
 
@@ -241,35 +242,32 @@ async def suggest_for_expense(
         raise HTTPException(status_code=400, detail="External attachment URLs cannot be OCR'd")
     media = storage_svc.read_object(expense.attachment_url, tenant_id=tenant_id)
     result = suggest_from_media(media)
-
-    cat_q = select(m.ExpenseCategory).where(m.ExpenseCategory.tenant_id == tenant_id)
-    if scope_cid:
-        cat_q = cat_q.where(m.ExpenseCategory.company_id == scope_cid)
-    cats = (await db.execute(cat_q)).scalars().all()
-    if not cats:
-        await expenses_svc.ensure_default_categories(db, tenant_id, company_id=scope_cid)
-        cats = (await db.execute(cat_q)).scalars().all()
-    text_blob = " ".join(
-        filter(
-            None,
-            [
-                result.get("raw_text_preview"),
-                (result.get("suggestions") or {}).get("description"),
-                (result.get("suggestions") or {}).get("payee"),
-                expense.description,
-                expense.payee,
-            ],
+    await expenses_svc.ensure_default_categories(db, tenant_id)
+    categories = (
+        await db.execute(
+            select(m.ExpenseCategory).where(
+                m.ExpenseCategory.tenant_id == tenant_id,
+                m.ExpenseCategory.is_active == True,  # noqa: E712
+            )
         )
+    ).scalars().all()
+    blob = " ".join(
+        str(x)
+        for x in (
+            result.get("raw_text_preview"),
+            (result.get("suggestions") or {}).get("payee"),
+            (result.get("suggestions") or {}).get("description"),
+            expense.description,
+            expense.payee,
+        )
+        if x
     )
-    cat_sug = suggest_category_from_text(text_blob, cats)
-    if cat_sug:
-        result["suggestions"] = {
-            **(result.get("suggestions") or {}),
-            "category": cat_sug["name"],
-            "category_id": cat_sug["id"],
-        }
-        result["category_suggestion"] = cat_sug
-
+    cat_suggest = ai_expenses_svc.suggest_category_from_text(blob, list(categories))
+    if cat_suggest:
+        result.setdefault("suggestions", {})
+        result["suggestions"]["category_id"] = cat_suggest["category_id"]
+        result["suggestions"]["category"] = cat_suggest["category"]
+        result["category_suggestion"] = cat_suggest
     result["expense_id"] = expense.id
     result["expense_status"] = expense.status
     return result

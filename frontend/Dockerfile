@@ -20,7 +20,13 @@ WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1 \
     NODE_ENV=production
 ARG NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ARG NEXT_PUBLIC_UMAMI_SRC=https://analytics.ribdigihouse.com/script.js
+ARG NEXT_PUBLIC_UMAMI_WEBSITE_ID=0d5b3d4e-fe16-47bf-91f2-6ce564fb2e0e
+ARG NEXT_PUBLIC_UMAMI_DOMAINS=erp.ribdigihouse.com
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
+    NEXT_PUBLIC_UMAMI_SRC=${NEXT_PUBLIC_UMAMI_SRC} \
+    NEXT_PUBLIC_UMAMI_WEBSITE_ID=${NEXT_PUBLIC_UMAMI_WEBSITE_ID} \
+    NEXT_PUBLIC_UMAMI_DOMAINS=${NEXT_PUBLIC_UMAMI_DOMAINS}
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
@@ -36,6 +42,7 @@ RUN addgroup --system --gid 10001 nodejs \
     && adduser --system --uid 10001 nextjs
 
 COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/guides ./guides
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 

@@ -16,6 +16,8 @@ from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from fastapi import HTTPException
+
+from app.honesty import money_json, optional_honest_narrative
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -28,6 +30,7 @@ OFFSITE_META_KEY = "__offsite__"
 
 # Restore order respects FK dependencies (parents before children).
 DATASET_SPECS: list[tuple[str, type]] = [
+    ("custom_roles", m.CustomRole),
     ("stores", m.Store),
     ("warehouses", m.Warehouse),
     ("product_categories", m.ProductCategory),
@@ -45,7 +48,6 @@ DATASET_SPECS: list[tuple[str, type]] = [
     ("expense_categories", m.ExpenseCategory),
     ("purchase_requests", m.PurchaseRequest),
     ("purchase_request_items", m.PurchaseRequestItem),
-    ("purchase_request_approval_actions", m.PurchaseRequestApprovalAction),
     ("purchase_orders", m.PurchaseOrder),
     ("purchase_order_items", m.PurchaseOrderItem),
     ("purchase_order_amendments", m.PurchaseOrderAmendment),
@@ -79,6 +81,7 @@ DATASET_SPECS: list[tuple[str, type]] = [
     ("stock_counts", m.StockCount),
     ("stock_count_items", m.StockCountItem),
     ("product_images", m.ProductImage),
+    ("party_contacts", m.PartyContact),
     ("notification_preferences", m.NotificationPreference),
     ("report_schedules", m.ReportSchedule),
 ]
@@ -100,13 +103,45 @@ def backup_root() -> Path:
     return root
 
 
+def _fernet_from_configured_key(raw: str, *, label: str) -> Fernet:
+    """Accept a Fernet key, or common openssl formats (hex / standard base64)."""
+    value = (raw or "").strip()
+    if not value:
+        raise ValueError("empty key")
+
+    try:
+        return Fernet(value.encode("utf-8") if isinstance(value, str) else value)
+    except Exception:
+        pass
+
+    if len(value) == 64:
+        try:
+            return Fernet(base64.urlsafe_b64encode(bytes.fromhex(value)))
+        except Exception:
+            pass
+
+    try:
+        decoded = base64.b64decode(value, validate=False)
+        if len(decoded) == 32:
+            return Fernet(base64.urlsafe_b64encode(decoded))
+    except Exception:
+        pass
+
+    raise HTTPException(
+        status_code=500,
+        detail=(
+            f"Invalid {label}: use a Fernet key from "
+            '`python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` '
+            "or a 64-character hex value from `openssl rand -hex 32`. "
+            "Do not leave REPLACE_ME placeholders."
+        ),
+    )
+
+
 def _fernet() -> Fernet:
     raw = (settings.BACKUP_ENCRYPTION_KEY or "").strip()
     if raw:
-        try:
-            return Fernet(raw.encode("utf-8") if isinstance(raw, str) else raw)
-        except Exception as exc:
-            raise HTTPException(status_code=500, detail=f"Invalid BACKUP_ENCRYPTION_KEY: {exc}") from exc
+        return _fernet_from_configured_key(raw, label="BACKUP_ENCRYPTION_KEY")
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,
@@ -121,7 +156,7 @@ def _json_default(value: Any) -> Any:
     if isinstance(value, datetime):
         return value.isoformat()
     if isinstance(value, Decimal):
-        return float(value)
+        return money_json(value)
     if isinstance(value, bytes):
         return base64.b64encode(value).decode("ascii")
     return str(value)
@@ -262,6 +297,8 @@ async def update_settings(
     if enabled is not None:
         row.enabled = enabled
     if frequency is not None:
+        # Defense in depth: BackupSettingsUpdate.frequency Literal rejects
+        # blank/unknown with 422 before this runs.
         if frequency not in {"daily", "weekly"}:
             raise HTTPException(status_code=400, detail="frequency must be daily or weekly")
         row.frequency = frequency
@@ -397,9 +434,12 @@ async def collect_tenant_payload(db: AsyncSession, tenant_id: str) -> tuple[dict
             "industry": tenant.industry,
             "currency": tenant.currency,
             "status": tenant.status,
-            "logo_url": logo_url,
-            "expense_approval_threshold": float(tenant.expense_approval_threshold or 0),
-            "expense_l2_threshold": float(getattr(tenant, "expense_l2_threshold", None) or 1000),
+            "expense_approval_threshold": money_json(
+                tenant.expense_approval_threshold or 0
+            ),
+            "expense_l2_threshold": money_json(
+                getattr(tenant, "expense_l2_threshold", None), default=1000.0
+            ),
             "expense_approval_matrix": getattr(tenant, "expense_approval_matrix", None),
             "purchase_request_approval_matrix": getattr(
                 tenant, "purchase_request_approval_matrix", None
@@ -407,7 +447,9 @@ async def collect_tenant_payload(db: AsyncSession, tenant_id: str) -> tuple[dict
             "tax_jurisdiction": getattr(tenant, "tax_jurisdiction", None) or "GH",
             "tax_registration_number": getattr(tenant, "tax_registration_number", None),
             "tax_filing_period": getattr(tenant, "tax_filing_period", None) or "monthly",
-            "early_pay_discount_pct": float(getattr(tenant, "early_pay_discount_pct", None) or 0),
+            "early_pay_discount_pct": money_json(
+                getattr(tenant, "early_pay_discount_pct", None) or 0
+            ),
             "early_pay_discount_days": int(getattr(tenant, "early_pay_discount_days", None) or 0),
         },
         "created_at": datetime.utcnow().isoformat(),
@@ -530,7 +572,7 @@ async def create_backup(
         encrypted=True,
         record_counts={},
         created_by=user_id,
-        notes=notes,
+        notes=optional_honest_narrative(notes, label="backup notes"),
     )
     db.add(job)
     await db.flush()
@@ -585,27 +627,60 @@ async def create_backup(
 
         return job
     except HTTPException as exc:
-        detail = exc.detail if isinstance(exc.detail, str) else "Backup failed"
-        # Offsite failure already persisted above; avoid double notify/commit.
-        if job.status != "failed":
-            await _persist_backup_failure(
-                db, tenant_id=tenant_id, job=job, error_message=detail
+        job.status = "failed"
+        job.error_message = str(exc.detail)[:500] if exc.detail else "Backup failed"
+        await db.flush()
+        # Manual creates still raise; scheduled path catches and notifies.
+        if notes != "scheduled":
+            await notify_backup_failure(
+                db,
+                tenant_id=tenant_id,
+                reason="failed",
+                detail=str(exc.detail),
             )
         raise
     except Exception as exc:
-        await _persist_backup_failure(
-            db, tenant_id=tenant_id, job=job, error_message=str(exc)
-        )
+        job.status = "failed"
+        job.error_message = str(exc)[:500]
+        await db.flush()
+        if notes != "scheduled":
+            await notify_backup_failure(
+                db,
+                tenant_id=tenant_id,
+                reason="failed",
+                detail=str(exc)[:400],
+            )
         raise HTTPException(status_code=500, detail=f"Backup failed: {exc}") from exc
 
 
-async def list_backups(db: AsyncSession, tenant_id: str, limit: int = 50) -> list[m.BackupJob]:
-    result = await db.execute(
+async def list_backups(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    status: str | None = None,
+    limit: int = 50,
+) -> list[m.BackupJob]:
+    stmt = (
         select(m.BackupJob)
         .where(m.BackupJob.tenant_id == tenant_id)
         .order_by(m.BackupJob.created_at.desc())
         .limit(min(max(limit, 1), 200))
     )
+    if status is not None:
+        # Schema BackupJobStatusFilterValue rejects blank/invalid → 422;
+        # keep allow-list defense-in-depth (no silent empty filter / blank→all).
+        wanted = (status or "").strip().lower()
+        allowed = {"pending", "completed", "failed", "restoring"}
+        if not wanted:
+            pass
+        elif wanted not in allowed:
+            raise HTTPException(
+                status_code=422,
+                detail="status must be pending, completed, failed, or restoring",
+            )
+        else:
+            stmt = stmt.where(m.BackupJob.status == wanted)
+    result = await db.execute(stmt)
     return list(result.scalars().all())
 
 
@@ -842,6 +917,115 @@ async def apply_restore(db: AsyncSession, tenant_id: str, payload: dict) -> dict
     report["restored"] = restored
     report["media"] = media_report
     report["applied"] = True
+    report["proof"] = await prove_restore_integrity(db, tenant_id, payload)
+    return report
+
+
+_PROOF_FIELDS: dict[str, tuple[str, ...]] = {
+    "products": ("name", "sku", "stock_qty"),
+    "parties": ("name", "kind", "status"),
+    "stores": ("name", "code", "is_active"),
+    "warehouses": ("name", "code", "is_active"),
+    "accounts": ("code", "name", "account_type"),
+    "sales_invoices": ("invoice_number", "status", "total_amount"),
+    "purchase_orders": ("po_number", "status"),
+}
+
+
+def _proof_values_equal(expected: Any, actual: Any) -> bool:
+    if expected is None and actual is None:
+        return True
+    if isinstance(expected, (int, float, Decimal)) or isinstance(actual, (int, float, Decimal)):
+        try:
+            return money_json(expected or 0) == money_json(actual or 0)
+        except (TypeError, ValueError):
+            return str(expected) == str(actual)
+    return str(expected) == str(actual)
+
+
+async def prove_restore_integrity(
+    db: AsyncSession,
+    tenant_id: str,
+    payload: dict,
+    *,
+    sample_limit: int = 100,
+) -> dict:
+    """Compare live tenant rows to a decrypted backup payload (restore proof).
+
+    Logical restore is upsert-only: rows created after the backup may remain.
+    Proof checks that every sampled backup row is present with matching fields.
+    """
+    datasets = payload.get("datasets") or {}
+    mismatches: list[dict[str, Any]] = []
+    checked = 0
+    by_dataset: dict[str, dict[str, int]] = {}
+
+    for name, model in DATASET_SPECS:
+        rows = datasets.get(name) or []
+        dataset_checked = 0
+        dataset_bad = 0
+        fields = _PROOF_FIELDS.get(name, ("name", "status"))
+        for raw in rows[:sample_limit]:
+            pk = (raw or {}).get("id")
+            if not pk:
+                continue
+            checked += 1
+            dataset_checked += 1
+            live = await db.get(model, pk)
+            if live is None or getattr(live, "tenant_id", None) != tenant_id:
+                dataset_bad += 1
+                mismatches.append({"dataset": name, "id": pk, "error": "missing"})
+                continue
+            for field in fields:
+                if field not in raw or not hasattr(live, field):
+                    continue
+                actual = getattr(live, field)
+                if not _proof_values_equal(raw[field], actual):
+                    dataset_bad += 1
+                    mismatches.append(
+                        {
+                            "dataset": name,
+                            "id": pk,
+                            "field": field,
+                            "expected": raw[field],
+                            "actual": actual
+                            if not isinstance(actual, Decimal)
+                            else money_json(actual),
+                        }
+                    )
+                    break
+        by_dataset[name] = {"checked": dataset_checked, "mismatches": dataset_bad}
+
+    return {
+        "ok": len(mismatches) == 0,
+        "checked": checked,
+        "mismatch_count": len(mismatches),
+        "mismatches": mismatches[:50],
+        "by_dataset": by_dataset,
+        "sample_limit": sample_limit,
+        "mode": "upsert_field_match",
+    }
+
+
+async def verify_backup(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    backup_id: str,
+    sample_limit: int = 100,
+) -> dict:
+    """Decrypt backup, validate tenant binding, and prove against live data."""
+    job = await get_backup(db, tenant_id, backup_id)
+    file_bytes = await read_backup_bytes(job)
+    payload = decrypt_archive(file_bytes, expected_file_checksum=job.checksum_sha256)
+    report = await validate_restore_payload(payload, tenant_id)
+    proof = await prove_restore_integrity(
+        db, tenant_id, payload, sample_limit=sample_limit
+    )
+    report["proof"] = proof
+    report["backup_id"] = backup_id
+    report["checksum_sha256"] = job.checksum_sha256
+    report["filename"] = job.filename
     return report
 
 
@@ -899,13 +1083,43 @@ async def prune_retention(db: AsyncSession, tenant_id: str, keep: int) -> int:
 
 
 def ensure_backup_dir_writable() -> None:
-    root = backup_root()
-    probe = root / ".write_test"
     try:
+        root = backup_root()
+        probe = root / ".write_test"
         probe.write_text("ok", encoding="utf-8")
         probe.unlink(missing_ok=True)
     except OSError as exc:
-        raise HTTPException(status_code=503, detail=f"Backup directory not writable: {root}") from exc
+        raise HTTPException(
+            status_code=503,
+            detail=f"Backup directory not writable: {settings.BACKUP_DIR}",
+        ) from exc
+
+
+async def notify_backup_failure(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    reason: str,
+    detail: str | None = None,
+) -> None:
+    """Create an in-app system alert for admins when a backup fails (BR-16.2)."""
+    from app import notifications as notifications_svc
+
+    reason_s = (reason or "failed").strip()[:80]
+    detail_s = (detail or "").strip()[:400]
+    message = f"Backup failed ({reason_s})"
+    if detail_s:
+        message = f"{message}: {detail_s}"
+    await notifications_svc.create_notification(
+        db,
+        tenant_id=tenant_id,
+        category="system",
+        title="Backup failed",
+        message=message[:500],
+        roles=["company_admin", "super_admin"],
+        entity_type="backup",
+        entity_id=None,
+    )
 
 
 async def run_scheduled_backup_if_due(
@@ -914,7 +1128,11 @@ async def run_scheduled_backup_if_due(
     tenant_id: str,
     user_id: str | None = None,
 ) -> dict:
-    """Run a backup when schedule is enabled and due. Safe for Celery/cron."""
+    """Run a backup when schedule is enabled and due. Safe for Celery/cron.
+
+    Never raises for expected schedule/create failures — returns ``ran=false`` with a
+    reason so the Celery tenant loop can commit the failed job + admin notification.
+    """
     from datetime import timedelta
 
     row = await get_or_create_settings(db, tenant_id)
@@ -927,19 +1145,23 @@ async def run_scheduled_backup_if_due(
             return {"ran": False, "reason": "already_ran", "tenant_id": tenant_id}
     if now.hour < int(row.hour_utc or 0) and row.last_run_at:
         return {"ran": False, "reason": "before_hour", "tenant_id": tenant_id}
+
     try:
         ensure_backup_dir_writable()
     except HTTPException as exc:
-        detail = exc.detail if isinstance(exc.detail, str) else "Backup directory not writable"
         await notify_backup_failure(
-            db, tenant_id=tenant_id, error_message=detail, backup_id=None
+            db,
+            tenant_id=tenant_id,
+            reason="dir_not_writable",
+            detail=str(exc.detail),
         )
         return {
             "ran": False,
             "reason": "dir_not_writable",
             "tenant_id": tenant_id,
-            "detail": detail[:500],
+            "error": str(exc.detail)[:200],
         }
+
     try:
         job = await create_backup(
             db,
@@ -947,18 +1169,36 @@ async def run_scheduled_backup_if_due(
             user_id=user_id,
             notes="scheduled",
         )
+        return {
+            "ran": True,
+            "reason": "created",
+            "tenant_id": tenant_id,
+            "backup_id": job.id,
+            "filename": job.filename,
+        }
     except HTTPException as exc:
-        detail = exc.detail if isinstance(exc.detail, str) else "Backup failed"
+        await notify_backup_failure(
+            db,
+            tenant_id=tenant_id,
+            reason="failed",
+            detail=str(exc.detail),
+        )
         return {
             "ran": False,
             "reason": "failed",
             "tenant_id": tenant_id,
-            "detail": detail[:500],
+            "error": str(exc.detail)[:200],
         }
-    return {
-        "ran": True,
-        "reason": "created",
-        "tenant_id": tenant_id,
-        "backup_id": job.id,
-        "filename": job.filename,
-    }
+    except Exception as exc:  # noqa: BLE001 — scheduled path must not crash the tenant loop
+        await notify_backup_failure(
+            db,
+            tenant_id=tenant_id,
+            reason="failed",
+            detail=str(exc)[:400],
+        )
+        return {
+            "ran": False,
+            "reason": "failed",
+            "tenant_id": tenant_id,
+            "error": str(exc)[:200],
+        }

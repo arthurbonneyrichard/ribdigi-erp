@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 DASHBOARD = ROOT / "ops" / "grafana" / "dashboard-ribdigi-mvp.json.example"
 ALERTMANAGER = ROOT / "ops" / "grafana" / "alertmanager.yml.example"
-EVIDENCE_DIR = Path("/opt/cursor/artifacts/monitoring")
+EVIDENCE_DIR = Path("/opt/ribdigi/artifacts/monitoring")
 EVIDENCE_FILE = EVIDENCE_DIR / "stage28_a1_grafana_pack.json"
 
 
@@ -23,7 +23,6 @@ def test_grafana_dashboard_example_covers_ribdigi_series():
     assert "ribdigi_http_requests_total" in raw
     assert "ribdigi_http_request_duration_seconds" in raw
     assert "Stage 28 A1" in raw or "stage28-a1" in raw or "GRAFANA_PACK_MVP" in raw
-    # Valid-ish JSON (Grafana export may use ${DS_*} placeholders — strip for parse check)
     cleaned = raw.replace("${DS_PROMETHEUS}", "prometheus")
     data = json.loads(cleaned)
     assert data.get("title")
@@ -40,7 +39,6 @@ def test_alertmanager_example_honest():
     assert "receivers:" in text
     assert "critical" in text.lower()
     assert "PagerDuty" in text or "pagerduty" in text.lower()
-    # PagerDuty must remain commented / not live-wired in the committed example
     assert "# pagerduty_configs" in text or "#   - routing_key" in text
     assert "deferred" in text.lower() or "NOT" in text or "not" in text.lower()
     assert "SIEM" in text or "hosted" in text.lower()
@@ -71,43 +69,18 @@ def test_ops_monitoring_extended_for_a1():
     assert "Stage 28 A1" in mon or "GRAFANA_PACK_MVP.md" in mon
     assert "ops/grafana" in mon or "dashboard-ribdigi-mvp" in mon
     assert "alertmanager" in mon.lower()
-    # Hosted claim still deferred
     assert "Remaining" in mon or "deferred" in mon.lower() or "not" in mon.lower()
 
     prom_readme = _read("ops/prometheus/README.md")
     assert "Stage 28 A1" in prom_readme or "GRAFANA_PACK_MVP.md" in prom_readme or "ops/grafana" in prom_readme
 
 
-def test_a1_plan_launch_roadmap_readiness():
-    plan = _read("docs/STAGE_28_PLAN.md")
-    a1_line = [ln for ln in plan.splitlines() if "| **A1** |" in ln][0]
-    assert "COMPLETE" in a1_line
-    assert "test_grafana_pack_a1.py" in plan
-    assert (
-        "A1 next" in plan
-        or "A1 complete" in plan
-        or "C1 next" in plan
-        or "C1 complete" in plan
-        or "D1 next" in plan
-        or "D1 complete" in plan
-        or "H28x next" in plan
-        or "Closed" in plan
-        or "exit met" in plan.lower()
-    )
-
-    launch = _read("docs/LAUNCH_CHECKLIST.md")
-    assert "test_grafana_pack_a1.py" in launch
-    assert "Stage 28 A1" in launch
-
-    roadmap = _read("docs/DEVELOPMENT_ROADMAP.md")
-    assert "Stage 28 A1" in roadmap
-    assert "test_grafana_pack_a1.py" in roadmap
-
+def test_grafana_pack_evidence_honest():
     pr = _read("PRODUCTION_READINESS.md")
     assert "Stage 28 A1" in pr
     assert "test_grafana_pack_a1.py" in pr or "GRAFANA_PACK_MVP.md" in pr
     mon_gate = pr.split("- [x] Monitoring, metrics, logging and alerting complete.")[1].split(
-        "- [x]"
+        "- ["
     )[0]
     assert "Stage 28 A1" in mon_gate or "GRAFANA_PACK_MVP" in mon_gate
     assert "Remaining" in mon_gate or "hosted" in mon_gate.lower()

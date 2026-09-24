@@ -1,7 +1,7 @@
 # PITR Drill Pack MVP — Operator Staging Certification Packaging
 
 **Status:** Complete (MVP) — Stage 28 R1  
-**Evidence:** `backend/tests/test_pitr_drill_pack_r1.py` · `/opt/cursor/artifacts/dr/stage28_r1_pitr_drill_pack.json`  
+**Evidence:** `backend/tests/test_pitr_drill_pack_r1.py` · `/opt/ribdigi/artifacts/dr/stage28_r1_pitr_drill_pack.json`  
 **Checklist map:** `ops/postgres/pitr-drill-checklist.json`  
 **Runbook:** `docs/DR_WAL_PITR_RUNBOOK.md`  
 **Compose sketch:** `ops/backup/docker-compose.wal-drill.example.yml`

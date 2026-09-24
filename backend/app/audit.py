@@ -9,12 +9,47 @@ import json
 from datetime import datetime
 
 from fastapi import HTTPException
-from sqlalchemy import or_, select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app import schema_compat
+from app.models import uid
 
 GENESIS_HASH = "0" * 64
+
+# Modules accepted on GET /audit-logs?module= (record_event + middleware segments + system).
+AUDIT_MODULES = frozenset(
+    {
+        "accounting",
+        "ai",
+        "audit",
+        "auth",
+        "backup",
+        "company",
+        "credit",
+        "dashboard",
+        "expenses",
+        "fmcg",
+        "hotel",
+        "inventory",
+        "notifications",
+        "onboarding",
+        "platform_staff",
+        "pos",
+        "purchasing",
+        "reports",
+        "sales",
+        "security",
+        "settings",
+        "stores",
+        "system",
+        "tax",
+        "tenants",
+        "users",
+        "webhooks",
+    }
+)
 
 
 def canonical_payload(
@@ -60,24 +95,30 @@ def serialize_audit(row: m.AuditLog) -> dict:
         "user_agent": row.user_agent,
         "prev_hash": row.prev_hash,
         "integrity_hash": row.integrity_hash,
+        "archived_at": getattr(row, "archived_at", None),
         "created_at": row.created_at,
         "archived_at": getattr(row, "archived_at", None),
     }
 
 
 async def latest_integrity_hash(db: AsyncSession, tenant_id: str) -> str:
-    row = (
-        await db.execute(
-            select(m.AuditLog)
-            .where(
-                m.AuditLog.tenant_id == tenant_id,
-                m.AuditLog.integrity_hash.is_not(None),
-            )
-            .order_by(m.AuditLog.created_at.desc(), m.AuditLog.id.desc())
-            .limit(1)
+    try:
+        cols = await schema_compat.table_column_names(db, "audit_logs")
+        if "integrity_hash" not in cols or "tenant_id" not in cols:
+            return GENESIS_HASH
+        order = "created_at DESC" if "created_at" in cols else "id DESC"
+        result = await db.execute(
+            text(
+                f"SELECT integrity_hash FROM audit_logs "
+                f"WHERE tenant_id = :tid AND integrity_hash IS NOT NULL "
+                f"ORDER BY {order} LIMIT 1"
+            ),
+            {"tid": tenant_id},
         )
-    ).scalar_one_or_none()
-    return row.integrity_hash if row and row.integrity_hash else GENESIS_HASH
+        value = result.scalar()
+        return str(value) if value else GENESIS_HASH
+    except Exception:
+        return GENESIS_HASH
 
 
 async def record_event(
@@ -108,7 +149,9 @@ async def record_event(
         created_at=created_at,
     )
     integrity = compute_integrity_hash(prev, payload)
+    row_id = uid()
     row = m.AuditLog(
+        id=row_id,
         tenant_id=tenant_id,
         company_id=company_id,
         user_id=user_id,
@@ -123,7 +166,26 @@ async def record_event(
         integrity_hash=integrity,
         created_at=created_at,
     )
-    db.add(row)
+    await schema_compat.insert_matching_row(
+        db,
+        "audit_logs",
+        {
+            "id": row_id,
+            "tenant_id": tenant_id,
+            "user_id": user_id,
+            "module": module,
+            "action": action,
+            "entity": entity,
+            "entity_id": entity_id,
+            "details": details,
+            "ip_address": ip_address,
+            "user_agent": user_agent,
+            "prev_hash": prev,
+            "integrity_hash": integrity,
+            "created_at": created_at,
+            "company_id": None,
+        },
+    )
     await db.flush()
     return row
 
@@ -145,7 +207,15 @@ async def query_logs(
     if user_id:
         stmt = stmt.where(m.AuditLog.user_id == user_id)
     if module:
-        stmt = stmt.where(m.AuditLog.module == module)
+        # Schema AuditModuleValue rejects blank/unknown → 422; keep allow-list defense-in-depth.
+        mod = module.strip().lower()
+        if mod and mod not in AUDIT_MODULES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"module must be one of: {', '.join(sorted(AUDIT_MODULES))}",
+            )
+        if mod:
+            stmt = stmt.where(m.AuditLog.module == mod)
     if action:
         stmt = stmt.where(m.AuditLog.action == action)
     if entity:
@@ -265,7 +335,7 @@ def reject_mutation() -> None:
 
 
 def retention_policy() -> dict:
-    """BR-17.2 retention / cold-archive policy (Stage 1 G20)."""
+    """BR-17.2 retention / cold-archive policy."""
     from app.config import settings
 
     years = max(7, int(getattr(settings, "AUDIT_RETENTION_YEARS", 7) or 7))
@@ -278,7 +348,7 @@ def retention_policy() -> dict:
         "notes": (
             "Financial/audit records are retained at least 7 years. "
             "Cold archive writes a checksummed JSONL copy to object storage; "
-            "hot rows are marked archived_at and never deleted in Stage 1."
+            "hot rows are marked archived_at and never deleted."
         ),
     }
 
@@ -300,14 +370,18 @@ def serialize_cold_archive(row: m.AuditColdArchive) -> dict:
 async def list_cold_archives(
     db: AsyncSession, *, tenant_id: str, limit: int = 50
 ) -> list[m.AuditColdArchive]:
-    return (
-        await db.execute(
-            select(m.AuditColdArchive)
-            .where(m.AuditColdArchive.tenant_id == tenant_id)
-            .order_by(m.AuditColdArchive.created_at.desc())
-            .limit(min(limit, 200))
+    return list(
+        (
+            await db.execute(
+                select(m.AuditColdArchive)
+                .where(m.AuditColdArchive.tenant_id == tenant_id)
+                .order_by(m.AuditColdArchive.created_at.desc())
+                .limit(min(limit, 200))
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
 
 async def archive_cold_logs(
@@ -326,7 +400,6 @@ async def archive_cold_logs(
     from datetime import timedelta
 
     from app import storage as storage_svc
-    from app.config import settings
 
     policy = retention_policy()
     days = older_than_days if older_than_days is not None else policy["cold_archive_after_days"]

@@ -9,21 +9,36 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 from app.inventory import apply_stock_change
-from app.sales import (
-    INVOICE_PRINT_FORMATS,
-    INVOICE_PRINT_TEMPLATES,
-    calc_sale_line_amounts,
-    create_sales_invoice,
-    get_customer,
-    get_invoice,
-    list_invoice_items,
-    render_branded_lines_pdf,
+from app.doc_numbers import (
+    next_credit_note_number,
+    next_quotation_number,
+    next_sales_order_number,
+    next_sales_return_number,
 )
+from app.sales import create_sales_invoice, get_customer, require_active_customer, get_invoice, list_invoice_items
 from app.tax import resolve_product_tax
 from app.catalog import get_variant, resolve_sale_line
 
 RETURN_REASONS = frozenset({"damaged", "wrong_item", "defective", "customer_change", "other"})
+RETURN_CONDITIONS = frozenset({"sellable", "discard"})
+# Manage list statuses (full quotation lifecycle).
+QT_MANAGE_STATUSES = frozenset(
+    {"draft", "sent", "accepted", "rejected", "expired", "converted"}
+)
+# Manage list statuses (full sales order fulfillment lifecycle).
+SO_MANAGE_STATUSES = frozenset(
+    {
+        "draft",
+        "confirmed",
+        "processing",
+        "shipped",
+        "delivered",
+        "invoiced",
+        "cancelled",
+    }
+)
 
 QUOTATION_PRINT_TEMPLATES = INVOICE_PRINT_TEMPLATES
 QUOTATION_PRINT_FORMATS = INVOICE_PRINT_FORMATS
@@ -34,9 +49,10 @@ async def _prepare_lines(
     tenant_id: str,
     items: list[dict],
     *,
-    group_discount_percent: float = 0,
-    company_id: str | None = None,
+    customer_id: str | None = None,
 ) -> tuple[float, float, list[tuple[dict, float]]]:
+    from app.uom import resolve_line_unit
+
     if not items:
         raise HTTPException(status_code=400, detail="At least one line item is required")
     from app.workspace import assert_fk_company
@@ -46,17 +62,41 @@ async def _prepare_lines(
     prepared: list[tuple[dict, float]] = []
     for item in items:
         product, variant, unit = await resolve_sale_line(
-            db, tenant_id, item, group_discount_percent=group_discount_percent
+            db, tenant_id, item, customer_id=customer_id
         )
-        assert_fk_company(product, company_id, detail="Product not found")
-        qty = float(item["quantity"])
-        if qty <= 0:
-            raise HTTPException(status_code=400, detail="Quantity must be positive")
-        discount = float(item.get("discount") or 0)
+        unit_id, qty, _qty_base = await resolve_line_unit(
+            db,
+            tenant_id=tenant_id,
+            product=product,
+            unit_id=item.get("unit_id"),
+            quantity=money_json(item["quantity"]),
+        )
+        discount = money_json(item.get("discount") or 0)
+        # Auto-apply best FMCG trade scheme when no explicit line discount.
+        if discount <= 0 and item.get("apply_fmcg_scheme", True) is not False:
+            try:
+                from app import fmcg as fmcg_svc
+                from app import packages as packages_svc
+                from app import tenants as tenants_svc
+
+                tenant = await tenants_svc.get_tenant(db, tenant_id)
+                if packages_svc.module_allowed(tenant, "fmcg"):
+                    gross = money_json(qty * unit)
+                    scheme_disc, _meta = await fmcg_svc.best_line_scheme_discount(
+                        db,
+                        tenant_id=tenant_id,
+                        product_id=product.id,
+                        line_qty=float(qty),
+                        line_amount=float(gross),
+                    )
+                    if scheme_disc > 0:
+                        discount = money_json(min(scheme_disc, gross))
+            except Exception:
+                pass
         explicit = item.get("tax_rate")
         if explicit is not None:
             spec = await resolve_product_tax(
-                db, tenant_id, product, explicit_rate=float(explicit)
+                db, tenant_id, product, explicit_rate=money_json(explicit)
             )
         else:
             spec = await resolve_product_tax(db, tenant_id, product, explicit_rate=None)
@@ -73,6 +113,7 @@ async def _prepare_lines(
                     "product_id": product.id,
                     "variant_id": variant.id if variant else None,
                     "quantity": qty,
+                    "unit_id": unit_id,
                     "unit_price": unit,
                     "tax_rate": spec.rate_pct,
                     "discount": discount,
@@ -81,7 +122,7 @@ async def _prepare_lines(
                 line_total,
             )
         )
-    return round(subtotal, 2), round(tax_total, 2), prepared
+    return money_json(round(subtotal, 2)), money_json(round(tax_total, 2)), prepared
 
 
 async def _allocate(
@@ -130,12 +171,13 @@ async def serialize_quotation(db: AsyncSession, quote: m.SalesQuotation) -> dict
         "quotation_number": quote.quotation_number,
         "customer_id": quote.customer_id,
         "status": quote.status,
-        "subtotal": float(quote.subtotal),
-        "tax_amount": float(quote.tax_amount),
-        "discount_amount": float(quote.discount_amount),
-        "total_amount": float(quote.total_amount),
+        "subtotal": money_json(quote.subtotal),
+        "tax_amount": money_json(quote.tax_amount),
+        "discount_amount": money_json(quote.discount_amount),
+        "total_amount": money_json(quote.total_amount),
         "valid_until": quote.valid_until,
         "notes": quote.notes,
+        "rejection_reason": quote.rejection_reason,
         "converted_order_id": quote.converted_order_id,
         "converted_invoice_id": quote.converted_invoice_id,
         "emailed_at": quote.emailed_at,
@@ -147,11 +189,12 @@ async def serialize_quotation(db: AsyncSession, quote: m.SalesQuotation) -> dict
                 "company_id": getattr(i, "company_id", None),
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
-                "quantity": float(i.quantity),
-                "unit_price": float(i.unit_price),
-                "tax_rate": float(i.tax_rate),
-                "discount": float(i.discount),
-                "line_total": float(i.line_total),
+                "quantity": money_json(i.quantity),
+                "unit_id": i.unit_id,
+                "unit_price": money_json(i.unit_price),
+                "tax_rate": money_json(i.tax_rate),
+                "discount": money_json(i.discount),
+                "line_total": money_json(i.line_total),
             }
             for i in items
         ],
@@ -417,21 +460,17 @@ async def create_quotation(
     valid_days: int = 14,
     company_id: str | None = None,
 ) -> m.SalesQuotation:
-    await get_customer(db, tenant_id, customer_id, company_id=company_id)
-    from app.customers import customer_group_discount_percent
-
-    group_discount = await customer_group_discount_percent(db, tenant_id, customer_id)
+    await require_active_customer(db, tenant_id, customer_id)
     subtotal, tax_total, prepared = await _prepare_lines(
-        db, tenant_id, items, group_discount_percent=group_discount, company_id=company_id
+        db, tenant_id, items, customer_id=customer_id
     )
-    discount_amount = float(discount_amount or 0)
-    total = round(subtotal + tax_total - discount_amount, 2)
+    discount_amount = money_json(discount_amount or 0)
+    total = money_json(round(subtotal + tax_total - discount_amount, 2))
     if total < 0:
         raise HTTPException(status_code=400, detail="Total cannot be negative")
     quote = m.SalesQuotation(
         tenant_id=tenant_id,
-        company_id=company_id,
-        quotation_number=await _allocate(db, tenant_id, "sales_quotation", company_id=company_id),
+        quotation_number=await next_quotation_number(db, tenant_id),
         customer_id=customer_id,
         status="draft",
         subtotal=subtotal,
@@ -439,7 +478,7 @@ async def create_quotation(
         discount_amount=discount_amount,
         total_amount=total,
         valid_until=datetime.utcnow() + timedelta(days=max(valid_days, 1)),
-        notes=notes,
+        notes=optional_honest_narrative(notes, label="quotation notes"),
         created_by=user_id,
     )
     db.add(quote)
@@ -487,6 +526,7 @@ async def send_quotation(
         currency=currency,
         customer_name=customer.name,
         quotation=payload,
+        tenant=tenant,
     )
     if not result.sent:
         if result.mode == "disabled":
@@ -522,11 +562,23 @@ async def accept_quotation(db: AsyncSession, tenant_id: str, quotation_id: str) 
     return quote
 
 
-async def reject_quotation(db: AsyncSession, tenant_id: str, quotation_id: str) -> m.SalesQuotation:
+async def reject_quotation(
+    db: AsyncSession,
+    tenant_id: str,
+    quotation_id: str,
+    *,
+    reason: str | None = None,
+) -> m.SalesQuotation:
     quote = await get_quotation(db, tenant_id, quotation_id)
     if quote.status not in {"draft", "sent"}:
         raise HTTPException(status_code=409, detail=f"Cannot reject quotation in status {quote.status}")
+    if quote.valid_until and quote.valid_until < datetime.utcnow():
+        quote.status = "expired"
+        await db.flush()
+        raise HTTPException(status_code=409, detail="Quotation has expired")
+    reason_s = require_honest_narrative(reason, label="rejection reason")
     quote.status = "rejected"
+    quote.rejection_reason = reason_s
     quote.updated_at = datetime.utcnow()
     await db.flush()
     return quote
@@ -572,11 +624,12 @@ async def list_order_reservations(
 
 async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
     items = await list_order_items(db, order.tenant_id, order.id)
-    reservations = await list_order_reservations(db, order.tenant_id, order.id)
+    from app.reservations import list_order_reservations
+
+    reservations = await list_order_reservations(db, order.tenant_id, order.id, status=None)
+    active = [r for r in reservations if r.status == "active"]
     reserved_by_item = {
-        r.sales_order_item_id: float(r.quantity or 0)
-        for r in reservations
-        if r.status == "active"
+        r.sales_order_item_id: money_json(r.quantity) for r in active if r.sales_order_item_id
     }
     return {
         "id": order.id,
@@ -584,34 +637,46 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
         "order_number": order.order_number,
         "customer_id": order.customer_id,
         "quotation_id": order.quotation_id,
-        "store_id": order.store_id,
-        "warehouse_id": order.warehouse_id,
+        "store_id": getattr(order, "store_id", None),
+        "delivery_date": getattr(order, "delivery_date", None),
+        "delivery_address": getattr(order, "delivery_address", None),
         "status": order.status,
-        "subtotal": float(order.subtotal),
-        "tax_amount": float(order.tax_amount),
-        "discount_amount": float(order.discount_amount),
-        "total_amount": float(order.total_amount),
+        "subtotal": money_json(order.subtotal),
+        "tax_amount": money_json(order.tax_amount),
+        "discount_amount": money_json(order.discount_amount),
+        "total_amount": money_json(order.total_amount),
         "notes": order.notes,
         "delivery_date": order.delivery_date,
         "delivery_address": order.delivery_address,
         "converted_invoice_id": order.converted_invoice_id,
         "confirmed_at": order.confirmed_at,
-        "processing_at": order.processing_at,
-        "shipped_at": order.shipped_at,
-        "delivered_at": order.delivered_at,
+        "processing_at": getattr(order, "processing_at", None),
+        "shipped_at": getattr(order, "shipped_at", None),
+        "delivered_at": getattr(order, "delivered_at", None),
         "created_at": order.created_at,
-        "reserved_qty_total": sum(reserved_by_item.values()),
+        "reserved_qty": money_json(round(sum(money_json(r.quantity) for r in active), 3)),
+        "reservation_status": (
+            "active"
+            if active
+            else ("consumed" if any(r.status == "consumed" for r in reservations) else None)
+        ),
+        "can_process": order.status == "confirmed",
+        "can_ship": order.status == "processing",
+        "can_deliver": order.status == "shipped",
+        "can_cancel": order.status in {"draft", "confirmed", "processing"},
+        "can_invoice": order.status in {"draft", "confirmed", "processing", "shipped", "delivered"},
         "items": [
             {
                 "id": i.id,
                 "company_id": getattr(i, "company_id", None),
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
-                "quantity": float(i.quantity),
-                "unit_price": float(i.unit_price),
-                "tax_rate": float(i.tax_rate),
-                "discount": float(i.discount),
-                "line_total": float(i.line_total),
+                "quantity": money_json(i.quantity),
+                "unit_id": i.unit_id,
+                "unit_price": money_json(i.unit_price),
+                "tax_rate": money_json(i.tax_rate),
+                "discount": money_json(i.discount),
+                "line_total": money_json(i.line_total),
                 "reserved_qty": reserved_by_item.get(i.id, 0.0),
             }
             for i in items
@@ -712,12 +777,10 @@ async def create_order(
     notes: str | None = None,
     quotation_id: str | None = None,
     store_id: str | None = None,
-    warehouse_id: str | None = None,
     delivery_date: datetime | None = None,
     delivery_address: str | None = None,
-    company_id: str | None = None,
 ) -> m.SalesOrder:
-    customer = await get_customer(db, tenant_id, customer_id, company_id=company_id)
+    await require_active_customer(db, tenant_id, customer_id)
     if quotation_id:
         from app.workspace import assert_fk_company
 
@@ -725,40 +788,33 @@ async def create_order(
         assert_fk_company(quote, company_id, detail="Quotation not found")
         if quote.customer_id != customer_id:
             raise HTTPException(status_code=400, detail="Quotation customer mismatch")
-        if company_id is None:
-            company_id = getattr(quote, "company_id", None)
-    resolved_store, resolved_wh = await _resolve_order_warehouse(
-        db,
-        tenant_id=tenant_id,
-        store_id=store_id,
-        warehouse_id=warehouse_id,
-        company_id=company_id,
-    )
-    from app.customers import customer_group_discount_percent
+    resolved_store_id = None
+    if store_id:
+        from app.stores import get_store
 
-    group_discount = await customer_group_discount_percent(db, tenant_id, customer_id)
+        store = await get_store(db, tenant_id, store_id)
+        resolved_store_id = store.id
     subtotal, tax_total, prepared = await _prepare_lines(
-        db, tenant_id, items, group_discount_percent=group_discount, company_id=company_id
+        db, tenant_id, items, customer_id=customer_id
     )
-    discount_amount = float(discount_amount or 0)
-    total = round(subtotal + tax_total - discount_amount, 2)
-    address = (delivery_address or "").strip() or (customer.address or None)
+    discount_amount = money_json(discount_amount or 0)
+    total = money_json(round(subtotal + tax_total - discount_amount, 2))
     order = m.SalesOrder(
         tenant_id=tenant_id,
-        company_id=company_id,
-        order_number=await _allocate(db, tenant_id, "sales_order", company_id=company_id),
+        order_number=await next_sales_order_number(db, tenant_id),
         customer_id=customer_id,
         quotation_id=quotation_id,
-        store_id=resolved_store,
-        warehouse_id=resolved_wh,
+        store_id=resolved_store_id,
+        delivery_date=delivery_date,
+        delivery_address=optional_honest_narrative(
+            delivery_address, label="sales order delivery address", max_length=500
+        ),
         status="draft",
         subtotal=subtotal,
         tax_amount=tax_total,
         discount_amount=discount_amount,
         total_amount=total,
-        notes=notes,
-        delivery_date=delivery_date,
-        delivery_address=address,
+        notes=optional_honest_narrative(notes, label="sales order notes"),
         created_by=user_id,
     )
     db.add(order)
@@ -883,6 +939,18 @@ async def advance_order_status(
         company_id=getattr(order, "company_id", None),
     )
     await db.flush()
+
+    from app.notifications import create_notification
+
+    await create_notification(
+        db,
+        tenant_id=tenant_id,
+        category="new_order",
+        title="Sales order created",
+        message=f"Order {order.order_number} created for {money_json(order.total_amount or 0):.2f}.",
+        entity_type="sales_order",
+        entity_id=order.id,
+    )
     return order
 
 
@@ -910,14 +978,15 @@ async def convert_quotation_to_order(
             {
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
-                "quantity": float(i.quantity),
-                "unit_price": float(i.unit_price),
-                "tax_rate": float(i.tax_rate),
-                "discount": float(i.discount),
+                "quantity": money_json(i.quantity),
+                "unit_id": i.unit_id,
+                "unit_price": money_json(i.unit_price),
+                "tax_rate": money_json(i.tax_rate),
+                "discount": money_json(i.discount),
             }
             for i in items
         ],
-        discount_amount=float(quote.discount_amount or 0),
+        discount_amount=money_json(quote.discount_amount or 0),
         notes=quote.notes,
         quotation_id=quote.id,
         company_id=getattr(quote, "company_id", None),
@@ -934,12 +1003,37 @@ async def confirm_order(
     tenant_id: str,
     order_id: str,
     *,
-    user_id: str | None = None,
+    store_id: str | None = None,
+    delivery_date: datetime | None = None,
+    delivery_address: str | None = None,
 ) -> m.SalesOrder:
     order = await get_order(db, tenant_id, order_id)
     if order.status != "draft":
         raise HTTPException(status_code=409, detail=f"Cannot confirm order in status {order.status}")
-    await reserve_order_stock(db, tenant_id=tenant_id, order=order, user_id=user_id)
+    if store_id:
+        from app.stores import get_store
+
+        store = await get_store(db, tenant_id, store_id)
+        order.store_id = store.id
+    if delivery_date is not None:
+        order.delivery_date = delivery_date
+    if delivery_address is not None:
+        order.delivery_address = optional_honest_narrative(
+            delivery_address, label="sales order delivery address", max_length=500
+        )
+    if not order.store_id:
+        raise HTTPException(
+            status_code=400,
+            detail="store_id is required to confirm a sales order (soft inventory reservation)",
+        )
+
+    from app.stores import warehouse_for_store
+    from app.reservations import reserve_order
+
+    wh = await warehouse_for_store(db, tenant_id, order.store_id)
+    items = await list_order_items(db, tenant_id, order.id)
+    await reserve_order(db, tenant_id=tenant_id, order=order, items=items, warehouse_id=wh.id)
+
     order.status = "confirmed"
     order.confirmed_at = datetime.utcnow()
     order.updated_at = datetime.utcnow()
@@ -959,23 +1053,115 @@ async def confirm_order(
     return order
 
 
+ORDER_CANCELABLE = frozenset({"draft", "confirmed", "processing"})
+ORDER_INVOICEABLE = frozenset({"draft", "confirmed", "processing", "shipped", "delivered"})
+# Soft holds remain active through fulfillment until cancel or invoice post.
+ORDER_RESERVED_STATUSES = frozenset({"confirmed", "processing", "shipped", "delivered"})
+
+
+async def _advance_order(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    order_id: str,
+    from_status: str,
+    to_status: str,
+    stamp_field: str,
+    notify_title: str,
+    notify_message: str,
+) -> m.SalesOrder:
+    order = await get_order(db, tenant_id, order_id)
+    if order.status != from_status:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Cannot move order to {to_status} from status {order.status}",
+        )
+    order.status = to_status
+    setattr(order, stamp_field, datetime.utcnow())
+    order.updated_at = datetime.utcnow()
+    from app.notifications import create_notification
+
+    await create_notification(
+        db,
+        tenant_id=tenant_id,
+        category="system",
+        title=notify_title,
+        message=notify_message.format(number=order.order_number),
+        entity_type="sales_order",
+        entity_id=order.id,
+    )
+    await db.flush()
+    return order
+
+
+async def start_processing_order(db: AsyncSession, tenant_id: str, order_id: str) -> m.SalesOrder:
+    return await _advance_order(
+        db,
+        tenant_id=tenant_id,
+        order_id=order_id,
+        from_status="confirmed",
+        to_status="processing",
+        stamp_field="processing_at",
+        notify_title="Sales order processing",
+        notify_message="Order {number} is now processing.",
+    )
+
+
+async def ship_order(db: AsyncSession, tenant_id: str, order_id: str) -> m.SalesOrder:
+    return await _advance_order(
+        db,
+        tenant_id=tenant_id,
+        order_id=order_id,
+        from_status="processing",
+        to_status="shipped",
+        stamp_field="shipped_at",
+        notify_title="Sales order shipped",
+        notify_message="Order {number} has been shipped.",
+    )
+
+
+async def deliver_order(db: AsyncSession, tenant_id: str, order_id: str) -> m.SalesOrder:
+    return await _advance_order(
+        db,
+        tenant_id=tenant_id,
+        order_id=order_id,
+        from_status="shipped",
+        to_status="delivered",
+        stamp_field="delivered_at",
+        notify_title="Sales order delivered",
+        notify_message="Order {number} has been delivered.",
+    )
+
+
 async def cancel_order(
     db: AsyncSession,
     tenant_id: str,
     order_id: str,
     *,
     user_id: str | None = None,
+    reason: str | None = None,
 ) -> m.SalesOrder:
+    reason_s = require_honest_narrative(reason, label="cancel reason")
     order = await get_order(db, tenant_id, order_id)
-    if order.status not in {"draft", "confirmed", "processing"}:
+    if order.status not in ORDER_CANCELABLE:
         raise HTTPException(status_code=409, detail=f"Cannot cancel order in status {order.status}")
-    from app.inventory import release_reservations_for_order
+    if order.status in ORDER_RESERVED_STATUSES:
+        from app.reservations import release_order_reservations
 
-    await release_reservations_for_order(
-        db, tenant_id=tenant_id, sales_order_id=order.id, user_id=user_id
-    )
+        await release_order_reservations(db, tenant_id=tenant_id, order_id=order.id)
     order.status = "cancelled"
+    order.notes = ((order.notes or "") + f"\nCancel: {reason_s}").strip()
     order.updated_at = datetime.utcnow()
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="so_cancelled",
+            entity="sales_order",
+            entity_id=order.id,
+            details={"order_number": order.order_number, "reason": reason_s},
+        )
+    )
     await db.flush()
     return order
 
@@ -988,7 +1174,7 @@ async def convert_order_to_invoice(
     order_id: str,
 ) -> m.SalesInvoice:
     order = await get_order(db, tenant_id, order_id)
-    if order.status not in {"draft", "confirmed", "processing", "shipped", "delivered"}:
+    if order.status not in ORDER_INVOICEABLE:
         raise HTTPException(status_code=409, detail=f"Cannot invoice order in status {order.status}")
     if order.status == "draft":
         await reserve_order_stock(db, tenant_id=tenant_id, order=order, user_id=user_id)
@@ -1004,14 +1190,15 @@ async def convert_order_to_invoice(
             {
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
-                "quantity": float(i.quantity),
-                "unit_price": float(i.unit_price),
-                "tax_rate": float(i.tax_rate),
-                "discount": float(i.discount),
+                "quantity": money_json(i.quantity),
+                "unit_id": i.unit_id,
+                "unit_price": money_json(i.unit_price),
+                "tax_rate": money_json(i.tax_rate),
+                "discount": money_json(i.discount),
             }
             for i in items
         ],
-        discount_amount=float(order.discount_amount or 0),
+        discount_amount=money_json(order.discount_amount or 0),
         notes=order.notes,
         company_id=getattr(order, "company_id", None),
     )
@@ -1073,33 +1260,64 @@ async def serialize_return(db: AsyncSession, ret: m.SalesReturn) -> dict:
         "id": ret.id,
         "company_id": getattr(ret, "company_id", None),
         "return_number": ret.return_number,
-        "credit_note_number": ret.credit_note_number,
+        "credit_note_number": getattr(ret, "credit_note_number", None),
         "customer_id": ret.customer_id,
         "sales_invoice_id": ret.sales_invoice_id,
         "status": ret.status,
         "reason": ret.reason,
         "restock": ret.restock,
-        "subtotal": float(ret.subtotal),
-        "tax_amount": float(ret.tax_amount),
-        "total_amount": float(ret.total_amount),
+        "subtotal": money_json(ret.subtotal),
+        "tax_amount": money_json(ret.tax_amount),
+        "total_amount": money_json(ret.total_amount),
+        "settlement_method": getattr(ret, "settlement_method", None),
+        "refund_payment_method": getattr(ret, "refund_payment_method", None),
+        "refunded_amount": money_json(getattr(ret, "refunded_amount", None)),
         "notes": ret.notes,
         "posted_at": ret.posted_at,
         "created_at": ret.created_at,
+        "can_cancel": ret.status == "draft",
         "items": [
             {
                 "id": i.id,
                 "company_id": getattr(i, "company_id", None),
                 "product_id": i.product_id,
                 "variant_id": i.variant_id,
-                "quantity": float(i.quantity),
-                "unit_price": float(i.unit_price),
-                "tax_rate": float(i.tax_rate),
-                "line_total": float(i.line_total),
+                "quantity": money_json(i.quantity),
+                "unit_price": money_json(i.unit_price),
+                "tax_rate": money_json(i.tax_rate),
+                "line_total": money_json(i.line_total),
                 "condition": i.condition,
             }
             for i in items
         ],
     }
+
+
+async def cancel_return(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    return_id: str,
+    reason: str | None = None,
+) -> m.SalesReturn:
+    reason_s = require_honest_narrative(reason, label="cancel reason")
+    ret = await get_return(db, tenant_id, return_id)
+    if ret.status != "draft":
+        raise HTTPException(status_code=409, detail="Only draft sales returns can be cancelled")
+    ret.status = "cancelled"
+    ret.notes = ((ret.notes or "") + f"\nCancel: {reason_s}").strip()
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="sales_return_cancelled",
+            entity="sales_return",
+            entity_id=ret.id,
+            details={"return_number": ret.return_number, "reason": reason_s},
+        )
+    )
+    return ret
 
 
 async def create_return(
@@ -1109,18 +1327,18 @@ async def create_return(
     user_id: str,
     sales_invoice_id: str,
     items: list[dict],
-    reason: str = "other",
+    reason: str,
     restock: bool = True,
     notes: str | None = None,
     company_id: str | None = None,
 ) -> m.SalesReturn:
+    reason = (reason or "").strip()
+    if not reason:
+        raise HTTPException(status_code=400, detail="reason is required")
     if reason not in RETURN_REASONS:
         raise HTTPException(status_code=400, detail=f"reason must be one of {sorted(RETURN_REASONS)}")
     invoice = await get_invoice(db, tenant_id, sales_invoice_id)
-    from app.workspace import assert_fk_company
-
-    assert_fk_company(invoice, company_id, detail="Sales invoice not found")
-    if invoice.status not in {"posted", "partial", "paid"}:
+    if invoice.status not in {"posted", "sent", "partial", "paid", "overdue"}:
         raise HTTPException(status_code=409, detail="Returns require a posted invoice")
     inv_items = {
         (i.product_id, i.variant_id): i for i in await list_invoice_items(db, tenant_id, invoice.id)
@@ -1143,16 +1361,24 @@ async def create_return(
                 vid = src.variant_id
         if not src:
             raise HTTPException(status_code=400, detail=f"Product {pid} not on original invoice")
-        qty = float(item["quantity"])
-        if qty <= 0 or qty > float(src.quantity) + 1e-9:
+        qty = money_json(item["quantity"])
+        if qty <= 0 or qty > money_json(src.quantity) + 1e-9:
             raise HTTPException(status_code=400, detail="Return quantity exceeds invoice quantity")
-        unit = float(src.unit_price)
-        rate = float(src.tax_rate or 0)
-        line_net = round(qty * unit, 2)
-        line_tax = round(line_net * (rate / 100.0), 2)
-        line_total = round(line_net + line_tax, 2)
+        unit = money_json(src.unit_price)
+        rate = money_json(src.tax_rate or 0)
+        line_net = money_json(round(qty * unit, 2))
+        line_tax = money_json(round(line_net * (rate / 100.0), 2))
+        line_total = money_json(round(line_net + line_tax, 2))
         subtotal += line_net
         tax_total += line_tax
+        condition = (item.get("condition") or "").strip()
+        if not condition:
+            raise HTTPException(status_code=400, detail="items[].condition is required")
+        if condition not in RETURN_CONDITIONS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"condition must be one of {sorted(RETURN_CONDITIONS)}",
+            )
         prepared.append(
             {
                 "product_id": pid,
@@ -1161,23 +1387,22 @@ async def create_return(
                 "unit_price": unit,
                 "tax_rate": rate,
                 "line_total": line_total,
-                "condition": item.get("condition") or ("sellable" if restock else "discard"),
+                "condition": condition,
             }
         )
 
     ret = m.SalesReturn(
         tenant_id=tenant_id,
-        company_id=company_id or getattr(invoice, "company_id", None),
-        return_number=await _allocate(db, tenant_id, "sales_return", company_id=company_id or getattr(invoice, "company_id", None)),
+        return_number=await next_sales_return_number(db, tenant_id),
         customer_id=invoice.customer_id,
         sales_invoice_id=invoice.id,
         status="draft",
         reason=reason,
         restock=restock,
-        subtotal=round(subtotal, 2),
-        tax_amount=round(tax_total, 2),
-        total_amount=round(subtotal + tax_total, 2),
-        notes=notes,
+        subtotal=money_json(round(subtotal, 2)),
+        tax_amount=money_json(round(tax_total, 2)),
+        total_amount=money_json(round(subtotal + tax_total, 2)),
+        notes=optional_honest_narrative(notes, label="sales return notes"),
         created_by=user_id,
     )
     db.add(ret)
@@ -1194,6 +1419,9 @@ async def post_return(
     tenant_id: str,
     user_id: str,
     return_id: str,
+    settlement_method: str | None = None,
+    payment_method: str = "cash",
+    liquid_account_id: str | None = None,
 ) -> m.SalesReturn:
     ret = await get_return(db, tenant_id, return_id)
     if ret.status != "draft":
@@ -1216,7 +1444,7 @@ async def post_return(
 
     for item in items:
         if ret.restock and item.condition == "sellable":
-            qty = float(item.quantity)
+            qty = money_json(item.quantity)
             await apply_stock_change(
                 db,
                 tenant_id=tenant_id,
@@ -1232,51 +1460,77 @@ async def post_return(
             )
             if item.variant_id:
                 variant = await get_variant(db, tenant_id, item.variant_id)
-                variant.stock_qty = float(variant.stock_qty or 0) + qty
+                variant.stock_qty = money_json(variant.stock_qty or 0) + qty
         else:
-            # Discarded: still log movement as adjust out of sold goods without increasing sellable stock
-            from app import audit as audit_svc
-            await audit_svc.record_event(
-                db,
-                tenant_id=tenant_id,
-                user_id=user_id,
-                action="return_discarded",
-                entity="sales_return_item",
-                entity_id=item.id,
-                details={
-                "product_id": item.product_id,
-                "variant_id": item.variant_id,
-                "quantity": float(item.quantity),
-                },
-                module='sales',
+            db.add(
+                m.AuditLog(
+                    tenant_id=tenant_id,
+                    user_id=user_id,
+                    action="return_discarded",
+                    entity="sales_return_item",
+                    entity_id=item.id,
+                    details={
+                        "product_id": item.product_id,
+                        "variant_id": item.variant_id,
+                        "quantity": money_json(item.quantity),
+                    },
+                )
             )
 
-    # Customer balances are base currency; invoice/return amounts are document currency.
-    ret_base = to_base(float(ret.total_amount), doc_rate(invoice))
-    customer = await get_customer(db, tenant_id, ret.customer_id)
-    customer.balance = max(float(customer.balance or 0) - ret_base, 0)
+    return_total = money_json(round(money_json(ret.total_amount), 2))
+    invoice = await get_invoice(db, tenant_id, ret.sales_invoice_id)
+    open_ar = max(money_json(invoice.total_amount) - money_json(invoice.paid_amount or 0), 0.0)
+    apply_to_invoice = min(return_total, open_ar)
+    excess = money_json(round(return_total - apply_to_invoice, 2))
 
-    # paid_amount stays in document currency (same units as invoice.total_amount).
+    method = (settlement_method or "").strip().lower() or None
+    # Defense in depth: SalesReturnPost Literal rejects blank/unknown with 422.
+    # Invalid values used to persist as garbage when excess was 0 (method or "adjust").
+    if method is not None and method not in {"adjust", "refund"}:
+        raise HTTPException(
+            status_code=400,
+            detail="settlement_method must be adjust or refund",
+        )
+    if excess > 1e-9:
+        if method not in {"adjust", "refund"}:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "SETTLEMENT_REQUIRED",
+                    "message": (
+                        "Return exceeds open invoice balance; "
+                        "provide settlement_method=adjust (customer credit) or refund"
+                    ),
+                    "open_invoice_balance": open_ar,
+                    "return_total": return_total,
+                    "excess": excess,
+                },
+            )
+    else:
+        method = method or "adjust"
+
     invoice.paid_amount = min(
-        float(invoice.total_amount),
-        float(invoice.paid_amount or 0) + float(ret.total_amount),
+        money_json(invoice.total_amount),
+        money_json(invoice.paid_amount or 0) + apply_to_invoice,
     )
-    from app.sales import invoice_payment_status
+    from app.sales import apply_invoice_status
 
-    if invoice.status in {"posted", "partial", "paid"}:
-        invoice.status = invoice_payment_status(float(invoice.total_amount), float(invoice.paid_amount))
-        # credit note style: treat return as reducing open balance
-        if float(invoice.paid_amount) + 1e-9 >= float(invoice.total_amount):
-            invoice.status = "paid"
-        elif float(invoice.paid_amount) > 0:
-            invoice.status = "partial"
+    if invoice.status != "draft":
+        apply_invoice_status(invoice)
         invoice.updated_at = datetime.utcnow()
 
+    customer = await get_customer(db, tenant_id, ret.customer_id)
+    # Negative balance = customer store credit after return
+    customer.balance = money_json(round(money_json(customer.balance or 0) - return_total, 2))
+
+    ret.credit_note_number = await next_credit_note_number(db, tenant_id)
+    ret.settlement_method = method
+    ret.refunded_amount = 0
     ret.status = "posted"
     ret.posted_at = datetime.utcnow()
     ret.credit_note_number = await _allocate(db, tenant_id, "sales_credit_note", company_id=getattr(ret, "company_id", None))
 
-    from app.accounting import post_sales_return_journal
+    from app.accounting import post_sales_return_journal, post_sales_return_refund_journal
 
     await post_sales_return_journal(
         db,
@@ -1322,6 +1576,23 @@ async def post_return(
         module="sales",
     )
 
+    if method == "refund" and excess > 1e-9:
+        pay_method = (payment_method or "cash").strip().lower() or "cash"
+        await post_sales_return_refund_journal(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            sales_return=ret,
+            amount=excess,
+            payment_method=pay_method,
+            liquid_account_id=liquid_account_id,
+        )
+        ret.refund_payment_method = pay_method
+        ret.refund_liquid_account_id = liquid_account_id
+        ret.refunded_amount = excess
+        # Cash paid out instead of leaving store credit for the excess
+        customer.balance = money_json(round(money_json(customer.balance or 0) + excess, 2))
+
     from app.notifications import create_notification
 
     await create_notification(
@@ -1331,11 +1602,30 @@ async def post_return(
         title="Sales return posted",
         message=(
             f"Return {ret.return_number} / {ret.credit_note_number} posted for "
-            f"{float(ret.total_amount):.2f}."
+            f"{return_total:.2f} ({method}"
+            + (f", refunded {excess:.2f}" if method == "refund" and excess > 1e-9 else "")
+            + ")."
         ),
         entity_type="sales_return",
         entity_id=ret.id,
         company_id=getattr(ret, "company_id", None),
+    )
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="sales_return_posted",
+            entity="sales_return",
+            entity_id=ret.id,
+            details={
+                "return_number": ret.return_number,
+                "credit_note_number": ret.credit_note_number,
+                "total_amount": return_total,
+                "settlement_method": method,
+                "refunded_amount": money_json(ret.refunded_amount or 0),
+                "applied_to_invoice": apply_to_invoice,
+            },
+        )
     )
     await db.flush()
     return ret

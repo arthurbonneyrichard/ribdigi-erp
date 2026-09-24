@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException
@@ -9,7 +10,72 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app import schema_compat
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 from app.inventory import apply_stock_change
+
+_SKU_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$")
+
+
+def normalize_sku(value: str | None) -> str | None:
+    sku = (value or "").strip().upper()
+    if not sku:
+        return None
+    if not _SKU_RE.fullmatch(sku):
+        raise HTTPException(
+            status_code=400,
+            detail="SKU must be 1–100 chars: letters, digits, . _ - (start alphanumeric)",
+        )
+    return sku
+
+
+async def sku_in_use(
+    db: AsyncSession,
+    tenant_id: str,
+    sku: str,
+    *,
+    exclude_product_id: str | None = None,
+    exclude_variant_id: str | None = None,
+) -> bool:
+    if await schema_compat.tenant_value_in_use(
+        db, "products", tenant_id, "sku", sku, exclude_id=exclude_product_id
+    ):
+        return True
+    return await schema_compat.tenant_value_in_use(
+        db, "product_variants", tenant_id, "sku", sku, exclude_id=exclude_variant_id
+    )
+
+
+async def assert_sku_available(
+    db: AsyncSession,
+    tenant_id: str,
+    sku: str,
+    *,
+    exclude_product_id: str | None = None,
+    exclude_variant_id: str | None = None,
+) -> None:
+    if await sku_in_use(
+        db,
+        tenant_id,
+        sku,
+        exclude_product_id=exclude_product_id,
+        exclude_variant_id=exclude_variant_id,
+    ):
+        raise HTTPException(status_code=409, detail="SKU already in use")
+
+
+async def allocate_sku(db: AsyncSession, tenant_id: str, *, prefix: str = "SKU") -> str:
+    """Allocate a unique tenant SKU: PREFIX-YYYY-NNNN."""
+    year = datetime.utcnow().year
+    head = f"{prefix}-{year}-"
+    product_count = await schema_compat.count_tenant_rows(db, "products", tenant_id)
+    variant_count = await schema_compat.count_tenant_rows(db, "product_variants", tenant_id)
+    start = int(product_count or 0) + int(variant_count or 0) + 1
+    for n in range(start, start + 10_000):
+        candidate = f"{head}{n:04d}"
+        if not await sku_in_use(db, tenant_id, candidate):
+            return candidate
+    raise HTTPException(status_code=500, detail="Unable to allocate SKU")
 
 
 def serialize_variant(v: m.ProductVariant) -> dict:
@@ -23,9 +89,10 @@ def serialize_variant(v: m.ProductVariant) -> dict:
         "size": v.size,
         "color": v.color,
         "flavor": v.flavor,
-        "cost_price": float(v.cost_price or 0),
-        "selling_price": float(v.selling_price or 0),
-        "stock_qty": float(v.stock_qty or 0),
+        "dosage": getattr(v, "dosage", None),
+        "cost_price": money_json(v.cost_price),
+        "selling_price": money_json(v.selling_price),
+        "stock_qty": money_json(v.stock_qty),
         "is_active": bool(v.is_active),
         "created_at": v.created_at,
     }
@@ -41,33 +108,22 @@ def serialize_batch(b: m.ProductBatch) -> dict:
         "batch_number": b.batch_number,
         "manufacturing_date": b.manufacturing_date,
         "expiry_date": b.expiry_date,
-        "quantity": float(b.quantity or 0),
+        "quantity": money_json(b.quantity),
         "created_at": b.created_at,
         "updated_at": b.updated_at,
     }
 
 
 async def get_product(db: AsyncSession, tenant_id: str, product_id: str) -> m.Product:
-    product = (
-        await db.execute(
-            select(m.Product).where(m.Product.id == product_id, m.Product.tenant_id == tenant_id)
-        )
-    ).scalar_one_or_none()
-    if not product:
+    product = await schema_compat.get_mapped(db, m.Product, product_id)
+    if not product or product.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Product not found")
     return product
 
 
 async def get_variant(db: AsyncSession, tenant_id: str, variant_id: str) -> m.ProductVariant:
-    row = (
-        await db.execute(
-            select(m.ProductVariant).where(
-                m.ProductVariant.id == variant_id,
-                m.ProductVariant.tenant_id == tenant_id,
-            )
-        )
-    ).scalar_one_or_none()
-    if not row:
+    row = await schema_compat.get_mapped(db, m.ProductVariant, variant_id)
+    if not row or row.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Variant not found")
     return row
 
@@ -77,14 +133,17 @@ async def resolve_sale_line(
     tenant_id: str,
     item: dict,
     *,
-    group_discount_percent: float = 0,
+    customer_id: str | None = None,
 ) -> tuple[m.Product, m.ProductVariant | None, float]:
     """Validate product/variant and resolve unit price (variant price wins when set).
 
-    When unit_price is omitted, apply customer-group discount to catalog price.
-    Explicit unit_price always wins (manual override).
+    When ``unit_price`` is omitted, list/variant price is used. If ``customer_id``
+    is set and that customer belongs to an active group, the group's discount
+    percent is applied (BR-7.1). Explicit ``unit_price`` is treated as an override.
     """
     product = await get_product(db, tenant_id, item["product_id"])
+    if not product.is_active:
+        raise HTTPException(status_code=400, detail="Product is inactive")
     variant = None
     variant_id = item.get("variant_id")
     if variant_id:
@@ -94,15 +153,18 @@ async def resolve_sale_line(
         if not variant.is_active:
             raise HTTPException(status_code=409, detail="Variant is inactive")
     if item.get("unit_price") is not None:
-        unit_price = float(item["unit_price"])
+        unit_price = money_json(item["unit_price"])
     else:
         if variant is not None:
-            unit_price = float(variant.selling_price or 0)
+            unit_price = money_json(variant.selling_price or 0)
         else:
-            unit_price = float(product.selling_price or 0)
-        pct = max(0.0, min(100.0, float(group_discount_percent or 0)))
-        if pct > 0:
-            unit_price = round(unit_price * (1.0 - pct / 100.0), 4)
+            unit_price = money_json(product.selling_price or 0)
+        if customer_id:
+            from app.customer_groups import apply_discount, customer_group_discount
+
+            pct, _group = await customer_group_discount(db, tenant_id, customer_id)
+            if pct:
+                unit_price = apply_discount(unit_price, pct)
     return product, variant, unit_price
 
 
@@ -111,20 +173,27 @@ async def list_variants(
     tenant_id: str,
     product_id: str,
     *,
-    active_only: bool = False,
     is_active: bool | None = None,
 ) -> list[m.ProductVariant]:
-    """Stage 124 V1 — is_active / active_only for honest inactive-only variant lists."""
     await get_product(db, tenant_id, product_id)
-    stmt = select(m.ProductVariant).where(
-        m.ProductVariant.tenant_id == tenant_id,
-        m.ProductVariant.product_id == product_id,
-    )
+    extra = "product_id = :pid"
+    params = {"pid": product_id}
     if is_active is not None:
-        stmt = stmt.where(m.ProductVariant.is_active.is_(bool(is_active)))
-    elif active_only:
-        stmt = stmt.where(m.ProductVariant.is_active.is_(True))
-    return list((await db.execute(stmt.order_by(m.ProductVariant.name))).scalars().all())
+        extra += " AND is_active = :ia"
+        params["ia"] = bool(is_active)
+    return await schema_compat.list_mapped(
+        db,
+        m.ProductVariant,
+        tenant_id=tenant_id,
+        extra=extra,
+        extra_params=params,
+        order_by="name",
+    )
+
+
+def _clean_attr(value: str | None) -> str | None:
+    """Strip blank → None; non-blank garbage → **400** (VariantAttrValue defense)."""
+    return optional_honest_narrative(value, label="variant attribute", max_length=80)
 
 
 async def create_variant(
@@ -133,55 +202,55 @@ async def create_variant(
     tenant_id: str,
     product_id: str,
     name: str,
-    sku: str,
+    sku: str | None = None,
     barcode: str | None = None,
     size: str | None = None,
     color: str | None = None,
     flavor: str | None = None,
+    dosage: str | None = None,
     cost_price: float | None = None,
     selling_price: float | None = None,
 ) -> m.ProductVariant:
     product = await get_product(db, tenant_id, product_id)
-    sku = (sku or "").strip()
-    name = (name or "").strip()
-    if not sku or not name:
-        raise HTTPException(status_code=400, detail="Variant name and sku are required")
-    company_id = getattr(product, "company_id", None)
-    variant_stmt = select(m.ProductVariant).where(
-        m.ProductVariant.tenant_id == tenant_id,
-        m.ProductVariant.sku == sku,
-    )
-    product_stmt = select(m.Product).where(m.Product.tenant_id == tenant_id, m.Product.sku == sku)
-    if company_id:
-        variant_stmt = variant_stmt.where(m.ProductVariant.company_id == company_id)
-        product_stmt = product_stmt.where(m.Product.company_id == company_id)
-    exists = (await db.execute(variant_stmt)).scalar_one_or_none()
-    if exists:
-        raise HTTPException(status_code=409, detail="Variant SKU already exists")
-    # Also block collision with parent product SKUs
-    prod_sku = (await db.execute(product_stmt)).scalar_one_or_none()
-    if prod_sku:
-        raise HTTPException(status_code=409, detail="SKU already used by a product")
+    name = require_honest_narrative(name, label="variant name", max_length=120)
+    sku_norm = normalize_sku(sku)
+    if not sku_norm:
+        sku_norm = await allocate_sku(db, tenant_id, prefix="SKU")
+    else:
+        await assert_sku_available(db, tenant_id, sku_norm)
+    sku = sku_norm
 
-    variant = m.ProductVariant(
-        tenant_id=tenant_id,
-        company_id=company_id,
-        product_id=product.id,
-        name=name,
-        sku=sku,
-        barcode=barcode,
-        size=size,
-        color=color,
-        flavor=flavor,
-        cost_price=float(cost_price if cost_price is not None else product.cost_price or 0),
-        selling_price=float(
-            selling_price if selling_price is not None else product.selling_price or 0
-        ),
-        stock_qty=0,
-        is_active=True,
+    from app import barcodes as barcodes_svc
+
+    barcode_norm = barcodes_svc.normalize_barcode(barcode)
+    if barcode_norm:
+        await barcodes_svc.assert_barcode_unique(
+            db, tenant_id=tenant_id, barcode_value=barcode_norm
+        )
+
+    variant = await schema_compat.insert_and_get(
+        db,
+        m.ProductVariant,
+        {
+            "tenant_id": tenant_id,
+            "product_id": product.id,
+            "name": name,
+            "sku": sku,
+            "barcode": barcode_norm,
+            "size": _clean_attr(size),
+            "color": _clean_attr(color),
+            "flavor": _clean_attr(flavor),
+            "dosage": _clean_attr(dosage),
+            "cost_price": money_json(cost_price if cost_price is not None else product.cost_price or 0),
+            "selling_price": money_json(
+                selling_price if selling_price is not None else product.selling_price or 0
+            ),
+            "stock_qty": 0,
+            "is_active": True,
+        },
     )
-    db.add(variant)
-    await db.flush()
+    if variant is None:
+        raise HTTPException(status_code=500, detail="The server could not complete this request.")
     return variant
 
 
@@ -197,6 +266,7 @@ async def update_variant(
     size: str | None = None,
     color: str | None = None,
     flavor: str | None = None,
+    dosage: str | None = None,
     cost_price: float | None = None,
     selling_price: float | None = None,
     is_active: bool | None = None,
@@ -204,62 +274,66 @@ async def update_variant(
     clear_size: bool = False,
     clear_color: bool = False,
     clear_flavor: bool = False,
+    clear_dosage: bool = False,
 ) -> m.ProductVariant:
     await get_product(db, tenant_id, product_id)
     variant = await get_variant(db, tenant_id, variant_id)
     if variant.product_id != product_id:
         raise HTTPException(status_code=404, detail="Variant not found")
 
+    fields: dict = {}
     if name is not None:
-        name = name.strip()
-        if not name:
-            raise HTTPException(status_code=400, detail="Variant name is required")
-        variant.name = name
-    if sku is not None:
-        sku = sku.strip()
-        if not sku:
-            raise HTTPException(status_code=400, detail="Variant sku is required")
-        company_id = getattr(variant, "company_id", None)
-        clash_stmt = select(m.ProductVariant).where(
-            m.ProductVariant.tenant_id == tenant_id,
-            m.ProductVariant.sku == sku,
-            m.ProductVariant.id != variant.id,
+        fields["name"] = require_honest_narrative(
+            name, label="variant name", max_length=120
         )
-        prod_stmt = select(m.Product).where(m.Product.tenant_id == tenant_id, m.Product.sku == sku)
-        if company_id:
-            clash_stmt = clash_stmt.where(m.ProductVariant.company_id == company_id)
-            prod_stmt = prod_stmt.where(m.Product.company_id == company_id)
-        clash = (await db.execute(clash_stmt)).scalar_one_or_none()
-        if clash:
-            raise HTTPException(status_code=409, detail="Variant SKU already exists")
-        prod_sku = (await db.execute(prod_stmt)).scalar_one_or_none()
-        if prod_sku:
-            raise HTTPException(status_code=409, detail="SKU already used by a product")
-        variant.sku = sku
+    if sku is not None:
+        sku_norm = normalize_sku(sku)
+        if not sku_norm:
+            raise HTTPException(status_code=400, detail="Variant sku is required")
+        await assert_sku_available(
+            db, tenant_id, sku_norm, exclude_variant_id=variant.id
+        )
+        fields["sku"] = sku_norm
     if clear_barcode:
-        variant.barcode = None
+        fields["barcode"] = None
     elif barcode is not None:
-        variant.barcode = barcode.strip() or None
+        from app import barcodes as barcodes_svc
+
+        barcode_norm = barcodes_svc.normalize_barcode(barcode)
+        if barcode_norm:
+            await barcodes_svc.assert_barcode_unique(
+                db,
+                tenant_id=tenant_id,
+                barcode_value=barcode_norm,
+                exclude_variant_id=variant.id,
+            )
+        fields["barcode"] = barcode_norm
     if clear_size:
-        variant.size = None
+        fields["size"] = None
     elif size is not None:
-        variant.size = size.strip() or None
+        fields["size"] = _clean_attr(size)
     if clear_color:
-        variant.color = None
+        fields["color"] = None
     elif color is not None:
-        variant.color = color.strip() or None
+        fields["color"] = _clean_attr(color)
     if clear_flavor:
-        variant.flavor = None
+        fields["flavor"] = None
     elif flavor is not None:
-        variant.flavor = flavor.strip() or None
+        fields["flavor"] = _clean_attr(flavor)
+    if clear_dosage:
+        fields["dosage"] = None
+    elif dosage is not None:
+        fields["dosage"] = _clean_attr(dosage)
     if cost_price is not None:
-        variant.cost_price = float(cost_price)
+        fields["cost_price"] = money_json(cost_price)
     if selling_price is not None:
-        variant.selling_price = float(selling_price)
+        fields["selling_price"] = money_json(selling_price)
     if is_active is not None:
-        variant.is_active = bool(is_active)
-    await db.flush()
-    return variant
+        fields["is_active"] = bool(is_active)
+    if not fields:
+        return variant
+    row = await schema_compat.apply_updates(db, m.ProductVariant, variant.id, fields)
+    return row or variant
 
 
 async def deactivate_variant(
@@ -344,23 +418,32 @@ async def stock_in_with_batch(
     user_id: str,
     product_id: str,
     quantity: float,
+    unit_id: str | None = None,
     notes: str | None = None,
     warehouse_id: str | None = None,
     variant_id: str | None = None,
     batch_number: str | None = None,
     manufacturing_date: datetime | None = None,
     expiry_date: datetime | None = None,
+    movement_type: str = "stock_in",
     reference_type: str | None = None,
     reference_id: str | None = None,
-    movement_type: str = "stock_in",
-    company_id: str | None = None,
 ) -> dict:
-    quantity = float(quantity)
-    if quantity <= 0:
+    from app.uom import to_stock_qty
+
+    entered_qty = money_json(quantity)
+    if entered_qty <= 0:
         raise HTTPException(status_code=400, detail="quantity must be positive")
     if movement_type not in {"stock_in", "opening_stock"}:
         raise HTTPException(status_code=400, detail="Invalid inbound movement type")
     product = await get_product(db, tenant_id, product_id)
+    quantity_base, entered_unit_id, entered_qty = await to_stock_qty(
+        db,
+        tenant_id=tenant_id,
+        quantity=entered_qty,
+        from_unit_id=unit_id,
+        product=product,
+    )
     variant = None
     if variant_id:
         variant = await get_variant(db, tenant_id, variant_id)
@@ -370,9 +453,22 @@ async def stock_in_with_batch(
     if product.tracks_batches and not (batch_number or "").strip():
         raise HTTPException(status_code=400, detail="batch_number required for batch-tracked products")
 
+    # OpenAPI BatchNumberValue → 422; service defense-in-depth → 400.
+    batch_number = optional_honest_narrative(
+        batch_number, label="batch number", max_length=80
+    )
+    # OpenAPI StockInReferenceTypeValue / StockMovementReferenceIdValue → 422.
+    reference_type = optional_honest_narrative(
+        reference_type, label="stock-in reference type", max_length=50
+    )
+    if reference_type is not None:
+        reference_type = reference_type.lower()
+    reference_id = optional_honest_narrative(
+        reference_id, label="stock movement reference id", max_length=36
+    )
+
     batch = None
     if batch_number:
-        batch_number = batch_number.strip()
         batch = await _find_batch(
             db,
             tenant_id=tenant_id,
@@ -401,31 +497,40 @@ async def stock_in_with_batch(
                 batch.expiry_date = expiry_date
             if warehouse_id:
                 batch.warehouse_id = warehouse_id
-        batch.quantity = float(batch.quantity or 0) + quantity
+        batch.quantity = money_json(batch.quantity or 0) + quantity_base
         batch.updated_at = datetime.utcnow()
+
+    notes = optional_honest_narrative(notes, label="stock movement notes")
+    note_text = notes
+    if entered_unit_id and product.unit_id and entered_unit_id != product.unit_id:
+        suffix = f"entered {entered_qty:g} (unit {entered_unit_id[:8]}) → {quantity_base:g} stock"
+        note_text = f"{notes}; {suffix}" if notes else suffix
 
     product = await apply_stock_change(
         db,
         tenant_id=tenant_id,
         product_id=product.id,
-        quantity_delta=quantity,
+        quantity_delta=quantity_base,
         movement_type=movement_type,
         user_id=user_id,
-        notes=notes,
+        notes=note_text,
         warehouse_id=warehouse_id,
         variant_id=variant.id if variant else None,
         batch_id=batch.id if batch else None,
         reference_type=reference_type,
         reference_id=reference_id,
-        company_id=company_id or getattr(product, "company_id", None),
     )
     if variant:
-        variant.stock_qty = float(variant.stock_qty or 0) + quantity
+        variant.stock_qty = money_json(variant.stock_qty or 0) + quantity_base
 
     return {
         "product_id": product.id,
-        "stock_qty": float(product.stock_qty),
-        "batch_id": batch.id if batch else None,
+        "stock_qty": money_json(product.stock_qty),
+        "quantity_entered": money_json(entered_qty),
+        "quantity_base": money_json(quantity_base),
+        "unit_id": entered_unit_id,
+        "stock_unit_id": product.unit_id,
+        "cost_price": money_json(product.cost_price),
         "variant": serialize_variant(variant) if variant else None,
         "batch": serialize_batch(batch) if batch else None,
         "movement_type": movement_type,
@@ -572,6 +677,7 @@ async def stock_out_with_batch(
     user_id: str,
     product_id: str,
     quantity: float,
+    unit_id: str | None = None,
     notes: str | None = None,
     warehouse_id: str | None = None,
     variant_id: str | None = None,
@@ -580,16 +686,25 @@ async def stock_out_with_batch(
     reference_id: str | None = None,
     company_id: str | None = None,
 ) -> dict:
-    quantity = float(quantity)
-    if quantity <= 0:
+    from app.uom import to_stock_qty
+
+    entered_qty = money_json(quantity)
+    if entered_qty <= 0:
         raise HTTPException(status_code=400, detail="quantity must be positive")
     product = await get_product(db, tenant_id, product_id)
+    quantity, entered_unit_id, entered_qty = await to_stock_qty(
+        db,
+        tenant_id=tenant_id,
+        quantity=entered_qty,
+        from_unit_id=unit_id,
+        product=product,
+    )
     variant = None
     if variant_id:
         variant = await get_variant(db, tenant_id, variant_id)
         if variant.product_id != product.id:
             raise HTTPException(status_code=400, detail="Variant does not belong to product")
-        if float(variant.stock_qty or 0) + 1e-9 < quantity:
+        if money_json(variant.stock_qty or 0) + 1e-9 < quantity:
             raise HTTPException(status_code=409, detail="Insufficient variant stock")
 
     remaining = quantity
@@ -609,12 +724,12 @@ async def stock_out_with_batch(
         ).scalar_one_or_none()
         if not batch:
             raise HTTPException(status_code=404, detail="Batch not found")
-        avail = float(batch.quantity or 0)
+        avail = money_json(batch.quantity or 0)
         if avail + 1e-9 < quantity:
             raise HTTPException(status_code=409, detail="Insufficient batch quantity")
-        batch.quantity = avail - quantity
+        batch.quantity = money_json(round(avail - quantity, 6))
         batch.updated_at = datetime.utcnow()
-        consumed.append({"batch_id": batch.id, "quantity": quantity})
+        consumed.append({"batch_id": batch.id, "quantity": money_json(quantity)})
         remaining = 0
         primary_batch_id = batch.id
     else:
@@ -652,24 +767,34 @@ async def stock_out_with_batch(
             for batch in batches:
                 if remaining <= 1e-9:
                     break
-                take = min(float(batch.quantity or 0), remaining)
+                take = min(money_json(batch.quantity or 0), remaining)
                 if take <= 0:
                     continue
-                batch.quantity = float(batch.quantity or 0) - take
+                batch.quantity = money_json(batch.quantity or 0) - take
                 batch.updated_at = datetime.utcnow()
-                consumed.append({"batch_id": batch.id, "quantity": take})
+                consumed.append({"batch_id": batch.id, "quantity": money_json(take)})
                 if primary_batch_id is None:
                     primary_batch_id = batch.id
-                remaining = round(remaining - take, 6)
+                remaining = money_json(round(remaining - take, 6))
             if remaining > 1e-9 and (product.tracks_batches or consumed):
                 raise HTTPException(
                     status_code=409,
                     detail={
                         "code": "INSUFFICIENT_BATCH_STOCK",
                         "message": "Not enough batch quantity (FEFO)",
-                        "shortfall": remaining,
+                        "shortfall": money_json(remaining),
                     },
                 )
+
+    notes = optional_honest_narrative(notes, label="stock movement notes")
+    # OpenAPI StockMovementReferenceIdValue → 422; stock-out type is Literal at schema.
+    reference_id = optional_honest_narrative(
+        reference_id, label="stock movement reference id", max_length=36
+    )
+    note_text = notes
+    if entered_unit_id and product.unit_id and entered_unit_id != product.unit_id:
+        suffix = f"entered {entered_qty:g} (unit {entered_unit_id[:8]}) → {quantity:g} stock"
+        note_text = f"{notes}; {suffix}" if notes else suffix
 
     product = await apply_stock_change(
         db,
@@ -678,7 +803,7 @@ async def stock_out_with_batch(
         quantity_delta=-quantity,
         movement_type="stock_out",
         user_id=user_id,
-        notes=notes,
+        notes=note_text,
         warehouse_id=warehouse_id,
         variant_id=variant.id if variant else None,
         batch_id=primary_batch_id,
@@ -687,11 +812,18 @@ async def stock_out_with_batch(
         company_id=company_id or getattr(product, "company_id", None),
     )
     if variant:
-        variant.stock_qty = max(float(variant.stock_qty or 0) - quantity, 0)
+        variant.stock_qty = max(money_json(variant.stock_qty or 0) - quantity, 0)
 
     return {
         "product_id": product.id,
-        "stock_qty": float(product.stock_qty),
+        "stock_qty": money_json(product.stock_qty),
+        "quantity_entered": money_json(entered_qty),
+        "quantity_base": money_json(quantity),
+        "unit_id": entered_unit_id,
+        "stock_unit_id": product.unit_id,
         "variant": serialize_variant(variant) if variant else None,
         "batches_consumed": consumed,
+        "warehouse_id": warehouse_id,
+        "reference_type": reference_type,
+        "reference_id": reference_id,
     }

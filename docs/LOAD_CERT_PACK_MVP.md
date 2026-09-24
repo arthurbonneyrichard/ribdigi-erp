@@ -1,7 +1,7 @@
 # Load Cert Pack MVP — Operator ~1000-VU Certification Packaging
 
 **Status:** Complete (MVP) — Stage 28 C1  
-**Evidence:** `backend/tests/test_load_cert_pack_c1.py` · `/opt/cursor/artifacts/loadtest/stage28_c1_load_cert_pack.json`  
+**Evidence:** `backend/tests/test_load_cert_pack_c1.py` · `/opt/ribdigi/artifacts/loadtest/stage28_c1_load_cert_pack.json`  
 **Checklist map:** `ops/loadtest/1000vu-cert-checklist.json`  
 **Run schema example:** `ops/loadtest/operator_1000vu_run.example.json`  
 **Related:** [LOAD_CAPACITY_MVP.md](LOAD_CAPACITY_MVP.md) (Stage 26 C1) · [LOAD_TEST_BASELINE.md](LOAD_TEST_BASELINE.md) · `backend/loadtest/`
@@ -42,5 +42,3 @@ CI capacity remains ASGI-honest at modest concurrency (`--ci-capacity`) — see 
 ## Sign-off
 
 Stage 28 C1 is met when this doc + checklist + run schema example + evidence JSON exist, `test_load_cert_pack_c1.py` passes, and PRODUCTION_READINESS / launch / roadmap cite Stage 28 C1 without inventing a live 1000-VU certificate.
-
-See also Stage 223 load cert pack remaining-gate index: [`LOAD_CERT_PACK_REMAINING_GATE_MVP.md`](LOAD_CERT_PACK_REMAINING_GATE_MVP.md).

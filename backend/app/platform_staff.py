@@ -1,0 +1,382 @@
+"""Platform (software-owner) staff users on the platform home tenant."""
+
+from __future__ import annotations
+
+from fastapi import HTTPException
+from sqlalchemy import delete, select, update
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app import models as m
+from app.honesty import require_honest_narrative
+from app.rbac import (
+    PLATFORM_OWNER_ROLES,
+    PLATFORM_ROLES,
+    can_assign_platform_role,
+    is_platform_owner_role,
+    is_platform_role,
+    permissions_for_role,
+    serialize_user,
+)
+from app.security import hash_password, validate_password_strength
+
+# Safe fallback when revoking software-owner dashboard access.
+DEFAULT_APP_ROLE = "company_admin"
+
+
+async def list_platform_staff(db: AsyncSession, *, tenant_id: str) -> list[m.User]:
+    rows = (
+        await db.execute(
+            select(m.User)
+            .where(m.User.tenant_id == tenant_id)
+            .order_by(m.User.full_name.asc())
+        )
+    ).scalars().all()
+    return [u for u in rows if is_platform_role(u.role)]
+
+
+async def list_app_users(db: AsyncSession, *, tenant_id: str) -> list[m.User]:
+    """Non-platform users on the platform workspace (candidates for dashboard access)."""
+    rows = (
+        await db.execute(
+            select(m.User)
+            .where(m.User.tenant_id == tenant_id)
+            .order_by(m.User.full_name.asc())
+        )
+    ).scalars().all()
+    return [u for u in rows if not is_platform_role(u.role)]
+
+
+async def _get_workspace_user(db: AsyncSession, tenant_id: str, user_id: str) -> m.User:
+    user = (
+        await db.execute(
+            select(m.User).where(m.User.id == user_id, m.User.tenant_id == tenant_id)
+        )
+    ).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found on this workspace")
+    return user
+
+
+async def grant_dashboard_access(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    actor_id: str,
+    actor_role: str,
+    user_id: str,
+    role: str = "platform_support",
+) -> m.User:
+    """Promote an existing app user so they can open the software-owner dashboard."""
+    # Defense in depth: PlatformGrantAccess.role Literal rejects blank/unknown with 422.
+    # Empty used to coerce to platform_support via `role or "platform_support"`.
+    role_key = (role or "").strip().lower()
+    if not is_platform_role(role_key):
+        raise HTTPException(
+            status_code=422,
+            detail=f"role must be one of: {', '.join(sorted(PLATFORM_ROLES))}",
+        )
+    if role_key == "super_admin" and actor_role != "super_admin":
+        raise HTTPException(status_code=403, detail="Only super_admin can assign super_admin")
+    if not can_assign_platform_role(actor_role, role_key):
+        raise HTTPException(
+            status_code=403,
+            detail=f"You cannot assign platform role '{role_key}'",
+        )
+    user = await _get_workspace_user(db, tenant_id, user_id)
+    if user.id == actor_id and user.role != role_key:
+        raise HTTPException(status_code=400, detail="Cannot change your own role via grant")
+    if not user.is_active:
+        raise HTTPException(status_code=409, detail="Activate the user before granting access")
+    user.role = role_key
+    user.permissions = permissions_for_role(role_key)
+    await db.flush()
+    return user
+
+
+async def revoke_dashboard_access(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    actor_id: str,
+    actor_role: str,
+    user_id: str,
+    fallback_role: str = DEFAULT_APP_ROLE,
+) -> m.User:
+    """Remove software-owner dashboard access; user remains an app user on the workspace."""
+    user = await _get_workspace_user(db, tenant_id, user_id)
+    if not is_platform_role(user.role):
+        raise HTTPException(status_code=400, detail="User does not have platform dashboard access")
+    if user.id == actor_id:
+        raise HTTPException(status_code=400, detail="Cannot revoke your own dashboard access")
+    if not can_assign_platform_role(actor_role, user.role):
+        raise HTTPException(
+            status_code=403,
+            detail="You cannot revoke access for this staff role",
+        )
+    # Defense in depth: PlatformRevokeAccess.fallback_role Literal rejects
+    # blank/platform/unknown with 422. Empty used to coerce to company_admin.
+    fallback = (fallback_role or "").strip().lower()
+    if (
+        not fallback
+        or is_platform_role(fallback)
+        or fallback == "super_admin"
+    ):
+        raise HTTPException(status_code=422, detail="fallback_role must be a non-platform app role")
+    from app import custom_roles as custom_roles_svc
+
+    role_key, role_perms = await custom_roles_svc.resolve_role_assignment(
+        db, tenant_id, fallback
+    )
+    if is_platform_role(role_key):
+        raise HTTPException(status_code=422, detail="fallback_role must be a non-platform app role")
+    user.role = role_key
+    user.permissions = role_perms
+    await db.flush()
+    return user
+
+
+async def create_platform_staff(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    actor_role: str,
+    email: str,
+    full_name: str,
+    password: str,
+    role: str,
+    phone: str | None = None,
+) -> m.User:
+    # Defense in depth: PlatformStaffCreate.role Literal rejects blank/unknown with 422.
+    # Empty used to coerce to platform_support via API `role or "platform_support"`.
+    role_key = (role or "").strip().lower()
+    if not is_platform_role(role_key):
+        raise HTTPException(
+            status_code=422,
+            detail=f"role must be one of: {', '.join(sorted(PLATFORM_ROLES))}",
+        )
+    if not can_assign_platform_role(actor_role, role_key):
+        raise HTTPException(
+            status_code=403,
+            detail=f"You cannot assign platform role '{role_key}'",
+        )
+    validate_password_strength(password)
+    existing = (
+        await db.execute(
+            select(m.User).where(m.User.tenant_id == tenant_id, m.User.email == email.lower())
+        )
+    ).scalar_one_or_none()
+    if existing:
+        raise HTTPException(status_code=409, detail="User email already exists on this workspace")
+
+    user = m.User(
+        tenant_id=tenant_id,
+        email=email.lower().strip(),
+        full_name=require_honest_narrative(
+            full_name, label="full name", max_length=150
+        ),
+        password_hash=hash_password(password),
+        role=role_key,
+        phone=phone,
+        email_verified=False,
+        permissions=permissions_for_role(role_key),
+        is_active=True,
+    )
+    db.add(user)
+    try:
+        await db.flush()
+    except IntegrityError as exc:
+        raise HTTPException(
+            status_code=409, detail="User email already exists on this workspace"
+        ) from exc
+    return user
+
+
+async def update_platform_staff(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    actor_id: str,
+    actor_role: str,
+    user_id: str,
+    full_name: str | None = None,
+    email: str | None = None,
+    role: str | None = None,
+    phone: str | None = None,
+    is_active: bool | None = None,
+    password: str | None = None,
+) -> m.User:
+    user = (
+        await db.execute(
+            select(m.User).where(m.User.id == user_id, m.User.tenant_id == tenant_id)
+        )
+    ).scalar_one_or_none()
+    if not user or not is_platform_role(user.role):
+        raise HTTPException(status_code=404, detail="Platform staff user not found")
+    if user.id == actor_id and role is not None and role != user.role:
+        raise HTTPException(status_code=400, detail="Cannot change your own role")
+    if user.id == actor_id and is_active is False:
+        raise HTTPException(status_code=400, detail="Cannot deactivate yourself")
+    if password is not None and not is_platform_owner_role(actor_role):
+        raise HTTPException(status_code=403, detail="Only the platform owner can set a staff password")
+    if email is not None and not is_platform_owner_role(actor_role):
+        raise HTTPException(status_code=403, detail="Only the platform owner can change a staff email")
+
+    if role is not None:
+        # Defense in depth: PlatformStaffUpdate.role Literal → 422 on blank/unknown.
+        role_key = role.strip().lower()
+        if not is_platform_role(role_key):
+            raise HTTPException(status_code=422, detail="Invalid platform role")
+        if not can_assign_platform_role(actor_role, role_key):
+            raise HTTPException(status_code=403, detail=f"You cannot assign role '{role_key}'")
+        user.role = role_key
+        user.permissions = permissions_for_role(role_key)
+    if full_name is not None:
+        user.full_name = require_honest_narrative(
+            full_name, label="full name", max_length=150
+        )
+    if email is not None:
+        normalized = email.lower().strip()
+        if normalized != (user.email or "").lower():
+            taken = (
+                await db.execute(
+                    select(m.User).where(
+                        m.User.tenant_id == tenant_id,
+                        m.User.email == normalized,
+                        m.User.id != user.id,
+                    )
+                )
+            ).scalar_one_or_none()
+            if taken:
+                raise HTTPException(
+                    status_code=409,
+                    detail="User email already exists on this workspace",
+                )
+            user.email = normalized
+    if phone is not None:
+        user.phone = phone.strip() or None
+    if password is not None:
+        validate_password_strength(password)
+        user.password_hash = hash_password(password)
+    if is_active is not None:
+        user.is_active = bool(is_active)
+    await db.flush()
+    return user
+
+
+async def delete_platform_staff(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    actor_id: str,
+    actor_role: str,
+    user_id: str,
+) -> dict:
+    """Permanently remove a platform staff account (owner only)."""
+    if not is_platform_owner_role(actor_role):
+        raise HTTPException(
+            status_code=403,
+            detail="Only the platform owner can delete a staff account",
+        )
+    user = (
+        await db.execute(
+            select(m.User).where(m.User.id == user_id, m.User.tenant_id == tenant_id)
+        )
+    ).scalar_one_or_none()
+    if not user or not is_platform_role(user.role):
+        raise HTTPException(status_code=404, detail="Platform staff user not found")
+    if user.id == actor_id:
+        raise HTTPException(status_code=400, detail="Cannot delete your own account")
+    if not can_assign_platform_role(actor_role, user.role):
+        raise HTTPException(
+            status_code=403,
+            detail="You cannot delete a staff user with this role",
+        )
+    if user.role in PLATFORM_OWNER_ROLES:
+        other_owners = (
+            await db.execute(
+                select(m.User).where(
+                    m.User.tenant_id == tenant_id,
+                    m.User.id != user.id,
+                    m.User.role.in_(tuple(PLATFORM_OWNER_ROLES)),
+                    m.User.is_active.is_(True),
+                )
+            )
+        ).scalars().all()
+        if not other_owners:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot delete the last active platform owner",
+            )
+
+    snapshot = {
+        "id": user.id,
+        "email": user.email,
+        "full_name": user.full_name,
+        "role": user.role,
+    }
+
+    # Auth / MFA / prefs owned by this user.
+    for model in (
+        m.AuthSession,
+        m.AuthToken,
+        m.WebAuthnCredential,
+        m.WebAuthnChallenge,
+        m.TwoFactorBackupCode,
+        m.UserStoreMembership,
+        m.NotificationPreference,
+    ):
+        await db.execute(delete(model).where(model.user_id == user.id))
+
+    # Optional references — clear instead of blocking delete.
+    await db.execute(
+        update(m.Notification).where(m.Notification.user_id == user.id).values(user_id=None)
+    )
+    if hasattr(m, "PosDevice"):
+        await db.execute(
+            update(m.PosDevice).where(m.PosDevice.user_id == user.id).values(user_id=None)
+        )
+    await db.execute(
+        update(m.Branch).where(m.Branch.manager_id == user.id).values(manager_id=None)
+    )
+    await db.execute(
+        update(m.Department)
+        .where(m.Department.head_user_id == user.id)
+        .values(head_user_id=None)
+    )
+    await db.execute(
+        update(m.Store).where(m.Store.manager_id == user.id).values(manager_id=None)
+    )
+    if hasattr(m, "Warehouse"):
+        await db.execute(
+            update(m.Warehouse).where(m.Warehouse.manager_id == user.id).values(manager_id=None)
+        )
+
+    pos_sessions = (
+        await db.execute(select(m.PosSession.id).where(m.PosSession.user_id == user.id).limit(1))
+    ).first()
+    if pos_sessions:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Cannot delete this account because it has POS shift history. "
+                "Deactivate the account instead."
+            ),
+        )
+
+    try:
+        await db.delete(user)
+        await db.flush()
+    except IntegrityError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Cannot delete this account because it is linked to business records. "
+                "Deactivate the account instead."
+            ),
+        ) from exc
+    return snapshot
+
+
+def serialize_staff(user: m.User) -> dict:
+    return serialize_user(user)

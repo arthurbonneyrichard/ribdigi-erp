@@ -1,86 +1,109 @@
-/** Tenant regional formatting helpers (Stage 1 E13 / BR-20.2). */
+/** Tenant regional display helpers (BR-20.2). */
 
-export type RegionalFormats = {
+export type FormatPrefs = {
   date_format?: string | null;
-  number_format?: string | null;
+  decimal_separator?: string | null;
+  thousand_separator?: string | null;
   time_format?: string | null;
 };
 
-/** Defaults are always concrete strings (Required alone does not strip `| null`). */
-type ResolvedRegionalFormats = {
-  [K in keyof Required<RegionalFormats>]: NonNullable<RegionalFormats[K]>;
-};
-
-const DEFAULTS: ResolvedRegionalFormats = {
+const DEFAULTS: Required<FormatPrefs> = {
   date_format: 'DD/MM/YYYY',
-  number_format: '1,234.56',
+  decimal_separator: '.',
+  thousand_separator: ',',
   time_format: '24h',
 };
 
-function pad2(n: number) {
-  return String(n).padStart(2, '0');
+function prefsOrDefault(prefs?: FormatPrefs | null): Required<FormatPrefs> {
+  return {
+    date_format: prefs?.date_format || DEFAULTS.date_format,
+    decimal_separator: prefs?.decimal_separator || DEFAULTS.decimal_separator,
+    thousand_separator:
+      prefs?.thousand_separator !== undefined && prefs?.thousand_separator !== null
+        ? prefs.thousand_separator
+        : DEFAULTS.thousand_separator,
+    time_format: prefs?.time_format || DEFAULTS.time_format,
+  };
 }
 
-function asDate(value: string | number | Date | null | undefined): Date | null {
-  if (value == null || value === '') return null;
-  const d = value instanceof Date ? value : new Date(value);
-  return Number.isNaN(d.getTime()) ? null : d;
-}
-
+/** Format a number with tenant decimal/thousand separators. */
 export function formatNumber(
   value: number | string | null | undefined,
-  numberFormat: string | null | undefined = DEFAULTS.number_format,
+  prefs?: FormatPrefs | null,
+  fractionDigits = 2
 ): string {
-  if (value == null || value === '') return '—';
-  const num = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(num)) return String(value);
-  const fmt = numberFormat || DEFAULTS.number_format;
-  const fixed = Math.abs(num).toFixed(2);
-  const [intPart, decPart] = fixed.split('.');
-  let grouped = intPart;
-  if (fmt === '1.234,56') {
-    grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-    return `${num < 0 ? '-' : ''}${grouped},${decPart}`;
+  if (value === null || value === undefined || value === '') return '';
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(n)) return String(value);
+  const p = prefsOrDefault(prefs);
+  const fixed = Math.abs(n).toFixed(fractionDigits);
+  const [intPart, fracPart = ''] = fixed.split('.');
+  const groups: string[] = [];
+  for (let i = intPart.length; i > 0; i -= 3) {
+    groups.unshift(intPart.slice(Math.max(0, i - 3), i));
   }
-  if (fmt === '1 234.56') {
-    grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-    return `${num < 0 ? '-' : ''}${grouped}.${decPart}`;
-  }
-  // default 1,234.56
-  grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  return `${num < 0 ? '-' : ''}${grouped}.${decPart}`;
+  const joined =
+    p.thousand_separator === '' || p.thousand_separator == null
+      ? groups.join('')
+      : groups.join(p.thousand_separator);
+  const sign = n < 0 ? '-' : '';
+  if (fractionDigits <= 0) return `${sign}${joined}`;
+  return `${sign}${joined}${p.decimal_separator}${fracPart}`;
 }
 
+function pad2(n: number): string {
+  return n < 10 ? `0${n}` : String(n);
+}
+
+/** Format a date (date-only or ISO) with tenant date_format. */
 export function formatDate(
-  value: string | number | Date | null | undefined,
-  dateFormat: string | null | undefined = DEFAULTS.date_format,
+  value: string | Date | null | undefined,
+  prefs?: FormatPrefs | null
 ): string {
-  const d = asDate(value);
-  if (!d) return '—';
-  const yyyy = d.getFullYear();
-  const mm = pad2(d.getMonth() + 1);
-  const dd = pad2(d.getDate());
-  const fmt = (dateFormat || DEFAULTS.date_format).toUpperCase();
-  if (fmt === 'MM/DD/YYYY') return `${mm}/${dd}/${yyyy}`;
-  if (fmt === 'YYYY-MM-DD') return `${yyyy}-${mm}-${dd}`;
-  return `${dd}/${mm}/${yyyy}`;
+  if (value === null || value === undefined || value === '') return '';
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  const p = prefsOrDefault(prefs);
+  const day = pad2(d.getDate());
+  const month = pad2(d.getMonth() + 1);
+  const year = String(d.getFullYear());
+  switch (p.date_format) {
+    case 'MM/DD/YYYY':
+      return `${month}/${day}/${year}`;
+    case 'YYYY-MM-DD':
+      return `${year}-${month}-${day}`;
+    case 'DD/MM/YYYY':
+    default:
+      return `${day}/${month}/${year}`;
+  }
+}
+
+/** Format time using tenant 12h/24h preference. */
+export function formatTime(
+  value: string | Date | null | undefined,
+  prefs?: FormatPrefs | null
+): string {
+  if (value === null || value === undefined || value === '') return '';
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  const p = prefsOrDefault(prefs);
+  const hours = d.getHours();
+  const minutes = pad2(d.getMinutes());
+  if (p.time_format === '12h') {
+    const h12 = hours % 12 || 12;
+    const ampm = hours < 12 ? 'AM' : 'PM';
+    return `${h12}:${minutes} ${ampm}`;
+  }
+  return `${pad2(hours)}:${minutes}`;
 }
 
 export function formatDateTime(
-  value: string | number | Date | null | undefined,
-  dateFormat: string | null | undefined = DEFAULTS.date_format,
-  timeFormat: string | null | undefined = DEFAULTS.time_format,
+  value: string | Date | null | undefined,
+  prefs?: FormatPrefs | null
 ): string {
-  const d = asDate(value);
-  if (!d) return '—';
-  const datePart = formatDate(d, dateFormat);
-  const hours = d.getHours();
-  const minutes = pad2(d.getMinutes());
-  const seconds = pad2(d.getSeconds());
-  if ((timeFormat || DEFAULTS.time_format).toLowerCase() === '12h') {
-    const h12 = hours % 12 || 12;
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    return `${datePart} ${pad2(h12)}:${minutes}:${seconds} ${ampm}`;
-  }
-  return `${datePart} ${pad2(hours)}:${minutes}:${seconds}`;
+  const date = formatDate(value, prefs);
+  const time = formatTime(value, prefs);
+  if (!date) return time;
+  if (!time) return date;
+  return `${date} ${time}`;
 }

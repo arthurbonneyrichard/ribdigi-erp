@@ -12,6 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.config import settings
+from app.honesty import money_json, optional_honest_narrative
+from app.schemas import validate_webhook_url_value
 
 PROVIDERS = frozenset({"mock", "http_json"})
 
@@ -80,33 +82,36 @@ async def list_connections(
     db: AsyncSession,
     tenant_id: str,
     *,
-    active_only: bool = False,
     is_active: bool | None = None,
-    company_id: str | None = None,
 ) -> list[m.BankAccountConnection]:
-    """Stage 126 C1 — is_active / active_only for honest inactive-only bank connection lists."""
-    stmt = select(m.BankAccountConnection).where(
-        m.BankAccountConnection.tenant_id == tenant_id
+    stmt = (
+        select(m.BankAccountConnection)
+        .where(m.BankAccountConnection.tenant_id == tenant_id)
+        .order_by(m.BankAccountConnection.created_at.desc())
     )
-    if company_id:
-        stmt = stmt.where(m.BankAccountConnection.company_id == company_id)
     if is_active is not None:
         stmt = stmt.where(m.BankAccountConnection.is_active.is_(bool(is_active)))
-    elif active_only:
-        stmt = stmt.where(m.BankAccountConnection.is_active.is_(True))
-    return list(
-        (await db.execute(stmt.order_by(m.BankAccountConnection.created_at.desc())))
-        .scalars()
-        .all()
-    )
+    return list((await db.execute(stmt)).scalars().all())
+
+
+def _is_production() -> bool:
+    return (settings.APP_ENV or "").strip().lower() == "production"
 
 
 def _normalize_provider(provider: str | None) -> str:
+    # Defense in depth: BankConnectionCreate/Update.provider Literal rejects
+    # blank/unknown with 422 before this runs. Empty used to coerce to "mock"
+    # via (provider or "mock") — schema honesty closes that gap (R1).
     value = (provider or "mock").strip().lower()
     if value not in PROVIDERS:
         raise HTTPException(
             status_code=400,
             detail=f"provider must be one of: {', '.join(sorted(PROVIDERS))}",
+        )
+    if value == "mock" and _is_production():
+        raise HTTPException(
+            status_code=400,
+            detail="The 'mock' bank provider is for development only and is disabled in production. Use 'http_json'.",
         )
     return value
 
@@ -150,17 +155,40 @@ async def create_connection(
     lookback = max(1, min(int(sync_lookback_days or 30), 365))
     creds = None
     if access_token:
-        creds = _encrypt(json.dumps({"access_token": access_token.strip()}))
+        # OpenAPI BankAccessTokenValue → 422; service defense-in-depth → 400.
+        token = optional_honest_narrative(
+            access_token, label="bank connection access token", max_length=128
+        )
+        if not token or " " in token:
+            raise HTTPException(
+                status_code=400, detail="bank connection access token is required"
+            )
+        creds = _encrypt(json.dumps({"access_token": token}))
+
+    # OpenAPI BankConnectionDisplayNameValue / BankExternalAccountIdValue → 422.
+    display_name = optional_honest_narrative(
+        display_name, label="bank connection display name", max_length=120
+    )
+    external_account_id = optional_honest_narrative(
+        external_account_id, label="bank external account id", max_length=120
+    )
 
     now = datetime.utcnow()
+    # OpenAPI WebhookUrlValue → 422; service defense-in-depth → 400.
+    feed_url_clean: str | None = None
+    if feed_url is not None and str(feed_url).strip():
+        try:
+            feed_url_clean = validate_webhook_url_value(str(feed_url).strip())
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
     row = m.BankAccountConnection(
         tenant_id=tenant_id,
         company_id=company_id,
         account_id=account_id,
         provider=prov,
-        display_name=(display_name or "").strip() or None,
-        external_account_id=(external_account_id or "").strip() or None,
-        feed_url=(feed_url or "").strip() or None,
+        display_name=display_name,
+        external_account_id=external_account_id,
+        feed_url=feed_url_clean,
         credentials_enc=creds,
         auto_sync=bool(auto_sync),
         auto_match_after_sync=bool(auto_match_after_sync),
@@ -186,11 +214,25 @@ async def update_connection(
         db, tenant_id=tenant_id, connection_id=connection_id, company_id=company_id
     )
     if "display_name" in payload and payload["display_name"] is not None:
-        row.display_name = str(payload["display_name"]).strip() or None
+        row.display_name = optional_honest_narrative(
+            payload["display_name"], label="bank connection display name", max_length=120
+        )
     if "external_account_id" in payload and payload["external_account_id"] is not None:
-        row.external_account_id = str(payload["external_account_id"]).strip() or None
+        row.external_account_id = optional_honest_narrative(
+            payload["external_account_id"],
+            label="bank external account id",
+            max_length=120,
+        )
     if "feed_url" in payload and payload["feed_url"] is not None:
-        row.feed_url = str(payload["feed_url"]).strip() or None
+        # OpenAPI WebhookUrlValue → 422; service defense-in-depth → 400.
+        raw_url = str(payload["feed_url"]).strip()
+        if not raw_url:
+            row.feed_url = None
+        else:
+            try:
+                row.feed_url = validate_webhook_url_value(raw_url)
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
     if "provider" in payload and payload["provider"] is not None:
         row.provider = _normalize_provider(payload["provider"])
     if "auto_sync" in payload and payload["auto_sync"] is not None:
@@ -202,9 +244,17 @@ async def update_connection(
     if "is_active" in payload and payload["is_active"] is not None:
         row.is_active = bool(payload["is_active"])
     if payload.get("access_token"):
-        row.credentials_enc = _encrypt(
-            json.dumps({"access_token": str(payload["access_token"]).strip()})
+        # OpenAPI BankAccessTokenValue → 422; service defense-in-depth → 400.
+        token = optional_honest_narrative(
+            payload["access_token"],
+            label="bank connection access token",
+            max_length=128,
         )
+        if not token or " " in token:
+            raise HTTPException(
+                status_code=400, detail="bank connection access token is required"
+            )
+        row.credentials_enc = _encrypt(json.dumps({"access_token": token}))
     if payload.get("clear_credentials"):
         row.credentials_enc = None
     if row.provider == "http_json" and not (row.feed_url or "").strip():
@@ -241,12 +291,12 @@ def _normalize_txn(raw: dict) -> dict | None:
     """Map provider row → bank_recon line shape."""
     amount = raw.get("amount")
     if amount is None and ("debit" in raw or "credit" in raw):
-        debit = float(raw.get("debit") or 0)
-        credit = float(raw.get("credit") or 0)
-        amount = credit - debit
+        debit = money_json(raw.get("debit") or 0)
+        credit = money_json(raw.get("credit") or 0)
+        amount = money_json(round(credit - debit, 2))
     if amount is None:
         return None
-    amount = float(amount)
+    amount = money_json(amount)
     if abs(amount) < 1e-9:
         return None
     txn_date = raw.get("txn_date") or raw.get("date") or raw.get("posted_at")
@@ -275,6 +325,11 @@ async def fetch_provider_transactions(
     """Return (provider, normalized lines, opening, closing)."""
     provider = (row.provider or "mock").strip().lower()
     if provider == "mock":
+        if _is_production():
+            raise HTTPException(
+                status_code=400,
+                detail="The 'mock' bank provider is disabled in production; reconnect this account with a real 'http_json' feed.",
+            )
         return "mock", _mock_transactions(row, since=since), None, None
     if provider == "http_json":
         return await _fetch_http_json(row, since=since)
@@ -302,7 +357,7 @@ def _mock_transactions(row: m.BankAccountConnection, *, since: datetime) -> list
         lines.append(
             {
                 "txn_date": stamp,
-                "amount": float(base_amt),
+                "amount": money_json(base_amt),
                 "description": f"Mock deposit {h}",
                 "external_ref": f"mock-{seed}-{stamp}-in",
             }
@@ -310,7 +365,7 @@ def _mock_transactions(row: m.BankAccountConnection, *, since: datetime) -> list
         lines.append(
             {
                 "txn_date": stamp,
-                "amount": -float((base_amt // 2) or 5),
+                "amount": -money_json((base_amt // 2) or 5),
                 "description": f"Mock withdrawal {h}",
                 "external_ref": f"mock-{seed}-{stamp}-out",
             }
@@ -371,8 +426,8 @@ async def _fetch_http_json(
         if norm:
             lines.append(norm)
     return "http_json", lines, (
-        float(opening) if opening is not None else None
-    ), (float(closing) if closing is not None else None)
+        money_json(opening) if opening is not None else None
+    ), (money_json(closing) if closing is not None else None)
 
 
 async def _known_external_refs(
@@ -452,9 +507,13 @@ async def sync_connection(
             result["message"] = "No new transactions"
             return result
 
-        net = round(sum(float(ln["amount"]) for ln in fresh), 2)
-        open_bal = float(opening) if opening is not None else 0.0
-        close_bal = float(closing) if closing is not None else round(open_bal + net, 2)
+        net = money_json(round(sum(money_json(ln["amount"]) for ln in fresh), 2))
+        open_bal = money_json(opening) if opening is not None else 0.0
+        close_bal = (
+            money_json(closing)
+            if closing is not None
+            else money_json(round(open_bal + net, 2))
+        )
         stmt_date = max(ln["txn_date"] for ln in fresh)
         stmt_company_id = company_id or row.company_id
 

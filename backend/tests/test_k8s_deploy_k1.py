@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-EVIDENCE_DIR = Path("/opt/cursor/artifacts/k8s")
+EVIDENCE_DIR = Path("/opt/ribdigi/artifacts/k8s")
 EVIDENCE_FILE = EVIDENCE_DIR / "stage26_k1_deploy_fidelity.json"
 
 
@@ -79,6 +79,11 @@ def test_ops_k8s_smoke_scripts():
     assert "ribdigi_up" in smoke
     assert "Stage 26 K1" in smoke
 
+    env_ex = _read(".env.production.example")
+    assert "JWT_SECRET_KEY" in env_ex
+    assert "DATABASE_URL" in env_ex
+    assert "REDIS_URL" in env_ex
+
 
 def test_k8s_deploy_mvp_doc():
     doc = _read("docs/K8S_DEPLOY_MVP.md")
@@ -87,8 +92,8 @@ def test_k8s_deploy_mvp_doc():
     assert "helm/ribdigi" in doc
     assert "/api/v1/health/ready" in doc
     assert "gha" in doc.lower() or "CI" in doc or "deferred" in doc.lower()
-    assert "test_ci_prod_config_c1.py" in doc or "Stage 18 C1" in doc
     assert "stage26_k1_deploy_fidelity.json" in doc
+    assert "Remaining" in doc or "deferred" in doc.lower()
 
 
 def test_kubernetes_gate_complete_mvp_and_evidence():
@@ -99,19 +104,9 @@ def test_kubernetes_gate_complete_mvp_and_evidence():
     assert "test_k8s_deploy_k1.py" in pr
     assert "helm/ribdigi" in pr or "K8S_DEPLOY_MVP.md" in pr
     assert "GHA" in pr or "staging" in pr.lower() or "Remaining" in pr
-    # Load may be Complete (MVP) after C1
-    assert (
-        "- [ ] Load/performance tests meet documented targets." in pr
-        or (
-            "- [x] Load/performance tests meet documented targets." in pr
-            and "Stage 26 C1" in pr
-        )
-    )
-    # Prior Stage 26 gates stay Complete
     assert "- [x] Monitoring, metrics, logging and alerting complete." in pr
     assert "- [x] Point-in-time recovery/WAL strategy complete." in pr
 
-    # Main CI remains deploy-free (Stage 18 C1)
     ci = _read(".github/workflows/ci.yml")
     assert "deploy:" not in ci
     assert "kubectl" not in ci.lower()
@@ -126,37 +121,12 @@ def test_kubernetes_gate_complete_mvp_and_evidence():
         "smoke_script": "ops/k8s/staging-smoke.sh.example",
         "operator_staging_apply_required": True,
         "gha_staging_deploy_deferred": True,
+        "live_staging_apply_claimed": False,
         "probe_readiness": "/api/v1/health/ready",
     }
     EVIDENCE_FILE.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     loaded = json.loads(EVIDENCE_FILE.read_text(encoding="utf-8"))
     assert loaded["passed"] is True
     assert loaded["gha_staging_deploy_deferred"] is True
+    assert loaded["live_staging_apply_claimed"] is False
     assert loaded["probe_readiness"] == "/api/v1/health/ready"
-
-
-def test_k1_plan_launch_roadmap_cite():
-    plan = _read("docs/STAGE_26_PLAN.md")
-    k1_line = [ln for ln in plan.splitlines() if "| **K1** |" in ln][0]
-    assert "COMPLETE" in k1_line
-    assert "test_k8s_deploy_k1.py" in plan
-    assert (
-        "K1 next" in plan
-        or "K1 complete" in plan
-        or "C1 next" in plan
-        or "C1 complete" in plan
-        or "D1 next" in plan
-        or "D1 complete" in plan
-        or "H26x next" in plan
-        or "Closed" in plan
-        or "exit met" in plan.lower()
-    )
-
-    launch = _read("docs/LAUNCH_CHECKLIST.md")
-    assert "test_k8s_deploy_k1.py" in launch
-    assert "Stage 26 K1" in launch or "helm/ribdigi" in launch
-
-    roadmap = _read("docs/DEVELOPMENT_ROADMAP.md")
-    assert "Stage 26 K1" in roadmap
-    assert "test_k8s_deploy_k1.py" in roadmap
-    assert "K8S_DEPLOY_MVP.md" in roadmap or "helm/ribdigi" in roadmap

@@ -1,51 +1,329 @@
-# Production-oriented Compose overlay (Stage 18 C1).
-# Usage:
-#   cp .env.production.example .env.production   # fill real secrets
-#   docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.production up -d --build
+# Ribdigi ERP — production Docker Compose (Ubuntu 24.04 VPS)
 #
-# No Kubernetes / Helm deploy. Staging K8s remains explicitly out of Stage 18.
+# Usage:
+#   cp ops/vps/env.production.example .env
+#   # edit .env — replace every REPLACE_ME_* value
+#   docker compose -f docker-compose.prod.yml build
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Public ports: Caddy 80/443 only.
+# PostgreSQL, Redis, RabbitMQ, and MinIO are NOT published to the host.
+#
+# Do NOT use this file together with docker-compose.yml (dev).
+
+name: ribdigi-prod
+
+networks:
+  # Edge: Caddy + frontend + backend (browser / TLS path)
+  ribdigi_edge:
+    driver: bridge
+  # Data plane: DB / cache / broker / object storage.
+  # Not published to the host. Not marked internal:true so Celery/backend
+  # retain egress for SMTP, FX, webhooks, etc. Isolation = no ports + UFW.
+  ribdigi_internal:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  minio_data:
+  backup_data:
+  media_data:
+  caddy_data:
+  caddy_config:
 
 services:
-  backend:
-    env_file: .env.production
-    environment:
-      PYTHONPATH: /app
-      APP_ENV: production
-      DEBUG: "false"
-      RATE_LIMIT_ENABLED: "true"
-      RATE_LIMIT_BACKEND: redis
-      RATE_LIMIT_REQUIRE_REDIS: "true"
-      CELERY_TASK_ALWAYS_EAGER: "false"
-      ALLOW_DEVELOPMENT_SEED: "false"
-      REQUEST_LOG_ENABLED: "true"
-      METRICS_ENABLED: "true"
-    # No bind-mount of source; do not enable uvicorn reload in production
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
     volumes:
-      - backup_data:/data/backups
-      - media_data:/data/media
-    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2"
-
-  celery_worker:
-    env_file: .env.production
-    environment:
-      PYTHONPATH: /app
-      APP_ENV: production
-      DEBUG: "false"
-      CELERY_TASK_ALWAYS_EAGER: "false"
-    volumes:
-      - backup_data:/data/backups
-      - media_data:/data/media
-
-  celery_beat:
-    env_file: .env.production
-    environment:
-      PYTHONPATH: /app
-      APP_ENV: production
-      DEBUG: "false"
-      CELERY_TASK_ALWAYS_EAGER: "false"
-    volumes: []
+      - ./ops/vps/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - ribdigi_edge
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
 
   frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: runner
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_UMAMI_SRC: ${NEXT_PUBLIC_UMAMI_SRC:-https://analytics.ribdigihouse.com/script.js}
+        NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${NEXT_PUBLIC_UMAMI_WEBSITE_ID:-0d5b3d4e-fe16-47bf-91f2-6ce564fb2e0e}
+        NEXT_PUBLIC_UMAMI_DOMAINS: ${NEXT_PUBLIC_UMAMI_DOMAINS:-erp.ribdigihouse.com}
+    restart: unless-stopped
     environment:
       NODE_ENV: production
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.example.com/api/v1}
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+    networks:
+      - ribdigi_edge
+    # No host ports — only reachable via Caddy on the edge network
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PYTHONPATH: /app
+      APP_ENV: ${APP_ENV:-production}
+      DEBUG: ${DEBUG:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      UVICORN_WORKERS: ${UVICORN_WORKERS:-2}
+    volumes:
+      - backup_data:/data/backups
+      - media_data:/data/media
+    networks:
+      - ribdigi_edge
+      - ribdigi_internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    # Migrate once via migrate service; then start ASGI only (no bind-mount source)
+    command:
+      - sh
+      - -c
+      - exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers $${UVICORN_WORKERS:-2} --proxy-headers --forwarded-allow-ips='*' --log-level $${LOG_LEVEL:-info}
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file: .env
+    environment:
+      PYTHONPATH: /app
+      APP_ENV: ${APP_ENV:-production}
+      DEBUG: ${DEBUG:-false}
+    volumes:
+      - backup_data:/data/backups
+      - media_data:/data/media
+    networks:
+      - ribdigi_internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["python", "scripts/bootstrap.py"]
+    restart: "on-failure"
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PYTHONPATH: /app
+      APP_ENV: ${APP_ENV:-production}
+      DEBUG: ${DEBUG:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    volumes:
+      - backup_data:/data/backups
+      - media_data:/data/media
+    networks:
+      - ribdigi_internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    command:
+      - celery
+      - -A
+      - app.celery_app.celery
+      - worker
+      - --loglevel=${CELERY_LOG_LEVEL:-INFO}
+      - --concurrency=${CELERY_CONCURRENCY:-2}
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PYTHONPATH: /app
+      APP_ENV: ${APP_ENV:-production}
+      DEBUG: ${DEBUG:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    networks:
+      - ribdigi_internal
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      celery_worker:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
+    command:
+      - celery
+      - -A
+      - app.celery_app.celery
+      - beat
+      - --loglevel=${CELERY_LOG_LEVEL:-INFO}
+      - --schedule=/tmp/celerybeat-schedule
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ribdigi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-ribdigi_erp}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ribdigi_internal
+    # Intentionally no ports: — not reachable from the public internet
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${POSTGRES_USER:-ribdigi} -d ${POSTGRES_DB:-ribdigi_erp}
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory-policy
+      - allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - ribdigi_internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-ribdigi}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:?set RABBITMQ_DEFAULT_PASS in .env}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - ribdigi_internal
+    # Management UI (15672) is also internal-only — use docker exec / SSH tunnel if needed
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  minio:
+    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    restart: unless-stopped
+    command: server /data --console-address :9001
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?set MINIO_ROOT_USER in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env}
+    volumes:
+      - minio_data:/data
+    networks:
+      - ribdigi_internal
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  minio-init:
+    image: minio/mc:RELEASE.2024-11-17T19-35-56Z
+    depends_on:
+      minio:
+        condition: service_started
+    networks:
+      - ribdigi_internal
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      S3_BUCKET: ${S3_BUCKET:-ribdigi-prod}
+    entrypoint: >
+      /bin/sh -c "
+      for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+        mc alias set local http://minio:9000 \"$${MINIO_ROOT_USER}\" \"$${MINIO_ROOT_PASSWORD}\" && break;
+        sleep 2;
+      done;
+      mc mb -p local/$${S3_BUCKET} || true;
+      exit 0;
+      "
+    restart: "on-failure"

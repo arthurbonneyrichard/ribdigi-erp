@@ -2,7 +2,19 @@
 #
 # ONE file. No overlay. No second -f argument.
 #
+# =============================================================================
+# CRITICAL — deploy the LATEST commercial ERP from Git branch:
+#   Branch       : production
+#   Compose Path : docker-compose.dokploy.yml
+# Do NOT deploy GitHub `main` for erp.ribdigihouse.com — that is the older ERP
+# lineage and will not include commercial features / migration fixes.
+# After changing branch: Redeploy with image rebuild (no cache).
+# Verify live build via: GET /api/v1/health → release_channel=production
+# =============================================================================
+#
 # Dokploy settings:
+#   Repository   : ribdigi-erp
+#   Branch       : production
 #   Compose Path : docker-compose.dokploy.yml
 #   Compose Type : docker-compose
 #   Environment  : paste .env.production.example (edited) into Dokploy → Environment
@@ -46,11 +58,17 @@ services:
       args:
         # Baked at image build time — must match public HTTPS API URL
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL}
+        # Baked at image build time. Rebuild the frontend after changing these.
+        NEXT_PUBLIC_UMAMI_SRC: ${NEXT_PUBLIC_UMAMI_SRC:-https://analytics.ribdigihouse.com/script.js}
+        NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${NEXT_PUBLIC_UMAMI_WEBSITE_ID:-0d5b3d4e-fe16-47bf-91f2-6ce564fb2e0e}
+        NEXT_PUBLIC_UMAMI_DOMAINS: ${NEXT_PUBLIC_UMAMI_DOMAINS:-erp.ribdigihouse.com}
     restart: unless-stopped
     environment:
       NODE_ENV: production
       PORT: "3000"
       HOSTNAME: 0.0.0.0
+      # Server-side guide check calls /me on the compose network, not the public URL.
+      API_INTERNAL_URL: http://backend:8000/api/v1
     expose:
       - "3000"
     networks:
@@ -77,6 +95,9 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        # Bump to force Dokploy/BuildKit to rebuild app+alembic layers
+        RIBDIGI_BUILD_ID: "20260924-depts-guide-nav"
     restart: unless-stopped
     env_file: .env
     environment:
@@ -85,6 +106,8 @@ services:
       DEBUG: ${DEBUG:-false}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       UVICORN_WORKERS: ${UVICORN_WORKERS:-2}
+      RIBDIGI_RELEASE_CHANNEL: production
+      RIBDIGI_BUILD_ID: "20260924-depts-guide-nav"
     volumes:
       - backup_data:/data/backups
       - media_data:/data/media
@@ -129,11 +152,15 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        RIBDIGI_BUILD_ID: "20260924-depts-guide-nav"
     env_file: .env
     environment:
       PYTHONPATH: /app
       APP_ENV: ${APP_ENV:-production}
       DEBUG: ${DEBUG:-false}
+      RIBDIGI_RELEASE_CHANNEL: production
+      RIBDIGI_BUILD_ID: "20260924-depts-guide-nav"
     volumes:
       - backup_data:/data/backups
       - media_data:/data/media
@@ -142,7 +169,28 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: ["python", "scripts/bootstrap.py"]
+    # Prove the image embeds IF NOT EXISTS 0106, then run Alembic.
+    command:
+      - sh
+      - -c
+      - |
+        set -eu
+        echo "migrate: build-id=$$(cat /app/.build-id)"
+        MIG=/app/alembic/versions/20260917_0106_transaction_client_request_id.py
+        test -f "$$MIG"
+        test -f /app/alembic/versions/20260917_0107_pos_devices.py
+        grep -F 'RIBDIGI_0106_IF_NOT_EXISTS_V3' "$$MIG"
+        grep -F 'ADD COLUMN IF NOT EXISTS client_request_id' "$$MIG"
+        if grep -E 'op\.add_column\(|batch\.add_column\(' "$$MIG"; then
+          echo "migrate: FATAL stale 0106 still has op/batch.add_column(" >&2
+          exit 3
+        fi
+        if grep -F 'ADD COLUMN client_request_id' "$$MIG"; then
+          echo "migrate: FATAL stale 0106 still has unconditional ADD COLUMN" >&2
+          exit 4
+        fi
+        echo "migrate: 0106 on-disk proof OK"
+        exec python scripts/bootstrap.py
     restart: "on-failure"
     logging:
       driver: json-file
@@ -157,6 +205,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        RIBDIGI_BUILD_ID: "20260924-depts-guide-nav"
     restart: unless-stopped
     env_file: .env
     environment:
@@ -164,6 +214,8 @@ services:
       APP_ENV: ${APP_ENV:-production}
       DEBUG: ${DEBUG:-false}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      RIBDIGI_RELEASE_CHANNEL: production
+      RIBDIGI_BUILD_ID: "20260924-depts-guide-nav"
     volumes:
       - backup_data:/data/backups
       - media_data:/data/media
@@ -185,6 +237,15 @@ services:
       - worker
       - --loglevel=${CELERY_LOG_LEVEL:-INFO}
       - --concurrency=${CELERY_CONCURRENCY:-2}
+    # Inherit backend image HEALTHCHECK would curl :8000 (FastAPI) — wrong for Celery.
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - celery -A app.celery_app.celery inspect ping --timeout 10 2>/dev/null | grep -qi pong
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 60s
     logging:
       driver: json-file
       options:
@@ -195,6 +256,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        RIBDIGI_BUILD_ID: "20260924-depts-guide-nav"
     restart: unless-stopped
     env_file: .env
     environment:
@@ -202,6 +265,8 @@ services:
       APP_ENV: ${APP_ENV:-production}
       DEBUG: ${DEBUG:-false}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      RIBDIGI_RELEASE_CHANNEL: production
+      RIBDIGI_BUILD_ID: "20260924-depts-guide-nav"
     networks:
       - ribdigi_internal
     depends_on:
@@ -218,6 +283,16 @@ services:
       - beat
       - --loglevel=${CELERY_LOG_LEVEL:-INFO}
       - --schedule=/tmp/celerybeat-schedule
+      - --pidfile=/tmp/celerybeat.pid
+    # Beat has no HTTP server; Dockerfile HEALTHCHECK (curl :8000) is invalid here.
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - test -f /tmp/celerybeat.pid && kill -0 "$$(cat /tmp/celerybeat.pid)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
     logging:
       driver: json-file
       options:
@@ -300,7 +375,6 @@ services:
         max-file: "3"
 
   minio:
-    # Docker Hub minio/minio is no longer publicly pullable; Quay hosts the same release tags.
     image: quay.io/minio/minio:RELEASE.2024-12-18T13-15-44Z
     restart: unless-stopped
     command: server /data --console-address :9001
@@ -319,7 +393,6 @@ services:
         max-file: "3"
 
   minio-init:
-    # Docker Hub minio/mc is unavailable; use Quay. Closest stable tag to prior Dec-2024 pin.
     image: quay.io/minio/mc:RELEASE.2024-11-21T17-21-54Z
     depends_on:
       minio:

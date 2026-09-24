@@ -1,4 +1,4 @@
-"""Security middleware: headers and rate limiting (Redis or memory)."""
+"""Security middleware: headers, rate limiting, and HTTP metrics."""
 
 from __future__ import annotations
 
@@ -53,7 +53,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     """Sliding-window limiter keyed by client IP + route class + tenant scope.
 
     Tenant scope uses ``X-Tenant-ID`` when present so API buckets are isolated
-    per tenant on shared egress IPs (Stage 19 K1 / BR-18.1). Plan-tier caps remain deferred.
+    per tenant on shared egress IPs (BR-18.1). Plan-tier caps remain deferred.
     """
 
     def __init__(self, app):
@@ -116,7 +116,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
 
 class MetricsMiddleware(BaseHTTPMiddleware):
-    """Record coarse HTTP counters for /api/v1/metrics (Stage 5 H5)."""
+    """Record coarse HTTP counters for /api/v1/metrics."""
 
     async def dispatch(self, request: Request, call_next) -> Response:
         from app import metrics as metrics_svc

@@ -28,6 +28,9 @@
 13. [Multi-Store Management](#13-multi-store-management)
 14. [Reports](#14-reports)
 15. [Notifications](#15-notifications)
+15A. [Onboarding Checklist](#15a-onboarding-checklist)
+15B. [Scheduled Jobs](#15b-scheduled-jobs)
+15C. [Audit Logs](#15c-audit-logs)
 16. [AI Business Assistant](#16-ai-business-assistant)
 17. [Webhooks](#17-webhooks)
 18. [Caching](#18-caching-stage-6-p2)
@@ -41,13 +44,14 @@
 Stage 19 A1 proves live standards under `/api/v1` — `test_api_standards_a1.py` (BR-18.6). Stage 19 D1 fidelity sync: `docs/STAGE_19_FIDELITY.md` (`test_stage19_fidelity_d1.py`) — BR-18–20 + LAUNCH §5. Stage 20 D1 AI fidelity sync: `docs/STAGE_20_FIDELITY.md` (`test_stage20_fidelity_d1.py`) — BR-21. Stage 21 D1/H21x tenant/org/dashboard fidelity + exit: `docs/STAGE_21_FIDELITY.md` (`test_stage21_fidelity_d1.py`), `docs/STAGE_21_EXIT_CRITERIA.md`, ADR-048 (`test_stage21_exit_h21x.py`) — BR-1–4. Stage 22 D1/H22x expenses/ledger/credit/tax fidelity + exit: `docs/STAGE_22_FIDELITY.md` (`test_stage22_fidelity_d1.py`), `docs/STAGE_22_EXIT_CRITERIA.md`, ADR-050 (`test_stage22_exit_h22x.py`) — BR-9–12. Stage 23 D1/H23x reports-dimension & MVP-gate fidelity + exit: `docs/STAGE_23_FIDELITY.md` (`test_stage23_fidelity_d1.py`), `docs/STAGE_23_EXIT_CRITERIA.md`, ADR-052 (`test_stage23_exit_h23x.py`) — BR-14 (historical open ADR-051). Stage 24 D1/H24x commerce & ops gate fidelity + exit: `docs/STAGE_24_FIDELITY.md` (`test_stage24_fidelity_d1.py`; N1 `test_document_numbering_n1.py`; G1 `test_commerce_gate_closure_g1.py`; O1 `test_ops_ai_gate_closure_o1.py`), `docs/STAGE_24_EXIT_CRITERIA.md`, ADR-054 (`test_stage24_exit_h24x.py`) — BR-20.4 (historical open ADR-053 / `docs/STAGE_24_PLAN.md`). Stage 25 D1/H25x actuals → AI → insights fidelity + exit: `docs/STAGE_25_FIDELITY.md` (`test_stage25_fidelity_d1.py`; P1 `test_ai_purchases_analysis_p1.py`; X1 `test_ai_cross_domain_x1.py`; B1 `test_ai_business_insights_b1.py`; U1 `test_ai_ui_fidelity_u1.py`), `docs/STAGE_25_EXIT_CRITERIA.md`, ADR-056 (`test_stage25_exit_h25x.py`) — BR-21.2 / 21.11 / 21.12 (historical open ADR-055 / `docs/STAGE_25_PLAN.md`). Stage 26 closed (ADR-058): Production Platform & Ops Fidelity — `docs/STAGE_26_PLAN.md`, `docs/STAGE_26_EXIT_CRITERIA.md` (historical open ADR-057; `test_stage26_open.py`). Stage 26 M1 monitoring scrape/alerts/log-ship: `ops/prometheus/`, `ops/logging/`, `docs/OPS_MONITORING_MVP.md` (`test_ops_monitoring_m1.py`). Stage 26 W1 WAL/PITR + S3 offsite strategy: `docs/DR_WAL_PITR_RUNBOOK.md`, `ops/postgres/`, `ops/backup/` (`test_wal_pitr_w1.py`). Stage 26 K1 Kubernetes/Helm deploy fidelity: `helm/ribdigi/`, `k8s/`, `docs/K8S_DEPLOY_MVP.md` (`test_k8s_deploy_k1.py`). Stage 26 C1 load capacity evidence: `docs/LOAD_CAPACITY_MVP.md`, `backend/loadtest/` (`test_load_capacity_c1.py`). Stage 26 D1 production platform fidelity: `docs/STAGE_26_FIDELITY.md` (`test_stage26_fidelity_d1.py`) — BR-16 / NFR ops evidence lock; public API contracts unchanged. Stage 26 H26x exit + freeze: `docs/STAGE_26_EXIT_CRITERIA.md`, ADR-058 (`test_stage26_exit_h26x.py`). Stage 27 closed (ADR-060): Commercial MVP Release Fidelity — `docs/STAGE_27_PLAN.md`, `docs/STAGE_27_EXIT_CRITERIA.md` (historical open ADR-059; `test_stage27_open.py`) Stage 27 B1 offsite upload (`test_backup_offsite_b1.py`); P1 PgBouncer (`docs/PGBOUNCER_MVP.md`, `test_pgbouncer_p1.py`); S1 security scan (`docs/SECURITY_SCAN_MVP.md`, `test_security_scan_s1.py`); L1 launch cert (`docs/LAUNCH_CERT_MVP.md`, `test_launch_cert_l1.py`). Stage 27 D1 release fidelity: `docs/STAGE_27_FIDELITY.md` (`test_stage27_fidelity_d1.py`). Stage 27 H27x exit + freeze: `docs/STAGE_27_EXIT_CRITERIA.md`, ADR-060 (`test_stage27_exit_h27x.py`). Stage 28 open (ADR-061): Staging Certification Fidelity — `docs/STAGE_28_PLAN.md` (`test_stage28_open.py`). Stage 28 R1 PITR drill pack: `docs/PITR_DRILL_PACK_MVP.md` (`test_pitr_drill_pack_r1.py`). Stage 28 G1 staging GHA: `docs/STAGING_GHA_MVP.md` (`test_staging_gha_g1.py`). Stage 28 A1 Grafana pack: `docs/GRAFANA_PACK_MVP.md` (`test_grafana_pack_a1.py`). Stage 28 C1 1000-VU cert pack: `docs/LOAD_CERT_PACK_MVP.md` (`test_load_cert_pack_c1.py`). Stage 28 D1 staging certification fidelity: `docs/STAGE_28_FIDELITY.md` (`test_stage28_fidelity_d1.py`). Stage 28 H28x exit + freeze: `docs/STAGE_28_EXIT_CRITERIA.md`, ADR-062 (`test_stage28_exit_h28x.py`). Stage 29 open (ADR-063): Operator Hardening & Production Cutover Fidelity — `docs/STAGE_29_PLAN.md` (`test_stage29_open.py`). Stage 29 V1 pen-test pack: `docs/PENTEST_PACK_MVP.md` (`test_pentest_pack_v1.py`). Stage 29 B2 PgBouncer soak pack: `docs/PGBOUNCER_SOAK_PACK_MVP.md` (`test_pgbouncer_soak_b2.py`). Stage 29 T1 TLS ingress pack: `docs/TLS_INGRESS_PACK_MVP.md` (`test_tls_ingress_t1.py`). Stage 29 X1 production cutover pack: `docs/CUTOVER_PACK_MVP.md` (`test_cutover_pack_x1.py`). Stage 29 D1 operator hardening & cutover fidelity: `docs/STAGE_29_FIDELITY.md` (`test_stage29_fidelity_d1.py`) — V1–X1 evidence lock; public API contracts unchanged. Stage 29 H29x exit + freeze: `docs/STAGE_29_EXIT_CRITERIA.md`, ADR-064 (`test_stage29_exit_h29x.py`). Stage 30 open (ADR-065): Go-Live Support Fidelity — `docs/STAGE_30_PLAN.md` (`test_stage30_open.py`). Stage 30 L1 evidence ledger: `docs/EVIDENCE_LEDGER_MVP.md` (`test_evidence_ledger_l1.py`). Stage 30 I1 incident pack: `docs/INCIDENT_PACK_MVP.md` (`test_incident_pack_i1.py`). Stage 30 S1 support/Admin fidelity: `docs/SUPPORT_RUNBOOK_MVP.md` (`test_support_runbook_s1.py`). Stage 30 A1 attestation matrix: `docs/ATTESTATION_PACK_MVP.md` (`test_attestation_pack_a1.py`). Stage 30 D1 go-live support fidelity: `docs/STAGE_30_FIDELITY.md` (`test_stage30_fidelity_d1.py`) — L1–A1 evidence lock; public API contracts unchanged. Stage 30 H30x exit + freeze: `docs/STAGE_30_EXIT_CRITERIA.md`, ADR-066 (`test_stage30_exit_h30x.py`). Stage 31 open (ADR-067): Commercial MVP Closeout Fidelity — `docs/STAGE_31_PLAN.md` (`test_stage31_open.py`). Stage 31 G1 MVP gate honesty matrix: `docs/MVP_GATE_MATRIX_MVP.md` (`test_mvp_gate_matrix_g1.py`). Stage 31 R1 deferred ADR register: `docs/DEFERRED_ADR_REGISTER_MVP.md` (`test_deferred_adr_register_r1.py`). Stage 31 O1 operator Remaining register: `docs/OPERATOR_REMAINING_MVP.md` (`test_operator_remaining_o1.py`). Stage 31 C1 commercial MVP declaration: `docs/MVP_DECLARATION_MVP.md` (`test_mvp_declaration_c1.py`). Stage 31 D1 closeout fidelity: `docs/STAGE_31_FIDELITY.md` (`test_stage31_fidelity_d1.py`) — G1–C1 evidence lock; public API contracts unchanged. Stage 31 H31x exit + freeze: `docs/STAGE_31_EXIT_CRITERIA.md`, ADR-068 (`test_stage31_exit_h31x.py`). Stage 32 open (ADR-069): Commercial MVP Handoff Fidelity — `docs/STAGE_32_PLAN.md` (`test_stage32_open.py`). Stage 32 A1 MVP acceptance archive: `docs/ACCEPTANCE_ARCHIVE_MVP.md` (`test_acceptance_archive_a1.py`). Stage 32 H1 operator handoff: `docs/OPERATOR_HANDOFF_MVP.md` (`test_operator_handoff_h1.py`). Stage 32 N1 commercial release notes: `docs/RELEASE_NOTES_MVP.md` (`test_release_notes_n1.py`). Stage 32 B1 post-MVP backlog: `docs/POST_MVP_BACKLOG_MVP.md` (`test_post_mvp_backlog_b1.py`). Stage 32 D1 handoff fidelity: `docs/STAGE_32_FIDELITY.md` (`test_stage32_fidelity_d1.py`) — A1–B1 evidence lock; public API contracts unchanged. Stage 32 H32x exit + freeze: `docs/STAGE_32_EXIT_CRITERIA.md`, ADR-070 (`test_stage32_exit_h32x.py`). Stage 33 open (ADR-071): Commercial MVP Continuity Fidelity — `docs/STAGE_33_PLAN.md` (`test_stage33_open.py`). Stage 33 K1 residual risk register: `docs/RESIDUAL_RISK_MVP.md` (`test_residual_risk_k1.py`). Stage 33 C1 compliance readiness: `docs/COMPLIANCE_READINESS_MVP.md` (`test_compliance_readiness_c1.py`). Stage 33 F1 first-tenant onboarding: `docs/FIRST_TENANT_ONBOARDING_MVP.md` (`test_first_tenant_onboarding_f1.py`). Stage 33 T1 knowledge transfer: `docs/KNOWLEDGE_TRANSFER_MVP.md` (`test_knowledge_transfer_t1.py`). Stage 33 D1 continuity fidelity: `docs/STAGE_33_FIDELITY.md` (`test_stage33_fidelity_d1.py`). Stage 33 H33x exit + freeze: `docs/STAGE_33_EXIT_CRITERIA.md`, ADR-072 (`test_stage33_exit_h33x.py`). Stage 34 open (ADR-073): Commercial Customer Assurance Fidelity — `docs/STAGE_34_PLAN.md` (`test_stage34_open.py`). Stage 34 A1 assurance evidence: `docs/ASSURANCE_EVIDENCE_MVP.md` (`test_assurance_evidence_a1.py`). Stage 34 C1 compliance questionnaire: `docs/COMPLIANCE_QUESTIONNAIRE_MVP.md` (`test_compliance_questionnaire_c1.py`). Stage 34 D1 assurance fidelity: `docs/STAGE_34_FIDELITY.md` (`test_stage34_fidelity_d1.py`). Stage 34 H34x exit + freeze: `docs/STAGE_34_EXIT_CRITERIA.md`, ADR-074 (`test_stage34_exit_h34x.py`). Stage 35 open (ADR-075): Commercial End-to-End Operational Smoke Fidelity — `docs/STAGE_35_PLAN.md` (`test_stage35_open.py`). Stage 35 T1 org bootstrap: `docs/E2E_ORG_BOOTSTRAP_MVP.md` (`test_e2e_org_bootstrap_t1.py`). Stage 35 U1 users + RBAC: `docs/E2E_USERS_RBAC_MVP.md` (`test_e2e_users_rbac_u1.py`). Stage 35 P1 purchase-to-stock: `docs/E2E_PURCHASE_STOCK_MVP.md` (`test_e2e_purchase_stock_p1.py`). Stage 35 S1 sale-to-payment: `docs/E2E_SALE_PAYMENT_MVP.md` (`test_e2e_sale_payment_s1.py`). Stage 35 V1 verify financials: `docs/E2E_VERIFY_FINANCIALS_MVP.md` (`test_e2e_verify_financials_v1.py`). Stage 35 R1 backup + restore: `docs/E2E_BACKUP_RESTORE_MVP.md` (`test_e2e_backup_restore_r1.py`). Stage 35 D1 E2E smoke fidelity: `docs/STAGE_35_FIDELITY.md` (`test_stage35_fidelity_d1.py`). Stage 35 H35x exit + freeze: `docs/STAGE_35_EXIT_CRITERIA.md`, ADR-076 (`test_stage35_exit_h35x.py`). Stage 36 open (ADR-077): Commercial Assurance Completion Fidelity — `docs/STAGE_36_PLAN.md` (`test_stage36_open.py`). Stage 36 S1 support SLA boundary: `docs/SUPPORT_SLA_BOUNDARY_MVP.md` (`test_support_sla_boundary_s1.py`). Stage 36 B1 billing-deferred honesty: `docs/BILLING_DEFERRED_HONESTY_MVP.md` (`test_billing_deferred_honesty_b1.py`). Stage 36 D1 assurance completion fidelity: `docs/STAGE_36_FIDELITY.md` (`test_stage36_fidelity_d1.py`). Stage 37 open — `docs/STAGE_37_PLAN.md`, ADR-079 (`test_stage37_open.py`). Stage 37 P1 data portability — `docs/DATA_PORTABILITY_MVP.md` (`test_data_portability_p1.py`). Stage 37 E1 erasure honesty — `docs/ERASURE_HONESTY_MVP.md` (`test_erasure_honesty_e1.py`). Stage 37 D1 data protection fidelity — `docs/STAGE_37_FIDELITY.md` (`test_stage37_fidelity_d1.py`). Stage 37 H37x exit + freeze — `docs/STAGE_37_EXIT_CRITERIA.md`, ADR-080 (`test_stage37_exit_h37x.py`). Stage 38 open — `docs/STAGE_38_PLAN.md`, ADR-081 (`test_stage38_open.py`). Stage 38 V1 vulnerability disclosure — `docs/VULN_DISCLOSURE_MVP.md` (`test_vuln_disclosure_v1.py`). Stage 38 B1 breach notification — `docs/BREACH_NOTIFICATION_MVP.md` (`test_breach_notification_b1.py`). Stage 38 D1 security disclosure fidelity — `docs/STAGE_38_FIDELITY.md` (`test_stage38_fidelity_d1.py`). Stage 38 H38x exit + freeze — `docs/STAGE_38_EXIT_CRITERIA.md`, ADR-082 (`test_stage38_exit_h38x.py`). Stage 39 open — `docs/STAGE_39_PLAN.md`, ADR-083 (`test_stage39_open.py`). Stage 39 P1 DPA / subprocessor — `docs/DPA_SUBPROCESSOR_MVP.md` (`test_dpa_subprocessor_p1.py`). Stage 39 A1 MSA security addendum — `docs/MSA_ADDENDUM_MVP.md` (`test_msa_addendum_a1.py`). Stage 39 D1 contract evidence fidelity — `docs/STAGE_39_FIDELITY.md` (`test_stage39_fidelity_d1.py`). Stage 39 H39x Stage 40 open: `docs/STAGE_40_PLAN.md`, ADR-085 (`test_stage40_open.py`). Stage 40 U1: `docs/STATUS_UPTIME_MVP.md` (`test_status_uptime_u1.py`). Stage 40 S1 SBOM/dependency disclosure honesty Complete (MVP) Stage 40 D1 availability & supply-chain fidelity Complete (MVP) Stage 40 exit met — `docs/STAGE_40_EXIT_CRITERIA.md`, ADR-086 (`test_stage40_exit_h40x.py`) Stage 41 open: `docs/STAGE_41_PLAN.md`, ADR-087 (`test_stage41_open.py`). Stage 41 A1 accessibility statement honesty Complete (MVP) Stage 41 C1 change/maintenance governance honesty Complete (MVP) Stage 41 D1 accessibility & change governance fidelity Complete (MVP) Stage 41 exit met — `docs/STAGE_41_EXIT_CRITERIA.md`, ADR-088 (`test_stage41_exit_h41x.py`) Stage 42 open: `docs/STAGE_42_PLAN.md`, ADR-089 (`test_stage42_open.py`). Stage 42 A1 AI use disclosure honesty Complete (MVP) Stage 42 P1 AI model/provider boundary honesty Complete (MVP) Stage 42 D1 AI transparency fidelity Complete (MVP) Stage 42 exit met — `docs/STAGE_42_EXIT_CRITERIA.md`, ADR-090 (`test_stage42_exit_h42x.py`) Stage 43 open: `docs/STAGE_43_PLAN.md`, ADR-091 (`test_stage43_open.py`). Stage 43 T1 ToS / AUP honesty Complete (MVP) — `docs/TOS_AUP_MVP.md`, `ops/mvp/tos-aup.json` (`test_tos_aup_t1.py`). Stage 43 C1 Cookie / privacy notice honesty Complete (MVP) — `docs/COOKIE_PRIVACY_NOTICE_MVP.md`, `ops/mvp/cookie-privacy-notice.json` (`test_cookie_privacy_notice_c1.py`). Stage 43 D1 commercial legal notice fidelity Complete (MVP) — `docs/STAGE_43_FIDELITY.md` (`test_stage43_fidelity_d1.py`). Stage 43 exit met — `docs/STAGE_43_EXIT_CRITERIA.md`, ADR-092 (`test_stage43_exit_h43x.py`). Stage 44 open: `docs/STAGE_44_PLAN.md`, ADR-093 (`test_stage44_open.py`). Stage 44 R1 data residency / localization honesty Complete (MVP) — `docs/DATA_RESIDENCY_MVP.md`, `ops/mvp/data-residency.json` (`test_data_residency_r1.py`). Stage 44 E1 encryption / key-management honesty Complete (MVP) — `docs/ENCRYPTION_KMS_MVP.md`, `ops/mvp/encryption-kms.json` (`test_encryption_kms_e1.py`). Stage 44 D1 commercial data trust fidelity Complete (MVP) — `docs/STAGE_44_FIDELITY.md` (`test_stage44_fidelity_d1.py`). Stage 44 exit met — `docs/STAGE_44_EXIT_CRITERIA.md`, ADR-094 (`test_stage44_exit_h44x.py`). Stage 45 open: `docs/STAGE_45_PLAN.md`, ADR-095 (`test_stage45_open.py`). Stage 45 O1 RTO / RPO recovery objectives honesty Complete (MVP) — `docs/RTO_RPO_MVP.md`, `ops/mvp/rto-rpo.json` (`test_rto_rpo_o1.py`). Stage 45 T1 data retention / return honesty Complete (MVP) — `docs/DATA_RETENTION_RETURN_MVP.md`, `ops/mvp/data-retention-return.json` (`test_data_retention_return_t1.py`). Stage 45 D1 commercial continuity & exit fidelity Complete (MVP) — `docs/STAGE_45_FIDELITY.md` (`test_stage45_fidelity_d1.py`). Stage 45 exit met — `docs/STAGE_45_EXIT_CRITERIA.md`, ADR-096 (`test_stage45_exit_h45x.py`). Stage 46 open: `docs/STAGE_46_PLAN.md`, ADR-097 (`test_stage46_open.py`). Stage 46 L1 limitation of liability / indemnity honesty Complete (MVP) — `docs/LIABILITY_INDEMNITY_MVP.md`, `ops/mvp/liability-indemnity.json` (`test_liability_indemnity_l1.py`). Stage 46 W1 service credit / warranty honesty Complete (MVP) — `docs/SERVICE_CREDIT_WARRANTY_MVP.md`, `ops/mvp/service-credit-warranty.json` (`test_service_credit_warranty_w1.py`). Stage 46 D1 commercial liability & remedy fidelity Complete (MVP) — `docs/STAGE_46_FIDELITY.md` (`test_stage46_fidelity_d1.py`). Stage 46 exit met — `docs/STAGE_46_EXIT_CRITERIA.md`, ADR-098 (`test_stage46_exit_h46x.py`). Stage 47 open: `docs/STAGE_47_PLAN.md`, ADR-099 (`test_stage47_open.py`). Stage 47 I1 cyber insurance / COI honesty Complete (MVP) — `docs/CYBER_INSURANCE_MVP.md`, `ops/mvp/cyber-insurance.json` (`test_cyber_insurance_i1.py`). Stage 47 A1 customer audit rights honesty Complete (MVP) — `docs/CUSTOMER_AUDIT_RIGHTS_MVP.md`, `ops/mvp/customer-audit-rights.json` (`test_customer_audit_rights_a1.py`). Stage 47 D1 commercial insurance & audit fidelity Complete (MVP) — `docs/STAGE_47_FIDELITY.md` (`test_stage47_fidelity_d1.py`). Stage 47 exit met — `docs/STAGE_47_EXIT_CRITERIA.md`, ADR-100 (`test_stage47_exit_h47x.py`). Stage 48 open: `docs/STAGE_48_PLAN.md`, ADR-101 (`test_stage48_open.py`). Stage 48 P1 professional services / SOW honesty Complete (MVP) — `docs/PROFESSIONAL_SERVICES_SOW_MVP.md`, `ops/mvp/professional-services-sow.json` (`test_professional_services_sow_p1.py`). Stage 48 T1 customer training / certification honesty Complete (MVP) — `docs/CUSTOMER_TRAINING_CERT_MVP.md`, `ops/mvp/customer-training-cert.json` (`test_customer_training_cert_t1.py`). Stage 48 D1 commercial services fidelity Complete (MVP) — `docs/STAGE_48_FIDELITY.md` (`test_stage48_fidelity_d1.py`). Stage 48 exit met — `docs/STAGE_48_EXIT_CRITERIA.md`, ADR-102 (`test_stage48_exit_h48x.py`). Stage 49 open: `docs/STAGE_49_PLAN.md`, ADR-103 (`test_stage49_open.py`). Stage 49 R1 partner / reseller terms honesty Complete (MVP) — `docs/PARTNER_RESELLER_MVP.md`, `ops/mvp/partner-reseller.json` (`test_partner_reseller_r1.py`). Stage 49 L1 pricing transparency honesty Complete (MVP) — `docs/PRICING_TRANSPARENCY_MVP.md`, `ops/mvp/pricing-transparency.json`; evidence `/opt/cursor/artifacts/launch/stage49_l1_pricing_transparency.json` (`test_pricing_transparency_l1.py`). Stage 49 D1 commercial channel & pricing fidelity Complete (MVP) — `docs/STAGE_49_FIDELITY.md` (`test_stage49_fidelity_d1.py`). Stage 49 exit met — `docs/STAGE_49_EXIT_CRITERIA.md`, ADR-104 (`test_stage49_exit_h49x.py`). Stage 50 open: `docs/STAGE_50_PLAN.md`, ADR-105 (`test_stage50_open.py`). Stage 50 R1 referral program honesty Complete (MVP) — `docs/REFERRAL_PROGRAM_MVP.md`, `ops/mvp/referral-program.json` (`test_referral_program_r1.py`). Stage 50 F1 freemium trial honesty Complete (MVP) — `docs/FREEMIUM_TRIAL_MVP.md`, `ops/mvp/freemium-trial.json`; evidence `/opt/cursor/artifacts/launch/stage50_f1_freemium_trial.json` (`test_freemium_trial_f1.py`). Stage 50 D1 commercial acquisition & trial fidelity Complete (MVP) — `docs/STAGE_50_FIDELITY.md` (`test_stage50_fidelity_d1.py`). Stage 50 exit met — `docs/STAGE_50_EXIT_CRITERIA.md`, ADR-106 (`test_stage50_exit_h50x.py`). Stage 51 open: `docs/STAGE_51_PLAN.md`, ADR-107 (`test_stage51_open.py`). Stage 51 M1 marketplace presence honesty Complete (MVP) — `docs/MARKETPLACE_PRESENCE_MVP.md`, `ops/mvp/marketplace-presence.json` (`test_marketplace_presence_m1.py`). Stage 51 A1 add-on services honesty Complete (MVP) — `docs/ADDON_SERVICES_MVP.md`, `ops/mvp/addon-services.json`; evidence `/opt/cursor/artifacts/launch/stage51_a1_addon_services.json` (`test_addon_services_a1.py`). Stage 51 D1 commercial marketplace & add-ons fidelity Complete (MVP) — `docs/STAGE_51_FIDELITY.md` (`test_stage51_fidelity_d1.py`). Stage 51 exit met — `docs/STAGE_51_EXIT_CRITERIA.md`, ADR-108 (`test_stage51_exit_h51x.py`). Stage 52 open: `docs/STAGE_52_PLAN.md`, ADR-109 (`test_stage52_open.py`). Stage 52 I1 industry partnerships honesty Complete (MVP) — `docs/INDUSTRY_PARTNERSHIPS_MVP.md`, `ops/mvp/industry-partnerships.json` (`test_industry_partnerships_i1.py`). Stage 52 R1 subscription renewal / annual discount honesty Complete (MVP) — `docs/SUBSCRIPTION_RENEWAL_MVP.md`, `ops/mvp/subscription-renewal.json`; evidence `/opt/cursor/artifacts/launch/stage52_r1_subscription_renewal.json` (`test_subscription_renewal_r1.py`). Stage 52 D1 commercial partnerships & renewal fidelity Complete (MVP) — `docs/STAGE_52_FIDELITY.md` (`test_stage52_fidelity_d1.py`). Stage 52 exit met — `docs/STAGE_52_EXIT_CRITERIA.md`, ADR-110 (`test_stage52_exit_h52x.py`). Stage 53 open: `docs/STAGE_53_PLAN.md`, ADR-111 (`test_stage53_open.py`). Stage 53 A1 API & integration commercial honesty Complete (MVP) — `docs/API_INTEGRATION_COMMERCIAL_MVP.md`, `ops/mvp/api-integration-commercial.json` (`test_api_integration_commercial_a1.py`). Stage 53 C1 cancellation / refund / churn policy honesty Complete (MVP) — `docs/CANCELLATION_CHURN_MVP.md`, `ops/mvp/cancellation-churn.json`; evidence `/opt/cursor/artifacts/launch/stage53_c1_cancellation_churn.json` (`test_cancellation_churn_c1.py`). Stage 53 D1 commercial API & lifecycle fidelity Complete (MVP) — `docs/STAGE_53_FIDELITY.md` (`test_stage53_fidelity_d1.py`). Stage 53 exit met — `docs/STAGE_53_EXIT_CRITERIA.md`, ADR-112 (`test_stage53_exit_h53x.py`). Stage 54 open: `docs/STAGE_54_PLAN.md`, ADR-113 (`test_stage54_open.py`). Stage 54 M1 digital marketing / case studies / testimonials honesty Complete (MVP) — `docs/DIGITAL_MARKETING_MVP.md`, `ops/mvp/digital-marketing.json` (`test_digital_marketing_m1.py`). Stage 54 S1 direct sales honesty Complete (MVP) — `docs/DIRECT_SALES_MVP.md`, `ops/mvp/direct-sales.json`; evidence `/opt/cursor/artifacts/launch/stage54_s1_direct_sales.json` (`test_direct_sales_s1.py`). Stage 54 D1 commercial go-to-market fidelity Complete (MVP) — `docs/STAGE_54_FIDELITY.md` (`test_stage54_fidelity_d1.py`). Stage 54 exit met — `docs/STAGE_54_EXIT_CRITERIA.md`, ADR-114 (`test_stage54_exit_h54x.py`). Stage 55 open: `docs/STAGE_55_PLAN.md`, ADR-115 (`test_stage55_open.py`). Stage 55 W1 white-label licensing commercial honesty Complete (MVP) — `docs/WHITE_LABEL_LICENSING_MVP.md`, `ops/mvp/white-label-licensing.json` (`test_white_label_licensing_w1.py`). Stage 55 U1 unit economics / competitive positioning honesty Complete (MVP) — `docs/UNIT_ECONOMICS_POSITIONING_MVP.md`, `ops/mvp/unit-economics-positioning.json`; evidence `/opt/cursor/artifacts/launch/stage55_u1_unit_economics_positioning.json` (`test_unit_economics_positioning_u1.py`). Stage 55 D1 commercial licensing & positioning fidelity Complete (MVP) — `docs/STAGE_55_FIDELITY.md` (`test_stage55_fidelity_d1.py`). Stage 55 exit met — `docs/STAGE_55_EXIT_CRITERIA.md`, ADR-116 (`test_stage55_exit_h55x.py`). Stage 56 open: `docs/STAGE_56_PLAN.md`, ADR-117 (`test_stage56_open.py`). Stage 56 O1 implementation & onboarding commercial honesty Complete (MVP) — `docs/IMPLEMENTATION_ONBOARDING_MVP.md`, `ops/mvp/implementation-onboarding.json` (`test_implementation_onboarding_o1.py`). Stage 56 G1 geographic expansion honesty Complete (MVP) — `docs/GEOGRAPHIC_EXPANSION_MVP.md`, `ops/mvp/geographic-expansion.json` (`test_geographic_expansion_g1.py`). Stage 56 D1 commercial onboarding & expansion fidelity Complete (MVP) — `docs/STAGE_56_FIDELITY.md` (`test_stage56_fidelity_d1.py`). Stage 56 exit met — `docs/STAGE_56_EXIT_CRITERIA.md`, ADR-118 (`test_stage56_exit_h56x.py`). Stage 57 open: `docs/STAGE_57_PLAN.md`, ADR-119 (`test_stage57_open.py`). Stage 57 A1 mobile app GTM honesty Complete (MVP) — `docs/MOBILE_APP_GTM_MVP.md`, `ops/mvp/mobile-app-gtm.json` (`test_mobile_app_gtm_a1.py`). Stage 57 K1 success metrics honesty Complete (MVP) — `docs/SUCCESS_METRICS_MVP.md`, `ops/mvp/success-metrics.json` (`test_success_metrics_k1.py`). Stage 57 D1 commercial mobile & metrics fidelity Complete (MVP) — `docs/STAGE_57_FIDELITY.md` (`test_stage57_fidelity_d1.py`). Stage 57 exit met — `docs/STAGE_57_EXIT_CRITERIA.md`, ADR-120 (`test_stage57_exit_h57x.py`). Stage 58 open: `docs/STAGE_58_PLAN.md`, ADR-121 (`test_stage58_open.py`). Stage 58 B1 business metrics honesty Complete (MVP) — `docs/BUSINESS_METRICS_MVP.md`, `ops/mvp/business-metrics.json` (`test_business_metrics_b1.py`). Stage 58 I1 AI metrics honesty Complete (MVP) — `docs/AI_METRICS_MVP.md`, `ops/mvp/ai-metrics.json` (`test_ai_metrics_i1.py`). Stage 58 D1 commercial business & AI metrics fidelity Complete (MVP) — `docs/STAGE_58_FIDELITY.md` (`test_stage58_fidelity_d1.py`). Stage 58 exit met — `docs/STAGE_58_EXIT_CRITERIA.md`, ADR-122 (`test_stage58_exit_h58x.py`). Stage 59 open: `docs/STAGE_59_PLAN.md`, ADR-123 (`test_stage59_open.py`). Stage 59 E1 e-commerce integration honesty Complete (MVP) — `docs/ECOMMERCE_INTEGRATION_MVP.md`, `ops/mvp/ecommerce-integration.json` (`test_ecommerce_integration_e1.py`). Stage 59 C1 CRM commercial honesty Complete (MVP) — `docs/CRM_COMMERCIAL_MVP.md`, `ops/mvp/crm-commercial.json` (`test_crm_commercial_c1.py`). Stage 59 D1 commercial channel extensions fidelity Complete (MVP) — `docs/STAGE_59_FIDELITY.md` (`test_stage59_fidelity_d1.py`). Stage 59 exit met — `docs/STAGE_59_EXIT_CRITERIA.md`, ADR-124 (`test_stage59_exit_h59x.py`). Stage 60 open: `docs/STAGE_60_PLAN.md`, ADR-125 (`test_stage60_open.py`). Stage 60 M1 advanced manufacturing honesty Complete (MVP) — `docs/ADVANCED_MANUFACTURING_MVP.md`, `ops/mvp/advanced-manufacturing.json` (`test_advanced_manufacturing_m1.py`). Stage 60 T1 multi-country tax honesty Complete (MVP) — `docs/MULTI_COUNTRY_TAX_MVP.md`, `ops/mvp/multi-country-tax.json` (`test_multi_country_tax_t1.py`). Stage 60 D1 commercial manufacturing & tax fidelity Complete (MVP) — `docs/STAGE_60_FIDELITY.md` (`test_stage60_fidelity_d1.py`). Stage 60 exit met — `docs/STAGE_60_EXIT_CRITERIA.md`, ADR-126 (`test_stage60_exit_h60x.py`). Stage 61 open: `docs/STAGE_61_PLAN.md`, ADR-127 (`test_stage61_open.py`). Stage 61 F1 embedded fintech honesty Complete (MVP) — `docs/EMBEDDED_FINTECH_MVP.md`, `ops/mvp/embedded-fintech.json` (`test_embedded_fintech_f1.py`). Stage 61 S1 supply chain integration honesty Complete (MVP) — `docs/SUPPLY_CHAIN_INTEGRATION_MVP.md`, `ops/mvp/supply-chain-integration.json` (`test_supply_chain_integration_s1.py`). Stage 61 D1 commercial fintech & supply-chain fidelity Complete (MVP) — `docs/STAGE_61_FIDELITY.md` (`test_stage61_fidelity_d1.py`). Stage 61 exit met — `docs/STAGE_61_EXIT_CRITERIA.md`, ADR-128 (`test_stage61_exit_h61x.py`). Stage 62 open: `docs/STAGE_62_PLAN.md`, ADR-129 (`test_stage62_open.py`). Stage 62 I1 IoT integration honesty Complete (MVP) — `docs/IOT_INTEGRATION_MVP.md`, `ops/mvp/iot-integration.json` (`test_iot_integration_i1.py`). Stage 62 A1 AI model marketplace honesty Complete (MVP) — `docs/AI_MODEL_MARKETPLACE_MVP.md`, `ops/mvp/ai-model-marketplace.json` (`test_ai_model_marketplace_a1.py`). Stage 62 D1 commercial IoT & AI marketplace fidelity Complete (MVP) — `docs/STAGE_62_FIDELITY.md` (`test_stage62_fidelity_d1.py`). Stage 62 exit met — `docs/STAGE_62_EXIT_CRITERIA.md`, ADR-130 (`test_stage62_exit_h62x.py`). Stage 63 open: `docs/STAGE_63_PLAN.md`, ADR-131 (`test_stage63_open.py`). Stage 63 P1 IPO readiness honesty Complete (MVP) — `docs/IPO_READINESS_MVP.md`, `ops/mvp/ipo-readiness.json` (`test_ipo_readiness_p1.py`). Stage 63 G1 global scale honesty Complete (MVP) — `docs/GLOBAL_SCALE_MVP.md`, `ops/mvp/global-scale.json` (`test_global_scale_g1.py`). Stage 63 D1 commercial capital & scale fidelity Complete (MVP) — `docs/STAGE_63_FIDELITY.md` (`test_stage63_fidelity_d1.py`). Stage 63 exit met — `docs/STAGE_63_EXIT_CRITERIA.md`, ADR-132 (`test_stage63_exit_h63x.py`). Stage 64 open: `docs/STAGE_64_PLAN.md`, ADR-133 (`test_stage64_open.py`). Stage 64 B1 Advanced BI honesty Complete (MVP) — `docs/ADVANCED_BI_MVP.md`, `ops/mvp/advanced-bi.json` (`test_advanced_bi_b1.py`). Stage 64 F1 Franchise & chain enterprise honesty Complete (MVP) — `docs/FRANCHISE_CHAIN_MVP.md`, `ops/mvp/franchise-chain.json` (`test_franchise_chain_f1.py`). Stage 64 D1 commercial analytics & franchise fidelity Complete (MVP) — `docs/STAGE_64_FIDELITY.md` (`test_stage64_fidelity_d1.py`). Stage 64 exit met — `docs/STAGE_64_EXIT_CRITERIA.md`, ADR-134 (`test_stage64_exit_h64x.py`). Stage 65 open: `docs/STAGE_65_PLAN.md`, ADR-135 (`test_stage65_open.py`). Stage 65 R1 Release pipeline honesty Complete (MVP) — `docs/RELEASE_PIPELINE_MVP.md`, `ops/mvp/release-pipeline.json` (`test_release_pipeline_r1.py`). Stage 65 P1 Controlled business pilot honesty Complete (MVP) — `docs/BUSINESS_PILOT_MVP.md`, `ops/mvp/business-pilot.json` (`test_business_pilot_p1.py`). Stage 65 D1 MVP release-candidate fidelity Complete (MVP) — `docs/STAGE_65_FIDELITY.md` (`test_stage65_fidelity_d1.py`). Stage 65 H65x exit + freeze: `docs/STAGE_65_EXIT_CRITERIA.md`, ADR-136 (`test_stage65_exit_h65x.py`). Stage 66 open: `docs/STAGE_66_PLAN.md`, ADR-138 (`test_stage66_open.py`). Stage 66 L1 Production launch honesty Complete (MVP) — `docs/PRODUCTION_LAUNCH_MVP.md`, `ops/mvp/production-launch.json` (`test_production_launch_l1.py`). Stage 66 T1 First tenant go-live honesty Complete (MVP) — `docs/FIRST_TENANT_GOLIVE_MVP.md`, `ops/mvp/first-tenant-golive.json` (`test_first_tenant_golive_t1.py`). Stage 66 D1 MVP production-launch fidelity Complete (MVP) — `docs/STAGE_66_FIDELITY.md` (`test_stage66_fidelity_d1.py`). Stage 66 H66x exit + freeze: `docs/STAGE_66_EXIT_CRITERIA.md`, ADR-139 (`test_stage66_exit_h66x.py`). Stage 67 open: `docs/STAGE_67_PLAN.md`, ADR-140 (`test_stage67_open.py`). Stage 67 H1 Production hypercare honesty Complete (MVP) — `docs/PRODUCTION_HYPERCARE_MVP.md`, `ops/mvp/production-hypercare.json` (`test_production_hypercare_h1.py`). Stage 67 C1 Post-launch continuity honesty Complete (MVP) — `docs/POST_LAUNCH_CONTINUITY_MVP.md`, `ops/mvp/post-launch-continuity.json` (`test_post_launch_continuity_c1.py`). Stage 67 D1 MVP post-launch continuity fidelity Complete (MVP) — `docs/STAGE_67_FIDELITY.md` (`test_stage67_fidelity_d1.py`). Stage 67 H67x exit + freeze: `docs/STAGE_67_EXIT_CRITERIA.md`, ADR-141 (`test_stage67_exit_h67x.py`). Stage 68 open: `docs/STAGE_68_PLAN.md`, ADR-142 (`test_stage68_open.py`). Stage 68 H1 Ribdigi House console honesty Complete (MVP) — `docs/RIBDIGI_HOUSE_CONSOLE_MVP.md`, `ops/mvp/ribdigi-house-console.json` (`test_ribdigi_house_console_h1.py`). Stage 68 T1 Tenant Company console honesty Complete (MVP) — `docs/TENANT_COMPANY_CONSOLE_MVP.md`, `ops/mvp/tenant-company-console.json` (`test_tenant_company_console_t1.py`). Stage 68 D1 Platform ↔ Tenant console fidelity Complete (MVP) — `docs/STAGE_68_FIDELITY.md` (`test_stage68_fidelity_d1.py`). Stage 68 H68x exit + freeze: `docs/STAGE_68_EXIT_CRITERIA.md`, ADR-143 (`test_stage68_exit_h68x.py`). Stage 69 open: `docs/STAGE_69_PLAN.md`, ADR-144 (`test_stage69_open.py`). Stage 69 V1 Pre-flight verification honesty Complete (MVP) — `docs/PREFLIGHT_VERIFICATION_MVP.md`, `ops/mvp/preflight-verification.json` (`test_preflight_verification_v1.py`). Stage 69 A1 Go-live attestation honesty Complete (MVP) — `docs/GOLIVE_ATTESTATION_MVP.md`, `ops/mvp/golive-attestation.json` (`test_golive_attestation_a1.py`). Honesty: `section_7_signed` / `attestation_claimed` / `go_live_claimed` remain false (packaging ≠ §7 signed). Stage 69 D1 Commercial Go-Live fidelity Complete (MVP) — `docs/STAGE_69_FIDELITY.md` (`test_stage69_fidelity_d1.py`); maps V1–A1. Stage 69 H69x exit + freeze Complete (MVP) — `docs/STAGE_69_EXIT_CRITERIA.md`, ADR-145 (`test_stage69_exit_h69x.py`). Stage 70 open: `docs/STAGE_70_PLAN.md`, ADR-146 (`test_stage70_open.py`). Stage 70 F1 First commercial day ops honesty Complete (MVP) — `docs/FIRST_COMMERCIAL_DAY_MVP.md`, `ops/mvp/first-commercial-day.json` (`test_first_commercial_day_f1.py`). Honesty: `first_commercial_day_claimed` / `commercial_day_ops_live_claimed` remain false (packaging ≠ first-day live). Stage 70 G1 Commercial go-live closeout honesty Complete (MVP) — `docs/COMMERCIAL_GOLIVE_CLOSEOUT_MVP.md`, `ops/mvp/commercial-golive-closeout.json` (`test_commercial_golive_closeout_g1.py`). Honesty: `go_live_claimed` / `commercial_golive_closeout_claimed` remain false (packaging ≠ go-live). Stage 70 D1 First Commercial Day fidelity Complete (MVP) — `docs/STAGE_70_FIDELITY.md` (`test_stage70_fidelity_d1.py`); maps F1–G1. Stage 70 H70x exit + freeze Complete (MVP) — `docs/STAGE_70_EXIT_CRITERIA.md`, ADR-147 (`test_stage70_exit_h70x.py`). Stage 71 open: `docs/STAGE_71_PLAN.md`, ADR-148 (`test_stage71_open.py`). Stage 71 S1 Steady-state commercial ops honesty Complete (MVP) — `docs/STEADY_STATE_OPS_MVP.md`, `ops/mvp/steady-state-ops.json` (`test_steady_state_ops_s1.py`). Honesty: `steady_state_ops_claimed` / `commercial_acceptance_claimed` remain false (packaging ≠ steady-state live). Stage 71 A1 Commercial acceptance gate honesty Complete (MVP) — `docs/COMMERCIAL_ACCEPTANCE_MVP.md`, `ops/mvp/commercial-acceptance.json` (`test_commercial_acceptance_a1.py`). Honesty: `commercial_acceptance_claimed` / `go_live_claimed` remain false (packaging ≠ acceptance Complete). Stage 71 D1 Commercial Steady-State fidelity Complete (MVP) — `docs/STAGE_71_FIDELITY.md` (`test_stage71_fidelity_d1.py`); maps S1–A1. Stage 71 H71x exit + freeze Complete (MVP) — `docs/STAGE_71_EXIT_CRITERIA.md`, ADR-149 (`test_stage71_exit_h71x.py`). Stage 72 open: `docs/STAGE_72_PLAN.md`, ADR-150 (`test_stage72_open.py`). Stage 72 R1 Commercial residual remaining honesty Complete (MVP) — `docs/COMMERCIAL_RESIDUAL_MVP.md`, `ops/mvp/commercial-residual.json` (`test_commercial_residual_r1.py`). Stage 72 P1 Commercial packaging archive honesty Complete (MVP) — `docs/COMMERCIAL_PACKAGING_ARCHIVE_MVP.md`, `ops/mvp/commercial-packaging-archive.json` (`test_commercial_packaging_archive_p1.py`). Stage 72 D1 Commercial Packaging Closeout fidelity Complete (MVP) — `docs/STAGE_72_FIDELITY.md` (`test_stage72_fidelity_d1.py`); maps R1–P1. Stage 72 H72x exit + freeze Complete (MVP) — `docs/STAGE_72_EXIT_CRITERIA.md`, ADR-151 (`test_stage72_exit_h72x.py`). Stage 73 open: `docs/STAGE_73_PLAN.md`, ADR-152 (`test_stage73_open.py`). Stage 73 E1 Commercial evidence chain honesty Complete (MVP) — `docs/COMMERCIAL_EVIDENCE_CHAIN_MVP.md`, `ops/mvp/commercial-evidence-chain.json` (`test_commercial_evidence_chain_e1.py`). Stage 73 A1 Commercial assurance boundary honesty Complete (MVP) — `docs/COMMERCIAL_ASSURANCE_MVP.md`, `ops/mvp/commercial-assurance.json` (`test_commercial_assurance_a1.py`). Stage 73 D1 Commercial Assurance fidelity Complete (MVP) — `docs/STAGE_73_FIDELITY.md` (`test_stage73_fidelity_d1.py`); maps E1–A1. Stage 73 H73x exit + freeze Complete (MVP) — `docs/STAGE_73_EXIT_CRITERIA.md`, ADR-153 (`test_stage73_exit_h73x.py`). Stage 74 open: `docs/STAGE_74_PLAN.md`, ADR-154 (`test_stage74_open.py`). Stage 74 S1 Commercial support boundary honesty Complete (MVP) — `docs/COMMERCIAL_SUPPORT_MVP.md`, `ops/mvp/commercial-support.json` (`test_commercial_support_s1.py`). Stage 74 U1 Commercial status boundary honesty Complete (MVP) — `docs/COMMERCIAL_STATUS_MVP.md`, `ops/mvp/commercial-status.json` (`test_commercial_status_u1.py`). Stage 74 D1 Commercial Operator Boundary fidelity Complete (MVP) — `docs/STAGE_74_FIDELITY.md` (`test_stage74_fidelity_d1.py`); maps S1–U1. Stage 74 H74x exit + freeze Complete (MVP) — `docs/STAGE_74_EXIT_CRITERIA.md`, ADR-155 (`test_stage74_exit_h74x.py`). Stage 75 C1 commercial security contact honesty Complete (MVP) — `docs/COMMERCIAL_SECURITY_CONTACT_MVP.md`, `ops/mvp/commercial-security-contact.json` (`test_commercial_security_contact_c1.py`); security contact live Remaining. Stage 75 P1 commercial privacy notice honesty Complete (MVP) — `docs/COMMERCIAL_PRIVACY_NOTICE_MVP.md`, `ops/mvp/commercial-privacy-notice.json` (`test_commercial_privacy_notice_p1.py`); privacy notice live Remaining. Stage 75 D1 Commercial Trust Boundary fidelity Complete (MVP) — `docs/STAGE_75_FIDELITY.md` (`test_stage75_fidelity_d1.py`); maps C1–P1. Stage 75 H75x exit + freeze Complete (MVP) — `docs/STAGE_75_EXIT_CRITERIA.md`, ADR-157 (`test_stage75_exit_h75x.py`). Stage 76 T1 commercial terms honesty Complete (MVP) — `docs/COMMERCIAL_TERMS_MVP.md`, `ops/mvp/commercial-terms.json` (`test_commercial_terms_t1.py`); signed ToS Remaining. Stage 76 B1 commercial billing deferred honesty Complete (MVP) — `docs/COMMERCIAL_BILLING_DEFERRED_MVP.md`, `ops/mvp/commercial-billing-deferred.json` (`test_commercial_billing_deferred_b1.py`); paid billing Remaining. Stage 76 D1 Commercial Contract Boundary fidelity Complete (MVP) — `docs/STAGE_76_FIDELITY.md` (`test_stage76_fidelity_d1.py`); maps T1–B1. Stage 76 H76x exit + freeze Complete (MVP) — `docs/STAGE_76_EXIT_CRITERIA.md`, ADR-159 (`test_stage76_exit_h76x.py`). Stage 77 A1 commercial DPA honesty Complete (MVP) — `docs/COMMERCIAL_DPA_MVP.md`, `ops/mvp/commercial-dpa.json` (`test_commercial_dpa_a1.py`); signed DPA Remaining. Stage 77 L1 commercial liability honesty Complete (MVP) — `docs/COMMERCIAL_LIABILITY_MVP.md`, `ops/mvp/commercial-liability.json` (`test_commercial_liability_l1.py`); liability cap signed Remaining. Stage 77 D1 Commercial Legal Envelope fidelity Complete (MVP) — `docs/STAGE_77_FIDELITY.md` (`test_stage77_fidelity_d1.py`); maps A1–L1. Stage 77 H77x exit + freeze Complete (MVP) — `docs/STAGE_77_EXIT_CRITERIA.md`, ADR-161 (`test_stage77_exit_h77x.py`). Stage 78 P1 commercial pricing honesty Complete (MVP) — `docs/COMMERCIAL_PRICING_MVP.md`, `ops/mvp/commercial-pricing.json` (`test_commercial_pricing_p1.py`); public pricing portal Remaining. Stage 78 S1 commercial professional services honesty Complete (MVP) — `docs/COMMERCIAL_PROFESSIONAL_SERVICES_MVP.md`, `ops/mvp/commercial-professional-services.json` (`test_commercial_professional_services_s1.py`); signed SOW Remaining. Stage 78 D1 Commercial Procurement Boundary fidelity Complete (MVP) — `docs/STAGE_78_FIDELITY.md` (`test_stage78_fidelity_d1.py`); maps P1–S1. Stage 78 H78x exit + freeze Complete (MVP) — `docs/STAGE_78_EXIT_CRITERIA.md`, ADR-163 (`test_stage78_exit_h78x.py`). Stage 79 R1 commercial data retention honesty Complete (MVP) — `docs/COMMERCIAL_DATA_RETENTION_MVP.md`, `ops/mvp/commercial-data-retention.json` (`test_commercial_data_retention_r1.py`); data return portal Remaining. Stage 79 A1 commercial customer audit honesty Complete (MVP) — `docs/COMMERCIAL_CUSTOMER_AUDIT_MVP.md`, `ops/mvp/commercial-customer-audit.json` (`test_commercial_customer_audit_a1.py`); customer audit rights live Remaining. Stage 79 D1 Commercial Data Exit fidelity Complete (MVP) — `docs/STAGE_79_FIDELITY.md` (`test_stage79_fidelity_d1.py`); maps R1–A1. Stage 79 H79x exit + freeze Complete (MVP) — `docs/STAGE_79_EXIT_CRITERIA.md`, ADR-165 (`test_stage79_exit_h79x.py`). Stage 80 open Complete (MVP) — `docs/ADR_166_STAGE80_OPEN.md`, `docs/STAGE_80_PLAN.md` (`test_stage80_open.py`). Stage 80 P1 platform dashboard charts Complete (MVP) — `/api/v1/platform/dashboard/*` (`test_platform_dashboard_charts_p1.py`); `mrr_fabricated_claimed: false` (ADR-002). Stage 80 T1 tenant role-scoped dashboards Complete (MVP) — `dashboard_views` (`test_tenant_role_dashboard_t1.py`). Stage 80 D1 Dual-Console Dashboard fidelity Complete (MVP) — `docs/STAGE_80_FIDELITY.md` (`test_stage80_fidelity_d1.py`); maps P1–T1. Stage 80 H80x exit + freeze Complete (MVP) — `docs/STAGE_80_EXIT_CRITERIA.md`, ADR-167 (`test_stage80_exit_h80x.py`). Stage 81 open Complete (MVP) — `docs/ADR_168_STAGE81_OPEN.md`, `docs/STAGE_81_PLAN.md` (`test_stage81_open.py`). Stage 81 A1 Tenant Admin RBAC console surfaces Complete (MVP) — `/users`, `/admin/roles`, `/admin/permissions` (`test_admin_console_a1.py`). Stage 81 S1 store-scoped manager ops Complete (MVP) — `store_scope` / `stores.manager_id` (`test_store_scoped_manager_s1.py`); `user_store_membership_claimed: false` (ADR-005). Stage 81 D1 Dual-Console Admin fidelity Complete (MVP) — `docs/STAGE_81_FIDELITY.md` (`test_stage81_fidelity_d1.py`); maps A1–S1. Stage 81 H81x exit + freeze Complete (MVP) — `docs/STAGE_81_EXIT_CRITERIA.md`, ADR-169 (`test_stage81_exit_h81x.py`). Stage 82 open Complete (MVP) — `docs/ADR_170_STAGE82_OPEN.md`, `docs/STAGE_82_PLAN.md` (`test_stage82_open.py`). Stage 82 C1 tenant dashboard slices Complete (MVP) — `/api/v1/dashboard/summary|sales-trend|top-products|expenses|stock-alerts|user-stats` (`test_dashboard_slices_c1.py`). Stage 82 P1 Platform Plans console Complete (MVP) — `/platform/plans` + Activity alias (`test_platform_plans_p1.py`); `mrr_fabricated_claimed: false` (ADR-002). Stage 82 D1 Dual-Console Surface Parity fidelity Complete (MVP) — `docs/STAGE_82_FIDELITY.md` (`test_stage82_fidelity_d1.py`); maps C1–P1. Stage 82 H82x exit + freeze Complete (MVP) — `docs/STAGE_82_EXIT_CRITERIA.md`, ADR-171 (`test_stage82_exit_h82x.py`). Stage 83 open Complete (MVP) — `docs/ADR_172_STAGE83_OPEN.md`, `docs/STAGE_83_PLAN.md` (`test_stage83_open.py`). Stage 83 S1 store-scoped chart depth Complete (MVP) — `store_ids` on charts/slices (`test_store_scoped_charts_s1.py`). Stage 83 U1 Tenant Admin user-ops Complete (MVP) — reset password + org assignment UI (`test_admin_user_ops_u1.py`). Stage 83 D1 Dual-Console Ops fidelity Complete (MVP) — `docs/STAGE_83_FIDELITY.md` (`test_stage83_fidelity_d1.py`); maps S1–U1. Stage 83 H83x exit + freeze Complete (MVP) — `docs/STAGE_83_EXIT_CRITERIA.md`, ADR-173 (`test_stage83_exit_h83x.py`). Stage 84 A1 dotted permission aliases Complete (MVP) — `view`→`read`; `inventory.view` / `inventory:read` (`test_permission_aliases_a1.py`). Stage 84 S1 dashboard slice depth Complete (MVP) — expenses-by-category + `/dashboard/credit` + cashier open-shift UI (`test_dashboard_slice_depth_s1.py`). Stage 84 D1 Dual-Console Permission & Slice fidelity Complete (MVP) — `docs/STAGE_84_FIDELITY.md` (`test_stage84_fidelity_d1.py`). Stage 84 H84x exit + freeze Complete (MVP) — `docs/STAGE_84_EXIT_CRITERIA.md`, ADR-175 (`test_stage84_exit_h84x.py`). Stage 85 R1 platform subscriptions roster Complete (MVP) — tenant×plan metadata (`test_platform_subscriptions_r1.py`); `subscriptions_live_claimed` remains false. Stage 85 E1 admin email password reset Complete (MVP) — `POST /users/{id}/password-reset-email` (`test_admin_email_reset_e1.py`). Stage 85 L1 org-chart role catalog Complete (MVP) — Manager/Tenant Admin labels + system matrix (`test_org_role_catalog_l1.py`). Stage 85 D1 House Roster & Tenant Access Ops fidelity Complete (MVP) — `docs/STAGE_85_FIDELITY.md` (`test_stage85_fidelity_d1.py`). Stage 85 H85x exit + freeze Complete (MVP) — `docs/STAGE_85_EXIT_CRITERIA.md`, ADR-177 (`test_stage85_exit_h85x.py`). Stage 86 P1 House tenant provision Complete (MVP) — `POST /platform/tenants` (`test_platform_tenant_provision_p1.py`). Stage 86 E1 platform email password reset Complete (MVP) — `POST /platform/users/{id}/password-reset-email` (`test_platform_email_reset_e1.py`). Stage 86 A1 platform audit Activity depth Complete (MVP) — filters + `/platform/activity` (`test_platform_audit_activity_a1.py`). Stage 86 D1 House Provision & Platform Access Ops fidelity Complete (MVP) — `docs/STAGE_86_FIDELITY.md` (`test_stage86_fidelity_d1.py`). Stage 86 H86x exit + freeze Complete (MVP) — `docs/STAGE_86_EXIT_CRITERIA.md`, ADR-179 (`test_stage86_exit_h86x.py`). Stage 87 X1 platform audit export + chain verify Complete (MVP) — `GET /platform/audit/export` / `GET /platform/audit/verify` (`test_platform_audit_integrity_x1.py`). Stage 87 Y1 House ops surface polish Complete (MVP) — health cards, last_activity UI, `PATCH /platform/tenants/{id}/notes`, settings honesty (`test_house_ops_surface_y1.py`). Stage 87 Z1 console boundary hardening Complete (MVP) — `ribdigi_principal` cookie + middleware + soft-delete honesty (`test_console_boundary_z1.py`). Stage 87 D1 House Integrity & Console Boundary Ops fidelity Complete (MVP) — `docs/STAGE_87_FIDELITY.md` (`test_stage87_fidelity_d1.py`). Stage 87 H87x exit + freeze Complete (MVP) — `docs/STAGE_87_EXIT_CRITERIA.md`, ADR-181 (`test_stage87_exit_h87x.py`). Stage 88 L1 tenant lifecycle controls Complete (MVP) — `PATCH /platform/tenants/{id}/lifecycle` + suspend reason (`test_platform_tenant_lifecycle_l1.py`). Stage 88 R1 tenant roster export + at-risk queue Complete (MVP) — `GET /platform/tenants/export` / `GET /platform/tenants/at-risk` (`test_platform_tenant_roster_r1.py`). Stage 88 S1 platform staff invite + session ops Complete (MVP) — email invite + `GET/DELETE /platform/users/sessions` (`test_platform_staff_security_s1.py`). Stage 88 D1 House Lifecycle & Staff Security Ops fidelity Complete (MVP) — `docs/STAGE_88_FIDELITY.md` (`test_stage88_fidelity_d1.py`). Stage 88 H88x exit + freeze Complete (MVP) — `docs/STAGE_88_EXIT_CRITERIA.md`, ADR-183 (`test_stage88_exit_h88x.py`). Stage 89 A1 House Tenant Admin assist Complete (MVP) — `POST /platform/tenants/{id}/admin/password-reset-email` / `…/admin/resend-verification` (`test_platform_tenant_admin_assist_a1.py`). Stage 89 F1 roster filters + dashboard at-risk KPIs Complete (MVP) — `plan_code`/`industry` filters + `at_risk_count` (`test_platform_roster_intel_f1.py`). Stage 89 C1 plan catalog + billing roster depth Complete (MVP) — metadata catalog + trial_ends deep-links (`test_platform_catalog_billing_c1.py`). Stage 89 D1 House Customer Assist & Roster Intelligence Ops fidelity Complete (MVP) — `docs/STAGE_89_FIDELITY.md` (`test_stage89_fidelity_d1.py`). Stage 89 H89x exit + freeze Complete (MVP) — `docs/STAGE_89_EXIT_CRITERIA.md`, ADR-185 (`test_stage89_exit_h89x.py`). Stage 90 E1 House email delivery visibility Complete (MVP) — `platform.email.delivery` audit + `delivery_only` (`test_platform_email_delivery_visibility_e1.py`). Stage 90 O1 operator surfaces Complete (MVP) — Health contacts/security + Settings runbook links (`test_house_operator_surfaces_o1.py`). Stage 90 Q1 roster findability + plan context Complete (MVP) — admin email search + detail soft limits (`test_platform_roster_findability_q1.py`). Stage 90 D1 House Operator Visibility & Delivery Ops fidelity Complete (MVP) — `docs/STAGE_90_FIDELITY.md` (`test_stage90_fidelity_d1.py`). Stage 90 H90x exit + freeze Complete (MVP) — `docs/STAGE_90_EXIT_CRITERIA.md`, ADR-187 (`test_stage90_exit_h90x.py`). Stage 91 I1 Audit/Activity date-range investigation Complete (MVP) — `test_platform_audit_investigation_i1.py`. Stage 91 N1 dashboard→roster deep-links + tenant last House email delivery Complete (MVP) — `test_platform_nav_delivery_n1.py`. Stage 91 P1 staff presence / health required / House TZ / `GET /platform/evidence` Complete (MVP) — `test_house_posture_evidence_p1.py`. Stage 91 D1 House Operator Investigation & Evidence Ops fidelity Complete (MVP) — `docs/STAGE_91_FIDELITY.md` (`test_stage91_fidelity_d1.py`). Stage 91 H91x exit + freeze Complete (MVP) — `docs/STAGE_91_EXIT_CRITERIA.md`, ADR-189 (`test_stage91_exit_h91x.py`). Stage 92 B1 Investigation export + evidence download Complete (MVP) — `test_stage92_console_workflow_b1.py`. Stage 92 G1 roster triage + commercial-metadata context Complete (MVP) — `test_stage92_roster_context_g1.py`. Stage 92 K1 House regional formats + runtime evidence detail Complete (MVP) — `test_stage92_readiness_formats_k1.py`. Stage 92 D1 House Console Workflow & Readiness Ops fidelity Complete (MVP) — `docs/STAGE_92_FIDELITY.md` (`test_stage92_fidelity_d1.py`). Stage 92 H92x exit + freeze Complete (MVP) — `docs/STAGE_92_EXIT_CRITERIA.md`, ADR-191 (`test_stage92_exit_h92x.py`). Stage 93 M1 Roster navigation & export Complete (MVP) — `test_stage93_roster_navigation_m1.py`. Stage 93 J1 Staff delivery & integrity Complete (MVP) — `test_stage93_staff_integrity_j1.py`. Stage 93 V1 Format, evidence & runtime posture Complete (MVP) — `test_stage93_runtime_posture_v1.py`. Stage 93 D1 House Navigation & Runtime Ops fidelity Complete (MVP) — `docs/STAGE_93_FIDELITY.md` (`test_stage93_fidelity_d1.py`). Stage 93 H93x exit + freeze Complete (MVP) — `docs/STAGE_93_EXIT_CRITERIA.md`, ADR-193 (`test_stage93_exit_h93x.py`). Stage 94 open Complete (MVP) — `docs/STAGE_94_PLAN.md`, ADR-194 (`test_stage94_open.py`). Stage 94 W1 Platform staff discovery Complete (MVP) — `test_stage94_staff_discovery_w1.py`. Stage 94 H1 Configuration integrity & release identity Complete (MVP) — `test_stage94_configuration_integrity_h1.py` (`runtime_identity`). Stage 94 T2 Console state & queue awareness Complete (MVP) — `test_stage94_console_state_t2.py`. Stage 94 D1 House Discovery & Runtime Assurance Ops fidelity Complete (MVP) — `docs/STAGE_94_FIDELITY.md` (`test_stage94_fidelity_d1.py`). Stage 94 H94x exit + freeze Complete (MVP) — `docs/STAGE_94_EXIT_CRITERIA.md`, ADR-195 (`test_stage94_exit_h94x.py`). Stage 95 open Complete (MVP) — `docs/STAGE_95_PLAN.md`, ADR-196 (`test_stage95_open.py`). Stage 95 N1 Tenant Shell IA regrouping Complete (MVP) — `test_stage95_shell_ia_n1.py`. Stage 95 P1 Party & stock discoverability Complete (MVP) — `test_stage95_party_stock_p1.py`. Stage 95 C1 Chrome & settings alias fidelity Complete (MVP) — `test_stage95_chrome_c1.py`. Stage 95 D1 Tenant MVP Navigation Ops fidelity Complete (MVP) — `docs/STAGE_95_FIDELITY.md` (`test_stage95_fidelity_d1.py`). Stage 95 H95x exit + freeze Complete (MVP) — `docs/STAGE_95_EXIT_CRITERIA.md`, ADR-197 (`test_stage95_exit_h95x.py`). Stage 96 open Complete (MVP) — `docs/STAGE_96_PLAN.md`, ADR-198 (`test_stage96_open.py`). Stage 96 B1 Dashboard Business Overview fidelity Complete (MVP) — `test_stage96_dashboard_overview_b1.py`. Stage 96 G1 Global topbar search Complete (MVP) — `test_stage96_global_search_g1.py` (`GET /search`). Stage 96 L1 Finance / Sales / Settings leaf fidelity Complete (MVP) — `test_stage96_leaf_fidelity_l1.py`. Stage 96 D1 Tenant MVP Outline Surface Fidelity Ops fidelity Complete (MVP) — `docs/STAGE_96_FIDELITY.md` (`test_stage96_fidelity_d1.py`). Stage 96 H96x exit + freeze Complete (MVP) — `docs/STAGE_96_EXIT_CRITERIA.md`, ADR-199 (`test_stage96_exit_h96x.py`).  Stages 1–42 frozen for Stage 42 scope; external LLM / AI certification Remaining. — `docs/STAGE_42_FIDELITY.md` (`test_stage42_fidelity_d1.py`); maps A1–P1; `ai_certification_claimed` / `external_llm_claimed` remain false; external LLM / AI certification Remaining. — `docs/AI_PROVIDER_BOUNDARY_MVP.md`, `ops/mvp/ai-provider-boundary.json` (`test_ai_provider_boundary_p1.py`); external LLM Remaining. — `docs/AI_USE_DISCLOSURE_MVP.md`, `ops/mvp/ai-use-disclosure.json` (`test_ai_use_disclosure_a1.py`); AI certification Remaining.; Stages 1–41 frozen for Stage 41 scope; WCAG AA audit / public change calendar Remaining. — `docs/STAGE_41_FIDELITY.md` (`test_stage41_fidelity_d1.py`); maps A1–C1; `wcag_aa_claimed` / `change_calendar_live` remain false; WCAG AA audit / public change calendar Remaining. — `docs/CHANGE_GOVERNANCE_MVP.md`, `ops/mvp/change-governance.json` (`test_change_governance_c1.py`); public change calendar Remaining. — `docs/ACCESSIBILITY_STATEMENT_MVP.md`, `ops/mvp/accessibility-statement.json` (`test_accessibility_statement_a1.py`); WCAG AA audit Remaining.; Stages 1–40 frozen for Stage 40 scope; live status page / SBOM pipeline Remaining. — `docs/STAGE_40_FIDELITY.md` (`test_stage40_fidelity_d1.py`); maps U1–S1; `status_page_live` / `sbom_pipeline_live` remain false; live status page / SBOM pipeline Remaining. — `docs/SBOM_DISCLOSURE_MVP.md`, `ops/mvp/sbom-disclosure.json` (`test_sbom_disclosure_s1.py`); live SBOM pipeline Remaining. exit + freeze — `docs/STAGE_39_EXIT_CRITERIA.md`, ADR-084 (`test_stage39_exit_h39x.py`). Stage 36 H36x exit + freeze: `docs/STAGE_36_EXIT_CRITERIA.md`, ADR-078 (`test_stage36_exit_h36x.py`).
 
 ### 1.1 Request Format
-- All requests and responses use **JSON**.
-- Content-Type header must be: `application/json`
-- Date format: **ISO 8601** (`YYYY-MM-DDTHH:MM:SSZ`)
-- Currency values are sent as **decimal strings** or numbers; prefer decimal strings for money fields where schemas require them.
+- **Default** request/response bodies are **JSON** with `Content-Type: application/json`.
+- **Multipart** uploads use `multipart/form-data` (company/brand logos, product images, expense/PI/journal attachments, bank statement import, AI document analyze, catalog/product CSV import, etc.). Those routes are documented per endpoint — do not send JSON bodies there.
+- Date / datetime **inputs** (`IsoDateQueryValue` and related): accept calendar **`YYYY-MM-DD`** or ISO datetime (e.g. `2026-08-07T13:51:00Z`); blank/invalid/`01/02/2024` → **422**. Not limited to a single `YYYY-MM-DDTHH:MM:SSZ` form.
+- Currency / money fields on **request bodies** are JSON **numbers** (IEEE-754 doubles via Pydantic `float` Values such as `PositiveMoneyValue` / `NonNegativeMoneyValue`). Clients may send `199.99` (not required as `"199.99"` strings). NaN/Inf and out-of-range values → **422**.
+- Currency / money fields in **JSON responses** are likewise JSON **numbers**. Response serializers use `app.honesty.money_json` (ORM `Numeric`/`Decimal` → finite IEEE-754 float; NaN/Inf rejected — not decimal strings) on sales invoice, quotation, sales order, sales return, purchase order, purchase invoice, purchase return, GRN qty, expense/recurring, cheque, journal, cash account/transfer (+ cash transfer audit amount), bank statement/line, POS payment/drawer, FX rate, purchase-request qty, stock-count qty, stock-transfer qty, product/variant/batch, tax rate, expense-category budget, customer-group discount, unit conversion ratio, tenant expense/early-pay thresholds, warehouse capacity, credit AR/AP aging/statement/history, POS receipt, invoice print, inventory/store warehouse stock, stock-in/out responses, COA opening-balance totals, reports sales daily/monthly/by-product/customer/salesperson/store/department + returns + inventory balance/valuation/movements/low-stock/expiry/transfers/stock-counts + purchases summary/pending/returns/suppliers + expenses summary + budget-vs-actual + cash-flow + balance sheet + trial balance + P&L, dashboard KPIs, AI inventory/sales/expenses/customer/documents (+ insight compose sales/expense totals and restock qty), tax calc/report/filing pack + GH VAT return, party credit/balance, opening-stock response, low-stock purchase suggestions, expense OCR suggestion amount, bank recon unmatched journal debit/credit/signed_amount + statement arithmetic closing, POS sale create totals + product search price/stock/tax, POS session payment_breakdown, customer/supplier payment responses, stock-adjust + product warehouse-stock reorder_level, store reorder-policy qty, PO amend snapshots, sales/purchase invoice tax_breakdown, AI document amount_mismatch flags, webhook sale/expense/PO/stock (+ stock.low) amount pilots, bank feed normalize/mock/sync amounts + CSV/OFX import line amounts and OFX open/close/net, PO/PI/SI create+post and expense-update audit totals, sales-return discard audit qty, and notification payment-due / recurring-expense-due amounts. Convert/audit/export pilots also use `money_json` on quotation→order / order→invoice line+discount payloads, sales-return post refunded_amount, journal unpost totals, PI approve reverse_charge_tax, SI credit-limit override extras, tenant backup expense/early-pay thresholds, PR→PO convert qty/cost, invoice print discount/reverse-charge, cheque early-payment discount, and credit early-pay settings pct. User CSV import validates `full_name` / `phone` / `temporary_password` via `UserFullNameValue` / `E164PhoneValue` / `UserPasswordValue` TypeAdapters (row report; parallel to product CSV honesty). Product CSV also TypeAdapter-validates `barcode` ∈ `ProductBarcodeValue` before `normalize_barcode`. Store/warehouse/category/brand/unit/customer-group/expense-category **codes** use `require_honest_narrative` defense-in-depth (**400**) matching OpenAPI `*CodeValue` (**422**). Customer-payment / journal-post / purchase-return / GRN audits + bank clearing group totals (+ mismatch) + `sale.paid` `amount_applied` use `money_json`. Branch/department/account **codes** + bank **account_number** use `require_honest_narrative` / `optional_honest_narrative` defense-in-depth (**400**) matching OpenAPI Values (**422**). Invoice print thermal/A4 line qty/price/tax/total + POS receipt thermal line qty/price/total/discount + expense approval threshold settings use `money_json`. Document **prefix** + tax **component** code/name + bank **name**/branch use honesty defense-in-depth (**400**). Credit limit-exceeded / early-discount / customer+supplier credit-info + POS Z-report summary + dashboard monthly/daily + warehouse `total_quantity` + expense approval matrix `min_amount` use `money_json`. Tenant **slug** / create **company_name** + product/expense **category label** use honesty defense-in-depth (**400**). Opening-stock `inventory_value` + SI `balance_due_base` + purchase-return discount + AR/AP aging `total_due`/`balance_due_base` + supplier payment-schedule due + trial-balance totals/row debit/credit/balance + tax report schedule net/tax/gross/RC + AI expense unusual mean/std + duplicate amount use `money_json`. Journal/opening **account_code** lookup uses `require_account_code` / `validate_account_code_value` defense-in-depth (**400**). Sales daily/monthly/by-product/customer/returns totals + purchases summary outstanding + expenses summary/by-category + budget-vs-actual + BS totals/compare + cash-flow inflows/outflows/net/lines + inventory balance/valuation/expiry/transfers/stock-count variance totals + sales avg_ticket + returns by_reason/by_customer + purchases by_supplier rows + dashboard sales_today/mtd + AI inventory velocity/forecast use `money_json` on response totals (was bare `round`). Sales monthly `change_pct` + by-product/customer/salesperson/store/department row revenue/tax/qty + pending-order ordered/received/outstanding qty + returns row quantity + transfer row/route qty + warehouse/store `suggested_order_qty` + insufficient-stock available/requested + budget `variance_pct` + AI seasonality ratio/confidence also use `money_json`. Dashboard `sales_today_pct`/`sales_mtd_pct`, package `years_assigned`/`years_used`/`years_remaining`, AI document name_similarity + party/PO match `score`, inventory balance aggregated `quantity` + item `cost_price`/zero `value`, low-stock product suggested zero, AI sales RFM monetary/monthly series/forecast/seasonality ratio, AI expenses budget_scaled/spent/variance_pct, and returns by_reason/by_customer/by_supplier `quantity` also use `money_json`. AI insight `_pct_delta`, AI customer `churn_risk`, AI inventory `confidence_score`/`_recommended_qty`, expense OCR `confidence`, credit customer/supplier history summary totals, reports `sales_monthly_total`, customer-group `apply_discount`, bank recon `journal_line_signed_amount`, credit AR/AP aging `balance_due` + `add_to_bucket`, AI document PI draft `discount_amount`, expense approval matrix `min_amount`, and credit statement line debit/credit/`balance_due` also use `money_json`. FX `to_base` / `quotes_to_rate_to_base`, POS `compute_expected_cash` / `compute_variance` / `credit_portion` / open/apply/close / `resolve_sale_payments`, tax `effective_rate_from_components` (incl. empty fallback), SI/PI `_line_tax_value` / `_pi_line_subtotal` / `_pi_line_tax_value` + tax_breakdown by_rate/by_component + PI `balance_due`/`balance_due_base`, sales-docs `_prepare_lines` subtotal/tax_total + SO `reserved_qty`, accounting `compute_standard_cogs` / `append_cogs_lines`, expense OCR `_parse_amount`, expenses `scale_monthly_budget`, cash-transfer create `amt`, opening-stock `line_value`, bank recon `expected_closing`, bank feed CSV/OFX line amounts + OFX opening infer, bank connector sync net/close, reservation `active_reserved_qty`/`available_qty`, cheque bounce settlement / create/deposit/clear amounts, POS shift_report sale row money, bank recon create/import opening/closing/line/net, bank connector http_json open/close, FX `resolve_rate`, journal post debit/credit normalize, opening-balance line amount, stock-count expected/counted qty, backup verify Decimal `actual`, COGS unit/product cost, customer-group discount create/update, catalog unit conversion_ratio fallback, tax component/breakdown/update rates, expense approval thresholds/budget, bank recon match/suggest/clearing totals, FX doc/upsert/explicit/provider quotes, customer-group discount lookup/apply, opening-stock qty/unit_cost, UoM conversion/to_stock/validate, purchase OCR amount compare, emailer PO discount, and low-stock suggested qty gap also use `money_json`. Dashboard month/daily accumulate + cost_map, AI expenses by_cat/budget/spent/unusual/dup/recent-prior, AI sales RFM/monthly accumulate, AI inventory sold/reorder/forecast/already_low, cheque reverse AR/AP + bounce/cancel amounts, accounting lines_are_balanced + unpost/post balance + SI/SR journal post + COGS qty, purchase suggestion/PR qty, AI document expense/PI qty, credit payment-schedule balance, and AI insight WoW sales also use `money_json`. Accounting stock_qty_for_cogs / append_cogs / SR refund / AR+AP payment journals / PR+PI(+reversal) / expense / POS sale+tender+COGS, purchasing line-tax / overdue-PI / GRN qty+line_gross / supplier payment+balance, and sales SI create+post / AR payment amount/due/balance also use `money_json`. Purchasing PO-line-discount / payment FX rate / PR+PI create-post, sales-docs `_prepare_lines` / QT-SO-SR, inventory stock/reorder, tax compute/report, stores transfer/reorder, expense thresholds/amounts, catalog price/stock, and POS cash/tender also use `money_json`. Sales AR-payment FX rate, stock-count complete expected/counted, opening-balance plug credit/opening_balance, catalog stock-status qty/reorder, reservations qty, credit aging bucket, FX to_base, cash-transfer amt, bank-recon signed debit/credit, emailer/_money_safe formatters, API product opening-stock, barcode label prices, stock adjust/in/out qty, sale list_price preview, legacy tx credit/balance, POS line/cart discount, POS credit amount/balance, bank-statement create balances, customer/supplier open due, and tax calculate rate_pct also use `money_json`. AI prediction `risk_reason` (+ line notes) uses `optional_honest_narrative` defense-in-depth (**400**). Product CSV export/commit + receipts `_money` + reports monthly inv/pos + budget-vs-actual sort + backup JSON Decimal/proof compare + GRN schema reject-reason qty + FX quotes quote + API product create/update dims/prices + product audit `_jsonable` + AI inventory `sold_90` + bank statement line amount validator + product CSV validate `_parse_float` + AI sales spike pct / restock days_to_stockout / seasonality ratio + AI document OCR confidence + AI inventory lead/cover/velocity denoms + AI sales RFM frequency + AI prediction confidence/min_confidence + party serialize/normalize latitude/longitude + product audit float `_jsonable` also use `money_json`. Residual bare `round(...)` money paths on PO create/amend totals + GRN rejected_qty + supplier/customer payment discount/remaining/settlement_base + PI from-GRN/create totals + SI reverse_charge_tax + sales-docs QT/SO/SR totals/excess + accounting AR/AP FX settle/fx_gain_loss + PI journal net + POS revenue/tender + API POS cart + opening-balance residual/plug + FX AR/AP plug + notifications/stores/reports low-stock suggested + reports sales/returns/pending accumulate + AI expenses MoM pct + tax compute breakdown intermediate/early-return + tax report aggregates + tax compute_line_total line_amount + stock-count serialize/complete variance + catalog FEFO remaining/shortfall + catalog batch quantity + bank connector debit-credit amount + reports budget variance/total_variance intermediate + accounting P&L net accumulate + P&L expense/gross/net intermediate + purchase-suggestion gap/warehouse gap/product returns + inventory warehouse suggested_order_qty gap + expense/recurring create+update amount + GRN schema inferred rejected_qty also use `money_json(round(...))`. Other serializers may still use bare `float(...)` for non-money timeouts.
 
 ### 1.2 Response Envelope
-Successful handlers return the `env()` envelope:
+Successful **JSON** API responses use the `env()` helper envelope:
 
 ```json
 {
@@ -57,26 +61,33 @@ Successful handlers return the `env()` envelope:
 }
 ```
 
-HTTP errors typically use FastAPI’s `{"detail": "..."}` (string) or structured `{"detail": {"code": "...", "message": "..."}}` for gated auth cases. Rate-limit `429` responses use an envelope with `success: false`, `detail: "RATE_LIMIT_EXCEEDED"`, and `Retry-After` / `X-RateLimit-*` headers. Correlation for ops logs uses `X-Request-ID` (Stage 18 L1) — not a field inside `env()`.
+There is **no** `timestamp` or `request_id` field in the JSON body. Correlation uses the **`X-Request-ID`** response header (echoes a client-supplied id when safe; otherwise a generated hex id). See `docs/OPS_MONITORING_MVP.md`.
+
+**Non-JSON responses** (no `env()` wrapper): report export CSV/PDF/XLSX, product/POS CSV export, invoice/receipt PDF or plain text, barcode PNG / HTML labels, Prometheus `GET /metrics`, and raw attachment/file downloads. Media types are set per route.
 
 ### 1.3 Pagination
-Most catalog/party list endpoints return the full array in `data` (MVP-sized tenants). High-volume / filtered lists support an optional **`limit`** query parameter (examples: `GET /audit-logs?limit=200`, AI history, some reports). Cursor/`page` pagination is **deferred** post-MVP.
+Most list endpoints return an **unpaginated** array in `data` (no `cursor` / `limit` / `sort` list Query contract, no `{ items, pagination }` wrapper):
 
-### 1.4 Versioning & OpenAPI
-- All routes are mounted under **`/api/v1`**.
-- OpenAPI is auto-generated by FastAPI: `GET /openapi.json`, interactive `GET /docs` / `GET /redoc` when `APP_ENV` is not `production` (disabled in production — Stage 5 S1).
-- Webhooks: HMAC-signed outbound subscriptions under `/api/v1/webhooks` (Stage 6 W1; Stage 19 A1 regression).
+```json
+{
+  "success": true,
+  "data": [ ... ],
+  "message": "Operation completed successfully"
+}
+```
 
----
+A few surfaces expose their own bounded `limit` Query params (e.g. audit logs, notifications, product lookup) — those are documented on the endpoint, not a global cursor protocol.
 
-### 1.5 HTTP Methods
+**Lookup exception (not cursor pagination):** `GET /inventory/products/lookup` returns `data: { q, barcode, count, items: Product[] }` with Query `limit` ∈ 1–100 (omit → 48). This is a search payload, not the fictional global `{ items, pagination }` cursor contract.
+
+### 1.4 HTTP Methods
 | Method | Usage |
 |--------|-------|
 | `GET` | Retrieve resources |
-| `POST` | Create resources |
-| `PUT` | Full update (rarely used; prefer PATCH) |
-| `PATCH` | Partial update |
-| `DELETE` | Soft-delete / remove resources where supported |
+| `POST` | Create resources / actions |
+| `PUT` | Rare upsert/replace only — today: `PUT /credit/exchange-rates/{currency_code}`, `PUT /inventory/warehouse-stock/reorder`, `PUT /stores/{store_id}/reorder-policy`, `PUT /users/{user_id}/stores` (not a general “full update” verb) |
+| `PATCH` | Partial update (primarily PATCH — the update verb across modules) |
+| `DELETE` | Remove / soft-deactivate resources |
 
 ---
 
@@ -95,6 +106,10 @@ RIBDIGI ERP uses **JWT (JSON Web Tokens)** with password-grant login (OAuth2 res
   "tenant_id": "tenant_abc123"
 }
 ```
+
+`password` ∈ `LoginPasswordValue` (strip; 1–128; ≥1 letter/digit; no `://` / `@` / spaces); blank/`!!!`/`http://…` → **422** (was free `str`; whitespace/`!!!`/URL reached `verify_password` as **401**). Authenticity still `verify_password` → **401**. Login UI **Login password** + **Login email** (`aria-label`s); submit sends password trim + `email.trim()`. Body `Login` `extra=forbid` (unknown keys → **422**); same forbid on `TwoFactorConfirm` / `Verify` / `Disable`, `RefreshRequest`, password-reset / email-verify / resend / `ProfileUpdate`.
+
+`tenant_id` ∈ `TenantRefValue` (strip; UUID or slug `^[a-z0-9][a-z0-9-]{1,79}$`; UUID/slug normalized lower); blank/`!!!`/`http://…`/`a b`/`X` → **422** (was free `str`; whitespace/`!!!`/URL reached `resolve_tenant` as **404**). Same honesty on `POST /auth/password-reset-request` and `POST /auth/resend-verification`. Existence still `resolve_tenant` → **404**. Login **Login tenant** + Forgot password **Password reset tenant** (`aria-label`s); submit/resend send trim.
 
 **Response:**
 ```json
@@ -127,6 +142,8 @@ Rotates the session: validates the refresh token hash against `auth_sessions`, r
 }
 ```
 
+`refresh_token` ∈ `RefreshTokenValue` (strip; 1–200; ≥1 letter/digit; no `://` / `@` / spaces); blank/`!!!`/`http://…` → **422** (was free `str`; whitespace/`!!!`/URL reached refresh lookup as invalid). Authenticity remains hashed refresh-token lookup (**401**). Frontend `refreshSession` sends trim (no dedicated form; `localStorage`).
+
 ### 2.3 Logout
 **Endpoint:** `POST /auth/logout`
 
@@ -135,10 +152,13 @@ Rotates the session: validates the refresh token hash against `auth_sessions`, r
 ### 2.4 Password Reset
 **Endpoint:** `POST /auth/password-reset-request`
 
+UI: login **Forgot password?** → `/forgot-password` (workspace + email; **Password reset email** `aria-label`; submit sends `email.trim()`). Always returns a neutral success message (no account enumeration). Non-production may include `reset_token` for local testing. Email link opens `/reset-password?token=…`. Confirm body `token` ∈ `PasswordResetTokenValue` (strip; 1–200; ≥1 letter/digit; no `://` / `@` / spaces); blank/`!!!`/`http://…` → **422** (was free `str`; whitespace/`!!!`/URL reached `hash_token` / invalid-token **400**). Reset password **Password reset token** input (`aria-label`); submit sends trim.
+
 **Request:**
 ```json
 {
-  "email": "admin@company.com"
+  "email": "admin@company.com",
+  "tenant_id": "acme"
 }
 ```
 
@@ -152,10 +172,25 @@ Rotates the session: validates the refresh token hash against `auth_sessions`, r
 }
 ```
 
-### 2.5 Two-Factor Authentication (Optional)
-**Endpoint:** `POST /auth/2fa/enable`
+`token` ∈ `PasswordResetTokenValue` (strip; 1–128; ≥1 letter/digit; no `://` / `@` / spaces); blank/`!!!`/`http://…` → **422** (was free `str`; whitespace/`!!!`/URL reached hashed one-time lookup as invalid). Authenticity remains token hash lookup (**400** invalid/expired). Reset password UI **Password reset token** (`aria-label`; paste field when URL has no `token`); submit sends trim.
 
-**Endpoint:** `POST /auth/2fa/verify`
+`new_password` ∈ `PasswordResetNewPasswordValue` (strip; 1–128; ≥1 letter/digit; no `://` / `@` / spaces); blank/`!!!`/`http://…` → **422** (was free `str`; whitespace/`!!!`/URL could reach hash path). Strength still `validate_password_strength` → **400**. Reset password UI **Password reset new password** (`aria-label`); submit sends trim.
+
+Token is single-use and expires in 1 hour; new password must pass complexity rules.
+
+### 2.4b Email verification (BR-19.1)
+**Verify:** `POST /auth/verify-email` — body `token` ∈ `EmailVerifyTokenValue` (strip; 1–200; ≥1 letter/digit; no `://` / `@` / spaces); blank/`!!!`/`http://…` → **422** (was free `str`; whitespace/`!!!`/URL reached `hash_token` / invalid-token **400**). Sets `email_verified=true` (single-use token). Authenticity remains AuthToken lookup (**400**). UI: `/verify-email?token=…` (auto-submits when token present). Verify email **Email verification token** input (`aria-label`); submit sends trim.  
+**Resend:** `POST /auth/resend-verification` — `{ "email", "tenant_id" }` with `tenant_id` ∈ `TenantRefValue` (same as login; blank/`!!!`/`http://…` → **422**); neutral success; invalidates unused prior verify tokens; non-prod may echo `verification_token`.  
+**Login gate:** `POST /auth/login` returns `403` with `detail.code = "EMAIL_NOT_VERIFIED"` when credentials are valid but email is unverified (no tokens issued). Login UI offers resend.
+
+### 2.5 Two-Factor Authentication (Optional)
+**Setup / confirm:** `POST /auth/2fa/setup` then `POST /auth/2fa/confirm` — body `{ "code" }` ∈ `TwoFactorCodeValue` (strip; 4–64; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…`/`abc` → **422** — was free `str`; empty/garbage reached service verify). Security **2FA setup code** input (`aria-label`); confirm sends `code.trim()`.
+
+**Login challenge verify:** `POST /auth/2fa/verify` — `{ "challenge_token", "code" }` with `challenge_token` ∈ `ChallengeTokenValue` (strip; 1–2048; ≥1 letter/digit; no `://` / `@` / spaces); blank/`!!!`/`http://…` → **422** (was free `str`; whitespace/`!!!`/URL reached `decode_challenge_token` as **401**). Authenticity remains JWT decode (**401**). Same `TwoFactorCodeValue` honesty on `code`. Login **2FA challenge token** input (`aria-label`); verify sends trim. WebAuthn login `options` / `verify` bodies use the same `ChallengeTokenValue` on `challenge_token`.
+
+**Backup codes / disable:** `POST /auth/2fa/backup-codes` (`TwoFactorConfirm`) and `POST /auth/2fa/disable` (`TwoFactorDisable`) — `code` ∈ `TwoFactorCodeValue` (required). Disable body `password` ∈ `TwoFactorDisablePasswordValue` (strip; 1–128; ≥1 letter/digit; no `://` / `@` / spaces); blank/`!!!`/`http://…` → **422** (was free `str`; whitespace/`!!!`/URL reached `verify_password` as **401**). Authenticity remains `verify_password` (**401**). Security **2FA code** + **Disable 2FA password** inputs (`aria-label`s); Disable / backup-codes send `code.trim()`; Disable password trim.
+
+**Login body:** `POST /auth/login` optional `totp_code` ∈ `TwoFactorCodeValue` (omit/`null` → no TOTP field; blank/`!!!`/`http://…` → **422** — was free `str`). Login **2FA code** input (`aria-label`); login sends `totp_code: totpCode.trim() || null`; challenge verify sends `code: totpCode.trim()`. Service `verify_totp` / backup-code hash checks remain defense-in-depth for authenticity.
 
 **Request:**
 ```json
@@ -164,12 +199,16 @@ Rotates the session: validates the refresh token hash against `auth_sessions`, r
 }
 ```
 
+**Passkeys (WebAuthn):** `POST /auth/webauthn/register/options` then `POST /auth/webauthn/register/verify` — body `{ "credential", "name"? }` (`extra=forbid`). Required `credential` ∈ `WebAuthnRegistrationCredential` (`extra=forbid`; `id`/`rawId` ∈ `Base64UrlValue` (strip; `A–Z` `a–z` `0–9` `_` `-` + optional `=` pad; blank/`!!!`/`+`/`/`/`http://…` → **422** — was free `str` `min_length=1`; garbage reached verify as opaque **400**); `type` ∈ `public-key`; `response.clientDataJSON` + `attestationObject` ∈ `Base64UrlValue` (same honesty); optional `transports` ∈ `AuthenticatorTransportListValue` (`usb`|`nfc`|`ble`|`internal`|`hybrid`|`smart-card`; `cable`→`hybrid`; unknown → **422** — was free `list[str]`); optional `clientExtensionResults` ∈ `WebAuthnClientExtensionResultsValue` (JSON object ≤32 keys; list/string → **422** — was free `dict[str, Any]`); incomplete/garbage → **422** (was free `dict`; late opaque **400**). Optional `name` ∈ `PasskeyNameValue` (strip; 1–120; ≥1 letter/digit; no `://`/`@`; omit/`null` → service default `"Passkey"`; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently became `"Passkey"` via service strip; punctuation/URL could persist on `WebAuthnCredential.name` String(120)). Login `POST /auth/webauthn/login/verify` uses `WebAuthnAuthenticationCredential` (`id`/`rawId` ∈ `Base64UrlValue`; assertion `clientDataJSON`/`authenticatorData`/`signature` ∈ `Base64UrlValue`; optional `userHandle` ∈ `Base64UrlValue | None` — omit/`null` OK; blank/garbage → **422** — was free `str`). Security **Passkey name** input (`aria-label`); register sends `null` when blank; `credentialToJson` / `bufferToBase64url` serializers; Login sends `null` `userHandle` when absent. Service strip remains defense-in-depth.
+
 ### 2.6 Session Management
 **Endpoint:** `GET /auth/sessions` — list caller sessions; Stage 128 S1 supports `status=active|revoked|all` and `active_only`.
 
 **Endpoint:** `GET /auth/sessions/export` — Stage 128 S1 CSV (no refresh-token secrets).
 
-**Endpoint:** `DELETE /auth/sessions/{session_id}`
+**Endpoint:** `DELETE /auth/sessions/{session_id}` — Path `session_id` ∈ `UuidIdValue` (strip; lower; valid UUID); blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage reached session lookup **404**). Existence remains own-session lookup **404**. Security **Revoke session** / **Sign out this device** (`aria-label`s).
+
+Client idle auto-logout uses tenant `inactivity_timeout_minutes` (default `30`, range `5`–`480`). Configure via `PATCH /tenants/me`; current value is also returned on `GET /me` and `GET /tenants/me`.
 
 **Passkey inventory export (Stage 128 P1):** `GET /auth/webauthn/credentials/export` (no `public_key` / `credential_id`).
 
@@ -197,7 +236,7 @@ Optional `X-Tenant-ID` must match the key’s tenant when present. Permissions a
 ## 3. Tenant Management
 
 ### 3.1 Register Company (Tenant)
-**Endpoint:** `POST /tenants`
+**Endpoint:** `POST /tenants` — **platform staff only** (`platform_tenants:write`; missing/invalid token → **401**; company user or staff without write → **403**). There is no public self-registration. Typed `TenantCreate` (`extra=forbid`; unknown keys → **422**; `TenantProfileUpdate` / `TenantSuspendRequest` / `TenantModulesUpdate` / store-limit overrides same)
 
 **Request:**
 ```json
@@ -212,6 +251,16 @@ Optional `X-Tenant-ID` must match the key’s tenant when present. Permissions a
   "subscription_plan": "trial"
 }
 ```
+
+`industry` schema `Literal["retail","pharmacy","restaurant","bakery","wholesale","manufacturing","mart"]` (omit → `retail`; blank/invalid → **422**; case-insensitive coerce via `BeforeValidator`, e.g. `Wholesale` → `wholesale`). Service `normalize_industry` remains defense-in-depth **400**. Company **Company industry** + Platform **Tenant industry** selects (`aria-label`s) match the allow-list.
+
+`currency` ∈ 3-letter ISO (`CurrencyCodeValue`; strip/upper; omit → `GHS`; blank/non-ISO → **422** — was free `str` with no create-path check). Same honesty on `PATCH /tenants/me`. Company **Currency** select.
+
+`company_name` ∈ `CompanyNameValue` (strip; 2–200 chars; at least one letter/digit; no `://` / `@`); required on create; blank/`!!!`/`http://…`/`X` → **422** (was free `str` with no create-path length/content check). Same honesty on `PATCH /tenants/me` (omit/`null` → no change). Company **Company trading name** input (`aria-label`).
+
+`slug` ∈ `TenantSlugValue` (strip/lower; 2–80; `^[a-z0-9][a-z0-9-]{1,79}$`); required on create; blank/`!!!`/`http://…`/`a b`/`X`/`-bad` → **422** (was free `str`; blank/garbage could persist on `Tenant.slug` String(80)). Duplicate slug → **409**. Platform console **Tenant slug** input (`aria-label`; create sends trim/lower).
+
+`admin_password` ∈ `TenantAdminPasswordValue` (strip; 1–128; ≥1 letter/digit; no `://` / `@` / spaces); blank/`!!!`/`http://…` → **422** (was free `str`; whitespace/`!!!`/URL could reach hash path; strength still `validate_password_strength` → **400**). Platform console **Tenant admin password** input (`aria-label`); create requires trim.
 
 **Response:**
 ```json
@@ -228,38 +277,127 @@ Optional `X-Tenant-ID` must match the key’s tenant when present. Permissions a
 ```
 
 ### 3.2 Get Tenant Profile
-**Endpoint:** `GET /tenants/{tenant_id}`
+**Endpoint:** `GET /tenants/me` (own company; `company_admin` / `super_admin`)  
+Also: `GET /tenants/{tenant_id}` for platform cross-tenant reads where authorized.
 
 **Current tenant (Stage 21 T1/C1):** `GET /tenants/me` / `PATCH /tenants/me` — company admin / super_admin profile (legal name, registration/tax IDs, billing/shipping/warehouse addresses, contact person, currency, logo via `/tenants/me/logo`). `document_numbering` + `document_numbering_preview` cover sales/purchase series including order, return, credit note, debit note (Stage 24 N1: `test_document_numbering_n1.py`). Evidence: `test_tenant_lifecycle_t1.py`, `test_company_currency_tax_c1.py`.
 
 ### 3.3 Update Tenant Profile
-**Endpoint:** `PATCH /tenants/{tenant_id}`
+**Endpoint:** `PATCH /tenants/me`
 
-**Request:**
+**Request (partial update):**
 ```json
 {
-  "company_name": "Acme Retail Ltd",
-  "logo_url": "https://cdn.ribdigi.com/logos/acme.png",
-  "settings": {
-    "currency": "USD",
-    "timezone": "America/New_York",
-    "date_format": "MM/DD/YYYY",
-    "number_format": "#,##0.00"
-  }
+  "company_name": "Acme Trading",
+  "legal_name": "Acme Retail Limited",
+  "registration_number": "CS123456789",
+  "contact_person": "Ama Mensah",
+  "address": "1 Headquarters Road, Accra",
+  "billing_address": "2 Billing Avenue, Accra",
+  "shipping_address": "3 Warehouse Gate, Tema",
+  "phone": "+233200000000",
+  "email": "ops@acme.example.com",
+  "website": "https://acme.example.com",
+  "currency": "GHS",
+  "timezone": "Africa/Accra",
+  "fiscal_year_start": "01-01",
+  "tax_jurisdiction": "GH",
+  "tax_registration_number": "C0001234567",
+  "tax_filing_period": "monthly",
+  "date_format": "DD/MM/YYYY",
+  "decimal_separator": ".",
+  "thousand_separator": ",",
+  "time_format": "24h",
+  "inactivity_timeout_minutes": 30
 }
 ```
+
+`industry` (when sent) uses the same schema `Literal` as create (omit = no change; blank/invalid → **422**). Company **Company industry** select (`aria-label`).
+
+`currency` (when sent) same `CurrencyCodeValue` as create / FX rates (omit = no change; blank/non-ISO → **422** — was free `str` with length-only late service **400**; non-ISO could persist). Company **Currency** select.
+
+`phone` (when sent) ∈ `E164PhoneValue` (`+` + 8–15 digits); omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`; blank silently cleared; garbage could persist). Company **Company phone** input (`aria-label`); Save omits blank phone so prior value is kept.
+
+`email` (when sent) ∈ `EmailStr`; omit/`null` → no change; blank/`not-an-email` → **422**. Company **Company email** input (`aria-label`); Save omits blank/whitespace email so prior value is kept.
+
+`website` (when sent) ∈ `WebhookUrlValue` (strip; absolute `http(s)` + netloc; `http` only for localhost/127.0.0.1/testserver/host.docker.internal); omit/`null` → no change; blank/`ftp://`/`not-a-url`/`www.x`/plain-http remote → **422** (was free `str`; blank silently cleared; garbage could persist). Company **Company website** input (`aria-label`); Save omits blank website so prior value is kept.
+
+`tax_registration_number` (when sent) ∈ `TaxRegistrationNumberValue` (strip; alphanumeric + optional spaces/hyphens; max 40); omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank silently cleared TIN; garbage could persist). Company **TIN / VAT registration number** input (`aria-label`); Save omits blank TIN so prior value is kept.
+
+`registration_number` (when sent) ∈ `RegistrationNumberValue` (strip; alphanumeric + optional spaces/hyphens; max 80); omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank silently cleared; garbage could persist; length>80 was late service **400**). Company **Company registration number** input (`aria-label`); Save omits blank so prior value is kept.
+
+`contact_person` (when sent) ∈ `ContactPersonValue` (strip; 1–150 chars; at least one letter/digit; no `://` / `@`); omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank silently cleared; garbage could persist; length>150 was late service **400**). Company **Company contact person** input (`aria-label`); Save omits blank so prior value is kept.
+
+`legal_name` (when sent) ∈ `LegalNameValue` (strip; 2–200 chars; at least one letter/digit; no `://` / `@`); omit/`null` → no change; blank/`!!!`/`http://…`/`X` → **422** (was free `str`; blank silently cleared; garbage could persist; len<2 or >200 was late service **400**). Company **Company legal name** input (`aria-label`); Save omits blank so prior value is kept.
+
+`company_name` (when sent) ∈ `CompanyNameValue` (strip; 2–200 chars; at least one letter/digit; no `://` / `@`); omit/`null` → no change; blank/`!!!`/`http://…`/`X` → **422** (was free `str`; blank/`X` late service **400**; garbage could persist). Company **Company trading name** input (`aria-label`); Save sends `String(tenant.company_name || '').trim()` (required trading name).
+
+`address` / `billing_address` / `shipping_address` (when sent) ∈ `AddressValue` (strip; 1–500 chars; at least one letter/digit; no `://` / `@`); omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank silently cleared; garbage could persist). Company **Company headquarters address** / **Company billing address** / **Company shipping address** textareas (`aria-label`s); Save omits blank so prior value is kept.
+
+`fiscal_year_start` (when sent) ∈ valid calendar `MM-DD` (`FiscalYearStartValue`; strip; blank/invalid/`13-01`/`02-30` → **422** — was free `str` with length-only late service **400**; garbage could persist). Company **Fiscal year start** input.
+
+`timezone` (when sent) ∈ valid IANA key (`TimezoneValue`; strip + `ZoneInfo`; blank/`Foo/Bar`/`UTC+0` → **422** — was free `str`; blank late **400**; garbage could persist). Company **Timezone** select.
+
+Regional / tax format fields (BR-20.2) are schema Literals on this PATCH (omit = no change; blank/invalid → **422**):
+- `tax_jurisdiction` ∈ `GH` (same `TaxFilingJurisdictionValue` / `tax_filings.SUPPORTED` as filing Query; blank/unsupported → **422** — was free `str` with length-only late service **400**; unsupported codes could persist then fail later on filing). Company **Tax jurisdiction** select.
+- `tax_filing_period` ∈ `monthly|quarterly` — Company **Tax filing period** (`aria-label`)
+- `date_format` ∈ `DD/MM/YYYY|MM/DD/YYYY|YYYY-MM-DD` — Company **Company date format** (`aria-label`)
+- `decimal_separator` ∈ `.|,` — Company **Company decimal separator** (`aria-label`)
+- `thousand_separator` ∈ `,|.|space|""` (`none` coerces to `""`) — Company **Company thousand separator** (`aria-label`)
+- `time_format` ∈ `12h|24h` — Company **Company time format** (`aria-label`)
+
+Company UI selects match (`aria-label`s). Service validators remain defense-in-depth **400** (and still require decimal ≠ thousand).
+
+Company logo is managed separately via `POST|GET|DELETE /tenants/me/logo` (not a URL field on this patch).
+
+**Print branding (BR-20.4):** `GET|PATCH /settings/print` — `{ header_text?, footer_text?, default_invoice_template?, default_receipt_paper? }`.  
+`header_text` ∈ `PrintHeaderTextValue` (strip; 1–200; ≥1 letter/digit; no `://`/`@`); omit → no change; `null` → clear; blank/`!!!`/`http://…` → **422** (was free `str` max_length=200; blank/garbage could persist).  
+`footer_text` ∈ `PrintFooterTextValue` (strip; 1–300; same honesty; was free `str` max_length=300).  
+`default_invoice_template` schema `Literal["a4","thermal"]` (omit = no change; blank/invalid → **422**).  
+`default_receipt_paper` schema `Literal["58mm","80mm"]` (omit = no change; blank/invalid → **422**).  
+Service `apply_print_branding_update` remains defense-in-depth **400** for template/paper. Read path still coerces stored garbage to `a4` / `80mm`. Company page **Print branding header text** / **footer text** + Invoice template / Receipt paper selects + **Save print branding** (`aria-label`s); Save sends `null` when header/footer blank.
 
 ### 3.4 Tenant Status Management
-**Endpoint:** `PATCH /tenants/{tenant_id}/status`
+**List (platform):** `GET /tenants?status=` — Query `status` ∈ `trial`|`active`|`grace`|`suspended` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422** — was late **400**). Service `list_tenants` remains defense-in-depth. Platform console **Tenant status** chips (client filter over full cache; API also supports `?status=`).  
+**Self-suspend:** `POST /tenants/me/suspend` — body `TenantSuspendRequest` (`extra=forbid`; `{ "reason" }` ∈ `TenantSuspendReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; **required**) for company_admin/super_admin; omit/blank/`!!!`/`http://…` → **422** (was free `str` with `min_length=1` only; whitespace still reached service **400**; garbage could persist). Stores `suspended_reason`, revokes sessions, emits `tenant.suspended`. Company page **Tenant suspend reason** (`aria-label`; no hardcoded `"Admin requested"`).  
+**Suspend:** `POST /tenants/{tenant_ref}/suspend` — Path `tenant_ref` ∈ `TenantRefValue` (UUID or slug; blank/`!!!`/`http://…` → **422** — was free `str`; existence remains resolve_tenant **404**). Body `{ "reason" }` ∈ `TenantSuspendReasonValue` (same schema) → `status=suspended` + `suspended_reason`; sessions revoked; webhook `tenant.suspended`. Platform console **Tenant suspend reason** (`aria-label`; no `window.prompt`).  
+**Activate:** `POST /tenants/{tenant_ref}/activate` — Path `tenant_ref` ∈ `TenantRefValue` (same honesty).  
+(`tenant_ref` = id or slug; platform `platform_tenants:write` / legacy **super_admin** for cross-tenant)
 
-**Request:**
+**Allowed statuses:** `trial`, `active`, `grace`, `suspended`
+
+### 3.4b Packages, subscription term & feature control (software owner)
+**Catalog:** `GET /packages`  
+**Assign term + package:** `POST /tenants/{tenant_ref}/subscription` — typed `TenantSubscriptionAssign` (`extra=forbid`; unknown keys → **422**)
+
 ```json
 {
-  "status": "active"
+  "package_code": "professional",
+  "term_value": 12,
+  "term_unit": "months",
+  "activate": true
 }
 ```
 
-**Allowed statuses:** `trial`, `active`, `suspended`
+`package_code` schema `Literal["trial","starter","professional","enterprise"]` (strip/lower coerce; blank/invalid → **422**; no free-string accept). Platform **Subscription package** select (`aria-label`). `term_unit` schema `Literal["months","years"]` (omit → `months`; blank/invalid → **422**; no silent months from `""`). Platform **Subscription term unit** select (`aria-label`). Optional `start_at` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit/`null` → now; blank/`not-a-date`/`01/02/2024` → **422** (was free `datetime`; OpenAPI date-time; padded dates inconsistent). API `reports.parse_date` remains defense-in-depth. Platform **Subscription start date** input (`aria-label`); assign omits blank. Optional `max_stores_override` (int ≥ 0) sets a per-tenant store entitlement override; `clear_max_stores_override` clears it. Response includes `subscription` usage: months/years assigned, used, remaining, renewal date, effective `enabled_modules`, and store quota fields (`package_max_stores`, `effective_store_limit`, `stores_active`, …).
+
+**Store entitlements:** Package catalog `max_stores` (`null` = unlimited). Platform `PATCH /tenants/{ref}/store-entitlement` `{ max_stores_override }` / `{ clear: true }`. Tenant admin `PATCH /tenants/me/store-limit` `{ store_limit }` (null = full entitlement; cannot exceed entitlement). `GET /stores/entitlement` returns usage. `POST /stores` and reactivate enforce active-store count (403 `STORE_LIMIT_REACHED`); downgrades never delete stores.
+
+**Feature modules:** `PATCH /tenants/{tenant_ref}/modules`  
+`{ "enabled_modules": ["dashboard","pos",...] }` or `{ "reset_to_package": true }`. `enabled_modules` items are schema `Literal` of `PACKAGEABLE_MODULES` (strip/lower; blank/unknown/`platform` → **422**). Always-on modules (`dashboard`, `notifications`, `security`) are merged by the service if omitted. Same item Literal applies on `POST /tenants/{ref}/subscription` when `enabled_modules` is sent.
+
+**Usage detail:** `GET /tenants/{tenant_ref}/usage`  
+Packages: `trial` | `starter` | `professional` | `enterprise`. Disabled modules return `403 PACKAGE_FEATURE_DISABLED`.
+
+### 3.4c Platform staff & reports (software owner)
+Platform roles: `super_admin` (legacy), `platform_owner`, `platform_admin`, `platform_support`, `platform_finance`.
+
+**Staff:** `GET|POST /platform/staff`, `PATCH /platform/staff/{id}`, `GET /platform/roles`  
+Create body `PlatformStaffCreate` (`extra=forbid`): `email` ∈ `EmailStr` (blank/`not-an-email`/`abc` → **422**; was free `str` with `min_length=3`); `full_name` ∈ `PlatformStaffFullNameValue` (strip; 1–150; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str` min_length=1; whitespace/`!!!`/URL could persist; PATCH omit/`null` → no change); `password` ∈ `PlatformStaffPasswordValue` (strip; 1–128; ≥1 letter/digit; no `://` / `@` / spaces; blank/`!!!`/`http://…` → **422** — was free `str` min_length=1; whitespace/`!!!`/URL could reach hash path; strength still `validate_password_strength` → **400**); create/patch `role` uses the same platform-role schema `Literal` as grant (strip/lower; create omit → `platform_support`; blank/invalid → **422**; no silent support from `""` via former `role or "platform_support"`). `phone` ∈ `E164PhoneValue` (create omit/`null` → no phone; PATCH omit/`null` → no change; blank/`not-a-phone`/`123` → **422** — was free `str`; blank/garbage could persist). Platform Staff **Platform staff full name** + **Platform staff email** + **Platform staff password** + **Platform staff phone** + **Create platform staff**.  
+**App users (no dashboard yet):** `GET /platform/app-users`  
+**Grant dashboard:** `POST /platform/staff/grant` — typed `PlatformGrantAccess` (`extra=forbid`; unknown keys → **422**). Body `{ "user_id", "role": "platform_support" }` — promotes an existing workspace app user so they can open the software-owner console. Required `user_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach user lookup; existence remains platform-scoped user lookup **404**). Platform Staff **Grant dashboard** (`aria-label`); grant sends `user_id` trim. `role` schema `Literal["super_admin","platform_owner","platform_admin","platform_support","platform_finance"]` (strip/lower coerce; omit → `platform_support`; blank/invalid → **422**; no silent support from `""`). Platform Staff **Platform grant role** select (`aria-label`).  
+**Revoke dashboard:** `POST /platform/staff/{id}/revoke` — typed `PlatformRevokeAccess` (`extra=forbid`; unknown keys → **422**). Body `{ "fallback_role": "company_admin" }` — removes platform role; account stays as an app user. `fallback_role` schema `Literal["company_admin","store_manager","sales_officer","inventory_officer","accountant","cashier"]` (strip/lower coerce; omit → `company_admin`; blank/invalid/platform → **422**; no silent company_admin from `""`).  
+**Reports:** `GET /platform/reports` (bundle) or `/platform/reports/summary|subscriptions|packages|trials` — `GET /platform/reports/trials` Query `within_days` ∈ 1–365 (omit → 45; `0`/`-1`/`366` → **422** — was free `int`; service silently clamped 1–365).
 
 ### 3.4a Onboarding Checklist (Stage 6 N2)
 
@@ -302,64 +440,156 @@ Steps: `setup_company`, `add_products`, `create_supplier`, `stock_ready`, `first
 }
 ```
 
+### 3.5z Email / SMTP settings (BR-20.3)
+**Get:** `GET /settings/email` (`company_admin` / `super_admin`) — resolved status (`source`: `tenant` | `env` | `none`); never returns password (only `has_password`).  
+**Patch:** `PATCH /settings/email` — typed body `EmailSettingsUpdate` (`extra=forbid`; unknown keys → **422**). Tenant SMTP override stored on `tenants.email_settings` (password encrypted as `password_enc`). Optional `password` ∈ `SmtpPasswordValue` (strip; 1–128; ≥1 letter/digit; no `://` / `@` / spaces); omit/`null` → keep prior; blank/`!!!`/`http://…` → **422** (was free `str`; blank was a silent no-op via service; punctuation/URL could be encrypted into `password_enc`). `clear_password: true` removes it. Optional `from_email` ∈ `EmailStr`; omit/`null` → no change; blank/`not-an-email` → **422** (was free `str`; blank/garbage were accepted). Optional `host` ∈ `SmtpHostValue` (strip/lower; DNS hostname / IPv4 / `localhost`; no `://` / `@` / spaces); omit/`null` → no change; blank/`http://smtp…`/`not a host` → **422** (was free `str`; blank/garbage were accepted). Optional `from_name` ∈ `SmtpFromNameValue` (strip; 1–120 chars; at least one letter/digit; no `://` / `@`); omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage were accepted into tenant SMTP From display name). Optional `username` ∈ `SmtpUsernameValue` (strip; 1–200 chars; at least one letter/digit; no `://`; email-shaped logins OK); omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage were accepted into tenant SMTP username). Requires host + from_email for tenant override to take precedence over env. Company **Company SMTP host** + **Company SMTP username** + **Company SMTP password** + **Company from email** + **Company from name** + **Save email settings** (`aria-label`s; Save omits blank host/username/password/from_name).  
+**Test:** `POST /settings/email/test` — optional `{ "to"? }` (`EmailTestRequest` `extra=forbid`; `to` ∈ `EmailStr`; unknown keys → **422**); uses resolved tenant/env config (console when unset).
+
+```json
+{
+  "host": "smtp.example.com",
+  "port": 587,
+  "username": "noreply@example.com",
+  "password": "secret",
+  "from_email": "noreply@example.com",
+  "from_name": "Acme ERP",
+  "use_tls": true,
+  "use_ssl": false
+}
+```
+
+### 3.5z2 SMS / Twilio settings (BR-15.2)
+**Get:** `GET /settings/sms` — resolved status (`source`: `tenant` | `env` | `none`); never returns auth token (only `has_auth_token`).  
+**Patch:** `PATCH /settings/sms` — typed body `SmsSettingsUpdate` (`extra=forbid`; unknown keys → **422**). Tenant Twilio override on `tenants.sms_settings` (`auth_token_enc`). Optional `auth_token` ∈ `TwilioAuthTokenValue` (strip; 1–128; ≥1 letter/digit; no `://` / `@` / spaces); omit/`null` → keep prior; blank/`!!!`/`http://…` → **422** (was free `str`; blank was a silent no-op via service; punctuation/URL could be encrypted into `auth_token_enc`). `clear_auth_token: true` removes it. Optional `from_number` ∈ `E164PhoneValue` (`+` + 8–15 digits); omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`; blank/garbage were accepted). Optional `account_sid` ∈ `TwilioAccountSidValue` (strip; alphanumeric 1–64; not strict `AC`+32hex); omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage were accepted into tenant Twilio SID). Requires account_sid + from_number + token for tenant override. Company **Company SMS account SID** + **Company SMS auth token** + **Company SMS from number** + **Save SMS settings** (`aria-label`s; Save omits blank SID/token).  
+**Test:** `POST /settings/sms/test` — optional `{ "to": "+233..." }` ∈ `E164PhoneValue` (`extra=forbid`); omit → profile phone; blank/invalid → **422**; console when unset.  
+**Profile phone:** `PATCH /me` body `phone` ∈ `E164PhoneValue` (`ProfileUpdate`); omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`; blank silently cleared; garbage was late **400**). Company **Profile phone for SMS test** + **Save my profile** (Save omits blank `phone` so prior value is kept).  
+**Profile full name:** `PATCH /me` body `full_name` ∈ `UserFullNameValue` (`ProfileUpdate`; strip; 1–150; ≥1 letter/digit; no `://`/`@`; omit/`null` → no change; blank/`!!!`/`http://…` → **422** — was free `str`; blank reached service **400**; punctuation/URL could persist). Same Value type as Users create/update. Company **Profile full name** + **Save my profile** (Save omits blank `full_name`).
+
+```json
+{
+  "account_sid": "ACxxxxxxxx",
+  "auth_token": "secret",
+  "from_number": "+15551234567"
+}
+```
+
+### 3.5a Branches (BR-2.2)
+**List:** `GET /branches` (`active_only=true` optional; `is_active=true|false` for Multi-Store manage filter)  
+**Create:** `POST /branches` — typed `BranchCreate` (`extra=forbid`; unknown keys → **422**; `BranchUpdate` same). `code` ∈ `BranchCodeValue` (strip; 1–40; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/invalid reached service **400** via `_clean_code`). Multi-Store **Branch code** input. `name` ∈ `BranchNameValue` (strip; 1–150; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Multi-Store **Branch name** input. Optional `manager_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no manager; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach user lookup; existence remains tenant-scoped user lookup **404**). Multi-Store **Branch manager** select; Create branch sends trim or `null` when blank. Duplicate code → **409**. (`code` is create-only.)  
+**Update:** `PATCH /branches/{branch_id}` — `name` ∈ `BranchNameValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**). Multi-Store **Edit branch name** input.
+
+```json
+{
+  "code": "ACC",
+  "name": "Accra Branch",
+  "address": "Ring Road",
+  "phone": "+233201111111",
+  "email": "accra@example.com",
+  "manager_id": "user_uuid"
+}
+```
+
+PATCH supports `name`, `address` ∈ `AddressValue` (strip; 1–500 chars; at least one letter/digit; no `://` / `@`; omit/`null` → no change; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently cleared; garbage could persist), `phone` ∈ `E164PhoneValue` (omit/`null` → no change; blank/`not-a-phone`/`123` → **422** — was free `str`; blank silently cleared; garbage could persist), `email`, optional `manager_id` ∈ `UuidIdValue` (omit/`null` → no change; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach user lookup; existence remains tenant-scoped **404**). Use `clear_manager` to remove. Multi-Store **Edit branch manager** select; Save branch sends trim, or `clear_manager` when cleared. Also `is_active`. Create `address` / `phone` same (omit/`null` → no address/phone). Multi-Store **Branch address** + **Branch phone** inputs (`aria-label`s); create/edit omit blank address; create sends `null` phone when blank; edit omits blank phone. Deactivate with `is_active: false` (soft; row retained). Code is unique per tenant and immutable after create.
+
+### 3.5a2 Departments (BR-2.5)
+**List:** `GET /departments` (optional Query `branch_id` ∈ `UuidIdValue` — omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; `active_only` optional; `is_active=true|false` for Multi-Store manage filter; FE often omits and filters client-side)  
+**Create:** `POST /departments` — typed `DepartmentCreate` (`extra=forbid`; unknown keys → **422**; `DepartmentUpdate` same). `code` ∈ `DepartmentCodeValue` (strip; 1–40; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/invalid reached service **400** via `_clean_code`). Multi-Store **Department code** input. `name` ∈ `DepartmentNameValue` (strip; 1–150; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Multi-Store **Department name** input. Optional `branch_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no branch; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach branch lookup; existence remains tenant-scoped branch lookup **404**). Multi-Store **Department branch** select (`aria-label`); Create department sends trim or `null` when blank. Optional `head_user_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no head; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach user lookup; existence remains tenant-scoped user lookup **404**). Multi-Store **Department head** select; Create department sends trim or `null` when blank. Duplicate code → **409**. (`code` is create-only.)  
+**Update:** `PATCH /departments/{department_id}` — `name` ∈ `DepartmentNameValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**). Multi-Store **Edit department name** input.
+
+```json
+{
+  "code": "SALES",
+  "name": "Sales",
+  "branch_id": "branch_uuid",
+  "head_user_id": "user_uuid"
+}
+```
+
+PATCH supports `name`, optional `branch_id` ∈ `UuidIdValue` (omit/`null` → no change; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach branch lookup; existence remains tenant-scoped **404**). Use `clear_branch` to remove. Multi-Store **Edit department branch** select; Save department sends trim, or `clear_branch` when cleared. Optional `head_user_id` ∈ `UuidIdValue` (omit/`null` → no change; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach user lookup; existence remains tenant-scoped **404**). Use `clear_head` to remove. Multi-Store **Edit department head** select; Save department sends trim, or `clear_head` when cleared. Also `is_active`. Soft-deactivate with `is_active: false`. Code unique per tenant.
+
+### 3.5b Warehouses (BR-2.4)
+**List:** `GET /warehouses` (`is_active=true|false` optional — Multi-Store manage filter; default returns all)  
+**Get:** `GET /warehouses/{warehouse_id}`  
+**Create:** `POST /warehouses` — typed `WarehouseCreate` (`extra=forbid`; unknown keys → **422**; `WarehouseUpdate` same). `code` ∈ `WarehouseCodeValue` (strip; 1–50; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank reached service **400**; punctuation/URL could persist). Multi-Store **Warehouse code** input. Optional `capacity` ∈ `NonNegativeQtyValue` (omit/`null` OK; `nan`/`inf`/<0 → **422** — was `Field(ge=0)` only). Multi-Store **Warehouse capacity** (`aria-label`). `name` ∈ `WarehouseNameValue` (strip; 1–150; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Multi-Store **Warehouse name** input. Optional `manager_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no manager; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach user lookup; existence remains tenant-scoped user lookup **404**). Multi-Store **Warehouse manager** select; Create warehouse sends trim or `null` when blank. Optional `store_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no store; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach store lookup; existence remains tenant-scoped store lookup **404**). Multi-Store **Warehouse store** select; Create warehouse sends trim or `null` when blank. Duplicate code → **409**. (`code` is create-only.)  
+**Update:** `PATCH /warehouses/{warehouse_id}` — `name` ∈ `WarehouseNameValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**); partial fields also include type/address/capacity plus optional `manager_id` ∈ `UuidIdValue` (omit/`null` → no change; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach user lookup; existence remains tenant-scoped **404**). Use `clear_manager` to remove. Multi-Store **Edit warehouse manager** select; Save warehouse sends trim, or `clear_manager` when cleared. Optional `store_id` ∈ `UuidIdValue` (omit/`null` → no change; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach store lookup; existence remains tenant-scoped **404**). Use `clear_store` to remove. Multi-Store **Edit warehouse store** select; Save warehouse sends trim, or `clear_store` when cleared. Soft-deactivate via `is_active` (Multi-Store **Activate** / **Deactivate**; inactive hidden from Inventory/Reports pickers; stock movements, warehouse transfers, and PO warehouse assign return 400). Multi-Store **Edit warehouse name** input.
+
+```json
+{
+  "name": "Cold Room A",
+  "code": "WH-COLD-A",
+  "warehouse_type": "cold_storage",
+  "manager_id": "user_uuid",
+  "address": "Zone 3, Industrial Area",
+  "capacity": 1200.5,
+  "store_id": null
+}
+```
+
+`warehouse_type`: `retail` | `bulk` | `cold_storage` | `other` (schema `Literal`; omit on create defaults to `retail`; blank/invalid → **422**). Multi-Store **Warehouse type** select (`aria-label`). PATCH supports `clear_manager`, `clear_store`, `clear_capacity`, `is_active`.
+
+`address` (when sent) ∈ `AddressValue` (strip; 1–500 chars; at least one letter/digit; no `://` / `@`); create omit/`null` → no address; PATCH omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank silently cleared on PATCH; garbage could persist). Multi-Store **Warehouse address** input (`aria-label`); create/edit omit blank.
+
 ---
 
 ## 4. User Management
 
 ### 4.1 Create User
-**Endpoint:** `POST /users`
+**Endpoint:** `POST /users` — typed `UserCreate` (`extra=forbid`; unknown keys → **422**; `UserUpdate` / `PlatformStaffUpdate` same)
 
 **Request:**
 ```json
 {
   "email": "manager@acme.com",
-  "first_name": "John",
-  "last_name": "Doe",
+  "full_name": "John Doe",
   "role": "store_manager",
-  "branch_id": "br_001",
-  "store_id": "st_001",
+  "branch_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+  "department_id": "11111111-2222-3333-4444-555555555555",
+  "record_scope": "branch",
   "phone": "+1-555-0199",
   "password": "TempPass123!"
 }
 ```
 
+`role` ∈ role key shape (`RoleKeyValue` / `custom_roles.ROLE_KEY_RE`; strip/lower; omit → `cashier`; blank/`A`/`Cashier!` → **422** — was free `str`; blank late **400**). Unknown role still service **400**. Users **User role** select.
+
+`full_name` ∈ `UserFullNameValue` (strip; 1–150; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; empty/whitespace/`!!!`/URL could persist). Users **User full name** + **User email** inputs (`aria-label`s); create requires name trim; email `form.email.trim()`.
+
+`password` ∈ `UserPasswordValue` (strip; 1–128; ≥1 letter/digit; no `://` / `@` / spaces; blank/`!!!`/`http://…` → **422** — was free `str`; whitespace/`!!!`/URL could reach hash path; strength still `validate_password_strength` → **400**). PATCH omit/`null` → no change. Users **User password** input (`aria-label`); create requires trim.
+
+`phone` (when sent) ∈ `E164PhoneValue` (`+` + 8–15 digits); omit/`null` → no phone; blank/`not-a-phone`/`123` → **422** (was free `str`; blank/garbage could persist). Users **User phone** input (`aria-label`); create sends `phone: form.phone.trim() || null`.
+
+Optional `branch_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no branch; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach branch lookup; existence remains tenant-scoped branch lookup **404**). Users **User branch** select (`aria-label`); Create user sends trim or `null` when blank.
+
+Optional `department_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no department; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach department lookup; existence remains tenant-scoped department lookup **404**). Users **User department** select (`aria-label`); Create user sends trim or `null` when blank.
+
+`record_scope` schema `Literal["own","department","branch","all"]` (omit = role default; blank/invalid → **422** — no silent `all` from `""`). Users **User record scope** select (`aria-label`). Response wraps `{ "user": {...}, ... }`.
+
 ### 4.2 List Users
-**Endpoint:** `GET /users?role=store_manager&status=active`
+**Endpoint:** `GET /users` — optional `?is_active=true|false` filters soft-deactivated users (omit = all; Users manage status filter All/Active/Inactive).
 
 ### 4.3 Get User
-**Endpoint:** `GET /users/{user_id}`
+**Endpoint:** `GET /users/{user_id}` — Path `user_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; existence remains tenant-scoped **404**).
 
 ### 4.4 Update User
-**Endpoint:** `PATCH /users/{user_id}`
+**Endpoint:** `PATCH /users/{user_id}` — Path `user_id` ∈ `UuidIdValue` (same honesty as Get).
 
-### 4.5 Deactivate User (soft delete)
-**Endpoint:** `DELETE /users/{user_id}`
+Supports `full_name` ∈ `UserFullNameValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422** — was free `str`; empty/whitespace/`!!!`/URL could persist), `phone` ∈ `E164PhoneValue` (omit/`null` → no change; blank/`not-a-phone`/`123` → **422** — was free `str`; blank silently cleared; garbage could persist), `role` (same `RoleKeyValue`; omit = no change; blank/malformed → **422**), `password`, `is_active`, `branch_id` ∈ `UuidIdValue` (omit → no change; blank/`!!!`/`http://…`/non-UUID → **422**; `clear_branch` for explicit clear), `department_id` ∈ `UuidIdValue` (omit → no change; blank/`!!!`/`http://…`/non-UUID → **422**; `clear_department` for explicit clear), `record_scope` (same `Literal`, omit = no change; blank/invalid → **422**). Users row **Change role** / **Edit user branch** / **Edit user department** / **Edit user record scope** selects (`aria-label`s).
 
-Deactivates the user (`is_active=false`), revokes sessions, and audits `user_deactivated`. The user row is **not** removed (ADR-003). Reactivate with `PATCH /users/{user_id}` and `{"is_active": true}`.
-
-There is no hard-delete endpoint and no `PATCH /users/{user_id}/status` shortcut.
+### 4.5 Delete / Deactivate User
+**Endpoint:** `DELETE /users/{user_id}` (soft deactivate)
 
 ### 4.6 Roles & Permissions
 
-**List Roles:** `GET /roles`
+**List Roles:** `GET /roles` — system roles + **active** tenant custom roles (default `record_scope` on each row). Pass `?include_inactive=true` to include soft-deactivated custom roles (Users manage UI). Custom rows include `system: false`, `is_active`, `base_role`, and `id`. Users manage **Custom role status filter** All / Active / Inactive (`roleManageFilter`; client filter over full `include_inactive` cache). Assignment pickers stay active-only (except current role).
 
-**Get Role Permissions:** `GET /roles/{role_id}/permissions`
+**Get Role:** `GET /roles/{role}` — Path `role` ∈ `RoleKeyValue` (blank/`A`/`Cashier!` → **422** — was free `str`); system catalog entry or custom role (inactive custom roles still resolve).
 
-**Update Permissions:** `PUT /roles/{role_id}/permissions`
+**Create Custom Role:** `POST /roles` — company_admin / super_admin; `{ key, label, base_role? }` (`label` ∈ `CustomRoleLabelValue` strip; 1–120; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist; Users **Custom role label** input) or explicit `permissions` + optional `record_scope` (same `Literal`; omit = base_role/own default; blank/invalid → **422**). `key` ∈ same `RoleKeyValue` shape as user assign (strip/lower; blank/malformed → **422** — was free `str`; late **400**); system-key collision / `super_*` remain service **400**. `base_role` schema `Literal` of clonable system roles (platform_* + company_admin|store_manager|sales_officer|inventory_officer|accountant|cashier; strip/lower; omit/null OK when `permissions` set; blank/unknown/`super_admin` → **422**). Clones system `base_role` permission map when provided. `permissions` map modules ∈ assignable modules with actions ∈ `read`|`write`|`approve`|`*` (`ApiKeyPermissionAction`; strip/lower; unknown module|action / empty map / `*:*` / unknown top-level keys → **422** — was late service **400**). Body `extra=forbid`. Users **Create custom role** controls (`aria-label`s).
 
-**Request:**
-```json
-{
-  "module_permissions": ["inventory", "sales", "pos"],
-  "menu_permissions": ["products", "stock_in", "stock_out"],
-  "record_permissions": {
-    "products": ["read", "write", "delete"],
-    "sales": ["read", "write"]
-  }
-}
-```
+**Update Custom Role:** `PATCH /roles/{role}` — `{ label?, permissions?, record_scope? (same Literal), is_active? }` (`label` ∈ `CustomRoleLabelValue`; omit/`null` → no change; blank/`!!!`/`http://…` → **422**) (`extra=forbid`; same `permissions` honesty when sent). Soft-deactivate with `is_active: false` (Users UI **Activate** / **Deactivate**); inactive roles leave existing assignees intact but block new assignment (400). System roles are immutable (400).
+**Delete Custom Role:** `DELETE /roles/{role}` — hard delete; returns **409** while any user still has that role. Prefer soft-deactivate for retirement.
 
-**Available Roles:**
+**Available system roles:**
 - `super_admin`
 - `company_admin`
 - `store_manager`
@@ -375,34 +605,41 @@ There is no hard-delete endpoint and no `PATCH /users/{user_id}/status` shortcut
 Stage 17 C1 proves catalog fidelity for BR-5.1 (categories tree, brands+logo, UoM conversion, variants, barcode generate, multi-image primary, batch/expiry via stock-in) — `test_catalog_fidelity_c1.py`; plan `docs/STAGE_17_PLAN.md`.
 
 ### 5.1 Product Categories
-**List:** `GET /catalog/categories` (`?tree=true` for nested tree)  
-**Create:** `POST /catalog/categories` — body `{ code, name, parent_id?, tax_rate_id? }`  
-**Update:** `PATCH /catalog/categories/{category_id}` — may set/clear `tax_rate_id`  
-**Delete:** `DELETE /catalog/categories/{category_id}` (soft deactivate)
+**List:** `GET /catalog/categories` — tree order with `depth` and `path` (e.g. `Food › Soft Drinks › Colas`) (BR-5.1); optional `is_active=true|false` for Catalog manage All/Active/Inactive (default all)  
+**Create:** `POST /catalog/categories` — typed `ProductCategoryCreate` (`extra=forbid`; unknown keys → **422**; `ProductCategoryUpdate` same). Body (`code`, `name`, optional `parent_id`, `tax_rate_id`) — `code` ∈ `CategoryCodeValue` (strip; 1–40; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank reached service **400**; punctuation/URL could persist). Inventory Catalog **Category code** input. `name` ∈ `CategoryNameValue` (strip; 1–120; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Inventory Catalog **Category name** input. Optional `parent_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → root; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach parent lookup; existence remains tenant-scoped category lookup **404**). Inventory Catalog **Category parent** select; Add category sends trim or `null` when blank. Optional `tax_rate_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → tenant default path; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach tax-rate lookup; existence remains tenant-scoped tax-rate lookup **404**). Inventory Catalog **Category tax rate** select; Add category sends trim or `null` when blank. Duplicate code → **409**.  
+**Update:** `PATCH /catalog/categories/{category_id}` — `code` ∈ `CategoryCodeValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**); `name` ∈ `CategoryNameValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**); optional `parent_id` ∈ `UuidIdValue` (omit → no change; `null` → root; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach parent lookup; existence / cycle checks remain tenant-scoped **404**/400). Inventory Catalog **Edit category parent** select; reparent sends trim or `null` when blank. Optional `tax_rate_id` ∈ `UuidIdValue` (omit → no change; `null` → clear; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach tax-rate lookup; existence remains tenant-scoped **404**). Inventory Catalog **Edit category tax rate** select; update sends trim or `null` when blank. Soft-reactivate via `is_active: true` (Inventory Catalog **Activate**)  
+**Delete:** `DELETE /catalog/categories/{category_id}` (soft deactivate `is_active=false`; Inventory **Deactivate**; inactive blocked on product create/PATCH; product create category picker hides inactive)
 
-Stage 10 T1: optional `tax_rate_id` on the category. Tax resolution for a product line is exempt → line override → product `tax_rate_id` → category rate (walks parents) → tenant default.
+Inventory Catalog **Category tree** UI shows indented hierarchy + reparent picker; product create category select uses `path`.
+
+Optional `tax_rate_id` on create/update (BR-12.1 / BR-2.8). Clear with `"tax_rate_id": null`. Resolve order for product lines: product `tax_rate_id` → category (walk `parent_id`, nearest wins) → tenant default tax rate → 0%.
 
 ### 5.2 Brands
-**List:** `GET /catalog/brands`  
-**Create:** `POST /catalog/brands`  
-**Update:** `PATCH /catalog/brands/{brand_id}`
+**List:** `GET /catalog/brands` (`is_active=true|false` optional — Catalog manage filter; default returns all)  
+**Create:** `POST /catalog/brands` — typed `BrandCreate` (`extra=forbid`; unknown keys → **422**; `BrandUpdate` same). Body `{ "code", "name", "description"? }` — `code` ∈ `BrandCodeValue` (strip; 1–40; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank reached service **400**; punctuation/URL could persist). Inventory Catalog **Brand code** input. `name` ∈ `BrandNameValue` (strip; 1–120; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Inventory Catalog **Brand name** input. Optional `description` ∈ `BrandDescriptionValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → no description; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently cleared / garbage could persist). Inventory Catalog **Brand description** input. Duplicate code → **409**.  
+**Update:** `PATCH /catalog/brands/{brand_id}` — `code` ∈ `BrandCodeValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**); `name` ∈ `BrandNameValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**); `description` ∈ `BrandDescriptionValue` (omit/`null` → no change; blank/invalid → **422**); partial fields also include `is_active` (Inventory Catalog **Activate** when inactive)  
+**Deactivate:** `DELETE /catalog/brands/{brand_id}` (soft `is_active=false`; Inventory **Deactivate**; inactive brands cannot be assigned on product create/PATCH)  
+**Logo:** `POST|GET|DELETE /catalog/brands/{brand_id}/logo` (multipart `file` on POST; image types same as company logo)
+
+Responses include `description`, `logo_url`, and `has_logo` (BR-5.1).
 
 ### 5.3 Units
-**List:** `GET /catalog/units`  
-**Create:** `POST /catalog/units`
+**List:** `GET /catalog/units` (`is_active=true|false` optional — Catalog manage filter; default returns all)  
+**Create:** `POST /catalog/units` — typed `UnitOfMeasureCreate` (`extra=forbid`; unknown keys → **422**; `UnitOfMeasureUpdate` / `UnitConvertPreview` / variant + image-primary same). `code` ∈ `UnitCodeValue` (strip; 1–20; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank reached service **400**; punctuation/URL could persist). Inventory Catalog **Unit code** input. `name` ∈ `UnitNameValue` (strip; 1–80; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Inventory Catalog **Unit name** input. `base_unit_id` ∈ `UuidIdValue` (omit/`null` → root; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach base lookup). Inventory Catalog **Unit base unit** select. Duplicate code → **409**.  
+**Update:** `PATCH /catalog/units/{unit_id}` — `code` ∈ `UnitCodeValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**); `name` ∈ `UnitNameValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**); `base_unit_id` ∈ `UuidIdValue` (omit → no change; blank/`!!!`/`http://…`/non-UUID → **422**; `clear_base` for explicit root clear); partial fields also include conversion fields, `is_active` (Inventory Catalog **Activate** when inactive)  
+**Deactivate:** `DELETE /catalog/units/{unit_id}` (soft `is_active=false`; Inventory **Deactivate**; inactive units cannot be assigned on product create/PATCH)  
+**Convert preview:** `POST /catalog/units/convert` — required `product_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`); `quantity` > 0; optional `from_unit_id` ∈ `UuidIdValue` (omit/`null` → product stock unit; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`). Returns entered vs stockkeeping quantity.  
+
+Create with conversion (BR-5.1): `{ "code": "CASE12", "name": "Case of 12", "base_unit_id": "<PCS id>", "conversion_ratio": 12 }` (`conversion_ratio` ∈ `PositiveQtyValue`; omit → 1; `nan`/`inf`/≤0 → **422** — was unconstrained `float`; Inventory **Unit conversion ratio** `aria-label`)  
+Meaning: 1 CASE12 = 12 × base unit. Stock ledger stays in `product.unit_id`.  
+`POST /inventory/stock-in` / `stock-out` accept optional `unit_id` (entered UoM) and convert to stock units.
 
 ### 5.4 Products
-**List:** `GET /products`  
-**Create:** `POST /products`  
-**Get:** `GET /products/{product_id}`  
-**Update:** `PATCH /products/{product_id}` (set `is_active=false` to soft-deactivate)  
-**Import:** `GET /products/import/template`, `POST /products/import?dry_run=true|false`  
-**Warehouse stock:** `GET /products/{product_id}/warehouse-stock`  
-**Barcode lookup:** `GET /inventory/products/lookup?q=&barcode=`
-
-Stage 19 P1 proves products/catalog CRUD + import + stock/barcode surfaces via JWT and X-API-Key reads — `test_products_customers_api_p1.py` (BR-18.2). Dedicated catalog CSV export deferred (list/report packaging covers export needs for MVP).
-
-Stage 17 A1 domain audit (`module=inventory`): `product_create` (details.after snapshot); `product_update` / soft-delete `product_deactivate` with `before`/`after` field diffs; stock ops emit `stock_{movement_type}` with qty before/after. Evidence: `test_inventory_audit_a1.py`.
+**List:** `GET /products?category_id=&brand_id=&low_stock=true&is_active=true|false` — optional `is_active` filters soft-deactivated products (Inventory manage All / Active / Inactive UI; default returns all)  
+**Create:** `POST /products` — typed `ProductCreate` (`extra=forbid`; unknown keys → **422**; `ProductUpdate` same). `name` ∈ `ProductNameValue` (strip; 1–200; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Inventory **Product name** input. `cost_price` / `selling_price` / `stock_qty` / `reorder_level` ∈ `NonNegativeMoneyValue` / `NonNegativeQtyValue` (omit → 0; `nan`/`inf`/<0 → **422** — was unconstrained `float`). Optional `weight` / `length` / `width` / `height` ∈ `NonNegativeQtyValue`. Inventory **Product selling price** / weight / dims (`aria-label`s). Optional `sku` ∈ `ProductSkuValue` (strip + upper; `^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$`; omit/`null` → auto `SKU-YYYY-NNNN`; blank/`!!!`/`a b`/`http://…` → **422** — was free `str`; blank also auto-allocated; garbage late service **400**). Inventory **Product SKU** input. Optional `barcode` ∈ `ProductBarcodeValue` (strip + upper; `^[A-Za-z0-9\-._]{4,48}$`; omit/`null` → no barcode; blank/`!!!!`/`http://…`/`ab` → **422** — was free `str`; blank silently cleared; garbage late service **400**). Inventory **Product barcode** input. Optional `description` ∈ `ProductDescriptionValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → no description; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently cleared / garbage could persist). Inventory **Product description** input. `category` ∈ `ProductCategoryLabelValue` (strip; 1–100; ≥1 letter/digit; no `://`/`@`; omit → `"General"`; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently fell through to `"General"`; punctuation/URL could persist). Optional `category_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → label-only / General path; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach category lookup; existence remains tenant-scoped catalog category lookup **404**/400). Prefer `category_id` (when set, service overwrites denormalized label from catalog name). Inventory **Product category** select; Create product sends trim or `null` when blank. Optional `tax_rate_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → category/tenant default path; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach tax-rate lookup / FK; existence remains tenant-scoped tax-rate lookup **404**/integrity). Inventory **Product tax rate** select; Create product sends trim or `null` when blank. Optional `brand_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no brand; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach brand lookup / FK; existence remains tenant-scoped brand lookup **404**/integrity). Inventory **Product brand** select; Create product sends trim or `null` when blank. Optional `unit_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no unit / default path; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach unit lookup / FK; existence remains tenant-scoped unit lookup **404**/integrity). Inventory **Product unit** select; Create product sends trim or `null` when blank. `tax_supply_class` schema `Literal["standard","zero_rated","exempt"]` (omit → `standard`; blank/invalid → **422**; no silent standard from garbage). Inventory **Product supply class** select (`aria-label`). `tax_exempt` is aligned to `exempt` class on write.  
+**Get:** `GET /products/{product_id}` — Path `product_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; existence remains tenant-scoped **404**). Same Path honesty on image/barcode/variant/batch/stock/price product routes.  
+**Update:** `PATCH /products/{product_id}` — Path `product_id` ∈ `UuidIdValue` (same honesty). Partial fields include `name` ∈ `ProductNameValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**), `sku` ∈ `ProductSkuValue` (omit/`null` → no change; blank/`!!!`/`a b`/`http://…` → **422** — was free `str`; blank silently ignored; garbage could persist without `normalize_sku`), `barcode` ∈ `ProductBarcodeValue` (omit/`null` → no change; blank/invalid → **422**), `description` ∈ `ProductDescriptionValue` (omit/`null` → no change; blank/invalid → **422**), `category` ∈ `ProductCategoryLabelValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**), optional `category_id` ∈ `UuidIdValue` (omit/`null` → no change; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach category lookup; existence remains tenant-scoped catalog category lookup **404**/400). Inventory **Edit product category** select; Save product sends trim or `null` when blank. Optional `brand_id` ∈ `UuidIdValue` (omit/`null` → no change; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach brand lookup / FK; existence remains tenant-scoped brand lookup **404**/integrity). Inventory **Edit product brand** select; Save product sends trim or `null` when blank. Optional `unit_id` ∈ `UuidIdValue` (omit/`null` → no change; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach unit lookup / FK; existence remains tenant-scoped unit lookup **404**/integrity). Inventory **Edit product unit** select; Save product sends trim or `null` when blank. Optional `tax_rate_id` ∈ `UuidIdValue` (omit/`null` → no change; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach tax-rate lookup / FK; existence remains tenant-scoped tax-rate lookup **404**/integrity). Inventory **Edit product tax rate** select; Save product sends trim or `null` when blank. Also prices, physical dims, tax flags (`tax_supply_class` same `Literal`, omit = no change; blank/invalid → **422**), and soft-deactivate via `is_active` (false hides from POS search and blocks new sale/PR/PO/PI lines; Inventory UI **Activate** / **Deactivate** + manage status filter; stock ops still allowed)  
+**Delete:** `DELETE /products/{product_id}` — Path `product_id` ∈ `UuidIdValue` (same honesty).
 
 **Create Product Request:**
 ```json
@@ -410,59 +647,145 @@ Stage 17 A1 domain audit (`module=inventory`): `product_create` (details.after s
   "name": "Organic Wheat Flour",
   "sku": "WF-ORG-5KG",
   "barcode": "8901234567890",
+  "description": "Premium organic wheat flour",
   "category_id": "cat_001",
   "brand_id": "brand_001",
   "unit_id": "unit_001",
-  "variants": [
-    {
-      "name": "5kg Pack",
-      "sku": "WF-ORG-5KG",
-      "price": 12.99,
-      "cost": 8.50,
-      "barcode": "8901234567890"
-    }
-  ],
-  "description": "Premium organic wheat flour",
-  "images": ["https://cdn.ribdigi.com/products/wf1.jpg"],
-  "track_inventory": true,
-  "is_active": true
+  "cost_price": 8.50,
+  "selling_price": 12.99,
+  "weight": 5.0,
+  "length": 30,
+  "width": 20,
+  "height": 10,
+  "tax_supply_class": "standard",
+  "tracks_batches": false
 }
 ```
+
+`sku` ∈ `ProductSkuValue` is optional on create: omit/`null` to auto-allocate `SKU-YYYY-NNNN` unique per tenant (products + variants); blank/`!!!`/`a b`/`http://…` → **422** (was free `str`; blank also auto-allocated; garbage late **400** via `normalize_sku`). Explicit SKU is uppercased and must be unique (**409** on clash). Same auto/manual rules apply to `POST /products/{id}/variants`. Inventory **Product SKU** / **Variant SKU** inputs send `null` when blank. Service `normalize_sku` remains defense-in-depth.
+
+**Variants:** `POST /products/{id}/variants` — `name` ∈ `VariantNameValue` (strip; 1–120; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Inventory Variants **Variant name** input. Optional `sku` ∈ `ProductSkuValue` (same as product SKU; Inventory **Variant SKU** input). Optional `barcode` ∈ `ProductBarcodeValue` (same pattern as product barcode; Inventory **Variant barcode** input). Optional `size`|`color`|`flavor`|`dosage` ∈ `VariantAttrValue` (strip; 1–80; ≥1 letter/digit; no `://`/`@`; omit/`null` → no attr; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently cleared; punctuation/URL could persist). Inventory **Variant size** / **color** / **flavor** / **dosage** inputs (`aria-label`s; create sends `null` when blank). `PATCH /products/{id}/variants/{vid}` — `name` ∈ `VariantNameValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**); `sku` ∈ `ProductSkuValue` (omit/`null` → no change; blank/`!!!`/`a b`/`http://…` → **422** — was free `str`; blank late **400** "Variant sku is required"); `barcode` ∈ `ProductBarcodeValue` (omit/`null` → no change; blank/invalid → **422**); attrs ∈ `VariantAttrValue` (omit → no change; `null` → clear; blank/garbage → **422**).
+
+Variant attributes (BR-5.1): `size`, `color`, `flavor`, `dosage` on `POST|PATCH /products/{id}/variants` (typed `VariantAttrValue`; set to `null` on PATCH to clear). Soft-deactivate via `DELETE /products/{id}/variants/{vid}`; reactivate via `PATCH …/variants/{vid}` `{ is_active: true }` (Inventory Variants **Activate** / **Deactivate** + manage status filter All/Active/Inactive; `GET /products/{id}/variants?is_active=true|false` optional — omit = all; inactive variants excluded from sale/stock pickers).
+
+Optional physical fields: `weight` (kg), `length` / `width` / `height` (cm). Also accepted on `PATCH /products/{id}` and CSV import columns.
+
+Product responses include `stock_qty`, `reorder_level`, plus traffic-light fields `stock_status` (`green`|`yellow`|`red`) and `stock_status_label` (`ok`|`near_reorder`|`low`|`out_of_stock`) for Inventory list badges (BR-5.5). Rules: **red** when on-hand ≤ 0 or (reorder > 0 and on-hand ≤ reorder); **yellow** when reorder > 0 and on-hand ≤ reorder × 1.5; otherwise **green**.
+
+**Barcode symbology (BR-5.1):**  
+- `POST /products/{id}/barcode/generate?symbology=code128|ean13|upca&force=false` — Code 128 from SKU; EAN-13 / UPC-A allocate unique internal GTINs (prefixes `200` / `2`) with valid check digits. Response includes `symbology`. Query `symbology` is OpenAPI `Literal` (+ strip/lower); omit on generate → `code128`; blank/unknown → **422** (no silent `code128` from `""`). Service `normalize_symbology` remains defense-in-depth (**400**).  
+- `GET /products/{id}/barcode.png?symbology=` — PNG render (auto-detects EAN-13/UPC-A from digits when omitted). Same Literal when provided.  
+- `GET /products/{id}/barcode/label?copies=&symbology=` — printable HTML labels. Query `copies` ∈ 1–40 (omit → 1; `0`/`-1`/`41` → **422** — was free `int`; service silently clamped 1–40). Inventory **Label copies** (`aria-label`).  
+- Variant equivalents: `POST|GET /products/{pid}/variants/{vid}/barcode/generate|png|label` (same symbology query params). Inventory Variants tab: barcode column + Generate/Label.  
+Barcodes are unique across **products and variants** in the tenant (409 on clash). Assigning a 12/13-digit barcode via create/PATCH validates the check digit.
+
+**Integrator lookup (BR-18.2):** `GET /inventory/products/lookup` — Query `q` ∈ `ProductSearchQueryValue` (strip; max 120; empty default OK; ≥1 letter/digit when non-empty; no `://`; blank/`!!!`/`http://…` → **422**); Query `barcode` ∈ `ProductBarcodeValue` (strip + upper; 4–48; omit/`null` → name/SKU `q` path; blank/`!!!!`/`ab`/`http://…` → **422**); Query `limit` ∈ 1–100 (omit → 48; `0`/`-1`/`101` → **422** — was free `int`; service silently clamped 1–100). Response `data` shape is `{ "q", "barcode", "count", "items": [ ... ] }` (not a bare product array; not cursor pagination). Inventory **Product lookup search** / **Product lookup barcode** (`aria-label`s); lookup omits blank. Also `GET /products/{id}/warehouse-stock` and `GET /products/export`.
 
 ### 5.5 Stock Operations
 
 Stage 17 S1 proves stock-in → warehouse qty + `stock_movements`, adjustment reason codes, and opening stock — `test_stock_ops_chain_s1.py`.
 
-**Stock In:** `POST /inventory/stock-in` — body `{ product_id, quantity, warehouse_id?, notes?, variant_id?, batch_number?, manufacturing_date?, expiry_date? }`
+```json
+{
+  "product_id": "prod_001",
+  "quantity": 12,
+  "warehouse_id": "wh_001",
+  "variant_id": "var_001",
+  "unit_id": "unit_001",
+  "notes": "Receive to main warehouse",
+  "batch_number": "LOT-001",
+  "manufacturing_date": "2026-01-01",
+  "expiry_date": "2026-12-31"
+}
+```
 
-**Stock Out:** `POST /inventory/stock-out` — same shape; optional `batch_id` (FEFO if omitted)
+Required `product_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach catalog lookup; existence remains tenant-scoped product lookup **404**). Inventory **Selected product** select (`aria-label`); Receive batch sends `product_id` trim. Optional `warehouse_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → company / product stock path; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach warehouse lookup; existence remains tenant-scoped warehouse lookup **404**). Inventory Batches **Stock-in warehouse** select (`aria-label`); Receive batch sends trim or `null` when blank. Optional `variant_id` ∈ `UuidIdValue` (omit/`null` → no variant; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`). Inventory Batches **Stock-in variant** select. Optional `unit_id` ∈ `UuidIdValue` (omit/`null` → product stock unit; blank/`!!!`/`http://…`/non-UUID → **422**). Inventory Batches **Stock-in unit** select. Optional `batch_id` ∈ `UuidIdValue` (omit/`null` → resolve via `batch_number`; blank/`!!!`/`http://…`/non-UUID → **422**). Optional `notes` ∈ `StockInNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → no notes; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently dropped / garbage could persist). Inventory Batches **Stock-in notes** input. Optional `reference_type` ∈ `StockInReferenceTypeValue` (strip/lower; 1–50; ≥1 letter/digit; no `://`/`@`; omit/`null` → no coded source; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist on `StockMovement.reference_type` String(50)). Inventory Batches **Stock-in reference type** input (`aria-label`; Receive batch sends `null` when blank). Optional `reference_id` ∈ `StockMovementReferenceIdValue` (same honesty as stock-out; Inventory **Stock-in reference id**). Inventory Batches UI sends these; batch row persists warehouse + variant. Opening stock lines also accept `variant_id`.
 
-**Stock Adjustment:** `POST /inventory/adjust/{product_id}` — body `{ quantity` (signed delta), `reason` (`damage|theft|expiry|found|lost|other`), `notes?`, `warehouse_id?` }. Invalid reason → `400 INVALID_ADJUSTMENT_REASON`.
+```json
+{
+  "product_id": "prod_001",
+  "variant_id": "var_001",
+  "warehouse_id": "wh_001",
+  "quantity": 100,
+  "batch_number": "LOT-001",
+  "manufacturing_date": "2026-07-01",
+  "expiry_date": "2027-07-01",
+  "notes": "Initial stock from PO-001"
+}
+```
 
-**Opening Stock:** `POST /inventory/opening-stock` — single or `items[]`; `mode=add|set`; writes `movement_type=opening_stock` / `reference_type=opening_stock`.
+Batch fields: optional `batch_number` ∈ `BatchNumberValue` (strip; 1–80; ≥1 letter/digit; no `://`/`@`; omit/`null` → no lot — service still requires a lot when `product.tracks_batches`; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently stripped to None / punctuation/URL could persist on `ProductBatch.batch_number`); optional `manufacturing_date` / `expiry_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime; omit/`null` → no batch dates; blank/`not-a-date`/`01/02/2024` → **422** — was free `datetime`; OpenAPI date-time; padded dates inconsistent) create/update a `product_batches` row; response includes serialized `batch`. Same batch-number + date honesty on `POST /inventory/opening-stock` lines. API `reports.parse_date` remains defense-in-depth. Inventory **Stock-in batch number** / **Stock-in manufacturing date** / **Stock-in expiry date** + **Opening stock batch number** / **Opening stock manufacturing date** / **Opening stock expiry date** inputs (`aria-label`s); stock-in trims lot; opening sends `null` when blank lot/dates.
 
-**Warehouse stock view:** `GET /products/{product_id}/warehouse-stock`
+**Stock Out:** `POST /inventory/stock-out`
 
-**Stock Transfer:** `POST /inventory/stock-transfers`
+```json
+{
+  "product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+  "variant_id": "var_001",
+  "warehouse_id": "wh_001",
+  "quantity": 5,
+  "reference_type": "sale",
+  "reference_id": "inv_001",
+  "notes": "Sold via invoice INV-001"
+}
+```
+
+Required `product_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach catalog lookup; existence remains tenant-scoped product lookup **404**). Inventory **Selected product** select (`aria-label`); Stock out sends `product_id` trim. Optional `warehouse_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → company / product stock path; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach warehouse lookup; existence remains tenant-scoped warehouse lookup **404**). Inventory Stock Out **Stock-out warehouse** select (`aria-label`); Post stock out sends trim or `null` when blank. Optional `unit_id` / `variant_id` / `batch_id` ∈ `UuidIdValue` (omit/`null` OK; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`). Inventory **Stock-out unit** / **Stock-out variant** / **Stock-out batch** selects (`aria-label`s). `reference_type` required ∈ `{sale, transfer, adjustment, damage, internal, other}` (schema `StockOut` + `Literal`; no silent default to `other`; omit/blank/invalid → **422**). Inventory UI **Select reference type**. Optional `notes` ∈ `StockOutNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → no notes; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently dropped / garbage could persist). Inventory Stock Out **Stock-out notes** input. Optional `reference_id` ∈ `StockMovementReferenceIdValue` (strip; 1–36; ≥1 letter/digit; no `://`/`@`; omit/`null` → no external ref; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist on `StockMovement.reference_id` String(36); same type on `POST /inventory/stock-in`). Inventory Stock Out **Stock-out reference id** input (`aria-label`; post sends `null` when blank). Optional `warehouse_id`, `variant_id`, `unit_id`, `batch_id` (otherwise FEFO). Persists `stock_movements.reference_type` / `reference_id` with `movement_type=stock_out`. Inventory UI **Stock Out** tab.
+
+**Warehouse Stock (BR-5.4):** `GET /inventory/warehouse-stock?warehouse_id=&include_zero=false` — per-warehouse on-hand + reorder policy (`inventory:read`). Response `items[]` include `quantity`, `reorder_level`, `reorder_qty`, `below_reorder`, `suggested_order_qty`, `consolidated_stock`. Inventory **Warehouse stock** tab.
+
+**Warehouse reorder:** `PUT /inventory/warehouse-stock/reorder` — required `warehouse_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach warehouse lookup; existence remains tenant-scoped warehouse lookup **404**). Required `product_id` ∈ `UuidIdValue` (same honesty; catalog lookup **404**). Inventory **Warehouse stock warehouse** + **Warehouse reorder product** selects (`aria-label`s); `reorder_level` / `reorder_qty` ∈ `NonNegativeQtyValue` (`nan`/`inf`/<0 → **422**). Inventory **Warehouse reorder level/qty** (`aria-label`s); Save warehouse reorder policy sends trim.
+
+```json
+{
+  "warehouse_id": "wh_001",
+  "product_id": "prod_001",
+  "reorder_level": 10,
+  "reorder_qty": 25
+}
+```
+
+Creates/updates `warehouse_stocks` reorder fields for that warehouse (`inventory:write`). Store-scoped alias remains `PUT /stores/{store_id}/reorder-policy` — required `product_id` ∈ `UuidIdValue` (same honesty); `reorder_level` / `reorder_qty` ∈ `NonNegativeQtyValue` (`nan`/`inf`/<0 → **422** — was `Field(ge=0)` only). Multi-Store **Store reorder product** / **Store reorder level/qty** (`aria-label`s); Save store reorder policy sends trim.
+
+**Stock Adjustment:** `POST /inventory/adjust/{product_id}` (BR-5.2)
+
+```json
+{
+  "quantity": -2,
+  "reason": "damage",
+  "warehouse_id": "wh_001",
+  "notes": "Water damage during storage"
+}
+```
+
+`reason` required ∈ `{damage, theft, expiry, found, lost}` (schema `Literal`; no silent default to `damage`; omit/blank/invalid → **422**). Inventory UI **Select reason**. Optional `notes` ∈ `Required `quantity` ∈ `FiniteQtyValue` (signed finite; `nan`/`inf` → **422** — was unconstrained `float`). Optional notes ∈ `StockAdjustNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → no notes; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently dropped / garbage could persist). Inventory Adjust **Stock adjustment notes** input. Optional `warehouse_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → company / product stock path; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach warehouse lookup; existence remains tenant-scoped warehouse lookup **404**). Inventory Adjust **Stock adjustment warehouse** select (`aria-label`); Post stock adjustment sends trim or `null` when blank. Persists `stock_movements.reason` with `movement_type=adjustment`. Inventory UI **Adjust** tab. Filter movements with `reason=` on `/inventory/movements` and `/reports/inventory/movements` (Query `Literal`; blank/invalid → **422**).
+
+**Stock Transfer (BR-5.2 / BR-5.4):** `POST /inventory/stock-transfers` (also `POST /stores/transfers`)
 
 Stage 17 W1: inter-warehouse create → submit/ship → receive updates `WarehouseStock` and writes `transfer_out`/`transfer_in` movements (`reference_type=stock_transfer`). Per-product grid: `GET /products/{id}/warehouse-stock`. Insufficient source qty on ship → `409 INSUFFICIENT_WAREHOUSE_STOCK` (stays `requested`). Evidence: `test_warehouse_transfer_chain_w1.py`.
 
 ```json
 {
-  "from_warehouse_id": "wh_001",
-  "to_warehouse_id": "wh_002",
+  "from_warehouse_id": "11111111-2222-3333-4444-555555555555",
+  "to_warehouse_id": "22222222-3333-4444-5555-666666666666",
   "submit": true,
   "notes": "Transfer to branch warehouse",
-  "items": [{ "product_id": "prod_001", "quantity": 50 }]
+  "items": [{ "product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", "quantity": 50 }]
 }
 ```
 
-**List:** `GET /inventory/stock-transfers` (filters: `status`, `store_id`, dates, `scope`, `limit`)  
-**Submit / Ship / Receive / Cancel:** `POST /inventory/stock-transfers/{transfer_id}/submit|ship|receive|cancel`  
-(No status PATCH — use action POSTs.)
+Nested `items[].product_id` required ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach catalog lookup; existence remains tenant-scoped product lookup **404**). Inventory **Selected product** select (`aria-label`; shared product picker) + Multi-Store **Stock transfer product** select (`aria-label`); Create transfer sends `product_id` trim. Optional `from_store_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` OK when warehouse pair set; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach store lookup; existence remains tenant-scoped store lookup **404**). Multi-Store **Stock transfer from store** select (`aria-label`); Create transfer sends trim. Optional `to_store_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` OK when warehouse pair set; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach store lookup; existence remains tenant-scoped store lookup **404**). Multi-Store **Stock transfer to store** select (`aria-label`); Create transfer sends trim. Optional `from_warehouse_id` / `to_warehouse_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` OK when store pair set; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach warehouse lookup; existence remains tenant-scoped warehouse lookup **404**). Inventory **Stock transfer from warehouse** / **Stock transfer to warehouse** selects (`aria-label`s); Create transfer sends trim. Warehouse pair preferred for Inventory UI. Both warehouses must be linked to a store. Same-store warehouse pairs use **1-step** approval; different stores keep **dual** manager approval (BR-13.2). Store-only create still requires different `from_store_id` / `to_store_id` (warehouses derived). Optional `notes` ∈ `StockTransferNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → no notes; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently dropped / garbage could persist). Inventory Transfers **Stock transfer notes** input. Lifecycle: `submit` → `approve` (×1 or ×2) → `ship` → `receive` (also `reject` / `cancel`). **Reject / Cancel:** `POST /inventory/stock-transfers/{id}/reject|cancel` (and `/stores/transfers/{id}/…`) body `{ "reason" }` ∈ `StockTransferRejectReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; **required**) → status `cancelled` + `rejection_reason`. Omit/blank/`!!!`/`http://…` → **422** (was free `str` with `min_length=1` only; whitespace still reached service **400**; garbage could persist). Inventory + Multi-Store **Stock transfer reject reason** (`aria-label`; shared reject/cancel input). Inventory aliases under `/inventory/stock-transfers*` use `inventory:read|write`. Inventory **Transfers** tab. **Manage list status:** `GET /inventory/stock-transfers` + `GET /stores/transfers` optional Query `status` ∈ `draft`|`requested`|`in_transit`|`received`|`cancelled` (same `TransferReportStatusValue` as transfer report; omit → all; blank/invalid → **422**). Inventory + Multi-Store **Stock transfer status filter** (`transferManageFilter`; client filter over full cache).
 
 **Update Transfer Status:** `PATCH /inventory/stock-transfers/{transfer_id}` — **deprecated / not implemented**; use action POSTs above.
 ### 5.6 Stock Count
+**Create:** `POST /inventory/stock-counts` — required `warehouse_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach warehouse lookup; existence remains tenant-scoped warehouse lookup **404**). Optional `notes` ∈ `StockCountNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → no notes; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently dropped / garbage could persist). Optional `product_ids` ∈ `list[UuidIdValue]` (omit/`null` → all warehouse stock; blank/`!!!`/`http://…`/non-UUID element → **422** — was free `list[str]`; garbage could reach product lookup). Inventory Counts **Stock count warehouse** select + **Stock count notes** input; Create draft sends `warehouse_id` trim and `null` notes when blank (UI omits product_ids → full warehouse).  
+**List:** `GET /inventory/stock-counts` — optional Query `status` ∈ `draft`|`completed`|`cancelled` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Inventory Counts **Stock count status filter** All / Draft / Completed / Cancelled (`countManageFilter`; client filter over full cache).  
+**Get:** `GET /inventory/stock-counts/{count_id}` — Path `count_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; existence remains tenant-scoped **404**). Same Path honesty on items/complete/cancel.  
+**Update lines:** `PATCH /inventory/stock-counts/{count_id}/items` — Path `count_id` ∈ `UuidIdValue` (same honesty). Body `{ "items": [{ "product_id", "counted_qty", "notes"? }] }` (`StockCountItemsUpdate` / `StockCountItemUpdate`; both `extra=forbid` with `StockCountCreate` / `StockCountCancel` — unknown keys → **422**). Required line `product_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach catalog / count-line lookup). Inventory Counts **Save count lines** sends `product_id` trim. Optional line `notes` ∈ `StockCountItemNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit → no change; `null` → clear; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently dropped via strip-to-None / garbage could persist; PATCH `exclude_unset` so omit ≠ null). Inventory Counts active draft **Stock count line notes** inputs.  
+**Cancel:** `POST /inventory/stock-counts/{count_id}/cancel` `{ "reason": "..." }` — Path `count_id` ∈ `UuidIdValue` (same honesty). **reason** ∈ `StockCountCancelReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` `min_length=1` only — whitespace still reached service **400**; garbage could be appended to count `notes` / audit). Appended to count `notes` as `Cancel: …` and stored in audit `stock_count_cancelled.details.reason`; draft only → `cancelled` (`can_cancel`); no variance movements. Inventory Counts **Stock count cancel reason** (`aria-label`) + `Cancel stock count ${id}`.  
+**Complete:** `POST /inventory/stock-counts/{count_id}/complete` — Path `count_id` ∈ `UuidIdValue` (same honesty); posts warehouse/product variance adjustments (`movement_type=adjustment`).
+
+**Variance report (BR-5.2):** `GET /reports/inventory/stock-counts?from_date=&to_date=&warehouse_id=&store_id=&variance_only=true&status=completed` — completed counts with line variances (`expected_qty` / `counted_qty` / `variance`); default `variance_only=true` omits zero lines. Query `status` ∈ `draft`|`completed`|`cancelled` (schema Query `Literal` + strip/lower; omit → `completed`; blank/invalid → **422** — no silent empty filter or blank→all). Flat `lines[]` for export. Export type `inventory_stock_counts`. Reports Inventory **Count status** select.
 
 Stage 17 S2 proves create → enter counted qty → complete (posts `adjustment` movements with `reference_type=stock_count`) → variance report export — `test_stock_count_chain_s2.py`.
 
@@ -489,25 +812,31 @@ Stage 17 L1: traffic-light `stock_status` (`green`/`yellow`/`red`), `suggested_o
 **Low-stock list response (`data` is an array):**
 ```json
 {
-  "success": true,
-  "data": [
-    {
-      "id": "prod_001",
-      "sku": "FLOUR-01",
-      "name": "Organic Wheat Flour",
-      "stock_qty": 5,
-      "minimum_stock": 20,
-      "reorder_level": 30,
-      "stock_status": "red",
-      "suggested_order_qty": 25,
-      "scope": "product",
-      "warehouse_id": null
-    }
-  ]
+  "warehouse_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+  "notes": "Month-end cycle count",
+  "product_ids": ["11111111-2222-3333-4444-555555555555"]
 }
 ```
 
-**Create draft reorder PO:**
+### 5.6a Opening Stock
+**Create:** `POST /inventory/opening-stock`  
+**List movements:** `GET /inventory/opening-stock` — Query `limit` ∈ 1–500 (omit → 100; `0`/`-1`/`501` → **422** — was free `int`; service silently clamped 1–500).
+
+Multi-line go-live / fiscal-year stock init with optional warehouse/batch/unit/`unit_cost` and optional Dr 1200 / Cr 3000 journal (`post_journal`). Each `OpeningStockLine.product_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach catalog lookup; existence remains tenant-scoped product lookup **404**). Inventory **Selected product** select (`aria-label`; shared with stock-in/out); Post opening stock sends `product_id` trim. Optional per-line `warehouse_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → company / product stock path; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach warehouse lookup; existence remains tenant-scoped warehouse lookup **404**). Inventory Opening **Opening stock warehouse** select (`aria-label`); Post opening stock sends trim or `null` when blank. Optional line `unit_id` / `variant_id` ∈ `UuidIdValue` (omit/`null` OK; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`). Inventory **Opening stock unit** / **Opening stock variant** selects (`aria-label`s). Optional `reference` ∈ `OpeningStockReferenceValue` (strip; 1–100; ≥1 letter/digit; no `://`/`@`; omit/`null` → auto `OS-YYYY-NNNN`; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently auto-numbered / garbage could persist). Optional header `notes` and per-line `OpeningStockLine.notes` ∈ `OpeningStockNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → no notes; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently dropped / garbage could persist); header + line notes merge onto movement notes. Inventory **Opening stock reference** / **Opening stock notes** / **Opening stock line notes** inputs.
+
+**Numbering:** `GET|PATCH /inventory/settings` exposes `opening_stock_numbering` alongside `stock_transfer_numbering` / `stock_count_numbering`. Create allocates `{PREFIX}-{YYYY}-{NNNN}` (default `OS`) when `reference` is omitted; explicit references are kept. Allocated label is returned on the response, stored on the audit event, and used as the journal `reference` when a GL entry is posted (BR-5.2 / BR-20.4).
+
+### 5.7 Stock Movement History
+**Endpoint:** `GET /inventory/movements?product_id=&warehouse_id=&store_id=&movement_type=&created_by=&reason=&from_date=&to_date=`
+
+Immutable audit trail (BR-5.3). No DELETE. Same payload shape as `GET /reports/inventory/movements` (`inventory:read`): each movement includes `product_sku` / `product_name`, `quantity_before` / `quantity_after`, `reason` (coded adjustment), and `created_by` / `created_by_name` / `created_by_email`. Query `product_id` / `warehouse_id` / `store_id` / `created_by` ∈ `UuidIdValue` (omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach FK lookup). Query `movement_type` ∈ `stock_in`|`stock_out`|`opening_stock`|`adjustment`|`transfer_out`|`transfer_in`|`transfer_cancel` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422** — no silent empty filter). Query `reason` ∈ `damage`|`theft`|`expiry`|`found`|`lost` (same Literal pattern; omit → all; blank/invalid → **422**). Optional `from_date` / `to_date` ∈ `IsoDateQueryValue` (`YYYY-MM-DD` or ISO; omit → no bound; blank/invalid → **422** — blank was silent omit; invalid was late service **400**). Inventory UI **Movements** type + reason selects + **Movement warehouse filter** + **From/To date** + **Movement selected product only** (`aria-label`s; load sends UUID filters trimmed; `created_by` filter currently omitted in UI).
+
+### 5.8 Low Stock Alerts
+**Endpoint:** `GET /inventory/low-stock` (also `GET /reports/inventory/low-stock` with optional `store_id` / `warehouse_id`)
+
+Product + warehouse policy scans create `low_stock` notifications (`scan_low_stock` Celery job / stock-out hooks). Emails go to `inventory_officer`, `store_manager`, `company_admin`, and `super_admin` (default `low_stock.email=true`; opt out in notification settings). Per-store warehouse reorder: `PUT /stores/{store_id}/reorder-policy` (`reorder_level`, `reorder_qty`).
+
+**Response:**
 ```json
 {
   "product_id": "prod_001",
@@ -542,32 +871,57 @@ Stage 19 S1 purchasing fidelity: `test_sales_purchases_api_s1.py` (BR-18.5).
 
 ### 6.1 Suppliers
 **List:** `GET /suppliers`  
-**Create:** `POST /suppliers`  
-**Get:** `GET /suppliers/{supplier_id}`  
-**Update:** `PATCH /suppliers/{supplier_id}`  
+**Create:** `POST /suppliers` — typed `PartyCreate` (`extra=forbid`; unknown keys → **422**; same party update/contact forbid as customers). Required `name` ∈ `PartyNameValue` (strip; 1–180 chars; ≥1 letter/digit; no `://` / `@`); blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist). Optional `latitude` / `longitude` ∈ `LatitudeValue` / `LongitudeValue` (same honesty as customers). Purchasing **Supplier latitude/longitude** (`aria-label`s). Purchasing **Supplier name** input (`aria-label`); create trims. `code` ∈ `PartyCodeValue` (strip; 1–64; ≥1 letter/digit; no `://` / `@`; omit/`null` → no code; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently cleared; punctuation/URL could persist). Purchasing **Supplier code** input (`aria-label`); create sends `null` when blank. `profile_type` schema `Literal` union (`registered|trade|manufacturer|service|other` for suppliers; blank/invalid → **422**; omit → `registered`). Purchasing **Supplier profile type** + **Supplier status** selects (`aria-label`s). Kind allow-list still enforces supplier set (e.g. `walk_in` → **400**). `category` ∈ `PartyCategoryValue` (strip; 1–80; ≥1 letter/digit; no `://` / `@`; omit/`null` → no category; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently cleared; punctuation/URL could persist). Purchasing **Supplier category** input (`aria-label`); create sends `null` when blank. `status` schema `Literal["active","inactive"]` (omit → `active`; blank/invalid → **422**). `phone` ∈ `E164PhoneValue` (omit/`null` → no phone; blank/`not-a-phone`/`123` → **422** — was free `str`; blank/garbage could persist). Purchasing **Supplier phone** input (`aria-label`); create sends `null` when blank. Optional `email` ∈ `EmailStr` (omit/`null` → no email; blank/`not-an-email` → **422**). Purchasing **Supplier email** input (`aria-label`); create sends `supplierEmail.trim() || null`. `address` ∈ `AddressValue` (strip; 1–500 chars; at least one letter/digit; no `://` / `@`; omit/`null` → no address; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Purchasing **Supplier address** input (`aria-label`); create sends `null` when blank.  
+**Get:** `GET /suppliers/{supplier_id}` — Path `supplier_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; existence remains tenant-scoped **404**). Same Path honesty on supplier contacts/history/credit/payments routes.  
+**Update:** `PATCH /suppliers/{supplier_id}` — partial fields include `name`, `code` ∈ `PartyCodeValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**), `category` ∈ `PartyCategoryValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**), `status` (`active`|`inactive`), contacts profile (`profile_type` / `status` same Literals, omit = no change; blank → **422**; no silent `registered`); `phone` ∈ `E164PhoneValue` (omit/`null` → no change; blank/garbage → **422**); `address` ∈ `AddressValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**); soft-deactivate via `status=inactive` (Purchasing **Activate** / **Deactivate**; inactive blocked on new PO / preferred-supplier PR / standalone PI; GRN/PO-linked invoices may still settle)  
 **Delete:** `DELETE /suppliers/{supplier_id}`
 
+List supports optional `?status=active|inactive` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422** — no late **400**). Purchasing Manage supplier filters All / Active / Inactive; PO/PR/PI pickers stay active-only. Party `code` is unique per tenant when set.
 **Create Supplier:**
 ```json
 {
   "name": "Global Supplies Inc",
-  "contact_person": "Jane Smith",
+  "code": "SUP-001",
+  "profile_type": "manufacturer",
+  "category": "packaging",
+  "status": "active",
   "email": "jane@globalsupplies.com",
   "phone": "+1-555-0200",
   "address": "456 Supply Ave, Industrial City",
-  "tax_id": "TAX123456",
-  "payment_terms": "net_30",
-  "opening_balance": 0.00,
-  "status": "active"
+  "latitude": 5.6698,
+  "longitude": -0.0166,
+  "payment_terms_days": 30,
+  "credit_limit": 0
 }
 ```
 
+List supports optional `?status=active|inactive` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Party `code` is unique per tenant when set.
+
+**Contacts (BR-6.1):**  
+`GET|POST /suppliers/{supplier_id}/contacts` — `name` ∈ `PartyContactNameValue` (strip; 1–150; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Purchasing **Party contact name** input.  
+`PATCH|DELETE /suppliers/{supplier_id}/contacts/{contact_id}` — PATCH `name` ∈ `PartyContactNameValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**)  
+
+`phone` ∈ `E164PhoneValue` (omit/`null` → no phone on create / no change on PATCH; blank/`not-a-phone`/`123` → **422** — was free `str`; blank/garbage could persist). Purchasing **Party contact phone** input (`aria-label`); create sends `null` when blank.
+
+`designation` ∈ `PartyContactDesignationValue` (strip; 1–120; ≥1 letter/digit; no `://`/`@`; omit/`null` → no designation on create / no change on PATCH; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently None / garbage could persist). Purchasing **Party contact designation** input (`aria-label`); create sends `null` when blank.
+
+```json
+{ "name": "Ada Buyer", "phone": "+233200000001", "email": "ada@acme.example.com", "designation": "Purchasing", "is_primary": true }
+```
+
+First contact becomes primary; setting `is_primary` clears other primaries and syncs party `email`/`phone`. `GET /suppliers/{id}` includes `contacts`.
+
 ### 6.2 Purchase Request
-**List:** `GET /purchasing/requests`  
-**Create:** `POST /purchasing/requests`  
-**Get:** `GET /purchasing/requests/{request_id}`  
+**List:** `GET /purchasing/requests` — optional Query `status` ∈ `draft`|`pending`|`approved`|`rejected`|`converted` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Purchasing Requests **Purchase request status filter** (`prManageFilter`; client filter over full cache).  
+**Create:** `POST /purchasing/requests` — typed `PurchaseRequestCreate` / `PurchaseRequestItemCreate` (`extra=forbid`; unknown keys → **422**; reject/convert same). Optional `preferred_supplier_id` ∈ `UuidIdValue` (omit/`null` → no preference; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach supplier lookup). Purchasing **Purchase request preferred supplier** select (`aria-label`); create sends `null` when blank. Optional `warehouse_id` ∈ `UuidIdValue` (omit/`null` → no warehouse; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach warehouse lookup; existence remains tenant-scoped **404**). Optional `required_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit/`null` → no needed-by date; blank/`not-a-date`/`01/02/2024` → **422** (was free `datetime`; OpenAPI date-time; padded dates inconsistent). API `reports.parse_date` remains defense-in-depth. Optional `department` ∈ `PurchaseRequestDepartmentValue` (strip; 1–120; ≥1 letter/digit; no `://`/`@`); omit/`null` → no department; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist). Purchasing **Purchase request department** input (`aria-label`); create sends `null` when blank. Optional header `notes` and per-line `PurchaseRequestItemCreate.notes` ∈ `PurchaseRequestNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`); omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist on PREQ / line notes). Purchasing **Purchase request required date** + **Purchase request notes** + **Purchase request line notes** inputs (`aria-label`s); create sends `null` when blank. Nested `items[].product_id` required ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach catalog lookup). Purchasing **Purchase request product** select (`aria-label`); create sends trim. Optional `items[].variant_id` ∈ `UuidIdValue` (omit/`null` → no variant; blank/`!!!`/`http://…`/non-UUID → **422**).  
+**Low-stock suggestions:** `GET /purchasing/suggestions/low-stock?store_id=&warehouse_id=` — optional `store_id` / `warehouse_id` ∈ `UuidIdValue` (omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`). Reports Inventory passes shared location qs (trim) when loading suggestions.  
+**From low-stock suggestions:** `POST /purchasing/requests/from-low-stock` — typed body `LowStockSuggestionsCreate` / `LowStockSuggestionLine` (`extra=forbid`; unknown keys → **422`). Body `{ lines[], notes?, department?, include_open? }`. Nested `lines[].product_id` required ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`). Optional `lines[].warehouse_id` / `preferred_supplier_id` ∈ `UuidIdValue` (omit/`null` OK; blank/`!!!`/`http://…`/non-UUID → **422**). Header + nested `LowStockSuggestionLine.notes` ∈ `PurchaseRequestNotesValue` (omit/`null` → service default header note / no line notes; blank/`!!!`/`http://…` → **422** — was free `str`). Optional `department` ∈ `PurchaseRequestDepartmentValue` (omit/`null` → no department; blank/`!!!`/`http://…` → **422**). Reports Inventory **Low-stock suggestion notes** + **Create draft PR from low-stock suggestions** (`aria-label`s; blank omitted as `null`; line FK ids trimmed).  
+**Get:** `GET /purchasing/requests/{request_id}` — Path `request_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`).  
 **Approve:** `POST /purchasing/requests/{request_id}/approve`  
-**Reject:** `POST /purchasing/requests/{request_id}/reject`
+**Reject:** `POST /purchasing/requests/{request_id}/reject` — body `{ "reason" }` ∈ `PurchaseRequestRejectReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; **required**) → `rejection_reason` + audit `pr_rejected.details.reason`. Omit/blank/`!!!`/`http://…` → **422** (was free `str` with `min_length=1` only; whitespace still reached service **400**; garbage could persist). Purchasing UI **Purchase request reject reason** (`aria-label`; no hardcoded string) (BR-6.2).  
+**Convert:** `POST /purchasing/requests/{request_id}/convert` — optional body `PurchaseRequestConvert` `{ supplier_id? }`; optional `supplier_id` ∈ `UuidIdValue` (omit/`null` → preferred / first-line supplier path; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach party lookup; existence remains tenant-scoped supplier lookup **404**). Purchasing **Convert purchase request ${id}** (`aria-label`); Convert to PO sends `{}` when no override.
+
+**Numbering:** `GET|PATCH /purchasing/settings` exposes `purchase_request_numbering`. Create allocates `{PREFIX}-{YYYY}-{NNNN}` (default `PREQ`) — not a daily `R{yymmdd}-NNN` stamp (BR-6.2 / BR-20.4).
 
 **Create Request:**
 ```json
@@ -587,39 +941,58 @@ Stage 19 S1 purchasing fidelity: `test_sales_purchases_api_s1.py` (BR-18.5).
 ```
 
 ### 6.3 Purchase Order
-**List:** `GET /purchasing/orders`  
-**Create:** `POST /purchasing/orders`  
+**List:** `GET /purchasing/orders` — optional Query `status` ∈ `draft`|`sent`|`partially_received`|`received`|`cancelled` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Purchasing Orders **Purchase order status filter** (`poManageFilter`; client filter over full cache).  
+**Create:** `POST /purchasing/orders` — typed `PurchaseOrderCreate` + `PurchaseOrderItemCreate` (`extra=forbid`; unknown keys → **422**; `PurchaseOrderAmend` same).  
 **Get:** `GET /purchasing/orders/{order_id}`  
-**Send:** `POST /purchasing/orders/{order_id}/send`  
-**Cancel:** `POST /purchasing/orders/{order_id}/cancel`
+**Update Status:** `PATCH /purchasing/orders/{order_id}/status`
 
-**Create PO:**
+**Create PO** (`POST /purchasing/orders`):
 ```json
 {
-  "supplier_id": "sup_001",
-  "order_date": "2026-08-07",
-  "expected_delivery": "2026-08-14",
+  "supplier_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
   "warehouse_id": "wh_001",
-  "reference": "PO-2026-001",
+  "delivery_address": "Gate B, Tema Wharf",
   "items": [
     {
-      "product_id": "prod_001",
+      "product_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
       "quantity": 100,
       "unit_price": 8.50,
       "tax_rate": 10.0,
-      "discount": 0.0
+      "discount": 25.0
     }
   ],
   "notes": "Standard monthly order"
 }
 ```
 
-**Status Flow:** `draft` → `sent` → `partially_received` → `received` → `cancelled`
+Required `supplier_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach party lookup; existence remains tenant-scoped supplier lookup **404**). Purchasing **PO supplier** select (`aria-label`); Create PO sends `supplier_id` trim.
+
+Optional `warehouse_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no warehouse; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach warehouse lookup; existence / active-warehouse rules remain `require_active_warehouse` **404**/400).
+
+Each line requires `product_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach catalog lookup; existence remains tenant-scoped product lookup **404**). Purchasing **PO product** select (`aria-label`); Create PO sends `product_id` trim. Same type on amend line items. Optional line `unit_id` ∈ `UuidIdValue` (omit/`null` → product stock unit; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach UoM lookup). Purchasing **PO unit** select (`aria-label`); Create/Amend send trim or `null` when blank.
+
+Optional `delivery_address` ∈ `AddressValue` (strip; 1–500 chars; at least one letter/digit; no `://` / `@`); create omit/`null` → no ship-to; blank/`!!!`/`http://…` → **422** (was free `str`; blank silent→null; garbage could persist). Stored on the PO, returned on GET/list/serialize, amendable via `POST /purchasing/orders/{id}/amend`, and included in supplier email bodies when set (BR-6.3). Purchasing **PO delivery address** input (`aria-label`); create sends `null` when blank.
+
+Optional `notes` ∈ `PurchaseOrderNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; create omit/`null` → no notes; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Amend uses the same type (`null` clears). Purchasing **PO notes** / **PO amend notes** inputs.
+
+Per-line `discount` (≥0, cannot exceed qty×unit_price) is applied after tax on the line (same order as PI). `line_total` and PO `total_amount` reflect discounts; serialize/email include `discount`. Amend via `POST /purchasing/orders/{id}/amend`. Alembic `20260814_0096` (BR-6.3).
+
+Omit `tax_rate` on a line to auto-resolve **product → category (parents) → tenant default** (same as sales; BR-12.2). Explicit `tax_rate` (including `0`) wins. Resolved `%` is snapshotted on the PO/PI line.
+
+**Status Flow:** `draft` → `sent` → `partially_received` → `received` (Fully Received); branch to `cancelled`
+
+**Cancel:** `POST /purchasing/orders/{po_id}/cancel` `{ "reason" }` ∈ `PurchaseOrderCancelReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; **required**) — omit/blank/`!!!`/`http://…` → **422** (was free `str` with `min_length=1` only; whitespace still reached service **400**; garbage could be appended). Appended to PO `notes` as `Cancel: …` and stored in audit `po_cancelled.details.reason`; allowed for draft/sent with no receipts; blocked after any `received_qty` or when already `received`/`cancelled`. Serialize includes `can_cancel` + `notes`. Purchasing Orders **Purchase order cancel reason** (`aria-label`; BR-6.3).
+
+**Send / resend:** `POST /purchasing/orders/{po_id}/send` — emails supplier (SMTP/console); draft → `sent`. Optional Query `to` ∈ `EmailStr`; omit → supplier email; blank/`not-an-email` → **422** (blank was silent fallthrough; garbage was accepted). Purchasing **Purchase order email override to** + **Email purchase order** / **Resend purchase order email**.
+
+**Amend:** `POST /purchasing/orders/{po_id}/amend` — body may include `items` / `notes` / `delivery_address` ∈ `AddressValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently cleared; garbage could persist; Purchasing **PO amend delivery address** omits blank) / optional `due_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime; omit/`null` → no change; `clear_due_date=true` clears; blank/`not-a-date`/`01/02/2024` → **422** — was free `datetime`; OpenAPI date-time; padded dates inconsistent; Purchasing **PO amend due date** `aria-label`; amend omits blank; API `reports.parse_date` defense-in-depth) / `notify_supplier` / optional `to` ∈ `EmailStr` (blank/invalid → **422** when present); **`reason`** ∈ `PurchaseOrderAmendReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` `min_length=1` only — whitespace still reached service **400**; garbage could persist on amendment history / audit) → stored on `purchase_order_amendments.reason` + audit `po_amended.details.reason`. Purchasing Orders **Purchase order amend reason** (`aria-label`) + **Save purchase order amendment** + **PO amend email override to** (BR-6.3).
 
 ### 6.4 Goods Received Note (GRN)
-**List:** `GET /purchasing/grn`  
-**Create:** `POST /purchasing/grn`  
-**Get:** `GET /purchasing/grn/{grn_id}`
+**List:** `GET /purchases/grn`  
+**Create:** `POST /purchases/grn` — typed `GrnCreate` / `GrnItemCreate` (`extra=forbid`; unknown keys → **422**). Required `purchase_order_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach PO lookup; existence remains tenant-scoped purchase-order lookup **404**). Purchasing **GRN purchase order** control (`aria-label`); Post GRN / Receive all send `purchase_order_id` trim. Nested `items[].po_item_id` required ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach PO-line lookup; existence remains tenant-scoped purchase-order item lookup **404**/400). Post GRN / Receive all send `po_item_id` trim. Optional `warehouse_id` ∈ `UuidIdValue` (omit/`null` → PO warehouse / default path; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach warehouse lookup). Optional `notes` ∈ `GrnNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`); omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist on GRN). Purchasing Orders receive **GRN notes** input (`aria-label`); Post GRN / Receive all send `null` when blank.  
+**Get:** `GET /purchases/grn/{grn_id}` — Path `grn_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; route `/purchasing/grn/{grn_id}`).
+
+Accepted lines stock via `stock_in_with_batch`. Optional per-line `batch_number` ∈ `BatchNumberValue` (strip; 1–80; ≥1 letter/digit; no `://`/`@`; omit/`null` → no lot — service still requires a lot when `product.tracks_batches`; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently stripped to None / punctuation/URL could persist); optional `manufacturing_date` / `expiry_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit/`null` → no batch dates; blank/`not-a-date`/`01/02/2024` → **422** (was free `datetime`; OpenAPI date-time; padded dates inconsistent). API `reports.parse_date` remains defense-in-depth. Serialize echoes batch fields from the GRN’s stock movements / `product_batches` (not stored on `goods_receipt_items`). Purchasing Orders receive UI **GRN batch number** / **GRN manufacturing date** / **GRN expiry date** inputs (`aria-label`s; BR-6.4); post omits blank lot/dates.
 
 **Create GRN** (posts immediately — stock ↑, supplier balance ↑, Dr 1200 / Cr 2000):
 ```json
@@ -633,43 +1006,47 @@ Stage 19 S1 purchasing fidelity: `test_sales_purchases_api_s1.py` (BR-18.5).
       "accepted_qty": 98,
       "rejected_qty": 2,
       "rejection_reason": "Damaged packaging",
-      "batch_number": "LOT-1",
-      "expiry_date": "2027-01-01T00:00:00"
+      "batch_number": "LOT-2026-01",
+      "manufacturing_date": "2026-01-15",
+      "expiry_date": "2027-01-15"
     }
   ],
   "notes": "Delivery received in good condition"
 }
 ```
 
-Accepted value uses PO line discount + tax math (Stage 11 C1). Uninvoiced AP aging uses received value, not full PO total.
+`accepted_qty + rejected_qty` must equal `received_qty` (rejected may be inferred when omitted and accepted < received). `rejection_reason` ∈ `GrnRejectionReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`) is **required** when `rejected_qty > 0` (or inferred reject) — omit/`null` OK when no reject; blank/`!!!`/`http://…` → **422** (was free `str`; blank failed model_validator when rejected, but garbage could persist on GRN line). Schema field validators + `model_validator`; service still 400 if reached. Only accepted qty is stocked; full `received_qty` reduces PO outstanding (BR-6.4). Purchasing receive **GRN rejection reason ${po_item_id}** (`aria-label`) + **Post GRN**.
 
 ### 6.5 Purchase Invoice
-**List:** `GET /purchasing/invoices`  
-**Create:** `POST /purchasing/invoices`  
+**List:** `GET /purchasing/invoices` — optional Query `status` ∈ `draft`|`unpaid`|`partial`|`paid`|`overdue`|`cancelled` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Purchasing Invoices **Purchase invoice status filter** (`piManageFilter`; client filter over full cache).  
+**Create:** `POST /purchasing/invoices` — typed `PurchaseInvoiceCreate` + `PurchaseInvoiceItemCreate` (`extra=forbid`; unknown keys → **422**; `PurchaseInvoiceUpdate` same). Optional `supplier_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` OK when from-GRN / PO path; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach party lookup; existence remains tenant-scoped supplier lookup **404**). Purchasing **Purchase invoice supplier** select (`aria-label`); Draft manual PI sends trim. Optional `goods_receipt_id` ∈ `UuidIdValue` (omit/`null` → manual / PO path; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach GRN lookup). Purchasing **Purchase invoice GRN** select (`aria-label`); Draft from GRN sends trim. Optional `purchase_order_id` ∈ `UuidIdValue` (omit/`null` → manual / GRN path; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach PO lookup). Nested manual `items[].product_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach catalog lookup). Purchasing **Purchase invoice product** select (`aria-label`); Draft manual PI sends trim. Optional `notes` ∈ `PurchaseInvoiceNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → no notes; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Optional `supplier_invoice_number` ∈ `SupplierInvoiceNumberValue` (strip; 1–100; ≥1 letter/digit; no `://`/`@`); omit/`null` → no number; blank/`!!!`/`http://…` → **422** (was free `str`; blank silently cleared; punctuation/URL could persist). Optional `attachment_url` ∈ `WebhookUrlValue` (strip; absolute `http(s)` + netloc; `http` only for localhost/127.0.0.1/testserver/host.docker.internal); omit/`null` → no external URL; blank/`ftp://`/`not-a-url`/`www.x`/plain-http remote → **422** (was free `str`; blank/`""` could persist; garbage URLs could persist). Multipart `POST …/invoices/{id}/attachment` still stores a tenant media key. Purchasing **Purchase invoice notes** + **Supplier invoice number** + **Purchase invoice attachment URL** inputs (`aria-label`s; from-GRN + manual); Draft sends `null` when blank.  
 **Get:** `GET /purchasing/invoices/{invoice_id}`  
+**Update draft:** `PATCH /purchasing/invoices/{invoice_id}` — draft only (409 otherwise). Body `PurchaseInvoiceUpdate` may include optional `supplier_invoice_number` ∈ `SupplierInvoiceNumberValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently cleared / garbage could persist), optional `notes` ∈ `PurchaseInvoiceNotesValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently cleared / garbage could persist), optional `invoice_date` / `due_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit/`null` → no change; blank/`not-a-date`/`01/02/2024` → **422** (was free `datetime`; OpenAPI date-time; padded dates inconsistent). API `reports.parse_date` remains defense-in-depth. Purchasing **Supplier invoice OCR** **Supplier invoice number** + **Purchase invoice OCR date** + **Purchase invoice OCR notes** inputs (`aria-label`s); Apply omits blank date/notes/number.  
+**Pay:** `POST /purchasing/invoices/{invoice_id}/payments`  
+**Cancel:** `POST /purchasing/invoices/{invoice_id}/cancel` `{ "reason" }` ∈ `PurchaseInvoiceCancelReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; **required**) — omit/blank/`!!!`/`http://…` → **422** (was free `str` with `min_length=1` only; whitespace still reached service **400**; garbage could be appended). Appended to invoice `notes` as `Cancel: …` and stored in audit `pi_cancelled.details.reason`; already-cancelled is idempotent; allowed for `draft` / `unpaid` / `overdue` when `paid_amount` is zero; reverses AP if posted. Serialize includes `can_cancel` + `notes`. Purchasing Invoices **Purchase invoice cancel reason** (`aria-label`; BR-6.5).
 
-Supplier payments: `POST /suppliers/{id}/payments` (credit module). Attachment: `POST/GET/DELETE /purchasing/invoices/{invoice_id}/attachment`.
+**Numbering:** `GET|PATCH /purchasing/settings` exposes `purchase_invoice_numbering` (`prefix`, `next_number`, `preview`) alongside PO/GRN. Create allocates `{PREFIX}-{YYYY}-{NNNN}` (default `PINV`) — not a timestamp (BR-6.5 / BR-20.4).
 
-**OCR suggest:** `POST /purchasing/invoices/{invoice_id}/ocr-suggest` — requires `purchasing:write`  
-**OCR apply (Stage 10 A1):** `POST /purchasing/invoices/{invoice_id}/ocr-apply` — requires `purchasing:write`
+Create accepts header `discount_amount` + per-line `discount` ∈ `NonNegativeMoneyValue` (`nan`/`inf`/<0 → **422** — was `Field(ge=0)` only). Purchasing **Purchase invoice header/line discount** (`aria-label`s). Line tax is computed on qty×unit_price before line discount; invoice `total_amount` subtracts header discount from gross (or from subtotal when reverse charge). Purchasing create forms + invoice detail show discounts (BR-6.5). PATCH does not update discounts.
 
-```json
-{
-  "confirm": true,
-  "supplier_invoice_number": "SUP-42",
-  "notes": "From OCR",
-  "invoice_date": "2026-03-10T00:00:00",
-  "due_date": null
-}
-```
+Optional create `currency` ∈ 3-letter ISO (`CurrencyCodeValue | null`; strip/upper) — omit/`null` → tenant base via `resolve_rate`; blank/`EURO`/`gh` → **422** (was free `str`; blank silently became base). Optional `exchange_rate` (>0) pairs with non-base currency. Purchasing Invoices **Currency** input (`aria-label="Purchase invoice currency"`).
 
-`confirm` must be `true`. Applies only while the invoice is `draft` (409 otherwise). Suggest remains read-only; there is no silent auto-write from OCR.
+Manual PI lines omit `tax_rate` for catalog auto-resolve (BR-12.2); GRN-sourced invoices copy the PO line snapshot including proportional `items[].discount` (`accepted_qty / ordered_qty × PO line discount`). When header `discount_amount` is omitted/0 on from-GRN create, it defaults to the sum of those line discounts so `total_amount` matches negotiated PO economics; an explicit header discount overrides that default while line discounts still appear on lines (BR-6.5 / BR-6.3).
+
+Response lines include `line_subtotal`, `line_tax`, and optional `tax_components`. Header includes `tax_amount` plus `tax_breakdown` (`by_rate`, `by_component`, `lines`) for display (BR-12.2). Purchasing → Invoices UI shows per-line tax and by-rate totals when an invoice number is selected.
 
 ### 6.6 Purchase Return
-**List:** `GET /purchasing/returns`  
-**Create:** `POST /purchasing/returns`  
-**Get:** `GET /purchasing/returns/{return_id}`  
-**Post:** `POST /purchasing/returns/{return_id}/post`
+**List:** `GET /purchasing/returns` — optional Query `status` ∈ `draft`|`posted`|`cancelled` (same `ReturnReportStatusValue` as return report; omit → all; blank/invalid → **422**). Purchasing **Purchase return status filter** (`returnManageFilter`; client filter over full cache).  
+**Create:** `POST /purchasing/returns` — typed `PurchaseReturnCreate` / `PurchaseReturnItemCreate` (`extra=forbid`; unknown keys → **422**; cancel same). Required `goods_receipt_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach GRN lookup; existence remains tenant-scoped goods-receipt lookup **404**). Coded `reason` ∈ `damaged` | `wrong_item` | `expiry` | `quality` | `other` (schema `Literal`; omit/blank/invalid → **422**). Purchasing **Purchase return reason** select (`aria-label`), `items[]` with required `goods_receipt_item_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach GRN line lookup; existence remains tenant-scoped goods-receipt item lookup **404**/400) + qty, optional `notes` ∈ `PurchaseReturnNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → no notes; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Purchasing **Return from GRN** + **Purchase return GRN line** selects + **Purchase return notes** (`aria-label`s); Draft return sends `goods_receipt_id` / `goods_receipt_item_id` trim and `null` notes when blank.  
+**Get:** `GET /purchasing/returns/{return_id}` — Path `return_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`).  
+**Post:** `POST /purchasing/returns/{return_id}/post` — draft only; stock/AP/journal on post.  
+**Cancel:** `POST /purchasing/returns/{return_id}/cancel` — body `{ "reason" }` ∈ `PurchaseReturnCancelReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; **required**) — omit/blank/`!!!`/`http://…` → **422** (was free `str` with `min_length=1` only; whitespace still reached service **400**; garbage could be appended). Draft only → `status=cancelled`; appends `Cancel: …` to `notes` + audit `purchase_return_cancelled.details.reason`. Serialize includes `can_cancel`. Purchasing **Purchase return cancel reason** (`aria-label`; BR-6.6). No stock/AP on cancel.
+
+**Create** requires `reason` ∈ `damaged` | `wrong_item` | `expiry` | `quality` | `other` (schema `Literal`; no silent default to `other`). Omit/blank/invalid → **422**; service still rejects unknown codes as defense in depth. Purchasing UI uses Select reason (BR-6.6).
+
+**Numbering:** `GET|PATCH /purchasing/settings` exposes `purchase_return_numbering` and `debit_note_numbering`. Create allocates `{PREFIX}-{YYYY}-{NNNN}` for `return_number` (default `PR`); post allocates series `debit_note_number` (default `DN`, unique per tenant). Alembic `20260814_0097` (BR-6.6 / BR-20.4).
+
+Line credits inherit proportional PO line discount (`return_qty / ordered_qty × PO line discount`, tax before discount). Serialize exposes `items[].discount` and header `discount_amount`; `total_amount` (and post AP/journal) uses the discounted credit. Purchasing Returns shows Discount (BR-6.6 / BR-6.3).
 
 ---
 
@@ -680,40 +1057,51 @@ Stage 19 S1 proves sales quotations/orders/invoices/payments/returns/POS and pur
 
 ### 7.1 Customers
 **List:** `GET /customers`  
-**Create:** `POST /customers`  
-**Get:** `GET /customers/{customer_id}` (includes `balance`)  
-**Update:** `PATCH /customers/{customer_id}`  
-**Delete:** `DELETE /customers/{customer_id}` (soft-deactivate → `status=inactive`)  
-**History:** `GET /customers/{customer_id}/history`  
-**Outstanding:** `GET /customers/{customer_id}/outstanding` (`credit:read`)
-
-Stage 19 P1 proves customers/groups CRUD + balance + history via JWT and X-API-Key sales reads — `test_products_customers_api_p1.py` (BR-18.3).
+**Create:** `POST /customers` — typed `PartyCreate` (`extra=forbid`; unknown keys → **422**; `PartyUpdate` / `PartyContactCreate` / `PartyContactUpdate` same). Required `name` ∈ `PartyNameValue` (strip; 1–180 chars; ≥1 letter/digit; no `://` / `@`); blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist). Sales **Customer name** input (`aria-label`); create trims. Optional `latitude` ∈ `LatitudeValue` (−90…90) / `longitude` ∈ `LongitudeValue` (−180…180); omit/`null` OK; `nan`/`inf`/out-of-range → **422** — was unconstrained `float`. Sales **Customer latitude/longitude** (`aria-label`s). `code` ∈ `PartyCodeValue` (strip; 1–64; ≥1 letter/digit; no `://` / `@`; omit/`null` → no code; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently cleared; punctuation/URL could persist). Sales **Customer code** input (`aria-label`); create sends `null` when blank. `profile_type` schema `Literal` union (`walk_in|registered` for customers; blank/invalid → **422**; omit → `registered`). Sales **Customer profile type** + **Customer status** selects (`aria-label`s). Kind allow-list still enforces customer set (e.g. `trade` → **400**). `category` ∈ `PartyCategoryValue` (strip; 1–80; ≥1 letter/digit; no `://` / `@`; omit/`null` → no category; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently cleared; punctuation/URL could persist). Sales **Customer category** input (`aria-label`); create sends `null` when blank. `status` schema `Literal["active","inactive"]` (omit → `active`; blank/invalid → **422**). `phone` ∈ `E164PhoneValue` (omit/`null` → no phone; blank/`not-a-phone`/`123` → **422** — was free `str`; blank/garbage could persist). Sales **Customer phone** input (`aria-label`); create sends `null` when blank. Optional `email` ∈ `EmailStr` (omit/`null` → no email; blank/`not-an-email` → **422**). Sales **Customer email** input (`aria-label`); create sends `customerEmail.trim() || null`. `address` ∈ `AddressValue` (strip; 1–500 chars; at least one letter/digit; no `://` / `@`; omit/`null` → no address; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Sales **Customer address** input (`aria-label`); create sends `null` when blank. `customer_group_id` ∈ `UuidIdValue` (omit/`null` → no group; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach group lookup). Sales **Customer group** select (`aria-label`); create sends `null` when blank.  
+**Get:** `GET /customers/{customer_id}` — Path `customer_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; existence remains tenant-scoped **404**). Same Path honesty on customer contacts/history/credit/payments routes.  
+**Update:** `PATCH /customers/{customer_id}` — Path `customer_id` ∈ `UuidIdValue` (same honesty). Partial fields include `name` ∈ `PartyNameValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**); `code` ∈ `PartyCodeValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**); `category` ∈ `PartyCategoryValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**); profile + `status` (`active`|`inactive`) (`profile_type` / `status` same Literals, omit = no change; blank → **422**; no silent `registered`); `phone` ∈ `E164PhoneValue` (omit/`null` → no change; blank/garbage → **422**); `address` ∈ `AddressValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**); `customer_group_id` ∈ `UuidIdValue` (omit → no change; `null` → clear; blank/`!!!`/`http://…`/non-UUID → **422**); soft-deactivate via `status=inactive` (Sales **Activate** / **Deactivate**; inactive blocked on new QT/SO/INV/POS; existing docs can still settle)  
+**Delete:** `DELETE /customers/{customer_id}` — Path `customer_id` ∈ `UuidIdValue` (same honesty).
 
 **Create Customer:**
 ```json
 {
   "name": "Walk-in Customer",
+  "code": "CUST-001",
+  "profile_type": "walk_in",
+  "status": "active",
   "email": "walkin@example.com",
   "phone": "+1-555-0300",
   "address": "789 Customer Lane",
-  "party_type": "registered",
-  "customer_group_id": "group_uuid",
-  "credit_limit": 500.00
+  "latitude": 5.6037,
+  "longitude": -0.187,
+  "customer_group_id": null,
+  "credit_limit": 500.00,
+  "payment_terms_days": 30
 }
 ```
 
+List supports optional `?status=active|inactive` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422** — no late **400**). Sales Manage customer filters All / Active / Inactive; Sale/POS pickers stay active-only. Party `code` is unique per tenant when set.
+
+**Contacts (BR-6.1):** same nested `/customers/{customer_id}/contacts` routes as suppliers; `GET /customers/{id}` includes `contacts`. Contact `name` ∈ `PartyContactNameValue` (strip; 1–150; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist); PATCH omit/`null` → no change. Contact `phone` ∈ `E164PhoneValue` (omit/`null` OK; blank/garbage → **422**). Contact `designation` ∈ `PartyContactDesignationValue` (omit/`null` OK; blank/garbage → **422**). Sales/Purchasing **Party contact name** + **Party contact phone** + **Party contact designation** inputs (`aria-label`s); create sends trimmed name and `null` phone/designation when blank.
+
 ### 7.2 Customer Groups
-**List:** `GET /customers/groups`  
-**Create:** `POST /customers/groups`  
-**Get:** `GET /customers/groups/{group_id}`  
-**Update:** `PATCH /customers/groups/{group_id}`  
-**Delete:** `DELETE /customers/groups/{group_id}`
+**List:** `GET /customers/groups` (seeds Retail / Wholesale / VIP defaults; `is_active=true|false` optional — Sales manage All/Active/Inactive; default returns all)  
+**Create:** `POST /customers/groups` — typed `CustomerGroupCreate` (`extra=forbid`; unknown keys → **422**; `CustomerGroupUpdate` same). `name` ∈ `CustomerGroupNameValue` (strip; 1–120; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Sales **Customer group name** input. Optional `discount_percent` ∈ `PercentRateValue` (0–100 finite; omit → 0; `nan`/`inf`/out-of-range → **422** — was unconstrained `float`). Sales **Customer group discount percent** (`aria-label`). `code` ∈ `CustomerGroupCodeValue` (strip; 1–40; ≥1 letter/digit; no `://`/`@`; omit/`null` → slug from name; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently fell through to name-slug; punctuation/URL could persist). Sales **Customer group code** input (`aria-label`); create sends `null` when blank. Duplicate code → **409**.  
+**Update:** `PATCH /customers/groups/{group_id}` — Path `group_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`). `{ name?, discount_percent?, is_active? }` (`name` ∈ `CustomerGroupNameValue`; omit/`null` → no change; blank/`!!!`/`http://…` → **422**; `discount_percent` ∈ `PercentRateValue` 0–100 finite — omit/`null` → no change; `nan`/`inf`/out-of-range → **422**; soft-deactivate via `is_active=false`; Sales UI **Activate** / **Deactivate** + **Save discount** / **Customer group discount percent** `aria-label`s + manage status filter)
+**Assign on customer:** `POST /customers` / `PATCH /customers/{customer_id}` with `customer_group_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422**; inactive group → **400**)  
+**Preview price:** `GET /products/{product_id}/price?customer_id=&variant_id=` — optional Query `customer_id` / `variant_id` ∈ `UuidIdValue` (omit/`null` → base / list price path; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`). Sales **Sale customer** / **Sales variant** (`aria-label`s); group-price preview sends trim or omits blank.
+
+When a sale/quote/order/POS line omits `unit_price`, list (or variant) price is used and the customer group's `discount_percent` is applied (active groups only). An explicit `unit_price` is treated as a cashier override.
 
 ### 7.3 Quotations
-**List:** `GET /sales/quotations`  
-**Create:** `POST /sales/quotations`  
-**Get:** `GET /sales/quotations/{quote_id}`  
-**Convert to Order:** `POST /sales/quotations/{quote_id}/convert-to-order`
+**List:** `GET /sales/quotations` — optional Query `status` ∈ `draft`|`sent`|`accepted`|`rejected`|`expired`|`converted` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Sales Quotations **Quotation status filter** (`quotationManageFilter`; client filter over full cache).  
+**Create:** `POST /sales/quotations` — typed `SalesQuotationCreate` (`extra=forbid`; unknown keys → **422**). Required `customer_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach party lookup; existence remains tenant-scoped customer lookup **404**). Optional `notes` ∈ `SalesDocumentNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`); omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist). Sales **Sale customer** select + **Sales document notes** input (`aria-label`s); Create quotation sends `customer_id` trim and `null` notes when blank.  
+**Get:** `GET /sales/quotations/{quote_id}` — Path `quotation_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; OpenAPI path param name `quotation_id`).  
+**Send / resend:** `POST /sales/quotations/{quote_id}/send` — emails customer (SMTP/console); status → `sent`. Optional Query `to` ∈ `EmailStr`; omit → customer email; blank/`not-an-email` → **422** (blank was silent fallthrough; garbage was accepted). Sales **Document email override to** + **Email quotation** / **Resend quotation email**.
+**Accept:** `POST /sales/quotations/{quote_id}/accept` — draft/sent only → `accepted`  
+**Reject:** `POST /sales/quotations/{quote_id}/reject` — body `{ "reason" }` ∈ `SalesQuotationRejectReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; **required**) → `rejected` + `rejection_reason`. Omit/blank/`!!!`/`http://…` → **422** (was free `str` with `min_length=1` only; whitespace still reached service **400**; garbage could persist). Sales Quotations **Quotation reject reason** (`aria-label`; 409 if already accepted/rejected/converted/expired).  
+**Convert to Order:** `POST /sales/quotations/{quote_id}/convert-order`  
+**Convert to Invoice:** `POST /sales/quotations/{quote_id}/convert-invoice`
 
 **Create Quotation:**
 ```json
@@ -734,22 +1122,31 @@ Stage 19 P1 proves customers/groups CRUD + balance + history via JWT and X-API-K
 }
 ```
 
+Create accepts header `discount_amount` + per-line `items[].discount` ∈ `NonNegativeMoneyValue` (`nan`/`inf`/<0 → **422** — was `Field(ge=0)` only). Per-line `quantity` ∈ `PositiveQtyValue`; optional `unit_price` ∈ `NonNegativeMoneyValue` (`nan`/`inf`/≤0 or <0 → **422**). Line tax is computed on qty×unit_price before line discount; document `total_amount` subtracts header discount. Sales **Create sale** UI **Line quantity** / **Line unit price** / **Line discount** + **Header discount** (`aria-label`s); detail shows Discount column + KPI (BR-7.2 / BR-7.3 / BR-7.4).
+
 ### 7.4 Sales Orders
-**List:** `GET /sales/orders`  
-**Create:** `POST /sales/orders`  
-**Get:** `GET /sales/orders/{order_id}`  
+**List:** `GET /sales/orders` — optional Query `status` ∈ `draft`|`confirmed`|`processing`|`shipped`|`delivered`|`invoiced`|`cancelled` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Sales Orders **Sales order status filter** (`orderManageFilter`; client filter over full cache).  
+**Create:** `POST /sales/orders` — typed `SalesOrderCreate` (`extra=forbid`; unknown keys → **422**). Required `customer_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach party lookup; existence remains tenant-scoped customer lookup **404**). Optional `quotation_id` ∈ `UuidIdValue` (omit/`null` → standalone order; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach quotation lookup; existence remains tenant-scoped quotation lookup **404**). UI convert-order uses path id; API create may pass body trim. Optional `store_id` ∈ `UuidIdValue` (omit/`null` → no store until confirm; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach store lookup; existence remains tenant-scoped store lookup **404**). Optional `notes` ∈ `SalesDocumentNotesValue` (same honesty as quotations/invoices; omit/`null` → no notes; blank/garbage → **422**). Sales **Sale customer** + **Sale store** selects + **Sales document notes** input; Create order sends `customer_id` trim, `store_id` trim or `null` when blank, and `null` notes when blank.  
+**Get:** `GET /sales/orders/{order_id}` — Path `order_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; existence remains tenant-scoped **404**). Same Path honesty on confirm/process/ship/deliver/cancel/convert.  
 **Update Status:** `PATCH /sales/orders/{order_id}/status`  
 **Convert to Invoice:** `POST /sales/orders/{order_id}/convert-to-invoice`
 
-**Status Flow:** `draft` → `confirmed` → `processing` → `shipped` → `delivered` → `cancelled`
+Optional create/confirm `delivery_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); create omit/`null` → no promised date; confirm omit/`null` → no change; blank/`not-a-date`/`01/02/2024` → **422** (was free `datetime`; OpenAPI date-time; padded dates inconsistent). API `reports.parse_date` remains defense-in-depth. Sales **SO delivery date** input (`aria-label`); create/confirm send `null` when blank.
+
+Optional create/confirm `delivery_address` ∈ `AddressValue` (strip; 1–500 chars; at least one letter/digit; no `://` / `@`); create omit/`null` → no ship-to; confirm omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank silent→null; garbage could persist). Sales **SO delivery address** input (`aria-label`); create sends `null` when blank; confirm omits blank. Confirm: `POST /sales/orders/{order_id}/confirm` — optional `store_id` ∈ `UuidIdValue` (omit/`null` → keep order store / require when confirming without one; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach store lookup). Sales **Sale store** select; Confirm sends trim when set.
+
+**Numbering:** `GET|PATCH /sales/settings` exposes `sales_order_numbering`. Create (and quotation convert) allocates `{PREFIX}-{YYYY}-{NNNN}` (default `SO`) — not a timestamp stamp (BR-7.3 / BR-20.4).
+
+**Cancel:** `POST /sales/orders/{order_id}/cancel` `{ "reason" }` ∈ `SalesOrderCancelReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; **required**) — omit/blank/`!!!`/`http://…` → **422** (was free `str` with `min_length=1` only; whitespace still reached service **400**; garbage could be appended). Appended to order `notes` as `Cancel: …` and stored in audit `so_cancelled.details.reason`; allowed for `draft` / `confirmed` / `processing` (`can_cancel`); releases soft reservations; blocked after ship/deliver/invoiced. Sales Orders **Sales order cancel reason** (`aria-label`; BR-7.3).
+
+**Status Flow:** `draft` → `confirmed` → `processing` → `shipped` → `delivered` → `invoiced`; branch to `cancelled`
 
 ### 7.5 Invoices
-**List:** `GET /sales/invoices`  
-**Create:** `POST /sales/invoices`  
-**Get:** `GET /sales/invoices/{invoice_id}`  
-**Post:** `POST /sales/invoices/{invoice_id}/post`  
+**List:** `GET /sales/invoices` — optional Query `status` ∈ `draft`|`posted`|`sent`|`partial`|`paid`|`overdue`|`cancelled` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Sales Invoices **Sales invoice status filter** (`invoiceManageFilter`; client filter over full cache).  
+**Create:** `POST /sales/invoices` — typed `SalesInvoiceCreate` (`extra=forbid`; unknown keys → **422**; same forbid on `SalesQuotationCreate` / `SalesOrderCreate`). Required `customer_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach party lookup; existence remains tenant-scoped customer lookup **404**). Optional `store_id` ∈ `UuidIdValue` (omit/`null` → no store / HQ path; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach store lookup; existence remains tenant-scoped store lookup **404**). Line `items[].product_id` ∈ `UuidIdValue` (`SalesInvoiceItemCreate` / shared `LineItem` for POS/legacy sale; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach catalog lookup; existence remains tenant-scoped product lookup **404**). Optional line `unit_id` / `variant_id` ∈ `UuidIdValue` (omit/`null` OK; blank/`!!!`/`http://…`/non-UUID → **422**). Optional `notes` ∈ `SalesDocumentNotesValue` (same honesty as quotations/orders; omit/`null` → no notes; blank/garbage → **422**). Sales **Sale customer** + **Sale store** + **Sales product** + **Sales unit** + **Sales variant** selects + **Sales document notes** input; Create invoice sends `customer_id` / `product_id` trim, `store_id` / unit/variant trim or `null` when blank, and `null` notes when blank.  
+**Get:** `GET /sales/invoices/{invoice_id}` — Path `invoice_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; existence remains tenant-scoped **404**). Same Path honesty on print/post/send/cancel.  
 **Pay:** `POST /sales/invoices/{invoice_id}/payments`  
-**Print:** `GET /sales/invoices/{invoice_id}/print`
+**Print:** `GET /sales/invoices/{invoice_id}/print` — query `template` ∈ a4|thermal (omit → company print branding default; blank/invalid → **422**); `format` ∈ pdf|text|json (omit → `pdf`; blank/invalid → **422**); `paper` ∈ 58mm|80mm for thermal (omit → branding default; blank/invalid → **422**, no silent branding fallback for garbage). Sales Print A4 / thermal controls.
 
 **Post stock integrity (Stage 15 H1):** Aggregated line quantities are checked before stock-out / AR / journal. Insufficient available stock → `409` with `detail.code = INSUFFICIENT_STOCK`; invoice stays `draft` (no movements, AR bump, or JE).
 
@@ -789,25 +1186,38 @@ Reason must be at least 3 characters (`400 CREDIT_OVERRIDE_REASON_REQUIRED`). Mi
 }
 ```
 
-### 7.6 Sales Return
-**List:** `GET /sales/returns`  
-**Create:** `POST /sales/returns`  
-**Get:** `GET /sales/returns/{return_id}`  
-**Post:** `POST /sales/returns/{return_id}/post`
+Create accepts header `discount_amount` + per-line `items[].discount` ∈ `NonNegativeMoneyValue` (`nan`/`inf`/<0 → **422**) with the same tax-before-line-discount order as quotations/orders. Sales UI **Header discount** / **Line discount** + invoice detail show discounts (BR-7.4).
 
-**Post (Stage 15 R1/A1):** Restock sellable lines into the original invoice’s store warehouse when `store_id` is set. Customer balance and return journal amounts use `to_base` via the invoice `exchange_rate` (document `paid_amount` stays in doc currency). Journal includes tax reverse `2100`, COGS/Inventory reverse when restocked, and `store_id`. Allocates credit note number. Domain audit `sales_return_posted`.
+**Send / resend:** `POST /sales/invoices/{invoice_id}/send` — emails customer (SMTP/console) for posted/sent/partial/paid/overdue; stamps `emailed_at`/`emailed_to`; unpaid → `sent` on first email. Optional Query `to` ∈ `EmailStr`; omit → customer email; blank/`not-an-email` → **422** (blank was silent fallthrough; garbage was accepted). Sales **Document email override to** + **Email invoice** / **Resend invoice email**.
+
+Optional create `currency` ∈ 3-letter ISO (`CurrencyCodeValue | null`; strip/upper) — omit/`null` → tenant base via `resolve_rate`; blank/`EURO`/`gh` → **422** (was free `str`; blank silently became base). Optional `exchange_rate` (>0) pairs with non-base currency. Sales **Currency** input (`aria-label="Sales invoice currency"`).
+
+**Cancel:** `POST /sales/invoices/{invoice_id}/cancel` `{ "reason" }` ∈ `SalesInvoiceCancelReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; **required**) — omit/blank/`!!!`/`http://…` → **422** (was free `str` with `min_length=1` only; whitespace still reached service **400**; garbage could be appended). Appended to invoice `notes` as `Cancel: …` and stored in audit `invoice_cancelled.details.reason`; **draft only** (posted/sent/paid → 409). Sales Invoices **Sales invoice cancel reason** (`aria-label`; BR-7.4).
+
+Optional header `is_reverse_charge: true` forces reverse-charge memo for all lines (tax excluded from customer total / `tax_amount`; stored on `reverse_charge_tax` and `sales_invoices.is_reverse_charge`). Same pattern as purchase invoices; Create sale checkbox. Rate-level RC still applies when header is false.
+
+Response lines include `line_subtotal`, `line_tax`, optional `tax_components`, and `is_reverse_charge`. Header includes `tax_amount`, `reverse_charge_tax`, `is_reverse_charge`, plus `tax_breakdown` (`by_rate`, `by_component`, `lines`) for display (BR-12.2). Print JSON/PDF includes per-line tax amounts.
+
+### 7.6 Sales Return
+**List:** `GET /sales/returns` — optional Query `status` ∈ `draft`|`posted`|`cancelled` (same `ReturnReportStatusValue` as return report; omit → all; blank/invalid → **422**). Sales **Sales return status filter** (`returnManageFilter`; client filter over full cache).  
+**Create:** `POST /sales/returns` — typed `SalesReturnCreate` / `SalesReturnItemCreate` (`extra=forbid`; unknown keys → **422**; `SalesReturnPost` same). Required `sales_invoice_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach invoice lookup; existence remains tenant-scoped sales invoice lookup **404**). Coded `reason` ∈ `damaged` | `wrong_item` | `defective` | `customer_change` | `other` (schema `Literal`; no silent default to `other`; omit/blank/invalid → **422**), `items[]` each with required `product_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`), optional `variant_id` ∈ `UuidIdValue` (omit/`null` OK; blank/`!!!`/`http://…`/non-UUID → **422**), required `condition` ∈ `sellable` | `discard` (schema `Literal`; no silent default from `restock`; omit/blank/invalid → **422**), optional `restock`, optional `notes` ∈ `SalesReturnNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → no notes; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Restock on post only when `restock` and line `condition=sellable`. Sales **Return from invoice** select + **Select reason** + **Select condition** + **Sales return notes**; Create return sends `sales_invoice_id` trim (BR-7.5).  
+**Get:** `GET /sales/returns/{return_id}` — Path `return_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`).  
+**Post:** `POST /sales/returns/{return_id}/post` — draft only; body optional `settlement_method` schema `Literal["adjust","refund"]` (omit OK — defaults to `adjust` when return ≤ open AR; blank/invalid → **422**; when return exceeds open AR, service still requires one of these → **400** `SETTLEMENT_REQUIRED`), `payment_method` schema `Literal["cash","bank_transfer","card","cheque"]` (omit → `cash`; blank/invalid → **422**), optional `liquid_account_id` ∈ `UuidIdValue` (omit/`null` → payment-method default; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach liquid-account lookup). Sales UI **Post credit** / **Post + refund**.  
+**Cancel:** `POST /sales/returns/{return_id}/cancel` — body `{ "reason" }` ∈ `SalesReturnCancelReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; **required**) — omit/blank/`!!!`/`http://…` → **422** (was free `str` with `min_length=1` only; whitespace still reached service **400**; garbage could be appended). Draft only → `status=cancelled`; appends `Cancel: …` to `notes` + audit `sales_return_cancelled.details.reason`. Serialize includes `can_cancel`. Sales **Sales return cancel reason** (`aria-label`; BR-7.5).
+
+**Numbering:** `GET|PATCH /sales/settings` exposes `sales_return_numbering` and `credit_note_numbering`. Create allocates `{PREFIX}-{YYYY}-{NNNN}` for `return_number` (default `SR`); post allocates series `credit_note_number` (default `CN`, unique per tenant). Sales Document numbering UI (BR-7.5 / BR-20.4).
 
 **Create Return:**
 ```json
 {
   "sales_invoice_id": "inv_001",
-  "reason": "defective",
+  "reason": "damaged",
   "restock": true,
   "items": [
     {
       "product_id": "prod_001",
       "quantity": 1,
-      "condition": "sellable"
+      "condition": "discard"
     }
   ]
 }
@@ -818,7 +1228,7 @@ Reason must be at least 3 characters (`400 CREDIT_OVERRIDE_REASON_REQUIRED`). Mi
 ## 8. Point of Sale (POS)
 
 ### 8.1 POS Session
-**Open Shift:** `POST /pos/sessions/open`
+**Open Shift:** `POST /pos/sessions/open` — typed `PosSessionOpen` (`extra=forbid`; unknown keys → **422**). Optional `store_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no store / HQ path; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach store lookup; existence remains tenant-scoped store lookup **404**). POS **POS store** select (`aria-label`); Open shift sends trim or `null` when blank. Optional `opening_cash` ∈ `NonNegativeMoneyValue` (finite; `ge=0`; ≤1e15; omit → 0; `nan`/`inf`/<0 → **422** — was `Field(ge=0)` only; Inf could pass). POS **Opening cash** (`aria-label`).
 
 ```json
 {
@@ -828,7 +1238,7 @@ Reason must be at least 3 characters (`400 CREDIT_OVERRIDE_REASON_REQUIRED`). Mi
 }
 ```
 
-**Close Shift:** `POST /pos/sessions/{session_id}/close`
+**Close Shift:** `POST /pos/sessions/{session_id}/close` — typed `PosSessionClose` (`extra=forbid`; unknown keys → **422**). Path `session_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; existence remains tenant-scoped **404**). Required `actual_cash` ∈ `NonNegativeMoneyValue` (finite; `ge=0`; ≤1e15; `nan`/`inf`/<0 → **422** — was `Field(ge=0)` only); optional `closing_cash` ∈ `NonNegativeMoneyValue` (omit/`null` OK; same honesty). Optional `notes` ∈ `PosSessionCloseNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`); omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist on shift notes). POS **Counted cash** + **POS shift close notes** inputs (`aria-label`s); Close shift sends `null` notes when blank.
 
 ```json
 {
@@ -840,19 +1250,12 @@ Reason must be at least 3 characters (`400 CREDIT_OVERRIDE_REASON_REQUIRED`). Mi
 
 **Get Current Session:** `GET /pos/sessions/current`
 
+**List Sessions:** `GET /pos/sessions` — optional Query `status` ∈ `open`|`closed` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). POS **POS shift status filter** All / Open / Closed (`shiftManageFilter`; client filter over full list cache).
+
+**Shift Report:** `GET /pos/sessions/{session_id}/report` — sales list, `payment_breakdown`, `summary` (sale_count, subtotal, tax, discounts, net_sales, return_count, return_total, net_after_returns), and `returns[]` for the cashier/store during the shift window (BR-8.2).
+
 ### 8.2 POS Sale
-**Create Sale:** `POST /pos/sales` — requires `pos:write`
-
-Single tender: set `payment_method` (`cash`|`card`|`wallet`|`credit`|`other`).  
-Split tender: set `payments[]` with `{ "payment_method", "amount", "reference?", "liquid_account_id?" }` summing to the computed sale total (`PAYMENT_TOTAL_MISMATCH` if not). Response includes `payments` rows and `payment_method` (`split` when multiple). Credit portion only increases customer AR balance.
-
-Credit tender (full or split portion) enforces the same credit-limit gate as invoice post. Optional body fields: `credit_limit_override` (bool), `credit_override_reason` (string). Same `CREDIT_LIMIT_*` error codes and audit action apply.
-
-**Stock integrity (Stage 13 H1):** Aggregated line quantities are checked before the sale transaction is created. Insufficient available stock returns `409` with `detail.code = INSUFFICIENT_STOCK`. No `Transaction`, `PosPayment`, or `pos_sale` journal is committed; open session totals are unchanged.
-
-**Drawer (Stage 13 H2):** When any tender is `cash` (`has_cash_tender`), the response may include `drawer` (mock/network/browser_bridge pulse per store settings). Card/wallet-only splits omit `drawer`.
-
-**Domain audit:** successful sale records `pos_sale_completed`.
+**Create Sale:** `POST /pos/sales` — typed `PosSaleCreate` (`extra=forbid`; no client `payload` bag — server builds receipt JSON; unknown keys → **422** — was free `payload: dict` merge). Optional `session_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → current session path; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach session lookup; existence remains tenant-scoped POS session lookup **404**/400). POS Complete sale sends `session_id` trim when a shift is open. Optional `party_id` ∈ `UuidIdValue` (omit/`null` → walk-in; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach party lookup; existence remains tenant-scoped customer lookup **404**). POS **POS customer** select (`aria-label`); Complete sale sends trim or `null` when blank. Optional `discount_amount` ∈ `NonNegativeMoneyValue` (omit → 0; `nan`/`inf`/<0 → **422** — was `Field(ge=0)` only). POS **POS cart discount** (`aria-label`). Optional `subtotal` / `tax` / `total` ∈ `NonNegativeMoneyValue` (omit → 0; `nan`/`inf`/<0 → **422** — was unconstrained `float`; POS UI usually omits — server computes). POS **POS cart totals** (`aria-label`). Optional `customer_name` ∈ `PosCustomerNameValue` (strip; 1–180; ≥1 letter/digit; no `://`/`@`; omit/`null` → walk-in; blank/`!!!`/`http://…` → **422** — was free `str` max 180; blank/garbage could persist). POS **POS customer name** input (`aria-label`); Complete sale sends `customer_name: name.trim() || null` (whitespace-only → walk-in `null`, not **422**). `payment_method` schema `Literal["cash","card","wallet","credit","other","split"]` (omit → `cash`; blank/invalid → **422**; no silent `other`). POS **POS payment method** select (`aria-label`). Wallet aliases `digital_wallet` / `mobile_money` / `momo` coerce to `wallet` before Literal check. Tender lines use typed `PosPaymentLine` (`extra=forbid`; unknown keys → **422`). `PosPaymentLine.payment_method` without `split`. Optional per-tender `PosPaymentLine.reference` ∈ `PaymentReferenceValue` (strip; 1–100; ≥1 letter/digit; no `://`/`@`; omit/`null` → no reference; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). POS **POS payment reference** input (`aria-label`; blank omitted; non-blank wraps the tender in `payments[]`). Optional per-tender `PosPaymentLine.liquid_account_id` ∈ `UuidIdValue` (omit/`null` → tender-method default; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach liquid-account lookup; existence remains tenant-scoped **404**/400). Service `normalize_payment_method` is strict by default (defense-in-depth **400**). `status` schema `Literal["completed"]` (omit → `completed`; blank/invalid → **422**; no garbage persist on `transactions.status`).
 
 ```json
 {
@@ -866,31 +1269,41 @@ Credit tender (full or split portion) enforces the same credit-limit gate as inv
       "discount": 0.50
     }
   ],
+  "payment_method": "cash",
   "payments": [
-    { "payment_method": "cash", "amount": 20.00 },
-    { "payment_method": "card", "amount": 5.48 }
-  ]
+    {
+      "payment_method": "cash",
+      "amount": 20.00
+    },
+    {
+      "payment_method": "card",
+      "amount": 5.48
+    }
+  ],
+  "discount_total": 1.00,
+  "tax_total": 2.49,
+  "grand_total": 25.48,
+  "notes": ""
 }
 ```
 
 ### 8.3 Product Search
-**Endpoint:** `GET /pos/products/search?q=flour&barcode=8901234567890`
+**Endpoint:** `GET /pos/products/search?q=flour&barcode=8901234567890` — Query `q` ∈ `ProductSearchQueryValue` (strip; empty OK; non-empty max 120; ≥1 letter/digit; no `://`); `!!!`/`http://…`/punctuation-only → **422** (was free `str`). Optional Query `barcode` ∈ `ProductBarcodeValue` (omit/`null` → name/SKU `q` path; blank/invalid → **422**). POS **Barcode scan or product search** (`aria-label`).
 
-### 8.4 Receipt Printing & Send
-**Get receipt:** `GET /pos/sales/{sale_id}/receipt` — requires `pos:read`
+**Inventory lookup:** `GET /inventory/products/lookup` — same Query `q` ∈ `ProductSearchQueryValue` + `barcode` ∈ `ProductBarcodeValue` honesty. Inventory **Product lookup search** / **Product lookup barcode** (`aria-label`s); lookup omits blank params.
 
-**Query Params:** `format=json|text|pdf` (default `json`); `paper=thermal_80|thermal_58` (tenant default when omitted). JSON includes thermal `text` plus ESC/POS drawer kick bytes (`drawer_kick_base64` / `drawer_kick_hex`).
+### 8.4 Receipt Printing
+**Endpoint:** `GET /pos/sales/{sale_id}/receipt`  
+Query `format` ∈ json|text|pdf (omit → `json`; blank/invalid → **422**); `paper` ∈ 58mm|80mm (omit → company print branding default; blank/invalid → **422**). POS **POS receipt paper** select (`aria-label`).
 
-**Send digital receipt (Stage 13 H2):** `POST /pos/sales/{sale_id}/receipt/send` — requires `pos:write`
+**Send:** `POST /pos/sales/{sale_id}/receipt/send` — query `channel` ∈ email|sms (omit → `email`; blank/invalid → **422**; no silent email from `""`); `paper` ∈ 58mm|80mm (omit → `80mm`; blank/invalid → **422**); optional Query `to` ∈ `ReceiptOverrideToValue` (strip; email or E.164); omit/`null` → cashier email/phone; blank/`!!!`/`not-an-email`/`not-a-phone` → **422** (was free `str`; blank was silent fallthrough; garbage reached soft send failure). Channel refine remains in API (email rejects E.164-only; sms rejects email). POS **POS receipt override to** + Email / SMS buttons.
 
-**Query Params:** `channel=email|sms` (default `email`); `to` optional recipient (defaults to cashier email/phone); `paper` optional.
-
-Successful send records domain audit `pos_receipt_sent` (`module=pos`, `entity=pos_sale`). Email/SMS uses SMTP/Twilio when configured, otherwise console mode in non-production.
+**Query Params (legacy note):** `?format=pdf&paper=80mm`
 
 ### 8.5 Cash Drawer
-**Summary:** `GET /pos/sessions/{session_id}/drawer` — requires `pos:read`  
-**Manual open:** `POST /pos/sessions/{session_id}/drawer/open` — requires `pos:write`  
-**Store settings:** `PATCH /stores/{store_id}/drawer` — `drawer_mode` `none|mock|network|browser_bridge`, `drawer_open_on_cash`, optional `drawer_host`/`drawer_port`
+**Store settings:** `PATCH /stores/{store_id}/drawer` — body `StoreDrawerSettingsUpdate` `{ drawer_mode?, drawer_host?, drawer_port?, drawer_open_on_cash? }`. `drawer_mode` schema `Literal["none","mock","network","browser_bridge"]` (omit = no change; blank/invalid → **422**; no silent `none` from `""`). Multi-Store **Cash drawer mode** select (`aria-label`). `drawer_host` ∈ `SmtpHostValue` (strip/lower; DNS hostname / IPv4 / `localhost`; no `://` / `@` / spaces); omit/`null` OK; blank/`http://…`/`not a host` → **422** (was free `str`; blank silent→null; garbage could persist). Service still requires host for `network` mode (**400**). Service `normalize_mode` remains defense-in-depth **400**. Multi-Store **Cash drawer host** input (`aria-label`; shown when Mode = network).  
+**Get:** `GET /pos/sessions/{session_id}/drawer`  
+**Open (manual):** `POST /pos/sessions/{session_id}/drawer/open` — typed `PosDrawerOpen` (`extra=forbid`; `{ "reason" }` ∈ `PosDrawerOpenReasonValue` (strip; 3–200; ≥1 letter/digit; no `://`/`@`; rejects placeholders `manual`/`n/a`/`na`/`none`/`test`); omit/blank/`!!!`/`http://…`/placeholder → **422** (was free `str` `min_length=1` only — whitespace/placeholders still reached service **400**; garbage could be logged). POS **Cash drawer open reason** (`aria-label`) + **Open cash drawer** (no `window.prompt`). Auto-open on cash sale uses internal `pos_sale:{id}` reason.
 
 ---
 
@@ -899,64 +1312,33 @@ Successful send records domain audit `pos_receipt_sent` (`module=pos`, `entity=p
 Stage 22 D1 fidelity for BR-9: `docs/STAGE_22_FIDELITY.md` (`test_stage22_fidelity_d1.py`).
 
 ### 9.1 Expense Categories
-**List:** `GET /expenses/categories`  
-**Create:** `POST /expenses/categories`  
-**Update:** `PATCH /expenses/categories/{category_id}`  
-**Budgets (Stage 22 E1):** `GET /expenses/budgets`
-
-Create/update accept optional `account_id` (tenant expense-type COA; Stage 14 E1) and `budget_amount` (Stage 22 E1). Serialize includes `account_id`, `account_code`, `account_name`. Clear mapping with `clear_account: true` on PATCH. Invalid non-expense account → `400 INVALID_EXPENSE_ACCOUNT`.
+**List:** `GET /expenses/categories` (`is_active=true|false` optional — Expenses manage All/Active/Inactive; default returns all)  
+**Create:** `POST /expenses/categories` — typed `ExpenseCategoryCreate` (`extra=forbid`; unknown keys → **422**; `ExpenseCategoryUpdate` / `ExpenseReject` same). Body `{ code, name, budget_amount?, account_id? }` — optional `budget_amount` ∈ `NonNegativeMoneyValue` (omit → 0; `nan`/`inf`/<0 → **422** — was `Field(ge=0)` only). Expenses **Expense category monthly budget** (`aria-label`). `code` ∈ `ExpenseCategoryCodeValue` (strip; 1–40; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/punctuation/URL could persist). Expenses **Expense category code** input. `name` ∈ `ExpenseCategoryNameValue` (strip; 1–120; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Expenses **Expense category name** input. Optional `account_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → default GL 6000; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach COA lookup; existence remains tenant-scoped account lookup **404**). Expenses **Expense category GL account** select; Add category sends trim or `null` when blank. Duplicate code → **409**. (`code` is create-only.) Response includes `budget_amount` / `is_active` / `account_id` / `account_code` / `account_name`  
+**Update:** `PATCH /expenses/categories/{category_id}` — partial `{ name?, budget_amount?, is_active?, account_id?, clear_account? }` (`name` ∈ `ExpenseCategoryNameValue`; omit/`null` → no change; blank/`!!!`/`http://…` → **422**; `budget_amount` ∈ `NonNegativeMoneyValue` — omit/`null` → no change; `nan`/`inf`/<0 → **422**; Expenses **Edit expense category budget** `aria-label`; optional `account_id` ∈ `UuidIdValue` — omit/`null` → no change; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach COA lookup; use `clear_account` to remove; Expenses **Edit expense category GL account** select — Save sends trim or `clear_account`; soft-deactivate via `is_active=false`; BR-9.1 / BR-9.2). Approved expenses debit the category GL (else default `6000`). Inactive categories remain listed for reactivation (manage status filter); creating expenses/recurring with an inactive `category_id` returns 400. Expenses UI **Activate** / **Deactivate** + manage status filter.
 
 ### 9.2 Expenses
-**List:** `GET /expenses?store_id=&department_id=`  
-**Create:** `POST /expenses`  
-**Get:** `GET /expenses/{expense_id}`  
-**Update:** `PATCH /expenses/{expense_id}`  
-**Approve:** `POST /expenses/{expense_id}/approve`  
-**Reject:** `POST /expenses/{expense_id}/reject` — body `{ "reason" }`  
-**Delete:** `DELETE /expenses/{expense_id}`  
-**Approval settings (Stage 22 A1):** `GET/PATCH /expenses/settings` — levels, thresholds, role gates (expense approval matrix)  
-**OCR suggest:** `POST /expenses/{expense_id}/ocr-suggest` — requires `expenses:write`  
-**OCR apply (Stage 10 A1):** `POST /expenses/{expense_id}/ocr-apply` — requires `expenses:write`
+**List:** `GET /expenses` — optional Query `status` ∈ `pending`|`approved`|`rejected` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Expenses **Expense status filter** All / Pending / Approved / Rejected (`expenseManageFilter`; client filter over full `GET /expenses` cache).  
+**Create:** `POST /expenses` — typed `ExpenseCreate` (`extra=forbid`; unknown keys → **422**; `ExpenseUpdate` same). Required `amount` ∈ `PositiveMoneyValue` (finite; `gt=0`; ≤1e15; `nan`/`inf`/≤0 → **422** — was `Field(gt=0)` only; Inf could pass). Expenses **Expense amount** (`aria-label`). `payment_method` schema `Literal["cash","bank_transfer","card","cheque"]` (omit → `cash`; blank/invalid → **422**; aliases `check`→`cheque`, `credit_card`/`debit_card`→`card`, `bank`/`transfer`→`bank_transfer`). Service `normalize_expense_payment_method` remains defense-in-depth **400**. Expenses **Expense payment method** select (`aria-label`) matches. Optional `description` ∈ `ExpenseDescriptionValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → empty; blank/`!!!`/`http://…` → **422** — was free `str` default `""`; blank/garbage could persist). Expenses **Expense description** input. Optional `payee` ∈ `ExpensePayeeValue` (strip; 1–150; ≥1 letter/digit; no `://`/`@`; omit/`null` OK; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Expenses **Expense payee** input. Optional `reference` ∈ `ExpenseReferenceValue` (strip; 1–100; ≥1 letter/digit; no `://`/`@`; omit/`null` → auto EXP-YYYY-NNNN; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently auto-numbered / garbage could persist). Expenses **Expense reference** input. Optional `category` ∈ `ExpenseCategoryLabelValue` (strip; 1–100; ≥1 letter/digit; no `://`/`@`; omit/`null` OK when `category_id` set; blank/`!!!`/`http://…` → **422** — was free `str`; blank without `category_id` reached service **400**; punctuation/URL could persist). Optional `category_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → label-only / MISC path; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach category lookup; existence remains tenant-scoped **404**/400). Prefer `category_id` (when set, service overwrites denormalized label from catalog name). Expenses **Expense spend category** select; Submit expense sends trim or `null` when blank. Optional `liquid_account_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → payment-method default GL; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach liquid-account lookup; existence remains tenant-scoped liquid account lookup **404**/400). Expenses **Expense liquid account** select (`aria-label`); Submit expense sends trim or `null` when blank. Optional `expense_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit/`null` → today; blank/`not-a-date`/`01/02/2024` → **422** (was free `datetime`; OpenAPI date-time; padded dates inconsistent). API `reports.parse_date` remains defense-in-depth. Expenses **Expense date** input (`aria-label`); create sends `null` when blank.  
+**Get:** `GET /expenses/{expense_id}` — Path `expense_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; existence remains tenant-scoped **404**). Same Path honesty on patch/approve/reject/attachment/OCR.  
+**Update:** `PATCH /expenses/{expense_id}` — Path `expense_id` ∈ `UuidIdValue` (same honesty). pending or rejected only (409 if approved). Body may include `amount` ∈ `PositiveMoneyValue` (omit/`null` → no change; `nan`/`inf`/≤0 → **422** — was `Field(gt=0)` only), `payee` ∈ `ExpensePayeeValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**), `description` ∈ `ExpenseDescriptionValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**), `reference` ∈ `ExpenseReferenceValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**), `expense_date` ∈ `IsoDateQueryValue` (omit/`null` → no change; blank/`not-a-date`/`01/02/2024` → **422**), `payment_method` (same `Literal`, omit = no change; blank/invalid → **422**), `category` ∈ `ExpenseCategoryLabelValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**), optional `category_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no change; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach category lookup; existence remains tenant-scoped expense-category lookup **404**/400). Same honesty as create. Expenses **Edit expense category** select (`aria-label`); Save changes sends trim or `null` when blank. Optional `store_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no change; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach store lookup; existence remains tenant-scoped store lookup **404**). Same honesty as create; use `clear_store` to remove. Expenses **Edit expense store** select (`aria-label`); Save changes sends trim, or `clear_store` when cleared. Optional `branch_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no change; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach branch lookup; existence remains tenant-scoped branch lookup **404**). Same honesty as create; use `clear_branch` to remove. Expenses **Edit expense branch** select (`aria-label`); Save changes sends trim, or `clear_branch` when cleared. Optional `department_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no change; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach department lookup; existence remains tenant-scoped department lookup **404**). Same honesty as create; use `clear_department` to remove. Expenses **Edit expense department** select (`aria-label`); Save changes sends trim, or `clear_department` when cleared. Amount cannot change after a human approval step is recorded. Expenses UI **Edit** opens these fields (OCR **Apply to expense** uses the same PATCH; **Expense OCR date** + **Expense OCR payee** / **Expense OCR description** / **Expense OCR reference** + **OCR expense amount** / **Edit amount** `aria-label`s; Apply trims and omits blank payee/description/reference/date).
 
-Create/update accept optional `store_id`, `department_id`, `payee` (Stage 14 E2). Foreign store/department → `404`. Approve/reject emit domain audit `expense_approved` / `expense_rejected` (`module=expenses`); submit pending → `expense_submitted`; under-threshold → `expense_auto_approved`; mid-level → `expense_level_approved` (Stage 14 A3). Final/auto approve also posts `journal_posted` with `source_type=expense`.
+Optional org dims: optional `branch_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no branch; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach branch lookup; existence remains tenant-scoped branch lookup **404**). Expenses **Expense branch** select (`aria-label`); Submit expense sends trim or `null` when blank. Optional `department_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no department; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach department lookup; existence remains tenant-scoped department lookup **404**). Expenses **Expense department** select (`aria-label`); Submit expense sends trim or `null` when blank. Optional `store_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no store; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach store lookup; existence remains tenant-scoped store lookup **404**). Expenses **Expense store** select (`aria-label`); Submit expense sends trim or `null` when blank. Department must belong to the selected branch when both are set. `PATCH /expenses/{id}` accepts the same fields plus `clear_branch` / `clear_department`. Receipts use separate upload endpoints (not inline attachments on create).
 
-```json
-{
-  "confirm": true,
-  "amount": 75.5,
-  "payee": "Office Depot",
-  "description": "Receipt — Office Depot",
-  "reference": "R-9",
-  "expense_date": "2026-04-01T00:00:00",
-  "category_id": null,
-  "payment_method": null
-}
-```
+**Attachments (BR-9.4):** `POST|GET|DELETE /expenses/{expense_id}/attachment` — multipart upload (PDF/image); GET returns file bytes (`Content-Disposition: attachment`). Expenses UI **Preview** loads the blob into an image/PDF modal (object URL); Download still forces save. Same Preview pattern on purchase-invoice and journal-entry attachments. OCR: `POST /expenses/{expense_id}/ocr-suggest`.
 
-`confirm` must be `true`. Applies only to `pending`/`rejected` expenses (same gate as `PATCH`). Suggest remains read-only; human review is required before apply.
+Pending expenses notify current-step matrix roles (BR-9.3): in-app `expense_approval` plus email (default on; opt out via notification preferences). Creator is excluded from the email fan-out. Advancing a level re-notifies the next step's roles.
 
-**Create Expense:**
-```json
-{
-  "category_id": "exp_cat_001",
-  "amount": 150.00,
-  "expense_date": "2026-08-07",
-  "payment_method": "bank_transfer",
-  "reference": "UTIL-001",
-  "payee": "City Power",
-  "description": "Monthly electricity bill",
-  "store_id": "store_001",
-  "department_id": "dept_001"
-}
-```
+**Approval settings:** `GET|PATCH /expenses/settings` — thresholds + `levels[]` (`ApprovalLevelUpdate`: `min_amount` ∈ `PositiveMoneyValue`, `roles[]`, `label?`, optional `step` 1–20 — omit/`null` → list order; `0`/`-1`/`21` → **422**). Thresholds `expense_approval_threshold` / `expense_l2_threshold` ∈ `PositiveMoneyValue` (omit/`null` → no change; `nan`/`inf`/≤0 → **422** — was `Field(gt=0)` only). `roles[]` items ∈ system roles (`SystemRoleValue` / `rbac.VALID_ROLES`; strip/lower; blank/unknown → **422** — was late service **400**). Optional `label` ∈ `ApprovalLevelLabelValue` (strip; 1–120; ≥1 letter/digit; no `://`/`@`; omit/`null` → no label; blank/`!!!`/`http://…` → **422** — was free `str`). Body `extra=forbid`. Expenses **Approval matrix** roles + label + min amount inputs (`aria-label`s + system-role datalist; blank label → `null`). Same `SystemRoleValue` + `ApprovalLevelLabelValue` honesty on `PATCH /purchasing/requests/settings` PR matrix (`PurchaseApprovalLevelUpdate`).
+
+**Approve:** `POST /expenses/{expense_id}/approve` — typed `ExpenseDecision` (`extra=forbid`; unknown keys → **422**). Body `{ "comment"? }` optional `comment` ∈ `ExpenseApproveCommentValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`); omit/`null`/empty body → no typed comment (service may still set a level-awaiting system note); blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist on `approval_comment`). Expenses UI **Expense approve comment** input (`aria-label`); Approve omits blank (no hardcoded `"Approved"`) → advances approval step or final `approved` + journal; no self-approve (except `super_admin`).  
+**Reject:** `POST /expenses/{expense_id}/reject` — body `{ "reason" }` ∈ `ExpenseRejectReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; **required**) → `rejected` + `rejection_reason`. Omit/blank/`!!!`/`http://…` → **422** (was free `str` with `min_length=1` only; whitespace still reached service **400**; garbage could persist). Expenses UI **Expense reject reason** (`aria-label`; no hardcoded `"Rejected"`). Role-gated to the awaiting matrix step.
 
 ### 9.3 Recurring Expenses
-**List:** `GET /expenses/recurring`  
-**Create:** `POST /expenses/recurring`  
-**Update:** `PATCH /expenses/recurring/{id}`  
-**Generate (Stage 22 A1):** `POST /expenses/recurring/generate`
-
-Templates carry optional `store_id` / `department_id` into generated expenses (Stage 14 E2). `PATCH` supports `skip_next`, `next_amount`, `next_description` (Stage 22 A1).
+**List:** `GET /expenses/recurring` — optional `?is_active=true|false` filters soft-deactivated schedules (omit = all; Expenses manage status filter).  
+**Create:** `POST /expenses/recurring` — typed `RecurringExpenseCreate` (`extra=forbid`; unknown keys → **422**; `RecurringExpenseUpdate` same). Required `amount` ∈ `PositiveMoneyValue` (`nan`/`inf`/≤0 → **422** — was `Field(gt=0)` only). Expenses **Recurring amount** (`aria-label`). `payment_method` same expense `Literal` (omit → `bank_transfer`; blank/invalid → **422**). Optional `description` ∈ `ExpenseDescriptionValue` (omit/`null` → empty; blank/`!!!`/`http://…` → **422**). Optional `payee` ∈ `ExpensePayeeValue` (omit/`null` OK; blank/`!!!`/`http://…` → **422**). Optional `category` ∈ `ExpenseCategoryLabelValue` (omit/`null` OK when `category_id` set; blank/`!!!`/`http://…` → **422**). Optional `category_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → label-only path; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach category lookup; existence remains tenant-scoped **404**/400). Prefer `category_id` (when set, service overwrites denormalized label from catalog name). Optional `branch_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no branch; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach branch lookup; existence remains tenant-scoped **404**). Optional `department_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no department; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach department lookup; existence remains tenant-scoped **404**). Expenses **Recurring description** + **Recurring payee** + **Recurring expense category** + **Recurring expense branch** + **Recurring expense department** select; Create schedule sends trim or `null` when blank.  
+**Update:** `PATCH /expenses/recurring/{id}` — activate/deactivate (`is_active`) and/or edit template fields: `amount` ∈ `PositiveMoneyValue` (omit/`null` → no change; `nan`/`inf`/≤0 → **422**), `payee` ∈ `ExpensePayeeValue` (+ `clear_payee`; omit/`null` → no change unless clear; blank/`!!!`/`http://…` → **422**), `description` ∈ `ExpenseDescriptionValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**), `payment_method` (same `Literal`, omit = no change; blank/invalid → **422**), `frequency`, optional `category_id` ∈ `UuidIdValue` (omit/`null` → no change; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach category lookup; existence remains tenant-scoped **404**/400). Prefer `category_id` (when set, service overwrites denormalized label). Expenses **Edit recurring expense category** select; Save schedule sends trim or `null` when blank. Optional `branch_id` ∈ `UuidIdValue` (omit/`null` → no change; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach branch lookup; existence remains tenant-scoped **404**). Use `clear_branch` to remove. Expenses **Edit recurring expense branch** select; Save schedule sends trim, or `clear_branch` when cleared. Optional `department_id` ∈ `UuidIdValue` (omit/`null` → no change; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach department lookup; existence remains tenant-scoped **404**). Use `clear_department` to remove. Expenses **Edit recurring expense department** select; Save schedule sends trim, or `clear_department` when cleared. Also `category`. Expenses UI **Edit schedule** (**Edit amount** `aria-label`). Existing generated expenses are unchanged; next Generate uses the updated template.  
+**Skip next:** `POST /expenses/recurring/{id}/skip-next` — typed `RecurringSkipNext` (`extra=forbid`; `{ "reason" }` ∈ `RecurringSkipReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; **required**) → advance `next_run_at` by one frequency period without creating an expense; audit `recurring_expense_skipped` with `details.reason` (+ previous/new `next_run_at`). Omit/blank/`!!!`/`http://…` → **422** (was free `str` with `min_length=1` only; whitespace still reached service **400**; garbage could persist on audit). Reason is audit-only (schedule `description` unchanged). Inactive → 400; past `end_date` after skip deactivates. Expenses UI **Skip next reason** (`aria-label`).  
+**Generate due:** `POST /expenses/recurring/generate` — creates expenses for active schedules with `next_run_at <= now` (also Celery beat `generate_recurring_expenses`)
 
 **Create Recurring:**
 ```json
@@ -964,11 +1346,13 @@ Templates carry optional `store_id` / `department_id` into generated expenses (S
   "category_id": "exp_cat_001",
   "amount": 150.00,
   "frequency": "monthly",
-  "start_date": "2026-08-01",
-  "end_date": "2026-12-31",
-  "description": "Recurring utility payment"
+  "description": "Recurring utility payment",
+  "branch_id": "br_001",
+  "department_id": "dept_001"
 }
 ```
+
+`frequency` ∈ `daily|weekly|monthly|yearly` (schema `Literal`; omit on create defaults to `monthly`; blank/invalid → **422**). Expenses **Recurring frequency** + **Recurring payment method** selects (`aria-label`s). Org dims on templates are copied onto expenses generated from the schedule. Generated expenses omit a forced reference so `expense_numbering` allocates `{PREFIX}-{YYYY}-{NNNN}` (default `EXP`); description is tagged `(recurring)` when needed. Expenses UI: Recurring expenses card (BR-9.5 / BR-9.2 / BR-20.4) including **Skip next** (typed reason required) and manage status filter All / Active / Inactive (`recurringManageFilter`; Generate remains active-only).
 
 ---
 
@@ -977,92 +1361,108 @@ Templates carry optional `store_id` / `department_id` into generated expenses (S
 Stage 22 D1 fidelity for BR-10: `docs/STAGE_22_FIDELITY.md` (`test_stage22_fidelity_d1.py`). Seeded system COA is industry-agnostic for MVP (Stage 22 C1).
 
 ### 10.1 Chart of Accounts
-**List:** `GET /accounting/accounts` (`tree=true` for nested children; `active_only` default true)  
-**Create:** `POST /accounting/accounts`  
+**List:** `GET /accounting/accounts` — optional `?is_active=true|false` (omit = all; Accounting manage status filter).  
+**Create:** `POST /accounting/accounts` — typed `AccountCreate` (`extra=forbid`; unknown keys → **422**; `AccountUpdate` same).  
 **Get:** `GET /accounting/accounts/{account_id}`  
-**Update:** `PATCH /accounting/accounts/{account_id}`  
-**Opening balance:** `POST /accounting/accounts/{account_id}/opening-balance`
+**Update:** `PATCH /accounting/accounts/{account_id}` — partial fields include `name`, bank metadata, and soft-deactivate via `is_active` (Accounting COA **Activate** / **Deactivate**; inactive blocked on new journal lines, cash transfers, opening balances, expense-category GL, and liquid pickers).
 
 **Account Types:** `asset`, `liability`, `equity`, `income`, `expense`
 
-**Create body:** `{ "code", "name", "account_type", "parent_id?" }` — non-system accounts only. Parent must share `account_type`; cycles rejected.
-
-**Opening balance body:** `{ "amount", "description?" }` — natural-side amount (assets/expenses debit; liability/equity/income credit). Posts balanced journal against system account `3900` Opening Balances Equity (`source_type=opening_balance`). Duplicate posted opening balance → `409 OPENING_BALANCE_EXISTS`.
+**COA opening balances (BR-10.1):** `POST /accounting/opening-balances` — typed `OpeningBalanceCreate` / `OpeningBalanceLine` (`extra=forbid`; unknown keys → **422**). Body `{ "lines": [{ "account_id"|"account_code", "amount" }], "reference"?, "notes"? }`. Per-line `amount` ∈ `PositiveMoneyValue` (finite; `gt=0`; ≤1e15; `nan`/`inf`/≤0 → **422** — was `Field(gt=0)` only; Inf could pass). Accounting **Opening balance amount** (`aria-label`). Optional per-line `account_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` OK when `account_code` set; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach COA lookup; existence remains tenant-scoped account lookup **404**). Accounting Ledger **Opening balance account** select (`aria-label`); Post opening balances sends `account_id` trim. Optional per-line `account_code` ∈ `AccountCodeValue` (strip; 1–30; `^[A-Za-z0-9][A-Za-z0-9_-]{0,29}$`; omit/`null` OK when `account_id` set; blank/`!!!`/`a b`/`http://…` → **422** — was free `str`; blank reached service **400**; malformed codes were late **404**). Same Value type as `AccountCreate.code`. Optional `reference` ∈ `OpeningBalanceReferenceValue` (strip; 1–100; ≥1 letter/digit; no `://`/`@`; omit/`null` → auto `COA-OPEN-YYYYMMDD`; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently auto-labeled / garbage could persist on journal `reference`). Optional `notes` ∈ `OpeningBalanceNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → default journal description; blank/`!!!`/`http://…` → **422** — was free `str`; blank fell through to default / garbage could persist on `JournalEntry.description`). Accounting Ledger **Opening balance account** / **Opening balance reference** / **Opening balance notes** inputs. Status: `GET /accounting/opening-balances` (`posted` once per tenant; equity plug to 3000).
 
 ### 10.2 Journal Entries
-**List:** `GET /accounting/journal-entries?store_id=`  
-**Create:** `POST /accounting/journal-entries`  
-**Get:** `GET /accounting/journal-entries/{entry_id}`  
-**Unpost:** `POST /accounting/journal-entries/{entry_id}/unpost`  
-**Upload attachment (Stage 9 J1):** `POST /accounting/journal-entries/{entry_id}/attachment` (multipart `file`) — requires `accounting:write`  
-**Download attachment:** `GET /accounting/journal-entries/{entry_id}/attachment` — requires `accounting:read`  
-**Delete attachment:** `DELETE /accounting/journal-entries/{entry_id}/attachment` — requires `accounting:write`  
+**List:** `GET /accounting/journal-entries` — optional Query `status` ∈ `posted`|`unposted` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Accounting Ledger **Journal status filter** All / Posted / Unposted (`journalManageFilter`; client filter over full cache).  
+**Create:** `POST /accounting/journal-entries` — typed `JournalCreate` + `JournalLineCreate` (`extra=forbid`; unknown keys → **422**). Body `description` ∈ `JournalDescriptionValue` (strip; 2–500 chars; ≥1 letter/digit; no `://` / `@`); blank/`!!!`/`http://…` → **422** (was free `str`; empty/garbage could persist on the ledger). Optional `reference` ∈ `JournalReferenceValue` (strip; 1–100; ≥1 letter/digit; no `://`/`@`; omit/`null` → no reference; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently dropped / garbage could persist). Optional body `entry_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit/`null` → now; blank/`not-a-date`/`01/02/2024` → **422** (was free `date`; OpenAPI date; padded dates inconsistent). API `reports.parse_date` remains defense-in-depth. Nested `lines[].account_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` OK when `account_code` set; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach COA lookup; existence remains tenant-scoped account lookup **404**). Accounting Manual journal **Journal line N account** select (`aria-label`); Post balanced entry sends `account_id` trim or `null` when blank. Nested `lines[].account_code` ∈ `AccountCodeValue` (strip; 1–30; `^[A-Za-z0-9][A-Za-z0-9_-]{0,29}$`; omit/`null` OK when `account_id` set; blank/`!!!`/`a b`/`http://…` → **422** — was free `str`; blank reached service **400**; malformed codes were late **404**; same Value type as `AccountCreate.code`). Nested `lines[].description` ∈ `JournalLineDescriptionValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → no line narrative; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist on `JournalEntryLine.description`). Accounting **Journal description** / **Journal reference** / **Journal entry date** / **Journal line N account** / **Journal line N description** inputs (`aria-label`s); create sends `null` reference/entry_date/line description when blank.  
+**Unpost:** `POST /accounting/journal-entries/{entry_id}/unpost` — typed `JournalUnpost` (`extra=forbid`; `{ "reason" }` ∈ `JournalUnpostReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; **required**) — omit/blank/`!!!`/`http://…` → **422** (was free `str` with `min_length=1` only; whitespace still reached service **400**; garbage could be appended). Manual journals only; reverses account balances; appended to journal `description` as `Unpost: …` and stored in audit `journal_unposted.details.reason`; allowed only when `entry_date` is in the tenant’s current fiscal period (`tenants.fiscal_year_start` MM-DD) **and** not on/before `books_closed_through`. Auto-posted sources (`sales_invoice`, `coa_opening`, `cash_transfer`, …) are rejected. Accounting **Journal unpost reason** (`aria-label`; BR-10.2).  
+**Attachment:** `POST|GET|DELETE /accounting/journal-entries/{entry_id}/attachment` — multipart `file` upload (PDF/image); tenant-scoped media key on `journal_entries.attachment_url`.
 
-Journal payloads include `attachment_url`, `has_attachment`, and optional `store_id` (Stage 14 A1). Manual create accepts `store_id` (tenant-scoped 404). Auto-post from expense / sales invoice / POS sets store when known. Sales invoice / POS / sales return journals include standard-cost COGS↔Inventory lines when cost > 0 (Stage 15 I1); returns also carry invoice `store_id` (Stage 15 R1). List filter `store_id` returns matching entries only. Upload replaces any prior stored object for the entry. Download returns `404` when none is stored.
+**Period close (BR-10.2):**
+- `GET /accounting/period` — `fiscal_year_start`, current fiscal bounds, `books_closed_through`
+- `POST /accounting/period/close` — typed `PeriodCloseBody` (`extra=forbid`; unknown keys → **422`; `PeriodReopenBody` same). Body `{ "through_date": "YYYY-MM-DD", "reason": "..." }` — inclusive close; cannot be future; cannot move earlier (use reopen); **reason** ∈ `PeriodCloseReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` `min_length=1` only — whitespace still reached service **400**; garbage could land in audit `period_closed.details.reason`). Body `through_date` ∈ `IsoDateQueryValue` (required; strip; `YYYY-MM-DD` or ISO datetime); blank/`not-a-date`/`01/02/2024` → **422** (was bare `date`; OpenAPI date; padded dates inconsistent). API `reports.parse_date` + `as_calendar_date` defense-in-depth. Accounting **Period close through date** + **Period close or reopen reason** + **Close books** (`aria-label`s).
+- `POST /accounting/period/reopen` `{ "through_date": null | "YYYY-MM-DD", "reason": "..." }` — clear or move closed-through earlier; **reason** ∈ `PeriodCloseReasonValue` (same honesty as close → **422** on blank/garbage); audit `period_reopened.details.reason`. Optional `through_date` ∈ `IsoDateQueryValue`; omit/`null` → clear; blank/invalid → **422**. Accounting **Reopen books** (`aria-label`).
 
-Unpost reverses account balances and sets status `unposted`. Allowed only when `entry_date` is in the tenant’s open fiscal year (`fiscal_year_start` MM-DD). Returns `409` with `FISCAL_PERIOD_CLOSED`, `JOURNAL_NOT_POSTED`, or `JOURNAL_RECONCILED` when blocked.
+Posting a journal (`POST /accounting/journal-entries`) rejects `entry_date` (default: now) on or before `books_closed_through` with **400**.
 
 **Create Journal Entry:**
 ```json
 {
-  "date": "2026-08-07",
   "reference": "JE-001",
   "description": "Adjusting entry for depreciation",
-  "entries": [
-    {
-      "account_id": "acc_001",
-      "debit": 100.00,
-      "credit": 0.00
-    },
-    {
-      "account_id": "acc_002",
-      "debit": 0.00,
-      "credit": 100.00
-    }
+  "entry_date": "2026-08-01",
+  "lines": [
+    { "account_code": "6000", "debit": 40.00, "credit": 0.00 },
+    { "account_code": "5000", "debit": 60.00, "credit": 0.00 },
+    { "account_code": "1000", "debit": 0.00, "credit": 100.00 }
   ]
 }
 ```
 
-### 10.3 Cash & Bank Accounts / Account ledger
-**Liquid accounts (Stage 22 B1):** `GET/POST /accounting/liquid-accounts`, `PATCH /accounting/liquid-accounts/{account_id}` — cash/bank with optional `bank_name` / `account_number` / `bank_branch`  
-**Liquid transfers:** `POST /accounting/liquid-transfers` — `deposit` / `withdrawal` / `transfer`  
-**Bank statements / recon:** `GET/POST /accounting/bank-statements`, `POST .../import`, match/ignore/complete lines (Open Banking adapters deferred)  
-**Cheques:** `GET/POST /accounting/cheques` + issue/deposit/bounce/clear lifecycle  
-**List (COA filter):** `GET /accounting/accounts?type=asset&sub_type=cash`  
-**Create:** `POST /accounting/accounts`  
-**Get Transactions (Stage 8 A1):** `GET /accounting/accounts/{account_id}/transactions`
+`lines` requires **≥2** rows; each line must have `account_id` ∈ `UuidIdValue` or `account_code` ∈ `AccountCodeValue` (blank/malformed id or code → **422**), `debit`/`credit` ∈ `NonNegativeMoneyValue` (finite; `ge=0`; ≤1e15; `nan`/`inf`/<0 → **422** — was `Field(ge=0)` only; Inf could pass), a non-zero debit **or** credit (not both), and Σ debit = Σ credit within ±0.01. Accounting Manual journal UI supports Add/Remove lines (default two) with live balance (BR-10.2). **Journal description** (`aria-label`) posts the typed narrative; optional **Journal entry date** (`aria-label`) posts `entry_date` or `null` when blank; per-line **Journal line N account** (`aria-label`) posts trimmed `lines[].account_id`; per-line **Journal line N debit/credit** (`aria-label`s); optional per-line **Journal line N description** (`aria-label`) posts `lines[].description` or `null` when blank.
 
-Query: `from_date`, `to_date` (ISO date), `include_unposted` (default false). Returns account metadata, `opening_balance` (activity before `from_date`), `closing_balance`, `total_debit` / `total_credit`, and `transactions[]` with `entry_number`, `entry_date`, debit/credit, and running `balance` on the account’s natural side (assets/expenses: debit−credit; liability/equity/income: credit−debit). Requires `accounting:read`.
+### 10.3 Cash & Bank Accounts
+**List liquid:** `GET /accounting/liquid-accounts`  
+**Create account:** `POST /accounting/accounts` — required `code` ∈ `AccountCodeValue` (strip; 1–30 chars; `^[A-Za-z0-9][A-Za-z0-9_-]{0,29}$`; no forced upper); blank/`!!!`/`a b`/`http://…` → **422** (was free `str`; blank late service **400**; garbage could persist as COA identity). Required `name` ∈ `AccountNameValue` (strip; 1–150 chars; ≥1 letter/digit; no `://` / `@`); blank/`!!!`/`http://…` → **422** (was free `str`; blank late service **400**; garbage could persist on COA). `account_type` schema `Literal["asset","liability","equity","income","expense"]` (omit → `asset`; blank/invalid → **422**); `liquid_kind` schema `Literal["cash","bank"] | null` (omit/null = non-liquid; blank/invalid → **422**; when set, account is forced to `asset`). Accounting **Liquid account kind** select (`aria-label`); optional `bank_name` ∈ `BankNameValue` (strip; 1–120 chars; at least one letter/digit; no `://` / `@`); omit/`null` OK; blank/`!!!`/`http://…` → **422** (was free `str`; blank silent→null then late service **400** when bank). Service still requires `bank_name` for bank accounts (**400**). Optional `account_number` ∈ `BankAccountNumberValue` (strip; alphanumeric + optional spaces/hyphens; max 64); omit/`null` OK; blank/`not-an-account`/`http://…` → **422** (was free `str`; blank silent→null; garbage could persist). Optional `bank_branch` ∈ `BankBranchValue` (strip; 1–120 chars; at least one letter/digit; no `://` / `@`); omit/`null` OK; blank/`!!!`/`http://…` → **422** (was free `str`; blank silent→null; garbage could persist). Accounting **Account code** + **Account name** + **Bank name** + **Bank account number** + **Bank branch** inputs (`aria-label`s; bank fields shown when Kind = bank); create omits blank bank_name / sends `null` account_number/branch when blank. PATCH `name` same honesty (omit/`null` → no change). Accounting **Edit account name** input (`aria-label`).  
+```json
+{ "code": "1001", "name": "Petty Cash", "liquid_kind": "cash" }
+```
+Bank example: `{ "code": "1011", "name": "Savings", "liquid_kind": "bank", "bank_name": "Acme Bank", "account_number": "123", "bank_branch": "Main" }`  
+Expense example: `{ "code": "6100", "name": "Misc Expense", "account_type": "expense" }`
+
+**Transfers / deposits / withdrawals:**  
+- `GET /accounting/transfers` — optional Query `kind` ∈ `transfer`|`deposit`|`withdrawal` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Accounting Cash & Bank **Cash transfer kind filter** All / Transfer / Deposit / Withdrawal (`xferKindManageFilter`; client filter over full cache).  
+- `POST /accounting/transfers` — typed `CashTransferCreate` (`extra=forbid`; unknown keys → **422**). Body `{ "kind": "transfer|deposit|withdrawal", "from_account_id", "to_account_id", "amount", "reference", "notes" }` — `kind` schema `Literal` (omit → `transfer`; blank/invalid → **422**). Accounting **Cash transfer kind** select (`aria-label`). Required `amount` ∈ `PositiveMoneyValue` (`nan`/`inf`/≤0 → **422** — was `Field(gt=0)` only). Accounting **Cash transfer amount** (`aria-label`). Optional `from_account_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → service requires for transfer/withdrawal; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach liquid-account lookup; existence remains tenant-scoped account lookup **404**). Accounting **Cash transfer from account** select (`aria-label`); Post cash transfer sends trim or `null` when blank. Optional `to_account_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → service requires for transfer/deposit; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach liquid-account lookup; existence remains tenant-scoped account lookup **404**). Accounting **Cash transfer to account** select (`aria-label`); Post cash transfer sends trim or `null` when blank. Optional `reference` ∈ `CashTransferReferenceValue` (strip; 1–80; ≥1 letter/digit; no `://`/`@`; omit/`null` → auto `XFER-YYYY-NNNN`; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently auto-numbered / garbage could persist). Optional `notes` ∈ `CashTransferNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → no notes; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently dropped / garbage could persist). Accounting **Cash transfer reference** / **Cash transfer notes** inputs.  
+- `GET /accounting/transfers/{id}`  
+
+**Numbering:** `GET|PATCH /accounting/settings` exposes `cash_transfer_numbering` alongside `journal_numbering`. Create allocates `{PREFIX}-{YYYY}-{NNNN}` (default `XFER`) when `reference` is omitted; explicit references are kept. Journal line `reference` uses the same value (BR-10.3 / BR-20.4). Nested `prefix` ∈ `DocumentPrefixValue` (strip + upper; `^[A-Za-z0-9][A-Za-z0-9_-]{0,19}$`); blank/`!!!`/`JE!`/`a b` → **422** (was free `str`; service `normalize_prefix` late **400**). Nested `DocumentNumberingFields` `extra=forbid` (unknown keys → **422**). Accounting **Journal number prefix** / **Cash transfer number prefix** inputs (`aria-label`s). Same prefix honesty + `aria-label`s on Sales (Invoice/Quotation/Sales order/Sales return/Credit note/Payment receipt), Purchasing (PO/GRN/PI/Request/PR/DN/SPY), Expenses (Expense), Inventory (Transfer/Stock count/Opening stock), and POS (Sale/Shift) numbering settings.
+
+`transfer` requires two distinct liquid accounts (Dr destination / Cr source).  
+`deposit` credits Owner's Equity `3000` into a liquid account; `withdrawal` is the reverse.
+
+**Cheques (BR-10.4):**  
+**List:** `GET /accounting/cheques` — optional Query `direction` ∈ `received`|`issued`; `status` ∈ `pending`|`deposited`|`cleared`|`bounced`|`cancelled` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422** — no silent empty list from garbage). Accounting Cheques **Direction** / **Status** filters.  
+**Deposit / Clear:** `POST /accounting/cheques/{id}/deposit|clear`  
+**Bounce / Cancel:** `POST /accounting/cheques/{id}/bounce|cancel` — body `ChequeLifecycleReason` (`extra=forbid`; `{ "reason" }` ∈ `ChequeLifecycleReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; **required**) — omit/blank/`!!!`/`http://…` → **422** (was free `str` with `min_length=1` only; whitespace still reached service **400**; garbage could be appended). Appended to notes (`Bounce:` / `Cancel:`) + journal description. Accounting Cheques **Cheque bounce cancel reason** (`aria-label`; BR-10.4).
+
+**Bank feed connections (reconcile):**  
+**List:** `GET /accounting/bank-connections` — optional `?is_active=true|false` filters soft-deactivated connections (omit = all; Accounting Reconcile manage status filter).  
+**Create:** `POST /accounting/bank-connections` — typed `BankConnectionCreate` (`extra=forbid`; unknown keys → **422**; `BankConnectionUpdate` same). Body `{ account_id, provider: mock|http_json, display_name?, external_account_id?, feed_url?, access_token?, auto_sync?, auto_match_after_sync?, sync_lookback_days? }` — required `account_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach liquid-account lookup; existence remains tenant-scoped liquid account lookup **404**). Accounting Reconcile **Reconcile liquid account** select (`aria-label`; shared with statement create); Connect bank account sends `account_id` trim. Optional `display_name` ∈ `BankConnectionDisplayNameValue` (strip; 1–120; ≥1 letter/digit; no `://`/`@`; omit/`null` OK; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Accounting Reconcile **Bank connection display name** input. Optional `external_account_id` ∈ `BankExternalAccountIdValue` (strip; 1–120; ≥1 letter/digit; no `://`/`@`; omit/`null` OK; blank/`!!!`/`http://…` → **422** — was free `str`; blank silent→null via service strip; garbage could persist). Accounting Reconcile **Bank external account id** input. `provider` schema `Literal` (omit → `mock`; blank/invalid → **422**; `mock` blocked in production at service layer); optional `feed_url` ∈ `WebhookUrlValue` (absolute `http(s)`; `http` only for localhost; omit/`null` OK for `mock`; blank/`ftp://`/`not-a-url`/plain-http remote → **422** — was free `str`; garbage could persist; `http_json` still requires URL at service **400**). Accounting **Bank connection provider** select (`aria-label`). Accounting Reconcile **Bank feed URL** input (`aria-label`); Connect sends `connFeedUrl.trim() || null` for `http_json`. Optional `access_token` ∈ `BankAccessTokenValue` (strip; 1–128; ≥1 letter/digit; no `://` / `@` / spaces); omit/`null` → no token; blank/`!!!`/`http://…` → **422** (was free `str`; blank silent no-op via service; punctuation/URL could be encrypted into credentials). Accounting Reconcile **Bank connection access token** input (`aria-label`; http_json; create sends `null` when blank).  
+**Update:** `PATCH /accounting/bank-connections/{connection_id}` — partial fields include display/feed settings (`provider` same `Literal`, omit = no change; blank/invalid → **422**; `feed_url` same `WebhookUrlValue` honesty, omit/`null` = no change; `external_account_id` ∈ `BankExternalAccountIdValue`, omit/`null` = no change; blank/`!!!`/`http://…` → **422**) and soft-deactivate via `is_active` (Accounting Reconcile **Activate** / **Deactivate** + manage status filter All/Active/Inactive; inactive connections skip Celery auto-sync and Sync returns **400**) Optional `display_name` ∈ `BankConnectionDisplayNameValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422`).
+**Delete:** `DELETE /accounting/bank-connections/{connection_id}` — hard remove  
+**Sync:** `POST /accounting/bank-connections/{connection_id}/sync` — imports into a reconcilable bank statement (dedupe by external ref); rejected when connection is inactive  
+**Auto-clear:** `POST /accounting/bank-statements/{statement_id}/auto-clear` — typed `BankAutoClearBody` (`extra=forbid`; unknown keys → **422`). Body `{ "min_confidence"?, "date_window_days"? }`. `min_confidence` schema `Literal["high","medium","low"]` (strip/lower; omit → `high`; blank/invalid → **422**; no silent high from `""`/garbage). Service `apply_auto_matches` remains defense-in-depth (**400**). Accounting Reconcile **Auto-clear high confidence** / **medium+** buttons.  
+**Match line:** `POST /accounting/bank-statements/{statement_id}/lines/{line_id}/match` — Path `statement_id` / `line_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`). Typed body `BankStatementMatchBody` `{ "journal_line_id" }` (`extra=forbid`; required `journal_line_id` ∈ `UuidIdValue` — blank/`!!!`/`http://…`/non-UUID → **422** — was free `str` `min_length=1` / late **404**; unknown keys → **422**). Accounting **Match bank line to journal line** sends trim. Service `match_line` remains defense-in-depth.  
+**Clear group:** `POST /accounting/bank-statements/{statement_id}/clear-group` — typed body `BankClearGroupBody` `{ "statement_line_ids", "journal_line_ids", "notes"? }` (`extra=forbid`; non-empty `statement_line_ids` + `journal_line_ids` ∈ `list[UuidIdValue]` — blank/`!!!`/`http://…`/non-UUID element → **422** — was free `list[str]` with blank-strip only / late **400**; empty either id list / unknown keys → **422** — was late **400**). Optional `notes` ∈ `BankClearGroupNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → no notes; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist on clearing group). Accounting Reconcile **Clear-group notes** input; Clear group sends id lists trimmed. Service `create_clearing_group` remains defense-in-depth.  
+**Create statement:** `POST /accounting/bank-statements` — typed body `BankStatementCreateBody` `{ "account_id", "statement_date"?, "opening_balance"?, "closing_balance"?, "notes"?, "lines"? }` (`extra=forbid`; nested `BankStatementLineCreate` also `extra=forbid`). Required `account_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str` min_length=1; garbage could reach liquid-account lookup; existence remains tenant-scoped liquid account lookup **404**). Accounting Reconcile **Reconcile liquid account** select; Create statement sends trim. Unknown keys / zero line `amount` → **422** (was free `dict` with late **404**/**400**). Nested line `amount` ∈ `FiniteMoneyValue` (signed; finite; ±1e15; `nan`/`inf`/out-of-range → **422** — was unconstrained `float`; zero still rejected). Accounting **Statement line amount** (`aria-label`). Optional `opening_balance` / `closing_balance` ∈ `FiniteMoneyValue` (finite; ±1e15; omit → 0; `nan`/`inf`/out-of-range → **422** — was unconstrained `float`). Optional `statement_date` + line `txn_date` ∈ `IsoDateQueryValue` (`YYYY-MM-DD` or ISO; omit → today / line default; blank/invalid → **422** — blank was silent default; invalid was uncaught **500**). Optional `notes` ∈ `BankStatementNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → no notes; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently dropped via strip-to-None / garbage could persist). Optional line `description` ∈ `BankStatementLineDescriptionValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → no description; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently dropped via strip-to-None / garbage could persist). Optional line `external_ref` ∈ `BankStatementLineExternalRefValue` (strip; 1–120; ≥1 letter/digit; no `://`/`@`; omit/`null` → no ref; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently dropped via strip-to-None / garbage could persist; max 120 matches column). Accounting Reconcile **Create bank statement** controls (`aria-label` account/opening/closing/statement date/line amount/description/external ref/notes/txn date/create).  
+**Import statement:** `POST /accounting/bank-statements/import?account_id=&opening_balance=&closing_balance=&statement_date=&notes=` + multipart `file` — Query `statement_date` ∈ `IsoDateQueryValue` (omit → max line txn date / today; blank/invalid → **422** — invalid was uncaught **500**). Optional Query `notes` ∈ `BankStatementNotesValue` (omit/`null` → no notes; blank/`!!!`/`http://…` → **422** — was free `str`). Optional Query `opening_balance` / `closing_balance` ∈ `FiniteMoneyValue` (finite; ±1e15; omit/`null` → feed/default; `nan`/`inf`/out-of-range → **422** — was free `float`). Accounting Reconcile import file control + **Statement opening/closing balance** + **Statement notes** trim when set.  
+**List statements:** `GET /accounting/bank-statements` — optional Query `status` ∈ `draft`|`in_progress`|`reconciled` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Accounting Reconcile **Bank statement status filter** All / Draft / In progress / Reconciled (`statementManageFilter`; client filter over full cache).
 
 ### 10.4 Financial Reports
-**Profit & Loss:** `GET /reports/profit-loss?from_date=&to_date=&store_id=&branch_id=&compare=` (also `GET /accounting/profit-loss`)  
+**Profit & Loss:** `GET /accounting/profit-loss` (also `/reports/profit-loss`) — returns `revenue`, `cogs` (account 5000), `gross_profit`, `operating_expenses`, `expense` (total), `net_profit`. COGS is posted automatically on sales invoice post / POS sale (Dr 5000 / Cr 1200 at standard `cost_price` × stock qty); restocked sales returns reverse COGS. Optional query params: `from_date`, `to_date`, `store_id`, `branch_id`. Optional `from_date` / `to_date` ∈ `IsoDateQueryValue` (`YYYY-MM-DD` or ISO; omit → no bound; blank/invalid → **422** — blank was silent omit; invalid was late service **400**). Optional `store_id` / `branch_id` ∈ `UuidIdValue` (omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`). Accounting **P&L From/To date** + **P&L store/branch filter** + Reports shared **Report From/To date** + **Report financial store/branch filter** controls (`aria-label`s; send trim). With no filters, response uses lifetime income/expense account balances (`mode=balances`). With any filter, aggregates posted journal lines (`mode=journals`); store/branch keep only attributable `sales_invoice` / `pos_sale` / `expense` / `sales_return` journals.
 
-Returns period totals from **posted** journal lines: `revenue`, `cogs`, `gross_profit`, `operating_expenses`, `other_income`, `income`, `expense`, `net_profit`, plus per-account `bucket`. Optional `store_id` / `branch_id` filter journals by store dimension (Stage 14 A1 store; Stage 23 F1 branch). Foreign store/branch → `404`. Store not in branch → `400 STORE_BRANCH_MISMATCH`. Stage 23 C1: `compare=true` adds `comparison` with equal-length prior period + per-metric `current` / `prior` / `change_pct` (defaults to current calendar month when dates omitted).
-
-**Cash Flow:** `GET /reports/cash-flow?from_date=&to_date=&store_id=&branch_id=&compare=`  
-
-Liquid (cash/bank) movements classified as `operating` / `investing` / `financing` / `transfer` by journal `source_type`. Includes `opening_cash`, `closing_cash`, `net_change` (excludes cash↔bank transfers). Optional `store_id` / `branch_id` (Stage 14 A1 / Stage 23 F1). Stage 23 C1: `compare=true` prior-period `comparison` block (same semantics as P&L).
-
-**Trial Balance:** `GET /reports/trial-balance?as_of_date=` (also `GET /accounting/trial-balance`)  
-
-When `as_of_date` is set, balances are rebuilt from **posted** journal lines with `entry_date` through that day; omit for live account balances. Response includes `as_of` (Stage 14 A2).
-
-**Balance Sheet (Stage 23 F1/C1):** `GET /reports/balance-sheet?as_of_date=&store_id=&branch_id=&compare=`  
-
-Same `as_of_date` semantics as trial balance; response includes `as_of`, `store_id`, `branch_id`, assets/liabilities/equity, and `balanced`. With store/branch filters, balances rebuild from posted journals (tenant live balances are not store-scoped). Empty branch (no stores) returns a zeroed balanced sheet. Stage 23 C1: `compare=true` compares against the same calendar day one month earlier (`comparison.mode=prior_as_of`).
-
-**Export (Stage 22 P1 / Stage 23 F1/C1):** `GET /reports/export?report_type=profit_loss|trial_balance|balance_sheet|cash_flow&format=pdf|xlsx` (also CSV where supported) with optional `store_id` / `branch_id` / `compare`. AR/AP aging via `GET /credit/aging?kind=receivable|payable`.
+**Balance Sheet:** `GET /reports/balance-sheet` (also `/accounting/balance-sheet`) — assets / liabilities / equity + computed retained earnings; `balanced` when Assets = Liabilities + Equity. Optional `as_of` ∈ `IsoDateQueryValue` (`YYYY-MM-DD` or ISO; omit → live balances; blank/invalid → **422** — blank was silent live; invalid was late service **400**). Optional `compare` ∈ prior_period|prior_year (schema Query `Literal` + strip/lower; omit → no compare; blank/invalid → **422**). Adds prior balances and deltas on each row plus summary `compare.deltas`. Same `compare` Literal on `GET /reports/export?report_type=balance_sheet`. Reports **Report as of date** + **Balance sheet compare** select (`aria-label`).  
+**Cash Flow:** `GET /reports/cash-flow?from_date=&to_date=&store_id=&branch_id=` — liquid cash/bank GL movements with back-compat `inflows`/`outflows`/`net` plus sections `operating` / `investing` / `financing` / `transfers` (each `{inflows,outflows,net}`). Lines include `activity`. Classification by journal `source_type` (`cash_transfer` deposit/withdrawal → financing; liquid↔liquid transfer → `transfers`; payments/POS/expenses → operating; `coa_opening` → financing). Investing reserved for future CapEx sources. Optional `from_date` / `to_date` ∈ `IsoDateQueryValue` (`YYYY-MM-DD` or ISO; omit → no bound; blank/invalid → **422** — blank was silent omit; invalid was late service **400**). Optional `store_id` / `branch_id` keep attributable journals only (expenses / POS / sales returns / customer payments on store invoices); HQ `cash_transfer` / `coa_opening` omitted when filtered. Response echoes `store_id`/`branch_id`/`mode`. Export `cash_flow` accepts the same filters. Reports shared **Report From/To date** controls. 
+**Trial Balance:** `GET /accounting/trial-balance` (also `/reports/trial-balance`) — optional `as_of` ∈ `IsoDateQueryValue` (same honesty as Balance Sheet; omit → live balances; blank/invalid → **422**). Optional `store_id` / `branch_id` ∈ `UuidIdValue` (omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`). Response includes `as_of`, `mode`, `rows`, `total_debit`, `total_credit`, `balanced`. Accounting **Trial balance as of date** + Reports **Report as of date** controls. Export: `report_type=trial_balance` with the same `as_of` (or `to_date`/`date`).
 
 ---
 
 ## 11. Credit Management
 
-Stage 22 D1 fidelity for BR-11: `docs/STAGE_22_FIDELITY.md` (`test_stage22_fidelity_d1.py`).
+**Aging:** `GET /credit/aging` — Query `kind` ∈ `receivable`|`payable` (schema Query `Literal` + strip/lower; omit → `receivable`; blank/invalid → **422** — no silent AR aging for `Payable`/`""`/garbage). Returns bucketed totals + rows for AR or AP. Credit UI **Receivables** / **Payables** toggle. Requires `credit:read`.
+
+**Exchange rates (BR-2.6):** `GET /credit/exchange-rates`; `PUT /credit/exchange-rates/{currency_code}` body `{ currency_code, rate_to_base }` (`extra=forbid`; `rate_to_base` ∈ `PositiveMoneyValue` — `nan`/`inf`/≤0 → **422** — was `Field(gt=0)` only); `DELETE /credit/exchange-rates/{currency_code}`; `POST /credit/exchange-rates/refresh` optional `{ currencies[] }`; `PATCH /credit/exchange-rates/settings`. Path + body `currency_code` (and refresh list items) ∈ 3-letter ISO (`CurrencyCodeValue`; strip/upper; blank/non-ISO → **422** — was late service **400**). Credit **Exchange rates** controls (`aria-label`s).
 
 ### 11.1 Customer Credit
-**Get Credit Info:** use customer `balance` on `GET /customers/{customer_id}` plus `GET /credit/customers/{customer_id}/statement` (`credit:read`) — there is no `GET /customers/{customer_id}/credit` route.  
-**Aging:** `GET /credit/aging?kind=receivable|payable`  
-**Credit limit (Stage 22 R1):** `PATCH /customers/{customer_id}/credit-limit` — block on exceed (`CREDIT_LIMIT_EXCEEDED`); override with `credit_limit_override` + reason + `credit:approve`
+**Get Credit Info:** `GET /customers/{customer_id}/credit` — `credit_limit`, `outstanding_balance`, `available_credit` (`null` when unlimited/`credit_limit<=0`), `is_over_limit`, `credit_sales[]` open invoices. Requires `credit:read`.
+**Update credit limit:** `PATCH /customers/{customer_id}/credit-limit` — body `CreditLimitUpdate` `{ credit_limit, payment_terms_days? }` (`credit_limit` ∈ `NonNegativeMoneyValue`; `nan`/`inf`/<0 → **422** — was `Field(ge=0)` only). Credit **Credit limit** (`aria-label`). Party create/update `credit_limit` same honesty.
+**Early payment terms:** `GET|PATCH /credit/settings` — `early_pay_discount_pct` ∈ `PercentRateValue` (0–100 finite); `early_pay_discount_days` ∈ 0–365; `nan`/`inf`/out-of-range → **422**. Credit **Early pay discount percent** / **Early pay discount days** (`aria-label`s).
+
+**Credit limit enforcement / override (BR-11.1):** posting a sales invoice, POS credit checkout, or legacy `POST /sales` that would push `balance + amount` above `credit_limit` returns `409` with `detail.code = CREDIT_LIMIT_EXCEEDED` (includes `over_by`, balances). Retry with body:
+```json
+{ "override_credit_limit": true, "override_reason": "Approved by store manager" }
+```
+Requires `credit:approve` (store_manager, accountant, company_admin / `*`). Otherwise `403` `CREDIT_OVERRIDE_FORBIDDEN`. When `override_credit_limit` is true, **`override_reason`** ∈ `CreditOverrideReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`) is **required** — omit/`null` OK when flag is false; blank/`!!!`/`http://…` → **422** (was free `str` `max_length=500` only — whitespace failed model_validator, but garbage could land in audit). Schema field validators + `model_validator`; service still returns `400` `CREDIT_OVERRIDE_REASON_REQUIRED` if reached. Successful overrides set `credit_limit_overridden: true` and write audit `credit_limit_override` with `details.reason`. Sales Invoices + POS UIs **Credit override reason** (`aria-label`; no canned `window.prompt` default).
+
+**Legacy `POST /sales` body:** typed `TransactionCreate` (`extra=forbid`). Optional `payload` ∈ `LegacyTransactionPayload` (`extra=forbid`; optional `items[]` ∈ `LineItem`); omit/`null` OK; unknown payload keys → **422** (was free `dict`; poison keys could persist on `transactions.payload`). Prefer top-level `items`; server stores only typed line items (no client bag merge).
 
 **Response:**
 ```json
@@ -1084,11 +1484,8 @@ Stage 22 D1 fidelity for BR-11: `docs/STAGE_22_FIDELITY.md` (`test_stage22_fidel
 }
 ```
 
-**Get Outstanding Bills (Stage 8 S2):** `GET /customers/{customer_id}/outstanding`
-
-Returns open AR invoices (`posted` / `partial` / `sent` / `overdue` with balance > 0): `{ invoice_id, invoice_number, amount, due_date, status, document_type: "sales_invoice" }`. Requires `credit:read`; 404 if customer missing.
-
-**Record Payment:** `POST /customers/{customer_id}/payments` (alias `POST /sales/payments`)
+**Record Payment:** `POST /customers/{customer_id}/payments` — typed `CustomerPaymentCreate` (`extra=forbid`; unknown keys → **422**; `CreditLimitUpdate` / `CreditLimitOverrideBody` same). Required body `customer_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach party lookup; existence remains tenant-scoped customer lookup **404**). Required `amount` ∈ `PositiveMoneyValue` (`nan`/`inf`/≤0 → **422** — was `Field(gt=0)` only). Credit **Payment amount** (`aria-label`). Optional `sales_invoice_id` ∈ `UuidIdValue` (omit/`null` → apply oldest-open; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach invoice lookup; existence remains tenant-scoped sales-invoice lookup **404**). Credit Record payment may omit (FIFO apply). Optional `liquid_account_id` ∈ `UuidIdValue` (omit/`null` → payment-method default GL; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach liquid-account lookup). Credit **Credit payment liquid account** select (`aria-label`); Record payment sends trim or `null` when blank. `payment_method` schema `Literal["cash","bank_transfer","card","cheque"]` (omit → `cash`; blank/invalid → **422**; same aliases as expenses). Optional `reference` ∈ `PaymentReferenceValue` (strip; 1–100; ≥1 letter/digit; no `://`/`@`); omit/`null` → no reference; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist on `CustomerPayment.reference`). Optional `notes` ∈ `PaymentNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`); omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist on `CustomerPayment.notes`). Optional `cheque_number` ∈ `ChequeNumberValue` (strip; alphanumeric + optional spaces/hyphens; max 50); omit/`null` → service falls back to reference/payment_number; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist). Optional `bank_name` ∈ `BankNameValue` (strip; 1–120 chars; at least one letter/digit; no `://` / `@`); omit/`null` OK; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist). Optional `cheque_date` ∈ `IsoDateQueryValue` (`YYYY-MM-DD` or ISO; omit/`null` OK; blank/`not-a-date`/`01/02/2024` → **422** — was free `datetime`; padded dates rejected; Credit UI never set → always null). Optional `currency` ∈ 3-letter ISO (`CurrencyCodeValue | null`; omit/`null` → invoice/base via `resolve_rate`; blank/non-ISO → **422** — was free `str`; blank silently base). Optional `exchange_rate` ∈ `PositiveMoneyValue` (omit/`null` → resolve_rate; `nan`/`inf`/≤0 → **422** — was `Field(gt=0)` only). Also `POST /sales/payments` with the same `CustomerPaymentCreate` body. Credit **Credit payment party** select (`aria-label`); Method select matches; **Payment reference** + **Payment notes** inputs (`aria-label`s); **Payment cheque number** + **Payment cheque bank name** + **Payment cheque date** when Method = cheque; **Record payment** sends `customer_id` trim and `null` cheque/ref/notes when blank. Service `normalize_expense_payment_method` / `normalize_currency` remain defense-in-depth **400**; API `reports.parse_date` for cheque_date.  
+**Customer History:** `GET /customers/{customer_id}/history?from_date=&to_date=` — purchase history (sales invoices + POS), returns, and payments with `summary` totals (BR-7.1). Optional `from_date` / `to_date` ∈ `IsoDateQueryValue` (`YYYY-MM-DD` or ISO; omit → no bound; blank/invalid → **422** — blank was silent omit; invalid was late service **400**). Credit **History From/To date** inputs (`aria-label`s).
 
 ```json
 {
@@ -1101,16 +1498,16 @@ Returns open AR invoices (`posted` / `partial` / `sent` / `overdue` with balance
 }
 ```
 
-Optional `sales_invoice_id` allocates to that invoice only; omit to auto-allocate oldest-first (Stage 14 R1 Credit UI). Wrong customer → `400`.
-
 ### 11.2 Supplier Credit
-**Get Outstanding Bills (Stage 8 S2):** `GET /suppliers/{supplier_id}/outstanding`
+**Get Credit / Balance:** `GET /suppliers/{supplier_id}/credit` — `outstanding_balance`, `open_bills[]` (PIs + uninvoiced POs). Requires `credit:read`.  
+**Get Outstanding Bills:** `GET /suppliers/{supplier_id}/outstanding`  
+**Supplier History:** `GET /suppliers/{supplier_id}/history?from_date=&to_date=` — purchase history (POs + purchase invoices), returns, and payments with `summary` totals (BR-6.1). Same `from_date` / `to_date` ∈ `IsoDateQueryValue` honesty. Credit **History From/To date** inputs (`aria-label`s).
 
-**Payment Schedule (Stage 8 S1 / BR-11.2):** `GET /suppliers/{supplier_id}/payment-schedule`
+**Payment Schedule:** `GET /suppliers/{supplier_id}/payment-schedule` — open purchase invoices + uninvoiced POs sorted by `due_date` ascending; each row includes `balance_due`, `days_until_due`, `days_overdue`, optional `early_discount` quote when tenant early-pay settings apply. Response also has `total_due`, `upcoming_count`, `overdue_count`. Requires `credit:read`.
 
-Returns `{ supplier_id, supplier_name, as_of, total_due, overdue_total, upcoming_total, early_pay, items[] }`. Each item includes `document_type` (`purchase_invoice` | `purchase_order`), amount, `due_date`, `days_until_due`, `schedule_bucket` (`overdue` | `due_today` | `upcoming` | `unscheduled`), and `early_discount` quote for open purchase invoices. Sorted overdue → due today → upcoming. Requires `credit:read`.
+**Due notifications:** Celery / `POST /notifications/scan-due` runs `scan_payment_due` for both AR sales invoices and AP purchase invoices within the horizon (default 3 days), creating `payment_due` notifications (`entity_type=purchase_invoice` for bills), `scan_quotation_expiry` for draft/sent quotations with `valid_until` within 1 day (category `quotation_expiry`, `entity_type=sales_quotation`; past-due rows are flipped to `status=expired`), and `scan_recurring_expense_due` for active recurring schedules with `next_run_at` within 1 day (category `recurring_expense_due`, `entity_type=recurring_expense`; BR-9.5).
 
-**Record Payment:** `POST /suppliers/{supplier_id}/payments`
+**Record Payment:** `POST /suppliers/{supplier_id}/payments` — typed `SupplierPaymentCreate` (`extra=forbid`; unknown keys → **422**). Required body `supplier_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach party lookup; existence remains tenant-scoped supplier lookup **404**). Required `amount` ∈ `PositiveMoneyValue` (`nan`/`inf`/≤0 → **422** — was `Field(gt=0)` only). Optional `purchase_order_id` / `purchase_invoice_id` ∈ `UuidIdValue` (omit/`null` → apply oldest-open; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach PO/PI lookup; existence remains tenant-scoped **404**). Optional `liquid_account_id` ∈ `UuidIdValue` (omit/`null` → payment-method default GL; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach liquid-account lookup). Credit **Credit payment liquid account** select; Record payment sends trim or `null` when blank. `payment_method` schema `Literal["cash","bank_transfer","card","cheque"]` (omit → `bank_transfer`; blank/invalid → **422**; same aliases). Optional `reference` ∈ `PaymentReferenceValue` (omit/`null` → no reference; blank/garbage → **422**; same honesty as customer payments). Optional `notes` ∈ `PaymentNotesValue` (omit/`null` → no notes; blank/garbage → **422**; same honesty as customer payments). Optional `cheque_number` ∈ `ChequeNumberValue` (omit/`null` OK; blank/garbage → **422**; same honesty as customer payments). Optional `bank_name` ∈ `BankNameValue` (omit/`null` OK; blank/garbage → **422**; same honesty as customer payments). Optional `cheque_date` ∈ `IsoDateQueryValue` (omit/`null` OK; blank/garbage → **422**; same honesty as customer payments). Optional `currency` ∈ 3-letter ISO (`CurrencyCodeValue | null`; omit/`null` → invoice/base; blank/non-ISO → **422** — was free `str`; blank silently base). Credit **Credit payment party** select (`aria-label`; shared AR/AP); Method select matches; **Payment reference** + **Payment notes**; **Payment cheque number** + **Payment cheque bank name** + **Payment cheque date** when Method = cheque; **Record payment** sends `supplier_id` trim and `null` when blank.
 
 Optional `purchase_invoice_id` and/or `purchase_order_id`; omit both to auto-allocate oldest open bills then POs (Stage 14 R1).
 
@@ -1121,12 +1518,12 @@ Optional `purchase_invoice_id` and/or `purchase_order_id`; omit both to auto-all
 Stage 22 D1 fidelity for BR-12: `docs/STAGE_22_FIDELITY.md` (`test_stage22_fidelity_d1.py`).
 
 ### 12.1 Tax Rates
-**List:** `GET /tax/rates?active_only=` (alias `GET /taxes/rates`)  
-**Create:** `POST /tax/rates`  
-**Get:** `GET /tax/rates/{rate_id}`  
-**Update (Stage 14 T1):** `PATCH /tax/rates/{rate_id}` — name/rate/type/mode/components/flags; `is_active: false` deactivates and clears default  
-**Set default:** `POST /tax/rates/{rate_id}/default`  
-**Calculate (Stage 22 T1):** `POST /tax/calculate` — inclusive/exclusive pricing mode + compound components (`basis: compound`)
+**List:** `GET /tax/rates` (`is_active=true|false` optional — Tax manage All/Active/Inactive; default returns all)  
+**Create:** `POST /tax/rates` — typed `TaxCreate` (`extra=forbid`; unknown keys → **422**; `TaxUpdate` / `TaxCalculateRequest` same). `name` ∈ `TaxRateNameValue` (strip; 1–80; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Tax **Tax rate name** input. Required `rate` ∈ `NonNegativeMoneyValue` (`nan`/`inf`/<0 → **422** — was `Field(ge=0)` only). Tax **Tax rate percent** (`aria-label`). `tax_type` schema `Literal["vat","gst","sales_tax","custom"]` (omit → `vat`; blank/invalid → **422**); `pricing_mode` schema `Literal["exclusive","inclusive"]` (omit → `exclusive`; blank/invalid → **422**; no silent exclusive for unknown modes). Tax **Tax rate type** + **Tax pricing mode** selects (`aria-label`s). Optional `components[]` typed `TaxComponent` (`extra=forbid`; `rate` ∈ `NonNegativeMoneyValue`; `basis` ∈ `net`|`compound` strip/lower, omit→`net`; optional `code` ∈ `TaxComponentCodeValue` (strip; 1–40; ≥1 letter/digit; no `://`/`@`; omit/`null` → name or auto `cN`; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently fell through; garbage could persist); optional `name` ∈ `TaxComponentNameValue` (strip; 1–80; ≥1 letter/digit; no `://`/`@`; omit/`null` → code; blank/`!!!`/`http://…` → **422**); blank/invalid basis / unknown keys → **422** — was free `list[dict]`; blank basis silently `net`; bad basis late **400**). Tax **Tax rate components JSON** textarea.  
+**Get:** `GET /tax/rates/{rate_id}` — Path `rate_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`).  
+**Update:** `PATCH /tax/rates/{rate_id}` — `{ name?, rate?, tax_type?, pricing_mode?, components?, is_reverse_charge?, is_active? }` (`name` ∈ `TaxRateNameValue`; omit/`null` → no change; blank/`!!!`/`http://…` → **422**; `tax_type` / `pricing_mode` same Literals, omit = no change; blank/invalid → **422**; same `TaxComponent` honesty when `components` sent; soft-deactivate via `is_active=false` clears `is_default`; Tax UI **Activate** / **Deactivate**)  
+**Set default:** `POST /tax/rates/{rate_id}/default` (rejects inactive rates)  
+**Calculate:** `POST /tax/calculate` — required `amount` ∈ `PositiveMoneyValue` (`nan`/`inf`/≤0 → **422** — was `Field(gt=0)` only). Optional `rate` ∈ `NonNegativeMoneyValue` (omit/`null` → tax_rate_id / tenant default; `nan`/`inf`/<0 → **422** — was unconstrained `float`). `pricing_mode` same `Literal` (omit → exclusive; blank/invalid → **422**); optional `tax_rate_id` ∈ `UuidIdValue` (omit/`null` → use `rate` / tenant default; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach tax-rate lookup); optional `components[]` same `TaxComponent` honesty.
 
 **Create Tax Rate:**
 ```json
@@ -1140,36 +1537,19 @@ Stage 22 D1 fidelity for BR-12: `docs/STAGE_22_FIDELITY.md` (`test_stage22_fidel
 }
 ```
 
+**Category mapping:** assign rates via `POST|PATCH /catalog/categories` `tax_rate_id` (see §5.1).
+
 ### 12.2 Tax Reports
-**Endpoint:** `GET /reports/tax?from_date=&to_date=&period=&year=&month=&quarter=`  
-**Filing pack:** `GET /reports/tax/filing?from_date=&to_date=&period=&year=&month=&quarter=&jurisdiction=` — jurisdiction-neutral boxes plus optional government mapping when supported (`GH`, `NG`, `KE`)  
-
-`period=monthly|quarterly|annually` resolves bounds from `year` / `month` / `quarter` (defaults to current UTC period). Response includes `period`, `period_year`, `period_month`, `period_quarter` when a preset is used (Stage 14 T1). Explicit `from_date`/`to_date` still work when `period` is omitted.
-
-**Exports:** `tax`, `tax_filing`, `tax_filing_gh`, `tax_filing_ng`, `tax_filing_ke` via `/reports/export` (also surfaced on Reports → Tax UI — Stage 16 R2)  
-
-Government templates are **manual filing workbooks only** — they do not e-file to GRA, FIRS, or KRA iTax portals (Stage 10 T2).
-
-### 12.3 Credit aging export (Stage 16 R2)
-**Export:** `GET /reports/export?report_type=credit_aging&format=csv|xlsx|pdf&kind=receivable|payable&as_of_date=`  
-
-Packages existing `/credit/aging` into the Reports export surface (no parallel Credit engine). Default `kind=receivable`. Reports UI Credit tab links to `/credit`.
-
-### 12.4 Transfer history export (Stage 16 M2)
-**Report:** `GET /reports/transfers`  
-**Export:** `GET /reports/export?report_type=transfer_history&format=csv|xlsx|pdf&status=&store_id=&scope=all|inter_store|warehouse&from_date=&to_date=&limit=`  
-
-Consolidated inter-store + warehouse transfer history (same `StockTransfer` records as `/stores/transfers`). Reports UI **Transfers** tab.
-
----
+**Endpoint:** `GET /reports/tax?from_date=&to_date=&store_id=` — output/input/net VAT summary; optional `store_id` ∈ `UuidIdValue` (omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; invoices by invoice store, POS by session store, input via PO/GRN warehouse→store). Optional `from_date` / `to_date` ∈ `IsoDateQueryValue` (`YYYY-MM-DD` or ISO; omit → no bound; blank/invalid → **422** — blank was silent omit; invalid was late service **400**). Response echoes `store_id`/`store_name`. Tax UI **Tax From/To date** + **Tax report store filter** (`aria-label`; qs/export send trim).  
+**Filing pack:** `GET /reports/tax/filing?from_date=&to_date=&store_id=&jurisdiction=` — same `store_id` ∈ `UuidIdValue` honesty + same `from_date` / `to_date` ∈ `IsoDateQueryValue` honesty; export `tax` / `tax_filing` / `tax_filing_gh` pass `store_id`. Query `jurisdiction` ∈ `GH` (schema Query `Literal` + strip/upper; keep aligned with `tax_filings.SUPPORTED`; omit → tenant `tax_jurisdiction` with neutral pack when unsupported; blank/unsupported → **422** — blank was silent omit; unsupported was late service **400**). Same Query Literal on `GET /reports/export` (omit → export default; `tax_filing_gh` still defaults to GH). Tax UI (`/tax`) **Tax filing jurisdiction filter** (`filingJurisdictionFilter`) + period store picker + **Tax From/To date**.
 
 ## 13. Multi-Store Management
 
 ### 13.1 Stores
-**List:** `GET /stores`  
-**Create:** `POST /stores`  
-**Get:** `GET /stores/{store_id}`  
-**Update:** `PATCH /stores/{store_id}`
+**List:** `GET /stores` (`is_active=true|false` optional — Multi-Store manage All/Active/Inactive; default returns all)  
+**Create:** `POST /stores` — typed `StoreCreate` (`extra=forbid`; unknown keys → **422**; `StoreUpdate` same). `code` ∈ `StoreCodeValue` (strip; 1–50; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/punctuation/URL could persist). Multi-Store **Store code** input. `name` ∈ `StoreNameValue` (strip; 1–150; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str`; blank/garbage could persist). Multi-Store **Store name** input. Optional `manager_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no manager; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach user lookup; existence remains tenant-scoped user lookup **404**). Multi-Store **Store manager** select; Create store sends trim or `null` when blank. Optional `branch_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no branch; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach branch lookup; existence remains tenant-scoped branch lookup **404**). Multi-Store **Store branch** select; Create store sends trim or `null` when blank. Tenant uniqueness remains UniqueConstraint `(tenant_id, code)`.  
+**Get:** `GET /stores/{store_id}` — Path `store_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; existence remains tenant-scoped **404**). Same Path honesty on store patch/inventory/sales/drawer/reorder routes.  
+**Update:** `PATCH /stores/{store_id}` — `name` ∈ `StoreNameValue` (omit/`null` → no change; blank/`!!!`/`http://…` → **422**). Multi-Store **Edit store name** input. (`code` is create-only.)
 
 **Create Store:**
 ```json
@@ -1179,10 +1559,28 @@ Consolidated inter-store + warehouse transfer history (same `StockTransfer` reco
   "address": "100 Main St",
   "phone": "+1-555-0400",
   "manager_id": "usr_002",
-  "warehouse_id": "wh_002",
-  "status": "active"
+  "branch_id": null,
+  "operating_hours": {
+    "mon": { "open": "09:00", "close": "18:00" },
+    "tue": { "open": "09:00", "close": "18:00" },
+    "wed": { "open": "09:00", "close": "18:00" },
+    "thu": { "open": "09:00", "close": "18:00" },
+    "fri": { "open": "09:00", "close": "17:00" },
+    "sat": { "closed": true },
+    "sun": { "closed": true }
+  }
 }
 ```
+
+`operating_hours` typed `StoreOperatingHours` (`extra=forbid`; keys ∈ `mon`…`sun` only; each day `StoreDayHours` with `closed` or `open`/`close` ∈ `StoreHoursTimeValue` — strip; `HH:MM` 24h; omit/`null` OK when `closed`; blank/`!!!`/`9:00`/`25:00`/`http://…` → **422** — was free `str`; OpenAPI unconstrained; garbage failed only via day model_validator / service **400**; open before close still required when not closed). Unknown day keys / open≥close / missing times when not closed → **422** (was late service **400**). Returned on list/GET; update via `PATCH /stores/{store_id}` (BR-2.3). Creating a store still auto-creates a linked warehouse. Multi-Store **Store {Day} open time** / **close time** inputs (`aria-label`s).
+
+`phone` (when sent) ∈ `E164PhoneValue` (`+` + 8–15 digits); create omit/`null` → no phone; PATCH omit/`null` → no change; blank/`not-a-phone`/`123` → **422** (was free `str`; blank silently cleared on PATCH; garbage could persist). Multi-Store **Store phone** input (`aria-label`); create sends `null` when blank; edit omits blank phone.
+
+`address` (when sent) ∈ `AddressValue` (strip; 1–500 chars; at least one letter/digit; no `://` / `@`); create omit/`null` → no address; PATCH omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`; blank silently cleared on PATCH; garbage could persist). Multi-Store **Store address** input (`aria-label`); create/edit omit blank.
+
+**Update fields:** `name` ∈ `StoreNameValue` (same rules as create), `address` ∈ `AddressValue` (same rules), `phone` ∈ `E164PhoneValue` (same rules), optional `manager_id` ∈ `UuidIdValue` (omit/`null` → no change; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach user lookup; existence remains tenant-scoped **404**). Use `clear_manager` to remove. Multi-Store **Edit store manager** select; Save store sends trim, or `clear_manager` when cleared. Optional `branch_id` ∈ `UuidIdValue` (omit/`null` → no change; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach branch lookup; existence remains tenant-scoped **404**). Use `clear_branch` to remove. Multi-Store **Edit store branch** select; Save store sends trim, or `clear_branch` when cleared. Also `is_active`, `operating_hours` (same typed map). Soft-deactivate with `is_active: false` (row retained; Multi-Store UI **Activate** / **Deactivate**; inactive excluded from POS `/pos/stores`, Shell switcher, and new sales/expense pickers; POS open / sales invoice create / expense store assign return 400). Assigned `manager_id` is enforced for inter-store transfer dual approval when set.
+
+**Cash drawer:** `PATCH /stores/{store_id}/drawer` — see §8.5 (`drawer_mode` OpenAPI `Literal`; blank/invalid → **422**).
 
 ### 13.2 Store Inventory
 **Endpoint:** `GET /stores/{store_id}/inventory`
@@ -1197,21 +1595,12 @@ Returns store metadata, aggregated `summary` (invoice/POS counts and revenue), a
 Global UI store context (Shell switcher) is client-side only (`localStorage` key `selected_store_id`); it does not send a store header to the API.
 
 ### 13.4 Inter-Store Transfers
-**List:** `GET /stores/transfers` — optional filters: `status`, `store_id` (from or to), `from_date`, `to_date`, `scope=all|inter_store|warehouse`, `limit` (Stage 16 M2)  
-**Create:** `POST /stores/transfers`  
-**Get:** `GET /stores/transfers/{transfer_id}`  
-**Submit:** `POST /stores/transfers/{transfer_id}/submit`  
-**Ship:** `POST /stores/transfers/{transfer_id}/ship`  
-**Receive:** `POST /stores/transfers/{transfer_id}/receive`  
-**Cancel:** `POST /stores/transfers/{transfer_id}/cancel`
-
-**Transfer history report (Stage 16 M2):** `GET /reports/transfers?status=&store_id=&from_date=&to_date=&scope=all|inter_store|warehouse&limit=` — consolidated counts/`by_status`/qty totals + serialized transfers. Export: `report_type=transfer_history` via `/reports/export`. Reports UI **Transfers** tab.
-
-Status flow: `draft` → `requested` → `in_transit` → `received` (or `cancelled`).
-
-**Dual-manager approval (Stage 4 T1 / BR-13.2):** When the source store has `manager_id`, only that user may ship (`403 TRANSFER_SHIP_FORBIDDEN` otherwise). When the destination store has `manager_id`, only that user may receive (`403 TRANSFER_RECEIVE_FORBIDDEN`). `company_admin` / `super_admin` may override either action; override writes audit action `transfer_manager_override`. Warehouse-only transfers (null store ids) skip this gate. Serialized transfers include `from_store_manager_id` / `to_store_manager_id`.
-
-**Stock chain (Stage 16 M1):** Ship deducts source warehouse stock and writes `stock_movements` (`transfer_out`, `reference_type=stock_transfer`). Receive adds destination warehouse stock (`transfer_in`). Insufficient source qty → `409 INSUFFICIENT_WAREHOUSE_STOCK`; transfer stays `requested` with no movements. Evidence: `test_multistore_transfer_chain_m1.py`.
+**List:** `GET /stores/transfers` — optional Query `status` ∈ `draft`|`requested`|`in_transit`|`received`|`cancelled` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Same filter on Inventory alias `GET /inventory/stock-transfers`. Inventory + Multi-Store **Stock transfer status filter** All / Draft / Requested / In transit / Received / Cancelled (`transferManageFilter`; client filter over full cache).  
+**Create:** `POST /stores/transfers` — typed `StockTransferCreate` / `StockTransferItemCreate` (`extra=forbid`; unknown keys → **422**; reject same). Optional `from_store_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` OK when warehouse pair set; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach store lookup; existence remains tenant-scoped **404**). Multi-Store **Stock transfer from store** select; Create transfer sends trim. Optional `to_store_id` ∈ `UuidIdValue` (same honesty); Multi-Store **Stock transfer to store** select; Create transfer sends trim.  
+**Get:** `GET /stores/transfers/{transfer_id}` — Path `transfer_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; same Path honesty on inventory stock-transfer + cash-transfer routes).  
+**Update Status:** `PATCH /stores/transfers/{transfer_id}/status`  
+**Reject (BR-13.2):** `POST /stores/transfers/{transfer_id}/reject` — body `{ "reason" }` ∈ `StockTransferRejectReasonValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; **required**) → status `cancelled` + `rejection_reason`. Omit/blank/`!!!`/`http://…` → **422**. Multi-Store **Stock transfer reject reason** (`aria-label`). Same helper as `POST /inventory/stock-transfers/{id}/reject`.  
+**Cancel:** `POST /stores/transfers/{transfer_id}/cancel` — body `{ "reason" }` ∈ `StockTransferRejectReasonValue` (same Value type) → status `cancelled` + `rejection_reason` (also Inventory `/inventory/stock-transfers/{id}/cancel`). Reject / Cancel share the same reason input in UI.
 
 **Create Transfer:**
 ```json
@@ -1236,34 +1625,50 @@ Status flow: `draft` → `requested` → `in_transit` → `received` (or `cancel
 Stage 23 D1 fidelity for BR-14.5 financial filters/comparative + MVP gate docs: `docs/STAGE_23_FIDELITY.md` (`test_stage23_fidelity_d1.py`). Financial endpoints also documented under §10.4.
 
 ### 14.1 Sales Reports
-**Daily Sales:** `GET /reports/sales/daily?date=` — includes `previous_day_revenue` and `change_pct` vs prior day.  
-**Monthly Sales:** `GET /reports/sales/monthly?month=&year=` — includes `previous_month_revenue` and `change_pct`.  
-**Product Sales:** `GET /reports/sales/products?from_date=&to_date=&store_id=&category_id=`  
-**Customer Sales:** `GET /reports/sales/customers?from_date=&to_date=&limit=` — top customers by revenue and frequency (invoice + POS).  
-**Salesperson:** `GET /reports/sales/salesperson?from_date=&to_date=`  
-**By Store:** `GET /reports/sales/by-store?from_date=&to_date=`
-
-Export type `sales_customers` is available on `/reports/export`. Product export honors `store_id` / `category_id`.
+**Daily Sales:** `GET /reports/sales/daily?date=&store_id=` — day totals (invoices + POS); optional `store_id` ∈ `UuidIdValue` (omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; invoice store / POS session store). Optional Query `date` ∈ `IsoDateQueryValue` (`YYYY-MM-DD` or ISO; omit → today UTC; blank/invalid → **422** — blank was silent today; invalid was late service **400**). Response echoes `store_id`/`store_name`/`date`. Export `sales_daily` (passes `store_id`). Reports Sales uses shared **Report To date** (fallback **From**) as `date` + **Report financial store filter** (`aria-label`s; qs sends trim).  
+**Monthly Sales:** `GET /reports/sales/monthly?month=&year=&store_id=` — Query `year` ∈ 2000–2100; Query `month` ∈ 1–12 (omit/`null` → current UTC; out-of-range → **422** — was free `int`). Month totals (invoices + POS); optional `store_id` ∈ `UuidIdValue` (same honesty as daily). Response echoes `store_id`/`store_name`. Export `sales_monthly` (passes `store_id`; same year/month bounds on `GET /reports/export`).  
+**Product Sales:** `GET /reports/sales/products?from_date=&to_date=&store_id=&category_id=` — product qty/revenue (invoices + POS); optional `store_id` / `category_id` ∈ `UuidIdValue` (omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`); rows include `category_id`/`category_name`. Optional `from_date` / `to_date` ∈ `IsoDateQueryValue` (`YYYY-MM-DD` or ISO; omit → no bound; blank/invalid → **422** — blank was silent omit; invalid was late service **400**). Export `sales_products` (passes `store_id`/`category_id`). Reports shared **Report From/To date** + **Report sales category filter** / store filter (`aria-label`s; qs/export send trim).  
+**Customer Sales:** `GET /reports/sales/customers?from_date=&to_date=&store_id=&limit=` — top customers by revenue (posted invoices + POS); includes walk-in bucket; optional `store_id` ∈ `UuidIdValue` (same honesty) and `limit` for top-N. Same `from_date` / `to_date` ∈ `IsoDateQueryValue` honesty. Response echoes `store_id`. Export `sales_customers` (passes `store_id`).  
+**Sales Returns:** `GET /reports/sales/returns?from_date=&to_date=&customer_id=&reason=&status=&store_id=` — return summary with `by_reason` / `by_customer` / line list; optional `store_id` / `customer_id` ∈ `UuidIdValue` (omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; store via original invoice store); reasons `damaged|wrong_item|defective|customer_change|other`. Optional `from_date` / `to_date` ∈ `IsoDateQueryValue` (`YYYY-MM-DD` or ISO; omit → no bound; blank/invalid → **422** — blank was silent omit; invalid was late service **400**). Query `reason` ∈ that set (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422** — was late **400**). Query `status` ∈ `draft`|`posted`|`cancelled` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422** — was late **400**). Response echoes `store_id`/`store_name`. Export `sales_returns` (passes `store_id`). Reports Sales **Return status** / **Return reason** selects + shared **Report From/To date** controls.  
+**Salesperson:** `GET /reports/sales/salesperson?from_date=&to_date=&department_id=&store_id=` — sales by user (invoices + POS); optional `department_id` / `store_id` ∈ `UuidIdValue` (omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`). Same `from_date` / `to_date` ∈ `IsoDateQueryValue` honesty. Response echoes `store_id`/`store_name`. Export `sales_salesperson` accepts the same filters. Reports **Salespeople** tab uses shared **Report From/To date** + **Report department filter** / store filter (`aria-label`s; qs sends trim).  
+**By store:** `GET /reports/sales/by-store?from_date=&to_date=&department_id=` — optional `department_id` ∈ `UuidIdValue` (same honesty); optional `from_date` / `to_date` ∈ `IsoDateQueryValue` (`YYYY-MM-DD` or ISO; omit → no bound; blank/invalid → **422** — blank was silent omit; invalid was late service **400**). Reports **Stores** tab uses shared **Report From/To date** + department filter.  
+**By department (BR-2.5):** `GET /reports/sales/by-department?from_date=&to_date=&department_id=` — buckets by seller `users.department_id` (invoice `created_by` / POS session user); optional `department_id` ∈ `UuidIdValue` (same honesty); export type `sales_by_department`. Same `from_date` / `to_date` ∈ `IsoDateQueryValue` honesty. Reports **Departments** tab uses shared **Report From/To date** + department filter.
 
 ### 14.2 Inventory Reports
-**Stock Balance:** `GET /reports/inventory/balance?warehouse_id=`  
-**Stock Movement:** `GET /reports/inventory/movements?product_id=&from_date=&to_date=`  
-**Low Stock:** `GET /reports/inventory/low-stock?store_id=&warehouse_id=`  
-**Expiry:** `GET /reports/inventory/expiry?days=30`  
-**Stock Valuation (Stage 9 R2):** `GET /reports/inventory/valuation?warehouse_id=&store_id=`  
-
-Valuation uses **standard cost** only: `value = quantity × product.cost_price`. Response includes `costing_method` (`standard_cost`), `costing_method_note`, line items, `by_warehouse` totals, and overall `total_value`. FIFO/LIFO/weighted average are **not** implemented. Export type: `inventory_valuation`. Requires `reports:read`. See also `docs/STAGE_9_FIDELITY.md`.
+**Stock Balance:** `GET /reports/inventory/balance?warehouse_id=&store_id=` — current stock; optional `warehouse_id` / `store_id` ∈ `UuidIdValue` (omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; store expands to linked warehouses). Response echoes location fields. Export `inventory_balance`.  
+**Stock Movement:** `GET /reports/inventory/movements?product_id=&from_date=&to_date=&warehouse_id=&store_id=&movement_type=&created_by=&reason=` — recent stock movements with product sku/name, optional coded `reason`, and acting user; optional warehouse/store (via warehouse store link), movement type, and `created_by`. Query `product_id` / `warehouse_id` / `store_id` / `created_by` ∈ `UuidIdValue` (omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; same honesty as `/inventory/movements`). Query `movement_type` same `Literal` as `/inventory/movements` (omit → all; blank/invalid → **422**). Query `reason` ∈ damage|theft|expiry|found|lost (`Literal` + strip/lower; omit → all; blank/invalid → **422**). Optional `from_date` / `to_date` ∈ `IsoDateQueryValue` (same honesty as `/inventory/movements`; omit → no bound; blank/invalid → **422**). Reports Inventory **Report inventory store filter** / **Report inventory warehouse filter** (`aria-label`s; qs sends trim). Response echoes location fields. Export `inventory_movements` (passes location filters; rows include user attribution + reason).
+**Low Stock:** `GET /reports/inventory/low-stock?store_id=&warehouse_id=` — product + warehouse reorder breaches; optional `store_id` / `warehouse_id` ∈ `UuidIdValue` (omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`). Reports Inventory location filters (`aria-label`s; qs sends trim). Export `inventory_low_stock`.  
+**Stock Valuation:** `GET /reports/inventory/valuation?method=standard&warehouse_id=&store_id=` — standard-cost valuation (qty × `products.cost_price`). Query `method` ∈ `standard` only (schema Query `Literal` + strip/lower; omit → `standard`; blank/`fifo`/`lifo`/`average`/`weighted_average`/invalid → **422** — no silent `standard` from `""`). Optional `warehouse_id` / `store_id` ∈ `UuidIdValue` (same honesty as balance/low-stock). Response: `method`, location fields, `items[]` (`product_id`, `sku`, `name`, `warehouse_id`, `quantity`, `unit_cost`, `cost_price`, `value`), `total_quantity`, `total_value`. Export: `POST /reports/export` with `report_type: "inventory_valuation"` (hardcodes standard). Reports Inventory **Valuation method** select.  
+**Expiry Report:** `GET /reports/inventory/expiry?days=30&warehouse_id=&store_id=` — Query `days` ∈ 1–365 (omit → 30; `0`/`-1`/`366` → **422** — was free `int`). Batches with quantity > 0 and `expiry_date` within horizon (includes already expired); rows include `sku`/`name`/`days_until_expiry`/`is_expired`; optional `warehouse_id` / `store_id` ∈ `UuidIdValue` (same honesty as low-stock). Export `inventory_expiry` (optional `days` same 1–365 bounds; omit → export default; location filters). Reports **Inventory expiry days** (`aria-label`).  
+**Inventory expiring batches:** `GET /inventory/batches/expiring?days=30` — same Query `days` ∈ 1–365 honesty.  
+**Inter-Store Transfers:** `GET /reports/inventory/transfers?from_date=&to_date=&status=&from_store_id=&to_store_id=&store_id=` — transfer history with `by_status` / `by_route` aggregates (BR-13.2). Optional `store_id` / `from_store_id` / `to_store_id` ∈ `UuidIdValue` (omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; `store_id` matches source **or** destination). Optional `from_date` / `to_date` ∈ `IsoDateQueryValue` (`YYYY-MM-DD` or ISO; omit → no bound; blank/invalid → **422** — blank was silent omit; invalid was late service **400**). Query `status` ∈ `draft`|`requested`|`in_transit`|`received`|`cancelled` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422** — no silent empty filter; was late **400**). Response echoes `store_id`/`store_name`. Export `inventory_transfers` (passes `store_id`). Reports Inventory **Transfer status** select + shared **Report From/To date** controls.
+**Stock Count Variances:** `GET /reports/inventory/stock-counts?from_date=&to_date=&warehouse_id=&store_id=&variance_only=true&status=completed` — physical count variance report (BR-5.2); same `from_date` / `to_date` ∈ `IsoDateQueryValue` honesty; optional `warehouse_id` / `store_id` ∈ `UuidIdValue` (omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`); Query `status` ∈ draft|completed|cancelled (`Literal` + strip/lower; omit → `completed`; blank/invalid → **422**); `counts[]` + flat `lines[]`; default variance-only. Export `inventory_stock_counts`. Reports Inventory **Count status** select.
 
 ### 14.3 Purchase Reports
-**Purchase Summary:** `GET /reports/purchases/summary?from_date=&to_date=`  
-**Supplier Purchases:** `GET /reports/purchases/suppliers?supplier_id=&from_date=&to_date=`  
-**Pending Orders (Stage 9 R1):** `GET /reports/purchases/pending-orders?supplier_id=&from_date=&to_date=` — issued POs in `sent` or `partially_received` with ordered/received/open quantities  
-**Purchase Return Summary (Stage 9 R1):** `GET /reports/purchases/returns?supplier_id=&from_date=&to_date=` — returns by reason/supplier with posted totals  
-
-Export types: `purchases_pending_orders`, `purchases_returns` (plus existing `purchases_summary` / `purchases_suppliers`). Requires `reports:read`.
+**Purchase Summary:** `GET /reports/purchases/summary?from_date=&to_date=&warehouse_id=&store_id=` — PO totals by period; optional `warehouse_id` / `store_id` ∈ `UuidIdValue` (omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; warehouse = PO `warehouse_id`; store expands to linked warehouses). Echoes `warehouse_name`/`store_name`. Optional `from_date` / `to_date` ∈ `IsoDateQueryValue` (`YYYY-MM-DD` or ISO; omit → no bound; blank/invalid → **422** — blank was silent omit; invalid was late service **400**). Export `purchases_summary`. Reports **Report purchases store/warehouse filter** + shared **Report From/To date** (`aria-label`s; qs sends trim).  
+**Supplier Purchases:** `GET /reports/purchases/suppliers?supplier_id=&from_date=&to_date=&warehouse_id=&store_id=` — same location filters; optional `supplier_id` ∈ `UuidIdValue` (omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`). Same `from_date` / `to_date` ∈ `IsoDateQueryValue` honesty. Export `purchases_suppliers`.  
+**Pending Orders:** `GET /reports/purchases/pending-orders?from_date=&to_date=&supplier_id=&status=&warehouse_id=&store_id=` — POs not fully received (`draft` / `sent` / `partially_received`); optional `supplier_id` / location ∈ `UuidIdValue` (same honesty) + `status`; returns outstanding qty + amount. Optional `from_date` / `to_date` ∈ `IsoDateQueryValue` (`YYYY-MM-DD` or ISO; omit → no bound; blank/invalid → **422** — blank was silent omit; invalid was late service **400**). Query `status` ∈ `draft`|`sent`|`partially_received` (schema Query `Literal` + strip/lower; omit → all pending; blank/`received`/`cancelled`/invalid → **422** — was late **400**). Export `purchases_pending_orders`. Reports Purchases **Pending status** select + location filters + shared **Report From/To date** controls.  
+**Purchase Returns:** `GET /reports/purchases/returns?from_date=&to_date=&supplier_id=&reason=&status=&warehouse_id=&store_id=` — return summary with `by_reason` / `by_supplier` / line list; optional `supplier_id` / `warehouse_id` / `store_id` ∈ `UuidIdValue` (same honesty; return warehouse); reasons `damaged|wrong_item|expiry|quality|other`. Same `from_date` / `to_date` ∈ `IsoDateQueryValue` honesty. Query `reason` ∈ that set (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422** — was late **400**). Query `status` ∈ `draft`|`posted`|`cancelled` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422** — was late **400**). Response echoes location fields. Export `purchases_returns` (passes location filters). Reports Purchases **Return status** / **Return reason** selects + location filters.
 
 ### 14.4 Expense Reports
-**Expense Summary:** `GET /reports/expenses/summary?from_date=&to_date=&category_id=`
+**Expense Summary:** `GET /reports/expenses/summary?from_date=&to_date=&category_id=&branch_id=&department_id=&store_id=` — optional `category_id` / `branch_id` / `department_id` / `store_id` ∈ `UuidIdValue` (omit/`null` → all; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`); optional `from_date` / `to_date` ∈ `IsoDateQueryValue` (`YYYY-MM-DD` or ISO; omit → no bound; blank/invalid → **422** — blank was silent omit; invalid was late service **400**). Reports shared **Report From/To date** + financial store/branch + department filters (`aria-label`s; qs sends trim).  
+**Budget vs Actual:** `GET /reports/expenses/budget-vs-actual?from_date=&to_date=&category_id=&branch_id=&department_id=&store_id=` — same UUID + date Query honesty; scales each category's monthly `budget_amount` by `period_days/30` against approved spend (org filters apply to actuals); returns `rows`, `top_categories`, totals, echo `branch_name`/`department_name`/`store_name`, and status `over_budget|under_budget|on_budget|no_budget`. Export types `expenses_summary` / `expenses_budget_vs_actual` accept the same org params.
+
+### 14.5 Email report schedules (BR-14)
+**List:** `GET /reports/schedules` — optional Query `enabled` ∈ `true`|`false` (omit → all; invalid → **422**); optional Query `frequency` ∈ `daily`|`weekly` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Reports Email schedules **Report schedule enabled filter** / **frequency filter** (`scheduleManageFilter` / `scheduleFrequencyFilter`; client filter over full list cache).  
+**Create:** `POST /reports/schedules` — typed `ReportScheduleCreate` (`extra=forbid`; unknown keys → **422**; `ReportScheduleUpdate` same). Body `name` ∈ `ReportScheduleNameValue` (strip; 2–120 chars; ≥1 letter/digit; no `://` / `@`); blank/`!!!`/`http://…` → **422** (was free `str` min_length=2; whitespace late service **400**; punctuation/URL could persist). Body `recipients` ∈ `ReportScheduleRecipientsValue` (`list[EmailStr]` or comma/`;`-separated string); required ≥1; blank/`bad`/`ops@x.com, bad` → **422**. Service strip/`_normalize_recipients` remain defense-in-depth (**400**). Reports **Report schedule name** + **Report schedule recipients** inputs (`aria-label`s).  
+**Update:** `PATCH /reports/schedules/{schedule_id}` — optional `name` / `recipients` same honesty; omit/`null` → no change; blank/invalid → **422**.  
+**Delete:** `DELETE /reports/schedules/{schedule_id}`  
+**Run now:** `POST /reports/schedules/{schedule_id}/run?force=true`  
+**Run due (tenant):** `POST /reports/schedules/run-due`
+
+`report_type` ∈ `EXPORTABLE` (schema `Literal` + strip/lower; same set as export — e.g. `summary`, `sales_daily`, `profit_loss`, …). Blank/unknown → **422**. `frequency` ∈ `daily|weekly`; `format` ∈ `csv|pdf|xlsx` (same Literal honesty). Service checks remain defense-in-depth (**400**). Reports UI **Email schedules** create form: **Report schedule report type** / **Report schedule format** / **Report schedule frequency** / **Report schedule weekday** (`aria-label`s).
+
+### 14.6 One-shot export (BR-14)
+**Export:** `GET /reports/export?report_type=&format=csv`  
+**Catalog:** `GET /reports/exportable`
+
+Query `report_type` ∈ `EXPORTABLE` (`Literal` + strip/lower; required). Query `format` ∈ csv|pdf|xlsx (`Literal` + strip/lower; omit → `csv`; blank/invalid → **422**; no silent csv from `""`). Optional `from_date` / `to_date` / `date` / `as_of` ∈ `IsoDateQueryValue` (`YYYY-MM-DD` or ISO; omit → no bound / live as_of fallbacks; blank/invalid → **422** — blank was silent omit; invalid was late service **400**). Same aliases as Email schedules. Reports Export CSV/Excel/PDF buttons + shared **Report From/To/as of date** controls.
 
 ### 14.5 Financial Reports (Stage 23 F1/C1)
 See §10.4 for `GET /reports/profit-loss`, `/reports/cash-flow`, `/reports/balance-sheet`, `/reports/trial-balance` with `store_id` / `branch_id` / `compare` and export packaging.
@@ -1275,11 +1680,9 @@ See §10.4 for `GET /reports/profit-loss`, `/reports/cash-flow`, `/reports/balan
 Stage 21 N1/D1 proves BR-4.4 panel fidelity — unread count, groups, mark read/unread, 90-day history (`test_dashboard_notifications_n1.py`; `docs/STAGE_21_FIDELITY.md`). WebSocket realtime remains deferred.
 
 ### 15.1 List Notifications
-**Endpoint:** `GET /notifications?status=unread&category=&group=`
-
-Groups: `stock`, `orders`, `payments`, `system`. Category `new_order` (Stage 4 N1 / BR-15.1) belongs to group `orders` and is emitted when a sales order is created or confirmed. List applies a **90-day** `created_at` cutoff (`HISTORY_DAYS`).
-
-**Unread count:** `GET /notifications/unread-count` → `{ count }`.
+**Endpoint:** `GET /notifications?status=unread&category=&limit=100` — Query `limit` ∈ 1–200 (omit → 100; `0`/`-1`/`201` → **422** — was free `int`; API silently clamped 1–200).  
+Query `status` ∈ unread|read (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**).  
+Query `category` ∈ `VALID_CATEGORIES` / preference keys (same Literal; omit → all; blank/invalid → **422**). Notifications UI Unread/All + category chips. Shell Alerts uses `status=unread`.
 
 ### 15.2 Mark as Read
 **Endpoint:** `PATCH /notifications/{notification_id}/read`  
@@ -1288,22 +1691,85 @@ Groups: `stock`, `orders`, `payments`, `system`. Category `new_order` (Stage 4 N
 
 ### 15.3 Notification Settings
 **Endpoint:** `GET /notifications/settings`  
-**Update:** `PATCH /notifications/settings`
+**Update:** `PATCH /notifications/settings` — body `{ "preferences": { "<category>": { "dashboard"?, "email"?, "sms"? } } }`. Schema `NotificationPreferencesMap` (`extra=forbid` on known categories) + `NotificationChannelPrefs` (`extra=forbid` on dashboard|email|sms). Unknown category/channel → **422** (was silent ignore via merge). Service `update_preferences` remains defense-in-depth. Notifications **Channel preferences** toggles.
+
+Categories include `low_stock` (BR-5.5 — default email **on**; emails `inventory_officer` + `store_manager` + admins via `roles`), `payment_due`, `quotation_expiry` (BR-7.2 — T−1 day before `valid_until`; past-due draft/sent auto-`expired`), `recurring_expense_due` (BR-9.5 — T−1 day before recurring `next_run_at`; default email **on**), `purchase_received`, `expense_approval` (BR-9.3 — default email **on**; role-targeted when expense notify passes `roles`), `credit_limit`, `shift_variance`, `new_order` (BR-15.1 — emitted on sales order create/confirm), `transfer`, `billing`, `security`, `system`. Each maps to dashboard/email/sms preference channels.
 
 Preference keys include `new_order`, `low_stock`, `purchase_received`, `payment_due`, `credit_limit`, `shift_variance`, `transfer`, and other default categories. Each key has `dashboard` / `email` / `sms` booleans.
 
 ```json
 {
-  "low_stock": { "dashboard": true, "email": false, "sms": false },
-  "new_order": { "dashboard": true, "email": false, "sms": false },
-  "payment_due": { "dashboard": true, "email": true, "sms": false },
-  "credit_limit": { "dashboard": true, "email": false, "sms": false }
+  "low_stock": { "dashboard": true, "email": true, "sms": false },
+  "new_order": { "dashboard": true, "email": true, "sms": false },
+  "payment_due": { "dashboard": true, "email": true, "sms": true },
+  "credit_limit": { "dashboard": true, "email": true, "sms": true }
 }
 ```
 
 Outline alert categories (`low_stock`, `new_order`, `credit_limit`, `purchase_received`, `shift_variance`, `transfer`) default **email/sms false**; enable per user via this API. `payment_due` / `expense_approval` default email on.
 
 **Channel delivery (Stage 16 N2):** After the dashboard notification is written, `create_notification` best-effort sends email/SMS to recipients with that channel enabled for the category. Broadcast alerts (`user_id` null) target active `company_admin` / `super_admin`. SMTP unset → email `mode=console` outbox attempt; Twilio unset → SMS `mode=console`. Carrier `delivered` is only recorded for real SMTP/Twilio sends.
+---
+
+## 15A. Onboarding Checklist
+
+First-run tenant checklist (Stage 6 N2). Auto-detects company profile, products, supplier, stock on hand, and first sale. Skip/dismiss/restore require `company_admin` or `super_admin`.
+
+### 15A.1 Get checklist
+**Endpoint:** `GET /onboarding/checklist`
+
+**Response `data`:** `steps[]` (`id`, `title`, `description`, `href`, `completed`, `auto_completed`, `skipped`), `completed_count`, `total_count`, `progress_pct`, `dismissed`, `dismissible`, `visible`, `dismiss_threshold_pct` (80).
+
+### 15A.2 Skip / unskip step
+**Endpoint:** `POST /onboarding/checklist/steps/{step_id}/skip`  
+**Endpoint:** `POST /onboarding/checklist/steps/{step_id}/unskip`  
+
+Path `step_id` schema `Literal` of checklist steps (`OnboardingStepIdValue` + strip/lower): `setup_company` | `add_products` | `create_supplier` | `stock_ready` | `first_sale`. Blank/unknown → **422** (was late service **400**). Service `VALID_STEP_IDS` remains defense-in-depth. Shell Getting started **Skip** / **Undo skip** (`aria-label`s per step).
+### 15A.3 Dismiss / restore
+**Endpoint:** `POST /onboarding/checklist/dismiss` — requires `progress_pct >= 80` (or all complete).  
+**Endpoint:** `POST /onboarding/checklist/restore` — clears dismiss so the Shell banner returns.
+
+UI: persistent **Getting started** banner in the tenant Shell (`OnboardingChecklist`).
+
+---
+
+## 15B. Scheduled Jobs
+
+Celery reliability admin surface (see `docs/CELERY_RELIABILITY_RUNBOOK.md`).
+
+### 15B.1 List jobs
+**Endpoint:** `GET /jobs`  
+**Roles:** `company_admin`, `super_admin`, `platform_owner`
+
+Returns `celery_enabled`, broker/result URLs, `task_always_eager`, sorted handler names in `jobs`, and beat interval map in `beat`.
+
+### 15B.2 Run job
+**Endpoint:** `POST /jobs/{job_name}/run` — Path `job_name` schema `Literal` of `JOB_HANDLERS` keys (`JobNameValue` + strip/lower; blank/unknown → **422** — was late **404**). Allow-list defense-in-depth if Literal and handlers drift.  
+**Query:** `enqueue=true` to push to Celery (requires `CELERY_ENABLED`)  
+**Roles:** `super_admin`, `platform_owner`
+
+Sync run returns handler result payload. Jobs UI **Run sync** / **Enqueue** (`aria-label`s per job).
+
+**UI:** Shell → **Jobs** (`/jobs`).
+
+---
+
+## 15C. Audit Logs
+
+Append-only hash-chained audit trail (BR-17.1–17.2).
+
+### 15C.1 Query / verify / export
+**List:** `GET /audit-logs?module=&action=&user_id=&entity=&from_date=&to_date=&limit=` — Query `limit` ∈ 1–1000 (omit → 200; `0`/`-1`/`1001` → **422** — was free `int`; service only capped high at 1000). Optional Query `module` ∈ `AuditModuleValue` / `audit.AUDIT_MODULES` (strip/lower; omit → all; blank/unknown → **422** — blank was silent omit; unknown returned empty). Optional Query `action` ∈ `AuditActionValue` (strip/lower; snake_case shape; digit-start OK for `2fa_*`; omit → all; blank/`login!`/`A` → **422** — blank was silent omit; malformed returned empty). Unknown well-shaped actions still return empty. Optional Query `entity` ∈ `AuditEntityValue` (strip/lower; snake_case starting with a letter; omit → all; blank/`!!!`/`Invoice` → **422** — blank was silent omit; malformed returned empty). Optional Query `user_id` ∈ `UuidIdValue` (omit/`null` → all for admin roles; non-admin roles still forced to self; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`). Optional `from_date` / `to_date` ∈ `IsoDateQueryValue` (`YYYY-MM-DD` or ISO; omit → no bound; blank/invalid → **422** — blank was silent omit; invalid was **500**). Audit **Audit module filter** + **Audit action filter** + **Audit entity filter** + **Audit user filter** + **From/To date** controls (`aria-label`s; entity/action apply on Filter; user filter sends trim).  
+**Verify chain:** `GET /audit-logs/verify`  
+**Export CSV:** `GET /audit-logs/export` (same filters; same `module` / `action` / `entity` / `user_id` / date honesty)
+
+### 15C.2 Retention & cold archive
+**Policy:** `GET /audit-logs/retention` — `retention_years` (≥7), `cold_archive_after_days`, `purge_allowed=false`  
+**Archives:** `GET /audit-logs/archives` — company_admin / super_admin; Query `limit` ∈ 1–200 (omit → 50; `0`/`-1`/`201` → **422** — was free `int`; service capped at 200).  
+**Archive now:** `POST /audit-logs/archive-cold?older_than_days=` — Query `older_than_days` ∈ 1–3650 (omit/`null` → retention policy days; `0`/`-1`/`3651` → **422** — was free `int`; service `max(1, days)`). Copies aged rows to checksummed JSONL, sets `archived_at`, never deletes. Audit **Archive cold audit logs** (`aria-label`).
+
+**UI:** Shell → **Audit** retention card + archives table + **Archive cold now** + date filters.
+
 ---
 
 ## 16. AI Business Assistant
@@ -1315,12 +1781,14 @@ Stage 20 D1 proves BR-21 commercial-MVP AI fidelity on rule-based `/ai/*` engine
 **History:** `GET /ai/chat/history`  
 **Permission:** `ai:read` (commands that write require the matching module write, e.g. `purchasing:write` for draft PO)
 
+Typed body `AiChatBody` `{ "message" | "prompt", "context"?, "conversation_id"? }` (`extra=forbid`; `message`/`prompt`/`context` ∈ `AiChatMessageValue` strip; 1–16000; ≥1 letter/digit; no `://`/`@`; omit both message+prompt / blank/`!!!`/`http://…` → **422** — blank was late service **400**; punctuation/URL could reach parse; optional context omit/`null` OK; blank/garbage → **422**; optional `conversation_id` ∈ `UuidIdValue` — omit/`null` OK; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str` strip-blank→omit). Service `parse_chat_message` / injection checks remain defense-in-depth. AI UI **Ask AI chat** (`aria-label` message + Ask; Ask gated on trim; currently omits conversation_id).
+
 **Request:**
 ```json
 {
   "message": "What are my top selling products this month?",
   "context": "dashboard",
-  "conversation_id": "conv_001"
+  "conversation_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
 }
 ```
 
@@ -1341,42 +1809,49 @@ Stage 20 D1 proves BR-21 commercial-MVP AI fidelity on rule-based `/ai/*` engine
 **Endpoint:** `GET /ai/insights`  
 Returns anomaly / restock / purchase cards with per-card `domains` cites (Inventory, Sales, Purchases, Expenses). Also returns `actuals`, `actuals_covered`, and `note` (Stage 25 B1). Weekly digest via Celery/`publish_insights` when email prefs allow. Evidence: `test_ai_insights_fidelity_i1.py`, `test_ai_business_insights_b1.py`.
 
+**Query history:** `GET /ai/queries?limit=50` — Query `limit` ∈ 1–200 (omit → 50; `0`/`-1`/`201` → **422** — was free `int`; service silently clamped 1–200).
+
 ### 16.3 Smart Inventory Intelligence
 **Endpoints:**  
 - `GET /ai/inventory/predictions` — combined forecast + low-stock summary  
 - `GET /ai/inventory/demand-forecast` — 7/30/90 demand + reorder + seasonality  
 - `GET /ai/inventory/dead-stock` — idle stock identification
 
+Rule-based velocity forecasts (7/30/90), reorder qty, dead stock, seasonality hint. See `docs/AI_INVENTORY_MVP.md`.
+
 ### 16.4 AI Low Stock Prediction
-**Endpoint:** `GET /ai/inventory/low-stock-prediction?horizon_days=14&lead_time_days=7&lookback_days=30&at_risk_only=true`
+**List:** `GET /ai/inventory/low-stock-prediction?days_ahead=14` — Query `days_ahead` ∈ 1–90 (omit → 14; `0`/`-1`/`91` → **422** — was free `int`; service silently clamped 1–90).  
+**Create draft PRs:** `POST /ai/inventory/low-stock-prediction/requests` — typed body `AiLowStockPredictionRequestsBody` `{ "lines"?, "days_ahead"?, "min_confidence"?, "notes"?, "include_open"? }` (`extra=forbid`; `days_ahead` 1–365 omit→14; `min_confidence` ∈ `UnitIntervalValue` (0–1 finite; omit→0; `nan`/`inf`/out-of-range → **422** — was `Field(ge=0, le=1)` Inf/NaN edge cases). AI **AI prediction min confidence** (`aria-label`; omits blank). Blank/non-numeric days / unknown keys → **422** — was free `dict` with silent blank→default and possible **500** on garbage). Optional header `notes` + nested line `notes` ∈ `PurchaseRequestNotesValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`; omit/`null` → no notes; blank/`!!!`/`http://…` → **422** — was free `str` silently stripped to null). Nested `lines[]` are `AiLowStockPredictionLine` (`extra=forbid`; required `product_id` ∈ `UuidIdValue`; optional `warehouse_id`/`preferred_supplier_id` ∈ `UuidIdValue` (omit/`null` OK; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; blank silently stripped to null); optional `confidence` ∈ `UnitIntervalValue` (0–1 finite), `suggested_order_qty`/`recommended_order_qty` ∈ `NonNegativeQtyValue`, `notes`; optional `risk_reason` ∈ `AiPredictionRiskReasonValue` — omit/`null` → service defaults generated line note to `at_risk`; blank/`!!!`/`http://…` → **422** — was free `str` stripped to null; unknown line keys / blank `product_id` / bad qty|confidence → **422** — was free `list[dict]`). Omit/`null`/`[]` `lines` re-runs prediction. AI UI **Create draft purchase requests from predictions** + **AI low-stock prediction notes** + **AI prediction risk reason** + **Include open purchase requests** (`aria-label`s; blank header notes/risk_reason omitted as `null`; line notes `String(x.notes || '').trim() || null`).
+
+```json
+{ "days_ahead": 14, "min_confidence": 0.3, "lines": null }
+```
+
+Omitting `lines` runs prediction then creates draft purchase requests (`purchasing:write`).
+
+**UI:** AI page (`/ai`) — **Inventory predictions** then **Create draft PR(s)** (BR-21.4). Uses loaded at-risk lines when present; otherwise re-runs prediction. Open Purchasing → Requests to submit.
 
 ### 16.5 AI Sales Analysis
 **Endpoint:** `GET /ai/sales/analysis?from_date=&to_date=&lookback_days=90`  
 Returns `trend` (incl. 7/14/30 forecast), `rfm`, `product_affinity`, `peaks`.
 
+Rule-based trend forecast, RFM segments, product affinity, peak hours/days. Optional `from_date` / `to_date` ∈ `IsoDateQueryValue` (`YYYY-MM-DD` or ISO; omit → service default ~90d window; blank/invalid → **422** — blank was silent default; invalid was late service **400**). AI **Analysis From/To date** inputs (`aria-label`s). See `docs/AI_SALES_EXPENSE_MVP.md`.
+
 ### 16.6 AI Expense Analysis
 **Endpoint:** `GET /ai/expenses/analysis?from_date=&to_date=`
 
-### 16.6a AI Purchases Analysis (Stage 25 P1 / BR-21.11)
-**Endpoint:** `GET /ai/purchases/analysis?from_date=&to_date=&lookback_days=90`  
-Returns `trend` (incl. 7/14/30 forecast from posted PI totals), `suppliers` (spend share), `purchase_orders` (status/fill), `goods_receipts`, `purchase_invoices.overdue`, and `suggestions`. Method `rules_v1` (not Prophet). Evidence: `test_ai_purchases_analysis_p1.py`. Stage 25 U1 wires this on `frontend/app/ai/page.tsx` (`test_ai_ui_fidelity_u1.py`).
-
-### 16.6b Cross-Domain AI Analysis (Stage 25 X1 / BR-21.12)
-**Endpoint:** `GET /ai/cross-domain/analysis?from_date=&to_date=&lookback_days=90`  
-Orchestrates inventory / sales / purchases / expenses analyzers. Returns `domains` (per-domain summaries + endpoint cites) and `cross_signals` (multi-domain synthesis). Method `rules_v1`. Evidence: `test_ai_cross_domain_x1.py`. Stage 25 U1 wires this on `frontend/app/ai/page.tsx`.
+Budget variance, unusual/duplicate detection, cost-optimization suggestions; OCR may suggest category keywords. Same `from_date` / `to_date` ∈ `IsoDateQueryValue` honesty.
 
 ### 16.7 AI Report Generator
-**Endpoint:** `POST /ai/reports/generate` (optional `?export=true` for file download)  
-**Templates:** `GET/POST /ai/reports/templates`, `DELETE /ai/reports/templates/{template_id}`
+**Generate (JSON preview):** `POST /ai/reports/generate` — typed body `AiReportsGenerateBody` `{ "prompt"? | "template_id"? | "report_type"?, "format"?, "period"?, "filters"?|"params"? }` (`extra=forbid`; optional filters/params ∈ `AiReportFilters` (`extra=forbid`; dates/UUIDs/year-month/days/jurisdiction/compare — was free `dict[str, Any]`); must provide prompt/template_id/report_type; optional `prompt` ∈ `AiReportPromptValue` strip; 1–16000; ≥1 letter/digit; no `://`/`@`; omit/`null` OK with other intent; blank/`!!!`/`http://…` → **422**; optional `template_id` ∈ `UuidIdValue` — omit/`null` OK with prompt|report_type; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str` strip-blank→omit; garbage could reach template lookup; existence remains tenant-scoped **404**; optional `period` ∈ `AiReportPeriodValue` strip; 1–80; ≥1 letter/digit; no `://`/`@`; omit/`null` → service/prompt default; blank/`!!!`/`http://…` → **422** — was free `str` soft-nulled on blank; punctuation/URL could reach period_label; invalid `format` ∈ csv|pdf|xlsx or `report_type` ∈ EXPORTABLE → **422** — format garbage was silently remapped to csv; unknown report_type was late **400**). AI UI **Generate AI report** + **AI report period** (`aria-label`s; generate sends `null` when period blank; prompt path — template_id unused in UI).  
+**Export file:** `POST /ai/reports/export` — typed body `AiReportsExportBody` `{ "prompt"? | "template_id"? | "report_type"?, "format"?, "period"?, "filters"?|"params"? }` (`extra=forbid`; optional filters/params ∈ `AiReportFilters` (same honesty as generate); must provide prompt/template_id/report_type; optional `prompt` ∈ `AiReportPromptValue` same honesty; optional `template_id` ∈ `UuidIdValue` same honesty as generate; optional `period` ∈ `AiReportPeriodValue` strip; 1–80; ≥1 letter/digit; no `://`/`@`; omit/`null` → service/prompt default; blank/`!!!`/`http://…` → **422** — field was absent / unknown key **422**; generate already typed the same Value; `format` omit → **csv**; blank/invalid format|type|prompt|period|template_id / unknown keys → **422** — was free `dict` with `or "csv"`). AI UI **Export AI report** + shared **AI report period** (`aria-label`s; export sends `null` when period blank).  
+**Templates:** `GET|POST /ai/reports/templates`, `DELETE /ai/reports/templates/{id}` — `GET` Query `limit` ∈ 1–200 (omit → 50; `0`/`-1`/`201` → **422** — was free `int`; service silently clamped 1–200). Create body typed `AiReportTemplateCreateBody` `{ "name", "prompt", "format"? }` (`extra=forbid`; `name` ∈ `AiReportTemplateNameValue` strip; 1–120; ≥1 letter/digit; no `://`/`@`; `prompt` ∈ `AiReportPromptValue` strip; 1–16000; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…` → **422** — was free `str` min_length=1; punctuation/URL could persist; blank/omit prompt / unknown keys / bad format → **422**). AI UI **AI report template name** + **Save AI report template** (`aria-label`s; Save gated on trim name + prompt). Shared prompt textarea `aria-label` **AI chat message**.
 
 ```json
-{
-  "prompt": "Show me monthly sales for Q2 2026",
-  "format": "csv"
-}
+{ "prompt": "Show me monthly sales for Q2 2026", "format": "csv" }
 ```
 
-Reuse a saved template with `{ "template_id": "…" }`. Export sets `Content-Disposition` attachment.
+Also accepts structured `{ "report_type": "sales_monthly", "period": "last_month", "format": "pdf" }` (EXPORTABLE types). Constrained NL — see `docs/AI_REPORT_GENERATOR_MVP.md`.
 
 ### 16.8 AI Document Assistant
 **Endpoint:** `POST /ai/documents/analyze`
@@ -1390,12 +1865,18 @@ Reuse a saved template with `{ "template_id": "…" }`. Export sets `Content-Dis
 }
 ```
 
-Human-confirmed OCR apply to expense/PI drafts uses the Stage 10 `ocr-apply` paths (`confirm: true`); PO OCR apply remains deferred. Stage 25 U1 wires suggest-only analyze on `frontend/app/ai/page.tsx` (`test_ai_ui_fidelity_u1.py`).
+Form fields: `file` (required), `document_type` ∈ `receipt`|`invoice`|`purchase_order`|`auto` (`Literal` + strip/lower; omit/`null` → `auto`; blank/`""`/invalid → **422** — no silent `auto` from empty Form field or garbage), optional `expected_amount` ∈ `FiniteMoneyValue` (finite; ±1e15; omit/`null` → no expected; `nan`/`inf`/out-of-range → **422** — was free `float`). Returns extracted fields, party/PO matches, and discrepancy flags. Analyze is suggest-only — see `docs/AI_DOCUMENT_MVP.md`. AI UI **Document type** select + **AI document expected amount** (`aria-label`; omits blank).
+
+**Create draft expense:** `POST /ai/documents/create-expense` — typed body `AiDocumentExpenseCreate` `{ amount, payee?, description?, reference?, category_id?, category?, expense_date?, payment_method?, store_id?, branch_id?, department_id? }` (`extra=forbid`; `expenses:write`; required `amount` ∈ `PositiveMoneyValue` — `nan`/`inf`/≤0 → **422** — was `Field(gt=0)` only; `payment_method` same expense `Literal`, omit → `cash`; blank/invalid → **422**). Optional `description` ∈ `ExpenseDescriptionValue` (strip; 1–500; ≥1 letter/digit; no `://`/`@`); omit/`null` → no description; blank/`!!!`/`http://…` → **422** (was free `str`; blank/garbage could persist). Optional `category_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → label-only / MISC path; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach category lookup; existence remains tenant-scoped expense-category lookup **404**/400). Same honesty as `ExpenseCreate.category_id`. AI **AI document expense category** select (`aria-label`); Create draft expense sends trim or `null` when blank (prefilled from Analyze suggestion). Optional `store_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no store; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach store lookup; existence remains tenant-scoped store lookup **404**). Same honesty as `ExpenseCreate.store_id`. AI **AI document expense store** select (`aria-label`); Create draft expense sends trim or `null` when blank. Optional `branch_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no branch; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach branch lookup; existence remains tenant-scoped branch lookup **404**). Same honesty as `ExpenseCreate.branch_id`. AI **AI document expense branch** select (`aria-label`); Create draft expense sends trim or `null` when blank. Optional `department_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → no department; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach department lookup; existence remains tenant-scoped department lookup **404**). Same honesty as `ExpenseCreate.department_id`. AI **AI document expense department** select (`aria-label`); Create draft expense sends trim or `null` when blank. Optional `expense_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → service default (today); blank/`not-a-date`/`01/02/2024` → **422** (blank was silent default; invalid was late service **400**). Creates a normal pending/auto-approved expense from reviewed OCR fields (defaults category to MISC when omitted); AI UI **Create draft expense** + **AI document draft date** + **AI document expense description** + **AI document expense category** + **AI document expense store** + **AI document expense branch** + **AI document expense department** (`aria-label`s; blank omitted as `null`). Create draft expense trims extract `payee` / `reference` / `category` (`String(…).trim() || null`).
+
+**Create draft purchase invoice (PO-matched):** `POST /ai/documents/create-purchase-invoice` — typed body `AiDocumentPurchaseInvoiceCreate` `{ purchase_order_id, supplier_id?, supplier_invoice_number?, notes?, invoice_date?, is_reverse_charge? }` (`extra=forbid`; `purchasing:write`). Required `purchase_order_id` ∈ `UuidIdValue` (strip; lower; valid UUID; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach PO lookup; existence remains tenant-scoped purchase-order lookup **404**). Same honesty as `GrnCreate.purchase_order_id`. AI **AI document purchase order** select (`aria-label`; prefilled from Analyze PO matches); Create draft purchase invoice sends trim. Optional `supplier_id` ∈ `UuidIdValue` (strip; lower; valid UUID; omit/`null` → PO's supplier; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`; garbage could reach party lookup; service still requires supplier match the PO **400**). AI **AI document supplier** select (`aria-label`; prefilled from matched PO); Create draft purchase invoice sends trim or `null` when blank. Optional `supplier_invoice_number` ∈ `SupplierInvoiceNumberValue` (strip; 1–100; ≥1 letter/digit; no `://`/`@`; omit/`null` → none; blank/`!!!`/`http://…` → **422**). Optional `invoice_date` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit → service default; blank/`not-a-date`/`01/02/2024` → **422** (blank was silent default; invalid was late service **400**). Copies active PO lines into a draft PI; AI UI **Create draft purchase invoice** when Analyze returns a PO match. See `docs/AI_DOCUMENT_MVP.md`. Create draft purchase invoice trims extract `supplier_invoice_number` / `notes` (`String(…).trim() || null`).
 
 ### 16.9 AI Customer Assistant
 **Endpoints:**  
 - `POST /ai/customer/assist` — NL assist for a customer or portfolio query  
 - `GET /ai/customers/insights` — `best_customers`, `churn_risks`, `promotion_suggestions`
+
+Typed body `AiCustomerAssistBody` `{ "customer_id"?, "query"? | "message"? }` (`extra=forbid`; unknown keys → **422**; omit/`{}` → overview; optional `customer_id` ∈ `UuidIdValue` strip/lower; omit/`null` → overview / all-customers path; blank/`!!!`/`http://…`/non-UUID → **422** — was free `str` with blank coerced to omit; optional `query`/`message` ∈ `AiChatMessageValue` strip; 1–16000; ≥1 letter/digit; no `://`/`@`; omit/`null` → overview; blank/`!!!`/`http://…` → **422** — was free `str` stripped to null / garbage could silently become overview). AI UI **AI customer assist customer** select + **Customer assist** (`aria-label`s); Customer assist sends `customer_id` trim or `null` when blank.
 
 ```json
 {
@@ -1404,47 +1885,64 @@ Human-confirmed OCR apply to expense/PI drafts uses the Stage 10 `ocr-apply` pat
 }
 ```
 
+Rule-based churn, best customers, promotions, and balance overview (RFM + credit). See `docs/AI_CUSTOMER_MVP.md`.
+
 ### 16.10 AI Security Monitor
-**Endpoint:** `GET /ai/security/alerts?lookback_hours=72&notify=false`  
-`notify=true` creates unread `category=security` notifications for high-score alerts. Requires `security:read`.
+**List:** `GET /ai/security/alerts` — Query `limit` ∈ 1–200 (omit → 50); Query `min_score` ∈ 0–100 (omit/`null` → no floor); out-of-range → **422** (was free `int`).  
+Query: `limit`, `min_score`, `scan=true` (optional inline rescan)
+
+**Scan now:** `POST /ai/security/scan`
+
+Returns tenant-scoped alerts with `kind`, `risk_score`, `user_id`, `evidence`, `created_at`. Rule-based MVP (no LLM). See `docs/AI_SECURITY_MVP.md`.
 
 ---
 
 ## 17. Webhooks
 
 RIBDIGI ERP supports webhook subscriptions for real-time event notifications.
+Company admins can also manage endpoints in the **Integrations** UI (`/integrations`).
 
 ### 17.1 Manage Webhooks
-**List:** `GET /webhooks`  
-**Create:** `POST /webhooks`  
-**Get:** `GET /webhooks/{webhook_id}`  
-**Update:** `PATCH /webhooks/{webhook_id}`  
-**Delete:** `DELETE /webhooks/{webhook_id}`
+**List:** `GET /webhooks` — optional `?is_active=true|false` (or `active_only=true`) filters disabled endpoints (omit = all; Integrations manage status filter).  
+**Create:** `POST /webhooks` — typed `WebhookCreate` (`extra=forbid`; unknown keys → **422**; `WebhookUpdate` same). `url` ∈ absolute `http(s)` (`WebhookUrlValue`; strip; blank/`ftp://`/`not-a-url`/remote `http` → **422** — was free `str`; late service **400**; `http` allowed only for localhost). `events[]` ∈ `VALID_EVENTS` (blank/unknown/empty → **422**). Optional `secret` ∈ `WebhookSecretValue` (strip; 1–128; ≥1 letter/digit; no `://` / `@` / spaces; omit/`null` → auto-generate `whsec_…`; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently auto-generated; punctuation/URL could be encrypted into `secret_enc`; non-`whsec_` length still service **400**). Optional `description` ∈ `WebhookDescriptionValue` (strip; 1–255; ≥1 letter/digit; no `://`/`@`; omit/`null` OK; blank/`!!!`/`http://…` → **422** — was free `str`; blank silently None / garbage could persist). Integrations **Webhook endpoint URL** + **Webhook signing secret** + **Webhook description** inputs (`aria-label`s); create sends `url: hookUrl.trim()`; secret/description `trim() || null`.  
+**Get:** `GET /webhooks/{webhook_id}` — Path `webhook_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`).  
+**Update:** `PATCH /webhooks/{webhook_id}` (Path `webhook_id` ∈ `UuidIdValue`; same `WebhookUrlValue` when `url` sent; `description` ∈ `WebhookDescriptionValue` omit/`null` → no change; blank/`!!!`/`http://…` → **422**; set `rotate_secret: true` to issue a new `whsec_…`; soft-disable via `is_active: false` — Integrations **Disable** / **Enable** + manage status filter All/Active/Inactive)  
+**Delete:** `DELETE /webhooks/{webhook_id}` — Path `webhook_id` ∈ `UuidIdValue` (same honesty).  
+**Test:** `POST /webhooks/{webhook_id}/test` (delivers signed `webhook.test`)  
+**Deliveries:** `GET /webhooks/{webhook_id}/deliveries?limit=50` — Query `limit` ∈ 1–200 (omit → 50; `0`/`-1`/`201` → **422** — was free `int`; service silently clamped 1–200). Optional Query `status` ∈ `pending`|`pending_retry`|`delivered`|`failed` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422**). Integrations **Webhook delivery status filter** All / Pending / Pending retry / Delivered / Failed (`deliveryStatusFilter`; client filter over loaded delivery cache).  
+**Retry delivery:** `POST /webhooks/{webhook_id}/deliveries/{delivery_id}/retry` — Path `webhook_id` / `delivery_id` ∈ `UuidIdValue` (blank/`!!!`/`http://…`/non-UUID → **422** — was free `str`); pending_retry or failed.
+
+`events` on create/update is OpenAPI `list[Literal[…]]` of known event names (aligned with Integrations checkboxes / `VALID_EVENTS`). Unknown or blank items → **422**; empty list → **422** (`min_length=1` on create). Case is coerced (e.g. `Sale.Created` → `sale.created`). Service `normalize_events` remains defense-in-depth (**400**). HTTPS required for remote URLs (localhost http allowed).
 
 **Create Webhook:**
 ```json
 {
   "url": "https://your-app.com/webhooks/ribdigi",
-  "events": ["sale.created", "stock.low", "payment.received"],
+  "events": ["sale.created", "stock.low", "webhook.test"],
   "secret": "whsec_your_secret",
   "is_active": true
 }
 ```
 
+Signing secret is returned **once** on create/rotate (`secret_shown_once`). Deliveries include `X-Ribdigi-Signature: t=<unix>,v1=<hmac-sha256>`.
+
 ### 17.2 Available Events
 
 | Event | Description |
 |-------|-------------|
-| `sale.created` | New sale/invoice created |
-| `sale.paid` | Invoice payment received |
+| `sale.created` | New sale/invoice created (invoice post or POS checkout) |
+| `sale.paid` | Invoice payment received, or POS sale fully settled at till (no credit tender) |
 | `stock.low` | Product reached low stock level |
 | `stock.in` | Stock received into warehouse |
+| `stock.out` | Stock issued from warehouse (manual / non-POS-invoice outbound) |
 | `purchase.order.created` | New PO created |
 | `purchase.grn.received` | GRN recorded |
 | `customer.created` | New customer added |
+| `supplier.created` | New supplier added |
 | `expense.approved` | Expense approved |
-| `user.login` | User logged in |
+| `user.login` | Successful interactive login (password / TOTP / WebAuthn; not refresh) |
 | `tenant.suspended` | Tenant account suspended |
+| `webhook.test` | Manual test ping from admin UI / `POST .../test` |
 
 ### 17.3 Webhook Payload
 ```json
@@ -1460,11 +1958,84 @@ RIBDIGI ERP supports webhook subscriptions for real-time event notifications.
 }
 ```
 
-### 17.4 Signature verification (Stage 6 W1)
-Each delivery includes header `X-Ribdigi-Signature` with value `t=<unix_ts>,v1=<hex>` where `v1` is HMAC-SHA256 of `{t}.{raw_body}` using the webhook signing secret (`whsec_…`, shown once on create). Reject if timestamp skew exceeds 5 minutes. Test ping: `POST /webhooks/{id}/test` (`webhook.test` event). Invoice post emits `sale.created`.
+### 17.4 Signature verification (subscribers)
 
-### 17.5 Delivery retries (Stage 7 W2)
-Non-2xx or transport errors set delivery status to `pending_retry` with `next_retry_at` using exponential backoff (`WEBHOOK_RETRY_BASE_SECONDS` × 5^(attempt−1), capped at 1 hour). Celery beat job `retry_due_webhooks` (also `POST /jobs/retry_due_webhooks/run`) re-signs the stored payload with a fresh timestamp and re-POSTs. After `WEBHOOK_MAX_ATTEMPTS` (default 5) the delivery is terminal `failed`. Successful retry → `delivered` and clears `next_retry_at`.
+Every delivery includes header **`X-Ribdigi-Signature`** with format:
+
+```text
+t=<unix_seconds>,v1=<hmac_sha256_hex>
+```
+
+Signed bytes are: `f"{t}.".encode("utf-8") + raw_body` (raw JSON body **exactly** as received — do not re-serialize).
+
+Rules:
+
+1. Parse `t` and `v1` from the header.
+2. Reject if `|now - t| > 300` seconds (replay window).
+3. Recompute HMAC-SHA256 with your `whsec_…` secret; compare with `hmac.compare_digest`.
+4. Secrets are shown **once** on create/rotate in Integrations — store them in your vault.
+
+**Live events today:** `webhook.test` (Integrations **Test**), `sale.created` (invoice post **or** POS checkout), `sale.paid` (customer payment **or** POS sale with no credit tender), `customer.created`, `supplier.created`, `purchase.order.created`, `purchase.grn.received`, `expense.approved` (final approval), `stock.low` (when a new low-stock notification is created), `stock.in` (inbound `stock_in` movements except `reference_type=grn`, which fans out only as `purchase.grn.received`), `stock.out` (outbound `stock_out` movements except `pos_sale` / `sales_invoice` — those use `sale.created`), `tenant.suspended` (self-suspend, platform suspend, or trial-grace expiry — first delivery is best-effort; Celery retries skip suspended tenants), and `user.login` (successful interactive login via password / TOTP / WebAuthn; **not** token refresh — higher volume; payload may include email + IP).
+
+**Golden fixture** (matches `tests/test_webhooks_w1.py`):
+
+| Field | Value |
+|-------|--------|
+| Secret | `whsec_demo_secret_123456` |
+| Body | `{"event":"webhook.test","timestamp":"2026-08-15T07:00:00Z","tenant_id":"demo","data":{"message":"ping"}}` |
+| Timestamp `t` | `1723705200` |
+| Header | `t=1723705200,v1=8ba12e1df3b867331f2ccf13f760ace4afd370df9d542012046eb4aba49bb2e2` |
+
+**Python:**
+
+```python
+import hashlib, hmac, time
+
+def verify_ribdigi_signature(secret: str, body: bytes, header: str, skew: int = 300) -> bool:
+    parts = dict(p.split("=", 1) for p in header.split(",") if "=" in p)
+    ts = int(parts.get("t", "0"))
+    expected = parts.get("v1", "")
+    if abs(int(time.time()) - ts) > skew:
+        return False
+    signed = f"{ts}.".encode() + body
+    got = hmac.new(secret.encode(), signed, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(got, expected)
+```
+
+**Node.js:**
+
+```js
+const crypto = require("crypto");
+
+function verifyRibdigiSignature(secret, bodyBuf, header, skew = 300) {
+  const parts = Object.fromEntries(
+    header.split(",").map((c) => c.trim().split("="))
+  );
+  const ts = Number(parts.t || 0);
+  const expected = parts.v1 || "";
+  if (Math.abs(Math.floor(Date.now() / 1000) - ts) > skew) return false;
+  const signed = Buffer.concat([Buffer.from(`${ts}.`), bodyBuf]);
+  const got = crypto.createHmac("sha256", secret).update(signed).digest("hex");
+  return crypto.timingSafeEqual(Buffer.from(got), Buffer.from(expected));
+}
+```
+
+See also Integrations UI **Verify signature** panel and `docs/SECURITY_GUIDE.md` §8.5.
+
+---
+
+## 17A. API Keys
+
+Service integrations authenticate with tenant API keys (BR-18.1). Manage via `GET|POST|DELETE /api-keys` or the **Integrations** UI.
+
+**List:** `GET /api-keys` — optional Query `status` ∈ `active`|`revoked`|`expired` (schema Query `Literal` + strip/lower; omit → all; blank/invalid → **422** — was late **400**). Optional `active_only=true` keeps active keys only. Integrations **API key status filter** All / Active / Revoked / Expired (`apiKeyManageFilter`; client filter over full cache).  
+**Create:** `POST /api-keys` — typed body `ApiKeyCreate` `{ "name", "permissions"?, "expires_at"? }` (`extra=forbid`; `name` ∈ `ApiKeyNameValue` strip; 2–120; ≥1 letter/digit; no `://`/`@`; blank/`!!!`/`http://…`/`x` → **422** — was free `str` min_length=2; punctuation/URL could persist; Integrations **API key name** input). Unknown keys / unknown permission module|action → **422** — was late **400** via free `dict`). Optional `expires_at` ∈ `IsoDateQueryValue` (strip; `YYYY-MM-DD` or ISO datetime); omit/`null` → no expiry; blank/`not-a-date`/`01/02/2024` → **422** (was free `datetime`; OpenAPI date-time; padded dates inconsistent). API `reports.parse_datetime` keeps clock time (defense-in-depth). Omit/`{}` `permissions` → default read map. Returns `api_key` once (`rdk_…`). Integrations **API key expiry** input (`aria-label`); create omits blank.  
+**Get / usage:** `GET /api-keys/{id}`, `GET /api-keys/{id}/usage`  
+**Revoke:** `DELETE /api-keys/{id}`
+
+**Auth headers:** `X-API-Key` ∈ `ApiKeyHeaderValue` (`rdk_…`; blank/`!!!`/`http://…`/non-`rdk_` → **422**) or `Authorization: Bearer rdk_…` / JWT. Optional `X-Tenant-ID` ∈ `UuidIdValue` (JWT/key tenant UUID; blank/slug/garbage → **422**; mismatch → **403**).
+
+Default permissions (if omitted): read on `inventory`, `sales`, `purchasing`, `customers`, `reports`.
 
 ---
 
@@ -1518,36 +2089,40 @@ On `429 RATE_LIMIT_EXCEEDED`, responses also include `Retry-After`. Evidence: `t
 | `500` | Internal Server Error |
 
 ### Error Response Format
+FastAPI validation / `HTTPException` errors use the framework shape (not the success `env()` envelope). Typical **422** validation:
+
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "The request validation failed",
-    "details": [
-      {
-        "field": "email",
-        "message": "Email is required"
-      }
-    ]
-  },
-  "request_id": "req_8f3a9b2c1d4e"
+  "detail": [
+    {
+      "type": "value_error",
+      "loc": ["body", "email"],
+      "msg": "...",
+      "input": "..."
+    }
+  ]
 }
 ```
 
+Business errors often return `detail` as a string or `{ "code": "CREDIT_LIMIT_EXCEEDED", "message": "...", ... }`. Correlation remains the **`X-Request-ID`** header (not a body `request_id` field).
+
 ### Common Error Codes
-| Code | Description |
-|------|-------------|
-| `VALIDATION_ERROR` | Input validation failed |
-| `AUTHENTICATION_FAILED` | Invalid credentials |
-| `TOKEN_EXPIRED` | JWT token has expired |
-| `INSUFFICIENT_PERMISSIONS` | User lacks required role/permission |
-| `TENANT_SUSPENDED` | Tenant account is suspended |
-| `RESOURCE_NOT_FOUND` | Requested resource not found |
-| `INSUFFICIENT_STOCK` | Not enough stock for operation |
-| `CREDIT_LIMIT_EXCEEDED` | Customer credit limit reached |
-| `DUPLICATE_ENTRY` | Resource already exists |
-| `RATE_LIMIT_EXCEEDED` | Too many requests |
+Codes below are values clients may see on **`detail.code`** (object `detail`) or as a plain **`detail`** string. FastAPI **422** validation uses a `detail` **array** (no body `VALIDATION_ERROR` code). Metrics/request-log maps (e.g. status→`VALIDATION_ERROR` / `UNAUTHENTICATED`) are operator-side only — not response body fields.
+
+| Code / detail | Where | Description |
+|---------------|-------|-------------|
+| (422 `detail[]`) | body | Pydantic/OpenAPI validation failed |
+| `Invalid credentials` / `Invalid refresh token` / … | `detail` string (401) | Auth failures (plain strings — no dedicated auth failure code enum) |
+| `Tenant is suspended` | `detail` string (403) | Tenant suspended (plain string — no dedicated suspended body code) |
+| `RATE_LIMIT_EXCEEDED` | `detail` string (429) | Too many requests |
+| `EMAIL_NOT_VERIFIED` | `detail.code` (403) | Login blocked until email verified |
+| `INSUFFICIENT_STOCK` | `detail.code` (409) | Not enough stock for operation |
+| `CREDIT_LIMIT_EXCEEDED` | `detail.code` (409) | Credit limit reached (override via `override_credit_limit` + `override_reason` + `credit:approve`) |
+| `CREDIT_OVERRIDE_FORBIDDEN` | `detail.code` (403) | Override without `credit:approve` |
+| `CREDIT_OVERRIDE_REASON_REQUIRED` | `detail.code` (400) | Override flag without reason |
+| `STORE_LIMIT_REACHED` | `detail.code` (403) | Active store entitlement exhausted |
+| `SETTLEMENT_REQUIRED` | `detail.code` (400) | Sales return needs explicit settlement method |
+| `TENANT_READ_ONLY` | `detail.code` (403) | Tenant in read-only / grace restriction |
 
 ---
 
@@ -1571,21 +2146,35 @@ Foreign-tenant `backup_id` → `404`. WAL / pg_dump / S3 PITR deferred post-MVP.
 
 | Type | Format | Example |
 |------|--------|---------|
-| `id` | string | `usr_001`, `prod_abc123` |
-| `decimal` | string | `"199.99"` |
-| `date` | ISO 8601 | `2026-08-07` |
-| `datetime` | ISO 8601 | `2026-08-07T13:51:00Z` |
-| `currency` | ISO 4217 | `USD`, `EUR`, `NGN` |
+| `id` | string (UUID) | `11111111-2222-3333-4444-555555555555` |
+| `decimal` / money | JSON number | `199.99` |
+| `date` | ISO 8601 date | `2026-08-07` |
+| `datetime` | ISO 8601 datetime | `2026-08-07T13:51:00Z` |
+| `currency` | ISO 4217 | `USD`, `EUR`, `GHS` |
 | `status` | string enum | `active`, `inactive`, `pending` |
 
 ## Appendix B: Multi-Tenant Headers
 
-All API requests (except tenant registration) must include:
+Authenticated API requests should send:
 
 ```
-X-Tenant-ID: tenant_abc123
-Authorization: Bearer <jwt_token>
+Authorization: Bearer <access_token>
+X-Tenant-ID: <tenant UUID from JWT user.tenant_id>
 ```
+
+`X-Tenant-ID` ∈ `UuidIdValue` (strip; lower; valid UUID). Omit to rely on the JWT/API-key tenant alone. Blank / slug (`tenant_abc123` / `alpha`) / `!!!` / `http://…` / non-UUID → **422** (was free `str`; non-matching values including slugs reached cross-tenant **403**). A well-formed UUID that differs from the token/key tenant → **403** Cross-tenant access denied.
+
+API keys may use `X-API-Key: rdk_…` (`ApiKeyHeaderValue`; blank/garbage/non-`rdk_` → **422**) instead of a user JWT; optional `X-Tenant-ID` must still be that key’s tenant UUID when sent.
+
+Optional / response correlation:
+
+```
+X-Request-ID: <client-or-server-id>
+```
+
+The API echoes a safe client `X-Request-ID` or generates one; it is **not** duplicated as a JSON body field on success/`env()` responses.
+
+Note: rate-limit middleware may still bucket on the raw `X-Tenant-ID` string for anonymous/health probes — that is not auth validation.
 
 ---
 

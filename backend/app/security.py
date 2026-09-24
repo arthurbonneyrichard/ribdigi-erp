@@ -4,6 +4,7 @@ import hashlib
 import re
 import secrets
 from datetime import datetime, timedelta, timezone
+from typing import Annotated
 
 from fastapi import Depends, Header, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -15,12 +16,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.db import get_db
 from app import models as m
-from app.rbac import (
-    VALID_ROLES,
-    has_permission,
-    permissions_for_role,
-    record_scope_from_permissions,
-)
+from app.rbac import has_permission, is_system_role, permissions_for_role, is_platform_role
+from app.schemas import ApiKeyHeaderValue, UuidIdValue
 
 pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
 bearer = HTTPBearer(auto_error=False)
@@ -93,6 +90,7 @@ async def _claims_from_api_key(
 ) -> dict:
     from app import api_keys as api_keys_svc
     from app import tenants as tenants_svc
+    from app import packages as packages_svc
 
     row = await api_keys_svc.authenticate_api_key(db, raw_key)
     tenant_id = row.tenant_id
@@ -110,7 +108,6 @@ async def _claims_from_api_key(
         "sub": f"apikey:{row.id}",
         "tenant_id": tenant_id,
         "role": "api_key",
-        "principal": "tenant",
         "type": "api_key",
         "permissions": row.permissions or {},
         "email_verified": True,
@@ -119,10 +116,13 @@ async def _claims_from_api_key(
         "must_enroll_2fa": False,
         "tenant_status": tenant.status,
         "read_only": tenants_svc.is_read_only(tenant),
+        "package_code": getattr(tenant, "package_code", None) or "trial",
+        "enabled_modules": packages_svc.resolve_enabled_modules(tenant),
+        "industry": getattr(tenant, "industry", None) or "retail",
         "branch_id": None,
         "department_id": None,
         "record_scope": "all",
-        "scope_user_ids": [],
+        "scope_user_ids": None,
         "auth_method": "api_key",
         "api_key_id": row.id,
     }
@@ -132,68 +132,67 @@ async def _claims_from_api_key(
     return claims
 
 
-async def resolve_user_permissions(db: AsyncSession, user: m.User) -> dict:
-    """Resolve effective permissions with optional Redis/app-cache (Stage 7 C2).
+async def optional_platform_tenant_writer(
+    db: AsyncSession,
+    creds: HTTPAuthorizationCredentials | None,
+) -> dict | None:
+    """Active platform staff with tenant-write permission, or None.
 
-    Soft-fails when cache is disabled or Redis is down (same pattern as P2).
+    A missing or invalid token is ignored so public company signup stays
+    email-verified. The platform console sends the owner's access token when
+    it creates a company, and that path may sign the admin in immediately.
     """
-    from app.cache import app_cache
-
-    key = app_cache.permissions_key(user.tenant_id, user.id)
-    cached = await app_cache.get_json(key)
-    if isinstance(cached, dict):
-        return cached
-
-    if isinstance(user.permissions, dict) and user.permissions:
-        perms = dict(user.permissions)
-    elif user.role in VALID_ROLES:
-        perms = permissions_for_role(user.role)
-    else:
-        from app import roles as roles_svc
-
-        try:
-            perms = await roles_svc.permissions_for_assignment(
-                db, user.tenant_id, user.role
+    raw = (creds.credentials if creds else "") or ""
+    if not raw.strip():
+        return None
+    try:
+        data = jwt.decode(raw, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+    except JWTError:
+        return None
+    if data.get("type") not in (None, "access"):
+        return None
+    role = str(data.get("role") or "")
+    user_id = data.get("sub")
+    tenant_id = data.get("tenant_id")
+    if not user_id or not tenant_id or not is_platform_role(role):
+        return None
+    user = (
+        await db.execute(
+            select(m.User).where(
+                m.User.id == user_id,
+                m.User.tenant_id == tenant_id,
+                m.User.is_active == True,  # noqa: E712
             )
-        except Exception:
-            perms = {}
-
-    if not isinstance(perms, dict):
-        perms = {}
-    await app_cache.set_json(
-        key, perms, ttl_seconds=int(settings.CACHE_PERMISSIONS_TTL_SECONDS)
-    )
-    return perms
+        )
+    ).scalar_one_or_none()
+    if not user or not is_platform_role(user.role):
+        return None
+    overrides = user.permissions if isinstance(user.permissions, dict) else None
+    if not has_permission(user.role, "platform_tenants", "write", overrides=overrides):
+        return None
+    return {"sub": user.id, "tenant_id": user.tenant_id, "role": user.role}
 
 
 async def current_claims(
     request: Request,
     creds: HTTPAuthorizationCredentials | None = Depends(bearer),
-    x_tenant_id: str | None = Header(default=None, alias="X-Tenant-ID"),
-    x_api_key: str | None = Header(default=None, alias="X-API-Key"),
-    x_workspace_kind: str | None = Header(default=None, alias="X-Workspace-Kind"),
-    x_company_id: str | None = Header(default=None, alias="X-Company-ID"),
+    x_tenant_id: Annotated[
+        UuidIdValue | None,
+        Header(alias="X-Tenant-ID"),
+    ] = None,
+    x_api_key: Annotated[
+        ApiKeyHeaderValue | None,
+        Header(alias="X-API-Key"),
+    ] = None,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
-    raw_api_key = (x_api_key or "").strip()
+    # X-Tenant-ID / X-API-Key Values strip + shape-check (blank/slug/garbage → **422**).
+    # Mismatch vs JWT/key tenant remains **403** Cross-tenant (defense-in-depth).
+    raw_api_key = x_api_key or ""
     if not raw_api_key and creds and str(creds.credentials or "").startswith("rdk_"):
         raw_api_key = str(creds.credentials).strip()
     if raw_api_key:
-        claims = await _claims_from_api_key(request, db, raw_api_key, x_tenant_id)
-        # API keys operate in company workspace on the tenant default company (ADR-490).
-        from app import workspace as workspace_svc
-
-        tenant = await db.get(m.Tenant, claims["tenant_id"])
-        if tenant:
-            co = await workspace_svc.ensure_default_company(db, tenant)
-            claims["workspace_kind"] = "company"
-            claims["company_id"] = co.id
-        else:
-            claims["workspace_kind"] = "company"
-            claims["company_id"] = None
-        request.state.workspace_kind = claims.get("workspace_kind")
-        request.state.company_id = claims.get("company_id")
-        return claims
+        return await _claims_from_api_key(request, db, raw_api_key, x_tenant_id)
 
     if not creds:
         raise HTTPException(status_code=401, detail="Authentication required")
@@ -250,46 +249,47 @@ async def current_claims(
     )
 
     tenant = await tenants_svc.ensure_trial_state(db, tenant)
-    # Prefer live role/tenant over stale JWT principal
-    live_principal = principal_for(tenant_id=tenant_id, role=str(user.role or ""))
-    if tenant.status == "suspended" and not (
-        is_platform_tenant_id(tenant_id) and live_principal == "platform"
-    ):
-        raise HTTPException(status_code=403, detail="Tenant suspended or missing")
+    if tenant.status == "suspended":
+        from app.tenants import PROTECTED_TENANT_SLUGS
+        from app.rbac import is_platform_role
+
+        slug = (tenant.slug or "").strip().lower()
+        tid = (tenant.id or "").strip().lower()
+        # Allow platform staff on the protected workspace to recover from lockout.
+        if not (
+            (slug in PROTECTED_TENANT_SLUGS or tid in PROTECTED_TENANT_SLUGS)
+            and is_platform_role(user.role)
+        ):
+            raise HTTPException(status_code=403, detail="Tenant suspended or missing")
 
     data["permissions"] = await resolve_user_permissions(db, user)
     data["email_verified"] = user.email_verified
     data["totp_enabled"] = bool(user.totp_enabled)
     data["tenant_status"] = tenant.status
     data["read_only"] = tenants_svc.is_read_only(tenant)
+    from app import packages as packages_svc
+
+    data["package_code"] = getattr(tenant, "package_code", None) or "trial"
+    data["enabled_modules"] = packages_svc.resolve_enabled_modules(tenant)
+    data["industry"] = getattr(tenant, "industry", None) or "retail"
     data["branch_id"] = getattr(user, "branch_id", None)
     data["department_id"] = getattr(user, "department_id", None)
-    data["auth_method"] = "jwt"
-    data["principal"] = live_principal
-    data["role"] = user.role
-    if live_principal == "platform" and not path_allowed_for_platform_principal(request.url.path):
-        raise HTTPException(
-            status_code=403,
-            detail={
-                "code": "PLATFORM_USE_PLATFORM_API",
-                "message": "Platform principals cannot access tenant ERP modules. Use /api/v1/platform/*.",
-            },
-        )
-    scope = record_scope_from_permissions(
-        user.role, data["permissions"] if isinstance(data.get("permissions"), dict) else None
-    )
-    data["record_scope"] = scope
+    from app.rbac import record_scope_from_permissions
     from app import org_units as org_units_svc
 
+    scope = record_scope_from_permissions(
+        user.role, data["permissions"] if isinstance(data["permissions"], dict) else None
+    )
+    data["record_scope"] = scope
     data["scope_user_ids"] = await org_units_svc.scope_user_ids(
         db, tenant_id=tenant_id, user=user, scope=scope
     )
-    from app.totp import path_allowed_during_enrollment, role_requires_2fa
+    from app.totp import must_enroll_2fa, path_allowed_during_enrollment
     from app import webauthn_svc as webauthn
 
     has_mfa = await webauthn.user_has_mfa(db, user)
     data["webauthn_enabled"] = await webauthn.user_has_webauthn(db, user.id)
-    must_enroll = role_requires_2fa(user.role) and not has_mfa
+    must_enroll = must_enroll_2fa(user.role, has_mfa=has_mfa)
     data["must_enroll_2fa"] = must_enroll
     if must_enroll and not path_allowed_during_enrollment(request.url.path):
         raise HTTPException(
@@ -352,25 +352,19 @@ def require_roles(*roles: str):
 
 
 def require_platform_permission(module: str, action: str = "read"):
-    """Authorize Ribdigi House platform APIs (ADR-137)."""
+    """Gate software-owner console APIs (platform staff roles only)."""
 
     async def dep(claims: dict = Depends(current_claims)) -> dict:
-        if claims.get("principal") != "platform":
-            raise HTTPException(
-                status_code=403,
-                detail={
-                    "code": "PLATFORM_PRINCIPAL_REQUIRED",
-                    "message": "Platform administration requires a Ribdigi House platform principal.",
-                },
-            )
-        role = claims.get("role", "")
+        role = claims.get("role") or ""
+        if not is_platform_role(role):
+            raise HTTPException(status_code=403, detail="Platform staff access required")
         overrides = claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
-        if overrides and (overrides.get("*") == ["*"] or "*" in (overrides.get("*") or [])):
+        if overrides and overrides.get("*") == ["*"]:
             return claims
         if not has_permission(role, module, action, overrides=overrides):
             raise HTTPException(
                 status_code=403,
-                detail=f"Missing permission: {module}:{action}",
+                detail=f"Missing platform permission: {module}:{action}",
             )
         return claims
 
@@ -396,29 +390,64 @@ def require_permission(module: str, action: str = "read"):
                     "message": "Trial expired; account is read-only during the grace period. Activate to restore write access.",
                 },
             )
-        # ADR-490 — operational modules require company workspace + membership.
-        from app import workspace as workspace_svc
+        # Package + business-type feature gate (software-owner controlled modules)
+        if not is_platform_role(claims.get("role")):
+            from app import packages as packages_svc
 
-        workspace_svc.assert_module_workspace(claims, module)
-
+            mod = (module or "").strip().lower()
+            industry = (claims.get("industry") or "retail").strip().lower()
+            if (
+                mod
+                and mod in packages_svc.INDUSTRY_SPECIFIC_MODULES
+                and not packages_svc.industry_allows_module(industry, mod)
+            ):
+                raise HTTPException(
+                    status_code=403,
+                    detail={
+                        "code": "INDUSTRY_MODULE_DISABLED",
+                        "message": (
+                            f"Module '{mod}' is not available for business type '{industry}'. "
+                            "Industry-specific modules activate only for matching tenants."
+                        ),
+                        "module": mod,
+                        "industry": industry,
+                    },
+                )
+            enabled = claims.get("enabled_modules")
+            if (
+                enabled is not None
+                and mod
+                and mod not in packages_svc.ALWAYS_ON_MODULES
+                and mod != "platform"
+                and not mod.startswith("platform_")
+                and mod not in enabled
+            ):
+                raise HTTPException(
+                    status_code=403,
+                    detail={
+                        "code": "PACKAGE_FEATURE_DISABLED",
+                        "message": f"Module '{mod}' is not included in this tenant's package",
+                        "module": mod,
+                        "package_code": claims.get("package_code"),
+                    },
+                )
         role = claims.get("role", "")
         overrides = claims.get("permissions") if isinstance(claims.get("permissions"), dict) else None
-        # Tenant workspace: tenant admins may manage companies/subscription without ops wildcards.
-        if claims.get("workspace_kind") == "tenant" and module in {
-            "tenant_dashboard",
-            "companies",
-            "subscription",
-            "tenant",
-            "security",
-            "users",
-            "backup",
-        }:
-            if is_tenant_admin_like(role) or has_permission(role, module, action, overrides=overrides):
-                return claims
-        if overrides and (overrides.get("*") == ["*"] or "*" in (overrides.get("*") or [])):
+        # permissions in claims may be the full map from user; treat wildcard user override specially
+        if overrides and overrides.get("*") == ["*"]:
             return claims
-        # user.permissions is the authoritative map (system copy or custom role snapshot).
-        if not has_permission(role, module, action, overrides=overrides):
+        # Custom roles: evaluate against the full stored permission map.
+        if not is_system_role(role):
+            if not has_permission(role, module, action, overrides=overrides):
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Missing permission: {module}:{action}",
+                )
+            return claims
+        user_overrides = None
+        if overrides and module in overrides:
+            user_overrides = {module: overrides[module]}
+        if not has_permission(role, module, action, overrides=user_overrides if user_overrides else overrides):
             raise HTTPException(
                 status_code=403,
                 detail=f"Missing permission: {module}:{action}",

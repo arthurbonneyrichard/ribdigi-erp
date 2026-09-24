@@ -1,334 +1,526 @@
-"""CSV bulk import for products (template + dry-run/commit)."""
+"""Product CSV bulk import (validate + all-or-nothing commit)."""
 
 from __future__ import annotations
 
 import csv
 import io
-import re
 from typing import Any
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app import barcodes as barcode_svc
+from app import barcodes as barcodes_svc
 from app import catalog_meta as catalog_meta_svc
 from app import models as m
+from app.honesty import money_json
 from app.inventory import apply_stock_change
+from app.tax import normalize_supply_class
+from pydantic import TypeAdapter, ValidationError
 
-TEMPLATE_COLUMNS = [
+from app.schemas import (
+    ProductBarcodeValue,
+    ProductDescriptionValue,
+    ProductNameValue,
+    ProductSkuValue,
+)
+
+
+def _csv_money(value: Any, *, places: int = 4) -> str:
+    """Format money/qty for CSV text columns via money_json (no bare float)."""
+    n = money_json(value or 0)
+    return f"{n:.{places}f}".rstrip("0").rstrip(".") or "0"
+
+
+def _csv_dim(value: Any) -> str:
+    """Format optional product dimension via money_json (no bare float)."""
+    if value is None:
+        return ""
+    return str(money_json(value))
+
+TEMPLATE_HEADERS = (
     "name",
     "sku",
     "barcode",
-    "category_code",
-    "brand_code",
-    "unit_code",
+    "description",
+    "category",
+    "brand",
+    "unit",
     "cost_price",
     "selling_price",
-    "reorder_level",
+    "weight",
+    "length",
+    "width",
+    "height",
     "stock_qty",
+    "reorder_level",
+    "tax_exempt",
+    "tax_supply_class",
     "tracks_batches",
-]
+)
+
+SAMPLE_ROW = {
+    "name": "Bottled Water 500ml",
+    "sku": "WATER-500",
+    "barcode": "WATER-500",
+    "description": "Still water 500ml PET",
+    "category": "Beverages",
+    "brand": "",
+    "unit": "PCS",
+    "cost_price": "2.00",
+    "selling_price": "5.00",
+    "weight": "0.520",
+    "length": "6.5",
+    "width": "6.5",
+    "height": "22",
+    "stock_qty": "100",
+    "reorder_level": "20",
+    "tax_exempt": "false",
+    "tax_supply_class": "standard",
+    "tracks_batches": "false",
+}
 
 
 def template_csv() -> str:
     buf = io.StringIO()
-    writer = csv.DictWriter(buf, fieldnames=TEMPLATE_COLUMNS)
+    writer = csv.DictWriter(buf, fieldnames=list(TEMPLATE_HEADERS))
     writer.writeheader()
-    writer.writerow(
-        {
-            "name": "Sample Widget",
-            "sku": "SKU-001",
-            "barcode": "",
-            "category_code": "GEN",
-            "brand_code": "",
-            "unit_code": "PCS",
-            "cost_price": "1.00",
-            "selling_price": "2.50",
-            "reorder_level": "5",
-            "stock_qty": "0",
-            "tracks_batches": "false",
-        }
-    )
+    writer.writerow(SAMPLE_ROW)
     return buf.getvalue()
 
 
-async def export_products_csv(
-    db: AsyncSession, *, tenant_id: str, company_id: str | None = None
+def products_to_csv(
+    products: list[m.Product],
+    *,
+    category_by_id: dict[str, m.ProductCategory] | None = None,
+    brand_by_id: dict[str, m.Brand] | None = None,
+    unit_by_id: dict[str, m.UnitOfMeasure] | None = None,
 ) -> str:
-    """Stage 118 E1 — export tenant products using the same columns as the import template."""
-    await catalog_meta_svc.ensure_default_catalog(db, tenant_id, company_id=company_id)
-    cat_q = select(m.ProductCategory).where(m.ProductCategory.tenant_id == tenant_id)
-    brand_q = select(m.Brand).where(m.Brand.tenant_id == tenant_id)
-    unit_q = select(m.UnitOfMeasure).where(m.UnitOfMeasure.tenant_id == tenant_id)
-    prod_q = select(m.Product).where(m.Product.tenant_id == tenant_id)
-    if company_id:
-        cat_q = cat_q.where(m.ProductCategory.company_id == company_id)
-        brand_q = brand_q.where(m.Brand.company_id == company_id)
-        unit_q = unit_q.where(m.UnitOfMeasure.company_id == company_id)
-        prod_q = prod_q.where(m.Product.company_id == company_id)
-    cats = {
-        c.id: c.code
-        for c in (await db.execute(cat_q)).scalars().all()
-    }
-    brands = {
-        b.id: b.code
-        for b in (await db.execute(brand_q)).scalars().all()
-    }
-    units = {
-        u.id: u.code
-        for u in (await db.execute(unit_q)).scalars().all()
-    }
-    products = (
-        await db.execute(prod_q.order_by(m.Product.sku))
-    ).scalars().all()
+    """Serialize catalog products to the same columns as the import template (BR-18.2 export)."""
+    cats = category_by_id or {}
+    brands = brand_by_id or {}
+    units = unit_by_id or {}
     buf = io.StringIO()
-    writer = csv.DictWriter(buf, fieldnames=TEMPLATE_COLUMNS)
+    writer = csv.DictWriter(buf, fieldnames=list(TEMPLATE_HEADERS))
     writer.writeheader()
     for p in products:
+        cat = cats.get(getattr(p, "category_id", None) or "")
+        brand = brands.get(getattr(p, "brand_id", None) or "")
+        unit = units.get(getattr(p, "unit_id", None) or "")
         writer.writerow(
             {
                 "name": p.name or "",
                 "sku": p.sku or "",
                 "barcode": p.barcode or "",
-                "category_code": cats.get(p.category_id) or "",
-                "brand_code": brands.get(p.brand_id) or "",
-                "unit_code": units.get(p.unit_id) or "",
-                "cost_price": f"{float(p.cost_price or 0):.2f}",
-                "selling_price": f"{float(p.selling_price or 0):.2f}",
-                "reorder_level": f"{float(p.reorder_level or 0):.2f}",
-                "stock_qty": f"{float(p.stock_qty or 0):.2f}",
+                "description": getattr(p, "description", None) or "",
+                "category": (cat.name if cat else None) or (p.category or ""),
+                "brand": (brand.name if brand else "") or "",
+                "unit": (unit.code if unit else "") or "",
+                "cost_price": _csv_money(p.cost_price, places=4),
+                "selling_price": _csv_money(p.selling_price, places=4),
+                "weight": _csv_dim(getattr(p, "weight", None)),
+                "length": _csv_dim(getattr(p, "length", None)),
+                "width": _csv_dim(getattr(p, "width", None)),
+                "height": _csv_dim(getattr(p, "height", None)),
+                "stock_qty": _csv_money(p.stock_qty, places=3),
+                "reorder_level": _csv_money(p.reorder_level, places=3),
+                "tax_exempt": "true" if p.tax_exempt else "false",
+                "tax_supply_class": getattr(p, "tax_supply_class", None)
+                or ("exempt" if p.tax_exempt else "standard"),
                 "tracks_batches": "true" if p.tracks_batches else "false",
             }
         )
     return buf.getvalue()
 
 
-def _norm_header(h: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "_", (h or "").strip().lower()).strip("_")
+async def export_tenant_products_csv(db: AsyncSession, tenant_id: str) -> str:
+    products = (
+        await db.execute(
+            select(m.Product)
+            .where(m.Product.tenant_id == tenant_id)
+            .order_by(m.Product.sku, m.Product.name)
+        )
+    ).scalars().all()
+    cat_ids = {p.category_id for p in products if p.category_id}
+    brand_ids = {p.brand_id for p in products if p.brand_id}
+    unit_ids = {p.unit_id for p in products if p.unit_id}
+    cats: dict[str, m.ProductCategory] = {}
+    brands: dict[str, m.Brand] = {}
+    units: dict[str, m.UnitOfMeasure] = {}
+    if cat_ids:
+        rows = (
+            await db.execute(
+                select(m.ProductCategory).where(
+                    m.ProductCategory.tenant_id == tenant_id,
+                    m.ProductCategory.id.in_(cat_ids),
+                )
+            )
+        ).scalars().all()
+        cats = {r.id: r for r in rows}
+    if brand_ids:
+        rows = (
+            await db.execute(
+                select(m.Brand).where(
+                    m.Brand.tenant_id == tenant_id,
+                    m.Brand.id.in_(brand_ids),
+                )
+            )
+        ).scalars().all()
+        brands = {r.id: r for r in rows}
+    if unit_ids:
+        rows = (
+            await db.execute(
+                select(m.UnitOfMeasure).where(
+                    m.UnitOfMeasure.tenant_id == tenant_id,
+                    m.UnitOfMeasure.id.in_(unit_ids),
+                )
+            )
+        ).scalars().all()
+        units = {r.id: r for r in rows}
+    return products_to_csv(products, category_by_id=cats, brand_by_id=brands, unit_by_id=units)
 
 
-def _parse_bool(value: str | None) -> bool:
-    text = (value or "").strip().lower()
-    if text in {"", "0", "false", "no", "n"}:
+def _truthy(value: str | None) -> bool:
+    if value is None:
         return False
-    if text in {"1", "true", "yes", "y"}:
-        return True
-    raise ValueError("must be true/false")
+    return str(value).strip().lower() in {"1", "true", "yes", "y", "t"}
 
 
-def _parse_float(value: str | None, *, default: float = 0.0) -> float:
+def _parse_float(value: str | None, *, field: str, default: float = 0.0) -> float:
     text = (value or "").strip()
     if not text:
-        return default
-    return float(text.replace(",", ""))
-
-
-def parse_product_csv(content: str) -> list[dict[str, str]]:
-    sample = content.lstrip("\ufeff")
-    if not sample.strip():
-        raise HTTPException(status_code=400, detail="Empty CSV")
+        return money_json(default)
     try:
-        dialect = csv.Sniffer().sniff(sample[:4096], delimiters=",;\t|")
-    except csv.Error:
-        dialect = csv.excel
-    reader = csv.DictReader(io.StringIO(sample), dialect=dialect)
+        return money_json(float(text))
+    except (ValueError, TypeError) as exc:
+        raise ValueError(f"{field} must be a number") from exc
+
+
+def _norm_header(name: str) -> str:
+    return (name or "").strip().lower().replace(" ", "_")
+
+
+def parse_csv_rows(content: str) -> list[dict[str, str]]:
+    text = (content or "").lstrip("\ufeff")
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="Empty CSV")
+    reader = csv.DictReader(io.StringIO(text))
     if not reader.fieldnames:
-        raise HTTPException(status_code=400, detail="CSV has no header row")
-
-    header_map: dict[str, str] = {}
-    for raw in reader.fieldnames:
-        key = _norm_header(raw)
-        if key in TEMPLATE_COLUMNS and key not in header_map:
-            header_map[key] = raw
-    if "name" not in header_map or "sku" not in header_map:
-        raise HTTPException(status_code=400, detail="CSV must include name and sku columns")
-
+        raise HTTPException(status_code=400, detail="CSV is missing a header row")
+    mapping = {_norm_header(h): h for h in reader.fieldnames if h}
+    if "name" not in mapping or "sku" not in mapping:
+        raise HTTPException(
+            status_code=400,
+            detail="CSV must include name and sku columns",
+        )
     rows: list[dict[str, str]] = []
-    for raw_row in reader:
-        if not any((v or "").strip() for v in raw_row.values()):
+    for raw in reader:
+        if not any((v or "").strip() for v in raw.values()):
             continue
-        rows.append({col: (raw_row.get(header_map[col]) or "").strip() if col in header_map else "" for col in TEMPLATE_COLUMNS})
+        rows.append(
+            {
+                key: (raw.get(mapping[key]) or "").strip() if key in mapping else ""
+                for key in TEMPLATE_HEADERS
+            }
+        )
     if not rows:
         raise HTTPException(status_code=400, detail="CSV has no data rows")
     if len(rows) > 2000:
-        raise HTTPException(status_code=400, detail="CSV exceeds maximum of 2000 rows")
+        raise HTTPException(status_code=400, detail="CSV exceeds 2000 row limit")
     return rows
 
 
-async def _lookup_code_maps(
-    db: AsyncSession, tenant_id: str, company_id: str | None = None
-) -> tuple[dict[str, m.ProductCategory], dict[str, m.Brand], dict[str, m.UnitOfMeasure]]:
-    await catalog_meta_svc.ensure_default_catalog(db, tenant_id, company_id=company_id)
-    cat_q = select(m.ProductCategory).where(m.ProductCategory.tenant_id == tenant_id)
-    brand_q = select(m.Brand).where(m.Brand.tenant_id == tenant_id)
-    unit_q = select(m.UnitOfMeasure).where(m.UnitOfMeasure.tenant_id == tenant_id)
-    if company_id:
-        cat_q = cat_q.where(m.ProductCategory.company_id == company_id)
-        brand_q = brand_q.where(m.Brand.company_id == company_id)
-        unit_q = unit_q.where(m.UnitOfMeasure.company_id == company_id)
-    cats = {c.code.upper(): c for c in (await db.execute(cat_q)).scalars().all()}
-    brands = {b.code.upper(): b for b in (await db.execute(brand_q)).scalars().all()}
-    units = {u.code.upper(): u for u in (await db.execute(unit_q)).scalars().all()}
-    return cats, brands, units
+async def _lookup_category(
+    db: AsyncSession, tenant_id: str, value: str
+) -> tuple[str | None, str]:
+    text = value.strip()
+    if not text:
+        return None, "General"
+    row = (
+        await db.execute(
+            select(m.ProductCategory).where(
+                m.ProductCategory.tenant_id == tenant_id,
+                m.ProductCategory.is_active == True,  # noqa: E712
+                (func.lower(m.ProductCategory.name) == text.lower())
+                | (func.lower(m.ProductCategory.code) == text.lower()),
+            )
+        )
+    ).scalar_one_or_none()
+    if not row:
+        raise ValueError(f"Unknown category '{text}'")
+    return row.id, row.name
 
 
-async def import_products_csv(
+async def _lookup_brand(db: AsyncSession, tenant_id: str, value: str) -> str | None:
+    text = value.strip()
+    if not text:
+        return None
+    row = (
+        await db.execute(
+            select(m.Brand).where(
+                m.Brand.tenant_id == tenant_id,
+                m.Brand.is_active == True,  # noqa: E712
+                (func.lower(m.Brand.name) == text.lower())
+                | (func.lower(m.Brand.code) == text.lower()),
+            )
+        )
+    ).scalar_one_or_none()
+    if not row:
+        raise ValueError(f"Unknown brand '{text}'")
+    return row.id
+
+
+async def _lookup_unit(db: AsyncSession, tenant_id: str, value: str) -> str | None:
+    text = value.strip()
+    if not text:
+        return None
+    row = (
+        await db.execute(
+            select(m.UnitOfMeasure).where(
+                m.UnitOfMeasure.tenant_id == tenant_id,
+                m.UnitOfMeasure.is_active == True,  # noqa: E712
+                (func.lower(m.UnitOfMeasure.code) == text.lower())
+                | (func.lower(m.UnitOfMeasure.name) == text.lower()),
+            )
+        )
+    ).scalar_one_or_none()
+    if not row:
+        raise ValueError(f"Unknown unit '{text}'")
+    return row.id
+
+
+async def _sku_exists(db: AsyncSession, tenant_id: str, sku: str) -> bool:
+    hit = (
+        await db.execute(
+            select(m.Product.id).where(
+                m.Product.tenant_id == tenant_id,
+                func.lower(m.Product.sku) == sku.lower(),
+            )
+        )
+    ).scalar_one_or_none()
+    return hit is not None
+
+
+async def _barcode_exists(db: AsyncSession, tenant_id: str, barcode: str) -> bool:
+    hit = (
+        await db.execute(
+            select(m.Product.id).where(
+                m.Product.tenant_id == tenant_id,
+                m.Product.barcode == barcode,
+            )
+        )
+    ).scalar_one_or_none()
+    if hit:
+        return True
+    vhit = (
+        await db.execute(
+            select(m.ProductVariant.id).where(
+                m.ProductVariant.tenant_id == tenant_id,
+                m.ProductVariant.barcode == barcode,
+            )
+        )
+    ).scalar_one_or_none()
+    return vhit is not None
+
+
+async def validate_import_rows(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    rows: list[dict[str, str]],
+) -> dict[str, Any]:
+    report_rows: list[dict[str, Any]] = []
+    seen_skus: set[str] = set()
+    seen_barcodes: set[str] = set()
+    prepared: list[dict[str, Any]] = []
+
+    for idx, raw in enumerate(rows, start=2):  # header is line 1
+        errors: list[str] = []
+        name = (raw.get("name") or "").strip()
+        sku = (raw.get("sku") or "").strip()
+        if not name:
+            errors.append("name is required")
+        else:
+            try:
+                name = TypeAdapter(ProductNameValue).validate_python(name)
+            except ValidationError:
+                errors.append("name must be a plain product label (no URL/punctuation-only)")
+        if not sku:
+            errors.append("sku is required")
+        else:
+            try:
+                sku = TypeAdapter(ProductSkuValue).validate_python(sku)
+            except ValidationError:
+                errors.append("sku must be a valid product SKU")
+        sku_key = sku.lower()
+        if sku and sku_key in seen_skus:
+            errors.append("duplicate sku in file")
+        if sku:
+            seen_skus.add(sku_key)
+
+        barcode = None
+        raw_barcode = (raw.get("barcode") or "").strip()
+        if raw_barcode:
+            try:
+                # OpenAPI ProductBarcodeValue → 422; CSV TypeAdapter defense → row error.
+                TypeAdapter(ProductBarcodeValue).validate_python(raw_barcode)
+            except ValidationError:
+                errors.append(
+                    "barcode must be 4–48 characters (letters, numbers, - . _)"
+                )
+            else:
+                try:
+                    barcode = barcodes_svc.normalize_barcode(raw_barcode)
+                except HTTPException as exc:
+                    errors.append(str(exc.detail))
+        if barcode:
+            if barcode in seen_barcodes:
+                errors.append("duplicate barcode in file")
+            seen_barcodes.add(barcode)
+
+        cost_price = selling_price = stock_qty = reorder_level = 0.0
+        weight = length = width = height = None
+        try:
+            cost_price = _parse_float(raw.get("cost_price"), field="cost_price")
+            selling_price = _parse_float(raw.get("selling_price"), field="selling_price")
+            stock_qty = _parse_float(raw.get("stock_qty"), field="stock_qty")
+            reorder_level = _parse_float(raw.get("reorder_level"), field="reorder_level")
+            if (raw.get("weight") or "").strip():
+                weight = _parse_float(raw.get("weight"), field="weight")
+            if (raw.get("length") or "").strip():
+                length = _parse_float(raw.get("length"), field="length")
+            if (raw.get("width") or "").strip():
+                width = _parse_float(raw.get("width"), field="width")
+            if (raw.get("height") or "").strip():
+                height = _parse_float(raw.get("height"), field="height")
+            dims = [v for v in (weight, length, width, height) if v is not None]
+            if cost_price < 0 or selling_price < 0 or stock_qty < 0 or reorder_level < 0:
+                errors.append("prices and quantities must be >= 0")
+            if any(v < 0 for v in dims):
+                errors.append("weight and dimensions must be >= 0")
+        except ValueError as exc:
+            errors.append(str(exc))
+        description = (raw.get("description") or "").strip() or None
+        if description is not None:
+            try:
+                description = TypeAdapter(ProductDescriptionValue).validate_python(description)
+            except ValidationError:
+                errors.append("description must be a plain product narrative (no URL/punctuation-only)")
+
+        category_id = None
+        category_label = "General"
+        brand_id = None
+        unit_id = None
+        try:
+            category_id, category_label = await _lookup_category(
+                db, tenant_id, raw.get("category") or ""
+            )
+            brand_id = await _lookup_brand(db, tenant_id, raw.get("brand") or "")
+            unit_id = await _lookup_unit(db, tenant_id, raw.get("unit") or "")
+        except ValueError as exc:
+            errors.append(str(exc))
+
+        if sku and await _sku_exists(db, tenant_id, sku):
+            errors.append("sku already exists")
+        if barcode and await _barcode_exists(db, tenant_id, barcode):
+            errors.append("barcode already exists")
+
+        ok = not errors
+        report_rows.append(
+            {
+                "line": idx,
+                "sku": sku,
+                "name": name,
+                "ok": ok,
+                "errors": errors,
+            }
+        )
+        if ok:
+            prepared.append(
+                {
+                    "name": name,
+                    "sku": sku,
+                    "barcode": barcode,
+                    "description": description,
+                    "category": category_label,
+                    "category_id": category_id,
+                    "brand_id": brand_id,
+                    "unit_id": unit_id,
+                    "cost_price": cost_price,
+                    "selling_price": selling_price,
+                    "weight": weight,
+                    "length": length,
+                    "width": width,
+                    "height": height,
+                    "stock_qty": stock_qty,
+                    "reorder_level": reorder_level,
+                    "tax_exempt": _truthy(raw.get("tax_exempt")),
+                    "tax_supply_class": normalize_supply_class(
+                        raw.get("tax_supply_class"),
+                        tax_exempt=_truthy(raw.get("tax_exempt")),
+                    ),
+                    "tracks_batches": _truthy(raw.get("tracks_batches")),
+                }
+            )
+
+    error_count = sum(1 for r in report_rows if not r["ok"])
+    return {
+        "total_rows": len(report_rows),
+        "valid_rows": len(prepared),
+        "error_rows": error_count,
+        "can_commit": error_count == 0 and len(prepared) > 0,
+        "rows": report_rows,
+        "_prepared": prepared,
+    }
+
+
+async def commit_import(
     db: AsyncSession,
     *,
     tenant_id: str,
     user_id: str,
-    content: str,
-    dry_run: bool = True,
-    company_id: str | None = None,
-) -> dict[str, Any]:
-    rows = parse_product_csv(content)
-    cats, brands, units = await _lookup_code_maps(db, tenant_id=tenant_id, company_id=company_id)
-
-    sku_q = select(m.Product.sku).where(m.Product.tenant_id == tenant_id)
-    barcode_q = select(m.Product.barcode).where(
-        m.Product.tenant_id == tenant_id,
-        m.Product.barcode.is_not(None),
-    )
-    variant_barcode_q = select(m.ProductVariant.barcode).where(
-        m.ProductVariant.tenant_id == tenant_id,
-        m.ProductVariant.barcode.is_not(None),
-    )
-    if company_id:
-        sku_q = sku_q.where(m.Product.company_id == company_id)
-        barcode_q = barcode_q.where(m.Product.company_id == company_id)
-        variant_barcode_q = variant_barcode_q.where(m.ProductVariant.company_id == company_id)
-    existing_skus = set((await db.execute(sku_q)).scalars().all())
-    existing_barcodes = {b for b in (await db.execute(barcode_q)).scalars().all() if b}
-    existing_barcodes.update(
-        {b for b in (await db.execute(variant_barcode_q)).scalars().all() if b}
-    )
-
-    seen_skus: set[str] = set()
-    seen_barcodes: set[str] = set()
-    errors: list[dict[str, Any]] = []
-    valid_rows: list[dict[str, Any]] = []
-
-    for idx, row in enumerate(rows, start=2):  # header is row 1
-        row_errors: list[str] = []
-        name = row["name"].strip()
-        sku = row["sku"].strip()
-        if not name:
-            row_errors.append("name is required")
-        if not sku:
-            row_errors.append("sku is required")
-        elif sku in existing_skus or sku in seen_skus:
-            row_errors.append("sku already exists")
-        barcode = None
-        if row["barcode"]:
-            try:
-                barcode = barcode_svc.validate_barcode(row["barcode"])
-            except HTTPException as exc:
-                row_errors.append(str(exc.detail))
-            else:
-                if barcode in existing_barcodes or barcode in seen_barcodes:
-                    row_errors.append("barcode already in use")
-
-        category_id = None
-        category_label = "General"
-        if row["category_code"]:
-            cat = cats.get(row["category_code"].upper())
-            if not cat or not cat.is_active:
-                row_errors.append(f"unknown category_code {row['category_code']}")
-            else:
-                category_id = cat.id
-                category_label = cat.name
-
-        brand_id = None
-        if row["brand_code"]:
-            brand = brands.get(row["brand_code"].upper())
-            if not brand or not brand.is_active:
-                row_errors.append(f"unknown brand_code {row['brand_code']}")
-            else:
-                brand_id = brand.id
-
-        unit_id = None
-        if row["unit_code"]:
-            unit = units.get(row["unit_code"].upper())
-            if not unit or not unit.is_active:
-                row_errors.append(f"unknown unit_code {row['unit_code']}")
-            else:
-                unit_id = unit.id
-
-        try:
-            cost_price = _parse_float(row["cost_price"])
-            selling_price = _parse_float(row["selling_price"])
-            reorder_level = _parse_float(row["reorder_level"])
-            stock_qty = _parse_float(row["stock_qty"])
-            tracks_batches = _parse_bool(row["tracks_batches"])
-        except ValueError as exc:
-            row_errors.append(f"numeric/boolean parse error: {exc}")
-            cost_price = selling_price = reorder_level = stock_qty = 0.0
-            tracks_batches = False
-
-        if row_errors:
-            errors.append({"row": idx, "sku": sku or None, "errors": row_errors})
-            continue
-
-        seen_skus.add(sku)
-        if barcode:
-            seen_barcodes.add(barcode)
-        valid_rows.append(
-            {
-                "name": name,
-                "sku": sku,
-                "barcode": barcode,
-                "category": category_label,
-                "category_id": category_id,
-                "brand_id": brand_id,
-                "unit_id": unit_id,
-                "cost_price": cost_price,
-                "selling_price": selling_price,
-                "reorder_level": reorder_level,
-                "stock_qty": stock_qty,
-                "tracks_batches": tracks_batches,
-            }
-        )
-
+    prepared: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
     created: list[dict[str, Any]] = []
-    if not dry_run and valid_rows:
-        for data in valid_rows:
-            opening = float(data.pop("stock_qty") or 0)
-            product = m.Product(
-                tenant_id=tenant_id,
-                company_id=company_id,
-                stock_qty=0,
-                is_active=True,
-                **data,
-            )
-            db.add(product)
-            await db.flush()
-            if opening > 0:
-                await apply_stock_change(
-                    db,
-                    tenant_id=tenant_id,
-                    product_id=product.id,
-                    quantity_delta=opening,
-                    movement_type="opening_stock",
-                    user_id=user_id,
-                    reference_type="product_import",
-                    reference_id=product.id,
-                    notes="Opening stock from CSV import",
-                )
-            created.append(catalog_meta_svc.serialize_product(product) | {"imported_stock_qty": opening})
+    for data in prepared:
+        stock_qty = money_json(data.get("stock_qty") or 0)
+        product = m.Product(
+            tenant_id=tenant_id,
+            name=data["name"],
+            sku=data["sku"],
+            barcode=data.get("barcode"),
+            description=data.get("description"),
+            category=data.get("category") or "General",
+            category_id=data.get("category_id"),
+            brand_id=data.get("brand_id"),
+            unit_id=data.get("unit_id"),
+            cost_price=money_json(data.get("cost_price") or 0),
+            selling_price=money_json(data.get("selling_price") or 0),
+            weight=None if data.get("weight") is None else money_json(data.get("weight")),
+            length=None if data.get("length") is None else money_json(data.get("length")),
+            width=None if data.get("width") is None else money_json(data.get("width")),
+            height=None if data.get("height") is None else money_json(data.get("height")),
+            stock_qty=0,
+            reorder_level=money_json(data.get("reorder_level") or 0),
+            tax_exempt=bool(data.get("tax_supply_class") == "exempt" or data.get("tax_exempt")),
+            tax_supply_class=data.get("tax_supply_class") or "standard",
+            tracks_batches=bool(data.get("tracks_batches")),
+        )
+        db.add(product)
         await db.flush()
-
-    return {
-        "dry_run": dry_run,
-        "total_rows": len(rows),
-        "valid_rows": len(valid_rows),
-        "error_rows": len(errors),
-        "errors": errors[:100],
-        "created": created if not dry_run else [],
-        "preview": [
-            {"sku": r["sku"], "name": r["name"], "barcode": r["barcode"], "stock_qty": r["stock_qty"]}
-            for r in valid_rows[:20]
-        ]
-        if dry_run
-        else [],
-    }
+        if stock_qty > 0:
+            product = await apply_stock_change(
+                db,
+                tenant_id=tenant_id,
+                product_id=product.id,
+                quantity_delta=stock_qty,
+                movement_type="opening_stock",
+                user_id=user_id,
+                reference_type="product_import",
+                reference_id=product.id,
+                notes="Opening stock from CSV import",
+            )
+        else:
+            await db.refresh(product)
+        created.append(catalog_meta_svc.serialize_product(product))
+    return created

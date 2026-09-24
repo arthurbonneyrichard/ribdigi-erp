@@ -3,19 +3,23 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api import api
-from app.config import settings
 from app.audit_middleware import AuditMutationMiddleware
+from app.config import settings
 from app.db import SessionLocal
+from app.http_errors import register_exception_handlers
 from app.middleware import MetricsMiddleware, RateLimitMiddleware, SecurityHeadersMiddleware
-from app.platform_api import router as platform_api
 from app.request_logging import RequestLoggingMiddleware
-from app.security_runtime import is_production, openapi_enabled
 import logging
 
 is_prod = is_production()
 _docs = openapi_enabled()
 
 # Stage 18 L1 — apply LOG_LEVEL for structured request logger (and root if unset).
+_level = getattr(logging, str(settings.LOG_LEVEL or "INFO").upper(), logging.INFO)
+logging.getLogger("ribdigi.request").setLevel(_level)
+if not logging.getLogger().handlers:
+    logging.basicConfig(level=_level)
+
 _level = getattr(logging, str(settings.LOG_LEVEL or "INFO").upper(), logging.INFO)
 logging.getLogger("ribdigi.request").setLevel(_level)
 if not logging.getLogger().handlers:
@@ -57,6 +61,8 @@ cors_kwargs = {
         "X-RateLimit-Backend",
         "Retry-After",
         "X-Request-ID",
+        "Content-Disposition",
+        "Content-Type",
     ],
     "max_age": 600,
 }
@@ -65,9 +71,24 @@ app.add_middleware(CORSMiddleware, **cors_kwargs)
 app.add_middleware(RequestLoggingMiddleware)
 
 app.include_router(api)
-app.include_router(platform_api)
+register_exception_handlers(app)
 # Used by AuditMutationMiddleware (overridable in tests via app.state.session_factory).
 app.state.session_factory = SessionLocal
+
+
+@app.on_event("startup")
+async def _align_hybrid_schema_on_startup() -> None:
+    if settings.APP_ENV.lower() != "production":
+        return
+    if "sqlite" in (settings.DATABASE_URL or "").lower():
+        return
+    from app.db import engine
+    from app.schema_align import align_async_engine
+
+    try:
+        await align_async_engine(engine)
+    except Exception:
+        logging.getLogger("ribdigi.schema_align").exception("startup schema align failed")
 
 
 @app.get("/")

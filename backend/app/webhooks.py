@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app import totp as totp_svc
+from app.honesty import optional_honest_narrative
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -28,9 +29,11 @@ VALID_EVENTS: frozenset[str] = frozenset(
         "sale.paid",
         "stock.low",
         "stock.in",
+        "stock.out",
         "purchase.order.created",
         "purchase.grn.received",
         "customer.created",
+        "supplier.created",
         "expense.approved",
         "user.login",
         "tenant.suspended",
@@ -71,6 +74,7 @@ def decrypt_webhook_secret(token: str) -> str:
 
 
 def validate_url(url: str) -> str:
+    # Defense in depth: WebhookCreate/Update WebhookUrlValue → 422 on blank/non-http(s).
     cleaned = (url or "").strip()
     parsed = urlparse(cleaned)
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
@@ -82,6 +86,7 @@ def validate_url(url: str) -> str:
 
 
 def normalize_events(events: list | None) -> list[str]:
+    # Defense in depth: WebhookCreate/Update.events Literals reject blank/unknown with 422.
     if not events:
         raise HTTPException(status_code=400, detail="events must be a non-empty list")
     if not isinstance(events, list):
@@ -159,29 +164,67 @@ def serialize_delivery(row: m.WebhookDelivery) -> dict[str, Any]:
         "next_retry_at": row.next_retry_at,
         "created_at": row.created_at,
         "delivered_at": row.delivered_at,
+        "can_retry": row.status in {STATUS_PENDING_RETRY, STATUS_FAILED},
     }
 
 
 async def list_deliveries(
     db: AsyncSession,
     tenant_id: str,
+    webhook_id: str,
     *,
-    webhook_id: str | None = None,
     status: str | None = None,
-    limit: int = 200,
+    limit: int = 50,
 ) -> list[m.WebhookDelivery]:
-    """Stage 144 W1 — tenant webhook delivery attempt log (payload excluded from serialize)."""
+    """Recent delivery attempts for one webhook endpoint (Integrations UI)."""
+    await get_endpoint(db, tenant_id, webhook_id)
+    lim = max(1, min(int(limit or 50), 200))
     stmt = (
         select(m.WebhookDelivery)
-        .where(m.WebhookDelivery.tenant_id == tenant_id)
+        .where(
+            m.WebhookDelivery.tenant_id == tenant_id,
+            m.WebhookDelivery.webhook_id == webhook_id,
+        )
         .order_by(m.WebhookDelivery.created_at.desc())
-        .limit(min(max(limit, 1), 500))
+        .limit(lim)
     )
-    if webhook_id:
-        stmt = stmt.where(m.WebhookDelivery.webhook_id == webhook_id.strip())
-    if status:
-        stmt = stmt.where(m.WebhookDelivery.status == status.strip().lower())
-    return list((await db.execute(stmt)).scalars().all())
+    if status is not None:
+        # Schema WebhookDeliveryStatusFilterValue rejects blank/invalid → 422;
+        # keep allow-list defense-in-depth (no silent empty filter / blank→all).
+        wanted = (status or "").strip().lower()
+        allowed = {STATUS_PENDING, STATUS_PENDING_RETRY, STATUS_DELIVERED, STATUS_FAILED}
+        if not wanted:
+            pass
+        elif wanted not in allowed:
+            raise HTTPException(
+                status_code=422,
+                detail="status must be pending, pending_retry, delivered, or failed",
+            )
+        else:
+            stmt = stmt.where(m.WebhookDelivery.status == wanted)
+    rows = (await db.execute(stmt)).scalars().all()
+    return list(rows)
+
+
+async def get_delivery(
+    db: AsyncSession,
+    tenant_id: str,
+    webhook_id: str,
+    delivery_id: str,
+) -> m.WebhookDelivery:
+    await get_endpoint(db, tenant_id, webhook_id)
+    row = (
+        await db.execute(
+            select(m.WebhookDelivery).where(
+                m.WebhookDelivery.id == delivery_id,
+                m.WebhookDelivery.tenant_id == tenant_id,
+                m.WebhookDelivery.webhook_id == webhook_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not row:
+        raise HTTPException(status_code=404, detail="Webhook delivery not found")
+    return row
 
 
 async def list_endpoints(
@@ -230,7 +273,13 @@ async def create_endpoint(
 ) -> tuple[m.WebhookEndpoint, str]:
     cleaned_url = validate_url(url)
     event_list = normalize_events(events)
-    raw_secret = (secret or "").strip() or generate_secret()
+    # OpenAPI WebhookSecretValue → 422; omit/`null`/blank → auto-generate; garbage → 400.
+    cleaned_secret = optional_honest_narrative(
+        secret, label="webhook signing secret", max_length=128
+    )
+    if cleaned_secret and " " in cleaned_secret:
+        raise HTTPException(status_code=400, detail="webhook signing secret must be a plain narrative")
+    raw_secret = cleaned_secret or generate_secret()
     if not raw_secret.startswith("whsec_"):
         # Allow custom secrets but normalize empty; non-whsec custom still ok if long enough
         if len(raw_secret) < 16:
@@ -240,7 +289,7 @@ async def create_endpoint(
         url=cleaned_url,
         events=event_list,
         secret_enc=encrypt_webhook_secret(raw_secret),
-        description=(description or "").strip() or None,
+        description=optional_honest_narrative(description, label="webhook description"),
         is_active=bool(is_active),
         created_by=user_id,
     )
@@ -267,7 +316,9 @@ async def update_endpoint(
     if events is not None:
         row.events = normalize_events(events)
     if description is not None:
-        row.description = description.strip() or None
+        row.description = optional_honest_narrative(
+            description, label="webhook description"
+        )
     if is_active is not None:
         row.is_active = bool(is_active)
     if rotate_secret:
@@ -395,8 +446,16 @@ async def retry_delivery(
     delivery: m.WebhookDelivery,
     *,
     transport: httpx.AsyncBaseTransport | None = None,
+    force: bool = False,
 ) -> m.WebhookDelivery:
-    """Re-attempt a pending_retry delivery with a freshly signed payload."""
+    """Re-attempt a pending_retry (or failed when force=True) delivery with a freshly signed payload."""
+    if delivery.status == STATUS_DELIVERED and not force:
+        raise HTTPException(status_code=400, detail="Delivery already succeeded")
+    if delivery.status not in {STATUS_PENDING_RETRY, STATUS_FAILED} and not force:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Delivery status {delivery.status} cannot be retried",
+        )
     endpoint = await db.get(m.WebhookEndpoint, delivery.webhook_id)
     if not endpoint or endpoint.tenant_id != delivery.tenant_id:
         delivery.status = STATUS_FAILED

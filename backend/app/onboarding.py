@@ -16,7 +16,7 @@ STEP_DEFS: list[dict[str, str]] = [
     {
         "id": "setup_company",
         "title": "Setup company profile",
-        "description": "Add phone, address, legal name, or company logo",
+        "description": "Add phone, address, website, email, or company logo",
         "href": "/company",
     },
     {
@@ -62,9 +62,9 @@ async def _auto_complete(db: AsyncSession, tenant_id: str, tenant: m.Tenant) -> 
     company_done = bool(
         (tenant.logo_url or "").strip()
         or (tenant.phone or "").strip()
-        or (tenant.legal_name or "").strip()
         or (tenant.address or "").strip()
         or (tenant.email or "").strip()
+        or (tenant.website or "").strip()
     )
 
     product_count = int(
@@ -177,8 +177,10 @@ def _save_state(tenant: m.Tenant, state: dict) -> None:
 
 
 async def skip_step(db: AsyncSession, tenant_id: str, step_id: str) -> dict[str, Any]:
+    # Schema OnboardingStepIdValue rejects blank/unknown → 422; keep allow-list
+    # defense-in-depth if Literal and VALID_STEP_IDS drift.
     if step_id not in VALID_STEP_IDS:
-        raise HTTPException(status_code=400, detail=f"Unknown step: {step_id}")
+        raise HTTPException(status_code=422, detail=f"Unknown step: {step_id}")
     tenant = await db.get(m.Tenant, tenant_id)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
@@ -192,7 +194,7 @@ async def skip_step(db: AsyncSession, tenant_id: str, step_id: str) -> dict[str,
 
 async def unskip_step(db: AsyncSession, tenant_id: str, step_id: str) -> dict[str, Any]:
     if step_id not in VALID_STEP_IDS:
-        raise HTTPException(status_code=400, detail=f"Unknown step: {step_id}")
+        raise HTTPException(status_code=422, detail=f"Unknown step: {step_id}")
     tenant = await db.get(m.Tenant, tenant_id)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")

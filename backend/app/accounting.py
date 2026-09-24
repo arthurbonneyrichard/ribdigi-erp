@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, time
 
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app import schema_compat
+from app.doc_numbers import next_journal_entry_number
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
 DEFAULT_ACCOUNTS = [
     ("1000", "Cash", "asset", True, False),
@@ -20,8 +23,7 @@ DEFAULT_ACCOUNTS = [
     ("2000", "Accounts Payable", "liability", False, False),
     ("2015", "Cheques Payable", "liability", False, False),
     ("2100", "Tax Payable", "liability", False, False),
-    ("3000", "Owner Equity", "equity", False, False),
-    ("3900", "Opening Balances Equity", "equity", False, False),
+    ("3000", "Owner's Equity", "equity", False, False),
     ("4000", "Sales Revenue", "income", False, False),
     ("4100", "Sales Discounts", "expense", False, False),
     ("4200", "Purchase Discounts Taken", "income", False, False),
@@ -36,8 +38,8 @@ SYSTEM_ACCOUNT_CODES = frozenset(code for code, *_ in DEFAULT_ACCOUNTS)
 
 
 def lines_are_balanced(lines: list[dict], tolerance: float = 0.01) -> bool:
-    debit = sum(float(x.get("debit") or 0) for x in lines)
-    credit = sum(float(x.get("credit") or 0) for x in lines)
+    debit = sum(money_json(x.get("debit") or 0) for x in lines)
+    credit = sum(money_json(x.get("credit") or 0) for x in lines)
     return abs(debit - credit) <= tolerance
 
 
@@ -147,63 +149,65 @@ async def resolve_settlement_gl(
     return liquid_gl_for_payment_method(payment_method)
 
 
-async def get_account_by_code(
-    db: AsyncSession, tenant_id: str, code: str, *, company_id: str | None = None
-) -> m.Account:
-    q = select(m.Account).where(m.Account.tenant_id == tenant_id, m.Account.code == code)
-    if company_id:
-        account = (
-            await db.execute(q.where(m.Account.company_id == company_id))
-        ).scalar_one_or_none()
-        if account:
-            return account
-        # Legacy / pre-scope rows: allow null company_id accounts for the same code.
-        account = (
-            await db.execute(q.where(m.Account.company_id.is_(None)))
-        ).scalar_one_or_none()
-        if account:
-            return account
-        raise HTTPException(status_code=400, detail=f"Account code {code} not found for tenant")
-    account = (await db.execute(q.limit(1))).scalar_one_or_none()
+def require_account_code(value: str | None) -> str:
+    """OpenAPI AccountCodeValue → 422; service defense-in-depth → 400.
+
+    Used by journal lines + COA opening balances that resolve by ``account_code``
+    (was strip-then-404/400 “not found” for malformed codes).
+    """
+    from app.schemas import validate_account_code_value
+
+    try:
+        return validate_account_code_value((value or "").strip())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+async def get_account_by_code(db: AsyncSession, tenant_id: str, code: str) -> m.Account:
+    # OpenAPI AccountCodeValue → 422; service defense-in-depth → 400.
+    code = require_account_code(code)
+    account = (
+        await db.execute(
+            select(m.Account).where(m.Account.tenant_id == tenant_id, m.Account.code == code)
+        )
+    ).scalar_one_or_none()
     if not account:
         raise HTTPException(status_code=400, detail=f"Account code {code} not found for tenant")
     return account
 
 
-async def ensure_default_accounts(
-    db: AsyncSession, tenant_id: str, company_id: str | None = None
-) -> None:
-    q = select(m.Account).where(m.Account.tenant_id == tenant_id)
-    if company_id:
-        q = q.where(m.Account.company_id == company_id)
-    existing = {
-        a.code: a
-        for a in (await db.execute(q)).scalars().all()
-    }
+def assert_account_active(account: m.Account) -> None:
+    """Block new postings/assignments against soft-deactivated COA rows (BR-10.1)."""
+    if getattr(account, "is_active", True) is False:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Account {account.code} is inactive",
+        )
+
+
+async def ensure_default_accounts(db: AsyncSession, tenant_id: str) -> None:
+    existing_codes = await schema_compat.existing_codes(db, "accounts", tenant_id)
     for code, name, account_type, is_cash, is_bank in DEFAULT_ACCOUNTS:
-        if code not in existing:
-            db.add(
-                m.Account(
-                    tenant_id=tenant_id,
-                    company_id=company_id,
-                    code=code,
-                    name=name,
-                    account_type=account_type,
-                    balance=0,
-                    is_cash_account=is_cash,
-                    is_bank_account=is_bank,
-                    is_system=True,
-                    is_active=True,
-                )
-            )
-        else:
-            row = existing[code]
-            row.is_system = True
-            # Keep flags aligned for seeded liquid accounts without clobbering custom flags on others
-            if code == "1000":
-                row.is_cash_account = True
-            if code == "1010":
-                row.is_bank_account = True
+        if code in existing_codes:
+            continue
+        await schema_compat.insert_matching_row(
+            db,
+            "accounts",
+            {
+                "tenant_id": tenant_id,
+                "code": code,
+                "name": name,
+                "account_type": account_type,
+                "balance": 0,
+                "opening_balance": 0,
+                "is_cash_account": is_cash,
+                "is_bank_account": is_bank,
+                "is_system": True,
+                "is_active": True,
+                "parent_id": None,
+                "company_id": None,
+            },
+        )
     await db.flush()
 
 
@@ -836,197 +840,127 @@ def _signed_balance_delta(account_type: str, debit: float, credit: float) -> flo
     return credit - debit
 
 
-def _parse_fiscal_mm_dd(fiscal_year_start: str) -> tuple[int, int]:
-    raw = (fiscal_year_start or "01-01").strip()
+def parse_fiscal_mmdd(value: str | None) -> tuple[int, int]:
+    raw = (value or "01-01").strip()
     parts = raw.split("-")
     if len(parts) != 2:
         raise HTTPException(status_code=400, detail="fiscal_year_start must be MM-DD")
     try:
-        month, day = int(parts[0]), int(parts[1])
+        mm, dd = int(parts[0]), int(parts[1])
     except ValueError as exc:
         raise HTTPException(status_code=400, detail="fiscal_year_start must be MM-DD") from exc
-    if month < 1 or month > 12 or day < 1 or day > 31:
+    if not (1 <= mm <= 12 and 1 <= dd <= 31):
         raise HTTPException(status_code=400, detail="fiscal_year_start must be MM-DD")
-    return month, day
+    return mm, dd
 
 
-def _safe_date(year: int, month: int, day: int) -> date:
-    """Clamp day for short months (e.g. Feb 29 → Feb 28 on non-leap years)."""
-    from calendar import monthrange
+def _safe_calendar_date(year: int, mm: int, dd: int) -> date:
+    while dd >= 1:
+        try:
+            return date(year, mm, dd)
+        except ValueError:
+            dd -= 1
+    raise HTTPException(status_code=400, detail="Invalid fiscal_year_start")
 
-    last = monthrange(year, month)[1]
-    return date(year, month, min(day, last))
 
-
-def fiscal_year_bounds(
-    fiscal_year_start: str,
-    *,
-    as_of: date | datetime | None = None,
-) -> tuple[date, date]:
-    """Return [start, end) for the open fiscal year containing as_of."""
-    if as_of is None:
-        as_of_d = datetime.utcnow().date()
-    elif isinstance(as_of, datetime):
-        as_of_d = as_of.date()
+def fiscal_period_bounds(
+    fiscal_year_start: str | None, *, as_of: date | None = None
+) -> tuple[datetime, datetime]:
+    """Return [start, end) datetime bounds for the fiscal period containing as_of."""
+    as_of = as_of or datetime.utcnow().date()
+    mm, dd = parse_fiscal_mmdd(fiscal_year_start)
+    start_this_year = _safe_calendar_date(as_of.year, mm, dd)
+    if as_of >= start_this_year:
+        start = start_this_year
+        end = _safe_calendar_date(as_of.year + 1, mm, dd)
     else:
-        as_of_d = as_of
-    month, day = _parse_fiscal_mm_dd(fiscal_year_start)
-    start = _safe_date(as_of_d.year, month, day)
-    if as_of_d < start:
-        start = _safe_date(as_of_d.year - 1, month, day)
-    end = _safe_date(start.year + 1, month, day)
-    return start, end
+        start = _safe_calendar_date(as_of.year - 1, mm, dd)
+        end = start_this_year
+    return datetime.combine(start, time.min), datetime.combine(end, time.min)
 
 
-def entry_in_open_fiscal_period(
-    entry_date: date | datetime,
-    fiscal_year_start: str,
+def in_current_fiscal_period(
+    entry_date: datetime | date,
+    fiscal_year_start: str | None,
     *,
-    as_of: date | datetime | None = None,
+    as_of: date | None = None,
 ) -> bool:
-    start, end = fiscal_year_bounds(fiscal_year_start, as_of=as_of)
-    ed = entry_date.date() if isinstance(entry_date, datetime) else entry_date
+    start, end = fiscal_period_bounds(fiscal_year_start, as_of=as_of)
+    if isinstance(entry_date, datetime):
+        ed = entry_date
+    else:
+        ed = datetime.combine(entry_date, time.min)
     return start <= ed < end
 
 
-def _closed_period_starts(tenant: m.Tenant) -> list[str]:
-    raw = getattr(tenant, "fiscal_closed_period_starts", None) or []
-    if not isinstance(raw, list):
-        return []
-    return [str(x) for x in raw]
+def as_calendar_date(value: datetime | date | None) -> date | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.date()
+    return value
 
 
-def fiscal_period_manually_closed(
-    tenant: m.Tenant,
-    entry_date: date | datetime,
-) -> bool:
-    """Stage 118 F1 — True when the FY containing entry_date was closed via the console."""
-    fys = tenant.fiscal_year_start or "01-01"
-    start, _end = fiscal_year_bounds(fys, as_of=entry_date)
-    return start.isoformat() in _closed_period_starts(tenant)
+def is_date_closed(entry_date: datetime | date, books_closed_through: date | datetime | None) -> bool:
+    """True when entry_date falls on or before the inclusive books-closed date."""
+    closed = as_calendar_date(books_closed_through)
+    if closed is None:
+        return False
+    ed = as_calendar_date(entry_date)
+    assert ed is not None
+    return ed <= closed
 
 
-def assert_fiscal_period_open_for_mutation(
-    tenant: m.Tenant,
-    entry_date: date | datetime,
+async def get_tenant_or_404(db: AsyncSession, tenant_id: str) -> m.Tenant:
+    tenant = (
+        await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id))
+    ).scalar_one_or_none()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    return tenant
+
+
+async def assert_books_open(
+    db: AsyncSession,
+    tenant_id: str,
+    entry_date: datetime | date,
+    *,
+    action: str = "post",
+    tenant: m.Tenant | None = None,
 ) -> None:
-    """Block post/unpost when calendar period is past OR current FY was manually closed."""
-    fys = tenant.fiscal_year_start or "01-01"
-    start, end = fiscal_year_bounds(fys)
-    if not entry_in_open_fiscal_period(entry_date, fys) or fiscal_period_manually_closed(
-        tenant, entry_date
-    ):
+    """Reject mutations dated on or before tenants.books_closed_through (BR-10.2)."""
+    row = tenant or await get_tenant_or_404(db, tenant_id)
+    if is_date_closed(entry_date, row.books_closed_through):
+        closed = as_calendar_date(row.books_closed_through)
         raise HTTPException(
-            status_code=409,
-            detail={
-                "code": "FISCAL_PERIOD_CLOSED",
-                "message": "Mutation is only allowed within an open fiscal period",
-                "open_period_start": start.isoformat(),
-                "open_period_end_exclusive": end.isoformat(),
-                "current_period_closed": start.isoformat() in _closed_period_starts(tenant),
-            },
+            status_code=400,
+            detail=(
+                f"Books are closed through {closed.isoformat()}; "
+                f"cannot {action} journal entries on or before that date"
+            ),
         )
 
 
-def serialize_fiscal_period_status(tenant: m.Tenant) -> dict:
-    fys = tenant.fiscal_year_start or "01-01"
-    start, end = fiscal_year_bounds(fys)
-    closed_starts = _closed_period_starts(tenant)
-    return {
-        "fiscal_year_start": fys,
-        "open_period_start": start.isoformat(),
-        "open_period_end_exclusive": end.isoformat(),
-        "current_period_closed": start.isoformat() in closed_starts,
-        "closed_period_starts": closed_starts,
-    }
+def is_manual_journal(entry: m.JournalEntry) -> bool:
+    st = (entry.source_type or "").strip().lower()
+    return st in {"", "manual"}
 
 
-async def close_current_fiscal_period(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    user_id: str | None,
-) -> dict:
-    """Stage 118 F1 — lock the calendar-open fiscal year for post/unpost mutations."""
-    tenant = (
-        await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id))
-    ).scalar_one_or_none()
-    if not tenant:
-        raise HTTPException(status_code=404, detail="Tenant not found")
-    fys = tenant.fiscal_year_start or "01-01"
-    start, end = fiscal_year_bounds(fys)
-    closed = list(_closed_period_starts(tenant))
-    key = start.isoformat()
-    if key not in closed:
-        closed.append(key)
-        tenant.fiscal_closed_period_starts = closed
-        from sqlalchemy.orm.attributes import flag_modified
-
-        flag_modified(tenant, "fiscal_closed_period_starts")
-        from app import audit as audit_svc
-
-        await audit_svc.record_event(
-            db,
-            tenant_id=tenant_id,
-            user_id=user_id,
-            module="accounting",
-            action="fiscal_period_close",
-            entity="tenant",
-            entity_id=tenant_id,
-            details={
-                "period_start": key,
-                "period_end_exclusive": end.isoformat(),
-            },
-        )
-    return serialize_fiscal_period_status(tenant)
+def journal_can_unpost(entry: m.JournalEntry, tenant: m.Tenant | None) -> bool:
+    if entry.status != "posted" or not is_manual_journal(entry):
+        return False
+    if tenant is None:
+        return True
+    if not in_current_fiscal_period(entry.entry_date, tenant.fiscal_year_start):
+        return False
+    if is_date_closed(entry.entry_date, tenant.books_closed_through):
+        return False
+    return True
 
 
-async def reopen_current_fiscal_period(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    user_id: str | None,
-) -> dict:
-    """Stage 118 F1 — reopen the calendar-open fiscal year (company admin)."""
-    tenant = (
-        await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id))
-    ).scalar_one_or_none()
-    if not tenant:
-        raise HTTPException(status_code=404, detail="Tenant not found")
-    fys = tenant.fiscal_year_start or "01-01"
-    start, end = fiscal_year_bounds(fys)
-    key = start.isoformat()
-    closed = [x for x in _closed_period_starts(tenant) if x != key]
-    tenant.fiscal_closed_period_starts = closed
-    from sqlalchemy.orm.attributes import flag_modified
-
-    flag_modified(tenant, "fiscal_closed_period_starts")
-    from app import audit as audit_svc
-
-    await audit_svc.record_event(
-        db,
-        tenant_id=tenant_id,
-        user_id=user_id,
-        module="accounting",
-        action="fiscal_period_reopen",
-        entity="tenant",
-        entity_id=tenant_id,
-        details={
-            "period_start": key,
-            "period_end_exclusive": end.isoformat(),
-        },
-    )
-    return serialize_fiscal_period_status(tenant)
-
-
-async def unpost_journal_entry(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    user_id: str | None,
-    entry_id: str,
+async def get_journal_entry(
+    db: AsyncSession, tenant_id: str, entry_id: str
 ) -> m.JournalEntry:
-    """Reverse a posted journal within the open fiscal period (BR-10.2)."""
     entry = (
         await db.execute(
             select(m.JournalEntry).where(
@@ -1037,21 +971,38 @@ async def unpost_journal_entry(
     ).scalar_one_or_none()
     if not entry:
         raise HTTPException(status_code=404, detail="Journal entry not found")
-    if (entry.status or "").lower() != "posted":
+    return entry
+
+
+async def unpost_journal_entry(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str | None,
+    entry_id: str,
+    reason: str | None = None,
+) -> m.JournalEntry:
+    """Reverse a posted manual journal within the current fiscal period (BR-10.2)."""
+    reason_s = require_honest_narrative(reason, label="unpost reason")
+
+    entry = await get_journal_entry(db, tenant_id, entry_id)
+    if entry.status != "posted":
+        raise HTTPException(status_code=400, detail="Only posted journal entries can be unposted")
+    if not is_manual_journal(entry):
         raise HTTPException(
-            status_code=409,
-            detail={
-                "code": "JOURNAL_NOT_POSTED",
-                "message": f"Only posted journals can be unposted (status={entry.status})",
-            },
+            status_code=400,
+            detail="Only manual journal entries can be unposted; reverse the source document instead",
         )
 
-    tenant = (
-        await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id))
-    ).scalar_one_or_none()
-    if not tenant:
-        raise HTTPException(status_code=404, detail="Tenant not found")
-    assert_fiscal_period_open_for_mutation(tenant, entry.entry_date)
+    tenant = await get_tenant_or_404(db, tenant_id)
+    if not in_current_fiscal_period(entry.entry_date, tenant.fiscal_year_start):
+        raise HTTPException(
+            status_code=400,
+            detail="Unpost is only allowed within the current fiscal period",
+        )
+    await assert_books_open(
+        db, tenant_id, entry.entry_date, action="unpost", tenant=tenant
+    )
 
     lines = (
         await db.execute(
@@ -1061,39 +1012,6 @@ async def unpost_journal_entry(
             )
         )
     ).scalars().all()
-    if not lines:
-        raise HTTPException(status_code=400, detail="Journal entry has no lines")
-
-    line_ids = [ln.id for ln in lines]
-    matched = (
-        await db.execute(
-            select(m.BankStatementLine.id)
-            .where(
-                m.BankStatementLine.tenant_id == tenant_id,
-                m.BankStatementLine.matched_journal_line_id.in_(line_ids),
-            )
-            .limit(1)
-        )
-    ).scalar_one_or_none()
-    clearing_link = (
-        await db.execute(
-            select(m.BankClearingBookLink.id)
-            .where(
-                m.BankClearingBookLink.tenant_id == tenant_id,
-                m.BankClearingBookLink.journal_line_id.in_(line_ids),
-            )
-            .limit(1)
-        )
-    ).scalar_one_or_none()
-    if matched or clearing_link:
-        raise HTTPException(
-            status_code=409,
-            detail={
-                "code": "JOURNAL_RECONCILED",
-                "message": "Cannot unpost a journal with bank-reconciled lines; unmatch first",
-            },
-        )
-
     for line in lines:
         account = (
             await db.execute(
@@ -1104,90 +1022,29 @@ async def unpost_journal_entry(
             )
         ).scalar_one_or_none()
         if not account:
-            raise HTTPException(status_code=404, detail="Account not found")
-        account.balance = float(account.balance or 0) - _signed_balance_delta(
-            account.account_type, float(line.debit or 0), float(line.credit or 0)
+            raise HTTPException(status_code=404, detail="Account not found for journal line")
+        account.balance = money_json(account.balance or 0) - _signed_balance_delta(
+            account.account_type, money_json(line.debit or 0), money_json(line.credit or 0)
         )
 
     entry.status = "unposted"
-
-    from app import audit as audit_svc
-
-    await audit_svc.record_event(
-        db,
-        tenant_id=tenant_id,
-        user_id=user_id,
-        action="journal_unposted",
-        entity="journal_entry",
-        entity_id=entry.id,
-        details={
-            "entry_number": entry.entry_number,
-            "total_debit": float(entry.total_debit or 0),
-            "source_type": entry.source_type,
-            "source_id": entry.source_id,
-        },
-        module="accounting",
+    entry.description = ((entry.description or "") + f"\nUnpost: {reason_s}").strip()
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="journal_unposted",
+            entity="journal_entry",
+            entity_id=entry.id,
+            details={
+                "entry_number": entry.entry_number,
+                "total_debit": money_json(entry.total_debit or 0),
+                "total_credit": money_json(entry.total_credit or 0),
+                "reason": reason_s,
+            },
+        )
     )
     return entry
-
-
-async def resolve_journal_store_id(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    store_id: str | None,
-    company_id: str | None = None,
-) -> str | None:
-    """Validate optional store dimension (tenant/company-scoped 404)."""
-    if not store_id:
-        return None
-    from app.stores import get_store
-
-    store = await get_store(db, tenant_id, store_id, company_id=company_id)
-    return store.id
-
-
-async def resolve_journal_dimension_ids(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    store_id: str | None = None,
-    branch_id: str | None = None,
-    company_id: str | None = None,
-) -> tuple[str | None, str | None, list[str] | None]:
-    """Resolve optional store/branch journal filters.
-
-    Returns ``(store_id, branch_id, store_ids)`` where ``store_ids`` is:
-    - ``None`` — no dimension filter
-    - ``list`` — filter journals to those store ids (may be empty)
-    """
-    from app.org_units import get_branch
-    from app.stores import get_store
-
-    resolved_branch: str | None = None
-    resolved_store: str | None = None
-    if branch_id:
-        branch = await get_branch(db, tenant_id, branch_id, company_id=company_id)
-        resolved_branch = branch.id
-    if store_id:
-        store = await get_store(db, tenant_id, store_id, company_id=company_id)
-        resolved_store = store.id
-        if resolved_branch and store.branch_id != resolved_branch:
-            raise HTTPException(
-                status_code=400,
-                detail="STORE_BRANCH_MISMATCH: Store does not belong to the selected branch",
-            )
-        return resolved_store, resolved_branch, [resolved_store]
-    if resolved_branch:
-        store_q = select(m.Store).where(
-            m.Store.tenant_id == tenant_id,
-            m.Store.branch_id == resolved_branch,
-        )
-        if company_id:
-            store_q = store_q.where(m.Store.company_id == company_id)
-        stores = (await db.execute(store_q)).scalars().all()
-        return None, resolved_branch, [s.id for s in stores]
-    return None, None, None
 
 
 async def post_journal_entry(
@@ -1200,16 +1057,18 @@ async def post_journal_entry(
     reference: str | None = None,
     source_type: str | None = None,
     source_id: str | None = None,
-    store_id: str | None = None,
-    company_id: str | None = None,
+    entry_date: datetime | date | None = None,
 ) -> m.JournalEntry:
     if len(lines) < 2:
         raise HTTPException(status_code=400, detail="Journal entry requires at least two lines")
 
+    when = entry_date or datetime.utcnow()
+    await assert_books_open(db, tenant_id, when, action="post")
+
     normalized = []
     for line in lines:
-        debit = float(line.get("debit") or 0)
-        credit = float(line.get("credit") or 0)
+        debit = money_json(line.get("debit") or 0)
+        credit = money_json(line.get("credit") or 0)
         if debit < 0 or credit < 0:
             raise HTTPException(status_code=400, detail="Debit/credit cannot be negative")
         if debit == 0 and credit == 0:
@@ -1223,13 +1082,18 @@ async def post_journal_entry(
     if not lines_are_balanced(normalized):
         raise HTTPException(status_code=400, detail="Journal entry is not balanced")
 
-    tenant = (
-        await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id))
-    ).scalar_one_or_none()
-    if not tenant:
-        raise HTTPException(status_code=404, detail="Tenant not found")
-    # Stage 118 F1 — block posting into a manually closed current fiscal period
-    assert_fiscal_period_open_for_mutation(tenant, datetime.utcnow())
+    # OpenAPI JournalDescriptionValue → 422; service defense-in-depth → 400.
+    description = require_honest_narrative(
+        description, label="journal description", min_length=2
+    )
+    for line in normalized:
+        line["description"] = optional_honest_narrative(
+            line.get("description"), label="journal line description"
+        )
+    # OpenAPI JournalReferenceValue → 422; service defense-in-depth → 400.
+    reference = optional_honest_narrative(
+        reference, label="journal reference", max_length=100
+    )
 
     total_debit = sum(x["debit"] for x in normalized)
     total_credit = sum(x["credit"] for x in normalized)
@@ -1237,10 +1101,15 @@ async def post_journal_entry(
         db, tenant_id=tenant_id, store_id=store_id, company_id=company_id
     )
 
+    if isinstance(when, date) and not isinstance(when, datetime):
+        when_dt = datetime.combine(when, time.min)
+    else:
+        when_dt = when  # type: ignore[assignment]
+
     entry = m.JournalEntry(
         tenant_id=tenant_id,
-        company_id=company_id,
-        entry_number=f"JE-{datetime.utcnow():%Y%m%d%H%M%S%f}",
+        entry_number=await next_journal_entry_number(db, tenant_id),
+        entry_date=when_dt,
         reference=reference,
         description=description,
         source_type=source_type,
@@ -1278,6 +1147,7 @@ async def post_journal_entry(
             )
         if not account:
             raise HTTPException(status_code=404, detail="Account not found")
+        assert_account_active(account)
 
         db.add(
             m.JournalEntryLine(
@@ -1290,25 +1160,24 @@ async def post_journal_entry(
                 description=line.get("description"),
             )
         )
-        account.balance = float(account.balance or 0) + _signed_balance_delta(
+        account.balance = money_json(account.balance or 0) + _signed_balance_delta(
             account.account_type, line["debit"], line["credit"]
         )
 
-    from app import audit as audit_svc
-    await audit_svc.record_event(
-        db,
-        tenant_id=tenant_id,
-        user_id=user_id,
-        action="journal_posted",
-        entity="journal_entry",
-        entity_id=entry.id,
-        details={
-        "entry_number": entry.entry_number,
-        "total_debit": total_debit,
-        "source_type": source_type,
-        "source_id": source_id,
-        },
-        module='accounting',
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="journal_posted",
+            entity="journal_entry",
+            entity_id=entry.id,
+            details={
+                "entry_number": entry.entry_number,
+                "total_debit": money_json(total_debit),
+                "source_type": source_type,
+                "source_id": source_id,
+            },
+        )
     )
     return entry
 
@@ -1322,6 +1191,9 @@ async def serialize_journal(db: AsyncSession, entry: m.JournalEntry) -> dict:
             )
         )
     ).scalars().all()
+    tenant = (
+        await db.execute(select(m.Tenant).where(m.Tenant.id == entry.tenant_id))
+    ).scalar_one_or_none()
     return {
         "id": entry.id,
         "company_id": getattr(entry, "company_id", None),
@@ -1331,22 +1203,21 @@ async def serialize_journal(db: AsyncSession, entry: m.JournalEntry) -> dict:
         "description": entry.description,
         "source_type": entry.source_type,
         "source_id": entry.source_id,
-        "store_id": getattr(entry, "store_id", None),
-        "total_debit": float(entry.total_debit),
-        "total_credit": float(entry.total_credit),
+        "total_debit": money_json(entry.total_debit),
+        "total_credit": money_json(entry.total_credit),
         "status": entry.status,
         "attachment_url": entry.attachment_url,
         "has_attachment": bool(entry.attachment_url),
-        "created_by": entry.created_by,
+        "can_unpost": journal_can_unpost(entry, tenant),
         "created_at": entry.created_at,
-        "balanced": abs(float(entry.total_debit) - float(entry.total_credit)) < 0.01,
+        "balanced": abs(money_json(entry.total_debit) - money_json(entry.total_credit)) < 0.01,
         "lines": [
             {
                 "id": ln.id,
                 "company_id": getattr(ln, "company_id", None),
                 "account_id": ln.account_id,
-                "debit": float(ln.debit),
-                "credit": float(ln.credit),
+                "debit": money_json(ln.debit),
+                "credit": money_json(ln.credit),
                 "description": ln.description,
             }
             for ln in lines
@@ -1354,83 +1225,254 @@ async def serialize_journal(db: AsyncSession, entry: m.JournalEntry) -> dict:
     }
 
 
-async def unit_standard_cost(
+async def period_status(db: AsyncSession, tenant_id: str) -> dict:
+    """Fiscal year bounds + books-closed-through for Accounting UI (BR-10.2)."""
+    tenant = await get_tenant_or_404(db, tenant_id)
+    start, end = fiscal_period_bounds(tenant.fiscal_year_start)
+    closed = as_calendar_date(tenant.books_closed_through)
+    return {
+        "fiscal_year_start": tenant.fiscal_year_start or "01-01",
+        "current_fiscal_start": start.date().isoformat(),
+        "current_fiscal_end_exclusive": end.date().isoformat(),
+        "books_closed_through": closed.isoformat() if closed else None,
+        "books_are_closed": closed is not None,
+    }
+
+
+async def close_books(
     db: AsyncSession,
-    tenant_id: str,
     *,
-    product_id: str | None,
+    tenant_id: str,
+    user_id: str | None,
+    through_date: date,
+    reason: str | None = None,
+) -> dict:
+    """Advance tenants.books_closed_through (inclusive). Cannot close future dates."""
+    reason_s = require_honest_narrative(reason, label="close reason")
+    tenant = await get_tenant_or_404(db, tenant_id)
+    today = datetime.utcnow().date()
+    if through_date > today:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot close books through a future date",
+        )
+    current = as_calendar_date(tenant.books_closed_through)
+    if current is not None and through_date < current:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Books are already closed through {current.isoformat()}; "
+                "use reopen to move the closed date earlier"
+            ),
+        )
+    tenant.books_closed_through = through_date
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="period_closed",
+            entity="tenant",
+            entity_id=tenant_id,
+            details={
+                "books_closed_through": through_date.isoformat(),
+                "previous": current.isoformat() if current else None,
+                "reason": reason_s,
+            },
+        )
+    )
+    return await period_status(db, tenant_id)
+
+
+async def reopen_books(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str | None,
+    through_date: date | None,
+    reason: str | None = None,
+) -> dict:
+    """Move books_closed_through earlier, or clear when through_date is null."""
+    reason_s = require_honest_narrative(reason, label="reopen reason")
+    tenant = await get_tenant_or_404(db, tenant_id)
+    current = as_calendar_date(tenant.books_closed_through)
+    if current is None:
+        raise HTTPException(status_code=400, detail="Books are not closed")
+    if through_date is not None:
+        if through_date >= current:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Reopen through_date must be before current closed date "
+                    f"({current.isoformat()}), or omit to clear"
+                ),
+            )
+        if through_date > datetime.utcnow().date():
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot set books_closed_through to a future date",
+            )
+    previous = current.isoformat()
+    tenant.books_closed_through = through_date
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="period_reopened",
+            entity="tenant",
+            entity_id=tenant_id,
+            details={
+                "books_closed_through": through_date.isoformat() if through_date else None,
+                "previous": previous,
+                "reason": reason_s,
+            },
+        )
+    )
+    return await period_status(db, tenant_id)
+
+
+async def unit_cost_for_line(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    product_id: str,
     variant_id: str | None = None,
 ) -> float:
-    """Standard cost from variant (if set) else product; tenant-scoped."""
-    if not product_id:
-        return 0.0
+    """Standard unit cost: variant.cost_price if set, else product.cost_price."""
     if variant_id:
-        variant = await db.get(m.ProductVariant, variant_id)
-        if variant and variant.tenant_id == tenant_id:
-            cost = float(variant.cost_price or 0)
-            if cost > 0:
-                return cost
-    product = await db.get(m.Product, product_id)
-    if product and product.tenant_id == tenant_id:
-        return max(float(product.cost_price or 0), 0.0)
-    return 0.0
+        variant = (
+            await db.execute(
+                select(m.ProductVariant).where(
+                    m.ProductVariant.id == variant_id,
+                    m.ProductVariant.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if variant is not None:
+            v_cost = money_json(variant.cost_price or 0)
+            if v_cost > 0:
+                return v_cost
+    product = (
+        await db.execute(
+            select(m.Product).where(
+                m.Product.id == product_id,
+                m.Product.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not product:
+        return 0.0
+    return money_json(product.cost_price or 0)
 
 
-async def standard_cost_cogs_for_lines(
+async def stock_qty_for_cogs(
     db: AsyncSession,
+    *,
     tenant_id: str,
-    lines: list,
+    product_id: str,
+    quantity: float,
+    unit_id: str | None = None,
 ) -> float:
-    """Sum qty × standard cost for invoice/POS/return line dicts or ORM rows."""
+    """Convert line qty to stockkeeping units for COGS (matches stock_out)."""
+    from app.uom import to_stock_qty
+
+    product = (
+        await db.execute(
+            select(m.Product).where(
+                m.Product.id == product_id,
+                m.Product.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not product:
+        return money_json(quantity or 0)
+    qty_base, _, _ = await to_stock_qty(
+        db,
+        tenant_id=tenant_id,
+        quantity=money_json(quantity),
+        from_unit_id=unit_id,
+        product=product,
+    )
+    return money_json(qty_base)
+
+
+async def compute_standard_cogs(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    lines: list[dict],
+) -> float:
+    """Sum qty×standard cost for COGS lines.
+
+    Each line: product_id, quantity, optional unit_id / variant_id.
+    """
     total = 0.0
     for line in lines:
-        if isinstance(line, dict):
-            qty = float(line.get("quantity") or 0)
-            product_id = line.get("product_id")
-            variant_id = line.get("variant_id")
-        else:
-            qty = float(getattr(line, "quantity", 0) or 0)
-            product_id = getattr(line, "product_id", None)
-            variant_id = getattr(line, "variant_id", None)
-        if qty <= 0 or not product_id:
+        product_id = line.get("product_id")
+        if not product_id:
             continue
-        unit = await unit_standard_cost(
-            db, tenant_id, product_id=str(product_id), variant_id=str(variant_id) if variant_id else None
+        qty = money_json(line.get("quantity") or 0)
+        if qty <= 0:
+            continue
+        unit_id = line.get("unit_id")
+        try:
+            stock_qty = await stock_qty_for_cogs(
+                db,
+                tenant_id=tenant_id,
+                product_id=product_id,
+                quantity=qty,
+                unit_id=unit_id,
+            )
+        except HTTPException:
+            stock_qty = qty
+        cost = await unit_cost_for_line(
+            db,
+            tenant_id=tenant_id,
+            product_id=product_id,
+            variant_id=line.get("variant_id"),
         )
-        if unit > 0:
-            total += qty * unit
-    return round(total, 2)
+        total += stock_qty * cost
+    return money_json(round(total, 2))
 
 
-def cogs_inventory_journal_lines(cogs: float, *, reverse: bool = False) -> list[dict]:
-    """Dr COGS 5000 / Cr Inventory 1200 (sale), or reverse for restocked returns."""
-    amount = round(float(cogs or 0), 2)
-    if amount <= 0:
-        return []
+def append_cogs_lines(lines: list[dict], cogs: float, *, reverse: bool = False) -> None:
+    """Append Dr 5000 / Cr 1200 (or reverse) when cogs > 0."""
+    cogs = money_json(round(money_json(cogs or 0), 2))
+    if cogs <= 0:
+        return
     if reverse:
-        return [
+        lines.append(
             {
                 "account_code": "1200",
-                "debit": amount,
+                "debit": cogs,
                 "credit": 0,
-                "description": "Inventory restock",
-            },
+                "description": "Inventory restock (COGS reverse)",
+            }
+        )
+        lines.append(
             {
                 "account_code": "5000",
                 "debit": 0,
-                "credit": amount,
+                "credit": cogs,
                 "description": "COGS reverse",
-            },
-        ]
-    return [
-        {"account_code": "5000", "debit": amount, "credit": 0, "description": "COGS"},
-        {
-            "account_code": "1200",
-            "debit": 0,
-            "credit": amount,
-            "description": "Inventory out",
-        },
-    ]
+            }
+        )
+    else:
+        lines.append(
+            {
+                "account_code": "5000",
+                "debit": cogs,
+                "credit": 0,
+                "description": "Cost of goods sold",
+            }
+        )
+        lines.append(
+            {
+                "account_code": "1200",
+                "debit": 0,
+                "credit": cogs,
+                "description": "Inventory relief",
+            }
+        )
 
 
 async def post_sales_invoice_journal(
@@ -1442,11 +1484,14 @@ async def post_sales_invoice_journal(
 ) -> m.JournalEntry:
     await ensure_default_accounts(db, tenant_id)
     from app.fx import doc_rate, to_base
+    from app.sales import list_invoice_items
 
     rate = doc_rate(invoice)
-    revenue = to_base(float(invoice.subtotal) - float(invoice.discount_amount or 0), rate)
-    tax = to_base(float(invoice.tax_amount or 0), rate)
-    total = to_base(float(invoice.total_amount), rate)
+    revenue = to_base(
+        money_json(invoice.subtotal) - money_json(invoice.discount_amount or 0), rate
+    )
+    tax = to_base(money_json(invoice.tax_amount or 0), rate)
+    total = to_base(money_json(invoice.total_amount), rate)
     lines = [
         {"account_code": "1100", "debit": total, "credit": 0, "description": "AR"},
         {"account_code": "4000", "debit": 0, "credit": max(revenue, 0), "description": "Sales"},
@@ -1456,16 +1501,22 @@ async def post_sales_invoice_journal(
     if revenue < 0:
         raise HTTPException(status_code=400, detail="Invoice revenue after discount cannot be negative")
 
-    items = (
-        await db.execute(
-            select(m.SalesInvoiceItem).where(
-                m.SalesInvoiceItem.tenant_id == tenant_id,
-                m.SalesInvoiceItem.sales_invoice_id == invoice.id,
-            )
-        )
-    ).scalars().all()
-    cogs = await standard_cost_cogs_for_lines(db, tenant_id, list(items))
-    lines.extend(cogs_inventory_journal_lines(cogs))
+    items = await list_invoice_items(db, tenant_id, invoice.id)
+    cogs = await compute_standard_cogs(
+        db,
+        tenant_id=tenant_id,
+        lines=[
+            {
+                "product_id": it.product_id,
+                "quantity": money_json(it.quantity),
+                "unit_id": it.unit_id,
+                "variant_id": it.variant_id,
+            }
+            for it in items
+        ],
+    )
+    # COGS is in base currency terms (cost_price is tenant base)
+    append_cogs_lines(lines, cogs, reverse=False)
 
     return await post_journal_entry(
         db,
@@ -1489,21 +1540,12 @@ async def post_sales_return_journal(
     invoice: m.SalesInvoice | None = None,
 ) -> m.JournalEntry:
     await ensure_default_accounts(db, tenant_id)
-    from app.fx import doc_rate, to_base
+    from app.sales_docs import list_return_items
 
-    if invoice is None:
-        invoice = (
-            await db.execute(
-                select(m.SalesInvoice).where(
-                    m.SalesInvoice.id == sales_return.sales_invoice_id,
-                    m.SalesInvoice.tenant_id == tenant_id,
-                )
-            )
-        ).scalar_one_or_none()
-    rate = doc_rate(invoice) if invoice is not None else 1.0
-    revenue = to_base(float(sales_return.subtotal or 0), rate)
-    tax = to_base(float(sales_return.tax_amount or 0), rate)
-    total = to_base(float(sales_return.total_amount), rate)
+    revenue = money_json(sales_return.subtotal or 0)
+    tax = money_json(sales_return.tax_amount or 0)
+    total = money_json(sales_return.total_amount)
+    cn = getattr(sales_return, "credit_note_number", None) or sales_return.return_number
     lines = [
         {"account_code": "4000", "debit": max(revenue, 0), "credit": 0, "description": "Sales return"},
         {"account_code": "1100", "debit": 0, "credit": total, "description": "AR credit"},
@@ -1511,31 +1553,77 @@ async def post_sales_return_journal(
     if tax > 0:
         lines.append({"account_code": "2100", "debit": tax, "credit": 0, "description": "Tax reverse"})
 
-    # Reverse COGS/Inventory only for restocked sellable lines (Stage 15 I1).
-    if getattr(sales_return, "restock", True):
-        items = (
-            await db.execute(
-                select(m.SalesReturnItem).where(
-                    m.SalesReturnItem.tenant_id == tenant_id,
-                    m.SalesReturnItem.sales_return_id == sales_return.id,
-                )
-            )
-        ).scalars().all()
-        restock_lines = [
-            it for it in items if (getattr(it, "condition", None) or "sellable") == "sellable"
-        ]
-        cogs = await standard_cost_cogs_for_lines(db, tenant_id, restock_lines)
-        lines.extend(cogs_inventory_journal_lines(cogs, reverse=True))
+    # Reverse COGS only for restocked sellable lines (matches stock_in path)
+    if sales_return.restock:
+        items = await list_return_items(db, tenant_id, sales_return.id)
+        cogs = await compute_standard_cogs(
+            db,
+            tenant_id=tenant_id,
+            lines=[
+                {
+                    "product_id": it.product_id,
+                    "quantity": money_json(it.quantity),
+                    "variant_id": it.variant_id,
+                }
+                for it in items
+                if (it.condition or "sellable") == "sellable"
+            ],
+        )
+        append_cogs_lines(lines, cogs, reverse=True)
 
     return await post_journal_entry(
         db,
         tenant_id=tenant_id,
         user_id=user_id,
-        description=f"Sales return {sales_return.return_number}",
-        reference=sales_return.credit_note_number or sales_return.return_number,
+        description=f"Sales return {sales_return.return_number} / {cn}",
+        reference=cn,
         source_type="sales_return",
         source_id=sales_return.id,
         store_id=getattr(invoice, "store_id", None) if invoice is not None else None,
+        lines=lines,
+    )
+
+
+async def post_sales_return_refund_journal(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    sales_return: m.SalesReturn,
+    amount: float,
+    payment_method: str = "cash",
+    liquid_account_id: str | None = None,
+) -> m.JournalEntry:
+    """Pay out customer credit from a return: Dr AR, Cr cash/bank."""
+    await ensure_default_accounts(db, tenant_id)
+    amount = money_json(round(money_json(amount), 2))
+    if amount <= 0:
+        raise HTTPException(status_code=400, detail="Refund amount must be positive")
+    liquid_code, liquid_label = await resolve_settlement_gl(
+        db,
+        tenant_id,
+        payment_method,
+        liquid_account_id=liquid_account_id,
+        outflow=True,
+    )
+    cn = getattr(sales_return, "credit_note_number", None) or sales_return.return_number
+    lines = [
+        {"account_code": "1100", "debit": amount, "credit": 0, "description": "Clear AR credit for refund"},
+        {
+            "account_code": liquid_code,
+            "debit": 0,
+            "credit": amount,
+            "description": f"Customer refund via {liquid_label}",
+        },
+    ]
+    return await post_journal_entry(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        description=f"Refund for return {sales_return.return_number} / {cn}",
+        reference=cn,
+        source_type="sales_return_refund",
+        source_id=sales_return.id,
         lines=lines,
     )
 
@@ -1552,8 +1640,8 @@ async def post_customer_payment_journal(
     await ensure_default_accounts(db, tenant_id)
     from app.fx import doc_rate, fx_lines_for_receipt, to_base
 
-    amount = float(payment.amount)
-    discount = float(getattr(payment, "early_payment_discount", 0) or 0)
+    amount = money_json(payment.amount)
+    discount = money_json(getattr(payment, "early_payment_discount", 0) or 0)
     pay_rate = doc_rate(payment)
     liquid_code, liquid_label = await resolve_settlement_gl(
         db,
@@ -1571,10 +1659,10 @@ async def post_customer_payment_journal(
         cash_at_inv = 0.0
         for inv, settle, disc in allocations:
             inv_rate = doc_rate(inv)
-            cash_doc = round(settle - disc, 2)
-            ar_base = round(ar_base + to_base(settle, inv_rate), 2)
-            disc_base = round(disc_base + to_base(disc, inv_rate), 2)
-            cash_at_inv = round(cash_at_inv + to_base(cash_doc, inv_rate), 2)
+            cash_doc = money_json(round(settle - disc, 2))
+            ar_base = money_json(round(ar_base + to_base(settle, inv_rate), 2))
+            disc_base = money_json(round(disc_base + to_base(disc, inv_rate), 2))
+            cash_at_inv = money_json(round(cash_at_inv + to_base(cash_doc, inv_rate), 2))
         # Remeasure cash portion at payment rate vs invoice rates
         cash_base = to_base(amount, pay_rate)
         fx_amt, fx_extra = fx_lines_for_receipt(
@@ -1586,7 +1674,7 @@ async def post_customer_payment_journal(
         disc_base = to_base(discount, pay_rate)
         fx_amt, fx_extra = 0.0, []
 
-    payment.fx_gain_loss = round(fx_amt, 2)
+    payment.fx_gain_loss = money_json(round(fx_amt, 2))
     lines = [
         {
             "account_code": liquid_code,
@@ -1636,8 +1724,8 @@ async def post_supplier_payment_journal(
     await ensure_default_accounts(db, tenant_id)
     from app.fx import doc_rate, fx_lines_for_payment, to_base
 
-    amount = float(payment.amount)
-    discount = float(getattr(payment, "early_payment_discount", 0) or 0)
+    amount = money_json(payment.amount)
+    discount = money_json(getattr(payment, "early_payment_discount", 0) or 0)
     pay_rate = doc_rate(payment)
     liquid_code, liquid_label = await resolve_settlement_gl(
         db,
@@ -1653,8 +1741,8 @@ async def post_supplier_payment_journal(
         disc_base = 0.0
         for inv, settle, disc in allocations:
             inv_rate = doc_rate(inv)
-            ap_base = round(ap_base + to_base(settle, inv_rate), 2)
-            disc_base = round(disc_base + to_base(disc, inv_rate), 2)
+            ap_base = money_json(round(ap_base + to_base(settle, inv_rate), 2))
+            disc_base = money_json(round(disc_base + to_base(disc, inv_rate), 2))
         fx_amt, fx_extra = fx_lines_for_payment(
             cash_base=cash_base, ap_base=ap_base, discount_base=disc_base
         )
@@ -1663,7 +1751,7 @@ async def post_supplier_payment_journal(
         disc_base = to_base(discount, pay_rate)
         fx_amt, fx_extra = 0.0, []
 
-    payment.fx_gain_loss = round(fx_amt, 2)
+    payment.fx_gain_loss = money_json(round(fx_amt, 2))
     lines = [
         {
             "account_code": "2000",
@@ -1726,6 +1814,35 @@ async def post_grn_journal(
     )
 
 
+async def post_opening_stock_journal(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    entry_id: str,
+    reference: str,
+    inventory_value: float,
+    description: str | None = None,
+) -> m.JournalEntry | None:
+    """Dr Inventory 1200 / Cr Owner's Equity 3000 for opening stock at cost."""
+    if inventory_value <= 0:
+        return None
+    await ensure_default_accounts(db, tenant_id)
+    return await post_journal_entry(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        description=description or f"Opening stock {reference}",
+        reference=reference,
+        source_type="opening_stock",
+        source_id=entry_id,
+        lines=[
+            {"account_code": "1200", "debit": inventory_value, "credit": 0, "description": "Opening inventory"},
+            {"account_code": "3000", "debit": 0, "credit": inventory_value, "description": "Opening equity"},
+        ],
+    )
+
+
 async def post_purchase_return_journal(
     db: AsyncSession,
     *,
@@ -1735,7 +1852,7 @@ async def post_purchase_return_journal(
 ) -> m.JournalEntry:
     """Reverse GRN impact: Dr AP / Cr Inventory for return total (tax-inclusive inventory value)."""
     await ensure_default_accounts(db, tenant_id)
-    total = float(purchase_return.total_amount)
+    total = money_json(purchase_return.total_amount)
     return await post_journal_entry(
         db,
         tenant_id=tenant_id,
@@ -1770,13 +1887,16 @@ async def post_purchase_invoice_journal(
 
     rate = doc_rate(purchase_invoice)
     net = to_base(
-        round(
-            float(purchase_invoice.subtotal or 0) - float(purchase_invoice.discount_amount or 0),
+        money_json(round(
+            money_json(purchase_invoice.subtotal or 0)
+            - money_json(purchase_invoice.discount_amount or 0),
             2,
-        ),
+        )),
         rate,
     )
-    rc = to_base(float(getattr(purchase_invoice, "reverse_charge_tax", 0) or 0), rate)
+    rc = to_base(
+        money_json(getattr(purchase_invoice, "reverse_charge_tax", 0) or 0), rate
+    )
     is_rc = bool(getattr(purchase_invoice, "is_reverse_charge", False)) and rc > 0
     if skip_inventory_ap:
         if not is_rc:
@@ -1798,8 +1918,8 @@ async def post_purchase_invoice_journal(
             {"account_code": "2100", "debit": 0, "credit": rc, "description": "Tax payable (RC self-assess)"},
         ]
     else:
-        total = to_base(float(purchase_invoice.total_amount), rate)
-        tax = to_base(float(purchase_invoice.tax_amount or 0), rate)
+        total = to_base(money_json(purchase_invoice.total_amount), rate)
+        tax = to_base(money_json(purchase_invoice.tax_amount or 0), rate)
         if tax > 0 and abs(total - (net + tax)) < 0.02:
             lines = [
                 {"account_code": "1200", "debit": net, "credit": 0, "description": "Inventory/purchases"},
@@ -1836,13 +1956,16 @@ async def post_purchase_invoice_reversal_journal(
 
     rate = doc_rate(purchase_invoice)
     net = to_base(
-        round(
-            float(purchase_invoice.subtotal or 0) - float(purchase_invoice.discount_amount or 0),
+        money_json(round(
+            money_json(purchase_invoice.subtotal or 0)
+            - money_json(purchase_invoice.discount_amount or 0),
             2,
-        ),
+        )),
         rate,
     )
-    rc = to_base(float(getattr(purchase_invoice, "reverse_charge_tax", 0) or 0), rate)
+    rc = to_base(
+        money_json(getattr(purchase_invoice, "reverse_charge_tax", 0) or 0), rate
+    )
     is_rc = bool(getattr(purchase_invoice, "is_reverse_charge", False)) and rc > 0
     if skip_inventory_ap:
         # Stage 11 C2 — reverse only RC self-assess posted for GRN-linked invoices.
@@ -1860,8 +1983,8 @@ async def post_purchase_invoice_reversal_journal(
             {"account_code": "1300", "debit": 0, "credit": rc, "description": "Input tax reverse"},
         ]
     else:
-        total = to_base(float(purchase_invoice.total_amount), rate)
-        tax = to_base(float(purchase_invoice.tax_amount or 0), rate)
+        total = to_base(money_json(purchase_invoice.total_amount), rate)
+        tax = to_base(money_json(purchase_invoice.tax_amount or 0), rate)
         if tax > 0 and abs(total - (net + tax)) < 0.02:
             lines = [
                 {"account_code": "2000", "debit": total, "credit": 0, "description": "AP reverse"},
@@ -1893,7 +2016,7 @@ async def post_expense_journal(
     expense: m.Expense,
 ) -> m.JournalEntry:
     await ensure_default_accounts(db, tenant_id)
-    amount = float(expense.amount)
+    amount = money_json(expense.amount)
     liquid_code, liquid_label = await resolve_settlement_gl(
         db,
         tenant_id,
@@ -1902,39 +2025,20 @@ async def post_expense_journal(
         outflow=True,
         company_id=getattr(expense, "company_id", None),
     )
-    # Stage 14 E1 — debit mapped category COA when set; else Operating Expenses 6000
-    debit_line: dict = {
-        "account_code": "6000",
-        "debit": amount,
-        "credit": 0,
-        "description": expense.category,
-    }
-    if getattr(expense, "category_id", None):
-        cat = (
-            await db.execute(
-                select(m.ExpenseCategory).where(
-                    m.ExpenseCategory.id == expense.category_id,
-                    m.ExpenseCategory.tenant_id == tenant_id,
-                )
-            )
-        ).scalar_one_or_none()
-        if cat and cat.account_id:
-            mapped = (
-                await db.execute(
-                    select(m.Account).where(
-                        m.Account.id == cat.account_id,
-                        m.Account.tenant_id == tenant_id,
-                        m.Account.is_active == True,  # noqa: E712
-                    )
-                )
-            ).scalar_one_or_none()
-            if mapped and (mapped.account_type or "").strip().lower() == "expense":
-                debit_line = {
-                    "account_id": mapped.id,
-                    "debit": amount,
-                    "credit": 0,
-                    "description": expense.category or mapped.name,
-                }
+    debit_code = "6000"
+    debit_desc = expense.category
+    category_id = getattr(expense, "category_id", None)
+    if category_id:
+        cat = await db.get(m.ExpenseCategory, category_id)
+        if cat and cat.tenant_id == tenant_id and getattr(cat, "account_id", None):
+            account = await db.get(m.Account, cat.account_id)
+            if (
+                account
+                and account.tenant_id == tenant_id
+                and (account.account_type or "").lower() == "expense"
+            ):
+                debit_code = account.code
+                debit_desc = f"{expense.category} ({account.code})"
     return await post_journal_entry(
         db,
         tenant_id=tenant_id,
@@ -1945,7 +2049,12 @@ async def post_expense_journal(
         source_id=expense.id,
         store_id=getattr(expense, "store_id", None),
         lines=[
-            debit_line,
+            {
+                "account_code": debit_code,
+                "debit": amount,
+                "credit": 0,
+                "description": debit_desc,
+            },
             {
                 "account_code": liquid_code,
                 "debit": 0,
@@ -1964,18 +2073,12 @@ async def post_pos_sale_journal(
     tx: m.Transaction,
     payment_method: str = "cash",
     payments: list[dict] | None = None,
-    company_id: str | None = None,
 ) -> m.JournalEntry:
     """Post POS sale GL; supports split tenders as multiple debit lines."""
-    cid = company_id or getattr(tx, "company_id", None)
-    await ensure_default_accounts(db, tenant_id, company_id=cid)
-    amount = float(tx.total or 0)
-    tax = float(tx.tax or 0)
-    cart_discount = float((tx.payload or {}).get("discount_amount") or 0)
-    # Net revenue: subtotal already excludes line discounts; cart discount reduces cash total.
-    revenue = round(float(tx.subtotal or 0) - cart_discount, 2)
-    if revenue < 0:
-        raise HTTPException(status_code=400, detail="POS revenue after discount cannot be negative")
+    await ensure_default_accounts(db, tenant_id)
+    amount = money_json(tx.total or 0)
+    tax = money_json(tx.tax or 0)
+    revenue = money_json(round(amount - tax, 2))
     if abs(amount - (revenue + tax)) > 0.02:
         raise HTTPException(status_code=400, detail="POS journal amounts do not balance")
 
@@ -1986,18 +2089,13 @@ async def post_pos_sale_journal(
     debit_sum = 0.0
     for tender in tenders:
         method = (tender.get("payment_method") or "cash").strip().lower()
-        part = round(float(tender.get("amount") or 0), 2)
+        part = money_json(round(money_json(tender.get("amount") or 0), 2))
         if part <= 0:
             continue
         liquid_id = tender.get("liquid_account_id")
         if liquid_id and method != "credit":
             code, label = await resolve_settlement_gl(
-                db,
-                tenant_id,
-                method,
-                liquid_account_id=liquid_id,
-                outflow=False,
-                company_id=getattr(tx, "company_id", None),
+                db, tenant_id, method, liquid_account_id=liquid_id, outflow=False
             )
         else:
             code, label = pos_debit_account_for_payment_method(method)
@@ -2020,15 +2118,25 @@ async def post_pos_sale_journal(
         lines.append(
             {"account_code": "2100", "debit": 0, "credit": tax, "description": "Tax payable"}
         )
-    payload_items = list((tx.payload or {}).get("items") or [])
-    cogs = await standard_cost_cogs_for_lines(db, tenant_id, payload_items)
-    lines.extend(cogs_inventory_journal_lines(cogs))
 
-    store_id = None
-    if getattr(tx, "session_id", None):
-        session = await db.get(m.PosSession, tx.session_id)
-        if session and session.tenant_id == tenant_id:
-            store_id = session.store_id
+    payload = tx.payload if isinstance(tx.payload, dict) else {}
+    pos_items = list(payload.get("items") or [])
+    cogs = await compute_standard_cogs(
+        db,
+        tenant_id=tenant_id,
+        lines=[
+            {
+                "product_id": it.get("product_id"),
+                "quantity": money_json(it.get("quantity") or 0),
+                "unit_id": it.get("unit_id"),
+                "variant_id": it.get("variant_id"),
+            }
+            for it in pos_items
+            if it.get("product_id")
+        ],
+    )
+    append_cogs_lines(lines, cogs, reverse=False)
+
     return await post_journal_entry(
         db,
         tenant_id=tenant_id,
@@ -2043,73 +2151,90 @@ async def post_pos_sale_journal(
     )
 
 
-async def account_balances_through(
-    db: AsyncSession,
-    tenant_id: str,
-    *,
-    as_of: datetime | None = None,
-    store_ids: list[str] | None = None,
-    company_id: str | None = None,
-) -> tuple[list[m.Account], dict[str, float]]:
-    """Natural-side balances per account; as_of / store_ids rebuild from posted journals."""
-    aq = select(m.Account).where(m.Account.tenant_id == tenant_id).order_by(m.Account.code)
-    if company_id:
-        aq = aq.where(m.Account.company_id == company_id)
-    accounts = (await db.execute(aq)).scalars().all()
-    if as_of is None and store_ids is None:
-        return accounts, {a.id: float(a.balance or 0) for a in accounts}
-
-    balances = {a.id: 0.0 for a in accounts}
-    if store_ids is not None and len(store_ids) == 0:
-        return accounts, balances
-
-    stmt = (
-        select(m.JournalEntryLine, m.Account)
-        .join(m.Account, m.Account.id == m.JournalEntryLine.account_id)
-        .join(m.JournalEntry, m.JournalEntry.id == m.JournalEntryLine.journal_entry_id)
-        .where(
-            m.JournalEntryLine.tenant_id == tenant_id,
-            m.JournalEntry.tenant_id == tenant_id,
-            m.JournalEntry.status == "posted",
-        )
-    )
-    if company_id:
-        stmt = stmt.where(m.JournalEntry.company_id == company_id)
-    if as_of is not None:
-        stmt = stmt.where(m.JournalEntry.entry_date <= as_of)
-    if store_ids is not None:
-        stmt = stmt.where(m.JournalEntry.store_id.in_(store_ids))
-    for line, account in (await db.execute(stmt)).all():
-        balances[account.id] = round(
-            float(balances.get(account.id, 0.0))
-            + _signed_balance_delta(
-                account.account_type, float(line.debit or 0), float(line.credit or 0)
-            ),
-            2,
-        )
-    return accounts, balances
-
-
 async def trial_balance(
     db: AsyncSession,
     tenant_id: str,
     *,
     as_of: datetime | None = None,
-    company_id: str | None = None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
 ) -> dict:
-    """Trial balance; optional as_of rebuilds balances from posted journals through that date."""
-    accounts, bal_by_id = await account_balances_through(
-        db, tenant_id, as_of=as_of, company_id=company_id
+    """Trial balance (BR-10.6 / BR-14.5).
+
+    - No ``as_of`` (and no location filter): live ``Account.balance`` (``mode=balances``).
+    - With ``as_of``: reconstruct signed balances from posted journal lines
+      through that timestamp (``mode=journals``), matching balance-sheet as-of.
+    - Optional ``store_id`` / ``branch_id``: reconstruct from journals attributable to
+      that location (forces ``mode=journals``; defaults ``as_of`` to end of today).
+    """
+    await ensure_default_accounts(db, tenant_id)
+    accounts = (
+        await db.execute(
+            select(m.Account).where(m.Account.tenant_id == tenant_id).order_by(m.Account.code)
+        )
+    ).scalars().all()
+
+    store_ids = await _pnl_store_ids(
+        db, tenant_id, store_id=store_id, branch_id=branch_id
     )
+    location_filter = store_ids is not None
+    effective_as_of = as_of
+    if location_filter and effective_as_of is None:
+        today = datetime.utcnow().date()
+        effective_as_of = datetime(
+            today.year, today.month, today.day, 23, 59, 59, 999999
+        )
+
+    if effective_as_of is None:
+        bal_by_id = {a.id: money_json(a.balance) for a in accounts}
+        as_of_day = datetime.utcnow().date()
+        mode = "balances"
+    else:
+        bal_by_id = {a.id: 0.0 for a in accounts}
+        allowed_journal_ids: set[str] | None = None
+        if location_filter:
+            allowed_journal_ids = await _pnl_journal_ids_for_stores(
+                db, tenant_id, store_ids or [], branch_id=branch_id
+            )
+        stmt = (
+            select(m.JournalEntryLine, m.Account)
+            .join(m.JournalEntry, m.JournalEntry.id == m.JournalEntryLine.journal_entry_id)
+            .join(m.Account, m.Account.id == m.JournalEntryLine.account_id)
+            .where(
+                m.JournalEntryLine.tenant_id == tenant_id,
+                m.JournalEntry.tenant_id == tenant_id,
+                m.JournalEntry.status == "posted",
+                m.JournalEntry.entry_date <= effective_as_of,
+                m.Account.tenant_id == tenant_id,
+            )
+        )
+        if allowed_journal_ids is not None:
+            if not allowed_journal_ids:
+                stmt = stmt.where(m.JournalEntry.id.in_([]))
+            else:
+                stmt = stmt.where(m.JournalEntry.id.in_(allowed_journal_ids))
+        for line, account in (await db.execute(stmt)).all():
+            bal_by_id[account.id] = money_json(bal_by_id.get(account.id, 0)) + _signed_balance_delta(
+                account.account_type,
+                money_json(line.debit),
+                money_json(line.credit),
+            )
+        as_of_day = effective_as_of.date()
+        mode = "journals"
+
     rows = []
     debit_total = 0.0
     credit_total = 0.0
     for account in accounts:
-        bal = float(bal_by_id.get(account.id, 0.0))
+        bal = money_json(round(money_json(bal_by_id.get(account.id, 0)), 2))
+        if mode == "journals" and abs(bal) < 0.0001:
+            continue
         if account.account_type in {"asset", "expense"}:
             d, c = (bal, 0.0) if bal >= 0 else (0.0, abs(bal))
         else:
             d, c = (0.0, bal) if bal >= 0 else (abs(bal), 0.0)
+        d = money_json(d)
+        c = money_json(c)
         debit_total += d
         credit_total += c
         rows.append(
@@ -2125,26 +2250,213 @@ async def trial_balance(
         )
     as_of_date = (as_of or datetime.utcnow()).date().isoformat()
     return {
-        "as_of": as_of_date,
+        "as_of": as_of_day.isoformat(),
+        "mode": mode,
+        "store_id": store_id,
+        "branch_id": branch_id,
         "rows": rows,
-        "total_debit": round(debit_total, 2),
-        "total_credit": round(credit_total, 2),
+        "total_debit": money_json(round(debit_total, 2)),
+        "total_credit": money_json(round(credit_total, 2)),
         "balanced": abs(debit_total - credit_total) < 0.01,
     }
 
 
-def _pnl_bucket(account: m.Account) -> str:
-    """Classify P&L account into revenue / cogs / operating_expense / other_income."""
-    code = (account.code or "").strip()
-    if account.account_type == "income":
-        if code.startswith("42") or code.startswith("43"):
-            return "other_income"
-        return "revenue"
-    if account.account_type == "expense":
-        if code.startswith("5") or "cogs" in (account.name or "").lower():
-            return "cogs"
-        return "operating_expense"
-    return "other"
+async def _pnl_store_ids(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    store_id: str | None,
+    branch_id: str | None,
+) -> list[str] | None:
+    """Resolve store ids for location-filtered P&L; None means no location filter."""
+    if store_id:
+        store = (
+            await db.execute(
+                select(m.Store).where(
+                    m.Store.id == store_id,
+                    m.Store.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not store:
+            raise HTTPException(status_code=404, detail="Store not found")
+        if branch_id and store.branch_id != branch_id:
+            raise HTTPException(
+                status_code=400,
+                detail="store_id is not in the requested branch",
+            )
+        return [store.id]
+    if branch_id:
+        branch = (
+            await db.execute(
+                select(m.Branch).where(
+                    m.Branch.id == branch_id,
+                    m.Branch.tenant_id == tenant_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if not branch:
+            raise HTTPException(status_code=404, detail="Branch not found")
+        rows = (
+            await db.execute(
+                select(m.Store.id).where(
+                    m.Store.tenant_id == tenant_id,
+                    m.Store.branch_id == branch_id,
+                )
+            )
+        ).scalars().all()
+        return list(rows)
+    return None
+
+
+async def _pnl_journal_ids_for_stores(
+    db: AsyncSession,
+    tenant_id: str,
+    store_ids: list[str],
+    *,
+    branch_id: str | None = None,
+) -> set[str]:
+    """Journal entries attributable to the given stores (sales/POS/expense/returns).
+
+    When `branch_id` is set, also include expenses assigned directly to that branch
+    (even when `store_id` is null).
+    """
+    if not store_ids and not branch_id:
+        return set()
+
+    inv_ids = set()
+    if store_ids:
+        inv_ids = set(
+            (
+                await db.execute(
+                    select(m.SalesInvoice.id).where(
+                        m.SalesInvoice.tenant_id == tenant_id,
+                        m.SalesInvoice.store_id.in_(store_ids),
+                    )
+                )
+            ).scalars().all()
+        )
+    exp_ids = set()
+    if store_ids:
+        exp_ids |= set(
+            (
+                await db.execute(
+                    select(m.Expense.id).where(
+                        m.Expense.tenant_id == tenant_id,
+                        m.Expense.store_id.in_(store_ids),
+                    )
+                )
+            ).scalars().all()
+        )
+    if branch_id:
+        exp_ids |= set(
+            (
+                await db.execute(
+                    select(m.Expense.id).where(
+                        m.Expense.tenant_id == tenant_id,
+                        m.Expense.branch_id == branch_id,
+                    )
+                )
+            ).scalars().all()
+        )
+    tx_ids = set()
+    return_ids = set()
+    if store_ids:
+        tx_ids = set(
+            (
+                await db.execute(
+                    select(m.Transaction.id)
+                    .join(m.PosSession, m.PosSession.id == m.Transaction.session_id)
+                    .where(
+                        m.Transaction.tenant_id == tenant_id,
+                        m.PosSession.tenant_id == tenant_id,
+                        m.PosSession.store_id.in_(store_ids),
+                    )
+                )
+            ).scalars().all()
+        )
+        return_ids = set(
+            (
+                await db.execute(
+                    select(m.SalesReturn.id)
+                    .join(m.SalesInvoice, m.SalesInvoice.id == m.SalesReturn.sales_invoice_id)
+                    .where(
+                        m.SalesReturn.tenant_id == tenant_id,
+                        m.SalesInvoice.tenant_id == tenant_id,
+                        m.SalesInvoice.store_id.in_(store_ids),
+                    )
+                )
+            ).scalars().all()
+        )
+
+    from sqlalchemy import or_
+
+    clauses = []
+    if inv_ids:
+        clauses.append(
+            (m.JournalEntry.source_type == "sales_invoice")
+            & (m.JournalEntry.source_id.in_(inv_ids))
+        )
+    if tx_ids:
+        clauses.append(
+            (m.JournalEntry.source_type == "pos_sale")
+            & (m.JournalEntry.source_id.in_(tx_ids))
+        )
+    if exp_ids:
+        clauses.append(
+            (m.JournalEntry.source_type == "expense")
+            & (m.JournalEntry.source_id.in_(exp_ids))
+        )
+    if return_ids:
+        clauses.append(
+            (m.JournalEntry.source_type.in_(("sales_return", "sales_return_refund")))
+            & (m.JournalEntry.source_id.in_(return_ids))
+        )
+    if not clauses:
+        return set()
+
+    rows = (
+        await db.execute(
+            select(m.JournalEntry.id).where(
+                m.JournalEntry.tenant_id == tenant_id,
+                m.JournalEntry.status == "posted",
+                or_(*clauses),
+            )
+        )
+    ).scalars().all()
+    return set(rows)
+
+
+def _pnl_pack(
+    *,
+    revenue: float,
+    cogs: float,
+    operating_expenses: float,
+    accounts: list[dict],
+    from_date: datetime | None,
+    to_date: datetime | None,
+    store_id: str | None,
+    branch_id: str | None,
+    mode: str,
+) -> dict:
+    expense = money_json(round(cogs + operating_expenses, 2))
+    gross_profit = money_json(round(revenue - cogs, 2))
+    net_profit = money_json(round(revenue - expense, 2))
+    return {
+        "income": money_json(round(money_json(revenue), 2)),  # back-compat alias
+        "revenue": money_json(round(money_json(revenue), 2)),
+        "cogs": money_json(round(money_json(cogs), 2)),
+        "gross_profit": money_json(round(money_json(gross_profit), 2)),
+        "operating_expenses": money_json(round(money_json(operating_expenses), 2)),
+        "expense": money_json(round(money_json(expense), 2)),  # back-compat: total expenses incl. COGS
+        "net_profit": money_json(round(money_json(net_profit), 2)),
+        "accounts": accounts,
+        "from_date": from_date.isoformat() if from_date else None,
+        "to_date": to_date.isoformat() if to_date else None,
+        "store_id": store_id,
+        "branch_id": branch_id,
+        "mode": mode,
+    }
 
 
 async def profit_and_loss(
@@ -2155,91 +2467,122 @@ async def profit_and_loss(
     to_date: datetime | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
-    company_id: str | None = None,
 ) -> dict:
-    """Period P&L from posted journal lines (optional date range / store / branch)."""
-    await ensure_default_accounts(db, tenant_id, company_id=company_id)
-    resolved_store, resolved_branch, store_ids = await resolve_journal_dimension_ids(
-        db,
-        tenant_id=tenant_id,
-        store_id=store_id,
-        branch_id=branch_id,
-        company_id=company_id,
+    """P&L with revenue, COGS (5000), gross profit, and operating expenses (BR-10.6 / BR-14.5).
+
+    Without filters: lifetime income/expense account balances (back-compat).
+    With date and/or store/branch filters: posted journal-line activity. Location
+    filters keep only sales_invoice / pos_sale / expense / sales_return journals
+    attributable to the store(s); unattributable journals are excluded.
+    """
+    store_ids = await _pnl_store_ids(
+        db, tenant_id, store_id=store_id, branch_id=branch_id
     )
+    use_journals = bool(from_date or to_date or store_ids is not None)
+
+    if not use_journals:
+        accounts = (
+            await db.execute(select(m.Account).where(m.Account.tenant_id == tenant_id))
+        ).scalars().all()
+        revenue = sum(money_json(a.balance) for a in accounts if a.account_type == "income")
+        cogs = sum(money_json(a.balance) for a in accounts if a.code == "5000")
+        operating_expenses = sum(
+            money_json(a.balance)
+            for a in accounts
+            if a.account_type == "expense" and a.code != "5000"
+        )
+        return _pnl_pack(
+            revenue=revenue,
+            cogs=cogs,
+            operating_expenses=operating_expenses,
+            accounts=[
+                {
+                    "code": a.code,
+                    "name": a.name,
+                    "account_type": a.account_type,
+                    "balance": money_json(a.balance),
+                }
+                for a in accounts
+                if a.account_type in {"income", "expense"}
+            ],
+            from_date=None,
+            to_date=None,
+            store_id=None,
+            branch_id=None,
+            mode="balances",
+        )
 
     stmt = (
-        select(m.JournalEntryLine, m.Account, m.JournalEntry)
-        .join(m.Account, m.Account.id == m.JournalEntryLine.account_id)
+        select(m.JournalEntryLine, m.JournalEntry, m.Account)
         .join(m.JournalEntry, m.JournalEntry.id == m.JournalEntryLine.journal_entry_id)
+        .join(m.Account, m.Account.id == m.JournalEntryLine.account_id)
         .where(
             m.JournalEntryLine.tenant_id == tenant_id,
             m.JournalEntry.tenant_id == tenant_id,
             m.JournalEntry.status == "posted",
+            m.Account.tenant_id == tenant_id,
             m.Account.account_type.in_(("income", "expense")),
         )
     )
-    if company_id:
-        stmt = stmt.where(m.JournalEntry.company_id == company_id)
-        stmt = stmt.where(m.Account.company_id == company_id)
     if from_date:
         stmt = stmt.where(m.JournalEntry.entry_date >= from_date)
     if to_date:
         stmt = stmt.where(m.JournalEntry.entry_date <= to_date)
     if store_ids is not None:
-        if store_ids:
-            stmt = stmt.where(m.JournalEntry.store_id.in_(store_ids))
-        else:
-            stmt = stmt.where(m.JournalEntry.store_id.in_([]))
+        je_ids = await _pnl_journal_ids_for_stores(
+            db, tenant_id, store_ids, branch_id=branch_id
+        )
+        if not je_ids:
+            return _pnl_pack(
+                revenue=0,
+                cogs=0,
+                operating_expenses=0,
+                accounts=[],
+                from_date=from_date,
+                to_date=to_date,
+                store_id=store_id,
+                branch_id=branch_id,
+                mode="journals",
+            )
+        stmt = stmt.where(m.JournalEntry.id.in_(je_ids))
 
     rows = (await db.execute(stmt)).all()
     by_account: dict[str, dict] = {}
-    for line, account, _entry in rows:
-        debit = float(line.debit or 0)
-        credit = float(line.credit or 0)
-        # Income increases with credit; expense with debit.
+    revenue = 0.0
+    cogs = 0.0
+    operating_expenses = 0.0
+    for line, _entry, account in rows:
+        debit = money_json(line.debit)
+        credit = money_json(line.credit)
         if account.account_type == "income":
-            delta = credit - debit
+            net = money_json(round(credit - debit, 2))
+            revenue = money_json(round(revenue + net, 2))
         else:
-            delta = debit - credit
-        slot = by_account.get(account.id)
-        if not slot:
-            slot = {
-                "account_id": account.id,
+            net = money_json(round(debit - credit, 2))
+            if account.code == "5000":
+                cogs = money_json(round(cogs + net, 2))
+            else:
+                operating_expenses = money_json(round(operating_expenses + net, 2))
+        bucket = by_account.setdefault(
+            account.id,
+            {
                 "code": account.code,
                 "name": account.name,
                 "account_type": account.account_type,
-                "bucket": _pnl_bucket(account),
                 "balance": 0.0,
-            }
-            by_account[account.id] = slot
-        slot["balance"] = round(float(slot["balance"]) + delta, 2)
+            },
+        )
+        bucket["balance"] = money_json(round(money_json(bucket["balance"]) + net, 2))
 
-    accounts_out = sorted(by_account.values(), key=lambda r: r["code"])
-    revenue = round(sum(r["balance"] for r in accounts_out if r["bucket"] == "revenue"), 2)
-    other_income = round(
-        sum(r["balance"] for r in accounts_out if r["bucket"] == "other_income"), 2
+    accounts_out = sorted(by_account.values(), key=lambda r: r["code"] or "")
+    return _pnl_pack(
+        revenue=revenue,
+        cogs=cogs,
+        operating_expenses=operating_expenses,
+        accounts=accounts_out,
+        from_date=from_date,
+        to_date=to_date,
+        store_id=store_id,
+        branch_id=branch_id,
+        mode="journals",
     )
-    cogs = round(sum(r["balance"] for r in accounts_out if r["bucket"] == "cogs"), 2)
-    operating_expenses = round(
-        sum(r["balance"] for r in accounts_out if r["bucket"] == "operating_expense"), 2
-    )
-    income = round(revenue + other_income, 2)
-    expense = round(cogs + operating_expenses, 2)
-    gross_profit = round(revenue - cogs, 2)
-    net_profit = round(income - expense, 2)
-
-    return {
-        "from_date": from_date.date().isoformat() if from_date else None,
-        "to_date": to_date.date().isoformat() if to_date else None,
-        "store_id": resolved_store,
-        "branch_id": resolved_branch,
-        "revenue": revenue,
-        "other_income": other_income,
-        "cogs": cogs,
-        "gross_profit": gross_profit,
-        "operating_expenses": operating_expenses,
-        "income": income,
-        "expense": expense,
-        "net_profit": net_profit,
-        "accounts": accounts_out,
-    }

@@ -37,3 +37,6 @@ def test_sms_status_shape():
     assert "enabled" in status
     assert "mode" in status
     assert "configured" in status
+    assert "source" in status
+    assert "has_auth_token" in status
+    assert "auth_token" not in status or status.get("auth_token") in (None, "")

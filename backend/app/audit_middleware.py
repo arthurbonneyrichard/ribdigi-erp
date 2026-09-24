@@ -56,6 +56,7 @@ _SEGMENT_MODULE = {
     "backup": "backup",
     "ai": "ai",
     "dashboard": "dashboard",
+    "api-keys": "security",
 }
 
 _UUID_RE = re.compile(
@@ -142,8 +143,6 @@ class AuditMutationMiddleware(BaseHTTPMiddleware):
         if not tenant_id:
             return
         user_id = (claims or {}).get("sub")
-        # Prefer verified request.state.company_id from auth; never invent from untrusted headers alone.
-        company_id = getattr(request.state, "company_id", None)
         entity, entity_id = entity_from_path(path)
         module = module_from_path(path)
 
@@ -158,7 +157,6 @@ class AuditMutationMiddleware(BaseHTTPMiddleware):
                 db,
                 tenant_id=tenant_id,
                 user_id=user_id,
-                company_id=company_id,
                 module=module,
                 action="http_write",
                 entity=entity,

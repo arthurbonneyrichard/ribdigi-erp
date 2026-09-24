@@ -22,20 +22,60 @@ from app import models as m
 from app.config import settings
 
 ENFORCED_ROLES = frozenset(
-    {"company_admin", "super_admin", "platform_super_admin", "platform_admin"}
+    {
+        "company_admin",
+        "super_admin",
+        "platform_owner",
+        "platform_admin",
+    }
 )
 BACKUP_CODE_COUNT = 10
 CHALLENGE_TTL_MINUTES = 5
 ISSUER = "RIBDIGI ERP"
 
 
+def _fernet_from_configured_key(raw: str, *, label: str) -> Fernet:
+    """Accept a Fernet key, or common openssl formats (hex / standard base64)."""
+    value = (raw or "").strip()
+    if not value:
+        raise ValueError("empty key")
+
+    # Already a Fernet key (url-safe base64 of 32 bytes).
+    try:
+        return Fernet(value.encode("utf-8"))
+    except Exception:
+        pass
+
+    # openssl rand -hex 32 → 64 hex chars → 32 raw bytes.
+    if len(value) == 64:
+        try:
+            return Fernet(base64.urlsafe_b64encode(bytes.fromhex(value)))
+        except Exception:
+            pass
+
+    # openssl rand -base64 32 → standard base64 of 32 bytes.
+    try:
+        decoded = base64.b64decode(value, validate=False)
+        if len(decoded) == 32:
+            return Fernet(base64.urlsafe_b64encode(decoded))
+    except Exception:
+        pass
+
+    raise HTTPException(
+        status_code=500,
+        detail=(
+            f"Invalid {label}: use a Fernet key from "
+            '`python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"` '
+            "or a 64-character hex value from `openssl rand -hex 32`. "
+            "Do not leave REPLACE_ME placeholders."
+        ),
+    )
+
+
 def _fernet() -> Fernet:
     raw = (settings.TOTP_ENCRYPTION_KEY or settings.BACKUP_ENCRYPTION_KEY or "").strip()
     if raw:
-        try:
-            return Fernet(raw.encode("utf-8"))
-        except Exception as exc:
-            raise HTTPException(status_code=500, detail=f"Invalid TOTP encryption key: {exc}") from exc
+        return _fernet_from_configured_key(raw, label="TOTP encryption key")
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,
@@ -70,9 +110,20 @@ def generate_backup_codes(count: int = BACKUP_CODE_COUNT) -> list[str]:
     return codes
 
 
+def login_2fa_enabled() -> bool:
+    """Whether login challenges + enrollment enforcement are active."""
+    return bool(settings.LOGIN_2FA_ENABLED)
+
+
 def role_requires_2fa(role: str) -> bool:
     configured = {x.strip() for x in settings.TOTP_ENFORCED_ROLES.split(",") if x.strip()}
     return role in (configured or ENFORCED_ROLES)
+
+
+def must_enroll_2fa(role: str, *, has_mfa: bool) -> bool:
+    if not login_2fa_enabled():
+        return False
+    return role_requires_2fa(role) and not has_mfa
 
 
 def otpauth_uri(*, secret: str, email: str, tenant_slug: str | None = None) -> str:
@@ -227,8 +278,9 @@ def status_payload(user: m.User) -> dict:
     return {
         "enabled": bool(user.totp_enabled),
         "confirmed_at": user.totp_confirmed_at,
+        "login_2fa_enabled": login_2fa_enabled(),
         "role_requires_2fa": role_requires_2fa(user.role),
-        "must_enroll_2fa": role_requires_2fa(user.role) and not bool(user.totp_enabled),
+        "must_enroll_2fa": must_enroll_2fa(user.role, has_mfa=bool(user.totp_enabled)),
         "pending_setup": bool(user.totp_pending_secret_enc) and not bool(user.totp_enabled),
     }
 
@@ -251,8 +303,8 @@ ENROLLMENT_ALLOWED_SUFFIXES = (
     "/settings/email",
     "/settings/sms",
     "/health",
-    "/health/ready",
-    "/metrics",
+    "/notifications/unread-count",
+    "/staff-guide",
 )
 
 

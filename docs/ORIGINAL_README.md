@@ -53,7 +53,7 @@ Provide affordable, enterprise-grade ERP capabilities to businesses traditionall
 
 ## Key Features
 
-- **Multi-Tenant SaaS Architecture** — Isolated tenant databases with centralized management
+- **Multi-Tenant SaaS Architecture** — Shared schema with `tenant_id` isolation (see `docs/ADR_001_TENANCY.md`). ~~Isolated tenant databases~~ **SUPERSEDED**
 - **Role-Based Access Control (RBAC)** — Granular permissions across modules, menus, and records
 - **Real-Time Dashboard** — Executive insights into sales, purchases, expenses, and inventory
 - **Integrated POS System** — Barcode scanning, multi-payment support, receipt printing, shift management
@@ -92,7 +92,7 @@ Provide affordable, enterprise-grade ERP capabilities to businesses traditionall
 ### Design Principles
 - **Domain-Driven Design (DDD)** — Clear module boundaries, ubiquitous language, aggregate roots
 - **Event-Driven Architecture** — Async communication between modules via event bus
-- **SaaS Multi-Tenancy** — Tenant isolation at the database level with shared application layer
+- **SaaS Multi-Tenancy** — Shared PostgreSQL schema with `tenant_id` row isolation (ADR-001). ~~Tenant isolation at the database level~~ **SUPERSEDED**
 - **API-First** — RESTful APIs enabling web, mobile, and third-party integrations
 - **AI-Native** — Embedded machine learning pipelines for predictive and prescriptive analytics
 
@@ -126,10 +126,13 @@ Provide affordable, enterprise-grade ERP capabilities to businesses traditionall
 ```
 
 ### Tenant Isolation Strategy
-- **Database-per-Tenant** with shared schema structure
+- **Shared-schema multi-tenancy** with `tenant_id` on every tenant-owned row (authoritative: `docs/ADR_001_TENANCY.md`)
 - Tenant context resolution via JWT claims
-- Automated tenant database initialization on registration
-- Row-level security policies for additional data protection
+- Automated tenant initialization on registration
+
+> **SUPERSEDED:** Older drafts described Database-per-Tenant / schema-per-tenant. The running commercial MVP uses a **shared PostgreSQL schema**. Do not change the working architecture to match obsolete docs.
+
+- Row-level filters by `tenant_id` (application-enforced; see ADR-001)
 
 ---
 

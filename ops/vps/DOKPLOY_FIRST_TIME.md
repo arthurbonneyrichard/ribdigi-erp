@@ -3,6 +3,12 @@
 This guide is for a **first VPS** and **Dokploy**.  
 Dokploy is a control panel that installs Docker + Traefik and deploys your Git repo with a UI.
 
+> **CRITICAL:** For the **latest commercial ERP**, set the Dokploy Git **Branch** to  
+> **`production`**. Do **not** deploy from GitHub **`main`** — that is the older ERP  
+> lineage. After changing the branch, Redeploy with **image rebuild (no cache)**.  
+> Confirm: `GET https://erp.ribdigihouse.com/api/v1/health` shows  
+> `"release_channel":"production"`.
+
 | Deploy style | Compose file | Who handles HTTPS |
 |--------------|--------------|-------------------|
 | **Dokploy (this guide)** | `docker-compose.dokploy.yml` | Dokploy Traefik |
@@ -118,9 +124,17 @@ Details: https://docs.dokploy.com/docs/core/installation
 3. **General** tab:
    - **Source:** GitHub
    - **Repository:** your `ribdigi-erp`
-   - **Branch:** `cursor/production-docker-compose-vps` (or your release branch)
+   - **Branch:** `production` (or your release branch)
    - **Compose path:** `docker-compose.dokploy.yml`
    - **Compose type:** Docker Compose (not Stack)
+
+4. **Always rebuild images on Alembic/schema fixes.** Dokploy can reuse a cached
+   `migrate`/`backend` image that still contains an old migration file. After
+   pulling commits that change `backend/alembic/` or `RIBDIGI_BUILD_ID`, use
+   **Redeploy** with image rebuild (no cache) so `migrate` logs show
+   `bootstrap: 0106 idempotent markers OK` and
+   `RIBDIGI_BUILD_ID=20260918-production-erp-v5`. A stale image will exit
+   early with a clear bootstrap error instead of `DuplicateColumn`.
 
 ---
 
@@ -137,6 +151,8 @@ DEBUG=false
 ALLOW_DEVELOPMENT_SEED=false
 
 JWT_SECRET_KEY=   # openssl rand -hex 32
+# Prefer Fernet keys (not REPLACE_ME text):
+# python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 BACKUP_ENCRYPTION_KEY=
 TOTP_ENCRYPTION_KEY=
 
@@ -174,6 +190,8 @@ openssl rand -hex 16
 Dokploy writes these into a `.env` next to the compose file. Our compose already uses `env_file: .env` for backend/celery.
 
 **Important:** `NEXT_PUBLIC_API_URL` is baked into the frontend **at build time**. If you change it later, Redeploy / rebuild.
+
+Umami stats use the same bake-time rule. Production defaults to `https://analytics.ribdigihouse.com/script.js` with website ID `0d5b3d4e-fe16-47bf-91f2-6ce564fb2e0e`. Rebuild the frontend after changing them. Query strings are excluded so password-reset tokens are not stored.
 
 ---
 
@@ -229,25 +247,24 @@ Open `https://erp.ribdigihouse.com` in the browser.
 
 ---
 
-## 9. Create the Platform Admin (one time)
+## 9. Create the Platform Owner (one time)
 
-Dokploy → Compose → open a terminal / exec into **`backend`**, or SSH to the VPS.
-Main uses `scripts/bootstrap_platform_admin.py` (no hard-coded password):
+Dokploy → Compose → open a terminal / exec into **`backend`**, or SSH to the VPS:
 
 ```bash
 # Find the backend container name
 docker ps --format '{{.Names}}' | grep -i backend
 
 docker exec -it CONTAINER_NAME \
-  env PLATFORM_ADMIN_EMAIL='you@ribdigihouse.com' \
-      PLATFORM_ADMIN_PASSWORD='YourStrongPass1!' \
-      PLATFORM_ADMIN_FULL_NAME='Platform Super Admin' \
-      PLATFORM_ADMIN_ROLE=platform_super_admin \
-  python scripts/bootstrap_platform_admin.py
+  env ALLOW_PLATFORM_OWNER_BOOTSTRAP=true \
+      PLATFORM_OWNER_EMAIL='you@ribdigihouse.com' \
+      PLATFORM_OWNER_PASSWORD='YourStrongPass1!' \
+      PLATFORM_OWNER_FULL_NAME='Platform Owner' \
+  python scripts/create_platform_owner.py
 ```
 
 Then log in at `https://erp.ribdigihouse.com` and change the password.  
-Do **not** leave `PLATFORM_ADMIN_PASSWORD` in Dokploy env after bootstrap.
+Do **not** leave `ALLOW_PLATFORM_OWNER_BOOTSTRAP=true` in Dokploy env.
 
 ---
 
@@ -266,7 +283,7 @@ Do **not** leave `PLATFORM_ADMIN_PASSWORD` in Dokploy env after bootstrap.
 ## Common first-time mistakes
 
 1. **Port 80/443 already used** — stop nginx/Caddy/`docker-compose.prod.yml` before installing Dokploy.  
-2. **Using the wrong compose file in Dokploy** — use **`docker-compose.dokploy.yml`** only (standalone; no Traefik/Caddy). Do not point Dokploy at `docker-compose.yml` + overlay.  
+2. **Using `docker-compose.prod.yml` in Dokploy** — that file includes Caddy and will fight Traefik. Use **`docker-compose.dokploy.yml`**.  
 3. **Forgot Redeploy after Domains** — Compose domains only apply after redeploy.  
 4. **Wrong `NEXT_PUBLIC_API_URL`** — must be `https://your-host/api/v1` and rebuild frontend.  
 5. **`EMAIL_ENABLED=true` without SMTP** — app will refuse to start in production. Keep `false` until SMTP is ready.  
@@ -280,4 +297,4 @@ Do **not** leave `PLATFORM_ADMIN_PASSWORD` in Dokploy env after bootstrap.
 - **Choose Dokploy** if you want a UI, GitHub auto-deploy, Traefik domains, and less SSH day-to-day.  
 - **Choose `docker-compose.prod.yml`** if you prefer only SSH + Caddy and no Dokploy panel.
 
-Both paths share the same app Dockerfiles, env template, migrations, and `bootstrap_platform_admin.py`.
+Both paths share the same app Dockerfiles, env template, migrations, and Platform Owner script.

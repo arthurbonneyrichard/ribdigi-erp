@@ -25,16 +25,23 @@ EXPORTABLE = frozenset(
         "sales_products",
         "sales_customers",
         "sales_salesperson",
+        "sales_customers",
+        "sales_returns",
         "sales_by_store",
+        "sales_by_department",
         "inventory_balance",
+        "inventory_valuation",
         "inventory_movements",
         "inventory_low_stock",
-        "inventory_valuation",
+        "inventory_expiry",
+        "inventory_transfers",
+        "inventory_stock_counts",
         "purchases_summary",
         "purchases_suppliers",
         "purchases_pending_orders",
         "purchases_returns",
         "expenses_summary",
+        "expenses_budget_vs_actual",
         "cash_flow",
         "trial_balance",
         "profit_loss",
@@ -252,6 +259,25 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
         ]
         return rows or [{"note": "no rows"}], lines, "Sales by Salesperson"
 
+    if report_type == "sales_customers":
+        items = payload.get("customers") or []
+        rows = [dict(x) for x in items]
+        lines = _kv_lines(payload if isinstance(payload, dict) else {}) + [
+            f"{r.get('name')}: sales={r.get('sale_count')} revenue={r.get('revenue')} avg={r.get('avg_ticket')}"
+            for r in rows[:50]
+        ]
+        return rows or [{"note": "no rows"}], lines, "Sales by Customer"
+
+    if report_type == "sales_returns":
+        items = payload.get("returns") or []
+        rows = [dict(x) for x in items]
+        lines = _kv_lines(payload) + [
+            f"{r.get('return_number')} {r.get('customer_name')}: {r.get('reason')} "
+            f"{r.get('status')} amt={r.get('total_amount')}"
+            for r in rows[:60]
+        ]
+        return rows or [{"note": "no rows"}], lines, "Sales Returns Summary"
+
     if report_type == "sales_by_store":
         items = payload.get("stores") or []
         rows = [dict(x) for x in items]
@@ -262,15 +288,41 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
         ]
         return rows or [{"note": "no rows"}], lines, "Sales by Store"
 
+    if report_type == "sales_by_department":
+        items = payload.get("departments") or []
+        rows = [dict(x) for x in items]
+        lines = _kv_lines(payload if isinstance(payload, dict) else {}) + [
+            f"{r.get('name') or r.get('code')}: sales={r.get('sale_count')} revenue={r.get('revenue')} "
+            f"inv={r.get('invoice_revenue')} pos={r.get('pos_revenue')}"
+            for r in rows[:50]
+        ]
+        return rows or [{"note": "no rows"}], lines, "Sales by Department"
+
     if report_type == "inventory_balance":
         items = payload.get("items") or payload.get("products") or (payload if isinstance(payload, list) else [])
         rows = [dict(x) for x in items]
         return rows or [{"note": "no rows"}], [f"{r.get('sku')}: {r.get('qty') or r.get('stock_qty') or r.get('quantity')}" for r in rows[:60]], "Inventory Balance"
 
+    if report_type == "inventory_valuation":
+        items = payload.get("items") or []
+        rows = [dict(x) for x in items]
+        lines = _kv_lines(payload) + [
+            f"{r.get('sku')}: qty {r.get('quantity')} @ {r.get('unit_cost') or r.get('cost_price')} = {r.get('value')}"
+            for r in rows[:60]
+        ]
+        return rows or [{"note": "no rows"}], lines, "Inventory Valuation"
+
     if report_type == "inventory_movements":
         items = payload.get("movements") or payload.get("items") or (payload if isinstance(payload, list) else [])
         rows = [dict(x) for x in items]
-        return rows or [{"note": "no rows"}], [f"{r.get('created_at')}: {r.get('movement_type')} {r.get('quantity')}" for r in rows[:60]], "Inventory Movements"
+        lines = [
+            f"{r.get('created_at')}: {r.get('movement_type')} {r.get('quantity')} "
+            f"{r.get('product_sku') or r.get('product_id') or ''} "
+            f"reason={r.get('reason') or '—'} "
+            f"by {r.get('created_by_name') or r.get('created_by_email') or r.get('created_by') or '—'}"
+            for r in rows[:60]
+        ]
+        return rows or [{"note": "no rows"}], lines, "Inventory Movements"
 
     if report_type == "inventory_low_stock":
         items = payload.get("items") or payload.get("products") or (payload if isinstance(payload, list) else [])
@@ -285,27 +337,35 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
             "Low Stock",
         )
 
-    if report_type == "inventory_valuation":
-        items = payload.get("items") or []
+    if report_type == "inventory_expiry":
+        items = payload.get("batches") or []
         rows = [dict(x) for x in items]
-        lines = _kv_lines(
-            {
-                k: payload.get(k)
-                for k in (
-                    "costing_method",
-                    "total_quantity",
-                    "total_value",
-                    "line_count",
-                    "warehouse_id",
-                    "store_id",
-                )
-                if k in payload
-            }
-        ) + [
-            f"{r.get('sku')}: qty={r.get('quantity')} cost={r.get('cost_price')} value={r.get('value')}"
+        lines = _kv_lines(payload) + [
+            f"{r.get('sku')} batch {r.get('batch_number')}: exp {r.get('expiry_date')} "
+            f"days={r.get('days_until_expiry')} qty={r.get('quantity')}"
             for r in rows[:60]
         ]
-        return rows or [{"note": "no rows"}], lines, "Stock Valuation"
+        return rows or [{"note": "no rows"}], lines, "Inventory Expiry"
+
+    if report_type == "inventory_transfers":
+        items = payload.get("transfers") or []
+        rows = [dict(x) for x in items]
+        lines = _kv_lines(payload) + [
+            f"{r.get('transfer_number')} {r.get('from_store_code')}→{r.get('to_store_code')}: "
+            f"{r.get('status')} qty={r.get('quantity')}"
+            for r in rows[:60]
+        ]
+        return rows or [{"note": "no rows"}], lines, "Inter-Store Transfers"
+
+    if report_type == "inventory_stock_counts":
+        items = payload.get("lines") or []
+        rows = [dict(x) for x in items]
+        lines = _kv_lines(payload) + [
+            f"{r.get('count_number')} {r.get('sku')}: expected {r.get('expected_qty')} "
+            f"counted {r.get('counted_qty')} var {r.get('variance')}"
+            for r in rows[:60]
+        ]
+        return rows or [{"note": "no rows"}], lines, "Stock Count Variances"
 
     if report_type == "purchases_summary":
         return [dict(payload)], _kv_lines(payload), "Purchases Summary"
@@ -318,26 +378,22 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
     if report_type == "purchases_pending_orders":
         items = payload.get("orders") or []
         rows = [dict(x) for x in items]
-        lines = [
-            f"{r.get('po_number')}: {r.get('supplier_name')} open_qty={r.get('open_qty')} ({r.get('status')})"
+        lines = _kv_lines(payload) + [
+            f"{r.get('po_number')} {r.get('supplier_name')}: {r.get('status')} "
+            f"out={r.get('outstanding_qty')} amt={r.get('total_amount')}"
             for r in rows[:60]
         ]
-        return rows or [{"note": "no rows"}], lines or _kv_lines(payload), "Pending Purchase Orders"
+        return rows or [{"note": "no rows"}], lines, "Pending Purchase Orders"
 
     if report_type == "purchases_returns":
         items = payload.get("returns") or []
         rows = [dict(x) for x in items]
-        lines = _kv_lines(
-            {
-                k: payload.get(k)
-                for k in ("return_count", "posted_count", "total_amount", "posted_amount")
-                if k in payload
-            }
-        ) + [
-            f"{r.get('return_number')}: {r.get('reason')} {r.get('total_amount')} ({r.get('status')})"
+        lines = _kv_lines(payload) + [
+            f"{r.get('return_number')} {r.get('supplier_name')}: {r.get('reason')} "
+            f"{r.get('status')} amt={r.get('total_amount')}"
             for r in rows[:60]
         ]
-        return rows or [{"note": "no rows"}], lines, "Purchase Return Summary"
+        return rows or [{"note": "no rows"}], lines, "Purchase Returns Summary"
 
     if report_type == "expenses_summary":
         cats = payload.get("by_category") or []
@@ -345,51 +401,28 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
         lines = _kv_lines(payload) + [f"{c.get('name') or c.get('category')}: {c.get('total') or c.get('amount')}" for c in cats[:40]]
         return [dict(x) for x in rows], lines, "Expenses Summary"
 
+    if report_type == "expenses_budget_vs_actual":
+        rows = [dict(x) for x in (payload.get("rows") or [])]
+        lines = _kv_lines(payload) + [
+            f"{r.get('category')}: budget {r.get('budget_scaled')} actual {r.get('actual')} ({r.get('status')})"
+            for r in rows[:40]
+        ]
+        return rows or [{"note": "no rows"}], lines, "Expenses Budget vs Actual"
+
     if report_type == "cash_flow":
         lines_data = payload.get("lines") or []
         rows = [dict(x) for x in lines_data] if lines_data else [dict(payload)]
-        comparison = payload.get("comparison") or {}
-        for metric, vals in (comparison.get("metrics") or {}).items():
-            rows.append(
-                {
-                    "section": "comparison",
-                    "metric": metric,
-                    "current": vals.get("current"),
-                    "prior": vals.get("prior"),
-                    "change_pct": vals.get("change_pct"),
-                }
-            )
-        summary = {
-            k: payload.get(k)
-            for k in (
-                "from_date",
-                "to_date",
-                "opening_cash",
-                "closing_cash",
-                "net_change",
-                "inflows",
-                "outflows",
-                "net",
-            )
-            if k in payload
-        }
+        pdf = _kv_lines(payload)
         for section in ("operating", "investing", "financing", "transfers"):
-            block = payload.get(section) or {}
-            if isinstance(block, dict):
-                summary[f"{section}_net"] = block.get("net")
-        pdf = _kv_lines(summary)
-        if comparison:
+            bucket = payload.get(section) or {}
             pdf.append(
-                f"Compare prior {comparison.get('from_date')} → {comparison.get('to_date')}"
+                f"{section}: in {bucket.get('inflows')} out {bucket.get('outflows')} net {bucket.get('net')}"
             )
-            for metric, vals in (comparison.get("metrics") or {}).items():
-                pdf.append(
-                    f"  {metric}: current={vals.get('current')} prior={vals.get('prior')} "
-                    f"change_pct={vals.get('change_pct')}"
-                )
         pdf.extend(
-            f"{r.get('date')} [{r.get('activity')}]: +{r.get('inflow')} -{r.get('outflow')} {r.get('description')}"
-            for r in lines_data[:40]
+            [
+                f"{r.get('date')}: +{r.get('inflow')} -{r.get('outflow')} [{r.get('activity')}] {r.get('description')}"
+                for r in lines_data[:40]
+            ]
         )
         return rows, pdf, "Cash Flow"
 
@@ -475,7 +508,14 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
         for section in ("assets", "liabilities", "equity"):
             lines.append(f"-- {section.upper()} --")
             for item in payload.get(section) or []:
-                lines.append(f"  {item.get('code')} {item.get('name')}: {item.get('balance')}")
+                prior = item.get("prior_balance")
+                delta = item.get("delta")
+                extra = ""
+                if prior is not None:
+                    extra = f" (prior {prior}, Δ {delta})"
+                lines.append(
+                    f"  {item.get('code')} {item.get('name')}: {item.get('balance')}{extra}"
+                )
         return rows or [{"note": "no rows"}], lines, "Balance Sheet"
 
     if report_type == "credit_aging":
@@ -646,13 +686,15 @@ async def build_report_payload(
     branch_id: str | None = None,
     category_id: str | None = None,
     jurisdiction: str | None = None,
-    kind: str | None = None,
-    status: str | None = None,
-    scope: str | None = None,
-    limit: int | None = None,
-    compare: bool = False,
-    company_id: str | None = None,
+    store_id: str | None = None,
+    branch_id: str | None = None,
+    category_id: str | None = None,
+    days: int | None = None,
+    as_of: str | None = None,
+    compare: str | None = None,
+    department_id: str | None = None,
 ) -> Any:
+    # Defense in depth: /reports/export report_type Query Literal → 422 on blank/unknown.
     if report_type not in EXPORTABLE:
         raise HTTPException(
             status_code=400,
@@ -665,8 +707,12 @@ async def build_report_payload(
     now = datetime.utcnow()
 
     if report_type == "summary":
-        daily = await reports_svc.sales_daily(db, tenant_id, now)
-        monthly = await reports_svc.sales_monthly(db, tenant_id, now.year, now.month)
+        daily = await reports_svc.sales_daily(
+            db, tenant_id, now, store_id=store_id or None
+        )
+        monthly = await reports_svc.sales_monthly(
+            db, tenant_id, now.year, now.month, store_id=store_id or None
+        )
         low = await reports_svc.inventory_low_stock(db, tenant_id)
         expenses = await reports_svc.expenses_summary(db, tenant_id)
         return {
@@ -676,10 +722,19 @@ async def build_report_payload(
             "expenses": expenses,
         }
     if report_type == "sales_daily":
-        return await reports_svc.sales_daily(db, tenant_id, reports_svc.parse_date(date) or now)
+        return await reports_svc.sales_daily(
+            db,
+            tenant_id,
+            reports_svc.parse_date(date) or now,
+            store_id=store_id or None,
+        )
     if report_type == "sales_monthly":
         return await reports_svc.sales_monthly(
-            db, tenant_id, year or now.year, month or now.month
+            db,
+            tenant_id,
+            year or now.year,
+            month or now.month,
+            store_id=store_id or None,
         )
     if report_type == "sales_products":
         return await reports_svc.sales_by_product(
@@ -687,80 +742,209 @@ async def build_report_payload(
             tenant_id,
             from_date=fd,
             to_date=td,
-            store_id=store_id,
-            category_id=category_id,
+            store_id=store_id or None,
+            category_id=category_id or None,
+        )
+    if report_type == "sales_salesperson":
+        return await reports_svc.sales_by_salesperson(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            department_id=department_id or None,
+            store_id=store_id or None,
         )
     if report_type == "sales_customers":
-        return await reports_svc.sales_by_customer(db, tenant_id, from_date=fd, to_date=td)
-    if report_type == "sales_salesperson":
-        return await reports_svc.sales_by_salesperson(db, tenant_id, from_date=fd, to_date=td)
+        return await reports_svc.sales_by_customer(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            store_id=store_id or None,
+        )
+    if report_type == "sales_returns":
+        return await reports_svc.sales_returns_summary(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            store_id=store_id or None,
+        )
     if report_type == "sales_by_store":
-        return await reports_svc.sales_by_store(db, tenant_id, from_date=fd, to_date=td)
+        return await reports_svc.sales_by_store(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            department_id=department_id or None,
+        )
+    if report_type == "sales_by_department":
+        return await reports_svc.sales_by_department(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            department_id=department_id or None,
+        )
     if report_type == "inventory_balance":
-        return await reports_svc.inventory_balance(db, tenant_id, warehouse_id)
-    if report_type == "inventory_movements":
-        return await reports_svc.inventory_movements(db, tenant_id, from_date=fd, to_date=td)
-    if report_type == "inventory_low_stock":
-        return await reports_svc.inventory_low_stock(db, tenant_id)
+        return await reports_svc.inventory_balance(
+            db,
+            tenant_id,
+            warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
+        )
     if report_type == "inventory_valuation":
         return await reports_svc.inventory_valuation(
-            db, tenant_id, warehouse_id=warehouse_id, store_id=store_id
+            db,
+            tenant_id,
+            method="standard",
+            warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
+        )
+    if report_type == "inventory_movements":
+        return await reports_svc.inventory_movements(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
+        )
+    if report_type == "inventory_low_stock":
+        return await reports_svc.inventory_low_stock(
+            db,
+            tenant_id,
+            store_id=store_id or None,
+            warehouse_id=warehouse_id or None,
+        )
+    if report_type == "inventory_expiry":
+        return await reports_svc.inventory_expiry(
+            db,
+            tenant_id,
+            within_days=int(days) if days is not None else 30,
+            warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
+        )
+    if report_type == "inventory_transfers":
+        return await reports_svc.inventory_transfers(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            store_id=store_id or None,
+        )
+    if report_type == "inventory_stock_counts":
+        return await reports_svc.inventory_stock_counts(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
+            variance_only=True,
+            status="completed",
         )
     if report_type == "purchases_summary":
-        return await reports_svc.purchases_summary(db, tenant_id, from_date=fd, to_date=td)
-    if report_type == "purchases_suppliers":
-        return await reports_svc.purchases_by_supplier(db, tenant_id, from_date=fd, to_date=td)
-    if report_type == "purchases_pending_orders":
-        return await reports_svc.purchases_pending_orders(db, tenant_id, from_date=fd, to_date=td)
-    if report_type == "purchases_returns":
-        return await reports_svc.purchases_return_summary(db, tenant_id, from_date=fd, to_date=td)
-    if report_type == "expenses_summary":
-        return await reports_svc.expenses_summary(db, tenant_id, from_date=fd, to_date=td)
-    if report_type == "cash_flow":
-        return await reports_svc.cash_flow_with_optional_compare(
+        return await reports_svc.purchases_summary(
             db,
             tenant_id,
             from_date=fd,
             to_date=td,
-            store_id=store_id,
-            branch_id=branch_id,
-            compare=compare,
+            warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
+        )
+    if report_type == "purchases_suppliers":
+        return await reports_svc.purchases_by_supplier(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
+        )
+    if report_type == "purchases_pending_orders":
+        return await reports_svc.purchases_pending_orders(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
+        )
+    if report_type == "purchases_returns":
+        return await reports_svc.purchases_returns_summary(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            warehouse_id=warehouse_id or None,
+            store_id=store_id or None,
+        )
+    if report_type == "expenses_summary":
+        return await reports_svc.expenses_summary(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            branch_id=branch_id or None,
+            department_id=department_id or None,
+            store_id=store_id or None,
+        )
+    if report_type == "expenses_budget_vs_actual":
+        return await reports_svc.budget_vs_actual(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            category_id=category_id or None,
+            branch_id=branch_id or None,
+            department_id=department_id or None,
+            store_id=store_id or None,
+        )
+    if report_type == "cash_flow":
+        return await reports_svc.cash_flow(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            store_id=store_id or None,
+            branch_id=branch_id or None,
         )
     if report_type == "trial_balance":
-        return await accounting_svc.trial_balance(db, tenant_id, as_of=as_of)
+        as_of_raw = as_of or to_date or date
+        return await accounting_svc.trial_balance(
+            db,
+            tenant_id,
+            as_of=reports_svc.parse_date(as_of_raw, end_of_day=True),
+            store_id=store_id or None,
+            branch_id=branch_id or None,
+        )
     if report_type == "profit_loss":
-        return await reports_svc.profit_loss_with_optional_compare(
+        return await accounting_svc.profit_and_loss(
             db,
             tenant_id,
             from_date=fd,
             to_date=td,
-            store_id=store_id,
-            branch_id=branch_id,
-            compare=compare,
+            store_id=store_id or None,
+            branch_id=branch_id or None,
         )
     if report_type == "balance_sheet":
-        return await reports_svc.balance_sheet_with_optional_compare(
+        as_of_raw = as_of or to_date or date
+        return await reports_svc.balance_sheet(
             db,
             tenant_id,
-            as_of=as_of,
-            store_id=store_id,
-            branch_id=branch_id,
+            as_of=reports_svc.parse_date(as_of_raw, end_of_day=True),
             compare=compare,
+            store_id=store_id or None,
+            branch_id=branch_id or None,
         )
-    if report_type == "credit_aging":
-        from app import credit as credit_svc
-
-        aging_kind = (kind or "receivable").strip().lower()
-        if aging_kind in {"payable", "ap"}:
-            return await credit_svc.ap_aging(db, tenant_id, as_of=as_of or now)
-        return await credit_svc.ar_aging(db, tenant_id, as_of=as_of or now)
     if report_type == "tax":
         return await tax_svc.tax_report(
-            db, tenant_id, from_date=fd, to_date=td, company_id=company_id
+            db, tenant_id, from_date=fd, to_date=td, store_id=store_id or None
         )
     if report_type == "tax_filing":
         return await tax_svc.tax_filing_pack(
-            db, tenant_id, from_date=fd, to_date=td, company_id=company_id
+            db, tenant_id, from_date=fd, to_date=td, store_id=store_id or None
         )
     if report_type == "tax_filing_gh":
         from app import tax_filings as tax_filings_svc
@@ -771,42 +955,7 @@ async def build_report_payload(
             from_date=fd,
             to_date=td,
             jurisdiction=jurisdiction or "GH",
-            company_id=company_id,
-        )
-    if report_type == "tax_filing_ke":
-        from app import tax_filings as tax_filings_svc
-
-        return await tax_filings_svc.government_filing_pack(
-            db,
-            tenant_id,
-            from_date=fd,
-            to_date=td,
-            jurisdiction=jurisdiction or "KE",
-            company_id=company_id,
-        )
-    if report_type == "tax_filing_ng":
-        from app import tax_filings as tax_filings_svc
-
-        return await tax_filings_svc.government_filing_pack(
-            db,
-            tenant_id,
-            from_date=fd,
-            to_date=td,
-            jurisdiction=jurisdiction or "NG",
-            company_id=company_id,
-        )
-    if report_type == "transfer_history":
-        from app import stores as stores_svc
-
-        return await stores_svc.transfer_history(
-            db,
-            tenant_id,
-            status=status,
-            store_id=store_id,
-            from_date=fd,
-            to_date=td,
-            scope=scope or "all",
-            limit=int(limit or 200),
+            store_id=store_id or None,
         )
     raise HTTPException(status_code=400, detail="Unhandled report type")
 
@@ -818,6 +967,8 @@ async def export_report(
     fmt: str,
     **kwargs,
 ) -> tuple[bytes, str, str]:
+    # Defense in depth: /reports/export Query Literals reject blank/unknown with 422.
+    # Empty format used to coerce to csv via `fmt or "csv"`.
     fmt = (fmt or "csv").lower()
     if fmt not in EXPORT_FORMATS:
         raise HTTPException(

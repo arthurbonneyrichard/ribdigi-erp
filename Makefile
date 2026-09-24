@@ -1,4 +1,4 @@
-.PHONY: up down logs test lint seed migrate ensure-env loadtest-smoke \
+.PHONY: up down logs test lint seed migrate ensure-env \
 	prod-config prod-up prod-down prod-logs prod-migrate prod-ps prod-backup
 
 ensure-env:
@@ -17,22 +17,19 @@ test:
 	docker compose exec -e PYTHONPATH=/app backend pytest -q
 lint:
 	docker compose exec backend ruff check app tests
-# Stage 5 L1 — CI-style health baseline (live API). See docs/LOAD_TEST_BASELINE.md
-loadtest-smoke:
-	docker compose exec -e PYTHONPATH=/app backend python -m loadtest.run_baseline --smoke --base-url http://localhost:8000
 
-# --- production / Dokploy helpers (manual Compose; Dokploy uses UI Deploy) ---
+# --- production (Ubuntu VPS) ---
 prod-config:
-	docker compose -f docker-compose.dokploy.yml config >/dev/null && echo "docker-compose.dokploy.yml OK"
+	docker compose -f docker-compose.prod.yml config >/dev/null && echo "docker-compose.prod.yml OK"
 prod-up:
-	docker compose -f docker-compose.dokploy.yml up -d --build
+	docker compose -f docker-compose.prod.yml up -d --build
 prod-down:
-	docker compose -f docker-compose.dokploy.yml down
+	docker compose -f docker-compose.prod.yml down
 prod-logs:
-	docker compose -f docker-compose.dokploy.yml logs -f --tail=200
+	docker compose -f docker-compose.prod.yml logs -f --tail=200
 prod-migrate:
-	docker compose -f docker-compose.dokploy.yml run --rm migrate
+	docker compose -f docker-compose.prod.yml run --rm migrate
 prod-ps:
-	docker compose -f docker-compose.dokploy.yml ps
+	docker compose -f docker-compose.prod.yml ps
 prod-backup:
 	./ops/vps/backup-postgres.sh

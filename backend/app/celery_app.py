@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from celery import Celery
-from celery.schedules import schedule
+from celery.schedules import crontab, schedule
 
 from app.config import settings
 
@@ -43,6 +43,12 @@ celery.conf.update(
                 run_every=max(1, int(settings.CELERY_QUOTATION_EXPIRY_INTERVAL_MINUTES)) * 60.0
             ),
         },
+        "scan-recurring-expense-due": {
+            "task": "app.tasks.scan_recurring_expense_due",
+            "schedule": schedule(
+                run_every=max(1, int(settings.CELERY_RECURRING_NOTIFY_INTERVAL_MINUTES)) * 60.0
+            ),
+        },
         "generate-recurring-expenses": {
             "task": "app.tasks.generate_recurring_expenses",
             "schedule": schedule(
@@ -73,18 +79,6 @@ celery.conf.update(
                 run_every=max(1, int(settings.CELERY_BANK_FEED_INTERVAL_MINUTES)) * 60.0
             ),
         },
-        "generate-ai-low-stock-predictions": {
-            "task": "app.tasks.generate_ai_low_stock_predictions",
-            "schedule": schedule(
-                run_every=max(1, int(settings.CELERY_AI_PREDICTION_INTERVAL_MINUTES)) * 60.0
-            ),
-        },
-        "generate-ai-insights": {
-            "task": "app.tasks.generate_ai_insights",
-            "schedule": schedule(
-                run_every=max(1, int(settings.CELERY_AI_INSIGHTS_INTERVAL_MINUTES)) * 60.0
-            ),
-        },
         "archive-cold-audit-logs": {
             "task": "app.tasks.archive_cold_audit_logs",
             "schedule": schedule(
@@ -96,6 +90,16 @@ celery.conf.update(
             "schedule": schedule(
                 run_every=max(5, int(settings.CELERY_WEBHOOK_RETRY_INTERVAL_SECONDS))
             ),
+        },
+        "scan-ai-security-alerts": {
+            "task": "app.tasks.scan_ai_security_alerts",
+            "schedule": schedule(
+                run_every=max(1, int(settings.CELERY_AI_SECURITY_INTERVAL_MINUTES)) * 60.0
+            ),
+        },
+        "send-weekly-ai-insight-digest": {
+            "task": "app.tasks.send_weekly_ai_insight_digest",
+            "schedule": crontab(minute=0, hour=7, day_of_week="monday"),
         },
     },
 )

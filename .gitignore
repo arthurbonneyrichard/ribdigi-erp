@@ -92,4 +92,3 @@ docker-compose.override.yml
 celerybeat-schedule
 celerybeat-schedule.*
 **/celerybeat-schedule
-.venv

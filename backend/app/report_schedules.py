@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app.honesty import require_honest_narrative
 from app.report_export import EXPORTABLE, EXPORT_FORMATS, export_report
 
 FREQUENCIES = frozenset({"daily", "weekly"})
@@ -35,13 +36,32 @@ def serialize_schedule(row: m.ReportSchedule) -> dict:
 
 
 def _normalize_recipients(raw: list[str] | str | None) -> list[str]:
+    """Split/de-dupe recipient emails. Schema ReportScheduleRecipientsValue rejects
+    blank/invalid with **422**; this remains defense-in-depth (**400**).
+    """
     if raw is None:
         return []
     if isinstance(raw, str):
         parts = [p.strip() for p in raw.replace(";", ",").split(",")]
     else:
         parts = [str(p).strip() for p in raw]
-    out = [p for p in parts if p and "@" in p]
+    out: list[str] = []
+    for p in parts:
+        if not p:
+            continue
+        # Soft `@` gate was tip #118 pre-state; require a real local@domain shape.
+        if "@" not in p or p.startswith("@") or p.endswith("@") or " " in p:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid recipient email: {p}",
+            )
+        local, _, domain = p.partition("@")
+        if not local or "." not in domain:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid recipient email: {p}",
+            )
+        out.append(p)
     # de-dupe preserve order
     seen: set[str] = set()
     unique: list[str] = []
@@ -59,19 +79,27 @@ async def list_schedules(
     tenant_id: str,
     *,
     enabled: bool | None = None,
-    company_id: str | None = None,
+    frequency: str | None = None,
 ) -> list[m.ReportSchedule]:
-    """Stage 127 S1 — optional enabled filter for honest schedule lists."""
-    stmt = select(m.ReportSchedule).where(m.ReportSchedule.tenant_id == tenant_id)
-    if company_id:
-        stmt = stmt.where(m.ReportSchedule.company_id == company_id)
+    stmt = (
+        select(m.ReportSchedule)
+        .where(m.ReportSchedule.tenant_id == tenant_id)
+        .order_by(m.ReportSchedule.created_at.desc())
+    )
     if enabled is not None:
         stmt = stmt.where(m.ReportSchedule.enabled.is_(bool(enabled)))
-    return list(
-        (await db.execute(stmt.order_by(m.ReportSchedule.created_at.desc())))
-        .scalars()
-        .all()
-    )
+    if frequency is not None:
+        wanted = (frequency or "").strip().lower()
+        if not wanted:
+            pass
+        elif wanted not in {"daily", "weekly"}:
+            raise HTTPException(
+                status_code=422,
+                detail="frequency must be daily or weekly",
+            )
+        else:
+            stmt = stmt.where(m.ReportSchedule.frequency == wanted)
+    return list((await db.execute(stmt)).scalars().all())
 
 
 async def get_schedule(
@@ -108,15 +136,19 @@ async def create_schedule(
     enabled: bool = True,
     company_id: str | None = None,
 ) -> m.ReportSchedule:
-    name = (name or "").strip()
-    if len(name) < 2:
-        raise HTTPException(status_code=400, detail="name is required")
+    name = require_honest_narrative(
+        name, label="report schedule name", min_length=2, max_length=120
+    )
+    # Defense in depth: ReportScheduleCreate.report_type Literal rejects blank/unknown with 422.
     if report_type not in EXPORTABLE:
         raise HTTPException(status_code=400, detail=f"report_type must be one of {sorted(EXPORTABLE)}")
     fmt = (format or "xlsx").lower()
+    # Defense in depth: ReportScheduleCreate.format Literal rejects blank/unknown with 422.
     if fmt not in EXPORT_FORMATS:
         raise HTTPException(status_code=400, detail=f"format must be one of {sorted(EXPORT_FORMATS)}")
     freq = (frequency or "daily").lower()
+    # Defense in depth: ReportScheduleCreate.frequency Literal rejects blank/unknown with 422.
+    # Empty used to coerce to daily via `frequency or "daily"`.
     if freq not in FREQUENCIES:
         raise HTTPException(status_code=400, detail="frequency must be daily or weekly")
     if freq == "weekly":
@@ -164,21 +196,23 @@ async def update_schedule(
 ) -> m.ReportSchedule:
     row = await get_schedule(db, tenant_id, schedule_id, company_id=company_id)
     if name is not None:
-        name = name.strip()
-        if len(name) < 2:
-            raise HTTPException(status_code=400, detail="name is required")
-        row.name = name
+        row.name = require_honest_narrative(
+            name, label="report schedule name", min_length=2, max_length=120
+        )
     if report_type is not None:
+        # Defense in depth: ReportScheduleUpdate.report_type Literal → 422 on blank/unknown.
         if report_type not in EXPORTABLE:
             raise HTTPException(status_code=400, detail=f"report_type must be one of {sorted(EXPORTABLE)}")
         row.report_type = report_type
     if format is not None:
         fmt = format.lower()
+        # Defense in depth: ReportScheduleUpdate.format Literal → 422 on blank/unknown.
         if fmt not in EXPORT_FORMATS:
             raise HTTPException(status_code=400, detail=f"format must be one of {sorted(EXPORT_FORMATS)}")
         row.format = fmt
     if frequency is not None:
         freq = frequency.lower()
+        # Defense in depth: ReportScheduleUpdate.frequency Literal → 422 on blank/unknown.
         if freq not in FREQUENCIES:
             raise HTTPException(status_code=400, detail="frequency must be daily or weekly")
         row.frequency = freq

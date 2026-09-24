@@ -23,6 +23,8 @@
 12. [Troubleshooting](#12-troubleshooting)
 13. [Appendix](#13-appendix)
 
+> Also see **§9A Integrations** (API keys & webhooks) after System Settings.
+
 ---
 
 ## 1. Introduction & Role Definitions
@@ -547,18 +549,18 @@ For onboarding multiple users at once:
 1. Go to **Admin → Users → Import**
 2. Download the **CSV Template**
 3. Fill in required columns:
-   - `full_name`, `email`, `phone`, `role`
-   - Optional: `branch`, `store`, `department`, `employee_id`
+   - `full_name`, `email`, `role`, `temporary_password`
+   - Optional: `phone`
 4. Upload CSV file
 5. System validates:
-   - Email uniqueness
-   - Role existence
-   - Branch/store validity
+   - Email uniqueness (file + tenant)
+   - Role existence (system roles; `super_admin` blocked for non–super admins)
+   - Password policy (upper, lower, number, symbol, min 8)
 6. Review validation report
-7. Click **Import Valid Rows**
-8. Welcome emails sent automatically
+7. Click **Import valid rows** (all-or-nothing)
+8. Verification emails dispatched for each created user
 
-> **Template Download:** Available at `Admin → Users → Import → Download Template`
+> **Template Download:** Available at **Users → Bulk import users → Download CSV template** (`GET /users/import/template`)
 
 ### 5.6 User Profile Management
 
@@ -927,7 +929,15 @@ RIBDIGI ensures tamper-evident logging:
 - **Immutable Storage:** Write-once storage backend for audit data
 - **Access Control:** Only Company Admin and Super Admin can view audit logs
 
-> **⚠️ Legal Hold:** In case of legal proceedings, contact RIBDIGI Support to place a legal hold on audit data, preventing automated archival deletion.
+### 8.6 Retention & cold archive
+
+1. Open **Audit** in the Shell (`/audit`)
+2. Review the **Retention & cold archive** card (minimum 7 years; purge never)
+3. Company Admin / Super Admin can **Archive cold now** — aged hot rows are copied to checksummed JSONL object storage and marked `archived_at` (never deleted)
+4. The archives table lists manifests (event count, date range, size, SHA-256)
+5. Celery job `archive_cold_audit_logs` (also on **Jobs**) runs the same archive on a schedule
+
+> **⚠️ Legal Hold:** In case of legal proceedings, contact RIBDIGI Support to place a legal hold on audit data before changing archive settings.
 
 ---
 
@@ -1045,6 +1055,31 @@ Use these placeholders in custom templates:
 - `{{customer_name}}`, `{{customer_address}}`
 - `{{subtotal}}`, `{{tax_amount}}`, `{{total}}`
 - `{{payment_method}}`, `{{cashier_name}}`
+
+---
+
+## 9A. Integrations (API keys & webhooks)
+
+Company Admins manage external integrations at **Integrations** (`/integrations`).
+
+### 9A.1 API keys
+
+1. Open **Integrations**.
+2. Create a key (optional expiry). Copy the `rdk_…` secret immediately — it is shown once.
+3. Clients send `X-API-Key: rdk_…` (or `Authorization: Bearer rdk_…`) plus `X-Tenant-ID` when required.
+4. Use **Usage** to inspect request counts; **Revoke** to invalidate immediately.
+
+Default scopes (if omitted at create): read on inventory, sales, purchasing, customers, reports.
+
+### 9A.2 Webhooks
+
+1. Create an HTTPS endpoint URL and select events (at least one).
+2. Copy the `whsec_…` signing secret once (or after **Rotate secret**).
+3. Click **Test** to send a signed `webhook.test` ping.
+4. Open **Deliveries** to see recent attempts; use **Retry** for `pending_retry` / `failed` rows.
+5. Verify incoming signatures using `docs/API_DOCUMENTATION.md` §17.4 (Python/Node samples) or the on-page **Verify signature** panel.
+
+**Honesty:** Live fan-out today includes `webhook.test`, `sale.created` (invoice post + POS), `sale.paid` (AR payment + fully settled POS), `customer.created`, `supplier.created`, `purchase.order.created`, `purchase.grn.received`, `expense.approved`, `stock.low`, `stock.in` (skips GRN — use `purchase.grn.received`), `stock.out` (skips POS/invoice — use `sale.created`), `tenant.suspended`, and `user.login` (interactive auth only; not refresh).
 
 ---
 

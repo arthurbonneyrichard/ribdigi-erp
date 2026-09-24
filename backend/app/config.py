@@ -24,19 +24,21 @@ class Settings(BaseSettings):
     # Production recommendation: set True so multi-instance deploys share sliding windows.
     RATE_LIMIT_REQUIRE_REDIS: bool = False
     RATE_LIMIT_REDIS_PREFIX: str = "ribdigi:ratelimit"
-    # Stage 6 P2 — app-data cache (dashboard / catalog). Soft-fail; never 503 on Redis miss.
-    CACHE_ENABLED: bool = True
-    CACHE_BACKEND: str = "auto"  # auto | redis | memory
-    CACHE_REDIS_PREFIX: str = "ribdigi:cache"
-    CACHE_DASHBOARD_TTL_SECONDS: int = 300
-    CACHE_CATALOG_TTL_SECONDS: int = 600
-    # Stage 7 C2 — user permissions cache (architecture: perms:{user_id}, 1h)
-    CACHE_PERMISSIONS_TTL_SECONDS: int = 3600
-    # Stage 7 W2 — webhook delivery retries (exponential backoff from base)
+    # Auto-log successful POST/PUT/PATCH/DELETE under /api/v1 (BR-17.1 catch-all).
+    AUDIT_HTTP_MIDDLEWARE_ENABLED: bool = True
+    # BR-17.2 — minimum retention (years); cold archive after N hot days (rows kept, not purged).
+    AUDIT_RETENTION_YEARS: int = 7
+    AUDIT_COLD_ARCHIVE_AFTER_DAYS: int = 365
+    CELERY_AUDIT_ARCHIVE_INTERVAL_MINUTES: int = 1440
+    # BR-18.6 — webhook delivery retries (exponential backoff from base)
     WEBHOOK_MAX_ATTEMPTS: int = 5
     WEBHOOK_RETRY_BASE_SECONDS: int = 60
     CELERY_WEBHOOK_RETRY_INTERVAL_SECONDS: int = 30
     ALLOW_DEVELOPMENT_SEED: bool = False
+    # Deploy identity — set by Docker Compose build/runtime for Dokploy verification.
+    # release_channel must be "production" for the commercial ERP (not GitHub main).
+    RIBDIGI_RELEASE_CHANNEL: str = "development"
+    RIBDIGI_BUILD_ID: str = "dev"
     BACKUP_DIR: str = "/data/backups"
     MEDIA_DIR: str = "/data/media"
     MEDIA_MAX_LOGO_BYTES: int = 2_000_000
@@ -61,11 +63,10 @@ class Settings(BaseSettings):
     DB_POOL_SIZE: int = 5
     DB_MAX_OVERFLOW: int = 10
     TOTP_ENCRYPTION_KEY: str = ""
-    TOTP_ENFORCED_ROLES: str = "company_admin,super_admin,platform_super_admin,platform_admin"
-    # ADR-137 — optional bootstrap of first Ribdigi House platform admin (never hard-code in code)
-    PLATFORM_ADMIN_EMAIL: str = ""
-    PLATFORM_ADMIN_PASSWORD: str = ""
-    PLATFORM_ADMIN_FULL_NAME: str = "Platform Super Admin"
+    TOTP_ENFORCED_ROLES: str = "company_admin,super_admin"
+    # When false, login skips TOTP/passkey challenge and enrollment gates (password + tenant only).
+    # Set true in production to require enrolled second factors at sign-in.
+    LOGIN_2FA_ENABLED: bool = False
     WEBAUTHN_RP_ID: str = "localhost"
     WEBAUTHN_RP_NAME: str = "RIBDIGI ERP"
     WEBAUTHN_ORIGIN: str = ""  # defaults to FRONTEND_URL
@@ -75,7 +76,7 @@ class Settings(BaseSettings):
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
     SMTP_FROM_EMAIL: str = "noreply@localhost"
-    SMTP_FROM_NAME: str = "RIBDIGI ERP"
+    SMTP_FROM_NAME: str = "Ribdigi House"
     SMTP_USE_TLS: bool = True
     SMTP_USE_SSL: bool = False
     SMTP_TIMEOUT_SECONDS: float = 15.0
@@ -93,6 +94,7 @@ class Settings(BaseSettings):
     CELERY_PAYMENT_DUE_INTERVAL_MINUTES: int = 60
     CELERY_QUOTATION_EXPIRY_INTERVAL_MINUTES: int = 60
     CELERY_RECURRING_INTERVAL_MINUTES: int = 15
+    CELERY_RECURRING_NOTIFY_INTERVAL_MINUTES: int = 60
     CELERY_BACKUP_INTERVAL_MINUTES: int = 60
     CELERY_TRIAL_INTERVAL_MINUTES: int = 60
     CELERY_REPORT_EMAIL_INTERVAL_MINUTES: int = 60
@@ -113,18 +115,26 @@ class Settings(BaseSettings):
     POS_DRAWER_TIMEOUT_SECONDS: float = 3.0
     TRIAL_DAYS: int = 14
     TRIAL_GRACE_DAYS: int = 7
-    # Stage 1 G19 — catch-all hash-chained audit for mutating /api/v1 writes
-    AUDIT_HTTP_MIDDLEWARE_ENABLED: bool = True
-    # Stage 1 G20 — BR-17.2 retention / cold archive
-    AUDIT_RETENTION_YEARS: int = 7
-    # Logs older than this many days are eligible for cold-archive copy (rows are never deleted).
-    AUDIT_COLD_ARCHIVE_AFTER_DAYS: int = 365
-    CELERY_AUDIT_ARCHIVE_INTERVAL_MINUTES: int = 1440
-    # Stage 5 H5 — Prometheus-text /metrics (full Grafana stack deferred)
+    # Ops monitoring (Prometheus text + structured request logs)
     METRICS_ENABLED: bool = True
-    # Stage 18 L1 — structured JSON request/error logs (MVP-lite)
     REQUEST_LOG_ENABLED: bool = True
     LOG_LEVEL: str = "INFO"
+    # AI Business Assistant (fail-closed until enabled + approved provider + key)
+    AI_ENABLED: bool = False
+    AI_PROVIDER: str = "none"  # none | openai | mock (mock = non-production only)
+    AI_API_KEY: str = ""
+    AI_API_BASE_URL: str = ""
+    AI_MODEL: str = ""
+    AI_MAX_MESSAGE_CHARS: int = 16000  # ~4096 tokens heuristic
+    AI_CHAT_TIMEOUT_SECONDS: float = 30.0
+    # AI Security Monitor (rule-based; no LLM)
+    AI_SECURITY_MONITOR_ENABLED: bool = True
+    AI_SECURITY_ALERT_THRESHOLD: int = 60
+    CELERY_AI_SECURITY_INTERVAL_MINUTES: int = 15
+    # AI inventory predictions (rule-based velocity; no LLM)
+    AI_INVENTORY_LOOKBACK_DAYS: int = 28
+    AI_INVENTORY_DEFAULT_LEAD_DAYS: int = 7
+    AI_INVENTORY_COVER_DAYS: int = 14
 
     model_config = SettingsConfigDict(env_file="../.env", extra="ignore")
 
@@ -169,6 +179,16 @@ class Settings(BaseSettings):
                 raise ValueError("RATE_LIMIT_ENABLED must be true in production")
             if self.RATE_LIMIT_PER_MINUTE < 1 or self.RATE_LIMIT_AUTH_PER_MINUTE < 1:
                 raise ValueError("Rate limit values must be positive in production")
+            if not self.trusted_hosts:
+                raise ValueError(
+                    "Production TRUSTED_HOSTS must list at least one host "
+                    "(e.g. erp.ribdigihouse.com,localhost,127.0.0.1)"
+                )
+            if not self.LOGIN_2FA_ENABLED:
+                raise ValueError(
+                    "Production LOGIN_2FA_ENABLED must be true "
+                    "(password-only login is not allowed in production)"
+                )
             backend = (self.RATE_LIMIT_BACKEND or "auto").lower()
             if backend not in {"auto", "redis", "memory"}:
                 raise ValueError("RATE_LIMIT_BACKEND must be auto, redis, or memory")
@@ -188,6 +208,26 @@ class Settings(BaseSettings):
                         "Production SMS_ENABLED requires TWILIO_ACCOUNT_SID, "
                         "TWILIO_AUTH_TOKEN, and TWILIO_FROM_NUMBER"
                     )
+            if self.AI_ENABLED:
+                provider = (self.AI_PROVIDER or "").strip().lower()
+                if provider in {"", "none", "mock"}:
+                    raise ValueError(
+                        "Production AI_ENABLED requires AI_PROVIDER=openai "
+                        "(mock is not allowed in production)"
+                    )
+                if provider not in {"openai"}:
+                    raise ValueError(
+                        f"Production AI_PROVIDER '{provider}' is not an approved provider"
+                    )
+                key = (self.AI_API_KEY or "").strip()
+                weak = {"", "change-me", "changeme", "replace-me", "your-api-key", "sk-test"}
+                if not key or key.lower() in weak or len(key) < 16:
+                    raise ValueError(
+                        "Production AI_ENABLED requires a strong AI_API_KEY "
+                        "(min 16 chars, not a placeholder)"
+                    )
+                if self.AI_MAX_MESSAGE_CHARS < 256:
+                    raise ValueError("AI_MAX_MESSAGE_CHARS must be >= 256 in production")
         return self
 
 

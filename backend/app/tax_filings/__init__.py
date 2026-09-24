@@ -15,7 +15,18 @@ SUPPORTED = {
 }
 
 
+def coerce_tax_filing_jurisdiction_value(value: object) -> object:
+    """Pydantic BeforeValidator: strip/uppercase; blank stays blank for Literal 422."""
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().upper()
+
+
 def normalize_jurisdiction(code: str | None) -> str:
+    # Schema TaxFilingJurisdictionValue rejects blank/unknown Query → 422 when the
+    # client passes jurisdiction=; keep length checks for tenant-default / export paths.
     cur = (code or "").strip().upper()
     if not cur:
         raise HTTPException(status_code=400, detail="jurisdiction is required")
@@ -56,7 +67,7 @@ async def government_filing_pack(
     from_date=None,
     to_date=None,
     jurisdiction: str | None = None,
-    company_id: str | None = None,
+    store_id: str | None = None,
 ) -> dict:
     from app import tax as tax_svc
 
@@ -64,7 +75,7 @@ async def government_filing_pack(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
     pack = await tax_svc.tax_filing_pack(
-        db, tenant_id, from_date=from_date, to_date=to_date, company_id=company_id
+        db, tenant_id, from_date=from_date, to_date=to_date, store_id=store_id
     )
     juris = normalize_jurisdiction(jurisdiction or getattr(tenant, "tax_jurisdiction", None) or "GH")
     government = build_government_return(pack, tenant, jurisdiction=juris)

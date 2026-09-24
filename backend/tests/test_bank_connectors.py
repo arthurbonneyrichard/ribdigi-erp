@@ -20,6 +20,23 @@ async def _admin_headers(ac, seeded):
     )
 
 
+def test_mock_provider_blocked_in_production(monkeypatch):
+    """The dev-only 'mock' provider (fake feed) must be rejected in production."""
+    from fastapi import HTTPException
+
+    from app import bank_connectors as bc
+
+    monkeypatch.setattr("app.bank_connectors.settings.APP_ENV", "production")
+    with pytest.raises(HTTPException) as exc:
+        bc._normalize_provider("mock")
+    assert exc.value.status_code == 400
+    # a real feed provider stays allowed in production
+    assert bc._normalize_provider("http_json") == "http_json"
+
+    monkeypatch.setattr("app.bank_connectors.settings.APP_ENV", "development")
+    assert bc._normalize_provider("mock") == "mock"
+
+
 @pytest.mark.asyncio
 async def test_mock_bank_connection_sync_and_dedupe(client, monkeypatch):
     monkeypatch.setattr("app.config.settings.BANK_FEED_SYNC_ENABLED", True)
@@ -82,6 +99,122 @@ async def test_mock_bank_connection_sync_and_dedupe(client, monkeypatch):
         f"/api/v1/accounting/bank-connections/{conn['id']}", headers=headers
     )
     assert deleted.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_bank_connection_soft_deactivate_blocks_sync(client, monkeypatch):
+    """PATCH is_active=false pauses sync (400) until reactivated; Remove still deletes."""
+    monkeypatch.setattr("app.config.settings.BANK_FEED_SYNC_ENABLED", True)
+    monkeypatch.setattr("app.bank_connectors.settings.BANK_FEED_SYNC_ENABLED", True)
+
+    ac, seeded = client
+    headers = await _admin_headers(ac, seeded)
+    accounts = (await ac.get("/api/v1/accounting/liquid-accounts", headers=headers)).json()["data"]
+    bank = next((a for a in accounts if a.get("code") == "1010"), accounts[0])
+
+    created = await ac.post(
+        "/api/v1/accounting/bank-connections",
+        headers=headers,
+        json={
+            "account_id": bank["id"],
+            "provider": "mock",
+            "display_name": "Soft deactivate feed",
+            "external_account_id": "seed-soft-1",
+            "auto_sync": True,
+            "auto_match_after_sync": False,
+        },
+    )
+    assert created.status_code == 200, created.text
+    conn = created.json()["data"]
+    assert conn.get("is_active") is True
+
+    deactivated = await ac.patch(
+        f"/api/v1/accounting/bank-connections/{conn['id']}",
+        headers=headers,
+        json={"is_active": False},
+    )
+    assert deactivated.status_code == 200, deactivated.text
+    assert deactivated.json()["data"]["is_active"] is False
+
+    blocked = await ac.post(
+        f"/api/v1/accounting/bank-connections/{conn['id']}/sync",
+        headers=headers,
+        json={},
+    )
+    assert blocked.status_code == 400, blocked.text
+    assert "inactive" in blocked.json()["detail"].lower()
+
+    activated = await ac.patch(
+        f"/api/v1/accounting/bank-connections/{conn['id']}",
+        headers=headers,
+        json={"is_active": True},
+    )
+    assert activated.status_code == 200, activated.text
+    assert activated.json()["data"]["is_active"] is True
+
+    ok = await ac.post(
+        f"/api/v1/accounting/bank-connections/{conn['id']}/sync",
+        headers=headers,
+        json={},
+    )
+    assert ok.status_code == 200, ok.text
+    assert ok.json()["data"]["imported"] >= 1
+
+
+@pytest.mark.asyncio
+async def test_bank_connections_list_is_active_filter(client):
+    ac, seeded = client
+    headers = await _admin_headers(ac, seeded)
+    accounts = (await ac.get("/api/v1/accounting/liquid-accounts", headers=headers)).json()["data"]
+    bank = next((a for a in accounts if a.get("code") == "1010"), accounts[0])
+
+    created = await ac.post(
+        "/api/v1/accounting/bank-connections",
+        headers=headers,
+        json={
+            "account_id": bank["id"],
+            "provider": "mock",
+            "display_name": "Filter Demo Bank Conn",
+            "external_account_id": "seed-filter-1",
+            "auto_sync": False,
+            "auto_match_after_sync": False,
+        },
+    )
+    assert created.status_code == 200, created.text
+    cid = created.json()["data"]["id"]
+
+    await ac.patch(
+        f"/api/v1/accounting/bank-connections/{cid}",
+        headers=headers,
+        json={"is_active": False},
+    )
+
+    all_rows = await ac.get("/api/v1/accounting/bank-connections", headers=headers)
+    assert cid in {r["id"] for r in all_rows.json()["data"]}
+
+    active_only = await ac.get(
+        "/api/v1/accounting/bank-connections?is_active=true", headers=headers
+    )
+    assert cid not in {r["id"] for r in active_only.json()["data"]}
+
+    inactive_only = await ac.get(
+        "/api/v1/accounting/bank-connections?is_active=false", headers=headers
+    )
+    assert cid in {r["id"] for r in inactive_only.json()["data"]}
+    assert all(r["is_active"] is False for r in inactive_only.json()["data"])
+
+
+def test_bank_connection_status_filter_ui_wired():
+    from pathlib import Path
+
+    accounting = (
+        Path(__file__).resolve().parents[2] / "frontend/app/(dashboard)/accounting/page.tsx"
+    ).read_text(encoding="utf-8")
+    assert "connectionManageFilter" in accounting
+    assert 'aria-label="Bank connection status filter"' in accounting
+    assert "managedConnections" in accounting
+    assert "[inactive]" in accounting
+    assert "setConnectionActive" in accounting
 
 
 @pytest.mark.asyncio

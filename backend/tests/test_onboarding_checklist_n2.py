@@ -55,7 +55,7 @@ async def test_onboarding_checklist_progress_skip_dismiss(client, db_session):
     bad_step = await ac.post(
         "/api/v1/onboarding/checklist/steps/not_a_step/skip", headers=headers
     )
-    assert bad_step.status_code == 400
+    assert bad_step.status_code == 422
 
     dismissed = await ac.post("/api/v1/onboarding/checklist/dismiss", headers=headers)
     assert dismissed.status_code == 200, dismissed.text

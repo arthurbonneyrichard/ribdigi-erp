@@ -7,7 +7,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
-from app.reports import apply_company_filter
+from app import schema_compat
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
 DEFAULT_UNITS = (
     ("PCS", "Pieces"),
@@ -37,212 +38,230 @@ def serialize_category(row: m.ProductCategory) -> dict:
     }
 
 
-def build_category_tree(rows: list[m.ProductCategory]) -> list[dict]:
-    """Nest categories by parent_id; orphans with missing parents become roots."""
-    nodes = {row.id: {**serialize_category(row), "children": []} for row in rows}
-    roots: list[dict] = []
-    for row in rows:
-        node = nodes[row.id]
-        parent_id = row.parent_id
-        if parent_id and parent_id in nodes and parent_id != row.id:
-            nodes[parent_id]["children"].append(node)
-        else:
-            roots.append(node)
+def serialize_categories_tree(rows: list[m.ProductCategory]) -> list[dict]:
+    """Serialize categories in tree order with depth + path (BR-5.1)."""
+    items = [serialize_category(r) for r in rows]
+    children: dict[str | None, list[dict]] = {}
+    for item in items:
+        children.setdefault(item.get("parent_id"), []).append(item)
+    for bucket in children.values():
+        bucket.sort(key=lambda x: ((x.get("name") or "").lower(), x.get("code") or ""))
 
-    def sort_rec(items: list[dict]) -> None:
-        items.sort(key=lambda x: (x.get("name") or "").lower())
-        for item in items:
-            sort_rec(item["children"])
+    ordered: list[dict] = []
 
-    sort_rec(roots)
-    return roots
+    def walk(parent_id: str | None, depth: int, ancestors: list[str]) -> None:
+        for item in children.get(parent_id, []):
+            path_names = ancestors + [item["name"]]
+            item["depth"] = depth
+            item["path"] = " › ".join(path_names)
+            ordered.append(item)
+            walk(item["id"], depth + 1, path_names)
+
+    walk(None, 0, [])
+    # Orphans whose parent is missing (inactive/deleted FK) still appear
+    seen = {i["id"] for i in ordered}
+    for item in items:
+        if item["id"] in seen:
+            continue
+        item["depth"] = 0
+        item["path"] = item["name"]
+        ordered.append(item)
+    return ordered
 
 
-def flatten_category_tree(tree: list[dict], *, depth: int = 0) -> list[dict]:
-    out: list[dict] = []
-    for node in tree:
-        out.append({**{k: v for k, v in node.items() if k != "children"}, "depth": depth})
-        out.extend(flatten_category_tree(node.get("children") or [], depth=depth + 1))
-    return out
+async def _assert_category_parent_ok(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    category_id: str,
+    parent_id: str,
+) -> None:
+    """Reject self-parent and cycles (parent is self or a descendant)."""
+    if parent_id == category_id:
+        raise HTTPException(status_code=400, detail="Category cannot be its own parent")
+    parent = await db.get(m.ProductCategory, parent_id)
+    if not parent or parent.tenant_id != tenant_id:
+        raise HTTPException(status_code=404, detail="Parent category not found")
+    seen: set[str] = set()
+    current_id: str | None = parent_id
+    while current_id:
+        if current_id == category_id:
+            raise HTTPException(
+                status_code=400,
+                detail="Category parent would create a cycle",
+            )
+        if current_id in seen:
+            break
+        seen.add(current_id)
+        node = await db.get(m.ProductCategory, current_id)
+        if not node or node.tenant_id != tenant_id:
+            break
+        current_id = node.parent_id
 
 
 def serialize_brand(row: m.Brand) -> dict:
+    logo = getattr(row, "logo_url", None)
     return {
         "id": row.id,
         "company_id": getattr(row, "company_id", None),
         "code": row.code,
         "name": row.name,
         "description": row.description,
-        "logo_url": getattr(row, "logo_url", None),
-        "has_logo": bool(getattr(row, "logo_url", None)),
+        "logo_url": logo,
+        "has_logo": bool(logo),
         "is_active": bool(row.is_active),
         "created_at": row.created_at,
     }
 
 
-def serialize_unit(row: m.UnitOfMeasure) -> dict:
+async def get_brand(db: AsyncSession, tenant_id: str, brand_id: str) -> m.Brand:
+    row = await db.get(m.Brand, brand_id)
+    if row is None or row.tenant_id != tenant_id:
+        raise HTTPException(status_code=404, detail="Brand not found")
+    return row
+
+
+def serialize_unit(row: m.UnitOfMeasure, *, base: m.UnitOfMeasure | None = None) -> dict:
     return {
         "id": row.id,
         "company_id": getattr(row, "company_id", None),
         "code": row.code,
         "name": row.name,
         "base_unit_id": getattr(row, "base_unit_id", None),
-        "conversion_factor": float(getattr(row, "conversion_factor", 1) or 1),
+        "conversion_ratio": money_json(getattr(row, "conversion_ratio", None), default=1.0),
+        "base_unit_code": base.code if base else None,
         "is_active": bool(row.is_active),
         "created_at": row.created_at,
     }
 
 
-def serialize_product(row: m.Product) -> dict:
-    from app.inventory import compute_stock_status
+# Near-reorder band: yellow while qty is above reorder but ≤ this factor × reorder (BR-5.5).
+STOCK_STATUS_YELLOW_FACTOR = 1.5
 
-    stock_qty = float(row.stock_qty or 0)
-    minimum_stock = float(getattr(row, "minimum_stock", 0) or 0)
-    reorder_level = float(row.reorder_level or 0)
+
+def compute_stock_status(stock_qty: float, reorder_level: float) -> dict:
+    """Traffic-light stock status for product list (BR-5.5).
+
+    - red: on-hand ≤ 0, or (reorder > 0 and on-hand ≤ reorder) — matches low-stock report
+    - yellow: reorder > 0 and reorder < on-hand ≤ reorder × 1.5
+    - green: otherwise (incl. reorder unset/0 with positive stock)
+    """
+    qty = money_json(stock_qty or 0)
+    reorder = money_json(reorder_level or 0)
+    if qty <= 0 or (reorder > 0 and qty <= reorder):
+        code = "red"
+        label = "out_of_stock" if qty <= 0 else "low"
+    elif reorder > 0 and qty <= reorder * STOCK_STATUS_YELLOW_FACTOR:
+        code = "yellow"
+        label = "near_reorder"
+    else:
+        code = "green"
+        label = "ok"
+    return {"status": code, "label": label}
+
+
+def serialize_product(row: m.Product) -> dict:
+    def _opt_float(value) -> float | None:
+        return None if value is None else money_json(value)
+
+    stock_qty = money_json(row.stock_qty)
+    reorder_level = money_json(row.reorder_level)
+    status = compute_stock_status(stock_qty, reorder_level)
     return {
         "id": row.id,
         "company_id": getattr(row, "company_id", None),
         "name": row.name,
         "sku": row.sku,
         "barcode": row.barcode,
+        "description": getattr(row, "description", None),
         "category": row.category,
         "category_id": row.category_id,
         "brand_id": row.brand_id,
         "unit_id": row.unit_id,
         "image_url": row.image_url,
         "has_image": bool(row.image_url),
-        "cost_price": float(row.cost_price or 0),
-        "selling_price": float(row.selling_price or 0),
+        "cost_price": money_json(row.cost_price),
+        "selling_price": money_json(row.selling_price),
+        "weight": _opt_float(getattr(row, "weight", None)),
+        "length": _opt_float(getattr(row, "length", None)),
+        "width": _opt_float(getattr(row, "width", None)),
+        "height": _opt_float(getattr(row, "height", None)),
         "stock_qty": stock_qty,
-        "reserved_qty": float(getattr(row, "reserved_qty", 0) or 0),
-        "available_qty": max(
-            stock_qty - float(getattr(row, "reserved_qty", 0) or 0),
-            0.0,
-        ),
-        "minimum_stock": minimum_stock,
         "reorder_level": reorder_level,
-        "stock_status": compute_stock_status(stock_qty, minimum_stock, reorder_level),
-        "weight": float(row.weight) if getattr(row, "weight", None) is not None else None,
-        "length": float(row.length) if getattr(row, "length", None) is not None else None,
-        "width": float(row.width) if getattr(row, "width", None) is not None else None,
-        "height": float(row.height) if getattr(row, "height", None) is not None else None,
+        "stock_status": status["status"],
+        "stock_status_label": status["label"],
         "tax_rate_id": row.tax_rate_id,
         "tax_exempt": bool(row.tax_exempt),
+        "tax_supply_class": getattr(row, "tax_supply_class", None)
+        or ("exempt" if row.tax_exempt else "standard"),
         "tracks_batches": bool(row.tracks_batches),
         "is_active": bool(row.is_active),
     }
 
 
-# BR-17.1 Product Changes — fields captured on domain audit before/after
-_PRODUCT_AUDIT_FIELDS = (
-    "name",
-    "sku",
-    "barcode",
-    "category",
-    "category_id",
-    "brand_id",
-    "unit_id",
-    "cost_price",
-    "selling_price",
-    "minimum_stock",
-    "reorder_level",
-    "weight",
-    "length",
-    "width",
-    "height",
-    "tax_rate_id",
-    "tax_exempt",
-    "tracks_batches",
-    "is_active",
-)
-
-
-def product_audit_snapshot(row: m.Product) -> dict:
-    """Serializable product fields for audit before/after (BR-17.1)."""
-    data = serialize_product(row)
-    return {k: data.get(k) for k in _PRODUCT_AUDIT_FIELDS}
-
-
-def product_audit_diff(before: dict, after: dict) -> tuple[dict, dict]:
-    """Return only keys that changed between two product audit snapshots."""
-    changed_before: dict = {}
-    changed_after: dict = {}
-    keys = set(before) | set(after)
-    for key in sorted(keys):
-        if before.get(key) != after.get(key):
-            changed_before[key] = before.get(key)
-            changed_after[key] = after.get(key)
-    return changed_before, changed_after
-
-
-async def ensure_default_catalog(
-    db: AsyncSession, tenant_id: str, company_id: str | None = None
-) -> None:
-    units_q = select(m.UnitOfMeasure.id).where(m.UnitOfMeasure.tenant_id == tenant_id)
-    cats_q = select(m.ProductCategory.id).where(m.ProductCategory.tenant_id == tenant_id)
-    if company_id:
-        units_q = units_q.where(m.UnitOfMeasure.company_id == company_id)
-        cats_q = cats_q.where(m.ProductCategory.company_id == company_id)
-    existing_units = (await db.execute(units_q.limit(1))).scalar_one_or_none()
-    if not existing_units:
+async def ensure_default_catalog(db: AsyncSession, tenant_id: str) -> None:
+    unit_codes = await schema_compat.existing_codes(db, "units_of_measure", tenant_id)
+    if not unit_codes:
         for code, name in DEFAULT_UNITS:
-            db.add(
-                m.UnitOfMeasure(
-                    tenant_id=tenant_id, company_id=company_id, code=code, name=name, is_active=True
-                )
+            await schema_compat.insert_matching_row(
+                db,
+                "units_of_measure",
+                {
+                    "tenant_id": tenant_id,
+                    "code": code,
+                    "name": name,
+                    "is_active": True,
+                    "conversion_ratio": 1,
+                    "conversion_factor": 1,
+                    "company_id": None,
+                },
             )
-
-    existing_cats = (await db.execute(cats_q.limit(1))).scalar_one_or_none()
-    if not existing_cats:
+    cat_codes = await schema_compat.existing_codes(db, "product_categories", tenant_id)
+    if not cat_codes:
         for code, name, _parent in DEFAULT_CATEGORIES:
-            db.add(
-                m.ProductCategory(
-                    tenant_id=tenant_id,
-                    company_id=company_id,
-                    code=code,
-                    name=name,
-                    parent_id=None,
-                    is_active=True,
-                )
+            await schema_compat.insert_matching_row(
+                db,
+                "product_categories",
+                {
+                    "tenant_id": tenant_id,
+                    "code": code,
+                    "name": name,
+                    "parent_id": None,
+                    "is_active": True,
+                    "company_id": None,
+                },
             )
     await db.flush()
 
 
 async def list_categories(
-    db: AsyncSession,
-    tenant_id: str,
-    *,
-    active_only: bool = False,
-    is_active: bool | None = None,
-    company_id: str | None = None,
+    db: AsyncSession, tenant_id: str, *, is_active: bool | None = None
 ) -> list[m.ProductCategory]:
-    """Stage 122 M1 — is_active / active_only for honest inactive-only category lists."""
-    stmt = select(m.ProductCategory).where(m.ProductCategory.tenant_id == tenant_id)
-    stmt = apply_company_filter(stmt, m.ProductCategory.company_id, company_id)
+    extra = ""
+    params: dict = {}
     if is_active is not None:
-        stmt = stmt.where(m.ProductCategory.is_active.is_(bool(is_active)))
-    elif active_only:
-        stmt = stmt.where(m.ProductCategory.is_active.is_(True))
-    return list((await db.execute(stmt.order_by(m.ProductCategory.name))).scalars().all())
-
-
-async def _validate_category_tax_rate(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    tax_rate_id: str | None,
-    company_id: str | None = None,
-) -> str | None:
-    if tax_rate_id is None:
-        return None
-    stmt = select(m.TaxRate).where(
-        m.TaxRate.id == tax_rate_id,
-        m.TaxRate.tenant_id == tenant_id,
+        extra = "is_active = :ia"
+        params["ia"] = bool(is_active)
+    return await schema_compat.list_mapped(
+        db, m.ProductCategory, tenant_id=tenant_id, extra=extra, extra_params=params, order_by="name"
     )
     if company_id:
         stmt = stmt.where(m.TaxRate.company_id == company_id)
     rate = (await db.execute(stmt)).scalar_one_or_none()
     if not rate:
+        raise HTTPException(status_code=404, detail="Tax rate not found")
+    if not rate.is_active:
+        raise HTTPException(status_code=400, detail="Tax rate is inactive")
+    return rate.id
+
+
+async def _validate_category_tax_rate(
+    db: AsyncSession, *, tenant_id: str, tax_rate_id: str | None
+) -> str | None:
+    if tax_rate_id is None:
+        return None
+    rate = await db.get(m.TaxRate, tax_rate_id)
+    if rate is None or rate.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Tax rate not found")
     if not rate.is_active:
         raise HTTPException(status_code=400, detail="Tax rate is inactive")
@@ -257,49 +276,108 @@ async def create_category(
     name: str,
     parent_id: str | None = None,
     tax_rate_id: str | None = None,
-    company_id: str | None = None,
 ) -> m.ProductCategory:
-    code = code.strip().upper()
-    name = name.strip()
-    if not code or not name:
-        raise HTTPException(status_code=400, detail="code and name are required")
+    # OpenAPI CategoryCodeValue → 422; service defense-in-depth → 400.
+    code = require_honest_narrative(
+        (code or "").strip().upper(), label="category code", max_length=40
+    )
+    name = require_honest_narrative(name, label="category name", max_length=120)
     if parent_id:
-        await get_category(db, tenant_id, parent_id, company_id=company_id)
-    validated_tax = await _validate_category_tax_rate(
-        db, tenant_id=tenant_id, tax_rate_id=tax_rate_id, company_id=company_id
-    )
-    dup_stmt = select(m.ProductCategory).where(
-        m.ProductCategory.tenant_id == tenant_id,
-        m.ProductCategory.code == code,
-    )
-    dup_stmt = apply_company_filter(dup_stmt, m.ProductCategory.company_id, company_id)
-    dup = (await db.execute(dup_stmt)).scalar_one_or_none()
-    if dup:
+        parent = await schema_compat.get_mapped(db, m.ProductCategory, parent_id)
+        if not parent or parent.tenant_id != tenant_id:
+            raise HTTPException(status_code=404, detail="Parent category not found")
+    tax_rate_id = await _validate_category_tax_rate(db, tenant_id=tenant_id, tax_rate_id=tax_rate_id)
+    if code in await schema_compat.existing_codes(db, "product_categories", tenant_id):
         raise HTTPException(status_code=409, detail="Category code exists")
-    row = m.ProductCategory(
-        tenant_id=tenant_id,
-        company_id=company_id,
-        code=code,
-        name=name,
-        parent_id=parent_id,
-        tax_rate_id=validated_tax,
-        is_active=True,
+    row = await schema_compat.insert_and_get(
+        db,
+        m.ProductCategory,
+        {
+            "tenant_id": tenant_id,
+            "code": code,
+            "name": name,
+            "parent_id": parent_id,
+            "tax_rate_id": tax_rate_id,
+            "is_active": True,
+        },
     )
-    db.add(row)
+    if row is None:
+        raise HTTPException(status_code=500, detail="The server could not complete this request.")
+    return row
+
+
+async def update_category(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    category_id: str,
+    code: str | None = None,
+    name: str | None = None,
+    parent_id: str | None = None,
+    tax_rate_id: str | None = None,
+    is_active: bool | None = None,
+    clear_parent: bool = False,
+    clear_tax_rate: bool = False,
+) -> m.ProductCategory:
+    row = await db.get(m.ProductCategory, category_id)
+    if row is None or row.tenant_id != tenant_id:
+        raise HTTPException(status_code=404, detail="Category not found")
+    if code is not None:
+        # OpenAPI CategoryCodeValue → 422; service defense-in-depth → 400.
+        code = require_honest_narrative(
+            (code or "").strip().upper(), label="category code", max_length=40
+        )
+        dup = (
+            await db.execute(
+                select(m.ProductCategory).where(
+                    m.ProductCategory.tenant_id == tenant_id,
+                    m.ProductCategory.code == code,
+                    m.ProductCategory.id != row.id,
+                )
+            )
+        ).scalar_one_or_none()
+        if dup:
+            raise HTTPException(status_code=409, detail="Category code exists")
+        row.code = code
+    if name is not None:
+        row.name = require_honest_narrative(name, label="category name", max_length=120)
+    if clear_parent:
+        row.parent_id = None
+    elif parent_id is not None:
+        await _assert_category_parent_ok(
+            db, tenant_id=tenant_id, category_id=row.id, parent_id=parent_id
+        )
+        row.parent_id = parent_id
+    if clear_tax_rate:
+        row.tax_rate_id = None
+    elif tax_rate_id is not None:
+        row.tax_rate_id = await _validate_category_tax_rate(
+            db, tenant_id=tenant_id, tax_rate_id=tax_rate_id
+        )
+    if is_active is not None:
+        row.is_active = bool(is_active)
     await db.flush()
     return row
 
 
-async def get_category(
-    db: AsyncSession,
-    tenant_id: str,
-    category_id: str,
-    *,
-    company_id: str | None = None,
+async def deactivate_category(
+    db: AsyncSession, *, tenant_id: str, category_id: str
 ) -> m.ProductCategory:
-    stmt = select(m.ProductCategory).where(
-        m.ProductCategory.id == category_id,
-        m.ProductCategory.tenant_id == tenant_id,
+    return await update_category(
+        db, tenant_id=tenant_id, category_id=category_id, is_active=False
+    )
+
+
+async def list_brands(
+    db: AsyncSession, tenant_id: str, *, is_active: bool | None = None
+) -> list[m.Brand]:
+    extra = ""
+    params: dict = {}
+    if is_active is not None:
+        extra = "is_active = :ia"
+        params["ia"] = bool(is_active)
+    return await schema_compat.list_mapped(
+        db, m.Brand, tenant_id=tenant_id, extra=extra, extra_params=params, order_by="name"
     )
     stmt = apply_company_filter(stmt, m.ProductCategory.company_id, company_id)
     row = (await db.execute(stmt)).scalar_one_or_none()
@@ -427,25 +505,26 @@ async def create_brand(
     description: str | None = None,
     company_id: str | None = None,
 ) -> m.Brand:
-    code = code.strip().upper()
-    name = name.strip()
-    if not code or not name:
-        raise HTTPException(status_code=400, detail="code and name are required")
-    dup_stmt = select(m.Brand).where(m.Brand.tenant_id == tenant_id, m.Brand.code == code)
-    dup_stmt = apply_company_filter(dup_stmt, m.Brand.company_id, company_id)
-    dup = (await db.execute(dup_stmt)).scalar_one_or_none()
-    if dup:
-        raise HTTPException(status_code=409, detail="Brand code exists")
-    row = m.Brand(
-        tenant_id=tenant_id,
-        company_id=company_id,
-        code=code,
-        name=name,
-        description=(description or "").strip() or None,
-        is_active=True,
+    # OpenAPI BrandCodeValue → 422; service defense-in-depth → 400.
+    code = require_honest_narrative(
+        (code or "").strip().upper(), label="brand code", max_length=40
     )
-    db.add(row)
-    await db.flush()
+    name = require_honest_narrative(name, label="brand name", max_length=120)
+    if code in await schema_compat.existing_codes(db, "brands", tenant_id):
+        raise HTTPException(status_code=409, detail="Brand code exists")
+    row = await schema_compat.insert_and_get(
+        db,
+        m.Brand,
+        {
+            "tenant_id": tenant_id,
+            "code": code,
+            "name": name,
+            "description": optional_honest_narrative(description, label="brand description"),
+            "is_active": True,
+        },
+    )
+    if row is None:
+        raise HTTPException(status_code=500, detail="The server could not complete this request.")
     return row
 
 
@@ -459,159 +538,68 @@ async def update_brand(
     description: str | None = None,
     is_active: bool | None = None,
     clear_description: bool = False,
-    company_id: str | None = None,
 ) -> m.Brand:
-    row = await get_brand(db, tenant_id, brand_id, company_id=company_id)
-    scope_company = company_id if company_id is not None else getattr(row, "company_id", None)
+    row = await db.get(m.Brand, brand_id)
+    if row is None or row.tenant_id != tenant_id:
+        raise HTTPException(status_code=404, detail="Brand not found")
     if code is not None:
-        code = code.strip().upper()
-        if not code:
-            raise HTTPException(status_code=400, detail="code is required")
-        dup_stmt = select(m.Brand).where(
-            m.Brand.tenant_id == tenant_id,
-            m.Brand.code == code,
-            m.Brand.id != row.id,
+        # OpenAPI BrandCodeValue → 422; service defense-in-depth → 400.
+        code = require_honest_narrative(
+            (code or "").strip().upper(), label="brand code", max_length=40
         )
-        dup_stmt = apply_company_filter(dup_stmt, m.Brand.company_id, scope_company)
-        dup = (await db.execute(dup_stmt)).scalar_one_or_none()
+        dup = (
+            await db.execute(
+                select(m.Brand).where(
+                    m.Brand.tenant_id == tenant_id,
+                    m.Brand.code == code,
+                    m.Brand.id != row.id,
+                )
+            )
+        ).scalar_one_or_none()
         if dup:
             raise HTTPException(status_code=409, detail="Brand code exists")
         row.code = code
     if name is not None:
-        name = name.strip()
-        if not name:
-            raise HTTPException(status_code=400, detail="name is required")
-        row.name = name
+        row.name = require_honest_narrative(name, label="brand name", max_length=120)
     if clear_description:
         row.description = None
     elif description is not None:
-        row.description = description.strip() or None
+        row.description = optional_honest_narrative(
+            description, label="brand description"
+        )
     if is_active is not None:
         row.is_active = bool(is_active)
     await db.flush()
     return row
 
 
-async def deactivate_brand(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    brand_id: str,
-    company_id: str | None = None,
-) -> m.Brand:
-    return await update_brand(
-        db, tenant_id=tenant_id, brand_id=brand_id, is_active=False, company_id=company_id
-    )
+async def deactivate_brand(db: AsyncSession, *, tenant_id: str, brand_id: str) -> m.Brand:
+    return await update_brand(db, tenant_id=tenant_id, brand_id=brand_id, is_active=False)
 
 
 async def list_units(
-    db: AsyncSession,
-    tenant_id: str,
-    *,
-    active_only: bool = False,
-    is_active: bool | None = None,
-    company_id: str | None = None,
+    db: AsyncSession, tenant_id: str, *, is_active: bool | None = None
 ) -> list[m.UnitOfMeasure]:
-    """Stage 122 M1 — is_active / active_only for honest inactive-only unit lists."""
-    stmt = select(m.UnitOfMeasure).where(m.UnitOfMeasure.tenant_id == tenant_id)
-    stmt = apply_company_filter(stmt, m.UnitOfMeasure.company_id, company_id)
+    extra = ""
+    params: dict = {}
     if is_active is not None:
-        stmt = stmt.where(m.UnitOfMeasure.is_active.is_(bool(is_active)))
-    elif active_only:
-        stmt = stmt.where(m.UnitOfMeasure.is_active.is_(True))
-    return list((await db.execute(stmt.order_by(m.UnitOfMeasure.code))).scalars().all())
-
-
-async def get_unit(
-    db: AsyncSession,
-    tenant_id: str,
-    unit_id: str,
-    *,
-    company_id: str | None = None,
-) -> m.UnitOfMeasure:
-    stmt = select(m.UnitOfMeasure).where(
-        m.UnitOfMeasure.id == unit_id,
-        m.UnitOfMeasure.tenant_id == tenant_id,
+        extra = "is_active = :ia"
+        params["ia"] = bool(is_active)
+    return await schema_compat.list_mapped(
+        db, m.UnitOfMeasure, tenant_id=tenant_id, extra=extra, extra_params=params, order_by="code"
     )
-    stmt = apply_company_filter(stmt, m.UnitOfMeasure.company_id, company_id)
-    row = (await db.execute(stmt)).scalar_one_or_none()
-    if row is None:
-        raise HTTPException(status_code=404, detail="Unit not found")
-    return row
 
 
-async def _validate_base_unit(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    unit_id: str | None,
-    base_unit_id: str | None,
-    company_id: str | None = None,
-) -> str | None:
-    if not base_unit_id:
-        return None
-    if unit_id and base_unit_id == unit_id:
-        raise HTTPException(status_code=400, detail="base_unit_id cannot reference itself")
-    base = await get_unit(db, tenant_id, base_unit_id, company_id=company_id)
-    # One-level conversions only: base unit must itself be a base (no chain)
-    if getattr(base, "base_unit_id", None):
-        raise HTTPException(
-            status_code=400,
-            detail="base_unit_id must reference a base unit (no multi-level chains)",
-        )
-    return base.id
-
-
-def quantity_in_base(unit: m.UnitOfMeasure, quantity: float) -> tuple[str, float]:
-    """Return (base_unit_id, qty_in_base)."""
-    factor = float(getattr(unit, "conversion_factor", 1) or 1)
-    if factor <= 0:
-        raise HTTPException(status_code=400, detail="conversion_factor must be positive")
-    if unit.base_unit_id:
-        return unit.base_unit_id, float(quantity) * factor
-    return unit.id, float(quantity)
-
-
-async def convert_quantity(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    from_unit_id: str,
-    to_unit_id: str,
-    quantity: float,
-    company_id: str | None = None,
-) -> dict:
-    qty = float(quantity)
-    if qty < 0:
-        raise HTTPException(status_code=400, detail="quantity cannot be negative")
-    from_unit = await get_unit(db, tenant_id, from_unit_id, company_id=company_id)
-    to_unit = await get_unit(db, tenant_id, to_unit_id, company_id=company_id)
-    from_base, from_base_qty = quantity_in_base(from_unit, qty)
-    to_base, _ = quantity_in_base(to_unit, 1)
-    if from_base != to_base:
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "code": "INCOMPATIBLE_UNITS",
-                "message": "Units do not share a common base for conversion",
-                "from_unit_id": from_unit.id,
-                "to_unit_id": to_unit.id,
-            },
-        )
-    to_factor = float(getattr(to_unit, "conversion_factor", 1) or 1)
-    if to_unit.base_unit_id:
-        result = from_base_qty / to_factor
-    else:
-        result = from_base_qty
-    return {
-        "from_unit_id": from_unit.id,
-        "from_unit_code": from_unit.code,
-        "to_unit_id": to_unit.id,
-        "to_unit_code": to_unit.code,
-        "quantity": qty,
-        "converted_quantity": round(result, 6),
-        "base_unit_id": from_base,
-    }
+async def serialize_units(db: AsyncSession, tenant_id: str, rows: list[m.UnitOfMeasure]) -> list[dict]:
+    base_ids = {r.base_unit_id for r in rows if r.base_unit_id}
+    bases: dict[str, m.UnitOfMeasure] = {}
+    if base_ids:
+        bases = {}
+        for bid in base_ids:
+            unit = await schema_compat.get_mapped(db, m.UnitOfMeasure, bid)
+            if unit and unit.tenant_id == tenant_id:
+                bases[unit.id] = unit
+    return [serialize_unit(r, base=bases.get(r.base_unit_id)) for r in rows]
 
 
 async def create_unit(
@@ -621,44 +609,39 @@ async def create_unit(
     code: str,
     name: str,
     base_unit_id: str | None = None,
-    conversion_factor: float = 1,
-    company_id: str | None = None,
+    conversion_ratio: float | None = None,
 ) -> m.UnitOfMeasure:
-    code = code.strip().upper()
-    name = name.strip()
-    if not code or not name:
-        raise HTTPException(status_code=400, detail="code and name are required")
-    factor = float(conversion_factor or 1)
-    if factor <= 0:
-        raise HTTPException(status_code=400, detail="conversion_factor must be positive")
-    dup_stmt = select(m.UnitOfMeasure).where(
-        m.UnitOfMeasure.tenant_id == tenant_id,
-        m.UnitOfMeasure.code == code,
+    from app.uom import validate_unit_base
+
+    # OpenAPI UnitCodeValue → 422; service defense-in-depth → 400.
+    code = require_honest_narrative(
+        (code or "").strip().upper(), label="unit code", max_length=20
     )
-    dup_stmt = apply_company_filter(dup_stmt, m.UnitOfMeasure.company_id, company_id)
-    dup = (await db.execute(dup_stmt)).scalar_one_or_none()
-    if dup:
+    name = require_honest_narrative(name, label="unit name", max_length=80)
+    if code in await schema_compat.existing_codes(db, "units_of_measure", tenant_id):
         raise HTTPException(status_code=409, detail="Unit code exists")
-    base_id = await _validate_base_unit(
+    base_id, ratio = await validate_unit_base(
         db,
         tenant_id=tenant_id,
         unit_id=None,
         base_unit_id=base_unit_id,
-        company_id=company_id,
+        conversion_ratio=conversion_ratio,
     )
-    if base_id is None:
-        factor = 1.0
-    row = m.UnitOfMeasure(
-        tenant_id=tenant_id,
-        company_id=company_id,
-        code=code,
-        name=name,
-        base_unit_id=base_id,
-        conversion_factor=factor,
-        is_active=True,
+    row = await schema_compat.insert_and_get(
+        db,
+        m.UnitOfMeasure,
+        {
+            "tenant_id": tenant_id,
+            "code": code,
+            "name": name,
+            "base_unit_id": base_id,
+            "conversion_ratio": ratio,
+            "conversion_factor": ratio,
+            "is_active": True,
+        },
     )
-    db.add(row)
-    await db.flush()
+    if row is None:
+        raise HTTPException(status_code=500, detail="The server could not complete this request.")
     return row
 
 
@@ -669,100 +652,83 @@ async def update_unit(
     unit_id: str,
     code: str | None = None,
     name: str | None = None,
-    base_unit_id: str | None = None,
-    conversion_factor: float | None = None,
     is_active: bool | None = None,
-    clear_base_unit: bool = False,
-    company_id: str | None = None,
+    base_unit_id: str | None = None,
+    conversion_ratio: float | None = None,
+    clear_base: bool = False,
 ) -> m.UnitOfMeasure:
-    row = await get_unit(db, tenant_id, unit_id, company_id=company_id)
-    scope_company = company_id if company_id is not None else getattr(row, "company_id", None)
+    from app.uom import validate_unit_base
+
+    row = await db.get(m.UnitOfMeasure, unit_id)
+    if row is None or row.tenant_id != tenant_id:
+        raise HTTPException(status_code=404, detail="Unit not found")
     if code is not None:
-        code = code.strip().upper()
-        if not code:
-            raise HTTPException(status_code=400, detail="code is required")
-        dup_stmt = select(m.UnitOfMeasure).where(
-            m.UnitOfMeasure.tenant_id == tenant_id,
-            m.UnitOfMeasure.code == code,
-            m.UnitOfMeasure.id != row.id,
+        # OpenAPI UnitCodeValue → 422; service defense-in-depth → 400.
+        code = require_honest_narrative(
+            (code or "").strip().upper(), label="unit code", max_length=20
         )
-        dup_stmt = apply_company_filter(
-            dup_stmt, m.UnitOfMeasure.company_id, scope_company
-        )
-        dup = (await db.execute(dup_stmt)).scalar_one_or_none()
+        dup = (
+            await db.execute(
+                select(m.UnitOfMeasure).where(
+                    m.UnitOfMeasure.tenant_id == tenant_id,
+                    m.UnitOfMeasure.code == code,
+                    m.UnitOfMeasure.id != row.id,
+                )
+            )
+        ).scalar_one_or_none()
         if dup:
             raise HTTPException(status_code=409, detail="Unit code exists")
         row.code = code
     if name is not None:
-        name = name.strip()
-        if not name:
-            raise HTTPException(status_code=400, detail="name is required")
-        row.name = name
-    if clear_base_unit:
-        row.base_unit_id = None
-        row.conversion_factor = 1
-    elif base_unit_id is not None:
-        row.base_unit_id = await _validate_base_unit(
-            db,
-            tenant_id=tenant_id,
-            unit_id=row.id,
-            base_unit_id=base_unit_id,
-            company_id=scope_company,
-        )
-    if conversion_factor is not None and not clear_base_unit:
-        factor = float(conversion_factor)
-        if factor <= 0:
-            raise HTTPException(status_code=400, detail="conversion_factor must be positive")
-        row.conversion_factor = factor if row.base_unit_id else 1
+        row.name = require_honest_narrative(name, label="unit name", max_length=80)
     if is_active is not None:
         row.is_active = bool(is_active)
-    # Prevent turning a base into a dependent if other units reference it
-    if row.base_unit_id:
-        dep_stmt = select(m.UnitOfMeasure.id).where(
-            m.UnitOfMeasure.tenant_id == tenant_id,
-            m.UnitOfMeasure.base_unit_id == row.id,
-        ).limit(1)
-        dep_stmt = apply_company_filter(
-            dep_stmt, m.UnitOfMeasure.company_id, scope_company
-        )
-        dependents = (await db.execute(dep_stmt)).scalar_one_or_none()
-        if dependents:
-            raise HTTPException(
-                status_code=400,
-                detail="Cannot set a base for a unit that is already used as a base by others",
+    if clear_base:
+        row.base_unit_id = None
+        row.conversion_ratio = 1
+    elif base_unit_id is not None or conversion_ratio is not None:
+        # Reject setting this unit as base of something that already uses it as base while becoming non-root? depth-1 only.
+        if base_unit_id is None and conversion_ratio is not None and not row.base_unit_id:
+            row.conversion_ratio = 1
+        else:
+            target_base = base_unit_id if base_unit_id is not None else row.base_unit_id
+            target_ratio = (
+                conversion_ratio
+                if conversion_ratio is not None
+                else money_json(row.conversion_ratio or 1)
             )
+            base_id, ratio = await validate_unit_base(
+                db,
+                tenant_id=tenant_id,
+                unit_id=row.id,
+                base_unit_id=target_base,
+                conversion_ratio=target_ratio,
+            )
+            # Prevent cycles: no unit that already has children should become a non-root via pointing elsewhere
+            # while being someone's base — if this unit is used as a base by others, it must stay root.
+            child = (
+                await db.execute(
+                    select(m.UnitOfMeasure.id).where(
+                        m.UnitOfMeasure.tenant_id == tenant_id,
+                        m.UnitOfMeasure.base_unit_id == row.id,
+                    ).limit(1)
+                )
+            ).scalar_one_or_none()
+            if child and base_id:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Unit is already a base for other units; clear dependents first",
+                )
+            row.base_unit_id = base_id
+            row.conversion_ratio = ratio
     await db.flush()
     return row
 
 
 async def deactivate_unit(
-    db: AsyncSession,
-    *,
-    tenant_id: str,
-    unit_id: str,
-    company_id: str | None = None,
+    db: AsyncSession, *, tenant_id: str, unit_id: str
 ) -> m.UnitOfMeasure:
-    return await update_unit(
-        db, tenant_id=tenant_id, unit_id=unit_id, is_active=False, company_id=company_id
-    )
-
-
-async def get_brand(
-    db: AsyncSession,
-    tenant_id: str,
-    brand_id: str,
-    *,
-    company_id: str | None = None,
-) -> m.Brand:
-    stmt = select(m.Brand).where(
-        m.Brand.id == brand_id,
-        m.Brand.tenant_id == tenant_id,
-    )
-    stmt = apply_company_filter(stmt, m.Brand.company_id, company_id)
-    row = (await db.execute(stmt)).scalar_one_or_none()
-    if row is None:
-        raise HTTPException(status_code=404, detail="Brand not found")
-    return row
+    return await update_unit(db, tenant_id=tenant_id, unit_id=unit_id, is_active=False)
 
 
 async def resolve_product_refs(
@@ -776,14 +742,33 @@ async def resolve_product_refs(
     company_id: str | None = None,
 ) -> tuple[str | None, str | None, str | None, str]:
     """Validate FKs and return (category_id, brand_id, unit_id, category_label)."""
-    label = (category_name or "General").strip() or "General"
+    # OpenAPI ProductCategoryLabelValue → 422; service defense-in-depth → 400.
+    # omit/`null`/blank → "General"; non-blank garbage still rejected.
+    label = (
+        optional_honest_narrative(
+            category_name, label="product category label", max_length=100
+        )
+        or "General"
+    )
     resolved_category_id = category_id
     if category_id:
-        cat = await get_category(db, tenant_id, category_id, company_id=company_id)
+        cat = await db.get(m.ProductCategory, category_id)
+        if not cat or cat.tenant_id != tenant_id:
+            raise HTTPException(status_code=404, detail="Category not found")
+        if not bool(cat.is_active):
+            raise HTTPException(status_code=400, detail="Category is inactive")
         label = cat.name
         resolved_category_id = cat.id
     if brand_id:
-        await get_brand(db, tenant_id, brand_id, company_id=company_id)
+        brand = await db.get(m.Brand, brand_id)
+        if not brand or brand.tenant_id != tenant_id:
+            raise HTTPException(status_code=404, detail="Brand not found")
+        if not bool(brand.is_active):
+            raise HTTPException(status_code=400, detail="Brand is inactive")
     if unit_id:
-        await get_unit(db, tenant_id, unit_id, company_id=company_id)
+        unit = await db.get(m.UnitOfMeasure, unit_id)
+        if not unit or unit.tenant_id != tenant_id:
+            raise HTTPException(status_code=404, detail="Unit not found")
+        if not bool(unit.is_active):
+            raise HTTPException(status_code=400, detail="Unit is inactive")
     return resolved_category_id, brand_id, unit_id, label
