@@ -26,10 +26,11 @@ ARG RIBDIGI_BUILD_ID=unknown
 LABEL org.ribdigi.build_id="${RIBDIGI_BUILD_ID}"
 RUN printf '%s\n' "${RIBDIGI_BUILD_ID}" > /app/.build-id
 
-COPY alembic.ini .
+    COPY alembic.ini .
 COPY alembic ./alembic
 COPY app ./app
 COPY scripts ./scripts
+COPY guides ./guides
 
 # Fail the image build if the production-critical idempotent marker is missing
 # in BOTH the alembic tree and the runtime overlay used by entrypoint.

@@ -1,11 +1,7 @@
-import { readFile } from 'fs/promises';
-import path from 'path';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-const GUIDE = 'RIBDIGI-ERP-Customer-User-Guide.pdf';
 
 function apiBase() {
   return (
@@ -15,72 +11,38 @@ function apiBase() {
   ).replace(/\/$/, '');
 }
 
-function canDownloadStaffGuide(role: string, permissions: Record<string, string[]> | null): boolean {
-  if (
-    [
-      'company_admin',
-      'super_admin',
-      'platform_owner',
-      'platform_admin',
-      'platform_support',
-      'platform_finance',
-    ].includes(role)
-  ) {
-    return true;
-  }
-  const perms = permissions || {};
-  if (perms['*']?.includes('*')) return true;
-  const sg = perms.staff_guide || [];
-  return sg.includes('read') || sg.includes('download') || sg.includes('*');
-}
-
 export async function GET(request: NextRequest) {
   const auth = request.headers.get('authorization') || '';
   if (!auth.startsWith('Bearer ')) {
     return NextResponse.json({ detail: 'Sign in required' }, { status: 401 });
   }
-
-  let role = '';
-  let permissions: Record<string, string[]> | null = null;
+  const tenant = request.headers.get('x-tenant-id') || '';
   try {
-    const me = await fetch(`${apiBase()}/me`, {
-      headers: { Authorization: auth },
+    const upstream = await fetch(`${apiBase()}/staff-guide`, {
+      headers: {
+        Authorization: auth,
+        ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+      },
       cache: 'no-store',
     });
-    if (me.status === 401) {
-      return NextResponse.json({ detail: 'Sign in required' }, { status: 401 });
+    const type = (upstream.headers.get('content-type') || '').toLowerCase();
+    if (!upstream.ok) {
+      const body = await upstream.json().catch(() => ({ detail: 'Could not verify this account' }));
+      return NextResponse.json(body, { status: upstream.status });
     }
-    if (!me.ok) {
-      return NextResponse.json({ detail: 'Could not verify this account' }, { status: me.status });
+    if (!type.includes('pdf')) {
+      return NextResponse.json({ detail: 'Guide file is not available' }, { status: 502 });
     }
-    const body = await me.json();
-    role = String(body?.data?.role || '');
-    permissions =
-      body?.data?.permissions && typeof body.data.permissions === 'object'
-        ? body.data.permissions
-        : null;
-  } catch {
-    return NextResponse.json({ detail: 'Could not verify this account' }, { status: 503 });
-  }
-
-  if (!canDownloadStaffGuide(role, permissions)) {
-    return NextResponse.json(
-      { detail: 'Missing permission: staff_guide:download' },
-      { status: 403 }
-    );
-  }
-
-  try {
-    const bytes = await readFile(path.join(process.cwd(), 'guides', GUIDE));
-    return new NextResponse(new Uint8Array(bytes), {
+    const bytes = Buffer.from(await upstream.arrayBuffer());
+    return new NextResponse(bytes, {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${GUIDE}"`,
+        'Content-Disposition': 'attachment; filename="RIBDIGI-ERP-Customer-User-Guide.pdf"',
         'Cache-Control': 'private, no-store',
       },
     });
   } catch {
-    return NextResponse.json({ detail: 'Guide file is not available' }, { status: 404 });
+    return NextResponse.json({ detail: 'Could not reach the guide service' }, { status: 503 });
   }
 }

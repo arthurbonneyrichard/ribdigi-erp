@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
+from pathlib import Path as FsPath
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Path, Query, Request, UploadFile
-from fastapi.responses import PlainTextResponse, Response
+from fastapi.responses import FileResponse, PlainTextResponse, Response
 from pydantic import EmailStr, TypeAdapter, ValidationError as PydanticValidationError
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -640,6 +641,7 @@ async def create_tenant(
     # OpenAPI TenantSlugValue / CompanyNameValue → 422; service defense-in-depth → 400.
     slug = tenants_svc.require_tenant_slug(payload.slug)
     company_name = tenants_svc.require_company_name(payload.company_name)
+    admin_email = str(payload.admin_email).strip().lower()
     existing = (
         await db.execute(select(m.Tenant).where(m.Tenant.slug == slug))
     ).scalar_one_or_none()
@@ -670,7 +672,7 @@ async def create_tenant(
 
         admin = m.User(
             tenant_id=tenant.id,
-            email=str(payload.admin_email).strip().lower(),
+            email=admin_email,
             full_name="Company Administrator",
             password_hash=password_hash,
             role="company_admin",
@@ -691,8 +693,11 @@ async def create_tenant(
             entity_id=tenant.id,
             details={
                 "slug": tenant.slug,
+                "admin_email": admin_email,
                 "admin_email_verified": False,
                 "admin_user_id": admin.id,
+                "admin_role": "company_admin",
+                "industry": tenant.industry,
                 "source": "platform_console",
             },
         )
@@ -2611,6 +2616,29 @@ async def resend_verification(
         if settings.DEBUG or settings.APP_ENV.lower() != "production":
             data["verification_token"] = raw
     return env(data, "If the account exists and needs verification, a link was sent")
+
+
+STAFF_GUIDE_NAME = "RIBDIGI-ERP-Customer-User-Guide.pdf"
+STAFF_GUIDE_PATHS = (
+    FsPath("/app/guides") / STAFF_GUIDE_NAME,
+    FsPath(__file__).resolve().parents[1] / "guides" / STAFF_GUIDE_NAME,
+)
+
+
+@api.get("/staff-guide")
+async def download_staff_guide(
+    claims=Depends(require_permission("staff_guide", "download")),
+):
+    """Authenticated tenant download of the staff user guide (not Company Admin only)."""
+    for path in STAFF_GUIDE_PATHS:
+        if path.is_file():
+            return FileResponse(
+                path,
+                media_type="application/pdf",
+                filename=STAFF_GUIDE_NAME,
+                headers={"Cache-Control": "private, no-store"},
+            )
+    raise HTTPException(status_code=404, detail="Guide file is not available")
 
 
 @api.get("/me")

@@ -32,7 +32,7 @@ const CATEGORY_CHIPS: { id: string; label: string }[] = [
 
 export default function Page() {
   const [rows, setRows] = useState<Note[]>([]);
-  const [status, setStatus] = useState('unread');
+  const [status, setStatus] = useState('');
   const [category, setCategory] = useState('');
   const [prefs, setPrefs] = useState<any>(null);
   const [message, setMessage] = useState('');

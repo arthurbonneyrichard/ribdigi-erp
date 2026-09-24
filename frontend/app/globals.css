@@ -958,7 +958,11 @@
 .users-page-head h1{margin:0}
 .users-add-btn{display:inline-flex;align-items:center;justify-content:center;padding:10px 16px;border-radius:8px;background:var(--deep-green,#0a3d30);color:#fff;font-weight:700;white-space:nowrap}
 .users-add-btn:hover{background:var(--brand,#4AB012)}
-.users-create-card,.users-perm-msg{max-width:100%}
+.nav-group{margin:0 0 6px;border:1px solid #002818;border-radius:10px;padding:2px 0 4px;background:#00281866}
+.nav-group > summary{list-style:none;cursor:pointer;padding:8px 10px;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#d4e5c4;user-select:none}
+.nav-group > summary::-webkit-details-marker{display:none}
+.nav-group-active{color:var(--brand-light,#4AB012)!important}
+.nav-group a{margin:2px 6px}
 @media(max-width:720px){
   .users-page-head{flex-direction:column}
   .users-add-btn{width:100%;text-align:center}

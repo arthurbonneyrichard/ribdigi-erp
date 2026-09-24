@@ -142,6 +142,7 @@ export default function Page() {
   const [deptBranchId, setDeptBranchId] = useState('');
   const [deptHeadId, setDeptHeadId] = useState('');
   const [editDeptId, setEditDeptId] = useState('');
+  const [deptBusy, setDeptBusy] = useState(false);
   const [fromStore, setFromStore] = useState('');
   const [toStore, setToStore] = useState('');
   const [productId, setProductId] = useState('');
@@ -610,24 +611,44 @@ export default function Page() {
   }
 
   async function createDepartment() {
+    if (deptBusy) return;
+    const nameTrim = deptName.trim();
+    const codeTrim = (deptCode.trim() || nameTrim)
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, '_')
+      .replace(/^_|_$/g, '')
+      .slice(0, 40);
+    if (!nameTrim || !codeTrim) {
+      setError('Department name is required.');
+      return;
+    }
     setError('');
     setMessage('');
+    setDeptBusy(true);
     try {
-      await api('/departments', {
+      const payload: Record<string, string> = {
+        code: codeTrim,
+        name: nameTrim,
+      };
+      if (deptBranchId.trim()) payload.branch_id = deptBranchId.trim();
+      if (deptHeadId.trim()) payload.head_user_id = deptHeadId.trim();
+      const created = await api('/departments', {
         method: 'POST',
-        body: JSON.stringify({
-          code: deptCode.trim(),
-          name: deptName.trim(),
-          // trim so Create department (UuidIdValue branch_id) does not 422 on whitespace
-          branch_id: deptBranchId.trim() || null,
-          head_user_id: deptHeadId.trim() || null,
-        }),
+        body: JSON.stringify(payload),
       });
       resetDeptForm();
       setMessage('Department created');
+      if (created?.data?.id) {
+        setDepartments((prev) => {
+          const next = prev.filter((d) => d.id !== created.data.id);
+          return [created.data, ...next];
+        });
+      }
       await refresh();
     } catch (err: any) {
-      setError(err.message);
+      setError(err.message || 'Department was not created');
+    } finally {
+      setDeptBusy(false);
     }
   }
 
@@ -949,10 +970,10 @@ export default function Page() {
               <button
                 type="button"
                 onClick={createDepartment}
-                disabled={!deptCode.trim() || !deptName.trim()}
+                disabled={deptBusy || !deptName.trim()}
                 aria-label="Create department"
               >
-                Create department
+                {deptBusy ? 'Saving…' : 'Create department'}
               </button>
             )}
           </div>

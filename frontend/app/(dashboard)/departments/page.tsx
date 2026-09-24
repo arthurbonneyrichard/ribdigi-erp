@@ -26,6 +26,7 @@ export default function Page() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [canWrite, setCanWrite] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
@@ -52,25 +53,41 @@ export default function Page() {
 
   async function createDept(e: React.FormEvent) {
     e.preventDefault();
+    if (submitting) return;
+    const nameTrim = name.trim();
+    const codeTrim = (code.trim() || nameTrim).toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40);
+    if (!nameTrim || !codeTrim) {
+      setError('Department name is required.');
+      return;
+    }
     setError('');
     setMessage('');
     setBusy(true);
+    setSubmitting(true);
     try {
-      await api('/departments', {
+      const created = await api('/departments', {
         method: 'POST',
         body: JSON.stringify({
-          code: code.trim().toUpperCase(),
-          name: name.trim(),
+          code: codeTrim,
+          name: nameTrim,
         }),
       });
       setCode('');
       setName('');
       setMessage('Department created');
+      if (created?.data?.id) {
+        setRows((prev) => {
+          const next = prev.filter((r) => r.id !== created.data.id);
+          return [created.data, ...next];
+        });
+      }
+      setBusy(false);
+      setSubmitting(false);
       await refresh();
     } catch (err: any) {
-      setError(err.message);
-    } finally {
+      setError(err.message || 'Department was not created');
       setBusy(false);
+      setSubmitting(false);
     }
   }
 
@@ -154,7 +171,7 @@ export default function Page() {
             aria-label="Department name"
             required
           />
-          <button type="submit" disabled={busy} aria-label="Create department">
+          <button type="submit" disabled={busy || submitting} aria-label="Create department">
             {busy ? 'Saving…' : 'Create department'}
           </button>
         </form>

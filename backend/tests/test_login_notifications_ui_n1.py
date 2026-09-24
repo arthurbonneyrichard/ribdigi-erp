@@ -10,6 +10,14 @@ def test_notifications_page_loads_list_without_settings():
     assert "Promise.all" not in page or "notifications/settings" not in page.split("Promise.all")[0]
     assert "api('/notifications/settings')" in page
     assert "setRows(notes.data" in page
+    assert "useState('')" in page or "useState(\"\")" in page
+
+
+def test_sidebar_groups_keep_existing_routes():
+    shell = (ROOT / "frontend/components/Shell.tsx").read_text(encoding="utf-8")
+    assert "TENANT_NAV_GROUPS" in shell
+    for href in ("/dashboard", "/inventory", "/sales", "/pos", "/departments", "/notifications"):
+        assert href in shell
 
 
 def test_login_logo_is_preloaded():

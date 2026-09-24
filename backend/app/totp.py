@@ -302,6 +302,7 @@ ENROLLMENT_ALLOWED_SUFFIXES = (
     "/settings/email",
     "/health",
     "/notifications/unread-count",
+    "/staff-guide",
 )
 
 

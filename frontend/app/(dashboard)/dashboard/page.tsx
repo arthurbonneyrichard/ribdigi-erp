@@ -313,17 +313,28 @@ export default function Page() {
     setGuideBusy(true);
     try {
       const token = localStorage.getItem('token') || '';
-      const response = await fetch('/guides/customer', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      const tenant = localStorage.getItem('tenant') || '';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+      const headers: Record<string, string> = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(tenant)) {
+        headers['X-Tenant-ID'] = tenant;
+      }
+      const response = await fetch(`${apiBase.replace(/\/$/, '')}/staff-guide`, {
+        headers,
         cache: 'no-store',
       });
-      if (!response.ok) {
-        let detail = 'You do not have permission to download this guide.';
+      const type = (response.headers.get('content-type') || '').toLowerCase();
+      if (!response.ok || !type.includes('pdf')) {
+        let detail = 'Could not download the guide.';
         try {
           const body = await response.json();
-          if (body?.detail) detail = String(body.detail);
+          const raw = body?.detail;
+          if (typeof raw === 'string') detail = raw;
+          else if (raw?.message) detail = String(raw.message);
         } catch {
-          /* keep default */
+          if (response.status === 401) detail = 'Sign in required';
+          if (response.status === 403) detail = 'Missing permission: staff_guide:download';
         }
         setGuideError(detail);
         return;
@@ -452,11 +463,10 @@ export default function Page() {
         </section>
 
         {canGuide && (
-          <section className="card" style={{ marginTop: 16 }}>
-            <h2 style={{ margin: '0 0 6px', fontSize: 18 }}>Staff user guide</h2>
-            <p className="muted" style={{ marginTop: 0 }}>
+          <details className="card" style={{ marginTop: 16 }}>
+            <summary style={{ cursor: 'pointer', fontWeight: 700 }}>Staff user guide</summary>
+            <p className="muted" style={{ marginTop: 8 }}>
               Step-by-step for adding products, stock, sales, the till, and purchasing.
-              Download requires the staff_guide permission assigned to your role.
             </p>
             <button
               type="button"
@@ -472,7 +482,7 @@ export default function Page() {
                 {guideError}
               </p>
             )}
-          </section>
+          </details>
         )}
 
         <section className="stat-grid">

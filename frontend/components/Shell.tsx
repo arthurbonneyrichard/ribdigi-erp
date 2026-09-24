@@ -44,6 +44,76 @@ const TENANT_ITEMS: NavItem[] = [
   ['Departments', '/departments', 'users'],
 ];
 
+type NavGroup = { id: string; label: string; items: NavItem[] };
+
+const TENANT_NAV_GROUPS: NavGroup[] = [
+  { id: 'dashboard', label: 'Dashboard', items: [['Dashboard', '/dashboard', 'dashboard']] },
+  {
+    id: 'company',
+    label: 'Company and Setup',
+    items: [
+      ['Company', '/company', 'company'],
+      ['Integrations', '/integrations', 'integrations'],
+      ['Jobs', '/jobs', 'jobs'],
+    ],
+  },
+  { id: 'inventory', label: 'Inventory', items: [['Inventory', '/inventory', 'inventory']] },
+  {
+    id: 'sales',
+    label: 'Sales and POS',
+    items: [
+      ['Sales', '/sales', 'sales'],
+      ['POS', '/pos', 'pos'],
+    ],
+  },
+  { id: 'purchases', label: 'Purchases', items: [['Purchasing', '/purchasing', 'purchasing']] },
+  {
+    id: 'finance',
+    label: 'Finance and Accounts',
+    items: [
+      ['Expenses', '/expenses', 'expenses'],
+      ['Accounting', '/accounting', 'accounting'],
+      ['Credit', '/credit', 'credit'],
+      ['Tax', '/tax', 'tax'],
+    ],
+  },
+  { id: 'stores', label: 'Stores and Warehouses', items: [['Multi-Store', '/stores', 'stores']] },
+  {
+    id: 'reports',
+    label: 'Reports',
+    items: [
+      ['Reports', '/reports', 'reports'],
+      ['Audit', '/audit', 'audit'],
+    ],
+  },
+  {
+    id: 'people',
+    label: 'User Management',
+    items: [
+      ['Users', '/users', 'users'],
+      ['Departments', '/departments', 'users'],
+    ],
+  },
+  { id: 'notifications', label: 'Notifications', items: [['Notifications', '/notifications', 'notifications']] },
+  {
+    id: 'settings',
+    label: 'Settings',
+    items: [
+      ['Security', '/security', 'security'],
+      ['Backup', '/backup', 'backup'],
+      ['AI Assistant', '/ai', 'ai'],
+    ],
+  },
+  {
+    id: 'industry',
+    label: 'Industry-specific features',
+    items: [
+      ['Hotel', '/hotel', 'hotel'],
+      ['FMCG', '/fmcg', 'fmcg'],
+    ],
+  },
+];
+
 /** Software-owner / platform console navigation only. */
 const PLATFORM_ITEMS: NavItem[] = [
   ['Platform', '/platform', 'platform'],
@@ -375,6 +445,14 @@ function navItemsForRole(
     }
     return canReadModule(permissions, permModule);
   });
+}
+
+function groupedTenantNav(visible: NavItem[]): NavGroup[] {
+  const allowed = new Set(visible.map(([, href]) => href));
+  return TENANT_NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter(([, href]) => allowed.has(href)),
+  })).filter((group) => group.items.length > 0);
 }
 
 type BellNote = {
@@ -716,6 +794,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     () => navItemsForRole(role, permissions, enabledModules),
     [role, permissions, enabledModules]
   );
+  const navGroups = useMemo(() => groupedTenantNav(visible), [visible]);
   const showAlerts = visible.some(([, href]) => href === '/notifications');
   const sidebarLogoSrc = companyLogoUrl || '/brand/logo-sidebar.png';
   const sidebarLogoAlt = companyLogoUrl
@@ -724,23 +803,13 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   // Warm the Next.js route and API payloads for sidebar destinations.
   useEffect(() => {
-    if (!authReady || !visible.length) return;
-    for (const [, href] of visible) {
-      try {
-        router.prefetch(href);
-      } catch {
-        /* ignore */
-      }
+    if (!authReady) return;
+    try {
+      router.prefetch('/dashboard');
+    } catch {
+      /* ignore */
     }
-    if (isPlatformOwner) {
-      void prefetchGet('/tenants');
-      void prefetchGet('/packages');
-      void prefetchGet('/platform/staff');
-      void prefetchGet('/platform/roles');
-      void prefetchGet('/platform/app-users');
-      void prefetchGet('/platform/reports');
-    }
-  }, [authReady, visible, router, isPlatformOwner]);
+  }, [authReady, router]);
 
   function warmDestination(href: string) {
     try {
@@ -791,28 +860,40 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         </div>
         {isPlatformOwner ? <div className="brand-sub">Platform owner console</div> : null}
         <nav className="nav" aria-label={isPlatformOwner ? 'Platform navigation' : 'Tenant navigation'}>
-          {visible.map(([n, h, module]) => {
-            const active = isNavActive(pathname || '', h, visible);
+          {(isPlatformOwner ? [{ id: 'platform', label: '', items: visible }] : navGroups).map((group) => {
+            const links = group.items.map(([n, h, module]) => {
+              const active = isNavActive(pathname || '', h, visible);
+              return (
+                <Link
+                  key={h}
+                  href={h}
+                  prefetch={false}
+                  className={active ? 'active' : undefined}
+                  aria-current={active ? 'page' : undefined}
+                  onClick={() => setMenuOpen(false)}
+                  onMouseEnter={() => warmDestination(h)}
+                  onFocus={() => warmDestination(h)}
+                  onTouchStart={() => warmDestination(h)}
+                >
+                  <span className="nav-ico">
+                    <NavIcon name={module} />
+                  </span>
+                  <span className="nav-label">
+                    {n}
+                    {h === '/notifications' && unread > 0 ? ` (${unread})` : ''}
+                  </span>
+                </Link>
+              );
+            });
+            if (!group.label) {
+              return <div key={group.id}>{links}</div>;
+            }
+            const childActive = group.items.some(([, h]) => isNavActive(pathname || '', h, visible));
             return (
-              <Link
-                key={h}
-                href={h}
-                prefetch
-                className={active ? 'active' : undefined}
-                aria-current={active ? 'page' : undefined}
-                onClick={() => setMenuOpen(false)}
-                onMouseEnter={() => warmDestination(h)}
-                onFocus={() => warmDestination(h)}
-                onTouchStart={() => warmDestination(h)}
-              >
-                <span className="nav-ico">
-                  <NavIcon name={module} />
-                </span>
-                <span className="nav-label">
-                  {n}
-                  {h === '/notifications' && unread > 0 ? ` (${unread})` : ''}
-                </span>
-              </Link>
+              <details key={group.id} className="nav-group" open>
+                <summary className={childActive ? 'nav-group-active' : undefined}>{group.label}</summary>
+                {links}
+              </details>
             );
           })}
         </nav>
