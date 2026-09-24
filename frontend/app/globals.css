@@ -954,3 +954,13 @@
 .side-foot{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
 .login-foot{line-height:1.6}
 
+.users-page-head{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px}
+.users-page-head h1{margin:0}
+.users-add-btn{display:inline-flex;align-items:center;justify-content:center;padding:10px 16px;border-radius:8px;background:var(--deep-green,#0a3d30);color:#fff;font-weight:700;white-space:nowrap}
+.users-add-btn:hover{background:var(--brand,#4AB012)}
+.users-create-card,.users-perm-msg{max-width:100%}
+@media(max-width:720px){
+  .users-page-head{flex-direction:column}
+  .users-add-btn{width:100%;text-align:center}
+}
+

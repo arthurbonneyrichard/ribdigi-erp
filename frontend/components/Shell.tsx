@@ -368,7 +368,7 @@ function navItemsForRole(
     if (
       packageSet &&
       !packageSet.has(permModule) &&
-      !['dashboard', 'notifications', 'security'].includes(module)
+      !['dashboard', 'notifications', 'security', 'users'].includes(module)
     ) {
       return false;
     }

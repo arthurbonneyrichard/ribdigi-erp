@@ -55,6 +55,39 @@ const RECORD_SCOPES = [
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
+const PLATFORM_USER_ROLES = new Set([
+  'super_admin',
+  'platform_owner',
+  'platform_admin',
+  'platform_support',
+  'platform_finance',
+]);
+
+/** Roles that may create/edit tenant staff. Matches backend users:write for these principals. */
+const USER_ADMIN_ROLES = new Set([
+  'company_admin',
+  'tenant_admin',
+  'tenant_owner',
+  'super_admin',
+  'platform_owner',
+  'platform_admin',
+]);
+
+function moduleActions(perms: Record<string, string[]> | undefined, module: string): string[] {
+  const raw = perms?.[module] as unknown;
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === 'string') return [raw];
+  return [];
+}
+
+/** Align with POST /users (require_permission users:write). Accept users:create as the same grant. */
+function canWriteUsers(role: string, perms: Record<string, string[]> | undefined): boolean {
+  if (USER_ADMIN_ROLES.has(role)) return true;
+  if (moduleActions(perms, '*').includes('*')) return true;
+  const actions = moduleActions(perms, 'users');
+  return actions.includes('write') || actions.includes('create') || actions.includes('*');
+}
+
 type ImportReportRow = {
   line: number;
   email: string;
@@ -92,37 +125,40 @@ export default function Page() {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [canWrite, setCanWrite] = useState(false);
+  const [permChecked, setPermChecked] = useState(false);
+  const [meRole, setMeRole] = useState('');
   const [meId, setMeId] = useState('');
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importReport, setImportReport] = useState<ImportReport | null>(null);
   const [importBusy, setImportBusy] = useState(false);
 
   async function refresh() {
-    const [usersRes, rolesRes, meRes, branchesRes, deptsRes, storesRes] = await Promise.all([
+    const meRes = await getMe();
+    const perms = (meRes.data?.permissions || {}) as Record<string, string[]>;
+    const role = meRes.data?.role || '';
+    setMeId(String(meRes.data?.id || '').trim());
+    setMeRole(role);
+    setCanWrite(canWriteUsers(role, perms));
+    setPermChecked(true);
+
+    const [usersRes, rolesRes, branchesRes, deptsRes, storesRes] = await Promise.all([
       api('/users'),
       // Manage list needs inactive custom roles for Activate / Deactivate (BR-3.2).
       api('/roles?include_inactive=true'),
-      getMe(),
       api('/branches').catch(() => ({ data: [] })),
       api('/departments').catch(() => ({ data: [] })),
       api('/stores').catch(() => ({ data: [] })),
     ]);
-    setRows(usersRes.data || []);
+    const listed: UserRow[] = usersRes.data || [];
+    const hidePlatform = !PLATFORM_USER_ROLES.has(role);
+    setRows(hidePlatform ? listed.filter((u) => !PLATFORM_USER_ROLES.has(u.role)) : listed);
     setRoles(rolesRes.data || []);
     setBranches(branchesRes.data || []);
     setDepartments(deptsRes.data || []);
     setStores((storesRes.data || []).filter((s: StoreRow) => s.is_active !== false));
-    const perms = meRes.data?.permissions || {};
-    const role = meRes.data?.role || '';
-    setMeId(String(meRes.data?.id || '').trim());
-    setCanWrite(
-      role === 'super_admin' ||
-        role === 'company_admin' ||
-        perms?.['*']?.includes('*') ||
-        (perms.users || []).includes('write') ||
-        (perms.users || []).includes('*')
-    );
-    const users: UserRow[] = usersRes.data || [];
+    const users: UserRow[] = hidePlatform
+      ? listed.filter((u) => !PLATFORM_USER_ROLES.has(u.role))
+      : listed;
     const membershipEntries = await Promise.all(
       users.map(async (u) => {
         try {
@@ -141,7 +177,7 @@ export default function Page() {
   const assignableRoles = (currentRole?: string) =>
     roles.filter(
       (r) =>
-        r.role !== 'super_admin' &&
+        !PLATFORM_USER_ROLES.has(r.role) &&
         (isRoleActive(r) || (currentRole != null && r.role === currentRole)),
     );
 
@@ -479,14 +515,131 @@ export default function Page() {
 
   return (
     <>
-      <h1>User Management</h1>
-      <p className="muted">
-        Create users, assign roles, branch/department, and record scope; activate, deactivate, or
-        permanently delete staff accounts (BR-3.1). Soft-deactivate custom roles without deleting
-        assignees (BR-3.2). Deactivate keeps the account; Delete removes it.
-      </p>
+      <div className="users-page-head">
+        <div>
+          <h1>User Management</h1>
+          <p className="muted" style={{ margin: '8px 0 0' }}>
+            Create users, assign roles, branch/department, and record scope; activate, deactivate, or
+            permanently delete staff accounts (BR-3.1). Soft-deactivate custom roles without deleting
+            assignees (BR-3.2). Deactivate keeps the account; Delete removes it.
+          </p>
+        </div>
+        {canWrite ? (
+          <a className="users-add-btn" href="#create-user" aria-label="Add User">
+            Add User
+          </a>
+        ) : null}
+      </div>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
+      {permChecked && !canWrite ? (
+        <div className="card users-perm-msg" role="status" style={{ margin: '12px 0' }}>
+          <p style={{ margin: 0 }}>
+            You can view users in this company, but you cannot create or edit them.
+            Creating users requires <code>users:write</code> (Company Admin). Your role is{' '}
+            <strong>{meRole || 'unknown'}</strong>. Cashiers and other read-only roles cannot
+            create users from this page, by URL, or via the API.
+          </p>
+        </div>
+      ) : null}
+
+      {canWrite && (
+        <form
+          id="create-user"
+          onSubmit={createUser}
+          className="card users-create-card"
+          style={{ margin: '20px 0', display: 'grid', gap: 8 }}
+        >
+          <h2 style={{ fontSize: 18, margin: 0 }}>Create User</h2>
+          <input
+            value={form.full_name}
+            onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+            placeholder="Full name"
+            aria-label="User full name"
+            required
+          />
+          <input
+            type="email"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            placeholder="Email"
+            aria-label="User email"
+            required
+          />
+          <input
+            type="password"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            placeholder="Temporary password"
+            aria-label="User password"
+            required
+          />
+          <input
+            value={form.phone}
+            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            placeholder="Phone (optional, E.164 e.g. +233...)"
+            aria-label="User phone"
+          />
+          <select
+            value={form.role}
+            onChange={(e) => setForm({ ...form, role: e.target.value })}
+            aria-label="User role"
+          >
+            {assignableRoles().map((r) => (
+              <option key={r.role} value={r.role}>
+                {r.label}
+                {isCustomRole(r) ? ' (custom)' : ''}
+              </option>
+            ))}
+          </select>
+          <select
+            value={form.branch_id}
+            onChange={(e) =>
+              setForm({ ...form, branch_id: e.target.value, department_id: '' })
+            }
+            aria-label="User branch"
+            title="Optional branch assignment (UuidIdValue)"
+          >
+            <option value="">Branch (optional)</option>
+            {activeBranches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.code} — {b.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={form.department_id}
+            onChange={(e) => setForm({ ...form, department_id: e.target.value })}
+            aria-label="User department"
+            title="Optional department assignment (UuidIdValue)"
+          >
+            <option value="">Department (optional)</option>
+            {activeDepartments(form.branch_id).map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.code} — {d.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={form.record_scope}
+            onChange={(e) => setForm({ ...form, record_scope: e.target.value })}
+            aria-label="User record scope"
+          >
+            {RECORD_SCOPES.map((s) => (
+              <option key={s.value || 'default'} value={s.value}>
+                Record scope: {s.label}
+              </option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            disabled={busy || !form.full_name.trim() || !form.password.trim()}
+            aria-label="Create user"
+          >
+            {busy ? 'Creating…' : 'Create User'}
+          </button>
+        </form>
+      )}
 
       {canWrite && (
         <form onSubmit={createCustomRole} className="card" style={{ margin: '20px 0', display: 'grid', gap: 8 }}>
@@ -517,7 +670,7 @@ export default function Page() {
             aria-label="Clone from system role"
           >
             {roles
-              .filter((r) => !isCustomRole(r) && r.role !== 'super_admin')
+              .filter((r) => !isCustomRole(r) && !PLATFORM_USER_ROLES.has(r.role))
               .map((r) => (
                 <option key={r.role} value={r.role}>
                   Clone from {r.label}
@@ -659,99 +812,6 @@ export default function Page() {
         </div>
       )}
 
-      {canWrite && (
-        <form onSubmit={createUser} className="card" style={{ margin: '20px 0', display: 'grid', gap: 8 }}>
-          <h2 style={{ fontSize: 18, margin: 0 }}>Create user</h2>
-          <input
-            value={form.full_name}
-            onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-            placeholder="Full name"
-            aria-label="User full name"
-            required
-          />
-          <input
-            type="email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            placeholder="Email"
-            aria-label="User email"
-            required
-          />
-          <input
-            type="password"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            placeholder="Temporary password"
-            aria-label="User password"
-            required
-          />
-          <input
-            value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            placeholder="Phone (optional, E.164 e.g. +233...)"
-            aria-label="User phone"
-          />
-          <select
-            value={form.role}
-            onChange={(e) => setForm({ ...form, role: e.target.value })}
-            aria-label="User role"
-          >
-            {assignableRoles().map((r) => (
-              <option key={r.role} value={r.role}>
-                {r.label}
-                {isCustomRole(r) ? ' (custom)' : ''}
-              </option>
-            ))}
-          </select>
-          <select
-            value={form.branch_id}
-            onChange={(e) =>
-              setForm({ ...form, branch_id: e.target.value, department_id: '' })
-            }
-            aria-label="User branch"
-            title="Optional branch assignment (UuidIdValue)"
-          >
-            <option value="">Branch (optional)</option>
-            {activeBranches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.code} — {b.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={form.department_id}
-            onChange={(e) => setForm({ ...form, department_id: e.target.value })}
-            aria-label="User department"
-            title="Optional department assignment (UuidIdValue)"
-          >
-            <option value="">Department (optional)</option>
-            {activeDepartments(form.branch_id).map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.code} — {d.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={form.record_scope}
-            onChange={(e) => setForm({ ...form, record_scope: e.target.value })}
-            aria-label="User record scope"
-          >
-            {RECORD_SCOPES.map((s) => (
-              <option key={s.value || 'default'} value={s.value}>
-                Record scope: {s.label}
-              </option>
-            ))}
-          </select>
-          <button
-            type="submit"
-            disabled={busy || !form.full_name.trim() || !form.password.trim()}
-            aria-label="Create user"
-          >
-            {busy ? 'Creating…' : 'Create user'}
-          </button>
-        </form>
-      )}
-
       <select
         value={userManageFilter}
         onChange={(e) => setUserManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
@@ -870,7 +930,7 @@ export default function Page() {
                 )}
               </td>
               <td>
-                {canWrite && r.role !== 'company_admin' && r.role !== 'super_admin' ? (
+                {canWrite && !PLATFORM_USER_ROLES.has(r.role) && r.role !== 'company_admin' ? (
                   <select
                     multiple
                     value={userStoreIds[r.id] || []}
@@ -890,7 +950,7 @@ export default function Page() {
                   </select>
                 ) : (
                   <span className="muted">
-                    {r.role === 'company_admin' || r.role === 'super_admin'
+                    {r.role === 'company_admin' || PLATFORM_USER_ROLES.has(r.role)
                       ? 'All stores'
                       : (userStoreIds[r.id] || []).length
                         ? `${(userStoreIds[r.id] || []).length} assigned`

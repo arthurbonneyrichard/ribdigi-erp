@@ -379,6 +379,11 @@ def has_permission(
     module_perms = perms.get(module) or []
     if "*" in module_perms or action in module_perms:
         return True
-    if action == "read" and "write" in module_perms:
+    if action == "read" and ("write" in module_perms or "create" in module_perms):
+        return True
+    # User Management create/edit uses users:write; accept users:create as the same grant.
+    if action in {"write", "create"} and (
+        "write" in module_perms or "create" in module_perms
+    ):
         return True
     return False

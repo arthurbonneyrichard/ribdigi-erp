@@ -251,6 +251,15 @@ export default function Page() {
           ? ` · Grace days left: ${tenant.days_remaining}`
           : ''}
       </p>
+      <div className="card" style={{ margin: '12px 0' }}>
+        <h2 style={{ fontSize: 18, margin: '0 0 8px' }}>Users</h2>
+        <p className="muted" style={{ margin: '0 0 8px' }}>
+          Settings → Users: add staff for this company (same API as User Management).
+        </p>
+        <a href="/users#create-user" aria-label="Add User">
+          Add User
+        </a>
+      </div>
       {tenant.status === 'trial' && (
         <div className="card" style={{ marginBottom: 12, borderLeft: '4px solid #ca8a04' }}>
           <p>

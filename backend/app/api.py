@@ -2631,13 +2631,21 @@ async def update_me(
     )
 
 
-async def _get_tenant_user(db: AsyncSession, tenant_id: str, user_id: str) -> m.User:
+async def _get_tenant_user(
+    db: AsyncSession,
+    tenant_id: str,
+    user_id: str,
+    *,
+    actor_role: str | None = None,
+) -> m.User:
     user = (
         await db.execute(
             select(m.User).where(m.User.id == user_id, m.User.tenant_id == tenant_id)
         )
     ).scalar_one_or_none()
     if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if actor_role is not None and not is_platform_role(actor_role) and is_platform_role(user.role):
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
@@ -2965,6 +2973,9 @@ async def users(
     if is_active is not None:
         stmt = stmt.where(m.User.is_active.is_(bool(is_active)))
     rows = (await db.execute(stmt)).scalars().all()
+    actor_role = claims.get("role") or ""
+    if not is_platform_role(actor_role):
+        rows = [u for u in rows if not is_platform_role(u.role)]
     return env([serialize_user(u) for u in rows])
 
 
@@ -3039,7 +3050,9 @@ async def get_user(
     claims=Depends(require_permission("users", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    user = await _get_tenant_user(db, claims["tenant_id"], user_id)
+    user = await _get_tenant_user(
+        db, claims["tenant_id"], user_id, actor_role=claims.get("role")
+    )
     return env(serialize_user(user))
 
 
@@ -3052,7 +3065,7 @@ async def get_user_stores(
     """List store memberships for a user (empty = all stores / grandfather)."""
     from app import store_access as store_access_svc
 
-    await _get_tenant_user(db, claims["tenant_id"], user_id)
+    await _get_tenant_user(db, claims["tenant_id"], user_id, actor_role=claims.get("role"))
     rows = await store_access_svc.list_memberships(
         db, tenant_id=claims["tenant_id"], user_id=user_id, active_only=True
     )
@@ -3079,7 +3092,7 @@ async def put_user_stores(
     from app import store_access as store_access_svc
     from app import audit as audit_svc
 
-    await _get_tenant_user(db, claims["tenant_id"], user_id)
+    await _get_tenant_user(db, claims["tenant_id"], user_id, actor_role=claims.get("role"))
     rows = await store_access_svc.replace_memberships(
         db,
         tenant_id=claims["tenant_id"],
@@ -3196,7 +3209,9 @@ async def confirm_user_email(
     db: AsyncSession = Depends(get_db),
 ):
     """Clear the email gate for a user an admin already provisioned."""
-    user = await _get_tenant_user(db, claims["tenant_id"], user_id)
+    user = await _get_tenant_user(
+        db, claims["tenant_id"], user_id, actor_role=claims.get("role")
+    )
     user.email_verified = True
     await audit_svc.record_event(
         db,
@@ -3219,7 +3234,9 @@ async def update_user(
     claims=Depends(require_permission("users", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    user = await _get_tenant_user(db, claims["tenant_id"], user_id)
+    user = await _get_tenant_user(
+        db, claims["tenant_id"], user_id, actor_role=claims.get("role")
+    )
     changes: dict = {}
 
     if payload.full_name is not None:
@@ -3328,7 +3345,9 @@ async def deactivate_user(
     db: AsyncSession = Depends(get_db),
 ):
     """Soft-delete: deactivate the user and revoke sessions (no hard delete)."""
-    user = await _get_tenant_user(db, claims["tenant_id"], user_id)
+    user = await _get_tenant_user(
+        db, claims["tenant_id"], user_id, actor_role=claims.get("role")
+    )
     if user.id == claims["sub"]:
         raise HTTPException(status_code=400, detail="Cannot deactivate your own account")
     if not user.is_active:
