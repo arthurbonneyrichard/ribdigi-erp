@@ -9,7 +9,7 @@ from sqlalchemy import text
 
 from app import schema_compat
 from app import models as m
-from app.schema_align import align_async_engine
+from app.schema_align import _pg_default, align_async_engine
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -49,6 +49,18 @@ async def test_align_copies_plan_code_into_empty_package_code(db_engine, db_sess
     assert row is not None
     assert row[0] == "starter"
     assert row[1] == "starter"
+
+
+def test_pg_default_quotes_string_server_default():
+    """Unquoted DEFAULT registered is a column ref; Postgres raises FeatureNotSupportedError."""
+    col = m.Party.__table__.c.profile_type
+    assert _pg_default(col, "postgresql") == "'registered'"
+    status = m.Party.__table__.c.status
+    assert _pg_default(status, "postgresql") == "'active'"
+    warehouse_type = m.Warehouse.__table__.c.warehouse_type
+    assert _pg_default(warehouse_type, "postgresql") == "'retail'"
+    is_active = m.UserStoreMembership.__table__.c.is_active
+    assert _pg_default(is_active, "postgresql") == "true"
 
 
 def test_bootstrap_calls_schema_align():

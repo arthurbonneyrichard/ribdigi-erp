@@ -19,6 +19,10 @@ from app.models import Base
 logger = logging.getLogger("ribdigi.schema_align")
 
 _IDENT = re.compile(r"^[a-z_][a-z0-9_]*$")
+_BARE_LITERAL = re.compile(
+    r"^(true|false|null|current_timestamp|current_date|-?\d+(\.\d+)?)$",
+    re.IGNORECASE,
+)
 
 _ALIAS_COPIES = (
     ("tenants", "package_code", "plan_code"),
@@ -36,11 +40,47 @@ def _quote(name: str) -> str:
     return name
 
 
+def _raw_default_text(raw) -> str | None:
+    if raw is None or callable(raw):
+        return None
+    if hasattr(raw, "text"):
+        raw = raw.text
+    text_val = str(raw).strip()
+    return text_val or None
+
+
+def _sql_literal(col, raw, dialect: str) -> str | None:
+    """Turn ORM/server defaults into SQL that Postgres will not treat as a column ref."""
+    text_val = _raw_default_text(raw)
+    if text_val is None:
+        if isinstance(raw, bool):
+            return "true" if raw else "false"
+        if isinstance(raw, (int, float)):
+            return str(raw)
+        return None
+    if (text_val.startswith("'") and text_val.endswith("'")) or "::" in text_val:
+        return text_val
+    if _BARE_LITERAL.match(text_val):
+        lowered = text_val.lower()
+        if lowered in {"true", "false", "null"}:
+            return lowered
+        if lowered in {"current_timestamp", "current_date"}:
+            return text_val.upper()
+        return text_val
+    escaped = text_val.replace("'", "''")
+    if isinstance(col.type, JSON):
+        return f"'{escaped}'" if dialect != "postgresql" else f"'{escaped}'::json"
+    if isinstance(col.type, Boolean):
+        return "true" if text_val.lower() in {"true", "1", "t", "yes"} else "false"
+    return f"'{escaped}'"
+
+
 def _pg_default(col, dialect: str = "postgresql") -> str | None:
     if col.server_default is not None:
         raw = getattr(col.server_default, "arg", None)
-        if raw is not None and not callable(raw):
-            return str(raw)
+        literal = _sql_literal(col, raw, dialect)
+        if literal is not None:
+            return literal
     default = col.default.arg if col.default is not None else None
     if callable(default):
         default = None
@@ -100,6 +140,16 @@ def _live_default(col_meta: dict) -> str | None:
     return None
 
 
+def _exec_isolated(sync_conn: Connection, sql: str) -> None:
+    """Run one DDL/DML statement; roll back only that statement on failure (PG abort)."""
+    try:
+        with sync_conn.begin_nested():
+            sync_conn.execute(text(sql))
+    except Exception:
+        # Nested rollback already restored the outer transaction.
+        raise
+
+
 def align_connection(sync_conn: Connection) -> None:
     dialect = sync_conn.dialect.name
     insp = inspect(sync_conn)
@@ -108,13 +158,21 @@ def align_connection(sync_conn: Connection) -> None:
         tname = table.name
         if not _IDENT.match(tname):
             continue
-        if not insp.has_table(tname):
+        try:
+            if not insp.has_table(tname):
+                continue
+            live_cols = {c["name"]: c for c in insp.get_columns(tname)}
+        except Exception:
+            logger.exception("schema align skip inspect %s", tname)
             continue
-        live_cols = {c["name"]: c for c in insp.get_columns(tname)}
         for col in table.columns:
             if col.name in live_cols or not _IDENT.match(col.name):
                 continue
-            type_sql = col.type.compile(dialect=sync_conn.dialect)
+            try:
+                type_sql = col.type.compile(dialect=sync_conn.dialect)
+            except Exception:
+                logger.exception("schema align skip compile %s.%s", tname, col.name)
+                continue
             default = _pg_default(col, dialect)
             nullable = col.nullable
             if not nullable and default is None:
@@ -133,15 +191,19 @@ def align_connection(sync_conn: Connection) -> None:
                 pieces.append("NOT NULL")
             sql = " ".join(pieces)
             try:
-                sync_conn.execute(text(sql))
+                _exec_isolated(sync_conn, sql)
                 logger.info("schema align added %s.%s", tname, col.name)
             except Exception:
-                logger.exception("schema align skip add %s.%s", tname, col.name)
+                logger.exception("schema align skip add %s.%s sql=%s", tname, col.name, sql)
         try:
             insp.clear_cache()
         except Exception:
             insp = inspect(sync_conn)
-        live_cols = {c["name"]: c for c in insp.get_columns(tname)}
+        try:
+            live_cols = {c["name"]: c for c in insp.get_columns(tname)}
+        except Exception:
+            logger.exception("schema align skip reinspect %s", tname)
+            continue
         mapped = {c.name for c in table.columns}
         for cname, cmeta in live_cols.items():
             if cname in mapped or not _IDENT.match(cname):
@@ -153,13 +215,13 @@ def align_connection(sync_conn: Connection) -> None:
             fallback = _live_default(cmeta)
             if not fallback:
                 continue
+            if dialect != "postgresql":
+                continue
+            sql = (
+                f"ALTER TABLE {_quote(tname)} ALTER COLUMN {_quote(cname)} SET DEFAULT {fallback}"
+            )
             try:
-                if dialect == "postgresql":
-                    sync_conn.execute(
-                        text(
-                            f"ALTER TABLE {_quote(tname)} ALTER COLUMN {_quote(cname)} SET DEFAULT {fallback}"
-                        )
-                    )
+                _exec_isolated(sync_conn, sql)
                 logger.info("schema align default %s.%s", tname, cname)
             except Exception:
                 logger.exception("schema align skip default %s.%s", tname, cname)
@@ -169,19 +231,22 @@ def align_connection(sync_conn: Connection) -> None:
     except Exception:
         insp = inspect(sync_conn)
     for table_name, dest, src in _ALIAS_COPIES:
-        if not insp.has_table(table_name):
+        try:
+            if not insp.has_table(table_name):
+                continue
+            names = {c["name"] for c in insp.get_columns(table_name)}
+        except Exception:
+            logger.exception("schema align skip copy inspect %s", table_name)
             continue
-        names = {c["name"] for c in insp.get_columns(table_name)}
         if dest not in names or src not in names:
             continue
+        sql = (
+            f"UPDATE {_quote(table_name)} SET {_quote(dest)} = {_quote(src)} "
+            f"WHERE {_quote(src)} IS NOT NULL AND "
+            f"({_quote(dest)} IS NULL OR CAST({_quote(dest)} AS TEXT) IN ('', 'trial', '0', '1'))"
+        )
         try:
-            sync_conn.execute(
-                text(
-                    f"UPDATE {_quote(table_name)} SET {_quote(dest)} = {_quote(src)} "
-                    f"WHERE {_quote(src)} IS NOT NULL AND "
-                    f"({_quote(dest)} IS NULL OR CAST({_quote(dest)} AS TEXT) IN ('', 'trial', '0', '1'))"
-                )
-            )
+            _exec_isolated(sync_conn, sql)
         except Exception:
             logger.exception("schema align skip copy %s.%s <- %s", table_name, dest, src)
 

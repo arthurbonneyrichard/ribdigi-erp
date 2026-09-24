@@ -229,13 +229,7 @@ async def ensure_remove_outlook_platform_staff() -> None:
 async def main() -> None:
     _print_migration_fingerprint()
     if run_alembic():
-        try:
-            await ensure_ribdigi_house_active()
-            await ensure_remove_outlook_platform_staff()
-        except Exception as exc:  # noqa: BLE001
-            print(f"bootstrap: platform ops ensure failed: {exc}", file=sys.stderr)
-            if settings.APP_ENV.lower() == "production":
-                sys.exit(1)
+        # Align first so hybrid live columns exist before platform UPDATE/DELETE.
         try:
             from app.schema_align import align_async_engine
 
@@ -243,8 +237,20 @@ async def main() -> None:
             print("bootstrap: schema align complete")
         except Exception as exc:  # noqa: BLE001
             print(f"bootstrap: schema align failed: {exc}", file=sys.stderr)
-            if settings.APP_ENV.lower() == "production":
-                sys.exit(1)
+            print(
+                "bootstrap: continuing after non-fatal schema align error "
+                "(Alembic already succeeded)",
+                file=sys.stderr,
+            )
+        try:
+            await ensure_ribdigi_house_active()
+            await ensure_remove_outlook_platform_staff()
+        except Exception as exc:  # noqa: BLE001
+            print(f"bootstrap: platform ops ensure failed: {exc}", file=sys.stderr)
+            print(
+                "bootstrap: continuing after non-fatal platform ops error",
+                file=sys.stderr,
+            )
         return
     if settings.APP_ENV.lower() == "production":
         print("Alembic failed in production — refusing create_all fallback", file=sys.stderr)
