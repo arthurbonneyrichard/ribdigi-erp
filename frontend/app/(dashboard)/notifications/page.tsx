@@ -44,12 +44,15 @@ export default function Page() {
     if (category) params.set('category', category);
     params.set('limit', '100');
     const q = `?${params.toString()}`;
-    const [notes, settings] = await Promise.all([
-      api(`/notifications${q}`),
-      api('/notifications/settings'),
-    ]);
+    const notes = await api(`/notifications${q}`);
     setRows(notes.data || []);
-    setPrefs(settings.data);
+    try {
+      const settings = await api('/notifications/settings');
+      setPrefs(settings.data);
+    } catch (err: any) {
+      setPrefs(null);
+      if (err?.message) setError(err.message);
+    }
   }
 
   useEffect(() => {
@@ -182,7 +185,16 @@ export default function Page() {
           </tr>
         </thead>
         <tbody>
-          {rows.map((n) => (
+          {rows.length === 0 ? (
+            <tr>
+              <td colSpan={5} className="muted">
+                {status === 'unread'
+                  ? 'No unread notifications. Switch to All (90 days) to see history.'
+                  : 'No notifications in this filter.'}
+              </td>
+            </tr>
+          ) : (
+            rows.map((n) => (
             <tr key={n.id}>
               <td>{n.category}</td>
               <td>{n.title}</td>
@@ -196,7 +208,8 @@ export default function Page() {
                 )}
               </td>
             </tr>
-          ))}
+            ))
+          )}
         </tbody>
       </table>
 

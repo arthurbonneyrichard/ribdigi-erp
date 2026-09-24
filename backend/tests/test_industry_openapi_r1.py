@@ -86,7 +86,9 @@ def test_coerce_and_normalize_industry_defense():
 
 def test_industry_ui_and_docs():
     company = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
-    assert "tenant.industry" in company
+    assert "Business Type:" in company
+    assert "onChange={(e) => setTenant({ ...tenant, industry: e.target.value })}" not in company
+    industries = (ROOT / "frontend/lib/industries.ts").read_text(encoding="utf-8")
     for value in (
         "retail",
         "mart",
@@ -97,8 +99,10 @@ def test_industry_ui_and_docs():
         "manufacturing",
         "hotel",
         "fmcg",
+        "distribution",
+        "general_trading",
     ):
-        assert f"'{value}'" in company or f'"{value}"' in company
+        assert f"'{value}'" in industries or f'"{value}"' in industries
     api = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
     assert "industry" in api
     assert "Literal" in api

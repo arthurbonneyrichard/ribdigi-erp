@@ -15,6 +15,25 @@ function apiBase() {
   ).replace(/\/$/, '');
 }
 
+function canDownloadStaffGuide(role: string, permissions: Record<string, string[]> | null): boolean {
+  if (
+    [
+      'company_admin',
+      'super_admin',
+      'platform_owner',
+      'platform_admin',
+      'platform_support',
+      'platform_finance',
+    ].includes(role)
+  ) {
+    return true;
+  }
+  const perms = permissions || {};
+  if (perms['*']?.includes('*')) return true;
+  const sg = perms.staff_guide || [];
+  return sg.includes('read') || sg.includes('download') || sg.includes('*');
+}
+
 export async function GET(request: NextRequest) {
   const auth = request.headers.get('authorization') || '';
   if (!auth.startsWith('Bearer ')) {
@@ -22,23 +41,31 @@ export async function GET(request: NextRequest) {
   }
 
   let role = '';
+  let permissions: Record<string, string[]> | null = null;
   try {
     const me = await fetch(`${apiBase()}/me`, {
       headers: { Authorization: auth },
       cache: 'no-store',
     });
-    if (!me.ok) {
+    if (me.status === 401) {
       return NextResponse.json({ detail: 'Sign in required' }, { status: 401 });
+    }
+    if (!me.ok) {
+      return NextResponse.json({ detail: 'Could not verify this account' }, { status: me.status });
     }
     const body = await me.json();
     role = String(body?.data?.role || '');
+    permissions =
+      body?.data?.permissions && typeof body.data.permissions === 'object'
+        ? body.data.permissions
+        : null;
   } catch {
     return NextResponse.json({ detail: 'Could not verify this account' }, { status: 503 });
   }
 
-  if (role !== 'company_admin') {
+  if (!canDownloadStaffGuide(role, permissions)) {
     return NextResponse.json(
-      { detail: 'Only a company administrator can download this guide' },
+      { detail: 'Missing permission: staff_guide:download' },
       { status: 403 }
     );
   }

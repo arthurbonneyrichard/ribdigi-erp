@@ -6,7 +6,7 @@ import re
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
@@ -37,17 +37,13 @@ async def sku_in_use(
     exclude_product_id: str | None = None,
     exclude_variant_id: str | None = None,
 ) -> bool:
-    pq = select(m.Product.id).where(m.Product.tenant_id == tenant_id, m.Product.sku == sku)
-    if exclude_product_id:
-        pq = pq.where(m.Product.id != exclude_product_id)
-    if (await db.execute(pq)).scalar_one_or_none():
+    if await schema_compat.tenant_value_in_use(
+        db, "products", tenant_id, "sku", sku, exclude_id=exclude_product_id
+    ):
         return True
-    vq = select(m.ProductVariant.id).where(
-        m.ProductVariant.tenant_id == tenant_id, m.ProductVariant.sku == sku
+    return await schema_compat.tenant_value_in_use(
+        db, "product_variants", tenant_id, "sku", sku, exclude_id=exclude_variant_id
     )
-    if exclude_variant_id:
-        vq = vq.where(m.ProductVariant.id != exclude_variant_id)
-    return (await db.execute(vq)).scalar_one_or_none() is not None
 
 
 async def assert_sku_available(
@@ -72,15 +68,8 @@ async def allocate_sku(db: AsyncSession, tenant_id: str, *, prefix: str = "SKU")
     """Allocate a unique tenant SKU: PREFIX-YYYY-NNNN."""
     year = datetime.utcnow().year
     head = f"{prefix}-{year}-"
-    # Count existing catalog rows as a starting sequence hint
-    product_count = (
-        await db.execute(select(func.count()).select_from(m.Product).where(m.Product.tenant_id == tenant_id))
-    ).scalar_one()
-    variant_count = (
-        await db.execute(
-            select(func.count()).select_from(m.ProductVariant).where(m.ProductVariant.tenant_id == tenant_id)
-        )
-    ).scalar_one()
+    product_count = await schema_compat.count_tenant_rows(db, "products", tenant_id)
+    variant_count = await schema_compat.count_tenant_rows(db, "product_variants", tenant_id)
     start = int(product_count or 0) + int(variant_count or 0) + 1
     for n in range(start, start + 10_000):
         candidate = f"{head}{n:04d}"
@@ -131,15 +120,8 @@ async def get_product(db: AsyncSession, tenant_id: str, product_id: str) -> m.Pr
 
 
 async def get_variant(db: AsyncSession, tenant_id: str, variant_id: str) -> m.ProductVariant:
-    row = (
-        await db.execute(
-            select(m.ProductVariant).where(
-                m.ProductVariant.id == variant_id,
-                m.ProductVariant.tenant_id == tenant_id,
-            )
-        )
-    ).scalar_one_or_none()
-    if not row:
+    row = await schema_compat.get_mapped(db, m.ProductVariant, variant_id)
+    if not row or row.tenant_id != tenant_id:
         raise HTTPException(status_code=404, detail="Variant not found")
     return row
 
@@ -297,8 +279,9 @@ async def update_variant(
     if variant.product_id != product_id:
         raise HTTPException(status_code=404, detail="Variant not found")
 
+    fields: dict = {}
     if name is not None:
-        variant.name = require_honest_narrative(
+        fields["name"] = require_honest_narrative(
             name, label="variant name", max_length=120
         )
     if sku is not None:
@@ -308,9 +291,9 @@ async def update_variant(
         await assert_sku_available(
             db, tenant_id, sku_norm, exclude_variant_id=variant.id
         )
-        variant.sku = sku_norm
+        fields["sku"] = sku_norm
     if clear_barcode:
-        variant.barcode = None
+        fields["barcode"] = None
     elif barcode is not None:
         from app import barcodes as barcodes_svc
 
@@ -322,31 +305,33 @@ async def update_variant(
                 barcode_value=barcode_norm,
                 exclude_variant_id=variant.id,
             )
-        variant.barcode = barcode_norm
+        fields["barcode"] = barcode_norm
     if clear_size:
-        variant.size = None
+        fields["size"] = None
     elif size is not None:
-        variant.size = _clean_attr(size)
+        fields["size"] = _clean_attr(size)
     if clear_color:
-        variant.color = None
+        fields["color"] = None
     elif color is not None:
-        variant.color = _clean_attr(color)
+        fields["color"] = _clean_attr(color)
     if clear_flavor:
-        variant.flavor = None
+        fields["flavor"] = None
     elif flavor is not None:
-        variant.flavor = _clean_attr(flavor)
+        fields["flavor"] = _clean_attr(flavor)
     if clear_dosage:
-        variant.dosage = None
+        fields["dosage"] = None
     elif dosage is not None:
-        variant.dosage = _clean_attr(dosage)
+        fields["dosage"] = _clean_attr(dosage)
     if cost_price is not None:
-        variant.cost_price = money_json(cost_price)
+        fields["cost_price"] = money_json(cost_price)
     if selling_price is not None:
-        variant.selling_price = money_json(selling_price)
+        fields["selling_price"] = money_json(selling_price)
     if is_active is not None:
-        variant.is_active = bool(is_active)
-    await db.flush()
-    return variant
+        fields["is_active"] = bool(is_active)
+    if not fields:
+        return variant
+    row = await schema_compat.apply_updates(db, m.ProductVariant, variant.id, fields)
+    return row or variant
 
 
 async def deactivate_variant(

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { api, apiOptional } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { formatDateTime, formatNumber } from '../../../lib/format';
+import { industryLabel } from '../../../lib/industries';
 
 export default function Page() {
   const [tenant, setTenant] = useState<any>(null);
@@ -124,7 +125,6 @@ export default function Page() {
         method: 'PATCH',
         body: JSON.stringify({
           company_name: String(tenant.company_name || '').trim(),
-          industry: tenant.industry,
           currency: tenant.currency,
           // Omit blank phone so Save does not 422 (E164PhoneValue); leave prior value.
           ...(String(tenant.phone || '').trim()
@@ -368,21 +368,16 @@ export default function Page() {
           placeholder="Primary contact person"
           aria-label="Company contact person"
         />
-        <select
-          value={tenant.industry || 'retail'}
-          onChange={(e) => setTenant({ ...tenant, industry: e.target.value })}
+        <p
           aria-label="Company industry"
+          style={{ margin: 0, fontWeight: 600 }}
         >
-          {['retail', 'mart', 'pharmacy', 'restaurant', 'bakery', 'wholesale', 'manufacturing', 'hotel', 'fmcg'].map((i) => (
-            <option key={i} value={i}>
-              {i}
-            </option>
-          ))}
-        </select>
+          Business Type: {industryLabel(tenant.industry)}
+        </p>
         <p className="muted" style={{ fontSize: 12, gridColumn: '1 / -1', marginTop: -8 }}>
-          Business type controls industry modules: Hotel activates Hotel ops; FMCG activates trade
-          schemes/routes. Other types use shared core ERP only. Changing industry requires re-login
-          for session claims to refresh.
+          Business type is set by the Platform Owner when the tenant is created and cannot be
+          changed here. It controls industry modules (Hotel ops, FMCG trade schemes) for this
+          company.
         </p>
         <select
           value={tenant.currency || 'GHS'}

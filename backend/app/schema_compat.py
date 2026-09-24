@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime
 import re
 
-from sqlalchemy import MetaData, Table, insert, inspect, text
+from sqlalchemy import MetaData, Table, insert, inspect, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.attributes import set_committed_value
 
@@ -89,6 +89,9 @@ def _default_for_required_column(col, table_name: str = "", values: dict | None 
         return "standard"
     if name == "code":
         return _slug_code(values.get("code") or values.get("name") or table_name)
+    if name.endswith("_id"):
+        # Never invent FKs (company_id="default" breaks live Postgres).
+        return None
     if name == "tax_type":
         return "vat"
     if name == "pricing_mode":
@@ -268,6 +271,21 @@ async def ensure_tenant_company(db: AsyncSession, tenant_id: str, *, name: str |
     return await resolve_tenant_company_id(db, tenant_id)
 
 
+async def sync_company_industry(db: AsyncSession, tenant_id: str, industry: str | None) -> None:
+    """Copy tenant business type onto the company row when the column exists."""
+    cols = await table_column_names(db, "companies")
+    if not cols or "industry" not in cols:
+        return
+    cid = await resolve_tenant_company_id(db, tenant_id)
+    if not cid:
+        await ensure_tenant_company(db, tenant_id, industry=industry)
+        return
+    value = (industry or "").strip()
+    if not value:
+        return
+    await update_matching_row(db, "companies", cid, {"industry": value})
+
+
 def apply_column_aliases(data: dict) -> dict:
     out = dict(data)
     for src, dst in COLUMN_ALIASES:
@@ -350,6 +368,73 @@ async def insert_and_get(db: AsyncSession, model, values: dict):
     table = model.__tablename__
     if "id" not in values:
         values = {**values, "id": uid()}
+    names = await table_column_names(db, table)
+    if "company_id" in names and not values.get("company_id") and values.get("tenant_id"):
+        company_id = await ensure_tenant_company(db, str(values["tenant_id"]))
+        if company_id:
+            values = {**values, "company_id": company_id}
     await insert_matching_row(db, table, values)
     await db.flush()
     return await get_mapped(db, model, values["id"])
+
+
+async def update_matching_row(db: AsyncSession, table_name: str, pk: str, values: dict) -> None:
+    if not _IDENT.match(table_name):
+        raise ValueError(f"unsafe table {table_name}")
+
+    def _update(sync_session) -> None:
+        tbl = Table(table_name, MetaData(), autoload_with=_session_connection(sync_session))
+        payload = {key: value for key, value in values.items() if key in tbl.c and key != "id"}
+        for src, dst in COLUMN_ALIASES:
+            if src in values and dst in tbl.c and dst not in payload:
+                payload[dst] = values[src]
+        if not payload or "id" not in tbl.c:
+            return
+        sync_session.execute(update(tbl).where(tbl.c.id == pk).values(**payload))
+
+    await db.run_sync(_update)
+
+
+async def apply_updates(db: AsyncSession, model, pk: str, values: dict):
+    await update_matching_row(db, model.__tablename__, pk, values)
+    await db.flush()
+    return await get_mapped(db, model, pk)
+
+
+async def tenant_value_in_use(
+    db: AsyncSession,
+    table_name: str,
+    tenant_id: str,
+    column: str,
+    value: object,
+    *,
+    exclude_id: str | None = None,
+) -> bool:
+    if not _IDENT.match(table_name) or not _IDENT.match(column):
+        return False
+    names = await table_column_names(db, table_name)
+    if column not in names or "tenant_id" not in names:
+        return False
+    sql = f"SELECT id FROM {table_name} WHERE tenant_id = :tid AND {column} = :val"
+    params = {"tid": tenant_id, "val": value}
+    if exclude_id and "id" in names:
+        sql += " AND id != :eid"
+        params["eid"] = exclude_id
+    sql += " LIMIT 1"
+    row = (await db.execute(text(sql), params)).first()
+    return row is not None
+
+
+async def count_tenant_rows(db: AsyncSession, table_name: str, tenant_id: str) -> int:
+    if not _IDENT.match(table_name):
+        return 0
+    names = await table_column_names(db, table_name)
+    if "tenant_id" not in names:
+        return 0
+    row = (
+        await db.execute(
+            text(f"SELECT COUNT(*) FROM {table_name} WHERE tenant_id = :tid"),
+            {"tid": tenant_id},
+        )
+    ).first()
+    return int(row[0] or 0) if row else 0

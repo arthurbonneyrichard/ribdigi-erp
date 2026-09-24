@@ -15,6 +15,22 @@ from app.schemas import validate_e164_phone_value
 
 CODE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$")
 
+DEFAULT_DEPARTMENTS: tuple[tuple[str, str], ...] = (
+    ("SALES", "Sales"),
+    ("INV", "Inventory"),
+    ("PURCH", "Purchasing"),
+    ("WH", "Warehouse"),
+    ("FIN", "Finance"),
+    ("ACCT", "Accounting"),
+    ("HR", "Human Resources"),
+    ("PROD", "Production"),
+    ("OPS", "Operations"),
+    ("CS", "Customer Service"),
+    ("IT", "Information Technology"),
+    ("ADMIN", "Administration"),
+    ("MKT", "Marketing"),
+)
+
 
 def _clean_code(code: str, *, label: str = "code") -> str:
     # OpenAPI BranchCodeValue / DepartmentCodeValue → 422; service defense → 400.
@@ -126,6 +142,7 @@ async def list_departments(
     branch_id: str | None = None,
     active_only: bool = False,
     is_active: bool | None = None,
+    q: str | None = None,
 ) -> list[m.Department]:
     """Stage 122 O1 — is_active for honest inactive-only department lists."""
     stmt = select(m.Department).where(m.Department.tenant_id == tenant_id)
@@ -135,7 +152,46 @@ async def list_departments(
         stmt = stmt.where(m.Department.is_active.is_(bool(is_active)))
     elif active_only:
         stmt = stmt.where(m.Department.is_active == True)  # noqa: E712
+    needle = (q or "").strip()
+    if needle:
+        like = f"%{needle}%"
+        stmt = stmt.where(
+            (m.Department.name.ilike(like)) | (m.Department.code.ilike(like))
+        )
     return list((await db.execute(stmt.order_by(m.Department.name))).scalars().all())
+
+
+async def _assert_unique_department_name(
+    db: AsyncSession,
+    tenant_id: str,
+    name: str,
+    *,
+    exclude_id: str | None = None,
+) -> None:
+    stmt = select(m.Department).where(
+        m.Department.tenant_id == tenant_id,
+        func.lower(m.Department.name) == name.strip().lower(),
+    )
+    if exclude_id:
+        stmt = stmt.where(m.Department.id != exclude_id)
+    exists = (await db.execute(stmt)).scalar_one_or_none()
+    if exists:
+        raise HTTPException(
+            status_code=409, detail="Department name already exists in this tenant"
+        )
+
+
+async def ensure_default_departments(db: AsyncSession, tenant_id: str) -> None:
+    existing = (
+        await db.execute(select(m.Department.id).where(m.Department.tenant_id == tenant_id).limit(1))
+    ).scalar_one_or_none()
+    if existing:
+        return
+    for code, name in DEFAULT_DEPARTMENTS:
+        try:
+            await create_department(db, tenant_id=tenant_id, code=code, name=name)
+        except HTTPException:
+            continue
 
 
 async def create_branch(
@@ -229,6 +285,7 @@ async def create_department(
     name_clean = require_honest_narrative(
         name, label="department name", min_length=2, max_length=150
     )
+    await _assert_unique_department_name(db, tenant_id, name_clean)
     if branch_id:
         await get_branch(db, tenant_id, branch_id)
     head_user_id = await _assert_tenant_user(db, tenant_id, head_user_id)
@@ -269,6 +326,9 @@ async def update_department(
         # OpenAPI DepartmentNameValue → 422; service defense-in-depth → 400.
         row.name = require_honest_narrative(
             name, label="department name", min_length=2, max_length=150
+        )
+        await _assert_unique_department_name(
+            db, tenant_id, row.name, exclude_id=row.id
         )
     if clear_branch:
         row.branch_id = None

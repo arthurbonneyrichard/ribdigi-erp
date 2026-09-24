@@ -22,6 +22,11 @@ export function clearSessionAndRedirect() {
   localStorage.removeItem('token');
   localStorage.removeItem('refresh_token');
   localStorage.removeItem('tenant');
+  try {
+    sessionStorage.clear();
+  } catch {
+    /* ignore */
+  }
   clearSessionTheme();
   void import('./meCache')
     .then((m) => m.invalidateMeCache())
@@ -30,7 +35,7 @@ export function clearSessionAndRedirect() {
     .then((m) => m.invalidatePrefetchCache())
     .catch(() => undefined);
   if (window.location.pathname !== '/') {
-    window.location.href = '/';
+    window.location.replace('/');
   }
 }
 

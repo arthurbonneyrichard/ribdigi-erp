@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { useStoreContext } from '../../../lib/storeContext';
+import { canDownloadStaffGuide } from '../../../lib/industries';
 
 type Subscription = {
   status?: string;
@@ -286,7 +287,7 @@ export default function Page() {
   const [d, setD] = useState<Dash>({});
   const [now, setNow] = useState<Date | null>(null);
   const [fullName, setFullName] = useState('');
-  const [role, setRole] = useState('');
+  const [canGuide, setCanGuide] = useState(false);
   const [guideBusy, setGuideBusy] = useState(false);
   const [guideError, setGuideError] = useState('');
 
@@ -302,7 +303,7 @@ export default function Page() {
     getMe()
       .then((r) => {
         setFullName(r.data?.full_name || '');
-        setRole(r.data?.role || '');
+        setCanGuide(canDownloadStaffGuide(r.data?.role, r.data?.permissions));
       })
       .catch(() => {});
   }, []);
@@ -317,7 +318,14 @@ export default function Page() {
         cache: 'no-store',
       });
       if (!response.ok) {
-        setGuideError('Only the company administrator can download this guide.');
+        let detail = 'You do not have permission to download this guide.';
+        try {
+          const body = await response.json();
+          if (body?.detail) detail = String(body.detail);
+        } catch {
+          /* keep default */
+        }
+        setGuideError(detail);
         return;
       }
       const blob = await response.blob();
@@ -443,12 +451,12 @@ export default function Page() {
           )}
         </section>
 
-        {role === 'company_admin' && (
+        {canGuide && (
           <section className="card" style={{ marginTop: 16 }}>
             <h2 style={{ margin: '0 0 6px', fontSize: 18 }}>Staff user guide</h2>
             <p className="muted" style={{ marginTop: 0 }}>
               Step-by-step for adding products, stock, sales, the till, and purchasing.
-              Download this file and share it with your team. Cashiers and other roles do not see this button.
+              Download requires the staff_guide permission assigned to your role.
             </p>
             <button
               type="button"

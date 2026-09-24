@@ -17,6 +17,8 @@ export default function LoginBrandLogo({
         alt={alt}
         width={1024}
         height={341}
+        decoding="async"
+        fetchPriority="high"
       />
     </div>
   );

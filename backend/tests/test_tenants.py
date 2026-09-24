@@ -71,7 +71,16 @@ def test_grace_in_valid_statuses():
 
 
 def test_industries_cover_brd():
-    for item in ("retail", "pharmacy", "restaurant", "bakery", "wholesale", "manufacturing"):
+    for item in (
+        "retail",
+        "pharmacy",
+        "restaurant",
+        "bakery",
+        "wholesale",
+        "manufacturing",
+        "distribution",
+        "general_trading",
+    ):
         assert item in VALID_INDUSTRIES
 
 

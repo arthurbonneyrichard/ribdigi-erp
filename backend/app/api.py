@@ -291,6 +291,7 @@ from app.schemas import (
     TenantDeleteConfirm,
     TenantSubscriptionAssign,
     TenantModulesUpdate,
+    TenantIndustryChange,
     TenantStoreLimitUpdate,
     TenantMaxStoresOverrideUpdate,
     TransactionCreate,
@@ -520,6 +521,11 @@ async def seed_tenant_defaults(db: AsyncSession, tenant_id: str) -> None:
 
     await _seed_optional("default store", _default_store, db)
 
+    async def _default_departments() -> None:
+        await org_units_svc.ensure_default_departments(db, tenant_id)
+
+    await _seed_optional("default departments", _default_departments, db)
+
 
 
 async def create_session(
@@ -739,11 +745,20 @@ async def tenant_me_update(
 ):
     tenants_svc.assert_writable(claims)
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    if payload.industry is not None:
+        current = (getattr(tenant, "industry", None) or "").strip().lower()
+        if payload.industry != current:
+            raise HTTPException(
+                status_code=403,
+                detail=(
+                    "Business type is set when the Platform Owner creates the tenant "
+                    "and cannot be changed by company users."
+                ),
+            )
     tenant = await tenants_svc.update_profile(
         db,
         tenant,
         company_name=payload.company_name,
-        industry=payload.industry,
         currency=payload.currency,
         phone=payload.phone,
         email=str(payload.email) if payload.email is not None else None,
@@ -1171,6 +1186,45 @@ async def tenant_assign_subscription(
         await tenants_svc.serialize_tenant_with_store_usage(db, tenant),
         "Subscription assigned",
     )
+
+
+@api.patch("/tenants/{tenant_ref}/industry")
+async def tenant_update_industry(
+    tenant_ref: TenantRefValue,
+    payload: TenantIndustryChange,
+    claims=Depends(require_platform_permission("platform_tenants", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Platform Owner only — exceptional audited business-type change."""
+    if not is_platform_owner_role(claims.get("role")):
+        raise HTTPException(
+            status_code=403,
+            detail="Only the Platform Owner can change a tenant business type",
+        )
+    tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
+    previous = getattr(tenant, "industry", None)
+    reason = require_honest_narrative(payload.reason, label="business type change reason")
+    tenant = await tenants_svc.update_profile(
+        db, tenant, industry=payload.industry
+    )
+    await schema_compat.sync_company_industry(db, tenant.id, tenant.industry)
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="tenants",
+        action="industry_changed",
+        entity="tenant",
+        entity_id=tenant.id,
+        details={
+            "target_tenant": tenant.id,
+            "previous_industry": previous,
+            "industry": tenant.industry,
+            "reason": reason,
+        },
+    )
+    await db.commit()
+    return env(tenants_svc.serialize_tenant(tenant), "Business type updated")
 
 
 @api.patch("/tenants/{tenant_ref}/modules")
@@ -2879,6 +2933,7 @@ async def list_departments(
     branch_id: Annotated[UuidIdValue | None, Query()] = None,
     active_only: bool = False,
     is_active: bool | None = None,
+    q: Annotated[str | None, Query(max_length=80)] = None,
     claims=Depends(require_permission("users", "read")),
     db: AsyncSession = Depends(get_db),
 ):
@@ -2888,6 +2943,7 @@ async def list_departments(
         branch_id=branch_id,
         active_only=active_only,
         is_active=is_active,
+        q=q,
     )
     return env([org_units_svc.serialize_department(r) for r in rows])
 

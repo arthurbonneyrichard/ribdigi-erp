@@ -29,8 +29,23 @@ VALID_INDUSTRIES = frozenset(
         "mart",
         "hotel",
         "fmcg",
+        "distribution",
+        "general_trading",
     }
 )
+INDUSTRY_LABELS = {
+    "retail": "Retail",
+    "mart": "Mart",
+    "hotel": "Hotel",
+    "fmcg": "FMCG",
+    "pharmacy": "Pharmacy",
+    "restaurant": "Restaurant",
+    "bakery": "Bakery",
+    "wholesale": "Wholesale",
+    "distribution": "Distribution",
+    "general_trading": "General Trading",
+    "manufacturing": "Manufacturing",
+}
 VALID_DATE_FORMATS = frozenset({"DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"})
 VALID_DECIMAL_SEPARATORS = frozenset({".", ","})
 VALID_THOUSAND_SEPARATORS = frozenset({",", ".", " ", ""})
@@ -128,6 +143,15 @@ def normalize_industry(industry: str | None, *, required: bool = True) -> str | 
     return ind
 
 
+def industry_label(value: str | None) -> str:
+    key = (value or "").strip().lower()
+    if key in INDUSTRY_LABELS:
+        return INDUSTRY_LABELS[key]
+    if key:
+        return key.replace("_", " ").title()
+    return "Unknown"
+
+
 def require_tenant_slug(value: str | None) -> str:
     """OpenAPI TenantSlugValue → 422; service defense-in-depth → 400."""
     from app.schemas import validate_tenant_slug_value
@@ -187,6 +211,7 @@ def serialize_tenant(tenant: m.Tenant) -> dict:
         "slug": tenant.slug,
         "company_name": tenant.company_name,
         "industry": tenant.industry,
+        "industry_label": industry_label(getattr(tenant, "industry", None)),
         "currency": tenant.currency,
         "tax_jurisdiction": getattr(tenant, "tax_jurisdiction", None) or "GH",
         "tax_registration_number": getattr(tenant, "tax_registration_number", None),

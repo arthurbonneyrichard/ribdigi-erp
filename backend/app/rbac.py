@@ -57,6 +57,7 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "audit": ["read"],
         "ai": ["read", "write"],
         "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
     },
     "sales_officer": {
         "dashboard": ["read"],
@@ -71,6 +72,7 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "notifications": ["read", "write"],
         "ai": ["read"],
         "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
     },
     "inventory_officer": {
         "dashboard": ["read"],
@@ -81,6 +83,7 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "notifications": ["read", "write"],
         "ai": ["read"],
         "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
     },
     "accountant": {
         "dashboard": ["read"],
@@ -96,6 +99,7 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "ai": ["read"],
         "audit": ["read"],
         "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
     },
     "cashier": {
         "dashboard": ["read"],
@@ -104,6 +108,7 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "sales": ["read"],
         "notifications": ["read", "write"],
         "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
     },
 }
 
@@ -162,6 +167,7 @@ MENU_MODULE_BY_PATH: dict[str, str] = {
     "/security": "security",
     "/ai": "ai",
     "/users": "users",
+    "/departments": "users",
 }
 
 VALID_ROLES = set(ROLE_PERMISSIONS.keys())
@@ -188,6 +194,7 @@ SYSTEM_MODULES = frozenset(
         "backup",
         "ai",
         "users",
+        "staff_guide",
         "security",
         "company",
         "customers",
@@ -199,7 +206,7 @@ SYSTEM_MODULES = frozenset(
         "platform_reports",
     }
 )
-ALLOWED_ACTIONS = frozenset({"read", "write", "approve", "*"})
+ALLOWED_ACTIONS = frozenset({"read", "write", "create", "download", "approve", "*"})
 
 
 def is_system_role(role: str | None) -> bool:
@@ -380,6 +387,10 @@ def has_permission(
     if "*" in module_perms or action in module_perms:
         return True
     if action == "read" and ("write" in module_perms or "create" in module_perms):
+        return True
+    if action == "download" and (
+        "download" in module_perms or "read" in module_perms or "write" in module_perms
+    ):
         return True
     # User Management create/edit uses users:write; accept users:create as the same grant.
     if action in {"write", "create"} and (

@@ -41,6 +41,7 @@ const TENANT_ITEMS: NavItem[] = [
   ['Security', '/security', 'security'],
   ['AI Assistant', '/ai', 'ai'],
   ['Users', '/users', 'users'],
+  ['Departments', '/departments', 'users'],
 ];
 
 /** Software-owner / platform console navigation only. */

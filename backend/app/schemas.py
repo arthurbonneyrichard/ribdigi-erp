@@ -51,6 +51,8 @@ IndustryValue = Annotated[
         "mart",
         "hotel",
         "fmcg",
+        "distribution",
+        "general_trading",
     ],
     BeforeValidator(coerce_industry_value),
 ]
@@ -698,8 +700,8 @@ class TenantCreate(BaseModel):
     # blank/`!!!`/`http://…`/`a b`/`X` → **422** (was free `str`; blank/garbage could persist
     # on `Tenant.slug` String(80); uniqueness remains create **409**).
     slug: TenantSlugValue
-    # BR-1.2 — schema Literal (+ case coerce via BeforeValidator); omit → retail;
-    # blank/invalid → 422 (no silent retail from garbage).
+    # BR-1.2 — schema Literal; omit → retail for backward-compatible API clients;
+    # blank/invalid → 422 (no silent retail from garbage). Platform UI requires a choice.
     industry: IndustryValue = "retail"
     # BR-2.6 — same CurrencyCodeValue as FX rates; omit → GHS; blank/non-ISO → 422
     currency: CurrencyCodeValue = "GHS"
@@ -806,6 +808,15 @@ class TenantSubscriptionAssign(BaseModel):
     # Platform store entitlement override; omit = no change; null clears to package default
     max_stores_override: int | None = Field(default=None, ge=0)
     clear_max_stores_override: bool = False
+
+
+class TenantIndustryChange(BaseModel):
+    """Platform Owner exceptional business-type change (audited)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    industry: IndustryValue
+    reason: TenantSuspendReasonValue
 
 
 class TenantModulesUpdate(BaseModel):

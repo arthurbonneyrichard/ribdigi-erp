@@ -77,6 +77,14 @@ def register_exception_handlers(app: FastAPI) -> None:
             request.method,
             request.url.path,
         )
+        raw = str(getattr(exc, "orig", None) or exc).lower()
+        if "foreign key" in raw or "not null" in raw or "not-null" in raw or "null value" in raw:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "detail": "Could not save because a required related record is missing.",
+                },
+            )
         return JSONResponse(status_code=409, content={"detail": SAFE_409})
 
     @app.exception_handler(SQLAlchemyError)

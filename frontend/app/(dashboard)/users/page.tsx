@@ -131,6 +131,8 @@ export default function Page() {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importReport, setImportReport] = useState<ImportReport | null>(null);
   const [importBusy, setImportBusy] = useState(false);
+  const [userQuery, setUserQuery] = useState('');
+  const [deptFilter, setDeptFilter] = useState('');
 
   async function refresh() {
     const meRes = await getMe();
@@ -199,9 +201,19 @@ export default function Page() {
 
   const activeBranches = branches.filter((b) => b.is_active !== false);
   const managedUsers = rows.filter((r) => {
-    if (userManageFilter === 'all') return true;
-    const active = r.is_active !== false;
-    return userManageFilter === 'inactive' ? !active : active;
+    if (userManageFilter === 'all') {
+      /* keep */
+    } else {
+      const active = r.is_active !== false;
+      if (userManageFilter === 'inactive' ? active : !active) return false;
+    }
+    if (deptFilter && r.department_id !== deptFilter) return false;
+    const needle = userQuery.trim().toLowerCase();
+    if (needle) {
+      const hay = `${r.full_name} ${r.email} ${deptLabel(r.department_id)}`.toLowerCase();
+      if (!hay.includes(needle)) return false;
+    }
+    return true;
   });
   const managedCustomRoles = roles.filter((r) => {
     if (!isCustomRole(r)) return false;
@@ -822,6 +834,26 @@ export default function Page() {
         <option value="all">All statuses</option>
         <option value="active">Active only</option>
         <option value="inactive">Inactive only</option>
+      </select>
+      <input
+        value={userQuery}
+        onChange={(e) => setUserQuery(e.target.value)}
+        placeholder="Search name, email, department"
+        aria-label="Search users"
+        style={{ marginLeft: 8, marginBottom: 8 }}
+      />
+      <select
+        value={deptFilter}
+        onChange={(e) => setDeptFilter(e.target.value)}
+        aria-label="Filter users by department"
+        style={{ marginLeft: 8, marginBottom: 8 }}
+      >
+        <option value="">All departments</option>
+        {departments.map((d) => (
+          <option key={d.id} value={d.id}>
+            {d.name}
+          </option>
+        ))}
       </select>
 
       <table className="table">

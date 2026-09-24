@@ -6,6 +6,7 @@ import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { getPrefetched } from '../../../lib/prefetchCache';
 import { industryAllowsModule, INDUSTRY_SPECIFIC_MODULES } from '../../../lib/industryModules';
+import { INDUSTRIES, industryLabel } from '../../../lib/industries';
 
 type SubscriptionInfo = {
   package_code?: string;
@@ -70,13 +71,11 @@ type PackageInfo = {
 const emptyCreate = {
   company_name: '',
   slug: '',
-  industry: 'retail',
+  industry: '',
   currency: 'GHS',
   admin_email: '',
   admin_password: '',
 };
-
-const INDUSTRIES = ['retail', 'mart', 'pharmacy', 'restaurant', 'bakery', 'wholesale', 'manufacturing', 'hotel', 'fmcg'];
 
 function statusClass(status: string) {
   if (status === 'active') return 'st-active';
@@ -131,6 +130,8 @@ export default function PlatformConsole() {
   const [moduleDraft, setModuleDraft] = useState<string[]>([]);
   const [suspendReason, setSuspendReason] = useState('');
   const [overrideDraft, setOverrideDraft] = useState('');
+  const [industryDraft, setIndustryDraft] = useState('');
+  const [industryReason, setIndustryReason] = useState('');
   const [meRole, setMeRole] = useState('');
   const managePanelRef = useRef<HTMLDivElement | null>(null);
 
@@ -143,6 +144,8 @@ export default function PlatformConsole() {
   function openManage(row: TenantRow) {
     setError('');
     setSelectedId(row.id);
+    setIndustryDraft(row.industry || '');
+    setIndustryReason('');
     setMessage(`Managing ${row.company_name} (workspace: ${row.slug})`);
     // Defer scroll until the panel has rendered.
     window.setTimeout(() => {
@@ -244,6 +247,11 @@ export default function PlatformConsole() {
     const trimmedPassword = form.admin_password.trim();
     if (!trimmedPassword) {
       setError('Tenant admin password is required.');
+      setMessage('');
+      return;
+    }
+    if (!form.industry) {
+      setError('Business type is required.');
       setMessage('');
       return;
     }
@@ -599,10 +607,12 @@ export default function PlatformConsole() {
                 value={form.industry}
                 onChange={(e) => setForm((f) => ({ ...f, industry: e.target.value }))}
                 aria-label="Tenant industry"
+                required
               >
+                <option value="">Select business type</option>
                 {INDUSTRIES.map((i) => (
                   <option key={i} value={i}>
-                    {i}
+                    {industryLabel(i)}
                   </option>
                 ))}
               </select>
@@ -860,6 +870,68 @@ export default function PlatformConsole() {
                 <strong style={{ fontSize: 16 }}>{fmtDate(sub?.subscription_ends_at)}</strong>
               </div>
             </div>
+
+            <h3 style={{ marginTop: 20, fontSize: 15 }}>Business type</h3>
+            <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>
+              Current: {industryLabel(selected.industry)}. Only the Platform Owner can change this.
+              Staff must re-login after a change so session claims refresh.
+            </p>
+            {canDeleteTenant ? (
+              <div className="plat-form" style={{ marginTop: 8, display: 'grid', gap: 8 }}>
+                <label>
+                  <span>New business type</span>
+                  <select
+                    value={industryDraft || selected.industry || ''}
+                    onChange={(e) => setIndustryDraft(e.target.value)}
+                    aria-label="Change tenant business type"
+                  >
+                    {INDUSTRIES.map((i) => (
+                      <option key={i} value={i}>
+                        {industryLabel(i)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span>Reason</span>
+                  <input
+                    value={industryReason}
+                    onChange={(e) => setIndustryReason(e.target.value)}
+                    placeholder="Why this change is required"
+                    aria-label="Business type change reason"
+                  />
+                </label>
+                <button
+                  type="button"
+                  disabled={busy === selected.id}
+                  aria-label="Save tenant business type"
+                  onClick={async () => {
+                    setError('');
+                    setBusy(selected.id);
+                    try {
+                      await api(`/tenants/${selected.id}/industry`, {
+                        method: 'PATCH',
+                        body: JSON.stringify({
+                          industry: industryDraft || selected.industry,
+                          reason: industryReason.trim(),
+                        }),
+                      });
+                      setMessage('Business type updated');
+                      setIndustryReason('');
+                      await refresh({ force: true });
+                    } catch (err: any) {
+                      setError(err.message || 'Business type change failed');
+                    } finally {
+                      setBusy(null);
+                    }
+                  }}
+                >
+                  Save business type
+                </button>
+              </div>
+            ) : (
+              <p className="muted">Platform Owner access is required to change business type.</p>
+            )}
 
             <form className="plat-form" onSubmit={assignSubscription}>
               <label>
