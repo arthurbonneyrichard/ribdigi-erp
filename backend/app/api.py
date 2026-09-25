@@ -7869,15 +7869,19 @@ async def pos_session_report(
 
 @api.get("/pos/settings")
 async def pos_settings(
+    store_id: UuidIdValue | None = None,
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    from app.doc_numbers import numbering_settings
+    from app.doc_numbers import numbering_settings, resolve_pos_company_id
 
     tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    company_id = await resolve_pos_company_id(db, claims["tenant_id"], store_id)
     return env(
         {
-            "pos_sale_numbering": numbering_settings(tenant, "pos_sale"),
+            "pos_sale_numbering": numbering_settings(
+                tenant, "pos_sale", company_id=company_id
+            ),
             "pos_session_numbering": numbering_settings(tenant, "pos_session"),
         }
     )
@@ -7889,32 +7893,9 @@ async def update_pos_settings(
     claims=Depends(require_permission("pos", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    from app.doc_numbers import apply_numbering_update, numbering_settings
-
-    if payload.pos_sale_numbering is None and payload.pos_session_numbering is None:
-        raise HTTPException(status_code=400, detail="No numbering fields to update")
-    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
-    if payload.pos_sale_numbering is not None:
-        apply_numbering_update(
-            tenant,
-            "pos_sale",
-            prefix=payload.pos_sale_numbering.prefix,
-            next_number=payload.pos_sale_numbering.next_number,
-        )
-    if payload.pos_session_numbering is not None:
-        apply_numbering_update(
-            tenant,
-            "pos_session",
-            prefix=payload.pos_session_numbering.prefix,
-            next_number=payload.pos_session_numbering.next_number,
-        )
-    await db.commit()
-    return env(
-        {
-            "pos_sale_numbering": numbering_settings(tenant, "pos_sale"),
-            "pos_session_numbering": numbering_settings(tenant, "pos_session"),
-        },
-        "POS document numbering updated",
+    raise HTTPException(
+        status_code=400,
+        detail="POS and shift numbers are allocated by the server and cannot be set from the client",
     )
 
 
