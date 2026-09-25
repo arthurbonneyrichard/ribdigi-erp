@@ -9,7 +9,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
-from app.doc_numbers import next_pos_sale_number, next_pos_session_number  # re-exported for API callers
+from app.doc_numbers import (  # re-exported for API callers
+    next_pos_sale_number,
+    next_pos_session_number,
+    resolve_pos_company_id,
+)
 from app.honesty import money_json, optional_honest_narrative
 
 
@@ -64,8 +68,10 @@ def normalize_payment_method(method: str | None, *, strict: bool = True) -> str:
     return "other"
 
 
-async def next_session_number(db: AsyncSession, tenant_id: str) -> str:
-    return await next_pos_session_number(db, tenant_id)
+async def next_session_number(
+    db: AsyncSession, tenant_id: str, *, company_id: str | None = None
+) -> str:
+    return await next_pos_session_number(db, tenant_id, company_id=company_id)
 
 
 async def get_session(db: AsyncSession, tenant_id: str, session_id: str) -> m.PosSession:
@@ -138,11 +144,12 @@ async def open_session(
     if cash < 0:
         raise HTTPException(status_code=400, detail="opening_cash must be >= 0")
 
+    company_id = await resolve_pos_company_id(db, tenant_id, store_id)
     session = m.PosSession(
         tenant_id=tenant_id,
         store_id=store_id,
         user_id=user_id,
-        session_number=await next_session_number(db, tenant_id),
+        session_number=await next_session_number(db, tenant_id, company_id=company_id),
         status="open",
         opening_cash=cash,
         expected_cash=cash,

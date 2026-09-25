@@ -7731,14 +7731,26 @@ async def pos_open_session(
         user_id=claims["sub"],
         store_id=payload.store_id,
     )
-    session = await pos_svc.open_session(
-        db,
-        tenant_id=claims["tenant_id"],
-        user_id=claims["sub"],
-        store_id=payload.store_id,
-        opening_cash=payload.opening_cash,
-    )
-    await db.commit()
+    try:
+        session = await pos_svc.open_session(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            store_id=payload.store_id,
+            opening_cash=payload.opening_cash,
+        )
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        existing = await pos_svc.get_open_session_for_user(
+            db, claims["tenant_id"], claims["sub"]
+        )
+        if existing:
+            return env(
+                await pos_svc.serialize_session(db, existing),
+                "POS shift already open",
+            )
+        raise
     return env(await pos_svc.serialize_session(db, session), "POS shift opened")
 
 
@@ -7893,6 +7905,7 @@ async def update_pos_settings(
     claims=Depends(require_permission("pos", "write")),
     db: AsyncSession = Depends(get_db),
 ):
+    _ = payload
     raise HTTPException(
         status_code=400,
         detail="POS and shift numbers are allocated by the server and cannot be set from the client",
@@ -8131,7 +8144,13 @@ async def pos_sale(
             extra={"source": "pos_sale"},
         )
 
-    ref = await pos_svc.next_pos_sale_number(db, claims["tenant_id"])
+    ref = await pos_svc.next_pos_sale_number(
+        db,
+        claims["tenant_id"],
+        company_id=await pos_svc.resolve_pos_company_id(
+            db, claims["tenant_id"], session.store_id
+        ),
+    )
     body = payload.model_dump()
     body.pop("items", None)
     body.pop("session_id", None)
@@ -8275,7 +8294,33 @@ async def pos_sale(
                 "source": "pos",
             },
         )
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        if client_request_id:
+            existing = (
+                await db.execute(
+                    select(m.Transaction).where(
+                        m.Transaction.tenant_id == claims["tenant_id"],
+                        m.Transaction.client_request_id == client_request_id,
+                        m.Transaction.tx_type == "pos_sale",
+                    )
+                )
+            ).scalar_one_or_none()
+            if existing:
+                return env(
+                    {
+                        "id": existing.id,
+                        "reference": existing.reference,
+                        "total": money_json(existing.total or 0),
+                        "status": existing.status,
+                        "idempotent_replay": True,
+                        "client_request_id": client_request_id,
+                    },
+                    "POS sale already recorded",
+                )
+        raise
     payload_out = {
         "id": tx.id,
         "reference": ref,

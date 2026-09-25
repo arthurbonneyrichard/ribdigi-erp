@@ -253,18 +253,26 @@ def _write_state(
     tenant.document_numbering = data
 
 
-def numbering_settings(tenant: m.Tenant, kind: str, *, as_of: datetime | None = None) -> dict:
+def numbering_settings(
+    tenant: m.Tenant,
+    kind: str,
+    *,
+    as_of: datetime | None = None,
+    company_id: str | None = None,
+) -> dict:
     """Serialize numbering config + next preview for one document kind (no side effects)."""
     if kind not in SERIES_KINDS:
         raise HTTPException(status_code=400, detail=f"Unknown numbering kind: {kind}")
     now = as_of or datetime.utcnow()
     year = now.year
     locked = LOCKED_SERIES_PREFIXES.get(kind)
-    raw_prefix, next_seq, stored_year = _read_state(tenant, kind)
+    scope = company_id if SERIES_KINDS[kind].get("company_scoped") else None
+    raw_prefix, next_seq, stored_year = _read_state(tenant, kind, company_id=scope)
     prefix = locked or normalize_prefix(raw_prefix, default=SERIES_KINDS[kind]["default_prefix"])
     if stored_year is not None and int(stored_year) != year:
         next_seq = 1
     next_seq = max(int(next_seq), 1)
+    server_allocated = kind in LOCKED_SERIES_PREFIXES
     return {
         "kind": kind,
         "prefix": prefix,
@@ -273,6 +281,8 @@ def numbering_settings(tenant: m.Tenant, kind: str, *, as_of: datetime | None = 
         "pad": SERIES_PAD,
         "pattern": f"{prefix}-{{YYYY}}-{{NNNN}}",
         "preview": format_series_number(prefix, year, next_seq),
+        "server_allocated": server_allocated,
+        "editable": not server_allocated,
     }
 
 

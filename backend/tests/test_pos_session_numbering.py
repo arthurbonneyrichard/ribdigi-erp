@@ -1,4 +1,4 @@
-"""POS shift session year-series numbering (BR-8.2 / BR-20.4)."""
+"""POS shift session year-series numbering (BR-8.2 / BR-20.4). Server-allocated only."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from datetime import datetime
 import pyotp
 import pytest
 
+from app import models as m
 from tests.conftest import auth_headers
 
 
@@ -18,20 +19,42 @@ async def _admin(ac, seed):
 
 
 @pytest.mark.asyncio
-async def test_pos_session_numbering_series(client):
+async def test_pos_session_numbering_series(client, db_session):
     ac, seed = client
     headers = await _admin(ac, seed)
     year = datetime.utcnow().year
 
-    settings = await ac.patch(
+    db_session.add(
+        m.PosSession(
+            tenant_id=seed["t1"].id,
+            user_id=seed["super"].id,
+            session_number=f"SHIFT-{year}-0010",
+            status="closed",
+            opening_cash=0,
+            expected_cash=0,
+            cash_sales=0,
+            card_sales=0,
+            other_sales=0,
+            total_sales=0,
+            sale_count=0,
+        )
+    )
+    await db_session.commit()
+
+    blocked = await ac.patch(
         "/api/v1/pos/settings",
         headers=headers,
         json={"pos_session_numbering": {"prefix": "SHIFT", "next_number": 11}},
     )
+    assert blocked.status_code == 400, blocked.text
+
+    settings = await ac.get("/api/v1/pos/settings", headers=headers)
     assert settings.status_code == 200, settings.text
     data = settings.json()["data"]
-    assert data["pos_session_numbering"]["preview"] == f"SHIFT-{year}-0011"
-    assert "pos_sale_numbering" in data
+    assert data["pos_session_numbering"]["prefix"] == "SHIFT"
+    assert data["pos_session_numbering"]["server_allocated"] is True
+    assert data["pos_session_numbering"]["editable"] is False
+    assert data["pos_sale_numbering"]["server_allocated"] is True
 
     cur = await ac.get("/api/v1/pos/sessions/current", headers=headers)
     if cur.status_code == 200 and cur.json().get("data"):

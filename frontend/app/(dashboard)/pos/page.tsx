@@ -279,18 +279,13 @@ export default function Page() {
   const [receiptBusy, setReceiptBusy] = useState('');
   const [shiftReport, setShiftReport] = useState<any>(null);
   const [reportBusy, setReportBusy] = useState(false);
-  const [posPrefix, setPosPrefix] = useState('POS');
-  const [posNext, setPosNext] = useState('1');
-  const [posPreview, setPosPreview] = useState('');
-  const [shiftPrefix, setShiftPrefix] = useState('SHIFT');
-  const [shiftNext, setShiftNext] = useState('1');
+  const [shiftBusy, setShiftBusy] = useState(false);
   const [online, setOnline] = useState(
     typeof navigator === 'undefined' ? true : navigator.onLine
   );
   const [pendingOffline, setPendingOffline] = useState(0);
   const [catalogCachedAt, setCatalogCachedAt] = useState<string | null>(null);
   const [offlineAuthUntil, setOfflineAuthUntil] = useState<string | null>(null);
-  const [shiftPreview, setShiftPreview] = useState('');
   const [sessions, setSessions] = useState<Session[]>([]);
   const [shiftManageFilter, setShiftManageFilter] = useState<'all' | 'open' | 'closed'>('all');
   const [posDevices, setPosDevices] = useState<
@@ -501,22 +496,6 @@ export default function Page() {
     getMe()
       .then((r) => setCashierName(r.data?.full_name || r.data?.email || ''))
       .catch(() => setCashierName(''));
-    api('/pos/settings')
-      .then((r) => {
-        const num = r.data?.pos_sale_numbering;
-        if (num) {
-          setPosPrefix(num.prefix || 'POS');
-          setPosNext(String(num.next_number ?? 1));
-          setPosPreview(num.preview || '');
-        }
-        const shift = r.data?.pos_session_numbering;
-        if (shift) {
-          setShiftPrefix(shift.prefix || 'SHIFT');
-          setShiftNext(String(shift.next_number ?? 1));
-          setShiftPreview(shift.preview || '');
-        }
-      })
-      .catch(() => {});
     api('/pos/stores')
       .then((r) => {
         const list: Store[] = r.data || [];
@@ -558,10 +537,12 @@ export default function Page() {
   async function openShift() {
     setError('');
     setMessage('');
+    if (shiftBusy) return;
     if (stores.length > 0 && !storeId) {
       setError('Select a store before opening the shift');
       return;
     }
+    setShiftBusy(true);
     try {
       const r = await api('/pos/sessions/open', {
         method: 'POST',
@@ -572,7 +553,11 @@ export default function Page() {
         }),
       });
       setSession(r.data);
-      setMessage('Shift opened');
+      setMessage(
+        r.data?.session_number
+          ? `Shift opened · ${r.data.session_number}`
+          : 'Shift opened'
+      );
       try {
         const me = await getMe();
         const tenant = localStorage.getItem('tenant') || me.data?.tenant_id || '';
@@ -591,43 +576,8 @@ export default function Page() {
       await refreshPendingCount();
     } catch (err: any) {
       setError(err.message);
-    }
-  }
-
-  async function savePosNumbering() {
-    setError('');
-    setMessage('');
-    try {
-      const r = await api('/pos/settings', {
-        method: 'PATCH',
-        body: JSON.stringify({
-          pos_sale_numbering: {
-            prefix: posPrefix.trim(),
-            next_number: Math.max(1, Number(posNext) || 1),
-          },
-          pos_session_numbering: {
-            prefix: shiftPrefix.trim(),
-            next_number: Math.max(1, Number(shiftNext) || 1),
-          },
-        }),
-      });
-      const num = r.data?.pos_sale_numbering;
-      if (num) {
-        setPosPrefix(num.prefix || 'POS');
-        setPosNext(String(num.next_number ?? 1));
-        setPosPreview(num.preview || '');
-      }
-      const shift = r.data?.pos_session_numbering;
-      if (shift) {
-        setShiftPrefix(shift.prefix || 'SHIFT');
-        setShiftNext(String(shift.next_number ?? 1));
-        setShiftPreview(shift.preview || '');
-      }
-      setMessage(
-        `Numbering saved — Sale ${num?.preview || ''} / Shift ${shift?.preview || ''}`.trim()
-      );
-    } catch (err: any) {
-      setError(err.message);
+    } finally {
+      setShiftBusy(false);
     }
   }
 
@@ -967,7 +917,9 @@ export default function Page() {
       await refreshSession();
       await browse(q);
       setMessage(
-        r.data?.credit_limit_overridden ? 'Sale successful (credit limit overridden)' : 'Sale successful',
+        r.data?.credit_limit_overridden
+          ? `Sale successful (credit limit overridden) · ${r.data.reference}`
+          : `Sale successful · ${r.data.reference}`,
       );
     } catch (err: any) {
       setMessage('');
@@ -1092,9 +1044,10 @@ export default function Page() {
                   type="button"
                   className="tpos-btn tpos-btn-primary"
                   onClick={openShift}
+                  disabled={shiftBusy}
                   aria-label="Open shift"
                 >
-                  Open shift
+                  {shiftBusy ? 'Opening…' : 'Open shift'}
                 </button>
               </>
             ) : (
@@ -1191,53 +1144,23 @@ export default function Page() {
         <div className="card" style={{ margin: '12px 0', display: 'grid', gap: 8 }}>
           <strong>Document numbering</strong>
           <p className="muted" style={{ margin: 0 }}>
-            Sale receipts use POS-YYYY-NNNN; shift sessions use SHIFT-YYYY-NNNN.
+            The server assigns sale receipts as POS-YYYY-NNNN and shift sessions as
+            SHIFT-YYYY-NNNN. Prefixes and next numbers cannot be edited here.
           </p>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            <span className="muted">Sale</span>
-            <input
-              className="tpos-input"
-              value={posPrefix}
-              onChange={(e) => setPosPrefix(e.target.value.toUpperCase())}
-              placeholder="Prefix"
-              style={{ width: 100 }}
-              aria-label="POS sale number prefix"
-              title="Document prefix (letters, digits, _ or -)"
-            />
-            <input
-              className="tpos-input"
-              value={posNext}
-              onChange={(e) => setPosNext(e.target.value)}
-              placeholder="Next #"
-              style={{ width: 90 }}
-              aria-label="POS sale next number"
-            />
-            <span className="muted">{posPreview || '—'}</span>
-          </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            <span className="muted">Shift</span>
-            <input
-              className="tpos-input"
-              value={shiftPrefix}
-              onChange={(e) => setShiftPrefix(e.target.value.toUpperCase())}
-              placeholder="Prefix"
-              style={{ width: 100 }}
-              aria-label="POS session number prefix"
-              title="Document prefix (letters, digits, _ or -)"
-            />
-            <input
-              className="tpos-input"
-              value={shiftNext}
-              onChange={(e) => setShiftNext(e.target.value)}
-              placeholder="Next #"
-              style={{ width: 90 }}
-              aria-label="POS session next number"
-            />
-            <span className="muted">{shiftPreview || '—'}</span>
-            <button type="button" className="tpos-btn" onClick={savePosNumbering} aria-label="Save POS numbering">
-              Save numbering
-            </button>
-          </div>
+          {session?.session_number ? (
+            <p style={{ margin: 0 }}>
+              Current shift: <code>{session.session_number}</code>
+            </p>
+          ) : null}
+          {lastSale?.reference ? (
+            <p style={{ margin: 0 }}>
+              Last sale: <code>{lastSale.reference}</code>
+            </p>
+          ) : (
+            <p className="muted" style={{ margin: 0 }}>
+              Generated sale numbers appear here after checkout.
+            </p>
+          )}
         </div>
 
         <div className="card" style={{ margin: '12px 0' }}>
@@ -1468,7 +1391,7 @@ export default function Page() {
         {message && (
           <div className="tpos-banner tpos-banner-ok tpos-success-bar">
             <span>{message}</span>
-            {message === 'Sale successful' && lastSale && (
+            {lastSale && (
               <div className="tpos-success-actions">
                 <button
                   type="button"
