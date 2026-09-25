@@ -73,6 +73,7 @@ def test_numbering_industry_aria_ui_and_docs():
 
     company = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Company industry"' in company
+    assert "onChange={(e) => setTenant({ ...tenant, industry: e.target.value })}" not in company
 
     platform = (ROOT / "frontend/app/(dashboard)/platform/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Tenant industry"' in platform

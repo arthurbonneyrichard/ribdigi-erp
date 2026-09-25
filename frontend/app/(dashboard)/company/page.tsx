@@ -301,37 +301,6 @@ export default function Page() {
           ? ` · Grace days left: ${tenant.days_remaining}`
           : ''}
       </p>
-      <div className="card" style={{ margin: '12px 0' }}>
-        <h2 style={{ fontSize: 18, margin: '0 0 8px' }}>Users</h2>
-        <p className="muted" style={{ margin: '0 0 8px' }}>
-          Settings → Users: add staff for this company (same API as User Management).
-        </p>
-        <a href="/users#create-user" aria-label="Add User">
-          Add User
-        </a>
-      </div>
-      {canGuide && (
-        <div className="card" style={{ margin: '12px 0' }}>
-          <h2 style={{ fontSize: 18, margin: '0 0 8px' }}>Staff user guide</h2>
-          <p className="muted" style={{ margin: '0 0 8px' }}>
-            Download the authorized PDF for this company. Requires staff_guide:download.
-          </p>
-          <button
-            type="button"
-            className="btn-ok"
-            onClick={downloadStaffGuide}
-            disabled={guideBusy}
-            aria-label="Download staff user guide PDF"
-          >
-            {guideBusy ? 'Preparing staff guide…' : 'Download staff user guide (PDF)'}
-          </button>
-          {guideError ? (
-            <p className="form-flash err" role="alert">
-              {guideError}
-            </p>
-          ) : null}
-        </div>
-      )}
       {tenant.status === 'trial' && (
         <div className="card" style={{ marginBottom: 12, borderLeft: '4px solid #ca8a04' }}>
           <p>
@@ -355,12 +324,16 @@ export default function Page() {
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 
-      <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 520, marginBottom: 16 }}>
-        <h3>Company logo</h3>
+      <div className="card" style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
+        <h3>Company profile</h3>
+        <label className="muted" htmlFor="company-logo-file">
+          Company logo
+        </label>
         {tenant.has_logo && logoPreview && (
           <img src={logoPreview} alt="Company logo" style={{ maxHeight: 80, maxWidth: 200, objectFit: 'contain' }} />
         )}
         <input
+          id="company-logo-file"
           type="file"
           accept="image/png,image/jpeg,image/webp,image/gif"
           disabled={!!tenant.read_only}
@@ -396,6 +369,7 @@ export default function Page() {
         />
         {tenant.has_logo && (
           <button
+            type="button"
             disabled={!!tenant.read_only}
             aria-label="Remove company logo"
             onClick={async () => {
@@ -413,9 +387,6 @@ export default function Page() {
             Remove logo
           </button>
         )}
-      </div>
-
-      <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 520 }}>
         <input
           value={tenant.company_name || ''}
           onChange={(e) => setTenant({ ...tenant, company_name: e.target.value })}
@@ -440,16 +411,8 @@ export default function Page() {
           placeholder="Primary contact person"
           aria-label="Company contact person"
         />
-        <p
-          aria-label="Company industry"
-          style={{ margin: 0, fontWeight: 600 }}
-        >
-          Business Type: {industryLabel(tenant.industry)}
-        </p>
-        <p className="muted" style={{ fontSize: 12, gridColumn: '1 / -1', marginTop: -8 }}>
-          Business type is set by the Platform Owner when the tenant is created and cannot be
-          changed here. It controls industry modules (Hotel ops, FMCG trade schemes) for this
-          company.
+        <p aria-label="Company industry" className="muted" style={{ margin: 0 }}>
+          Business type: {industryLabel(tenant.industry)}
         </p>
         <select
           value={tenant.currency || 'GHS'}
@@ -672,6 +635,40 @@ export default function Page() {
             Suspended reason: {tenant.suspended_reason}
           </p>
         ) : null}
+      </div>
+
+      <div className="erp-split">
+        {canGuide && (
+          <div className="card" style={{ display: 'grid', gap: 8, alignContent: 'start' }}>
+            <h2 style={{ fontSize: 18, margin: 0 }}>Staff user guide</h2>
+            <p className="muted" style={{ margin: 0 }}>
+              Download the authorized PDF for this company. Requires staff_guide:download.
+            </p>
+            <button
+              type="button"
+              className="btn-ok"
+              onClick={downloadStaffGuide}
+              disabled={guideBusy}
+              aria-label="Download staff user guide PDF"
+            >
+              {guideBusy ? 'Preparing staff guide…' : 'Download staff user guide (PDF)'}
+            </button>
+            {guideError ? (
+              <p className="form-flash err" role="alert">
+                {guideError}
+              </p>
+            ) : null}
+          </div>
+        )}
+        <div className="card" style={{ display: 'grid', gap: 8, alignContent: 'start' }}>
+          <h2 style={{ fontSize: 18, margin: 0 }}>Users</h2>
+          <p className="muted" style={{ margin: 0 }}>
+            Settings → Users: add staff for this company (same API as User Management).
+          </p>
+          <a href="/users#create-user" aria-label="Add User">
+            Add User
+          </a>
+        </div>
       </div>
 
       {storageStatus && (

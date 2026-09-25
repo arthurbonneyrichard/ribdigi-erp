@@ -1577,8 +1577,8 @@ export default function Page() {
                       {out && <span className="tpos-oos">Out</span>}
                     </div>
                     <div className="tpos-tile-body">
-                      <strong>{r.name}</strong>
-                      <span className="tpos-sku">
+                      <strong title={r.name}>{r.name}</strong>
+                      <span className="tpos-sku" title={r.sku ? `${r.sku}${r.kind === 'variant' ? ' · variant' : ''}` : undefined}>
                         {r.sku}
                         {r.kind === 'variant' ? ' · variant' : ''}
                       </span>
@@ -1595,7 +1595,14 @@ export default function Page() {
                             <span className="tpos-price-value">{money(Number(r.selling_price))}</span>
                           </span>
                         </div>
-                        <span className="tpos-stock">
+                        <span
+                          className="tpos-stock"
+                          title={
+                            online
+                              ? `${r.stock_qty} in stock`
+                              : `Cached: ${r.stock_qty} · ${formatCacheAge(catalogCachedAt)}`
+                          }
+                        >
                           {online
                             ? `${r.stock_qty} in stock`
                             : `Cached: ${r.stock_qty} · ${formatCacheAge(catalogCachedAt)}`}

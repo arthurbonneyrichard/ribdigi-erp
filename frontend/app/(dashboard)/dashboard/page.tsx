@@ -69,12 +69,6 @@ const PANEL_ICONS: Record<string, React.ReactNode> = {
       <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </>
   ),
-  pie: (
-    <>
-      <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
-      <path d="M22 12A10 10 0 0 0 12 2v10z" />
-    </>
-  ),
   daily: (
     <>
       <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -225,26 +219,6 @@ function pctLabel(pct?: number | null) {
   return `${sign}${pct}%`;
 }
 
-function polar(cx: number, cy: number, r: number, angle: number): [number, number] {
-  return [cx + r * Math.cos(angle), cy + r * Math.sin(angle)];
-}
-
-function pieSlices(items: { label: string; value: number; color: string }[], cx: number, cy: number, r: number) {
-  const total = items.reduce((s, i) => s + i.value, 0);
-  if (total <= 0) return [];
-  let a = -Math.PI / 2;
-  return items.map((it) => {
-    const frac = it.value / total;
-    const a2 = a + frac * 2 * Math.PI;
-    const [x1, y1] = polar(cx, cy, r, a);
-    const [x2, y2] = polar(cx, cy, r, a2);
-    const large = frac > 0.5 ? 1 : 0;
-    const path = `M${cx} ${cy} L${x1.toFixed(2)} ${y1.toFixed(2)} A${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`;
-    a = a2;
-    return { path, color: it.color };
-  });
-}
-
 function subStatus(sub?: Subscription) {
   const status = sub?.status;
   const days = sub?.days_remaining;
@@ -357,14 +331,6 @@ export default function Page() {
   const daily = dailyAll.slice(-7);
   const dailyEmpty = daily.every((x) => !x.sales && !x.profit);
   const recent = d.recent_sales || [];
-
-  const finItems = [
-    { label: 'Sales', value: sales, color: '#4AB012' },
-    { label: 'Purchases', value: purchases, color: '#38bdf8' },
-    { label: 'Expenses', value: expenses, color: '#fb7185' },
-  ].filter((x) => x.value > 0);
-  const finTotal = finItems.reduce((s, i) => s + i.value, 0);
-  const finSlices = pieSlices(finItems, 70, 70, 66);
 
   const stats = [
     {
@@ -561,41 +527,6 @@ export default function Page() {
                 ))}
               </div>
             )}
-          </div>
-
-          <div className="panel">
-            <h3>
-              <PanelIcon name="pie" />
-              Revenue vs costs
-            </h3>
-            <p className="hint">Share of sales, purchases &amp; expenses</p>
-            <div className="mix">
-              <svg width="140" height="140" viewBox="0 0 140 140" role="img" aria-label="Revenue vs costs">
-                {finTotal <= 0 ? (
-                  <circle cx="70" cy="70" r="66" fill="#EAF8D8" />
-                ) : finItems.length === 1 ? (
-                  <circle cx="70" cy="70" r="66" fill={finItems[0].color} />
-                ) : (
-                  finSlices.map((s, i) => <path key={i} d={s.path} fill={s.color} stroke="#fff" strokeWidth="1.5" />)
-                )}
-              </svg>
-              <div className="legend">
-                {finTotal <= 0 ? (
-                  <span className="li">No financial activity yet</span>
-                ) : (
-                  [
-                    { label: 'Sales', value: sales, color: '#4AB012' },
-                    { label: 'Purchases', value: purchases, color: '#38bdf8' },
-                    { label: 'Expenses', value: expenses, color: '#fb7185' },
-                  ].map((it) => (
-                    <span className="li" key={it.label}>
-                      <span className="dot" style={{ background: it.color }} /> {it.label} ·{' '}
-                      <b>&nbsp;{num(it.value)}</b>
-                    </span>
-                  ))
-                )}
-              </div>
-            </div>
           </div>
 
           <div className="panel">

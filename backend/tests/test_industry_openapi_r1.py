@@ -86,7 +86,9 @@ def test_coerce_and_normalize_industry_defense():
 
 def test_industry_ui_and_docs():
     company = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
-    assert "Business Type:" in company
+    assert "Business Type:" not in company
+    assert "Business type:" in company
+    assert "industryLabel(tenant.industry)" in company
     assert "onChange={(e) => setTenant({ ...tenant, industry: e.target.value })}" not in company
     industries = (ROOT / "frontend/lib/industries.ts").read_text(encoding="utf-8")
     for value in (
