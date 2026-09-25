@@ -310,35 +310,12 @@ export default function Page() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [attachPreview, setAttachPreview] = useState<{ apiPath: string; title: string } | null>(null);
-  const [poPrefix, setPoPrefix] = useState('PO');
-  const [poNext, setPoNext] = useState('1');
-  const [poPreview, setPoPreview] = useState('');
-  const [grnPrefix, setGrnPrefix] = useState('GRN');
-  const [grnNext, setGrnNext] = useState('1');
-  const [grnPreview, setGrnPreview] = useState('');
-  const [piPrefix, setPiPrefix] = useState('PINV');
-  const [piNext, setPiNext] = useState('1');
-  const [piPreview, setPiPreview] = useState('');
-  const [preqPrefix, setPreqPrefix] = useState('PREQ');
-  const [preqNext, setPreqNext] = useState('1');
-  const [preqPreview, setPreqPreview] = useState('');
-  const [prPrefix, setPrPrefix] = useState('PR');
-  const [prNext, setPrNext] = useState('1');
-  const [prPreview, setPrPreview] = useState('');
-  const [dnPrefix, setDnPrefix] = useState('DN');
-  const [dnNext, setDnNext] = useState('1');
-  const [dnPreview, setDnPreview] = useState('');
-  const [spyPrefix, setSpyPrefix] = useState('SPY');
-  const [spyNext, setSpyNext] = useState('1');
-  const [spyPreview, setSpyPreview] = useState('');
-
   async function refresh() {
-    const [poRes, prRes, settingsRes, numRes, supRes, prodRes, unitRes, whRes, grnRes, invRes, retRes] =
+    const [poRes, prRes, settingsRes, supRes, prodRes, unitRes, whRes, grnRes, invRes, retRes] =
       await Promise.all([
       api('/purchasing/orders'),
       api('/purchasing/requests'),
       api('/purchasing/requests/settings'),
-      api('/purchasing/settings').catch(() => ({ data: null })),
       api('/suppliers'),
       api('/products'),
       api('/catalog/units').catch(() => ({ data: [] })),
@@ -357,48 +334,6 @@ export default function Page() {
     setGrns(grnRes.data || []);
     setInvoices(invRes.data || []);
     setReturns(retRes.data || []);
-    const poNum = numRes.data?.purchase_order_numbering;
-    if (poNum) {
-      setPoPrefix(poNum.prefix || 'PO');
-      setPoNext(String(poNum.next_number ?? 1));
-      setPoPreview(poNum.preview || '');
-    }
-    const grnNum = numRes.data?.grn_numbering;
-    if (grnNum) {
-      setGrnPrefix(grnNum.prefix || 'GRN');
-      setGrnNext(String(grnNum.next_number ?? 1));
-      setGrnPreview(grnNum.preview || '');
-    }
-    const piNum = numRes.data?.purchase_invoice_numbering;
-    if (piNum) {
-      setPiPrefix(piNum.prefix || 'PINV');
-      setPiNext(String(piNum.next_number ?? 1));
-      setPiPreview(piNum.preview || '');
-    }
-    const preqNum = numRes.data?.purchase_request_numbering;
-    if (preqNum) {
-      setPreqPrefix(preqNum.prefix || 'PREQ');
-      setPreqNext(String(preqNum.next_number ?? 1));
-      setPreqPreview(preqNum.preview || '');
-    }
-    const prNum = numRes.data?.purchase_return_numbering;
-    if (prNum) {
-      setPrPrefix(prNum.prefix || 'PR');
-      setPrNext(String(prNum.next_number ?? 1));
-      setPrPreview(prNum.preview || '');
-    }
-    const dnNum = numRes.data?.debit_note_numbering;
-    if (dnNum) {
-      setDnPrefix(dnNum.prefix || 'DN');
-      setDnNext(String(dnNum.next_number ?? 1));
-      setDnPreview(dnNum.preview || '');
-    }
-    const spyNum = numRes.data?.supplier_payment_numbering;
-    if (spyNum) {
-      setSpyPrefix(spyNum.prefix || 'SPY');
-      setSpyNext(String(spyNum.next_number ?? 1));
-      setSpyPreview(spyNum.preview || '');
-    }
   }
 
   useEffect(() => {
@@ -1137,93 +1072,6 @@ export default function Page() {
     }
   }
 
-  async function savePurchasingNumbering() {
-    setError('');
-    setMessage('');
-    try {
-      const r = await api('/purchasing/settings', {
-        method: 'PATCH',
-        body: JSON.stringify({
-          purchase_order_numbering: {
-            prefix: poPrefix.trim(),
-            next_number: Math.max(1, Number(poNext) || 1),
-          },
-          grn_numbering: {
-            prefix: grnPrefix.trim(),
-            next_number: Math.max(1, Number(grnNext) || 1),
-          },
-          purchase_invoice_numbering: {
-            prefix: piPrefix.trim(),
-            next_number: Math.max(1, Number(piNext) || 1),
-          },
-          purchase_request_numbering: {
-            prefix: preqPrefix.trim(),
-            next_number: Math.max(1, Number(preqNext) || 1),
-          },
-          purchase_return_numbering: {
-            prefix: prPrefix.trim(),
-            next_number: Math.max(1, Number(prNext) || 1),
-          },
-          debit_note_numbering: {
-            prefix: dnPrefix.trim(),
-            next_number: Math.max(1, Number(dnNext) || 1),
-          },
-          supplier_payment_numbering: {
-            prefix: spyPrefix.trim(),
-            next_number: Math.max(1, Number(spyNext) || 1),
-          },
-        }),
-      });
-      const poNum = r.data?.purchase_order_numbering;
-      if (poNum) {
-        setPoPrefix(poNum.prefix);
-        setPoNext(String(poNum.next_number));
-        setPoPreview(poNum.preview);
-      }
-      const grnNum = r.data?.grn_numbering;
-      if (grnNum) {
-        setGrnPrefix(grnNum.prefix);
-        setGrnNext(String(grnNum.next_number));
-        setGrnPreview(grnNum.preview);
-      }
-      const piNum = r.data?.purchase_invoice_numbering;
-      if (piNum) {
-        setPiPrefix(piNum.prefix);
-        setPiNext(String(piNum.next_number));
-        setPiPreview(piNum.preview);
-      }
-      const preqNum = r.data?.purchase_request_numbering;
-      if (preqNum) {
-        setPreqPrefix(preqNum.prefix);
-        setPreqNext(String(preqNum.next_number));
-        setPreqPreview(preqNum.preview);
-      }
-      const prNum = r.data?.purchase_return_numbering;
-      if (prNum) {
-        setPrPrefix(prNum.prefix);
-        setPrNext(String(prNum.next_number));
-        setPrPreview(prNum.preview);
-      }
-      const dnNum = r.data?.debit_note_numbering;
-      if (dnNum) {
-        setDnPrefix(dnNum.prefix);
-        setDnNext(String(dnNum.next_number));
-        setDnPreview(dnNum.preview);
-      }
-      const spyNum = r.data?.supplier_payment_numbering;
-      if (spyNum) {
-        setSpyPrefix(spyNum.prefix);
-        setSpyNext(String(spyNum.next_number));
-        setSpyPreview(spyNum.preview);
-      }
-      setMessage(
-        `Numbering saved — PO ${poNum?.preview || ''} / GRN ${grnNum?.preview || ''} / PI ${piNum?.preview || ''} / PREQ ${preqNum?.preview || ''} / PR ${prNum?.preview || ''} / DN ${dnNum?.preview || ''} / SPY ${spyNum?.preview || ''}`.trim()
-      );
-    } catch (err: any) {
-      setError(err.message);
-    }
-  }
-
   function updatePrLevel(idx: number, patch: Partial<(typeof prLevels)[0]>) {
     setPrLevels((prev) => prev.map((l, i) => (i === idx ? { ...l, ...patch } : l)));
   }
@@ -1320,148 +1168,6 @@ export default function Page() {
       {tab === 'requests' && (
         <>
           <div className="erp-split">
-          <div className="card" style={{ marginBottom: 16 }}>
-            <h3>Document numbering</h3>
-            <p className="muted" style={{ marginBottom: 8 }}>
-              Pattern <code>{'{PREFIX}-{YYYY}-{NNNN}'}</code>
-            </p>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 }}>
-              <span className="muted">PO</span>
-              <input
-                value={poPrefix}
-                onChange={(e) => setPoPrefix(e.target.value.toUpperCase())}
-                placeholder="Prefix"
-                style={{ width: 100 }}
-                aria-label="Purchase order number prefix"
-                title="Document prefix (letters, digits, _ or -)"
-              />
-              <input
-                value={poNext}
-                onChange={(e) => setPoNext(e.target.value)}
-                placeholder="Next #"
-                style={{ width: 90 }}
-                aria-label="Purchase order next number"
-              />
-              <span className="muted">{poPreview || '—'}</span>
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              <span className="muted">GRN</span>
-              <input
-                value={grnPrefix}
-                onChange={(e) => setGrnPrefix(e.target.value.toUpperCase())}
-                placeholder="Prefix"
-                style={{ width: 100 }}
-                aria-label="GRN number prefix"
-                title="Document prefix (letters, digits, _ or -)"
-              />
-              <input
-                value={grnNext}
-                onChange={(e) => setGrnNext(e.target.value)}
-                placeholder="Next #"
-                style={{ width: 90 }}
-                aria-label="GRN next number"
-              />
-              <span className="muted">{grnPreview || '—'}</span>
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
-              <span className="muted">PI</span>
-              <input
-                value={piPrefix}
-                onChange={(e) => setPiPrefix(e.target.value.toUpperCase())}
-                placeholder="Prefix"
-                style={{ width: 100 }}
-                aria-label="Purchase invoice number prefix"
-                title="Document prefix (letters, digits, _ or -)"
-              />
-              <input
-                value={piNext}
-                onChange={(e) => setPiNext(e.target.value)}
-                placeholder="Next #"
-                style={{ width: 90 }}
-                aria-label="Purchase invoice next number"
-              />
-              <span className="muted">{piPreview || '—'}</span>
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
-              <span className="muted">Request</span>
-              <input
-                value={preqPrefix}
-                onChange={(e) => setPreqPrefix(e.target.value.toUpperCase())}
-                placeholder="Prefix"
-                style={{ width: 100 }}
-                aria-label="Purchase request number prefix"
-                title="Document prefix (letters, digits, _ or -)"
-              />
-              <input
-                value={preqNext}
-                onChange={(e) => setPreqNext(e.target.value)}
-                placeholder="Next #"
-                style={{ width: 90 }}
-                aria-label="Purchase request next number"
-              />
-              <span className="muted">{preqPreview || '—'}</span>
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
-              <span className="muted">PR</span>
-              <input
-                value={prPrefix}
-                onChange={(e) => setPrPrefix(e.target.value.toUpperCase())}
-                placeholder="Prefix"
-                style={{ width: 100 }}
-                aria-label="Purchase return number prefix"
-                title="Document prefix (letters, digits, _ or -)"
-              />
-              <input
-                value={prNext}
-                onChange={(e) => setPrNext(e.target.value)}
-                placeholder="Next #"
-                style={{ width: 90 }}
-                aria-label="Purchase return next number"
-              />
-              <span className="muted">{prPreview || '—'}</span>
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
-              <span className="muted">DN</span>
-              <input
-                value={dnPrefix}
-                onChange={(e) => setDnPrefix(e.target.value.toUpperCase())}
-                placeholder="Prefix"
-                style={{ width: 100 }}
-                aria-label="Debit note number prefix"
-                title="Document prefix (letters, digits, _ or -)"
-              />
-              <input
-                value={dnNext}
-                onChange={(e) => setDnNext(e.target.value)}
-                placeholder="Next #"
-                style={{ width: 90 }}
-                aria-label="Debit note next number"
-              />
-              <span className="muted">{dnPreview || '—'}</span>
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
-              <span className="muted">SPY</span>
-              <input
-                value={spyPrefix}
-                onChange={(e) => setSpyPrefix(e.target.value.toUpperCase())}
-                placeholder="Prefix"
-                style={{ width: 100 }}
-                aria-label="Supplier payment number prefix"
-                title="Document prefix (letters, digits, _ or -)"
-              />
-              <input
-                value={spyNext}
-                onChange={(e) => setSpyNext(e.target.value)}
-                placeholder="Next #"
-                style={{ width: 90 }}
-                aria-label="Supplier payment next number"
-              />
-              <span className="muted">{spyPreview || '—'}</span>
-              <button type="button" onClick={savePurchasingNumbering} aria-label="Save purchasing numbering">
-                Save numbering
-              </button>
-            </div>
-          </div>
           <div className="card" style={{ marginBottom: 16 }}>
             <h3>PR approval matrix</h3>
             <p className="muted" style={{ marginBottom: 8 }}>

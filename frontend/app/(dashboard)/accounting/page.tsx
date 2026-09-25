@@ -85,12 +85,6 @@ export default function Page() {
   const [newAcctName, setNewAcctName] = useState('');
   const [newAcctKind, setNewAcctKind] = useState('cash');
   const [newBankName, setNewBankName] = useState('');
-  const [jePrefix, setJePrefix] = useState('JE');
-  const [jeNext, setJeNext] = useState('1');
-  const [jePreview, setJePreview] = useState('');
-  const [xferPrefix, setXferPrefix] = useState('XFER');
-  const [xferNext, setXferNext] = useState('1');
-  const [xferPreview, setXferPreview] = useState('');
   const [newAcctNumber, setNewAcctNumber] = useState('');
   const [newBankBranch, setNewBankBranch] = useState('');
   const [coaOpenAccountId, setCoaOpenAccountId] = useState('');
@@ -202,7 +196,7 @@ export default function Page() {
   }
 
   async function refresh() {
-    const [a, j, t, p, liq, stmts, conns, xfers, openSt, st, br, per, settings] = await Promise.all([
+    const [a, j, t, p, liq, stmts, conns, xfers, openSt, st, br, per] = await Promise.all([
       api('/accounting/accounts'),
       api('/accounting/journal-entries'),
       api(`/accounting/trial-balance${trialQuery()}`),
@@ -215,7 +209,6 @@ export default function Page() {
       api('/stores').catch(() => ({ data: [] })),
       api('/branches').catch(() => ({ data: [] })),
       api('/accounting/period').catch(() => ({ data: null })),
-      api('/accounting/settings').catch(() => ({ data: null })),
     ]);
     setAccounts(a.data || []);
     setCoaOpenAccountId((prev) => {
@@ -236,18 +229,6 @@ export default function Page() {
     setStores(st.data || []);
     setBranches(br.data || []);
     setPeriod(per.data || null);
-    const jeNum = settings.data?.journal_numbering;
-    if (jeNum) {
-      setJePrefix(jeNum.prefix || 'JE');
-      setJeNext(String(jeNum.next_number ?? 1));
-      setJePreview(jeNum.preview || '');
-    }
-    const xferNum = settings.data?.cash_transfer_numbering;
-    if (xferNum) {
-      setXferPrefix(xferNum.prefix || 'XFER');
-      setXferNext(String(xferNum.next_number ?? 1));
-      setXferPreview(xferNum.preview || '');
-    }
     if (!closeThrough && per.data?.books_closed_through) {
       setCloseThrough(per.data.books_closed_through);
     }
@@ -255,43 +236,6 @@ export default function Page() {
     if (!xferFrom && liq.data?.length) setXferFrom(liq.data[0].id);
     if (!xferTo && liq.data?.length > 1) setXferTo(liq.data[1].id);
     else if (!xferTo && liq.data?.length) setXferTo(liq.data[0].id);
-  }
-
-  async function saveAccountingNumbering() {
-    setError('');
-    setMessage('');
-    try {
-      const r = await api('/accounting/settings', {
-        method: 'PATCH',
-        body: JSON.stringify({
-          journal_numbering: {
-            prefix: jePrefix.trim(),
-            next_number: Math.max(1, Number(jeNext) || 1),
-          },
-          cash_transfer_numbering: {
-            prefix: xferPrefix.trim(),
-            next_number: Math.max(1, Number(xferNext) || 1),
-          },
-        }),
-      });
-      const jeNum = r.data?.journal_numbering;
-      if (jeNum) {
-        setJePrefix(jeNum.prefix || 'JE');
-        setJeNext(String(jeNum.next_number ?? 1));
-        setJePreview(jeNum.preview || '');
-      }
-      const xferNum = r.data?.cash_transfer_numbering;
-      if (xferNum) {
-        setXferPrefix(xferNum.prefix || 'XFER');
-        setXferNext(String(xferNum.next_number ?? 1));
-        setXferPreview(xferNum.preview || '');
-      }
-      setMessage(
-        `Numbering saved — JE ${jeNum?.preview || ''} · XFER ${xferNum?.preview || ''}`.trim(),
-      );
-    } catch (err: any) {
-      setError(err.message);
-    }
   }
 
   async function closeBooks() {
@@ -997,55 +941,6 @@ export default function Page() {
 
       {tab === 'ledger' && (
         <>
-          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
-            <strong>Document numbering</strong>
-            <p className="muted" style={{ margin: 0 }}>
-              Journals and cash/bank transfers use PREFIX-YYYY-NNNN (defaults JE / XFER). Blank
-              transfer reference auto-allocates the next XFER number.
-            </p>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              <span className="muted">Journal</span>
-              <input
-                value={jePrefix}
-                onChange={(e) => setJePrefix(e.target.value.toUpperCase())}
-                placeholder="Prefix"
-                style={{ width: 100 }}
-                aria-label="Journal number prefix"
-                title="Journal document prefix (letters, digits, _ or -)"
-              />
-              <input
-                value={jeNext}
-                onChange={(e) => setJeNext(e.target.value)}
-                placeholder="Next #"
-                style={{ width: 90 }}
-                aria-label="Journal next number"
-              />
-              <span className="muted">{jePreview || '—'}</span>
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              <span className="muted">Transfer/XFER</span>
-              <input
-                value={xferPrefix}
-                onChange={(e) => setXferPrefix(e.target.value.toUpperCase())}
-                placeholder="Prefix"
-                style={{ width: 100 }}
-                aria-label="Cash transfer number prefix"
-                title="Cash transfer document prefix (letters, digits, _ or -)"
-              />
-              <input
-                value={xferNext}
-                onChange={(e) => setXferNext(e.target.value)}
-                placeholder="Next #"
-                style={{ width: 90 }}
-                aria-label="Cash transfer next number"
-              />
-              <span className="muted">{xferPreview || '—'}</span>
-              <button type="button" onClick={saveAccountingNumbering} aria-label="Save accounting numbering">
-                Save numbering
-              </button>
-            </div>
-          </div>
-
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>Period close (BR-10.2)</h3>
             <p className="muted" style={{ margin: 0 }}>

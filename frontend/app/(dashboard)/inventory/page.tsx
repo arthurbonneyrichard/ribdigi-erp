@@ -330,18 +330,8 @@ export default function Page() {
   const [xferNotes, setXferNotes] = useState('');
   const [xferRejectReason, setXferRejectReason] = useState('');
   const [countCancelReason, setCountCancelReason] = useState('');
-  const [trPrefix, setTrPrefix] = useState('TR');
-  const [trNext, setTrNext] = useState('1');
-  const [trPreview, setTrPreview] = useState('');
-  const [scPrefix, setScPrefix] = useState('SC');
-  const [scNext, setScNext] = useState('1');
-  const [scPreview, setScPreview] = useState('');
-  const [osPrefix, setOsPrefix] = useState('OS');
-  const [osNext, setOsNext] = useState('1');
-  const [osPreview, setOsPreview] = useState('');
-
   async function refresh() {
-    const [p, e, c, b, u, w, sc, os, rates, settings] = await Promise.all([
+    const [p, e, c, b, u, w, sc, os, rates] = await Promise.all([
       apiOptional('/products'),
       apiOptional('/inventory/batches/expiring?days=60'),
       apiOptional('/catalog/categories'),
@@ -351,7 +341,6 @@ export default function Page() {
       apiOptional('/inventory/stock-counts'),
       apiOptional('/inventory/opening-stock'),
       apiOptional('/tax/rates'),
-      apiOptional('/inventory/settings'),
     ]);
     const loadError = [p, e, c, b, u, w, sc].map((x) => x.error).filter(Boolean).join(' ');
     if (loadError) setError(loadError);
@@ -365,24 +354,6 @@ export default function Page() {
     setCounts(sc.data || []);
     setOpeningHistory(os.data || []);
     setTaxRates(rates.data || []);
-    const trNum = settings.data?.stock_transfer_numbering;
-    if (trNum) {
-      setTrPrefix(trNum.prefix || 'TR');
-      setTrNext(String(trNum.next_number ?? 1));
-      setTrPreview(trNum.preview || '');
-    }
-    const scNum = settings.data?.stock_count_numbering;
-    if (scNum) {
-      setScPrefix(scNum.prefix || 'SC');
-      setScNext(String(scNum.next_number ?? 1));
-      setScPreview(scNum.preview || '');
-    }
-    const osNum = settings.data?.opening_stock_numbering;
-    if (osNum) {
-      setOsPrefix(osNum.prefix || 'OS');
-      setOsNext(String(osNum.next_number ?? 1));
-      setOsPreview(osNum.preview || '');
-    }
     if (!countWarehouseId && w.data?.length) setCountWarehouseId(w.data[0].id);
     if (!openingWarehouseId && w.data?.length) setOpeningWarehouseId(w.data[0].id);
     if (!stockWarehouseId && w.data?.length) setStockWarehouseId(w.data[0].id);
@@ -391,53 +362,6 @@ export default function Page() {
     if (!xferFromWh && linked[0]) setXferFromWh(linked[0].id);
     if (!xferToWh && linked[1]) setXferToWh(linked[1].id);
     else if (!xferToWh && linked[0]) setXferToWh(linked[0].id);
-  }
-
-  async function saveInventoryNumbering() {
-    setError('');
-    setMessage('');
-    try {
-      const r = await api('/inventory/settings', {
-        method: 'PATCH',
-        body: JSON.stringify({
-          stock_transfer_numbering: {
-            prefix: trPrefix.trim(),
-            next_number: Math.max(1, Number(trNext) || 1),
-          },
-          stock_count_numbering: {
-            prefix: scPrefix.trim(),
-            next_number: Math.max(1, Number(scNext) || 1),
-          },
-          opening_stock_numbering: {
-            prefix: osPrefix.trim(),
-            next_number: Math.max(1, Number(osNext) || 1),
-          },
-        }),
-      });
-      const trNum = r.data?.stock_transfer_numbering;
-      if (trNum) {
-        setTrPrefix(trNum.prefix || 'TR');
-        setTrNext(String(trNum.next_number ?? 1));
-        setTrPreview(trNum.preview || '');
-      }
-      const scNum = r.data?.stock_count_numbering;
-      if (scNum) {
-        setScPrefix(scNum.prefix || 'SC');
-        setScNext(String(scNum.next_number ?? 1));
-        setScPreview(scNum.preview || '');
-      }
-      const osNum = r.data?.opening_stock_numbering;
-      if (osNum) {
-        setOsPrefix(osNum.prefix || 'OS');
-        setOsNext(String(osNum.next_number ?? 1));
-        setOsPreview(osNum.preview || '');
-      }
-      setMessage(
-        `Numbering saved — TR ${trNum?.preview || ''} / SC ${scNum?.preview || ''} / OS ${osNum?.preview || ''}`.trim()
-      );
-    } catch (err: any) {
-      setError(err.message);
-    }
   }
 
   async function refreshSelected(id: string) {
@@ -1722,76 +1646,6 @@ export default function Page() {
           </button>
         ))}
       </div>
-
-      {(tab === 'opening' || tab === 'counts' || tab === 'transfers') && (
-      <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
-        <strong>Document numbering</strong>
-        <p className="muted" style={{ margin: 0 }}>
-          Transfers, stock counts, and opening stock use PREFIX-YYYY-NNNN (defaults TR / SC / OS).
-          Blank opening-stock reference auto-allocates the next OS number.
-        </p>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span className="muted">Transfer</span>
-          <input
-            value={trPrefix}
-            onChange={(e) => setTrPrefix(e.target.value.toUpperCase())}
-            placeholder="Prefix"
-            style={{ width: 100 }}
-            aria-label="Stock transfer number prefix"
-            title="Document prefix (letters, digits, _ or -)"
-          />
-          <input
-            value={trNext}
-            onChange={(e) => setTrNext(e.target.value)}
-            placeholder="Next #"
-            style={{ width: 90 }}
-            aria-label="Stock transfer next number"
-          />
-          <span className="muted">{trPreview || '—'}</span>
-        </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span className="muted">Stock count</span>
-          <input
-            value={scPrefix}
-            onChange={(e) => setScPrefix(e.target.value.toUpperCase())}
-            placeholder="Prefix"
-            style={{ width: 100 }}
-            aria-label="Stock count number prefix"
-            title="Document prefix (letters, digits, _ or -)"
-          />
-          <input
-            value={scNext}
-            onChange={(e) => setScNext(e.target.value)}
-            placeholder="Next #"
-            style={{ width: 90 }}
-            aria-label="Stock count next number"
-          />
-          <span className="muted">{scPreview || '—'}</span>
-        </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span className="muted">Opening stock</span>
-          <input
-            value={osPrefix}
-            onChange={(e) => setOsPrefix(e.target.value.toUpperCase())}
-            placeholder="Prefix"
-            style={{ width: 100 }}
-            aria-label="Opening stock number prefix"
-            title="Document prefix (letters, digits, _ or -)"
-          />
-          <input
-            value={osNext}
-            onChange={(e) => setOsNext(e.target.value)}
-            placeholder="Next #"
-            style={{ width: 90 }}
-            aria-label="Opening stock next number"
-          />
-          <span className="muted">{osPreview || '—'}</span>
-          <button type="button" onClick={saveInventoryNumbering} aria-label="Save inventory numbering">
-            Save numbering
-          </button>
-        </div>
-      </div>
-      )}
 
       {tab !== 'products' &&
         tab !== 'categories' &&
