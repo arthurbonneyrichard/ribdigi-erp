@@ -174,6 +174,8 @@ export default function Page() {
           <button type="submit" disabled={busy || submitting} aria-label="Create department">
             {busy ? 'Saving…' : 'Create department'}
           </button>
+          {message ? <p className="form-flash ok" role="status">{message}</p> : null}
+          {error ? <p className="form-flash err" role="alert">{error}</p> : null}
         </form>
       )}
 

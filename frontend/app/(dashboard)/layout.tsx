@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import Shell from '../../components/Shell';
 
 /**
@@ -8,5 +9,9 @@ import Shell from '../../components/Shell';
  * (Platform → Staff, Dashboard → Inventory, etc.), so the sidebar stays static.
  */
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  return <Shell>{children}</Shell>;
+  return (
+    <Suspense fallback={null}>
+      <Shell>{children}</Shell>
+    </Suspense>
+  );
 }

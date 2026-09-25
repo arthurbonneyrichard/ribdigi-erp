@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '../../../lib/api';
 import { useStoreContext } from '../../../lib/storeContext';
 
@@ -21,6 +22,27 @@ type Tab =
   | 'trialbalance'
   | 'balancesheet'
   | 'schedules';
+
+const REPORT_TABS: Tab[] = [
+  'summary',
+  'sales',
+  'salesperson',
+  'customers',
+  'stores',
+  'departments',
+  'inventory',
+  'purchases',
+  'expenses',
+  'cashflow',
+  'pnl',
+  'trialbalance',
+  'balancesheet',
+  'schedules',
+];
+
+function isReportTab(value: string | null): value is Tab {
+  return Boolean(value && (REPORT_TABS as string[]).includes(value));
+}
 
 const TAB_EXPORT: Record<Exclude<Tab, 'schedules'>, string> = {
   summary: 'summary',
@@ -71,6 +93,8 @@ const REPORT_TYPES = [
 ];
 
 export default function Page() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [tab, setTab] = useState<Tab>('summary');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
@@ -348,8 +372,19 @@ export default function Page() {
 
   function switchTab(t: Tab) {
     setTab(t);
+    router.replace(`/reports?tab=${t}`, { scroll: false });
     load(t);
   }
+
+  useEffect(() => {
+    const next = searchParams.get('tab');
+    if (isReportTab(next) && next !== tab) {
+      setTab(next);
+      load(next);
+    }
+    // load is stable enough for tab query changes from the sidebar
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   function suggestionKey(line: any) {
     return `${line.product_id}:${line.warehouse_id || 'product'}`;

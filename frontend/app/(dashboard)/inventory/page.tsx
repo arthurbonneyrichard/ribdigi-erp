@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { api, apiOptional } from '../../../lib/api';
 import { useStoreContext } from '../../../lib/storeContext';
 
@@ -8,7 +9,9 @@ type Tab =
   | 'products'
   | 'lookup'
   | 'import'
-  | 'catalog'
+  | 'categories'
+  | 'brands'
+  | 'units'
   | 'variants'
   | 'batches'
   | 'opening'
@@ -19,6 +22,29 @@ type Tab =
   | 'stockout'
   | 'whstock'
   | 'transfers';
+
+const INVENTORY_TABS: Tab[] = [
+  'products',
+  'lookup',
+  'import',
+  'categories',
+  'brands',
+  'units',
+  'variants',
+  'batches',
+  'opening',
+  'expiry',
+  'counts',
+  'movements',
+  'adjust',
+  'stockout',
+  'whstock',
+  'transfers',
+];
+
+function isInventoryTab(value: string | null): value is Tab {
+  return Boolean(value && (INVENTORY_TABS as string[]).includes(value));
+}
 
 type ImportReportRow = {
   line: number;
@@ -104,8 +130,18 @@ function StockStatusBadge({ product }: { product: any }) {
 }
 
 export default function Page() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [tab, setTab] = useState<Tab>('products');
   const [products, setProducts] = useState<any[]>([]);
+  useEffect(() => {
+    const next = searchParams.get('tab');
+    if (isInventoryTab(next) && next !== tab) setTab(next);
+  }, [searchParams, tab]);
+  function selectTab(id: Tab) {
+    setTab(id);
+    router.replace(`/inventory?tab=${id}`, { scroll: false });
+  }
   const [categories, setCategories] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
   const [units, setUnits] = useState<any[]>([]);
@@ -126,6 +162,7 @@ export default function Page() {
     setOutWarehouseId((cur: string) => pick(cur))
     setOpeningWarehouseId((cur: string) => pick(cur))
     setAdjWarehouseId((cur: string) => pick(cur))
+    setCreateOpeningWh((cur: string) => pick(cur))
     setXferFromWh((cur: string) => pick(cur))
     setWhStockWarehouseId((cur: string) => pick(cur))
     setCountWarehouseId((cur: string) => pick(cur))
@@ -155,6 +192,18 @@ export default function Page() {
   const [countLineNotes, setCountLineNotes] = useState<Record<string, string>>({});
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [formFlash, setFormFlash] = useState<{ ok?: string; err?: string }>({});
+  const [saveBusy, setSaveBusy] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [productEditMode, setProductEditMode] = useState(false);
+  const [createExpiryOpen, setCreateExpiryOpen] = useState(false);
+  const [createOpenStockOpen, setCreateOpenStockOpen] = useState(false);
+  const [createOpeningQty, setCreateOpeningQty] = useState('');
+  const [createOpeningWh, setCreateOpeningWh] = useState('');
+  const [createOpeningBatch, setCreateOpeningBatch] = useState('');
+  const [createOpeningMfg, setCreateOpeningMfg] = useState('');
+  const [createOpeningExpiry, setCreateOpeningExpiry] = useState('');
+  const [createOpeningCost, setCreateOpeningCost] = useState('');
 
   const [productName, setProductName] = useState('');
   const [productSku, setProductSku] = useState('');
@@ -334,7 +383,6 @@ export default function Page() {
       setOsNext(String(osNum.next_number ?? 1));
       setOsPreview(osNum.preview || '');
     }
-    if (!selectedId && p.data?.length) setSelectedId(p.data[0].id);
     if (!countWarehouseId && w.data?.length) setCountWarehouseId(w.data[0].id);
     if (!openingWarehouseId && w.data?.length) setOpeningWarehouseId(w.data[0].id);
     if (!stockWarehouseId && w.data?.length) setStockWarehouseId(w.data[0].id);
@@ -665,6 +713,13 @@ export default function Page() {
     }
   }, [selectedId, products]);
 
+  useEffect(() => {
+    if (tab !== 'variants') return;
+    if (selectedId) return;
+    const first = products.find((p) => p.is_active !== false) || products[0];
+    if (first?.id) setSelectedId(first.id);
+  }, [tab, products, selectedId]);
+
   async function saveProductEdits() {
     if (!selectedId) return;
     setError('');
@@ -688,10 +743,10 @@ export default function Page() {
           tax_rate_id: editTaxRateId.trim() || null,
         }),
       });
-      setMessage('Product updated');
+      setFormFlash({ ok: 'Product updated' });
       await refresh();
     } catch (err: any) {
-      setError(err.message);
+      setFormFlash({ err: err.message });
     }
   }
 
@@ -865,12 +920,36 @@ export default function Page() {
   }
 
   async function createProduct() {
+    if (saveBusy) return;
     setError('');
+    setMessage('');
+    setFormFlash({});
+    const name = productName.trim();
+    if (!name) {
+      setFormFlash({ err: 'Enter a product name' });
+      return;
+    }
+    const openingQty = Number(createOpeningQty);
+    const wantsOpening = createOpeningQty.trim() !== '' && Number.isFinite(openingQty) && openingQty > 0;
+    if (wantsOpening && !createOpeningWh.trim()) {
+      setFormFlash({ err: 'Select a warehouse for opening stock' });
+      setCreateOpenStockOpen(true);
+      return;
+    }
+    if (createOpeningExpiry && createOpeningMfg && createOpeningExpiry < createOpeningMfg) {
+      setFormFlash({ err: 'Expiry date cannot be before manufacturing date' });
+      setCreateExpiryOpen(true);
+      return;
+    }
+    setSaveBusy(true);
     try {
+      const tracksBatches = Boolean(
+        createOpeningBatch.trim() || createOpeningExpiry.trim() || createOpeningMfg.trim()
+      );
       const r = await api('/products', {
         method: 'POST',
         body: JSON.stringify({
-          name: productName.trim(),
+          name,
           sku: productSku.trim() || null,
           barcode: productBarcode.trim() || null,
           description: productDescription.trim() || null,
@@ -885,9 +964,30 @@ export default function Page() {
           brand_id: productBrandId.trim() || null,
           unit_id: productUnitId.trim() || null,
           tax_supply_class: productSupplyClass,
+          tracks_batches: tracksBatches,
+          stock_qty: 0,
         }),
       });
-      setMessage(`Product ${r.data.sku} created`);
+      const productId = r.data?.id;
+      if (!productId) {
+        setFormFlash({ err: 'Server did not confirm the product' });
+        return;
+      }
+      if (wantsOpening) {
+        const line: Record<string, unknown> = {
+          product_id: productId,
+          quantity: openingQty,
+          warehouse_id: createOpeningWh.trim(),
+          batch_number: createOpeningBatch.trim() || null,
+          manufacturing_date: createOpeningMfg.trim() || null,
+          expiry_date: createOpeningExpiry.trim() || null,
+        };
+        if (createOpeningCost !== '') line.unit_cost = Number(createOpeningCost);
+        await api('/inventory/opening-stock', {
+          method: 'POST',
+          body: JSON.stringify({ post_journal: true, lines: [line] }),
+        });
+      }
       setProductName('');
       setProductSku('');
       setProductBarcode('');
@@ -900,11 +1000,26 @@ export default function Page() {
       setProductCost('0');
       setProductSupplyClass('standard');
       setProductTaxRateId('');
+      setProductCategoryId('');
+      setProductBrandId('');
+      setProductUnitId('');
+      setCreateOpeningQty('');
+      setCreateOpeningBatch('');
+      setCreateOpeningMfg('');
+      setCreateOpeningExpiry('');
+      setCreateOpeningCost('');
+      setFormFlash({
+        ok: wantsOpening
+          ? `Saved ${r.data.sku || name} with opening stock`
+          : `Saved ${r.data.sku || name}`,
+      });
       await refresh();
-      setSelectedId(r.data.id);
+      setSelectedId(productId);
       setTab('products');
     } catch (err: any) {
-      setError(err.message);
+      setFormFlash({ err: err.message || 'Could not save product' });
+    } finally {
+      setSaveBusy(false);
     }
   }
 
@@ -1305,21 +1420,36 @@ export default function Page() {
   }
 
   async function addVariant() {
+    if (saveBusy) return;
     setError('');
+    setFormFlash({});
+    if (!selectedId) {
+      setFormFlash({ err: 'Select a product first' });
+      return;
+    }
+    const name = variantName.trim();
+    if (!name) {
+      setFormFlash({ err: 'Enter a variant name' });
+      return;
+    }
+    setSaveBusy(true);
     try {
+      const body: Record<string, unknown> = { name };
+      if (variantSku.trim()) body.sku = variantSku.trim();
+      if (variantBarcode.trim()) body.barcode = variantBarcode.trim();
+      if (variantSize.trim()) body.size = variantSize.trim();
+      if (variantColor.trim()) body.color = variantColor.trim();
+      if (variantFlavor.trim()) body.flavor = variantFlavor.trim();
+      if (variantDosage.trim()) body.dosage = variantDosage.trim();
       const r = await api(`/products/${selectedId}/variants`, {
         method: 'POST',
-        body: JSON.stringify({
-          name: variantName.trim(),
-          sku: variantSku.trim() || null,
-          barcode: variantBarcode.trim() || null,
-          size: variantSize.trim() || null,
-          color: variantColor.trim() || null,
-          flavor: variantFlavor.trim() || null,
-          dosage: variantDosage.trim() || null,
-        }),
+        body: JSON.stringify(body),
       });
-      setMessage(`Variant ${r.data.sku} created`);
+      if (!r.data?.id) {
+        setFormFlash({ err: 'Server did not confirm the variant' });
+        return;
+      }
+      setFormFlash({ ok: `Variant ${r.data.sku || r.data.name} saved` });
       setVariantName('');
       setVariantSku('');
       setVariantBarcode('');
@@ -1330,52 +1460,55 @@ export default function Page() {
       await refreshSelected(selectedId);
       setTab('variants');
     } catch (err: any) {
-      setError(err.message);
+      setFormFlash({ err: err.message || 'Could not save variant' });
+    } finally {
+      setSaveBusy(false);
     }
   }
 
   async function stockInBatch() {
     setError('');
+    setFormFlash({});
+    if (!selectedId) {
+      setFormFlash({ err: 'Select a product' });
+      return;
+    }
+    const wh = (stockWarehouseId || whStockWarehouseId).trim();
+    if (!wh) {
+      setFormFlash({ err: 'Select a warehouse' });
+      return;
+    }
+    if (saveBusy) return;
+    setSaveBusy(true);
     try {
       const r = await api('/inventory/stock-in', {
         method: 'POST',
         body: JSON.stringify({
-          // trim so Receive batch (UuidIdValue product_id) does not 422 on whitespace
           product_id: selectedId.trim(),
           quantity: Number(stockQty),
           unit_id: stockUnitId.trim() || null,
-          // trim so Receive batch (UuidIdValue warehouse_id) does not 422 on whitespace
-          warehouse_id: stockWarehouseId.trim() || null,
+          warehouse_id: wh,
           variant_id: stockVariantId.trim() || null,
           notes: stockNotes.trim() || null,
-          batch_number: batchNumber.trim(),
+          batch_number: batchNumber.trim() || null,
           manufacturing_date: mfgDate.trim() || null,
           expiry_date: expiryDate.trim() || null,
           reference_type: stockRefType.trim() || null,
           reference_id: stockRefId.trim() || null,
         }),
       });
-      const converted =
-        r.data.quantity_base != null && r.data.quantity_entered != null
-          ? ` (${r.data.quantity_entered} entered → ${r.data.quantity_base} stock)`
-          : '';
-      const loc =
-        r.data.batch?.warehouse_id || stockWarehouseId
-          ? ` · wh ${(r.data.batch?.warehouse_id || stockWarehouseId).slice(0, 8)}…`
-          : '';
-      const varLabel = r.data.variant?.sku ? ` · ${r.data.variant.sku}` : '';
-      setMessage(`Stock in — on-hand ${r.data.stock_qty}${converted}${loc}${varLabel}`);
+      setFormFlash({ ok: `Stock received — on-hand ${r.data.stock_qty}` });
       setBatchNumber('');
       setMfgDate('');
       setExpiryDate('');
       setStockNotes('');
-      setStockRefType('');
-      setStockRefId('');
       await refresh();
       await refreshSelected(selectedId);
-      setTab('batches');
+      if (whStockWarehouseId) await loadWarehouseStock();
     } catch (err: any) {
-      setError(err.message);
+      setFormFlash({ err: err.message || 'Could not receive stock' });
+    } finally {
+      setSaveBusy(false);
     }
   }
 
@@ -1427,21 +1560,24 @@ export default function Page() {
   }
 
   async function postStockAdjust() {
+    if (saveBusy) return;
     setError('');
     setMessage('');
+    setFormFlash({});
     if (!selectedId) {
-      setError('Select a product');
+      setFormFlash({ err: 'Select a product' });
       return;
     }
     if (!adjReason.trim()) {
-      setError('Select an adjustment reason');
+      setFormFlash({ err: 'Select an adjustment reason' });
       return;
     }
     const qty = Number(adjQty);
     if (!Number.isFinite(qty) || qty === 0) {
-      setError('Quantity delta must be a non-zero number');
+      setFormFlash({ err: 'Quantity delta must be a non-zero number' });
       return;
     }
+    setSaveBusy(true);
     try {
       const reason = adjReason;
       const r = await api(`/inventory/adjust/${selectedId}`, {
@@ -1459,13 +1595,12 @@ export default function Page() {
       );
       setAdjNotes('');
       setAdjReason('');
+      setFormFlash({ ok: `Adjustment saved — on-hand ${r.data.stock_qty}` });
       await refresh();
-      setMvType('adjustment');
-      setMvReason(reason);
-      setTab('movements');
-      await loadMovements({ movement_type: 'adjustment', reason });
     } catch (err: any) {
-      setError(err.message);
+      setFormFlash({ err: err.message || 'Adjustment failed' });
+    } finally {
+      setSaveBusy(false);
     }
   }
 
@@ -1562,22 +1697,24 @@ export default function Page() {
             ['products', 'Products'],
             ['lookup', 'Lookup'],
             ['import', 'Import'],
-            ['catalog', 'Catalog'],
+            ['categories', 'Categories'],
+            ['brands', 'Brands'],
+            ['units', 'Units'],
             ['variants', 'Variants'],
             ['batches', 'Batches'],
             ['opening', 'Opening stock'],
             ['stockout', 'Stock Out'],
-            ['whstock', 'Warehouse stock'],
+            ['whstock', 'Manage stock'],
             ['transfers', 'Transfers'],
             ['expiry', 'Expiring'],
             ['counts', 'Stock counts'],
             ['movements', 'Movements'],
-            ['adjust', 'Adjust'],
+            ['adjust', 'Adjust stock'],
           ] as const
         ).map(([id, label]) => (
           <button
             key={id}
-            onClick={() => setTab(id)}
+            onClick={() => selectTab(id)}
             disabled={tab === id}
             aria-label={`Show inventory ${id} tab`}
           >
@@ -1586,6 +1723,7 @@ export default function Page() {
         ))}
       </div>
 
+      {(tab === 'opening' || tab === 'counts' || tab === 'transfers') && (
       <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
         <strong>Document numbering</strong>
         <p className="muted" style={{ margin: 0 }}>
@@ -1653,9 +1791,19 @@ export default function Page() {
           </button>
         </div>
       </div>
+      )}
 
+      {tab !== 'products' &&
+        tab !== 'categories' &&
+        tab !== 'brands' &&
+        tab !== 'units' &&
+        tab !== 'lookup' &&
+        tab !== 'import' &&
+        tab !== 'expiry' && (
       <div className="card" style={{ marginBottom: 16 }}>
-        <label className="muted">Selected product</label>
+        <label className="muted">
+          {tab === 'whstock' ? 'Warehouse / product context' : 'Product for this action'}
+        </label>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
           <select
             value={productManageFilter}
@@ -1694,240 +1842,8 @@ export default function Page() {
         {selected?.is_active === false && (
           <p className="muted">Inactive — hidden from sales/purchasing/POS pickers; stock ops still allowed</p>
         )}
-        {selected?.has_image && <p className="muted">Has primary image</p>}
-        <label className="muted">Add gallery image (max 5)</label>
-        <input
-          type="file"
-          accept="image/png,image/jpeg,image/webp,image/gif"
-          disabled={!selectedId || gallery.length >= 5}
-          aria-label="Product gallery image file"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) uploadImage(file, { asPrimary: gallery.length === 0 });
-            e.target.value = '';
-          }}
-        />
-        {gallery.length > 0 && (
-          <ul className="muted" style={{ marginTop: 8 }}>
-            {gallery.map((img) => (
-              <li key={img.id} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                <span>
-                  {img.original_filename || img.storage_key.split('/').pop()}
-                  {img.is_primary ? ' (primary)' : ''}
-                </span>
-                {!img.is_primary && (
-                  <button type="button" onClick={() => setPrimaryImage(img.id)} aria-label={`Set primary product image ${img.id}`}>
-                    Set primary
-                  </button>
-                )}
-                <button type="button" onClick={() => removeGalleryImage(img.id)} aria-label={`Remove product gallery image ${img.id}`}>
-                  Remove
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {selectedId && (
-          <div style={{ display: 'grid', gap: 8, marginTop: 12 }}>
-            <label className="muted">Barcode</label>
-            <input
-              value={editBarcode}
-              onChange={(e) => setEditBarcode(e.target.value)}
-              placeholder="Scan or type barcode"
-              aria-label="Edit product barcode"
-              title="Optional barcode (4–48 chars: letters, numbers, - . _)"
-            />
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              <select
-                value={barcodeSymbology}
-                onChange={(e) => setBarcodeSymbology(e.target.value)}
-                title="Symbology"
-                aria-label="Barcode symbology"
-              >
-                <option value="code128">Code 128</option>
-                <option value="ean13">EAN-13</option>
-                <option value="upca">UPC-A</option>
-              </select>
-              <button type="button" onClick={generateBarcode} aria-label="Generate product barcode">
-                Generate barcode
-              </button>
-              <input
-                value={labelCopies}
-                onChange={(e) => setLabelCopies(e.target.value)}
-                style={{ width: 64 }}
-                title="Label copies"
-                aria-label="Label copies"
-              />
-              <button type="button" onClick={printBarcodeLabel} aria-label="Print product barcode label">
-                Print barcode label
-              </button>
-            </div>
-            <label className="muted">Description</label>
-            <textarea
-              value={editDescription}
-              onChange={(e) => setEditDescription(e.target.value)}
-              placeholder="Product description"
-              aria-label="Edit product description"
-              title="Optional description (1–500 chars; letters/digits required)"
-              rows={2}
-            />
-            <label className="muted">Weight (kg) / dimensions (cm)</label>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <input
-                value={editWeight}
-                onChange={(e) => setEditWeight(e.target.value)}
-                placeholder="Weight"
-                aria-label="Edit product weight"
-                style={{ width: 100 }}
-              />
-              <input
-                value={editLength}
-                onChange={(e) => setEditLength(e.target.value)}
-                placeholder="Length"
-                aria-label="Edit product length"
-                style={{ width: 80 }}
-              />
-              <input
-                value={editWidth}
-                onChange={(e) => setEditWidth(e.target.value)}
-                placeholder="Width"
-                aria-label="Edit product width"
-                style={{ width: 80 }}
-              />
-              <input
-                value={editHeight}
-                onChange={(e) => setEditHeight(e.target.value)}
-                placeholder="Height"
-                aria-label="Edit product height"
-                style={{ width: 80 }}
-              />
-            </div>
-            <label className="muted">Reorder level</label>
-            <input
-              value={editReorder}
-              onChange={(e) => setEditReorder(e.target.value)}
-              aria-label="Edit product reorder level"
-            />
-            <div className="product-price-field">
-                      <label className="product-price-label" htmlFor="edit-product-actual-price">Actual price</label>
-                      <input
-                        id="edit-product-actual-price"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        inputMode="decimal"
-                        placeholder="0.00"
-                        value={editCost}
-                        onChange={e => setEditCost(e.target.value)}
-                        aria-label="Edit product cost price"
-                      />
-                    </div>
-            <div className="product-price-field product-price-field--selling">
-                      <label className="product-price-label" htmlFor="edit-product-selling-price">Selling price</label>
-                      <input
-                        id="edit-product-selling-price"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        inputMode="decimal"
-                        placeholder="0.00"
-                        value={editPrice}
-                        onChange={e => setEditPrice(e.target.value)}
-                        aria-label="Edit product selling price"
-                      />
-                    </div>
-            <label className="muted">Tax supply class</label>
-            <select
-              value={editSupplyClass}
-              onChange={(e) => setEditSupplyClass(e.target.value)}
-              aria-label="Edit product supply class"
-            >
-              <option value="standard">Standard-rated</option>
-              <option value="zero_rated">Zero-rated</option>
-              <option value="exempt">Exempt</option>
-            </select>
-            <label className="muted">Category</label>
-            <select
-              value={editCategoryId}
-              onChange={(e) => setEditCategoryId(e.target.value)}
-              aria-label="Edit product category"
-              title="Product category (catalog picker; API category_id UUID)"
-            >
-              <option value="">Category</option>
-              {categories
-                .filter((c) => c.is_active !== false)
-                .map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {categoryIndent(c.depth)}
-                    {categoryLabel(c)}
-                  </option>
-                ))}
-            </select>
-            <label className="muted">Brand</label>
-            <select
-              value={editBrandId}
-              onChange={(e) => setEditBrandId(e.target.value)}
-              aria-label="Edit product brand"
-              title="Product brand (optional catalog picker; API brand_id UUID)"
-            >
-              <option value="">Brand</option>
-              {brands
-                .filter((b) => b.is_active !== false)
-                .map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-            </select>
-            <label className="muted">Unit</label>
-            <select
-              value={editUnitId}
-              onChange={(e) => setEditUnitId(e.target.value)}
-              aria-label="Edit product unit"
-              title="Product unit (optional catalog picker; API unit_id UUID)"
-            >
-              <option value="">Unit</option>
-              {units
-                .filter((u) => u.is_active !== false)
-                .map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.code} — {u.name}
-                  </option>
-                ))}
-            </select>
-            <label className="muted">Tax rate</label>
-            <select
-              value={editTaxRateId}
-              onChange={(e) => setEditTaxRateId(e.target.value)}
-              aria-label="Edit product tax rate"
-              title="Product tax rate (optional — category/tenant default when blank)"
-            >
-              <option value="">Tax rate (optional — category/tenant default)</option>
-              {taxRates
-                .filter((r) => r.is_active !== false)
-                .map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name} ({r.rate}%){r.is_default ? ' · default' : ''}
-                  </option>
-                ))}
-            </select>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button type="button" onClick={saveProductEdits} aria-label="Save product">
-                Save product
-              </button>
-              {selected?.is_active === false ? (
-                <button type="button" className="btn-ok" aria-label="Activate product" onClick={() => setProductActive(true)}>
-                  Activate
-                </button>
-              ) : (
-                <button type="button" className="btn-danger" aria-label="Deactivate product" onClick={() => setProductActive(false)}>
-                  Deactivate
-                </button>
-              )}
-            </div>
-          </div>
-        )}
       </div>
+        )}
 
       {tab === 'lookup' && (
         <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 12 }}>
@@ -2303,26 +2219,76 @@ export default function Page() {
                   </option>
                 ))}
             </select>
+            <details open={createExpiryOpen} onToggle={(e) => setCreateExpiryOpen((e.target as HTMLDetailsElement).open)}>
+              <summary style={{ cursor: 'pointer', fontWeight: 700 }}>Optional expiry / batch</summary>
+              <p className="muted">Leave blank if this product does not expire. Not required to save.</p>
+              <input
+                value={createOpeningBatch}
+                onChange={(e) => setCreateOpeningBatch(e.target.value)}
+                placeholder="Batch number"
+                aria-label="Create product batch number"
+              />
+              <label className="muted">Manufacturing date</label>
+              <input
+                type="date"
+                value={createOpeningMfg}
+                onChange={(e) => setCreateOpeningMfg(e.target.value)}
+                aria-label="Create product manufacturing date"
+              />
+              <label className="muted">Expiry date</label>
+              <input
+                type="date"
+                value={createOpeningExpiry}
+                onChange={(e) => setCreateOpeningExpiry(e.target.value)}
+                aria-label="Create product expiry date"
+              />
+            </details>
+            <details open={createOpenStockOpen} onToggle={(e) => setCreateOpenStockOpen((e.target as HTMLDetailsElement).open)}>
+              <summary style={{ cursor: 'pointer', fontWeight: 700 }}>Optional opening stock</summary>
+              <p className="muted">Empty or zero quantity creates the product only.</p>
+              <input
+                value={createOpeningQty}
+                onChange={(e) => setCreateOpeningQty(e.target.value)}
+                placeholder="Quantity"
+                aria-label="Create product opening quantity"
+              />
+              <select
+                value={createOpeningWh}
+                onChange={(e) => setCreateOpeningWh(e.target.value)}
+                aria-label="Create product opening warehouse"
+              >
+                <option value="">Warehouse (required when quantity is set)</option>
+                {storeWarehouses
+                  .filter((w) => w.is_active !== false)
+                  .map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name || w.code}
+                    </option>
+                  ))}
+              </select>
+              <input
+                value={createOpeningCost}
+                onChange={(e) => setCreateOpeningCost(e.target.value)}
+                placeholder="Unit cost (optional)"
+                aria-label="Create product opening unit cost"
+              />
+            </details>
             <button
+              type="button"
               onClick={createProduct}
-              disabled={!productName.trim()}
+              disabled={!productName.trim() || saveBusy}
               aria-label="Create product"
             >
-              Create product
+              {saveBusy ? 'Saving…' : 'Create product'}
             </button>
+            {formFlash.ok ? <p className="form-flash ok" role="status">{formFlash.ok}</p> : null}
+            {formFlash.err ? <p className="form-flash err" role="alert">{formFlash.err}</p> : null}
           </div>
           <table className="table">
             <thead>
               <tr>
                 <th>Name</th>
-                <th>SKU</th>
-                <th>Barcode</th>
-                <th>Category</th>
                 <th>Stock</th>
-                <th>Batches?</th>
-                <th>Prices</th>
-                <th>Active</th>
-                <th>Image</th>
               </tr>
             </thead>
             <tbody>
@@ -2330,45 +2296,77 @@ export default function Page() {
                 <tr key={p.id}>
                   <td>
                     <button
-                      onClick={() => setSelectedId(p.id)}
+                      type="button"
+                      onClick={() => {
+                        setSelectedId(p.id);
+                        setDrawerOpen(true);
+                        setProductEditMode(false);
+                        setFormFlash({});
+                      }}
                       style={{ background: 'none', border: 0, color: 'var(--deep-green, #006B2E)', cursor: 'pointer' }}
-                      aria-label={`Select inventory product ${p.id}`}
+                      aria-label={`Open product ${p.name}`}
                     >
                       {p.name}
                       {p.is_active === false ? ' [inactive]' : ''}
                     </button>
                   </td>
-                  <td>{p.sku}</td>
-                  <td>{p.barcode || '—'}</td>
-                  <td>{p.category}</td>
                   <td>
                     <StockStatusBadge product={p} />
                   </td>
-                  <td>{p.tracks_batches ? 'yes' : 'no'}</td>
-                  <td>
-                    <div className="inv-price-pair">
-                      {Number.isFinite(Number(p.cost_price)) ? (
-                        <span className="inv-price-actual">
-                          <span className="inv-price-label">Actual</span>
-                          <span className="inv-price-value">{Number(p.cost_price).toFixed(2)}</span>
-                        </span>
-                      ) : null}
-                      <span className="inv-price-selling">
-                        <span className="inv-price-label">Selling</span>
-                        <span className="inv-price-value">{Number(p.selling_price).toFixed(2)}</span>
-                      </span>
-                    </div>
-                  </td>
-                  <td>{p.is_active === false ? 'no' : 'yes'}</td>
-                  <td>{p.has_image ? 'yes' : '—'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+          {drawerOpen && selected && tab === 'products' && (
+            <>
+              <div className="inv-drawer-back" onClick={() => setDrawerOpen(false)} aria-hidden />
+              <aside className="inv-drawer" aria-label="Product details">
+                <button type="button" onClick={() => setDrawerOpen(false)} aria-label="Close product details">
+                  Close
+                </button>
+                <h3>{selected.name}</h3>
+                <p className="muted">SKU {selected.sku}</p>
+                <p className="muted">Barcode {selected.barcode || '—'}</p>
+                <p className="muted">Category {selected.category || '—'}</p>
+                <p className="muted">On-hand {selected.stock_qty ?? 0}</p>
+                {!productEditMode ? (
+                  <button type="button" onClick={() => setProductEditMode(true)} aria-label="Edit product">
+                    Edit
+                  </button>
+                ) : (
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    <label className="muted">Barcode</label>
+                    <input value={editBarcode} onChange={(e) => setEditBarcode(e.target.value)} aria-label="Edit product barcode" />
+                    <label className="muted">Description</label>
+                    <textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={2} aria-label="Edit product description" />
+                    <label className="muted">Reorder</label>
+                    <input value={editReorder} onChange={(e) => setEditReorder(e.target.value)} aria-label="Edit product reorder level" />
+                    <label className="muted">Actual price</label>
+                    <input value={editCost} onChange={(e) => setEditCost(e.target.value)} aria-label="Edit product cost price" />
+                    <label className="muted">Selling price</label>
+                    <input value={editPrice} onChange={(e) => setEditPrice(e.target.value)} aria-label="Edit product selling price" />
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await saveProductEdits();
+                        setFormFlash({ ok: 'Product updated' });
+                        setProductEditMode(false);
+                      }}
+                      aria-label="Save product"
+                    >
+                      Save
+                    </button>
+                    {formFlash.ok ? <p className="form-flash ok">{formFlash.ok}</p> : null}
+                    {formFlash.err ? <p className="form-flash err">{formFlash.err}</p> : null}
+                  </div>
+                )}
+              </aside>
+            </>
+          )}
         </>
       )}
 
-      {tab === 'catalog' && (
+      {tab === 'categories' && (
         <div style={{ display: 'grid', gap: 16 }}>
           <div className="card" style={{ display: 'grid', gap: 8 }}>
             <h3>Category tree (BR-5.1)</h3>
@@ -2438,17 +2436,19 @@ export default function Page() {
                   setCatName('');
                   setCatParentId('');
                   setCatTaxRateId('');
-                  setMessage(`Category created: ${r.data?.path || r.data?.name || catName}`);
+                  setFormFlash({ ok: `Category created: ${r.data?.path || r.data?.name || catName}` });
                   await refresh();
                 } catch (err: any) {
-                  setError(err.message);
+                  setFormFlash({ err: err.message });
                 }
               }}
-              disabled={!catCode.trim() || !catName.trim()}
+              disabled={!catCode.trim() || !catName.trim() || saveBusy}
               aria-label="Add category"
             >
               Add category
             </button>
+            {formFlash.ok ? <p className="form-flash ok">{formFlash.ok}</p> : null}
+            {formFlash.err ? <p className="form-flash err">{formFlash.err}</p> : null}
             <select
               value={categoryManageFilter}
               onChange={(e) =>
@@ -2597,7 +2597,10 @@ export default function Page() {
               })}
             </ul>
           </div>
-          <div className="erp-split">
+        </div>
+      )}
+
+      {tab === 'brands' && (
           <div className="card" style={{ display: 'grid', gap: 8 }}>
             <h3>Brand</h3>
             <p className="muted" style={{ margin: 0 }}>
@@ -2640,10 +2643,10 @@ export default function Page() {
                   setBrandCode('');
                   setBrandName('');
                   setBrandDescription('');
-                  setMessage('Brand created');
+                  setFormFlash({ ok: 'Brand created' });
                   await refresh();
                 } catch (err: any) {
-                  setError(err.message);
+                  setFormFlash({ err: err.message });
                 }
               }}
               disabled={!brandCode.trim() || !brandName.trim()}
@@ -2651,6 +2654,8 @@ export default function Page() {
             >
               Add brand
             </button>
+            {formFlash.ok ? <p className="form-flash ok">{formFlash.ok}</p> : null}
+            {formFlash.err ? <p className="form-flash err">{formFlash.err}</p> : null}
             <select
               value={brandManageFilter}
               onChange={(e) => setBrandManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
@@ -2747,6 +2752,9 @@ export default function Page() {
               ))}
             </ul>
           </div>
+      )}
+
+      {tab === 'units' && (
           <div className="card" style={{ display: 'grid', gap: 8 }}>
             <h3>Unit of measure</h3>
             <p className="muted" style={{ margin: 0 }}>
@@ -2805,10 +2813,10 @@ export default function Page() {
                   setUnitName('');
                   setUnitBaseId('');
                   setUnitRatio('1');
-                  setMessage('Unit created');
+                  setFormFlash({ ok: 'Unit created' });
                   await refresh();
                 } catch (err: any) {
-                  setError(err.message);
+                  setFormFlash({ err: err.message });
                 }
               }}
               disabled={!unitCode.trim() || !unitName.trim()}
@@ -2816,6 +2824,8 @@ export default function Page() {
             >
               Add unit
             </button>
+            {formFlash.ok ? <p className="form-flash ok">{formFlash.ok}</p> : null}
+            {formFlash.err ? <p className="form-flash err">{formFlash.err}</p> : null}
             <select
               value={unitManageFilter}
               onChange={(e) => setUnitManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
@@ -2880,8 +2890,6 @@ export default function Page() {
               ))}
             </ul>
           </div>
-          </div>
-        </div>
       )}
 
       {tab === 'variants' && (
@@ -2889,9 +2897,32 @@ export default function Page() {
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>Add variant</h3>
             <p className="muted">
-              Size, color, flavor, dosage (pharmacy) with unique SKUs and barcodes (BR-5.1). Use the
-              product symbology picker above for Generate / Print on each row.
+              Choose the parent product, then save the variant. Size, color, flavor, and dosage are
+              optional. SKU and barcode are unique per company; leave them blank to auto-assign SKU.
             </p>
+            <label className="muted" htmlFor="variant-parent-product">
+              Parent product
+            </label>
+            <select
+              id="variant-parent-product"
+              value={selectedId}
+              onChange={(e) => setSelectedId(e.target.value)}
+              aria-label="Parent product for variant"
+            >
+              <option value="">Select a product</option>
+              {products.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                addVariant();
+              }}
+              style={{ display: 'grid', gap: 8 }}
+            >
             <input
               value={variantName}
               onChange={(e) => setVariantName(e.target.value)}
@@ -2942,12 +2973,15 @@ export default function Page() {
               title="Optional dosage (1–80 chars; letters/digits required)"
             />
             <button
-              onClick={addVariant}
-              disabled={!selectedId || !variantName.trim()}
+              type="submit"
+              disabled={!variantName.trim() || saveBusy}
               aria-label="Create variant"
             >
-              Create variant
+              {saveBusy ? 'Saving…' : 'Create variant'}
             </button>
+            {formFlash.ok ? <p className="form-flash ok" role="status">{formFlash.ok}</p> : null}
+            {formFlash.err ? <p className="form-flash err" role="alert">{formFlash.err}</p> : null}
+            </form>
           </div>
           <select
             value={variantManageFilter}
@@ -3388,14 +3422,17 @@ export default function Page() {
             </tr>
           </thead>
           <tbody>
-            {expiring.map((b) => (
+            {expiring.map((b) => {
+              const prod = products.find((p) => p.id === b.product_id);
+              return (
               <tr key={b.id}>
                 <td>{b.batch_number}</td>
-                <td>{b.product_id}</td>
+                <td>{prod?.name || 'Unknown product'}</td>
                 <td>{b.quantity}</td>
                 <td>{b.expiry_date ? String(b.expiry_date).slice(0, 10) : '—'}</td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       )}
@@ -3740,11 +3777,10 @@ export default function Page() {
 
       {tab === 'adjust' && (
         <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 520 }}>
-          <h3>Stock adjustment</h3>
+          <h3>Correct stock quantity</h3>
           <p className="muted">
-            Correct on-hand discrepancies with a coded reason (BR-5.2): damage, theft, expiry, found,
-            or lost. Negative qty reduces stock; positive increases (e.g. found). Uses the product
-            selected above.
+            Use Adjust stock only to correct an existing on-hand figure. Positive or negative quantity.
+            A reason is required and is written to the audit trail. Receive or view stock in Manage stock.
           </p>
           <p className="muted">
             Selected:{' '}
@@ -3798,11 +3834,13 @@ export default function Page() {
             type="button"
             className="btn-ok"
             onClick={postStockAdjust}
-            disabled={!selectedId || !adjReason}
+            disabled={!selectedId || !adjReason || saveBusy}
             aria-label="Post stock adjustment"
           >
-            Post adjustment
+            {saveBusy ? 'Saving…' : 'Post adjustment'}
           </button>
+            {formFlash.ok ? <p className="form-flash ok" role="status">{formFlash.ok}</p> : null}
+            {formFlash.err ? <p className="form-flash err" role="alert">{formFlash.err}</p> : null}
         </div>
       )}
 
@@ -3933,9 +3971,10 @@ export default function Page() {
       {tab === 'whstock' && (
         <>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
-            <h3>Warehouse stock (BR-5.4)</h3>
+            <h3>Manage stock</h3>
             <p className="muted" style={{ margin: 0 }}>
-              On-hand quantities and reorder policy per warehouse (not consolidated company stock).
+              View on-hand quantity by warehouse, receive stock, and set reorder levels. Quantity
+              corrections with a reason belong on Adjust stock.
             </p>
             <label className="muted">Warehouse</label>
             <select
@@ -3969,6 +4008,44 @@ export default function Page() {
                 ? `${whStockMeta.warehouse_name} — ${whStockMeta.count ?? 0} products · total qty ${whStockMeta.total_quantity ?? 0}`
                 : 'Pick a warehouse to load stock'}
             </p>
+          </div>
+
+          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 560 }}>
+            <h3>Receive stock</h3>
+            <p className="muted" style={{ margin: 0 }}>
+              Adds quantity to the selected product and warehouse. This is not an adjustment.
+            </p>
+            <input
+              value={stockQty}
+              onChange={(e) => setStockQty(e.target.value)}
+              placeholder="Quantity"
+              aria-label="Receive stock quantity"
+            />
+            <input
+              value={batchNumber}
+              onChange={(e) => setBatchNumber(e.target.value)}
+              placeholder="Batch (optional)"
+              aria-label="Receive stock batch"
+            />
+            <input
+              type="date"
+              value={expiryDate}
+              onChange={(e) => setExpiryDate(e.target.value)}
+              aria-label="Receive stock expiry"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                if (whStockWarehouseId) setStockWarehouseId(whStockWarehouseId);
+                stockInBatch();
+              }}
+              disabled={!selectedId || !whStockWarehouseId || saveBusy}
+              aria-label="Receive stock"
+            >
+              {saveBusy ? 'Saving…' : 'Receive stock'}
+            </button>
+            {formFlash.ok ? <p className="form-flash ok" role="status">{formFlash.ok}</p> : null}
+            {formFlash.err ? <p className="form-flash err" role="alert">{formFlash.err}</p> : null}
           </div>
 
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 560 }}>

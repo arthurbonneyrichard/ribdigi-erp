@@ -213,7 +213,7 @@ async def create_variant(
     name = require_honest_narrative(name, label="variant name", max_length=120)
     sku_norm = normalize_sku(sku)
     if not sku_norm:
-        sku_norm = await allocate_sku(db, tenant_id, prefix="SKU")
+        sku_norm = await allocate_sku(db, tenant_id, prefix="VAR")
     else:
         await assert_sku_available(db, tenant_id, sku_norm)
     sku = sku_norm

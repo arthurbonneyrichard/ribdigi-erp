@@ -1,9 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '../../../lib/api';
 
 export default function Page() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [kind, setKind] = useState<'receivable' | 'payable'>('receivable');
   const [report, setReport] = useState<any>(null);
   const [customers, setCustomers] = useState<any[]>([]);
@@ -62,6 +65,20 @@ export default function Page() {
       const first = kind === 'receivable' ? cust.data?.[0]?.id : supp.data?.[0]?.id;
       if (first) setPartyId(first);
     }
+  }
+
+  useEffect(() => {
+    const next = searchParams.get('kind');
+    if ((next === 'payable' || next === 'receivable') && next !== kind) setKind(next);
+  }, [searchParams, kind]);
+
+  function selectKind(next: 'receivable' | 'payable') {
+    setKind(next);
+    const panel = next === 'payable' ? searchParams.get('panel') : null;
+    const qs = new URLSearchParams();
+    qs.set('kind', next);
+    if (next === 'payable' && panel === 'pay') qs.set('panel', 'pay');
+    router.replace(`/credit?${qs.toString()}`, { scroll: false });
   }
 
   useEffect(() => {
@@ -353,14 +370,14 @@ export default function Page() {
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         <button
-          onClick={() => setKind('receivable')}
+          onClick={() => selectKind('receivable')}
           disabled={kind === 'receivable'}
           aria-label="Show receivables aging"
         >
           Receivables
         </button>
         <button
-          onClick={() => setKind('payable')}
+          onClick={() => selectKind('payable')}
           disabled={kind === 'payable'}
           aria-label="Show payables aging"
         >

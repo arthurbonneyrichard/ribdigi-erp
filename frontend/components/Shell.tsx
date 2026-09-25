@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, clearSessionAndRedirect, idleTimeoutMs } from '../lib/api';
 import { getMe } from '../lib/meCache';
 import { prefetchGet } from '../lib/prefetchCache';
@@ -21,10 +21,29 @@ type NavItem = [label: string, href: string, module: string];
 const TENANT_ITEMS: NavItem[] = [
   ['Dashboard', '/dashboard', 'dashboard'],
   ['Company', '/company', 'company'],
-  ['Inventory', '/inventory', 'inventory'],
+  ['Products', '/inventory?tab=products', 'inventory'],
+  ['Categories', '/inventory?tab=categories', 'inventory'],
+  ['Brands', '/inventory?tab=brands', 'inventory'],
+  ['Units', '/inventory?tab=units', 'inventory'],
+  ['Variants', '/inventory?tab=variants', 'inventory'],
+  ['Manage Stock', '/inventory?tab=whstock', 'inventory'],
+  ['Stock Adjustment', '/inventory?tab=adjust', 'inventory'],
+  ['Stock Transfer', '/inventory?tab=transfers', 'inventory'],
+  ['Stock Count', '/inventory?tab=counts', 'inventory'],
+  ['Stock History', '/inventory?tab=movements', 'inventory'],
+  ['Low Stock', '/reports?tab=inventory', 'reports'],
+  ['Expiry', '/inventory?tab=expiry', 'inventory'],
+  ['Batches', '/inventory?tab=batches', 'inventory'],
   ['Sales', '/sales', 'sales'],
   ['POS', '/pos', 'pos'],
-  ['Purchasing', '/purchasing', 'purchasing'],
+  ['Suppliers', '/purchasing?tab=suppliers', 'purchasing'],
+  ['Purchase Orders', '/purchasing?tab=orders', 'purchasing'],
+  ['Purchases', '/purchasing?tab=invoices', 'purchasing'],
+  ['Receive Goods', '/purchasing?tab=grn', 'purchasing'],
+  ['Purchase Returns', '/purchasing?tab=returns', 'purchasing'],
+  ['Supplier Payments', '/credit?kind=payable&panel=pay', 'credit'],
+  ['Supplier Balances', '/credit?kind=payable', 'credit'],
+  ['Purchase History', '/reports?tab=purchases', 'reports'],
   ['Expenses', '/expenses', 'expenses'],
   ['Accounting', '/accounting', 'accounting'],
   ['Credit', '/credit', 'credit'],
@@ -46,6 +65,9 @@ const TENANT_ITEMS: NavItem[] = [
 
 type NavGroup = { id: string; label: string; items: NavItem[] };
 
+/** Never accordion — click navigates even if later given extra children. */
+const STANDALONE_NAV_IDS = new Set(['dashboard', 'notifications']);
+
 const TENANT_NAV_GROUPS: NavGroup[] = [
   { id: 'dashboard', label: 'Dashboard', items: [['Dashboard', '/dashboard', 'dashboard']] },
   {
@@ -57,7 +79,21 @@ const TENANT_NAV_GROUPS: NavGroup[] = [
       ['Jobs', '/jobs', 'jobs'],
     ],
   },
-  { id: 'inventory', label: 'Inventory', items: [['Inventory', '/inventory', 'inventory']] },
+  { id: 'inventory', label: 'Inventory', items: [
+    ['Products', '/inventory?tab=products', 'inventory'],
+    ['Categories', '/inventory?tab=categories', 'inventory'],
+    ['Brands', '/inventory?tab=brands', 'inventory'],
+    ['Units', '/inventory?tab=units', 'inventory'],
+    ['Variants', '/inventory?tab=variants', 'inventory'],
+    ['Manage Stock', '/inventory?tab=whstock', 'inventory'],
+    ['Stock Adjustment', '/inventory?tab=adjust', 'inventory'],
+    ['Stock Transfer', '/inventory?tab=transfers', 'inventory'],
+    ['Stock Count', '/inventory?tab=counts', 'inventory'],
+    ['Stock History', '/inventory?tab=movements', 'inventory'],
+    ['Low Stock', '/reports?tab=inventory', 'reports'],
+    ['Expiry', '/inventory?tab=expiry', 'inventory'],
+    ['Batches', '/inventory?tab=batches', 'inventory'],
+  ] },
   {
     id: 'sales',
     label: 'Sales and POS',
@@ -66,7 +102,16 @@ const TENANT_NAV_GROUPS: NavGroup[] = [
       ['POS', '/pos', 'pos'],
     ],
   },
-  { id: 'purchases', label: 'Purchases', items: [['Purchasing', '/purchasing', 'purchasing']] },
+  { id: 'purchases', label: 'Purchases', items: [
+    ['Suppliers', '/purchasing?tab=suppliers', 'purchasing'],
+    ['Purchase Orders', '/purchasing?tab=orders', 'purchasing'],
+    ['Purchases', '/purchasing?tab=invoices', 'purchasing'],
+    ['Receive Goods', '/purchasing?tab=grn', 'purchasing'],
+    ['Purchase Returns', '/purchasing?tab=returns', 'purchasing'],
+    ['Supplier Payments', '/credit?kind=payable&panel=pay', 'credit'],
+    ['Supplier Balances', '/credit?kind=payable', 'credit'],
+    ['Purchase History', '/reports?tab=purchases', 'reports'],
+  ] },
   {
     id: 'finance',
     label: 'Finance and Accounts',
@@ -113,6 +158,11 @@ const TENANT_NAV_GROUPS: NavGroup[] = [
     ],
   },
 ];
+
+function usesAccordion(group: NavGroup): boolean {
+  if (!group.label || STANDALONE_NAV_IDS.has(group.id)) return false;
+  return group.items.length > 1;
+}
 
 /** Software-owner / platform console navigation only. */
 const PLATFORM_ITEMS: NavItem[] = [
@@ -400,15 +450,47 @@ function canReadModule(permissions: Record<string, string[]> | null | undefined,
   return actions.includes('*') || actions.includes('read') || actions.includes('write');
 }
 
-/** Highlight only the most specific menu item. /platform must not stay active on /platform/staff. */
-function isNavActive(pathname: string, href: string, items: NavItem[]): boolean {
-  const path = pathname.split('?')[0].replace(/\/$/, '') || '/';
-  const matches = (candidate: string) => {
-    const item = candidate.replace(/\/$/, '') || '/';
-    return path === item || path.startsWith(`${item}/`);
-  };
-  if (!matches(href)) return false;
-  return !items.some(([, other]) => other !== href && other.length > href.length && matches(other));
+const DEFAULT_NAV_TABS: Record<string, string> = {
+  '/inventory': 'products',
+  '/purchasing': 'orders',
+  '/reports': 'summary',
+};
+
+function hrefParts(href: string): { path: string; params: URLSearchParams } {
+  const q = href.indexOf('?');
+  const path = ((q === -1 ? href : href.slice(0, q)).replace(/\/$/, '') || '/');
+  const params = new URLSearchParams(q === -1 ? '' : href.slice(q + 1));
+  return { path, params };
+}
+
+function currentNavValue(key: string, path: string, current: URLSearchParams): string {
+  const raw = current.get(key) || '';
+  if (raw) return raw;
+  if (key === 'tab') return DEFAULT_NAV_TABS[path] || '';
+  if (key === 'kind' && path === '/credit') return 'receivable';
+  return '';
+}
+
+/** Highlight the most specific item (query-aware). /platform must not stay active on /platform/staff. */
+function navMatchScore(pathname: string, search: string, href: string): number {
+  const currentPath = pathname.split('?')[0].replace(/\/$/, '') || '/';
+  const current = new URLSearchParams((search || '').replace(/^\?/, ''));
+  const target = hrefParts(href);
+  if (!(currentPath === target.path || currentPath.startsWith(`${target.path}/`))) return -1;
+  for (const pair of Array.from(target.params.entries())) {
+    const [key, value] = pair;
+    if (currentNavValue(key, currentPath, current) !== value) return -1;
+  }
+  if (!target.params.has('panel') && current.get('panel') && target.params.get('kind') === 'payable') {
+    return -1;
+  }
+  return target.path.length * 20 + Array.from(target.params.keys()).length * 5 + (currentPath === target.path ? 3 : 0);
+}
+
+function isNavActive(pathname: string, href: string, items: NavItem[], search = ''): boolean {
+  const score = navMatchScore(pathname, search, href);
+  if (score < 0) return false;
+  return !items.some(([, other]) => other !== href && navMatchScore(pathname, search, other) > score);
 }
 
 function navItemsForRole(
@@ -455,6 +537,48 @@ function groupedTenantNav(visible: NavItem[]): NavGroup[] {
   })).filter((group) => group.items.length > 0);
 }
 
+const NAV_EXPANDED_KEY = 'ribdigi.nav.expanded';
+
+function readExpandedNav(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(NAV_EXPANDED_KEY);
+    const parsed = JSON.parse(raw || '[]');
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((id): id is string => typeof id === 'string' && id.length > 0);
+  } catch {
+    return [];
+  }
+}
+
+function writeExpandedNav(ids: Iterable<string>) {
+  if (typeof window === 'undefined') return;
+  try {
+    const exclusive = Array.from(ids).slice(-1);
+    window.localStorage.setItem(NAV_EXPANDED_KEY, JSON.stringify(exclusive));
+  } catch {
+    /* quota / private mode — navigation still works without persist */
+  }
+}
+
+function exclusiveOpen(id: string | null | undefined): Set<string> {
+  return id ? new Set([id]) : new Set();
+}
+
+function activeNavGroupId(
+  groups: NavGroup[],
+  pathname: string,
+  items: NavItem[],
+  search = ''
+): string | null {
+  const path = pathname || '';
+  for (const group of groups) {
+    if (!usesAccordion(group)) continue;
+    if (group.items.some(([, href]) => isNavActive(path, href, items, search))) return group.id;
+  }
+  return null;
+}
+
 type BellNote = {
   id: string;
   category: string;
@@ -494,7 +618,10 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [bellOpen, setBellOpen] = useState(false);
   const [bellNotes, setBellNotes] = useState<BellNote[]>([]);
   const [bellBusy, setBellBusy] = useState(false);
+  const [expandedNav, setExpandedNav] = useState<Set<string>>(() => new Set());
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const navSearch = searchParams?.toString() || '';
   const router = useRouter();
   const isPlatformOwner = PLATFORM_ROLES.has(role);
 
@@ -795,6 +922,40 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     [role, permissions, enabledModules]
   );
   const navGroups = useMemo(() => groupedTenantNav(visible), [visible]);
+  const autoOpenedForPath = useRef('');
+  const navStorageSeeded = useRef(false);
+
+  useEffect(() => {
+    const storedIds = navStorageSeeded.current ? null : readExpandedNav();
+    navStorageSeeded.current = true;
+    const path = pathname || '';
+    const locKey = `${path}?${navSearch}`;
+    const activeId = isPlatformOwner ? null : activeNavGroupId(navGroups, path, visible, navSearch);
+    const accordionIds = new Set(navGroups.filter(usesAccordion).map((g) => g.id));
+    const storedOne = storedIds?.filter((id) => accordionIds.has(id)).slice(-1)[0] ?? null;
+    const shouldAutoOpen = Boolean(activeId) && autoOpenedForPath.current !== locKey;
+    if (shouldAutoOpen) autoOpenedForPath.current = locKey;
+    setExpandedNav((prev) => {
+      let next: Set<string>;
+      if (shouldAutoOpen && activeId) {
+        next = exclusiveOpen(activeId);
+      } else if (storedIds) {
+        next = exclusiveOpen(activeId ?? storedOne);
+      } else {
+        return prev;
+      }
+      writeExpandedNav(next);
+      return next;
+    });
+  }, [pathname, navSearch, navGroups, visible, isPlatformOwner]);
+
+  function toggleNavGroup(id: string) {
+    setExpandedNav((prev) => {
+      const next = prev.has(id) ? exclusiveOpen(null) : exclusiveOpen(id);
+      writeExpandedNav(next);
+      return next;
+    });
+  }
   const showAlerts = visible.some(([, href]) => href === '/notifications');
   const sidebarLogoSrc = companyLogoUrl || '/brand/logo-sidebar.png';
   const sidebarLogoAlt = companyLogoUrl
@@ -862,7 +1023,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         <nav className="nav" aria-label={isPlatformOwner ? 'Platform navigation' : 'Tenant navigation'}>
           {(isPlatformOwner ? [{ id: 'platform', label: '', items: visible }] : navGroups).map((group) => {
             const links = group.items.map(([n, h, module]) => {
-              const active = isNavActive(pathname || '', h, visible);
+              const active = isNavActive(pathname || '', h, visible, navSearch);
               return (
                 <Link
                   key={h}
@@ -880,19 +1041,40 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                   </span>
                   <span className="nav-label">
                     {n}
-                    {h === '/notifications' && unread > 0 ? ` (${unread})` : ''}
+                    {(h === '/notifications' || h.startsWith('/notifications?')) && unread > 0
+                      ? ` (${unread})`
+                      : ''}
                   </span>
                 </Link>
               );
             });
-            if (!group.label) {
-              return <div key={group.id}>{links}</div>;
+            if (!group.label || !usesAccordion(group)) {
+              return <div key={group.id} className="nav-standalone">{links}</div>;
             }
-            const childActive = group.items.some(([, h]) => isNavActive(pathname || '', h, visible));
+            const childActive = group.items.some(([, h]) => isNavActive(pathname || '', h, visible, navSearch));
+            const isOpen = expandedNav.has(group.id);
             return (
-              <details key={group.id} className="nav-group" open>
-                <summary className={childActive ? 'nav-group-active' : undefined}>{group.label}</summary>
-                {links}
+              <details
+                key={group.id}
+                className={`nav-group${childActive ? ' nav-group-has-active' : ''}`}
+                open={isOpen}
+                onToggle={(e) => {
+                  const el = e.currentTarget;
+                  if (el.open !== isOpen) el.open = isOpen;
+                }}
+              >
+                <summary
+                  className={childActive ? 'nav-group-active' : undefined}
+                  aria-expanded={isOpen}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    toggleNavGroup(group.id);
+                  }}
+                >
+                  <span className="nav-group-title">{group.label}</span>
+                  <span className="nav-group-arrow" aria-hidden="true" />
+                </summary>
+                <div className="nav-group-items">{links}</div>
               </details>
             );
           })}

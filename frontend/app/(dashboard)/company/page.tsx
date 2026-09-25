@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { api, apiOptional } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { formatDateTime, formatNumber } from '../../../lib/format';
-import { industryLabel } from '../../../lib/industries';
+import { canDownloadStaffGuide, industryLabel } from '../../../lib/industries';
 
 export default function Page() {
   const [tenant, setTenant] = useState<any>(null);
@@ -33,6 +33,9 @@ export default function Page() {
   const [smsFromNumber, setSmsFromNumber] = useState('');
   const [suspendReason, setSuspendReason] = useState('');
   const [loadBusy, setLoadBusy] = useState(true);
+  const [canGuide, setCanGuide] = useState(false);
+  const [guideBusy, setGuideBusy] = useState(false);
+  const [guideError, setGuideError] = useState('');
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -98,6 +101,7 @@ export default function Page() {
     setStorageStatus(st.data);
     setProfilePhone(me.data?.phone || '');
     setProfileFullName(me.data?.full_name || '');
+    setCanGuide(canDownloadStaffGuide(me.data?.role, me.data?.permissions));
     if (print.data) {
       setPrintHeader(print.data.header_text || '');
       setPrintFooter(print.data.footer_text || '');
@@ -117,6 +121,52 @@ export default function Page() {
       setLoadBusy(false);
     });
   }, []);
+
+  async function downloadStaffGuide() {
+    setGuideError('');
+    setGuideBusy(true);
+    try {
+      const token = localStorage.getItem('token') || '';
+      const tenantId = localStorage.getItem('tenant') || '';
+      const headers: Record<string, string> = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(tenantId)) {
+        headers['X-Tenant-ID'] = tenantId;
+      }
+      const response = await fetch(`${apiBase.replace(/\/$/, '')}/staff-guide`, {
+        headers,
+        cache: 'no-store',
+      });
+      const type = (response.headers.get('content-type') || '').toLowerCase();
+      if (!response.ok || !type.includes('pdf')) {
+        let detail = 'Could not download the guide.';
+        try {
+          const body = await response.json();
+          const raw = body?.detail;
+          if (typeof raw === 'string') detail = raw;
+          else if (raw?.message) detail = String(raw.message);
+        } catch {
+          if (response.status === 401) detail = 'Sign in required';
+          if (response.status === 403) detail = 'Missing permission: staff_guide:download';
+        }
+        setGuideError(detail);
+        return;
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'RIBDIGI-ERP-Customer-User-Guide.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setGuideError('Could not download the guide.');
+    } finally {
+      setGuideBusy(false);
+    }
+  }
 
   async function save() {
     setError('');
@@ -260,6 +310,28 @@ export default function Page() {
           Add User
         </a>
       </div>
+      {canGuide && (
+        <div className="card" style={{ margin: '12px 0' }}>
+          <h2 style={{ fontSize: 18, margin: '0 0 8px' }}>Staff user guide</h2>
+          <p className="muted" style={{ margin: '0 0 8px' }}>
+            Download the authorized PDF for this company. Requires staff_guide:download.
+          </p>
+          <button
+            type="button"
+            className="btn-ok"
+            onClick={downloadStaffGuide}
+            disabled={guideBusy}
+            aria-label="Download staff user guide PDF"
+          >
+            {guideBusy ? 'Preparing staff guide…' : 'Download staff user guide (PDF)'}
+          </button>
+          {guideError ? (
+            <p className="form-flash err" role="alert">
+              {guideError}
+            </p>
+          ) : null}
+        </div>
+      )}
       {tenant.status === 'trial' && (
         <div className="card" style={{ marginBottom: 12, borderLeft: '4px solid #ca8a04' }}>
           <p>

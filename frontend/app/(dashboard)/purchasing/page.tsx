@@ -1,12 +1,19 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import PartyContactsPanel from '../../../components/PartyContactsPanel';
 import AttachmentPreview from '../../../components/AttachmentPreview';
 import { api } from '../../../lib/api';
 import { useStoreContext } from '../../../lib/storeContext';
 
-type Tab = 'requests' | 'orders' | 'grn' | 'invoices' | 'returns';
+type Tab = 'suppliers' | 'requests' | 'orders' | 'grn' | 'invoices' | 'returns';
+
+const PURCHASING_TABS: Tab[] = ['suppliers', 'requests', 'orders', 'grn', 'invoices', 'returns'];
+
+function isPurchasingTab(value: string | null): value is Tab {
+  return Boolean(value && (PURCHASING_TABS as string[]).includes(value));
+}
 
 /** Keep aligned with backend SystemRoleValue / rbac.VALID_ROLES (PR approval matrix). */
 const SYSTEM_ROLES = [
@@ -163,7 +170,17 @@ type PurchaseInvoice = {
 
 export default function Page() {
   const { storeId } = useStoreContext();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [tab, setTab] = useState<Tab>('orders');
+  useEffect(() => {
+    const next = searchParams.get('tab');
+    if (isPurchasingTab(next) && next !== tab) setTab(next);
+  }, [searchParams, tab]);
+  function selectTab(id: Tab) {
+    setTab(id);
+    router.replace(`/purchasing?tab=${id}`, { scroll: false });
+  }
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [poManageFilter, setPoManageFilter] = useState<
     'all' | 'draft' | 'sent' | 'partially_received' | 'received' | 'cancelled'
@@ -1281,6 +1298,7 @@ export default function Page() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         {(
           [
+            ['suppliers', 'Suppliers'],
             ['requests', 'Requests'],
             ['orders', 'Orders'],
             ['grn', 'GRNs'],
@@ -1290,7 +1308,7 @@ export default function Page() {
         ).map(([id, label]) => (
           <button
             key={id}
-            onClick={() => setTab(id)}
+            onClick={() => selectTab(id)}
             disabled={tab === id}
             aria-label={`Show purchasing ${id} tab`}
           >
@@ -1725,7 +1743,7 @@ export default function Page() {
         </>
       )}
 
-      {tab === 'orders' && (
+      {(tab === 'orders' || tab === 'suppliers') && (
         <>
           <div className="erp-split">
       <div className="card" style={{ marginBottom: 16 }}>
@@ -1905,6 +1923,9 @@ export default function Page() {
           />
         ) : null}
       </div>
+    </div>
+      {tab === 'orders' && (
+      <>
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Create purchase order</h3>
         <div className="erp-form-grid">
@@ -2002,7 +2023,6 @@ export default function Page() {
           </button>
         </div>
       </div>
-          </div>
 
           <div className="card" style={{ marginBottom: 16 }}>
             <label>
@@ -2495,6 +2515,8 @@ export default function Page() {
             </div>
           )}
         </>
+      )}
+      </>
       )}
 
       {tab === 'grn' && (

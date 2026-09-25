@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Path, Query, 
 from fastapi.responses import FileResponse, PlainTextResponse, Response
 from pydantic import EmailStr, TypeAdapter, ValidationError as PydanticValidationError
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Annotated
 import logging
@@ -4888,13 +4889,23 @@ async def create_product_variant(
     claims=Depends(require_permission("inventory", "write")),
     db: AsyncSession = Depends(get_db),
 ):
-    variant = await catalog_svc.create_variant(
-        db,
-        tenant_id=claims["tenant_id"],
-        product_id=product_id,
-        **payload.model_dump(),
-    )
-    await db.commit()
+    variant = None
+    try:
+        variant = await catalog_svc.create_variant(
+            db,
+            tenant_id=claims["tenant_id"],
+            product_id=product_id,
+            **payload.model_dump(exclude_none=True),
+        )
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="A variant with this SKU or barcode already exists for this company",
+        )
+    if variant is None:
+        raise HTTPException(status_code=500, detail="The server could not complete this request.")
     return env(catalog_svc.serialize_variant(variant), "Variant created")
 
 

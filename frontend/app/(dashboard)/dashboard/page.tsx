@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { useStoreContext } from '../../../lib/storeContext';
-import { canDownloadStaffGuide } from '../../../lib/industries';
 
 type Subscription = {
   status?: string;
@@ -287,9 +286,7 @@ export default function Page() {
   const [d, setD] = useState<Dash>({});
   const [now, setNow] = useState<Date | null>(null);
   const [fullName, setFullName] = useState('');
-  const [canGuide, setCanGuide] = useState(false);
-  const [guideBusy, setGuideBusy] = useState(false);
-  const [guideError, setGuideError] = useState('');
+  const [companyName, setCompanyName] = useState('');
 
   useEffect(() => {
     setNow(new Date());
@@ -303,57 +300,10 @@ export default function Page() {
     getMe()
       .then((r) => {
         setFullName(r.data?.full_name || '');
-        setCanGuide(canDownloadStaffGuide(r.data?.role, r.data?.permissions));
+        setCompanyName(String(r.data?.company_name || r.data?.tenant?.company_name || '').trim());
       })
       .catch(() => {});
   }, []);
-
-  async function downloadStaffGuide() {
-    setGuideError('');
-    setGuideBusy(true);
-    try {
-      const token = localStorage.getItem('token') || '';
-      const tenant = localStorage.getItem('tenant') || '';
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-      const headers: Record<string, string> = {};
-      if (token) headers.Authorization = `Bearer ${token}`;
-      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(tenant)) {
-        headers['X-Tenant-ID'] = tenant;
-      }
-      const response = await fetch(`${apiBase.replace(/\/$/, '')}/staff-guide`, {
-        headers,
-        cache: 'no-store',
-      });
-      const type = (response.headers.get('content-type') || '').toLowerCase();
-      if (!response.ok || !type.includes('pdf')) {
-        let detail = 'Could not download the guide.';
-        try {
-          const body = await response.json();
-          const raw = body?.detail;
-          if (typeof raw === 'string') detail = raw;
-          else if (raw?.message) detail = String(raw.message);
-        } catch {
-          if (response.status === 401) detail = 'Sign in required';
-          if (response.status === 403) detail = 'Missing permission: staff_guide:download';
-        }
-        setGuideError(detail);
-        return;
-      }
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'RIBDIGI-ERP-Customer-User-Guide.pdf';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-    } catch {
-      setGuideError('Could not download the guide.');
-    } finally {
-      setGuideBusy(false);
-    }
-  }
 
   const firstName = fullName.trim().split(/\s+/)[0] || '';
 
@@ -450,9 +400,11 @@ export default function Page() {
           )}
           <h1 className="greet">
             {tod.greeting}
-            {firstName ? `, ${firstName}` : ''} <span className="wave">{tod.icon}</span>
+            {companyName ? `, ${companyName}` : firstName ? `, ${firstName}` : ''}{' '}
+            <span className="wave">{tod.icon}</span>
           </h1>
           <p className="greet-sub">{tod.sub}</p>
+          <p className="dash-house-mark">A Ribdigi House product</p>
           <p className="greet-date">{dateLabel}</p>
           {sub?.status === 'trial' && sub?.trial_ends_at && (
             <p className="greet-date">Trial ends {fmtDate(sub.trial_ends_at)}</p>
@@ -461,29 +413,6 @@ export default function Page() {
             <p className="greet-date">Grace period ends {fmtDate(sub.grace_ends_at)}</p>
           )}
         </section>
-
-        {canGuide && (
-          <details className="card" style={{ marginTop: 16 }}>
-            <summary style={{ cursor: 'pointer', fontWeight: 700 }}>Staff user guide</summary>
-            <p className="muted" style={{ marginTop: 8 }}>
-              Step-by-step for adding products, stock, sales, the till, and purchasing.
-            </p>
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={downloadStaffGuide}
-              disabled={guideBusy}
-              aria-label="Download staff user guide PDF"
-            >
-              {guideBusy ? 'Preparing…' : 'Download user guide (PDF)'}
-            </button>
-            {guideError && (
-              <p className="login-error" role="alert" style={{ marginTop: 8 }}>
-                {guideError}
-              </p>
-            )}
-          </details>
-        )}
 
         <section className="stat-grid">
           {stats.map((s) => (
