@@ -350,8 +350,9 @@ export default function Page() {
         </div>
       )}
 
-      <div className="card" style={{ marginBottom: 16, maxWidth: 720 }}>
-        <h2>API keys</h2>
+      <div className="erp-split">
+      <section className="card" aria-labelledby="integrations-api-keys-heading">
+        <h2 id="integrations-api-keys-heading">API keys</h2>
         <p className="muted">
           Authenticate with <code>X-API-Key</code> or <code>Authorization: Bearer</code>. Default
           permissions are read-only inventory/sales/purchasing/customers/reports.
@@ -395,6 +396,7 @@ export default function Page() {
           <option value="revoked">Revoked only</option>
           <option value="expired">Expired only</option>
         </select>
+        <div style={{ overflowX: 'auto' }}>
         <table>
           <thead>
             <tr>
@@ -439,15 +441,16 @@ export default function Page() {
             )}
           </tbody>
         </table>
+        </div>
         {usage && (
           <p className="muted" style={{ marginTop: 8 }}>
             Usage for selected key: {JSON.stringify(usage)}
           </p>
         )}
-      </div>
+      </section>
 
-      <div className="card" style={{ maxWidth: 960 }}>
-        <h2>Webhooks</h2>
+      <section className="card" aria-labelledby="integrations-webhooks-heading">
+        <h2 id="integrations-webhooks-heading">Webhooks</h2>
         <p className="muted">
           Outbound HTTPS deliveries signed with <code>X-Ribdigi-Signature</code> (HMAC-SHA256). Live
           fan-out today: <code>webhook.test</code>, <code>sale.created</code> (invoice + POS),{' '}
@@ -567,7 +570,8 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
           <option value="inactive">Inactive only</option>
         </select>
 
-        <table style={{ marginTop: 16 }}>
+        <div style={{ overflowX: 'auto', marginTop: 16 }}>
+        <table>
           <thead>
             <tr>
               <th>URL</th>
@@ -630,6 +634,7 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
             )}
           </tbody>
         </table>
+        </div>
         {deliveriesFor && (
           <div style={{ marginTop: 16, display: 'grid', gap: 8 }}>
             <strong>
@@ -665,6 +670,7 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
               <option value="failed">Failed only</option>
             </select>
             {deliveriesBusy ? <p className="muted">Loading…</p> : null}
+            <div style={{ overflowX: 'auto' }}>
             <table className="table">
               <thead>
                 <tr>
@@ -716,6 +722,7 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
                 )}
               </tbody>
             </table>
+            </div>
             <button
               type="button"
               onClick={() => loadDeliveries(deliveriesFor)}
@@ -726,6 +733,7 @@ def verify(secret, body: bytes, header: str, skew=300) -> bool:
             </button>
           </div>
         )}
+      </section>
       </div>
     </>
   );
