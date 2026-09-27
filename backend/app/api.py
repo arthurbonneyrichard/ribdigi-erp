@@ -802,28 +802,16 @@ async def tenant_me_update(
 
 @api.post("/tenants/me/suspend")
 async def tenant_me_suspend(
-    payload: TenantSuspendRequest,
-    claims=Depends(require_roles("company_admin", "super_admin")),
-    db: AsyncSession = Depends(get_db),
+    _claims=Depends(require_roles("company_admin", "super_admin")),
 ):
-    tenants_svc.assert_writable(claims)
-    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
-    reason_s = require_honest_narrative(payload.reason, label="suspension reason")
-    tenant = await tenants_svc.suspend_tenant(
-        db, tenant, reason=reason_s, suspended_by=claims["sub"]
+    """Tenant Admin cannot self-suspend. Use platform tenant APIs instead."""
+    raise HTTPException(
+        status_code=403,
+        detail=(
+            "Company users cannot suspend the tenant. "
+            "Only platform_owner/super_admin may suspend via platform tenant APIs."
+        ),
     )
-    await audit_svc.record_event(
-        db,
-        tenant_id=claims["tenant_id"],
-        user_id=claims["sub"],
-        module="tenants",
-        action="suspend",
-        entity="tenant",
-        entity_id=tenant.id,
-        details={"reason": reason_s},
-    )
-    await db.commit()
-    return env(tenants_svc.serialize_tenant(tenant), "Tenant suspended; sessions revoked")
 
 
 @api.post("/tenants/me/activate")

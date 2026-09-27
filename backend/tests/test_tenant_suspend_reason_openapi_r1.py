@@ -1,4 +1,4 @@
-"""TenantSuspendRequest.reason OpenAPI honesty (platform + company self-suspend)."""
+"""TenantSuspendRequest.reason OpenAPI honesty (platform suspend APIs)."""
 
 from __future__ import annotations
 
@@ -29,9 +29,10 @@ def test_tenant_suspend_reason_ui_and_docs():
     plat = (ROOT / "frontend/app/(dashboard)/platform/page.tsx").read_text(encoding="utf-8")
     company = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Tenant suspend reason"' in plat
-    assert 'aria-label="Tenant suspend reason"' in company
     assert "aria-label={`Suspend tenant ${t.id}`}" in plat
-    assert 'aria-label="Suspend company"' in company
+    assert 'aria-label="Save company profile"' in company
+    assert 'aria-label="Suspend company"' not in company
+    assert 'aria-label="Tenant suspend reason"' not in company
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "TenantSuspendReasonValue" in agents
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")

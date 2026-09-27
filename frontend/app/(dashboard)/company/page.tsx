@@ -31,7 +31,6 @@ export default function Page() {
   const [smsAccountSid, setSmsAccountSid] = useState('');
   const [smsAuthToken, setSmsAuthToken] = useState('');
   const [smsFromNumber, setSmsFromNumber] = useState('');
-  const [suspendReason, setSuspendReason] = useState('');
   const [loadBusy, setLoadBusy] = useState(true);
   const [canGuide, setCanGuide] = useState(false);
   const [guideBusy, setGuideBusy] = useState(false);
@@ -239,30 +238,6 @@ export default function Page() {
       const r = await api('/tenants/me/activate', { method: 'POST', body: '{}' });
       setTenant(r.data);
       setMessage(r.message || 'Activated');
-    } catch (err: any) {
-      setError(err.message);
-    }
-  }
-
-  async function suspend() {
-    const reason = suspendReason.trim();
-    if (!reason) {
-      setError('Enter a suspend reason before suspending this company');
-      return;
-    }
-    if (!window.confirm('Suspend this tenant? All sessions will be revoked.')) return;
-    setError('');
-    setMessage('');
-    try {
-      const r = await api('/tenants/me/suspend', {
-        method: 'POST',
-        body: JSON.stringify({ reason }),
-      });
-      setSuspendReason('');
-      setTenant(r.data);
-      setMessage(r.message || 'Suspended');
-      localStorage.removeItem('token');
-      localStorage.removeItem('refresh_token');
     } catch (err: any) {
       setError(err.message);
     }
@@ -604,41 +579,13 @@ export default function Page() {
         />
 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          {tenant.status !== 'suspended' && (
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 260 }}>
-              <span className="muted">Suspend reason (required)</span>
-              <input
-                value={suspendReason}
-                onChange={(e) => setSuspendReason(e.target.value)}
-                placeholder="Required before Suspend"
-                title="Required suspend reason (1–500 chars; letters/digits required)"
-                aria-label="Tenant suspend reason"
-                disabled={!!tenant.read_only}
-              />
-            </label>
-          )}
           <button onClick={save} disabled={!!tenant.read_only} aria-label="Save company profile">
             Save profile
           </button>
           {(tenant.status === 'trial' || tenant.status === 'grace') && (
             <button className="btn-ok" aria-label="Activate company" onClick={activate}>Activate</button>
           )}
-          {tenant.status !== 'suspended' && (
-            <button
-              className="btn-danger"
-              onClick={suspend}
-              disabled={!!tenant.read_only}
-              aria-label="Suspend company"
-            >
-              Suspend
-            </button>
-          )}
         </div>
-        {tenant.status === 'suspended' && tenant.suspended_reason ? (
-          <p className="muted" style={{ marginTop: 8 }}>
-            Suspended reason: {tenant.suspended_reason}
-          </p>
-        ) : null}
       </div>
 
       <div className="erp-split">

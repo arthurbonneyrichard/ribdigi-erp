@@ -1,69 +1,65 @@
-"""Company self-suspend reason honesty — no hardcoded Admin requested."""
+"""Company profile cannot self-suspend; tenant Save profile only."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-import pyotp
 import pytest
 
-from tests.conftest import auth_headers
+from tests.conftest import auth_headers, platform_owner_headers
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_company_suspend_reason_ui_wired():
+def test_company_page_save_profile_no_suspend():
     company = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
-    assert "suspendReason" in company
-    assert "Enter a suspend reason before suspending this company" in company
-    assert "JSON.stringify({ reason })" in company
-    assert "Admin requested" not in company
-    assert "Suspend reason (required)" in company
-    assert "Required before Suspend" in company
-    assert "suspended_reason" in company
-    assert 'aria-label="Tenant suspend reason"' in company
-    assert 'aria-label="Suspend company"' in company
-
-
-async def _admin(ac, seed):
-    code = pyotp.TOTP(seed["super_totp_secret"]).now()
-    return await auth_headers(
-        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
-    )
+    assert "Save profile" in company
+    assert 'aria-label="Save company profile"' in company
+    assert "tenants/me/suspend" not in company
+    assert "suspendReason" not in company
+    assert 'aria-label="Suspend company"' not in company
+    assert ">Suspend<" not in company
+    assert "JSON.stringify({ reason })" not in company
 
 
 @pytest.mark.asyncio
-async def test_company_me_suspend_requires_and_persists_reason(client):
+async def test_company_admin_cannot_self_suspend_via_me_api(client):
     ac, seed = client
-    headers = await _admin(ac, seed)
+    headers = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
 
-    missing = await ac.post("/api/v1/tenants/me/suspend", headers=headers, json={})
-    assert missing.status_code == 422, missing.text
-    assert "reason" in missing.text.lower()
-
-    blank = await ac.post(
-        "/api/v1/tenants/me/suspend",
-        headers=headers,
-        json={"reason": "   "},
-    )
-    assert blank.status_code == 422, blank.text
-
-    garbage = await ac.post(
-        "/api/v1/tenants/me/suspend",
-        headers=headers,
-        json={"reason": "!!!!"},
-    )
-    assert garbage.status_code == 422, garbage.text
-
-    ok = await ac.post(
+    denied = await ac.post(
         "/api/v1/tenants/me/suspend",
         headers=headers,
         json={"reason": "Seasonal closure — API hello-world"},
     )
-    assert ok.status_code == 200, ok.text
-    body = ok.json()["data"]
-    assert body["status"] == "suspended"
-    assert body["suspended_reason"] == "Seasonal closure — API hello-world"
+    assert denied.status_code == 403, denied.text
+    assert "cannot suspend" in denied.json()["detail"].lower()
 
-    # API response is source of truth (test db_session identity map may lag the override session).
-    # Leave tenant suspended — fixture DB is per-test.
+    me = await ac.get("/api/v1/tenants/me", headers=headers)
+    assert me.status_code == 200, me.text
+    assert me.json()["data"]["status"] != "suspended"
+
+    extra = await ac.patch(
+        "/api/v1/tenants/me",
+        headers=headers,
+        json={"suspended": True},
+    )
+    assert extra.status_code == 422, extra.text
+
+
+@pytest.mark.asyncio
+async def test_platform_owner_can_still_suspend_other_tenant(client):
+    ac, seed = client
+    headers = await platform_owner_headers(ac, seed)
+    slug = seed["t2"].slug
+    ok = await ac.post(
+        f"/api/v1/tenants/{slug}/suspend",
+        headers=headers,
+        json={"reason": "Non-payment — platform console"},
+    )
+    assert ok.status_code == 200, ok.text
+    assert ok.json()["data"]["status"] == "suspended"
+
+    act = await ac.post(f"/api/v1/tenants/{slug}/activate", headers=headers, json={})
+    assert act.status_code == 200, act.text
+    assert act.json()["data"]["status"] == "active"

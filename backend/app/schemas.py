@@ -772,8 +772,8 @@ class TenantSuspendRequest(BaseModel):
     `://`/`@`); omit/blank/`!!!`/`http://…` → **422** (was free `str` with
     `min_length=1` only — whitespace still reached service **400**; punctuation-
     only / URL-like garbage could persist on `Tenant.suspended_reason`).
-    Shared by platform `POST /tenants/{ref}/suspend` and company
-    `POST /tenants/me/suspend`.
+    Used by platform `POST /tenants/{ref}/suspend`.
+    Company `POST /tenants/me/suspend` is rejected (403) for tenant users.
     """
     model_config = ConfigDict(extra="forbid")
 
@@ -7839,7 +7839,7 @@ def validate_tenant_suspend_reason_value(value: str) -> str:
     return value
 
 
-# Tenant suspend reason — Tenant.suspended_reason (platform + company self-suspend).
+# Tenant suspend reason — Tenant.suspended_reason (platform suspend APIs).
 TenantSuspendReasonValue = Annotated[
     str,
     BeforeValidator(coerce_bank_name_value),
