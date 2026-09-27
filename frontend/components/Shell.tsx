@@ -509,12 +509,11 @@ function navItemsForRole(
   const packageSet =
     enabledModules && enabledModules.length > 0 ? new Set(enabledModules) : null;
   return TENANT_ITEMS.filter(([, , module]) => {
-    // Integrations + Jobs are company-admin ops surfaces; gate like Company.
-    const permModule =
-      module === 'integrations' || module === 'jobs' ? 'company' : module;
-    if (allowed !== '*' && !allowed.includes(permModule) && module !== 'integrations' && module !== 'jobs')
+    // Integrations is a company-admin ops surface; gate like Company. Jobs is platform-only.
+    const permModule = module === 'integrations' ? 'company' : module;
+    if (allowed !== '*' && !allowed.includes(permModule) && module !== 'integrations')
       return false;
-    if (allowed !== '*' && (module === 'integrations' || module === 'jobs') && !allowed.includes('company'))
+    if (allowed !== '*' && module === 'integrations' && !allowed.includes('company'))
       return false;
     if (
       packageSet &&

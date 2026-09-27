@@ -17,6 +17,63 @@ SECRETISH = re.compile(
     r"rabbitmq|MEDIA_DIR|/data/media)"
 )
 
+ROOT = Path(__file__).resolve().parents[2]
+FRONTEND = ROOT / "frontend"
+TENANT_UI_FORBIDDEN = (
+    "STORAGE_BACKEND",
+    "/data/media",
+    "Media storage",
+    "S3_ENDPOINT",
+    "MinIO",
+    "/settings/storage",
+    "Celery",
+    "RabbitMQ",
+    "Redis",
+    "docker",
+    "release_channel",
+    "build_id",
+)
+TENANT_PAGE_PATHS = [
+    FRONTEND / "app/(dashboard)/company/page.tsx",
+    FRONTEND / "app/(dashboard)/dashboard/page.tsx",
+    FRONTEND / "app/(dashboard)/expenses/page.tsx",
+    FRONTEND / "app/(dashboard)/accounting/page.tsx",
+]
+
+
+def _assert_tenant_ui_hides_infra() -> None:
+    company = (FRONTEND / "app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
+    assert "/settings/storage" not in company
+    assert "Media storage" not in company
+    assert "STORAGE_BACKEND" not in company
+    assert "/data/media" not in company
+    assert "storageStatus" not in company
+
+    settings_pages = list((FRONTEND / "app").rglob("**/settings/**/*.tsx"))
+    tenant_settings = [
+        p
+        for p in settings_pages
+        if "platform" not in p.parts and "node_modules" not in p.parts
+    ]
+    for path in tenant_settings:
+        text = path.read_text(encoding="utf-8")
+        for needle in ("STORAGE_BACKEND", "/data/media", "Media storage", "/settings/storage"):
+            assert needle not in text, f"{needle} leaked in {path}"
+
+    shell = (FRONTEND / "components/Shell.tsx").read_text(encoding="utf-8")
+    tenant_nav, _, _rest = shell.partition("PLATFORM_ITEMS")
+    assert "['Jobs', '/jobs', 'jobs']" not in tenant_nav
+    assert "Media storage" not in tenant_nav
+
+    for path in TENANT_PAGE_PATHS:
+        text = path.read_text(encoding="utf-8")
+        for needle in TENANT_UI_FORBIDDEN:
+            assert needle not in text, f"{needle} leaked in {path}"
+
+
+def test_company_and_tenant_settings_hide_media_storage_card():
+    _assert_tenant_ui_hides_infra()
+
 
 async def _company_admin(ac):
     return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
@@ -100,11 +157,7 @@ async def test_secrets_never_in_tenant_apis(client):
     assert denied.status_code == 403
     assert not SECRETISH.search(denied.text)
 
-    company = (Path(__file__).resolve().parents[2] / "frontend/app/(dashboard)/company/page.tsx").read_text(
-        encoding="utf-8"
-    )
-    assert "/settings/storage" not in company
-    assert "Media storage" not in company
+    _assert_tenant_ui_hides_infra()
 
 
 @pytest.mark.asyncio

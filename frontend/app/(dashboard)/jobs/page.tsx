@@ -21,6 +21,14 @@ const JOB_LABELS: Record<string, string> = {
   send_weekly_ai_insight_digest: 'Weekly AI insight digest',
 };
 
+const PLATFORM_VIEW_ROLES = new Set([
+  'super_admin',
+  'platform_owner',
+  'platform_admin',
+  'platform_support',
+  'platform_finance',
+]);
+
 const RUN_ROLES = new Set(['super_admin', 'platform_owner']);
 
 function beatForJob(beat: Record<string, number | string> | null | undefined, job: string): string {
@@ -37,21 +45,33 @@ function beatForJob(beat: Record<string, number | string> | null | undefined, jo
 export default function Page() {
   const [info, setInfo] = useState<any>(null);
   const [role, setRole] = useState('');
+  const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<any>(null);
 
+  const allowed = PLATFORM_VIEW_ROLES.has(role);
   const canRun = RUN_ROLES.has(role);
 
   const refresh = useCallback(async () => {
-    const [jobsRes, meRes] = await Promise.all([api('/jobs'), getMe()]);
+    const meRes = await getMe();
+    const nextRole = meRes.data?.role || '';
+    setRole(nextRole);
+    setReady(true);
+    if (!PLATFORM_VIEW_ROLES.has(nextRole)) {
+      setInfo(null);
+      return;
+    }
+    const jobsRes = await api('/jobs');
     setInfo(jobsRes.data || null);
-    setRole(meRes.data?.role || '');
   }, []);
 
   useEffect(() => {
-    refresh().catch((err) => setError(err.message || 'Failed to load jobs'));
+    refresh().catch((err) => {
+      setError(err.message || 'Failed to load jobs');
+      setReady(true);
+    });
   }, [refresh]);
 
   async function runJob(name: string, enqueue: boolean) {
@@ -68,6 +88,15 @@ export default function Page() {
     } finally {
       setBusy(null);
     }
+  }
+
+  if (ready && !allowed) {
+    return (
+      <>
+        <h1>Jobs</h1>
+        <p className="muted">This area is only available to Ribdigi House operators.</p>
+      </>
+    );
   }
 
   const jobs: string[] = info?.jobs || [];
