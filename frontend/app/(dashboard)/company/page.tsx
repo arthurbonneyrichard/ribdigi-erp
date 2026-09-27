@@ -491,7 +491,11 @@ export default function Page() {
             </option>
           ))}
         </select>
+        <label className="muted" htmlFor="company-fiscal-year-start">
+          Fiscal year starts (MM-DD)
+        </label>
         <input
+          id="company-fiscal-year-start"
           value={tenant.fiscal_year_start || '01-01'}
           onChange={(e) => setTenant({ ...tenant, fiscal_year_start: e.target.value })}
           placeholder="Fiscal year start MM-DD"

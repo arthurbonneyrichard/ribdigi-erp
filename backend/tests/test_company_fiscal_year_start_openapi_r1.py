@@ -31,6 +31,8 @@ def test_company_fiscal_year_start_schema():
 def test_company_fiscal_year_start_ui_and_docs():
     page = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Fiscal year start"' in page
+    assert "Fiscal year starts (MM-DD)" in page
+    assert 'htmlFor="company-fiscal-year-start"' in page
     assert 'pattern="(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])"' in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Company fiscal_year_start OpenAPI" in agents
