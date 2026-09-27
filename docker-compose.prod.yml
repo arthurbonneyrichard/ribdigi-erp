@@ -290,7 +290,11 @@ services:
         max-file: "3"
 
   minio:
-    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    # docker.io/minio/minio is no longer anonymously pullable; same MinIO vintage as
+    # RELEASE.2024-12-18T13-15-44Z (DEVELOPMENT.2024-12-18T13-15-44Z in this image).
+    image: docker.io/bitnamilegacy/minio:2024.12.18@sha256:c0ede65eb88e47138470202c517bacf55ab3c27df848030b7b46e69d34b7d192
+    user: "0:0"
+    entrypoint: ["minio"]
     restart: unless-stopped
     command: server /data --console-address :9001
     environment:
@@ -307,7 +311,7 @@ services:
         max-file: "3"
 
   minio-init:
-    image: minio/mc:RELEASE.2024-11-17T19-35-56Z
+    image: docker.io/bitnamilegacy/minio-client:2024.11.21@sha256:a7786f5e6bb7b7080fd142a9f4eec0b7f713d246b5ebdbe0ff55f3d5d9c315bb
     depends_on:
       minio:
         condition: service_started
