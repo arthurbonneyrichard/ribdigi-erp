@@ -51,7 +51,6 @@ cors_kwargs = {
     "expose_headers": [
         "X-RateLimit-Limit",
         "X-RateLimit-Remaining",
-        "X-RateLimit-Backend",
         "Retry-After",
         "X-Request-ID",
         "Content-Disposition",

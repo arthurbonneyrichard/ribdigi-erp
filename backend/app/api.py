@@ -332,6 +332,7 @@ from app.security import (
     hash_token,
     issue_one_time_token,
     issue_refresh_token,
+    optional_platform_ops_claims,
     require_permission,
     require_platform_permission,
     require_roles,
@@ -569,45 +570,90 @@ async def create_session(
 
 
 @api.get("/health")
-async def health(request: Request, deep: bool = False):
-    """Liveness by default; pass deep=true for dependency checks (DB/Redis/broker)."""
+async def health(
+    request: Request,
+    deep: bool = False,
+    ops_claims: dict | None = Depends(optional_platform_ops_claims),
+):
+    """Liveness. Deep dependency payloads are platform-ops only."""
     from fastapi.responses import JSONResponse
 
     from app import health as health_svc
 
+    expose = ops_claims is not None
     factory = getattr(request.app.state, "session_factory", None)
-    body, status_code = await health_svc.assemble_health(deep=deep, session_factory=factory)
+    body, status_code = await health_svc.assemble_health(
+        deep=bool(deep) and expose,
+        session_factory=factory,
+        expose_diagnostics=expose,
+    )
     if status_code != 200:
         return JSONResponse(
             status_code=status_code,
             content={
                 "success": False,
                 "data": body,
-                "message": "Service unhealthy",
+                "message": body.get("message") or "Service unhealthy",
             },
         )
-    return env(body)
+    return env(body, body.get("message") or "Operation completed successfully")
 
 
 @api.get("/health/ready")
-async def health_ready(request: Request):
-    """Readiness probe — always runs deep dependency checks."""
+async def health_ready(
+    request: Request,
+    ops_claims: dict | None = Depends(optional_platform_ops_claims),
+):
+    """Readiness probe. Public body is generic; platform ops receive dependency checks."""
     from fastapi.responses import JSONResponse
 
     from app import health as health_svc
 
+    expose = ops_claims is not None
     factory = getattr(request.app.state, "session_factory", None)
-    body, status_code = await health_svc.assemble_health(deep=True, session_factory=factory)
+    body, status_code = await health_svc.assemble_health(
+        deep=True,
+        session_factory=factory,
+        expose_diagnostics=expose,
+    )
     if status_code != 200:
         return JSONResponse(
             status_code=status_code,
             content={
                 "success": False,
                 "data": body,
-                "message": "Service not ready",
+                "message": body.get("message") or "Service not ready",
             },
         )
-    return env(body, "Ready")
+    return env(body, body.get("message") or "Ready")
+
+
+@api.get("/platform/health")
+async def platform_health(
+    request: Request,
+    claims=Depends(require_platform_permission("platform", "read")),
+):
+    """Platform Owner / ops diagnostics (DB, broker, build identity)."""
+    from fastapi.responses import JSONResponse
+
+    from app import health as health_svc
+
+    factory = getattr(request.app.state, "session_factory", None)
+    body, status_code = await health_svc.assemble_health(
+        deep=True,
+        session_factory=factory,
+        expose_diagnostics=True,
+    )
+    if status_code != 200:
+        return JSONResponse(
+            status_code=status_code,
+            content={
+                "success": False,
+                "data": body,
+                "message": body.get("message") or "Service unhealthy",
+            },
+        )
+    return env(body, body.get("message") or "Ready")
 
 
 @api.get("/metrics")
@@ -1783,7 +1829,7 @@ async def settings_sms_patch(
 
 @api.get("/settings/storage")
 async def settings_storage_get(
-    claims=Depends(require_roles("company_admin", "super_admin")),
+    claims=Depends(require_platform_permission("platform", "read")),
 ):
     return env(storage_svc.storage_status())
 
@@ -12538,7 +12584,7 @@ async def scan_due_notifications(
 
 @api.get("/jobs")
 async def list_jobs(
-    claims=Depends(require_roles("super_admin", "company_admin", "platform_owner")),
+    claims=Depends(require_platform_permission("platform", "read")),
 ):
     from app.config import settings as app_settings
     from app import jobs as jobs_svc
@@ -12574,20 +12620,20 @@ async def list_jobs(
 async def run_job_now(
     job_name: Annotated[JobNameValue, Path()],
     enqueue: bool = False,
-    claims=Depends(require_roles("super_admin", "platform_owner")),
+    claims=Depends(require_platform_permission("platform", "write")),
 ):
-    """Run a scheduled job immediately (sync) or enqueue to Celery."""
+    """Run a scheduled job immediately (sync) or enqueue to Celery (platform ops only)."""
     from app import jobs as jobs_svc
     from app.config import settings as app_settings
 
     # Schema JobNameValue rejects unknown/blank path → 422 (was late **404**).
     # Keep allow-list defense-in-depth if Literal and JOB_HANDLERS drift.
     if job_name not in jobs_svc.JOB_HANDLERS:
-        raise HTTPException(status_code=422, detail=f"Unknown job: {job_name}")
+        raise HTTPException(status_code=422, detail="Unknown job")
 
     if enqueue:
         if not app_settings.CELERY_ENABLED:
-            raise HTTPException(status_code=503, detail="CELERY_ENABLED is false")
+            raise HTTPException(status_code=503, detail="Background processing is not available.")
         from app.tasks import run_named_job
 
         async_result = run_named_job.delay(job_name)

@@ -309,7 +309,7 @@ Also: `GET /tenants/{tenant_id}` for platform cross-tenant reads where authorize
 `timezone` (when sent) ∈ valid IANA key (`TimezoneValue`; strip + `ZoneInfo`; blank/`Foo/Bar`/`UTC+0` → **422** — was free `str`; blank late **400**; garbage could persist). Company **Timezone** select.
 
 Regional / tax format fields (BR-20.2) are schema Literals on this PATCH (omit = no change; blank/invalid → **422**):
-- `tax_jurisdiction` ∈ `GH` (same `TaxFilingJurisdictionValue` / `tax_filings.SUPPORTED` as filing Query; blank/unsupported → **422** — was free `str` with length-only late service **400**; unsupported codes could persist then fail later on filing). Company **Tax jurisdiction** select.
+- `tax_jurisdiction` ∈ `TenantTaxJurisdictionValue` (ISO country list `tax_filings.TAX_COUNTRIES`, not GH-only). Filing Query `jurisdiction` stays `TaxFilingJurisdictionValue` / `tax_filings.SUPPORTED` (**GH** government template only). Blank/unsupported profile codes → **422**. Company **Tax jurisdiction** select.
 - `tax_filing_period` ∈ `monthly|quarterly` — Company **Tax filing period** (`aria-label`)
 - `date_format` ∈ `DD/MM/YYYY|MM/DD/YYYY|YYYY-MM-DD` — Company **Company date format** (`aria-label`)
 - `decimal_separator` ∈ `.|,` — Company **Company decimal separator** (`aria-label`)

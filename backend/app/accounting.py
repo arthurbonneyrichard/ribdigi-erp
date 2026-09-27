@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -247,6 +247,16 @@ def fiscal_period_bounds(
         start = _safe_calendar_date(as_of.year - 1, mm, dd)
         end = start_this_year
     return datetime.combine(start, time.min), datetime.combine(end, time.min)
+
+
+def fiscal_year_display_label(fiscal_year_start: str | None, *, as_of: date | None = None) -> str:
+    """Friendly FY label for Company profile (does not replace MM-DD storage)."""
+    start_dt, end_dt = fiscal_period_bounds(fiscal_year_start, as_of=as_of)
+    start = start_dt.date()
+    last = (end_dt - timedelta(seconds=1)).date()
+    if start.month == 1 and start.day == 1:
+        return f"FY {start.year}"
+    return f"FY {start.year}/{str(last.year)[-2:]}"
 
 
 def in_current_fiscal_period(

@@ -15,6 +15,7 @@ def test_company_page_save_profile_no_suspend():
     company = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
     assert "Save profile" in company
     assert 'aria-label="Save company profile"' in company
+    assert "form-flash" in company
     assert "tenants/me/suspend" not in company
     assert "suspendReason" not in company
     assert 'aria-label="Suspend company"' not in company

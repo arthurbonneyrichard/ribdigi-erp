@@ -12,6 +12,40 @@ SUPPORTED = {
     "GH": gh_vat,
 }
 
+# Company tax country (ISO-3166 alpha-2). Government return templates stay in SUPPORTED.
+TAX_COUNTRIES: dict[str, str] = {
+    "AE": "United Arab Emirates",
+    "AU": "Australia",
+    "BF": "Burkina Faso",
+    "BJ": "Benin",
+    "CA": "Canada",
+    "CI": "Côte d'Ivoire",
+    "CM": "Cameroon",
+    "CN": "China",
+    "DE": "Germany",
+    "EG": "Egypt",
+    "FR": "France",
+    "GB": "United Kingdom",
+    "GH": "Ghana",
+    "GM": "Gambia",
+    "IN": "India",
+    "KE": "Kenya",
+    "LR": "Liberia",
+    "MA": "Morocco",
+    "ML": "Mali",
+    "NE": "Niger",
+    "NG": "Nigeria",
+    "RW": "Rwanda",
+    "SL": "Sierra Leone",
+    "SN": "Senegal",
+    "TG": "Togo",
+    "TZ": "Tanzania",
+    "UG": "Uganda",
+    "US": "United States",
+    "ZA": "South Africa",
+}
+TAX_COUNTRY_CODES = frozenset(TAX_COUNTRIES)
+
 
 def coerce_tax_filing_jurisdiction_value(value: object) -> object:
     """Pydantic BeforeValidator: strip/uppercase; blank stays blank for Literal 422."""
@@ -20,6 +54,18 @@ def coerce_tax_filing_jurisdiction_value(value: object) -> object:
     if not isinstance(value, str):
         return value
     return value.strip().upper()
+
+
+def validate_tenant_tax_jurisdiction_value(value: str) -> str:
+    """AfterValidator: company profile country list (not filing-template Complete)."""
+    code = (value or "").strip().upper()
+    if code not in TAX_COUNTRY_CODES:
+        raise ValueError("tax_jurisdiction must be a supported ISO country code")
+    return code
+
+
+def list_tax_countries() -> list[dict]:
+    return [{"code": code, "name": name} for code, name in TAX_COUNTRIES.items()]
 
 
 def normalize_jurisdiction(code: str | None) -> str:

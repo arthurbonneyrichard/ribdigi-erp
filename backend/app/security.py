@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import re
 import secrets
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
@@ -313,6 +314,35 @@ def require_platform_permission(module: str, action: str = "read"):
         return claims
 
     return dep
+
+
+async def optional_platform_ops_claims(
+    request: Request,
+    creds: HTTPAuthorizationCredentials | None = Depends(bearer),
+    x_tenant_id: Annotated[str | None, Header(alias="X-Tenant-ID")] = None,
+    x_api_key: Annotated[str | None, Header(alias="X-API-Key")] = None,
+    db: AsyncSession = Depends(get_db),
+) -> dict | None:
+    """Platform staff claims, or None (probes and tenant callers stay anonymous).
+
+    Invalid tenant/API-key headers are ignored so liveness probes never 422.
+    """
+    if not creds and not (x_api_key or "").strip():
+        return None
+    tenant_header = (x_tenant_id or "").strip() or None
+    if tenant_header:
+        try:
+            uuid.UUID(tenant_header)
+        except ValueError:
+            tenant_header = None
+    key_header = (x_api_key or "").strip() or None
+    try:
+        claims = await current_claims(request, creds, tenant_header, key_header, db)
+    except HTTPException:
+        return None
+    if not is_platform_role(claims.get("role")):
+        return None
+    return claims
 
 
 def require_permission(module: str, action: str = "read"):

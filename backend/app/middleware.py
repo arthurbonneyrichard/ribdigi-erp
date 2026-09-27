@@ -105,13 +105,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     "Retry-After": str(retry_after),
                     "X-RateLimit-Limit": str(limit),
                     "X-RateLimit-Remaining": "0",
-                    "X-RateLimit-Backend": rate_limiter.backend,
                 },
             )
         response = await call_next(request)
         response.headers.setdefault("X-RateLimit-Limit", str(limit))
         response.headers.setdefault("X-RateLimit-Remaining", str(remaining))
-        response.headers.setdefault("X-RateLimit-Backend", rate_limiter.backend)
         return response
 
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException
@@ -16,6 +17,7 @@ from app.honesty import money_json, optional_honest_narrative
 from app.schemas import validate_webhook_url_value
 
 PROVIDERS = frozenset({"mock", "http_json"})
+logger = logging.getLogger("ribdigi.bank")
 
 
 def _encrypt(plain: str) -> str:
@@ -531,7 +533,8 @@ async def sync_connection(
         row.last_sync_error = str(exc)
         row.updated_at = datetime.utcnow()
         await db.flush()
-        raise HTTPException(status_code=502, detail=f"Bank sync failed: {exc}") from exc
+        logger.exception("bank sync failed connection_id=%s", getattr(row, "id", None))
+        raise HTTPException(status_code=502, detail="Bank sync failed. Try again or contact support.") from exc
 
 
 async def sync_tenant_auto_connections(

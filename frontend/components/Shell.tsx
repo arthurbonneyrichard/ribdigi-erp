@@ -55,7 +55,6 @@ const TENANT_ITEMS: NavItem[] = [
   ['Notifications', '/notifications', 'notifications'],
   ['Audit', '/audit', 'audit'],
   ['Backup', '/backup', 'backup'],
-  ['Jobs', '/jobs', 'jobs'],
   ['Integrations', '/integrations', 'integrations'],
   ['Security', '/security', 'security'],
   ['AI Assistant', '/ai', 'ai'],
@@ -76,7 +75,6 @@ const TENANT_NAV_GROUPS: NavGroup[] = [
     items: [
       ['Company', '/company', 'company'],
       ['Integrations', '/integrations', 'integrations'],
-      ['Jobs', '/jobs', 'jobs'],
     ],
   },
   { id: 'inventory', label: 'Inventory', items: [

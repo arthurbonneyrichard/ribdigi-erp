@@ -2037,7 +2037,7 @@ export default function Page() {
             <p className="muted">
               Link a liquid GL account to a live feed (`mock` for demos/tests, `http_json` for any
               aggregator that returns JSON transactions). Sync creates a reconcilable statement;
-              duplicates are skipped by external ref. Soft-deactivate pauses Sync / Celery auto-sync
+              duplicates are skipped by external ref. Soft-deactivate pauses automatic bank sync
               without deleting the connection (use Remove to delete).
             </p>
             <input aria-label="Bank connection display name" value={connName} onChange={(e) => setConnName(e.target.value)} placeholder="Connection name" />

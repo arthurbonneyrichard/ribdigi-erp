@@ -26,7 +26,10 @@ from app.tenants import (
     coerce_thousand_separator_value,
     coerce_time_format_value,
 )
-from app.tax_filings import coerce_tax_filing_jurisdiction_value
+from app.tax_filings import (
+    coerce_tax_filing_jurisdiction_value,
+    validate_tenant_tax_jurisdiction_value,
+)
 from app.expenses import coerce_expense_payment_method_value
 from app.print_branding import coerce_invoice_template_value, coerce_receipt_paper_value
 from app.fx import coerce_currency_code_value
@@ -60,10 +63,16 @@ TaxFilingPeriodValue = Annotated[
     Literal["monthly", "quarterly"],
     BeforeValidator(coerce_tax_filing_period_value),
 ]
-# Keep aligned with app.tax_filings.SUPPORTED (Company profile + Tax filing Query/export).
+# Filing Query/export templates — GH only until other government maps exist.
 TaxFilingJurisdictionValue = Annotated[
     Literal["GH"],
     BeforeValidator(coerce_tax_filing_jurisdiction_value),
+]
+# Company profile tax country (ISO list). Not a claim that filing templates exist.
+TenantTaxJurisdictionValue = Annotated[
+    str,
+    BeforeValidator(coerce_tax_filing_jurisdiction_value),
+    AfterValidator(validate_tenant_tax_jurisdiction_value),
 ]
 # Keep aligned with app.fx.normalize_currency (Credit FX rates — 3-letter ISO).
 CurrencyCodeValue = Annotated[
@@ -749,9 +758,9 @@ class TenantProfileUpdate(BaseModel):
     timezone: TimezoneValue | None = None
     # omit = no change; blank/invalid MM-DD → 422 (was free str; length-only late **400**)
     fiscal_year_start: FiscalYearStartValue | None = None
-    # Keep aligned with tax_filings.SUPPORTED / TaxFilingJurisdictionValue (Company select).
-    # omit = no change; blank/unsupported → 422 (was free str; length-only late **400**).
-    tax_jurisdiction: TaxFilingJurisdictionValue | None = None
+    # Company tax country ∈ TenantTaxJurisdictionValue (ISO list). Filing Query stays GH-only.
+    # omit = no change; blank/unsupported → 422.
+    tax_jurisdiction: TenantTaxJurisdictionValue | None = None
     # omit/`null` → no change; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silently cleared TIN; garbage could persist). Max 40 (DB column).
     tax_registration_number: TaxRegistrationNumberValue | None = None

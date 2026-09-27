@@ -690,7 +690,7 @@ def ensure_backup_dir_writable() -> None:
     except OSError as exc:
         raise HTTPException(
             status_code=503,
-            detail=f"Backup directory not writable: {settings.BACKUP_DIR}",
+            detail="Backups are temporarily unavailable.",
         ) from exc
 
 

@@ -138,7 +138,7 @@ def _s3_client():
     except ImportError as exc:
         raise HTTPException(
             status_code=503,
-            detail="S3 storage requires boto3 (install backend requirements)",
+            detail="Object storage is not available.",
         ) from exc
 
     endpoint = (settings.S3_ENDPOINT or settings.S3_ENDPOINT_URL or "").strip() or None
@@ -148,10 +148,10 @@ def _s3_client():
     if not access or not secret:
         raise HTTPException(
             status_code=503,
-            detail="S3_ACCESS_KEY and S3_SECRET_KEY are required when STORAGE_BACKEND=s3",
+            detail="Object storage is not configured.",
         )
     if not (settings.S3_BUCKET or "").strip():
-        raise HTTPException(status_code=503, detail="S3_BUCKET is required when STORAGE_BACKEND=s3")
+        raise HTTPException(status_code=503, detail="Object storage is not configured.")
 
     addressing = "path" if settings.S3_FORCE_PATH_STYLE else "auto"
     return boto3.client(
@@ -300,7 +300,7 @@ def open_key(key: str, *, tenant_id: str | None = None) -> tuple[Path, str]:
     if storage_backend() != "local":
         raise HTTPException(
             status_code=400,
-            detail="open_key is only available for STORAGE_BACKEND=local; use read_object",
+            detail="This media file cannot be opened that way.",
         )
     path = resolve_key(key, tenant_id=tenant_id)
     if not path.is_file():

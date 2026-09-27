@@ -119,7 +119,7 @@ def test_rate_limit_headers_and_tenant_buckets(monkeypatch):
     assert first.status_code == 200
     assert "X-RateLimit-Limit" in first.headers
     assert "X-RateLimit-Remaining" in first.headers
-    assert "X-RateLimit-Backend" in first.headers
+    assert "X-RateLimit-Backend" not in first.headers
     assert first.headers.get("Cross-Origin-Opener-Policy") == "same-origin"
 
     assert client.get("/api/v1/health", headers={"X-Tenant-ID": "tenant-alpha"}).status_code == 200
@@ -158,7 +158,7 @@ def test_security_headers_on_root():
     assert response.headers.get("X-Frame-Options") == "DENY"
     assert "default-src 'none'" in response.headers.get("Content-Security-Policy", "")
     assert "X-RateLimit-Limit" in response.headers
-    assert "X-RateLimit-Backend" in response.headers
+    assert "X-RateLimit-Backend" not in response.headers
 
 
 @pytest.mark.asyncio

@@ -5,12 +5,12 @@ import { api, apiOptional } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { formatDateTime, formatNumber } from '../../../lib/format';
 import { canDownloadStaffGuide, industryLabel } from '../../../lib/industries';
+import { TAX_COUNTRIES } from '../../../lib/taxCountries';
 
 export default function Page() {
   const [tenant, setTenant] = useState<any>(null);
   const [emailStatus, setEmailStatus] = useState<any>(null);
   const [smsStatus, setSmsStatus] = useState<any>(null);
-  const [storageStatus, setStorageStatus] = useState<any>(null);
   const [profilePhone, setProfilePhone] = useState('');
   const [profileFullName, setProfileFullName] = useState('');
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -65,7 +65,7 @@ export default function Page() {
 
   async function refresh() {
     setLoadBusy(true);
-    const [r, e, s, me, st, print] = await Promise.all([
+    const [r, e, s, me, print] = await Promise.all([
       apiOptional('/tenants/me'),
       apiOptional('/settings/email'),
       apiOptional('/settings/sms'),
@@ -73,7 +73,6 @@ export default function Page() {
         data: null,
         error: err?.message || 'Could not load your profile',
       })),
-      apiOptional('/settings/storage'),
       apiOptional('/settings/print'),
     ]);
     const loadError = [r, e, s, me].map((x) => x.error).filter(Boolean).join(' ');
@@ -97,7 +96,6 @@ export default function Page() {
       setSmsAuthToken('');
       setSmsFromNumber(s.data.from_number || '');
     }
-    setStorageStatus(st.data);
     setProfilePhone(me.data?.phone || '');
     setProfileFullName(me.data?.full_name || '');
     setCanGuide(canDownloadStaffGuide(me.data?.role, me.data?.permissions));
@@ -169,6 +167,7 @@ export default function Page() {
 
   async function save() {
     setError('');
+    setMessage('');
     try {
       const r = await api('/tenants/me', {
         method: 'PATCH',
@@ -479,12 +478,28 @@ export default function Page() {
           aria-label="Fiscal year start"
           title="MM-DD (e.g. 01-01)"
         />
+        <p className="muted" style={{ margin: 0 }} aria-label="Fiscal year label">
+          Current period: {tenant.fiscal_year_label || 'FY'}
+        </p>
         <select
           value={tenant.tax_jurisdiction || 'GH'}
           onChange={(e) => setTenant({ ...tenant, tax_jurisdiction: e.target.value })}
           aria-label="Tax jurisdiction"
         >
-          <option value="GH">Tax jurisdiction: GH — Ghana</option>
+          {(TAX_COUNTRIES.some((c) => c.code === (tenant.tax_jurisdiction || 'GH'))
+            ? TAX_COUNTRIES
+            : [
+                {
+                  code: tenant.tax_jurisdiction || 'GH',
+                  name: tenant.tax_jurisdiction || 'Ghana',
+                },
+                ...TAX_COUNTRIES,
+              ]
+          ).map((c) => (
+            <option key={c.code} value={c.code}>
+              Tax jurisdiction: {c.code} — {c.name}
+            </option>
+          ))}
         </select>
         <input
           value={tenant.tax_registration_number || ''}
@@ -586,6 +601,16 @@ export default function Page() {
             <button className="btn-ok" aria-label="Activate company" onClick={activate}>Activate</button>
           )}
         </div>
+        {message ? (
+          <p className="form-flash ok" role="status">
+            {message}
+          </p>
+        ) : null}
+        {error ? (
+          <p className="form-flash err" role="alert">
+            {error}
+          </p>
+        ) : null}
       </div>
 
       <div className="erp-split">
@@ -621,21 +646,6 @@ export default function Page() {
           </a>
         </div>
       </div>
-
-      {storageStatus && (
-        <div className="card" style={{ marginTop: 16, maxWidth: 520 }}>
-          <h2>Media storage</h2>
-          <p className="muted">
-            Backend: {storageStatus.backend}
-            {storageStatus.backend === 's3'
-              ? ` · Bucket ${storageStatus.bucket || '—'} · ${storageStatus.endpoint || 'AWS'}`
-              : ` · Dir ${storageStatus.media_dir || '—'}`}
-          </p>
-          <p className="muted">
-            Set STORAGE_BACKEND=s3 with S3_* / MinIO env vars for object storage. Keys stay tenant-scoped.
-          </p>
-        </div>
-      )}
 
       <div className="card" style={{ marginTop: 16, maxWidth: 520 }}>
         <h2>Print branding</h2>

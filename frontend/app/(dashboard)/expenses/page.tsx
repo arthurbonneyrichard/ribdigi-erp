@@ -981,9 +981,9 @@ export default function Page() {
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Recurring expenses</h3>
         <p className="muted">
-          Schedules auto-generate due expenses (Celery + manual Generate). Generated entries use the
+          Schedules auto-generate due expenses (automatic schedule + manual Generate). Generated entries use the
           EXP-YYYY-NNNN series when reference is blank. Advance notify (T−1) uses category
-          `recurring_expense_due` via Notifications scan-due / Celery. Use <strong>Skip next</strong>{' '}
+          `recurring_expense_due` via Notifications scan-due. Use <strong>Skip next</strong>{' '}
           with a typed reason to advance `next_run_at` by one period without creating an expense
           (reason is audit-only; schedule description is unchanged). Use{' '}
           <strong>Edit schedule</strong> to change template amount/payee for future generations.

@@ -77,9 +77,8 @@ export default function Page() {
     <>
       <h1>Jobs</h1>
       <p className="muted">
-        Scheduled Celery handlers and beat intervals. Company admins can view;{' '}
-        <strong>super_admin</strong> / <strong>platform_owner</strong> can run sync or enqueue.
-        See <code>docs/CELERY_RELIABILITY_RUNBOOK.md</code>.
+        Background job handlers and schedules for Ribdigi House operators.
+        Platform staff can view; roles with platform write can run or enqueue.
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
@@ -151,7 +150,7 @@ export default function Page() {
                       <button
                         type="button"
                         disabled={!!busy || !info?.celery_enabled}
-                        title={!info?.celery_enabled ? 'CELERY_ENABLED is false' : undefined}
+                        title={!info?.celery_enabled ? 'Background processing is not available' : undefined}
                         onClick={() => runJob(name, true)}
                         aria-label={`Enqueue ${name}`}
                       >

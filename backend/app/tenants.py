@@ -194,6 +194,12 @@ def is_read_only(tenant: m.Tenant) -> bool:
     return tenant.status == "grace"
 
 
+def _fiscal_year_label(tenant: m.Tenant) -> str:
+    from app.accounting import fiscal_year_display_label
+
+    return fiscal_year_display_label(getattr(tenant, "fiscal_year_start", None) or "01-01")
+
+
 def serialize_tenant(tenant: m.Tenant) -> dict:
     now = datetime.utcnow()
     days_left = None
@@ -228,6 +234,7 @@ def serialize_tenant(tenant: m.Tenant) -> dict:
         "shipping_address": getattr(tenant, "shipping_address", None),
         "timezone": tenant.timezone or "Africa/Accra",
         "fiscal_year_start": tenant.fiscal_year_start or "01-01",
+        "fiscal_year_label": _fiscal_year_label(tenant),
         "date_format": getattr(tenant, "date_format", None) or "DD/MM/YYYY",
         "decimal_separator": getattr(tenant, "decimal_separator", None) or ".",
         "thousand_separator": getattr(tenant, "thousand_separator", None)
@@ -860,13 +867,13 @@ async def update_profile(
         tenant.fiscal_year_start = fys
     if tax_jurisdiction is not None:
         # Defense in depth: TenantProfileUpdate TaxFilingJurisdictionValue → 422 on blank/unknown.
-        from app.tax_filings import SUPPORTED
+        from app.tax_filings import TAX_COUNTRY_CODES
 
         juris = tax_jurisdiction.strip().upper()
-        if juris not in SUPPORTED:
+        if juris not in TAX_COUNTRY_CODES:
             raise HTTPException(
                 status_code=400,
-                detail=f"tax_jurisdiction must be one of: {sorted(SUPPORTED)}",
+                detail="tax_jurisdiction must be a supported ISO country code",
             )
         tenant.tax_jurisdiction = juris
     if tax_registration_number is not None:

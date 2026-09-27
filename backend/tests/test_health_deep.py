@@ -1,4 +1,4 @@
-"""Deep /health readiness checks (DB / Redis / Celery broker)."""
+"""Public /health probes stay generic; deep checks are platform-ops only."""
 
 from __future__ import annotations
 
@@ -9,48 +9,53 @@ from app.main import app
 from app.rate_limit import rate_limiter
 
 
-def test_shallow_health_unchanged():
+INFRA_LEAKS = (
+    "redis",
+    "celery",
+    "postgres",
+    "build_id",
+    "release_channel",
+    "RIBDIGI_BUILD",
+    "checks",
+)
+
+
+def test_shallow_health_is_tenant_safe():
     rate_limiter.reset_for_tests()
     client = TestClient(app)
     response = client.get("/api/v1/health")
     assert response.status_code == 200
-    body = response.json()["data"]
+    payload = response.json()
+    body = payload["data"]
     assert body["status"] == "ok"
-    assert body["service"] == "ribdigi-erp"
-    assert body["deep"] is False
-    assert "checks" not in body
+    assert body["message"] == "System is operating normally."
+    blob = response.text.lower()
+    for leak in INFRA_LEAKS:
+        assert leak not in blob
+    assert "service" not in body
+    assert "deep" not in body
 
 
 @pytest.mark.asyncio
-async def test_deep_health_and_ready_with_sqlite(client, monkeypatch):
+async def test_deep_query_ignored_without_platform_auth(client, monkeypatch):
     ac, _seed = client
     monkeypatch.setattr("app.config.settings.CELERY_TASK_ALWAYS_EAGER", True)
     monkeypatch.setattr("app.health.settings.CELERY_TASK_ALWAYS_EAGER", True)
-    monkeypatch.setattr("app.config.settings.RATE_LIMIT_REQUIRE_REDIS", False)
-    monkeypatch.setattr("app.health.settings.RATE_LIMIT_REQUIRE_REDIS", False)
-
-    async def _redis_ok():
-        return {"status": "ok", "latency_ms": 0.1, "required": False}
-
-    monkeypatch.setattr("app.health.check_redis", _redis_ok)
 
     deep = await ac.get("/api/v1/health?deep=true")
     assert deep.status_code == 200, deep.text
     data = deep.json()["data"]
-    assert data["deep"] is True
-    assert data["checks"]["database"]["status"] == "ok"
-    assert data["checks"]["redis"]["status"] == "ok"
-    assert data["checks"]["celery_broker"]["status"] == "ok"
     assert data["status"] == "ok"
+    assert "checks" not in data
+    assert "build_id" not in data
 
     ready = await ac.get("/api/v1/health/ready")
     assert ready.status_code == 200, ready.text
-    assert ready.json()["data"]["deep"] is True
-    assert ready.json()["data"]["checks"]["database"]["status"] == "ok"
+    assert "checks" not in ready.json()["data"]
 
 
 @pytest.mark.asyncio
-async def test_deep_health_503_when_database_down(client, monkeypatch):
+async def test_ready_503_is_tenant_safe(client, monkeypatch):
     ac, _seed = client
 
     async def _db_down(_factory):
@@ -71,4 +76,6 @@ async def test_deep_health_503_when_database_down(client, monkeypatch):
     body = r.json()
     assert body["success"] is False
     assert body["data"]["status"] == "error"
-    assert body["data"]["checks"]["database"]["status"] == "error"
+    assert body["data"]["message"] == "System is temporarily unavailable."
+    assert "checks" not in body["data"]
+    assert "OperationalError" not in r.text

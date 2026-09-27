@@ -31,27 +31,32 @@ def test_company_tax_jurisdiction_literal_schema():
         TenantProfileUpdate.model_validate({"tax_jurisdiction": ""})
     with pytest.raises(ValidationError):
         TenantProfileUpdate.model_validate({"tax_jurisdiction": "   "})
+    ng = TenantProfileUpdate.model_validate({"tax_jurisdiction": "ng"})
+    assert ng.tax_jurisdiction == "NG"
+    us = TenantProfileUpdate.model_validate({"tax_jurisdiction": "US"})
+    assert us.tax_jurisdiction == "US"
     with pytest.raises(ValidationError):
-        TenantProfileUpdate.model_validate({"tax_jurisdiction": "NG"})
-    with pytest.raises(ValidationError):
-        TenantProfileUpdate.model_validate({"tax_jurisdiction": "US"})
+        TenantProfileUpdate.model_validate({"tax_jurisdiction": "XX"})
     with pytest.raises(ValidationError):
         TenantProfileUpdate.model_validate({"tax_jurisdiction": "garbage"})
 
 
 def test_company_tax_jurisdiction_ui_and_docs():
     page = (ROOT / "frontend/app/(dashboard)/company/page.tsx").read_text(encoding="utf-8")
+    countries = (ROOT / "frontend/lib/taxCountries.ts").read_text(encoding="utf-8")
     assert 'aria-label="Tax jurisdiction"' in page
     assert 'aria-label="Save company profile"' in page
-    assert 'value="GH"' in page
-    assert "Tax jurisdiction: GH" in page
+    assert "TAX_COUNTRIES" in page
+    assert "Tax jurisdiction:" in page
+    assert "Nigeria" in countries or "NG" in countries
     assert "placeholder=\"Tax jurisdiction" not in page
+    assert "NG" in countries and "KE" in countries and "ZA" in countries
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Company tax_jurisdiction OpenAPI" in agents
-    assert "TaxFilingJurisdictionValue" in agents
+    assert "TenantTaxJurisdictionValue" in agents
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
     assert "tax_jurisdiction" in docs
-    assert "TaxFilingJurisdictionValue" in docs or "tax_filings.SUPPORTED" in docs
+    assert "TenantTaxJurisdictionValue" in docs
     assert "Tax jurisdiction** select" in docs
 
 
@@ -70,9 +75,17 @@ async def test_company_tax_jurisdiction_api_blank_invalid_422(client):
     bad = await ac.patch(
         "/api/v1/tenants/me",
         headers=headers,
-        json={"tax_jurisdiction": "NG"},
+        json={"tax_jurisdiction": "XX"},
     )
     assert bad.status_code == 422, bad.text
+
+    ng = await ac.patch(
+        "/api/v1/tenants/me",
+        headers=headers,
+        json={"tax_jurisdiction": "NG"},
+    )
+    assert ng.status_code == 200, ng.text
+    assert ng.json()["data"].get("tax_jurisdiction") == "NG"
 
     omit = await ac.patch(
         "/api/v1/tenants/me",

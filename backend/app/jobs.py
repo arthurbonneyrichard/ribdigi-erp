@@ -65,7 +65,7 @@ async def _for_each_tenant(
             except Exception as exc:  # noqa: BLE001 — isolate tenant failures in batch jobs
                 logger.exception("Scheduled job failed for tenant %s", tenant_id)
                 await db.rollback()
-                results.append({"tenant_id": tenant_id, "ok": False, "error": str(exc)})
+                results.append({"tenant_id": tenant_id, "ok": False, "error": "job_failed"})
     return {"tenants": len(results), "results": results}
 
 
@@ -143,7 +143,7 @@ async def job_scan_trial_lifecycle() -> dict:
         except Exception as exc:  # noqa: BLE001
             logger.exception("Trial lifecycle job failed")
             await db.rollback()
-            return {"ok": False, "error": str(exc)}
+            return {"ok": False, "error": "job_failed"}
 
 
 async def job_run_due_report_emails() -> dict:

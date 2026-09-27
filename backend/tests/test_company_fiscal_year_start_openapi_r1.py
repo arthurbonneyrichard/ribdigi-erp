@@ -33,6 +33,7 @@ def test_company_fiscal_year_start_ui_and_docs():
     assert 'aria-label="Fiscal year start"' in page
     assert "Fiscal year starts (MM-DD)" in page
     assert 'htmlFor="company-fiscal-year-start"' in page
+    assert 'aria-label="Fiscal year label"' in page
     assert 'pattern="(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])"' in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Company fiscal_year_start OpenAPI" in agents
@@ -62,6 +63,8 @@ async def test_company_fiscal_year_start_api_blank_invalid_422(client):
     )
     assert ok.status_code == 200, ok.text
     assert ok.json()["data"].get("fiscal_year_start") == "04-01"
+    label = ok.json()["data"].get("fiscal_year_label") or ""
+    assert label.startswith("FY ")
 
     # null omit-style: explicit null should not wipe when schema allows None as no-op
     kept = await ac.patch(

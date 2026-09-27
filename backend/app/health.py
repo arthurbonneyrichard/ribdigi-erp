@@ -194,6 +194,10 @@ async def check_platform_workspace(
         }
 
 
+PUBLIC_OK_MESSAGE = "System is operating normally."
+PUBLIC_DOWN_MESSAGE = "System is temporarily unavailable."
+
+
 def _aggregate_status(checks: dict[str, CheckResult]) -> str:
     statuses = [c.get("status") for c in checks.values()]
     if "error" in statuses:
@@ -209,32 +213,64 @@ def _aggregate_status(checks: dict[str, CheckResult]) -> str:
     return "ok"
 
 
+def public_health_body(*, healthy: bool) -> dict[str, Any]:
+    """Tenant-safe status only — no backend names, paths, or build identity."""
+    if healthy:
+        return {"status": "ok", "message": PUBLIC_OK_MESSAGE}
+    return {"status": "error", "message": PUBLIC_DOWN_MESSAGE}
+
+
+async def _deep_checks(
+    session_factory: async_sessionmaker[AsyncSession] | None,
+) -> dict[str, CheckResult]:
+    from app.db import SessionLocal
+
+    factory = session_factory or SessionLocal
+    return {
+        "database": await check_database(factory),
+        "redis": await check_redis(),
+        "celery_broker": await check_celery_broker(),
+        "platform_workspace": await check_platform_workspace(factory),
+    }
+
+
 async def assemble_health(
     *,
     deep: bool,
     session_factory: async_sessionmaker[AsyncSession] | None = None,
+    expose_diagnostics: bool = False,
 ) -> tuple[dict[str, Any], int]:
-    """Build health payload. Returns (body, http_status)."""
+    """Build health payload. Returns (body, http_status).
+
+    Unauthenticated and tenant callers never receive infrastructure details.
+    Platform ops (`expose_diagnostics=True`) get dependency checks and build identity.
+    """
+    if not expose_diagnostics:
+        if not deep:
+            return public_health_body(healthy=True), 200
+        checks = await _deep_checks(session_factory)
+        status = _aggregate_status(checks)
+        if status == "error":
+            return public_health_body(healthy=False), 503
+        return public_health_body(healthy=True), 200
+
     body: dict[str, Any] = {
         "status": "ok",
         "service": "ribdigi-erp",
         "deep": bool(deep),
         "release_channel": settings.RIBDIGI_RELEASE_CHANNEL,
         "build_id": settings.RIBDIGI_BUILD_ID,
+        "message": PUBLIC_OK_MESSAGE,
     }
     if not deep:
         return body, 200
 
-    from app.db import SessionLocal
-
-    factory = session_factory or SessionLocal
-    checks = {
-        "database": await check_database(factory),
-        "redis": await check_redis(),
-        "celery_broker": await check_celery_broker(),
-        "platform_workspace": await check_platform_workspace(factory),
-    }
+    checks = await _deep_checks(session_factory)
     body["checks"] = checks
     body["status"] = _aggregate_status(checks)
+    if body["status"] == "error":
+        body["message"] = PUBLIC_DOWN_MESSAGE
+    elif body["status"] == "degraded":
+        body["message"] = "System is degraded."
     http_status = 503 if body["status"] == "error" else 200
     return body, http_status
