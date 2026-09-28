@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { api, apiOptional } from '../../../lib/api';
+import { getMe } from '../../../lib/meCache';
+import { isHotelIndustry } from '../../../lib/tenantNav';
 
 type DayHours = { open?: string; close?: string; closed?: boolean };
 type OperatingHours = Partial<Record<'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun', DayHours>>;
@@ -100,6 +103,8 @@ type Transfer = {
 };
 
 export default function Page() {
+  const router = useRouter();
+  const [hotelHome, setHotelHome] = useState<boolean | null>(null);
   const [stores, setStores] = useState<Store[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -238,8 +243,29 @@ export default function Page() {
   }
 
   useEffect(() => {
+    let cancelled = false;
+    getMe()
+      .then((me) => {
+        if (cancelled) return;
+        if (isHotelIndustry(me.data?.industry)) {
+          setHotelHome(true);
+          router.replace('/hotel');
+        } else {
+          setHotelHome(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setHotelHome(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
+  useEffect(() => {
+    if (hotelHome !== false) return;
     refresh().catch((err) => setError(err.message));
-  }, []);
+  }, [hotelHome]);
 
   async function createStore() {
     setError('');
@@ -829,6 +855,10 @@ export default function Page() {
   }
 
   const storeName = (id: string) => stores.find((s) => s.id === id)?.name || id;
+
+  if (hotelHome !== false) {
+    return <p className="muted">{hotelHome ? 'Opening hotel dashboard…' : 'Checking account…'}</p>;
+  }
 
   return (
     <>

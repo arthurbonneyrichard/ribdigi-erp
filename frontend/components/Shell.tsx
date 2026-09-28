@@ -10,7 +10,14 @@ import { getMe, invalidateMeCache } from '../lib/meCache';
 import { prefetchGet } from '../lib/prefetchCache';
 import { loadUserTheme, writeUserTheme } from '../lib/theme';
 import { StoreProvider } from '../lib/storeContext';
-import { FMCG_NAV_ITEMS, groupedTenantNav, HOTEL_NAV_ITEMS, type NavGroup, type NavItem } from '../lib/tenantNav';
+import {
+  FMCG_NAV_ITEMS,
+  groupedTenantNav,
+  HOTEL_NAV_ITEMS,
+  isHotelIndustry,
+  type NavGroup,
+  type NavItem,
+} from '../lib/tenantNav';
 import OnboardingChecklist from './OnboardingChecklist';
 import StoreSwitcher from './StoreSwitcher';
 
@@ -545,6 +552,7 @@ function navItemsForRole(
       return false;
     if (allowed !== '*' && module === 'integrations' && !allowed.includes('company'))
       return false;
+    if (isHotelIndustry(industry) && permModule === 'stores') return false;
     if (industrySpecific.has(permModule)) {
       if (!industryAllowsModule(industry, permModule)) return false;
       if (!packageSet || !packageSet.has(permModule)) return false;
@@ -1217,7 +1225,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           </div>
           {!isPlatformOwner ? (
             <div className="topbar-context">
-              <StoreSwitcher visible />
+              <StoreSwitcher visible={!isHotelIndustry(industry)} />
             </div>
           ) : (
             <div className="topbar-context topbar-context-spacer" aria-hidden />

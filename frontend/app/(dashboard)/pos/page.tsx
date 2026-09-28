@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { useStoreContext } from '../../../lib/storeContext';
+import { isHotelIndustry } from '../../../lib/tenantNav';
 import {
   cacheCatalogProducts,
   countPendingSales,
@@ -284,6 +285,7 @@ export default function Page() {
   const [printJobs, setPrintJobs] = useState<any[]>([]);
   const [busy, setBusy] = useState(false);
   const [cashierName, setCashierName] = useState('');
+  const [hideStorePicker, setHideStorePicker] = useState(false);
   const [receiptBusy, setReceiptBusy] = useState('');
   const [shiftReport, setShiftReport] = useState<any>(null);
   const [reportBusy, setReportBusy] = useState(false);
@@ -481,7 +483,10 @@ export default function Page() {
       .then((r) => setCustomers(r.data || []))
       .catch(() => setCustomers([]));
     getMe()
-      .then((r) => setCashierName(r.data?.full_name || r.data?.email || ''))
+      .then((r) => {
+        setCashierName(r.data?.full_name || r.data?.email || '');
+        setHideStorePicker(isHotelIndustry(r.data?.industry));
+      })
       .catch(() => setCashierName(''));
     api('/pos/stores')
       .then((r) => {
@@ -1016,7 +1021,7 @@ export default function Page() {
           <div className="tpos-shift">
             {!session ? (
               <>
-                {stores.length > 0 && (
+                {stores.length > 0 && !hideStorePicker && (
                   <select
                     className="tpos-input"
                     value={storeId}

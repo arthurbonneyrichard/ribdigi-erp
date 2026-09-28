@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
+import { isHotelIndustry } from '../../../lib/tenantNav';
 
 type RoleRow = {
   role: string;
@@ -133,6 +134,7 @@ export default function Page() {
   const [importBusy, setImportBusy] = useState(false);
   const [userQuery, setUserQuery] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
+  const [hideStoreUx, setHideStoreUx] = useState(false);
 
   async function refresh() {
     const meRes = await getMe();
@@ -142,6 +144,8 @@ export default function Page() {
     setMeRole(role);
     setCanWrite(canWriteUsers(role, perms));
     setPermChecked(true);
+    const hotelUx = isHotelIndustry(meRes.data?.industry);
+    setHideStoreUx(hotelUx);
 
     const [usersRes, rolesRes, branchesRes, deptsRes, storesRes] = await Promise.all([
       api('/users'),
@@ -149,7 +153,7 @@ export default function Page() {
       api('/roles?include_inactive=true'),
       api('/branches').catch(() => ({ data: [] })),
       api('/departments').catch(() => ({ data: [] })),
-      api('/stores').catch(() => ({ data: [] })),
+      hotelUx ? Promise.resolve({ data: [] }) : api('/stores').catch(() => ({ data: [] })),
     ]);
     const listed: UserRow[] = usersRes.data || [];
     const hidePlatform = !PLATFORM_USER_ROLES.has(role);
@@ -161,6 +165,10 @@ export default function Page() {
     const users: UserRow[] = hidePlatform
       ? listed.filter((u) => !PLATFORM_USER_ROLES.has(u.role))
       : listed;
+    if (hotelUx) {
+      setUserStoreIds({});
+      return;
+    }
     const membershipEntries = await Promise.all(
       users.map(async (u) => {
         try {
@@ -865,7 +873,7 @@ export default function Page() {
             <th>Branch</th>
             <th>Department</th>
             <th>Scope</th>
-            <th>Stores</th>
+            {!hideStoreUx && <th>Stores</th>}
             <th>Active</th>
             {canWrite && <th>Actions</th>}
           </tr>
@@ -873,7 +881,7 @@ export default function Page() {
         <tbody>
           {managedUsers.length === 0 && (
             <tr>
-              <td colSpan={canWrite ? 9 : 8} className="muted">
+              <td colSpan={canWrite ? (hideStoreUx ? 8 : 9) : hideStoreUx ? 7 : 8} className="muted">
                 {rows.length ? 'No users for this filter' : 'No users yet'}
               </td>
             </tr>
@@ -961,6 +969,7 @@ export default function Page() {
                   r.record_scope || '—'
                 )}
               </td>
+              {!hideStoreUx && (
               <td>
                 {canWrite && !PLATFORM_USER_ROLES.has(r.role) && r.role !== 'company_admin' ? (
                   <select
@@ -990,6 +999,7 @@ export default function Page() {
                   </span>
                 )}
               </td>
+              )}
               <td>{r.is_active ? 'Yes' : 'No'}</td>
               {canWrite && (
                 <td>

@@ -49,6 +49,10 @@ export const FMCG_NAV_ITEMS: NavItem[] = [
   ['Deliveries', '/fmcg?tab=deliveries', 'fmcg'],
 ];
 
+export function isHotelIndustry(industry: string | null | undefined): boolean {
+  return normalizeIndustry(industry) === 'hotel';
+}
+
 export function hotelNavLabels(items: NavItem[] = HOTEL_NAV_ITEMS): string[] {
   return items.map(([label]) => label);
 }

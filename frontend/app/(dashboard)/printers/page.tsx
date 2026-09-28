@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../../lib/api';
+import { getMe } from '../../../lib/meCache';
+import { isHotelIndustry } from '../../../lib/tenantNav';
 
 type Printer = {
   id: string;
@@ -23,6 +25,7 @@ const PURPOSES = ['customer_receipt', 'invoice', 'kitchen', 'bar', 'barcode'];
 export default function PrinterSettingsPage() {
   const [rows, setRows] = useState<Printer[]>([]);
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
+  const [hideStoreUx, setHideStoreUx] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [pairing, setPairing] = useState('');
@@ -39,11 +42,13 @@ export default function PrinterSettingsPage() {
 
   const load = useCallback(async () => {
     try {
-      const [printers, storeRes] = await Promise.all([
+      const [printers, storeRes, me] = await Promise.all([
         api('/printers'),
         api('/stores').catch(() => ({ data: [] })),
+        getMe().catch(() => ({ data: {} })),
       ]);
       setRows(printers.data || []);
+      setHideStoreUx(isHotelIndustry(me.data?.industry));
       setStores(storeRes.data || []);
       setError('');
     } catch (err: any) {
@@ -168,6 +173,7 @@ export default function PrinterSettingsPage() {
               <option value="network">Network (allowlisted private IP)</option>
             </select>
           </label>
+          {!hideStoreUx && (
           <label>
             Store
             <select value={form.store_id} onChange={(e) => setForm({ ...form, store_id: e.target.value })}>
@@ -179,6 +185,7 @@ export default function PrinterSettingsPage() {
               ))}
             </select>
           </label>
+          )}
           <label>
             Paper
             <select value={form.paper} onChange={(e) => setForm({ ...form, paper: e.target.value })}>

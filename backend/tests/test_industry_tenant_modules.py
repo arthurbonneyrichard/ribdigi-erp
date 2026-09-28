@@ -135,9 +135,13 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     root = Path(__file__).resolve().parents[2]
     nav = (root / "frontend/lib/tenantNav.ts").read_text(encoding="utf-8")
     shell = (root / "frontend/components/Shell.tsx").read_text(encoding="utf-8")
+    stores = (root / "frontend/app/(dashboard)/stores/page.tsx").read_text(encoding="utf-8")
+    users = (root / "frontend/app/(dashboard)/users/page.tsx").read_text(encoding="utf-8")
+    pos = (root / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert "HOTEL_OMIT_NAV_GROUP_IDS" in nav
     assert "'inventory'" in nav and "'sales'" in nav and "'purchases'" in nav
     assert "'stores'" in nav
+    assert "isHotelIndustry" in nav
     assert "'finance'" in nav and "'people'" in nav
     assert "Hostel" not in nav and "hostel" not in nav.lower()
     assert "Pharmacy" not in nav
@@ -149,4 +153,10 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "from '../lib/tenantNav'" in shell
     assert "groupedTenantNav(TENANT_NAV_GROUPS, visible, industry)" in shell
     assert "HOTEL_NAV_ITEMS" in shell
+    assert "isHotelIndustry(industry) && permModule === 'stores'" in shell
+    assert "StoreSwitcher visible={!isHotelIndustry(industry)}" in shell
+    assert "router.replace('/hotel')" in stores
+    assert "isHotelIndustry" in stores
+    assert "hideStoreUx" in users
+    assert "hideStorePicker" in pos
 
