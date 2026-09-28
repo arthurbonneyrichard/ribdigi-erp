@@ -1118,6 +1118,7 @@
 .cat-empty{text-align:center;padding:28px 12px}
 .cat-advanced{background:transparent;border:0;color:var(--deep-green);font-weight:700;text-align:left;padding:0;cursor:pointer}
 .cat-save-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.inv-child{font-size:12px;line-height:1.35;font-weight:500}
 @media(max-width:720px){
   .cat-table thead{display:none}
   .cat-table,.cat-table tbody,.cat-table tr,.cat-table td{display:block;width:100%}

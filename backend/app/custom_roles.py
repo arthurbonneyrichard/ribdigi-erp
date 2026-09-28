@@ -47,6 +47,7 @@ ASSIGNABLE_MODULES = frozenset(
         "security",
         "backup",
         "company",
+        "printers",
     }
 )
 

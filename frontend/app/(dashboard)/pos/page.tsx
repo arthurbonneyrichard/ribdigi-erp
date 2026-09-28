@@ -21,6 +21,7 @@ import {
   saveOfflineAuthEnvelope,
   touchLastOnline,
 } from '../../../lib/posOffline';
+import PosPrintStatus from '../../../components/PosPrintStatus';
 
 type TaxComponent = {
   code?: string;
@@ -274,6 +275,7 @@ export default function Page() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [lastSale, setLastSale] = useState<{ id: string; reference: string } | null>(null);
+  const [printJobs, setPrintJobs] = useState<any[]>([]);
   const [busy, setBusy] = useState(false);
   const [cashierName, setCashierName] = useState('');
   const [receiptBusy, setReceiptBusy] = useState('');
@@ -914,6 +916,7 @@ export default function Page() {
       setSplitTender(false);
       setPaymentReference('');
       setLastSale({ id: r.data.id, reference: r.data.reference });
+      setPrintJobs(r.data.print_jobs || []);
       await refreshSession();
       await browse(q);
       setMessage(
@@ -1810,6 +1813,9 @@ export default function Page() {
           </aside>
         </div>
 
+        {lastSale ? (
+          <PosPrintStatus jobs={printJobs} saleId={lastSale.id} />
+        ) : null}
 
       </div>
     </>

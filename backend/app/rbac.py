@@ -58,6 +58,7 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "ai": ["read", "write"],
         "security": ["read", "write"],
         "staff_guide": ["read", "download"],
+        "printers": ["read", "write"],
     },
     "sales_officer": {
         "dashboard": ["read"],
@@ -168,6 +169,7 @@ MENU_MODULE_BY_PATH: dict[str, str] = {
     "/ai": "ai",
     "/users": "users",
     "/departments": "users",
+    "/printers": "printers",
 }
 
 VALID_ROLES = set(ROLE_PERMISSIONS.keys())
@@ -204,6 +206,7 @@ SYSTEM_MODULES = frozenset(
         "platform_packages",
         "platform_staff",
         "platform_reports",
+        "printers",
     }
 )
 ALLOWED_ACTIONS = frozenset({"read", "write", "create", "download", "approve", "*"})

@@ -275,7 +275,9 @@ export default function Page() {
             aria-label="Tax filing jurisdiction filter"
           >
             <option value="">Tenant default</option>
-            <option value="GH">GH — Ghana VAT</option>
+            {(filing?.jurisdiction === 'GH' || filingJurisdictionFilter === 'GH') && (
+              <option value="GH">GH — Ghana VAT</option>
+            )}
           </select>
           <button
             onClick={() => refresh().catch((err) => setError(err.message))}
@@ -387,6 +389,8 @@ export default function Page() {
           <button onClick={() => downloadFiling('pdf')} aria-label="Export tax filing PDF">
             Export PDF
           </button>
+          {filing?.jurisdiction === 'GH' && (
+            <>
           <button
             onClick={() => downloadFiling('xlsx', 'tax_filing_gh')}
             aria-label="Export Ghana VAT Excel"
@@ -405,6 +409,8 @@ export default function Page() {
           >
             Export Ghana VAT (PDF)
           </button>
+            </>
+          )}
         </div>
         {!!filing?.government?.warnings?.length && (
           <p style={{ color: '#b45309' }}>{filing.government.warnings.join(' · ')}</p>

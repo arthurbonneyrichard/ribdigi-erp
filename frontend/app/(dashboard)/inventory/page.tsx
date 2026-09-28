@@ -640,11 +640,11 @@ export default function Page() {
       const reason = xferRejectReason.trim();
       if (!reason) {
         setFormFlash({
-          err:
-            action === 'cancel'
-              ? 'Enter a reason before cancelling this transfer'
-              : 'Enter a reason before rejecting this transfer',
-        });
+        err:
+          action === 'cancel'
+            ? 'Enter a cancel reason before cancelling a stock transfer'
+            : 'Enter a reject reason before rejecting a stock transfer',
+      });
         return;
       }
     }
@@ -964,7 +964,7 @@ export default function Page() {
     setFormFlash({});
     const reason = countCancelReason.trim();
     if (!reason) {
-      setFormFlash({ err: 'Enter a reason before cancelling this count' });
+      setFormFlash({ err: 'Enter a cancel reason before cancelling a stock count' });
       return;
     }
     setSaveBusy(true);
@@ -1836,6 +1836,7 @@ export default function Page() {
       const r = await api('/inventory/opening-stock', {
         method: 'POST',
         body: JSON.stringify({
+          reference: openingReference.trim() || null,
           notes: openingNotes.trim() || null,
           post_journal: openingPostJournal,
           lines: [line],
@@ -1884,9 +1885,6 @@ export default function Page() {
     }
     if (!adjConfirming) {
       setAdjConfirming(true);
-      setFormFlash({
-        err: `Confirm: change on-hand by ${qty} for ${adjReason}. This is recorded and cannot be undone.`,
-      });
       return;
     }
     setSaveBusy(true);
@@ -1927,7 +1925,7 @@ export default function Page() {
       return;
     }
     if (!outRefType.trim()) {
-      setFormFlash({ err: 'Select why stock is leaving' });
+      setFormFlash({ err: 'Select a stock-out reference type' });
       return;
     }
     const qty = Number(outQty);
@@ -3665,895 +3663,1171 @@ export default function Page() {
       )}
 
       {tab === 'batches' && (
-        <>
-          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
-            <h3>Stock in with batch</h3>
-            <p className="muted" style={{ margin: 0 }}>
-              Batch number, manufacturing date, expiry, warehouse, and optional variant (BR-5.1 /
-              BR-5.2).
-            </p>
-            <select
-              value={stockWarehouseId}
-              onChange={(e) => setStockWarehouseId(e.target.value)}
-              aria-label="Stock-in warehouse"
-              title="Optional warehouse for stock-in (UuidIdValue)"
-            >
-              <option value="">Warehouse (optional)</option>
-              {storeWarehouses
-                .filter((w) => w.is_active !== false)
-                .map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name || w.code || w.id.slice(0, 8)}
-                </option>
-              ))}
-            </select>
-            <select
-              value={stockVariantId}
-              onChange={(e) => setStockVariantId(e.target.value)}
-              aria-label="Stock-in variant"
-            >
-              <option value="">Variant (optional)</option>
-              {variants
-                .filter((v) => v.is_active !== false)
-                .map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.name} ({v.sku})
-                  </option>
-                ))}
-            </select>
-            <input
-              value={batchNumber}
-              onChange={(e) => setBatchNumber(e.target.value)}
-              placeholder="Batch number"
-              aria-label="Stock-in batch number"
-              title="Batch / lot number (1–80 chars; letters/digits required)"
-            />
-            <label className="muted">Manufacturing date</label>
-            <input
-              aria-label="Stock-in manufacturing date"
-              type="text"
-              placeholder="YYYY-MM-DD"
-              title="Manufacturing date (optional YYYY-MM-DD)"
-              value={mfgDate}
-              onChange={(e) => setMfgDate(e.target.value)}
-            />
-            <label className="muted">Expiry date</label>
-            <input
-              aria-label="Stock-in expiry date"
-              type="text"
-              placeholder="YYYY-MM-DD"
-              title="Expiry date (optional YYYY-MM-DD)"
-              value={expiryDate}
-              onChange={(e) => setExpiryDate(e.target.value)}
-            />
-            <input
-              value={stockQty}
-              onChange={(e) => setStockQty(e.target.value)}
-              placeholder="Quantity"
-              aria-label="Stock-in quantity"
-            />
-            <select
-              value={stockUnitId}
-              onChange={(e) => setStockUnitId(e.target.value)}
-              aria-label="Stock-in unit"
-            >
-              <option value="">Unit (default = product stock unit)</option>
-              {units
-                .filter((u) => u.is_active !== false)
-                .map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.code}
-                    {u.base_unit_code ? ` (= ${u.conversion_ratio} ${u.base_unit_code})` : ''}
-                  </option>
-                ))}
-            </select>
-            <input
-              value={stockNotes}
-              onChange={(e) => setStockNotes(e.target.value)}
-              placeholder="Notes (optional)"
-              aria-label="Stock-in notes"
-              title="Optional notes (1–500 chars; letters/digits required)"
-            />
-            <input
-              value={stockRefType}
-              onChange={(e) => setStockRefType(e.target.value)}
-              placeholder="Reference type (optional)"
-              aria-label="Stock-in reference type"
-              title="Optional source code (1–50 chars; letters/digits required; blank → omit)"
-            />
-            <input
-              value={stockRefId}
-              onChange={(e) => setStockRefId(e.target.value)}
-              placeholder="Reference id (optional)"
-              aria-label="Stock-in reference id"
-              title="Optional external reference (1–36 chars; letters/digits required)"
-            />
+        <div className="card cat-panel">
+          <div className="cat-head">
+            <h2 style={{ margin: 0 }}>Batches</h2>
             <button
               type="button"
-              className="btn-ok"
-              onClick={stockInBatch}
-              disabled={!selectedId || !batchNumber}
+              onClick={() => {
+                setFormFlash({});
+                setBatchDrawerOpen(true);
+              }}
               aria-label="Receive batch"
             >
               Receive batch
             </button>
           </div>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Batch</th>
-                <th>Qty</th>
-                <th>Mfg</th>
-                <th>Expiry</th>
-                <th>Warehouse</th>
-                <th>Variant</th>
-              </tr>
-            </thead>
-            <tbody>
-              {batches.map((b) => {
-                const wh = warehouses.find((w) => w.id === b.warehouse_id);
-                const vr = variants.find((v) => v.id === b.variant_id);
-                return (
-                  <tr key={b.id}>
-                    <td>{b.batch_number}</td>
-                    <td>{b.quantity}</td>
-                    <td>
-                      {b.manufacturing_date ? String(b.manufacturing_date).slice(0, 10) : '—'}
-                    </td>
-                    <td>{b.expiry_date ? String(b.expiry_date).slice(0, 10) : '—'}</td>
-                    <td>{wh ? wh.name || wh.code : b.warehouse_id ? String(b.warehouse_id).slice(0, 8) : '—'}</td>
-                    <td>{vr ? `${vr.sku}` : b.variant_id ? String(b.variant_id).slice(0, 8) : '—'}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </>
-      )}
-
-      {tab === 'opening' && (
-        <>
-          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
-            <h3>Opening stock (BR-5.2)</h3>
-            <p className="muted" style={{ margin: 0 }}>
-              Initialize on-hand quantity for go-live or fiscal year. Optionally posts Dr Inventory /
-              Cr Owner&apos;s Equity at cost.
-            </p>
-            <select
-              value={openingWarehouseId}
-              onChange={(e) => setOpeningWarehouseId(e.target.value)}
-              aria-label="Opening stock warehouse"
-              title="Optional warehouse for opening stock line (UuidIdValue)"
-            >
-              <option value="">Warehouse (optional)</option>
-              {storeWarehouses
-                .filter((w) => w.is_active !== false)
-                .map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name || w.code || w.id.slice(0, 8)}
-                </option>
-              ))}
-            </select>
-            <select
-              value={openingVariantId}
-              onChange={(e) => setOpeningVariantId(e.target.value)}
-              aria-label="Opening stock variant"
-            >
-              <option value="">Variant (optional)</option>
-              {variants
-                .filter((v) => v.is_active !== false)
-                .map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.name} ({v.sku})
-                  </option>
-                ))}
-            </select>
+          <div className="cat-toolbar">
             <input
-              value={openingQty}
-              onChange={(e) => setOpeningQty(e.target.value)}
-              placeholder="Quantity"
-              aria-label="Opening stock quantity"
+              value={batchSearch}
+              onChange={(e) => setBatchSearch(e.target.value)}
+              placeholder="Search batches"
+              aria-label="Search batches"
             />
-            <select
-              value={openingUnitId}
-              onChange={(e) => setOpeningUnitId(e.target.value)}
-              aria-label="Opening stock unit"
-            >
-              <option value="">Unit (product default)</option>
-              {units
-                .filter((u) => u.is_active !== false)
-                .map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.code}
-                  </option>
-                ))}
-            </select>
-            <input
-              value={openingUnitCost}
-              onChange={(e) => setOpeningUnitCost(e.target.value)}
-              placeholder={`Unit cost (default ${selected?.cost_price ?? 0})`}
-              aria-label="Opening stock unit cost"
-            />
-            <input
-              value={openingBatch}
-              onChange={(e) => setOpeningBatch(e.target.value)}
-              placeholder="Batch number (if tracked)"
-              aria-label="Opening stock batch number"
-              title="Optional batch / lot number (1–80 chars; letters/digits required)"
-            />
-            <label className="muted">Manufacturing date</label>
-            <input
-              aria-label="Opening stock manufacturing date"
-              type="text"
-              placeholder="YYYY-MM-DD"
-              title="Manufacturing date (optional YYYY-MM-DD)"
-              value={openingMfg}
-              onChange={(e) => setOpeningMfg(e.target.value)}
-            />
-            <label className="muted">Expiry date</label>
-            <input
-              aria-label="Opening stock expiry date"
-              type="text"
-              placeholder="YYYY-MM-DD"
-              title="Expiry date (optional YYYY-MM-DD)"
-              value={openingExpiry}
-              onChange={(e) => setOpeningExpiry(e.target.value)}
-            />
-            <input
-              value={openingReference}
-              onChange={(e) => setOpeningReference(e.target.value)}
-              placeholder="Reference (blank = next OS-YYYY-NNNN)"
-              aria-label="Opening stock reference"
-              title="Optional reference (1–100 chars; blank = next OS-YYYY-NNNN)"
-            />
-            <input
-              value={openingNotes}
-              onChange={(e) => setOpeningNotes(e.target.value)}
-              placeholder="Notes"
-              aria-label="Opening stock notes"
-              title="Optional notes (1–500 chars; letters/digits required)"
-            />
-            <input
-              value={openingLineNotes}
-              onChange={(e) => setOpeningLineNotes(e.target.value)}
-              placeholder="Line notes (optional)"
-              aria-label="Opening stock line notes"
-              title="Optional per-line notes (1–500 chars; letters/digits required)"
-            />
-            <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <input
-                type="checkbox"
-                aria-label="Opening stock post journal"
-                checked={openingPostJournal}
-                onChange={(e) => setOpeningPostJournal(e.target.checked)}
-              />
-              Post inventory / equity journal
-            </label>
-            <button
-              type="button"
-              className="btn-ok"
-              onClick={postOpeningStock}
-              disabled={!selectedId}
-              aria-label="Post opening stock"
-            >
-              Post opening stock
-            </button>
           </div>
-          <h3>Recent opening movements</h3>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>When</th>
-                <th>Product</th>
-                <th>Qty</th>
-                <th>After</th>
-                <th>Entry</th>
-              </tr>
-            </thead>
-            <tbody>
-              {openingHistory.map((m) => {
-                const p = products.find((x) => x.id === m.product_id);
-                return (
-                  <tr key={m.id}>
-                    <td>{m.created_at ? String(m.created_at).slice(0, 19) : '—'}</td>
-                    <td>{p ? `${p.sku}` : m.product_id.slice(0, 8)}</td>
-                    <td>{m.quantity}</td>
-                    <td>{m.quantity_after}</td>
-                    <td>{m.reference_id ? String(m.reference_id).slice(0, 8) : '—'}</td>
-                  </tr>
-                );
-              })}
-              {!openingHistory.length && (
-                <tr>
-                  <td colSpan={5} className="muted">
-                    No opening stock posted yet
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </>
-      )}
-
-      {tab === 'expiry' && (
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Batch</th>
-              <th>Product</th>
-              <th>Qty</th>
-              <th>Expiry</th>
-            </tr>
-          </thead>
-          <tbody>
-            {expiring.map((b) => {
-              const prod = products.find((p) => p.id === b.product_id);
-              return (
-              <tr key={b.id}>
-                <td>{b.batch_number}</td>
-                <td>{prod?.name || 'Unknown product'}</td>
-                <td>{b.quantity}</td>
-                <td>{b.expiry_date ? String(b.expiry_date).slice(0, 10) : '—'}</td>
-              </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
-
-      {tab === 'counts' && (
-        <>
-          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
-            <h3>Start stock count</h3>
-            <select
-              value={countWarehouseId}
-              onChange={(e) => setCountWarehouseId(e.target.value)}
-              aria-label="Stock count warehouse"
-            >
-              <option value="">Warehouse</option>
-              {storeWarehouses
-                .filter((w) => w.is_active !== false)
-                .map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name} ({w.code})
-                </option>
-              ))}
-            </select>
-            <input
-              value={countNotes}
-              onChange={(e) => setCountNotes(e.target.value)}
-              placeholder="Notes (optional)"
-              aria-label="Stock count notes"
-              title="Optional notes (1–500 chars; letters/digits required)"
-            />
-            <button
-              type="button"
-              className="btn-ok"
-              onClick={startStockCount}
-              disabled={!countWarehouseId}
-              aria-label="Create draft count"
-            >
-              Create draft count
-            </button>
-          </div>
-
-          <div className="card" style={{ marginBottom: 16 }}>
-            <label>
-              Cancel reason{' '}
-              <input
-                value={countCancelReason}
-                onChange={(e) => setCountCancelReason(e.target.value)}
-                placeholder="Required before Cancel"
-                style={{ minWidth: 280 }}
-                title="Required cancel reason (1–500 chars; letters/digits required)"
-                aria-label="Stock count cancel reason"
-              />
-            </label>
-            <p className="muted" style={{ marginTop: 6 }}>
-              Appended to count notes and audit (<code>POST .../stock-counts/.../cancel</code>{' '}
-              {'{ reason }'}). Draft only; no variance postings.
-            </p>
-          </div>
-
-          <select
-            value={countManageFilter}
-            onChange={(e) =>
-              setCountManageFilter(
-                e.target.value as 'all' | 'draft' | 'completed' | 'cancelled'
-              )
-            }
-            title="Filter stock count list by status"
-            aria-label="Stock count status filter"
-            style={{ marginBottom: 12 }}
-          >
-            <option value="all">All statuses</option>
-            <option value="draft">Draft only</option>
-            <option value="completed">Completed only</option>
-            <option value="cancelled">Cancelled only</option>
-          </select>
-          <table className="table" style={{ marginBottom: 16 }}>
-            <thead>
-              <tr>
-                <th>Number</th>
-                <th>Status</th>
-                <th>Items</th>
-                <th>Notes</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {managedCounts.map((c) => (
-                <tr key={c.id}>
-                  <td>{c.count_number}</td>
-                  <td>{c.status}</td>
-                  <td>
-                    {c.counted_item_count}/{c.item_count}
-                  </td>
-                  <td className="muted" style={{ maxWidth: 220, whiteSpace: 'pre-wrap' }}>
-                    {c.notes || '—'}
-                  </td>
-                  <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                    <button type="button" onClick={() => openCount(c.id)} aria-label={`Open stock count ${c.id}`}>
-                      Open
-                    </button>
-                    {(c.can_cancel || c.status === 'draft') && (
-                      <button
-                        type="button"
-                        className="btn-danger"
-                        onClick={() => cancelStockCount(c.id, c.count_number)}
-                        aria-label={`Cancel stock count ${c.id}`}
-                      >
-                        Cancel
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {!managedCounts.length && (
-                <tr>
-                  <td colSpan={5} className="muted">
-                    No stock counts for this filter
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-
-          {activeCount && (
-            <div className="card" style={{ display: 'grid', gap: 12 }}>
-              <h3>
-                {activeCount.count_number} — {activeCount.status}
-              </h3>
-              {activeCount.notes && (
-                <p className="muted" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
-                  Notes: {activeCount.notes}
-                </p>
-              )}
-              <table className="table">
+          {visibleBatches.length === 0 ? (
+            <div className="cat-empty">
+              <p style={{ margin: 0 }}>No batches yet.</p>
+              <p className="muted" style={{ margin: '8px 0 0' }}>
+                Receive stock with a batch number, location, and optional expiry.
+              </p>
+              <button
+                type="button"
+                style={{ marginTop: 12 }}
+                onClick={() => {
+                  setFormFlash({});
+                  setBatchDrawerOpen(true);
+                }}
+              >
+                Receive batch
+              </button>
+            </div>
+          ) : (
+            <div className="cat-table-wrap">
+              <table className="table cat-table">
                 <thead>
                   <tr>
-                    <th>SKU</th>
-                    <th>Expected</th>
-                    <th>Counted</th>
-                    <th>Variance</th>
-                    <th>Line notes</th>
+                    <th>Batch</th>
+                    <th>Qty</th>
+                    <th>Expiry</th>
+                    <th>Location</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {(activeCount.items || []).map((item: any) => {
-                    const counted = Number(countQtys[item.product_id] ?? item.expected_qty ?? 0);
-                    const variance = counted - Number(item.expected_qty || 0);
+                  {visibleBatches.map((b) => {
+                    const wh = warehouses.find((w) => w.id === b.warehouse_id);
+                    const vr = variants.find((v) => v.id === b.variant_id);
                     return (
-                      <tr key={item.id}>
-                        <td>
-                          {item.product_sku || item.product_id}
-                          <div className="muted">{item.product_name}</div>
+                      <tr key={b.id}>
+                        <td data-label="Batch">
+                          <div className="cat-name-cell">
+                            <strong>{b.batch_number}</strong>
+                          </div>
+                          <div className="muted inv-child">
+                            {b.manufacturing_date ? `Made ${String(b.manufacturing_date).slice(0, 10)}` : 'No make date'}
+                            {vr ? ` · ${vr.sku}` : ''}
+                          </div>
                         </td>
-                        <td>{item.expected_qty}</td>
-                        <td>
-                          <input
-                            value={countQtys[item.product_id] ?? ''}
-                            disabled={activeCount.status !== 'draft'}
-                            onChange={(e) =>
-                              setCountQtys({ ...countQtys, [item.product_id]: e.target.value })
-                            }
-                            style={{ width: 90 }}
-                            aria-label={`Counted qty ${item.product_sku || item.product_id}`}
-                          />
-                        </td>
-                        <td>{Number.isFinite(variance) ? variance : '—'}</td>
-                        <td>
-                          <input
-                            value={countLineNotes[item.product_id] ?? ''}
-                            disabled={activeCount.status !== 'draft'}
-                            onChange={(e) =>
-                              setCountLineNotes({
-                                ...countLineNotes,
-                                [item.product_id]: e.target.value,
-                              })
-                            }
-                            placeholder="Line notes (optional)"
-                            aria-label={`Stock count line notes ${item.product_sku || item.product_id}`}
-                            title="Optional line notes (1–500 chars; letters/digits required)"
-                            style={{ width: 180 }}
-                          />
-                        </td>
+                        <td data-label="Qty">{b.quantity}</td>
+                        <td data-label="Expiry">{b.expiry_date ? String(b.expiry_date).slice(0, 10) : '—'}</td>
+                        <td data-label="Location">{wh ? wh.name || wh.code : '—'}</td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
-              {activeCount.status === 'draft' && (
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <button type="button" onClick={saveCountLines} aria-label="Save count lines">
-                    Save counts
-                  </button>
-                  <button type="button" onClick={completeActiveCount} aria-label="Complete stock count and post variances">
-                    Complete &amp; post variances
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-danger"
-                    onClick={() => cancelStockCount(activeCount.id, activeCount.count_number)}
-                    aria-label={`Cancel stock count ${activeCount.id}`}
-                  >
-                    Cancel count
-                  </button>
-                </div>
-              )}
             </div>
           )}
-        </>
+          {batchDrawerOpen ? (
+            <>
+              <div className="inv-drawer-back" onClick={() => !saveBusy && setBatchDrawerOpen(false)} aria-hidden />
+              <aside className="inv-drawer" aria-label="Receive batch">
+                <button type="button" onClick={() => setBatchDrawerOpen(false)} disabled={saveBusy}>
+                  Close
+                </button>
+                <h3>Receive batch</h3>
+                <label className="muted" htmlFor="batch-product">
+                  Product
+                </label>
+                <select
+                  id="batch-product"
+                  value={selectedId}
+                  onChange={(e) => setSelectedId(e.target.value)}
+                  aria-label="Batch product"
+                >
+                  <option value="">Select product</option>
+                  {managedProducts.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.sku}) — {p.stock_qty}
+                    </option>
+                  ))}
+                </select>
+                <label className="muted" htmlFor="batch-wh">
+                  Location
+                </label>
+                <select
+                  id="batch-wh"
+                  value={stockWarehouseId}
+                  onChange={(e) => setStockWarehouseId(e.target.value)}
+                  aria-label="Stock-in warehouse"
+                >
+                  <option value="">Select location</option>
+                  {storeWarehouses
+                    .filter((w) => w.is_active !== false)
+                    .map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.name || w.code || w.id.slice(0, 8)}
+                      </option>
+                    ))}
+                </select>
+                <input
+                  value={batchNumber}
+                  onChange={(e) => setBatchNumber(e.target.value)}
+                  placeholder="Batch number"
+                  aria-label="Stock-in batch number"
+                />
+                <label className="muted">Manufacturing date</label>
+                <input
+                  aria-label="Stock-in manufacturing date"
+                  type="date"
+                  value={mfgDate}
+                  onChange={(e) => setMfgDate(e.target.value)}
+                />
+                <label className="muted">Expiry date</label>
+                <input
+                  aria-label="Stock-in expiry date"
+                  type="date"
+                  value={expiryDate}
+                  onChange={(e) => setExpiryDate(e.target.value)}
+                />
+                <input
+                  value={stockQty}
+                  onChange={(e) => setStockQty(e.target.value)}
+                  placeholder="Quantity"
+                  aria-label="Stock-in quantity"
+                />
+                <select value={stockUnitId} onChange={(e) => setStockUnitId(e.target.value)} aria-label="Stock-in unit">
+                  <option value="">Unit (product default)</option>
+                  {units
+                    .filter((u) => u.is_active !== false)
+                    .map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.code}
+                      </option>
+                    ))}
+                </select>
+                <select
+                  value={stockVariantId}
+                  onChange={(e) => setStockVariantId(e.target.value)}
+                  aria-label="Stock-in variant"
+                >
+                  <option value="">Variant (optional)</option>
+                  {variants
+                    .filter((v) => v.is_active !== false)
+                    .map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.name} ({v.sku})
+                      </option>
+                    ))}
+                </select>
+                <input
+                  value={stockNotes}
+                  onChange={(e) => setStockNotes(e.target.value)}
+                  placeholder="Notes (optional)"
+                  aria-label="Stock-in notes"
+                />
+                <input
+                  value={stockRefType}
+                  onChange={(e) => setStockRefType(e.target.value)}
+                  placeholder="Reference type (optional)"
+                  aria-label="Stock-in reference type"
+                />
+                <input
+                  value={stockRefId}
+                  onChange={(e) => setStockRefId(e.target.value)}
+                  placeholder="Reference id (optional)"
+                  aria-label="Stock-in reference id"
+                />
+                <div className="cat-save-row">
+                  <button
+                    type="button"
+                    className="btn-ok"
+                    onClick={() => stockInBatch({ requireBatch: true })}
+                    disabled={!selectedId || !batchNumber.trim() || saveBusy}
+                    aria-label="Receive batch"
+                  >
+                    {saveBusy ? 'Saving…' : 'Receive batch'}
+                  </button>
+                  {formFlash.ok ? (
+                    <p className="form-flash ok" role="status">
+                      {formFlash.ok}
+                    </p>
+                  ) : null}
+                  {formFlash.err ? (
+                    <p className="form-flash err" role="alert">
+                      {formFlash.err}
+                    </p>
+                  ) : null}
+                </div>
+              </aside>
+            </>
+          ) : null}
+        </div>
+      )}
+
+      {tab === 'opening' && (
+        <div className="card cat-panel">
+          <div className="cat-head">
+            <h2 style={{ margin: 0 }}>Opening stock</h2>
+            <button
+              type="button"
+              onClick={() => {
+                setFormFlash({});
+                setOpeningDrawerOpen(true);
+              }}
+              aria-label="Post opening stock"
+            >
+              Post opening stock
+            </button>
+          </div>
+          <div className="cat-toolbar">
+            <input
+              value={openingSearch}
+              onChange={(e) => setOpeningSearch(e.target.value)}
+              placeholder="Search opening stock"
+              aria-label="Search opening stock"
+            />
+          </div>
+          {visibleOpening.length === 0 ? (
+            <div className="cat-empty">
+              <p style={{ margin: 0 }}>No opening stock posted yet.</p>
+              <p className="muted" style={{ margin: '8px 0 0' }}>
+                Set starting on-hand quantity for go-live. The document number is assigned when you save.
+              </p>
+              <button
+                type="button"
+                style={{ marginTop: 12 }}
+                onClick={() => {
+                  setFormFlash({});
+                  setOpeningDrawerOpen(true);
+                }}
+              >
+                Post opening stock
+              </button>
+            </div>
+          ) : (
+            <div className="cat-table-wrap">
+              <table className="table cat-table">
+                <thead>
+                  <tr>
+                    <th>When</th>
+                    <th>Product</th>
+                    <th>Qty</th>
+                    <th>After</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleOpening.map((m) => {
+                    const p = products.find((x) => x.id === m.product_id);
+                    return (
+                      <tr key={m.id}>
+                        <td data-label="When">{m.created_at ? String(m.created_at).slice(0, 19) : '—'}</td>
+                        <td data-label="Product">
+                          <strong>{p ? p.sku : String(m.product_id).slice(0, 8)}</strong>
+                          <div className="muted inv-child">{p?.name || ''}</div>
+                        </td>
+                        <td data-label="Qty">{m.quantity}</td>
+                        <td data-label="After">{m.quantity_after}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {openingDrawerOpen ? (
+            <>
+              <div className="inv-drawer-back" onClick={() => !saveBusy && setOpeningDrawerOpen(false)} aria-hidden />
+              <aside className="inv-drawer" aria-label="Post opening stock">
+                <button type="button" onClick={() => setOpeningDrawerOpen(false)} disabled={saveBusy}>
+                  Close
+                </button>
+                <h3>Post opening stock</h3>
+                <p className="muted inv-child" style={{ margin: 0 }}>
+                  Number {invNumbering.opening_stock_numbering?.preview || 'assigned when you save'}
+                </p>
+                <input
+                  readOnly
+                  value={invNumbering.opening_stock_numbering?.preview || ''}
+                  placeholder="Assigned when you save"
+                  aria-label="Opening stock reference"
+                />
+                <label className="muted" htmlFor="opening-product">
+                  Product
+                </label>
+                <select
+                  id="opening-product"
+                  value={selectedId}
+                  onChange={(e) => setSelectedId(e.target.value)}
+                  aria-label="Opening stock product"
+                >
+                  <option value="">Select product</option>
+                  {managedProducts.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.sku})
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={openingWarehouseId}
+                  onChange={(e) => setOpeningWarehouseId(e.target.value)}
+                  aria-label="Opening stock warehouse"
+                >
+                  <option value="">Location (optional)</option>
+                  {storeWarehouses
+                    .filter((w) => w.is_active !== false)
+                    .map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.name || w.code || w.id.slice(0, 8)}
+                      </option>
+                    ))}
+                </select>
+                <input
+                  value={openingQty}
+                  onChange={(e) => setOpeningQty(e.target.value)}
+                  placeholder="Quantity"
+                  aria-label="Opening stock quantity"
+                />
+                <select value={openingUnitId} onChange={(e) => setOpeningUnitId(e.target.value)} aria-label="Opening stock unit">
+                  <option value="">Unit (product default)</option>
+                  {units
+                    .filter((u) => u.is_active !== false)
+                    .map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.code}
+                      </option>
+                    ))}
+                </select>
+                <input
+                  value={openingUnitCost}
+                  onChange={(e) => setOpeningUnitCost(e.target.value)}
+                  placeholder={`Unit cost (default ${selected?.cost_price ?? 0})`}
+                  aria-label="Opening stock unit cost"
+                />
+                <input
+                  value={openingBatch}
+                  onChange={(e) => setOpeningBatch(e.target.value)}
+                  placeholder="Batch number (if tracked)"
+                  aria-label="Opening stock batch number"
+                />
+                <label className="muted">Manufacturing date</label>
+                <input
+                  aria-label="Opening stock manufacturing date"
+                  type="date"
+                  value={openingMfg}
+                  onChange={(e) => setOpeningMfg(e.target.value)}
+                />
+                <label className="muted">Expiry date</label>
+                <input
+                  aria-label="Opening stock expiry date"
+                  type="date"
+                  value={openingExpiry}
+                  onChange={(e) => setOpeningExpiry(e.target.value)}
+                />
+                <input
+                  value={openingNotes}
+                  onChange={(e) => setOpeningNotes(e.target.value)}
+                  placeholder="Notes"
+                  aria-label="Opening stock notes"
+                />
+                <input
+                  value={openingLineNotes}
+                  onChange={(e) => setOpeningLineNotes(e.target.value)}
+                  placeholder="Line notes (optional)"
+                  aria-label="Opening stock line notes"
+                />
+                <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input
+                    type="checkbox"
+                    aria-label="Opening stock post journal"
+                    checked={openingPostJournal}
+                    onChange={(e) => setOpeningPostJournal(e.target.checked)}
+                  />
+                  Post inventory journal
+                </label>
+                <div className="cat-save-row">
+                  <button
+                    type="button"
+                    className="btn-ok"
+                    onClick={postOpeningStock}
+                    disabled={!selectedId || saveBusy}
+                    aria-label="Post opening stock"
+                  >
+                    {saveBusy ? 'Saving…' : 'Post opening stock'}
+                  </button>
+                  {formFlash.ok ? (
+                    <p className="form-flash ok" role="status">
+                      {formFlash.ok}
+                    </p>
+                  ) : null}
+                  {formFlash.err ? (
+                    <p className="form-flash err" role="alert">
+                      {formFlash.err}
+                    </p>
+                  ) : null}
+                </div>
+              </aside>
+            </>
+          ) : null}
+        </div>
+      )}
+
+      {tab === 'expiry' && (
+        <div className="card cat-panel">
+          <div className="cat-head">
+            <h2 style={{ margin: 0 }}>Expiry</h2>
+          </div>
+          <div className="cat-toolbar">
+            <input
+              value={expirySearch}
+              onChange={(e) => setExpirySearch(e.target.value)}
+              placeholder="Search expiry"
+              aria-label="Search expiry"
+            />
+          </div>
+          {visibleExpiring.length === 0 ? (
+            <div className="cat-empty">
+              <p style={{ margin: 0 }}>No batches expiring in the next 60 days.</p>
+              <p className="muted" style={{ margin: '8px 0 0' }}>
+                Receive stock with an expiry date to track it here.
+              </p>
+            </div>
+          ) : (
+            <div className="cat-table-wrap">
+              <table className="table cat-table">
+                <thead>
+                  <tr>
+                    <th>Batch</th>
+                    <th>Product</th>
+                    <th>Qty</th>
+                    <th>Expiry</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleExpiring.map((b) => {
+                    const prod = products.find((p) => p.id === b.product_id);
+                    return (
+                      <tr key={b.id}>
+                        <td data-label="Batch">
+                          <strong>{b.batch_number}</strong>
+                        </td>
+                        <td data-label="Product">{prod?.name || 'Unknown product'}</td>
+                        <td data-label="Qty">{b.quantity}</td>
+                        <td data-label="Expiry">{b.expiry_date ? String(b.expiry_date).slice(0, 10) : '—'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === 'counts' && (
+        <div className="card cat-panel">
+          <div className="cat-head">
+            <h2 style={{ margin: 0 }}>Stock count</h2>
+            <button
+              type="button"
+              onClick={() => {
+                setFormFlash({});
+                setCountDrawerOpen(true);
+              }}
+              aria-label="Start stock count"
+            >
+              Start count
+            </button>
+          </div>
+          <div className="cat-toolbar">
+            <input
+              value={countSearch}
+              onChange={(e) => setCountSearch(e.target.value)}
+              placeholder="Search counts"
+              aria-label="Search stock counts"
+            />
+            <select
+              value={countManageFilter}
+              onChange={(e) =>
+                setCountManageFilter(e.target.value as 'all' | 'draft' | 'completed' | 'cancelled')
+              }
+              aria-label="Stock count status filter"
+            >
+              <option value="all">All statuses</option>
+              <option value="draft">Draft only</option>
+              <option value="completed">Completed only</option>
+              <option value="cancelled">Cancelled only</option>
+            </select>
+          </div>
+          {visibleCounts.length === 0 ? (
+            <div className="cat-empty">
+              <p style={{ margin: 0 }}>No stock counts yet.</p>
+              <p className="muted" style={{ margin: '8px 0 0' }}>
+                Count on-hand quantity at a location, then post differences. This is not an adjustment
+                or a transfer.
+              </p>
+              <button
+                type="button"
+                style={{ marginTop: 12 }}
+                onClick={() => {
+                  setFormFlash({});
+                  setCountDrawerOpen(true);
+                }}
+              >
+                Start count
+              </button>
+            </div>
+          ) : (
+            <div className="cat-table-wrap">
+              <table className="table cat-table">
+                <thead>
+                  <tr>
+                    <th>Number</th>
+                    <th>Status</th>
+                    <th>Items</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleCounts.map((c) => (
+                    <tr key={c.id}>
+                      <td data-label="Number">
+                        <strong>{c.count_number}</strong>
+                        <div className="muted inv-child">{c.notes || ''}</div>
+                      </td>
+                      <td data-label="Status">{c.status}</td>
+                      <td data-label="Items">
+                        {c.counted_item_count}/{c.item_count}
+                      </td>
+                      <td className="cat-actions">
+                        <button type="button" onClick={() => openCount(c.id)} aria-label={`Open stock count ${c.id}`}>
+                          Open
+                        </button>
+                        {(c.can_cancel || c.status === 'draft') && (
+                          <button
+                            type="button"
+                            className="btn-danger"
+                            onClick={() => cancelStockCount(c.id, c.count_number)}
+                            aria-label={`Cancel stock count ${c.id}`}
+                          >
+                            Cancel
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {countDrawerOpen ? (
+            <>
+              <div className="inv-drawer-back" onClick={() => !saveBusy && setCountDrawerOpen(false)} aria-hidden />
+              <aside className="inv-drawer" aria-label="Start stock count">
+                <button type="button" onClick={() => setCountDrawerOpen(false)} disabled={saveBusy}>
+                  Close
+                </button>
+                <h3>Start stock count</h3>
+                <p className="muted inv-child" style={{ margin: 0 }}>
+                  Number {invNumbering.stock_count_numbering?.preview || 'assigned when you save'}
+                </p>
+                <select
+                  value={countWarehouseId}
+                  onChange={(e) => setCountWarehouseId(e.target.value)}
+                  aria-label="Stock count warehouse"
+                >
+                  <option value="">Location</option>
+                  {storeWarehouses
+                    .filter((w) => w.is_active !== false)
+                    .map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.name} ({w.code})
+                      </option>
+                    ))}
+                </select>
+                <input
+                  value={countNotes}
+                  onChange={(e) => setCountNotes(e.target.value)}
+                  placeholder="Notes (optional)"
+                  aria-label="Stock count notes"
+                />
+                <div className="cat-save-row">
+                  <button
+                    type="button"
+                    className="btn-ok"
+                    onClick={startStockCount}
+                    disabled={!countWarehouseId || saveBusy}
+                    aria-label="Create draft count"
+                  >
+                    {saveBusy ? 'Saving…' : 'Create draft count'}
+                  </button>
+                  {formFlash.ok ? (
+                    <p className="form-flash ok" role="status">
+                      {formFlash.ok}
+                    </p>
+                  ) : null}
+                  {formFlash.err ? (
+                    <p className="form-flash err" role="alert">
+                      {formFlash.err}
+                    </p>
+                  ) : null}
+                </div>
+              </aside>
+            </>
+          ) : null}
+          {activeCount ? (
+            <>
+              <div className="inv-drawer-back" onClick={() => !saveBusy && setActiveCount(null)} aria-hidden />
+              <aside className="inv-drawer" aria-label="Stock count details" style={{ width: 'min(560px,100vw)' }}>
+                <button type="button" onClick={() => setActiveCount(null)} disabled={saveBusy}>
+                  Close
+                </button>
+                <h3>
+                  {activeCount.count_number} — {activeCount.status}
+                </h3>
+                {activeCount.notes ? <p className="muted inv-child">{activeCount.notes}</p> : null}
+                <div className="cat-table-wrap">
+                  <table className="table cat-table">
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th>Expected</th>
+                        <th>Counted</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(activeCount.items || []).map((item: any) => (
+                        <tr key={item.id}>
+                          <td data-label="Product">
+                            <strong>{item.product_sku || item.product_id}</strong>
+                            <div className="muted inv-child">{item.product_name}</div>
+                          </td>
+                          <td data-label="Expected">{item.expected_qty}</td>
+                          <td data-label="Counted">
+                            <input
+                              value={countQtys[item.product_id] ?? ''}
+                              disabled={activeCount.status !== 'draft'}
+                              onChange={(e) => setCountQtys({ ...countQtys, [item.product_id]: e.target.value })}
+                              aria-label={`Counted qty ${item.product_sku || item.product_id}`}
+                            />
+                            <input
+                              value={countLineNotes[item.product_id] ?? ''}
+                              disabled={activeCount.status !== 'draft'}
+                              onChange={(e) =>
+                                setCountLineNotes({
+                                  ...countLineNotes,
+                                  [item.product_id]: e.target.value,
+                                })
+                              }
+                              placeholder="Stock count line notes"
+                              aria-label={`Stock count line notes ${item.product_sku || item.product_id}`}
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {activeCount.status === 'draft' ? (
+                  <>
+                    <input
+                      value={countCancelReason}
+                      onChange={(e) => setCountCancelReason(e.target.value)}
+                      placeholder="Required before Cancel"
+                      aria-label="Stock count cancel reason"
+                    />
+                    <div className="cat-save-row">
+                      <button type="button" onClick={saveCountLines} disabled={saveBusy} aria-label="Save count lines">
+                        {saveBusy ? 'Saving…' : 'Save counts'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={completeActiveCount}
+                        disabled={saveBusy}
+                        aria-label="Complete stock count and post variances"
+                      >
+                        Complete count
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-danger"
+                        onClick={() => cancelStockCount(activeCount.id, activeCount.count_number)}
+                        disabled={saveBusy}
+                        aria-label={`Cancel stock count ${activeCount.id}`}
+                      >
+                        Cancel count
+                      </button>
+                      {formFlash.ok ? (
+                        <p className="form-flash ok" role="status">
+                          {formFlash.ok}
+                        </p>
+                      ) : null}
+                      {formFlash.err ? (
+                        <p className="form-flash err" role="alert">
+                          {formFlash.err}
+                        </p>
+                      ) : null}
+                    </div>
+                  </>
+                ) : null}
+              </aside>
+            </>
+          ) : null}
+        </div>
       )}
 
       {tab === 'movements' && (
-        <>
-          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
-            <h3>Stock movement history</h3>
-            <p className="muted">
-              Immutable audit trail (BR-5.3). Records cannot be deleted. Filter by warehouse, type,
-              date, or the selected product above.
-            </p>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              <select
-                value={mvWarehouseId}
-                onChange={(e) => setMvWarehouseId(e.target.value)}
-                aria-label="Movement warehouse filter"
-              >
-                <option value="">All warehouses</option>
-                {storeWarehouses
+        <div className="card cat-panel">
+          <div className="cat-head">
+            <h2 style={{ margin: 0 }}>Stock history</h2>
+            <button type="button" onClick={() => loadMovements()} aria-label="Refresh inventory movements">
+              Refresh
+            </button>
+          </div>
+          <div className="cat-toolbar">
+            <input
+              value={mvSearch}
+              onChange={(e) => setMvSearch(e.target.value)}
+              placeholder="Search history"
+              aria-label="Search stock history"
+            />
+            <select
+              value={mvWarehouseId}
+              onChange={(e) => setMvWarehouseId(e.target.value)}
+              aria-label="Movement warehouse filter"
+            >
+              <option value="">All locations</option>
+              {storeWarehouses
                 .filter((w) => w.is_active !== false)
                 .map((w) => (
                   <option key={w.id} value={w.id}>
                     {w.name || w.code || w.id.slice(0, 8)}
                   </option>
                 ))}
-              </select>
-              <select
-                aria-label="Movement type filter"
-                value={mvType}
-                onChange={(e) => setMvType(e.target.value)}
-              >
-                <option value="">All types</option>
-                <option value="stock_in">stock_in</option>
-                <option value="stock_out">stock_out</option>
-                <option value="opening_stock">opening_stock</option>
-                <option value="adjustment">adjustment</option>
-                <option value="transfer_out">transfer_out</option>
-                <option value="transfer_in">transfer_in</option>
-                <option value="transfer_cancel">transfer_cancel</option>
-              </select>
-              <select
-                aria-label="Movement reason filter"
-                value={mvReason}
-                onChange={(e) => setMvReason(e.target.value)}
-              >
-                <option value="">All reasons</option>
-                <option value="damage">damage</option>
-                <option value="theft">theft</option>
-                <option value="expiry">expiry</option>
-                <option value="found">found</option>
-                <option value="lost">lost</option>
-              </select>
-              <label className="muted">From</label>
+            </select>
+            <select aria-label="Movement type filter" value={mvType} onChange={(e) => setMvType(e.target.value)}>
+              <option value="">All types</option>
+              <option value="stock_in">Received</option>
+              <option value="stock_out">Issued</option>
+              <option value="opening_stock">Opening</option>
+              <option value="adjustment">Adjustment</option>
+              <option value="transfer_out">Transfer out</option>
+              <option value="transfer_in">Transfer in</option>
+              <option value="transfer_cancel">Transfer cancel</option>
+            </select>
+            <select aria-label="Movement reason filter" value={mvReason} onChange={(e) => setMvReason(e.target.value)}>
+              <option value="">All reasons</option>
+              <option value="damage">Damaged</option>
+              <option value="theft">Theft</option>
+              <option value="expiry">Expired</option>
+              <option value="found">Found</option>
+              <option value="lost">Lost</option>
+            </select>
+            <input type="date" value={mvFrom} onChange={(e) => setMvFrom(e.target.value)} aria-label="Movement from date" />
+            <input type="date" value={mvTo} onChange={(e) => setMvTo(e.target.value)} aria-label="Movement to date" />
+            <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
               <input
-                type="date"
-                value={mvFrom}
-                onChange={(e) => setMvFrom(e.target.value)}
-                title="From date (YYYY-MM-DD)"
-                aria-label="Movement from date"
+                type="checkbox"
+                checked={mvProductOnly}
+                onChange={(e) => setMvProductOnly(e.target.checked)}
+                aria-label="Movement selected product only"
               />
-              <label className="muted">To</label>
-              <input
-                type="date"
-                value={mvTo}
-                onChange={(e) => setMvTo(e.target.value)}
-                title="To date (YYYY-MM-DD)"
-                aria-label="Movement to date"
-              />
-              <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                <input
-                  type="checkbox"
-                  checked={mvProductOnly}
-                  onChange={(e) => setMvProductOnly(e.target.checked)}
-                  aria-label="Movement selected product only"
-                />
-                Selected product only
-              </label>
-              <button type="button" onClick={() => loadMovements()} aria-label="Refresh inventory movements">
-                Refresh
-              </button>
-            </div>
-            <p className="muted">
-              {mvMeta.count ?? movements.length} movement
-              {(mvMeta.count ?? movements.length) === 1 ? '' : 's'}
-              {mvMeta.warehouse_name ? ` · ${mvMeta.warehouse_name}` : ''}
-            </p>
+              Selected product only
+            </label>
+            {mvProductOnly ? (
+              <select
+                value={selectedId}
+                onChange={(e) => setSelectedId(e.target.value)}
+                aria-label="Selected product"
+              >
+                <option value="">Select product</option>
+                {managedProducts.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.sku})
+                  </option>
+                ))}
+              </select>
+            ) : null}
           </div>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>When</th>
-                <th>Product</th>
-                <th>Type</th>
-                <th>Reason</th>
-                <th>Qty</th>
-                <th>Before → after</th>
-                <th>User</th>
-                <th>Ref</th>
-              </tr>
-            </thead>
-            <tbody>
-              {movements.map((mv) => (
-                <tr key={mv.id}>
-                  <td>{mv.created_at ? String(mv.created_at).slice(0, 19) : '—'}</td>
-                  <td>
-                    {mv.product_sku || mv.product_name
-                      ? `${mv.product_sku || ''}${mv.product_name ? ` ${mv.product_name}` : ''}`.trim()
-                      : mv.product_id
-                        ? String(mv.product_id).slice(0, 8)
-                        : '—'}
-                  </td>
-                  <td>{mv.movement_type}</td>
-                  <td>{mv.reason || '—'}</td>
-                  <td>{mv.quantity}</td>
-                  <td>
-                    {mv.quantity_before} → {mv.quantity_after}
-                  </td>
-                  <td>{mv.created_by_name || mv.created_by_email || '—'}</td>
-                  <td>
-                    {mv.reference_type || '—'}
-                    {mv.reference_id ? ` ${String(mv.reference_id).slice(0, 8)}…` : ''}
-                  </td>
-                </tr>
-              ))}
-              {!movements.length && (
-                <tr>
-                  <td colSpan={8} className="muted">
-                    No stock movements
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </>
+          <p className="muted inv-child" style={{ margin: 0 }}>
+            {mvMeta.count ?? movements.length} record{(mvMeta.count ?? movements.length) === 1 ? '' : 's'}
+            {mvMeta.warehouse_name ? ` · ${mvMeta.warehouse_name}` : ''}
+          </p>
+          {visibleMovements.length === 0 ? (
+            <div className="cat-empty">
+              <p style={{ margin: 0 }}>No stock history yet.</p>
+              <p className="muted" style={{ margin: '8px 0 0' }}>
+                Receives, issues, counts, transfers, and adjustments appear here. Records are kept for
+                audit.
+              </p>
+            </div>
+          ) : (
+            <div className="cat-table-wrap">
+              <table className="table cat-table">
+                <thead>
+                  <tr>
+                    <th>When</th>
+                    <th>Product</th>
+                    <th>Type</th>
+                    <th>Qty</th>
+                    <th>User</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleMovements.map((mv) => (
+                    <tr key={mv.id}>
+                      <td data-label="When">{mv.created_at ? String(mv.created_at).slice(0, 19) : '—'}</td>
+                      <td data-label="Product">
+                        <strong>
+                          {mv.product_sku || mv.product_name
+                            ? `${mv.product_sku || ''} ${mv.product_name || ''}`.trim()
+                            : '—'}
+                        </strong>
+                        <div className="muted inv-child">
+                          {mv.reason || '—'} · {mv.quantity_before} → {mv.quantity_after}
+                        </div>
+                      </td>
+                      <td data-label="Type">{mv.movement_type}</td>
+                      <td data-label="Qty">{mv.quantity}</td>
+                      <td data-label="User">{mv.created_by_name || mv.created_by_email || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       )}
 
       {tab === 'adjust' && (
-        <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 520 }}>
-          <h3>Correct stock quantity</h3>
-          <p className="muted">
-            Use Adjust stock only to correct an existing on-hand figure. Positive or negative quantity.
-            A reason is required and is written to the audit trail. Receive or view stock in Manage stock.
+        <div className="card cat-panel">
+          <div className="cat-head">
+            <h2 style={{ margin: 0 }}>Adjust stock</h2>
+            <button
+              type="button"
+              onClick={() => {
+                setFormFlash({});
+                setAdjConfirming(false);
+                setAdjustDrawerOpen(true);
+              }}
+              aria-label="Adjust stock"
+            >
+              Adjust stock
+            </button>
+          </div>
+          <p className="muted inv-child">
+            Use this only to correct on-hand quantity. Receive stock in Manage stock. Move stock with
+            Stock transfer. Count with Stock count.
           </p>
-          <p className="muted">
-            Selected:{' '}
-            {selected ? `${selected.name} (${selected.sku}) — on-hand ${selected.stock_qty}` : 'none'}
-          </p>
-          <label className="muted">Quantity delta</label>
-          <input
-            value={adjQty}
-            onChange={(e) => setAdjQty(e.target.value)}
-            placeholder="-1"
-            aria-label="Stock adjustment quantity"
-          />
-          <label className="muted">Reason</label>
-          <select
-            value={adjReason}
-            onChange={(e) => setAdjReason(e.target.value)}
-            aria-label="Adjustment reason"
-          >
-            <option value="">Select reason</option>
-            <option value="damage">damage</option>
-            <option value="theft">theft</option>
-            <option value="expiry">expiry</option>
-            <option value="found">found</option>
-            <option value="lost">lost</option>
-          </select>
-          <label className="muted">Warehouse (optional)</label>
-          <select
-            value={adjWarehouseId}
-            onChange={(e) => setAdjWarehouseId(e.target.value)}
-            aria-label="Stock adjustment warehouse"
-            title="Optional warehouse for adjustment (UuidIdValue)"
-          >
-            <option value="">Company / product stock only</option>
-            {storeWarehouses
-                .filter((w) => w.is_active !== false)
-                .map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.name || w.code || w.id.slice(0, 8)}
-              </option>
-            ))}
-          </select>
-          <label className="muted">Notes (optional)</label>
-          <input
-            value={adjNotes}
-            onChange={(e) => setAdjNotes(e.target.value)}
-            placeholder="Details"
-            aria-label="Stock adjustment notes"
-            title="Optional notes (1–500 chars; letters/digits required)"
-          />
-          <button
-            type="button"
-            className="btn-ok"
-            onClick={postStockAdjust}
-            disabled={!selectedId || !adjReason || saveBusy}
-            aria-label="Post stock adjustment"
-          >
-            {saveBusy ? 'Saving…' : 'Post adjustment'}
-          </button>
-            {formFlash.ok ? <p className="form-flash ok" role="status">{formFlash.ok}</p> : null}
-            {formFlash.err ? <p className="form-flash err" role="alert">{formFlash.err}</p> : null}
+          {lowStockProducts.length === 0 ? (
+            <p className="muted inv-child">No products are currently below reorder.</p>
+          ) : (
+            <p className="muted inv-child">{lowStockProducts.length} product(s) are low or out of stock.</p>
+          )}
+          {adjustDrawerOpen ? (
+            <>
+              <div
+                className="inv-drawer-back"
+                onClick={() => !saveBusy && setAdjustDrawerOpen(false)}
+                aria-hidden
+              />
+              <aside className="inv-drawer" aria-label="Adjust stock">
+                <button type="button" onClick={() => setAdjustDrawerOpen(false)} disabled={saveBusy}>
+                  Close
+                </button>
+                <h3>Correct stock quantity</h3>
+                <label className="muted" htmlFor="adj-product">
+                  Product
+                </label>
+                <select
+                  id="adj-product"
+                  value={selectedId}
+                  onChange={(e) => {
+                    setSelectedId(e.target.value);
+                    setAdjConfirming(false);
+                  }}
+                  aria-label="Adjustment product"
+                >
+                  <option value="">Select product</option>
+                  {managedProducts.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.sku}) — on-hand {p.stock_qty}
+                    </option>
+                  ))}
+                </select>
+                <label className="muted">Quantity change (+ or −)</label>
+                <input
+                  value={adjQty}
+                  onChange={(e) => {
+                    setAdjQty(e.target.value);
+                    setAdjConfirming(false);
+                  }}
+                  placeholder="-1"
+                  aria-label="Stock adjustment quantity"
+                />
+                <label className="muted">Reason</label>
+                <select
+                  value={adjReason}
+                  onChange={(e) => {
+                    setAdjReason(e.target.value);
+                    setAdjConfirming(false);
+                  }}
+                  aria-label="Adjustment reason"
+                >
+                  <option value="">Select reason</option>
+                  <option value="damage">Damaged</option>
+                  <option value="theft">Theft</option>
+                  <option value="expiry">Expired</option>
+                  <option value="found">Found</option>
+                  <option value="lost">Lost</option>
+                </select>
+                <select
+                  value={adjWarehouseId}
+                  onChange={(e) => setAdjWarehouseId(e.target.value)}
+                  aria-label="Stock adjustment warehouse"
+                >
+                  <option value="">Company stock (no location)</option>
+                  {storeWarehouses
+                    .filter((w) => w.is_active !== false)
+                    .map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.name || w.code || w.id.slice(0, 8)}
+                      </option>
+                    ))}
+                </select>
+                <input
+                  value={adjNotes}
+                  onChange={(e) => setAdjNotes(e.target.value)}
+                  placeholder="Notes (optional)"
+                  aria-label="Stock adjustment notes"
+                />
+                {adjConfirming ? (
+                  <p className="muted inv-child">
+                    Confirm: change on-hand by {adjQty} because {adjReason}. This is recorded and cannot
+                    be undone.
+                  </p>
+                ) : null}
+                <div className="cat-save-row">
+                  <button
+                    type="button"
+                    className="btn-ok"
+                    onClick={postStockAdjust}
+                    disabled={!selectedId || !adjReason || saveBusy}
+                    aria-label="Post stock adjustment"
+                  >
+                    {saveBusy ? 'Saving…' : adjConfirming ? 'Confirm adjustment' : 'Post adjustment'}
+                  </button>
+                  {formFlash.ok ? (
+                    <p className="form-flash ok" role="status">
+                      {formFlash.ok}
+                    </p>
+                  ) : null}
+                  {formFlash.err ? (
+                    <p className="form-flash err" role="alert">
+                      {formFlash.err}
+                    </p>
+                  ) : null}
+                </div>
+              </aside>
+            </>
+          ) : null}
         </div>
       )}
 
       {tab === 'stockout' && (
-        <div className="card" style={{ display: 'grid', gap: 8, maxWidth: 520 }}>
-          <h3>Stock Out</h3>
-          <p className="muted">
-            Issue outgoing stock with a reference type (BR-5.2): sale, transfer, adjustment, damage,
-            internal, or other. Uses FEFO across batches when no batch is selected. Quantity must be
-            positive.
+        <div className="card cat-panel">
+          <div className="cat-head">
+            <h2 style={{ margin: 0 }}>Stock out</h2>
+            <button
+              type="button"
+              onClick={() => {
+                setFormFlash({});
+                setStockOutDrawerOpen(true);
+              }}
+              aria-label="Issue stock"
+            >
+              Issue stock
+            </button>
+          </div>
+          <p className="muted inv-child">
+            Issue outgoing quantity with a reason. Earliest-expiry batches are used when you do not pick
+            a batch.
           </p>
-          <p className="muted">
-            Selected:{' '}
-            {selected ? `${selected.name} (${selected.sku}) — on-hand ${selected.stock_qty}` : 'none'}
-          </p>
-          <label className="muted">Quantity</label>
-          <input
-            value={outQty}
-            onChange={(e) => setOutQty(e.target.value)}
-            placeholder="1"
-            aria-label="Stock-out quantity"
-          />
-          <label className="muted">Reference type</label>
-          <select
-            value={outRefType}
-            onChange={(e) => setOutRefType(e.target.value)}
-            aria-label="Stock-out reference type"
-          >
-            <option value="">Select reference type</option>
-            <option value="sale">sale</option>
-            <option value="transfer">transfer</option>
-            <option value="adjustment">adjustment</option>
-            <option value="damage">damage</option>
-            <option value="internal">internal</option>
-            <option value="other">other</option>
-          </select>
-          <label className="muted">Reference id (optional)</label>
-          <input
-            value={outRefId}
-            onChange={(e) => setOutRefId(e.target.value)}
-            placeholder="Invoice / transfer / ticket id"
-            aria-label="Stock-out reference id"
-            title="Optional external reference (1–36 chars; letters/digits required)"
-          />
-          <label className="muted">Warehouse (optional)</label>
-          <select
-            value={outWarehouseId}
-            onChange={(e) => setOutWarehouseId(e.target.value)}
-            aria-label="Stock-out warehouse"
-            title="Optional warehouse for stock-out (UuidIdValue)"
-          >
-            <option value="">Company / product stock only</option>
-            {storeWarehouses
-                .filter((w) => w.is_active !== false)
-                .map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.name || w.code || w.id.slice(0, 8)}
-              </option>
-            ))}
-          </select>
-          <label className="muted">Variant (optional)</label>
-          <select
-            value={outVariantId}
-            onChange={(e) => setOutVariantId(e.target.value)}
-            aria-label="Stock-out variant"
-          >
-            <option value="">None</option>
-            {variants
-              .filter((v) => v.is_active !== false)
-              .map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.name} ({v.sku}) — {v.stock_qty}
-                </option>
-              ))}
-          </select>
-          <label className="muted">Unit (optional)</label>
-          <select
-            value={outUnitId}
-            onChange={(e) => setOutUnitId(e.target.value)}
-            aria-label="Stock-out unit"
-          >
-            <option value="">Default = product stock unit</option>
-            {units
-              .filter((u) => u.is_active !== false)
-              .map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.code}
-                  {u.base_unit_code ? ` (= ${u.conversion_ratio} ${u.base_unit_code})` : ''}
-                </option>
-              ))}
-          </select>
-          <label className="muted">Batch (optional — otherwise FEFO)</label>
-          <select
-            value={outBatchId}
-            onChange={(e) => setOutBatchId(e.target.value)}
-            aria-label="Stock-out batch"
-          >
-            <option value="">FEFO across open batches</option>
-            {batches
-              .filter((b) => Number(b.quantity) > 0)
-              .map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.batch_number} — qty {b.quantity}
-                  {b.expiry_date ? ` · exp ${String(b.expiry_date).slice(0, 10)}` : ''}
-                </option>
-              ))}
-          </select>
-          <label className="muted">Notes (optional)</label>
-          <input
-            value={outNotes}
-            onChange={(e) => setOutNotes(e.target.value)}
-            placeholder="Details"
-            aria-label="Stock-out notes"
-            title="Optional notes (1–500 chars; letters/digits required)"
-          />
-          <button
-            type="button"
-            className="btn-ok"
-            onClick={postStockOut}
-            disabled={!selectedId || !outRefType}
-            aria-label="Post stock out"
-          >
-            Post stock out
-          </button>
+          {stockOutDrawerOpen ? (
+            <>
+              <div
+                className="inv-drawer-back"
+                onClick={() => !saveBusy && setStockOutDrawerOpen(false)}
+                aria-hidden
+              />
+              <aside className="inv-drawer" aria-label="Issue stock">
+                <button type="button" onClick={() => setStockOutDrawerOpen(false)} disabled={saveBusy}>
+                  Close
+                </button>
+                <h3>Issue stock</h3>
+                <select
+                  value={selectedId}
+                  onChange={(e) => setSelectedId(e.target.value)}
+                  aria-label="Stock-out product"
+                >
+                  <option value="">Select product</option>
+                  {managedProducts.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.sku}) — {p.stock_qty}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  value={outQty}
+                  onChange={(e) => setOutQty(e.target.value)}
+                  placeholder="Quantity"
+                  aria-label="Stock-out quantity"
+                />
+                <select
+                  value={outRefType}
+                  onChange={(e) => setOutRefType(e.target.value)}
+                  aria-label="Stock-out reference type"
+                >
+                  <option value="">Select reference type</option>
+                  <option value="sale">Sale</option>
+                  <option value="transfer">Transfer</option>
+                  <option value="adjustment">Adjustment</option>
+                  <option value="damage">Damage</option>
+                  <option value="internal">Internal use</option>
+                  <option value="other">Other</option>
+                </select>
+                <input
+                  value={outRefId}
+                  onChange={(e) => setOutRefId(e.target.value)}
+                  placeholder="Reference (optional)"
+                  aria-label="Stock-out reference id"
+                />
+                <select
+                  value={outWarehouseId}
+                  onChange={(e) => setOutWarehouseId(e.target.value)}
+                  aria-label="Stock-out warehouse"
+                >
+                  <option value="">Company stock (no location)</option>
+                  {storeWarehouses
+                    .filter((w) => w.is_active !== false)
+                    .map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.name || w.code || w.id.slice(0, 8)}
+                      </option>
+                    ))}
+                </select>
+                <select value={outVariantId} onChange={(e) => setOutVariantId(e.target.value)} aria-label="Stock-out variant">
+                  <option value="">Variant (optional)</option>
+                  {variants
+                    .filter((v) => v.is_active !== false)
+                    .map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.name} ({v.sku})
+                      </option>
+                    ))}
+                </select>
+                <select value={outBatchId} onChange={(e) => setOutBatchId(e.target.value)} aria-label="Stock-out batch">
+                  <option value="">Earliest expiry (automatic)</option>
+                  {batches
+                    .filter((b) => Number(b.quantity) > 0)
+                    .map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.batch_number} — qty {b.quantity}
+                      </option>
+                    ))}
+                </select>
+                <input
+                  value={outNotes}
+                  onChange={(e) => setOutNotes(e.target.value)}
+                  placeholder="Notes (optional)"
+                  aria-label="Stock-out notes"
+                />
+                <div className="cat-save-row">
+                  <button
+                    type="button"
+                    className="btn-ok"
+                    onClick={postStockOut}
+                    disabled={!selectedId || !outRefType || saveBusy}
+                    aria-label="Post stock out"
+                  >
+                    {saveBusy ? 'Saving…' : 'Post stock out'}
+                  </button>
+                  {formFlash.ok ? (
+                    <p className="form-flash ok" role="status">
+                      {formFlash.ok}
+                    </p>
+                  ) : null}
+                  {formFlash.err ? (
+                    <p className="form-flash err" role="alert">
+                      {formFlash.err}
+                    </p>
+                  ) : null}
+                </div>
+              </aside>
+            </>
+          ) : null}
         </div>
       )}
 
       {tab === 'whstock' && (
-        <>
-          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
-            <h3>Manage stock</h3>
-            <p className="muted" style={{ margin: 0 }}>
-              View on-hand quantity by warehouse, receive stock, and set reorder levels. Quantity
-              corrections with a reason belong on Adjust stock.
-            </p>
-            <label className="muted">Warehouse</label>
+        <div className="card cat-panel">
+          <div className="cat-head">
+            <h2 style={{ margin: 0 }}>{whLowOnly ? 'Low stock' : 'Manage stock'}</h2>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setFormFlash({});
+                  setReceiveDrawerOpen(true);
+                }}
+                aria-label="Receive stock"
+              >
+                Receive stock
+              </button>
+            </div>
+          </div>
+          <p className="muted inv-child">
+            View quantity, receive stock, and set reorder levels. Quantity corrections belong on Adjust
+            stock.
+          </p>
+          <div className="cat-toolbar">
             <select
               value={whStockWarehouseId}
               onChange={(e) => setWhStockWarehouseId(e.target.value)}
               aria-label="Warehouse stock warehouse"
             >
-              <option value="">Select warehouse</option>
+              <option value="">Select location</option>
               {storeWarehouses
                 .filter((w) => w.is_active !== false)
                 .map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name || w.code || w.id.slice(0, 8)}
-                </option>
-              ))}
+                  <option key={w.id} value={w.id}>
+                    {w.name || w.code || w.id.slice(0, 8)}
+                  </option>
+                ))}
+            </select>
+            <input
+              value={whSearch}
+              onChange={(e) => setWhSearch(e.target.value)}
+              placeholder="Search products"
+              aria-label="Search warehouse stock"
+            />
+            <select
+              value={whLowOnly ? 'low' : 'all'}
+              onChange={(e) => setWhLowOnly(e.target.value === 'low')}
+              aria-label="Low stock filter"
+            >
+              <option value="all">All products</option>
+              <option value="low">Low stock</option>
             </select>
             <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <input
@@ -4562,348 +4836,493 @@ export default function Page() {
                 onChange={(e) => setWhStockIncludeZero(e.target.checked)}
                 aria-label="Warehouse stock include zero"
               />
-              <span className="muted">Include zero-qty rows</span>
+              <span className="muted">Include zero</span>
             </label>
             <button type="button" onClick={() => loadWarehouseStock()} disabled={!whStockWarehouseId} aria-label="Refresh warehouse stock">
               Refresh
             </button>
-            <p className="muted" style={{ margin: 0 }}>
-              {whStockMeta.warehouse_name
-                ? `${whStockMeta.warehouse_name} — ${whStockMeta.count ?? 0} products · total qty ${whStockMeta.total_quantity ?? 0}`
-                : 'Pick a warehouse to load stock'}
-            </p>
-          </div>
-
-          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 560 }}>
-            <h3>Receive stock</h3>
-            <p className="muted" style={{ margin: 0 }}>
-              Adds quantity to the selected product and warehouse. This is not an adjustment.
-            </p>
-            <input
-              value={stockQty}
-              onChange={(e) => setStockQty(e.target.value)}
-              placeholder="Quantity"
-              aria-label="Receive stock quantity"
-            />
-            <input
-              value={batchNumber}
-              onChange={(e) => setBatchNumber(e.target.value)}
-              placeholder="Batch (optional)"
-              aria-label="Receive stock batch"
-            />
-            <input
-              type="date"
-              value={expiryDate}
-              onChange={(e) => setExpiryDate(e.target.value)}
-              aria-label="Receive stock expiry"
-            />
             <button
               type="button"
               onClick={() => {
-                if (whStockWarehouseId) setStockWarehouseId(whStockWarehouseId);
-                stockInBatch();
+                setFormFlash({});
+                setReorderDrawerOpen(true);
               }}
-              disabled={!selectedId || !whStockWarehouseId || saveBusy}
-              aria-label="Receive stock"
+              aria-label="Set reorder level"
             >
-              {saveBusy ? 'Saving…' : 'Receive stock'}
-            </button>
-            {formFlash.ok ? <p className="form-flash ok" role="status">{formFlash.ok}</p> : null}
-            {formFlash.err ? <p className="form-flash err" role="alert">{formFlash.err}</p> : null}
-          </div>
-
-          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 560 }}>
-            <h3>Set warehouse reorder</h3>
-            <p className="muted" style={{ margin: 0 }}>
-              Saves warehouse_stocks.reorder_level / reorder_qty for the selected warehouse.
-            </p>
-            <select
-              value={whReorderProductId}
-              onChange={(e) => {
-                const id = e.target.value;
-                setWhReorderProductId(id);
-                const row = whStockRows.find((r) => r.product_id === id);
-                if (row) {
-                  setWhReorderLevel(String(row.reorder_level ?? 0));
-                  setWhReorderQty(String(row.reorder_qty ?? 0));
-                }
-              }}
-              aria-label="Warehouse reorder product"
-            >
-              <option value="">Product</option>
-              {products.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({p.sku})
-                </option>
-              ))}
-            </select>
-            <input
-              value={whReorderLevel}
-              onChange={(e) => setWhReorderLevel(e.target.value)}
-              placeholder="Reorder level"
-              aria-label="Warehouse reorder level"
-            />
-            <input
-              value={whReorderQty}
-              onChange={(e) => setWhReorderQty(e.target.value)}
-              placeholder="Reorder qty"
-              aria-label="Warehouse reorder qty"
-            />
-            <button
-              type="button"
-              onClick={saveWarehouseReorder}
-              disabled={!whStockWarehouseId || !whReorderProductId}
-              aria-label="Save warehouse reorder policy"
-            >
-              Save reorder policy
+              Set reorder
             </button>
           </div>
-
-          <table className="table">
-            <thead>
-              <tr>
-                <th>SKU</th>
-                <th>Product</th>
-                <th>Qty</th>
-                <th>Reorder</th>
-                <th>Suggest</th>
-                <th>Company</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {whStockRows.map((r) => (
-                <tr key={r.product_id}>
-                  <td>{r.sku}</td>
-                  <td>{r.name}</td>
-                  <td>{r.quantity}</td>
-                  <td>
-                    {r.reorder_level} / {r.reorder_qty}
-                  </td>
-                  <td>{r.suggested_order_qty ?? '—'}</td>
-                  <td>{r.consolidated_stock}</td>
-                  <td style={{ color: r.below_reorder ? '#b91c1c' : undefined }}>
-                    {r.below_reorder ? 'LOW' : 'ok'}
-                  </td>
-                </tr>
-              ))}
-              {whStockRows.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="muted">
-                    No warehouse stock rows
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </>
+          <p className="muted inv-child" style={{ margin: 0 }}>
+            {whStockMeta.warehouse_name
+              ? `${whStockMeta.warehouse_name} — ${whStockMeta.count ?? 0} products · total ${whStockMeta.total_quantity ?? 0}`
+              : 'Pick a location to load stock'}
+          </p>
+          {visibleWhRows.length === 0 ? (
+            <div className="cat-empty">
+              <p style={{ margin: 0 }}>{whLowOnly ? 'No low-stock products here.' : 'No stock rows yet.'}</p>
+              <p className="muted" style={{ margin: '8px 0 0' }}>
+                Receive stock into this location, or include zero-quantity rows.
+              </p>
+            </div>
+          ) : (
+            <div className="cat-table-wrap">
+              <table className="table cat-table">
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>Qty</th>
+                    <th>Reorder</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleWhRows.map((r) => (
+                    <tr key={r.product_id}>
+                      <td data-label="Product">
+                        <strong>{r.name}</strong>
+                        <div className="muted inv-child">{r.sku}</div>
+                      </td>
+                      <td data-label="Qty">{r.quantity}</td>
+                      <td data-label="Reorder">
+                        {r.reorder_level} / {r.reorder_qty}
+                      </td>
+                      <td data-label="Status" style={{ color: r.below_reorder ? '#b91c1c' : undefined }}>
+                        {r.below_reorder ? 'Low' : 'OK'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {receiveDrawerOpen ? (
+            <>
+              <div
+                className="inv-drawer-back"
+                onClick={() => !saveBusy && setReceiveDrawerOpen(false)}
+                aria-hidden
+              />
+              <aside className="inv-drawer" aria-label="Receive stock">
+                <button type="button" onClick={() => setReceiveDrawerOpen(false)} disabled={saveBusy}>
+                  Close
+                </button>
+                <h3>Receive stock</h3>
+                <select
+                  value={selectedId}
+                  onChange={(e) => setSelectedId(e.target.value)}
+                  aria-label="Receive stock product"
+                >
+                  <option value="">Select product</option>
+                  {managedProducts.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.sku})
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={whStockWarehouseId}
+                  onChange={(e) => {
+                    setWhStockWarehouseId(e.target.value);
+                    setStockWarehouseId(e.target.value);
+                  }}
+                  aria-label="Receive stock location"
+                >
+                  <option value="">Select location</option>
+                  {storeWarehouses
+                    .filter((w) => w.is_active !== false)
+                    .map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.name || w.code}
+                      </option>
+                    ))}
+                </select>
+                <input
+                  value={stockQty}
+                  onChange={(e) => setStockQty(e.target.value)}
+                  placeholder="Quantity"
+                  aria-label="Receive stock quantity"
+                />
+                <input
+                  value={batchNumber}
+                  onChange={(e) => setBatchNumber(e.target.value)}
+                  placeholder="Batch (optional)"
+                  aria-label="Receive stock batch"
+                />
+                <input
+                  type="date"
+                  value={expiryDate}
+                  onChange={(e) => setExpiryDate(e.target.value)}
+                  aria-label="Receive stock expiry"
+                />
+                <div className="cat-save-row">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (whStockWarehouseId) setStockWarehouseId(whStockWarehouseId);
+                      stockInBatch();
+                    }}
+                    disabled={!selectedId || !whStockWarehouseId || saveBusy}
+                    aria-label="Receive stock"
+                  >
+                    {saveBusy ? 'Saving…' : 'Receive stock'}
+                  </button>
+                  {formFlash.ok ? (
+                    <p className="form-flash ok" role="status">
+                      {formFlash.ok}
+                    </p>
+                  ) : null}
+                  {formFlash.err ? (
+                    <p className="form-flash err" role="alert">
+                      {formFlash.err}
+                    </p>
+                  ) : null}
+                </div>
+              </aside>
+            </>
+          ) : null}
+          {reorderDrawerOpen ? (
+            <>
+              <div
+                className="inv-drawer-back"
+                onClick={() => !saveBusy && setReorderDrawerOpen(false)}
+                aria-hidden
+              />
+              <aside className="inv-drawer" aria-label="Set reorder">
+                <button type="button" onClick={() => setReorderDrawerOpen(false)} disabled={saveBusy}>
+                  Close
+                </button>
+                <h3>Set reorder level</h3>
+                <select
+                  value={whReorderProductId}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setWhReorderProductId(id);
+                    const row = whStockRows.find((r) => r.product_id === id);
+                    if (row) {
+                      setWhReorderLevel(String(row.reorder_level ?? 0));
+                      setWhReorderQty(String(row.reorder_qty ?? 0));
+                    }
+                  }}
+                  aria-label="Warehouse reorder product"
+                >
+                  <option value="">Product</option>
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.sku})
+                    </option>
+                  ))}
+                </select>
+                <input
+                  value={whReorderLevel}
+                  onChange={(e) => setWhReorderLevel(e.target.value)}
+                  placeholder="Reorder level"
+                  aria-label="Warehouse reorder level"
+                />
+                <input
+                  value={whReorderQty}
+                  onChange={(e) => setWhReorderQty(e.target.value)}
+                  placeholder="Reorder qty"
+                  aria-label="Warehouse reorder qty"
+                />
+                <div className="cat-save-row">
+                  <button
+                    type="button"
+                    onClick={saveWarehouseReorder}
+                    disabled={!whStockWarehouseId || !whReorderProductId || saveBusy}
+                    aria-label="Save warehouse reorder policy"
+                  >
+                    {saveBusy ? 'Saving…' : 'Save reorder'}
+                  </button>
+                  {formFlash.ok ? (
+                    <p className="form-flash ok" role="status">
+                      {formFlash.ok}
+                    </p>
+                  ) : null}
+                  {formFlash.err ? (
+                    <p className="form-flash err" role="alert">
+                      {formFlash.err}
+                    </p>
+                  ) : null}
+                </div>
+              </aside>
+            </>
+          ) : null}
+        </div>
       )}
 
       {tab === 'transfers' && (
-        <>
-          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8, maxWidth: 560 }}>
-            <h3>Warehouse transfer (BR-5.2 / BR-5.4)</h3>
-            <p className="muted" style={{ margin: 0 }}>
-              Move stock between warehouses with a transfer note and approval. Same-store warehouse
-              pairs need one approval; different stores need dual manager approval. Warehouses must
-              be linked to a store. Uses the product selected above.
-            </p>
-            <p className="muted">
-              Selected:{' '}
-              {selected ? `${selected.name} (${selected.sku}) — on-hand ${selected.stock_qty}` : 'none'}
-            </p>
-            <label className="muted">From warehouse</label>
-            <select
-              value={xferFromWh}
-              onChange={(e) => setXferFromWh(e.target.value)}
-              aria-label="Stock transfer from warehouse"
-              title="Source warehouse for transfer (UuidIdValue)"
-            >
-              <option value="">Select source</option>
-              {storeWarehouses
-                .filter((w) => w.store_id)
-                .map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.name || w.code} ({w.code})
-                  </option>
-                ))}
-            </select>
-            <label className="muted">To warehouse</label>
-            <select
-              value={xferToWh}
-              onChange={(e) => setXferToWh(e.target.value)}
-              aria-label="Stock transfer to warehouse"
-              title="Destination warehouse for transfer (UuidIdValue)"
-            >
-              <option value="">Select destination</option>
-              {warehouses
-                .filter((w) => w.store_id)
-                .map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.name || w.code} ({w.code})
-                  </option>
-                ))}
-            </select>
-            <label className="muted">Quantity</label>
-            <input
-              value={xferQty}
-              onChange={(e) => setXferQty(e.target.value)}
-              placeholder="1"
-              aria-label="Stock transfer quantity"
-            />
-            <label className="muted">Notes (optional)</label>
-            <input
-              value={xferNotes}
-              onChange={(e) => setXferNotes(e.target.value)}
-              placeholder="Transfer note"
-              aria-label="Stock transfer notes"
-              title="Optional notes (1–500 chars; letters/digits required)"
-            />
+        <div className="card cat-panel">
+          <div className="cat-head">
+            <h2 style={{ margin: 0 }}>Stock transfer</h2>
             <button
               type="button"
-              onClick={createWarehouseTransfer}
-              disabled={!selectedId || !xferFromWh || !xferToWh}
+              onClick={() => {
+                setFormFlash({});
+                setXferDrawerOpen(true);
+              }}
               aria-label="Create stock transfer"
             >
-              Create &amp; request
+              New transfer
             </button>
           </div>
-
-          <h3>Transfers</h3>
-          <p className="muted">
-            Approve → ship (deducts source) → receive (credits destination). Cancel restores in-transit
-            stock.
+          <p className="muted inv-child">
+            Move stock between locations. This is not an adjustment. Number is assigned when you save.
           </p>
-          <div className="card" style={{ marginBottom: 12 }}>
-            <label>
-              Reject / Cancel reason{' '}
-              <input
-                value={xferRejectReason}
-                onChange={(e) => setXferRejectReason(e.target.value)}
-                placeholder="Required before Reject or Cancel"
-                title="Required reject/cancel reason (1–500 chars; letters/digits required)"
-                aria-label="Stock transfer reject reason"
-                style={{ minWidth: 280 }}
-              />
-            </label>
-            <p className="muted" style={{ marginTop: 6 }}>
-              Used by Reject and Cancel (stored as <code>rejection_reason</code>; status → cancelled).
-            </p>
+          <div className="cat-toolbar">
+            <input
+              value={xferSearch}
+              onChange={(e) => setXferSearch(e.target.value)}
+              placeholder="Search transfers"
+              aria-label="Search stock transfers"
+            />
+            <select
+              value={transferManageFilter}
+              onChange={(e) =>
+                setTransferManageFilter(
+                  e.target.value as
+                    | 'all'
+                    | 'draft'
+                    | 'requested'
+                    | 'in_transit'
+                    | 'received'
+                    | 'cancelled',
+                )
+              }
+              aria-label="Stock transfer status filter"
+            >
+              <option value="all">All statuses</option>
+              <option value="draft">Draft only</option>
+              <option value="requested">Requested only</option>
+              <option value="in_transit">In transit only</option>
+              <option value="received">Received only</option>
+              <option value="cancelled">Cancelled only</option>
+            </select>
+            <button type="button" onClick={() => loadTransfers()} aria-label="Refresh stock transfers">
+              Refresh
+            </button>
           </div>
-          <button type="button" onClick={() => loadTransfers()} style={{ marginBottom: 8 }} aria-label="Refresh stock transfers">
-            Refresh
-          </button>
-          <select
-            value={transferManageFilter}
-            onChange={(e) =>
-              setTransferManageFilter(
-                e.target.value as
-                  | 'all'
-                  | 'draft'
-                  | 'requested'
-                  | 'in_transit'
-                  | 'received'
-                  | 'cancelled'
-              )
-            }
-            title="Filter stock transfer list by status"
-            aria-label="Stock transfer status filter"
-            style={{ marginBottom: 12, marginLeft: 8 }}
-          >
-            <option value="all">All statuses</option>
-            <option value="draft">Draft only</option>
-            <option value="requested">Requested only</option>
-            <option value="in_transit">In transit only</option>
-            <option value="received">Received only</option>
-            <option value="cancelled">Cancelled only</option>
-          </select>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Number</th>
-                <th>From WH</th>
-                <th>To WH</th>
-                <th>Status</th>
-                <th>Approval</th>
-                <th>Reject / Cancel reason</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {managedTransfers.map((t) => (
-                <tr key={t.id}>
-                  <td>{t.transfer_number}</td>
-                  <td>{warehouseLabel(t.from_warehouse_id)}</td>
-                  <td>{warehouseLabel(t.to_warehouse_id)}</td>
-                  <td>{t.status}</td>
-                  <td>
-                    {t.status === 'requested'
-                      ? t.fully_approved
-                        ? 'Ready to ship'
-                        : t.approval_steps_required <= 1
-                          ? 'Awaiting approval'
-                          : t.awaiting_approval === 'dest'
-                            ? 'Awaiting dest'
-                            : 'Awaiting source'
-                      : '—'}
-                  </td>
-                  <td className="muted">{t.rejection_reason || '—'}</td>
-                  <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    {t.status === 'draft' && (
-                      <button type="button" className="btn-ok" onClick={() => transferAct(t.id, 'submit')} aria-label={`Submit stock transfer ${t.id}`}>
-                        Submit
-                      </button>
-                    )}
-                    {t.status === 'requested' && !t.fully_approved && (
-                      <>
-                        <button type="button" className="btn-ok" onClick={() => transferAct(t.id, 'approve')} aria-label={`Approve stock transfer ${t.id}`}>
-                          Approve
-                          {t.approval_steps_required > 1
-                            ? t.awaiting_approval === 'dest'
-                              ? ' dest'
-                              : ' source'
-                            : ''}
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-danger"
-                          onClick={() => transferAct(t.id, 'reject')}
-                          aria-label={`Reject stock transfer ${t.id}`}
-                        >
-                          Reject
-                        </button>
-                      </>
-                    )}
-                    {t.can_ship && (
-                      <button type="button" className="btn-ok" onClick={() => transferAct(t.id, 'ship')} aria-label={`Ship stock transfer ${t.id}`}>
-                        Ship
-                      </button>
-                    )}
-                    {t.status === 'in_transit' && (
-                      <button type="button" className="btn-ok" onClick={() => transferAct(t.id, 'receive')} aria-label={`Receive stock transfer ${t.id}`}>
-                        Receive
-                      </button>
-                    )}
-                    {['draft', 'requested', 'in_transit'].includes(t.status) && (
-                      <button type="button" className="btn-danger" onClick={() => transferAct(t.id, 'cancel')} aria-label={`Cancel stock transfer ${t.id}`}>
-                        Cancel
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {managedTransfers.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="muted">
-                    {transfers.length === 0
-                      ? 'No transfers yet'
-                      : 'No stock transfers for this filter'}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </>
+          {visibleTransfers.length === 0 ? (
+            <div className="cat-empty">
+              <p style={{ margin: 0 }}>
+                {transfers.length === 0 ? 'No transfers yet.' : 'No transfers for this filter.'}
+              </p>
+              <p className="muted" style={{ margin: '8px 0 0' }}>
+                Create a transfer, approve, ship, then receive at the destination.
+              </p>
+              <button
+                type="button"
+                style={{ marginTop: 12 }}
+                onClick={() => {
+                  setFormFlash({});
+                  setXferDrawerOpen(true);
+                }}
+              >
+                New transfer
+              </button>
+            </div>
+          ) : (
+            <div className="cat-table-wrap">
+              <table className="table cat-table">
+                <thead>
+                  <tr>
+                    <th>Number</th>
+                    <th>From</th>
+                    <th>To</th>
+                    <th>Status</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleTransfers.map((t) => (
+                    <tr key={t.id}>
+                      <td data-label="Number">
+                        <strong>{t.transfer_number}</strong>
+                        <div className="muted inv-child">{t.rejection_reason || ''}</div>
+                      </td>
+                      <td data-label="From">{warehouseLabel(t.from_warehouse_id)}</td>
+                      <td data-label="To">{warehouseLabel(t.to_warehouse_id)}</td>
+                      <td data-label="Status">{t.status}</td>
+                      <td className="cat-actions">
+                        {t.status === 'draft' && (
+                          <button
+                            type="button"
+                            className="btn-ok"
+                            onClick={() => transferAct(t.id, 'submit')}
+                            disabled={saveBusy}
+                            aria-label={`Submit stock transfer ${t.id}`}
+                          >
+                            Submit
+                          </button>
+                        )}
+                        {t.status === 'requested' && !t.fully_approved && (
+                          <button
+                            type="button"
+                            className="btn-ok"
+                            onClick={() => transferAct(t.id, 'approve')}
+                            disabled={saveBusy}
+                            aria-label={`Approve stock transfer ${t.id}`}
+                          >
+                            Approve
+                          </button>
+                        )}
+                        {t.can_ship && (
+                          <button
+                            type="button"
+                            className="btn-ok"
+                            onClick={() => transferAct(t.id, 'ship')}
+                            disabled={saveBusy}
+                            aria-label={`Ship stock transfer ${t.id}`}
+                          >
+                            Ship
+                          </button>
+                        )}
+                        {t.status === 'in_transit' && (
+                          <button
+                            type="button"
+                            className="btn-ok"
+                            onClick={() => transferAct(t.id, 'receive')}
+                            disabled={saveBusy}
+                            aria-label={`Receive stock transfer ${t.id}`}
+                          >
+                            Receive
+                          </button>
+                        )}
+                        {['draft', 'requested', 'in_transit'].includes(t.status) && (
+                          <button
+                            type="button"
+                            className="btn-danger"
+                            onClick={() => transferAct(t.id, 'cancel')}
+                            disabled={saveBusy}
+                            aria-label={`Cancel stock transfer ${t.id}`}
+                          >
+                            Cancel
+                          </button>
+                        )}
+                        {t.status === 'requested' && !t.fully_approved && (
+                          <button
+                            type="button"
+                            className="btn-danger"
+                            onClick={() => transferAct(t.id, 'reject')}
+                            disabled={saveBusy}
+                            aria-label={`Reject stock transfer ${t.id}`}
+                          >
+                            Reject
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <div className="cat-toolbar">
+            <input
+              value={xferRejectReason}
+              onChange={(e) => setXferRejectReason(e.target.value)}
+              placeholder="Required before Reject or Cancel"
+              aria-label="Stock transfer reject reason"
+            />
+            {formFlash.ok ? (
+              <p className="form-flash ok" role="status">
+                {formFlash.ok}
+              </p>
+            ) : null}
+            {formFlash.err ? (
+              <p className="form-flash err" role="alert">
+                {formFlash.err}
+              </p>
+            ) : null}
+          </div>
+          {xferDrawerOpen ? (
+            <>
+              <div className="inv-drawer-back" onClick={() => !saveBusy && setXferDrawerOpen(false)} aria-hidden />
+              <aside className="inv-drawer" aria-label="Create stock transfer">
+                <button type="button" onClick={() => setXferDrawerOpen(false)} disabled={saveBusy}>
+                  Close
+                </button>
+                <h3>New transfer</h3>
+                <p className="muted inv-child" style={{ margin: 0 }}>
+                  Number {invNumbering.stock_transfer_numbering?.preview || 'assigned when you save'}
+                </p>
+                <select
+                  value={selectedId}
+                  onChange={(e) => setSelectedId(e.target.value)}
+                  aria-label="Transfer product"
+                >
+                  <option value="">Select product</option>
+                  {managedProducts.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.sku}) — {p.stock_qty}
+                    </option>
+                  ))}
+                </select>
+                <label className="muted">From</label>
+                <select
+                  value={xferFromWh}
+                  onChange={(e) => setXferFromWh(e.target.value)}
+                  aria-label="Stock transfer from warehouse"
+                >
+                  <option value="">Select source</option>
+                  {storeWarehouses
+                    .filter((w) => w.store_id)
+                    .map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.name || w.code} ({w.code})
+                      </option>
+                    ))}
+                </select>
+                <label className="muted">To</label>
+                <select
+                  value={xferToWh}
+                  onChange={(e) => setXferToWh(e.target.value)}
+                  aria-label="Stock transfer to warehouse"
+                >
+                  <option value="">Select destination</option>
+                  {warehouses
+                    .filter((w) => w.store_id)
+                    .map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.name || w.code} ({w.code})
+                      </option>
+                    ))}
+                </select>
+                <input
+                  value={xferQty}
+                  onChange={(e) => setXferQty(e.target.value)}
+                  placeholder="Quantity"
+                  aria-label="Stock transfer quantity"
+                />
+                <input
+                  value={xferNotes}
+                  onChange={(e) => setXferNotes(e.target.value)}
+                  placeholder="Notes (optional)"
+                  aria-label="Stock transfer notes"
+                />
+                <div className="cat-save-row">
+                  <button
+                    type="button"
+                    onClick={createWarehouseTransfer}
+                    disabled={!selectedId || !xferFromWh || !xferToWh || saveBusy}
+                    aria-label="Create stock transfer"
+                  >
+                    {saveBusy ? 'Saving…' : 'Create & request'}
+                  </button>
+                  {formFlash.ok ? (
+                    <p className="form-flash ok" role="status">
+                      {formFlash.ok}
+                    </p>
+                  ) : null}
+                  {formFlash.err ? (
+                    <p className="form-flash err" role="alert">
+                      {formFlash.err}
+                    </p>
+                  ) : null}
+                </div>
+              </aside>
+            </>
+          ) : null}
+        </div>
       )}
     </>
   );

@@ -57,6 +57,7 @@ const TENANT_ITEMS: NavItem[] = [
   ['Backup', '/backup', 'backup'],
   ['Integrations', '/integrations', 'integrations'],
   ['Security', '/security', 'security'],
+  ['Printers', '/printers', 'printers'],
   ['AI Assistant', '/ai', 'ai'],
   ['Users', '/users', 'users'],
   ['Departments', '/departments', 'users'],
@@ -143,6 +144,7 @@ const TENANT_NAV_GROUPS: NavGroup[] = [
     label: 'Settings',
     items: [
       ['Security', '/security', 'security'],
+      ['Printers', '/printers', 'printers'],
       ['Backup', '/backup', 'backup'],
       ['AI Assistant', '/ai', 'ai'],
     ],
@@ -208,6 +210,7 @@ const ROLE_NAV_MODULES: Record<string, string[] | '*'> = {
     'audit',
     'ai',
     'security',
+    'printers',
   ],
   sales_officer: [
     'dashboard',
@@ -285,6 +288,13 @@ const ICONS: Record<string, React.ReactNode> = {
       <circle cx="9" cy="21" r="1" />
       <circle cx="20" cy="21" r="1" />
       <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+    </>
+  ),
+  printers: (
+    <>
+      <polyline points="6 9 6 2 18 2 18 9" />
+      <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+      <rect x="6" y="14" width="12" height="8" />
     </>
   ),
   purchasing: (
@@ -518,7 +528,7 @@ function navItemsForRole(
     if (
       packageSet &&
       !packageSet.has(permModule) &&
-      !['dashboard', 'notifications', 'security', 'users'].includes(module)
+      !['dashboard', 'notifications', 'security', 'users', 'printers'].includes(module)
     ) {
       return false;
     }

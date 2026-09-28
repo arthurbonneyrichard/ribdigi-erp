@@ -295,6 +295,8 @@ class ProductCategory(Base):
     name: Mapped[str] = mapped_column(String(120))
     tax_rate_id: Mapped[str | None] = mapped_column(ForeignKey("tax_rates.id"), nullable=True, index=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Optional restaurant prep routing: kitchen | bar | null (retail unused)
+    prep_station: Mapped[str | None] = mapped_column(String(20), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
@@ -359,6 +361,8 @@ class Product(Base):
     tax_supply_class: Mapped[str] = mapped_column(String(20), default="standard")
     tracks_batches: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Optional restaurant prep routing; overrides category when set
+    prep_station: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
 
 class ProductVariant(Base):
@@ -2043,3 +2047,95 @@ class FmcgCustomerAssignment(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class PrintAgent(Base):
+    """Paired till-side print agent (secret stored hashed; never returned after pair)."""
+
+    __tablename__ = "print_agents"
+    __table_args__ = (UniqueConstraint("tenant_id", "label", "store_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    label: Mapped[str] = mapped_column(String(120))
+    token_hash: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    pairing_code_hash: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    pairing_expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class Printer(Base):
+    """Tenant printer destination (browser dialog, paired agent, or allowlisted network)."""
+
+    __tablename__ = "printers"
+    __table_args__ = (UniqueConstraint("tenant_id", "name"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    agent_id: Mapped[str | None] = mapped_column(ForeignKey("print_agents.id"), nullable=True, index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    # browser_dialog | print_agent | network
+    connection_type: Mapped[str] = mapped_column(String(30), default="browser_dialog")
+    paper: Mapped[str] = mapped_column(String(20), default="80mm")
+    purposes: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    copies: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    is_enabled: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    # Network ESC/POS: host/port set only via printers:write; never from POS/browser
+    host: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    port: Mapped[int] = mapped_column(Integer, default=9100, server_default="9100")
+    status: Mapped[str] = mapped_column(String(20), default="unknown", server_default="unknown")
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class PrintJob(Base):
+    """Queued print work. Queued is not Printed. Retry does not create a new sale."""
+
+    __tablename__ = "print_jobs"
+    __table_args__ = (UniqueConstraint("tenant_id", "idempotency_key"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    printer_id: Mapped[str] = mapped_column(ForeignKey("printers.id"), index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    # pos_sale | sales_invoice | test | barcode
+    source_type: Mapped[str] = mapped_column(String(40), index=True)
+    source_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    # customer_receipt | invoice | kitchen | bar | barcode
+    purpose: Mapped[str] = mapped_column(String(40), index=True)
+    # queued | claimed | printing | printed | failed | cancelled | browser_pending
+    status: Mapped[str] = mapped_column(String(30), default="queued", index=True)
+    copies: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    attempt_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    idempotency_key: Mapped[str] = mapped_column(String(180), index=True)
+    reprint_of_job_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    payload: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    claimed_by_agent_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    claimed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    printed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class PrintJobAttempt(Base):
+    __tablename__ = "print_job_attempts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    job_id: Mapped[str] = mapped_column(ForeignKey("print_jobs.id"), index=True)
+    status: Mapped[str] = mapped_column(String(30))
+    detail: Mapped[str | None] = mapped_column(Text, nullable=True)
+    actor_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

@@ -11,7 +11,7 @@ from app.honesty import money_json
 # Always available so tenants can log in, see home, and get security alerts.
 # User Management is core tenant ops (Company Admin create/edit staff) — never package-strip it.
 ALWAYS_ON_MODULES: frozenset[str] = frozenset(
-    {"dashboard", "notifications", "security", "users", "staff_guide"}
+    {"dashboard", "notifications", "security", "users", "staff_guide", "printers"}
 )
 
 # Modules a package may grant (excludes platform — software-owner only).
@@ -38,6 +38,7 @@ PACKAGEABLE_MODULES: tuple[str, ...] = (
     "security",
     "customers",
     "suppliers",
+    "printers",
 )
 
 _STARTER = (
@@ -53,6 +54,7 @@ _STARTER = (
     "users",
     "customers",
     "suppliers",
+    "printers",
 )
 
 _PROFESSIONAL = _STARTER + (

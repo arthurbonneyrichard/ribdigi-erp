@@ -48,6 +48,7 @@ AUDIT_MODULES = frozenset(
         "tenants",
         "users",
         "webhooks",
+        "printers",
     }
 )
 

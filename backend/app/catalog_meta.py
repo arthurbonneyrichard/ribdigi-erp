@@ -39,6 +39,7 @@ def serialize_category(row: m.ProductCategory) -> dict:
         "name": row.name,
         "tax_rate_id": getattr(row, "tax_rate_id", None),
         "is_active": bool(row.is_active),
+        "prep_station": getattr(row, "prep_station", None),
         "created_at": row.created_at,
     }
 
@@ -198,6 +199,7 @@ def serialize_product(row: m.Product) -> dict:
         or ("exempt" if row.tax_exempt else "standard"),
         "tracks_batches": bool(row.tracks_batches),
         "is_active": bool(row.is_active),
+        "prep_station": getattr(row, "prep_station", None),
     }
 
 
@@ -322,6 +324,7 @@ async def create_category(
     name: str,
     parent_id: str | None = None,
     tax_rate_id: str | None = None,
+    prep_station: str | None = None,
 ) -> m.ProductCategory:
     name = require_honest_narrative(name, label="category name", max_length=120)
     supplied = (code or "").strip()
@@ -335,6 +338,10 @@ async def create_category(
         if not parent or parent.tenant_id != tenant_id:
             raise HTTPException(status_code=404, detail="Parent category not found")
     tax_rate_id = await _validate_category_tax_rate(db, tenant_id=tenant_id, tax_rate_id=tax_rate_id)
+    if prep_station is not None:
+        from app.printers import normalize_prep_station
+
+        prep_station = normalize_prep_station(prep_station)
     taken = {
         str(c).strip().upper()
         for c in await schema_compat.existing_codes(db, "product_categories", tenant_id)
@@ -350,6 +357,7 @@ async def create_category(
             "name": name,
             "parent_id": parent_id,
             "tax_rate_id": tax_rate_id,
+            "prep_station": prep_station,
             "is_active": True,
         },
     )
@@ -370,6 +378,8 @@ async def update_category(
     is_active: bool | None = None,
     clear_parent: bool = False,
     clear_tax_rate: bool = False,
+    prep_station: str | None = None,
+    clear_prep_station: bool = False,
 ) -> m.ProductCategory:
     row = await db.get(m.ProductCategory, category_id)
     if row is None or row.tenant_id != tenant_id:
@@ -408,6 +418,12 @@ async def update_category(
         )
     if is_active is not None:
         row.is_active = bool(is_active)
+    if clear_prep_station:
+        row.prep_station = None
+    elif prep_station is not None:
+        from app.printers import normalize_prep_station
+
+        row.prep_station = normalize_prep_station(prep_station)
     await db.flush()
     return row
 

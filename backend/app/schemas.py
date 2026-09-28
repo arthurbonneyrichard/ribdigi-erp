@@ -324,6 +324,7 @@ PackageableModuleValue = Annotated[
         "security",
         "customers",
         "suppliers",
+        "printers",
     ],
     BeforeValidator(coerce_package_code_value),
 ]
@@ -1341,6 +1342,8 @@ class ProductCreate(BaseModel):
     # BR-12.1 / BR-5.1 — schema Literal; omit → standard; blank/invalid → 422
     tax_supply_class: Literal["standard", "zero_rated", "exempt"] = "standard"
     tracks_batches: bool = False
+    # omit/`null` → inherit category / no prep ticket (retail)
+    prep_station: Literal["kitchen", "bar"] | None = None
 
 
 class ProductUpdate(BaseModel):
@@ -1400,6 +1403,8 @@ class ProductUpdate(BaseModel):
     tax_supply_class: Literal["standard", "zero_rated", "exempt"] | None = None
     tracks_batches: bool | None = None
     is_active: bool | None = None
+    prep_station: Literal["kitchen", "bar"] | None = None
+    clear_prep_station: bool = False
 
 
 class StockCountCreate(BaseModel):
@@ -1477,6 +1482,7 @@ class ProductCategoryCreate(BaseModel):
     # blank/`!!!`/`http://…`/non-UUID → **422** (was free `str`; garbage could reach
     # tax-rate lookup). Existence remains tenant-scoped tax-rate lookup (**404**).
     tax_rate_id: UuidIdValue | None = None
+    prep_station: Literal["kitchen", "bar"] | None = None
 
 
 class ProductCategoryUpdate(BaseModel):
@@ -1499,6 +1505,8 @@ class ProductCategoryUpdate(BaseModel):
     # Same honesty as ProductCategoryCreate.tax_rate_id.
     tax_rate_id: UuidIdValue | None = None
     is_active: bool | None = None
+    prep_station: Literal["kitchen", "bar"] | None = None
+    clear_prep_station: bool = False
 
 
 class BrandCreate(BaseModel):

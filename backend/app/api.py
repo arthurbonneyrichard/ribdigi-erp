@@ -68,6 +68,7 @@ from app import catalog_meta as catalog_meta_svc
 from app import product_images as product_images_svc
 from app import party_contacts as party_contacts_svc
 from app import barcodes as barcodes_svc
+from app import printers_api as printers_api_mod
 from app.config import settings
 from app.schemas import (
     BrandCreate,
@@ -348,6 +349,7 @@ from app import fmcg as fmcg_svc
 from app.rbac import PLATFORM_ROLES, is_platform_owner_role, is_platform_role
 
 api = APIRouter(prefix="/api/v1")
+api.include_router(printers_api_mod.router)
 logger = logging.getLogger("ribdigi.api")
 
 
@@ -3772,6 +3774,7 @@ async def patch_product(
         "length",
         "width",
         "height",
+        "prep_station",
     )
     before = {key: getattr(product, key, None) for key in tracked}
 
@@ -3857,6 +3860,12 @@ async def patch_product(
             product.tracks_batches = bool(value)
         elif key == "is_active" and value is not None:
             product.is_active = bool(value)
+        elif key == "prep_station":
+            from app.printers import normalize_prep_station
+
+            product.prep_station = normalize_prep_station(value)
+        elif key == "clear_prep_station" and value:
+            product.prep_station = None
 
     after = {key: getattr(product, key, None) for key in tracked}
 
@@ -3926,6 +3935,7 @@ async def catalog_create_category(
         name=payload.name,
         parent_id=payload.parent_id,
         tax_rate_id=payload.tax_rate_id,
+        prep_station=payload.prep_station,
     )
     await db.commit()
     rows = await catalog_meta_svc.list_categories(db, claims["tenant_id"])
@@ -3955,6 +3965,8 @@ async def catalog_patch_category(
         is_active=data.get("is_active"),
         clear_parent=clear_parent,
         clear_tax_rate=clear_tax_rate,
+        prep_station=data.get("prep_station"),
+        clear_prep_station=bool(data.get("clear_prep_station")),
     )
     await db.commit()
     # Return enriched tree fields for the updated row
@@ -8328,6 +8340,26 @@ async def pos_sale(
                 "source": "pos",
             },
         )
+    print_jobs_out: list[dict] = []
+    try:
+        from app import printers as printers_svc
+
+        tenant_row = await tenants_svc.get_tenant(db, claims["tenant_id"])
+        store_row = None
+        if session.store_id:
+            store_row = await db.get(m.Store, session.store_id)
+        print_rows = await printers_svc.enqueue_pos_sale_prints(
+            db,
+            tenant_id=claims["tenant_id"],
+            tx=tx,
+            user_id=claims.get("sub"),
+            store_id=session.store_id,
+            tenant=tenant_row,
+            store=store_row,
+        )
+        print_jobs_out = [printers_svc.serialize_job(j) for j in print_rows]
+    except Exception:
+        logger.exception("POS print enqueue failed sale_id=%s", tx.id)
     try:
         await db.commit()
     except IntegrityError:
@@ -8374,6 +8406,12 @@ async def pos_sale(
     }
     if drawer is not None:
         payload_out["drawer"] = drawer
+    payload_out["print_jobs"] = print_jobs_out
+    payload_out["print_browser_fallback"] = True
+    payload_out["print_note"] = (
+        "Queued is not printed. The browser cannot list OS printers; "
+        "use the print dialog, a paired till agent, or an allowlisted network printer."
+    )
     return env(payload_out, "POS sale recorded")
 
 
@@ -8558,6 +8596,23 @@ async def pos_receipt(
         )
     # Defense in depth: ReceiptPrintFormatValue Literal rejects unknown with 422.
     raise HTTPException(status_code=400, detail="format must be json, text, or pdf")
+
+
+@api.get("/pos/sales/{sale_id}/print-jobs")
+async def pos_sale_print_jobs(
+    sale_id: UuidIdValue,
+    claims=Depends(require_permission("pos", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import printers as printers_svc
+
+    tx = await db.get(m.Transaction, sale_id)
+    if not tx or tx.tenant_id != claims["tenant_id"] or tx.tx_type != "pos_sale":
+        raise HTTPException(status_code=404, detail="POS sale not found")
+    rows = await printers_svc.list_jobs(
+        db, tenant_id=claims["tenant_id"], source_id=sale_id
+    )
+    return env([printers_svc.serialize_job(r, include_payload=True) for r in rows])
 
 
 @api.post("/pos/sales/{sale_id}/receipt/send")
