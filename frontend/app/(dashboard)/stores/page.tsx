@@ -5,6 +5,12 @@ import { useRouter } from 'next/navigation';
 import { api, apiOptional } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { isHotelIndustry } from '../../../lib/tenantNav';
+import {
+  formatTransferDate,
+  matchesTransferSearch,
+  transferProductCount,
+  transferQtyTotal,
+} from '../../../lib/stockTransfers';
 
 type DayHours = { open?: string; close?: string; closed?: boolean };
 type OperatingHours = Partial<Record<'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun', DayHours>>;
@@ -100,6 +106,9 @@ type Transfer = {
   can_ship?: boolean;
   rejection_reason?: string | null;
   items: { product_id: string; quantity: number }[];
+  item_count?: number;
+  quantity_total?: number;
+  created_at?: string | null;
 };
 
 export default function Page() {
@@ -152,6 +161,10 @@ export default function Page() {
   const [toStore, setToStore] = useState('');
   const [productId, setProductId] = useState('');
   const [qty, setQty] = useState('1');
+  const [xferSearch, setXferSearch] = useState('');
+  const [xferFromFilter, setXferFromFilter] = useState('');
+  const [xferToFilter, setXferToFilter] = useState('');
+  const [xferConfirming, setXferConfirming] = useState(false);
   const [xferRejectReason, setXferRejectReason] = useState('');
   const [viewStore, setViewStore] = useState('');
   const [reorderProductId, setReorderProductId] = useState('');
@@ -197,8 +210,10 @@ export default function Page() {
   const managedBranches = byStatus(branches, branchManageFilter);
   const managedDepartments = byStatus(departments, departmentManageFilter);
   const managedTransfers = transfers.filter((t) => {
-    if (transferManageFilter === 'all') return true;
-    return (t.status || 'draft') === transferManageFilter;
+    if (xferFromFilter && t.from_store_id !== xferFromFilter) return false;
+    if (xferToFilter && t.to_store_id !== xferToFilter) return false;
+    if (transferManageFilter !== 'all' && (t.status || 'draft') !== transferManageFilter) return false;
+    return true;
   });
 
   async function refresh() {
@@ -803,6 +818,22 @@ export default function Page() {
 
   async function createTransfer() {
     setError('');
+    if (!fromStore.trim() || !toStore.trim()) {
+      setError('Select source and destination stores');
+      return;
+    }
+    if (fromStore.trim() === toStore.trim()) {
+      setError('Source and destination stores must be different');
+      return;
+    }
+    if (!productId.trim() || Number(qty) <= 0) {
+      setError('Select a product and a positive quantity');
+      return;
+    }
+    if (!xferConfirming) {
+      setXferConfirming(true);
+      return;
+    }
     try {
       const r = await api('/stores/transfers', {
         method: 'POST',
@@ -810,11 +841,11 @@ export default function Page() {
           from_store_id: fromStore.trim(),
           to_store_id: toStore.trim(),
           submit: true,
-          // trim so StockTransferItemCreate (UuidIdValue product_id) does not 422 on whitespace
           items: [{ product_id: productId.trim(), quantity: Number(qty) }],
         }),
       });
       setMessage(`Transfer ${r.data.transfer_number} requested`);
+      setXferConfirming(false);
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -855,6 +886,12 @@ export default function Page() {
   }
 
   const storeName = (id: string) => stores.find((s) => s.id === id)?.name || id;
+  const visibleTransfers = managedTransfers.filter((t) =>
+    matchesTransferSearch(t, xferSearch, {
+      from: storeName(t.from_store_id),
+      to: storeName(t.to_store_id),
+    }),
+  );
 
   if (hotelHome !== false) {
     return <p className="muted">{hotelHome ? 'Opening hotel dashboard…' : 'Checking account…'}</p>;
@@ -1189,7 +1226,10 @@ export default function Page() {
           <div style={{ display: 'grid', gap: 8 }}>
             <select
               value={fromStore}
-              onChange={(e) => setFromStore(e.target.value)}
+              onChange={(e) => {
+                setXferConfirming(false);
+                setFromStore(e.target.value);
+              }}
               aria-label="Stock transfer from store"
               title="Source store for inter-store transfer"
             >
@@ -1203,7 +1243,10 @@ export default function Page() {
             </select>
             <select
               value={toStore}
-              onChange={(e) => setToStore(e.target.value)}
+              onChange={(e) => {
+                setXferConfirming(false);
+                setToStore(e.target.value);
+              }}
               aria-label="Stock transfer to store"
               title="Destination store for inter-store transfer"
             >
@@ -1234,7 +1277,22 @@ export default function Page() {
               placeholder="Qty"
               aria-label="Stock transfer quantity"
             />
-            <button onClick={createTransfer} aria-label="Create and request stock transfer">Create & request</button>
+            {xferConfirming ? (
+              <p className="muted" style={{ margin: 0 }}>
+                Confirm from {stores.find((s) => s.id === fromStore)?.name || fromStore} to{' '}
+                {stores.find((s) => s.id === toStore)?.name || toStore} · qty {qty}
+              </p>
+            ) : null}
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {xferConfirming ? (
+                <button type="button" onClick={() => setXferConfirming(false)} aria-label="Edit stock transfer before confirm">
+                  Back
+                </button>
+              ) : null}
+              <button type="button" onClick={createTransfer} aria-label={xferConfirming ? 'Confirm stock transfer' : 'Review stock transfer'}>
+                {xferConfirming ? 'Confirm create' : 'Review transfer'}
+              </button>
+            </div>
           </div>
         </div>
         <div className="card">
@@ -1771,6 +1829,37 @@ export default function Page() {
           Used by Reject and Cancel (stored as <code>rejection_reason</code>; status → cancelled).
         </p>
       </div>
+      <div className="cat-toolbar" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+        <input
+          value={xferSearch}
+          onChange={(e) => setXferSearch(e.target.value)}
+          placeholder="Search reference, store, status"
+          aria-label="Search stock transfers"
+        />
+        <select
+          value={xferFromFilter}
+          onChange={(e) => setXferFromFilter(e.target.value)}
+          aria-label="Filter by from store"
+        >
+          <option value="">From store</option>
+          {stores.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+        <select
+          value={xferToFilter}
+          onChange={(e) => setXferToFilter(e.target.value)}
+          aria-label="Filter by to store"
+        >
+          <option value="">To store</option>
+          {stores.map((s) => (
+            <option key={`to-${s.id}`} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
       <select
         value={transferManageFilter}
         onChange={(e) =>
@@ -1795,25 +1884,33 @@ export default function Page() {
         <option value="received">Received only</option>
         <option value="cancelled">Cancelled only</option>
       </select>
+      </div>
       <table className="table">
         <thead>
           <tr>
-            <th>Number</th>
-            <th>From</th>
-            <th>To</th>
+            <th>From store</th>
+            <th>To store</th>
+            <th>Products</th>
+            <th>Qty</th>
+            <th>Reference</th>
+            <th>Date</th>
             <th>Status</th>
             <th>Approval</th>
-            <th>Reject / Cancel reason</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {managedTransfers.map((t) => (
+          {visibleTransfers.map((t) => (
             <tr key={t.id}>
-              <td>{t.transfer_number}</td>
               <td>{storeName(t.from_store_id)}</td>
               <td>{storeName(t.to_store_id)}</td>
-              <td>{t.status}</td>
+              <td>{transferProductCount(t)}</td>
+              <td>{transferQtyTotal(t)}</td>
+              <td>{t.transfer_number}</td>
+              <td>{formatTransferDate(t.created_at)}</td>
+              <td>
+                <span className={`xfer-status xfer-status--${t.status || 'draft'}`}>{t.status}</span>
+              </td>
               <td>
                 {t.status === 'requested'
                   ? t.fully_approved
@@ -1823,7 +1920,6 @@ export default function Page() {
                       : 'Awaiting source'
                   : '—'}
               </td>
-              <td>{t.rejection_reason || '—'}</td>
               <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {t.status === 'draft' && (
                   <button type="button" className="btn-ok" onClick={() => act(t.id, 'submit')} aria-label={`Submit stock transfer ${t.id}`}>
@@ -1863,9 +1959,9 @@ export default function Page() {
               </td>
             </tr>
           ))}
-          {managedTransfers.length === 0 && (
+          {visibleTransfers.length === 0 && (
             <tr>
-              <td colSpan={7} className="muted">
+              <td colSpan={9} className="muted">
                 {transfers.length === 0
                   ? 'No transfers yet'
                   : 'No stock transfers for this filter'}

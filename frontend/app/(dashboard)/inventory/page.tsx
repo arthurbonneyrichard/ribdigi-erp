@@ -1,11 +1,18 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api, apiOptional } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { useStoreContext } from '../../../lib/storeContext';
 import { isHotelIndustry } from '../../../lib/tenantNav';
+import { usesStoreStockTransfers } from '../../../lib/industries';
+import {
+  formatTransferDate,
+  matchesTransferSearch,
+  transferProductCount,
+  transferQtyTotal,
+} from '../../../lib/stockTransfers';
 
 type Tab =
   | 'products'
@@ -193,11 +200,22 @@ export default function Page() {
   const [units, setUnits] = useState<any[]>([]);
   const { storeId } = useStoreContext();
   const [hotelOps, setHotelOps] = useState(false);
+  const [retailTransfers, setRetailTransfers] = useState(true);
   useEffect(() => {
     getMe()
-      .then((r) => setHotelOps(isHotelIndustry(r.data?.industry)))
+      .then((r) => {
+        const industry = r.data?.industry;
+        setHotelOps(isHotelIndustry(industry));
+        setRetailTransfers(usesStoreStockTransfers(industry));
+      })
       .catch(() => undefined);
   }, []);
+  useEffect(() => {
+    if (hotelOps && tab === 'transfers') {
+      setTab('products');
+      router.replace('/inventory?tab=products', { scroll: false });
+    }
+  }, [hotelOps, tab, router]);
   const scopeStoreId = hotelOps ? '' : storeId;
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const storeWarehouses = useMemo(
@@ -398,11 +416,18 @@ export default function Page() {
   const [whReorderLevel, setWhReorderLevel] = useState('0');
   const [whReorderQty, setWhReorderQty] = useState('0');
   const [transfers, setTransfers] = useState<any[]>([]);
+  const [stores, setStores] = useState<any[]>([]);
   const [xferFromWh, setXferFromWh] = useState('');
   const [xferToWh, setXferToWh] = useState('');
-  const [xferQty, setXferQty] = useState('1');
+  const [xferFromFilter, setXferFromFilter] = useState('');
+  const [xferToFilter, setXferToFilter] = useState('');
+  const [xferLines, setXferLines] = useState<{ key: string; product_id: string; qty: string }[]>([
+    { key: '1', product_id: '', qty: '1' },
+  ]);
   const [xferNotes, setXferNotes] = useState('');
   const [xferRejectReason, setXferRejectReason] = useState('');
+  const [xferConfirming, setXferConfirming] = useState(false);
+  const [xferDetailId, setXferDetailId] = useState('');
   const [countCancelReason, setCountCancelReason] = useState('');
   const [invNumbering, setInvNumbering] = useState<{
     opening_stock_numbering?: { preview?: string };
@@ -430,13 +455,14 @@ export default function Page() {
   const [xferDrawerOpen, setXferDrawerOpen] = useState(false);
   const [mvSearch, setMvSearch] = useState('');
   async function refresh() {
-    const [p, e, c, b, u, w, sc, os, rates, settings] = await Promise.all([
+    const [p, e, c, b, u, w, st, sc, os, rates, settings] = await Promise.all([
       apiOptional('/products'),
       apiOptional('/inventory/batches/expiring?days=60'),
       apiOptional('/catalog/categories'),
       apiOptional('/catalog/brands'),
       apiOptional('/catalog/units'),
       apiOptional('/warehouses'),
+      apiOptional('/stores'),
       apiOptional('/inventory/stock-counts'),
       apiOptional('/inventory/opening-stock'),
       apiOptional('/tax/rates'),
@@ -451,6 +477,7 @@ export default function Page() {
     setBrands(b.data || []);
     setUnits(u.data || []);
     setWarehouses(w.data || []);
+    setStores(st.data || []);
     setCounts(sc.data || []);
     setOpeningHistory(os.data || []);
     setTaxRates(rates.data || []);
@@ -603,7 +630,11 @@ export default function Page() {
   async function loadTransfers() {
     setError('');
     try {
-      const r = await api('/inventory/stock-transfers');
+      const qs =
+        transferManageFilter !== 'all'
+          ? `?status=${encodeURIComponent(transferManageFilter)}`
+          : '';
+      const r = await api(`/inventory/stock-transfers${qs}`);
       setTransfers(r.data || []);
     } catch (err: any) {
       setError(err.message);
@@ -611,11 +642,28 @@ export default function Page() {
   }
 
   useEffect(() => {
-    if (tab === 'transfers') {
+    if (tab === 'transfers' && retailTransfers) {
       loadTransfers().catch((err) => setError(err.message));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab]);
+  }, [tab, transferManageFilter, retailTransfers]);
+
+  function parsedXferItems():
+    | { ok: false; error: string }
+    | { ok: true; items: { product_id: string; quantity: number }[] } {
+    const items: { product_id: string; quantity: number }[] = [];
+    for (const line of xferLines) {
+      const product_id = line.product_id.trim();
+      const quantity = Number(line.qty);
+      if (!product_id) continue;
+      if (!Number.isFinite(quantity) || quantity <= 0) {
+        return { ok: false, error: 'Each product line needs a positive quantity' };
+      }
+      items.push({ product_id, quantity });
+    }
+    if (!items.length) return { ok: false, error: 'Add at least one product line' };
+    return { ok: true, items };
+  }
 
   async function createWarehouseTransfer() {
     if (saveBusy) return;
@@ -630,13 +678,13 @@ export default function Page() {
       setFormFlash({ err: 'Source and destination must be different' });
       return;
     }
-    if (!selectedId) {
-      setFormFlash({ err: 'Select a product' });
+    const parsed = parsedXferItems();
+    if (!parsed.ok) {
+      setFormFlash({ err: parsed.error });
       return;
     }
-    const qty = Number(xferQty);
-    if (!Number.isFinite(qty) || qty <= 0) {
-      setFormFlash({ err: 'Quantity must be positive' });
+    if (!xferConfirming) {
+      setXferConfirming(true);
       return;
     }
     setSaveBusy(true);
@@ -648,7 +696,7 @@ export default function Page() {
           to_warehouse_id: xferToWh.trim(),
           submit: true,
           notes: xferNotes.trim() || null,
-          items: [{ product_id: selectedId.trim(), quantity: qty }],
+          items: parsed.items,
         }),
       });
       if (!r.data?.id && !r.data?.transfer_number) {
@@ -658,13 +706,11 @@ export default function Page() {
       setFormFlash({
         ok:
           `Transfer ${r.data.transfer_number} requested` +
-          (hotelOps
-            ? ''
-            : r.data.approval_steps_required <= 1
-              ? ' — same store'
-              : ' — needs both managers'),
+          (r.data.approval_steps_required <= 1 ? ' — same store' : ' — needs both managers'),
       });
       setXferNotes('');
+      setXferConfirming(false);
+      setXferLines([{ key: String(Date.now()), product_id: '', qty: '1' }]);
       await loadTransfers();
     } catch (err: any) {
       setFormFlash({ err: err.message || 'Could not create transfer' });
@@ -711,10 +757,19 @@ export default function Page() {
     }
   }
 
+  function storeLabel(id: string | null | undefined) {
+    if (!id) return '';
+    const s = stores.find((x) => x.id === id);
+    return s ? s.name || s.code || id.slice(0, 8) : '';
+  }
+
   function warehouseLabel(id: string | null | undefined) {
     if (!id) return '—';
     const w = warehouses.find((x) => x.id === id);
-    return w ? w.name || w.code || id.slice(0, 8) : id.slice(0, 8);
+    if (!w) return id.slice(0, 8);
+    const loc = w.name || w.code || id.slice(0, 8);
+    const store = storeLabel(w.store_id);
+    return store ? `${store} · ${loc}` : loc;
   }
 
   async function saveWarehouseReorder() {
@@ -2171,6 +2226,8 @@ export default function Page() {
     return (c.status || 'draft') === countManageFilter;
   });
   const managedTransfers = transfers.filter((t) => {
+    if (xferFromFilter && t.from_warehouse_id !== xferFromFilter) return false;
+    if (xferToFilter && t.to_warehouse_id !== xferToFilter) return false;
     if (transferManageFilter === 'all') return true;
     return (t.status || 'draft') === transferManageFilter;
   });
@@ -2216,11 +2273,13 @@ export default function Page() {
     return hay.includes(whQuery);
   });
   const xferQuery = xferSearch.trim().toLowerCase();
-  const visibleTransfers = managedTransfers.filter((t) => {
-    if (!xferQuery) return true;
-    const hay = `${t.transfer_number || ''} ${t.status || ''} ${t.rejection_reason || ''} ${warehouseLabel(t.from_warehouse_id)} ${warehouseLabel(t.to_warehouse_id)}`.toLowerCase();
-    return hay.includes(xferQuery);
-  });
+  const visibleTransfers = managedTransfers.filter((t) =>
+    matchesTransferSearch(t, xferQuery, {
+      from: warehouseLabel(t.from_warehouse_id),
+      to: warehouseLabel(t.to_warehouse_id),
+    }),
+  );
+  const xferParsed = parsedXferItems();
   const lowStockProducts = products.filter((p) => stockStatusOf(p) === 'red' && p.is_active !== false);
   const lsQuery = lowStockSearch.trim().toLowerCase();
   const lowStockRows = [
@@ -2281,7 +2340,9 @@ export default function Page() {
             ['movements', 'Stock history'],
             ['adjust', 'Adjust stock'],
           ] as const
-        ).map(([id, label]) => (
+        )
+          .filter(([id]) => id !== 'transfers' || retailTransfers)
+          .map(([id, label]) => (
           <button
             key={id}
             onClick={() => selectTab(id)}
@@ -5175,7 +5236,7 @@ export default function Page() {
         </div>
       )}
 
-      {tab === 'transfers' && (
+      {tab === 'transfers' && retailTransfers && (
         <div className="card cat-panel">
           <div className="cat-head">
             <h2 style={{ margin: 0 }}>Stock transfer</h2>
@@ -5183,6 +5244,7 @@ export default function Page() {
               type="button"
               onClick={() => {
                 setFormFlash({});
+                setXferConfirming(false);
                 setXferDrawerOpen(true);
               }}
               aria-label="Create stock transfer"
@@ -5191,15 +5253,43 @@ export default function Page() {
             </button>
           </div>
           <p className="muted inv-child">
-            Move stock between locations. This is not an adjustment. Number is assigned when you save.
+            Move stock from one store or warehouse to another. Status follows request → ship → receive.
           </p>
           <div className="cat-toolbar">
             <input
               value={xferSearch}
               onChange={(e) => setXferSearch(e.target.value)}
-              placeholder="Search transfers"
+              placeholder="Search reference, store, status"
               aria-label="Search stock transfers"
             />
+            <select
+              value={xferFromFilter}
+              onChange={(e) => setXferFromFilter(e.target.value)}
+              aria-label="Filter by from warehouse"
+            >
+              <option value="">From store / warehouse</option>
+              {warehouses
+                .filter((w) => w.store_id)
+                .map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {warehouseLabel(w.id)}
+                  </option>
+                ))}
+            </select>
+            <select
+              value={xferToFilter}
+              onChange={(e) => setXferToFilter(e.target.value)}
+              aria-label="Filter by to warehouse"
+            >
+              <option value="">To store / warehouse</option>
+              {warehouses
+                .filter((w) => w.store_id)
+                .map((w) => (
+                  <option key={`to-${w.id}`} value={w.id}>
+                    {warehouseLabel(w.id)}
+                  </option>
+                ))}
+            </select>
             <select
               value={transferManageFilter}
               onChange={(e) =>
@@ -5239,6 +5329,7 @@ export default function Page() {
                 style={{ marginTop: 12 }}
                 onClick={() => {
                   setFormFlash({});
+                  setXferConfirming(false);
                   setXferDrawerOpen(true);
                 }}
               >
@@ -5250,24 +5341,40 @@ export default function Page() {
               <table className="table cat-table">
                 <thead>
                   <tr>
-                    <th>Number</th>
-                    <th>From</th>
-                    <th>To</th>
+                    <th>From store / warehouse</th>
+                    <th>To store / warehouse</th>
+                    <th>Products</th>
+                    <th>Qty</th>
+                    <th>Reference</th>
+                    <th>Date</th>
                     <th>Status</th>
                     <th />
                   </tr>
                 </thead>
                 <tbody>
                   {visibleTransfers.map((t) => (
-                    <tr key={t.id}>
-                      <td data-label="Number">
+                    <Fragment key={t.id}>
+                    <tr>
+                      <td data-label="From">{warehouseLabel(t.from_warehouse_id)}</td>
+                      <td data-label="To">{warehouseLabel(t.to_warehouse_id)}</td>
+                      <td data-label="Products">{transferProductCount(t)}</td>
+                      <td data-label="Qty">{transferQtyTotal(t)}</td>
+                      <td data-label="Reference">
                         <strong>{t.transfer_number}</strong>
                         <div className="muted inv-child">{t.rejection_reason || ''}</div>
                       </td>
-                      <td data-label="From">{warehouseLabel(t.from_warehouse_id)}</td>
-                      <td data-label="To">{warehouseLabel(t.to_warehouse_id)}</td>
-                      <td data-label="Status">{t.status}</td>
+                      <td data-label="Date">{formatTransferDate(t.created_at)}</td>
+                      <td data-label="Status">
+                        <span className={`xfer-status xfer-status--${t.status || 'draft'}`}>{t.status}</span>
+                      </td>
                       <td className="cat-actions">
+                        <button
+                          type="button"
+                          onClick={() => setXferDetailId(xferDetailId === t.id ? '' : t.id)}
+                          aria-label={`${xferDetailId === t.id ? 'Hide' : 'Show'} stock transfer lines ${t.id}`}
+                        >
+                          {xferDetailId === t.id ? 'Hide lines' : 'Lines'}
+                        </button>
                         {t.status === 'draft' && (
                           <button
                             type="button"
@@ -5336,6 +5443,47 @@ export default function Page() {
                         )}
                       </td>
                     </tr>
+                    {xferDetailId === t.id ? (
+                      <tr>
+                        <td colSpan={8}>
+                          <table className="table">
+                            <thead>
+                              <tr>
+                                <th>Product</th>
+                                <th>Qty</th>
+                                <th>Shipped</th>
+                                <th>Received</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {(t.items || []).map((line: any) => {
+                                const prod = products.find((p) => p.id === line.product_id);
+                                return (
+                                  <tr key={line.id || `${t.id}-${line.product_id}`}>
+                                    <td>
+                                      {prod
+                                        ? `${prod.name} (${prod.sku})`
+                                        : line.product_id}
+                                    </td>
+                                    <td>{line.quantity}</td>
+                                    <td>{line.shipped_qty ?? '—'}</td>
+                                    <td>{line.received_qty ?? '—'}</td>
+                                  </tr>
+                                );
+                              })}
+                              {!(t.items || []).length ? (
+                                <tr>
+                                  <td colSpan={4} className="muted">
+                                    No product lines
+                                  </td>
+                                </tr>
+                              ) : null}
+                            </tbody>
+                          </table>
+                        </td>
+                      </tr>
+                    ) : null}
+                    </Fragment>
                   ))}
                 </tbody>
               </table>
@@ -5361,73 +5509,158 @@ export default function Page() {
           </div>
           {xferDrawerOpen ? (
             <>
-              <div className="inv-drawer-back" onClick={() => !saveBusy && setXferDrawerOpen(false)} aria-hidden />
+              <div
+                className="inv-drawer-back"
+                onClick={() => {
+                  if (saveBusy) return;
+                  setXferDrawerOpen(false);
+                  setXferConfirming(false);
+                }}
+                aria-hidden
+              />
               <aside className="inv-drawer" aria-label="Create stock transfer">
-                <button type="button" onClick={() => setXferDrawerOpen(false)} disabled={saveBusy}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setXferDrawerOpen(false);
+                    setXferConfirming(false);
+                  }}
+                  disabled={saveBusy}
+                >
                   Close
                 </button>
                 <h3>New transfer</h3>
                 <p className="muted inv-child" style={{ margin: 0 }}>
                   Number {invNumbering.stock_transfer_numbering?.preview || 'assigned when you save'}
                 </p>
-                <select
-                  value={selectedId}
-                  onChange={(e) => setSelectedId(e.target.value)}
-                  aria-label="Transfer product"
-                >
-                  <option value="">Select product</option>
-                  {managedProducts.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({p.sku}) — {p.stock_qty}
-                    </option>
-                  ))}
-                </select>
-                <label className="muted">From</label>
+                <label className="muted">From store / warehouse</label>
                 <select
                   value={xferFromWh}
-                  onChange={(e) => setXferFromWh(e.target.value)}
+                  onChange={(e) => {
+                    setXferFromWh(e.target.value);
+                    setXferConfirming(false);
+                  }}
                   aria-label="Stock transfer from warehouse"
                 >
                   <option value="">Select source</option>
-                  {(hotelOps ? storeWarehouses : storeWarehouses.filter((w) => w.store_id)).map((w) => (
+                  {storeWarehouses
+                    .filter((w) => w.store_id)
+                    .map((w) => (
                       <option key={w.id} value={w.id}>
-                        {w.name || w.code} ({w.code})
+                        {warehouseLabel(w.id)}
                       </option>
                     ))}
                 </select>
-                <label className="muted">To</label>
+                <label className="muted">To store / warehouse</label>
                 <select
                   value={xferToWh}
-                  onChange={(e) => setXferToWh(e.target.value)}
+                  onChange={(e) => {
+                    setXferToWh(e.target.value);
+                    setXferConfirming(false);
+                  }}
                   aria-label="Stock transfer to warehouse"
                 >
                   <option value="">Select destination</option>
-                  {(hotelOps ? warehouses : warehouses.filter((w) => w.store_id)).map((w) => (
+                  {warehouses
+                    .filter((w) => w.store_id)
+                    .map((w) => (
                       <option key={w.id} value={w.id}>
-                        {w.name || w.code} ({w.code})
+                        {warehouseLabel(w.id)}
                       </option>
                     ))}
                 </select>
-                <input
-                  value={xferQty}
-                  onChange={(e) => setXferQty(e.target.value)}
-                  placeholder="Quantity"
-                  aria-label="Stock transfer quantity"
-                />
+                <label className="muted">Product lines</label>
+                {xferLines.map((line, idx) => (
+                  <div key={line.key} className="xfer-line-row">
+                    <select
+                      value={line.product_id}
+                      onChange={(e) => {
+                        setXferConfirming(false);
+                        setXferLines((rows) =>
+                          rows.map((r) =>
+                            r.key === line.key ? { ...r, product_id: e.target.value } : r,
+                          ),
+                        );
+                      }}
+                      aria-label={`Transfer product line ${idx + 1}`}
+                    >
+                      <option value="">Select product</option>
+                      {managedProducts.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} ({p.sku}) — {p.stock_qty}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      value={line.qty}
+                      onChange={(e) => {
+                        setXferConfirming(false);
+                        setXferLines((rows) =>
+                          rows.map((r) => (r.key === line.key ? { ...r, qty: e.target.value } : r)),
+                        );
+                      }}
+                      placeholder="Qty"
+                      aria-label={`Transfer quantity line ${idx + 1}`}
+                    />
+                    {xferLines.length > 1 ? (
+                      <button
+                        type="button"
+                        className="btn-danger"
+                        onClick={() => {
+                          setXferConfirming(false);
+                          setXferLines((rows) => rows.filter((r) => r.key !== line.key));
+                        }}
+                        aria-label={`Remove transfer line ${idx + 1}`}
+                      >
+                        Remove
+                      </button>
+                    ) : null}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setXferLines((rows) => [
+                      ...rows,
+                      { key: String(Date.now()), product_id: '', qty: '1' },
+                    ])
+                  }
+                  aria-label="Add transfer product line"
+                >
+                  Add product line
+                </button>
                 <input
                   value={xferNotes}
                   onChange={(e) => setXferNotes(e.target.value)}
                   placeholder="Notes (optional)"
                   aria-label="Stock transfer notes"
                 />
+                {xferConfirming ? (
+                  <p className="muted" style={{ margin: 0 }}>
+                    Confirm: {warehouseLabel(xferFromWh)} → {warehouseLabel(xferToWh)}
+                    {xferParsed.ok
+                      ? ` · ${xferParsed.items.length} products · ${xferParsed.items.reduce((s, i) => s + i.quantity, 0)} qty`
+                      : ''}
+                  </p>
+                ) : null}
                 <div className="cat-save-row">
+                  {xferConfirming ? (
+                    <button
+                      type="button"
+                      onClick={() => setXferConfirming(false)}
+                      disabled={saveBusy}
+                      aria-label="Edit stock transfer before confirm"
+                    >
+                      Back
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     onClick={createWarehouseTransfer}
-                    disabled={!selectedId || !xferFromWh || !xferToWh || saveBusy}
-                    aria-label="Create stock transfer"
+                    disabled={!xferFromWh || !xferToWh || saveBusy}
+                    aria-label={xferConfirming ? 'Confirm stock transfer' : 'Review stock transfer'}
                   >
-                    {saveBusy ? 'Saving…' : 'Create & request'}
+                    {saveBusy ? 'Saving…' : xferConfirming ? 'Confirm create' : 'Review transfer'}
                   </button>
                   {formFlash.ok ? (
                     <p className="form-flash ok" role="status">

@@ -68,6 +68,8 @@ async def test_inventory_same_store_warehouse_transfer_lifecycle(client, db_sess
     assert body["to_store_id"] == store.id
     assert body["approval_steps_required"] == 1
     assert body["status"] == "requested"
+    assert body["item_count"] == 1
+    assert float(body["quantity_total"]) == 4
     assert body["fully_approved"] is False
     assert body["can_ship"] is False
 
@@ -156,3 +158,50 @@ async def test_stores_transfer_still_requires_different_stores(client, db_sessio
     )
     assert bad.status_code == 400, bad.text
     assert "stores must differ" in bad.text
+
+
+@pytest.mark.asyncio
+async def test_inventory_transfer_multi_item_counts(client, db_session, seeded):
+    ac, seed = client
+    admin = await _admin(ac, seed)
+    tenant_id = seed["t1"].id
+    store_a = await create_store(
+        db_session, tenant_id=tenant_id, name="Count From", code="CFR"
+    )
+    store_b = await create_store(
+        db_session, tenant_id=tenant_id, name="Count To", code="CTO"
+    )
+    await db_session.flush()
+    wh_a = await warehouse_for_store(db_session, tenant_id, store_a.id)
+    wh_b = await warehouse_for_store(db_session, tenant_id, store_b.id)
+    await apply_warehouse_stock_change(
+        db_session,
+        tenant_id=tenant_id,
+        warehouse_id=wh_a.id,
+        product_id=seed["p1"].id,
+        quantity_delta=20,
+    )
+    await db_session.commit()
+
+    created = await ac.post(
+        "/api/v1/inventory/stock-transfers",
+        headers=admin,
+        json={
+            "from_warehouse_id": wh_a.id,
+            "to_warehouse_id": wh_b.id,
+            "submit": True,
+            "items": [
+                {"product_id": seed["p1"].id, "quantity": 2},
+                {"product_id": seed["p1"].id, "quantity": 5},
+            ],
+        },
+    )
+    assert created.status_code == 200, created.text
+    body = created.json()["data"]
+    assert body["item_count"] == 2
+    assert float(body["quantity_total"]) == 7
+    listed = await ac.get("/api/v1/inventory/stock-transfers", headers=admin)
+    assert listed.status_code == 200, listed.text
+    row = next(r for r in listed.json()["data"] if r["id"] == body["id"])
+    assert row["item_count"] == 2
+    assert float(row["quantity_total"]) == 7

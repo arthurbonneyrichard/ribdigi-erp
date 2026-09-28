@@ -431,6 +431,7 @@ async def serialize_transfer(db: AsyncSession, transfer: m.StockTransfer) -> dic
     required = int(getattr(transfer, "approval_steps_required", 2) or 2)
     fully_approved = _transfer_fully_approved(transfer)
     can_ship = transfer.status == "requested" and fully_approved
+    qty_total = sum(money_json(i.quantity) for i in items)
     awaiting = None
     if transfer.status == "requested" and not fully_approved:
         if required <= 1:
@@ -458,6 +459,8 @@ async def serialize_transfer(db: AsyncSession, transfer: m.StockTransfer) -> dic
         "rejection_reason": getattr(transfer, "rejection_reason", None),
         "fully_approved": fully_approved,
         "can_ship": can_ship,
+        "item_count": len(items),
+        "quantity_total": money_json(qty_total),
         "shipped_at": transfer.shipped_at,
         "received_at": transfer.received_at,
         "created_at": transfer.created_at,

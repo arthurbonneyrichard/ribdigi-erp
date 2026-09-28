@@ -63,6 +63,13 @@ export function normalizeIndustry(value?: string | null): string | null {
   return (INDUSTRIES as readonly string[]).includes(mapped) ? mapped : null;
 }
 
+/** Inter-store / warehouse stock-transfer UI (retail POS-style). Hotel uses
+ * Hotel inventory only and already omits Multi-Store — do not surface this. */
+export function usesStoreStockTransfers(industry?: string | null): boolean {
+  const ind = normalizeIndustry(industry);
+  return Boolean(ind && ind !== 'hotel');
+}
+
 export function industryLabel(value?: string | null): string {
   const key = normalizeIndustry(value) || String(value || '').trim().toLowerCase();
   if (!key) return 'Unknown';

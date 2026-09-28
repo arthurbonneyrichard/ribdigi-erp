@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { moduleEnabledForTenant } from '../../../lib/industryModules';
+import { HotelRoomNightGrid } from '../../../components/HotelRoomNightGrid';
 
 type Room = {
   id: string;
@@ -209,6 +210,7 @@ function statusClass(status: string) {
 
 export default function HotelPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const rawTab = (searchParams?.get('tab') || '').trim().toLowerCase();
   const tab = rawTab || 'dashboard';
   const show = (section: string) => tab === section;
@@ -281,6 +283,10 @@ export default function HotelPage() {
   const [moveRoomId, setMoveRoomId] = useState('');
   const [report, setReport] = useState<any>(null);
   const [calendar, setCalendar] = useState<any>(null);
+  const [resGridStart, setResGridStart] = useState(() => localIso());
+  const [resGridSpan, setResGridSpan] = useState(21);
+  const [availTonightIds, setAvailTonightIds] = useState<string[]>([]);
+  const [calTick, setCalTick] = useState(0);
   const [settings, setSettings] = useState<any>(null);
   const [groupRooms, setGroupRooms] = useState<string[]>([]);
   const [dashDate, setDashDate] = useState(() => localIso());
@@ -339,8 +345,6 @@ export default function HotelPage() {
     const qs = filter ? `?list_kind=${filter}` : '';
     const startD = new Date();
     startD.setDate(startD.getDate() - 7);
-    const endD = new Date();
-    endD.setDate(endD.getDate() + 14);
     try {
       const [s, r, g, resv, set] = await Promise.all([
         api(`/hotel/summary?on_date=${dashDate}`),
@@ -369,11 +373,10 @@ export default function HotelPage() {
     } catch (err: any) {
       setError(hotelErr(err, 'Could not load rooms and reservations. Try again.'));
     }
-    const [hk, mt, rep, cal, svc, fol, plans, reqs, lf, shift, audits, ev] = await Promise.all([
+    const [hk, mt, rep, svc, fol, plans, reqs, lf, shift, audits, ev] = await Promise.all([
       soft<HkTask[]>('/hotel/housekeeping', []),
       soft<MaintTicket[]>('/hotel/maintenance', []),
       soft<any>(`/hotel/reports?start_date=${localIso(startD)}&end_date=${localIso()}`, null),
-      soft<any>(`/hotel/calendar?start_date=${localIso()}&end_date=${localIso(endD)}`, null),
       soft<HotelService[]>('/hotel/services', []),
       soft<FolioRow[]>('/hotel/folios', []),
       soft<any[]>('/hotel/rate-plans', []),
@@ -386,7 +389,6 @@ export default function HotelPage() {
     setHkTasks(hk);
     setMaint(mt);
     setReport(rep);
-    setCalendar(cal);
     setServices(svc);
     setFolioRows(fol);
     setRatePlans(plans);
@@ -395,6 +397,7 @@ export default function HotelPage() {
     setCashierShift(shift);
     setNightAudits(audits);
     setEvents(ev);
+    setCalTick((n) => n + 1);
   }
 
   useEffect(() => {
@@ -425,6 +428,49 @@ export default function HotelPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listKind, deskKind, dashDate, tab]);
+
+  useEffect(() => {
+    if (!moduleAllowed) return;
+    let live = true;
+    const start = tab === 'dashboard' ? dashDate : resGridStart;
+    const span = tab === 'dashboard' ? 7 : resGridSpan;
+    const end = shiftIso(start, Math.max(span, 1) - 1);
+    (async () => {
+      try {
+        const res = await api(`/hotel/calendar?start_date=${start}&end_date=${end}`);
+        if (live) setCalendar(res.data || null);
+      } catch {
+        if (live) setCalendar(null);
+      }
+      try {
+        const rows = await api(`/hotel/availability?check_in_date=${start}&check_out_date=${shiftIso(start, 1)}`);
+        if (live) setAvailTonightIds((rows.data || []).map((r: Room) => r.id));
+      } catch {
+        if (live) setAvailTonightIds([]);
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [moduleAllowed, tab, dashDate, resGridStart, resGridSpan, calTick]);
+
+  function prefillStay(roomId: string, dateIso: string, roomCode: string) {
+    setResForm((f) => ({
+      ...f,
+      room_id: roomId,
+      check_in_date: dateIso,
+      check_out_date: shiftIso(dateIso, 1),
+    }));
+    setAvailForm((f) => ({
+      ...f,
+      check_in_date: dateIso,
+      check_out_date: shiftIso(dateIso, 1),
+    }));
+    setMessage(`Prefilling ${roomCode} from ${dateIso}. Add a guest and book.`);
+    if (tab !== 'reservations') {
+      router.push('/hotel?tab=reservations');
+    }
+  }
 
   async function createRoom(e: React.FormEvent) {
     e.preventDefault();
@@ -904,6 +950,23 @@ export default function HotelPage() {
                       {!trend.length && <p className="empty">No stay nights yet.</p>}
                     </div>
                   </div>
+                </div>
+
+                <div className="panel">
+                  <HotelRoomNightGrid
+                    rooms={rooms}
+                    reservations={reservations}
+                    calendar={calendar}
+                    maint={maint}
+                    availableRoomIds={availTonightIds}
+                    startDate={dashDate}
+                    dayCount={7}
+                    compact
+                    onEmptyNight={prefillStay}
+                  />
+                  <p className="hint" style={{ marginTop: 8 }}>
+                    <Link href="/hotel?tab=reservations">Open full booking calendar</Link>
+                  </p>
                 </div>
 
                 <div className="hotel-ops-triple">
@@ -1405,6 +1468,21 @@ export default function HotelPage() {
       {show('reservations') && (
       <>
       <div className="card" style={{ marginBottom: 16 }}>
+        <HotelRoomNightGrid
+          rooms={rooms}
+          reservations={reservations}
+          calendar={calendar}
+          maint={maint}
+          availableRoomIds={availTonightIds}
+          startDate={resGridStart}
+          dayCount={resGridSpan}
+          showNav
+          onStartChange={setResGridStart}
+          onDayCountChange={setResGridSpan}
+          onEmptyNight={prefillStay}
+        />
+      </div>
+      <div className="card" style={{ marginBottom: 16 }}>
         <h2>Search availability</h2>
         <form
           onSubmit={async (e) => {
@@ -1461,7 +1539,7 @@ export default function HotelPage() {
           </ul>
         )}
       </div>
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card" id="hotel-book-stay" style={{ marginBottom: 16 }}>
         <h2>Book a stay</h2>
         <p className="muted">Pick dates and a room. Walk-in checks the guest in now. Tick extra rooms below for a group stay.</p>
         <form onSubmit={createReservation} style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' }}>
@@ -1469,7 +1547,7 @@ export default function HotelPage() {
             <span>Room</span>
             <select value={resForm.room_id} onChange={(e) => setResForm((f) => ({ ...f, room_id: e.target.value }))} aria-label="Hotel reservation room" required>
               <option value="">Select room</option>
-              {availableRooms.map((r) => (
+              {rooms.filter((r) => r.is_active).map((r) => (
                 <option key={r.id} value={r.id}>{r.code} — {r.name}</option>
               ))}
             </select>
@@ -2447,34 +2525,6 @@ export default function HotelPage() {
               <button type="submit" disabled={busy}>Save settings</button>
             </div>
           </form>
-        </div>
-      )}
-
-      {show('reservations') && calendar && (
-        <div className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
-          <h2>Availability calendar</h2>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Room</th>
-                {(calendar.days || []).slice(0, 14).map((d: string) => (
-                  <th key={d}>{d.slice(5)}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {(calendar.rooms || []).map((row: any) => (
-                <tr key={row.room.id}>
-                  <td><code>{row.room.code}</code></td>
-                  {(calendar.days || []).slice(0, 14).map((d: string) => (
-                    <td key={d} title={row.days?.[d]?.guest_name || ''}>
-                      {row.days?.[d] ? (row.days[d].status === 'checked_in' ? '●' : '○') : '·'}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </div>
       )}
 
