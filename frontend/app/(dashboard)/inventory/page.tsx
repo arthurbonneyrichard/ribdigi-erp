@@ -10,9 +10,13 @@ import { usesStoreStockTransfers } from '../../../lib/industries';
 import {
   formatTransferDate,
   matchesTransferSearch,
+  sameWarehouseError,
+  transferLineQtyError,
+  transferOnDate,
   transferProductCount,
   transferQtyTotal,
 } from '../../../lib/stockTransfers';
+import { LIST_PAGE_SIZE, matchesProductList, paginate, sortByKey, sortProducts } from '../../../lib/listPages';
 
 type Tab =
   | 'products'
@@ -266,6 +270,14 @@ export default function Page() {
   const [formFlash, setFormFlash] = useState<{ ok?: string; err?: string }>({});
   const [saveBusy, setSaveBusy] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [productAddOpen, setProductAddOpen] = useState(false);
+  const [productSearch, setProductSearch] = useState('');
+  const [productCategoryFilter, setProductCategoryFilter] = useState('');
+  const [productBrandFilter, setProductBrandFilter] = useState('');
+  const [productStockFilter, setProductStockFilter] = useState<'all' | 'low' | 'ok'>('all');
+  const [productSort, setProductSort] = useState('name');
+  const [productSortDir, setProductSortDir] = useState<1 | -1>(1);
+  const [productPage, setProductPage] = useState(1);
   const [productEditMode, setProductEditMode] = useState(false);
   const [createExpiryOpen, setCreateExpiryOpen] = useState(false);
   const [createOpenStockOpen, setCreateOpenStockOpen] = useState(false);
@@ -452,6 +464,15 @@ export default function Page() {
   const [receiveDrawerOpen, setReceiveDrawerOpen] = useState(false);
   const [reorderDrawerOpen, setReorderDrawerOpen] = useState(false);
   const [xferSearch, setXferSearch] = useState('');
+  const [xferDateFrom, setXferDateFrom] = useState('');
+  const [xferDateTo, setXferDateTo] = useState('');
+  const [xferSort, setXferSort] = useState('date');
+  const [xferSortDir, setXferSortDir] = useState<1 | -1>(-1);
+  const [xferPage, setXferPage] = useState(1);
+  const [xferBusy, setXferBusy] = useState(false);
+  const [xferProductQuery, setXferProductQuery] = useState('');
+  const [xferReference, setXferReference] = useState('');
+  const [xferAvail, setXferAvail] = useState<Record<string, number>>({});
   const [xferDrawerOpen, setXferDrawerOpen] = useState(false);
   const [mvSearch, setMvSearch] = useState('');
   async function refresh() {
@@ -629,6 +650,7 @@ export default function Page() {
 
   async function loadTransfers() {
     setError('');
+    setXferBusy(true);
     try {
       const qs =
         transferManageFilter !== 'all'
@@ -638,6 +660,9 @@ export default function Page() {
       setTransfers(r.data || []);
     } catch (err: any) {
       setError(err.message);
+      setTransfers([]);
+    } finally {
+      setXferBusy(false);
     }
   }
 
@@ -648,6 +673,49 @@ export default function Page() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, transferManageFilter, retailTransfers]);
 
+  useEffect(() => {
+    setProductPage(1);
+  }, [productSearch, productCategoryFilter, productBrandFilter, productStockFilter, productManageFilter]);
+
+  useEffect(() => {
+    setXferPage(1);
+  }, [xferSearch, xferFromFilter, xferToFilter, transferManageFilter, xferDateFrom, xferDateTo]);
+
+  useEffect(() => {
+    if (!xferDrawerOpen || !xferFromWh) {
+      setXferAvail({});
+      return;
+    }
+    let cancelled = false;
+    api(`/inventory/warehouse-stock?warehouse_id=${encodeURIComponent(xferFromWh)}&include_zero=true`)
+      .then((r) => {
+        if (cancelled) return;
+        const m: Record<string, number> = {};
+        for (const row of r.data?.items || []) {
+          if (row.product_id) m[row.product_id] = Number(row.quantity || 0);
+        }
+        setXferAvail(m);
+      })
+      .catch(() => {
+        if (!cancelled) setXferAvail({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [xferDrawerOpen, xferFromWh]);
+
+  useEffect(() => {
+    if (!productAddOpen && !xferDrawerOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== 'Escape' || saveBusy) return;
+      setProductAddOpen(false);
+      setXferDrawerOpen(false);
+      setXferConfirming(false);
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [productAddOpen, xferDrawerOpen, saveBusy]);
+
   function parsedXferItems():
     | { ok: false; error: string }
     | { ok: true; items: { product_id: string; quantity: number }[] } {
@@ -656,9 +724,8 @@ export default function Page() {
       const product_id = line.product_id.trim();
       const quantity = Number(line.qty);
       if (!product_id) continue;
-      if (!Number.isFinite(quantity) || quantity <= 0) {
-        return { ok: false, error: 'Each product line needs a positive quantity' };
-      }
+      const qtyErr = transferLineQtyError(quantity, xferAvail[product_id]);
+      if (qtyErr) return { ok: false, error: qtyErr };
       items.push({ product_id, quantity });
     }
     if (!items.length) return { ok: false, error: 'Add at least one product line' };
@@ -670,12 +737,9 @@ export default function Page() {
     setError('');
     setMessage('');
     setFormFlash({});
-    if (!xferFromWh || !xferToWh) {
-      setFormFlash({ err: 'Select source and destination locations' });
-      return;
-    }
-    if (xferFromWh === xferToWh) {
-      setFormFlash({ err: 'Source and destination must be different' });
+    const locErr = sameWarehouseError(xferFromWh, xferToWh);
+    if (locErr) {
+      setFormFlash({ err: locErr });
       return;
     }
     const parsed = parsedXferItems();
@@ -695,7 +759,9 @@ export default function Page() {
           from_warehouse_id: xferFromWh.trim(),
           to_warehouse_id: xferToWh.trim(),
           submit: true,
-          notes: xferNotes.trim() || null,
+          notes: [xferReference.trim() && `Ref ${xferReference.trim()}`, xferNotes.trim()]
+            .filter(Boolean)
+            .join(' — ') || null,
           items: parsed.items,
         }),
       });
@@ -709,7 +775,9 @@ export default function Page() {
           (r.data.approval_steps_required <= 1 ? ' — same store' : ' — needs both managers'),
       });
       setXferNotes('');
+      setXferReference('');
       setXferConfirming(false);
+      setXferDrawerOpen(false);
       setXferLines([{ key: String(Date.now()), product_id: '', qty: '1' }]);
       await loadTransfers();
     } catch (err: any) {
@@ -733,6 +801,15 @@ export default function Page() {
             ? 'Enter a cancel reason before cancelling a stock transfer'
             : 'Enter a reject reason before rejecting a stock transfer',
       });
+        return;
+      }
+      if (
+        !window.confirm(
+          action === 'cancel'
+            ? 'Cancel this stock transfer? Stock will not move.'
+            : 'Reject this stock transfer?',
+        )
+      ) {
         return;
       }
     }
@@ -1177,6 +1254,7 @@ export default function Page() {
           ? `Saved ${r.data.sku || name} with opening stock`
           : `Saved ${r.data.sku || name}`,
       });
+      setProductAddOpen(false);
       await refresh();
       setSelectedId(productId);
       setTab('products');
@@ -2155,6 +2233,24 @@ export default function Page() {
     const active = p.is_active !== false;
     return productManageFilter === 'inactive' ? !active : active;
   });
+  const productListRows = sortProducts(
+    managedProducts.filter((p) =>
+      matchesProductList(
+        p,
+        {
+          q: productSearch,
+          categoryId: productCategoryFilter,
+          brandId: productBrandFilter,
+          stock: productStockFilter,
+        },
+        stockStatusOf(p) as 'red' | 'yellow' | 'green',
+      ),
+    ),
+    productSort,
+    productSortDir,
+  );
+  const productPaged = paginate(productListRows, productPage, LIST_PAGE_SIZE);
+  const showCreatedBy = products.some((p) => p.created_by_name || p.created_by_email);
   const byStatus = <T extends { is_active?: boolean }>(
     rows: T[],
     filter: 'all' | 'active' | 'inactive',
@@ -2273,12 +2369,30 @@ export default function Page() {
     return hay.includes(whQuery);
   });
   const xferQuery = xferSearch.trim().toLowerCase();
-  const visibleTransfers = managedTransfers.filter((t) =>
-    matchesTransferSearch(t, xferQuery, {
-      from: warehouseLabel(t.from_warehouse_id),
-      to: warehouseLabel(t.to_warehouse_id),
+  const visibleTransfers = sortByKey(
+    managedTransfers.filter((t) => {
+      if (!transferOnDate(t, xferDateFrom, xferDateTo)) return false;
+      return matchesTransferSearch(t, xferQuery, {
+        from: warehouseLabel(t.from_warehouse_id),
+        to: warehouseLabel(t.to_warehouse_id),
+      });
     }),
+    (t) => {
+      if (xferSort === 'from') return warehouseLabel(t.from_warehouse_id);
+      if (xferSort === 'to') return warehouseLabel(t.to_warehouse_id);
+      if (xferSort === 'qty') return transferQtyTotal(t);
+      if (xferSort === 'status') return t.status || '';
+      if (xferSort === 'ref') return t.transfer_number || '';
+      return t.created_at || '';
+    },
+    xferSortDir,
   );
+  const xferPaged = paginate(visibleTransfers, xferPage, LIST_PAGE_SIZE);
+  const xferProductOptions = managedProducts.filter((p) => {
+    const q = xferProductQuery.trim().toLowerCase();
+    if (!q) return true;
+    return `${p.name || ''} ${p.sku || ''} ${p.barcode || ''}`.toLowerCase().includes(q);
+  });
   const xferParsed = parsedXferItems();
   const lowStockProducts = products.filter((p) => stockStatusOf(p) === 'red' && p.is_active !== false);
   const lsQuery = lowStockSearch.trim().toLowerCase();
@@ -2633,7 +2747,300 @@ export default function Page() {
 
       {tab === 'products' && (
         <>
-          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
+          <div className="card cat-panel">
+            <div className="list-page-head">
+              <div>
+                <h2 style={{ margin: 0 }}>Product List</h2>
+                <p className="muted" style={{ margin: '4px 0 0' }}>
+                  Search, filter, and add products for this company.
+                </p>
+              </div>
+              <div className="list-head-actions">
+                <button
+                  type="button"
+                  className="list-btn-primary"
+                  onClick={() => {
+                    setFormFlash({});
+                    setProductAddOpen(true);
+                  }}
+                  aria-label="Add Product"
+                >
+                  Add Product
+                </button>
+                <button type="button" onClick={() => selectTab('import')} aria-label="Import Product">
+                  Import Product
+                </button>
+              </div>
+            </div>
+            {formFlash.ok && !productAddOpen ? (
+              <p className="list-toast ok" role="status">
+                {formFlash.ok}
+              </p>
+            ) : null}
+            {formFlash.err && !productAddOpen ? (
+              <p className="list-toast err" role="alert">
+                {formFlash.err}
+              </p>
+            ) : null}
+            <div className="list-toolbar">
+              <input
+                value={productSearch}
+                onChange={(e) => setProductSearch(e.target.value)}
+                placeholder="Search name, SKU, barcode"
+                aria-label="Search products"
+              />
+              <select
+                value={productCategoryFilter}
+                onChange={(e) => setProductCategoryFilter(e.target.value)}
+                aria-label="Filter by category"
+              >
+                <option value="">All categories</option>
+                {categories
+                  .filter((c) => c.is_active !== false)
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {categoryLabel(c)}
+                    </option>
+                  ))}
+              </select>
+              <select
+                value={productBrandFilter}
+                onChange={(e) => setProductBrandFilter(e.target.value)}
+                aria-label="Filter by brand"
+              >
+                <option value="">All brands</option>
+                {brands
+                  .filter((b) => b.is_active !== false)
+                  .map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+              </select>
+              <select
+                value={productStockFilter}
+                onChange={(e) => setProductStockFilter(e.target.value as 'all' | 'low' | 'ok')}
+                aria-label="Filter by stock status"
+              >
+                <option value="all">All stock</option>
+                <option value="low">Low stock</option>
+                <option value="ok">In stock</option>
+              </select>
+              <select
+                value={productManageFilter}
+                onChange={(e) => setProductManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
+                aria-label="Product status filter"
+              >
+                <option value="all">All statuses</option>
+                <option value="active">Active only</option>
+                <option value="inactive">Inactive only</option>
+              </select>
+            </div>
+            {productPaged.total === 0 ? (
+              <div className="list-empty">
+                <p style={{ margin: 0 }}>
+                  {managedProducts.length === 0 ? 'No products yet.' : 'No products match these filters.'}
+                </p>
+                <p className="muted" style={{ margin: '8px 0 0' }}>
+                  Add a product to sell it at POS and keep stock.
+                </p>
+                <button
+                  type="button"
+                  className="list-btn-primary"
+                  style={{ marginTop: 12 }}
+                  onClick={() => {
+                    setFormFlash({});
+                    setProductAddOpen(true);
+                  }}
+                >
+                  Add Product
+                </button>
+              </div>
+            ) : (
+              <div className="list-table-wrap">
+                <table className="table cat-table">
+                  <thead>
+                    <tr>
+                      <th>
+                        <button
+                          type="button"
+                          className="list-sort"
+                          onClick={() => {
+                            setProductSort('name');
+                            setProductSortDir((d) => (productSort === 'name' ? ((d === 1 ? -1 : 1) as 1 | -1) : 1));
+                          }}
+                        >
+                          Product
+                        </button>
+                      </th>
+                      <th>
+                        <button
+                          type="button"
+                          className="list-sort"
+                          onClick={() => {
+                            setProductSort('sku');
+                            setProductSortDir((d) => (productSort === 'sku' ? ((d === 1 ? -1 : 1) as 1 | -1) : 1));
+                          }}
+                        >
+                          SKU
+                        </button>
+                      </th>
+                      <th>
+                        <button
+                          type="button"
+                          className="list-sort"
+                          onClick={() => {
+                            setProductSort('category');
+                            setProductSortDir((d) => (productSort === 'category' ? ((d === 1 ? -1 : 1) as 1 | -1) : 1));
+                          }}
+                        >
+                          Category
+                        </button>
+                      </th>
+                      <th>
+                        <button
+                          type="button"
+                          className="list-sort"
+                          onClick={() => {
+                            setProductSort('brand');
+                            setProductSortDir((d) => (productSort === 'brand' ? ((d === 1 ? -1 : 1) as 1 | -1) : 1));
+                          }}
+                        >
+                          Brand
+                        </button>
+                      </th>
+                      <th>
+                        <button
+                          type="button"
+                          className="list-sort"
+                          onClick={() => {
+                            setProductSort('price');
+                            setProductSortDir((d) => (productSort === 'price' ? ((d === 1 ? -1 : 1) as 1 | -1) : 1));
+                          }}
+                        >
+                          Selling price
+                        </button>
+                      </th>
+                      <th>Unit</th>
+                      <th>
+                        <button
+                          type="button"
+                          className="list-sort"
+                          onClick={() => {
+                            setProductSort('qty');
+                            setProductSortDir((d) => (productSort === 'qty' ? ((d === 1 ? -1 : 1) as 1 | -1) : 1));
+                          }}
+                        >
+                          Qty
+                        </button>
+                      </th>
+                      {showCreatedBy ? <th>Created by</th> : null}
+                      <th />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {productPaged.rows.map((p) => {
+                      const low = stockStatusOf(p) === 'red';
+                      const img = p.image_url || p.thumbnail_url || p.photo_url;
+                      return (
+                        <tr key={p.id}>
+                          <td data-label="Product">
+                            <div className="list-prod">
+                              {img ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={img} alt="" />
+                              ) : (
+                                <span className="list-prod-ph" aria-hidden>
+                                  {String(p.name || '?').slice(0, 1).toUpperCase()}
+                                </span>
+                              )}
+                              <span className="list-prod-name">
+                                {p.name}
+                                {p.is_active === false ? ' [inactive]' : ''}
+                              </span>
+                            </div>
+                          </td>
+                          <td data-label="SKU">{p.sku || '—'}</td>
+                          <td data-label="Category">{p.category || '—'}</td>
+                          <td data-label="Brand">{p.brand || '—'}</td>
+                          <td data-label="Price">{p.selling_price ?? 0}</td>
+                          <td data-label="Unit">{p.unit || p.unit_code || '—'}</td>
+                          <td data-label="Qty" className={low ? 'list-qty-low' : undefined}>
+                            <StockStatusBadge product={p} />
+                          </td>
+                          {showCreatedBy ? (
+                            <td data-label="Created by">{p.created_by_name || p.created_by_email || '—'}</td>
+                          ) : null}
+                          <td className="cat-actions">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedId(p.id);
+                                setDrawerOpen(true);
+                                setProductEditMode(false);
+                                setFormFlash({});
+                              }}
+                              aria-label={`Open product ${p.name}`}
+                            >
+                              View
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedId(p.id);
+                                setDrawerOpen(true);
+                                setProductEditMode(true);
+                                setFormFlash({});
+                              }}
+                              aria-label={`Edit product ${p.name}`}
+                            >
+                              Edit
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {productPaged.total > 0 ? (
+              <div className="list-pager">
+                <span className="muted">
+                  {productPaged.total} entries · page {productPaged.page} of {productPaged.pages}
+                </span>
+                <div className="list-pager-nav">
+                  <button
+                    type="button"
+                    disabled={productPaged.page <= 1}
+                    onClick={() => setProductPage(productPaged.page - 1)}
+                    aria-label="Previous product page"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    type="button"
+                    disabled={productPaged.page >= productPaged.pages}
+                    onClick={() => setProductPage(productPaged.page + 1)}
+                    aria-label="Next product page"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+          {productAddOpen ? (
+            <>
+              <div
+                className="inv-drawer-back"
+                onClick={() => !saveBusy && setProductAddOpen(false)}
+                aria-hidden
+              />
+              <aside className="inv-drawer" role="dialog" aria-modal="true" aria-label="Add Product">
+                <button type="button" onClick={() => setProductAddOpen(false)} disabled={saveBusy}>
+                  Close
+                </button>
             <h3>Add product</h3>
             <input
               value={productName}
@@ -2846,50 +3253,33 @@ export default function Page() {
                 aria-label="Create product opening unit cost"
               />
             </details>
+            <div className="form-actions">
             <button
               type="button"
+              className="list-btn-primary"
               onClick={createProduct}
               disabled={!productName.trim() || saveBusy}
               aria-label="Create product"
             >
-              {saveBusy ? 'Saving…' : 'Create product'}
+              {saveBusy ? 'Saving…' : 'Save'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setProductAddOpen(false);
+                setFormFlash({});
+              }}
+              disabled={saveBusy}
+              aria-label="Cancel add product"
+            >
+              Cancel
             </button>
             {formFlash.ok ? <p className="form-flash ok" role="status">{formFlash.ok}</p> : null}
             {formFlash.err ? <p className="form-flash err" role="alert">{formFlash.err}</p> : null}
-          </div>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Stock</th>
-              </tr>
-            </thead>
-            <tbody>
-              {managedProducts.map((p) => (
-                <tr key={p.id}>
-                  <td>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedId(p.id);
-                        setDrawerOpen(true);
-                        setProductEditMode(false);
-                        setFormFlash({});
-                      }}
-                      style={{ background: 'none', border: 0, color: 'var(--deep-green, #006B2E)', cursor: 'pointer' }}
-                      aria-label={`Open product ${p.name}`}
-                    >
-                      {p.name}
-                      {p.is_active === false ? ' [inactive]' : ''}
-                    </button>
-                  </td>
-                  <td>
-                    <StockStatusBadge product={p} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            </div>
+              </aside>
+            </>
+          ) : null}
           {drawerOpen && selected && tab === 'products' && (
             <>
               <div className="inv-drawer-back" onClick={() => setDrawerOpen(false)} aria-hidden />
@@ -5238,29 +5628,44 @@ export default function Page() {
 
       {tab === 'transfers' && retailTransfers && (
         <div className="card cat-panel">
-          <div className="cat-head">
-            <h2 style={{ margin: 0 }}>Stock transfer</h2>
+          <div className="list-page-head cat-head">
+            <div>
+              <h2 style={{ margin: 0 }}>Stock Transfer</h2>
+              <p className="muted" style={{ margin: '4px 0 0' }}>
+                Move stock from one warehouse to another. Request, ship, then receive.
+              </p>
+            </div>
             <button
               type="button"
+              className="list-btn-primary"
               onClick={() => {
                 setFormFlash({});
                 setXferConfirming(false);
                 setXferDrawerOpen(true);
               }}
-              aria-label="Create stock transfer"
+              aria-label="Add Transfer"
             >
-              New transfer
+              Add Transfer
             </button>
           </div>
-          <p className="muted inv-child">
-            Move stock from one store or warehouse to another. Status follows request → ship → receive.
-          </p>
-          <div className="cat-toolbar">
+          <div className="list-toolbar cat-toolbar">
             <input
               value={xferSearch}
               onChange={(e) => setXferSearch(e.target.value)}
-              placeholder="Search reference, store, status"
+              placeholder="Search reference, warehouse, status"
               aria-label="Search stock transfers"
+            />
+            <input
+              type="date"
+              value={xferDateFrom}
+              onChange={(e) => setXferDateFrom(e.target.value)}
+              aria-label="Transfer date from"
+            />
+            <input
+              type="date"
+              value={xferDateTo}
+              onChange={(e) => setXferDateTo(e.target.value)}
+              aria-label="Transfer date to"
             />
             <select
               value={xferFromFilter}
@@ -5316,8 +5721,14 @@ export default function Page() {
               Refresh
             </button>
           </div>
-          {visibleTransfers.length === 0 ? (
-            <div className="cat-empty">
+          {xferBusy ? <p className="muted">Loading transfers…</p> : null}
+          {error && tab === 'transfers' ? (
+            <p className="list-toast err" role="alert">
+              {error}
+            </p>
+          ) : null}
+          {!xferBusy && visibleTransfers.length === 0 ? (
+            <div className="list-empty cat-empty">
               <p style={{ margin: 0 }}>
                 {transfers.length === 0 ? 'No transfers yet.' : 'No transfers for this filter.'}
               </p>
@@ -5326,6 +5737,7 @@ export default function Page() {
               </p>
               <button
                 type="button"
+                className="list-btn-primary"
                 style={{ marginTop: 12 }}
                 onClick={() => {
                   setFormFlash({});
@@ -5333,11 +5745,11 @@ export default function Page() {
                   setXferDrawerOpen(true);
                 }}
               >
-                New transfer
+                Add Transfer
               </button>
             </div>
-          ) : (
-            <div className="cat-table-wrap">
+          ) : !xferBusy ? (
+            <div className="list-table-wrap cat-table-wrap">
               <table className="table cat-table">
                 <thead>
                   <tr>
@@ -5352,7 +5764,7 @@ export default function Page() {
                   </tr>
                 </thead>
                 <tbody>
-                  {visibleTransfers.map((t) => (
+                  {xferPaged.rows.map((t) => (
                     <Fragment key={t.id}>
                     <tr>
                       <td data-label="From">{warehouseLabel(t.from_warehouse_id)}</td>
@@ -5488,8 +5900,33 @@ export default function Page() {
                 </tbody>
               </table>
             </div>
-          )}
-          <div className="cat-toolbar">
+          ) : null}
+          {xferPaged.total > 0 && !xferBusy ? (
+            <div className="list-pager">
+              <span className="muted">
+                {xferPaged.total} entries · page {xferPaged.page} of {xferPaged.pages}
+              </span>
+              <div className="list-pager-nav">
+                <button
+                  type="button"
+                  disabled={xferPaged.page <= 1}
+                  onClick={() => setXferPage(xferPaged.page - 1)}
+                  aria-label="Previous transfer page"
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  disabled={xferPaged.page >= xferPaged.pages}
+                  onClick={() => setXferPage(xferPaged.page + 1)}
+                  aria-label="Next transfer page"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          ) : null}
+          <div className="list-toolbar cat-toolbar">
             <input
               value={xferRejectReason}
               onChange={(e) => setXferRejectReason(e.target.value)}
@@ -5529,7 +5966,7 @@ export default function Page() {
                 >
                   Close
                 </button>
-                <h3>New transfer</h3>
+                <h3>Add Transfer</h3>
                 <p className="muted inv-child" style={{ margin: 0 }}>
                   Number {invNumbering.stock_transfer_numbering?.preview || 'assigned when you save'}
                 </p>

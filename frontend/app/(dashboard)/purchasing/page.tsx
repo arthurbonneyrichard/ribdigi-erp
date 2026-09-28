@@ -1299,7 +1299,7 @@ export default function Page() {
       {tab === 'requests' && (
         <>
           <div className="erp-split">
-          <div className="card" style={{ marginBottom: 16 }}>
+          <div className="card">
             <h3>PR approval matrix</h3>
             <p className="muted" style={{ marginBottom: 8 }}>
               Role chain (no amount thresholds). Default: Store Manager → Company Admin. Roles are
@@ -1791,9 +1791,9 @@ export default function Page() {
             className="btn-primary"
             onClick={createSupplier}
             disabled={!supplierName.trim() || saveBusy}
-            aria-label="Save new supplier"
+            aria-label="Add supplier"
           >
-            {saveBusy ? 'Saving…' : 'Save supplier'}
+            {saveBusy ? 'Saving…' : 'Add supplier'}
           </button>
         </div>
       </div>
@@ -3040,7 +3040,7 @@ export default function Page() {
                 <td className="muted" style={{ maxWidth: 220, whiteSpace: 'pre-wrap' }}>
                   {inv.notes || '—'}
                 </td>
-                <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
+                <td className="purch-actions">
                   {inv.status === 'draft' && (
                     <button className="btn-ok" onClick={() => approveInvoice(inv.id)} aria-label={`Approve purchase invoice ${inv.id}`}>Approve</button>
                   )}
@@ -3174,6 +3174,7 @@ export default function Page() {
                 ))}
               </tbody>
             </table>
+            </div>
             <div className="grid" style={{ marginTop: 12 }}>
               <div className="card">
                 <div className="muted">Subtotal</div>
