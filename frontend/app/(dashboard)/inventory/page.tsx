@@ -393,8 +393,30 @@ export default function Page() {
   const [xferNotes, setXferNotes] = useState('');
   const [xferRejectReason, setXferRejectReason] = useState('');
   const [countCancelReason, setCountCancelReason] = useState('');
+  const [invNumbering, setInvNumbering] = useState<{
+    opening_stock_numbering?: { preview?: string };
+    stock_transfer_numbering?: { preview?: string };
+    stock_count_numbering?: { preview?: string };
+  }>({});
+  const [batchSearch, setBatchSearch] = useState('');
+  const [batchDrawerOpen, setBatchDrawerOpen] = useState(false);
+  const [openingSearch, setOpeningSearch] = useState('');
+  const [openingDrawerOpen, setOpeningDrawerOpen] = useState(false);
+  const [expirySearch, setExpirySearch] = useState('');
+  const [countSearch, setCountSearch] = useState('');
+  const [countDrawerOpen, setCountDrawerOpen] = useState(false);
+  const [adjustDrawerOpen, setAdjustDrawerOpen] = useState(false);
+  const [adjConfirming, setAdjConfirming] = useState(false);
+  const [stockOutDrawerOpen, setStockOutDrawerOpen] = useState(false);
+  const [whSearch, setWhSearch] = useState('');
+  const [whLowOnly, setWhLowOnly] = useState(false);
+  const [receiveDrawerOpen, setReceiveDrawerOpen] = useState(false);
+  const [reorderDrawerOpen, setReorderDrawerOpen] = useState(false);
+  const [xferSearch, setXferSearch] = useState('');
+  const [xferDrawerOpen, setXferDrawerOpen] = useState(false);
+  const [mvSearch, setMvSearch] = useState('');
   async function refresh() {
-    const [p, e, c, b, u, w, sc, os, rates] = await Promise.all([
+    const [p, e, c, b, u, w, sc, os, rates, settings] = await Promise.all([
       apiOptional('/products'),
       apiOptional('/inventory/batches/expiring?days=60'),
       apiOptional('/catalog/categories'),
@@ -404,6 +426,7 @@ export default function Page() {
       apiOptional('/inventory/stock-counts'),
       apiOptional('/inventory/opening-stock'),
       apiOptional('/tax/rates'),
+      apiOptional('/inventory/settings'),
     ]);
     const loadError = [p, e, c, b, u, w, sc].map((x) => x.error).filter(Boolean).join(' ');
     if (loadError) setError(loadError);
@@ -417,6 +440,7 @@ export default function Page() {
     setCounts(sc.data || []);
     setOpeningHistory(os.data || []);
     setTaxRates(rates.data || []);
+    setInvNumbering(settings.data || {});
     if (!countWarehouseId && w.data?.length) setCountWarehouseId(w.data[0].id);
     if (!openingWarehouseId && w.data?.length) setOpeningWarehouseId(w.data[0].id);
     if (!stockWarehouseId && w.data?.length) setStockWarehouseId(w.data[0].id);
@@ -556,25 +580,28 @@ export default function Page() {
   }, [tab]);
 
   async function createWarehouseTransfer() {
+    if (saveBusy) return;
     setError('');
     setMessage('');
+    setFormFlash({});
     if (!xferFromWh || !xferToWh) {
-      setError('Select source and destination warehouses');
+      setFormFlash({ err: 'Select source and destination locations' });
       return;
     }
     if (xferFromWh === xferToWh) {
-      setError('Source and destination warehouses must differ');
+      setFormFlash({ err: 'Source and destination must be different' });
       return;
     }
     if (!selectedId) {
-      setError('Select a product');
+      setFormFlash({ err: 'Select a product' });
       return;
     }
     const qty = Number(xferQty);
     if (!Number.isFinite(qty) || qty <= 0) {
-      setError('Quantity must be positive');
+      setFormFlash({ err: 'Quantity must be positive' });
       return;
     }
+    setSaveBusy(true);
     try {
       const r = await api('/inventory/stock-transfers', {
         method: 'POST',
@@ -583,37 +610,45 @@ export default function Page() {
           to_warehouse_id: xferToWh.trim(),
           submit: true,
           notes: xferNotes.trim() || null,
-          // trim so StockTransferItemCreate (UuidIdValue product_id) does not 422 on whitespace
           items: [{ product_id: selectedId.trim(), quantity: qty }],
         }),
       });
-      setMessage(
-        `Transfer ${r.data.transfer_number} requested` +
-          (r.data.approval_steps_required <= 1
-            ? ' (single approval — same store)'
-            : ' (dual approval)')
-      );
+      if (!r.data?.id && !r.data?.transfer_number) {
+        setFormFlash({ err: 'Server did not confirm the transfer' });
+        return;
+      }
+      setFormFlash({
+        ok:
+          `Transfer ${r.data.transfer_number} requested` +
+          (r.data.approval_steps_required <= 1 ? ' — same store' : ' — needs both managers'),
+      });
       setXferNotes('');
       await loadTransfers();
     } catch (err: any) {
-      setError(err.message);
+      setFormFlash({ err: err.message || 'Could not create transfer' });
+    } finally {
+      setSaveBusy(false);
     }
   }
 
   async function transferAct(id: string, action: string) {
+    if (saveBusy) return;
     setError('');
     setMessage('');
+    setFormFlash({});
     if (action === 'reject' || action === 'cancel') {
       const reason = xferRejectReason.trim();
       if (!reason) {
-        setError(
-          action === 'cancel'
-            ? 'Enter a cancel reason before cancelling a stock transfer'
-            : 'Enter a reject reason before rejecting a stock transfer'
-        );
+        setFormFlash({
+          err:
+            action === 'cancel'
+              ? 'Enter a reason before cancelling this transfer'
+              : 'Enter a reason before rejecting this transfer',
+        });
         return;
       }
     }
+    setSaveBusy(true);
     try {
       const r = await api(`/inventory/stock-transfers/${id}/${action}`, {
         method: 'POST',
@@ -625,10 +660,12 @@ export default function Page() {
       if (action === 'reject' || action === 'cancel') {
         setXferRejectReason('');
       }
-      setMessage(r.message || `Transfer ${action} ok`);
+      setFormFlash({ ok: r.message || `Transfer ${action} saved` });
       await loadTransfers();
     } catch (err: any) {
-      setError(err.message);
+      setFormFlash({ err: err.message || `Could not ${action} transfer` });
+    } finally {
+      setSaveBusy(false);
     }
   }
 
@@ -639,33 +676,41 @@ export default function Page() {
   }
 
   async function saveWarehouseReorder() {
+    if (saveBusy) return;
     setError('');
     setMessage('');
+    setFormFlash({});
     if (!whStockWarehouseId) {
-      setError('Select a warehouse');
+      setFormFlash({ err: 'Select a location' });
       return;
     }
     if (!whReorderProductId) {
-      setError('Select a product for reorder policy');
+      setFormFlash({ err: 'Select a product' });
       return;
     }
+    setSaveBusy(true);
     try {
       const r = await api('/inventory/warehouse-stock/reorder', {
         method: 'PUT',
         body: JSON.stringify({
-          // trim so Save warehouse reorder (UuidIdValue warehouse_id / product_id) does not 422
           warehouse_id: whStockWarehouseId.trim(),
           product_id: whReorderProductId.trim(),
           reorder_level: Number(whReorderLevel) || 0,
           reorder_qty: Number(whReorderQty) || 0,
         }),
       });
-      setMessage(
-        `Reorder saved for ${r.data.sku || r.data.name}: level ${r.data.reorder_level} / qty ${r.data.reorder_qty}`
-      );
+      if (!r.data) {
+        setFormFlash({ err: 'Server did not confirm the reorder level' });
+        return;
+      }
+      setFormFlash({
+        ok: `Reorder saved for ${r.data.sku || r.data.name}: ${r.data.reorder_level} / ${r.data.reorder_qty}`,
+      });
       await loadWarehouseStock();
     } catch (err: any) {
-      setError(err.message);
+      setFormFlash({ err: err.message || 'Could not save reorder' });
+    } finally {
+      setSaveBusy(false);
     }
   }
   useEffect(() => {
@@ -805,7 +850,14 @@ export default function Page() {
   }
 
   async function startStockCount() {
+    if (saveBusy) return;
     setError('');
+    setFormFlash({});
+    if (!countWarehouseId.trim()) {
+      setFormFlash({ err: 'Select a location' });
+      return;
+    }
+    setSaveBusy(true);
     try {
       const r = await api('/inventory/stock-counts', {
         method: 'POST',
@@ -814,6 +866,10 @@ export default function Page() {
           notes: countNotes.trim() || null,
         }),
       });
+      if (!r.data?.id) {
+        setFormFlash({ err: 'Server did not confirm the stock count' });
+        return;
+      }
       setActiveCount(r.data);
       const qtys: Record<string, string> = {};
       for (const item of r.data.items || []) {
@@ -821,11 +877,13 @@ export default function Page() {
       }
       setCountQtys(qtys);
       setCountNotes('');
-      setMessage(`Count ${r.data.count_number} created`);
+      setFormFlash({ ok: `Count ${r.data.count_number} created` });
       setTab('counts');
       await refresh();
     } catch (err: any) {
-      setError(err.message);
+      setFormFlash({ err: err.message || 'Could not start stock count' });
+    } finally {
+      setSaveBusy(false);
     }
   }
 
@@ -850,10 +908,12 @@ export default function Page() {
 
   async function saveCountLines() {
     if (!activeCount) return;
+    if (saveBusy) return;
     setError('');
+    setFormFlash({});
+    setSaveBusy(true);
     try {
       const items = (activeCount.items || []).map((item: any) => ({
-        // trim so Save count lines (UuidIdValue product_id) does not 422
         product_id: String(item.product_id).trim(),
         counted_qty: Number(countQtys[item.product_id] ?? item.expected_qty ?? 0),
         notes: (countLineNotes[item.product_id] || '').trim() || null,
@@ -863,46 +923,66 @@ export default function Page() {
         body: JSON.stringify({ items }),
       });
       setActiveCount(r.data);
-      setMessage('Count lines saved');
+      setFormFlash({ ok: 'Count lines saved' });
     } catch (err: any) {
-      setError(err.message);
+      setFormFlash({ err: err.message || 'Could not save count lines' });
+    } finally {
+      setSaveBusy(false);
     }
   }
 
   async function completeActiveCount() {
     if (!activeCount) return;
+    if (saveBusy) return;
     setError('');
+    setFormFlash({});
+    setSaveBusy(true);
     try {
-      await saveCountLines();
+      const items = (activeCount.items || []).map((item: any) => ({
+        product_id: String(item.product_id).trim(),
+        counted_qty: Number(countQtys[item.product_id] ?? item.expected_qty ?? 0),
+        notes: (countLineNotes[item.product_id] || '').trim() || null,
+      }));
+      await api(`/inventory/stock-counts/${activeCount.id}/items`, {
+        method: 'PATCH',
+        body: JSON.stringify({ items }),
+      });
       const r = await api(`/inventory/stock-counts/${activeCount.id}/complete`, { method: 'POST' });
       setActiveCount(r.data);
-      setMessage(`Count ${r.data.count_number} completed`);
+      setFormFlash({ ok: `Count ${r.data.count_number} completed` });
       await refresh();
     } catch (err: any) {
-      setError(err.message);
+      setFormFlash({ err: err.message || 'Could not complete stock count' });
+    } finally {
+      setSaveBusy(false);
     }
   }
 
   async function cancelStockCount(id: string, countNumber?: string) {
+    if (saveBusy) return;
     setError('');
+    setFormFlash({});
     const reason = countCancelReason.trim();
     if (!reason) {
-      setError('Enter a cancel reason before cancelling a stock count');
+      setFormFlash({ err: 'Enter a reason before cancelling this count' });
       return;
     }
+    setSaveBusy(true);
     try {
       const r = await api(`/inventory/stock-counts/${id}/cancel`, {
         method: 'POST',
         body: JSON.stringify({ reason }),
       });
-      setMessage(`Count ${r.data?.count_number || countNumber || id} cancelled`);
+      setFormFlash({ ok: `Count ${r.data?.count_number || countNumber || id} cancelled` });
       setCountCancelReason('');
       if (activeCount?.id === id) {
         setActiveCount(r.data);
       }
       await refresh();
     } catch (err: any) {
-      setError(err.message);
+      setFormFlash({ err: err.message || 'Could not cancel stock count' });
+    } finally {
+      setSaveBusy(false);
     }
   }
 
@@ -1671,7 +1751,8 @@ export default function Page() {
     }
   }
 
-  async function stockInBatch() {
+  async function stockInBatch(opts?: { requireBatch?: boolean }) {
+    if (saveBusy) return;
     setError('');
     setFormFlash({});
     if (!selectedId) {
@@ -1680,17 +1761,25 @@ export default function Page() {
     }
     const wh = (stockWarehouseId || whStockWarehouseId).trim();
     if (!wh) {
-      setFormFlash({ err: 'Select a warehouse' });
+      setFormFlash({ err: 'Select a location' });
       return;
     }
-    if (saveBusy) return;
+    if (opts?.requireBatch && !batchNumber.trim()) {
+      setFormFlash({ err: 'Enter a batch number' });
+      return;
+    }
+    const qty = Number(stockQty);
+    if (!Number.isFinite(qty) || qty <= 0) {
+      setFormFlash({ err: 'Quantity must be a positive number' });
+      return;
+    }
     setSaveBusy(true);
     try {
       const r = await api('/inventory/stock-in', {
         method: 'POST',
         body: JSON.stringify({
           product_id: selectedId.trim(),
-          quantity: Number(stockQty),
+          quantity: qty,
           unit_id: stockUnitId.trim() || null,
           warehouse_id: wh,
           variant_id: stockVariantId.trim() || null,
@@ -1702,6 +1791,10 @@ export default function Page() {
           reference_id: stockRefId.trim() || null,
         }),
       });
+      if (r.data?.stock_qty == null && !r.data?.id) {
+        setFormFlash({ err: 'Server did not confirm received stock' });
+        return;
+      }
       setFormFlash({ ok: `Stock received — on-hand ${r.data.stock_qty}` });
       setBatchNumber('');
       setMfgDate('');
@@ -1718,15 +1811,17 @@ export default function Page() {
   }
 
   async function postOpeningStock() {
+    if (saveBusy) return;
     setError('');
     setMessage('');
+    setFormFlash({});
     if (!selectedId) {
-      setError('Select a product');
+      setFormFlash({ err: 'Select a product' });
       return;
     }
+    setSaveBusy(true);
     try {
       const line: Record<string, unknown> = {
-        // trim so Opening stock line (UuidIdValue product_id) does not 422 on whitespace
         product_id: selectedId.trim(),
         quantity: Number(openingQty),
         unit_id: openingUnitId.trim() || null,
@@ -1741,16 +1836,19 @@ export default function Page() {
       const r = await api('/inventory/opening-stock', {
         method: 'POST',
         body: JSON.stringify({
-          reference: openingReference.trim() || null,
           notes: openingNotes.trim() || null,
           post_journal: openingPostJournal,
           lines: [line],
         }),
       });
-      const je = r.data.journal_number ? ` · JE ${r.data.journal_number}` : '';
-      setMessage(
-        `Opening stock ${r.data.reference}: ${r.data.line_count} line(s), value ${r.data.inventory_value}${je}`,
-      );
+      if (!r.data?.reference && !r.data?.id) {
+        setFormFlash({ err: 'Server did not confirm opening stock' });
+        return;
+      }
+      const je = r.data.journal_number ? ` · journal ${r.data.journal_number}` : '';
+      setFormFlash({
+        ok: `Opening stock ${r.data.reference}: ${r.data.line_count} line(s), value ${r.data.inventory_value}${je}`,
+      });
       setOpeningBatch('');
       setOpeningMfg('');
       setOpeningExpiry('');
@@ -1760,7 +1858,9 @@ export default function Page() {
       await refreshSelected(selectedId);
       setTab('opening');
     } catch (err: any) {
-      setError(err.message);
+      setFormFlash({ err: err.message || 'Could not post opening stock' });
+    } finally {
+      setSaveBusy(false);
     }
   }
 
@@ -1779,7 +1879,14 @@ export default function Page() {
     }
     const qty = Number(adjQty);
     if (!Number.isFinite(qty) || qty === 0) {
-      setFormFlash({ err: 'Quantity delta must be a non-zero number' });
+      setFormFlash({ err: 'Enter a non-zero quantity change' });
+      return;
+    }
+    if (!adjConfirming) {
+      setAdjConfirming(true);
+      setFormFlash({
+        err: `Confirm: change on-hand by ${qty} for ${adjReason}. This is recorded and cannot be undone.`,
+      });
       return;
     }
     setSaveBusy(true);
@@ -1794,12 +1901,13 @@ export default function Page() {
           warehouse_id: adjWarehouseId.trim() || null,
         }),
       });
-      setMessage(
-        `Adjusted (${r.data.reason}) — on-hand ${r.data.stock_qty}` +
-          (r.data.warehouse_id ? ` · warehouse ${String(r.data.warehouse_id).slice(0, 8)}…` : '')
-      );
+      if (r.data?.stock_qty == null) {
+        setFormFlash({ err: 'Server did not confirm the adjustment' });
+        return;
+      }
       setAdjNotes('');
       setAdjReason('');
+      setAdjConfirming(false);
       setFormFlash({ ok: `Adjustment saved — on-hand ${r.data.stock_qty}` });
       await refresh();
     } catch (err: any) {
@@ -1810,26 +1918,28 @@ export default function Page() {
   }
 
   async function postStockOut() {
+    if (saveBusy) return;
     setError('');
     setMessage('');
+    setFormFlash({});
     if (!selectedId) {
-      setError('Select a product');
+      setFormFlash({ err: 'Select a product' });
       return;
     }
     if (!outRefType.trim()) {
-      setError('Select a stock-out reference type');
+      setFormFlash({ err: 'Select why stock is leaving' });
       return;
     }
     const qty = Number(outQty);
     if (!Number.isFinite(qty) || qty <= 0) {
-      setError('Quantity must be a positive number');
+      setFormFlash({ err: 'Quantity must be a positive number' });
       return;
     }
+    setSaveBusy(true);
     try {
       const r = await api('/inventory/stock-out', {
         method: 'POST',
         body: JSON.stringify({
-          // trim so Stock out (UuidIdValue product_id) does not 422 on whitespace
           product_id: selectedId.trim(),
           quantity: qty,
           reference_type: outRefType,
@@ -1841,20 +1951,21 @@ export default function Page() {
           batch_id: outBatchId.trim() || null,
         }),
       });
-      setMessage(
-        `Stock out (${r.data.reference_type}) — on-hand ${r.data.stock_qty}` +
-          (r.data.warehouse_id ? ` · warehouse ${String(r.data.warehouse_id).slice(0, 8)}…` : '')
-      );
+      if (r.data?.stock_qty == null) {
+        setFormFlash({ err: 'Server did not confirm stock out' });
+        return;
+      }
+      setFormFlash({ ok: `Stock out saved — on-hand ${r.data.stock_qty}` });
       setOutNotes('');
       setOutRefId('');
       setOutRefType('');
       await refresh();
       setMvType('stock_out');
       setMvReason('');
-      setTab('movements');
-      await loadMovements({ movement_type: 'stock_out' });
     } catch (err: any) {
-      setError(err.message);
+      setFormFlash({ err: err.message || 'Could not post stock out' });
+    } finally {
+      setSaveBusy(false);
     }
   }
 
@@ -2023,13 +2134,60 @@ export default function Page() {
     if (transferManageFilter === 'all') return true;
     return (t.status || 'draft') === transferManageFilter;
   });
+  const batchQuery = batchSearch.trim().toLowerCase();
+  const visibleBatches = batches.filter((b) => {
+    if (!batchQuery) return true;
+    const prod = products.find((p) => p.id === b.product_id);
+    const wh = warehouses.find((w) => w.id === b.warehouse_id);
+    const hay = `${b.batch_number || ''} ${prod?.name || ''} ${prod?.sku || ''} ${wh?.name || ''} ${wh?.code || ''}`.toLowerCase();
+    return hay.includes(batchQuery);
+  });
+  const openingQuery = openingSearch.trim().toLowerCase();
+  const visibleOpening = openingHistory.filter((m) => {
+    if (!openingQuery) return true;
+    const p = products.find((x) => x.id === m.product_id);
+    const hay = `${p?.sku || ''} ${p?.name || ''} ${m.reference_id || ''}`.toLowerCase();
+    return hay.includes(openingQuery);
+  });
+  const expiryQuery = expirySearch.trim().toLowerCase();
+  const visibleExpiring = expiring.filter((b) => {
+    if (!expiryQuery) return true;
+    const prod = products.find((p) => p.id === b.product_id);
+    const hay = `${b.batch_number || ''} ${prod?.name || ''} ${prod?.sku || ''}`.toLowerCase();
+    return hay.includes(expiryQuery);
+  });
+  const countQuery = countSearch.trim().toLowerCase();
+  const visibleCounts = managedCounts.filter((c) => {
+    if (!countQuery) return true;
+    const hay = `${c.count_number || ''} ${c.status || ''} ${c.notes || ''}`.toLowerCase();
+    return hay.includes(countQuery);
+  });
+  const mvQuery = mvSearch.trim().toLowerCase();
+  const visibleMovements = movements.filter((mv) => {
+    if (!mvQuery) return true;
+    const hay = `${mv.product_sku || ''} ${mv.product_name || ''} ${mv.movement_type || ''} ${mv.reason || ''} ${mv.created_by_name || ''}`.toLowerCase();
+    return hay.includes(mvQuery);
+  });
+  const whQuery = whSearch.trim().toLowerCase();
+  const visibleWhRows = whStockRows.filter((r) => {
+    if (whLowOnly && !r.below_reorder) return false;
+    if (!whQuery) return true;
+    const hay = `${r.sku || ''} ${r.name || ''}`.toLowerCase();
+    return hay.includes(whQuery);
+  });
+  const xferQuery = xferSearch.trim().toLowerCase();
+  const visibleTransfers = managedTransfers.filter((t) => {
+    if (!xferQuery) return true;
+    const hay = `${t.transfer_number || ''} ${t.status || ''} ${t.rejection_reason || ''} ${warehouseLabel(t.from_warehouse_id)} ${warehouseLabel(t.to_warehouse_id)}`.toLowerCase();
+    return hay.includes(xferQuery);
+  });
+  const lowStockProducts = products.filter((p) => stockStatusOf(p) === 'red' && p.is_active !== false);
 
   return (
     <>
       <h1>Inventory</h1>
       <p className="muted">
-        Products, catalog, variants, batches, stock out, warehouse stock, transfers, expiry, stock
-        counts, movements &amp; adjustments
+        Products, catalog, batches, stock, transfers, expiry, counts, history, and adjustments
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
@@ -2046,12 +2204,12 @@ export default function Page() {
             ['variants', 'Variants'],
             ['batches', 'Batches'],
             ['opening', 'Opening stock'],
-            ['stockout', 'Stock Out'],
+            ['stockout', 'Stock out'],
             ['whstock', 'Manage stock'],
-            ['transfers', 'Transfers'],
-            ['expiry', 'Expiring'],
-            ['counts', 'Stock counts'],
-            ['movements', 'Movements'],
+            ['transfers', 'Stock transfer'],
+            ['expiry', 'Expiry'],
+            ['counts', 'Stock count'],
+            ['movements', 'Stock history'],
             ['adjust', 'Adjust stock'],
           ] as const
         ).map(([id, label]) => (
@@ -2073,7 +2231,15 @@ export default function Page() {
         tab !== 'variants' &&
         tab !== 'lookup' &&
         tab !== 'import' &&
-        tab !== 'expiry' && (
+        tab !== 'expiry' &&
+        tab !== 'batches' &&
+        tab !== 'opening' &&
+        tab !== 'counts' &&
+        tab !== 'movements' &&
+        tab !== 'adjust' &&
+        tab !== 'stockout' &&
+        tab !== 'whstock' &&
+        tab !== 'transfers' && (
       <div className="card" style={{ marginBottom: 16 }}>
         <label className="muted">
           {tab === 'whstock' ? 'Warehouse / product context' : 'Product for this action'}
