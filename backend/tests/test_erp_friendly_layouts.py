@@ -26,4 +26,4 @@ def test_erp_friendly_layout_css_and_pages():
 
     inventory = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert 'className="erp-split"' in inventory
-    assert "Brand" in inventory and "Unit of measure" in inventory
+    assert "Brands" in inventory and "Units" in inventory

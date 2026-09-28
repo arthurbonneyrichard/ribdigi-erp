@@ -84,6 +84,25 @@ function categoryParentName(categories: any[], parentId?: string | null) {
   return parent?.name || 'Main category';
 }
 
+function unitParentName(units: any[], baseId?: string | null) {
+  if (!baseId) return 'Main unit';
+  const parent = units.find((u) => u.id === baseId);
+  return parent?.name || parent?.code || 'Main unit';
+}
+
+function unitDepthOf(units: any[], row: any) {
+  let depth = 0;
+  let pid = row.base_unit_id;
+  const seen = new Set<string>();
+  while (pid && !seen.has(pid) && depth < 8) {
+    seen.add(pid);
+    depth += 1;
+    const parent = units.find((u) => u.id === pid);
+    pid = parent?.base_unit_id;
+  }
+  return depth;
+}
+
 function categoryDescendantIds(categories: any[], rootId: string) {
   const kids: Record<string, string[]> = {};
   for (const row of categories) {
@@ -280,12 +299,28 @@ export default function Page() {
   const [catTaxAdvanced, setCatTaxAdvanced] = useState(false);
   const [catMenuId, setCatMenuId] = useState('');
   const [catCollapsed, setCatCollapsed] = useState<Record<string, boolean>>({});
+  const [brandSearch, setBrandSearch] = useState('');
+  const [brandDrawerOpen, setBrandDrawerOpen] = useState(false);
+  const [brandEditId, setBrandEditId] = useState('');
+  const [brandAdvanced, setBrandAdvanced] = useState(false);
+  const [brandMenuId, setBrandMenuId] = useState('');
+  const [unitSearch, setUnitSearch] = useState('');
+  const [unitDrawerOpen, setUnitDrawerOpen] = useState(false);
+  const [unitEditId, setUnitEditId] = useState('');
+  const [unitAdvanced, setUnitAdvanced] = useState(false);
+  const [unitMenuId, setUnitMenuId] = useState('');
+  const [unitCollapsed, setUnitCollapsed] = useState<Record<string, boolean>>({});
+  const [variantSearch, setVariantSearch] = useState('');
+  const [variantDrawerOpen, setVariantDrawerOpen] = useState(false);
+  const [variantEditId, setVariantEditId] = useState('');
+  const [variantAdvanced, setVariantAdvanced] = useState(false);
+  const [variantMenuId, setVariantMenuId] = useState('');
+  const [variantCost, setVariantCost] = useState('');
+  const [variantPrice, setVariantPrice] = useState('');
   const [taxRates, setTaxRates] = useState<any[]>([]);
-  const [brandCode, setBrandCode] = useState('');
   const [brandName, setBrandName] = useState('');
   const [brandDescription, setBrandDescription] = useState('');
   const [brandLogoPreview, setBrandLogoPreview] = useState<Record<string, string>>({});
-  const [unitCode, setUnitCode] = useState('');
   const [unitName, setUnitName] = useState('');
   const [unitBaseId, setUnitBaseId] = useState('');
   const [unitRatio, setUnitRatio] = useState('1');
@@ -1265,6 +1300,14 @@ export default function Page() {
   async function deactivateVariant(variantId: string) {
     if (!selectedId) return;
     setError('');
+    setVariantMenuId('');
+    if (
+      !window.confirm(
+        'Deactivate this variant? The product stays in the catalog. You can activate the variant again later.',
+      )
+    ) {
+      return;
+    }
     try {
       await api(`/products/${selectedId}/variants/${variantId}`, { method: 'DELETE' });
       setMessage('Variant deactivated');
@@ -1277,6 +1320,7 @@ export default function Page() {
   async function activateVariant(variantId: string) {
     if (!selectedId) return;
     setError('');
+    setVariantMenuId('');
     try {
       await api(`/products/${selectedId}/variants/${variantId}`, {
         method: 'PATCH',
@@ -1371,6 +1415,210 @@ export default function Page() {
     }
   }
 
+  function openBrandCreate() {
+    setBrandEditId('');
+    setBrandName('');
+    setBrandDescription('');
+    setBrandAdvanced(false);
+    setFormFlash({});
+    setBrandDrawerOpen(true);
+  }
+
+  function openBrandEdit(row: any) {
+    setBrandEditId(row.id);
+    setBrandName(row.name || '');
+    setBrandDescription(row.description || '');
+    setBrandAdvanced(Boolean(row.description) || Boolean(row.has_logo));
+    setFormFlash({});
+    setBrandMenuId('');
+    setBrandDrawerOpen(true);
+  }
+
+  async function saveBrand() {
+    if (saveBusy) return;
+    const name = brandName.trim();
+    if (!name) {
+      setFormFlash({ err: 'Enter a brand name' });
+      return;
+    }
+    setSaveBusy(true);
+    setFormFlash({});
+    try {
+      const body = {
+        name,
+        description: brandDescription.trim() || null,
+      };
+      if (brandEditId) {
+        await api(`/catalog/brands/${brandEditId}`, {
+          method: 'PATCH',
+          body: JSON.stringify(body),
+        });
+        setFormFlash({ ok: 'Brand updated' });
+      } else {
+        await api('/catalog/brands', {
+          method: 'POST',
+          body: JSON.stringify(body),
+        });
+        setFormFlash({ ok: 'Brand created' });
+      }
+      await refresh();
+    } catch (err: any) {
+      setFormFlash({ err: err.message || 'Could not save brand' });
+    } finally {
+      setSaveBusy(false);
+    }
+  }
+
+  async function setBrandActive(row: any, isActive: boolean) {
+    setError('');
+    setBrandMenuId('');
+    if (
+      !isActive &&
+      !window.confirm(
+        'Deactivate this brand? Products stay in the catalog. You can activate the brand again later.',
+      )
+    ) {
+      return;
+    }
+    try {
+      if (isActive) {
+        await api(`/catalog/brands/${row.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ is_active: true }),
+        });
+        setMessage(`Brand ${row.name} activated`);
+      } else {
+        await api(`/catalog/brands/${row.id}`, { method: 'DELETE' });
+        setMessage('Brand deactivated');
+      }
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  function openUnitCreate() {
+    setUnitEditId('');
+    setUnitName('');
+    setUnitBaseId('');
+    setUnitRatio('1');
+    setUnitAdvanced(false);
+    setFormFlash({});
+    setUnitDrawerOpen(true);
+  }
+
+  function openUnitEdit(row: any) {
+    setUnitEditId(row.id);
+    setUnitName(row.name || '');
+    setUnitBaseId(row.base_unit_id || '');
+    setUnitRatio(String(row.conversion_ratio ?? 1));
+    setUnitAdvanced(Boolean(row.base_unit_id));
+    setFormFlash({});
+    setUnitMenuId('');
+    setUnitDrawerOpen(true);
+  }
+
+  async function saveUnit() {
+    if (saveBusy) return;
+    const name = unitName.trim();
+    if (!name) {
+      setFormFlash({ err: 'Enter a unit name' });
+      return;
+    }
+    setSaveBusy(true);
+    setFormFlash({});
+    try {
+      const body: Record<string, unknown> = {
+        name,
+        base_unit_id: unitBaseId.trim() || null,
+      };
+      if (unitBaseId.trim()) {
+        body.conversion_ratio = Number(unitRatio) || 1;
+      } else if (unitEditId) {
+        body.clear_base = true;
+      }
+      if (unitEditId) {
+        await api(`/catalog/units/${unitEditId}`, {
+          method: 'PATCH',
+          body: JSON.stringify(body),
+        });
+        setFormFlash({ ok: 'Unit updated' });
+      } else {
+        await api('/catalog/units', {
+          method: 'POST',
+          body: JSON.stringify(body),
+        });
+        setFormFlash({ ok: 'Unit created' });
+      }
+      await refresh();
+    } catch (err: any) {
+      setFormFlash({ err: err.message || 'Could not save unit' });
+    } finally {
+      setSaveBusy(false);
+    }
+  }
+
+  async function setUnitActive(row: any, isActive: boolean) {
+    setError('');
+    setUnitMenuId('');
+    if (
+      !isActive &&
+      !window.confirm(
+        'Deactivate this unit? Products stay in the catalog. You can activate the unit again later.',
+      )
+    ) {
+      return;
+    }
+    try {
+      if (isActive) {
+        await api(`/catalog/units/${row.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ is_active: true }),
+        });
+        setMessage(`Unit ${row.code} activated`);
+      } else {
+        await api(`/catalog/units/${row.id}`, { method: 'DELETE' });
+        setMessage('Unit deactivated');
+      }
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  function openVariantCreate() {
+    setVariantEditId('');
+    setVariantName('');
+    setVariantSku('');
+    setVariantBarcode('');
+    setVariantSize('');
+    setVariantColor('');
+    setVariantFlavor('');
+    setVariantDosage('');
+    setVariantCost('');
+    setVariantPrice('');
+    setVariantAdvanced(false);
+    setFormFlash({});
+    setVariantDrawerOpen(true);
+  }
+
+  function openVariantEdit(row: any) {
+    setVariantEditId(row.id);
+    setVariantName(row.name || '');
+    setVariantSku(row.sku || '');
+    setVariantBarcode(row.barcode || '');
+    setVariantSize(row.size || '');
+    setVariantColor(row.color || '');
+    setVariantFlavor(row.flavor || '');
+    setVariantDosage(row.dosage || '');
+    setVariantCost(String(row.cost_price ?? ''));
+    setVariantPrice(String(row.selling_price ?? ''));
+    setVariantAdvanced(Boolean(row.size || row.color || row.flavor || row.dosage || row.barcode));
+    setFormFlash({});
+    setVariantMenuId('');
+    setVariantDrawerOpen(true);
+  }
+
   async function addVariant() {
     if (saveBusy) return;
     setError('');
@@ -1386,29 +1634,34 @@ export default function Page() {
     }
     setSaveBusy(true);
     try {
-      const body: Record<string, unknown> = { name };
-      if (variantSku.trim()) body.sku = variantSku.trim();
-      if (variantBarcode.trim()) body.barcode = variantBarcode.trim();
-      if (variantSize.trim()) body.size = variantSize.trim();
-      if (variantColor.trim()) body.color = variantColor.trim();
-      if (variantFlavor.trim()) body.flavor = variantFlavor.trim();
-      if (variantDosage.trim()) body.dosage = variantDosage.trim();
-      const r = await api(`/products/${selectedId}/variants`, {
-        method: 'POST',
-        body: JSON.stringify(body),
-      });
-      if (!r.data?.id) {
-        setFormFlash({ err: 'Server did not confirm the variant' });
-        return;
+      const body: Record<string, unknown> = {
+        name,
+        sku: variantSku.trim() || null,
+        barcode: variantBarcode.trim() || null,
+        size: variantSize.trim() || null,
+        color: variantColor.trim() || null,
+        flavor: variantFlavor.trim() || null,
+        dosage: variantDosage.trim() || null,
+      };
+      if (variantCost.trim()) body.cost_price = Number(variantCost) || 0;
+      if (variantPrice.trim()) body.selling_price = Number(variantPrice) || 0;
+      if (variantEditId) {
+        await api(`/products/${selectedId}/variants/${variantEditId}`, {
+          method: 'PATCH',
+          body: JSON.stringify(body),
+        });
+        setFormFlash({ ok: 'Variant updated' });
+      } else {
+        const r = await api(`/products/${selectedId}/variants`, {
+          method: 'POST',
+          body: JSON.stringify(body),
+        });
+        if (!r.data?.id) {
+          setFormFlash({ err: 'Server did not confirm the variant' });
+          return;
+        }
+        setFormFlash({ ok: `Variant ${r.data.sku || r.data.name} saved` });
       }
-      setFormFlash({ ok: `Variant ${r.data.sku || r.data.name} saved` });
-      setVariantName('');
-      setVariantSku('');
-      setVariantBarcode('');
-      setVariantSize('');
-      setVariantColor('');
-      setVariantFlavor('');
-      setVariantDosage('');
       await refreshSelected(selectedId);
       setTab('variants');
     } catch (err: any) {
@@ -1723,8 +1976,45 @@ export default function Page() {
     return true;
   });
   const managedBrands = byStatus(brands, brandManageFilter);
+  const brandQuery = brandSearch.trim().toLowerCase();
+  const visibleBrands = managedBrands.filter((b) => {
+    if (!brandQuery) return true;
+    const hay = `${b.name || ''} ${b.code || ''} ${b.description || ''}`.toLowerCase();
+    return hay.includes(brandQuery);
+  });
   const managedUnits = byStatus(units, unitManageFilter);
+  const unitQuery = unitSearch.trim().toLowerCase();
+  const visibleUnits = managedUnits
+    .filter((u) => {
+      if (unitQuery) {
+        const parentName = unitParentName(units, u.base_unit_id).toLowerCase();
+        const hay = `${u.name || ''} ${u.code || ''} ${parentName}`.toLowerCase();
+        if (!hay.includes(unitQuery)) return false;
+        return true;
+      }
+      let pid = u.base_unit_id;
+      while (pid) {
+        if (unitCollapsed[pid]) return false;
+        const parent = units.find((x) => x.id === pid);
+        pid = parent?.base_unit_id;
+      }
+      return true;
+    })
+    .slice()
+    .sort((a, b) => {
+      const da = unitDepthOf(units, a);
+      const db = unitDepthOf(units, b);
+      if (da !== db) return da - db;
+      return String(a.name || '').localeCompare(String(b.name || ''));
+    });
   const managedVariants = byStatus(variants, variantManageFilter);
+  const variantQuery = variantSearch.trim().toLowerCase();
+  const visibleVariants = managedVariants.filter((v) => {
+    if (!variantQuery) return true;
+    const parentName = products.find((p) => p.id === selectedId)?.name || '';
+    const hay = `${v.name || ''} ${v.sku || ''} ${parentName}`.toLowerCase();
+    return hay.includes(variantQuery);
+  });
   const managedCounts = counts.filter((c) => {
     if (countManageFilter === 'all') return true;
     return (c.status || 'draft') === countManageFilter;
@@ -1780,6 +2070,7 @@ export default function Page() {
         tab !== 'categories' &&
         tab !== 'brands' &&
         tab !== 'units' &&
+        tab !== 'variants' &&
         tab !== 'lookup' &&
         tab !== 'import' &&
         tab !== 'expiry' && (
@@ -2592,61 +2883,20 @@ export default function Page() {
       )}
 
       {tab === 'brands' && (
-          <div className="card" style={{ display: 'grid', gap: 8 }}>
-            <h3>Brand</h3>
-            <p className="muted" style={{ margin: 0 }}>
-              Name, description, and logo (BR-5.1).
-            </p>
-            <input
-              value={brandCode}
-              onChange={(e) => setBrandCode(e.target.value)}
-              placeholder="Code"
-              aria-label="Brand code"
-              title="Brand code (1–40 chars; letters/digits required)"
-            />
-            <input
-              value={brandName}
-              onChange={(e) => setBrandName(e.target.value)}
-              placeholder="Name"
-              aria-label="Brand name"
-              title="Brand name (1–120 chars; letters/digits required)"
-            />
-            <textarea
-              value={brandDescription}
-              onChange={(e) => setBrandDescription(e.target.value)}
-              placeholder="Description (optional)"
-              aria-label="Brand description"
-              title="Optional description (1–500 chars; letters/digits required)"
-              rows={2}
-            />
-            <button
-              onClick={async () => {
-                setError('');
-                try {
-                  await api('/catalog/brands', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                      code: brandCode.trim(),
-                      name: brandName.trim(),
-                      description: brandDescription.trim() || null,
-                    }),
-                  });
-                  setBrandCode('');
-                  setBrandName('');
-                  setBrandDescription('');
-                  setFormFlash({ ok: 'Brand created' });
-                  await refresh();
-                } catch (err: any) {
-                  setFormFlash({ err: err.message });
-                }
-              }}
-              disabled={!brandCode.trim() || !brandName.trim()}
-              aria-label="Add brand"
-            >
+        <div className="card cat-panel">
+          <div className="cat-head">
+            <h2 style={{ margin: 0 }}>Brands</h2>
+            <button type="button" onClick={openBrandCreate} aria-label="Add brand">
               Add brand
             </button>
-            {formFlash.ok ? <p className="form-flash ok">{formFlash.ok}</p> : null}
-            {formFlash.err ? <p className="form-flash err">{formFlash.err}</p> : null}
+          </div>
+          <div className="cat-toolbar">
+            <input
+              value={brandSearch}
+              onChange={(e) => setBrandSearch(e.target.value)}
+              placeholder="Search brands"
+              aria-label="Search brands"
+            />
             <select
               value={brandManageFilter}
               onChange={(e) => setBrandManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
@@ -2657,166 +2907,179 @@ export default function Page() {
               <option value="active">Active only</option>
               <option value="inactive">Inactive only</option>
             </select>
-            <ul className="muted">
-              {managedBrands.map((b) => (
-                <li
-                  key={b.id}
-                  style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}
+          </div>
+          {visibleBrands.length === 0 ? (
+            <div className="cat-empty">
+              <p style={{ margin: 0 }}>No brands yet.</p>
+              <p className="muted" style={{ margin: '8px 0 0' }}>
+                Add a brand, then assign it on products.
+              </p>
+              <button type="button" style={{ marginTop: 12 }} onClick={openBrandCreate}>
+                Add brand
+              </button>
+            </div>
+          ) : (
+            <div className="cat-table-wrap">
+              <table className="table cat-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleBrands.map((b) => (
+                    <tr key={b.id}>
+                      <td data-label="Name">
+                        <div className="cat-name-cell">
+                          {brandLogoPreview[b.id] ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={brandLogoPreview[b.id]}
+                              alt=""
+                              width={24}
+                              height={24}
+                              style={{ objectFit: 'contain' }}
+                            />
+                          ) : null}
+                          <strong>{b.name}</strong>
+                        </div>
+                      </td>
+                      <td data-label="Status">{b.is_active === false ? 'Inactive' : 'Active'}</td>
+                      <td className="cat-actions">
+                        <button type="button" onClick={() => openBrandEdit(b)} aria-label={`Edit ${b.name}`}>
+                          Edit
+                        </button>
+                        <div className="cat-menu">
+                          <button
+                            type="button"
+                            aria-label={`More actions for ${b.name}`}
+                            onClick={() => setBrandMenuId(brandMenuId === b.id ? '' : b.id)}
+                          >
+                            ···
+                          </button>
+                          {brandMenuId === b.id ? (
+                            <div className="cat-menu-pop">
+                              {b.is_active === false ? (
+                                <button type="button" className="btn-ok" onClick={() => setBrandActive(b, true)}>
+                                  Activate
+                                </button>
+                              ) : (
+                                <button type="button" className="btn-danger" onClick={() => setBrandActive(b, false)}>
+                                  Deactivate
+                                </button>
+                              )}
+                            </div>
+                          ) : null}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {brandDrawerOpen ? (
+            <>
+              <div
+                className="inv-drawer-back"
+                onClick={() => !saveBusy && setBrandDrawerOpen(false)}
+                aria-hidden
+              />
+              <aside className="inv-drawer" aria-label={brandEditId ? 'Edit brand' : 'Add brand'}>
+                <button type="button" onClick={() => setBrandDrawerOpen(false)} disabled={saveBusy}>
+                  Close
+                </button>
+                <h3>{brandEditId ? 'Edit brand' : 'Add brand'}</h3>
+                <label className="muted" htmlFor="brand-name-field">
+                  Name
+                </label>
+                <input
+                  id="brand-name-field"
+                  value={brandName}
+                  onChange={(e) => setBrandName(e.target.value)}
+                  placeholder="Name"
+                  aria-label="Brand name"
+                  title="Brand name (1–120 chars; letters/digits required)"
+                />
+                <button
+                  type="button"
+                  className="cat-advanced"
+                  onClick={() => setBrandAdvanced((v) => !v)}
+                  aria-expanded={brandAdvanced}
                 >
-                  {brandLogoPreview[b.id] && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={brandLogoPreview[b.id]}
-                      alt={`${b.name} logo`}
-                      width={32}
-                      height={32}
-                      style={{ objectFit: 'contain', border: '1px solid var(--line, #D4E5C4)' }}
+                  {brandAdvanced ? 'Hide details' : 'Advanced: description and logo'}
+                </button>
+                {brandAdvanced ? (
+                  <>
+                    <label className="muted" htmlFor="brand-desc-field">
+                      Description
+                    </label>
+                    <textarea
+                      id="brand-desc-field"
+                      value={brandDescription}
+                      onChange={(e) => setBrandDescription(e.target.value)}
+                      placeholder="Description (optional)"
+                      aria-label="Brand description"
+                      title="Optional description (1–500 chars; letters/digits required)"
+                      rows={2}
                     />
-                  )}
-                  <span>
-                    {b.code} — {b.name}
-                    {b.description ? ` · ${b.description}` : ''}
-                    {b.has_logo ? ' · logo' : ''}
-                    {!b.is_active ? ' [inactive]' : ''}
-                  </span>
-                  {b.is_active === false ? (
-                    <button
-                      type="button"
-                      className="btn-ok"
-                      aria-label={`Activate brand ${b.id}`}
-                      onClick={async () => {
-                        setError('');
-                        try {
-                          await api(`/catalog/brands/${b.id}`, {
-                            method: 'PATCH',
-                            body: JSON.stringify({ is_active: true }),
-                          });
-                          setMessage(`Brand ${b.name} activated`);
-                          await refresh();
-                        } catch (err: any) {
-                          setError(err.message);
-                        }
-                      }}
-                    >
-                      Activate
-                    </button>
-                  ) : (
-                    <>
+                    {brandEditId ? (
                       <label className="muted" style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                         Logo
                         <input
                           type="file"
                           accept="image/png,image/jpeg,image/webp,image/gif"
-                          aria-label={`Brand logo file ${b.id}`}
+                          aria-label={`Brand logo file ${brandEditId}`}
                           onChange={(e) => {
                             const file = e.target.files?.[0];
-                            if (file) uploadBrandLogo(b.id, file);
+                            if (file) uploadBrandLogo(brandEditId, file);
                             e.target.value = '';
                           }}
                         />
                       </label>
-                      {b.has_logo && (
-                        <button type="button" onClick={() => removeBrandLogo(b.id)} aria-label={`Remove brand logo ${b.id}`}>
-                          Remove logo
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        className="btn-danger"
-                        aria-label={`Deactivate brand ${b.id}`}
-                        onClick={async () => {
-                          setError('');
-                          try {
-                            await api(`/catalog/brands/${b.id}`, { method: 'DELETE' });
-                            setMessage('Brand deactivated');
-                            await refresh();
-                          } catch (err: any) {
-                            setError(err.message);
-                          }
-                        }}
-                      >
-                        Deactivate
+                    ) : null}
+                    {brandEditId && brands.find((x) => x.id === brandEditId)?.has_logo ? (
+                      <button type="button" onClick={() => removeBrandLogo(brandEditId)} aria-label={`Remove brand logo ${brandEditId}`}>
+                        Remove logo
                       </button>
-                    </>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
+                    ) : null}
+                  </>
+                ) : null}
+                <div className="cat-save-row">
+                  <button
+                    type="button"
+                    onClick={saveBrand}
+                    disabled={!brandName.trim() || saveBusy}
+                    aria-label={brandEditId ? 'Save brand' : 'Add brand'}
+                  >
+                    {saveBusy ? 'Saving…' : brandEditId ? 'Save' : 'Add brand'}
+                  </button>
+                  {formFlash.ok ? <p className="form-flash ok">{formFlash.ok}</p> : null}
+                  {formFlash.err ? <p className="form-flash err">{formFlash.err}</p> : null}
+                </div>
+              </aside>
+            </>
+          ) : null}
+        </div>
       )}
 
       {tab === 'units' && (
-          <div className="card" style={{ display: 'grid', gap: 8 }}>
-            <h3>Unit of measure</h3>
-            <p className="muted" style={{ margin: 0 }}>
-              Optional base + ratio: 1 of this unit = ratio × base (e.g. BOX = 12 PCS). Stock stays in the
-              product&apos;s stock unit.
-            </p>
-            <input
-              value={unitCode}
-              onChange={(e) => setUnitCode(e.target.value)}
-              placeholder="Code"
-              aria-label="Unit code"
-              title="Unit code (1–20 chars; letters/digits required)"
-            />
-            <input
-              value={unitName}
-              onChange={(e) => setUnitName(e.target.value)}
-              placeholder="Name"
-              aria-label="Unit name"
-              title="Unit name (1–80 chars; letters/digits required)"
-            />
-            <select
-              value={unitBaseId}
-              onChange={(e) => setUnitBaseId(e.target.value)}
-              aria-label="Unit base unit"
-            >
-              <option value="">Base unit (root / none)</option>
-              {units
-                .filter((u) => u.is_active !== false && !u.base_unit_id)
-                .map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.code} — {u.name}
-                  </option>
-                ))}
-            </select>
-            <input
-              value={unitRatio}
-              onChange={(e) => setUnitRatio(e.target.value)}
-              placeholder="Conversion ratio"
-              aria-label="Unit conversion ratio"
-              disabled={!unitBaseId}
-            />
-            <button
-              onClick={async () => {
-                setError('');
-                try {
-                  await api('/catalog/units', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                      code: unitCode.trim(),
-                      name: unitName.trim(),
-                      base_unit_id: unitBaseId.trim() || null,
-                      conversion_ratio: unitBaseId.trim() ? Number(unitRatio) || 1 : 1,
-                    }),
-                  });
-                  setUnitCode('');
-                  setUnitName('');
-                  setUnitBaseId('');
-                  setUnitRatio('1');
-                  setFormFlash({ ok: 'Unit created' });
-                  await refresh();
-                } catch (err: any) {
-                  setFormFlash({ err: err.message });
-                }
-              }}
-              disabled={!unitCode.trim() || !unitName.trim()}
-              aria-label="Add unit"
-            >
+        <div className="card cat-panel">
+          <div className="cat-head">
+            <h2 style={{ margin: 0 }}>Units</h2>
+            <button type="button" onClick={openUnitCreate} aria-label="Add unit">
               Add unit
             </button>
-            {formFlash.ok ? <p className="form-flash ok">{formFlash.ok}</p> : null}
-            {formFlash.err ? <p className="form-flash err">{formFlash.err}</p> : null}
+          </div>
+          <div className="cat-toolbar">
+            <input
+              value={unitSearch}
+              onChange={(e) => setUnitSearch(e.target.value)}
+              placeholder="Search units"
+              aria-label="Search units"
+            />
             <select
               value={unitManageFilter}
               onChange={(e) => setUnitManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
@@ -2827,75 +3090,181 @@ export default function Page() {
               <option value="active">Active only</option>
               <option value="inactive">Inactive only</option>
             </select>
-            <ul className="muted">
-              {managedUnits.map((u) => (
-                <li key={u.id} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span>
-                    {u.code} — {u.name}
-                    {u.base_unit_code
-                      ? ` (= ${u.conversion_ratio} ${u.base_unit_code})`
-                      : ' [root]'}
-                    {!u.is_active ? ' [inactive]' : ''}
-                  </span>
-                  {u.is_active === false ? (
-                    <button
-                      type="button"
-                      className="btn-ok"
-                      aria-label={`Activate unit ${u.id}`}
-                      onClick={async () => {
-                        setError('');
-                        try {
-                          await api(`/catalog/units/${u.id}`, {
-                            method: 'PATCH',
-                            body: JSON.stringify({ is_active: true }),
-                          });
-                          setMessage(`Unit ${u.code} activated`);
-                          await refresh();
-                        } catch (err: any) {
-                          setError(err.message);
-                        }
-                      }}
-                    >
-                      Activate
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="btn-danger"
-                      aria-label={`Deactivate unit ${u.id}`}
-                      onClick={async () => {
-                        setError('');
-                        try {
-                          await api(`/catalog/units/${u.id}`, { method: 'DELETE' });
-                          setMessage('Unit deactivated');
-                          await refresh();
-                        } catch (err: any) {
-                          setError(err.message);
-                        }
-                      }}
-                    >
-                      Deactivate
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
           </div>
+          {visibleUnits.length === 0 ? (
+            <div className="cat-empty">
+              <p style={{ margin: 0 }}>No units yet.</p>
+              <p className="muted" style={{ margin: '8px 0 0' }}>
+                Add a main unit, then nest conversions under it.
+              </p>
+              <button type="button" style={{ marginTop: 12 }} onClick={openUnitCreate}>
+                Add unit
+              </button>
+            </div>
+          ) : (
+            <div className="cat-table-wrap">
+              <table className="table cat-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Parent</th>
+                    <th>Status</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleUnits.map((u) => {
+                    const depth = unitDepthOf(units, u);
+                    const hasKids = units.some((x) => x.base_unit_id === u.id);
+                    const collapsed = Boolean(unitCollapsed[u.id]);
+                    return (
+                      <tr key={u.id}>
+                        <td data-label="Name">
+                          <div
+                            className="cat-name-cell"
+                            style={{ paddingLeft: Math.min(depth, 6) * 14 }}
+                          >
+                            {hasKids ? (
+                              <button
+                                type="button"
+                                className="cat-twist"
+                                aria-label={collapsed ? `Expand ${u.name}` : `Collapse ${u.name}`}
+                                onClick={() =>
+                                  setUnitCollapsed((prev) => ({ ...prev, [u.id]: !collapsed }))
+                                }
+                              >
+                                {collapsed ? '+' : '–'}
+                              </button>
+                            ) : (
+                              <span className="cat-twist-spacer" />
+                            )}
+                            <strong>{u.name}</strong>
+                          </div>
+                        </td>
+                        <td data-label="Parent">{unitParentName(units, u.base_unit_id)}</td>
+                        <td data-label="Status">{u.is_active === false ? 'Inactive' : 'Active'}</td>
+                        <td className="cat-actions">
+                          <button type="button" onClick={() => openUnitEdit(u)} aria-label={`Edit ${u.name}`}>
+                            Edit
+                          </button>
+                          <div className="cat-menu">
+                            <button
+                              type="button"
+                              aria-label={`More actions for ${u.name}`}
+                              onClick={() => setUnitMenuId(unitMenuId === u.id ? '' : u.id)}
+                            >
+                              ···
+                            </button>
+                            {unitMenuId === u.id ? (
+                              <div className="cat-menu-pop">
+                                {u.is_active === false ? (
+                                  <button type="button" className="btn-ok" onClick={() => setUnitActive(u, true)}>
+                                    Activate
+                                  </button>
+                                ) : (
+                                  <button type="button" className="btn-danger" onClick={() => setUnitActive(u, false)}>
+                                    Deactivate
+                                  </button>
+                                )}
+                              </div>
+                            ) : null}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {unitDrawerOpen ? (
+            <>
+              <div
+                className="inv-drawer-back"
+                onClick={() => !saveBusy && setUnitDrawerOpen(false)}
+                aria-hidden
+              />
+              <aside className="inv-drawer" aria-label={unitEditId ? 'Edit unit' : 'Add unit'}>
+                <button type="button" onClick={() => setUnitDrawerOpen(false)} disabled={saveBusy}>
+                  Close
+                </button>
+                <h3>{unitEditId ? 'Edit unit' : 'Add unit'}</h3>
+                <label className="muted" htmlFor="unit-name-field">
+                  Name
+                </label>
+                <input
+                  id="unit-name-field"
+                  value={unitName}
+                  onChange={(e) => setUnitName(e.target.value)}
+                  placeholder="Name"
+                  aria-label="Unit name"
+                  title="Unit name (1–80 chars; letters/digits required)"
+                />
+                <label className="muted" htmlFor="unit-parent-field">
+                  Parent
+                </label>
+                <select
+                  id="unit-parent-field"
+                  value={unitBaseId}
+                  onChange={(e) => setUnitBaseId(e.target.value)}
+                  aria-label="Unit base unit"
+                  title="Main unit when blank"
+                >
+                  <option value="">Main unit</option>
+                  {units
+                    .filter((u) => u.is_active !== false && !u.base_unit_id)
+                    .filter((u) => u.id !== unitEditId)
+                    .map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.name}
+                      </option>
+                    ))}
+                </select>
+                <button
+                  type="button"
+                  className="cat-advanced"
+                  onClick={() => setUnitAdvanced((v) => !v)}
+                  aria-expanded={unitAdvanced}
+                >
+                  {unitAdvanced ? 'Hide conversion' : 'Advanced: conversion ratio'}
+                </button>
+                {unitAdvanced ? (
+                  <input
+                    value={unitRatio}
+                    onChange={(e) => setUnitRatio(e.target.value)}
+                    placeholder="Conversion ratio"
+                    aria-label="Unit conversion ratio"
+                    disabled={!unitBaseId}
+                  />
+                ) : null}
+                <div className="cat-save-row">
+                  <button
+                    type="button"
+                    onClick={saveUnit}
+                    disabled={!unitName.trim() || saveBusy}
+                    aria-label={unitEditId ? 'Save unit' : 'Add unit'}
+                  >
+                    {saveBusy ? 'Saving…' : unitEditId ? 'Save' : 'Add unit'}
+                  </button>
+                  {formFlash.ok ? <p className="form-flash ok">{formFlash.ok}</p> : null}
+                  {formFlash.err ? <p className="form-flash err">{formFlash.err}</p> : null}
+                </div>
+              </aside>
+            </>
+          ) : null}
+        </div>
       )}
 
       {tab === 'variants' && (
-        <>
-          <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
-            <h3>Add variant</h3>
-            <p className="muted">
-              Choose the parent product, then save the variant. Size, color, flavor, and dosage are
-              optional. SKU and barcode are unique per company; leave them blank to auto-assign SKU.
-            </p>
-            <label className="muted" htmlFor="variant-parent-product">
-              Parent product
-            </label>
+        <div className="card cat-panel">
+          <div className="cat-head">
+            <h2 style={{ margin: 0 }}>Variants</h2>
+            <button type="button" onClick={openVariantCreate} aria-label="Add variant">
+              Add variant
+            </button>
+          </div>
+          <div className="cat-toolbar">
             <select
-              id="variant-parent-product"
               value={selectedId}
               onChange={(e) => setSelectedId(e.target.value)}
               aria-label="Parent product for variant"
@@ -2907,188 +3276,226 @@ export default function Page() {
                 </option>
               ))}
             </select>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                addVariant();
-              }}
-              style={{ display: 'grid', gap: 8 }}
+            <input
+              value={variantSearch}
+              onChange={(e) => setVariantSearch(e.target.value)}
+              placeholder="Search variants"
+              aria-label="Search variants"
+            />
+            <select
+              value={variantManageFilter}
+              onChange={(e) =>
+                setVariantManageFilter(e.target.value as 'all' | 'active' | 'inactive')
+              }
+              title="Filter manage variant list by status"
+              aria-label="Product variant status filter"
             >
-            <input
-              value={variantName}
-              onChange={(e) => setVariantName(e.target.value)}
-              placeholder="Name"
-              aria-label="Variant name"
-              title="Variant name (1–120 chars; letters/digits required)"
-            />
-            <input
-              value={variantSku}
-              onChange={(e) => setVariantSku(e.target.value)}
-              placeholder="SKU (auto if blank)"
-              aria-label="Variant SKU"
-              title="Optional SKU (1–100 chars: letters, digits, . _ -; blank → auto)"
-            />
-            <input
-              value={variantBarcode}
-              onChange={(e) => setVariantBarcode(e.target.value)}
-              placeholder="Barcode (optional)"
-              aria-label="Variant barcode"
-              title="Optional barcode (4–48 chars: letters, numbers, - . _)"
-            />
-            <input
-              value={variantSize}
-              onChange={(e) => setVariantSize(e.target.value)}
-              placeholder="Size (optional)"
-              aria-label="Variant size"
-              title="Optional size (1–80 chars; letters/digits required)"
-            />
-            <input
-              value={variantColor}
-              onChange={(e) => setVariantColor(e.target.value)}
-              placeholder="Color (optional)"
-              aria-label="Variant color"
-              title="Optional color (1–80 chars; letters/digits required)"
-            />
-            <input
-              value={variantFlavor}
-              onChange={(e) => setVariantFlavor(e.target.value)}
-              placeholder="Flavor (optional)"
-              aria-label="Variant flavor"
-              title="Optional flavor (1–80 chars; letters/digits required)"
-            />
-            <input
-              value={variantDosage}
-              onChange={(e) => setVariantDosage(e.target.value)}
-              placeholder="Dosage (optional)"
-              aria-label="Variant dosage"
-              title="Optional dosage (1–80 chars; letters/digits required)"
-            />
-            <button
-              type="submit"
-              disabled={!variantName.trim() || saveBusy}
-              aria-label="Create variant"
-            >
-              {saveBusy ? 'Saving…' : 'Create variant'}
-            </button>
-            {formFlash.ok ? <p className="form-flash ok" role="status">{formFlash.ok}</p> : null}
-            {formFlash.err ? <p className="form-flash err" role="alert">{formFlash.err}</p> : null}
-            </form>
+              <option value="all">All statuses</option>
+              <option value="active">Active only</option>
+              <option value="inactive">Inactive only</option>
+            </select>
           </div>
-          <select
-            value={variantManageFilter}
-            onChange={(e) =>
-              setVariantManageFilter(e.target.value as 'all' | 'active' | 'inactive')
-            }
-            title="Filter manage variant list by status"
-            aria-label="Product variant status filter"
-            style={{ marginBottom: 8 }}
-          >
-            <option value="all">All statuses</option>
-            <option value="active">Active only</option>
-            <option value="inactive">Inactive only</option>
-          </select>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>SKU</th>
-                <th>Barcode</th>
-                <th>Size</th>
-                <th>Color</th>
-                <th>Flavor</th>
-                <th>Dosage</th>
-                <th>Stock</th>
-                <th>Cost</th>
-                <th>Price</th>
-                <th>Active</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {managedVariants.length === 0 && (
-                <tr>
-                  <td colSpan={11} className="muted">
-                    No variants for this filter
-                  </td>
-                </tr>
-              )}
-              {managedVariants.map((v) => (
-                <tr key={v.id}>
-                  <td>
-                    {v.name}
-                    {v.is_active === false ? (
-                      <span className="muted" style={{ marginLeft: 6, fontSize: 12 }}>
-                        [inactive]
-                      </span>
-                    ) : null}
-                  </td>
-                  <td>{v.sku}</td>
-                  <td>{v.barcode || '—'}</td>
-                  <td>{v.size || '—'}</td>
-                  <td>{v.color || '—'}</td>
-                  <td>{v.flavor || '—'}</td>
-                  <td>{v.dosage || '—'}</td>
-                  <td>{v.stock_qty}</td>
-                  <td>
+          {visibleVariants.length === 0 ? (
+            <div className="cat-empty">
+              <p style={{ margin: 0 }}>{selectedId ? 'No variants yet.' : 'Select a product first.'}</p>
+              <p className="muted" style={{ margin: '8px 0 0' }}>
+                Choose the parent product, then add size, color, or other options.
+              </p>
+              <button type="button" style={{ marginTop: 12 }} onClick={openVariantCreate} disabled={!products.length}>
+                Add variant
+              </button>
+            </div>
+          ) : (
+            <div className="cat-table-wrap">
+              <table className="table cat-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Parent</th>
+                    <th>Status</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleVariants.map((v) => (
+                    <tr key={v.id}>
+                      <td data-label="Name">
+                        <div className="cat-name-cell">
+                          <strong>{v.name}</strong>
+                        </div>
+                      </td>
+                      <td data-label="Parent">
+                        {products.find((p) => p.id === selectedId)?.name || '—'}
+                      </td>
+                      <td data-label="Status">{v.is_active === false ? 'Inactive' : 'Active'}</td>
+                      <td className="cat-actions">
+                        <button type="button" onClick={() => openVariantEdit(v)} aria-label={`Edit ${v.name}`}>
+                          Edit
+                        </button>
+                        <div className="cat-menu">
+                          <button
+                            type="button"
+                            aria-label={`More actions for ${v.name}`}
+                            onClick={() => setVariantMenuId(variantMenuId === v.id ? '' : v.id)}
+                          >
+                            ···
+                          </button>
+                          {variantMenuId === v.id ? (
+                            <div className="cat-menu-pop">
+                              {v.is_active === false ? (
+                                <button type="button" className="btn-ok" onClick={() => activateVariant(v.id)}>
+                                  Activate
+                                </button>
+                              ) : (
+                                <button type="button" className="btn-danger" onClick={() => deactivateVariant(v.id)}>
+                                  Deactivate
+                                </button>
+                              )}
+                              <button type="button" onClick={() => generateVariantBarcode(v.id)} aria-label={`Generate variant barcode ${v.id}`}>
+                                Generate barcode
+                              </button>
+                              <button type="button" onClick={() => printVariantBarcodeLabel(v.id)} aria-label={`Print variant barcode label ${v.id}`}>
+                                Label
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {variantDrawerOpen ? (
+            <>
+              <div
+                className="inv-drawer-back"
+                onClick={() => !saveBusy && setVariantDrawerOpen(false)}
+                aria-hidden
+              />
+              <aside className="inv-drawer" aria-label={variantEditId ? 'Edit variant' : 'Add variant'}>
+                <button type="button" onClick={() => setVariantDrawerOpen(false)} disabled={saveBusy}>
+                  Close
+                </button>
+                <h3>{variantEditId ? 'Edit variant' : 'Add variant'}</h3>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    addVariant();
+                  }}
+                  style={{ display: 'grid', gap: 8 }}
+                >
+                <label className="muted" htmlFor="variant-name-field">
+                  Name
+                </label>
+                <input
+                  id="variant-name-field"
+                  value={variantName}
+                  onChange={(e) => setVariantName(e.target.value)}
+                  placeholder="Name"
+                  aria-label="Variant name"
+                  title="Variant name (1–120 chars; letters/digits required)"
+                />
+                <label className="muted" htmlFor="variant-parent-product">
+                  Parent product
+                </label>
+                <select
+                  id="variant-parent-product"
+                  value={selectedId}
+                  onChange={(e) => setSelectedId(e.target.value)}
+                  aria-label="Parent product for variant"
+                  disabled={Boolean(variantEditId)}
+                >
+                  <option value="">Select a product</option>
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="cat-advanced"
+                  onClick={() => setVariantAdvanced((v) => !v)}
+                  aria-expanded={variantAdvanced}
+                >
+                  {variantAdvanced ? 'Hide options' : 'Advanced: SKU, barcode, and attributes'}
+                </button>
+                {variantAdvanced ? (
+                  <>
                     <input
-                      defaultValue={String(v.cost_price ?? 0)}
-                      style={{ width: 80 }}
-                      onBlur={(e) => {
-                        if (String(v.cost_price) !== e.target.value) {
-                          saveVariantCost(v.id, e.target.value);
-                        }
-                      }}
-                      aria-label={`Variant cost price ${v.name || v.sku || v.id}`}
+                      value={variantSku}
+                      onChange={(e) => setVariantSku(e.target.value)}
+                      placeholder="SKU (auto if blank)"
+                      aria-label="Variant SKU"
+                      title="Optional SKU (1–100 chars: letters, digits, . _ -; blank → auto)"
                     />
-                  </td>
-                  <td>
                     <input
-                      defaultValue={String(v.selling_price ?? 0)}
-                      style={{ width: 80 }}
-                      onBlur={(e) => {
-                        if (String(v.selling_price) !== e.target.value) {
-                          saveVariantPrice(v.id, e.target.value);
-                        }
-                      }}
-                      aria-label={`Variant selling price ${v.name || v.sku || v.id}`}
+                      value={variantBarcode}
+                      onChange={(e) => setVariantBarcode(e.target.value)}
+                      placeholder="Barcode (optional)"
+                      aria-label="Variant barcode"
+                      title="Optional barcode (4–48 chars: letters, numbers, - . _)"
                     />
-                  </td>
-                  <td>{v.is_active ? 'yes' : 'no'}</td>
-                  <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    <button
-                      type="button"
-                      onClick={() => generateVariantBarcode(v.id)}
-                      aria-label={`Generate variant barcode ${v.id}`}
-                    >
-                      Generate
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => printVariantBarcodeLabel(v.id)}
-                      aria-label={`Print variant barcode label ${v.id}`}
-                    >
-                      Label
-                    </button>
-                    {v.is_active === false ? (
-                      <button type="button" className="btn-ok" aria-label={`Activate variant ${v.id}`} onClick={() => activateVariant(v.id)}>
-                        Activate
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="btn-danger"
-                        aria-label={`Deactivate variant ${v.id}`}
-                        onClick={() => deactivateVariant(v.id)}
-                      >
-                        Deactivate
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
+                    <input
+                      value={variantSize}
+                      onChange={(e) => setVariantSize(e.target.value)}
+                      placeholder="Size (optional)"
+                      aria-label="Variant size"
+                      title="Optional size (1–80 chars; letters/digits required)"
+                    />
+                    <input
+                      value={variantColor}
+                      onChange={(e) => setVariantColor(e.target.value)}
+                      placeholder="Color (optional)"
+                      aria-label="Variant color"
+                      title="Optional color (1–80 chars; letters/digits required)"
+                    />
+                    <input
+                      value={variantFlavor}
+                      onChange={(e) => setVariantFlavor(e.target.value)}
+                      placeholder="Flavor (optional)"
+                      aria-label="Variant flavor"
+                      title="Optional flavor (1–80 chars; letters/digits required)"
+                    />
+                    <input
+                      value={variantDosage}
+                      onChange={(e) => setVariantDosage(e.target.value)}
+                      placeholder="Dosage (optional)"
+                      aria-label="Variant dosage"
+                      title="Optional dosage (1–80 chars; letters/digits required)"
+                    />
+                    <input
+                      value={variantCost}
+                      onChange={(e) => setVariantCost(e.target.value)}
+                      placeholder="Cost (optional)"
+                      aria-label="Variant cost price"
+                    />
+                    <input
+                      value={variantPrice}
+                      onChange={(e) => setVariantPrice(e.target.value)}
+                      placeholder="Price (optional)"
+                      aria-label="Variant selling price"
+                    />
+                  </>
+                ) : null}
+                <div className="cat-save-row">
+                  <button
+                    type="submit"
+                    disabled={!variantName.trim() || saveBusy}
+                    aria-label={variantEditId ? 'Save variant' : 'Create variant'}
+                  >
+                    {saveBusy ? 'Saving…' : variantEditId ? 'Save' : 'Create variant'}
+                  </button>
+                  {formFlash.ok ? <p className="form-flash ok" role="status">{formFlash.ok}</p> : null}
+                  {formFlash.err ? <p className="form-flash err" role="alert">{formFlash.err}</p> : null}
+                </div>
+                </form>
+              </aside>
+            </>
+          ) : null}
+        </div>
       )}
 
       {tab === 'batches' && (

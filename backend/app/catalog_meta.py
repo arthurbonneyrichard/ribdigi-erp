@@ -27,6 +27,8 @@ DEFAULT_CATEGORIES = (
 )
 
 _CAT_CODE_RE = re.compile(r"^CAT-(\d+)$", re.IGNORECASE)
+_BRD_CODE_RE = re.compile(r"^BRD-(\d+)$", re.IGNORECASE)
+_UNT_CODE_RE = re.compile(r"^UNT-(\d+)$", re.IGNORECASE)
 
 
 def serialize_category(row: m.ProductCategory) -> dict:
@@ -260,28 +262,56 @@ async def _validate_category_tax_rate(
     return rate.id
 
 
+async def _allocate_prefixed_code(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    table: str,
+    prefix: str,
+    pattern: re.Pattern[str],
+) -> str:
+    """Allocate PREFIX-NNNN under a tenant row lock. Existing codes are left unchanged."""
+    await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id).with_for_update())
+    taken = {
+        str(c).strip().upper()
+        for c in await schema_compat.existing_codes(db, table, tenant_id)
+    }
+    seq = 0
+    for existing in taken:
+        match = pattern.match(existing)
+        if match:
+            seq = max(seq, int(match.group(1)))
+    n = seq + 1
+    for _ in range(10_000):
+        candidate = f"{prefix}-{n:04d}"
+        if candidate not in taken:
+            return candidate
+        n += 1
+    raise HTTPException(status_code=500, detail="The server could not complete this request.")
+
+
 async def allocate_category_code(db: AsyncSession, tenant_id: str) -> str:
     """Allocate CAT-NNNN under a tenant row lock (same idea as POS numbers).
 
     Existing codes (GEN/BEV/FOOD and any client-supplied values) are left unchanged.
     """
-    await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id).with_for_update())
-    taken = {
-        str(c).strip().upper()
-        for c in await schema_compat.existing_codes(db, "product_categories", tenant_id)
-    }
-    seq = 0
-    for existing in taken:
-        match = _CAT_CODE_RE.match(existing)
-        if match:
-            seq = max(seq, int(match.group(1)))
-    n = seq + 1
-    for _ in range(10_000):
-        candidate = f"CAT-{n:04d}"
-        if candidate not in taken:
-            return candidate
-        n += 1
-    raise HTTPException(status_code=500, detail="The server could not complete this request.")
+    return await _allocate_prefixed_code(
+        db, tenant_id, table="product_categories", prefix="CAT", pattern=_CAT_CODE_RE
+    )
+
+
+async def allocate_brand_code(db: AsyncSession, tenant_id: str) -> str:
+    """Allocate BRD-NNNN under a tenant row lock. Existing codes are preserved."""
+    return await _allocate_prefixed_code(
+        db, tenant_id, table="brands", prefix="BRD", pattern=_BRD_CODE_RE
+    )
+
+
+async def allocate_unit_code(db: AsyncSession, tenant_id: str) -> str:
+    """Allocate UNT-NNNN under a tenant row lock. Existing codes are preserved."""
+    return await _allocate_prefixed_code(
+        db, tenant_id, table="units_of_measure", prefix="UNT", pattern=_UNT_CODE_RE
+    )
 
 
 async def create_category(
@@ -407,15 +437,17 @@ async def create_brand(
     db: AsyncSession,
     *,
     tenant_id: str,
-    code: str,
+    code: str | None = None,
     name: str,
     description: str | None = None,
 ) -> m.Brand:
-    # OpenAPI BrandCodeValue → 422; service defense-in-depth → 400.
-    code = require_honest_narrative(
-        (code or "").strip().upper(), label="brand code", max_length=40
-    )
     name = require_honest_narrative(name, label="brand name", max_length=120)
+    supplied = (code or "").strip()
+    if supplied:
+        # OpenAPI BrandCodeValue → 422; service defense-in-depth → 400.
+        code = require_honest_narrative(supplied, label="brand code", max_length=40).upper()
+    else:
+        code = await allocate_brand_code(db, tenant_id)
     if code in await schema_compat.existing_codes(db, "brands", tenant_id):
         raise HTTPException(status_code=409, detail="Brand code exists")
     row = await schema_compat.insert_and_get(
@@ -512,18 +544,20 @@ async def create_unit(
     db: AsyncSession,
     *,
     tenant_id: str,
-    code: str,
+    code: str | None = None,
     name: str,
     base_unit_id: str | None = None,
     conversion_ratio: float | None = None,
 ) -> m.UnitOfMeasure:
     from app.uom import validate_unit_base
 
-    # OpenAPI UnitCodeValue → 422; service defense-in-depth → 400.
-    code = require_honest_narrative(
-        (code or "").strip().upper(), label="unit code", max_length=20
-    )
     name = require_honest_narrative(name, label="unit name", max_length=80)
+    supplied = (code or "").strip()
+    if supplied:
+        # OpenAPI UnitCodeValue → 422; service defense-in-depth → 400.
+        code = require_honest_narrative(supplied, label="unit code", max_length=20).upper()
+    else:
+        code = await allocate_unit_code(db, tenant_id)
     if code in await schema_compat.existing_codes(db, "units_of_measure", tenant_id):
         raise HTTPException(status_code=409, detail="Unit code exists")
     base_id, ratio = await validate_unit_base(

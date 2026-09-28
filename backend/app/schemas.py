@@ -1504,10 +1504,10 @@ class ProductCategoryUpdate(BaseModel):
 class BrandCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    # Required brand code ∈ BrandCodeValue; blank/`!!!`/`http://…` → **422**
-    # (was free `str`; blank reached service **400**; punctuation/URL could persist).
+    # Optional brand code ∈ BrandCodeValue; omit/`null` → server allocates
+    # BRD-NNNN (existing codes preserved). If sent, blank/`!!!`/`http://…` → **422**.
     # Tenant uniqueness remains create_brand **409**.
-    code: BrandCodeValue
+    code: BrandCodeValue | None = None
     # Required brand label ∈ BrandNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on catalog brand create).
     name: BrandNameValue
@@ -1534,10 +1534,10 @@ class BrandUpdate(BaseModel):
 class UnitOfMeasureCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    # Required UoM code ∈ UnitCodeValue; blank/`!!!`/`http://…` → **422**
-    # (was free `str`; blank reached service **400**; punctuation/URL could persist).
+    # Optional UoM code ∈ UnitCodeValue; omit/`null` → server allocates
+    # UNT-NNNN (existing codes preserved). If sent, blank/`!!!`/`http://…` → **422**.
     # Tenant uniqueness remains create_unit **409**.
-    code: UnitCodeValue
+    code: UnitCodeValue | None = None
     # Required UoM label ∈ UnitNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on catalog unit create).
     name: UnitNameValue
