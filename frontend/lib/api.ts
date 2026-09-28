@@ -117,8 +117,8 @@ export function formatApiError(body: unknown, status: number): string {
     if (code === 404) return 'Not found.';
     if (code === 409) return 'That record already exists.';
     if (code === 422) return 'Some fields are invalid. Check email, role, phone (E.164), and password.';
-    if (code === 503) return 'The service is busy. Try again in a moment.';
-    if (code >= 500) return 'The server could not complete this request.';
+    if (code === 503) return 'This extra is not ready on the server yet. Rooms and reservations still work.';
+    if (code >= 500) return 'Could not complete that. Try again. Hotel extras may need a database update; rooms and reservations are separate.';
     return 'Request failed';
   };
   const looksUnsafe = (text: string): boolean => {

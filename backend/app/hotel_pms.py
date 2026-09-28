@@ -13,6 +13,15 @@ from app import models as m
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
 
 
+async def _flush_pms(db: AsyncSession) -> None:
+    try:
+        await db.flush()
+    except (ProgrammingError, OperationalError) as exc:
+        from app.hotel import HOTEL_FEATURE_UNAVAILABLE
+
+        raise HTTPException(status_code=400, detail=HOTEL_FEATURE_UNAVAILABLE) from exc
+
+
 async def _pms_scalars(db: AsyncSession, stmt) -> list:
     try:
         async with db.begin_nested():
@@ -72,7 +81,7 @@ async def create_rate_plan(
         is_active=True,
     )
     db.add(row)
-    await db.flush()
+    await _flush_pms(db)
     return row
 
 
@@ -126,7 +135,7 @@ async def create_guest_request(
         created_by=created_by,
     )
     db.add(row)
-    await db.flush()
+    await _flush_pms(db)
     return row
 
 
@@ -142,7 +151,7 @@ async def complete_guest_request(db: AsyncSession, *, tenant_id: str, request_id
         raise HTTPException(status_code=404, detail="Guest request not found")
     row.status = "completed"
     row.updated_at = datetime.utcnow()
-    await db.flush()
+    await _flush_pms(db)
     return row
 
 
@@ -190,7 +199,7 @@ async def create_lost_found(
         created_by=created_by,
     )
     db.add(row)
-    await db.flush()
+    await _flush_pms(db)
     return row
 
 
@@ -232,7 +241,7 @@ async def open_shift(
         status="open",
     )
     db.add(row)
-    await db.flush()
+    await _flush_pms(db)
     return row
 
 
@@ -262,7 +271,7 @@ async def close_shift(
     row.payments_total = total
     row.notes = optional_honest_narrative(notes, label="notes", max_length=500)
     row.status = "closed"
-    await db.flush()
+    await _flush_pms(db)
     return row
 
 
@@ -312,7 +321,7 @@ async def run_night_audit(
         created_by=user_id,
     )
     db.add(row)
-    await db.flush()
+    await _flush_pms(db)
     return row
 
 
@@ -395,10 +404,7 @@ async def create_event(
         created_by=created_by,
     )
     db.add(row)
-    try:
-        await db.flush()
-    except (ProgrammingError, OperationalError) as exc:
-        raise HTTPException(status_code=503, detail=HOTEL_FEATURE_UNAVAILABLE) from exc
+    await _flush_pms(db)
     return row
 
 
@@ -419,5 +425,5 @@ async def set_event_status(
         raise HTTPException(status_code=422, detail="Invalid event status")
     row.status = st
     row.updated_at = datetime.utcnow()
-    await db.flush()
+    await _flush_pms(db)
     return row

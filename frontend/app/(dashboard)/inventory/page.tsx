@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api, apiOptional } from '../../../lib/api';
+import { getMe } from '../../../lib/meCache';
 import { useStoreContext } from '../../../lib/storeContext';
+import { isHotelIndustry } from '../../../lib/tenantNav';
 
 type Tab =
   | 'products'
@@ -189,29 +191,36 @@ export default function Page() {
   const [categories, setCategories] = useState<any[]>([]);
   const [brands, setBrands] = useState<any[]>([]);
   const [units, setUnits] = useState<any[]>([]);
-  const { storeId } = useStoreContext()
-  const [warehouses, setWarehouses] = useState<any[]>([])
+  const { storeId } = useStoreContext();
+  const [hotelOps, setHotelOps] = useState(false);
+  useEffect(() => {
+    getMe()
+      .then((r) => setHotelOps(isHotelIndustry(r.data?.industry)))
+      .catch(() => undefined);
+  }, []);
+  const scopeStoreId = hotelOps ? '' : storeId;
+  const [warehouses, setWarehouses] = useState<any[]>([]);
   const storeWarehouses = useMemo(
     () =>
-      !storeId
+      !scopeStoreId
         ? warehouses
-        : warehouses.filter((w: any) => !w.store_id || String(w.store_id) === String(storeId)),
-    [warehouses, storeId],
-  )
+        : warehouses.filter((w: any) => !w.store_id || String(w.store_id) === String(scopeStoreId)),
+    [warehouses, scopeStoreId],
+  );
   useEffect(() => {
-    if (!storeId || !storeWarehouses.length) return
-    const ids = new Set(storeWarehouses.map((w: any) => String(w.id)))
-    const pick = (cur: string) => (cur && ids.has(String(cur)) ? cur : String(storeWarehouses[0].id))
-    setStockWarehouseId((cur: string) => pick(cur))
-    setOutWarehouseId((cur: string) => pick(cur))
-    setOpeningWarehouseId((cur: string) => pick(cur))
-    setAdjWarehouseId((cur: string) => pick(cur))
-    setCreateOpeningWh((cur: string) => pick(cur))
-    setXferFromWh((cur: string) => pick(cur))
-    setWhStockWarehouseId((cur: string) => pick(cur))
-    setCountWarehouseId((cur: string) => pick(cur))
-    setMvWarehouseId((cur: string) => (cur && ids.has(String(cur)) ? cur : ''))
-  }, [storeId, storeWarehouses]);
+    if (!scopeStoreId || !storeWarehouses.length) return;
+    const ids = new Set(storeWarehouses.map((w: any) => String(w.id)));
+    const pick = (cur: string) => (cur && ids.has(String(cur)) ? cur : String(storeWarehouses[0].id));
+    setStockWarehouseId((cur: string) => pick(cur));
+    setOutWarehouseId((cur: string) => pick(cur));
+    setOpeningWarehouseId((cur: string) => pick(cur));
+    setAdjWarehouseId((cur: string) => pick(cur));
+    setCreateOpeningWh((cur: string) => pick(cur));
+    setXferFromWh((cur: string) => pick(cur));
+    setWhStockWarehouseId((cur: string) => pick(cur));
+    setCountWarehouseId((cur: string) => pick(cur));
+    setMvWarehouseId((cur: string) => (cur && ids.has(String(cur)) ? cur : ''));
+  }, [scopeStoreId, storeWarehouses]);
   const [selectedId, setSelectedId] = useState('');
   const [productManageFilter, setProductManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [categoryManageFilter, setCategoryManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -450,7 +459,7 @@ export default function Page() {
     if (!openingWarehouseId && w.data?.length) setOpeningWarehouseId(w.data[0].id);
     if (!stockWarehouseId && w.data?.length) setStockWarehouseId(w.data[0].id);
     if (!whStockWarehouseId && w.data?.length) setWhStockWarehouseId(w.data[0].id);
-    const linked = (w.data || []).filter((x: any) => x.store_id);
+    const linked = hotelOps ? w.data || [] : (w.data || []).filter((x: any) => x.store_id);
     if (!xferFromWh && linked[0]) setXferFromWh(linked[0].id);
     if (!xferToWh && linked[1]) setXferToWh(linked[1].id);
     else if (!xferToWh && linked[0]) setXferToWh(linked[0].id);
@@ -572,7 +581,7 @@ export default function Page() {
     setError('');
     try {
       const params = new URLSearchParams();
-      if (storeId) params.set('store_id', storeId);
+      if (scopeStoreId) params.set('store_id', scopeStoreId);
       const q = params.toString();
       const r = await api(`/inventory/low-stock${q ? `?${q}` : ''}`);
       setLowStockPayload(r.data || { products: [], warehouse_low_stock: [] });
@@ -589,7 +598,7 @@ export default function Page() {
       loadLowStock().catch((err) => setError(err.message));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, storeId]);
+  }, [tab, scopeStoreId]);
 
   async function loadTransfers() {
     setError('');
@@ -649,7 +658,11 @@ export default function Page() {
       setFormFlash({
         ok:
           `Transfer ${r.data.transfer_number} requested` +
-          (r.data.approval_steps_required <= 1 ? ' — same store' : ' — needs both managers'),
+          (hotelOps
+            ? ''
+            : r.data.approval_steps_required <= 1
+              ? ' — same store'
+              : ' — needs both managers'),
       });
       setXferNotes('');
       await loadTransfers();
@@ -2227,7 +2240,7 @@ export default function Page() {
       category: w.category || '—',
       qty: w.quantity,
       reorder: w.reorder_level,
-      location: [w.warehouse_name || w.warehouse_code, w.store_id ? 'store' : '']
+      location: [w.warehouse_name || w.warehouse_code, !hotelOps && w.store_id ? 'store' : '']
         .filter(Boolean)
         .join(' · ') || 'Warehouse',
     })),
@@ -2238,9 +2251,11 @@ export default function Page() {
 
   return (
     <>
-      <h1>Inventory</h1>
+      <h1>{hotelOps ? 'Products and stock' : 'Inventory'}</h1>
       <p className="muted">
-        Products, catalog, batches, stock, transfers, expiry, counts, history, and adjustments
+        {hotelOps
+          ? 'Linen, toiletries, F&B, and cleaning supplies use the same inventory ledger as the rest of the hotel.'
+          : 'Products, catalog, batches, stock, transfers, expiry, counts, history, and adjustments'}
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
@@ -5374,9 +5389,7 @@ export default function Page() {
                   aria-label="Stock transfer from warehouse"
                 >
                   <option value="">Select source</option>
-                  {storeWarehouses
-                    .filter((w) => w.store_id)
-                    .map((w) => (
+                  {(hotelOps ? storeWarehouses : storeWarehouses.filter((w) => w.store_id)).map((w) => (
                       <option key={w.id} value={w.id}>
                         {w.name || w.code} ({w.code})
                       </option>
@@ -5389,9 +5402,7 @@ export default function Page() {
                   aria-label="Stock transfer to warehouse"
                 >
                   <option value="">Select destination</option>
-                  {warehouses
-                    .filter((w) => w.store_id)
-                    .map((w) => (
+                  {(hotelOps ? warehouses : warehouses.filter((w) => w.store_id)).map((w) => (
                       <option key={w.id} value={w.id}>
                         {w.name || w.code} ({w.code})
                       </option>

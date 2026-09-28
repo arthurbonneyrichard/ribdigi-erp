@@ -21,6 +21,18 @@ export const HOTEL_OMIT_NAV_GROUP_IDS = new Set([
   'industry',
 ]);
 
+export const HOTEL_INVENTORY_PARENT_HREF = '/hotel?tab=supplies';
+
+/** Shared ERP inventory/purchasing destinations, hotel-labeled. No second stock ledger. */
+export const HOTEL_INVENTORY_PROCUREMENT_CHILDREN: NavItem[] = [
+  ['Products and stock', '/inventory?tab=products', 'inventory'],
+  ['Low stock', '/inventory?tab=lowstock', 'inventory'],
+  ['Stock adjustments', '/inventory?tab=adjust', 'inventory'],
+  ['Purchase orders', '/purchasing?tab=orders', 'purchasing'],
+  ['Goods received', '/purchasing?tab=grn', 'purchasing'],
+  ['Suppliers', '/purchasing?tab=suppliers', 'purchasing'],
+];
+
 export const HOTEL_NAV_ITEMS: NavItem[] = [
   ['Hotel Dashboard', '/hotel', 'hotel'],
   ['Reservations and Booking', '/hotel?tab=reservations', 'hotel'],
@@ -33,7 +45,7 @@ export const HOTEL_NAV_ITEMS: NavItem[] = [
   ['Restaurant and POS', '/pos', 'pos'],
   ['Billing and Guest Folios', '/hotel?tab=billing', 'hotel'],
   ['Hotel Finance and Cashiering', '/hotel?tab=cashier', 'hotel'],
-  ['Inventory and Procurement', '/hotel?tab=supplies', 'inventory'],
+  ['Inventory and Procurement', HOTEL_INVENTORY_PARENT_HREF, 'inventory'],
   ['Staff and Permissions', '/users', 'users'],
   ['Hotel Reports', '/hotel?tab=reports', 'hotel'],
   ['Events and Banquets', '/hotel?tab=events', 'hotel'],
@@ -98,11 +110,34 @@ export function groupedTenantNav(groups: NavGroup[], visible: NavItem[], industr
   });
   if (!hotelItems.length) return mapped;
 
-  // One flat Hotel Management block: Dashboard is the first item, not a separate group.
-  return [
-    { id: 'hotel', label: '', items: hotelItems },
-    ...mapped,
-  ];
+  const invChildren = HOTEL_INVENTORY_PROCUREMENT_CHILDREN.filter(([, href]) => allowed.has(href));
+  const showInvParent = hotelItems.some(([, href]) => href === HOTEL_INVENTORY_PARENT_HREF);
+  const splitAt = HOTEL_NAV_ITEMS.findIndex(([, href]) => href === HOTEL_INVENTORY_PARENT_HREF);
+  const beforeHrefs = new Set(HOTEL_NAV_ITEMS.slice(0, Math.max(0, splitAt)).map(([, href]) => href));
+  const hotelFlat = hotelItems.filter(([, href]) => href !== HOTEL_INVENTORY_PARENT_HREF);
+  const before = hotelFlat.filter(([, href]) => beforeHrefs.has(href));
+  const after = hotelFlat.filter(([, href]) => !beforeHrefs.has(href));
+
+  const hotelGroups: NavGroup[] = [];
+  if (before.length) hotelGroups.push({ id: 'hotel', label: '', items: before });
+  if (showInvParent && invChildren.length) {
+    hotelGroups.push({
+      id: 'hotel-inventory',
+      label: 'Inventory and Procurement',
+      items: invChildren,
+    });
+  } else if (showInvParent) {
+    hotelGroups.push({
+      id: 'hotel-inventory',
+      label: '',
+      items: hotelItems.filter(([, href]) => href === HOTEL_INVENTORY_PARENT_HREF),
+    });
+  }
+  if (after.length) hotelGroups.push({ id: 'hotel-rest', label: '', items: after });
+  if (!hotelGroups.length) return mapped;
+
+  // Hotel-only: flat ops items, plus an accordion for shared inventory/purchasing.
+  return [...hotelGroups, ...mapped];
 }
 
 export function industrySpecificHrefAllowed(

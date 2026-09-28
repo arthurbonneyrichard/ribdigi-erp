@@ -13,6 +13,7 @@ import { StoreProvider } from '../lib/storeContext';
 import {
   FMCG_NAV_ITEMS,
   groupedTenantNav,
+  HOTEL_INVENTORY_PROCUREMENT_CHILDREN,
   HOTEL_NAV_ITEMS,
   isHotelIndustry,
   type NavGroup,
@@ -58,6 +59,7 @@ const TENANT_ITEMS: NavItem[] = [
   ['Tax', '/tax', 'tax'],
   ['Multi-Store', '/stores', 'stores'],
   ...HOTEL_NAV_ITEMS,
+  ...HOTEL_INVENTORY_PROCUREMENT_CHILDREN,
   ...FMCG_NAV_ITEMS,
   ['Reports', '/reports', 'reports'],
   ['Notifications', '/notifications', 'notifications'],
@@ -164,6 +166,7 @@ const TENANT_NAV_GROUPS: NavGroup[] = [
 
 function usesAccordion(group: NavGroup): boolean {
   if (!group.label || STANDALONE_NAV_IDS.has(group.id)) return false;
+  if (group.id === 'hotel-inventory') return group.items.length > 0;
   return group.items.length > 1;
 }
 
@@ -272,8 +275,8 @@ const ROLE_NAV_MODULES: Record<string, string[] | '*'> = {
   ],
   hotel_front_desk: ['hotel', 'notifications', 'security', 'printers'],
   hotel_reservations: ['hotel', 'notifications', 'security'],
-  hotel_housekeeping: ['hotel', 'notifications', 'security'],
-  hotel_maintenance: ['hotel', 'notifications', 'security'],
+  hotel_housekeeping: ['hotel', 'inventory', 'notifications', 'security'],
+  hotel_maintenance: ['hotel', 'inventory', 'notifications', 'security'],
   hotel_cashier: ['hotel', 'pos', 'accounting', 'notifications', 'security'],
   hotel_auditor: ['hotel', 'reports', 'audit', 'accounting', 'notifications', 'security'],
 };

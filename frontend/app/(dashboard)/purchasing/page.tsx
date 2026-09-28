@@ -28,6 +28,7 @@ const SYSTEM_ROLES = [
   'inventory_officer',
   'accountant',
   'cashier',
+  'hotel_manager',
 ] as const;
 
 type Supplier = {

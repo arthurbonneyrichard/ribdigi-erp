@@ -8,6 +8,7 @@ from app.packages import (
     package_modules,
     resolve_enabled_modules,
 )
+from app.rbac import has_permission
 from tests.conftest import auth_headers, set_tenant_industry
 
 
@@ -29,6 +30,10 @@ def test_industry_allows_module_unknown_does_not_grant_verticals():
     assert industry_allows_module("retail", "inventory") is True
     assert industry_allows_module("fmcg", "fmcg") is True
     assert industry_allows_module("hotel", "fmcg") is False
+    assert has_permission("hotel_manager", "purchasing", "write")
+    assert has_permission("hotel_manager", "inventory", "read")
+    assert has_permission("hotel_housekeeping", "inventory", "read")
+    assert not has_permission("hotel_front_desk", "inventory", "read")
 
 
 def test_trial_package_includes_verticals_but_resolve_filters():
@@ -149,10 +154,21 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "Restaurant and POS" in nav
     assert "['Hotel Dashboard', '/hotel', 'hotel']" in nav or '["Hotel Dashboard", "/hotel", "hotel"]' in nav
     assert "Events and Banquets" in nav
+    assert "HOTEL_INVENTORY_PROCUREMENT_CHILDREN" in nav
+    assert "Products and stock" in nav
+    assert "/inventory?tab=products" in nav
+    assert "/inventory?tab=lowstock" in nav
+    assert "/inventory?tab=adjust" in nav
+    assert "/purchasing?tab=orders" in nav
+    assert "/purchasing?tab=grn" in nav
+    assert "/purchasing?tab=suppliers" in nav
+    assert "hotel-inventory" in nav
     assert "id: 'hotel'" in nav or 'id: "hotel"' in nav
     assert "from '../lib/tenantNav'" in shell
     assert "groupedTenantNav(TENANT_NAV_GROUPS, visible, industry)" in shell
     assert "HOTEL_NAV_ITEMS" in shell
+    assert "HOTEL_INVENTORY_PROCUREMENT_CHILDREN" in shell
+    assert "hotel-inventory" in shell
     assert "isHotelIndustry(industry) && permModule === 'stores'" in shell
     assert "StoreSwitcher visible={!isHotelIndustry(industry)}" in shell
     assert "router.replace('/hotel')" in stores

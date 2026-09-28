@@ -158,6 +158,24 @@ const ROOM_STATUSES = [
   'out_of_order',
   'blocked',
 ];
+const BOOKING_SOURCES: { value: string; label: string }[] = [
+  { value: 'direct', label: 'Direct' },
+  { value: 'walk_in', label: 'Walk-in' },
+  { value: 'phone', label: 'Phone' },
+  { value: 'corporate', label: 'Corporate' },
+  { value: 'group', label: 'Group' },
+  { value: 'ota', label: 'OTA (logged manually)' },
+  { value: 'staff', label: 'Staff' },
+  { value: 'other', label: 'Other' },
+];
+
+function hotelErr(err: unknown, fallback: string) {
+  const m = err instanceof Error ? err.message : '';
+  if (!m || m === 'The server could not complete this request.' || m === 'Request failed') {
+    return fallback;
+  }
+  return m;
+}
 
 export default function HotelPage() {
   const searchParams = useSearchParams();
@@ -186,6 +204,7 @@ export default function HotelPage() {
   const [guestHistory, setGuestHistory] = useState<any>(null);
   const [folio, setFolio] = useState<Folio | null>(null);
   const [listKind, setListKind] = useState('');
+  const [deskKind, setDeskKind] = useState('arrivals');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -209,6 +228,7 @@ export default function HotelPage() {
   const [resForm, setResForm] = useState({
     room_id: '',
     guest_id: '',
+    new_guest_name: '',
     check_in_date: '',
     check_out_date: '',
     adults: '1',
@@ -285,7 +305,8 @@ export default function HotelPage() {
   }
 
   async function refresh() {
-    const qs = listKind ? `?list_kind=${listKind}` : '';
+    const filter = tab === 'front-desk' ? deskKind : listKind;
+    const qs = filter ? `?list_kind=${filter}` : '';
     const startD = new Date();
     startD.setDate(startD.getDate() - 7);
     const endD = new Date();
@@ -316,7 +337,7 @@ export default function HotelPage() {
       }
       setError('');
     } catch (err: any) {
-      setError(err.message || 'Could not load hotel. Try again.');
+      setError(hotelErr(err, 'Could not load rooms and reservations. Try again.'));
     }
     const [hk, mt, rep, cal, svc, fol, plans, reqs, lf, shift, audits, ev] = await Promise.all([
       soft<HkTask[]>('/hotel/housekeeping', []),
@@ -366,14 +387,14 @@ export default function HotelPage() {
         }
         await refresh();
       } catch (err: any) {
-        if (active) setError(err.message || 'Failed to load hotel');
+        if (active) setError(hotelErr(err, 'Could not load hotel'));
       }
     })();
     return () => {
       active = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [listKind, dashDate, tab]);
+  }, [listKind, deskKind, dashDate, tab]);
 
   async function createRoom(e: React.FormEvent) {
     e.preventDefault();
@@ -445,11 +466,25 @@ export default function HotelPage() {
     setError('');
     setMessage('');
     try {
-      await api('/hotel/reservations', {
+      let guestId = resForm.guest_id.trim();
+      if (!guestId && resForm.new_guest_name.trim()) {
+        const created = await api('/hotel/guests', {
+          method: 'POST',
+          body: JSON.stringify({ full_name: resForm.new_guest_name.trim() }),
+        });
+        guestId = created.data?.id || '';
+      }
+      if (!guestId) {
+        setError('Select a guest or type a new guest name.');
+        setBusy(false);
+        return;
+      }
+      const wasWalkIn = resForm.walk_in;
+      const booked = await api('/hotel/reservations', {
         method: 'POST',
         body: JSON.stringify({
           room_id: resForm.room_id.trim(),
-          guest_id: resForm.guest_id.trim(),
+          guest_id: guestId,
           check_in_date: resForm.check_in_date.trim(),
           check_out_date: resForm.check_out_date.trim(),
           adults: Number(resForm.adults) || 1,
@@ -461,9 +496,16 @@ export default function HotelPage() {
           status: resForm.walk_in ? 'booked' : undefined,
         }),
       });
+      if (wasWalkIn && booked.data?.id) {
+        await api(`/hotel/reservations/${booked.data.id}/check-in`, {
+          method: 'POST',
+          body: JSON.stringify({}),
+        });
+      }
       setResForm({
         room_id: '',
         guest_id: '',
+        new_guest_name: '',
         check_in_date: '',
         check_out_date: '',
         adults: '1',
@@ -472,10 +514,10 @@ export default function HotelPage() {
         deposit_amount: '0',
         walk_in: false,
       });
-      setMessage('Reservation created');
+      setMessage(wasWalkIn ? 'Walk-in checked in' : 'Reservation created');
       await refresh();
     } catch (err: any) {
-      setError(err.message || 'Could not create reservation');
+      setError(hotelErr(err, 'Could not create reservation'));
     } finally {
       setBusy(false);
     }
@@ -494,7 +536,7 @@ export default function HotelPage() {
       }
       await refresh();
     } catch (err: any) {
-      setError(err.message || 'Action failed');
+      setError(hotelErr(err, 'Could not complete that action'));
     } finally {
       setBusy(false);
     }
@@ -507,7 +549,7 @@ export default function HotelPage() {
       const f = await api(`/hotel/reservations/${reservationId}/folio`);
       setFolio(f.data || null);
     } catch (err: any) {
-      setError(err.message || 'No folio yet — check in first');
+      setError(hotelErr(err, 'No folio yet — check the guest in first'));
       setFolio(null);
     } finally {
       setBusy(false);
@@ -862,7 +904,7 @@ export default function HotelPage() {
           <p className="muted">
             Filter arrivals, departures, or in-house guests. Check-in and check-out keep room status in sync.
           </p>
-          <select value={listKind} onChange={(e) => setListKind(e.target.value)} aria-label="Front desk list filter">
+          <select value={deskKind} onChange={(e) => setDeskKind(e.target.value)} aria-label="Front desk list filter">
             <option value="arrivals">Arrivals today</option>
             <option value="departures">Departures today</option>
             <option value="in_house">In house</option>
@@ -1273,7 +1315,8 @@ export default function HotelPage() {
         )}
       </div>
       <div className="card" style={{ marginBottom: 16 }}>
-        <h2>New reservation / walk-in</h2>
+        <h2>Book a stay</h2>
+        <p className="muted">Pick dates and a room. Walk-in checks the guest in now. Tick extra rooms below for a group stay.</p>
         <form onSubmit={createReservation} style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' }}>
           <label>
             <span>Room</span>
@@ -1286,12 +1329,21 @@ export default function HotelPage() {
           </label>
           <label>
             <span>Guest</span>
-            <select value={resForm.guest_id} onChange={(e) => setResForm((f) => ({ ...f, guest_id: e.target.value }))} aria-label="Hotel reservation guest" required>
+            <select value={resForm.guest_id} onChange={(e) => setResForm((f) => ({ ...f, guest_id: e.target.value }))} aria-label="Hotel reservation guest">
               <option value="">Select guest</option>
               {guests.map((g) => (
                 <option key={g.id} value={g.id}>{g.full_name}</option>
               ))}
             </select>
+          </label>
+          <label>
+            <span>Or new guest name</span>
+            <input
+              value={resForm.new_guest_name}
+              onChange={(e) => setResForm((f) => ({ ...f, new_guest_name: e.target.value }))}
+              aria-label="New hotel guest name"
+              placeholder="If not in the list"
+            />
           </label>
           <label>
             <span>Check-in</span>
@@ -1304,8 +1356,8 @@ export default function HotelPage() {
           <label>
             <span>Source</span>
             <select value={resForm.booking_source} onChange={(e) => setResForm((f) => ({ ...f, booking_source: e.target.value }))} aria-label="Hotel booking source">
-              {['direct', 'walk_in', 'ota', 'corporate', 'phone', 'other'].map((s) => (
-                <option key={s} value={s}>{s.replace('_', ' ')}</option>
+              {BOOKING_SOURCES.map((s) => (
+                <option key={s.value} value={s.value}>{s.label}</option>
               ))}
             </select>
           </label>
@@ -1315,12 +1367,74 @@ export default function HotelPage() {
           </label>
           <label style={{ display: 'flex', alignItems: 'end', gap: 8 }}>
             <input type="checkbox" checked={resForm.walk_in} onChange={(e) => setResForm((f) => ({ ...f, walk_in: e.target.checked }))} aria-label="Walk-in reservation" />
-            <span>Walk-in</span>
+            <span>Walk-in (check in now)</span>
           </label>
           <div style={{ alignSelf: 'end' }}>
             <button type="submit" disabled={busy} aria-label="Create hotel reservation">{busy ? 'Saving…' : 'Book stay'}</button>
           </div>
         </form>
+        <h3 style={{ marginTop: 16 }}>Group stay</h3>
+        <p className="muted">Tick two or more rooms, with guest and dates filled in above. This is not an OTA channel.</p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+          {availableRooms.map((r) => (
+            <label key={r.id} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              <input
+                type="checkbox"
+                checked={groupRooms.includes(r.id)}
+                onChange={(e) =>
+                  setGroupRooms((ids) =>
+                    e.target.checked ? [...ids, r.id] : ids.filter((id) => id !== r.id)
+                  )
+                }
+                aria-label={`Group room ${r.code}`}
+              />
+              {r.code}
+            </label>
+          ))}
+          {!availableRooms.length && <span className="muted">Add rooms first (Rooms tab).</span>}
+        </div>
+        <button
+          type="button"
+          disabled={busy || groupRooms.length < 2 || (!resForm.guest_id && !resForm.new_guest_name.trim()) || !resForm.check_in_date || !resForm.check_out_date}
+          onClick={async () => {
+            setBusy(true);
+            setError('');
+            try {
+              let guestId = resForm.guest_id;
+              if (!guestId && resForm.new_guest_name.trim()) {
+                const created = await api('/hotel/guests', {
+                  method: 'POST',
+                  body: JSON.stringify({ full_name: resForm.new_guest_name.trim() }),
+                });
+                guestId = created.data?.id || '';
+                setResForm((f) => ({ ...f, guest_id: guestId }));
+              }
+              await api('/hotel/reservation-groups', {
+                method: 'POST',
+                body: JSON.stringify({
+                  guest_id: guestId,
+                  room_ids: groupRooms,
+                  check_in_date: resForm.check_in_date,
+                  check_out_date: resForm.check_out_date,
+                  adults: Number(resForm.adults) || 1,
+                  children: Number(resForm.children) || 0,
+                  booking_source: 'group',
+                  name: 'Group stay',
+                }),
+              });
+              setGroupRooms([]);
+              setMessage('Group reservation created');
+              await refresh();
+            } catch (err: unknown) {
+              setError(hotelErr(err, 'Group booking needs guest, dates, and two rooms. Database extras 0119+ may be required.'));
+            } finally {
+              setBusy(false);
+            }
+          }}
+          aria-label="Create group reservation"
+        >
+          Book group ({groupRooms.length} rooms)
+        </button>
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
@@ -1358,7 +1472,7 @@ export default function HotelPage() {
                 <td>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {r.can_confirm && (
-                      <button type="button" disabled={busy} onClick={() => act(`/hotel/reservations/${r.id}/confirm`, 'Confirmed')} aria-label={`Confirm ${r.reservation_number}`}>Confirm</button>
+                      <button type="button" disabled={busy} onClick={() => act(`/hotel/reservations/${r.id}/confirm`, 'Confirmed')} aria-label={`Confirm ${r.reservation_number}`}>Confirm booking</button>
                     )}
                     {r.can_check_in && (
                       <button type="button" className="btn-ok" disabled={busy} onClick={() => act(`/hotel/reservations/${r.id}/check-in`, 'Checked in')} aria-label={`Check in ${r.reservation_number}`}>Check in</button>
@@ -1385,13 +1499,13 @@ export default function HotelPage() {
                         try {
                           const conf = await api(`/hotel/reservations/${r.id}/confirmation`);
                           window.alert(conf.data?.text || 'Confirmation loaded');
-                        } catch (err: any) {
-                          setError(err.message || 'Could not load confirmation');
+                        } catch (err: unknown) {
+                          setError(hotelErr(err, 'Could not load confirmation slip'));
                         }
                       }}
-                      aria-label={`Print confirmation ${r.reservation_number}`}
+                      aria-label={`View confirmation ${r.reservation_number}`}
                     >
-                      Confirm
+                      View slip
                     </button>
                     {r.can_extend && (
                       <button
@@ -1945,6 +2059,12 @@ export default function HotelPage() {
         </div>
       )}
 
+      {show('reports') && !report && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h2>Hotel reports</h2>
+          <p className="muted">Reports could not be loaded. Occupancy on the dashboard still uses rooms and reservations.</p>
+        </div>
+      )}
       {show('reports') && report && (
         <div className="card" style={{ marginBottom: 16 }}>
           <h2>Hotel reports</h2>
@@ -2117,7 +2237,7 @@ export default function HotelPage() {
         </div>
       )}
 
-      {show('settings') && settings && (
+      {show('settings') && (
         <div className="card" style={{ marginBottom: 16 }}>
           <h2>Hotel settings</h2>
           <form
@@ -2181,63 +2301,6 @@ export default function HotelPage() {
             </div>
           </form>
         </div>
-      )}
-
-      {show('reservations') && (
-      <div className="card" style={{ marginBottom: 16 }}>
-        <h2>Group / multi-room booking</h2>
-        <p className="muted">Select multiple rooms then book with the reservation form dates and guest.</p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-          {availableRooms.map((r) => (
-            <label key={r.id} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-              <input
-                type="checkbox"
-                checked={groupRooms.includes(r.id)}
-                onChange={(e) =>
-                  setGroupRooms((ids) =>
-                    e.target.checked ? [...ids, r.id] : ids.filter((id) => id !== r.id)
-                  )
-                }
-                aria-label={`Group room ${r.code}`}
-              />
-              {r.code}
-            </label>
-          ))}
-        </div>
-        <button
-          type="button"
-          disabled={busy || groupRooms.length < 2 || !resForm.guest_id || !resForm.check_in_date || !resForm.check_out_date}
-          onClick={async () => {
-            setBusy(true);
-            setError('');
-            try {
-              await api('/hotel/reservation-groups', {
-                method: 'POST',
-                body: JSON.stringify({
-                  guest_id: resForm.guest_id,
-                  room_ids: groupRooms,
-                  check_in_date: resForm.check_in_date,
-                  check_out_date: resForm.check_out_date,
-                  adults: Number(resForm.adults) || 1,
-                  children: Number(resForm.children) || 0,
-                  booking_source: 'corporate',
-                  name: 'Group stay',
-                }),
-              });
-              setGroupRooms([]);
-              setMessage('Group reservation created');
-              await refresh();
-            } catch (err: any) {
-              setError(err.message || 'Group booking failed');
-            } finally {
-              setBusy(false);
-            }
-          }}
-          aria-label="Create group reservation"
-        >
-          Book group ({groupRooms.length} rooms)
-        </button>
-      </div>
       )}
 
       {show('reservations') && calendar && (

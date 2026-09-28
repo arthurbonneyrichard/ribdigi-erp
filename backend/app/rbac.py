@@ -116,7 +116,7 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "hotel": ["read", "write"],
         "inventory": ["read", "write"],
         "pos": ["read", "write"],
-        "purchasing": ["read", "approve"],
+        "purchasing": ["read", "write", "approve"],
         "expenses": ["read", "write"],
         "accounting": ["read"],
         "credit": ["read", "write"],
@@ -144,12 +144,14 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
     },
     "hotel_housekeeping": {
         "hotel": ["read", "write"],
+        "inventory": ["read"],
         "notifications": ["read"],
         "security": ["read", "write"],
         "staff_guide": ["read", "download"],
     },
     "hotel_maintenance": {
         "hotel": ["read", "write"],
+        "inventory": ["read"],
         "notifications": ["read"],
         "security": ["read", "write"],
         "staff_guide": ["read", "download"],
