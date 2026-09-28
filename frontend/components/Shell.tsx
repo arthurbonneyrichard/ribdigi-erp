@@ -3,15 +3,16 @@
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { api, clearSessionAndRedirect, idleTimeoutMs } from '../lib/api';
-import { getMe } from '../lib/meCache';
+import { api, apiRoot, clearSessionAndRedirect, idleTimeoutMs, tenantHeaderValue } from '../lib/api';
+import { industryAllowsModule, INDUSTRY_SPECIFIC_MODULES } from '../lib/industryModules';
+import { industryLabel, normalizeIndustry } from '../lib/industries';
+import { getMe, invalidateMeCache } from '../lib/meCache';
 import { prefetchGet } from '../lib/prefetchCache';
 import { loadUserTheme, writeUserTheme } from '../lib/theme';
 import { StoreProvider } from '../lib/storeContext';
+import { FMCG_NAV_ITEMS, groupedTenantNav, HOTEL_NAV_ITEMS, type NavGroup, type NavItem } from '../lib/tenantNav';
 import OnboardingChecklist from './OnboardingChecklist';
 import StoreSwitcher from './StoreSwitcher';
-
-type NavItem = [label: string, href: string, module: string];
 
 /** Tenant ERP navigation (business workspace).
  * Hotel/FMCG nav items are packageable but only appear when `/me.enabled_modules`
@@ -31,26 +32,26 @@ const TENANT_ITEMS: NavItem[] = [
   ['Stock Transfer', '/inventory?tab=transfers', 'inventory'],
   ['Stock Count', '/inventory?tab=counts', 'inventory'],
   ['Stock History', '/inventory?tab=movements', 'inventory'],
-  ['Low Stock', '/reports?tab=inventory', 'reports'],
+  ['Low Stock', '/inventory?tab=lowstock', 'inventory'],
   ['Expiry', '/inventory?tab=expiry', 'inventory'],
   ['Batches', '/inventory?tab=batches', 'inventory'],
   ['Sales', '/sales', 'sales'],
   ['POS', '/pos', 'pos'],
   ['Suppliers', '/purchasing?tab=suppliers', 'purchasing'],
   ['Purchase Orders', '/purchasing?tab=orders', 'purchasing'],
-  ['Purchases', '/purchasing?tab=invoices', 'purchasing'],
   ['Receive Goods', '/purchasing?tab=grn', 'purchasing'],
+  ['Supplier Bills', '/purchasing?tab=invoices', 'purchasing'],
   ['Purchase Returns', '/purchasing?tab=returns', 'purchasing'],
   ['Supplier Payments', '/credit?kind=payable&panel=pay', 'credit'],
   ['Supplier Balances', '/credit?kind=payable', 'credit'],
   ['Purchase History', '/reports?tab=purchases', 'reports'],
   ['Expenses', '/expenses', 'expenses'],
   ['Accounting', '/accounting', 'accounting'],
-  ['Credit', '/credit', 'credit'],
+  ['Customer credit', '/credit?kind=receivable', 'credit'],
   ['Tax', '/tax', 'tax'],
   ['Multi-Store', '/stores', 'stores'],
-  ['Hotel', '/hotel', 'hotel'],
-  ['FMCG', '/fmcg', 'fmcg'],
+  ...HOTEL_NAV_ITEMS,
+  ...FMCG_NAV_ITEMS,
   ['Reports', '/reports', 'reports'],
   ['Notifications', '/notifications', 'notifications'],
   ['Audit', '/audit', 'audit'],
@@ -63,10 +64,8 @@ const TENANT_ITEMS: NavItem[] = [
   ['Departments', '/departments', 'users'],
 ];
 
-type NavGroup = { id: string; label: string; items: NavItem[] };
-
 /** Never accordion — click navigates even if later given extra children. */
-const STANDALONE_NAV_IDS = new Set(['dashboard', 'notifications']);
+const STANDALONE_NAV_IDS = new Set(['dashboard', 'notifications', 'hotel']);
 
 const TENANT_NAV_GROUPS: NavGroup[] = [
   { id: 'dashboard', label: 'Dashboard', items: [['Dashboard', '/dashboard', 'dashboard']] },
@@ -89,7 +88,7 @@ const TENANT_NAV_GROUPS: NavGroup[] = [
     ['Stock Transfer', '/inventory?tab=transfers', 'inventory'],
     ['Stock Count', '/inventory?tab=counts', 'inventory'],
     ['Stock History', '/inventory?tab=movements', 'inventory'],
-    ['Low Stock', '/reports?tab=inventory', 'reports'],
+    ['Low Stock', '/inventory?tab=lowstock', 'inventory'],
     ['Expiry', '/inventory?tab=expiry', 'inventory'],
     ['Batches', '/inventory?tab=batches', 'inventory'],
   ] },
@@ -104,8 +103,8 @@ const TENANT_NAV_GROUPS: NavGroup[] = [
   { id: 'purchases', label: 'Purchases', items: [
     ['Suppliers', '/purchasing?tab=suppliers', 'purchasing'],
     ['Purchase Orders', '/purchasing?tab=orders', 'purchasing'],
-    ['Purchases', '/purchasing?tab=invoices', 'purchasing'],
     ['Receive Goods', '/purchasing?tab=grn', 'purchasing'],
+    ['Supplier Bills', '/purchasing?tab=invoices', 'purchasing'],
     ['Purchase Returns', '/purchasing?tab=returns', 'purchasing'],
     ['Supplier Payments', '/credit?kind=payable&panel=pay', 'credit'],
     ['Supplier Balances', '/credit?kind=payable', 'credit'],
@@ -117,7 +116,7 @@ const TENANT_NAV_GROUPS: NavGroup[] = [
     items: [
       ['Expenses', '/expenses', 'expenses'],
       ['Accounting', '/accounting', 'accounting'],
-      ['Credit', '/credit', 'credit'],
+      ['Customer credit', '/credit?kind=receivable', 'credit'],
       ['Tax', '/tax', 'tax'],
     ],
   },
@@ -152,10 +151,7 @@ const TENANT_NAV_GROUPS: NavGroup[] = [
   {
     id: 'industry',
     label: 'Industry-specific features',
-    items: [
-      ['Hotel', '/hotel', 'hotel'],
-      ['FMCG', '/fmcg', 'fmcg'],
-    ],
+    items: [...HOTEL_NAV_ITEMS, ...FMCG_NAV_ITEMS],
   },
 ];
 
@@ -250,6 +246,29 @@ const ROLE_NAV_MODULES: Record<string, string[] | '*'> = {
     'security',
   ],
   cashier: ['dashboard', 'inventory', 'pos', 'sales', 'notifications', 'security'],
+  hotel_manager: [
+    'dashboard',
+    'hotel',
+    'inventory',
+    'pos',
+    'purchasing',
+    'expenses',
+    'accounting',
+    'credit',
+    'reports',
+    'notifications',
+    'users',
+    'audit',
+    'security',
+    'company',
+    'printers',
+  ],
+  hotel_front_desk: ['hotel', 'notifications', 'security', 'printers'],
+  hotel_reservations: ['hotel', 'notifications', 'security'],
+  hotel_housekeeping: ['hotel', 'notifications', 'security'],
+  hotel_maintenance: ['hotel', 'notifications', 'security'],
+  hotel_cashier: ['hotel', 'pos', 'accounting', 'notifications', 'security'],
+  hotel_auditor: ['hotel', 'reports', 'audit', 'accounting', 'notifications', 'security'],
 };
 
 // Monochrome line icons (inherit the nav text color via currentColor).
@@ -504,7 +523,8 @@ function isNavActive(pathname: string, href: string, items: NavItem[], search = 
 function navItemsForRole(
   role: string,
   permissions: Record<string, string[]> | null,
-  enabledModules: string[] | null
+  enabledModules: string[] | null,
+  industry: string | null
 ): NavItem[] {
   // Software owner staff: platform console nav only.
   if (PLATFORM_ROLES.has(role)) {
@@ -517,15 +537,18 @@ function navItemsForRole(
 
   const allowed = ROLE_NAV_MODULES[role] ?? ROLE_NAV_MODULES.cashier;
   const packageSet =
-    enabledModules && enabledModules.length > 0 ? new Set(enabledModules) : null;
+    enabledModules && enabledModules.length > 0 ? new Set(enabledModules.map((m) => m.toLowerCase())) : null;
+  const industrySpecific = new Set<string>(INDUSTRY_SPECIFIC_MODULES);
   return TENANT_ITEMS.filter(([, , module]) => {
-    // Integrations is a company-admin ops surface; gate like Company. Jobs is platform-only.
     const permModule = module === 'integrations' ? 'company' : module;
     if (allowed !== '*' && !allowed.includes(permModule) && module !== 'integrations')
       return false;
     if (allowed !== '*' && module === 'integrations' && !allowed.includes('company'))
       return false;
-    if (
+    if (industrySpecific.has(permModule)) {
+      if (!industryAllowsModule(industry, permModule)) return false;
+      if (!packageSet || !packageSet.has(permModule)) return false;
+    } else if (
       packageSet &&
       !packageSet.has(permModule) &&
       !['dashboard', 'notifications', 'security', 'users', 'printers'].includes(module)
@@ -534,14 +557,6 @@ function navItemsForRole(
     }
     return canReadModule(permissions, permModule);
   });
-}
-
-function groupedTenantNav(visible: NavItem[]): NavGroup[] {
-  const allowed = new Set(visible.map(([, href]) => href));
-  return TENANT_NAV_GROUPS.map((group) => ({
-    ...group,
-    items: group.items.filter(([, href]) => allowed.has(href)),
-  })).filter((group) => group.items.length > 0);
 }
 
 const NAV_EXPANDED_KEY = 'ribdigi.nav.expanded';
@@ -609,9 +624,12 @@ function enrollmentRequired(err: unknown): boolean {
 
 export default function Shell({ children }: { children: React.ReactNode }) {
   const [authReady, setAuthReady] = useState(false);
+  const [authGateError, setAuthGateError] = useState('');
   const [unread, setUnread] = useState(0);
   const [permissions, setPermissions] = useState<Record<string, string[]> | null>(null);
   const [enabledModules, setEnabledModules] = useState<string[] | null>(null);
+  const [industry, setIndustry] = useState<string | null>(null);
+  const [industryValid, setIndustryValid] = useState<boolean | null>(null);
   const [role, setRole] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
@@ -636,6 +654,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   // Run once while this Shell stays mounted across dashboard navigations.
   useEffect(() => {
     let active = true;
+    let timer = 0;
     async function requireAccount() {
       const token = (localStorage.getItem('token') || '').trim();
       if (!token) {
@@ -643,19 +662,60 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         return;
       }
       try {
-        await getMe({ force: true });
-        if (active) setAuthReady(true);
+        await Promise.race([
+          getMe({ force: true }).then((meRes) => {
+            if (!active) return meRes;
+            setAuthGateError('');
+            setAuthReady(true);
+            setPermissions(meRes.data?.permissions || {});
+            setEnabledModules(
+              Array.isArray(meRes.data?.enabled_modules) ? meRes.data.enabled_modules : []
+            );
+            setIndustry(meRes.data?.industry ?? null);
+            setIndustryValid(
+              typeof meRes.data?.industry_valid === 'boolean'
+                ? meRes.data.industry_valid
+                : Boolean(normalizeIndustry(meRes.data?.industry))
+            );
+            setRole(meRes.data?.role || '');
+            setFullName(meRes.data?.full_name || '');
+            setCompanyName(meRes.data?.company_name || '');
+            setHasLogo(Boolean(meRes.data?.has_logo));
+            const uid = String(meRes.data?.id || '').trim();
+            if (uid) {
+              setUserId(uid);
+              setTheme(loadUserTheme(uid));
+            }
+            const mins = Number(meRes.data?.inactivity_timeout_minutes);
+            if (Number.isFinite(mins)) setIdleMinutes(mins);
+            return meRes;
+          }),
+          new Promise((_, reject) => {
+            timer = window.setTimeout(() => {
+              reject(new Error('The request timed out. Check your connection and try again.'));
+            }, 25000);
+          }),
+        ]);
+        if (active) {
+          setAuthGateError('');
+          setAuthReady(true);
+        }
       } catch (err) {
         if (enrollmentRequired(err)) {
           if (active) setAuthReady(true);
           return;
         }
+        const message = err instanceof Error ? err.message : 'Could not verify your account.';
+        if (active) setAuthGateError(message);
         clearSessionAndRedirect();
+      } finally {
+        window.clearTimeout(timer);
       }
     }
     requireAccount();
     return () => {
       active = false;
+      window.clearTimeout(timer);
     };
   }, []);
 
@@ -789,7 +849,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     let active = true;
     async function load() {
       try {
-        const meRes = await getMe();
+        const meRes = await getMe({ force: true });
         let unreadCount = 0;
         try {
           const countRes = await api('/notifications/unread-count');
@@ -801,7 +861,13 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         setUnread(unreadCount);
         setPermissions(meRes.data?.permissions || {});
         setEnabledModules(
-          Array.isArray(meRes.data?.enabled_modules) ? meRes.data.enabled_modules : null
+          Array.isArray(meRes.data?.enabled_modules) ? meRes.data.enabled_modules : []
+        );
+        setIndustry(meRes.data?.industry ?? null);
+        setIndustryValid(
+          typeof meRes.data?.industry_valid === 'boolean'
+            ? meRes.data.industry_valid
+            : Boolean(normalizeIndustry(meRes.data?.industry))
         );
         setRole(meRes.data?.role || '');
         setFullName(meRes.data?.full_name || '');
@@ -865,9 +931,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       }
       try {
         const token = localStorage.getItem('token');
-        const tenantId = localStorage.getItem('tenant');
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-        const res = await fetch(`${apiBase}/tenants/me/logo`, {
+        const tenantId = tenantHeaderValue(localStorage.getItem('tenant'));
+        const res = await fetch(`${apiRoot()}/tenants/me/logo`, {
           headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
             ...(tenantId ? { 'X-Tenant-ID': tenantId } : {}),
@@ -924,11 +989,50 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     };
   }, [idleMinutes, authReady]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined' || !authReady) return;
+    let lastTenant = localStorage.getItem('tenant') || '';
+    const applyTenantChange = () => {
+      const next = localStorage.getItem('tenant') || '';
+      if (next === lastTenant) return;
+      lastTenant = next;
+      invalidateMeCache();
+      void getMe({ force: true })
+        .then((meRes) => {
+          setPermissions(meRes.data?.permissions || {});
+          setEnabledModules(
+            Array.isArray(meRes.data?.enabled_modules) ? meRes.data.enabled_modules : []
+          );
+          setIndustry(meRes.data?.industry ?? null);
+          setIndustryValid(
+            typeof meRes.data?.industry_valid === 'boolean'
+              ? meRes.data.industry_valid
+              : Boolean(normalizeIndustry(meRes.data?.industry))
+          );
+          setRole(meRes.data?.role || '');
+          setCompanyName(meRes.data?.company_name || '');
+        })
+        .catch(() => undefined);
+    };
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'tenant' || e.key === 'token') applyTenantChange();
+    };
+    window.addEventListener('storage', onStorage);
+    const id = window.setInterval(applyTenantChange, 800);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.clearInterval(id);
+    };
+  }, [authReady]);
+
   const visible = useMemo(
-    () => navItemsForRole(role, permissions, enabledModules),
-    [role, permissions, enabledModules]
+    () => navItemsForRole(role, permissions, enabledModules, industry),
+    [role, permissions, enabledModules, industry]
   );
-  const navGroups = useMemo(() => groupedTenantNav(visible), [visible]);
+  const navGroups = useMemo(
+    () => groupedTenantNav(TENANT_NAV_GROUPS, visible, industry),
+    [visible, industry]
+  );
   const autoOpenedForPath = useRef('');
   const navStorageSeeded = useRef(false);
 
@@ -1000,7 +1104,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   if (!authReady) {
     return (
       <div className="auth-gate" role="status" aria-live="polite">
-        <p>Checking your account…</p>
+        <p>{authGateError || 'Checking your account…'}</p>
       </div>
     );
   }
@@ -1027,7 +1131,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           ) : null}
         </div>
         {isPlatformOwner ? <div className="brand-sub">Platform owner console</div> : null}
-        <nav className="nav" aria-label={isPlatformOwner ? 'Platform navigation' : 'Tenant navigation'}>
+        <nav
+          className="nav"
+          aria-label={isPlatformOwner ? 'Platform navigation' : 'Tenant navigation'}
+          data-industry={isPlatformOwner ? 'platform' : normalizeIndustry(industry) || ''}
+        >
           {(isPlatformOwner ? [{ id: 'platform', label: '', items: visible }] : navGroups).map((group) => {
             const links = group.items.map(([n, h, module]) => {
               const active = isNavActive(pathname || '', h, visible, navSearch);
@@ -1204,6 +1312,13 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         </div>
+        {!isPlatformOwner && industryValid === false && (
+          <p className="login-error" role="alert">
+            This company has no valid industry on file ({industryLabel(industry)}). Industry-specific
+            modules stay off until an administrator sets a supported industry on the Company page.
+            Shared modules such as finance and reports remain available.
+          </p>
+        )}
         {!isPlatformOwner && (
           <OnboardingChecklist
             canManage={role === 'company_admin' || role === 'super_admin'}

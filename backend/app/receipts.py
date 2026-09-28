@@ -92,6 +92,9 @@ def build_receipt_payload(
                 "sku": raw.get("sku"),
                 "quantity": qty,
                 "unit_price": unit,
+                "discount": money_json(raw.get("discount") or 0),
+                "discount_type": raw.get("discount_type") or "fixed",
+                "discount_percent": money_json(raw.get("discount_percent") or 0),
                 "line_total": line_total,
                 "product_id": raw.get("product_id"),
                 "variant_id": raw.get("variant_id"),
@@ -142,6 +145,8 @@ def build_receipt_payload(
         "subtotal": money_json(tx.subtotal),
         "tax": money_json(tx.tax),
         "discount_amount": money_json(payload.get("discount_amount") or 0),
+        "discount_type": payload.get("discount_type") or "fixed",
+        "discount_percent": money_json(payload.get("discount_percent") or 0),
         "line_discounts": money_json(payload.get("line_discounts") or 0),
         "total": money_json(tx.total),
         "items": normalized_items,
@@ -191,6 +196,9 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
         for i, part in enumerate(_wrap(name, width)):
             lines.append(part if i == 0 else ("  " + part)[:width])
         lines.append(_lr(f"  {qty:g} x {_money(unit)}", _money(total), width))
+        disc = money_json(item.get("discount") or 0)
+        if disc > 0:
+            lines.append(_lr("  Discount", f"-{_money(disc)}", width))
     lines.append("-" * width)
     currency = receipt.get("currency") or ""
     lines.append(_lr("Subtotal", _money(receipt.get("subtotal") or 0), width))

@@ -311,6 +311,11 @@ async def create_request(
         ).scalar_one_or_none()
         if not wh:
             raise HTTPException(status_code=404, detail="Warehouse not found")
+        from app import store_access as store_access_svc
+
+        await store_access_svc.assert_warehouse_access(
+            db, tenant_id=tenant_id, user_id=user_id, warehouse_id=wh.id
+        )
 
     prepared: list[dict] = []
     for item in items:

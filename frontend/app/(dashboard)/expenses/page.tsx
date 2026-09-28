@@ -132,11 +132,16 @@ export default function Page() {
   const [recEditId, setRecEditId] = useState<string | null>(null);
   const [recBusy, setRecBusy] = useState(false);
   const [skipNextReason, setSkipNextReason] = useState('');
+  const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [supplierId, setSupplierId] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [createBusy, setCreateBusy] = useState(false);
+  const [rowBusyId, setRowBusyId] = useState<string | null>(null);
 
   async function refresh() {
     const storeTrim = (storeId || ctxStoreId || '').trim();
     const expensesPath = storeTrim ? `/expenses?store_id=${encodeURIComponent(storeTrim)}` : '/expenses';
-    const [exp, cats, settings, liquid, st, br, dep, accounts, rec] = await Promise.all([
+    const [exp, cats, settings, liquid, st, br, dep, accounts, rec, supp] = await Promise.all([
       api(expensesPath),
       api('/expenses/categories'),
       api('/expenses/settings'),
@@ -146,6 +151,7 @@ export default function Page() {
       api('/departments').catch(() => ({ data: [] })),
       api('/accounting/accounts').catch(() => ({ data: [] })),
       api('/expenses/recurring').catch(() => ({ data: [] })),
+      api('/suppliers').catch(() => ({ data: [] })),
     ]);
     setRows(exp.data || []);
     setCategories(cats.data || []);
@@ -157,6 +163,7 @@ export default function Page() {
     setBranches(br.data || []);
     setDepartments(dep.data || []);
     setRecurring(rec.data || []);
+    setSuppliers(supp.data || []);
     const glExpense = (accounts.data || []).filter(
       (a: any) =>
         String(a.account_type || '').toLowerCase() === 'expense' && a.is_active !== false
@@ -273,8 +280,10 @@ export default function Page() {
   }
 
   async function createExpense() {
+    if (createBusy) return;
     setError('');
     setMessage('');
+    setCreateBusy(true);
     try {
       const r = await api('/expenses', {
         method: 'POST',
@@ -293,17 +302,21 @@ export default function Page() {
           store_id: storeId.trim() || null,
         }),
       });
-      setMessage(`Expense ${r.data.status}: ${r.data.amount}`);
+      setMessage(
+        r.data.status === 'approved'
+          ? `Expense saved and posted to the books (${r.data.amount})`
+          : `Expense saved — waiting for approval (${r.data.amount})`,
+      );
       setDescription('');
       setPayee('');
       setReference('');
       setExpenseDate('');
-      setStoreId('');
-      setBranchId('');
-      setDepartmentId('');
+      setSupplierId('');
       await refresh();
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setCreateBusy(false);
     }
   }
 
@@ -477,23 +490,43 @@ export default function Page() {
   }
 
   async function reject(id: string) {
+    if (rowBusyId) return;
     setError('');
     setMessage('');
     const reason = rejectReason.trim();
     if (!reason) {
-      setError('Enter a reject reason before rejecting an expense');
+      setError('Enter a reason before voiding this expense');
       return;
     }
+    setRowBusyId(id);
     try {
       await api(`/expenses/${id}/reject`, {
         method: 'POST',
         body: JSON.stringify({ reason }),
       });
-      setMessage('Expense rejected');
+      setMessage('Expense voided (reason stored on the record)');
       setRejectReason('');
       await refresh();
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setRowBusyId(null);
+    }
+  }
+
+  async function removeExpense(id: string) {
+    if (rowBusyId) return;
+    setError('');
+    setMessage('');
+    setRowBusyId(id);
+    try {
+      await api(`/expenses/${id}`, { method: 'DELETE' });
+      setMessage('Expense removed');
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setRowBusyId(null);
     }
   }
 
@@ -751,21 +784,258 @@ export default function Page() {
   const managedExpenses = rows.filter((r) => {
     if (expenseManageFilter === 'all') return true;
     return (r.status || 'pending') === expenseManageFilter;
+  }).filter((r) => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+    const hay = [r.category, r.payee, r.description, r.reference, r.status, String(r.amount)]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    return hay.includes(q);
   });
+  const approvedSpend = rows
+    .filter((r) => r.status === 'approved')
+    .reduce((s, r) => s + Number(r.amount || 0), 0);
+  const pendingSpend = rows
+    .filter((r) => r.status === 'pending')
+    .reduce((s, r) => s + Number(r.amount || 0), 0);
 
   return (
     <>
       <h1>Expenses</h1>
       <p className="muted">
-        Auto-approve ≤ {threshold}
-        {levels.length > 1 ? `; ${levels.length} approval levels above that` : ''}. Receipts supported.
+        Record what the company paid. Amounts at or below {threshold} post automatically.
+        Receipts attach on the list. VAT on supplier invoices is calculated under Tax / Purchases,
+        not on this cash expense.
       </p>
-      {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
+      {error && <p className="erp-banner err" role="alert">{error}</p>}
+      {message && <p className="erp-banner ok" role="status">{message}</p>}
 
-      <div className="erp-split">
+      <div className="erp-kpis">
+        <div className="card">
+          <div className="muted">Posted this list</div>
+          <div className="kpi">{approvedSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+        </div>
+        <div className="card">
+          <div className="muted">Waiting approval</div>
+          <div className="kpi">{pendingSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+        </div>
+        <div className="card">
+          <div className="muted">Rows</div>
+          <div className="kpi">{rows.length}</div>
+        </div>
+      </div>
+
       <div className="card" style={{ marginBottom: 16 }}>
-        <h3>Approval matrix</h3>
+        <h3>Add expense</h3>
+        <div className="erp-form-grid">
+          <label>
+            Category
+          <select
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+            aria-label="Expense spend category"
+            title="Expense spend category (catalog picker; API category label 1–100)"
+          >
+            {categories
+              .filter((c) => c.is_active !== false || c.id === categoryId)
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                  {c.account_code ? ` · ${c.account_code}` : ''}
+                  {c.is_active === false ? ' (inactive)' : ''}
+                </option>
+              ))}
+          </select>
+          </label>
+          <label>
+            Amount
+          <input
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="Amount paid"
+            aria-label="Expense amount"
+          />
+          </label>
+          <label>
+            Paid to
+          <input
+            value={payee}
+            onChange={(e) => setPayee(e.target.value)}
+            placeholder="Who received the money"
+            aria-label="Expense payee"
+          />
+          </label>
+          <label>
+            What for
+          <input
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Short description"
+            aria-label="Expense description"
+          />
+          </label>
+          <label>
+            Paid with
+          <select
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(e.target.value)}
+            aria-label="Expense payment method"
+          >
+            <option value="cash">Cash</option>
+            <option value="bank_transfer">Bank transfer</option>
+            <option value="card">Card</option>
+            <option value="cheque">Cheque</option>
+          </select>
+          </label>
+          <label>
+            Date
+          <input
+            type="date"
+            value={expenseDate}
+            onChange={(e) => setExpenseDate(e.target.value)}
+            aria-label="Expense date"
+            title="Expense date (optional YYYY-MM-DD)"
+          />
+          </label>
+          <details className="span-2" style={{ gridColumn: '1 / -1' }}>
+            <summary className="muted" style={{ cursor: 'pointer', fontWeight: 700 }}>
+              Optional: supplier name, receipt later, cash account, location
+            </summary>
+            <div className="erp-form-grid" style={{ marginTop: 10 }}>
+          <label>
+            Copy supplier name
+          <select
+            value={supplierId}
+            onChange={(e) => {
+              const id = e.target.value;
+              setSupplierId(id);
+              const s = suppliers.find((x: any) => x.id === id);
+              if (s?.name) setPayee(s.name);
+            }}
+            aria-label="Optional supplier for payee name"
+          >
+            <option value="">Not a supplier bill</option>
+            {suppliers
+              .filter((s: any) => s.is_active !== false)
+              .map((s: any) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                  {s.balance != null ? ` · balance ${s.balance}` : ''}
+                </option>
+              ))}
+          </select>
+          </label>
+          <p className="muted span-2">
+            This copies the name only. Supplier invoices and VAT live under Purchases and Tax —
+            they are not double-counted here.
+          </p>
+          <label>
+            Reference
+          <input
+            value={reference}
+            onChange={(e) => setReference(e.target.value)}
+            placeholder="Optional reference"
+            aria-label="Expense reference"
+          />
+          </label>
+          <label>
+            Cash or bank account
+          <select
+            value={liquidAccountId}
+            onChange={(e) => setLiquidAccountId(e.target.value)}
+            aria-label="Expense liquid account"
+            title="Optional liquid GL override (UuidIdValue)"
+          >
+            <option value="">Default for payment method</option>
+            {liquidAccounts.map((a: any) => (
+              <option key={a.id} value={a.id}>
+                {a.code} {a.name}
+              </option>
+            ))}
+          </select>
+          </label>
+          <label>
+            Branch
+          <select
+            value={branchId}
+            onChange={(e) => {
+              setBranchId(e.target.value);
+              setDepartmentId('');
+              setStoreId('');
+            }}
+            aria-label="Expense branch"
+            title="Optional branch (UuidIdValue)"
+          >
+            <option value="">None</option>
+            {branches
+              .filter((b) => b.is_active !== false)
+              .map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.code} — {b.name}
+                </option>
+              ))}
+          </select>
+          </label>
+          <label>
+            Store
+          <select
+            value={storeId}
+            onChange={(e) => {
+              setStoreId(e.target.value);
+              setCtxStoreId(e.target.value);
+            }}
+            aria-label="Expense store"
+            title="Optional store (UuidIdValue)"
+          >
+            <option value="">None</option>
+            {stores
+              .filter((s) => s.is_active !== false)
+              .filter((s) => !branchId || s.branch_id === branchId)
+              .map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.code} — {s.name}
+                </option>
+              ))}
+          </select>
+          </label>
+          <label>
+            Department
+          <select
+            value={departmentId}
+            onChange={(e) => setDepartmentId(e.target.value)}
+            aria-label="Expense department"
+            title="Optional department (UuidIdValue)"
+          >
+            <option value="">None</option>
+            {departments
+              .filter((d) => d.is_active !== false)
+              .filter((d) => !branchId || !d.branch_id || d.branch_id === branchId)
+              .map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.code} — {d.name}
+                </option>
+              ))}
+          </select>
+          </label>
+            </div>
+          </details>
+          <button
+            type="button"
+            className="btn-ok"
+            aria-label="Submit expense"
+            onClick={createExpense}
+            disabled={createBusy || !categoryId || !amount}
+          >
+            {createBusy ? 'Saving…' : 'Save expense'}
+          </button>
+        </div>
+      </div>
+
+      <details className="erp-advanced" id="approval-matrix">
+        <summary>Approval rules</summary>
+      <div className="card" style={{ marginBottom: 0, boxShadow: 'none', border: 0, padding: '0 0 8px' }}>
+        <h3>Who must approve large amounts</h3>
         <p className="muted" style={{ marginBottom: 8 }}>
           Amount must exceed a level&apos;s min to require that step. Roles are comma-separated.
           Pending expenses email current-step role holders (opt out under Notifications →
@@ -831,11 +1101,11 @@ export default function Page() {
           </button>
         </div>
       </div>
-
-      </div>
-      <div className="erp-split">
-      <div className="card" style={{ marginBottom: 16 }}>
-        <h3>Category budgets</h3>
+      </details>
+      <details className="erp-advanced" id="budgets">
+        <summary>Categories and monthly budgets</summary>
+      <div className="card" style={{ marginBottom: 0, boxShadow: 'none', border: 0, padding: '0 0 8px' }}>
+        <h3>Categories and monthly budgets</h3>
         <p className="muted">
           Monthly budgets scale to the report period (Net 30 days = 1×). Optional GL posts approved
           spend to that expense account (default 6000).
@@ -977,9 +1247,11 @@ export default function Page() {
           </tbody>
         </table>
       </div>
-
-      <div className="card" style={{ marginBottom: 16 }}>
-        <h3>Recurring expenses</h3>
+      </details>
+      <details className="erp-advanced" id="recurring">
+        <summary>Repeat on a schedule</summary>
+      <div className="card" style={{ marginBottom: 0, boxShadow: 'none', border: 0, padding: '0 0 8px' }}>
+        <h3>Repeat on a schedule</h3>
         <p className="muted">
           Schedules auto-generate due expenses (automatic schedule + manual Generate). Generated entries use the
           EXP-YYYY-NNNN series when reference is blank. Advance notify (T−1) uses category
@@ -1217,141 +1489,7 @@ export default function Page() {
           </tbody>
         </table>
       </div>
-
-      </div>
-      <div className="card" style={{ marginBottom: 16 }}>
-        <h3>New expense</h3>
-        <div className="erp-form-grid">
-          <select
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-            aria-label="Expense spend category"
-            title="Expense spend category (catalog picker; API category label 1–100)"
-          >
-            {categories
-              .filter((c) => c.is_active !== false || c.id === categoryId)
-              .map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                  {c.account_code ? ` · GL ${c.account_code}` : ''}
-                  {c.budget_amount ? ` · budget ${c.budget_amount}` : ''}
-                  {c.is_active === false ? ' (inactive)' : ''}
-                </option>
-              ))}
-          </select>
-          <input
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="Amount"
-            aria-label="Expense amount"
-          />
-          <input
-            value={payee}
-            onChange={(e) => setPayee(e.target.value)}
-            placeholder="Payee"
-            aria-label="Expense payee"
-          />
-          <input
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Description"
-            aria-label="Expense description"
-          />
-          <input
-            value={reference}
-            onChange={(e) => setReference(e.target.value)}
-            placeholder="Reference"
-            aria-label="Expense reference"
-          />
-          <input
-            value={expenseDate}
-            onChange={(e) => setExpenseDate(e.target.value)}
-            placeholder="Date YYYY-MM-DD (optional)"
-            aria-label="Expense date"
-            title="Expense date (optional YYYY-MM-DD)"
-          />
-          <select
-            value={paymentMethod}
-            onChange={(e) => setPaymentMethod(e.target.value)}
-            aria-label="Expense payment method"
-          >
-            <option value="cash">Cash</option>
-            <option value="bank_transfer">Bank transfer</option>
-            <option value="card">Card</option>
-            <option value="cheque">Cheque</option>
-          </select>
-          <select
-            value={liquidAccountId}
-            onChange={(e) => setLiquidAccountId(e.target.value)}
-            aria-label="Expense liquid account"
-            title="Optional liquid GL override (UuidIdValue)"
-          >
-            <option value="">GL: method default</option>
-            {liquidAccounts.map((a: any) => (
-              <option key={a.id} value={a.id}>
-                {a.code} {a.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={branchId}
-            onChange={(e) => {
-              setBranchId(e.target.value);
-              setDepartmentId('');
-              setStoreId('');
-            }}
-            aria-label="Expense branch"
-            title="Optional branch (UuidIdValue)"
-          >
-            <option value="">All / no branch</option>
-            {branches
-              .filter((b) => b.is_active !== false)
-              .map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.code} — {b.name}
-                </option>
-              ))}
-          </select>
-          <select
-            value={storeId}
-            onChange={(e) => {
-              setStoreId(e.target.value);
-              setCtxStoreId(e.target.value);
-            }}
-            aria-label="Expense store"
-            title="Optional store (UuidIdValue)"
-          >
-            <option value="">No store</option>
-            {stores
-              .filter((s) => s.is_active !== false)
-              .filter((s) => !branchId || s.branch_id === branchId)
-              .map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.code} — {s.name}
-                </option>
-              ))}
-          </select>
-          <select
-            value={departmentId}
-            onChange={(e) => setDepartmentId(e.target.value)}
-            aria-label="Expense department"
-            title="Optional department (UuidIdValue)"
-          >
-            <option value="">No department</option>
-            {departments
-              .filter((d) => d.is_active !== false)
-              .filter((d) => !branchId || !d.branch_id || d.branch_id === branchId)
-              .map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.code} — {d.name}
-                </option>
-              ))}
-          </select>
-          <button type="button" className="btn-ok" aria-label="Submit expense" onClick={createExpense}>
-            Submit expense
-          </button>
-        </div>
-      </div>
+      </details>
 
       <div className="card" style={{ marginBottom: 16 }}>
         <label>
@@ -1369,18 +1507,18 @@ export default function Page() {
           Used by Approve on pending expenses (no hardcoded <code>Approved</code> comment).
         </p>
         <label style={{ display: 'block', marginTop: 12 }}>
-          Reject reason{' '}
+          Void reason{' '}
           <input
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
-            placeholder="Required before Reject"
-            aria-label="Expense reject reason"
-            title="Required reason for Reject (1–500 chars; letters/digits required)"
+            placeholder="Required before Void"
+            aria-label="Expense void reason"
+            title="Required reason for Void (1–500 chars; letters/digits required)"
             style={{ minWidth: 280 }}
           />
         </label>
         <p className="muted" style={{ marginTop: 6 }}>
-          Used by Reject on pending expenses (stored as <code>rejection_reason</code>).
+          Used when you void a pending expense (stored as rejection reason). Posted expenses stay on the books.
         </p>
       </div>
 
@@ -1571,7 +1709,13 @@ export default function Page() {
         </div>
       )}
 
-      <div style={{ marginBottom: 12 }}>
+      <div className="erp-toolbar">
+        <input
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search payee, category, description…"
+          aria-label="Search expenses"
+        />
         <select
           value={expenseManageFilter}
           onChange={(e) =>
@@ -1582,66 +1726,52 @@ export default function Page() {
           title="Filter expense list by status"
           aria-label="Expense status filter"
         >
-          <option value="all">All statuses</option>
-          <option value="pending">Pending only</option>
-          <option value="approved">Approved only</option>
-          <option value="rejected">Rejected only</option>
+          <option value="all">All</option>
+          <option value="pending">Waiting approval</option>
+          <option value="approved">Posted</option>
+          <option value="rejected">Voided</option>
         </select>
       </div>
-      <table className="table">
+      <table className="table compact">
         <thead>
           <tr>
             <th>Category</th>
-            <th>Branch</th>
-            <th>Store</th>
-            <th>Department</th>
-            <th>Payee</th>
-            <th>Description</th>
+            <th>Paid to</th>
+            <th>What for</th>
             <th>Amount</th>
             <th>Status</th>
-            <th>Approval</th>
-            <th>Reject reason</th>
-            <th>Approve comment</th>
             <th>Receipt</th>
-            <th>Actions</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
           {managedExpenses.length === 0 ? (
             <tr>
-              <td colSpan={13} className="muted">
-                No expenses for this filter
+              <td colSpan={7} className="muted">
+                No expenses match this search
               </td>
             </tr>
           ) : (
             managedExpenses.map((r) => (
             <tr key={r.id}>
               <td>{r.category}</td>
-              <td>
-                {branches.find((b) => b.id === r.branch_id)?.code ||
-                  (r.branch_id ? r.branch_id.slice(0, 8) : '—')}
-              </td>
-              <td>
-                {stores.find((s) => s.id === r.store_id)?.code ||
-                  (r.store_id ? r.store_id.slice(0, 8) : '—')}
-              </td>
-              <td>
-                {departments.find((d) => d.id === r.department_id)?.code ||
-                  (r.department_id ? r.department_id.slice(0, 8) : '—')}
-              </td>
               <td>{r.payee || '—'}</td>
-              <td>{r.description}</td>
-              <td>{r.amount}</td>
-              <td>{r.status}</td>
               <td>
-                {r.status === 'pending'
-                  ? `L${r.awaiting_level || r.approval_step || 1}/${r.approval_steps_required || 1}`
-                  : r.approval_steps_required
-                    ? `${r.approval_steps_required} level(s)`
-                    : 'auto'}
+                {r.description}
+                {r.rejection_reason ? (
+                  <div className="muted" style={{ fontSize: 12 }}>
+                    Void: {r.rejection_reason}
+                  </div>
+                ) : null}
               </td>
-              <td className="muted">{r.rejection_reason || '—'}</td>
-              <td className="muted">{r.approval_comment || '—'}</td>
+              <td>{r.amount}</td>
+              <td>
+                {r.status === 'approved'
+                  ? 'Posted'
+                  : r.status === 'rejected'
+                    ? 'Voided'
+                    : 'Waiting'}
+              </td>
               <td>
                 {r.has_attachment ? (
                   <span style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>
@@ -1680,12 +1810,13 @@ export default function Page() {
                 )}
               </td>
               <td>
+                <div className="erp-row-actions">
                 {(r.status === 'pending' || r.status === 'rejected') && (
                   <button
                     type="button"
                     onClick={() => startEdit(r)}
-                    style={{ marginRight: 8 }}
                     aria-label={`Edit expense ${r.id}`}
+                    disabled={rowBusyId === r.id}
                   >
                     Edit
                   </button>
@@ -1695,26 +1826,38 @@ export default function Page() {
                     <button
                       className="btn-ok"
                       onClick={() => approve(r.id)}
-                      style={{ marginRight: 8 }}
                       aria-label="Approve expense"
+                      disabled={rowBusyId === r.id}
                     >
                       Approve
                     </button>
                     <button
                       className="btn-danger"
                       onClick={() => reject(r.id)}
-                      aria-label={`Reject expense ${r.id}`}
-                      disabled={!rejectReason.trim()}
+                      aria-label={`Void expense ${r.id}`}
+                      disabled={!rejectReason.trim() || rowBusyId === r.id}
                       title={
                         rejectReason.trim()
-                          ? 'Reject expense'
-                          : 'Enter a reject reason before rejecting'
+                          ? 'Void expense'
+                          : 'Enter a void reason first'
                       }
                     >
-                      Reject
+                      Void
                     </button>
                   </>
                 )}
+                {r.status === 'rejected' && (
+                  <button
+                    className="btn-danger"
+                    type="button"
+                    onClick={() => removeExpense(r.id)}
+                    disabled={rowBusyId === r.id}
+                    aria-label={`Remove voided expense ${r.id}`}
+                  >
+                    Remove
+                  </button>
+                )}
+                </div>
               </td>
             </tr>
           ))

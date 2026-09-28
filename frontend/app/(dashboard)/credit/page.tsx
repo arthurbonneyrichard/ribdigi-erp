@@ -41,6 +41,8 @@ export default function Page() {
   const [payFxRate, setPayFxRate] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [payBusy, setPayBusy] = useState(false);
+  const [limitBusy, setLimitBusy] = useState(false);
 
   async function refresh() {
     const [aging, cust, supp, settings, liquid, fx] = await Promise.all([
@@ -178,8 +180,9 @@ export default function Page() {
   }
 
   async function recordPayment() {
-    if (!partyId || !payAmount) return;
+    if (!partyId || !payAmount || payBusy) return;
     setError('');
+    setPayBusy(true);
     try {
       const chequeFields =
         payMethod === 'cheque'
@@ -239,12 +242,15 @@ export default function Page() {
       await loadStatement();
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setPayBusy(false);
     }
   }
 
   async function updateLimit() {
-    if (!partyId || kind !== 'receivable') return;
+    if (!partyId || kind !== 'receivable' || limitBusy) return;
     setError('');
+    setLimitBusy(true);
     try {
       await api(`/customers/${partyId}/credit-limit`, {
         method: 'PATCH',
@@ -253,10 +259,12 @@ export default function Page() {
           payment_terms_days: Number(paymentTermsDays) || 0,
         }),
       });
-      setMessage('Credit limit and payment terms updated');
+      setMessage('Customer credit limit and payment terms updated');
       await refresh();
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setLimitBusy(false);
     }
   }
 
@@ -359,42 +367,76 @@ export default function Page() {
 
   return (
     <>
-      <h1>Credit & Aging</h1>
+      <h1>{kind === 'receivable' ? 'Customer credit' : 'Supplier bills'}</h1>
       <p className="muted">
-        AR/AP aging, statements, payments, and early-payment discounts. Over-limit credit sales are
-        blocked unless a user with <code>credit:approve</code> (store manager / accountant / admin)
-        confirms an override on Sales invoice post or POS checkout.
+        {kind === 'receivable'
+          ? 'Money customers still owe from credit sales. Record a repayment here. New credit sales are created on Sales or POS — not here. Changing a customer limit needs credit approval permission.'
+          : 'Bills we still owe suppliers. Record a supplier payment here. New bills come from Purchases. Paying here does not create a second bill.'}
       </p>
-      {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
+      {error && <p className="erp-banner err" role="alert">{error}</p>}
+      {message && <p className="erp-banner ok" role="status">{message}</p>}
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+      <div className="erp-tabs">
         <button
           onClick={() => selectKind('receivable')}
           disabled={kind === 'receivable'}
-          aria-label="Show receivables aging"
+          aria-label="Show customer credit"
         >
-          Receivables
+          Customers who owe us
         </button>
         <button
           onClick={() => selectKind('payable')}
           disabled={kind === 'payable'}
-          aria-label="Show payables aging"
+          aria-label="Show supplier bills"
         >
-          Payables
+          Bills we owe
         </button>
       </div>
 
-      <div className="grid">
+      <div className="erp-kpis">
         <div className="card">
-          <h3>Totals · {kind}</h3>
-          <p>Current: {totals.current ?? 0}</p>
-          <p>1–30: {totals['1_30'] ?? 0}</p>
-          <p>31–60: {totals['31_60'] ?? 0}</p>
-          <p>61–90: {totals['61_90'] ?? 0}</p>
-          <p>90+: {totals['90_plus'] ?? 0}</p>
+          <div className="muted">{kind === 'receivable' ? 'Customer balance' : 'Supplier balance'}</div>
           <div className="kpi">{report?.total_due ?? 0}</div>
         </div>
+        <div className="card">
+          <div className="muted">Overdue (31+ days)</div>
+          <div className="kpi">
+            {(Number(totals['31_60'] || 0) + Number(totals['61_90'] || 0) + Number(totals['90_plus'] || 0)).toFixed(2)}
+          </div>
+        </div>
+        <div className="card">
+          <div className="muted">Current / not yet due</div>
+          <div className="kpi">{totals.current ?? 0}</div>
+        </div>
+      </div>
+
+      <div className="erp-split">
+        <div className="card">
+          <h3>{kind === 'receivable' ? 'New credit sale' : 'New supplier bill'}</h3>
+          <p className="muted">
+            {kind === 'receivable'
+              ? 'Open Sales to post an invoice. That increases what the customer owes. This page only records money coming in.'
+              : 'Open Purchases to post a supplier invoice. That increases what we owe. This page only records money going out.'}
+          </p>
+          <a href={kind === 'receivable' ? '/sales' : '/purchasing'}>
+            <button type="button">
+              {kind === 'receivable' ? 'Go to Sales' : 'Go to Purchases'}
+            </button>
+          </a>
+        </div>
+        <div className="card">
+          <h3>Aging</h3>
+          <p>Not yet due: {totals.current ?? 0}</p>
+          <p>1–30 days: {totals['1_30'] ?? 0}</p>
+          <p>31–60 days: {totals['31_60'] ?? 0}</p>
+          <p>61–90 days: {totals['61_90'] ?? 0}</p>
+          <p>90+ days: {totals['90_plus'] ?? 0}</p>
+        </div>
+      </div>
+
+      <details className="erp-advanced">
+        <summary>Early-pay discount and exchange rates</summary>
+        <div className="erp-split" style={{ marginTop: 8 }}>
         <div className="card">
           <h3>Early payment terms</h3>
           <p className="muted">e.g. 2% if paid within 10 days (AR give / AP take)</p>
@@ -469,8 +511,14 @@ export default function Page() {
             {!fxRates.length && <li className="muted">No foreign rates yet</li>}
           </ul>
         </div>
-        <div className="card">
-          <h3>Party actions</h3>
+        </div>
+      </details>
+
+      <div className="card">
+          <h3>{kind === 'receivable' ? 'Record customer repayment' : 'Record supplier payment'}</h3>
+          <p className="muted">
+            Partial amounts apply to the oldest open documents first. This does not create a new sale or bill.
+          </p>
           <select
             value={partyId}
             onChange={(e) => setPartyId(e.target.value)}
@@ -589,8 +637,8 @@ export default function Page() {
               title="Optional payment exchange rate (same currency as invoice)"
               aria-label="Payment FX rate"
             />
-            <button onClick={recordPayment} aria-label="Record payment">
-              Pay
+            <button onClick={recordPayment} aria-label="Record payment" disabled={payBusy || !payAmount}>
+              {payBusy ? 'Saving…' : kind === 'receivable' ? 'Record repayment' : 'Record supplier payment'}
             </button>
           </div>
           {(kind === 'receivable' || kind === 'payable') && (
@@ -605,6 +653,7 @@ export default function Page() {
             </label>
           )}
           {kind === 'receivable' && (
+            <>
             <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
               <input
                 value={creditLimit}
@@ -621,8 +670,12 @@ export default function Page() {
                 title="Payment terms (days)"
                 aria-label="Customer payment terms days"
               />
-              <button aria-label="Set customer credit limit and terms" onClick={updateLimit}>Set limit / terms</button>
+              <button aria-label="Set customer credit limit and terms" onClick={updateLimit} disabled={limitBusy}>
+                {limitBusy ? 'Saving…' : 'Save limit / terms'}
+              </button>
             </div>
+            <p className="muted">Needs credit approval permission. Limit 0 means unlimited.</p>
+            </>
           )}
           {kind === 'payable' && (
             <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
@@ -640,14 +693,13 @@ export default function Page() {
             </div>
           )}
         </div>
-      </div>
 
-      <h3 style={{ marginTop: 16 }}>By party</h3>
-      <table className="table">
+      <h3 style={{ marginTop: 16 }}>{kind === 'receivable' ? 'Customers' : 'Suppliers'}</h3>
+      <table className="table compact">
         <thead>
           <tr>
             <th>Name</th>
-            <th>Total due</th>
+            <th>Balance</th>
             <th>Current</th>
             <th>1–30</th>
             <th>31–60</th>
@@ -673,9 +725,35 @@ export default function Page() {
       {statement && (
         <div className="card" style={{ marginTop: 16 }}>
           <h3>Statement</h3>
-          <pre style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>
-            {JSON.stringify(statement, null, 2)}
-          </pre>
+          <p>
+            Balance {statement.outstanding_balance ?? statement.balance ?? statement.total_due ?? '—'}
+          </p>
+          {(statement.lines || statement.entries || statement.invoices) ? (
+            <table className="table compact">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Document</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(statement.lines || statement.entries || statement.invoices || []).slice(0, 40).map(
+                  (row: any, i: number) => (
+                    <tr key={row.id || row.invoice_id || i}>
+                      <td>
+                        {String(row.date || row.posted_at || row.created_at || '').slice(0, 10) || '—'}
+                      </td>
+                      <td>{row.reference || row.invoice_number || row.description || '—'}</td>
+                      <td>{row.amount ?? row.total_amount ?? row.balance ?? '—'}</td>
+                    </tr>
+                  ),
+                )}
+              </tbody>
+            </table>
+          ) : (
+            <p className="muted">Open documents listed on Balance.</p>
+          )}
         </div>
       )}
 

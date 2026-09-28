@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { moduleEnabledForTenant } from '../../../lib/industryModules';
@@ -43,11 +45,13 @@ type Reservation = {
   estimated_total: number;
   folio_id?: string | null;
   can_check_in?: boolean;
+  can_confirm?: boolean;
   can_check_out?: boolean;
   can_cancel?: boolean;
   can_no_show?: boolean;
   can_extend?: boolean;
   can_move?: boolean;
+  folio_balance?: number | null;
 };
 
 type Folio = {
@@ -76,6 +80,8 @@ type MaintTicket = {
   title: string;
   status: string;
   priority: string;
+  ooo_starts_on?: string | null;
+  ooo_ends_on?: string | null;
 };
 
 type Summary = {
@@ -86,13 +92,59 @@ type Summary = {
   rooms_dirty?: number;
   rooms_maintenance: number;
   reservations_booked: number;
+  reservations_tentative?: number;
+  reservations_cancelled?: number;
+  reservations_no_show?: number;
   reservations_in_house: number;
   arrivals_today?: number;
+  expected_arrivals?: number;
   departures_today?: number;
   occupancy_rate?: number;
+  physical_occupancy_rate?: number;
+  rooms_sold_night?: number;
+  room_status_mix?: Record<string, number>;
+  reservation_status_mix?: Record<string, number>;
+  occupancy_trend?: { date: string; sold: number; occupancy_rate: number }[];
   outstanding_folio_balance?: number;
+  revenue_today?: number;
+  room_revenue?: number;
+  service_revenue?: number;
+  payments_received?: number;
+  housekeeping_pending?: number;
+  housekeeping_overdue?: number;
+  maintenance_open?: number;
+  as_of?: string;
   guests_total: number;
+  recent_reservations?: Reservation[];
+  alerts?: { code: string; message: string; href?: string }[];
+  low_stock?: { id: string; name: string; stock_qty: number }[];
 };
+
+type HotelService = {
+  id: string;
+  code: string;
+  name: string;
+  category: string;
+  unit_amount: number;
+  tax_percent: number;
+  is_active: boolean;
+};
+
+type FolioRow = {
+  id: string;
+  folio_number: string;
+  status: string;
+  balance: number;
+  guest_name?: string | null;
+  reservation_number?: string | null;
+};
+
+function localIso(d = new Date()) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 
 const ROOM_TYPES = ['standard', 'deluxe', 'suite', 'family', 'other'];
 const ROOM_STATUSES = [
@@ -108,6 +160,10 @@ const ROOM_STATUSES = [
 ];
 
 export default function HotelPage() {
+  const searchParams = useSearchParams();
+  const rawTab = (searchParams?.get('tab') || '').trim().toLowerCase();
+  const tab = rawTab || 'dashboard';
+  const show = (section: string) => tab === section;
   const [moduleAllowed, setModuleAllowed] = useState<boolean | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -115,6 +171,19 @@ export default function HotelPage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [hkTasks, setHkTasks] = useState<HkTask[]>([]);
   const [maint, setMaint] = useState<MaintTicket[]>([]);
+  const [services, setServices] = useState<HotelService[]>([]);
+  const [folioRows, setFolioRows] = useState<FolioRow[]>([]);
+  const [availRooms, setAvailRooms] = useState<Room[]>([]);
+  const [availForm, setAvailForm] = useState({ check_in_date: '', check_out_date: '', room_type: '' });
+  const [serviceForm, setServiceForm] = useState({
+    code: '',
+    name: '',
+    category: 'laundry',
+    unit_amount: '0',
+    tax_percent: '0',
+  });
+  const [serviceCharge, setServiceCharge] = useState({ service_id: '', quantity: '1' });
+  const [guestHistory, setGuestHistory] = useState<any>(null);
   const [folio, setFolio] = useState<Folio | null>(null);
   const [listKind, setListKind] = useState('');
   const [error, setError] = useState('');
@@ -135,6 +204,7 @@ export default function HotelPage() {
     email: '',
     phone: '',
     nationality: '',
+    consent_marketing: false,
   });
   const [resForm, setResForm] = useState({
     room_id: '',
@@ -149,18 +219,50 @@ export default function HotelPage() {
   });
   const [chargeForm, setChargeForm] = useState({ description: '', unit_amount: '0', charge_type: 'extra' });
   const [payForm, setPayForm] = useState({ method: 'cash', amount: '0' });
-  const [hkForm, setHkForm] = useState({ room_id: '', assigned_to: '', priority: 'normal' });
-  const [maintForm, setMaintForm] = useState({ room_id: '', title: '', priority: 'normal' });
+  const [hkForm, setHkForm] = useState({ room_id: '', assigned_to: '', priority: 'normal', task_type: 'cleaning' });
+  const [maintForm, setMaintForm] = useState({
+    room_id: '',
+    title: '',
+    priority: 'normal',
+    ooo_starts_on: '',
+    ooo_ends_on: '',
+  });
   const [extendDate, setExtendDate] = useState('');
   const [moveRoomId, setMoveRoomId] = useState('');
   const [report, setReport] = useState<any>(null);
   const [calendar, setCalendar] = useState<any>(null);
   const [settings, setSettings] = useState<any>(null);
   const [groupRooms, setGroupRooms] = useState<string[]>([]);
+  const [dashDate, setDashDate] = useState(() => localIso());
+  const [ratePlans, setRatePlans] = useState<any[]>([]);
+  const [guestRequests, setGuestRequests] = useState<any[]>([]);
+  const [lostFound, setLostFound] = useState<any[]>([]);
+  const [cashierShift, setCashierShift] = useState<any>(null);
+  const [nightAudits, setNightAudits] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
+  const [eventForm, setEventForm] = useState({
+    title: '',
+    space_name: '',
+    starts_on: '',
+    ends_on: '',
+    expected_guests: '20',
+    room_id: '',
+    guest_id: '',
+  });
+  const [rateForm, setRateForm] = useState({ code: '', name: '', amount: '0' });
+  const [reqForm, setReqForm] = useState({ title: '', kind: 'service', reservation_id: '' });
+  const [lfForm, setLfForm] = useState({ description: '', kind: 'lost', room_id: '' });
+  const [mergeSource, setMergeSource] = useState('');
+  const [transferChargeId, setTransferChargeId] = useState('');
+  const [transferFolioId, setTransferFolioId] = useState('');
   const [settingsForm, setSettingsForm] = useState({
     check_in_time: '14:00',
     check_out_time: '11:00',
     cancellation_hours: '24',
+    tax_percent: '0',
+    early_checkin_fee: '0',
+    late_checkout_fee: '0',
+    property_name: '',
   });
 
   const availableRooms = useMemo(
@@ -173,41 +275,75 @@ export default function HotelPage() {
     [rooms]
   );
 
+  async function soft<T>(path: string, fallback: T): Promise<T> {
+    try {
+      const res = await api(path);
+      return (res.data ?? fallback) as T;
+    } catch {
+      return fallback;
+    }
+  }
+
   async function refresh() {
     const qs = listKind ? `?list_kind=${listKind}` : '';
-    const today = new Date();
-    const start = new Date(today);
-    start.setDate(start.getDate() - 7);
-    const end = new Date(today);
-    end.setDate(end.getDate() + 14);
-    const iso = (d: Date) => d.toISOString().slice(0, 10);
-    const [s, r, g, res, hk, mt, rep, cal, set] = await Promise.all([
-      api('/hotel/summary'),
-      api('/hotel/rooms?is_active=true'),
-      api('/hotel/guests?is_active=true'),
-      api(`/hotel/reservations${qs}`),
-      api('/hotel/housekeeping'),
-      api('/hotel/maintenance'),
-      api(`/hotel/reports?start_date=${iso(start)}&end_date=${iso(today)}`),
-      api(`/hotel/calendar?start_date=${iso(today)}&end_date=${iso(end)}`),
-      api('/hotel/settings'),
-    ]);
-    setSummary(s.data || null);
-    setRooms(r.data || []);
-    setGuests(g.data || []);
-    setReservations(res.data || []);
-    setHkTasks(hk.data || []);
-    setMaint(mt.data || []);
-    setReport(rep.data || null);
-    setCalendar(cal.data || null);
-    setSettings(set.data || null);
-    if (set.data) {
-      setSettingsForm({
-        check_in_time: set.data.check_in_time || '14:00',
-        check_out_time: set.data.check_out_time || '11:00',
-        cancellation_hours: String(set.data.cancellation_hours ?? 24),
-      });
+    const startD = new Date();
+    startD.setDate(startD.getDate() - 7);
+    const endD = new Date();
+    endD.setDate(endD.getDate() + 14);
+    try {
+      const [s, r, g, resv, set] = await Promise.all([
+        api(`/hotel/summary?on_date=${dashDate}`),
+        api('/hotel/rooms?is_active=true'),
+        api('/hotel/guests?is_active=true'),
+        api(`/hotel/reservations${qs}`),
+        api('/hotel/settings'),
+      ]);
+      setSummary(s.data || null);
+      setRooms(r.data || []);
+      setGuests(g.data || []);
+      setReservations(resv.data || []);
+      setSettings(set.data || null);
+      if (set.data) {
+        setSettingsForm({
+          check_in_time: set.data.check_in_time || '14:00',
+          check_out_time: set.data.check_out_time || '11:00',
+          cancellation_hours: String(set.data.cancellation_hours ?? 24),
+          tax_percent: String(set.data.tax_percent ?? 0),
+          early_checkin_fee: String(set.data.early_checkin_fee ?? 0),
+          late_checkout_fee: String(set.data.late_checkout_fee ?? 0),
+          property_name: set.data.property_name || '',
+        });
+      }
+      setError('');
+    } catch (err: any) {
+      setError(err.message || 'Could not load hotel. Try again.');
     }
+    const [hk, mt, rep, cal, svc, fol, plans, reqs, lf, shift, audits, ev] = await Promise.all([
+      soft<HkTask[]>('/hotel/housekeeping', []),
+      soft<MaintTicket[]>('/hotel/maintenance', []),
+      soft<any>(`/hotel/reports?start_date=${localIso(startD)}&end_date=${localIso()}`, null),
+      soft<any>(`/hotel/calendar?start_date=${localIso()}&end_date=${localIso(endD)}`, null),
+      soft<HotelService[]>('/hotel/services', []),
+      soft<FolioRow[]>('/hotel/folios', []),
+      soft<any[]>('/hotel/rate-plans', []),
+      soft<any[]>('/hotel/guest-requests', []),
+      soft<any[]>('/hotel/lost-found', []),
+      soft<any>('/hotel/cashier/shift', null),
+      soft<any[]>('/hotel/night-audits', []),
+      soft<any[]>('/hotel/events', []),
+    ]);
+    setHkTasks(hk);
+    setMaint(mt);
+    setReport(rep);
+    setCalendar(cal);
+    setServices(svc);
+    setFolioRows(fol);
+    setRatePlans(plans);
+    setGuestRequests(reqs);
+    setLostFound(lf);
+    setCashierShift(shift);
+    setNightAudits(audits);
+    setEvents(ev);
   }
 
   useEffect(() => {
@@ -237,7 +373,7 @@ export default function HotelPage() {
       active = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [listKind]);
+  }, [listKind, dashDate, tab]);
 
   async function createRoom(e: React.FormEvent) {
     e.preventDefault();
@@ -290,9 +426,10 @@ export default function HotelPage() {
           email: guestForm.email.trim() || null,
           phone: guestForm.phone.trim() || null,
           nationality: guestForm.nationality.trim() || null,
+          consent_marketing: guestForm.consent_marketing,
         }),
       });
-      setGuestForm({ full_name: '', email: '', phone: '', nationality: '' });
+      setGuestForm({ full_name: '', email: '', phone: '', nationality: '', consent_marketing: false });
       setMessage('Guest created');
       await refresh();
     } catch (err: any) {
@@ -321,6 +458,7 @@ export default function HotelPage() {
           deposit_amount: Number(resForm.deposit_amount) || 0,
           deposit_method: Number(resForm.deposit_amount) > 0 ? 'cash' : null,
           walk_in: resForm.walk_in,
+          status: resForm.walk_in ? 'booked' : undefined,
         }),
       });
       setResForm({
@@ -436,9 +574,10 @@ export default function HotelPage() {
           room_id: hkForm.room_id,
           assigned_to: hkForm.assigned_to.trim() || null,
           priority: hkForm.priority,
+          task_type: hkForm.task_type,
         }),
       });
-      setHkForm({ room_id: '', assigned_to: '', priority: 'normal' });
+      setHkForm({ room_id: '', assigned_to: '', priority: 'normal', task_type: 'cleaning' });
       setMessage('Housekeeping task created');
       await refresh();
     } catch (err: any) {
@@ -460,9 +599,11 @@ export default function HotelPage() {
           title: maintForm.title.trim(),
           priority: maintForm.priority,
           block_room: true,
+          ooo_starts_on: maintForm.ooo_starts_on || null,
+          ooo_ends_on: maintForm.ooo_ends_on || null,
         }),
       });
-      setMaintForm({ room_id: '', title: '', priority: 'normal' });
+      setMaintForm({ room_id: '', title: '', priority: 'normal', ooo_starts_on: '', ooo_ends_on: '' });
       setMessage('Maintenance ticket created');
       await refresh();
     } catch (err: any) {
@@ -470,6 +611,15 @@ export default function HotelPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  if (moduleAllowed === null) {
+    return (
+      <>
+        <h1>Hotel management</h1>
+        <p className="muted">Loading hotel data…</p>
+      </>
+    );
   }
 
   if (moduleAllowed === false) {
@@ -486,44 +636,344 @@ export default function HotelPage() {
 
   return (
     <>
-      <h1>Hotel</h1>
+      <h1>Hotel management</h1>
       <p className="muted">
-        Rooms, guests, reservations, folios (payment information only), housekeeping and maintenance.
+        {tab === 'dashboard' && 'Occupancy, arrivals, and alerts for today.'}
+        {tab === 'reservations' && 'Search rooms, then book a stay. Same room cannot overlap.'}
+        {tab === 'front-desk' && 'Check guests in and out, and log requests.'}
+        {tab === 'rooms' && 'Room list, nightly rates, and rate plans.'}
+        {tab === 'housekeeping' && 'Cleaning tasks and lost-and-found notes.'}
+        {tab === 'maintenance' && 'Repair tickets. Dated blocks only close those nights.'}
+        {tab === 'guests' && 'Guest profiles, stay history, and merge duplicates.'}
+        {tab === 'billing' && 'Guest bills and payment notes. Cards are not charged here.'}
+        {tab === 'cashier' && 'Open a shift and post night audit. Payment notes only.'}
+        {tab === 'supplies' && 'Hotel stock uses the same inventory as the rest of the business.'}
+        {tab === 'services' && 'Extras (laundry, spa) posted onto a guest bill.'}
+        {tab === 'reports' && 'Occupancy, revenue, and stock on hand.'}
+        {tab === 'events' && 'Banquets and meeting space. Optional room hold blocks that room.'}
+        {tab === 'settings' && 'Property name, check-in times, and fees.'}
       </p>
       {error && (
-        <p className="login-error" role="alert">
+        <p className="hotel-banner warn" role="alert">
           {error}
         </p>
       )}
-      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
+      {message && <p className="hotel-banner ok">{message}</p>}
 
-      {summary && (
-        <div className="grid" style={{ marginBottom: 16 }}>
-          <div className="card">
-            <div className="muted">Occupancy</div>
-            <div className="kpi">{summary.occupancy_rate ?? 0}%</div>
-            <div className="muted">
-              {summary.rooms_occupied} occupied · {summary.rooms_available} available
-            </div>
+      {show('dashboard') && (
+        <div className="dash">
+          <div className="dash-hero">
+            <div className="sun" aria-hidden="true" />
+            <div className="cloud" aria-hidden="true" />
+            <label className="status-pill st-active" style={{ display: 'inline-flex', gap: 8, alignItems: 'center', background: 'transparent', boxShadow: 'none', padding: 0 }}>
+              <span>Business date</span>
+              <input type="date" value={dashDate} onChange={(e) => setDashDate(e.target.value)} aria-label="Hotel dashboard date" style={{ width: 160 }} />
+            </label>
+            <h1 className="greet">{settings?.property_name || 'Hotel operations'}</h1>
+            <p className="greet-sub">
+              {summary?.rooms_sold_night ?? 0} of {summary?.rooms_total ?? 0} rooms sold on {summary?.as_of || dashDate}.
+            </p>
+            <p className="greet-date">{summary?.as_of || dashDate}</p>
           </div>
-          <div className="card">
-            <div className="muted">Today</div>
-            <div className="kpi">{summary.arrivals_today ?? 0}</div>
-            <div className="muted">
-              arrivals · {summary.departures_today ?? 0} departures · {summary.rooms_dirty ?? 0} dirty
-            </div>
-          </div>
-          <div className="card">
-            <div className="muted">In house / outstanding</div>
-            <div className="kpi">{summary.reservations_in_house}</div>
-            <div className="muted">
-              folio bal {Number(summary.outstanding_folio_balance || 0).toFixed(2)} ·{' '}
-              {summary.rooms_maintenance} offline
-            </div>
-          </div>
+          {!summary && !error && <p className="empty">Loading operational totals…</p>}
+          {summary && (
+            <>
+              <div className="stat-grid">
+                <div className="stat s-sales">
+                  <div className="rail" />
+                  <div className="ico" aria-hidden="true">%</div>
+                  <div className="label">Occupancy</div>
+                  <div className="val">{Number(summary.occupancy_rate || 0).toFixed(1)}%</div>
+                  <div className="hint">
+                    {summary.rooms_sold_night ?? 0} sold on {summary.as_of || dashDate} · {summary.rooms_available} vacant now
+                  </div>
+                </div>
+                <div className="stat s-buy">
+                  <div className="rail" />
+                  <div className="ico" aria-hidden="true">↕</div>
+                  <div className="label">Arrivals / in house</div>
+                  <div className="val">{summary.expected_arrivals ?? summary.arrivals_today ?? 0}</div>
+                  <div className="hint">{summary.departures_today ?? 0} departures · {summary.reservations_in_house} in house</div>
+                </div>
+                <div className="stat s-net">
+                  <div className="rail" />
+                  <div className="ico" aria-hidden="true">₵</div>
+                  <div className="label">Room + service revenue</div>
+                  <div className="val">{Number(summary.revenue_today || 0).toFixed(2)}</div>
+                  <div className="hint">
+                    Room {Number(summary.room_revenue || 0).toFixed(2)} · services {Number(summary.service_revenue || 0).toFixed(2)}
+                  </div>
+                </div>
+                <div className="stat s-exp">
+                  <div className="rail" />
+                  <div className="ico" aria-hidden="true">!</div>
+                  <div className="label">Balances due</div>
+                  <div className="val">{Number(summary.outstanding_folio_balance || 0).toFixed(2)}</div>
+                  <div className="hint">Payments recorded {Number(summary.payments_received || 0).toFixed(2)}</div>
+                </div>
+              </div>
+              <div className="info-grid">
+                <div className="panel">
+                  <h3>Room status mix</h3>
+                  <p className="hint">Live house status for this tenant.</p>
+                  {(() => {
+                    const mix = summary.room_status_mix || {};
+                    const tot = summary.rooms_total || 1;
+                    const segs = [
+                      { key: 'occupied', color: '#2F7A0C', n: mix.occupied || 0 },
+                      { key: 'reserved', color: '#4AB012', n: mix.reserved || 0 },
+                      { key: 'dirty', color: '#a16207', n: mix.dirty || 0 },
+                      { key: 'out_of_service', color: '#b91c1c', n: mix.out_of_service || 0 },
+                      { key: 'available', color: '#C8E86A', n: mix.available || 0 },
+                    ];
+                    return (
+                      <>
+                        <div className="hotel-occ-track" role="img" aria-label="Room status mix">
+                          {segs.map((s) => (
+                            <span
+                              key={s.key}
+                              className="hotel-occ-seg"
+                              style={{ width: `${Math.max(0, (s.n / tot) * 100)}%`, background: s.color }}
+                              title={`${s.key.replace(/_/g, ' ')} ${s.n}`}
+                            />
+                          ))}
+                        </div>
+                        <div className="legend" style={{ marginTop: 12 }}>
+                          {segs.map((s) => (
+                            <div className="li" key={s.key}>
+                              <span className="dot" style={{ background: s.color }} />
+                              {s.key.replace(/_/g, ' ')} · {s.n}
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+                <div className="panel">
+                  <h3>14-night occupancy</h3>
+                  <p className="hint">Rooms sold each night from stored reservations.</p>
+                  <div className="hotel-spark" aria-label="Occupancy trend">
+                    {(summary.occupancy_trend || []).map((p) => (
+                      <span
+                        key={p.date}
+                        style={{ height: `${Math.max(6, Math.min(100, p.occupancy_rate))}%` }}
+                        title={`${p.date}: ${p.occupancy_rate}% (${p.sold} sold)`}
+                      />
+                    ))}
+                    {!(summary.occupancy_trend || []).length && <p className="empty">No stay nights yet.</p>}
+                  </div>
+                </div>
+                <div className="panel">
+                  <h3>Reservations</h3>
+                  <p className="hint">Counts by stored status.</p>
+                  <div className="bars">
+                    {[
+                      ['tentative', summary.reservation_status_mix?.tentative ?? summary.reservations_tentative ?? 0],
+                      ['booked', summary.reservation_status_mix?.booked ?? summary.reservations_booked],
+                      ['in house', summary.reservation_status_mix?.checked_in ?? summary.reservations_in_house],
+                      ['cancelled', summary.reservation_status_mix?.cancelled ?? summary.reservations_cancelled ?? 0],
+                      ['no-show', summary.reservation_status_mix?.no_show ?? summary.reservations_no_show ?? 0],
+                    ].map(([label, n]) => {
+                      const max = Math.max(
+                        1,
+                        ...[
+                          summary.reservations_booked,
+                          summary.reservations_in_house,
+                          summary.reservations_tentative ?? 0,
+                          summary.reservations_cancelled ?? 0,
+                          summary.reservations_no_show ?? 0,
+                        ]
+                      );
+                      return (
+                        <div className="bar-row" key={String(label)}>
+                          <span className="bl">{label}</span>
+                          <span className="bar-track">
+                            <span className="bar-fill" style={{ width: `${Math.min(100, (Number(n) / max) * 100)}%`, background: 'var(--brand)' }} />
+                          </span>
+                          <span className="bv">{n}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+              <div className="info-grid">
+                <div className="panel">
+                  <h3>Alerts</h3>
+                  {(summary.alerts || []).length ? (
+                    <ul>
+                      {(summary.alerts || []).map((a) => (
+                        <li key={a.code}>{a.href ? <Link href={a.href}>{a.message}</Link> : a.message}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="empty">No operational alerts.</p>
+                  )}
+                  <p className="hint">
+                    Housekeeping pending {summary.housekeeping_pending ?? 0} · overdue {summary.housekeeping_overdue ?? 0} · maintenance {summary.maintenance_open ?? 0}
+                  </p>
+                </div>
+                <div className="panel panel-wide">
+                  <h3>Recent reservations</h3>
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>Number</th>
+                        <th>Guest</th>
+                        <th>Dates</th>
+                        <th>Room</th>
+                        <th>Status</th>
+                        <th>Balance</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(summary.recent_reservations || []).map((r) => (
+                        <tr key={r.id}>
+                          <td><code>{r.reservation_number}</code></td>
+                          <td>{r.guest_name || '—'}</td>
+                          <td>{r.check_in_date} → {r.check_out_date}</td>
+                          <td>{r.room_code || '—'}</td>
+                          <td>{r.status.replace('_', ' ')}</td>
+                          <td>{r.folio_balance != null ? Number(r.folio_balance).toFixed(2) : '—'}</td>
+                        </tr>
+                      ))}
+                      {!(summary.recent_reservations || []).length && (
+                        <tr><td colSpan={6} className="muted">No reservations for this tenant yet.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                  {(summary.low_stock || []).length > 0 && (
+                    <p className="hint" style={{ marginTop: 12 }}>
+                      Low stock: {(summary.low_stock || []).map((p) => p.name).join(', ')}. <Link href="/inventory?tab=lowstock">Open inventory</Link>
+                    </p>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 
+      {show('front-desk') && (
+        <>
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h2>Front desk</h2>
+          <p className="muted">
+            Filter arrivals, departures, or in-house guests. Check-in and check-out keep room status in sync.
+          </p>
+          <select value={listKind} onChange={(e) => setListKind(e.target.value)} aria-label="Front desk list filter">
+            <option value="arrivals">Arrivals today</option>
+            <option value="departures">Departures today</option>
+            <option value="in_house">In house</option>
+            <option value="">All reservations</option>
+          </select>
+          <table className="table" style={{ marginTop: 12 }}>
+            <thead>
+              <tr>
+                <th>Number</th>
+                <th>Guest</th>
+                <th>Room</th>
+                <th>Dates</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reservations.map((r) => (
+                <tr key={r.id}>
+                  <td><code>{r.reservation_number}</code></td>
+                  <td>{r.guest_name || '—'}</td>
+                  <td>{r.room_code || '—'}</td>
+                  <td>{r.check_in_date} → {r.check_out_date}</td>
+                  <td>{r.status.replace('_', ' ')}</td>
+                  <td>
+                    {r.can_check_in && (
+                      <button type="button" className="btn-ok" disabled={busy} onClick={() => act(`/hotel/reservations/${r.id}/check-in`, 'Checked in')}>Check in</button>
+                    )}
+                    {r.can_check_out && (
+                      <button type="button" className="btn-ok" disabled={busy} onClick={() => act(`/hotel/reservations/${r.id}/check-out`, 'Checked out')}>Check out</button>
+                    )}
+                    {r.can_move && (
+                      <button type="button" disabled={busy || !moveRoomId} onClick={() => act(`/hotel/reservations/${r.id}/move`, 'Guest moved', { new_room_id: moveRoomId })}>Change room</button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {!reservations.length && (
+                <tr><td colSpan={6} className="muted">No stays in this filter.</td></tr>
+              )}
+            </tbody>
+          </table>
+          <label style={{ marginTop: 8, display: 'block' }}>
+            <span>Change to room</span>
+            <select value={moveRoomId} onChange={(e) => setMoveRoomId(e.target.value)} aria-label="Front desk move room">
+              <option value="">Select</option>
+              {availableRooms.map((r) => (
+                <option key={r.id} value={r.id}>{r.code}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <h2>Guest requests</h2>
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setBusy(true);
+            setError('');
+            try {
+              await api('/hotel/guest-requests', {
+                method: 'POST',
+                body: JSON.stringify({
+                  title: reqForm.title.trim(),
+                  kind: reqForm.kind,
+                  reservation_id: reqForm.reservation_id || null,
+                }),
+              });
+              setReqForm({ title: '', kind: 'service', reservation_id: '' });
+              setMessage('Request recorded');
+              await refresh();
+            } catch (err: any) {
+              setError(err.message || 'Could not save request');
+            } finally {
+              setBusy(false);
+            }
+          }}
+          style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', marginTop: 8 }}
+        >
+          <label><span>Title</span><input value={reqForm.title} onChange={(e) => setReqForm((f) => ({ ...f, title: e.target.value }))} required aria-label="Guest request title" /></label>
+          <label>
+            <span>Kind</span>
+            <select value={reqForm.kind} onChange={(e) => setReqForm((f) => ({ ...f, kind: e.target.value }))} aria-label="Guest request kind">
+              {['service', 'wake_up', 'note', 'complaint'].map((k) => <option key={k} value={k}>{k.replace('_', ' ')}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>Reservation</span>
+            <select value={reqForm.reservation_id} onChange={(e) => setReqForm((f) => ({ ...f, reservation_id: e.target.value }))} aria-label="Guest request reservation">
+              <option value="">Optional</option>
+              {reservations.map((r) => (
+                <option key={r.id} value={r.id}>{r.reservation_number}</option>
+              ))}
+            </select>
+          </label>
+          <div style={{ alignSelf: 'end' }}><button type="submit" disabled={busy}>Record request</button></div>
+        </form>
+        <ul>
+          {guestRequests.map((q) => (
+            <li key={q.id}>
+              {q.title} ({q.kind}) — {q.status}
+              {q.status !== 'completed' && (
+                <button type="button" disabled={busy} onClick={() => act(`/hotel/guest-requests/${q.id}/complete`, 'Request done')}>Done</button>
+              )}
+            </li>
+          ))}
+          {!guestRequests.length && <li className="muted">No guest requests.</li>}
+        </ul>
+        </>
+      )}
+
+      {show('rooms') && (
       <div className="card" style={{ marginBottom: 16 }}>
         <h2>Add room</h2>
         <form
@@ -595,8 +1045,47 @@ export default function HotelPage() {
             )}
           </tbody>
         </table>
+        <h2 style={{ marginTop: 20 }}>Rate plans</h2>
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setBusy(true);
+            setError('');
+            try {
+              await api('/hotel/rate-plans', {
+                method: 'POST',
+                body: JSON.stringify({
+                  code: rateForm.code.trim(),
+                  name: rateForm.name.trim(),
+                  amount: Number(rateForm.amount) || 0,
+                }),
+              });
+              setRateForm({ code: '', name: '', amount: '0' });
+              setMessage('Rate plan saved');
+              await refresh();
+            } catch (err: any) {
+              setError(err.message || 'Could not save rate plan');
+            } finally {
+              setBusy(false);
+            }
+          }}
+          style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))' }}
+        >
+          <label><span>Code</span><input value={rateForm.code} onChange={(e) => setRateForm((f) => ({ ...f, code: e.target.value }))} required aria-label="Rate plan code" /></label>
+          <label><span>Name</span><input value={rateForm.name} onChange={(e) => setRateForm((f) => ({ ...f, name: e.target.value }))} required aria-label="Rate plan name" /></label>
+          <label><span>Amount</span><input type="number" min={0} step="0.01" value={rateForm.amount} onChange={(e) => setRateForm((f) => ({ ...f, amount: e.target.value }))} aria-label="Rate plan amount" /></label>
+          <div style={{ alignSelf: 'end' }}><button type="submit" disabled={busy}>Add plan</button></div>
+        </form>
+        <ul>
+          {ratePlans.map((p) => (
+            <li key={p.id}><code>{p.code}</code> {p.name} — {Number(p.amount).toFixed(2)}</li>
+          ))}
+          {!ratePlans.length && <li className="muted">No rate plans yet. Rooms still use their base rate.</li>}
+        </ul>
       </div>
+      )}
 
+      {show('guests') && (
       <div className="card" style={{ marginBottom: 16 }}>
         <h2>Guests</h2>
         <form onSubmit={createGuest} style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' }}>
@@ -616,12 +1105,173 @@ export default function HotelPage() {
             <span>Nationality</span>
             <input value={guestForm.nationality} onChange={(e) => setGuestForm((f) => ({ ...f, nationality: e.target.value }))} aria-label="Hotel guest nationality" />
           </label>
+          <label style={{ display: 'flex', alignItems: 'end', gap: 8 }}>
+            <input
+              type="checkbox"
+              checked={guestForm.consent_marketing}
+              onChange={(e) => setGuestForm((f) => ({ ...f, consent_marketing: e.target.checked }))}
+              aria-label="Marketing consent"
+            />
+            <span>Marketing consent</span>
+          </label>
           <div style={{ alignSelf: 'end' }}>
             <button type="submit" disabled={busy} aria-label="Create hotel guest">{busy ? 'Saving…' : 'Create guest'}</button>
           </div>
         </form>
+        <table className="table" style={{ marginTop: 12 }}>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {guests.map((g) => (
+              <tr key={g.id}>
+                <td>{g.full_name}</td>
+                <td>{g.email || '—'}</td>
+                <td>{g.phone || '—'}</td>
+                <td>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={async () => {
+                      setBusy(true);
+                      setError('');
+                      try {
+                        const h = await api(`/hotel/guests/${g.id}/history`);
+                        setGuestHistory(h.data || null);
+                      } catch (err: any) {
+                        setError(err.message || 'Could not load history');
+                      } finally {
+                        setBusy(false);
+                      }
+                    }}
+                  >
+                    Stay history
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {!guests.length && (
+              <tr><td colSpan={4} className="muted">No guests yet.</td></tr>
+            )}
+          </tbody>
+        </table>
+        <h3 style={{ marginTop: 16 }}>Merge duplicate profiles</h3>
+        <p className="muted">Keeps this guest, moves stays and folios from the duplicate, then deactivates the duplicate.</p>
+        <label>
+          <span>Merge into {guestHistory?.guest?.full_name || 'selected guest (load stay history first)'}</span>
+          <select value={mergeSource} onChange={(e) => setMergeSource(e.target.value)} aria-label="Duplicate guest to merge">
+            <option value="">Select duplicate profile</option>
+            {guests
+              .filter((g) => g.id !== guestHistory?.guest?.id)
+              .map((g) => (
+                <option key={g.id} value={g.id}>{g.full_name}</option>
+              ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          disabled={busy || !guestHistory?.guest?.id || !mergeSource}
+          onClick={async () => {
+            if (!window.confirm('Merge the duplicate into this guest? This cannot be undone.')) return;
+            setBusy(true);
+            setError('');
+            try {
+              await api(`/hotel/guests/${guestHistory.guest.id}/merge`, {
+                method: 'POST',
+                body: JSON.stringify({ source_guest_id: mergeSource }),
+              });
+              setMergeSource('');
+              setMessage('Guest profiles merged');
+              await refresh();
+            } catch (err: any) {
+              setError(err.message || 'Could not merge guests');
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          Merge duplicate
+        </button>
+        {guestHistory && (
+          <div style={{ marginTop: 12 }}>
+            <h3>{guestHistory.guest?.full_name}</h3>
+            <p className="muted">Outstanding {Number(guestHistory.outstanding_balance || 0).toFixed(2)}</p>
+            <ul>
+              {(guestHistory.reservations || []).map((r: Reservation) => (
+                <li key={r.id}>
+                  {r.reservation_number} · {r.status} · {r.check_in_date} → {r.check_out_date}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
+      )}
 
+      {show('reservations') && (
+      <>
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h2>Search availability</h2>
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setBusy(true);
+            setError('');
+            try {
+              const q = new URLSearchParams({
+                check_in_date: availForm.check_in_date,
+                check_out_date: availForm.check_out_date,
+              });
+              if (availForm.room_type) q.set('room_type', availForm.room_type);
+              const rows = await api(`/hotel/availability?${q.toString()}`);
+              setAvailRooms(rows.data || []);
+              setMessage(`${(rows.data || []).length} room(s) available`);
+            } catch (err: any) {
+              setError(err.message || 'Availability search failed');
+            } finally {
+              setBusy(false);
+            }
+          }}
+          style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' }}
+        >
+          <label>
+            <span>Arrival</span>
+            <input type="date" value={availForm.check_in_date} onChange={(e) => setAvailForm((f) => ({ ...f, check_in_date: e.target.value }))} required aria-label="Availability check-in" />
+          </label>
+          <label>
+            <span>Departure</span>
+            <input type="date" value={availForm.check_out_date} onChange={(e) => setAvailForm((f) => ({ ...f, check_out_date: e.target.value }))} required aria-label="Availability check-out" />
+          </label>
+          <label>
+            <span>Room type</span>
+            <select value={availForm.room_type} onChange={(e) => setAvailForm((f) => ({ ...f, room_type: e.target.value }))} aria-label="Availability room type">
+              <option value="">Any</option>
+              {ROOM_TYPES.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </label>
+          <div style={{ alignSelf: 'end' }}>
+            <button type="submit" disabled={busy}>Search rooms</button>
+          </div>
+        </form>
+        {availRooms.length > 0 && (
+          <ul>
+            {availRooms.map((r) => (
+              <li key={r.id}>
+                <button type="button" onClick={() => setResForm((f) => ({ ...f, room_id: r.id, check_in_date: availForm.check_in_date, check_out_date: availForm.check_out_date }))}>
+                  Use {r.code} — {r.name} ({Number(r.rate_amount).toFixed(2)})
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
       <div className="card" style={{ marginBottom: 16 }}>
         <h2>New reservation / walk-in</h2>
         <form onSubmit={createReservation} style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' }}>
@@ -650,6 +1300,14 @@ export default function HotelPage() {
           <label>
             <span>Check-out</span>
             <input type="date" value={resForm.check_out_date} onChange={(e) => setResForm((f) => ({ ...f, check_out_date: e.target.value }))} aria-label="Hotel check-out date" required />
+          </label>
+          <label>
+            <span>Source</span>
+            <select value={resForm.booking_source} onChange={(e) => setResForm((f) => ({ ...f, booking_source: e.target.value }))} aria-label="Hotel booking source">
+              {['direct', 'walk_in', 'ota', 'corporate', 'phone', 'other'].map((s) => (
+                <option key={s} value={s}>{s.replace('_', ' ')}</option>
+              ))}
+            </select>
           </label>
           <label>
             <span>Deposit</span>
@@ -699,6 +1357,9 @@ export default function HotelPage() {
                 <td>{r.status.replace('_', ' ')}</td>
                 <td>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {r.can_confirm && (
+                      <button type="button" disabled={busy} onClick={() => act(`/hotel/reservations/${r.id}/confirm`, 'Confirmed')} aria-label={`Confirm ${r.reservation_number}`}>Confirm</button>
+                    )}
                     {r.can_check_in && (
                       <button type="button" className="btn-ok" disabled={busy} onClick={() => act(`/hotel/reservations/${r.id}/check-in`, 'Checked in')} aria-label={`Check in ${r.reservation_number}`}>Check in</button>
                     )}
@@ -706,7 +1367,10 @@ export default function HotelPage() {
                       <button type="button" className="btn-ok" disabled={busy} onClick={() => act(`/hotel/reservations/${r.id}/check-out`, 'Checked out')} aria-label={`Check out ${r.reservation_number}`}>Check out</button>
                     )}
                     {r.can_cancel && (
-                      <button type="button" className="btn-danger" disabled={busy} onClick={() => act(`/hotel/reservations/${r.id}/cancel`, 'Cancelled')} aria-label={`Cancel ${r.reservation_number}`}>Cancel</button>
+                      <button type="button" className="btn-danger" disabled={busy} onClick={() => {
+                        if (!window.confirm(`Cancel reservation ${r.reservation_number}? This cannot be undone.`)) return;
+                        void act(`/hotel/reservations/${r.id}/cancel`, 'Cancelled');
+                      }} aria-label={`Cancel ${r.reservation_number}`}>Cancel</button>
                     )}
                     {r.can_no_show && (
                       <button type="button" disabled={busy} onClick={() => act(`/hotel/reservations/${r.id}/no-show`, 'Marked no-show')} aria-label={`No-show ${r.reservation_number}`}>No-show</button>
@@ -774,8 +1438,10 @@ export default function HotelPage() {
           </label>
         </div>
       </div>
+      </>
+      )}
 
-      {folio && (
+      {(show('billing') || show('reservations') || show('services')) && folio && (
         <div className="card" style={{ marginBottom: 16 }}>
           <h2>Folio {folio.folio_number}</h2>
           <p className="muted">
@@ -783,17 +1449,79 @@ export default function HotelPage() {
             <strong>{Number(folio.balance).toFixed(2)}</strong> (payment information only — not a gateway)
           </p>
           <table className="table">
-            <thead><tr><th>Charge</th><th>Total</th><th>Void</th></tr></thead>
+            <thead><tr><th>Charge</th><th>Total</th><th>Void</th><th></th></tr></thead>
             <tbody>
               {folio.charges.map((c) => (
                 <tr key={c.id}>
                   <td>{c.description}</td>
                   <td>{Number(c.line_total).toFixed(2)}</td>
                   <td>{c.is_void ? 'void' : '—'}</td>
+                  <td>
+                    {!c.is_void && (
+                      <button
+                        type="button"
+                        className="btn-danger"
+                        disabled={busy}
+                        onClick={() => {
+                          const reason = window.prompt('Void reason');
+                          if (!reason) return;
+                          void act(`/hotel/folios/${folio.id}/charges/${c.id}/void`, 'Charge voided', { void_reason: reason });
+                        }}
+                      >
+                        Void
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!folio || !transferChargeId || !transferFolioId) return;
+              setBusy(true);
+              setError('');
+              try {
+                const f = await api(`/hotel/folios/${folio.id}/charges/${transferChargeId}/transfer`, {
+                  method: 'POST',
+                  body: JSON.stringify({ target_folio_id: transferFolioId }),
+                });
+                setFolio(f.data || null);
+                setTransferChargeId('');
+                setTransferFolioId('');
+                setMessage('Charge transferred');
+                await refresh();
+              } catch (err: any) {
+                setError(err.message || 'Could not transfer charge');
+              } finally {
+                setBusy(false);
+              }
+            }}
+            style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', marginTop: 8 }}
+          >
+            <label>
+              <span>Split / transfer charge</span>
+              <select value={transferChargeId} onChange={(e) => setTransferChargeId(e.target.value)} aria-label="Charge to transfer">
+                <option value="">Select charge</option>
+                {folio.charges.filter((c) => !c.is_void).map((c) => (
+                  <option key={c.id} value={c.id}>{c.description} ({Number(c.line_total).toFixed(2)})</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>To folio</span>
+              <select value={transferFolioId} onChange={(e) => setTransferFolioId(e.target.value)} aria-label="Target folio">
+                <option value="">Select folio</option>
+                {folioRows.filter((f) => f.id !== folio.id && f.status === 'open').map((f) => (
+                  <option key={f.id} value={f.id}>{f.folio_number} {f.guest_name || ''}</option>
+                ))}
+              </select>
+            </label>
+            <div style={{ alignSelf: 'end' }}>
+              <button type="submit" disabled={busy || !transferChargeId || !transferFolioId}>Transfer charge</button>
+            </div>
+          </form>
           <form onSubmit={addCharge} style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', marginTop: 8 }}>
             <label>
               <span>Description</span>
@@ -832,9 +1560,189 @@ export default function HotelPage() {
               <button type="submit" disabled={busy}>Record payment info</button>
             </div>
           </form>
+          {services.length > 0 && (
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                if (!folio) return;
+                setBusy(true);
+                setError('');
+                try {
+                  const f = await api(`/hotel/folios/${folio.id}/service-charges`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                      service_id: serviceCharge.service_id,
+                      quantity: Number(serviceCharge.quantity) || 1,
+                    }),
+                  });
+                  setFolio(f.data || null);
+                  setMessage('Hotel service posted to folio');
+                  await refresh();
+                } catch (err: any) {
+                  setError(err.message || 'Could not post service');
+                } finally {
+                  setBusy(false);
+                }
+              }}
+              style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', marginTop: 8 }}
+            >
+              <label>
+                <span>Hotel service</span>
+                <select value={serviceCharge.service_id} onChange={(e) => setServiceCharge((f) => ({ ...f, service_id: e.target.value }))} required aria-label="Post hotel service">
+                  <option value="">Select</option>
+                  {services.filter((s) => s.is_active).map((s) => (
+                    <option key={s.id} value={s.id}>{s.name} ({Number(s.unit_amount).toFixed(2)})</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Qty</span>
+                <input type="number" min={0.01} step="0.01" value={serviceCharge.quantity} onChange={(e) => setServiceCharge((f) => ({ ...f, quantity: e.target.value }))} aria-label="Service quantity" />
+              </label>
+              <div style={{ alignSelf: 'end' }}>
+                <button type="submit" disabled={busy}>Post service</button>
+              </div>
+            </form>
+          )}
         </div>
       )}
 
+      {show('billing') && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h2>Billing and payments</h2>
+          <p className="muted">Payment information only — Ribdigi does not process or settle funds.</p>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Folio</th>
+                <th>Guest</th>
+                <th>Stay</th>
+                <th>Status</th>
+                <th>Balance</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {folioRows.map((f) => (
+                <tr key={f.id}>
+                  <td><code>{f.folio_number}</code></td>
+                  <td>{f.guest_name || '—'}</td>
+                  <td>{f.reservation_number || '—'}</td>
+                  <td>{f.status}</td>
+                  <td>{Number(f.balance || 0).toFixed(2)}</td>
+                  <td>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={async () => {
+                        setBusy(true);
+                        try {
+                          const d = await api(`/hotel/folios/${f.id}`);
+                          setFolio(d.data || null);
+                        } catch (err: any) {
+                          setError(err.message || 'Could not open folio');
+                        } finally {
+                          setBusy(false);
+                        }
+                      }}
+                    >
+                      Open
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {!folioRows.length && (
+                <tr><td colSpan={6} className="muted">No guest bills yet. Check a guest in to open a folio.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {show('services') && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h2>Hotel services</h2>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setBusy(true);
+              setError('');
+              try {
+                await api('/hotel/services', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    code: serviceForm.code.trim(),
+                    name: serviceForm.name.trim(),
+                    category: serviceForm.category,
+                    unit_amount: Number(serviceForm.unit_amount) || 0,
+                    tax_percent: Number(serviceForm.tax_percent) || 0,
+                  }),
+                });
+                setServiceForm({ code: '', name: '', category: 'laundry', unit_amount: '0', tax_percent: '0' });
+                setMessage('Hotel service created');
+                await refresh();
+              } catch (err: any) {
+                setError(err.message || 'Could not create service');
+              } finally {
+                setBusy(false);
+              }
+            }}
+            style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))' }}
+          >
+            <label>
+              <span>Code</span>
+              <input value={serviceForm.code} onChange={(e) => setServiceForm((f) => ({ ...f, code: e.target.value }))} required aria-label="Hotel service code" />
+            </label>
+            <label>
+              <span>Name</span>
+              <input value={serviceForm.name} onChange={(e) => setServiceForm((f) => ({ ...f, name: e.target.value }))} required aria-label="Hotel service name" />
+            </label>
+            <label>
+              <span>Category</span>
+              <select value={serviceForm.category} onChange={(e) => setServiceForm((f) => ({ ...f, category: e.target.value }))} aria-label="Hotel service category">
+                {['restaurant', 'laundry', 'transport', 'spa', 'extra', 'service'].map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Unit amount</span>
+              <input type="number" min={0} step="0.01" value={serviceForm.unit_amount} onChange={(e) => setServiceForm((f) => ({ ...f, unit_amount: e.target.value }))} aria-label="Hotel service amount" />
+            </label>
+            <div style={{ alignSelf: 'end' }}>
+              <button type="submit" disabled={busy}>Add service</button>
+            </div>
+          </form>
+          <table className="table" style={{ marginTop: 12 }}>
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Active</th>
+              </tr>
+            </thead>
+            <tbody>
+              {services.map((s) => (
+                <tr key={s.id}>
+                  <td><code>{s.code}</code></td>
+                  <td>{s.name}</td>
+                  <td>{s.category}</td>
+                  <td>{Number(s.unit_amount).toFixed(2)}</td>
+                  <td>{s.is_active ? 'yes' : 'no'}</td>
+                </tr>
+              ))}
+              {!services.length && (
+                <tr><td colSpan={5} className="muted">No hotel services yet.</td></tr>
+              )}
+            </tbody>
+          </table>
+          <p className="muted">Open a folio under Billing to post an approved service charge to a guest bill.</p>
+        </div>
+      )}
+
+      {show('housekeeping') && (
       <div className="card" style={{ marginBottom: 16 }}>
         <h2>Housekeeping</h2>
         <form onSubmit={createHk} style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' }}>
@@ -844,6 +1752,14 @@ export default function HotelPage() {
               <option value="">Select</option>
               {rooms.map((r) => (
                 <option key={r.id} value={r.id}>{r.code}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Task type</span>
+            <select value={hkForm.task_type} onChange={(e) => setHkForm((f) => ({ ...f, task_type: e.target.value }))} aria-label="Housekeeping task type">
+              {['cleaning', 'inspection', 'turndown', 'linen', 'special'].map((t) => (
+                <option key={t} value={t}>{t}</option>
               ))}
             </select>
           </label>
@@ -876,10 +1792,160 @@ export default function HotelPage() {
             {!hkTasks.length && <tr><td colSpan={5} className="muted">No housekeeping tasks.</td></tr>}
           </tbody>
         </table>
+        <h2>Lost and found / damage</h2>
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setBusy(true);
+            setError('');
+            try {
+              await api('/hotel/lost-found', {
+                method: 'POST',
+                body: JSON.stringify({
+                  description: lfForm.description.trim(),
+                  kind: lfForm.kind,
+                  room_id: lfForm.room_id || null,
+                }),
+              });
+              setLfForm({ description: '', kind: 'lost', room_id: '' });
+              setMessage('Record saved');
+              await refresh();
+            } catch (err: any) {
+              setError(err.message || 'Could not save record');
+            } finally {
+              setBusy(false);
+            }
+          }}
+          style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' }}
+        >
+          <label><span>Description</span><input value={lfForm.description} onChange={(e) => setLfForm((f) => ({ ...f, description: e.target.value }))} required aria-label="Lost found description" /></label>
+          <label>
+            <span>Kind</span>
+            <select value={lfForm.kind} onChange={(e) => setLfForm((f) => ({ ...f, kind: e.target.value }))} aria-label="Lost found kind">
+              {['lost', 'found', 'damage'].map((k) => <option key={k} value={k}>{k}</option>)}
+            </select>
+          </label>
+          <label>
+            <span>Room</span>
+            <select value={lfForm.room_id} onChange={(e) => setLfForm((f) => ({ ...f, room_id: e.target.value }))} aria-label="Lost found room">
+              <option value="">Optional</option>
+              {rooms.map((r) => <option key={r.id} value={r.id}>{r.code}</option>)}
+            </select>
+          </label>
+          <div style={{ alignSelf: 'end' }}><button type="submit" disabled={busy}>Save</button></div>
+        </form>
+        <ul>
+          {lostFound.map((x) => (
+            <li key={x.id}>{x.kind}: {x.description} ({x.status})</li>
+          ))}
+          {!lostFound.length && <li className="muted">No lost-and-found records.</li>}
+        </ul>
       </div>
+      )}
 
+      {show('maintenance') && (
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h2>Maintenance</h2>
+        <p className="muted">Leave dates empty to take the room out of service until the ticket is completed. Dated OOO only blocks overlapping nights.</p>
+        <form onSubmit={createMaint} style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' }}>
+          <label>
+            <span>Room</span>
+            <select value={maintForm.room_id} onChange={(e) => setMaintForm((f) => ({ ...f, room_id: e.target.value }))} required aria-label="Maintenance room">
+              <option value="">Select</option>
+              {rooms.map((r) => (
+                <option key={r.id} value={r.id}>{r.code}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Issue</span>
+            <input value={maintForm.title} onChange={(e) => setMaintForm((f) => ({ ...f, title: e.target.value }))} required aria-label="Maintenance title" />
+          </label>
+          <label>
+            <span>OOO from</span>
+            <input type="date" value={maintForm.ooo_starts_on} onChange={(e) => setMaintForm((f) => ({ ...f, ooo_starts_on: e.target.value }))} aria-label="Out of order start date" />
+          </label>
+          <label>
+            <span>OOO through</span>
+            <input type="date" value={maintForm.ooo_ends_on} onChange={(e) => setMaintForm((f) => ({ ...f, ooo_ends_on: e.target.value }))} aria-label="Out of order end date" />
+          </label>
+          <div style={{ alignSelf: 'end' }}>
+            <button type="submit" disabled={busy}>Create ticket (blocks room)</button>
+          </div>
+        </form>
+        <table className="table" style={{ marginTop: 12 }}>
+          <thead><tr><th>Room</th><th>Title</th><th>OOO</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            {maint.map((t) => (
+              <tr key={t.id}>
+                <td>{t.room_code || t.room_id}</td>
+                <td>{t.title}</td>
+                <td>
+                  {t.ooo_starts_on || t.ooo_ends_on
+                    ? `${t.ooo_starts_on || '—'} → ${t.ooo_ends_on || '—'}`
+                    : 'Until completed'}
+                </td>
+                <td>{t.status}</td>
+                <td>
+                  {t.status !== 'completed' && (
+                    <button type="button" disabled={busy} onClick={() => act(`/hotel/maintenance/${t.id}/complete`, 'Ticket completed')}>Complete</button>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {!maint.length && <tr><td colSpan={5} className="muted">No maintenance tickets.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+      )}
 
-      {report && (
+      {show('cashier') && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h2>Hotel finance and cashiering</h2>
+          <p className="muted">
+            This records payment information only. It does not process cards, hold funds, or settle to a bank.
+            Ledger posting uses existing{' '}
+            <Link href="/accounting">Accounting</Link> and <Link href="/expenses">Expenses</Link>.
+          </p>
+          {cashierShift ? (
+            <p>Open shift from {cashierShift.opened_at} · opening float {Number(cashierShift.opening_float || 0).toFixed(2)}</p>
+          ) : (
+            <p className="muted">No cashier shift is open.</p>
+          )}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button type="button" disabled={busy || !!cashierShift} onClick={() => act('/hotel/cashier/shift/open', 'Shift opened', { opening_float: 0 })}>Open shift</button>
+            <button type="button" disabled={busy || !cashierShift} onClick={() => act('/hotel/cashier/shift/close', 'Shift closed', { closing_float: 0 })}>Close shift</button>
+            <button type="button" disabled={busy} onClick={() => act('/hotel/night-audits', 'Night audit posted')}>Run night audit</button>
+          </div>
+          <h3>Night audits</h3>
+          <ul>
+            {nightAudits.map((n) => (
+              <li key={n.id}>{n.business_date} — occupancy {n.snapshot?.occupancy_rate ?? '—'}%</li>
+            ))}
+            {!nightAudits.length && <li className="muted">No night audits posted yet.</li>}
+          </ul>
+        </div>
+      )}
+
+      {show('supplies') && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h2>Inventory and procurement</h2>
+          <p className="muted">
+            Hotel stock (linen, toiletries, F&amp;B, cleaning supplies) uses the shared ERP inventory and purchasing
+            workflows. There is no second stock ledger.
+          </p>
+          <ul>
+            <li><Link href="/inventory?tab=products">Products and stock</Link></li>
+            <li><Link href="/inventory?tab=lowstock">Low stock</Link></li>
+            <li><Link href="/inventory?tab=adjust">Stock adjustments</Link></li>
+            <li><Link href="/purchasing?tab=orders">Purchase orders</Link></li>
+            <li><Link href="/purchasing?tab=grn">Goods received</Link></li>
+            <li><Link href="/purchasing?tab=suppliers">Suppliers</Link></li>
+          </ul>
+        </div>
+      )}
+
+      {show('reports') && report && (
         <div className="card" style={{ marginBottom: 16 }}>
           <h2>Hotel reports</h2>
           <p className="muted">
@@ -890,12 +1956,170 @@ export default function HotelPage() {
             Cancellations {report.cancellations} · No-shows {report.no_shows} · Occupied nights{' '}
             {report.occupied_nights}/{report.room_nights_available}
           </p>
+          <p className="muted">
+            Payments {Number(report.payments_total || 0).toFixed(2)} · Outstanding{' '}
+            {Number(report.outstanding_guest_balances || 0).toFixed(2)}
+          </p>
+          <h3>Hotel-service sales</h3>
+          <ul>
+            {Object.entries(report.service_sales || {}).map(([k, v]) => (
+              <li key={k}>{k}: {Number(v as number).toFixed(2)}</li>
+            ))}
+            {!Object.keys(report.service_sales || {}).length && <li className="muted">No service sales in this period.</li>}
+          </ul>
+          <h3>Inventory on hand</h3>
+          <p className="muted">
+            Uses the existing tenant inventory catalog (toiletries, linen, food, drinks).{' '}
+            <Link href="/inventory?tab=products">Open inventory</Link>
+          </p>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>SKU</th>
+                <th>Name</th>
+                <th>Stock</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(report.inventory_usage || []).map((p: { id: string; sku?: string; name: string; stock_qty: number }) => (
+                <tr key={p.id}>
+                  <td>{p.sku || '—'}</td>
+                  <td>{p.name}</td>
+                  <td>{Number(p.stock_qty || 0)}</td>
+                </tr>
+              ))}
+              {!(report.inventory_usage || []).length && (
+                <tr><td colSpan={3} className="muted">No inventory products on this tenant yet.</td></tr>
+              )}
+            </tbody>
+          </table>
         </div>
       )}
 
-      {settings && (
+      {show('events') && (
         <div className="card" style={{ marginBottom: 16 }}>
-          <h2>Property settings</h2>
+          <h2>Events and banquets</h2>
+          <p className="muted">
+            Book a named space. If you attach a guest room, overlapping reservations are blocked. This is not an OTA listing.
+          </p>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setBusy(true);
+              setError('');
+              try {
+                await api('/hotel/events', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    title: eventForm.title.trim(),
+                    space_name: eventForm.space_name.trim(),
+                    starts_on: eventForm.starts_on,
+                    ends_on: eventForm.ends_on,
+                    expected_guests: Number(eventForm.expected_guests) || 1,
+                    room_id: eventForm.room_id || null,
+                    guest_id: eventForm.guest_id || null,
+                    status: 'confirmed',
+                  }),
+                });
+                setEventForm({
+                  title: '',
+                  space_name: '',
+                  starts_on: '',
+                  ends_on: '',
+                  expected_guests: '20',
+                  room_id: '',
+                  guest_id: '',
+                });
+                setMessage('Event booked');
+                await refresh();
+              } catch (err: any) {
+                setError(err.message || 'Could not book event');
+              } finally {
+                setBusy(false);
+              }
+            }}
+            style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' }}
+          >
+            <label>
+              <span>Title</span>
+              <input value={eventForm.title} onChange={(e) => setEventForm((f) => ({ ...f, title: e.target.value }))} required aria-label="Event title" />
+            </label>
+            <label>
+              <span>Space</span>
+              <input value={eventForm.space_name} onChange={(e) => setEventForm((f) => ({ ...f, space_name: e.target.value }))} required aria-label="Event space name" />
+            </label>
+            <label>
+              <span>Starts</span>
+              <input type="date" value={eventForm.starts_on} onChange={(e) => setEventForm((f) => ({ ...f, starts_on: e.target.value }))} required aria-label="Event start date" />
+            </label>
+            <label>
+              <span>Ends</span>
+              <input type="date" value={eventForm.ends_on} onChange={(e) => setEventForm((f) => ({ ...f, ends_on: e.target.value }))} required aria-label="Event end date" />
+            </label>
+            <label>
+              <span>Expected guests</span>
+              <input type="number" min={1} value={eventForm.expected_guests} onChange={(e) => setEventForm((f) => ({ ...f, expected_guests: e.target.value }))} aria-label="Event expected guests" />
+            </label>
+            <label>
+              <span>Hold room (optional)</span>
+              <select value={eventForm.room_id} onChange={(e) => setEventForm((f) => ({ ...f, room_id: e.target.value }))} aria-label="Event room hold">
+                <option value="">None</option>
+                {rooms.filter((r) => r.is_active).map((r) => (
+                  <option key={r.id} value={r.id}>{r.code}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Organizer</span>
+              <select value={eventForm.guest_id} onChange={(e) => setEventForm((f) => ({ ...f, guest_id: e.target.value }))} aria-label="Event organizer guest">
+                <option value="">Optional</option>
+                {guests.map((g) => (
+                  <option key={g.id} value={g.id}>{g.full_name}</option>
+                ))}
+              </select>
+            </label>
+            <div style={{ alignSelf: 'end' }}>
+              <button type="submit" disabled={busy}>Book event</button>
+            </div>
+          </form>
+          <table className="table" style={{ marginTop: 12 }}>
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Space</th>
+                <th>Dates</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {events.map((evRow) => (
+                <tr key={evRow.id}>
+                  <td>{evRow.title}</td>
+                  <td>{evRow.space_name}</td>
+                  <td>{evRow.starts_on} → {evRow.ends_on}</td>
+                  <td>{evRow.status}</td>
+                  <td>
+                    {evRow.status === 'inquiry' && (
+                      <button type="button" disabled={busy} onClick={() => act(`/hotel/events/${evRow.id}/confirm`, 'Event confirmed')}>Confirm</button>
+                    )}
+                    {evRow.status !== 'cancelled' && evRow.status !== 'completed' && (
+                      <button type="button" disabled={busy} onClick={() => act(`/hotel/events/${evRow.id}/cancel`, 'Event cancelled')}>Cancel</button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {!events.length && (
+                <tr><td colSpan={5} className="muted">No events booked yet.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {show('settings') && settings && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h2>Hotel settings</h2>
           <form
             onSubmit={async (e) => {
               e.preventDefault();
@@ -908,6 +2132,10 @@ export default function HotelPage() {
                     check_in_time: settingsForm.check_in_time,
                     check_out_time: settingsForm.check_out_time,
                     cancellation_hours: Number(settingsForm.cancellation_hours) || 24,
+                    tax_percent: Number(settingsForm.tax_percent) || 0,
+                    early_checkin_fee: Number(settingsForm.early_checkin_fee) || 0,
+                    late_checkout_fee: Number(settingsForm.late_checkout_fee) || 0,
+                    property_name: settingsForm.property_name.trim() || null,
                   }),
                 });
                 setMessage('Hotel settings saved');
@@ -921,6 +2149,10 @@ export default function HotelPage() {
             style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))' }}
           >
             <label>
+              <span>Property name</span>
+              <input value={settingsForm.property_name} onChange={(e) => setSettingsForm((f) => ({ ...f, property_name: e.target.value }))} aria-label="Hotel property name" />
+            </label>
+            <label>
               <span>Check-in time</span>
               <input value={settingsForm.check_in_time} onChange={(e) => setSettingsForm((f) => ({ ...f, check_in_time: e.target.value }))} aria-label="Hotel check-in time" />
             </label>
@@ -932,6 +2164,18 @@ export default function HotelPage() {
               <span>Cancel hours</span>
               <input type="number" min={0} value={settingsForm.cancellation_hours} onChange={(e) => setSettingsForm((f) => ({ ...f, cancellation_hours: e.target.value }))} aria-label="Hotel cancellation hours" />
             </label>
+            <label>
+              <span>Tax %</span>
+              <input type="number" min={0} step="0.01" value={settingsForm.tax_percent} onChange={(e) => setSettingsForm((f) => ({ ...f, tax_percent: e.target.value }))} aria-label="Hotel tax percent" />
+            </label>
+            <label>
+              <span>Early check-in fee</span>
+              <input type="number" min={0} step="0.01" value={settingsForm.early_checkin_fee} onChange={(e) => setSettingsForm((f) => ({ ...f, early_checkin_fee: e.target.value }))} aria-label="Early check-in fee" />
+            </label>
+            <label>
+              <span>Late checkout fee</span>
+              <input type="number" min={0} step="0.01" value={settingsForm.late_checkout_fee} onChange={(e) => setSettingsForm((f) => ({ ...f, late_checkout_fee: e.target.value }))} aria-label="Late checkout fee" />
+            </label>
             <div style={{ alignSelf: 'end' }}>
               <button type="submit" disabled={busy}>Save settings</button>
             </div>
@@ -939,6 +2183,7 @@ export default function HotelPage() {
         </div>
       )}
 
+      {show('reservations') && (
       <div className="card" style={{ marginBottom: 16 }}>
         <h2>Group / multi-room booking</h2>
         <p className="muted">Select multiple rooms then book with the reservation form dates and guest.</p>
@@ -993,8 +2238,9 @@ export default function HotelPage() {
           Book group ({groupRooms.length} rooms)
         </button>
       </div>
+      )}
 
-      {calendar && (
+      {show('reservations') && calendar && (
         <div className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
           <h2>Availability calendar</h2>
           <table className="table">
@@ -1022,47 +2268,6 @@ export default function HotelPage() {
         </div>
       )}
 
-      <div className="card">
-        <h2>Maintenance</h2>
-        <form onSubmit={createMaint} style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' }}>
-          <label>
-            <span>Room</span>
-            <select value={maintForm.room_id} onChange={(e) => setMaintForm((f) => ({ ...f, room_id: e.target.value }))} required aria-label="Maintenance room">
-              <option value="">Select</option>
-              {rooms.map((r) => (
-                <option key={r.id} value={r.id}>{r.code}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>Title</span>
-            <input value={maintForm.title} onChange={(e) => setMaintForm((f) => ({ ...f, title: e.target.value }))} required aria-label="Maintenance title" />
-          </label>
-          <div style={{ alignSelf: 'end' }}>
-            <button type="submit" disabled={busy}>Create ticket</button>
-          </div>
-        </form>
-        <table className="table" style={{ marginTop: 12 }}>
-          <thead><tr><th>Room</th><th>Title</th><th>Status</th><th></th></tr></thead>
-          <tbody>
-            {maint.map((t) => (
-              <tr key={t.id}>
-                <td>{t.room_code || t.room_id}</td>
-                <td>{t.title}</td>
-                <td>{t.status}</td>
-                <td>
-                  {t.status !== 'completed' && (
-                    <button type="button" disabled={busy} onClick={() => act(`/hotel/maintenance/${t.id}/complete`, 'Maintenance completed')}>
-                      Complete
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-            {!maint.length && <tr><td colSpan={4} className="muted">No maintenance tickets.</td></tr>}
-          </tbody>
-        </table>
-      </div>
     </>
   );
 }

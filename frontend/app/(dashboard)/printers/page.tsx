@@ -1,8 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import Shell from '../../components/Shell';
-import { api } from '../../lib/api';
+import { api } from '../../../lib/api';
 
 type Printer = {
   id: string;
@@ -135,7 +134,7 @@ export default function PrinterSettingsPage() {
   }
 
   return (
-    <Shell>
+    <>
       <h1>Printer settings</h1>
       <p className="muted">
         The browser cannot list every OS printer or send to all of them silently. Use the OS print
@@ -274,6 +273,6 @@ export default function PrinterSettingsPage() {
           ))}
         </tbody>
       </table>
-    </Shell>
+    </>
   );
 }

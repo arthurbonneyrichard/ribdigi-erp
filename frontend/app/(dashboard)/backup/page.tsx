@@ -41,7 +41,11 @@ export default function Page() {
         method: 'POST',
         body: JSON.stringify({ notes: backupNotes.trim() || null }),
       });
-      setMessage(r.message || 'Backup created');
+      setMessage(
+        r.data?.status === 'completed'
+          ? (r.message || 'Backup completed')
+          : (r.message || `Backup ${r.data?.status || 'recorded'}; not complete yet`)
+      );
       setBackupNotes('');
       await refresh();
     } catch (err: any) {
@@ -129,10 +133,11 @@ export default function Page() {
 
   return (
     <>
-      <h1>Backup &amp; Recovery</h1>
+      <h1>Backups</h1>
       <p className="muted">
-        Encrypted tenant logical backups with checksum verification. Schedule failures raise an in-app
-        Backup failed alert for admins (see Notifications).
+        Real encrypted company exports (not Docker volumes). Last/next run and retention come from
+        the server. Failed jobs stay failed — starting a job is not success. Restore apply is a
+        platform operations workflow; you can download completed files you own.
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
@@ -248,13 +253,17 @@ export default function Page() {
                 <button onClick={() => dryRun(r.id)} aria-label="Backup dry-run restore">
                   Dry-run
                 </button>
-                <button
-                  disabled={busy}
-                  onClick={() => applyRestore(r.id)}
-                  aria-label="Apply backup restore"
-                >
-                  Restore
-                </button>
+                {false ? (
+                  <button
+                    disabled={busy}
+                    onClick={() => applyRestore(r.id)}
+                    aria-label="Apply backup restore"
+                  >
+                    Restore
+                  </button>
+                ) : (
+                  <span className="muted">Restore apply: platform ops</span>
+                )}
               </td>
             </tr>
           ))}

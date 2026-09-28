@@ -7,6 +7,7 @@ from datetime import datetime
 
 from fastapi import HTTPException
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
@@ -296,22 +297,22 @@ async def create_department(
     ).scalar_one_or_none()
     if exists:
         raise HTTPException(status_code=409, detail="Department code already exists")
-    from app import schema_compat
-    from app.models import uid
-
-    row = await schema_compat.insert_and_get(
-        db,
-        m.Department,
-        {
-            "id": uid(),
-            "tenant_id": tenant_id,
-            "branch_id": branch_id,
-            "code": code,
-            "name": name_clean,
-            "head_user_id": head_user_id,
-            "is_active": True,
-        },
+    row = m.Department(
+        tenant_id=tenant_id,
+        branch_id=branch_id,
+        code=code,
+        name=name_clean,
+        head_user_id=head_user_id,
+        is_active=True,
     )
+    db.add(row)
+    try:
+        await db.flush()
+    except IntegrityError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail="Department code or name already exists in this tenant",
+        ) from exc
     return row
 
 

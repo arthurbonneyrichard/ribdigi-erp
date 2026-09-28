@@ -82,6 +82,47 @@ def compute_integrity_hash(prev_hash: str, payload: str) -> str:
     return hashlib.sha256(material).hexdigest()
 
 
+_SECRET_DETAIL_KEYS = frozenset(
+    {
+        "password",
+        "password_hash",
+        "secret",
+        "token",
+        "refresh_token",
+        "access_token",
+        "api_key",
+        "authorization",
+        "totp_secret",
+        "totp_secret_enc",
+        "backup_codes",
+        "smtp_password",
+        "smtp_password_enc",
+    }
+)
+
+
+def redact_audit_details(details: dict | None) -> dict:
+    """Never return passwords or secrets on the tenant audit API."""
+    out: dict = {}
+    for key, value in (details or {}).items():
+        lk = str(key).lower()
+        if lk in _SECRET_DETAIL_KEYS or "password" in lk or lk.endswith("_secret") or lk.endswith("_token"):
+            out[key] = "[redacted]"
+        elif isinstance(value, dict):
+            out[key] = redact_audit_details(value)
+        else:
+            out[key] = value
+    return out
+
+
+def reject_mutation() -> None:
+    """Audit logs are append-only. Tenants cannot edit or erase events."""
+    raise HTTPException(
+        status_code=403,
+        detail="Audit logs cannot be edited or deleted",
+    )
+
+
 def serialize_audit(row: m.AuditLog) -> dict:
     return {
         "id": row.id,
@@ -90,11 +131,9 @@ def serialize_audit(row: m.AuditLog) -> dict:
         "action": row.action,
         "entity": row.entity,
         "entity_id": row.entity_id,
-        "details": row.details or {},
+        "details": redact_audit_details(row.details if isinstance(row.details, dict) else {}),
         "ip_address": row.ip_address,
         "user_agent": row.user_agent,
-        "prev_hash": row.prev_hash,
-        "integrity_hash": row.integrity_hash,
         "archived_at": getattr(row, "archived_at", None),
         "created_at": row.created_at,
     }
@@ -288,18 +327,12 @@ def to_csv(rows: list[m.AuditLog]) -> str:
                 row.entity,
                 row.entity_id or "",
                 row.ip_address or "",
-                row.integrity_hash or "",
-                json.dumps(row.details or {}, default=str),
+                "",
+                json.dumps(redact_audit_details(row.details if isinstance(row.details, dict) else {}), default=str),
             ]
         )
     return buf.getvalue()
 
-
-def reject_mutation() -> None:
-    raise HTTPException(
-        status_code=405,
-        detail="Audit logs are append-only and cannot be modified or deleted",
-    )
 
 
 def retention_policy() -> dict:

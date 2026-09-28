@@ -30,10 +30,41 @@ export const INDUSTRY_LABELS: Record<string, string> = {
   manufacturing: 'Manufacturing',
 };
 
-export function industryLabel(value?: string | null): string {
-  const key = String(value || '')
+export function normalizeIndustry(value?: string | null): string | null {
+  const raw = String(value || '')
     .trim()
-    .toLowerCase();
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
+  if (!raw) return null;
+  const aliases: Record<string, string> = {
+    hospitality: 'hotel',
+    hotels: 'hotel',
+    lodging: 'hotel',
+    accommodation: 'hotel',
+    guest_house: 'hotel',
+    guesthouse: 'hotel',
+    retail_mart: 'retail',
+    supermarket: 'mart',
+    super_market: 'mart',
+    grocery: 'mart',
+    fast_moving_consumer_goods: 'fmcg',
+    fmcg_distribution: 'fmcg',
+    pharma: 'pharmacy',
+    drugstore: 'pharmacy',
+    resto: 'restaurant',
+    food_service: 'restaurant',
+    cafe: 'restaurant',
+    wholesaler: 'wholesale',
+    distributor: 'distribution',
+    trading: 'general_trading',
+    manufacture: 'manufacturing',
+  };
+  const mapped = aliases[raw] || raw;
+  return (INDUSTRIES as readonly string[]).includes(mapped) ? mapped : null;
+}
+
+export function industryLabel(value?: string | null): string {
+  const key = normalizeIndustry(value) || String(value || '').trim().toLowerCase();
   if (!key) return 'Unknown';
   return INDUSTRY_LABELS[key] || key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }

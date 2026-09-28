@@ -46,13 +46,24 @@ async def list_memberships(
     return list(rows)
 
 
+def _is_unscoped_actor(user_id: str | None) -> bool:
+    """Jobs (`system`) and API keys are tenant-wide; they have no membership rows."""
+    uid = (user_id or "").strip()
+    return (not uid) or uid == "system" or uid.startswith("apikey:")
+
+
 async def assigned_store_ids(
     db: AsyncSession, *, tenant_id: str, user_id: str
 ) -> list[str] | None:
     """
     Return store ids the user may access, or None = all active stores (privileged
     or grandfather: no memberships configured).
+
+    Empty membership list = grandfather all stores (legacy tenants). When any
+    active membership exists, access is limited to those store ids.
     """
+    if _is_unscoped_actor(user_id):
+        return None
     user = (
         await db.execute(
             select(m.User).where(m.User.id == user_id, m.User.tenant_id == tenant_id)
@@ -86,6 +97,27 @@ async def assert_store_access(
                 "store_id": store_id,
             },
         )
+
+
+async def assert_warehouse_access(
+    db: AsyncSession, *, tenant_id: str, user_id: str, warehouse_id: str | None
+) -> None:
+    """Deny if warehouse is linked to a store the user may not access."""
+    if not warehouse_id:
+        return
+    wh = (
+        await db.execute(
+            select(m.Warehouse).where(
+                m.Warehouse.id == warehouse_id,
+                m.Warehouse.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not wh:
+        raise HTTPException(status_code=404, detail="Warehouse not found")
+    await assert_store_access(
+        db, tenant_id=tenant_id, user_id=user_id, store_id=wh.store_id
+    )
 
 
 async def filter_stores_for_user(

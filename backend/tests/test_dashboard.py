@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pyotp
 import pytest
 
@@ -98,7 +100,16 @@ async def test_dashboard_comparisons_top_products_and_alerts(client, db_session,
     assert data["top_products_by_revenue"][0]["product_id"] == seed["p1"].id
     assert data["top_products_by_revenue"][0]["revenue"] >= 140
     assert data["links"]["sales"] == "/sales"
-    assert data["links"]["low_stock"] == "/reports"
+    assert data["links"]["low_stock"] == "/inventory?tab=lowstock"
+
+
+def test_dashboard_page_surfaces_load_errors():
+    text = (Path(__file__).resolve().parents[2] / "frontend/app/(dashboard)/dashboard/page.tsx").read_text(
+        encoding="utf-8"
+    )
+    assert "setDashError" in text
+    assert "Retry dashboard" in text
+    assert "api(`/dashboard${qs}`)" in text
 
 
 @pytest.mark.asyncio

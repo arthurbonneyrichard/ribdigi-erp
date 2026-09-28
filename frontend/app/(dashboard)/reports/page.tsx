@@ -136,6 +136,7 @@ export default function Page() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [generatedAt, setGeneratedAt] = useState('');
   const [schedules, setSchedules] = useState<any[]>([]);
   const [scheduleManageFilter, setScheduleManageFilter] = useState<
     'all' | 'enabled' | 'disabled'
@@ -314,6 +315,7 @@ export default function Page() {
       setError(err.message);
     } finally {
       setLoading(false);
+      setGeneratedAt(new Date().toISOString());
     }
   }
 
@@ -570,40 +572,46 @@ export default function Page() {
 
   return (
     <>
-      <h1>Reports & Analytics</h1>
-      <p className="muted">Sales, inventory, purchases, expenses, cash flow, and balance sheet</p>
+      <h1>Reports</h1>
+      <p className="muted">
+        Company-scoped totals only (this tenant). Grouped by Sales, Inventory, Purchases, Finance,
+        Customers, and Staff. Preview, print, and export use the same filters.
+      </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
+      {generatedAt ? (
+        <p className="muted" style={{ fontSize: 13 }}>
+          Generated {new Date(generatedAt).toLocaleString()}
+        </p>
+      ) : null}
 
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-        {(
-          [
-            ['summary', 'Summary'],
-            ['sales', 'Sales'],
-            ['salesperson', 'Salespeople'],
-            ['customers', 'Customers'],
-            ['stores', 'Stores'],
-            ['departments', 'Departments'],
-            ['inventory', 'Inventory'],
-            ['purchases', 'Purchases'],
-            ['expenses', 'Expenses'],
-            ['cashflow', 'Cash flow'],
-            ['pnl', 'P&L'],
-            ['trialbalance', 'Trial balance'],
-            ['balancesheet', 'Balance sheet'],
-            ['schedules', 'Email schedules'],
-          ] as [Tab, string][]
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            onClick={() => switchTab(id)}
-            disabled={tab === id}
-            aria-label={`Show reports ${id} tab`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      {(
+        [
+          ['Sales', [['summary', 'Summary'], ['sales', 'Products'], ['salesperson', 'Staff'], ['stores', 'Stores'], ['departments', 'Departments']]],
+          ['Inventory', [['inventory', 'Stock']]],
+          ['Purchases', [['purchases', 'Purchases']]],
+          ['Finance', [['expenses', 'Expenses'], ['cashflow', 'Cash flow'], ['pnl', 'P&L'], ['trialbalance', 'Trial balance'], ['balancesheet', 'Balance sheet']]],
+          ['Customers', [['customers', 'Customers']]],
+          ['Staff', [['schedules', 'Email schedules']]],
+        ] as [string, [Tab, string][]][]
+      ).map(([group, items]) => (
+        <div key={group} style={{ marginBottom: 10 }}>
+          <div className="muted" style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>{group}</div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {items.map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => switchTab(id)}
+                disabled={tab === id || loading}
+                aria-label={`Show reports ${id} tab`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
 
       {tab !== 'schedules' && (
       <div className="card" style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -840,6 +848,9 @@ export default function Page() {
         </button>
         <button onClick={() => download('pdf')} aria-label="Export report PDF">
           Export PDF
+        </button>
+        <button type="button" onClick={() => window.print()} aria-label="Print report">
+          Print
         </button>
         {tab === 'sales' && (
           <>

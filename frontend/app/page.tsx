@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { api } from '../lib/api';
+import { api, unreachableApiMessage } from '../lib/api';
+import { invalidateMeCache } from '../lib/meCache';
+import { invalidatePrefetchCache } from '../lib/prefetchCache';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import LoginBrandLogo from '../components/LoginBrandLogo';
@@ -37,9 +39,12 @@ export default function Login() {
   const [verifyMessage, setVerifyMessage] = useState('');
   const [debugVerifyToken, setDebugVerifyToken] = useState('');
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
   const router = useRouter();
 
   function finishLogin(data: any) {
+    invalidateMeCache();
+    invalidatePrefetchCache();
     localStorage.setItem('token', data.access_token);
     if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
     // Only persist UUID tenant ids — slug values (e.g. platform) cause
@@ -67,6 +72,7 @@ export default function Login() {
 
   async function verifyPasskey() {
     setError('');
+    setBusy(true);
     try {
       if (!window.PublicKeyCredential) {
         throw new Error('This browser does not support passkeys');
@@ -110,12 +116,15 @@ export default function Login() {
       finishLogin(r.data);
     } catch (err: any) {
       setError(err.message || 'Passkey login failed');
+    } finally {
+      setBusy(false);
     }
   }
 
   async function go(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    setBusy(true);
     try {
       if (needs2fa && challengeToken) {
         if (!methods.includes('totp') && methods.includes('webauthn')) {
@@ -174,7 +183,14 @@ export default function Login() {
         setError(detail?.message || 'Verify your email before signing in');
         return;
       }
-      setError(err.message || 'Login failed');
+      const raw = String(err.message || '');
+      if (!raw || /failed to fetch|networkerror|load failed/i.test(raw)) {
+        setError(unreachableApiMessage());
+        return;
+      }
+      setError(raw || 'Login failed');
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -187,6 +203,7 @@ export default function Login() {
       setError('Login tenant is required');
       return;
     }
+    setBusy(true);
     try {
       const r = await api('/auth/resend-verification', {
         method: 'POST',
@@ -198,6 +215,8 @@ export default function Login() {
       }
     } catch (err: any) {
       setError(err.message || 'Unable to resend verification');
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -227,6 +246,7 @@ export default function Login() {
                   placeholder="Tenant slug or ID"
                   autoComplete="organization"
                   required
+                  disabled={busy}
                 />
               </label>
               <label className="login-field">
@@ -239,6 +259,7 @@ export default function Login() {
                   type="email"
                   autoComplete="username"
                   required
+                  disabled={busy}
                 />
               </label>
               <label className="login-field">
@@ -251,6 +272,7 @@ export default function Login() {
                   autoComplete="current-password"
                   aria-label="Login password"
                   required
+                  disabled={busy}
                 />
               </label>
               <p className="login-forgot">
@@ -285,14 +307,21 @@ export default function Login() {
                 autoComplete="one-time-code"
                 required={methods.includes('totp') && !methods.includes('webauthn')}
                 autoFocus
+                disabled={busy}
               />
             </label>
           )}
 
           {showPasskey && <p className="login-hint">Or continue with a registered passkey.</p>}
 
-          <button className="login-primary" type="submit" aria-label="Sign in">
-            {needs2fa ? (methods.includes('totp') ? 'Verify & continue' : 'Continue') : 'Sign in'}
+          <button className="login-primary" type="submit" aria-label="Sign in" disabled={busy} aria-busy={busy}>
+            {busy
+              ? 'Signing in…'
+              : needs2fa
+                ? methods.includes('totp')
+                  ? 'Verify & continue'
+                  : 'Continue'
+                : 'Sign in'}
           </button>
 
           {showPasskey && (
@@ -301,8 +330,9 @@ export default function Login() {
               type="button"
               onClick={verifyPasskey}
               aria-label="Use passkey"
+              disabled={busy}
             >
-              Use passkey
+              {busy ? 'Working…' : 'Use passkey'}
             </button>
           )}
 
@@ -333,8 +363,9 @@ export default function Login() {
                 type="button"
                 onClick={resendVerification}
                 aria-label="Resend verification email"
+                disabled={busy}
               >
-                Resend verification email
+                {busy ? 'Sending…' : 'Resend verification email'}
               </button>
               <Link className="login-ghost" href="/verify-email" style={{ display: 'block', textAlign: 'center' }}>
                 Open verify page

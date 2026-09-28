@@ -54,7 +54,12 @@ function looksLikeBarcode(value: string) {
   return /^[A-Za-z0-9\-._]{4,48}$/.test(text);
 }
 
-type CartItem = Product & { quantity: number; discount: number };
+type CartItem = Product & {
+  quantity: number;
+  discount: number;
+  discountType: 'fixed' | 'percent';
+  discountPercent: number;
+};
 
 type Customer = {
   id: string;
@@ -272,6 +277,7 @@ export default function Page() {
   const [creditOverrideReason, setCreditOverrideReason] = useState('');
   const [drawerReason, setDrawerReason] = useState('');
   const [cartDiscount, setCartDiscount] = useState('');
+  const [cartDiscountType, setCartDiscountType] = useState<'fixed' | 'percent'>('fixed');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [lastSale, setLastSale] = useState<{ id: string; reference: string } | null>(null);
@@ -298,6 +304,15 @@ export default function Page() {
     return Math.round(Number(listPrice) * (1 - groupDiscountPct / 100) * 100) / 100;
   }
 
+  function lineDiscountAmount(c: CartItem) {
+    const merch = groupUnitPrice(Number(c.selling_price)) * c.quantity;
+    if (c.discountType === 'percent') {
+      const pct = Math.max(0, Math.min(100, Number(c.discountPercent) || 0));
+      return Math.round((merch * pct) / 100 * 100) / 100;
+    }
+    return Math.min(Math.max(0, Number(c.discount) || 0), merch);
+  }
+
   const cartTotals = useMemo(() => {
     let subtotal = 0;
     let tax = 0;
@@ -305,7 +320,7 @@ export default function Page() {
       const unit = groupUnitPrice(Number(c.selling_price));
       const taxable = Math.max(
         0,
-        Math.round((unit * c.quantity - (Number(c.discount) || 0)) * 100) / 100
+        Math.round((unit * c.quantity - lineDiscountAmount(c)) * 100) / 100
       );
       const amounts = computeLineTaxAmounts(
         taxable,
@@ -320,11 +335,14 @@ export default function Page() {
     subtotal = Math.round(subtotal * 100) / 100;
     tax = Math.round(tax * 100) / 100;
     const maxDiscount = Math.round((subtotal + tax) * 100) / 100;
-    const discount = Math.max(0, Number(cartDiscount) || 0);
+    const discount =
+      cartDiscountType === 'percent'
+        ? Math.round((maxDiscount * Math.max(0, Math.min(100, Number(cartDiscount) || 0))) / 100 * 100) / 100
+        : Math.max(0, Number(cartDiscount) || 0);
     const due = Math.max(0, Math.round((subtotal + tax - discount) * 100) / 100);
-    return { subtotal, tax, maxDiscount, due };
-  }, [cart, cartDiscount, groupDiscountPct]);
-  const cartDiscountAmount = Math.max(0, Number(cartDiscount) || 0);
+    return { subtotal, tax, maxDiscount, discount, due };
+  }, [cart, cartDiscount, cartDiscountType, groupDiscountPct]);
+  const cartDiscountAmount = cartTotals.discount;
   const cartTotal = cartTotals.due;
   const cartCount = useMemo(() => cart.reduce((sum, c) => sum + c.quantity, 0), [cart]);
 
@@ -493,12 +511,20 @@ export default function Page() {
     setCustomerName('');
   }
 
-  function setLineDiscount(id: string, discount: number) {
+  function setLineDiscount(id: string, discount: number, kind: 'fixed' | 'percent' = 'fixed') {
     setCart((prev) =>
       prev.map((p) => {
         if (p.id !== id) return p;
-        const maxDisc = Number(p.selling_price) * p.quantity;
-        return { ...p, discount: Math.min(Math.max(0, discount), maxDisc) };
+        if (kind === 'percent') {
+          return { ...p, discountType: 'percent', discountPercent: Math.max(0, Math.min(100, discount)), discount: 0 };
+        }
+        const maxDisc = groupUnitPrice(Number(p.selling_price)) * p.quantity;
+        return {
+          ...p,
+          discountType: 'fixed',
+          discount: Math.min(Math.max(0, discount), maxDisc),
+          discountPercent: 0,
+        };
       })
     );
   }
@@ -665,6 +691,8 @@ export default function Page() {
           variant_id: product.variant_id || null,
           quantity: 1,
           discount: 0,
+          discountType: 'fixed',
+          discountPercent: 0,
         },
       ];
     });
@@ -676,11 +704,11 @@ export default function Page() {
         .map((p) => {
           if (p.id !== id) return p;
           const quantity = p.quantity + delta;
-          const maxDisc = Number(p.selling_price) * Math.max(quantity, 0);
+          const maxDisc = groupUnitPrice(Number(p.selling_price)) * Math.max(quantity, 0);
           return {
             ...p,
             quantity,
-            discount: Math.min(p.discount || 0, maxDisc),
+            discount: p.discountType === 'percent' ? 0 : Math.min(p.discount || 0, maxDisc),
           };
         })
         .filter((p) => p.quantity > 0)
@@ -744,12 +772,16 @@ export default function Page() {
       product_id: c.product_id || c.id,
       variant_id: c.variant_id || null,
       quantity: c.quantity,
-      discount: Number(c.discount) || 0,
+      discount: c.discountType === 'percent' ? 0 : Number(c.discount) || 0,
+      discount_type: c.discountType || 'fixed',
+      discount_percent: c.discountType === 'percent' ? Number(c.discountPercent) || 0 : 0,
     }));
     const body: Record<string, unknown> = {
       // trim so Complete sale (UuidIdValue session_id / party_id) does not 422
       session_id: String(session.session_id).trim(),
-      discount_amount: cartDiscountAmount,
+      discount_amount: cartDiscountType === 'percent' ? 0 : cartDiscountAmount,
+      discount_type: cartDiscountType,
+      discount_percent: cartDiscountType === 'percent' ? Math.max(0, Math.min(100, Number(cartDiscount) || 0)) : 0,
       status: 'completed',
       party_id: customerId.trim() || null,
       customer_name: name.trim() || null,
@@ -1347,7 +1379,8 @@ export default function Page() {
               {cart.map((c) => {
                 const unit = groupUnitPrice(Number(c.selling_price));
                 const lineMerch = unit * c.quantity;
-                const taxable = Math.max(0, Math.round((lineMerch - (Number(c.discount) || 0)) * 100) / 100);
+                const lineDisc = lineDiscountAmount(c);
+                const taxable = Math.max(0, Math.round((lineMerch - lineDisc) * 100) / 100);
                 const lineAmounts = computeLineTaxAmounts(
                   taxable,
                   Number(c.tax_rate_pct) || 0,
@@ -1372,13 +1405,32 @@ export default function Page() {
                       </span>
                       <label className="tpos-line-disc">
                         <span>Disc</span>
+                        <select
+                          value={c.discountType || 'fixed'}
+                          onChange={(e) => {
+                            const next = e.target.value === 'percent' ? 'percent' : 'fixed';
+                            setCart((prev) =>
+                              prev.map((p) =>
+                                p.id === c.id
+                                  ? { ...p, discountType: next, discount: 0, discountPercent: 0 }
+                                  : p,
+                              ),
+                            );
+                          }}
+                          aria-label={`Discount type for ${c.name}`}
+                        >
+                          <option value="fixed">Amount</option>
+                          <option value="percent">%</option>
+                        </select>
                         <input
                           type="number"
                           min={0}
-                          max={lineMerch}
+                          max={c.discountType === 'percent' ? 100 : lineMerch}
                           step="0.01"
-                          value={c.discount || 0}
-                          onChange={(e) => setLineDiscount(c.id, Number(e.target.value) || 0)}
+                          value={c.discountType === 'percent' ? c.discountPercent || 0 : c.discount || 0}
+                          onChange={(e) =>
+                            setLineDiscount(c.id, Number(e.target.value) || 0, c.discountType || 'fixed')
+                          }
                           aria-label={`Discount for ${c.name}`}
                         />
                       </label>
@@ -1401,6 +1453,17 @@ export default function Page() {
             <div className="tpos-cart-foot">
               <label className="tpos-field">
                 <span>Cart discount</span>
+                <select
+                  value={cartDiscountType}
+                  onChange={(e) => {
+                    setCartDiscountType(e.target.value === 'percent' ? 'percent' : 'fixed');
+                    setCartDiscount('');
+                  }}
+                  aria-label="POS cart discount type"
+                >
+                  <option value="fixed">Amount</option>
+                  <option value="percent">Percent</option>
+                </select>
                 <input
                   className="tpos-input"
                   type="number"
@@ -1408,7 +1471,7 @@ export default function Page() {
                   step="0.01"
                   value={cartDiscount}
                   onChange={(e) => setCartDiscount(e.target.value)}
-                  placeholder="0.00"
+                  placeholder={cartDiscountType === 'percent' ? '0' : '0.00'}
                   inputMode="decimal"
                   aria-label="POS cart discount"
                 />
@@ -1418,6 +1481,10 @@ export default function Page() {
                 <div className="tpos-total-row">
                   <span>Subtotal</span>
                   <strong>{money(cartTotals.subtotal)}</strong>
+                </div>
+                <div className="tpos-total-row">
+                  <span>Discount</span>
+                  <strong>{money(cartDiscountAmount)}</strong>
                 </div>
                 <div className="tpos-total-row">
                   <span>Tax</span>

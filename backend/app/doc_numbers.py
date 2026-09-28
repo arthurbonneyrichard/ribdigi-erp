@@ -16,7 +16,14 @@ from app.schema_compat import table_column_names
 
 _IDENT = re.compile(r"^[a-z_][a-z0-9_]*$")
 # POS/SHIFT prefixes are server-locked; clients cannot choose or rewind the series.
-LOCKED_SERIES_PREFIXES = {"pos_sale": "POS", "pos_session": "SHIFT"}
+# PO / GRN / supplier-bill prefixes match that lock so create payloads cannot pick numbers.
+LOCKED_SERIES_PREFIXES = {
+    "pos_sale": "POS",
+    "pos_session": "SHIFT",
+    "purchase_order": "PO",
+    "grn": "GRN",
+    "purchase_invoice": "PINV",
+}
 
 _SEQ_RE = re.compile(r"-(\d+)$")
 _PREFIX_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,19}$")
@@ -304,13 +311,14 @@ def apply_numbering_update(
 ) -> dict:
     if kind not in SERIES_KINDS:
         raise HTTPException(status_code=400, detail=f"Unknown numbering kind: {kind}")
-    if kind in LOCKED_SERIES_PREFIXES:
+    locked = LOCKED_SERIES_PREFIXES.get(kind)
+    if locked and kind in ("pos_sale", "pos_session"):
         raise HTTPException(
             status_code=400,
             detail="POS and shift numbers are allocated by the server and cannot be set from the client",
         )
     year = (as_of or datetime.utcnow()).year
-    clean = normalize_prefix(prefix, default=SERIES_KINDS[kind]["default_prefix"])
+    clean = locked or normalize_prefix(prefix, default=SERIES_KINDS[kind]["default_prefix"])
     _write_state(tenant, kind, prefix=clean, next_seq=max(int(next_number), 1), year=year)
     return numbering_settings(tenant, kind, as_of=as_of)
 

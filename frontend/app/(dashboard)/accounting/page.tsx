@@ -13,11 +13,55 @@ function fmtMoney(n: number, _currency?: string) {
   return v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-type Tab = 'ledger' | 'cash' | 'reconcile' | 'cheques';
+const JOURNAL_SOURCE_LABEL: Record<string, string> = {
+  manual: 'Manual journal',
+  expense: 'Expense',
+  sales_invoice: 'Sales invoice',
+  sales_return: 'Sales return',
+  sales_return_refund: 'Sales refund',
+  customer_payment: 'Customer repayment',
+  supplier_payment: 'Supplier payment',
+  purchase_invoice: 'Supplier bill',
+  purchase_invoice_cancel: 'Bill cancelled',
+  purchase_return: 'Purchase return',
+  grn: 'Goods received',
+  opening_stock: 'Opening stock',
+  pos_sale: 'POS sale',
+};
+
+function journalSourceLabel(sourceType?: string | null) {
+  const key = String(sourceType || 'manual').toLowerCase();
+  return JOURNAL_SOURCE_LABEL[key] || key.replace(/_/g, ' ');
+}
+
+function journalSourceHref(sourceType?: string | null): string | null {
+  switch (String(sourceType || '').toLowerCase()) {
+    case 'expense':
+      return '/expenses';
+    case 'sales_invoice':
+    case 'sales_return':
+    case 'sales_return_refund':
+      return '/sales';
+    case 'customer_payment':
+      return '/credit?kind=receivable';
+    case 'supplier_payment':
+    case 'purchase_invoice':
+    case 'purchase_invoice_cancel':
+    case 'purchase_return':
+    case 'grn':
+      return '/purchasing';
+    case 'pos_sale':
+      return '/pos';
+    default:
+      return null;
+  }
+}
+
+type Tab = 'overview' | 'ledger' | 'cash' | 'reconcile' | 'cheques';
 
 export default function Page() {
   const currency = '';
-  const [tab, setTab] = useState<Tab>('ledger');
+  const [tab, setTab] = useState<Tab>('overview');
   const [accounts, setAccounts] = useState<any[]>([]);
   const [accountManageFilter, setAccountManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [liquid, setLiquid] = useState<any[]>([]);
@@ -113,6 +157,9 @@ export default function Page() {
   const [cashFlow, setCashFlow] = useState<any>(null);
   /** OpenAPI: omit | prior_period | prior_year (blank → no compare). */
   const [bsCompare, setBsCompare] = useState('');
+  const [arAging, setArAging] = useState<any>(null);
+  const [apAging, setApAging] = useState<any>(null);
+  const [journalBusy, setJournalBusy] = useState(false);
 
   function pnlQuery() {
     const params = new URLSearchParams();
@@ -196,7 +243,7 @@ export default function Page() {
   }
 
   async function refresh() {
-    const [a, j, t, p, liq, stmts, conns, xfers, openSt, st, br, per] = await Promise.all([
+    const [a, j, t, p, liq, stmts, conns, xfers, openSt, st, br, per, ar, ap] = await Promise.all([
       api('/accounting/accounts'),
       api('/accounting/journal-entries'),
       api(`/accounting/trial-balance${trialQuery()}`),
@@ -209,6 +256,8 @@ export default function Page() {
       api('/stores').catch(() => ({ data: [] })),
       api('/branches').catch(() => ({ data: [] })),
       api('/accounting/period').catch(() => ({ data: null })),
+      api('/credit/aging?kind=receivable').catch(() => ({ data: null })),
+      api('/credit/aging?kind=payable').catch(() => ({ data: null })),
     ]);
     setAccounts(a.data || []);
     setCoaOpenAccountId((prev) => {
@@ -229,6 +278,8 @@ export default function Page() {
     setStores(st.data || []);
     setBranches(br.data || []);
     setPeriod(per.data || null);
+    setArAging(ar.data || null);
+    setApAging(ap.data || null);
     if (!closeThrough && per.data?.books_closed_through) {
       setCloseThrough(per.data.books_closed_through);
     }
@@ -302,8 +353,10 @@ export default function Page() {
   }, [headerStoreId]);
 
   async function postManual() {
+    if (journalBusy) return;
     setError('');
     setMessage('');
+    setJournalBusy(true);
     try {
       const lines = manualLines.map((l) => ({
         account_id: l.account_id.trim() || null,
@@ -347,6 +400,8 @@ export default function Page() {
       await refresh();
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setJournalBusy(false);
     }
   }
 
@@ -904,31 +959,40 @@ export default function Page() {
   return (
     <>
       <h1>Accounting</h1>
-      <p className="muted">Chart of accounts, journals, trial balance, P&amp;L, bank reconciliation, and cheques</p>
-      {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
+      <p className="muted">
+        One company ledger. Sales, expenses, and supplier bills post here — this is not a second set of books.
+      </p>
+      {error && <p className="erp-banner err" role="alert">{error}</p>}
+      {message && <p className="erp-banner ok" role="status">{message}</p>}
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+      <div className="erp-tabs">
+        <button
+          onClick={() => setTab('overview')}
+          disabled={tab === 'overview'}
+          aria-label="Show accounting overview"
+        >
+          Overview
+        </button>
         <button
           onClick={() => setTab('ledger')}
           disabled={tab === 'ledger'}
-          aria-label="Show accounting ledger tab"
+          aria-label="Show accounting tools"
         >
-          Ledger
+          Accounting tools
         </button>
         <button
           onClick={() => setTab('cash')}
           disabled={tab === 'cash'}
           aria-label="Show accounting cash and bank tab"
         >
-          Cash &amp; Bank
+          Cash and bank
         </button>
         <button
           onClick={() => setTab('reconcile')}
           disabled={tab === 'reconcile'}
           aria-label="Show accounting reconcile tab"
         >
-          Reconcile
+          Bank match
         </button>
         <button
           onClick={() => setTab('cheques')}
@@ -938,6 +1002,76 @@ export default function Page() {
           Cheques
         </button>
       </div>
+
+      {tab === 'overview' && (
+        <>
+          <div className="erp-kpis">
+            <div className="card">
+              <div className="muted">Income</div>
+              <div className="kpi">{fmtMoney(Number(pnl?.revenue ?? pnl?.income ?? 0))}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Expenses</div>
+              <div className="kpi">{fmtMoney(Number(pnl?.operating_expenses ?? pnl?.expense ?? 0))}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Customers owe us</div>
+              <div className="kpi">{fmtMoney(Number(arAging?.total_due ?? 0))}</div>
+            </div>
+            <div className="card">
+              <div className="muted">We owe suppliers</div>
+              <div className="kpi">{fmtMoney(Number(apAging?.total_due ?? 0))}</div>
+            </div>
+            <div className="card">
+              <div className="muted">Cash and bank</div>
+              <div className="kpi">
+                {fmtMoney(
+                  liquid.reduce((s: number, a: any) => s + Number(a.balance ?? a.current_balance ?? 0), 0),
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="card">
+            <h3>Recent activity</h3>
+            <table className="table compact">
+              <thead>
+                <tr>
+                  <th>Entry</th>
+                  <th>What happened</th>
+                  <th>From</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {journals.slice(0, 12).map((j: any) => {
+                  const href = journalSourceHref(j.source_type);
+                  return (
+                    <tr key={j.id}>
+                      <td>{j.entry_number}</td>
+                      <td>{j.description}</td>
+                      <td>
+                        {href ? (
+                          <a href={href}>{journalSourceLabel(j.source_type)}</a>
+                        ) : (
+                          journalSourceLabel(j.source_type)
+                        )}
+                      </td>
+                      <td>{fmtMoney(Number(j.total_debit || 0))}</td>
+                    </tr>
+                  );
+                })}
+                {!journals.length && (
+                  <tr>
+                    <td colSpan={4} className="muted">
+                      No journals yet
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
 
       {tab === 'ledger' && (
         <>
@@ -1131,10 +1265,10 @@ export default function Page() {
                 type="button"
                 className="btn-ok"
                 onClick={postManual}
-                disabled={!manualBalanced}
+                disabled={!manualBalanced || journalBusy}
                 aria-label="Post balanced entry"
               >
-                Post balanced entry
+                {journalBusy ? 'Posting…' : 'Post balanced entry'}
               </button>
             </div>
           </div>
@@ -1656,7 +1790,13 @@ export default function Page() {
                 <tr key={j.id}>
                   <td>{j.entry_number}</td>
                   <td>{j.description}</td>
-                  <td>{j.source_type || 'manual'}</td>
+                  <td>
+                    {(() => {
+                      const href = journalSourceHref(j.source_type);
+                      const label = journalSourceLabel(j.source_type);
+                      return href ? <a href={href}>{label}</a> : label;
+                    })()}
+                  </td>
                   <td>{j.status}</td>
                   <td>{j.total_debit}</td>
                   <td>{j.total_credit}</td>

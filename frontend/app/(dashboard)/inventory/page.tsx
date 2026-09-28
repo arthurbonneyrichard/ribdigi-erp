@@ -20,6 +20,7 @@ type Tab =
   | 'movements'
   | 'adjust'
   | 'stockout'
+  | 'lowstock'
   | 'whstock'
   | 'transfers';
 
@@ -38,6 +39,7 @@ const INVENTORY_TABS: Tab[] = [
   'movements',
   'adjust',
   'stockout',
+  'lowstock',
   'whstock',
   'transfers',
 ];
@@ -410,6 +412,9 @@ export default function Page() {
   const [stockOutDrawerOpen, setStockOutDrawerOpen] = useState(false);
   const [whSearch, setWhSearch] = useState('');
   const [whLowOnly, setWhLowOnly] = useState(false);
+  const [lowStockPayload, setLowStockPayload] = useState<any>(null);
+  const [lowStockBusy, setLowStockBusy] = useState(false);
+  const [lowStockSearch, setLowStockSearch] = useState('');
   const [receiveDrawerOpen, setReceiveDrawerOpen] = useState(false);
   const [reorderDrawerOpen, setReorderDrawerOpen] = useState(false);
   const [xferSearch, setXferSearch] = useState('');
@@ -561,6 +566,30 @@ export default function Page() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, whStockWarehouseId, whStockIncludeZero]);
+
+  async function loadLowStock() {
+    setLowStockBusy(true);
+    setError('');
+    try {
+      const params = new URLSearchParams();
+      if (storeId) params.set('store_id', storeId);
+      const q = params.toString();
+      const r = await api(`/inventory/low-stock${q ? `?${q}` : ''}`);
+      setLowStockPayload(r.data || { products: [], warehouse_low_stock: [] });
+    } catch (err: any) {
+      setError(err.message);
+      setLowStockPayload(null);
+    } finally {
+      setLowStockBusy(false);
+    }
+  }
+
+  useEffect(() => {
+    if (tab === 'lowstock') {
+      loadLowStock().catch((err) => setError(err.message));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, storeId]);
 
   async function loadTransfers() {
     setError('');
@@ -2180,6 +2209,32 @@ export default function Page() {
     return hay.includes(xferQuery);
   });
   const lowStockProducts = products.filter((p) => stockStatusOf(p) === 'red' && p.is_active !== false);
+  const lsQuery = lowStockSearch.trim().toLowerCase();
+  const lowStockRows = [
+    ...(lowStockPayload?.products || []).map((p: any) => ({
+      key: `p-${p.id}`,
+      name: p.name,
+      sku: p.sku,
+      category: p.category || '—',
+      qty: p.stock_qty,
+      reorder: p.reorder_level,
+      location: 'Company stock',
+    })),
+    ...(lowStockPayload?.warehouse_low_stock || []).map((w: any) => ({
+      key: `w-${w.warehouse_id}-${w.product_id}`,
+      name: w.name,
+      sku: w.sku,
+      category: w.category || '—',
+      qty: w.quantity,
+      reorder: w.reorder_level,
+      location: [w.warehouse_name || w.warehouse_code, w.store_id ? 'store' : '']
+        .filter(Boolean)
+        .join(' · ') || 'Warehouse',
+    })),
+  ].filter((row) => {
+    if (!lsQuery) return true;
+    return `${row.name} ${row.sku} ${row.category} ${row.location}`.toLowerCase().includes(lsQuery);
+  });
 
   return (
     <>
@@ -2203,6 +2258,7 @@ export default function Page() {
             ['batches', 'Batches'],
             ['opening', 'Opening stock'],
             ['stockout', 'Stock out'],
+            ['lowstock', 'Low stock'],
             ['whstock', 'Manage stock'],
             ['transfers', 'Stock transfer'],
             ['expiry', 'Expiry'],
@@ -2236,6 +2292,7 @@ export default function Page() {
         tab !== 'movements' &&
         tab !== 'adjust' &&
         tab !== 'stockout' &&
+        tab !== 'lowstock' &&
         tab !== 'whstock' &&
         tab !== 'transfers' && (
       <div className="card" style={{ marginBottom: 16 }}>
@@ -4778,6 +4835,58 @@ export default function Page() {
               </aside>
             </>
           ) : null}
+        </div>
+      )}
+
+      {tab === 'lowstock' && (
+        <div className="card cat-panel">
+          <div className="cat-head">
+            <h2 style={{ margin: 0 }}>Low stock</h2>
+          </div>
+          <p className="muted inv-child">
+            Products at or below reorder level, including warehouse locations you can access.
+          </p>
+          <input
+            value={lowStockSearch}
+            onChange={(e) => setLowStockSearch(e.target.value)}
+            placeholder="Search name, SKU, category, location"
+            aria-label="Search low stock"
+            style={{ maxWidth: 360, marginBottom: 12 }}
+          />
+          {lowStockBusy ? (
+            <p className="muted">Loading…</p>
+          ) : !lowStockPayload ? (
+            <p className="muted">Could not load low stock. Check the error above or retry from the menu.</p>
+          ) : lowStockRows.length === 0 ? (
+            <p className="muted inv-child">No products are at or below reorder level.</p>
+          ) : (
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>SKU</th>
+                    <th>Category</th>
+                    <th>Qty</th>
+                    <th>Reorder level</th>
+                    <th>Location</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lowStockRows.map((row) => (
+                    <tr key={row.key}>
+                      <td data-label="Product">{row.name}</td>
+                      <td data-label="SKU">{row.sku}</td>
+                      <td data-label="Category">{row.category}</td>
+                      <td data-label="Qty">{row.qty}</td>
+                      <td data-label="Reorder level">{row.reorder}</td>
+                      <td data-label="Location">{row.location}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 

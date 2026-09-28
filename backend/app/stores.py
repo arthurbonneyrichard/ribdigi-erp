@@ -508,6 +508,14 @@ async def create_transfer(
         to_store_id = to_wh.store_id
         await get_store(db, tenant_id, from_store_id)
         await get_store(db, tenant_id, to_store_id)
+        from app import store_access as store_access_svc
+
+        await store_access_svc.assert_store_access(
+            db, tenant_id=tenant_id, user_id=user_id, store_id=from_store_id
+        )
+        await store_access_svc.assert_store_access(
+            db, tenant_id=tenant_id, user_id=user_id, store_id=to_store_id
+        )
     elif from_store_id and to_store_id:
         if from_store_id == to_store_id:
             raise HTTPException(
@@ -515,6 +523,14 @@ async def create_transfer(
             )
         await get_store(db, tenant_id, from_store_id)
         await get_store(db, tenant_id, to_store_id)
+        from app import store_access as store_access_svc
+
+        await store_access_svc.assert_store_access(
+            db, tenant_id=tenant_id, user_id=user_id, store_id=from_store_id
+        )
+        await store_access_svc.assert_store_access(
+            db, tenant_id=tenant_id, user_id=user_id, store_id=to_store_id
+        )
         from_wh = await warehouse_for_store(db, tenant_id, from_store_id)
         to_wh = await warehouse_for_store(db, tenant_id, to_store_id)
     else:

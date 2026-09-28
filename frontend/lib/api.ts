@@ -1,16 +1,43 @@
 import { clearSessionTheme } from './theme';
 
-const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+/** Browser calls the Next.js origin; Next rewrites /api/v1 to the backend (avoids CORS Failed to fetch). */
+export function apiRoot(): string {
+  if (typeof window !== 'undefined') return '/api/v1';
+  const raw =
+    process.env.API_INTERNAL_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    'http://localhost:8000/api/v1';
+  return raw.replace(/\/$/, '');
+}
+
+const base = apiRoot();
 
 // Backend X-Tenant-ID is UuidIdValue — slugs like platform must not be sent
 // or /me returns 422 and Shell clears the session back to login.
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-function tenantHeaderValue(raw: string | null): string | null {
+export function tenantHeaderValue(raw: string | null): string | null {
   const value = (raw || '').trim();
   if (!value || !UUID_RE.test(value)) return null;
   return value;
+}
+
+/** Sign-in and recovery must not send a leftover Platform/tenant session. */
+function isPublicAuthPath(path: string): boolean {
+  return (
+    path.startsWith('/auth/login') ||
+    path.startsWith('/auth/refresh') ||
+    path.startsWith('/auth/2fa/verify') ||
+    path.startsWith('/auth/password-reset') ||
+    path.startsWith('/auth/verify-email') ||
+    path.startsWith('/auth/resend-verification') ||
+    path.startsWith('/auth/webauthn/login')
+  );
+}
+
+export function unreachableApiMessage(): string {
+  return 'Cannot reach the server. Check that the API is running, then sign in with the workspace slug (not the company name).';
 }
 
 // Shared in-flight refresh so concurrent 401s trigger a single token refresh.
@@ -146,9 +173,11 @@ export function formatApiError(body: unknown, status: number): string {
   return fallbackByStatus(status);
 }
 
-export async function api(path: string, opts: RequestInit = {}, retryOn401 = true) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  const tenant = typeof window !== 'undefined' ? localStorage.getItem('tenant') : null;
+/** Same-origin fetch with auth headers. Use for blobs/PDFs; JSON callers use `api()`. */
+export async function apiFetch(path: string, opts: RequestInit = {}, retryOn401 = true): Promise<Response> {
+  const publicAuth = isPublicAuthPath(path);
+  const token = typeof window !== 'undefined' && !publicAuth ? localStorage.getItem('token') : null;
+  const tenant = typeof window !== 'undefined' && !publicAuth ? localStorage.getItem('tenant') : null;
   const isFormData = typeof FormData !== 'undefined' && opts.body instanceof FormData;
   const headers: Record<string, string> = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
@@ -161,7 +190,7 @@ export async function api(path: string, opts: RequestInit = {}, retryOn401 = tru
   if (isFormData) delete headers['Content-Type'];
 
   const controller = new AbortController();
-  const timeoutMs = 20000;
+  const timeoutMs = isFormData ? 60000 : 20000;
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   let response: Response;
   try {
@@ -176,23 +205,30 @@ export async function api(path: string, opts: RequestInit = {}, retryOn401 = tru
     if (err instanceof DOMException && err.name === 'AbortError') {
       throw new Error('The request timed out. Check your connection and try again.');
     }
+    const raw = err instanceof Error ? err.message : '';
+    if (!raw || /failed to fetch|networkerror|load failed/i.test(raw)) {
+      throw new Error(unreachableApiMessage());
+    }
     throw err;
   }
   clearTimeout(timer);
 
-  // Session expired: try a one-time refresh + retry, otherwise send back to login.
-  // Auth endpoints are excluded so the login/2FA flow is never disrupted.
   if (response.status === 401 && retryOn401 && !path.startsWith('/auth/') && typeof window !== 'undefined') {
     const refreshed = await refreshSession();
     if (refreshed) {
-      return api(path, opts, false);
+      return apiFetch(path, opts, false);
     }
     clearSessionAndRedirect();
   }
 
+  return response;
+}
+
+export async function api(path: string, opts: RequestInit = {}, retryOn401 = true) {
+  const response = await apiFetch(path, opts, retryOn401);
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const detail = body.detail;
+    const detail = (body as { detail?: unknown }).detail;
     const message = formatApiError(body, response.status);
     const err = new Error(message) as Error & { detail?: unknown; status?: number };
     err.detail = detail;

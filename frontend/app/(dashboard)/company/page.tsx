@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api, apiOptional } from '../../../lib/api';
+import { api, apiFetch, apiOptional } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { formatDateTime, formatNumber } from '../../../lib/format';
 import { canDownloadStaffGuide, industryLabel } from '../../../lib/industries';
@@ -35,8 +35,22 @@ export default function Page() {
   const [canGuide, setCanGuide] = useState(false);
   const [guideBusy, setGuideBusy] = useState(false);
   const [guideError, setGuideError] = useState('');
+  const [profileBusy, setProfileBusy] = useState(false);
+  const [printBusy, setPrintBusy] = useState(false);
+  const [emailBusy, setEmailBusy] = useState(false);
+  const [smsBusy, setSmsBusy] = useState(false);
+  const [meBusy, setMeBusy] = useState(false);
+  const [profileFlash, setProfileFlash] = useState<{ ok?: string; err?: string }>({});
+  const [printFlash, setPrintFlash] = useState<{ ok?: string; err?: string }>({});
+  const [emailFlash, setEmailFlash] = useState<{ ok?: string; err?: string }>({});
+  const [smsFlash, setSmsFlash] = useState<{ ok?: string; err?: string }>({});
+  const [meFlash, setMeFlash] = useState<{ ok?: string; err?: string }>({});
+  const [industryValid, setIndustryValid] = useState(true);
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+  const [logoBusy, setLogoBusy] = useState(false);
+
+  const LOGO_MAX_BYTES = 2_000_000;
+  const LOGO_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif']);
 
   async function loadLogoPreview(hasLogo: boolean) {
     if (!hasLogo) {
@@ -44,20 +58,16 @@ export default function Page() {
       return;
     }
     try {
-      const token = localStorage.getItem('token');
-      const tenantId = localStorage.getItem('tenant');
-      const res = await fetch(`${apiBase}/tenants/me/logo`, {
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          ...(tenantId ? { 'X-Tenant-ID': tenantId } : {}),
-        },
-      });
+      const res = await apiFetch('/tenants/me/logo');
       if (!res.ok) {
         setLogoPreview(null);
         return;
       }
       const blob = await res.blob();
-      setLogoPreview(URL.createObjectURL(blob));
+      setLogoPreview((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return URL.createObjectURL(blob);
+      });
     } catch {
       setLogoPreview(null);
     }
@@ -99,6 +109,9 @@ export default function Page() {
     setProfilePhone(me.data?.phone || '');
     setProfileFullName(me.data?.full_name || '');
     setCanGuide(canDownloadStaffGuide(me.data?.role, me.data?.permissions));
+    if (me.data) {
+      setIndustryValid(me.data.industry_valid !== false);
+    }
     if (print.data) {
       setPrintHeader(print.data.header_text || '');
       setPrintFooter(print.data.footer_text || '');
@@ -123,17 +136,7 @@ export default function Page() {
     setGuideError('');
     setGuideBusy(true);
     try {
-      const token = localStorage.getItem('token') || '';
-      const tenantId = localStorage.getItem('tenant') || '';
-      const headers: Record<string, string> = {};
-      if (token) headers.Authorization = `Bearer ${token}`;
-      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(tenantId)) {
-        headers['X-Tenant-ID'] = tenantId;
-      }
-      const response = await fetch(`${apiBase.replace(/\/$/, '')}/staff-guide`, {
-        headers,
-        cache: 'no-store',
-      });
+      const response = await apiFetch('/staff-guide');
       const type = (response.headers.get('content-type') || '').toLowerCase();
       if (!response.ok || !type.includes('pdf')) {
         let detail = 'Could not download the guide.';
@@ -202,13 +205,6 @@ export default function Page() {
           ...(String(tenant.contact_person || '').trim()
             ? { contact_person: String(tenant.contact_person).trim() }
             : {}),
-          // Omit blank billing/shipping so Save does not 422 (AddressValue); leave prior.
-          ...(String(tenant.billing_address || '').trim()
-            ? { billing_address: String(tenant.billing_address).trim() }
-            : {}),
-          ...(String(tenant.shipping_address || '').trim()
-            ? { shipping_address: String(tenant.shipping_address).trim() }
-            : {}),
           timezone: tenant.timezone,
           fiscal_year_start: tenant.fiscal_year_start,
           tax_jurisdiction: tenant.tax_jurisdiction,
@@ -266,6 +262,13 @@ export default function Page() {
   return (
     <>
       <h1>Company</h1>
+      {!industryValid && (
+        <p className="login-error" role="alert">
+          Industry is missing or not recognized. Choose a supported industry (Retail, Mart, Hotel, FMCG,
+          Pharmacy, Restaurant, Bakery, Wholesale, Distribution, General Trading, or Manufacturing).
+          Industry-specific modules stay disabled until this is saved.
+        </p>
+      )}
       <p className="muted">
         Status: {tenant.status} · Slug: {tenant.slug}
         {tenant.days_remaining != null && tenant.status === 'trial'
@@ -310,33 +313,40 @@ export default function Page() {
           id="company-logo-file"
           type="file"
           accept="image/png,image/jpeg,image/webp,image/gif"
-          disabled={!!tenant.read_only}
+          disabled={!!tenant.read_only || logoBusy}
           aria-label="Company logo file"
           onChange={async (e) => {
             const file = e.target.files?.[0];
             if (!file) return;
             setError('');
+            setMessage('');
+            if (!LOGO_TYPES.has(file.type)) {
+              setError('That file type is not allowed. Use PNG, JPEG, WebP, or GIF.');
+              e.target.value = '';
+              return;
+            }
+            if (file.size <= 0) {
+              setError('The file is empty. Choose another image.');
+              e.target.value = '';
+              return;
+            }
+            if (file.size > LOGO_MAX_BYTES) {
+              setError('That file is too large. Maximum size is 2 MB.');
+              e.target.value = '';
+              return;
+            }
+            setLogoBusy(true);
             try {
-              const token = localStorage.getItem('token');
-              const tenantId = localStorage.getItem('tenant');
               const form = new FormData();
               form.append('file', file);
-              const res = await fetch(`${apiBase}/tenants/me/logo`, {
-                method: 'POST',
-                headers: {
-                  ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                  ...(tenantId ? { 'X-Tenant-ID': tenantId } : {}),
-                },
-                body: form,
-              });
-              const body = await res.json().catch(() => ({}));
-              if (!res.ok) throw new Error(body.detail?.message || body.detail || body.message || 'Upload failed');
-              setTenant(body.data);
-              setMessage('Logo uploaded');
+              const r = await api('/tenants/me/logo', { method: 'POST', body: form });
+              setTenant(r.data);
+              setMessage(r.message || 'Logo uploaded');
               await loadLogoPreview(true);
             } catch (err: any) {
-              setError(typeof err.message === 'string' ? err.message : 'Upload failed');
+              setError(typeof err.message === 'string' ? err.message : 'Could not upload the logo.');
             } finally {
+              setLogoBusy(false);
               e.target.value = '';
             }
           }}
@@ -426,18 +436,6 @@ export default function Page() {
           onChange={(e) => setTenant({ ...tenant, address: e.target.value })}
           placeholder="Headquarters address"
           aria-label="Company headquarters address"
-        />
-        <textarea
-          value={tenant.billing_address || ''}
-          onChange={(e) => setTenant({ ...tenant, billing_address: e.target.value })}
-          placeholder="Billing address"
-          aria-label="Company billing address"
-        />
-        <textarea
-          value={tenant.shipping_address || ''}
-          onChange={(e) => setTenant({ ...tenant, shipping_address: e.target.value })}
-          placeholder="Shipping address"
-          aria-label="Company shipping address"
         />
         <select
           value={tenant.timezone || 'Africa/Accra'}

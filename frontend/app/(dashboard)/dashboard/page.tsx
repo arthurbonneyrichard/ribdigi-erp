@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
+import { normalizeIndustry } from '../../../lib/industries';
 import { useStoreContext } from '../../../lib/storeContext';
 
 type Subscription = {
@@ -256,19 +258,56 @@ function arc(fraction: number, radius: number) {
 }
 
 export default function Page() {
+  const router = useRouter();
   const { storeId: headerStoreId } = useStoreContext();
   const [d, setD] = useState<Dash>({});
   const [now, setNow] = useState<Date | null>(null);
   const [fullName, setFullName] = useState('');
   const [companyName, setCompanyName] = useState('');
+  const [dashStatus, setDashStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [dashError, setDashError] = useState('');
+  const [dashTick, setDashTick] = useState(0);
+  const [hotelHome, setHotelHome] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+    getMe()
+      .then((me) => {
+        if (cancelled) return;
+        if (normalizeIndustry(me.data?.industry) === 'hotel') {
+          setHotelHome(true);
+          router.replace('/hotel');
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
+  useEffect(() => {
+    if (hotelHome) return;
+    let cancelled = false;
     setNow(new Date());
+    setDashStatus('loading');
+    setDashError('');
     const qs = headerStoreId ? `?store_id=${encodeURIComponent(headerStoreId)}` : '';
     api(`/dashboard${qs}`)
-      .then((r) => setD(r.data || {}))
-      .catch(() => {});
-  }, [headerStoreId]);
+      .then((r) => {
+        if (cancelled) return;
+        setD(r.data || {});
+        setDashStatus('ready');
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setD({});
+        setDashError(err instanceof Error ? err.message : 'Unable to load dashboard');
+        setDashStatus('error');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [headerStoreId, dashTick, hotelHome]);
 
   useEffect(() => {
     getMe()
@@ -276,7 +315,9 @@ export default function Page() {
         setFullName(r.data?.full_name || '');
         setCompanyName(String(r.data?.company_name || r.data?.tenant?.company_name || '').trim());
       })
-      .catch(() => {});
+      .catch(() => {
+        setCompanyName('');
+      });
   }, []);
 
   const firstName = fullName.trim().split(/\s+/)[0] || '';
@@ -352,6 +393,10 @@ export default function Page() {
     { label: 'Products', val: products, href: links.products || '/inventory' },
   ];
 
+  if (hotelHome) {
+    return <p className="muted">Opening hotel dashboard…</p>;
+  }
+
   return (
     <>
       <div className="dash">
@@ -378,8 +423,30 @@ export default function Page() {
           {sub?.status === 'grace' && sub?.grace_ends_at && (
             <p className="greet-date">Grace period ends {fmtDate(sub.grace_ends_at)}</p>
           )}
+          {dashStatus === 'loading' && (
+            <p className="greet-date" role="status">
+              Loading dashboard…
+            </p>
+          )}
+          {dashStatus === 'error' && (
+            <p className="greet-date" role="alert">
+              {dashError || 'Unable to load dashboard'}{' '}
+              <button type="button" onClick={() => setDashTick((n) => n + 1)} aria-label="Retry dashboard">
+                Retry
+              </button>
+            </p>
+          )}
         </section>
 
+        {dashStatus !== 'ready' ? (
+          <section className="stat-grid" aria-busy={dashStatus === 'loading'}>
+            <div className="stat">
+              <div className="label">{dashStatus === 'error' ? 'Figures hidden until reload succeeds' : 'Waiting for figures'}</div>
+              <div className="val">{dashStatus === 'error' ? '—' : '…'}</div>
+            </div>
+          </section>
+        ) : (
+        <>
         <section className="stat-grid">
           {stats.map((s) => (
             <Link className={`stat ${s.cls}`} key={s.label} href={s.href} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -650,6 +717,8 @@ export default function Page() {
             </table>
           )}
         </section>
+        </>
+        )}
       </div>
     </>
   );

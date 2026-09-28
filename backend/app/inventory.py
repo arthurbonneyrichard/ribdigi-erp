@@ -259,8 +259,13 @@ async def apply_stock_change(
     product.stock_qty = after
     if warehouse_id:
         from app.warehouses import require_active_warehouse
+        from app import store_access as store_access_svc
 
         await require_active_warehouse(db, tenant_id, warehouse_id)
+        if user_id:
+            await store_access_svc.assert_warehouse_access(
+                db, tenant_id=tenant_id, user_id=user_id, warehouse_id=warehouse_id
+            )
         await apply_warehouse_stock_change(
             db,
             tenant_id=tenant_id,

@@ -114,7 +114,9 @@ export default function Page() {
   const [unitPrice, setUnitPrice] = useState('0');
   const [taxRate, setTaxRate] = useState('');
   const [lineDiscount, setLineDiscount] = useState('');
+  const [lineDiscountType, setLineDiscountType] = useState<'fixed' | 'percent'>('fixed');
   const [headerDiscount, setHeaderDiscount] = useState('');
+  const [headerDiscountType, setHeaderDiscountType] = useState<'fixed' | 'percent'>('fixed');
   const [invoiceReverseCharge, setInvoiceReverseCharge] = useState(false);
   const [invoiceId, setInvoiceId] = useState('');
   const [returnReason, setReturnReason] = useState('');
@@ -219,7 +221,9 @@ export default function Page() {
       quantity: Number(qty),
       ...(useGroupPrice ? {} : { unit_price: Number(unitPrice) }),
       tax_rate: taxRate === '' ? null : Number(taxRate),
-      discount: lineDisc,
+      discount: lineDiscountType === 'percent' ? 0 : lineDisc,
+      discount_type: lineDiscountType,
+      discount_percent: lineDiscountType === 'percent' ? Math.max(0, Math.min(100, lineDisc)) : 0,
     },
   ];
 
@@ -231,7 +235,9 @@ export default function Page() {
     delivery_date: deliveryDate.trim() || null,
     // null when blank so Create order does not 422 (AddressValue).
     delivery_address: deliveryAddress.trim() || null,
-    discount_amount: hdrDisc,
+    discount_amount: headerDiscountType === 'percent' ? 0 : hdrDisc,
+    discount_type: headerDiscountType,
+    discount_percent: headerDiscountType === 'percent' ? Math.max(0, Math.min(100, hdrDisc)) : 0,
     notes: docNotes.trim() || null,
     items: lineItems,
   };
@@ -240,7 +246,9 @@ export default function Page() {
     customer_id: customerId.trim(),
     store_id: storeId.trim() || null,
     items: lineItems,
-    discount_amount: hdrDisc,
+    discount_amount: headerDiscountType === 'percent' ? 0 : hdrDisc,
+    discount_type: headerDiscountType,
+    discount_percent: headerDiscountType === 'percent' ? Math.max(0, Math.min(100, hdrDisc)) : 0,
     notes: docNotes.trim() || null,
     currency: currency.trim() || null,
     exchange_rate: exchangeRate === '' ? null : Number(exchangeRate),
@@ -1128,6 +1136,14 @@ export default function Page() {
             aria-label="Line tax percent"
             style={{ width: 80 }}
           />
+          <select
+            value={lineDiscountType}
+            onChange={(e) => setLineDiscountType(e.target.value === 'percent' ? 'percent' : 'fixed')}
+            aria-label="Line discount type"
+          >
+            <option value="fixed">Line discount amount</option>
+            <option value="percent">Line discount %</option>
+          </select>
           <input
             value={lineDiscount}
             onChange={(e) => setLineDiscount(e.target.value)}
@@ -1136,6 +1152,14 @@ export default function Page() {
             style={{ width: 110 }}
             title="Line discount amount (tax before discount)"
           />
+          <select
+            value={headerDiscountType}
+            onChange={(e) => setHeaderDiscountType(e.target.value === 'percent' ? 'percent' : 'fixed')}
+            aria-label="Header discount type"
+          >
+            <option value="fixed">Header discount amount</option>
+            <option value="percent">Header discount %</option>
+          </select>
           <input
             value={headerDiscount}
             onChange={(e) => setHeaderDiscount(e.target.value)}
@@ -1898,7 +1922,10 @@ export default function Page() {
                   <td>{it.quantity}</td>
                   <td>{it.unit_price}</td>
                   <td>{it.tax_rate}</td>
-                  <td>{it.discount ?? 0}</td>
+                  <td>
+                    {it.discount ?? 0}
+                    {it.discount_type === 'percent' ? ` (${it.discount_percent}%)` : ''}
+                  </td>
                   <td>{it.condition || '—'}</td>
                   <td>
                     {it.line_tax ?? 0}
@@ -1924,7 +1951,10 @@ export default function Page() {
             </div>
             <div className="card">
               <div className="muted">Discount</div>
-              <div className="kpi">{selected.discount_amount ?? 0}</div>
+              <div className="kpi">
+                {selected.discount_amount ?? 0}
+                {selected.discount_type === 'percent' ? ` (${selected.discount_percent}%)` : ''}
+              </div>
             </div>
             <div className="card">
               <div className="muted">Total</div>

@@ -29,7 +29,8 @@ ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
     NEXT_PUBLIC_UMAMI_DOMAINS=${NEXT_PUBLIC_UMAMI_DOMAINS}
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
+# Never reuse a host/layer .next; standalone runner copies this same build.
+RUN rm -rf .next && npm run build
 
 FROM node:20-alpine AS runner
 WORKDIR /app
@@ -41,10 +42,7 @@ ENV NODE_ENV=production \
 RUN addgroup --system --gid 10001 nodejs \
     && adduser --system --uid 10001 nextjs
 
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/guides ./guides
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 EXPOSE 3000

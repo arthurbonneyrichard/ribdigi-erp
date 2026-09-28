@@ -613,6 +613,7 @@ async def _resolve_expense_store(
     store_id: str | None,
     *,
     branch_id: str | None = None,
+    user_id: str | None = None,
 ) -> str | None:
     """Validate optional store; optionally ensure it belongs to the selected branch."""
     if not store_id:
@@ -620,6 +621,12 @@ async def _resolve_expense_store(
     from app import stores as stores_svc
 
     store = await stores_svc.require_active_store(db, tenant_id, store_id)
+    if user_id:
+        from app import store_access as store_access_svc
+
+        await store_access_svc.assert_store_access(
+            db, tenant_id=tenant_id, user_id=user_id, store_id=store.id
+        )
     if branch_id and store.branch_id and store.branch_id != branch_id:
         raise HTTPException(
             status_code=400,
@@ -659,7 +666,7 @@ async def create_expense(
         department_id=department_id,
     )
     resolved_store = await _resolve_expense_store(
-        db, tenant_id, store_id, branch_id=resolved_branch
+        db, tenant_id, store_id, branch_id=resolved_branch, user_id=user_id
     )
     settings = await get_approval_settings(db, tenant_id)
     levels = settings["levels"]
@@ -963,12 +970,12 @@ async def update_expense(
             expense.store_id = None
         elif store_id is not None:
             expense.store_id = await _resolve_expense_store(
-                db, tenant_id, store_id, branch_id=resolved_branch
+                db, tenant_id, store_id, branch_id=resolved_branch, user_id=user_id
             )
         elif resolved_branch and expense.store_id:
             # Re-validate existing store if branch changed
             expense.store_id = await _resolve_expense_store(
-                db, tenant_id, expense.store_id, branch_id=resolved_branch
+                db, tenant_id, expense.store_id, branch_id=resolved_branch, user_id=user_id
             )
 
     if amount is not None:

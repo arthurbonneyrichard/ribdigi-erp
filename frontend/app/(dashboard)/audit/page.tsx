@@ -55,6 +55,20 @@ function auditEntityQueryValue(raw: string): string | null {
   return v;
 }
 
+function recordHref(entity?: string, entityId?: string | null): string | null {
+  if (!entityId) return null;
+  const e = (entity || '').toLowerCase();
+  const id = String(entityId);
+  if (e === 'user') return `/users`;
+  if (e === 'department') return `/departments`;
+  if (e === 'backup' || e === 'backup_job') return `/backup`;
+  if (e.includes('invoice') && e.includes('sales')) return `/sales`;
+  if (e.includes('purchase')) return `/purchasing`;
+  if (e.includes('expense')) return `/expenses`;
+  if (e === 'product') return `/inventory`;
+  return null;
+}
+
 export default function Page() {
   const [rows, setRows] = useState<any[]>([]);
   const [module, setModule] = useState('');
@@ -194,9 +208,11 @@ export default function Page() {
 
   return (
     <>
-      <h1>Audit Logs</h1>
+      <h1>Audit</h1>
       <p className="muted">
-        Append-only activity trail with integrity verification and 7-year retention (BR-17.2).
+        Who did what, when, and to which record. Search and open the record when a link exists.
+        Passwords and secrets are never shown. Logs cannot be edited or erased. Technical integrity
+        tools stay on Verify chain (platform-style ops).
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
@@ -367,11 +383,18 @@ export default function Page() {
             <th>Entity</th>
             <th>User</th>
             <th>IP</th>
+            <th>Record</th>
             <th>Archived</th>
-            <th>Hash</th>
           </tr>
         </thead>
         <tbody>
+          {rows.length === 0 ? (
+            <tr>
+              <td colSpan={8} className="muted">
+                No audit events for these filters.
+              </td>
+            </tr>
+          ) : null}
           {rows.map((r) => (
             <tr key={r.id}>
               <td>{String(r.created_at)}</td>
@@ -383,12 +406,20 @@ export default function Page() {
               </td>
               <td>{r.user_id ? String(r.user_id).slice(0, 8) : '—'}</td>
               <td>{r.ip_address || '—'}</td>
+              <td>
+                {recordHref(r.entity, r.entity_id) ? (
+                  <a href={recordHref(r.entity, r.entity_id) || '#'}>Open</a>
+                ) : r.entity_id ? (
+                  String(r.entity_id).slice(0, 8)
+                ) : (
+                  '—'
+                )}
+              </td>
               <td className="muted" style={{ fontSize: 12 }}>
                 {r.archived_at
                   ? String(r.archived_at).replace('T', ' ').slice(0, 10)
                   : '—'}
               </td>
-              <td>{r.integrity_hash ? String(r.integrity_hash).slice(0, 10) : '—'}</td>
             </tr>
           ))}
         </tbody>

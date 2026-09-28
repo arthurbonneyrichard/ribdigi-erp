@@ -55,6 +55,10 @@ _STARTER = (
     "customers",
     "suppliers",
     "printers",
+    # Industry verticals are packageable on every plan; resolve_enabled_modules
+    # still strips them unless the tenant's saved industry matches.
+    "hotel",
+    "fmcg",
 )
 
 _PROFESSIONAL = _STARTER + (
@@ -62,8 +66,6 @@ _PROFESSIONAL = _STARTER + (
     "credit",
     "tax",
     "stores",
-    "hotel",
-    "fmcg",
     "reports",
     "audit",
     "backup",
@@ -123,17 +125,81 @@ INDUSTRY_MODULE_ALLOWLIST: dict[str, frozenset[str]] = {
     "fmcg": frozenset({"fmcg"}),
 }
 
+# Implemented industry verticals (must match shipped UI + APIs). Unimplemented
+# verticals are never added to enabled_modules or the sidebar.
+IMPLEMENTED_INDUSTRY_MODULES: frozenset[str] = frozenset({"hotel", "fmcg"})
+
+CANONICAL_INDUSTRIES: frozenset[str] = frozenset(
+    {
+        "retail",
+        "pharmacy",
+        "restaurant",
+        "bakery",
+        "wholesale",
+        "manufacturing",
+        "mart",
+        "hotel",
+        "fmcg",
+        "distribution",
+        "general_trading",
+    }
+)
+
+# Safe aliases → canonical VALID_INDUSTRIES keys. Do not invent competing codes.
+INDUSTRY_ALIASES: dict[str, str] = {
+    "hospitality": "hotel",
+    "hotels": "hotel",
+    "lodging": "hotel",
+    "accommodation": "hotel",
+    "guest_house": "hotel",
+    "guesthouse": "hotel",
+    "retail_mart": "retail",
+    "retail/mart": "retail",
+    "supermarket": "mart",
+    "super_market": "mart",
+    "grocery": "mart",
+    "fast_moving_consumer_goods": "fmcg",
+    "fmcg_distribution": "fmcg",
+    "pharma": "pharmacy",
+    "drugstore": "pharmacy",
+    "resto": "restaurant",
+    "food_service": "restaurant",
+    "cafe": "restaurant",
+    "wholesaler": "wholesale",
+    "distributor": "distribution",
+    "trading": "general_trading",
+    "manufacture": "manufacturing",
+}
+
+
+def canonicalize_industry(industry: str | None) -> str | None:
+    """Map a stored/display industry to a canonical code, or None if invalid."""
+    if industry is None:
+        return None
+    raw = str(industry).strip().lower().replace(" ", "_").replace("-", "_")
+    if not raw:
+        return None
+    raw = INDUSTRY_ALIASES.get(raw, raw)
+    if raw in CANONICAL_INDUSTRIES:
+        return raw
+    return None
+
 
 def industry_allows_module(industry: str | None, module: str) -> bool:
     """Whether a module is allowed for the tenant's business type.
 
     Non-industry-specific (shared/core) modules always pass. Industry-specific
-    modules require a matching industry allowlist entry.
+    modules require a matching, valid industry allowlist entry. Unknown or
+    blank industry does not default to retail for vertical modules.
     """
     mod = (module or "").strip().lower()
     if not mod or mod not in INDUSTRY_SPECIFIC_MODULES:
         return True
-    ind = (industry or "retail").strip().lower()
+    if mod not in IMPLEMENTED_INDUSTRY_MODULES:
+        return False
+    ind = canonicalize_industry(industry)
+    if ind is None:
+        return False
     return mod in INDUSTRY_MODULE_ALLOWLIST.get(ind, frozenset())
 
 
@@ -201,8 +267,10 @@ def resolve_enabled_modules(tenant) -> list[str]:
                 mods.append(m)
     else:
         mods = package_modules(getattr(tenant, "package_code", None))
-    industry = getattr(tenant, "industry", None)
-    return filter_modules_for_industry(mods, industry)
+    industry = canonicalize_industry(getattr(tenant, "industry", None))
+    filtered = filter_modules_for_industry(mods, industry)
+    # Drop unimplemented verticals even if a custom override listed them.
+    return [m for m in filtered if m not in INDUSTRY_SPECIFIC_MODULES or m in IMPLEMENTED_INDUSTRY_MODULES]
 
 
 def module_allowed(tenant, module: str) -> bool:

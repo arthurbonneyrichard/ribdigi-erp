@@ -111,6 +111,66 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "security": ["read", "write"],
         "staff_guide": ["read", "download"],
     },
+    "hotel_manager": {
+        "dashboard": ["read"],
+        "hotel": ["read", "write"],
+        "inventory": ["read", "write"],
+        "pos": ["read", "write"],
+        "purchasing": ["read", "approve"],
+        "expenses": ["read", "write"],
+        "accounting": ["read"],
+        "credit": ["read", "write"],
+        "reports": ["read"],
+        "notifications": ["read", "write"],
+        "users": ["read"],
+        "audit": ["read"],
+        "security": ["read", "write"],
+        "company": ["read", "write"],
+        "printers": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    "hotel_front_desk": {
+        "hotel": ["read", "write"],
+        "notifications": ["read", "write"],
+        "security": ["read", "write"],
+        "printers": ["read"],
+        "staff_guide": ["read", "download"],
+    },
+    "hotel_reservations": {
+        "hotel": ["read", "write"],
+        "notifications": ["read", "write"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    "hotel_housekeeping": {
+        "hotel": ["read", "write"],
+        "notifications": ["read"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    "hotel_maintenance": {
+        "hotel": ["read", "write"],
+        "notifications": ["read"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    "hotel_cashier": {
+        "hotel": ["read", "write"],
+        "pos": ["read", "write"],
+        "accounting": ["read"],
+        "notifications": ["read", "write"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
+    "hotel_auditor": {
+        "hotel": ["read"],
+        "reports": ["read"],
+        "audit": ["read"],
+        "accounting": ["read"],
+        "notifications": ["read"],
+        "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
+    },
 }
 
 ROLE_LABELS: dict[str, str] = {
@@ -125,6 +185,13 @@ ROLE_LABELS: dict[str, str] = {
     "inventory_officer": "Inventory Officer",
     "accountant": "Accountant",
     "cashier": "Cashier",
+    "hotel_manager": "Hotel Manager",
+    "hotel_front_desk": "Front Desk",
+    "hotel_reservations": "Reservations",
+    "hotel_housekeeping": "Housekeeping",
+    "hotel_maintenance": "Maintenance",
+    "hotel_cashier": "Hotel Cashier",
+    "hotel_auditor": "Hotel Auditor",
 }
 
 PLATFORM_ROLES = frozenset(
@@ -252,6 +319,13 @@ ROLE_RECORD_SCOPE: dict[str, str] = {
     "inventory_officer": "all",
     "sales_officer": "own",
     "cashier": "own",
+    "hotel_manager": "all",
+    "hotel_front_desk": "all",
+    "hotel_reservations": "all",
+    "hotel_housekeeping": "all",
+    "hotel_maintenance": "all",
+    "hotel_cashier": "all",
+    "hotel_auditor": "all",
 }
 
 

@@ -109,7 +109,7 @@ async def _claims_from_api_key(
         "read_only": tenants_svc.is_read_only(tenant),
         "package_code": getattr(tenant, "package_code", None) or "trial",
         "enabled_modules": packages_svc.resolve_enabled_modules(tenant),
-        "industry": getattr(tenant, "industry", None) or "retail",
+        "industry": packages_svc.canonicalize_industry(getattr(tenant, "industry", None)) or "",
         "branch_id": None,
         "department_id": None,
         "record_scope": "all",
@@ -257,7 +257,7 @@ async def current_claims(
 
     data["package_code"] = getattr(tenant, "package_code", None) or "trial"
     data["enabled_modules"] = packages_svc.resolve_enabled_modules(tenant)
-    data["industry"] = getattr(tenant, "industry", None) or "retail"
+    data["industry"] = packages_svc.canonicalize_industry(getattr(tenant, "industry", None)) or ""
     data["branch_id"] = getattr(user, "branch_id", None)
     data["department_id"] = getattr(user, "department_id", None)
     from app.rbac import record_scope_from_permissions
@@ -360,7 +360,7 @@ def require_permission(module: str, action: str = "read"):
             from app import packages as packages_svc
 
             mod = (module or "").strip().lower()
-            industry = (claims.get("industry") or "retail").strip().lower()
+            industry = packages_svc.canonicalize_industry(claims.get("industry"))
             if (
                 mod
                 and mod in packages_svc.INDUSTRY_SPECIFIC_MODULES

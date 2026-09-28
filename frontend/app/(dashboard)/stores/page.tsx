@@ -160,6 +160,7 @@ export default function Page() {
   const [drawerOnCash, setDrawerOnCash] = useState(true);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [storeBusy, setStoreBusy] = useState(false);
   const [storeManageFilter, setStoreManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [warehouseManageFilter, setWarehouseManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [branchManageFilter, setBranchManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -242,6 +243,7 @@ export default function Page() {
 
   async function createStore() {
     setError('');
+    setStoreBusy(true);
     try {
       await api('/stores', {
         method: 'POST',
@@ -272,6 +274,8 @@ export default function Page() {
       } else {
         setError(err.message);
       }
+    } finally {
+      setStoreBusy(false);
     }
   }
 
@@ -1039,10 +1043,11 @@ export default function Page() {
             <HoursEditor value={hours} onDay={(day, patch) => setDayHours('create', day, patch)} />
             <button
               onClick={createStore}
-              disabled={!code.trim() || !name.trim()}
+              disabled={storeBusy || !code.trim() || !name.trim()}
               aria-label="Create store"
+              aria-busy={storeBusy}
             >
-              Create store
+              {storeBusy ? 'Creating store…' : 'Create store'}
             </button>
           </div>
         </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { moduleEnabledForTenant } from '../../../lib/industryModules';
@@ -79,6 +80,9 @@ const SCHEME_TYPES = ['percent', 'fixed', 'bxgy'];
 const VISIT_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
 export default function FmcgPage() {
+  const searchParams = useSearchParams();
+  const tab = (searchParams?.get('tab') || '').trim().toLowerCase();
+  const show = (section: string) => !tab || tab === section;
   const [moduleAllowed, setModuleAllowed] = useState<boolean | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [schemes, setSchemes] = useState<Scheme[]>([]);
@@ -314,7 +318,7 @@ export default function FmcgPage() {
 
   return (
     <>
-      <h1>FMCG</h1>
+      <h1>FMCG management</h1>
       <p className="muted">
         Manage trade schemes, distribution routes, and near-expiry awareness for fast-moving goods.
       </p>

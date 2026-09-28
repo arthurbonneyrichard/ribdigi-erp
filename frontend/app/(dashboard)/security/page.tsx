@@ -97,6 +97,10 @@ export default function Page() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [revokingId, setRevokingId] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [pwdBusy, setPwdBusy] = useState(false);
+  const [revokeOthersBusy, setRevokeOthersBusy] = useState(false);
 
   async function refresh() {
     const [r, keys, sess] = await Promise.all([
@@ -245,8 +249,11 @@ export default function Page() {
 
   return (
     <>
-      <h1>Security / 2FA</h1>
-      <p className="muted">TOTP authenticator, passkeys, recovery codes, and active sessions</p>
+      <h1>Security</h1>
+      <p className="muted">
+        Password, sessions, 2FA, and sign-in activity for your account. Sensitive changes require
+        your current password. Infrastructure (Docker, database hosts, object storage) is not shown here.
+      </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 
@@ -262,6 +269,54 @@ export default function Page() {
         </div>
       )}
 
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h2>Password</h2>
+        <p className="muted">Changing your password signs out other devices.</p>
+        <div style={{ display: 'grid', gap: 8, maxWidth: 360 }}>
+          <input
+            type="password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            placeholder="Current password"
+            aria-label="Current password"
+          />
+          <input
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="New password"
+            aria-label="New password"
+          />
+          <button
+            type="button"
+            disabled={pwdBusy || !currentPassword.trim() || !newPassword.trim()}
+            onClick={async () => {
+              setError('');
+              setMessage('');
+              setPwdBusy(true);
+              try {
+                const r = await api('/auth/change-password', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    current_password: currentPassword,
+                    new_password: newPassword,
+                  }),
+                });
+                setCurrentPassword('');
+                setNewPassword('');
+                setMessage(r.message || 'Password updated');
+              } catch (err: any) {
+                setError(err.message || 'Password was not changed');
+              } finally {
+                setPwdBusy(false);
+              }
+            }}
+          >
+            {pwdBusy ? 'Saving…' : 'Update password'}
+          </button>
+        </div>
+      </div>
       <div className="card" style={{ marginBottom: 16 }}>
         <h2>Active sessions</h2>
         <p className="muted">
@@ -308,6 +363,27 @@ export default function Page() {
           ))}
           {!sessions.length && <li className="muted">No active sessions</li>}
         </ul>
+        <button
+          type="button"
+          style={{ marginTop: 12 }}
+          disabled={revokeOthersBusy}
+          onClick={async () => {
+            setError('');
+            setMessage('');
+            setRevokeOthersBusy(true);
+            try {
+              const r = await api('/auth/sessions/revoke-others', { method: 'POST', body: '{}' });
+              setMessage(r.message || 'Other sessions signed out');
+              await refresh();
+            } catch (err: any) {
+              setError(err.message);
+            } finally {
+              setRevokeOthersBusy(false);
+            }
+          }}
+        >
+          {revokeOthersBusy ? 'Signing out…' : 'Sign out other sessions'}
+        </button>
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>

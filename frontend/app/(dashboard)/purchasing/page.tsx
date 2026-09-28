@@ -310,6 +310,9 @@ export default function Page() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [attachPreview, setAttachPreview] = useState<{ apiPath: string; title: string } | null>(null);
+  const [saveBusy, setSaveBusy] = useState(false);
+  const [listQuery, setListQuery] = useState('');
+  const [supplierDrawer, setSupplierDrawer] = useState(false);
   async function refresh() {
     const [poRes, prRes, settingsRes, supRes, prodRes, unitRes, whRes, grnRes, invRes, retRes] =
       await Promise.all([
@@ -361,7 +364,10 @@ export default function Page() {
   }, [grnId, grns]);
 
   async function createSupplier() {
+    if (saveBusy) return;
     setError('');
+    setMessage('');
+    setSaveBusy(true);
     try {
       const r = await api('/suppliers', {
         method: 'POST',
@@ -394,8 +400,11 @@ export default function Page() {
       setSupplierTermsDays('30');
       await refresh();
       setMessage('Supplier created');
+      setSupplierDrawer(false);
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setSaveBusy(false);
     }
   }
 
@@ -422,8 +431,10 @@ export default function Page() {
   }
 
   async function createPo() {
+    if (saveBusy) return;
     setError('');
     setMessage('');
+    setSaveBusy(true);
     try {
       const r = await api('/purchasing/orders', {
         method: 'POST',
@@ -440,7 +451,7 @@ export default function Page() {
               unit_id: unitId.trim() || null,
               unit_price: Number(unitPrice),
               discount: Math.max(0, Number(lineDiscount) || 0),
-              // omit tax_rate → backend resolves product/category/default (BR-12.2)
+              // tax is resolved from product or company default
             },
           ],
         }),
@@ -455,6 +466,8 @@ export default function Page() {
       setTab('orders');
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setSaveBusy(false);
     }
   }
 
@@ -587,7 +600,10 @@ export default function Page() {
   }
 
   async function receiveAll(po: PurchaseOrder) {
+    if (saveBusy) return;
     setError('');
+    setMessage('');
+    setSaveBusy(true);
     try {
       const items = po.items
         .filter((i) => i.outstanding_qty > 0)
@@ -618,6 +634,7 @@ export default function Page() {
         });
       if (!items.length) {
         setError('Nothing left to receive');
+        setSaveBusy(false);
         return;
       }
       const r = await api('/purchasing/grn', {
@@ -638,12 +655,16 @@ export default function Page() {
       setTab('grn');
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setSaveBusy(false);
     }
   }
 
   async function postPartialReceive(po: PurchaseOrder) {
+    if (saveBusy) return;
     setError('');
     setMessage('');
+    setSaveBusy(true);
     try {
       const items = po.items
         .filter((i) => i.outstanding_qty > 0)
@@ -688,6 +709,7 @@ export default function Page() {
         .filter((i) => i.received_qty > 0);
       if (!items.length) {
         setError('Enter a received quantity on at least one line');
+        setSaveBusy(false);
         return;
       }
       const r = await api('/purchasing/grn', {
@@ -737,6 +759,8 @@ export default function Page() {
       setTab('grn');
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setSaveBusy(false);
     }
   }
 
@@ -1136,26 +1160,44 @@ export default function Page() {
     return (inv.status || 'draft') === piManageFilter;
   });
 
-  return (
-    <>
-      <h1>Purchasing</h1>
-      <p className="muted">Requests → purchase orders → GRN → invoices → returns</p>
-      {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
+  const supplierNameOf = (id: string) => suppliers.find((s) => s.id === id)?.name || id.slice(0, 8);
+  const poNumberOf = (id: string) => orders.find((o) => o.id === id)?.po_number || id.slice(0, 8);
+  const filteredSuppliers = suppliers.filter((s) => {
+    const st = s.status || 'active';
+    if (supplierManageFilter === 'inactive' && st !== 'inactive') return false;
+    if (supplierManageFilter === 'active' && st === 'inactive') return false;
+    if (!listQuery.trim()) return true;
+    const q = listQuery.trim().toLowerCase();
+    return `${s.name} ${s.code || ''} ${s.category || ''}`.toLowerCase().includes(q);
+  });
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+  return (
+    <div className="purch-desk">
+      <div className="cat-head">
+        <div>
+          <h1 style={{ margin: 0 }}>Purchasing</h1>
+          <p className="muted" style={{ margin: '4px 0 0' }}>
+            Supplier → Purchase Order → Receive Goods → Supplier Bill → Payment → Balance
+          </p>
+        </div>
+      </div>
+      {error ? <p className="form-flash err">{error}</p> : null}
+      {message ? <p className="form-flash ok">{message}</p> : null}
+
+      <div className="sales-toolbar">
         {(
           [
             ['suppliers', 'Suppliers'],
             ['requests', 'Requests'],
-            ['orders', 'Orders'],
-            ['grn', 'GRNs'],
-            ['invoices', 'Invoices'],
+            ['orders', 'Purchase Orders'],
+            ['grn', 'Receive Goods'],
+            ['invoices', 'Supplier Bills'],
             ['returns', 'Returns'],
           ] as const
         ).map(([id, label]) => (
           <button
             key={id}
+            className={tab === id ? 'sales-tab is-on' : 'sales-tab'}
             onClick={() => selectTab(id)}
             disabled={tab === id}
             aria-label={`Show purchasing ${id} tab`}
@@ -1451,9 +1493,67 @@ export default function Page() {
 
       {(tab === 'orders' || tab === 'suppliers') && (
         <>
+      {tab === 'suppliers' && (
+        <div className="card cat-panel" style={{ marginBottom: 16 }}>
+          <div className="cat-head">
+            <h2 style={{ margin: 0 }}>Suppliers</h2>
+            <button type="button" onClick={() => setSupplierDrawer(true)} aria-label="Add supplier">
+              Add supplier
+            </button>
+          </div>
+          <div className="cat-toolbar">
+            <input
+              className="sales-search"
+              value={listQuery}
+              onChange={(e) => setListQuery(e.target.value)}
+              placeholder="Search suppliers"
+              aria-label="Search suppliers"
+            />
+            <select
+              value={supplierManageFilter}
+              onChange={(e) => setSupplierManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
+              aria-label="Supplier status filter"
+            >
+              <option value="all">All statuses</option>
+              <option value="active">Active only</option>
+              <option value="inactive">Inactive only</option>
+            </select>
+          </div>
+          {filteredSuppliers.length === 0 ? (
+            <p className="cat-empty muted">No suppliers yet. Add a supplier to start purchase orders.</p>
+          ) : (
+            <div className="cat-table-wrap">
+              <table className="table cat-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Code</th>
+                    <th>Status</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredSuppliers.map((s) => (
+                    <tr key={s.id}>
+                      <td data-label="Name"><strong>{s.name}</strong></td>
+                      <td data-label="Code">{s.code || '—'}</td>
+                      <td data-label="Status">{s.status === 'inactive' ? 'Inactive' : 'Active'}</td>
+                      <td className="cat-actions">
+                        <button type="button" onClick={() => setSupplierId(s.id)} aria-label={`Manage ${s.name}`}>
+                          Manage
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
           <div className="erp-split">
-      <div className="card" style={{ marginBottom: 16 }}>
-        <h3>Quick add supplier</h3>
+      <div className="card" style={{ marginBottom: 16, display: tab === 'suppliers' || supplierDrawer ? undefined : 'none' }}>
+        <h3>Add supplier</h3>
         <div className="erp-form-grid">
           <input
             value={supplierName}
@@ -1546,11 +1646,12 @@ export default function Page() {
           <button
             type="button"
             onClick={createSupplier}
-            disabled={!supplierName.trim()}
+            disabled={!supplierName.trim() || saveBusy}
             aria-label="Add supplier"
           >
-            Add
+            {saveBusy ? 'Saving…' : 'Add supplier'}
           </button>
+          {message ? <p className="form-flash ok">{message}</p> : null}
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
           <select
@@ -1633,7 +1734,7 @@ export default function Page() {
       {tab === 'orders' && (
       <>
       <div className="card" style={{ marginBottom: 16 }}>
-        <h3>Create purchase order</h3>
+        <h3>Add purchase order</h3>
         <div className="erp-form-grid">
           <select
             value={supplierId}
@@ -1722,11 +1823,12 @@ export default function Page() {
           <button
             className="btn-primary"
             onClick={createPo}
-            disabled={!supplierId || !productId}
-            aria-label="Create draft PO"
+            disabled={!supplierId || !productId || saveBusy}
+            aria-label="Create purchase order"
           >
-            Create draft PO
+            {saveBusy ? 'Saving…' : 'Create purchase order'}
           </button>
+          {message ? <p className="form-flash ok">{message}</p> : null}
         </div>
       </div>
 
@@ -1743,7 +1845,7 @@ export default function Page() {
               />
             </label>
             <p className="muted" style={{ marginTop: 6 }}>
-              Appended to PO notes and audit (<code>POST .../cancel</code> {'{ reason }'}).
+              Saved on the purchase order notes.
             </p>
             <label style={{ display: 'block', marginTop: 8 }}>
               Email override{' '}
@@ -1787,6 +1889,7 @@ export default function Page() {
             <thead>
               <tr>
                 <th>PO</th>
+                <th>Supplier</th>
                 <th>Status</th>
                 <th>Rev</th>
                 <th>Total</th>
@@ -1806,6 +1909,7 @@ export default function Page() {
                       {o.po_number}
                     </button>
                   </td>
+                  <td>{supplierNameOf(o.supplier_id)}</td>
                   <td>{o.status}</td>
                   <td>{o.revision_no ?? 0}</td>
                   <td>{o.total_amount}</td>
@@ -1879,7 +1983,7 @@ export default function Page() {
                     Cancel PO
                   </button>
                   <span className="muted" style={{ marginLeft: 8 }}>
-                    Allowed while draft/sent with no receipts; cancel reason required (BR-6.3).
+                    Allowed while draft or sent with no receipts. Enter a cancel reason first.
                   </span>
                 </p>
               )}
@@ -2177,7 +2281,7 @@ export default function Page() {
                     aria-label="Purchase order amend reason"
                   />
                   <p className="muted" style={{ margin: 0 }}>
-                    Required — stored on amendment history and audit (<code>po_amended.details.reason</code>).
+                    Required. Stored on the amendment history.
                   </p>
                   <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <input
@@ -2226,7 +2330,17 @@ export default function Page() {
       )}
 
       {tab === 'grn' && (
-        <table className="table">
+        <div className="card cat-panel">
+        <div className="cat-head">
+          <h2 style={{ margin: 0 }}>Receive Goods</h2>
+        </div>
+        <p className="muted" style={{ margin: 0 }}>
+          Receive against a sent purchase order. Stock is posted once; a retry on a fully received order is rejected.
+        </p>
+        {grns.length === 0 ? (
+          <p className="cat-empty muted">No received goods yet. Open a purchase order and receive lines.</p>
+        ) : (
+        <table className="table cat-table">
           <thead>
             <tr>
               <th>GRN</th>
@@ -2256,8 +2370,8 @@ export default function Page() {
                 .join('; ');
               return (
                 <tr key={g.id}>
-                  <td>{g.grn_number}</td>
-                  <td>{g.purchase_order_id}</td>
+                  <td data-label="GRN">{g.grn_number}</td>
+                  <td data-label="PO">{poNumberOf(g.purchase_order_id)}</td>
                   <td>{g.status}</td>
                   <td>{g.items?.length || 0}</td>
                   <td>{accepted}</td>
@@ -2269,13 +2383,15 @@ export default function Page() {
             })}
           </tbody>
         </table>
+        )}
+        </div>
       )}
 
       {tab === 'invoices' && (
         <>
           <div className="erp-split">
       <div className="card" style={{ marginBottom: 16 }}>
-        <h3>Create purchase invoice from GRN</h3>
+        <h3>Create supplier bill from received goods</h3>
         <div className="erp-form-grid">
           <select
             value={invoiceGrnId}
@@ -2353,7 +2469,7 @@ export default function Page() {
         </div>
       </div>
       <div className="card" style={{ marginBottom: 16 }}>
-        <h3>Create manual purchase invoice</h3>
+        <h3>Create supplier bill</h3>
         <div className="erp-form-grid">
           <select
             value={manualInvSupplierId}
@@ -2539,8 +2655,7 @@ export default function Page() {
             />
           </label>
           <p className="muted" style={{ marginTop: 6 }}>
-            Appended to invoice notes and audit (<code>POST .../invoices/.../cancel</code>{' '}
-            {'{ reason }'}).
+            Saved on the supplier bill notes.
           </p>
         </div>
         <select
@@ -2712,7 +2827,7 @@ export default function Page() {
                   Cancel invoice
                 </button>
                 <span className="muted" style={{ marginLeft: 8 }}>
-                  Allowed for draft/unpaid/overdue with no payments; cancel reason required (BR-6.5).
+                  Allowed for draft, unpaid, or overdue bills with no payments. Enter a cancel reason first.
                   Reverses AP if posted.
                 </span>
               </p>
@@ -2968,6 +3083,6 @@ export default function Page() {
           onError={(msg) => setError(msg)}
         />
       )}
-    </>
+    </div>
   );
 }

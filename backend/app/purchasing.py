@@ -322,8 +322,12 @@ async def create_purchase_order(
     await require_active_supplier(db, tenant_id, supplier_id)
     if warehouse_id:
         from app.warehouses import require_active_warehouse
+        from app import store_access as store_access_svc
 
         await require_active_warehouse(db, tenant_id, warehouse_id)
+        await store_access_svc.assert_warehouse_access(
+            db, tenant_id=tenant_id, user_id=user_id, warehouse_id=warehouse_id
+        )
 
     from app.uom import resolve_line_unit
 
@@ -761,6 +765,15 @@ async def create_grn(
     po = await get_po(db, tenant_id, purchase_order_id)
     if po.status not in PO_RECEIVABLE:
         raise HTTPException(status_code=409, detail=f"Cannot receive against PO in status {po.status}")
+
+    from app import store_access as store_access_svc
+
+    await store_access_svc.assert_warehouse_access(
+        db,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        warehouse_id=warehouse_id or po.warehouse_id,
+    )
 
     po_items = {i.id: i for i in await list_po_items(db, tenant_id, po.id)}
     accepted_value = 0.0

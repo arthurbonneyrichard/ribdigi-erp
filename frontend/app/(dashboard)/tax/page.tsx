@@ -228,9 +228,14 @@ export default function Page() {
   return (
     <>
       <h1>Tax</h1>
-      <p className="muted">Rates, calculator, period summary, and filing export pack</p>
-      {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
+      <p className="muted">
+        Default rate applies unless a product or line overrides it. Inclusive means the price already
+        contains tax; exclusive means tax is added on top. This screen previews — the server amount on
+        the sale or bill is the one that posts. Changing a rate does not rewrite past invoices.
+        Ghana GRA mapping is available when the company jurisdiction is Ghana (export only — not e-filed).
+      </p>
+      {error && <p className="erp-banner err" role="alert">{error}</p>}
+      {message && <p className="erp-banner ok" role="status">{message}</p>}
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h3>Period</h3>
@@ -290,10 +295,18 @@ export default function Page() {
 
       <div className="grid">
         <div className="card">
-          <h3>Create rate</h3>
+          <h3>Add a tax rate</h3>
           <div style={{ display: 'grid', gap: 8 }}>
-            <input aria-label="Tax rate name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Name" />
+            <label>
+              Name
+            <input aria-label="Tax rate name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Standard VAT" />
+            </label>
+            <label>
+              Rate %
             <input value={rate} onChange={(e) => setRate(e.target.value)} placeholder="Rate %" aria-label="Tax rate percent" />
+            </label>
+            <label>
+              Kind
             <select
               value={taxType}
               onChange={(e) => setTaxType(e.target.value)}
@@ -304,14 +317,18 @@ export default function Page() {
               <option value="sales_tax">Sales tax</option>
               <option value="custom">Custom</option>
             </select>
+            </label>
+            <label>
+              How prices work
             <select
               value={pricingMode}
               onChange={(e) => setPricingMode(e.target.value)}
               aria-label="Tax pricing mode"
             >
-              <option value="exclusive">Exclusive</option>
-              <option value="inclusive">Inclusive</option>
+              <option value="exclusive">Exclusive — tax added on top of the price</option>
+              <option value="inclusive">Inclusive — price already includes tax</option>
             </select>
+            </label>
             <label className="muted">
               <input
                 type="checkbox"
@@ -319,24 +336,27 @@ export default function Page() {
                 onChange={(e) => setReverseCharge(e.target.checked)}
                 aria-label="Tax reverse charge"
               />{' '}
-              Reverse charge
+              Buyer self-assesses (reverse charge)
             </label>
-            <label className="muted">Compound components (optional JSON)</label>
+            <details>
+              <summary className="muted">Advanced: compound components</summary>
             <textarea
               value={componentsJson}
               onChange={(e) => setComponentsJson(e.target.value)}
               rows={3}
-              placeholder='[{"code":"cgst","name":"CGST","rate":9,"basis":"net"},{"code":"sgst","name":"SGST","rate":9,"basis":"net"}]'
+              placeholder='Only if you use split GST components'
               aria-label="Tax rate components JSON"
               title="JSON array of {code,name,rate,basis}; code/name omit or non-empty (blank/!!!/URL → 422); basis net|compound"
             />
+            </details>
             <button type="button" aria-label="Add tax rate" onClick={createRate} disabled={!name.trim()}>
               Add rate
             </button>
           </div>
         </div>
         <div className="card">
-          <h3>Calculator</h3>
+          <h3>Preview with default rate</h3>
+          <p className="muted">Estimate only. Posted documents use the server calculation.</p>
           <input
             value={calcAmount}
             onChange={(e) => setCalcAmount(e.target.value)}
@@ -347,34 +367,38 @@ export default function Page() {
           </button>
           {calcResult && (
             <p className="muted" style={{ marginTop: 8 }}>
-              Net {calcResult.net} · Tax {calcResult.tax} · Gross {calcResult.gross} (
-              {calcResult.rate}% {calcResult.pricing_mode}
+              Before tax {calcResult.net} · Tax {calcResult.tax} · Customer pays {calcResult.gross} (
+              {calcResult.rate}% {calcResult.pricing_mode === 'inclusive' ? 'included in price' : 'added on top'}
               {calcResult.is_reverse_charge ? ' · reverse charge' : ''})
             </p>
           )}
         </div>
         <div className="card">
-          <h3>Tax report{report?.store_name ? ` · ${report.store_name}` : ''}</h3>
-          <p>Output tax: {report?.output_tax ?? '—'}</p>
+          <h3>This period{report?.store_name ? ` · ${report.store_name}` : ''}</h3>
+          <p>VAT collected on sales: {report?.output_tax ?? '—'}</p>
           <p className="muted">
             Invoices {report?.output_tax_invoices ?? 0} · POS {report?.output_tax_pos ?? 0}
             {report?.reverse_charge_tax != null
               ? ` · RC memo ${report.reverse_charge_tax}`
               : ''}
           </p>
-          <p>Input tax: {report?.input_tax ?? '—'}</p>
+          <p>VAT on purchases (claimable): {report?.input_tax ?? '—'}</p>
           <p className="muted">Source: {report?.input_tax_source ?? '—'}</p>
           <div className="kpi">{report?.net_tax_payable ?? '—'}</div>
-          <p className="muted">Net payable / refundable</p>
+          <p className="muted">Amount to pay (or refund if negative)</p>
         </div>
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>
         <h3>Filing pack</h3>
         <p className="muted">
-          Jurisdiction-neutral boxes + output/input schedules
+          Boxes for your records
           {filing?.store_name ? ` · ${filing.store_name}` : ''}
-          {filing?.jurisdiction ? ` · Tenant jurisdiction: ${filing.jurisdiction}` : ''}
+          {filing?.jurisdiction === 'GH'
+            ? ' · Ghana VAT return mapping is available below (not sent to GRA automatically)'
+            : filing?.jurisdiction
+              ? ` · Company jurisdiction: ${filing.jurisdiction}`
+              : ''}
           {filing?.tax_registration_number
             ? ` · TIN ${filing.tax_registration_number}`
             : ' · TIN not set (set on Company)'}
@@ -501,7 +525,7 @@ export default function Page() {
               <td>{r.name}</td>
               <td>{r.tax_type}</td>
               <td>{r.rate}%</td>
-              <td>{r.pricing_mode}</td>
+              <td>{r.pricing_mode === 'inclusive' ? 'Included in price' : 'Added on top'}</td>
               <td>{String(!!r.is_reverse_charge)}</td>
               <td className="muted">
                 {r.components?.length

@@ -177,6 +177,8 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
         "reverse_charge_tax": money_json(getattr(invoice, "reverse_charge_tax", 0) or 0),
         "is_reverse_charge": bool(getattr(invoice, "is_reverse_charge", False)),
         "discount_amount": money_json(invoice.discount_amount),
+        "discount_type": getattr(invoice, "discount_type", None) or "fixed",
+        "discount_percent": money_json(getattr(invoice, "discount_percent", None) or 0),
         "total_amount": money_json(invoice.total_amount),
         "paid_amount": money_json(invoice.paid_amount),
         "balance_due": balance_due,
@@ -204,6 +206,8 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
                 "tax_rate": money_json(i.tax_rate),
                 "tax_supply_class": getattr(i, "tax_supply_class", None) or "standard",
                 "discount": money_json(i.discount),
+                "discount_type": getattr(i, "discount_type", None) or "fixed",
+                "discount_percent": money_json(getattr(i, "discount_percent", None) or 0),
                 "line_subtotal": money_json(getattr(i, "line_subtotal", None) or 0),
                 "line_tax": money_json(_line_tax_value(i)),
                 "is_reverse_charge": bool(getattr(i, "is_reverse_charge", False)),
@@ -291,6 +295,8 @@ async def create_sales_invoice(
     customer_id: str,
     items: list[dict],
     discount_amount: float = 0,
+    discount_type: str | None = "fixed",
+    discount_percent: float = 0,
     notes: str | None = None,
     store_id: str | None = None,
     currency: str | None = None,
@@ -310,9 +316,15 @@ async def create_sales_invoice(
         from app import stores as stores_svc
 
         store = await stores_svc.require_active_store(db, tenant_id, store_id)
+        from app import store_access as store_access_svc
+
+        await store_access_svc.assert_store_access(
+            db, tenant_id=tenant_id, user_id=user_id, store_id=store.id
+        )
         resolved_store_id = store.id
 
     from app.uom import resolve_line_unit
+    from app.sale_discounts import resolve_discount
 
     header_rc = bool(is_reverse_charge)
     subtotal = 0.0
@@ -337,17 +349,14 @@ async def create_sales_invoice(
             )
         else:
             spec = await resolve_product_tax(db, tenant_id, product, explicit_rate=None)
-        line_amount = qty * money_json(unit_price)
-        breakdown = spec.compute_breakdown(line_amount)
-        line_sub = money_json(breakdown["net"])
-        line_tax = money_json(breakdown["tax"])
-        line_is_rc = header_rc or bool(spec.is_reverse_charge)
-        # Customer-charged line: exclude tax when reverse charge (header or rate).
-        if line_is_rc:
-            line_total = line_sub
-        else:
-            line_total = money_json(breakdown["gross"])
-        discount = money_json(item.get("discount") or 0)
+        line_amount = money_json(round(qty * money_json(unit_price), 2))
+        discount, line_disc_type, line_disc_pct = resolve_discount(
+            base_amount=line_amount,
+            discount=item.get("discount") or 0,
+            discount_type=item.get("discount_type") or "fixed",
+            discount_percent=item.get("discount_percent") or 0,
+            label="Line discount",
+        )
         if discount <= 0:
             try:
                 from app import fmcg as fmcg_svc
@@ -365,9 +374,19 @@ async def create_sales_invoice(
                     )
                     if scheme_disc > 0:
                         discount = money_json(min(scheme_disc, line_amount))
+                        line_disc_type = "fixed"
+                        line_disc_pct = 0
             except Exception:
                 pass
-        line_total = max(line_total - discount, 0)
+        taxable_base = money_json(round(line_amount - discount, 2))
+        breakdown = spec.compute_breakdown(taxable_base)
+        line_sub = money_json(breakdown["net"])
+        line_tax = money_json(breakdown["tax"])
+        line_is_rc = header_rc or bool(spec.is_reverse_charge)
+        if line_is_rc:
+            line_total = line_sub
+        else:
+            line_total = money_json(breakdown["gross"])
         subtotal += line_sub
         if line_is_rc:
             reverse_charge_tax += line_tax
@@ -382,6 +401,8 @@ async def create_sales_invoice(
                     "unit_id": unit_id,
                     "unit_price": unit_price,
                     "discount": discount,
+                    "discount_type": line_disc_type,
+                    "discount_percent": line_disc_pct,
                     "tax_rate": spec.rate_pct,
                     "tax_supply_class": spec.supply_class,
                     "line_subtotal": line_sub,
@@ -393,8 +414,15 @@ async def create_sales_invoice(
             )
         )
 
-    discount_amount = money_json(discount_amount or 0)
-    total = max(subtotal + tax_total - discount_amount, 0)
+    header_base = money_json(round(subtotal + tax_total, 2))
+    discount_amount, header_disc_type, header_disc_pct = resolve_discount(
+        base_amount=header_base,
+        discount=discount_amount or 0,
+        discount_type=discount_type,
+        discount_percent=discount_percent or 0,
+        label="Sale discount",
+    )
+    total = max(header_base - discount_amount, 0)
 
     invoice = m.SalesInvoice(
         tenant_id=tenant_id,
@@ -406,6 +434,8 @@ async def create_sales_invoice(
         reverse_charge_tax=money_json(round(reverse_charge_tax, 2)),
         is_reverse_charge=header_rc,
         discount_amount=discount_amount,
+        discount_type=header_disc_type,
+        discount_percent=header_disc_pct,
         total_amount=total,
         paid_amount=0,
         currency=cur,
@@ -430,6 +460,8 @@ async def create_sales_invoice(
                 tax_rate=item.get("tax_rate", 0),
                 tax_supply_class=item.get("tax_supply_class") or "standard",
                 discount=item.get("discount", 0),
+                discount_type=item.get("discount_type") or "fixed",
+                discount_percent=item.get("discount_percent") or 0,
                 line_subtotal=item.get("line_subtotal") or 0,
                 line_tax=item.get("line_tax") or 0,
                 is_reverse_charge=bool(item.get("is_reverse_charge")),

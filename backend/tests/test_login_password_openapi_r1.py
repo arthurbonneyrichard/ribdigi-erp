@@ -46,6 +46,8 @@ def test_login_password_ui_and_docs():
     assert 'aria-label="Login password"' in page
     assert "trimmedPassword" in page
     assert "!trimmedPassword" in page
+    assert "setBusy(true)" in page
+    assert "Signing in" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Login password OpenAPI" in agents
     assert "LoginPasswordValue" in agents

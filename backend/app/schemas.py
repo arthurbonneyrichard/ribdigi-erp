@@ -492,6 +492,15 @@ class TwoFactorDisable(BaseModel):
     code: TwoFactorCodeValue
 
 
+class ChangePasswordRequest(BaseModel):
+    """POST /auth/change-password — reauth with current password; extra keys → 422."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    current_password: TwoFactorDisablePasswordValue
+    new_password: TwoFactorDisablePasswordValue
+
+
 class WebAuthnAttestationResponse(BaseModel):
     """Registration authenticator response (create). Unknown keys → **422**."""
 
@@ -1800,6 +1809,8 @@ class LineItem(BaseModel):
     unit_price: NonNegativeMoneyValue | None = None
     # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
     discount: NonNegativeMoneyValue = 0
+    discount_type: DiscountKindValue = "fixed"
+    discount_percent: PercentRateValue = 0
 
 
 class LegacyTransactionPayload(BaseModel):
@@ -3492,6 +3503,8 @@ class SalesInvoiceItemCreate(BaseModel):
     tax_rate: NonNegativeMoneyValue | None = None
     # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
     discount: NonNegativeMoneyValue = 0
+    discount_type: DiscountKindValue = "fixed"
+    discount_percent: PercentRateValue = 0
     # Optional variant ∈ UuidIdValue; omit/`null` → no variant; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach variant lookup).
     # Same honesty as LineItem.variant_id.
@@ -3508,6 +3521,8 @@ class SalesInvoiceCreate(BaseModel):
     customer_id: UuidIdValue
     # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
     discount_amount: NonNegativeMoneyValue = 0
+    discount_type: DiscountKindValue = "fixed"
+    discount_percent: PercentRateValue = 0
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on SalesInvoice.notes Text).
     notes: SalesDocumentNotesValue | None = None
@@ -3534,6 +3549,8 @@ class SalesQuotationCreate(BaseModel):
     customer_id: UuidIdValue
     # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
     discount_amount: NonNegativeMoneyValue = 0
+    discount_type: DiscountKindValue = "fixed"
+    discount_percent: PercentRateValue = 0
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on SalesQuotation.notes Text).
     notes: SalesDocumentNotesValue | None = None
@@ -3581,6 +3598,8 @@ class SalesOrderCreate(BaseModel):
     delivery_address: AddressValue | None = None
     # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
     discount_amount: NonNegativeMoneyValue = 0
+    discount_type: DiscountKindValue = "fixed"
+    discount_percent: PercentRateValue = 0
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on SalesOrder.notes Text).
     notes: SalesDocumentNotesValue | None = None
@@ -6524,6 +6543,10 @@ PercentRateValue = Annotated[
     float,
     Field(allow_inf_nan=False, ge=0, le=100),
 ]
+DiscountKindValue = Annotated[
+    Literal["fixed", "percent"],
+    BeforeValidator(coerce_package_code_value),
+]
 # Positive quantity (line qty, received qty) — gt 0 + finite.
 PositiveQtyValue = Annotated[
     float,
@@ -8811,6 +8834,8 @@ class PosSaleCreate(BaseModel):
     total: NonNegativeMoneyValue = 0
     # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
     discount_amount: NonNegativeMoneyValue = 0
+    discount_type: DiscountKindValue = "fixed"
+    discount_percent: PercentRateValue = 0
     # BR-8.1 — only completed POS create; omit → completed; blank/invalid → 422
     # (was free str; garbage persisted on transactions.status)
     status: Literal["completed"] = "completed"
@@ -8937,11 +8962,11 @@ HotelHousekeepingStatusValue = Annotated[
     BeforeValidator(coerce_hotel_room_status_value),
 ]
 HotelReservationStatusValue = Annotated[
-    Literal["booked", "checked_in", "checked_out", "cancelled", "no_show"],
+    Literal["tentative", "booked", "checked_in", "checked_out", "cancelled", "no_show"],
     BeforeValidator(coerce_hotel_reservation_status_value),
 ]
 HotelBookingSourceValue = Annotated[
-    Literal["direct", "walk_in", "ota", "corporate", "phone", "other"],
+    Literal["direct", "walk_in", "ota", "corporate", "phone", "staff", "group", "other"],
     BeforeValidator(coerce_hotel_booking_source_value),
 ]
 HotelPaymentMethodValue = Annotated[
@@ -8953,6 +8978,8 @@ HotelChargeTypeValue = Annotated[
         "room",
         "restaurant",
         "laundry",
+        "transport",
+        "spa",
         "service",
         "damage",
         "extra",
@@ -8963,7 +8990,7 @@ HotelChargeTypeValue = Annotated[
     BeforeValidator(coerce_hotel_room_status_value),
 ]
 HotelListKindValue = Annotated[
-    Literal["arrivals", "departures", "in_house", "upcoming", "cancelled", "no_show"],
+    Literal["arrivals", "departures", "in_house", "upcoming", "cancelled", "no_show", "tentative"],
     BeforeValidator(coerce_hotel_reservation_status_value),
 ]
 
@@ -9019,6 +9046,9 @@ class HotelGuestCreate(BaseModel):
     company_name: Annotated[str, Field(min_length=1, max_length=150)] | None = None
     preferences: Annotated[str, Field(min_length=1, max_length=1000)] | None = None
     notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+    consent_marketing: bool = False
+    travel_agent: Annotated[str, Field(min_length=1, max_length=150)] | None = None
+    loyalty_tier: Annotated[str, Field(min_length=1, max_length=40)] | None = None
 
 
 class HotelGuestUpdate(BaseModel):
@@ -9038,6 +9068,12 @@ class HotelGuestUpdate(BaseModel):
     is_active: bool | None = None
 
 
+class HotelGuestMerge(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source_guest_id: UuidIdValue
+
+
 class HotelReservationCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -9054,6 +9090,10 @@ class HotelReservationCreate(BaseModel):
     deposit_method: HotelPaymentMethodValue | None = None
     notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
     walk_in: bool = False
+    status: Literal["tentative", "booked"] = "booked"
+    rate_plan_id: UuidIdValue | None = None
+    discount_percent: NonNegativeMoneyValue = 0
+    discount_authorized_by: UuidIdValue | None = None
 
 
 class HotelExtendStay(BaseModel):
@@ -9123,8 +9163,25 @@ class HotelMaintenanceCreate(BaseModel):
     title: Annotated[str, Field(min_length=1, max_length=150)]
     priority: Literal["low", "normal", "high", "urgent"] = "normal"
     block_room: bool = True
+    ooo_starts_on: IsoDateQueryValue | None = None
+    ooo_ends_on: IsoDateQueryValue | None = None
     assigned_to: Annotated[str, Field(min_length=1, max_length=150)] | None = None
     notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+class HotelEventCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: Annotated[str, Field(min_length=1, max_length=150)]
+    space_name: Annotated[str, Field(min_length=1, max_length=120)]
+    starts_on: IsoDateQueryValue
+    ends_on: IsoDateQueryValue
+    expected_guests: Annotated[int, Field(ge=1, le=5000)] = 1
+    room_id: UuidIdValue | None = None
+    guest_id: UuidIdValue | None = None
+    deposit_amount: NonNegativeMoneyValue = 0
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+    status: Literal["inquiry", "confirmed"] = "inquiry"
 
 
 # --- FMCG module (trade schemes / routes / stops) ---
@@ -9228,6 +9285,109 @@ class HotelSettingsUpdate(BaseModel):
     tax_percent: NonNegativeMoneyValue | None = None
     service_charge_percent: NonNegativeMoneyValue | None = None
     notes: Annotated[str, Field(min_length=1, max_length=1000)] | None = None
+    property_name: Annotated[str, Field(min_length=1, max_length=150)] | None = None
+
+
+class HotelReservationUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    room_id: UuidIdValue | None = None
+    check_in_date: IsoDateQueryValue | None = None
+    check_out_date: IsoDateQueryValue | None = None
+    adults: Annotated[int, Field(ge=1, le=20)] | None = None
+    children: Annotated[int, Field(ge=0, le=20)] | None = None
+    nightly_rate: NonNegativeMoneyValue | None = None
+    booking_source: HotelBookingSourceValue | None = None
+    special_requests: Annotated[str, Field(min_length=1, max_length=1000)] | None = None
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+class HotelReservationDuplicate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    check_in_date: IsoDateQueryValue
+    check_out_date: IsoDateQueryValue
+
+
+class HotelRatePlanCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: Annotated[str, Field(min_length=1, max_length=40)]
+    name: Annotated[str, Field(min_length=1, max_length=150)]
+    amount: NonNegativeMoneyValue = 0
+    room_type: HotelRoomTypeValue | None = None
+    weekday_only: bool = False
+    weekend_only: bool = False
+    min_nights: Annotated[int, Field(ge=1, le=30)] = 1
+    starts_on: IsoDateQueryValue | None = None
+    ends_on: IsoDateQueryValue | None = None
+
+
+class HotelGuestRequestCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: Annotated[str, Field(min_length=1, max_length=150)]
+    kind: Literal["service", "wake_up", "note", "complaint"] = "service"
+    reservation_id: UuidIdValue | None = None
+    room_id: UuidIdValue | None = None
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+class HotelLostFoundCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    description: Annotated[str, Field(min_length=1, max_length=500)]
+    kind: Literal["lost", "found", "damage"] = "lost"
+    room_id: UuidIdValue | None = None
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+class HotelCashierShiftOpen(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    opening_float: NonNegativeMoneyValue = 0
+
+
+class HotelCashierShiftClose(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    closing_float: NonNegativeMoneyValue = 0
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+class HotelFolioChargeTransfer(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    target_folio_id: UuidIdValue
+
+
+class HotelServiceCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: Annotated[str, Field(min_length=1, max_length=40)]
+    name: Annotated[str, Field(min_length=1, max_length=150)]
+    category: Literal["restaurant", "laundry", "transport", "spa", "extra", "service"] = "extra"
+    unit_amount: NonNegativeMoneyValue = 0
+    tax_percent: NonNegativeMoneyValue = 0
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+class HotelServiceUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: Annotated[str, Field(min_length=1, max_length=150)] | None = None
+    category: Literal["restaurant", "laundry", "transport", "spa", "extra", "service"] | None = None
+    unit_amount: NonNegativeMoneyValue | None = None
+    tax_percent: NonNegativeMoneyValue | None = None
+    is_active: bool | None = None
+    notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+class HotelFolioServiceChargeCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    service_id: UuidIdValue
+    quantity: Annotated[float, Field(gt=0, le=100000)] = 1
 
 
 class HotelGroupReservationCreate(BaseModel):

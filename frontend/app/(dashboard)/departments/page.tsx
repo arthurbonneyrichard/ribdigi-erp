@@ -30,15 +30,19 @@ export default function Page() {
   const [canWrite, setCanWrite] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
-  async function refresh(search = q) {
-    const me = await getMe();
-    const perms = (me.data?.permissions || {}) as Record<string, string[]>;
-    setCanWrite(canWriteUsers(me.data?.role || '', perms));
+  async function loadList(search = q) {
     const params = new URLSearchParams();
     if (search.trim()) params.set('q', search.trim());
     const qs = params.toString() ? `?${params.toString()}` : '';
     const res = await api(`/departments${qs}`);
     setRows(res.data || []);
+  }
+
+  async function refresh(search = q) {
+    const me = await getMe();
+    const perms = (me.data?.permissions || {}) as Record<string, string[]>;
+    setCanWrite(canWriteUsers(me.data?.role || '', perms));
+    await loadList(search);
   }
 
   useEffect(() => {
@@ -81,11 +85,10 @@ export default function Page() {
           return [created.data, ...next];
         });
       }
-      setBusy(false);
-      setSubmitting(false);
-      await refresh();
+      await loadList();
     } catch (err: any) {
       setError(err.message || 'Department was not created');
+    } finally {
       setBusy(false);
       setSubmitting(false);
     }
@@ -162,8 +165,7 @@ export default function Page() {
             onChange={(e) => setCode(e.target.value)}
             placeholder="Code (e.g. SALES)"
             aria-label="Department code"
-            required
-          />
+            />
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}

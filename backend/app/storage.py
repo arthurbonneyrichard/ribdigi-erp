@@ -248,16 +248,17 @@ async def save_upload(
     if content_type not in allowed_types:
         raise HTTPException(
             status_code=400,
-            detail=f"Unsupported file type {content_type}. Allowed: {sorted(allowed_types)}",
+            detail="That file type is not allowed. Use PNG, JPEG, WebP, or GIF.",
         )
     data = await upload.read()
     size = len(data)
     if size <= 0:
-        raise HTTPException(status_code=400, detail="Empty file")
+        raise HTTPException(status_code=400, detail="The file is empty. Choose another image.")
     if size > max_bytes:
+        max_mb = max(1, int(max_bytes / 1_000_000))
         raise HTTPException(
             status_code=400,
-            detail=f"File exceeds maximum size of {max_bytes} bytes",
+            detail=f"That file is too large. Maximum size is {max_mb} MB.",
         )
     original = sanitize_filename(upload.filename)
     key = build_key(tenant_id, category, content_type, original)

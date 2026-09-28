@@ -49,6 +49,7 @@ async def _prepare_lines(
     customer_id: str | None = None,
 ) -> tuple[float, float, list[tuple[dict, float]]]:
     from app.uom import resolve_line_unit
+    from app.sale_discounts import resolve_discount
 
     if not items:
         raise HTTPException(status_code=400, detail="At least one line item is required")
@@ -66,7 +67,14 @@ async def _prepare_lines(
             unit_id=item.get("unit_id"),
             quantity=money_json(item["quantity"]),
         )
-        discount = money_json(item.get("discount") or 0)
+        gross = money_json(round(qty * unit, 2))
+        discount, line_disc_type, line_disc_pct = resolve_discount(
+            base_amount=gross,
+            discount=item.get("discount") or 0,
+            discount_type=item.get("discount_type") or "fixed",
+            discount_percent=item.get("discount_percent") or 0,
+            label="Line discount",
+        )
         # Auto-apply best FMCG trade scheme when no explicit line discount.
         if discount <= 0 and item.get("apply_fmcg_scheme", True) is not False:
             try:
@@ -76,7 +84,6 @@ async def _prepare_lines(
 
                 tenant = await tenants_svc.get_tenant(db, tenant_id)
                 if packages_svc.module_allowed(tenant, "fmcg"):
-                    gross = money_json(qty * unit)
                     scheme_disc, _meta = await fmcg_svc.best_line_scheme_discount(
                         db,
                         tenant_id=tenant_id,
@@ -86,6 +93,8 @@ async def _prepare_lines(
                     )
                     if scheme_disc > 0:
                         discount = money_json(min(scheme_disc, gross))
+                        line_disc_type = "fixed"
+                        line_disc_pct = 0
             except Exception:
                 pass
         explicit = item.get("tax_rate")
@@ -95,8 +104,8 @@ async def _prepare_lines(
             )
         else:
             spec = await resolve_product_tax(db, tenant_id, product, explicit_rate=None)
-        line_sub, line_tax, line_total = spec.compute_amounts(qty * unit)
-        line_total = max(line_total - discount, 0)
+        taxable_base = money_json(round(gross - discount, 2))
+        line_sub, line_tax, line_total = spec.compute_amounts(taxable_base)
         subtotal += line_sub
         if not spec.is_reverse_charge:
             tax_total += line_tax
@@ -110,6 +119,8 @@ async def _prepare_lines(
                     "unit_price": unit,
                     "tax_rate": spec.rate_pct,
                     "discount": discount,
+                    "discount_type": line_disc_type,
+                    "discount_percent": line_disc_pct,
                     "line_total": line_total,
                 },
                 line_total,
@@ -160,6 +171,8 @@ async def serialize_quotation(db: AsyncSession, quote: m.SalesQuotation) -> dict
         "subtotal": money_json(quote.subtotal),
         "tax_amount": money_json(quote.tax_amount),
         "discount_amount": money_json(quote.discount_amount),
+        "discount_type": getattr(quote, "discount_type", None) or "fixed",
+        "discount_percent": money_json(getattr(quote, "discount_percent", None) or 0),
         "total_amount": money_json(quote.total_amount),
         "valid_until": quote.valid_until,
         "notes": quote.notes,
@@ -179,6 +192,8 @@ async def serialize_quotation(db: AsyncSession, quote: m.SalesQuotation) -> dict
                 "unit_price": money_json(i.unit_price),
                 "tax_rate": money_json(i.tax_rate),
                 "discount": money_json(i.discount),
+                "discount_type": getattr(i, "discount_type", None) or "fixed",
+                "discount_percent": money_json(getattr(i, "discount_percent", None) or 0),
                 "line_total": money_json(i.line_total),
             }
             for i in items
@@ -194,6 +209,8 @@ async def create_quotation(
     customer_id: str,
     items: list[dict],
     discount_amount: float = 0,
+    discount_type: str | None = "fixed",
+    discount_percent: float = 0,
     notes: str | None = None,
     valid_days: int = 14,
 ) -> m.SalesQuotation:
@@ -201,8 +218,17 @@ async def create_quotation(
     subtotal, tax_total, prepared = await _prepare_lines(
         db, tenant_id, items, customer_id=customer_id
     )
-    discount_amount = money_json(discount_amount or 0)
-    total = money_json(round(subtotal + tax_total - discount_amount, 2))
+    from app.sale_discounts import resolve_discount
+
+    header_base = money_json(round(subtotal + tax_total, 2))
+    discount_amount, header_disc_type, header_disc_pct = resolve_discount(
+        base_amount=header_base,
+        discount=discount_amount or 0,
+        discount_type=discount_type,
+        discount_percent=discount_percent or 0,
+        label="Sale discount",
+    )
+    total = money_json(round(header_base - discount_amount, 2))
     if total < 0:
         raise HTTPException(status_code=400, detail="Total cannot be negative")
     quote = m.SalesQuotation(
@@ -213,6 +239,8 @@ async def create_quotation(
         subtotal=subtotal,
         tax_amount=tax_total,
         discount_amount=discount_amount,
+        discount_type=header_disc_type,
+        discount_percent=header_disc_pct,
         total_amount=total,
         valid_until=datetime.utcnow() + timedelta(days=max(valid_days, 1)),
         notes=optional_honest_narrative(notes, label="quotation notes"),
@@ -367,6 +395,8 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
         "subtotal": money_json(order.subtotal),
         "tax_amount": money_json(order.tax_amount),
         "discount_amount": money_json(order.discount_amount),
+        "discount_type": getattr(order, "discount_type", None) or "fixed",
+        "discount_percent": money_json(getattr(order, "discount_percent", None) or 0),
         "total_amount": money_json(order.total_amount),
         "notes": order.notes,
         "converted_invoice_id": order.converted_invoice_id,
@@ -396,6 +426,8 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
                 "unit_price": money_json(i.unit_price),
                 "tax_rate": money_json(i.tax_rate),
                 "discount": money_json(i.discount),
+                "discount_type": getattr(i, "discount_type", None) or "fixed",
+                "discount_percent": money_json(getattr(i, "discount_percent", None) or 0),
                 "line_total": money_json(i.line_total),
                 "reserved_qty": reserved_by_item.get(i.id, 0.0),
             }
@@ -412,6 +444,8 @@ async def create_order(
     customer_id: str,
     items: list[dict],
     discount_amount: float = 0,
+    discount_type: str | None = "fixed",
+    discount_percent: float = 0,
     notes: str | None = None,
     quotation_id: str | None = None,
     store_id: str | None = None,
@@ -426,14 +460,27 @@ async def create_order(
     resolved_store_id = None
     if store_id:
         from app.stores import get_store
+        from app import store_access as store_access_svc
 
         store = await get_store(db, tenant_id, store_id)
+        await store_access_svc.assert_store_access(
+            db, tenant_id=tenant_id, user_id=user_id, store_id=store.id
+        )
         resolved_store_id = store.id
     subtotal, tax_total, prepared = await _prepare_lines(
         db, tenant_id, items, customer_id=customer_id
     )
-    discount_amount = money_json(discount_amount or 0)
-    total = money_json(round(subtotal + tax_total - discount_amount, 2))
+    from app.sale_discounts import resolve_discount
+
+    header_base = money_json(round(subtotal + tax_total, 2))
+    discount_amount, header_disc_type, header_disc_pct = resolve_discount(
+        base_amount=header_base,
+        discount=discount_amount or 0,
+        discount_type=discount_type,
+        discount_percent=discount_percent or 0,
+        label="Sale discount",
+    )
+    total = money_json(round(header_base - discount_amount, 2))
     order = m.SalesOrder(
         tenant_id=tenant_id,
         order_number=await next_sales_order_number(db, tenant_id),
@@ -448,6 +495,8 @@ async def create_order(
         subtotal=subtotal,
         tax_amount=tax_total,
         discount_amount=discount_amount,
+        discount_type=header_disc_type,
+        discount_percent=header_disc_pct,
         total_amount=total,
         notes=optional_honest_narrative(notes, label="sales order notes"),
         created_by=user_id,
@@ -520,6 +569,7 @@ async def confirm_order(
     tenant_id: str,
     order_id: str,
     *,
+    user_id: str,
     store_id: str | None = None,
     delivery_date: datetime | None = None,
     delivery_address: str | None = None,
@@ -529,8 +579,12 @@ async def confirm_order(
         raise HTTPException(status_code=409, detail=f"Cannot confirm order in status {order.status}")
     if store_id:
         from app.stores import get_store
+        from app import store_access as store_access_svc
 
         store = await get_store(db, tenant_id, store_id)
+        await store_access_svc.assert_store_access(
+            db, tenant_id=tenant_id, user_id=user_id, store_id=store.id
+        )
         order.store_id = store.id
     if delivery_date is not None:
         order.delivery_date = delivery_date
@@ -543,6 +597,11 @@ async def confirm_order(
             status_code=400,
             detail="store_id is required to confirm a sales order (soft inventory reservation)",
         )
+    from app import store_access as store_access_svc
+
+    await store_access_svc.assert_store_access(
+        db, tenant_id=tenant_id, user_id=user_id, store_id=order.store_id
+    )
 
     from app.stores import warehouse_for_store
     from app.reservations import reserve_order

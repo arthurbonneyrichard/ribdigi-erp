@@ -1347,6 +1347,18 @@ async def post_expense_journal(
     user_id: str,
     expense: m.Expense,
 ) -> m.JournalEntry:
+    existing = (
+        await db.execute(
+            select(m.JournalEntry).where(
+                m.JournalEntry.tenant_id == tenant_id,
+                m.JournalEntry.source_type == "expense",
+                m.JournalEntry.source_id == expense.id,
+                m.JournalEntry.status == "posted",
+            )
+        )
+    ).scalar_one_or_none()
+    if existing:
+        return existing
     await ensure_default_accounts(db, tenant_id)
     amount = money_json(expense.amount)
     liquid_code, liquid_label = await resolve_settlement_gl(

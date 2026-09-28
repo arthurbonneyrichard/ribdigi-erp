@@ -115,11 +115,21 @@ async def require_open_session(
             raise HTTPException(status_code=409, detail="POS session is not open")
         if session.user_id != user_id:
             raise HTTPException(status_code=403, detail="POS session belongs to another cashier")
+        from app import store_access as store_access_svc
+
+        await store_access_svc.assert_store_access(
+            db, tenant_id=tenant_id, user_id=user_id, store_id=session.store_id
+        )
         return session
 
     session = await get_open_session_for_user(db, tenant_id, user_id)
     if not session:
         raise HTTPException(status_code=409, detail="Open a POS shift before recording sales")
+    from app import store_access as store_access_svc
+
+    await store_access_svc.assert_store_access(
+        db, tenant_id=tenant_id, user_id=user_id, store_id=session.store_id
+    )
     return session
 
 
@@ -137,8 +147,12 @@ async def open_session(
 
     if store_id:
         from app import stores as stores_svc
+        from app import store_access as store_access_svc
 
         store = await stores_svc.require_active_store(db, tenant_id, store_id)
+        await store_access_svc.assert_store_access(
+            db, tenant_id=tenant_id, user_id=user_id, store_id=store.id
+        )
 
     cash = money_json(round(money_json(opening_cash or 0), 2))
     if cash < 0:

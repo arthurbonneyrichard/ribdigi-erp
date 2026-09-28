@@ -348,7 +348,7 @@ async def build_dashboard(
             "customers": "/sales",
             "suppliers": "/purchasing",
             "products": "/inventory",
-            "low_stock": "/reports",
+            "low_stock": "/inventory?tab=lowstock",
             "expiring": "/inventory",
             "reports_sales": "/reports",
         },

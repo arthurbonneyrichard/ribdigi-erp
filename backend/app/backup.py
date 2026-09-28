@@ -170,6 +170,7 @@ def serialize_job(job: m.BackupJob) -> dict:
         "created_at": job.created_at,
         "error_message": job.error_message,
         "notes": job.notes,
+        # storage_path / destination credentials never serialized
     }
 
 

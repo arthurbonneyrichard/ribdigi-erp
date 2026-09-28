@@ -778,8 +778,16 @@ async def build_report_payload(
             db, tenant_id, from_date=fd, to_date=td, store_id=store_id or None
         )
     if report_type == "tax_filing_gh":
+        from app import tenants as tenants_svc
         from app import tax_filings as tax_filings_svc
 
+        tenant = await tenants_svc.get_tenant(db, tenant_id)
+        tenant_juris = (getattr(tenant, "tax_jurisdiction", None) or "GH").upper()
+        if tenant_juris != "GH":
+            raise HTTPException(
+                status_code=400,
+                detail="Ghana GRA VAT export is only available when tax_jurisdiction is GH",
+            )
         return await tax_filings_svc.government_filing_pack(
             db,
             tenant_id,

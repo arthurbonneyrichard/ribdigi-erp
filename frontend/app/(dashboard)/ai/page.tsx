@@ -44,8 +44,23 @@ export default function Page() {
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [assistCustomerId, setAssistCustomerId] = useState('');
+  const [chatAvailable, setChatAvailable] = useState(false);
+  const [aiStatusNote, setAiStatusNote] = useState('');
 
   useEffect(() => {
+    api('/ai/status')
+      .then((r) => {
+        setChatAvailable(Boolean(r.data?.chat_available));
+        setAiStatusNote(
+          r.data?.chat_available
+            ? 'Chat is configured for this environment.'
+            : 'No external LLM is used. Chat stays off until a provider is configured. Rule-based insights below use this company’s data only.',
+        );
+      })
+      .catch(() => {
+        setChatAvailable(false);
+        setAiStatusNote('Rule-based insights use this company’s data only. Chat is not configured.');
+      });
     api('/expenses/categories')
       .then((r) => setExpenseCategories(r.data || []))
       .catch(() => setExpenseCategories([]));
@@ -226,6 +241,9 @@ export default function Page() {
             (typeof x.risk_reason === 'string' ? x.risk_reason.trim() : '') ||
             null,
         }));
+      }
+      if (!window.confirm('Create draft purchase request(s) from these predictions?')) {
+        return;
       }
       const r = await api('/ai/inventory/low-stock-prediction/requests', {
         method: 'POST',
@@ -590,9 +608,10 @@ export default function Page() {
 
   return (
     <>
-      <h1>AI Business Assistant</h1>
+      <h1>AI Assistant</h1>
       <p className="muted">
-        Chat requires a configured AI provider. Rule-based insights, inventory/sales/expense analysis, report generator, customer/document assistants, and the Security Monitor are available now.
+        {aiStatusNote ||
+          'Tenant-scoped, rule-based insights from your books. This build does not send data to OpenAI or Gemini. Confirm before creating drafts.'}
       </p>
       <div className="card">
         <textarea
@@ -603,7 +622,7 @@ export default function Page() {
           aria-label="AI chat message"
         />
         <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <button onClick={go} aria-label="Ask AI chat">
+          <button onClick={go} aria-label="Ask AI chat" disabled={!chatAvailable} title={chatAvailable ? 'Ask' : 'Chat is not configured'}>
             Ask
           </button>
           <button onClick={generateReport} aria-label="Generate AI report">

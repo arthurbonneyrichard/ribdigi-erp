@@ -1627,6 +1627,8 @@ async def inventory_low_stock(
             "id": p.id,
             "sku": p.sku,
             "name": p.name,
+            "category": p.category or None,
+            "category_id": getattr(p, "category_id", None),
             "stock_qty": money_json(p.stock_qty),
             "reorder_level": money_json(p.reorder_level),
             "suggested_order_qty": money_json(
@@ -1673,6 +1675,7 @@ async def inventory_low_stock(
                 "product_id": product.id,
                 "sku": product.sku,
                 "name": product.name,
+                "category": product.category or None,
                 "quantity": qty,
                 "reorder_level": reorder,
                 "reorder_qty": reorder_qty,

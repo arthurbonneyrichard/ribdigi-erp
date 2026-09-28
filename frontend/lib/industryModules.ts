@@ -1,3 +1,5 @@
+import { normalizeIndustry } from './industries';
+
 /** Business-type (industry) gating for industry-specific modules.
 
  * Must stay aligned with backend `app.packages.INDUSTRY_SPECIFIC_MODULES`
@@ -23,9 +25,8 @@ export function industryAllowsModule(
   if (!mod || !(INDUSTRY_SPECIFIC_MODULES as readonly string[]).includes(mod)) {
     return true;
   }
-  const ind = String(industry || 'retail')
-    .trim()
-    .toLowerCase();
+  const ind = normalizeIndustry(industry);
+  if (!ind) return false;
   return ALLOWLIST[ind]?.has(mod) ?? false;
 }
 

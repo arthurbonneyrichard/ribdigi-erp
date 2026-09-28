@@ -959,6 +959,8 @@ class SalesInvoice(Base):
     # Header override: force reverse-charge memo for all lines (purchase parity).
     is_reverse_charge: Mapped[bool] = mapped_column(Boolean, default=False)
     discount_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    discount_type: Mapped[str] = mapped_column(String(16), default="fixed")
+    discount_percent: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     total_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     paid_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     # Document currency; exchange_rate converts 1 doc unit → base (locked at create).
@@ -991,6 +993,8 @@ class SalesInvoiceItem(Base):
     tax_rate: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     tax_supply_class: Mapped[str] = mapped_column(String(20), default="standard")
     discount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    discount_type: Mapped[str] = mapped_column(String(16), default="fixed")
+    discount_percent: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     line_subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     line_tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     is_reverse_charge: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -1375,6 +1379,8 @@ class SalesQuotation(Base):
     subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     discount_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    discount_type: Mapped[str] = mapped_column(String(16), default="fixed")
+    discount_percent: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     total_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     valid_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -1401,6 +1407,8 @@ class SalesQuotationItem(Base):
     unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax_rate: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     discount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    discount_type: Mapped[str] = mapped_column(String(16), default="fixed")
+    discount_percent: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
 
 
@@ -1420,6 +1428,8 @@ class SalesOrder(Base):
     subtotal: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     discount_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    discount_type: Mapped[str] = mapped_column(String(16), default="fixed")
+    discount_percent: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     total_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
@@ -1467,6 +1477,8 @@ class SalesOrderItem(Base):
     unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax_rate: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     discount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    discount_type: Mapped[str] = mapped_column(String(16), default="fixed")
+    discount_percent: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
     line_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
 
 
@@ -1774,6 +1786,9 @@ class HotelGuest(Base):
     preferences: Mapped[str | None] = mapped_column(Text, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    consent_marketing: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    travel_agent: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    loyalty_tier: Mapped[str | None] = mapped_column(String(40), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -1785,6 +1800,7 @@ class HotelSettings(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), unique=True, index=True)
+    property_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
     check_in_time: Mapped[str] = mapped_column(String(8), default="14:00", server_default="14:00")
     check_out_time: Mapped[str] = mapped_column(String(8), default="11:00", server_default="11:00")
     cancellation_hours: Mapped[int] = mapped_column(Integer, default=24, server_default="24")
@@ -1843,6 +1859,9 @@ class HotelReservation(Base):
     group_id: Mapped[str | None] = mapped_column(
         ForeignKey("hotel_reservation_groups.id"), nullable=True, index=True
     )
+    rate_plan_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    discount_percent: Mapped[float] = mapped_column(Numeric(7, 4), default=0, server_default="0")
+    discount_authorized_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -1922,6 +1941,7 @@ class HotelHousekeepingTask(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    due_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -1939,10 +1959,145 @@ class HotelMaintenanceTicket(Base):
     priority: Mapped[str] = mapped_column(String(20), default="normal")
     status: Mapped[str] = mapped_column(String(20), default="open", index=True)
     block_room: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    ooo_starts_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    ooo_ends_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     assigned_to: Mapped[str | None] = mapped_column(String(150), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HotelService(Base):
+    """Billable hotel extras (restaurant, laundry, transport, spa) posted to folios."""
+
+    __tablename__ = "hotel_services"
+    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    code: Mapped[str] = mapped_column(String(40))
+    name: Mapped[str] = mapped_column(String(150))
+    category: Mapped[str] = mapped_column(String(40), default="extra", index=True)
+    unit_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    tax_percent: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HotelRatePlan(Base):
+    """Configurable room rate plan (seasonal / weekday / promotional)."""
+
+    __tablename__ = "hotel_rate_plans"
+    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    code: Mapped[str] = mapped_column(String(40))
+    name: Mapped[str] = mapped_column(String(150))
+    room_type: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    weekday_only: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    weekend_only: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    min_nights: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    starts_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    ends_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HotelGuestRequest(Base):
+    """Front-desk guest request (wake-up, service, note)."""
+
+    __tablename__ = "hotel_guest_requests"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    reservation_id: Mapped[str | None] = mapped_column(
+        ForeignKey("hotel_reservations.id"), nullable=True, index=True
+    )
+    room_id: Mapped[str | None] = mapped_column(ForeignKey("hotel_rooms.id"), nullable=True, index=True)
+    kind: Mapped[str] = mapped_column(String(40), default="service", index=True)
+    title: Mapped[str] = mapped_column(String(150))
+    status: Mapped[str] = mapped_column(String(20), default="open", index=True)
+    due_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HotelLostFound(Base):
+    """Lost-and-found / room damage record."""
+
+    __tablename__ = "hotel_lost_found"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    room_id: Mapped[str | None] = mapped_column(ForeignKey("hotel_rooms.id"), nullable=True, index=True)
+    kind: Mapped[str] = mapped_column(String(20), default="lost", index=True)
+    description: Mapped[str] = mapped_column(String(500))
+    status: Mapped[str] = mapped_column(String(20), default="open", index=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HotelCashierShift(Base):
+    """Cashier shift open/close — payment information totals only."""
+
+    __tablename__ = "hotel_cashier_shifts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    opened_by: Mapped[str] = mapped_column(String(36), index=True)
+    opened_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    opening_float: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    closed_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    closing_float: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    payments_total: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="open", index=True)
+
+
+class HotelNightAudit(Base):
+    """End-of-day snapshot and business-date close."""
+
+    __tablename__ = "hotel_night_audits"
+    __table_args__ = (UniqueConstraint("tenant_id", "business_date"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    business_date: Mapped[date] = mapped_column(Date, index=True)
+    snapshot: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HotelEvent(Base):
+    """Banquet / event booking. Optional room_id blocks that room for the dates."""
+
+    __tablename__ = "hotel_events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    title: Mapped[str] = mapped_column(String(150))
+    space_name: Mapped[str] = mapped_column(String(120))
+    starts_on: Mapped[date] = mapped_column(Date, index=True)
+    ends_on: Mapped[date] = mapped_column(Date, index=True)
+    expected_guests: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    status: Mapped[str] = mapped_column(String(20), default="inquiry", index=True)
+    room_id: Mapped[str | None] = mapped_column(ForeignKey("hotel_rooms.id"), nullable=True, index=True)
+    guest_id: Mapped[str | None] = mapped_column(ForeignKey("hotel_guests.id"), nullable=True, index=True)
+    deposit_amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

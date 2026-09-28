@@ -54,12 +54,16 @@ TRIAL_REMINDER_DAYS = (7, 3, 1)
 
 
 def coerce_industry_value(value: object) -> object:
-    """Pydantic BeforeValidator: strip/lowercase; blank stays blank for Literal 422."""
+    """Pydantic BeforeValidator: strip/lowercase + safe aliases; blank stays blank for Literal 422."""
     if value is None:
         return value
     if not isinstance(value, str):
         return value
-    return value.strip().lower()
+    raw = value.strip().lower()
+    if not raw:
+        return raw
+    canon = packages_svc.canonicalize_industry(raw)
+    return canon if canon else raw
 
 
 def coerce_tax_filing_period_value(value: object) -> object:
@@ -127,20 +131,15 @@ def normalize_industry(industry: str | None, *, required: bool = True) -> str | 
                 detail=f"industry must be one of: {sorted(VALID_INDUSTRIES)}",
             )
         return None
-    ind = industry.strip().lower()
-    if not ind:
-        if required:
-            raise HTTPException(
-                status_code=400,
-                detail=f"industry must be one of: {sorted(VALID_INDUSTRIES)}",
-            )
-        return None
-    if ind not in VALID_INDUSTRIES:
+    canon = packages_svc.canonicalize_industry(industry)
+    if canon:
+        return canon
+    if required:
         raise HTTPException(
             status_code=400,
             detail=f"industry must be one of: {sorted(VALID_INDUSTRIES)}",
         )
-    return ind
+    return None
 
 
 def industry_label(value: str | None) -> str:
@@ -400,7 +399,7 @@ async def set_enabled_modules(
 ) -> m.Tenant:
     cleaned: list[str] = []
     seen: set[str] = set()
-    industry = getattr(tenant, "industry", None) or "retail"
+    industry = packages_svc.canonicalize_industry(getattr(tenant, "industry", None))
     # Defense in depth: TenantModulesUpdate / TenantSubscriptionAssign.enabled_modules
     # Literals reject blank/unknown/platform with 422 before this runs.
     for raw in modules or []:
@@ -866,7 +865,7 @@ async def update_profile(
         parse_fiscal_mmdd(fys)
         tenant.fiscal_year_start = fys
     if tax_jurisdiction is not None:
-        # Defense in depth: TenantProfileUpdate TaxFilingJurisdictionValue → 422 on blank/unknown.
+        # Defense in depth: TenantProfileUpdate TenantTaxJurisdictionValue → 422 on blank/unknown.
         from app.tax_filings import TAX_COUNTRY_CODES
 
         juris = tax_jurisdiction.strip().upper()

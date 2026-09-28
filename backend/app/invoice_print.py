@@ -129,6 +129,8 @@ async def build_invoice_print_payload(
         "tax_amount": money_json(invoice.tax_amount),
         "reverse_charge_tax": money_json(getattr(invoice, "reverse_charge_tax", 0) or 0),
         "discount_amount": money_json(invoice.discount_amount),
+        "discount_type": getattr(invoice, "discount_type", None) or "fixed",
+        "discount_percent": money_json(getattr(invoice, "discount_percent", None) or 0),
         "total": total,
         "total_amount": total,
         "paid_amount": paid,
@@ -183,6 +185,9 @@ def render_invoice_thermal_text(payload: dict[str, Any], *, paper: str = "80mm")
         for i, part in enumerate(_wrap(name, width)):
             lines.append(part if i == 0 else ("  " + part)[:width])
         lines.append(_lr(f"  {qty:g} x {_money(unit)}", _money(total), width))
+        disc = money_json(item.get("discount") or 0)
+        if disc > 0:
+            lines.append(_lr("  Discount", f"-{_money(disc)}", width))
     lines.append("-" * width)
     currency = payload.get("currency") or ""
     lines.append(_lr("Subtotal", _money(payload.get("subtotal") or 0), width))

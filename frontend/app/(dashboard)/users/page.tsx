@@ -531,9 +531,9 @@ export default function Page() {
         <div>
           <h1>User Management</h1>
           <p className="muted" style={{ margin: '8px 0 0' }}>
-            Create users, assign roles, branch/department, and record scope; activate, deactivate, or
-            permanently delete staff accounts (BR-3.1). Soft-deactivate custom roles without deleting
-            assignees (BR-3.2). Deactivate keeps the account; Delete removes it.
+            Add staff with a short form (name, email, temporary password, role). Invite means they
+            sign in to this company. Platform owner roles are not created here. Deactivate stops
+            sign-in but keeps history; Delete removes the account.
           </p>
         </div>
         {canWrite ? (
@@ -562,7 +562,7 @@ export default function Page() {
           className="card users-create-card"
           style={{ margin: '20px 0', display: 'grid', gap: 8 }}
         >
-          <h2 style={{ fontSize: 18, margin: 0 }}>Create User</h2>
+          <h2 style={{ fontSize: 18, margin: 0 }}>Add user</h2>
           <input
             value={form.full_name}
             onChange={(e) => setForm({ ...form, full_name: e.target.value })}
