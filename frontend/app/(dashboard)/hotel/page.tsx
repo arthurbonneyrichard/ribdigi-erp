@@ -177,6 +177,36 @@ function hotelErr(err: unknown, fallback: string) {
   return m;
 }
 
+function shiftIso(iso: string, days: number) {
+  const d = new Date(`${iso}T12:00:00`);
+  d.setDate(d.getDate() + days);
+  return localIso(d);
+}
+
+function pctChange(curr: number, prev: number | null | undefined): number | null {
+  if (prev == null || !Number.isFinite(Number(prev))) return null;
+  const p = Number(prev);
+  if (p === 0) return Number(curr) === 0 ? 0 : null;
+  return ((Number(curr) - p) / Math.abs(p)) * 100;
+}
+
+function HotelDelta({ value }: { value: number | null }) {
+  if (value == null || !Number.isFinite(value)) return null;
+  const cls = value > 0.05 ? 'up' : value < -0.05 ? 'down' : 'flat';
+  const sign = value > 0.05 ? '+' : '';
+  return (
+    <span className={`hotel-kpi-delta ${cls}`}>
+      {sign}
+      {value.toFixed(1)}%
+    </span>
+  );
+}
+
+function statusClass(status: string) {
+  const key = status.replace(/\s+/g, '_');
+  return `hotel-st hotel-st-${key}`;
+}
+
 export default function HotelPage() {
   const searchParams = useSearchParams();
   const rawTab = (searchParams?.get('tab') || '').trim().toLowerCase();
@@ -703,197 +733,314 @@ export default function HotelPage() {
       {message && <p className="hotel-banner ok">{message}</p>}
 
       {show('dashboard') && (
-        <div className="dash">
-          <div className="dash-hero">
-            <div className="sun" aria-hidden="true" />
-            <div className="cloud" aria-hidden="true" />
-            <label className="status-pill st-active" style={{ display: 'inline-flex', gap: 8, alignItems: 'center', background: 'transparent', boxShadow: 'none', padding: 0 }}>
+        <div className="hotel-ops">
+          <div className="hotel-ops-head">
+            <div>
+              <h2>{settings?.property_name || 'Hotel dashboard'}</h2>
+              <p className="muted" style={{ margin: '4px 0 0' }}>
+                Occupancy is rooms sold on the selected business date
+                ({summary?.rooms_sold_night ?? 0} of {summary?.rooms_total ?? 0}
+                {summary?.as_of || dashDate ? ` · ${summary?.as_of || dashDate}` : ''}).
+              </p>
+            </div>
+            <label className="hotel-ops-date">
               <span>Business date</span>
-              <input type="date" value={dashDate} onChange={(e) => setDashDate(e.target.value)} aria-label="Hotel dashboard date" style={{ width: 160 }} />
+              <input
+                type="date"
+                value={dashDate}
+                onChange={(e) => setDashDate(e.target.value)}
+                aria-label="Hotel dashboard date"
+              />
             </label>
-            <h1 className="greet">{settings?.property_name || 'Hotel operations'}</h1>
-            <p className="greet-sub">
-              {summary?.rooms_sold_night ?? 0} of {summary?.rooms_total ?? 0} rooms sold on {summary?.as_of || dashDate}.
-            </p>
-            <p className="greet-date">{summary?.as_of || dashDate}</p>
           </div>
           {!summary && !error && <p className="empty">Loading operational totals…</p>}
-          {summary && (
-            <>
-              <div className="stat-grid">
-                <div className="stat s-sales">
-                  <div className="rail" />
-                  <div className="ico" aria-hidden="true">%</div>
-                  <div className="label">Occupancy</div>
-                  <div className="val">{Number(summary.occupancy_rate || 0).toFixed(1)}%</div>
-                  <div className="hint">
-                    {summary.rooms_sold_night ?? 0} sold on {summary.as_of || dashDate} · {summary.rooms_available} vacant now
+          {summary && (() => {
+            const mix = summary.room_status_mix || {};
+            const tot = Math.max(1, summary.rooms_total || 0);
+            const occupiedN = mix.occupied || summary.rooms_occupied || 0;
+            const reservedN = mix.reserved || summary.rooms_reserved || 0;
+            const availableN = mix.available ?? summary.rooms_available;
+            const notReadyN = (mix.dirty || summary.rooms_dirty || 0) + (mix.out_of_service || summary.rooms_maintenance || 0);
+            const segs = [
+              { key: 'occupied', color: 'var(--brand-dark)', n: occupiedN },
+              { key: 'reserved', color: 'var(--brand)', n: reservedN },
+              { key: 'available', color: 'var(--brand-light)', n: availableN },
+              { key: 'not ready', color: 'var(--warn)', n: notReadyN },
+            ];
+            const trend = summary.occupancy_trend || [];
+            const occPrev = trend.length >= 2 ? trend[trend.length - 2].occupancy_rate : null;
+            const yest = shiftIso(summary.as_of || dashDate, -1);
+            const depPrev = reservations.filter(
+              (r) =>
+                r.check_out_date === yest && (r.status === 'checked_in' || r.status === 'checked_out')
+            ).length;
+            const occPct = Number(summary.occupancy_rate || 0);
+            const availShare = Math.max(0, Math.min(100, (availableN / tot) * 100));
+            const circ = 2 * Math.PI * 18;
+            const reqOpen = guestRequests.filter((q) => q.status !== 'completed').length;
+            const reqDone = guestRequests.filter((q) => q.status === 'completed').length;
+            const sourceCounts = reservations.reduce<Record<string, number>>((acc, r) => {
+              const k = (r.booking_source || 'direct').replace(/_/g, ' ');
+              acc[k] = (acc[k] || 0) + 1;
+              return acc;
+            }, {});
+            const sourceMax = Math.max(1, ...Object.values(sourceCounts), 0);
+            const liveRooms = rooms.filter((r) => r.is_active).slice(0, 10);
+            const assigned = rooms.filter((r) => r.status === 'occupied' || r.status === 'reserved').slice(0, 8);
+            return (
+              <>
+                <div className="hotel-ops-kpis">
+                  <div className="hotel-kpi">
+                    <div className="hotel-kpi-row">
+                      <div>
+                        <div className="lbl">Occupancy</div>
+                        <div className="val">{occPct.toFixed(1)}%</div>
+                        <HotelDelta value={pctChange(occPct, occPrev)} />
+                      </div>
+                    </div>
+                    <div className="hint">{summary.rooms_sold_night ?? 0} rooms sold this night</div>
+                    <div className="hotel-kpi-spark" aria-hidden="true">
+                      {trend.map((p) => (
+                        <span key={p.date} style={{ height: `${Math.max(8, Math.min(100, p.occupancy_rate))}%` }} />
+                      ))}
+                    </div>
                   </div>
-                </div>
-                <div className="stat s-buy">
-                  <div className="rail" />
-                  <div className="ico" aria-hidden="true">↕</div>
-                  <div className="label">Arrivals / in house</div>
-                  <div className="val">{summary.expected_arrivals ?? summary.arrivals_today ?? 0}</div>
-                  <div className="hint">{summary.departures_today ?? 0} departures · {summary.reservations_in_house} in house</div>
-                </div>
-                <div className="stat s-net">
-                  <div className="rail" />
-                  <div className="ico" aria-hidden="true">₵</div>
-                  <div className="label">Room + service revenue</div>
-                  <div className="val">{Number(summary.revenue_today || 0).toFixed(2)}</div>
-                  <div className="hint">
-                    Room {Number(summary.room_revenue || 0).toFixed(2)} · services {Number(summary.service_revenue || 0).toFixed(2)}
+                  <div className="hotel-kpi">
+                    <div className="hotel-kpi-row">
+                      <div>
+                        <div className="lbl">Available rooms</div>
+                        <div className="val">{availableN}</div>
+                      </div>
+                      <svg className="hotel-kpi-donut" viewBox="0 0 44 44" aria-hidden="true">
+                        <circle cx="22" cy="22" r="18" fill="none" stroke="var(--mist)" strokeWidth="6" />
+                        <circle
+                          cx="22"
+                          cy="22"
+                          r="18"
+                          fill="none"
+                          stroke="var(--brand)"
+                          strokeWidth="6"
+                          strokeDasharray={`${(availShare / 100) * circ} ${circ}`}
+                          strokeLinecap="round"
+                          transform="rotate(-90 22 22)"
+                        />
+                      </svg>
+                    </div>
+                    <div className="hint">{summary.rooms_total} rooms in inventory</div>
                   </div>
-                </div>
-                <div className="stat s-exp">
-                  <div className="rail" />
-                  <div className="ico" aria-hidden="true">!</div>
-                  <div className="label">Balances due</div>
-                  <div className="val">{Number(summary.outstanding_folio_balance || 0).toFixed(2)}</div>
-                  <div className="hint">Payments recorded {Number(summary.payments_received || 0).toFixed(2)}</div>
-                </div>
-              </div>
-              <div className="info-grid">
-                <div className="panel">
-                  <h3>Room status mix</h3>
-                  <p className="hint">Live house status for this tenant.</p>
-                  {(() => {
-                    const mix = summary.room_status_mix || {};
-                    const tot = summary.rooms_total || 1;
-                    const segs = [
-                      { key: 'occupied', color: '#2F7A0C', n: mix.occupied || 0 },
-                      { key: 'reserved', color: '#4AB012', n: mix.reserved || 0 },
-                      { key: 'dirty', color: '#a16207', n: mix.dirty || 0 },
-                      { key: 'out_of_service', color: '#b91c1c', n: mix.out_of_service || 0 },
-                      { key: 'available', color: '#C8E86A', n: mix.available || 0 },
-                    ];
-                    return (
-                      <>
-                        <div className="hotel-occ-track" role="img" aria-label="Room status mix">
-                          {segs.map((s) => (
-                            <span
-                              key={s.key}
-                              className="hotel-occ-seg"
-                              style={{ width: `${Math.max(0, (s.n / tot) * 100)}%`, background: s.color }}
-                              title={`${s.key.replace(/_/g, ' ')} ${s.n}`}
-                            />
-                          ))}
-                        </div>
-                        <div className="legend" style={{ marginTop: 12 }}>
-                          {segs.map((s) => (
-                            <div className="li" key={s.key}>
-                              <span className="dot" style={{ background: s.color }} />
-                              {s.key.replace(/_/g, ' ')} · {s.n}
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
-                <div className="panel">
-                  <h3>14-night occupancy</h3>
-                  <p className="hint">Rooms sold each night from stored reservations.</p>
-                  <div className="hotel-spark" aria-label="Occupancy trend">
-                    {(summary.occupancy_trend || []).map((p) => (
+                  <div className="hotel-kpi">
+                    <div className="lbl">Revenue</div>
+                    <div className="val">{Number(summary.revenue_today || 0).toFixed(2)}</div>
+                    <div className="hint">
+                      Room {Number(summary.room_revenue || 0).toFixed(2)} · extras{' '}
+                      {Number(summary.service_revenue || 0).toFixed(2)}
+                    </div>
+                    <div className="hotel-kpi-spark" aria-hidden="true">
+                      <span style={{ height: `${Math.max(12, Math.min(100, (Number(summary.room_revenue || 0) / Math.max(1, Number(summary.revenue_today || 1))) * 100))}%` }} />
                       <span
-                        key={p.date}
-                        style={{ height: `${Math.max(6, Math.min(100, p.occupancy_rate))}%` }}
-                        title={`${p.date}: ${p.occupancy_rate}% (${p.sold} sold)`}
+                        style={{
+                          height: `${Math.max(12, Math.min(100, (Number(summary.service_revenue || 0) / Math.max(1, Number(summary.revenue_today || 1))) * 100))}%`,
+                          background: 'var(--forest)',
+                        }}
                       />
-                    ))}
-                    {!(summary.occupancy_trend || []).length && <p className="empty">No stay nights yet.</p>}
+                    </div>
+                  </div>
+                  <div className="hotel-kpi">
+                    <div className="lbl">Check-in / out</div>
+                    <div className="val">
+                      {summary.expected_arrivals ?? summary.arrivals_today ?? 0}
+                      <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--muted)' }}>
+                        {' '}/ {summary.departures_today ?? 0}
+                      </span>
+                    </div>
+                    <HotelDelta value={pctChange(summary.departures_today ?? 0, depPrev)} />
+                    <div className="hint">{summary.reservations_in_house} in house · payments {Number(summary.payments_received || 0).toFixed(2)}</div>
                   </div>
                 </div>
-                <div className="panel">
-                  <h3>Reservations</h3>
-                  <p className="hint">Counts by stored status.</p>
-                  <div className="bars">
-                    {[
-                      ['tentative', summary.reservation_status_mix?.tentative ?? summary.reservations_tentative ?? 0],
-                      ['booked', summary.reservation_status_mix?.booked ?? summary.reservations_booked],
-                      ['in house', summary.reservation_status_mix?.checked_in ?? summary.reservations_in_house],
-                      ['cancelled', summary.reservation_status_mix?.cancelled ?? summary.reservations_cancelled ?? 0],
-                      ['no-show', summary.reservation_status_mix?.no_show ?? summary.reservations_no_show ?? 0],
-                    ].map(([label, n]) => {
-                      const max = Math.max(
-                        1,
-                        ...[
-                          summary.reservations_booked,
-                          summary.reservations_in_house,
-                          summary.reservations_tentative ?? 0,
-                          summary.reservations_cancelled ?? 0,
-                          summary.reservations_no_show ?? 0,
-                        ]
-                      );
-                      return (
-                        <div className="bar-row" key={String(label)}>
+
+                <div className="hotel-ops-split">
+                  <div className="panel">
+                    <h3>Room availability</h3>
+                    <p className="hint">Live house status for this tenant — not a forecast.</p>
+                    <div className="hotel-avail-bar" role="img" aria-label="Room availability mix">
+                      {segs.map((s) => (
+                        <span
+                          key={s.key}
+                          className="hotel-occ-seg"
+                          style={{ width: `${Math.max(0, (s.n / tot) * 100)}%`, background: s.color }}
+                          title={`${s.key} ${s.n}`}
+                        />
+                      ))}
+                    </div>
+                    <div className="hotel-avail-quad">
+                      {segs.map((s) => (
+                        <div key={s.key}>
+                          <div className="k">
+                            <span className="mark" style={{ background: s.color }} />
+                            {s.key}
+                          </div>
+                          <div className="n">{s.n}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="panel">
+                    <h3>Occupancy (14 nights)</h3>
+                    <p className="hint">Sold rooms vs remaining inventory, from stored reservations.</p>
+                    <div className="hotel-gbar" aria-label="Occupancy by night">
+                      {trend.map((p) => {
+                        const soldH = (p.sold / tot) * 100;
+                        const vacH = Math.max(0, 100 - soldH);
+                        return (
+                          <div className="col" key={p.date} title={`${p.date}: ${p.sold} sold (${p.occupancy_rate}%)`}>
+                            <div className="stack">
+                              <div className="seg sold" style={{ height: `${soldH}%` }} />
+                              <div className="seg vac" style={{ height: `${vacH}%` }} />
+                            </div>
+                            <span className="dl">{p.date.slice(5)}</span>
+                          </div>
+                        );
+                      })}
+                      {!trend.length && <p className="empty">No stay nights yet.</p>}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="hotel-ops-triple">
+                  <div className="panel">
+                    <h3>Quick access</h3>
+                    <p className="hint">Hotel workspace only.</p>
+                    <div className="hotel-quick">
+                      <Link href="/hotel?tab=rooms"><span className="qico">Rm</span>Rooms and rates</Link>
+                      <Link href="/hotel?tab=front-desk"><span className="qico">FD</span>Front desk</Link>
+                      <Link href="/hotel?tab=reports"><span className="qico">Rp</span>Hotel reports</Link>
+                      <Link href="/hotel?tab=maintenance">
+                        <span className="qico">
+                          Mt
+                          {(summary.maintenance_open || 0) > 0 && (
+                            <span className="qbadge">{summary.maintenance_open}</span>
+                          )}
+                        </span>
+                        Maintenance
+                      </Link>
+                      <Link href="/hotel?tab=housekeeping">
+                        <span className="qico">
+                          Hk
+                          {(summary.housekeeping_pending || 0) > 0 && (
+                            <span className="qbadge">{summary.housekeeping_pending}</span>
+                          )}
+                        </span>
+                        Housekeeping
+                      </Link>
+                      <Link href="/hotel?tab=billing"><span className="qico">Bl</span>Billing</Link>
+                    </div>
+                  </div>
+                  <div className="panel">
+                    <h3>Guest requests</h3>
+                    <p className="hint">From the guest-request API. Completing a request is recorded here only.</p>
+                    <div className="hotel-req-stats">
+                      <div>
+                        <div className="n">{reqOpen}</div>
+                        <div className="k">Open</div>
+                      </div>
+                      <div>
+                        <div className="n">{summary.housekeeping_overdue ?? 0}</div>
+                        <div className="k">HK overdue</div>
+                      </div>
+                      <div>
+                        <div className="n">{reqDone}</div>
+                        <div className="k">Done</div>
+                      </div>
+                    </div>
+                    <ul className="hotel-req-list">
+                      {guestRequests.slice(0, 5).map((q) => (
+                        <li key={q.id}>
+                          {q.title} · {String(q.kind || '').replace('_', ' ')}{' '}
+                          <span className={statusClass(q.status)}>{q.status}</span>
+                        </li>
+                      ))}
+                      {!guestRequests.length && <li className="muted">No guest requests.</li>}
+                    </ul>
+                    <p className="hint" style={{ marginTop: 10 }}>
+                      {(summary.alerts || []).length
+                        ? (summary.alerts || []).map((a) => (a.href ? <Link key={a.code} href={a.href}>{a.message}. </Link> : <span key={a.code}>{a.message}. </span>))
+                        : 'No operational alerts.'}
+                    </p>
+                  </div>
+                  <div className="panel">
+                    <h3>Booking source</h3>
+                    <p className="hint">How stored reservations were logged. OTA is a manual source label only.</p>
+                    <div className="hotel-source">
+                      {Object.entries(sourceCounts).map(([label, n]) => (
+                        <div className="bar-row" key={label}>
                           <span className="bl">{label}</span>
                           <span className="bar-track">
-                            <span className="bar-fill" style={{ width: `${Math.min(100, (Number(n) / max) * 100)}%`, background: 'var(--brand)' }} />
+                            <span className="bar-fill" style={{ width: `${Math.min(100, (n / sourceMax) * 100)}%`, background: 'var(--brand)' }} />
                           </span>
                           <span className="bv">{n}</span>
                         </div>
-                      );
-                    })}
+                      ))}
+                      {!Object.keys(sourceCounts).length && <p className="empty">No reservations yet.</p>}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="info-grid">
-                <div className="panel">
-                  <h3>Alerts</h3>
-                  {(summary.alerts || []).length ? (
-                    <ul>
-                      {(summary.alerts || []).map((a) => (
-                        <li key={a.code}>{a.href ? <Link href={a.href}>{a.message}</Link> : a.message}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="empty">No operational alerts.</p>
-                  )}
-                  <p className="hint">
-                    Housekeeping pending {summary.housekeeping_pending ?? 0} · overdue {summary.housekeeping_overdue ?? 0} · maintenance {summary.maintenance_open ?? 0}
-                  </p>
-                </div>
-                <div className="panel panel-wide">
-                  <h3>Recent reservations</h3>
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th>Number</th>
-                        <th>Guest</th>
-                        <th>Dates</th>
-                        <th>Room</th>
-                        <th>Status</th>
-                        <th>Balance</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(summary.recent_reservations || []).map((r) => (
-                        <tr key={r.id}>
-                          <td><code>{r.reservation_number}</code></td>
-                          <td>{r.guest_name || '—'}</td>
-                          <td>{r.check_in_date} → {r.check_out_date}</td>
-                          <td>{r.room_code || '—'}</td>
-                          <td>{r.status.replace('_', ' ')}</td>
-                          <td>{r.folio_balance != null ? Number(r.folio_balance).toFixed(2) : '—'}</td>
+
+                <div className="hotel-ops-pair">
+                  <div className="panel">
+                    <h3>Recent bookings</h3>
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>Room</th>
+                          <th>Guest</th>
+                          <th>Check in</th>
+                          <th>Check out</th>
+                          <th>Status</th>
+                          <th>Balance</th>
                         </tr>
+                      </thead>
+                      <tbody>
+                        {(summary.recent_reservations || []).map((r) => (
+                          <tr key={r.id}>
+                            <td>{r.room_code || '—'}</td>
+                            <td>{r.guest_name || '—'}</td>
+                            <td>{r.check_in_date}</td>
+                            <td>{r.check_out_date}</td>
+                            <td><span className={statusClass(r.status)}>{r.status.replace('_', ' ')}</span></td>
+                            <td>{r.folio_balance != null ? Number(r.folio_balance).toFixed(2) : '—'}</td>
+                          </tr>
+                        ))}
+                        {!(summary.recent_reservations || []).length && (
+                          <tr><td colSpan={6} className="muted">No reservations for this tenant yet.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                    {(summary.low_stock || []).length > 0 && (
+                      <p className="hint" style={{ marginTop: 12 }}>
+                        Low stock: {(summary.low_stock || []).map((p) => p.name).join(', ')}. <Link href="/inventory?tab=lowstock">Open inventory</Link>
+                      </p>
+                    )}
+                  </div>
+                  <div className="panel">
+                    <h3>Room status</h3>
+                    <p className="hint">Assigned and in-house rooms first, then inventory.</p>
+                    <div className="hotel-room-chips">
+                      {(assigned.length ? assigned : liveRooms).map((r) => (
+                        <div className="hotel-room-chip" key={r.id}>
+                          <span>{r.code} · {r.name}</span>
+                          <span className={statusClass(r.status)}>{r.status.replace(/_/g, ' ')}</span>
+                        </div>
                       ))}
-                      {!(summary.recent_reservations || []).length && (
-                        <tr><td colSpan={6} className="muted">No reservations for this tenant yet.</td></tr>
-                      )}
-                    </tbody>
-                  </table>
-                  {(summary.low_stock || []).length > 0 && (
+                      {!rooms.length && <p className="empty">No rooms yet.</p>}
+                    </div>
                     <p className="hint" style={{ marginTop: 12 }}>
-                      Low stock: {(summary.low_stock || []).map((p) => p.name).join(', ')}. <Link href="/inventory?tab=lowstock">Open inventory</Link>
+                      Outstanding folios {Number(summary.outstanding_folio_balance || 0).toFixed(2)} · payment notes only
                     </p>
-                  )}
+                  </div>
                 </div>
-              </div>
-            </>
-          )}
+              </>
+            );
+          })()}
         </div>
       )}
 
