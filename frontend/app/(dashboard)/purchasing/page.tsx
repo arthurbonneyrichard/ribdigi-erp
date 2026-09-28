@@ -207,6 +207,7 @@ export default function Page() {
   }, [searchParams, tab]);
   function selectTab(id: Tab) {
     setTab(id);
+    if (id !== 'suppliers') setSupplierDrawer(false);
     router.replace(`/purchasing?tab=${id}`, { scroll: false });
   }
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
@@ -1260,8 +1261,8 @@ export default function Page() {
     <div className="purch-desk">
       <div className="cat-head">
         <div>
-          <h1 style={{ margin: 0 }}>Purchasing</h1>
-          <p className="muted" style={{ margin: '4px 0 0' }}>
+          <h1>Purchasing</h1>
+          <p className="muted" style={{ margin: '6px 0 0' }}>
             Supplier → Purchase Order → Receive Goods → Supplier Bill → Payment → Balance
           </p>
         </div>
@@ -1269,7 +1270,7 @@ export default function Page() {
       {error ? <p className="form-flash err">{error}</p> : null}
       {message ? <p className="form-flash ok">{message}</p> : null}
 
-      <div className="sales-toolbar">
+      <nav className="sales-toolbar" aria-label="Purchasing workflow">
         {(
           [
             ['suppliers', 'Suppliers'],
@@ -1283,15 +1284,17 @@ export default function Page() {
         ).map(([id, label]) => (
           <button
             key={id}
+            type="button"
             className={tab === id ? 'sales-tab is-on' : 'sales-tab'}
             onClick={() => selectTab(id)}
             disabled={tab === id}
+            aria-current={tab === id ? 'page' : undefined}
             aria-label={`Show purchasing ${id} tab`}
           >
             {label}
           </button>
         ))}
-      </div>
+      </nav>
 
       {tab === 'requests' && (
         <>
@@ -1305,7 +1308,7 @@ export default function Page() {
             {prLevels.map((lvl, idx) => (
               <div
                 key={idx}
-                style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 }}
+                className="purch-level-row"
               >
                 <span className="muted">L{idx + 1}</span>
                 <input
@@ -1313,7 +1316,6 @@ export default function Page() {
                   onChange={(e) => updatePrLevel(idx, { label: e.target.value })}
                   placeholder="Label"
                   title="Optional level label (1–120 chars; letters/digits required)"
-                  style={{ width: 160 }}
                   aria-label={`PR approval level ${idx + 1} label`}
                 />
                 <input
@@ -1328,7 +1330,6 @@ export default function Page() {
                   }
                   placeholder="Roles (comma-separated system roles)"
                   list="pr-approval-system-roles"
-                  style={{ minWidth: 280, flex: 1 }}
                   aria-label={`PR approval level ${idx + 1} roles`}
                 />
                 <button
@@ -1362,8 +1363,7 @@ export default function Page() {
               </button>
             </div>
           </div>
-          </div>
-          <div className="card" style={{ marginBottom: 16 }}>
+          <div className="card">
             <h3>Create purchase request</h3>
             <div className="erp-form-grid">
               <select
@@ -1438,22 +1438,25 @@ export default function Page() {
               </button>
             </div>
           </div>
-          <div className="card" style={{ marginBottom: 16 }}>
-            <label>
-              Reject reason{' '}
+          </div>
+          <div className="card">
+            <label className="field">
+              <span>Reject reason</span>
               <input
+                className="purch-reason"
                 value={prRejectReason}
                 onChange={(e) => setPrRejectReason(e.target.value)}
                 placeholder="Required before Reject"
                 aria-label="Purchase request reject reason"
                 title="Required reason for Reject (1–500 chars; letters/digits required)"
-                style={{ minWidth: 280 }}
               />
             </label>
             <p className="muted" style={{ marginTop: 6 }}>
               Used by Reject on pending requests (stored as <code>rejection_reason</code>).
             </p>
           </div>
+          <div className="card cat-panel">
+          <div className="purch-filter-row">
           <select
             value={prManageFilter}
             onChange={(e) =>
@@ -1469,7 +1472,6 @@ export default function Page() {
             }
             title="Filter purchase request list by status"
             aria-label="Purchase request status filter"
-            style={{ marginBottom: 12 }}
           >
             <option value="all">All statuses</option>
             <option value="draft">Draft only</option>
@@ -1478,6 +1480,8 @@ export default function Page() {
             <option value="rejected">Rejected only</option>
             <option value="converted">Converted only</option>
           </select>
+          </div>
+          <div className="cat-table-wrap">
           <table className="table">
             <thead>
               <tr>
@@ -1509,7 +1513,7 @@ export default function Page() {
                       .join(', ') || '—'}
                   </td>
                   <td className="muted">{r.rejection_reason || '—'}</td>
-                  <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  <td className="purch-actions">
                     {r.status === 'draft' && (
                       <button
                         type="button"
@@ -1574,17 +1578,24 @@ export default function Page() {
               )}
             </tbody>
           </table>
+          </div>
+          </div>
         </>
       )}
 
-      {(tab === 'orders' || tab === 'suppliers') && (
-        <>
       {tab === 'suppliers' && (
-        <div className="card cat-panel" style={{ marginBottom: 16 }}>
+        <>
+        <div className="card cat-panel">
           <div className="cat-head">
-            <h2 style={{ margin: 0 }}>Suppliers</h2>
-            <button type="button" onClick={() => setSupplierDrawer(true)} aria-label="Add supplier">
-              Add supplier
+            <h2>Suppliers</h2>
+            <button
+              type="button"
+              className={supplierDrawer ? undefined : 'btn-primary'}
+              onClick={() => setSupplierDrawer((open) => !open)}
+              aria-expanded={supplierDrawer}
+              aria-label={supplierDrawer ? 'Close add supplier form' : 'Add supplier'}
+            >
+              {supplierDrawer ? 'Cancel' : 'Add supplier'}
             </button>
           </div>
           <div className="cat-toolbar">
@@ -1597,7 +1608,16 @@ export default function Page() {
             />
             <select
               value={supplierManageFilter}
-              onChange={(e) => setSupplierManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
+              onChange={(e) => {
+                const next = e.target.value as 'all' | 'active' | 'inactive';
+                setSupplierManageFilter(next);
+                if (supplierId) {
+                  const row = suppliers.find((s) => s.id === supplierId);
+                  const st = (row?.status || 'active') as string;
+                  if (next === 'active' && st === 'inactive') setSupplierId('');
+                  if (next === 'inactive' && st !== 'inactive') setSupplierId('');
+                }
+              }}
               aria-label="Supplier status filter"
             >
               <option value="all">All statuses</option>
@@ -1606,7 +1626,18 @@ export default function Page() {
             </select>
           </div>
           {filteredSuppliers.length === 0 ? (
-            <p className="cat-empty muted">No suppliers yet. Add a supplier to start purchase orders.</p>
+            <div className="cat-empty">
+              <p>
+                {suppliers.length === 0
+                  ? 'No suppliers yet.'
+                  : 'No suppliers match this search or status filter.'}
+              </p>
+              <p className="muted">
+                {suppliers.length === 0
+                  ? 'Add a supplier to start purchase orders, receipts, and supplier bills.'
+                  : 'Try another search or choose All statuses.'}
+              </p>
+            </div>
           ) : (
             <div className="cat-table-wrap">
               <table className="table cat-table">
@@ -1615,7 +1646,7 @@ export default function Page() {
                     <th>Name</th>
                     <th>Code</th>
                     <th>Status</th>
-                    <th></th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1636,129 +1667,141 @@ export default function Page() {
             </div>
           )}
         </div>
-      )}
-          <div className="erp-split">
-      <div className="card" style={{ marginBottom: 16, display: tab === 'suppliers' || supplierDrawer ? undefined : 'none' }}>
+        {supplierDrawer ? (
+      <div className="card">
         <h3>Add supplier</h3>
         <div className="erp-form-grid">
-          <input
-            value={supplierName}
-            onChange={(e) => setSupplierName(e.target.value)}
-            placeholder="Supplier name"
-            aria-label="Supplier name"
-            title="Supplier name (1–180 chars; letters/digits required)"
-          />
-          <input
-            value={supplierCode}
-            onChange={(e) => setSupplierCode(e.target.value)}
-            placeholder="Code"
-            aria-label="Supplier code"
-            title="Supplier code (optional; 1–64 chars; letters/digits required)"
-            style={{ width: 100 }}
-          />
-          <select
-            value={supplierProfileType}
-            onChange={(e) => setSupplierProfileType(e.target.value)}
-            aria-label="Supplier profile type"
-            title="Supplier type"
-          >
-            <option value="registered">Registered</option>
-            <option value="trade">Trade</option>
-            <option value="manufacturer">Manufacturer</option>
-            <option value="service">Service</option>
-            <option value="other">Other</option>
-          </select>
-          <input
-            value={supplierCategory}
-            onChange={(e) => setSupplierCategory(e.target.value)}
-            placeholder="Category"
-            aria-label="Supplier category"
-            title="Supplier category (optional; 1–80 chars; letters/digits required)"
-            style={{ width: 120 }}
-          />
-          <select
-            value={supplierStatus}
-            onChange={(e) => setSupplierStatus(e.target.value)}
-            aria-label="Supplier status"
-            title="Status"
-          >
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-          <input
-            value={supplierEmail}
-            onChange={(e) => setSupplierEmail(e.target.value)}
-            placeholder="Email"
-            aria-label="Supplier email"
-          />
-          <input
-            value={supplierPhone}
-            onChange={(e) => setSupplierPhone(e.target.value)}
-            placeholder="Phone (E.164 e.g. +233...)"
-            aria-label="Supplier phone"
-            style={{ width: 160 }}
-          />
-          <input
-            value={supplierAddress}
-            onChange={(e) => setSupplierAddress(e.target.value)}
-            placeholder="Address"
-            aria-label="Supplier address"
-            style={{ minWidth: 160 }}
-          />
-          <input
-            value={supplierLat}
-            onChange={(e) => setSupplierLat(e.target.value)}
-            placeholder="Lat"
-            style={{ width: 90 }}
-            title="GPS latitude (−90…90)"
-            aria-label="Supplier latitude"
-          />
-          <input
-            value={supplierLng}
-            onChange={(e) => setSupplierLng(e.target.value)}
-            placeholder="Lng"
-            style={{ width: 90 }}
-            title="GPS longitude (−180…180)"
-            aria-label="Supplier longitude"
-          />
-          <input
-            value={supplierTermsDays}
-            onChange={(e) => setSupplierTermsDays(e.target.value)}
-            placeholder="Net days"
-            style={{ width: 90 }}
-            title="Payment terms (days)"
-            aria-label="Supplier payment terms days"
-          />
+          <label className="field">
+            <span>Name</span>
+            <input
+              value={supplierName}
+              onChange={(e) => setSupplierName(e.target.value)}
+              placeholder="Supplier name"
+              aria-label="Supplier name"
+              title="Supplier name (1–180 chars; letters/digits required)"
+            />
+          </label>
+          <label className="field">
+            <span>Code</span>
+            <input
+              value={supplierCode}
+              onChange={(e) => setSupplierCode(e.target.value)}
+              placeholder="Optional code"
+              aria-label="Supplier code"
+              title="Supplier code (optional; 1–64 chars; letters/digits required)"
+            />
+          </label>
+          <label className="field">
+            <span>Type</span>
+            <select
+              value={supplierProfileType}
+              onChange={(e) => setSupplierProfileType(e.target.value)}
+              aria-label="Supplier profile type"
+              title="Supplier type"
+            >
+              <option value="registered">Registered</option>
+              <option value="trade">Trade</option>
+              <option value="manufacturer">Manufacturer</option>
+              <option value="service">Service</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+          <label className="field">
+            <span>Category</span>
+            <input
+              value={supplierCategory}
+              onChange={(e) => setSupplierCategory(e.target.value)}
+              placeholder="Optional category"
+              aria-label="Supplier category"
+              title="Supplier category (optional; 1–80 chars; letters/digits required)"
+            />
+          </label>
+          <label className="field">
+            <span>Status</span>
+            <select
+              value={supplierStatus}
+              onChange={(e) => setSupplierStatus(e.target.value)}
+              aria-label="Supplier status"
+              title="Status"
+            >
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </label>
+          <label className="field">
+            <span>Email</span>
+            <input
+              type="email"
+              value={supplierEmail}
+              onChange={(e) => setSupplierEmail(e.target.value)}
+              placeholder="Email"
+              aria-label="Supplier email"
+            />
+          </label>
+          <label className="field">
+            <span>Phone</span>
+            <input
+              value={supplierPhone}
+              onChange={(e) => setSupplierPhone(e.target.value)}
+              placeholder="E.164 e.g. +233…"
+              aria-label="Supplier phone"
+            />
+          </label>
+          <label className="field">
+            <span>Address</span>
+            <input
+              value={supplierAddress}
+              onChange={(e) => setSupplierAddress(e.target.value)}
+              placeholder="Address"
+              aria-label="Supplier address"
+            />
+          </label>
+          <label className="field">
+            <span>Latitude</span>
+            <input
+              value={supplierLat}
+              onChange={(e) => setSupplierLat(e.target.value)}
+              placeholder="−90 to 90"
+              title="GPS latitude (−90…90)"
+              aria-label="Supplier latitude"
+            />
+          </label>
+          <label className="field">
+            <span>Longitude</span>
+            <input
+              value={supplierLng}
+              onChange={(e) => setSupplierLng(e.target.value)}
+              placeholder="−180 to 180"
+              title="GPS longitude (−180…180)"
+              aria-label="Supplier longitude"
+            />
+          </label>
+          <label className="field">
+            <span>Payment terms (days)</span>
+            <input
+              value={supplierTermsDays}
+              onChange={(e) => setSupplierTermsDays(e.target.value)}
+              placeholder="Net days"
+              title="Payment terms (days)"
+              aria-label="Supplier payment terms days"
+            />
+          </label>
           <button
             type="button"
+            className="btn-primary"
             onClick={createSupplier}
             disabled={!supplierName.trim() || saveBusy}
-            aria-label="Add supplier"
+            aria-label="Save new supplier"
           >
-            {saveBusy ? 'Saving…' : 'Add supplier'}
+            {saveBusy ? 'Saving…' : 'Save supplier'}
           </button>
-          {message ? <p className="form-flash ok">{message}</p> : null}
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 8 }}>
-          <select
-            value={supplierManageFilter}
-            onChange={(e) => {
-              const next = e.target.value as 'all' | 'active' | 'inactive';
-              setSupplierManageFilter(next);
-              if (supplierId) {
-                const row = suppliers.find((s) => s.id === supplierId);
-                const st = (row?.status || 'active') as string;
-                if (next === 'active' && st === 'inactive') setSupplierId('');
-                if (next === 'inactive' && st !== 'inactive') setSupplierId('');
-              }
-            }}
-            title="Filter manage supplier list by status"
-            aria-label="Supplier status filter"
-          >
-            <option value="all">All statuses</option>
-            <option value="active">Active only</option>
-            <option value="inactive">Inactive only</option>
-          </select>
+      </div>
+        ) : null}
+        {supplierId ? (
+      <div className="card">
+        <h3>Supplier details</h3>
+        <div className="cat-toolbar">
           <select
             value={supplierId}
             onChange={(e) => setSupplierId(e.target.value)}
@@ -1780,7 +1823,6 @@ export default function Page() {
               </option>
             ))}
           </select>
-          {supplierId ? (
             <button
               type="button"
               className={
@@ -1799,24 +1841,22 @@ export default function Page() {
                 ? 'Activate'
                 : 'Deactivate'}
             </button>
-          ) : null}
         </div>
-        {supplierId &&
-          (suppliers.find((s) => s.id === supplierId)?.status || 'active') === 'inactive' && (
-            <p className="muted" style={{ marginTop: 8 }}>
+        {(suppliers.find((s) => s.id === supplierId)?.status || 'active') === 'inactive' ? (
+            <p className="muted" style={{ marginTop: 0 }}>
               Inactive — hidden from new PO / PR / manual invoice pickers; existing documents can still
               settle.
             </p>
-          )}
-        {supplierId ? (
+          ) : null}
           <PartyContactsPanel
             kind="supplier"
             partyId={supplierId}
             partyLabel={suppliers.find((s) => s.id === supplierId)?.name || 'Selected supplier'}
           />
-        ) : null}
       </div>
-    </div>
+        ) : null}
+        </>
+      )}
       {tab === 'orders' && (
       <>
       <div className="card" style={{ marginBottom: 16 }}>
@@ -1918,34 +1958,36 @@ export default function Page() {
         </div>
       </div>
 
-          <div className="card" style={{ marginBottom: 16 }}>
-            <label>
-              Cancel reason{' '}
+          <div className="card">
+            <label className="field">
+              <span>Cancel reason</span>
               <input
+                className="purch-reason"
                 value={poCancelReason}
                 onChange={(e) => setPoCancelReason(e.target.value)}
                 placeholder="Required before Cancel"
                 title="Required cancel reason (1–500 chars; letters/digits required)"
                 aria-label="Purchase order cancel reason"
-                style={{ minWidth: 280 }}
               />
             </label>
             <p className="muted" style={{ marginTop: 6 }}>
               Saved on the purchase order notes.
             </p>
-            <label style={{ display: 'block', marginTop: 8 }}>
-              Email override{' '}
+            <label className="field" style={{ marginTop: 8 }}>
+              <span>Email override</span>
               <input
                 type="email"
+                className="purch-reason"
                 value={poEmailTo}
                 onChange={(e) => setPoEmailTo(e.target.value)}
                 placeholder="Optional to= (omit → supplier email)"
                 aria-label="Purchase order email override to"
-                style={{ minWidth: 280 }}
               />
             </label>
           </div>
 
+          <div className="card cat-panel">
+          <div className="purch-filter-row">
           <select
             value={poManageFilter}
             onChange={(e) =>
@@ -1961,7 +2003,6 @@ export default function Page() {
             }
             title="Filter purchase order list by status"
             aria-label="Purchase order status filter"
-            style={{ marginBottom: 12 }}
           >
             <option value="all">All statuses</option>
             <option value="draft">Draft only</option>
@@ -1970,7 +2011,8 @@ export default function Page() {
             <option value="received">Received only</option>
             <option value="cancelled">Cancelled only</option>
           </select>
-
+          </div>
+          <div className="cat-table-wrap">
           <table className="table">
             <thead>
               <tr>
@@ -2002,7 +2044,7 @@ export default function Page() {
                   <td className="muted" style={{ maxWidth: 220, whiteSpace: 'pre-wrap' }}>
                     {o.notes || '—'}
                   </td>
-                  <td style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <td className="purch-actions">
                     {o.status === 'draft' && (
                       <button onClick={() => sendPo(o.id)} aria-label="Email purchase order">
                         Email
@@ -2042,7 +2084,7 @@ export default function Page() {
               ))}
               {managedOrders.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="muted">
+                  <td colSpan={7} className="muted">
                     {orders.length === 0
                       ? 'No purchase orders yet'
                       : 'No purchase orders for this filter'}
@@ -2051,6 +2093,8 @@ export default function Page() {
               )}
             </tbody>
           </table>
+          </div>
+          </div>
           {selected && (
             <div className="card" style={{ marginTop: 16 }}>
               <h3>
@@ -2084,6 +2128,7 @@ export default function Page() {
                   {selected.emailed_at ? ` · ${String(selected.emailed_at).slice(0, 19)}` : ''}
                 </p>
               )}
+              <div className="cat-table-wrap">
               <table className="table">
                 <thead>
                   <tr>
@@ -2269,6 +2314,7 @@ export default function Page() {
                   })}
                 </tbody>
               </table>
+              </div>
               {(selected.status === 'sent' || selected.status === 'partially_received') &&
                 selected.items.some((i) => i.outstanding_qty > 0) && (
                   <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -2412,8 +2458,6 @@ export default function Page() {
           )}
         </>
       )}
-      </>
-      )}
 
       {tab === 'grn' && (
         <div className="card cat-panel">
@@ -2441,10 +2485,13 @@ export default function Page() {
           </select>
         </div>
         {receivableOrders.length === 0 ? (
-          <p className="muted">No sent orders waiting to receive. Send an order first.</p>
+          <div className="cat-empty">
+            <p>No sent orders waiting to receive.</p>
+            <p className="muted">Send an order first, then receive it here.</p>
+          </div>
         ) : null}
         {selected && (selected.status === 'sent' || selected.status === 'partially_received') && (
-          <div style={{ marginTop: 12 }}>
+          <div className="cat-table-wrap" style={{ marginTop: 12 }}>
             <table className="table compact">
               <thead>
                 <tr>
@@ -2553,8 +2600,12 @@ export default function Page() {
         )}
         <h3 style={{ marginTop: 24 }}>Received</h3>
         {grns.length === 0 ? (
-          <p className="cat-empty muted">Nothing received yet.</p>
+          <div className="cat-empty">
+            <p>Nothing received yet.</p>
+            <p className="muted">Posted receipts will show here with quantities accepted and rejected.</p>
+          </div>
         ) : (
+        <div className="cat-table-wrap">
         <table className="table cat-table">
           <thead>
             <tr>
@@ -2585,6 +2636,7 @@ export default function Page() {
             })}
           </tbody>
         </table>
+        </div>
         )}
         </div>
       )}
@@ -2597,7 +2649,8 @@ export default function Page() {
           <p className="muted" style={{ margin: 0 }}>
             Orders, goods received, supplier bills, and returns — not the reports summary.
           </p>
-          <table className="table cat-table" style={{ marginTop: 12 }}>
+          <div className="cat-table-wrap">
+          <table className="table cat-table">
             <thead>
               <tr>
                 <th>Date</th>
@@ -2628,6 +2681,7 @@ export default function Page() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
@@ -2886,22 +2940,24 @@ export default function Page() {
               </div>
             </div>
           )}
-        <div className="card" style={{ marginBottom: 16 }}>
-          <label>
-            Cancel reason{' '}
+        <div className="card">
+          <label className="field">
+            <span>Cancel reason</span>
             <input
+              className="purch-reason"
               value={piCancelReason}
               onChange={(e) => setPiCancelReason(e.target.value)}
               placeholder="Required before Cancel"
               title="Required cancel reason (1–500 chars; letters/digits required)"
               aria-label="Purchase invoice cancel reason"
-              style={{ minWidth: 280 }}
             />
           </label>
           <p className="muted" style={{ marginTop: 6 }}>
             Saved on the supplier bill notes.
           </p>
         </div>
+        <div className="card cat-panel">
+        <div className="purch-filter-row">
         <select
           value={piManageFilter}
           onChange={(e) =>
@@ -2918,7 +2974,6 @@ export default function Page() {
           }
           title="Filter purchase invoice list by status"
           aria-label="Purchase invoice status filter"
-          style={{ marginBottom: 12 }}
         >
           <option value="all">All statuses</option>
           <option value="draft">Draft only</option>
@@ -2928,6 +2983,8 @@ export default function Page() {
           <option value="overdue">Overdue only</option>
           <option value="cancelled">Cancelled only</option>
         </select>
+        </div>
+        <div className="cat-table-wrap">
         <table className="table">
           <thead>
             <tr>
@@ -3052,6 +3109,8 @@ export default function Page() {
             )}
           </tbody>
         </table>
+        </div>
+        </div>
         {selectedInvoice && (
           <div className="card" style={{ marginTop: 16 }}>
             <h3>
@@ -3081,6 +3140,7 @@ export default function Page() {
                 Notes: {selectedInvoice.notes}
               </p>
             )}
+            <div className="cat-table-wrap">
             <table className="table">
               <thead>
                 <tr>
@@ -3229,16 +3289,16 @@ export default function Page() {
           </button>
         </div>
       </div>
-      <div className="card" style={{ marginBottom: 12 }}>
-        <label>
-          Cancel reason{' '}
+      <div className="card">
+        <label className="field">
+          <span>Cancel reason</span>
           <input
+            className="purch-reason"
             value={prCancelReason}
             onChange={(e) => setPrCancelReason(e.target.value)}
             placeholder="Required before Cancel"
             title="Required cancel reason (1–500 chars; letters/digits required)"
             aria-label="Purchase return cancel reason"
-            style={{ minWidth: 280 }}
           />
         </label>
         <p className="muted" style={{ marginTop: 6 }}>
@@ -3246,6 +3306,8 @@ export default function Page() {
           {'{ reason }'}). Draft only; no stock/AP.
         </p>
       </div>
+        <div className="card cat-panel">
+        <div className="purch-filter-row">
         <select
           value={returnManageFilter}
           onChange={(e) =>
@@ -3255,13 +3317,14 @@ export default function Page() {
           }
           title="Filter purchase return list by status"
           aria-label="Purchase return status filter"
-          style={{ marginBottom: 12 }}
         >
           <option value="all">All statuses</option>
           <option value="draft">Draft only</option>
           <option value="posted">Posted only</option>
           <option value="cancelled">Cancelled only</option>
         </select>
+        </div>
+        <div className="cat-table-wrap">
         <table className="table">
           <thead>
             <tr>
@@ -3287,7 +3350,7 @@ export default function Page() {
                 <td className="muted" style={{ maxWidth: 220, whiteSpace: 'pre-wrap' }}>
                   {r.notes || '—'}
                 </td>
-                <td style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                <td className="purch-actions">
                   {r.status === 'draft' && (
                     <>
                       <button type="button" className="btn-ok" onClick={() => postReturn(r.id)} aria-label={`Post purchase return ${r.id}`}>
@@ -3316,6 +3379,8 @@ export default function Page() {
             )}
           </tbody>
         </table>
+        </div>
+        </div>
         </>
       )}
       {attachPreview && (

@@ -33,8 +33,11 @@ def test_industry_allows_module_unknown_does_not_grant_verticals():
     assert industry_allows_module("hotel", "fmcg") is False
     assert has_permission("hotel_manager", "purchasing", "write")
     assert has_permission("hotel_manager", "inventory", "read")
+    assert has_permission("hotel_manager", "company", "read")
+    assert has_permission("company_admin", "company", "read")
     assert has_permission("hotel_housekeeping", "inventory", "read")
     assert not has_permission("hotel_front_desk", "inventory", "read")
+    assert not has_permission("hotel_front_desk", "company", "read")
 
 
 def test_trial_package_includes_verticals_but_resolve_filters():
@@ -154,6 +157,7 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "['POS'" not in nav and '["POS"' not in nav
     assert "Restaurant and POS" in nav
     assert "['Hotel Dashboard', '/hotel', 'hotel']" in nav or '["Hotel Dashboard", "/hotel", "hotel"]' in nav
+    assert "['Company profile', '/company', 'company']" in nav or '["Company profile", "/company", "company"]' in nav
     assert "Events and Banquets" in nav
     assert "HOTEL_INVENTORY_PROCUREMENT_CHILDREN" in nav
     assert "Products and stock" in nav

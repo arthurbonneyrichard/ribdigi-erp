@@ -322,6 +322,7 @@ export default function HotelPage() {
   const tab = rawTab || 'dashboard';
   const show = (section: string) => tab === section;
   const [moduleAllowed, setModuleAllowed] = useState<boolean | null>(null);
+  const [canReadCompany, setCanReadCompany] = useState(false);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [guests, setGuests] = useState<Guest[]>([]);
@@ -519,6 +520,14 @@ export default function HotelPage() {
         );
         if (!active) return;
         setModuleAllowed(ok);
+        const perms = (me.data?.permissions || {}) as Record<string, string[]>;
+        const companyActions = perms.company || [];
+        setCanReadCompany(
+          Boolean(perms['*']?.includes('*')) ||
+            companyActions.includes('*') ||
+            companyActions.includes('read') ||
+            companyActions.includes('write')
+        );
         if (!ok) {
           setError(
             'Hotel module is not available for this business type. It activates only for Hotel industry tenants (package entitlement still required).'
@@ -2719,6 +2728,12 @@ export default function HotelPage() {
       {show('settings') && (
         <div className="card" style={{ marginBottom: 16 }}>
           <h2>Hotel settings</h2>
+          {canReadCompany && (
+            <p className="muted">
+              Logo, legal name, address, and tax IDs:{' '}
+              <Link href="/company">Company profile</Link>
+            </p>
+          )}
           <form
             onSubmit={async (e) => {
               e.preventDefault();
