@@ -288,18 +288,15 @@ def label_html(
     symbology: str | None = None,
 ) -> str:
     copies = max(1, min(int(copies or 1), 40))
-    price_txt = f"{currency} {price:,.2f}"
-    sym = normalize_symbology(symbology) if symbology else detect_symbology(barcode_value)
+    _ = (price, currency, company_name, symbology)  # labels are name + SKU only
     cards = []
-    for _ in range(copies):
+    for _copy in range(copies):
         cards.append(
             f"""
             <div class="label">
-              <div class="co">{html.escape(company_name)}</div>
               <div class="name">{html.escape(product_name)}</div>
-              <div class="price">{html.escape(price_txt)}</div>
               <img src="{png_data_uri}" alt="barcode"/>
-              <div class="meta">{html.escape(sym.upper())} · SKU {html.escape(sku)} · {html.escape(barcode_value)}</div>
+              <div class="meta">SKU {html.escape(sku)}</div>
             </div>
             """
         )

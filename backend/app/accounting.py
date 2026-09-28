@@ -28,6 +28,7 @@ DEFAULT_ACCOUNTS = [
     ("4100", "Sales Discounts", "expense", False, False),
     ("4200", "Purchase Discounts Taken", "income", False, False),
     ("4300", "FX Gain/Loss", "income", False, False),
+    ("4400", "Other Income", "income", False, False),
     ("5000", "Cost of Goods Sold", "expense", False, False),
     ("6000", "Operating Expenses", "expense", False, False),
 ]
@@ -1925,3 +1926,81 @@ async def profit_and_loss(
         branch_id=branch_id,
         mode="journals",
     )
+
+
+async def account_statement(
+    db: AsyncSession,
+    tenant_id: str,
+    account_id: str,
+    *,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+) -> dict:
+    """Ledger statement for one CoA account from posted journals (not hardcoded)."""
+    await ensure_default_accounts(db, tenant_id)
+    account = (
+        await db.execute(
+            select(m.Account).where(
+                m.Account.id == account_id,
+                m.Account.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    stmt = (
+        select(m.JournalEntryLine, m.JournalEntry)
+        .join(m.JournalEntry, m.JournalEntry.id == m.JournalEntryLine.journal_entry_id)
+        .where(
+            m.JournalEntryLine.tenant_id == tenant_id,
+            m.JournalEntry.tenant_id == tenant_id,
+            m.JournalEntryLine.account_id == account.id,
+            m.JournalEntry.status == "posted",
+        )
+        .order_by(m.JournalEntry.entry_date.asc(), m.JournalEntry.created_at.asc())
+    )
+    rows = (await db.execute(stmt)).all()
+    opening = 0.0
+    lines_out: list[dict] = []
+    running = 0.0
+    for line, entry in rows:
+        delta = _signed_balance_delta(
+            account.account_type,
+            money_json(line.debit),
+            money_json(line.credit),
+        )
+        when = entry.entry_date
+        if from_date and when < from_date:
+            opening = money_json(round(opening + delta, 2))
+            continue
+        if to_date and when > to_date:
+            continue
+        running = money_json(round((opening if not lines_out else running) + delta, 2))
+        if not lines_out:
+            running = money_json(round(opening + delta, 2))
+        lines_out.append(
+            {
+                "date": when,
+                "entry_number": entry.entry_number,
+                "journal_entry_id": entry.id,
+                "source_type": entry.source_type,
+                "description": line.description or entry.description,
+                "debit": money_json(line.debit),
+                "credit": money_json(line.credit),
+                "balance": running,
+            }
+        )
+    if not lines_out:
+        running = money_json(opening)
+    return {
+        "account_id": account.id,
+        "code": account.code,
+        "name": account.name,
+        "account_type": account.account_type,
+        "opening_balance": money_json(opening),
+        "closing_balance": money_json(running),
+        "from_date": from_date,
+        "to_date": to_date,
+        "lines": lines_out,
+    }

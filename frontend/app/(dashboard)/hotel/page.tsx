@@ -1926,7 +1926,7 @@ export default function HotelPage() {
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div className="list-page-head">
           <h2 style={{ margin: 0 }}>Reservations</h2>
           <select value={listKind} onChange={(e) => setListKind(e.target.value)} aria-label="Hotel reservation list filter">
             <option value="">All</option>
@@ -1938,6 +1938,7 @@ export default function HotelPage() {
             <option value="no_show">No-show</option>
           </select>
         </div>
+        <div className="list-table-wrap">
         <table className="table">
           <thead>
             <tr>
@@ -2024,6 +2025,7 @@ export default function HotelPage() {
             )}
           </tbody>
         </table>
+        </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 8 }}>
           <label>
             <span>Extend to</span>

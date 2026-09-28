@@ -8,7 +8,7 @@ import {
   transferProductCount,
   transferQtyTotal,
   warehouseQtyMap,
-} from './stockTransfers.ts';
+} from './stockTransfers';
 
 test('transfer counts fall back to items', () => {
   const row = {

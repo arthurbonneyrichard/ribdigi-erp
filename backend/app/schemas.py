@@ -3512,6 +3512,35 @@ class SalesInvoiceItemCreate(BaseModel):
 
 
 
+def coerce_coupon_code_value(value: object) -> object:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        return value
+    return value.strip().upper()
+
+
+def validate_coupon_code_value(value: str) -> str:
+    if not value:
+        raise ValueError("Coupon code is required")
+    if len(value) > 32:
+        raise ValueError("Coupon code must be 1–32 chars")
+    if "://" in value or "@" in value or " " in value:
+        raise ValueError("Coupon code must be letters, digits, hyphen, or underscore")
+    import re
+
+    if not re.fullmatch(r"[A-Z0-9][A-Z0-9_-]{0,31}", value):
+        raise ValueError("Coupon code must be letters, digits, hyphen, or underscore")
+    return value
+
+
+CouponCodeValue = Annotated[
+    str,
+    BeforeValidator(coerce_coupon_code_value),
+    AfterValidator(validate_coupon_code_value),
+]
+
+
 class SalesInvoiceCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -3523,6 +3552,7 @@ class SalesInvoiceCreate(BaseModel):
     discount_amount: NonNegativeMoneyValue = 0
     discount_type: DiscountKindValue = "fixed"
     discount_percent: PercentRateValue = 0
+    coupon_code: CouponCodeValue | None = None
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on SalesInvoice.notes Text).
     notes: SalesDocumentNotesValue | None = None
@@ -3537,6 +3567,61 @@ class SalesInvoiceCreate(BaseModel):
     exchange_rate: PositiveMoneyValue | None = None
     is_reverse_charge: bool = False
     items: list[SalesInvoiceItemCreate] = Field(min_length=1)
+
+
+class CouponCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: CouponCodeValue
+    name: ProductNameValue
+    discount_type: DiscountKindValue = "percent"
+    amount: PositiveMoneyValue
+    min_spend: NonNegativeMoneyValue = 0
+    starts_at: datetime | None = None
+    ends_at: datetime | None = None
+    max_redemptions: int | None = Field(default=None, ge=1, le=1_000_000)
+    per_customer_limit: int = Field(default=0, ge=0, le=1_000_000)
+    eligible_product_ids: list[UuidIdValue] | None = None
+    eligible_category_ids: list[UuidIdValue] | None = None
+    is_active: bool = True
+    notes: SalesDocumentNotesValue | None = None
+
+
+class CouponUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: ProductNameValue | None = None
+    is_active: bool | None = None
+    min_spend: NonNegativeMoneyValue | None = None
+    starts_at: datetime | None = None
+    ends_at: datetime | None = None
+    max_redemptions: int | None = Field(default=None, ge=1, le=1_000_000)
+    per_customer_limit: int | None = Field(default=None, ge=0, le=1_000_000)
+    eligible_product_ids: list[UuidIdValue] | None = None
+    eligible_category_ids: list[UuidIdValue] | None = None
+    notes: SalesDocumentNotesValue | None = None
+
+
+class CouponValidate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: CouponCodeValue
+    header_base: NonNegativeMoneyValue = 0
+    customer_id: UuidIdValue | None = None
+    product_ids: list[UuidIdValue] = Field(default_factory=list)
+    category_ids: list[UuidIdValue] = Field(default_factory=list)
+
+
+class OtherIncomeCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    description: SalesDocumentNotesValue
+    amount: PositiveMoneyValue
+    income_date: datetime | None = None
+    payment_method: Literal["cash", "bank_transfer", "card", "cheque"] = "cash"
+    liquid_account_id: UuidIdValue | None = None
+    payer: PartyNameValue | None = None
+    reference: SalesDocumentNotesValue | None = None
 
 
 class SalesQuotationCreate(BaseModel):
@@ -8836,6 +8921,7 @@ class PosSaleCreate(BaseModel):
     discount_amount: NonNegativeMoneyValue = 0
     discount_type: DiscountKindValue = "fixed"
     discount_percent: PercentRateValue = 0
+    coupon_code: CouponCodeValue | None = None
     # BR-8.1 — only completed POS create; omit → completed; blank/invalid → 422
     # (was free str; garbage persisted on transactions.status)
     status: Literal["completed"] = "completed"

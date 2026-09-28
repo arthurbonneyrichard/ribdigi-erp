@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+import html
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -957,6 +958,9 @@ async def serialize_grn(db: AsyncSession, grn: m.GoodsReceipt) -> dict:
         ).scalars().all()
         batches = {b.id: b for b in rows}
     used_mv: set[str] = set()
+    already = await _returned_qty_by_grn_item(
+        db, tenant_id=grn.tenant_id, goods_receipt_id=grn.id
+    )
 
     def _batch_fields_for(item: m.GoodsReceiptItem) -> dict:
         if money_json(item.accepted_qty) <= 0:
@@ -1008,6 +1012,9 @@ async def serialize_grn(db: AsyncSession, grn: m.GoodsReceipt) -> dict:
                 "accepted_qty": money_json(i.accepted_qty),
                 "rejected_qty": money_json(i.rejected_qty),
                 "rejection_reason": i.rejection_reason,
+                "remaining_return_qty": money_json(
+                    max(money_json(i.accepted_qty or 0) - already.get(i.id, 0.0), 0)
+                ),
                 **_batch_fields_for(i),
             }
             for i in items
@@ -1453,6 +1460,31 @@ async def serialize_purchase_return(db: AsyncSession, ret: m.PurchaseReturn) -> 
         "can_cancel": ret.status == "draft",
         "items": serialized_items,
     }
+
+
+def purchase_return_print_html(ret: dict, *, supplier_name: str = "", company_name: str = "") -> str:
+    rows = "".join(
+        f"<tr><td>{html.escape(str(i.get('product_id') or ''))}</td>"
+        f"<td>{i.get('quantity')}</td><td>{i.get('unit_price')}</td>"
+        f"<td>{i.get('line_total')}</td></tr>"
+        for i in (ret.get("items") or [])
+    )
+    return f"""<!doctype html><html><head><meta charset="utf-8"/>
+<title>{html.escape(str(ret.get('debit_note_number') or ret.get('return_number') or 'Return'))}</title>
+<style>body{{font-family:Arial,sans-serif;margin:24px;color:#10211b}}
+table{{width:100%;border-collapse:collapse}}td,th{{border:1px solid #d4e5c4;padding:6px;text-align:left}}
+@media print{{.toolbar{{display:none}}}}</style></head><body>
+<div class="toolbar"><button onclick="window.print()">Print</button></div>
+<h1>{html.escape(company_name or 'Purchase return')}</h1>
+<p>Return {html.escape(str(ret.get('return_number') or ''))}
+ · Debit note {html.escape(str(ret.get('debit_note_number') or '—'))}</p>
+<p>Supplier {html.escape(supplier_name or str(ret.get('supplier_id') or ''))}
+ · Reason {html.escape(str(ret.get('reason') or ''))}
+ · Status {html.escape(str(ret.get('status') or ''))}</p>
+<table><thead><tr><th>Product</th><th>Qty</th><th>Unit</th><th>Total</th></tr></thead>
+<tbody>{rows}</tbody></table>
+<p>Total {html.escape(str(ret.get('total_amount') or 0))}</p>
+</body></html>"""
 
 
 async def cancel_purchase_return(

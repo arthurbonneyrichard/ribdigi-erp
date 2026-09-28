@@ -81,6 +81,9 @@ DATASET_SPECS: list[tuple[str, type]] = [
     ("party_contacts", m.PartyContact),
     ("notification_preferences", m.NotificationPreference),
     ("report_schedules", m.ReportSchedule),
+    ("sales_coupons", m.SalesCoupon),
+    ("sales_coupon_redemptions", m.SalesCouponRedemption),
+    ("other_incomes", m.OtherIncome),
 ]
 
 

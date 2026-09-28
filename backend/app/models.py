@@ -363,6 +363,7 @@ class Product(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     # Optional restaurant prep routing; overrides category when set
     prep_station: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
 
 
 class ProductVariant(Base):
@@ -973,6 +974,7 @@ class SalesInvoice(Base):
     due_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     quotation_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     sales_order_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    coupon_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     emailed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     emailed_to: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -2282,6 +2284,62 @@ class PrintJob(Base):
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class SalesCoupon(Base):
+    __tablename__ = "sales_coupons"
+    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    code: Mapped[str] = mapped_column(String(32), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    discount_type: Mapped[str] = mapped_column(String(16), default="percent")
+    amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    min_spend: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    starts_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    ends_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    max_redemptions: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    per_customer_limit: Mapped[int] = mapped_column(Integer, default=0)
+    eligible_product_ids: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    eligible_category_ids: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class SalesCouponRedemption(Base):
+    __tablename__ = "sales_coupon_redemptions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    coupon_id: Mapped[str] = mapped_column(ForeignKey("sales_coupons.id"), index=True)
+    customer_id: Mapped[str | None] = mapped_column(ForeignKey("parties.id"), nullable=True, index=True)
+    source_type: Mapped[str] = mapped_column(String(40))
+    source_id: Mapped[str] = mapped_column(String(36), index=True)
+    amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class OtherIncome(Base):
+    __tablename__ = "other_incomes"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    description: Mapped[str] = mapped_column(Text, default="")
+    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    income_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    payment_method: Mapped[str] = mapped_column(String(40), default="cash")
+    liquid_account_id: Mapped[str | None] = mapped_column(ForeignKey("accounts.id"), nullable=True)
+    payer: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    reference: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    status: Mapped[str] = mapped_column(String(30), default="posted")
+    journal_entry_id: Mapped[str | None] = mapped_column(ForeignKey("journal_entries.id"), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class PrintJobAttempt(Base):

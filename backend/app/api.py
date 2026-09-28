@@ -273,6 +273,10 @@ from app.schemas import (
     RecurringSkipNext,
     RefreshRequest,
     SalesInvoiceCreate,
+    CouponCreate,
+    CouponUpdate,
+    CouponValidate,
+    OtherIncomeCreate,
     SalesOrderCreate,
     SalesOrderCancel,
     SalesInvoiceCancel,
@@ -3647,7 +3651,7 @@ async def products(
     rows = await schema_compat.list_mapped(
         db, m.Product, tenant_id=claims["tenant_id"], extra=extra, extra_params=params, order_by="name"
     )
-    return env([catalog_meta_svc.serialize_product(p) for p in rows])
+    return env(await catalog_meta_svc.serialize_products_list(db, claims["tenant_id"], rows))
 
 
 @api.post("/products")
@@ -3714,6 +3718,7 @@ async def add_product(
             **data,
             "id": uid(),
             "tenant_id": claims["tenant_id"],
+            "created_by": claims["sub"],
             "reserved_qty": 0,
             "minimum_stock": data.get("reorder_level") or 0,
         },
@@ -3737,7 +3742,10 @@ async def add_product(
         )
     await db.commit()
     fresh = await schema_compat.get_mapped(db, m.Product, product.id)
-    return env(catalog_meta_svc.serialize_product(fresh or product), "Product created")
+    listed = await catalog_meta_svc.serialize_products_list(
+        db, claims["tenant_id"], [fresh or product]
+    )
+    return env(listed[0] if listed else catalog_meta_svc.serialize_product(fresh or product), "Product created")
 
 
 @api.get("/products/import/template")
@@ -6361,10 +6369,79 @@ async def create_sales_invoice(
         currency=payload.currency,
         exchange_rate=payload.exchange_rate,
         is_reverse_charge=bool(payload.is_reverse_charge),
+        coupon_code=payload.coupon_code,
         items=[i.model_dump() for i in payload.items],
     )
     await db.commit()
     return env(await sales_svc.serialize_invoice(db, invoice), "Sales invoice created as draft")
+
+
+@api.get("/sales/coupons")
+async def list_sales_coupons(
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import coupons as coupons_svc
+
+    return env(await coupons_svc.list_coupons(db, claims["tenant_id"]))
+
+
+@api.post("/sales/coupons")
+async def create_sales_coupon(
+    payload: CouponCreate,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import coupons as coupons_svc
+
+    row = await coupons_svc.create_coupon(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        payload=payload.model_dump(),
+    )
+    await db.commit()
+    return env(coupons_svc.serialize_coupon(row, redemption_count=0), "Coupon created")
+
+
+@api.patch("/sales/coupons/{coupon_id}")
+async def patch_sales_coupon(
+    coupon_id: UuidIdValue,
+    payload: CouponUpdate,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import coupons as coupons_svc
+
+    row = await coupons_svc.update_coupon(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        coupon_id=coupon_id,
+        payload=payload.model_dump(exclude_unset=True),
+    )
+    await db.commit()
+    return env(coupons_svc.serialize_coupon(row), "Coupon updated")
+
+
+@api.post("/sales/coupons/validate")
+async def validate_sales_coupon(
+    payload: CouponValidate,
+    claims=Depends(require_permission("sales", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import coupons as coupons_svc
+
+    data = await coupons_svc.apply_coupon(
+        db,
+        tenant_id=claims["tenant_id"],
+        code=payload.code,
+        header_base=payload.header_base,
+        product_ids=payload.product_ids,
+        category_ids=payload.category_ids,
+        customer_id=payload.customer_id,
+    )
+    return env(data, "Coupon is valid")
 
 
 @api.get("/sales/invoices/{invoice_id}")
@@ -7575,6 +7652,25 @@ async def get_purchase_return(
     return env(await purchasing_svc.serialize_purchase_return(db, ret))
 
 
+@api.get("/purchasing/returns/{return_id}/print")
+async def print_purchase_return(
+    return_id: UuidIdValue,
+    claims=Depends(require_permission("purchasing", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    ret = await purchasing_svc.get_purchase_return(db, claims["tenant_id"], return_id)
+    assert_record_access(claims, ret.created_by)
+    data = await purchasing_svc.serialize_purchase_return(db, ret)
+    supplier = await purchasing_svc.get_supplier(db, claims["tenant_id"], ret.supplier_id)
+    tenant = await tenants_svc.get_tenant(db, claims["tenant_id"])
+    html_page = purchasing_svc.purchase_return_print_html(
+        data,
+        supplier_name=supplier.name,
+        company_name=tenant.company_name or "",
+    )
+    return Response(content=html_page, media_type="text/html; charset=utf-8")
+
+
 @api.post("/purchasing/returns/{return_id}/post")
 async def post_purchase_return(
     return_id: UuidIdValue,
@@ -8286,13 +8382,37 @@ async def pos_sale(
             }
         )
     header_base = money_json(round(subtotal + tax_total, 2))
-    cart_discount, cart_disc_type, cart_disc_pct = resolve_discount(
-        base_amount=header_base,
-        discount=payload.discount_amount or 0,
-        discount_type=payload.discount_type,
-        discount_percent=payload.discount_percent or 0,
-        label="Cart discount",
-    )
+    coupon_meta = None
+    if payload.coupon_code and str(payload.coupon_code).strip():
+        from app import coupons as coupons_svc
+
+        cat_ids = []
+        for item in priced_items:
+            prod = await db.get(m.Product, item.get("product_id"))
+            if prod and prod.category_id:
+                cat_ids.append(prod.category_id)
+        coupon_meta = await coupons_svc.apply_coupon(
+            db,
+            tenant_id=claims["tenant_id"],
+            code=payload.coupon_code,
+            header_base=header_base,
+            product_ids=[i.get("product_id") for i in priced_items],
+            category_ids=cat_ids,
+            customer_id=payload.party_id,
+        )
+        cart_discount, cart_disc_type, cart_disc_pct = (
+            coupon_meta["discount_amount"],
+            coupon_meta["discount_type"],
+            coupon_meta["discount_percent"],
+        )
+    else:
+        cart_discount, cart_disc_type, cart_disc_pct = resolve_discount(
+            base_amount=header_base,
+            discount=payload.discount_amount or 0,
+            discount_type=payload.discount_type,
+            discount_percent=payload.discount_percent or 0,
+            label="Cart discount",
+        )
     total = money_json(round(header_base - cart_discount, 2))
 
     payments = pos_svc.resolve_sale_payments(
@@ -8351,6 +8471,7 @@ async def pos_sale(
     body.pop("discount_amount", None)
     body.pop("discount_type", None)
     body.pop("discount_percent", None)
+    body.pop("coupon_code", None)
     body.pop("override_credit_limit", None)
     body.pop("override_reason", None)
     body.pop("client_request_id", None)
@@ -8365,6 +8486,8 @@ async def pos_sale(
         "discount_percent": cart_disc_pct,
         "line_discounts": money_json(round(line_discounts, 2)),
         "client_request_id": client_request_id,
+        "coupon_code": (coupon_meta or {}).get("code"),
+        "coupon_id": (coupon_meta or {}).get("coupon_id"),
     }
     tx = m.Transaction(
         tenant_id=claims["tenant_id"],
@@ -8382,6 +8505,19 @@ async def pos_sale(
     )
     db.add(tx)
     await db.flush()
+    if coupon_meta:
+        from app import coupons as coupons_svc
+
+        await coupons_svc.record_redemption(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            coupon_id=coupon_meta["coupon_id"],
+            amount=cart_discount,
+            customer_id=payload.party_id,
+            source_type="pos_sale",
+            source_id=tx.id,
+        )
     payment_rows = await pos_svc.record_pos_payments(
         db,
         tenant_id=claims["tenant_id"],
@@ -9148,6 +9284,68 @@ async def generate_recurring_expenses(
         [await expenses_svc.serialize_expense_full(db, e) for e in created],
         f"Generated {len(created)} expense(s)",
     )
+
+
+@api.get("/incomes")
+async def list_other_incomes(
+    claims=Depends(require_permission("expenses", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import other_income as income_svc
+
+    rows = await income_svc.list_incomes(db, claims["tenant_id"])
+    return env([income_svc.serialize_income(r) for r in rows])
+
+
+@api.post("/incomes")
+async def add_other_income(
+    payload: OtherIncomeCreate,
+    claims=Depends(require_permission("expenses", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import other_income as income_svc
+    from app.accounting import ensure_default_accounts
+
+    await ensure_default_accounts(db, claims["tenant_id"])
+    row = await income_svc.create_income(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        payload=payload.model_dump(),
+    )
+    await db.commit()
+    return env(income_svc.serialize_income(row), "Income posted")
+
+
+@api.get("/incomes")
+async def list_other_incomes(
+    claims=Depends(require_permission("expenses", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import other_income as income_svc
+
+    rows = await income_svc.list_incomes(db, claims["tenant_id"])
+    return env([income_svc.serialize_income(r) for r in rows])
+
+
+@api.post("/incomes")
+async def add_other_income(
+    payload: OtherIncomeCreate,
+    claims=Depends(require_permission("expenses", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import other_income as income_svc
+    from app.accounting import ensure_default_accounts
+
+    await ensure_default_accounts(db, claims["tenant_id"])
+    row = await income_svc.create_income(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        payload=payload.model_dump(),
+    )
+    await db.commit()
+    return env(income_svc.serialize_income(row), "Income posted")
 
 
 @api.get("/expenses")
@@ -10581,6 +10779,48 @@ async def accounting_balance_sheet(
             compare=compare,
             store_id=store_id or None,
             branch_id=branch_id or None,
+        )
+    )
+
+
+@api.get("/accounting/accounts/{account_id}/statement")
+async def accounting_account_statement(
+    account_id: UuidIdValue,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    claims=Depends(require_permission("accounting", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.accounting import account_statement
+
+    return env(
+        await account_statement(
+            db,
+            claims["tenant_id"],
+            account_id,
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
+        )
+    )
+
+
+@api.get("/reports/account-statement")
+async def reports_account_statement(
+    account_id: UuidIdValue,
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.accounting import account_statement
+
+    return env(
+        await account_statement(
+            db,
+            claims["tenant_id"],
+            account_id,
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date, end_of_day=True),
         )
     )
 

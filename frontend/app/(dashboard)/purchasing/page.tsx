@@ -122,6 +122,7 @@ type GrnItem = {
   id: string;
   product_id: string;
   accepted_qty: number;
+  remaining_return_qty?: number;
   received_qty: number;
   rejected_qty?: number;
   rejection_reason?: string | null;
@@ -798,6 +799,17 @@ export default function Page() {
     setMessage('');
     if (!returnReason.trim()) {
       setError('Select a return reason');
+      return;
+    }
+    const line = (selectedGrn?.items || []).find((i) => i.id === grnItemId);
+    const remaining = Number(line?.remaining_return_qty ?? line?.accepted_qty ?? 0);
+    const qty = Number(returnQty);
+    if (!Number.isFinite(qty) || qty <= 0) {
+      setError('Return quantity must be positive');
+      return;
+    }
+    if (qty > remaining + 1e-9) {
+      setError(`Return quantity cannot exceed remaining accepted qty (${remaining})`);
       return;
     }
     try {
@@ -3252,7 +3264,7 @@ export default function Page() {
             <option value="">Select GRN line</option>
             {(selectedGrn?.items || []).map((i) => (
               <option key={i.id} value={i.id}>
-                {i.product_id} (accepted {i.accepted_qty})
+                {i.product_id} (remaining {i.remaining_return_qty ?? i.accepted_qty})
               </option>
             ))}
           </select>
@@ -3366,6 +3378,32 @@ export default function Page() {
                       </button>
                     </>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const token = localStorage.getItem('token');
+                      const tenant = localStorage.getItem('tenant');
+                      const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+                      fetch(`${base}/purchasing/returns/${r.id}/print`, {
+                        headers: {
+                          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                          ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+                        },
+                      })
+                        .then((res) => res.text())
+                        .then((html) => {
+                          const w = window.open('', '_blank');
+                          if (w) {
+                            w.document.write(html);
+                            w.document.close();
+                          }
+                        })
+                        .catch((err) => setError(String(err)));
+                    }}
+                    aria-label={`Print purchase return ${r.id}`}
+                  >
+                    Print
+                  </button>
                 </td>
               </tr>
             ))}

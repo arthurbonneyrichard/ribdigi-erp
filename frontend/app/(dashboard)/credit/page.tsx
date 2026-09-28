@@ -739,7 +739,10 @@ export default function Page() {
           </div>
         </div>
 
-      <h3 style={{ marginTop: 16 }}>{kind === 'receivable' ? 'Customers' : 'Suppliers'}</h3>
+      <div className="list-page-head">
+        <h3 style={{ margin: 0 }}>{kind === 'receivable' ? 'Customers' : 'Suppliers'}</h3>
+      </div>
+      <div className="list-table-wrap">
       <table className="table compact">
         <thead>
           <tr>
@@ -773,6 +776,7 @@ export default function Page() {
           ))}
         </tbody>
       </table>
+      </div>
 
       {statement && (
         <div className="card" style={{ marginTop: 16 }}>

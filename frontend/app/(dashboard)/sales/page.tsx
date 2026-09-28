@@ -6,7 +6,7 @@ import { api } from '../../../lib/api';
 import { formatNumber, type FormatPrefs } from '../../../lib/format';
 import { useStoreContext } from '../../../lib/storeContext';
 
-type Tab = 'invoices' | 'quotations' | 'orders' | 'returns';
+type Tab = 'invoices' | 'quotations' | 'orders' | 'returns' | 'coupons';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -117,6 +117,13 @@ export default function Page() {
   const [lineDiscountType, setLineDiscountType] = useState<'fixed' | 'percent'>('fixed');
   const [headerDiscount, setHeaderDiscount] = useState('');
   const [headerDiscountType, setHeaderDiscountType] = useState<'fixed' | 'percent'>('fixed');
+  const [couponCode, setCouponCode] = useState('');
+  const [coupons, setCoupons] = useState<any[]>([]);
+  const [newCouponCode, setNewCouponCode] = useState('');
+  const [newCouponName, setNewCouponName] = useState('');
+  const [newCouponType, setNewCouponType] = useState<'fixed' | 'percent'>('percent');
+  const [newCouponAmount, setNewCouponAmount] = useState('10');
+  const [newCouponMin, setNewCouponMin] = useState('0');
   const [invoiceReverseCharge, setInvoiceReverseCharge] = useState(false);
   const [invoiceId, setInvoiceId] = useState('');
   const [returnReason, setReturnReason] = useState('');
@@ -134,7 +141,7 @@ export default function Page() {
   const [composerOpen, setComposerOpen] = useState(false);
 
   async function refresh() {
-    const [invRes, custRes, prodRes, unitRes, qRes, oRes, rRes, storeRes, groupRes, tenantRes] =
+    const [invRes, custRes, prodRes, unitRes, qRes, oRes, rRes, storeRes, groupRes, tenantRes, couponRes] =
       await Promise.all([
         api('/sales/invoices'),
         api('/customers'),
@@ -146,6 +153,7 @@ export default function Page() {
         api('/stores').catch(() => ({ data: [] })),
         api('/customers/groups').catch(() => ({ data: [] })),
         api('/tenants/me').catch(() => ({ data: null })),
+        api('/sales/coupons').catch(() => ({ data: [] })),
       ]);
     setInvoices(invRes.data || []);
     setCustomers(custRes.data || []);
@@ -163,6 +171,7 @@ export default function Page() {
       Object.fromEntries((groupRes.data || []).map((g: any) => [g.id, String(g.discount_percent ?? 0)]))
     );
     if (tenantRes.data) setFmt(tenantRes.data);
+    setCoupons(couponRes.data || []);
   }
 
   useEffect(() => {
@@ -253,6 +262,7 @@ export default function Page() {
     currency: currency.trim() || null,
     exchange_rate: exchangeRate === '' ? null : Number(exchangeRate),
     is_reverse_charge: invoiceReverseCharge,
+    coupon_code: couponCode.trim() || null,
   };
 
   async function createCustomer() {
@@ -689,6 +699,7 @@ export default function Page() {
             ['quotations', 'Quotes'],
             ['orders', 'Orders'],
             ['returns', 'Returns'],
+            ['coupons', 'Coupons'],
           ] as [Tab, string][]
         ).map(([id, label]) => (
           <button
@@ -1169,6 +1180,13 @@ export default function Page() {
             title="Document-level discount amount"
           />
           <input
+            value={couponCode}
+            onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+            placeholder="Coupon code"
+            aria-label="Invoice coupon code"
+            style={{ width: 140 }}
+          />
+          <input
             value={docNotes}
             onChange={(e) => setDocNotes(e.target.value)}
             placeholder="Notes (optional)"
@@ -1556,6 +1574,7 @@ export default function Page() {
             </label>
           </div>
         <select
+          className="list-toolbar"
           value={invoiceManageFilter}
           onChange={(e) =>
             setInvoiceManageFilter(
@@ -1583,6 +1602,7 @@ export default function Page() {
           <option value="overdue">Overdue only</option>
           <option value="cancelled">Cancelled only</option>
         </select>
+        <div className="list-table-wrap">
         <table className="table">
           <thead>
             <tr>
@@ -1704,7 +1724,88 @@ export default function Page() {
             )}
           </tbody>
         </table>
+        </div>
         </>
+      )}
+
+      )}
+
+      {tab === 'coupons' && (
+        <div className="card cat-panel">
+          <h3>Coupons</h3>
+          <div className="erp-form-grid" style={{ marginBottom: 12 }}>
+            <input value={newCouponCode} onChange={(e) => setNewCouponCode(e.target.value.toUpperCase())} placeholder="Code" aria-label="New coupon code" />
+            <input value={newCouponName} onChange={(e) => setNewCouponName(e.target.value)} placeholder="Name" aria-label="New coupon name" />
+            <select value={newCouponType} onChange={(e) => setNewCouponType(e.target.value as 'fixed' | 'percent')} aria-label="New coupon type">
+              <option value="percent">Percent</option>
+              <option value="fixed">Fixed</option>
+            </select>
+            <input value={newCouponAmount} onChange={(e) => setNewCouponAmount(e.target.value)} placeholder="Amount" aria-label="New coupon amount" />
+            <input value={newCouponMin} onChange={(e) => setNewCouponMin(e.target.value)} placeholder="Min spend" aria-label="New coupon min spend" />
+            <button
+              type="button"
+              onClick={async () => {
+                setError('');
+                try {
+                  await api('/sales/coupons', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                      code: newCouponCode.trim(),
+                      name: newCouponName.trim(),
+                      discount_type: newCouponType,
+                      amount: Number(newCouponAmount),
+                      min_spend: Number(newCouponMin) || 0,
+                    }),
+                  });
+                  setNewCouponCode('');
+                  setNewCouponName('');
+                  await refresh();
+                  setMessage('Coupon saved');
+                } catch (err: any) {
+                  setError(err.message);
+                }
+              }}
+              aria-label="Save coupon"
+            >
+              Save coupon
+            </button>
+          </div>
+          <div className="list-table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th>Amount</th>
+                  <th>Min spend</th>
+                  <th>Active</th>
+                  <th>Used</th>
+                </tr>
+              </thead>
+              <tbody>
+                {coupons.map((c) => (
+                  <tr key={c.id}>
+                    <td>{c.code}</td>
+                    <td>{c.name}</td>
+                    <td>{c.discount_type}</td>
+                    <td>{c.amount}</td>
+                    <td>{c.min_spend}</td>
+                    <td>{c.is_active ? 'Yes' : 'No'}</td>
+                    <td>{c.redemption_count ?? 0}</td>
+                  </tr>
+                ))}
+                {coupons.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="muted">
+                      No coupons yet
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
       {tab === 'returns' && (

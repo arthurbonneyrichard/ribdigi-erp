@@ -5,7 +5,7 @@ import {
   matchesProductList,
   paginate,
   sortProducts,
-} from './listPages.ts';
+} from './listPages';
 
 test('paginate slices and clamps page', () => {
   const rows = Array.from({ length: 23 }, (_, i) => i + 1);

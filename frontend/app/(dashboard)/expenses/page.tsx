@@ -111,6 +111,10 @@ export default function Page() {
   const [editBusy, setEditBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [incomes, setIncomes] = useState<any[]>([]);
+  const [incomeDesc, setIncomeDesc] = useState('');
+  const [incomeAmount, setIncomeAmount] = useState('');
+  const [incomePayer, setIncomePayer] = useState('');
   const [attachPreview, setAttachPreview] = useState<{ apiPath: string; title: string } | null>(null);
   const [newCatCode, setNewCatCode] = useState('');
   const [newCatName, setNewCatName] = useState('');
@@ -141,7 +145,7 @@ export default function Page() {
   async function refresh() {
     const storeTrim = (storeId || ctxStoreId || '').trim();
     const expensesPath = storeTrim ? `/expenses?store_id=${encodeURIComponent(storeTrim)}` : '/expenses';
-    const [exp, cats, settings, liquid, st, br, dep, accounts, rec, supp] = await Promise.all([
+    const [exp, cats, settings, liquid, st, br, dep, accounts, rec, supp, inc] = await Promise.all([
       api(expensesPath),
       api('/expenses/categories'),
       api('/expenses/settings'),
@@ -152,8 +156,10 @@ export default function Page() {
       api('/accounting/accounts').catch(() => ({ data: [] })),
       api('/expenses/recurring').catch(() => ({ data: [] })),
       api('/suppliers').catch(() => ({ data: [] })),
+      api('/incomes').catch(() => ({ data: [] })),
     ]);
     setRows(exp.data || []);
+    setIncomes(inc.data || []);
     setCategories(cats.data || []);
     setLiquidAccounts(liquid.data || []);
     setStores(st.data || []);
@@ -806,8 +812,71 @@ export default function Page() {
       <p className="muted">
         Record what the company paid. Amounts at or below {threshold} post automatically.
         Receipts attach on the list. VAT on supplier invoices is calculated under Tax / Purchases,
-        not on this cash expense.
+        not here. Other income (below) posts to Other Income (4400) against cash/bank — it does not collect funds.
       </p>
+      <div className="card cat-panel" style={{ marginBottom: 16 }}>
+        <h3>Other income</h3>
+        <div className="erp-form-grid">
+          <input value={incomeDesc} onChange={(e) => setIncomeDesc(e.target.value)} placeholder="Description" aria-label="Income description" />
+          <input value={incomeAmount} onChange={(e) => setIncomeAmount(e.target.value)} placeholder="Amount" aria-label="Income amount" />
+          <input value={incomePayer} onChange={(e) => setIncomePayer(e.target.value)} placeholder="Payer (optional)" aria-label="Income payer" />
+          <button
+            type="button"
+            onClick={async () => {
+              setError('');
+              try {
+                await api('/incomes', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    description: incomeDesc.trim(),
+                    amount: Number(incomeAmount),
+                    payer: incomePayer.trim() || null,
+                    payment_method: paymentMethod,
+                    liquid_account_id: liquidAccountId.trim() || null,
+                  }),
+                });
+                setIncomeDesc('');
+                setIncomeAmount('');
+                setIncomePayer('');
+                await refresh();
+                setMessage('Income posted to the ledger');
+              } catch (err: any) {
+                setError(err.message);
+              }
+            }}
+            aria-label="Post other income"
+          >
+            Post income
+          </button>
+        </div>
+        <div className="list-table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Payer</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {incomes.map((row) => (
+                <tr key={row.id}>
+                  <td>{String(row.income_date || '').slice(0, 10)}</td>
+                  <td>{row.description}</td>
+                  <td>{row.payer || '—'}</td>
+                  <td>{row.amount}</td>
+                </tr>
+              ))}
+              {incomes.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="muted">No other income recorded</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
       {error && <p className="erp-banner err" role="alert">{error}</p>}
       {message && <p className="erp-banner ok" role="status">{message}</p>}
 

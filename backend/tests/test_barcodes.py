@@ -94,5 +94,10 @@ def test_label_html_uses_logo_brand_chrome():
     assert "background: #003d1f" in page
     assert "background: #4ab012" in page
     assert "color: #10211b" in page
+    assert "SKU W-1" in page
+    assert "Widget" in page
+    assert "GHS" not in page
+    assert "12.50" not in page
+    assert "Acme" not in page
     assert "#0f172a" not in page
     assert "#0f766e" not in page

@@ -200,7 +200,48 @@ def serialize_product(row: m.Product) -> dict:
         "tracks_batches": bool(row.tracks_batches),
         "is_active": bool(row.is_active),
         "prep_station": getattr(row, "prep_station", None),
+        "created_by": getattr(row, "created_by", None),
+        "unit_name": None,
+        "unit_code": None,
+        "brand": None,
+        "created_by_name": None,
+        "created_by_email": None,
     }
+
+
+async def serialize_products_list(
+    db: AsyncSession, tenant_id: str, rows: list[m.Product]
+) -> list[dict]:
+    payloads = [serialize_product(p) for p in rows]
+    if not payloads:
+        return payloads
+    unit_ids = {p.unit_id for p in rows if p.unit_id}
+    brand_ids = {p.brand_id for p in rows if p.brand_id}
+    user_ids = {getattr(p, "created_by", None) for p in rows if getattr(p, "created_by", None)}
+    units: dict[str, m.UnitOfMeasure] = {}
+    brands: dict[str, m.Brand] = {}
+    users: dict[str, m.User] = {}
+    if unit_ids:
+        for u in (
+            await db.execute(select(m.UnitOfMeasure).where(m.UnitOfMeasure.id.in_(unit_ids)))
+        ).scalars():
+            units[u.id] = u
+    if brand_ids:
+        for b in (await db.execute(select(m.Brand).where(m.Brand.id.in_(brand_ids)))).scalars():
+            brands[b.id] = b
+    if user_ids:
+        for u in (await db.execute(select(m.User).where(m.User.id.in_(user_ids)))).scalars():
+            users[u.id] = u
+    for p, payload in zip(rows, payloads):
+        unit = units.get(p.unit_id) if p.unit_id else None
+        brand = brands.get(p.brand_id) if p.brand_id else None
+        creator = users.get(getattr(p, "created_by", None) or "")
+        payload["unit_name"] = unit.name if unit else None
+        payload["unit_code"] = unit.code if unit else None
+        payload["brand"] = brand.name if brand else None
+        payload["created_by_name"] = creator.full_name if creator else None
+        payload["created_by_email"] = creator.email if creator else None
+    return payloads
 
 
 async def ensure_default_catalog(db: AsyncSession, tenant_id: str) -> None:

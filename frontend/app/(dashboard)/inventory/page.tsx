@@ -2964,7 +2964,9 @@ export default function Page() {
                           <td data-label="Category">{p.category || '—'}</td>
                           <td data-label="Brand">{p.brand || '—'}</td>
                           <td data-label="Price">{p.selling_price ?? 0}</td>
-                          <td data-label="Unit">{p.unit || p.unit_code || '—'}</td>
+                          <td data-label="Unit">
+                            {p.unit_name || p.unit_code || (typeof p.unit === 'string' ? p.unit : '—')}
+                          </td>
                           <td data-label="Qty" className={low ? 'list-qty-low' : undefined}>
                             <StockStatusBadge product={p} />
                           </td>
@@ -5054,6 +5056,14 @@ export default function Page() {
             Use this only to correct on-hand quantity. Receive stock in Manage stock. Move stock with
             Stock transfer. Count with Stock count.
           </p>
+          <div className="list-toolbar">
+            <input
+              value={productSearch}
+              onChange={(e) => setProductSearch(e.target.value)}
+              placeholder="Search products to adjust"
+              aria-label="Search products for stock adjustment"
+            />
+          </div>
           {lowStockProducts.length === 0 ? (
             <p className="muted inv-child">No products are currently below reorder.</p>
           ) : (
@@ -6006,6 +6016,20 @@ export default function Page() {
                       </option>
                     ))}
                 </select>
+                <label className="muted">Product search</label>
+                <input
+                  value={xferProductQuery}
+                  onChange={(e) => setXferProductQuery(e.target.value)}
+                  placeholder="Filter products by name or SKU"
+                  aria-label="Search transfer products"
+                />
+                <label className="muted">Reference (optional)</label>
+                <input
+                  value={xferReference}
+                  onChange={(e) => setXferReference(e.target.value)}
+                  placeholder="Your reference"
+                  aria-label="Stock transfer reference"
+                />
                 <label className="muted">Product lines</label>
                 {xferLines.map((line, idx) => (
                   <div key={line.key} className="xfer-line-row">
@@ -6022,12 +6046,15 @@ export default function Page() {
                       aria-label={`Transfer product line ${idx + 1}`}
                     >
                       <option value="">Select product</option>
-                      {managedProducts.map((p) => (
+                      {xferProductOptions.map((p) => (
                         <option key={p.id} value={p.id}>
-                          {p.name} ({p.sku}) — {p.stock_qty}
+                          {p.name} ({p.sku})
                         </option>
                       ))}
                     </select>
+                    <span className="muted" style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+                      Avail {line.product_id ? (xferAvail[line.product_id] ?? '—') : '—'}
+                    </span>
                     <input
                       value={line.qty}
                       onChange={(e) => {

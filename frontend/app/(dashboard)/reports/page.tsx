@@ -21,6 +21,7 @@ type Tab =
   | 'pnl'
   | 'trialbalance'
   | 'balancesheet'
+  | 'accountstatement'
   | 'schedules';
 
 const REPORT_TABS: Tab[] = [
@@ -37,6 +38,7 @@ const REPORT_TABS: Tab[] = [
   'pnl',
   'trialbalance',
   'balancesheet',
+  'accountstatement',
   'schedules',
 ];
 
@@ -44,7 +46,7 @@ function isReportTab(value: string | null): value is Tab {
   return Boolean(value && (REPORT_TABS as string[]).includes(value));
 }
 
-const TAB_EXPORT: Record<Exclude<Tab, 'schedules'>, string> = {
+const TAB_EXPORT: Partial<Record<Exclude<Tab, 'schedules'>, string>> = {
   summary: 'summary',
   sales: 'sales_products',
   salesperson: 'sales_salesperson',
@@ -111,6 +113,8 @@ export default function Page() {
   const [categories, setCategories] = useState<any[]>([]);
   const [departmentId, setDepartmentId] = useState('');
   const [departments, setDepartments] = useState<any[]>([]);
+  const [coaAccounts, setCoaAccounts] = useState<any[]>([]);
+  const [statementAccountId, setStatementAccountId] = useState('');
   const [expiryDays, setExpiryDays] = useState('30');
   const [valuationMethod, setValuationMethod] = useState<'standard'>('standard');
   const [stockCountStatus, setStockCountStatus] = useState<'draft' | 'completed' | 'cancelled'>('completed');
@@ -239,6 +243,15 @@ export default function Page() {
       if (nextTab === 'pnl') path = `/reports/profit-loss${qs()}`;
       if (nextTab === 'trialbalance') path = `/reports/trial-balance${trialBalanceQs()}`;
       if (nextTab === 'balancesheet') path = `/reports/balance-sheet${balanceSheetQs()}`;
+      if (nextTab === 'accountstatement') {
+        const acct = statementAccountId.trim();
+        if (!acct) {
+          setData(null);
+          setError('Select an account for the statement');
+          return;
+        }
+        path = `/reports/account-statement${qs({ account_id: acct })}`;
+      }
       const r = await api(path);
       if (nextTab === 'sales') {
         const [daily, monthly, returns] = await Promise.all([
@@ -327,13 +340,15 @@ export default function Page() {
       api('/warehouses').catch(() => ({ data: [] })),
       api('/catalog/categories').catch(() => ({ data: [] })),
       api('/departments').catch(() => ({ data: [] })),
+      api('/accounting/accounts').catch(() => ({ data: [] })),
     ])
-      .then(([st, br, wh, cats, deps]) => {
+      .then(([st, br, wh, cats, deps, accts]) => {
         setStores(st.data || []);
         setBranches(br.data || []);
         setWarehouses(wh.data || []);
         setCategories(cats.data || []);
         setDepartments(deps.data || []);
+        setCoaAccounts(accts.data || []);
         if (ctxStoreId && (st.data || []).some((s: any) => s.id === ctxStoreId)) {
           setStoreId(ctxStoreId);
         }
@@ -435,14 +450,16 @@ export default function Page() {
   }
 
   async function download(format: 'csv' | 'pdf' | 'xlsx', reportType?: string) {
-    if (tab === 'schedules') return;
+    if (tab === 'schedules' || tab === 'accountstatement') return;
     setError('');
     setMessage('');
     try {
       const token = localStorage.getItem('token');
       const tenant = localStorage.getItem('tenant');
       const params = new URLSearchParams();
-      params.set('report_type', reportType || TAB_EXPORT[tab]);
+      const exportType = reportType || TAB_EXPORT[tab];
+      if (!exportType) return;
+      params.set('report_type', exportType);
       params.set('format', format);
       if (fromDate) params.set('from_date', fromDate);
       if (toDate) params.set('to_date', toDate);
@@ -590,7 +607,7 @@ export default function Page() {
           ['Sales', [['summary', 'Summary'], ['sales', 'Products'], ['salesperson', 'Staff'], ['stores', 'Stores'], ['departments', 'Departments']]],
           ['Inventory', [['inventory', 'Stock']]],
           ['Purchases', [['purchases', 'Purchases']]],
-          ['Finance', [['expenses', 'Expenses'], ['cashflow', 'Cash flow'], ['pnl', 'P&L'], ['trialbalance', 'Trial balance'], ['balancesheet', 'Balance sheet']]],
+          ['Finance', [['expenses', 'Expenses'], ['cashflow', 'Cash flow'], ['pnl', 'P&L'], ['trialbalance', 'Trial balance'], ['balancesheet', 'Balance sheet'], ['accountstatement', 'Account statement']]],
           ['Customers', [['customers', 'Customers']]],
           ['Staff', [['schedules', 'Email schedules']]],
         ] as [string, [Tab, string][]][]
@@ -614,7 +631,7 @@ export default function Page() {
       ))}
 
       {tab !== 'schedules' && (
-      <div className="card" style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <div className="card list-toolbar" style={{ marginBottom: 16 }}>
         <input
           type="date"
           value={fromDate}
@@ -650,6 +667,20 @@ export default function Page() {
               </select>
             )}
           </>
+        )}
+        {tab === 'accountstatement' && (
+          <select
+            value={statementAccountId}
+            onChange={(e) => setStatementAccountId(e.target.value)}
+            aria-label="Account for statement"
+          >
+            <option value="">Select account</option>
+            {coaAccounts.map((a: any) => (
+              <option key={a.id} value={a.id}>
+                {a.code} {a.name}
+              </option>
+            ))}
+          </select>
         )}
         {tab === 'inventory' && (
           <>
@@ -2217,6 +2248,7 @@ export default function Page() {
             {' · '}
             Balanced: {String(data.balanced)} | Dr {data.total_debit} / Cr {data.total_credit}
           </p>
+          <div className="list-table-wrap">
           <table className="table">
             <thead>
               <tr>
@@ -2246,6 +2278,48 @@ export default function Page() {
               )}
             </tbody>
           </table>
+          </div>
+        </>
+      )}
+
+      {tab === 'accountstatement' && data && (
+        <>
+          <p className="muted">
+            {data.code} {data.name} · opening {data.opening_balance} · closing {data.closing_balance}
+          </p>
+          <div className="list-table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Entry</th>
+                  <th>Memo</th>
+                  <th>Debit</th>
+                  <th>Credit</th>
+                  <th>Balance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(data.lines || []).map((l: any, idx: number) => (
+                  <tr key={`${l.journal_entry_id}-${idx}`}>
+                    <td>{String(l.date || '').slice(0, 10)}</td>
+                    <td>{l.entry_number}</td>
+                    <td>{l.description || '—'}</td>
+                    <td>{l.debit}</td>
+                    <td>{l.credit}</td>
+                    <td>{l.balance}</td>
+                  </tr>
+                ))}
+                {!(data.lines || []).length && (
+                  <tr>
+                    <td colSpan={6} className="muted">
+                      No posted lines for this account in the date range
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
 

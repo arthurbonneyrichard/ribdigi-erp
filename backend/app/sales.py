@@ -179,6 +179,7 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
         "discount_amount": money_json(invoice.discount_amount),
         "discount_type": getattr(invoice, "discount_type", None) or "fixed",
         "discount_percent": money_json(getattr(invoice, "discount_percent", None) or 0),
+        "coupon_id": getattr(invoice, "coupon_id", None),
         "total_amount": money_json(invoice.total_amount),
         "paid_amount": money_json(invoice.paid_amount),
         "balance_due": balance_due,
@@ -302,6 +303,7 @@ async def create_sales_invoice(
     currency: str | None = None,
     exchange_rate: float | None = None,
     is_reverse_charge: bool = False,
+    coupon_code: str | None = None,
 ) -> m.SalesInvoice:
     if not items:
         raise HTTPException(status_code=400, detail="Invoice requires at least one line item")
@@ -415,6 +417,30 @@ async def create_sales_invoice(
         )
 
     header_base = money_json(round(subtotal + tax_total, 2))
+    coupon_id = None
+    coupon_meta = None
+    if coupon_code and str(coupon_code).strip():
+        from app import coupons as coupons_svc
+
+        product_ids = [p[0]["product_id"] for p in prepared]
+        cat_ids = []
+        for p, _lt in prepared:
+            prod = await db.get(m.Product, p["product_id"])
+            if prod and prod.category_id:
+                cat_ids.append(prod.category_id)
+        coupon_meta = await coupons_svc.apply_coupon(
+            db,
+            tenant_id=tenant_id,
+            code=coupon_code,
+            header_base=header_base,
+            product_ids=product_ids,
+            category_ids=cat_ids,
+            customer_id=customer_id,
+        )
+        discount_amount = coupon_meta["discount_amount"]
+        discount_type = coupon_meta["discount_type"]
+        discount_percent = coupon_meta["discount_percent"]
+        coupon_id = coupon_meta["coupon_id"]
     discount_amount, header_disc_type, header_disc_pct = resolve_discount(
         base_amount=header_base,
         discount=discount_amount or 0,
@@ -443,6 +469,7 @@ async def create_sales_invoice(
         notes=optional_honest_narrative(notes, label="sales invoice notes"),
         created_by=user_id,
         store_id=resolved_store_id,
+        coupon_id=coupon_id,
     )
     db.add(invoice)
     await db.flush()
@@ -468,6 +495,20 @@ async def create_sales_invoice(
                 tax_components=item.get("tax_components"),
                 line_total=line_total,
             )
+        )
+
+    if coupon_meta:
+        from app import coupons as coupons_svc
+
+        await coupons_svc.record_redemption(
+            db,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            coupon_id=coupon_meta["coupon_id"],
+            amount=discount_amount,
+            customer_id=customer_id,
+            source_type="sales_invoice",
+            source_id=invoice.id,
         )
 
     db.add(

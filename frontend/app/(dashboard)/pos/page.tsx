@@ -279,6 +279,7 @@ export default function Page() {
   const [drawerReason, setDrawerReason] = useState('');
   const [cartDiscount, setCartDiscount] = useState('');
   const [cartDiscountType, setCartDiscountType] = useState<'fixed' | 'percent'>('fixed');
+  const [couponCode, setCouponCode] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [lastSale, setLastSale] = useState<{ id: string; reference: string } | null>(null);
@@ -723,6 +724,7 @@ export default function Page() {
   function clearCart() {
     setCart([]);
     setCartDiscount('');
+    setCouponCode('');
     setCashTender('');
     setCardTender('');
   }
@@ -787,6 +789,7 @@ export default function Page() {
       discount_amount: cartDiscountType === 'percent' ? 0 : cartDiscountAmount,
       discount_type: cartDiscountType,
       discount_percent: cartDiscountType === 'percent' ? Math.max(0, Math.min(100, Number(cartDiscount) || 0)) : 0,
+      coupon_code: couponCode.trim() || null,
       status: 'completed',
       party_id: customerId.trim() || null,
       customer_name: name.trim() || null,
@@ -1479,6 +1482,16 @@ export default function Page() {
                   placeholder={cartDiscountType === 'percent' ? '0' : '0.00'}
                   inputMode="decimal"
                   aria-label="POS cart discount"
+                />
+              </label>
+              <label className="tpos-field">
+                <span>Coupon</span>
+                <input
+                  className="tpos-input"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  placeholder="CODE"
+                  aria-label="POS coupon code"
                 />
               </label>
 
