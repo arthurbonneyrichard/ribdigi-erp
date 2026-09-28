@@ -4,6 +4,16 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '../../../lib/api';
 
+function friendlyCreditError(raw: unknown): string {
+  const m = String((raw as { message?: string })?.message || raw || 'Something went wrong. Try again.');
+  if (/must be positive|payment amount/i.test(m)) return 'Enter an amount greater than zero.';
+  if (/select a supplier|supplier not found|customer not found/i.test(m)) {
+    return 'Select a supplier or customer first.';
+  }
+  if (/cannot reach|failed to fetch/i.test(m)) return 'Cannot reach the server. Try again in a moment.';
+  return m;
+}
+
 export default function Page() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -75,7 +85,8 @@ export default function Page() {
   }, [searchParams, kind]);
 
   function selectKind(next: 'receivable' | 'payable') {
-    setKind(next);
+    if (next === 'receivable') setKind('receivable');
+    else setKind('payable');
     const panel = next === 'payable' ? searchParams.get('panel') : null;
     const qs = new URLSearchParams();
     qs.set('kind', next);
@@ -88,7 +99,7 @@ export default function Page() {
     setHistory(null);
     setStatement(null);
     setCreditInfo(null);
-    refresh().catch((err) => setError(err.message));
+    refresh().catch((err) => setError(friendlyCreditError(err)));
   }, [kind]);
 
   useEffect(() => {
@@ -101,6 +112,12 @@ export default function Page() {
     }
   }, [partyId, customers, suppliers, kind]);
 
+  useEffect(() => {
+    if (!partyId) return;
+    loadCreditInfo().catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [partyId, kind]);
+
   async function loadStatement() {
     if (!partyId) return;
     setError('');
@@ -112,7 +129,7 @@ export default function Page() {
       const r = await api(path);
       setStatement(r.data);
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyCreditError(err));
     }
   }
 
@@ -135,7 +152,7 @@ export default function Page() {
         `History: ${s?.purchase_count ?? 0} purchases · ${s?.return_count ?? 0} returns · ${s?.payment_count ?? 0} payments`,
       );
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyCreditError(err));
     }
   }
 
@@ -161,7 +178,7 @@ export default function Page() {
         );
       }
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyCreditError(err));
     }
   }
 
@@ -175,7 +192,7 @@ export default function Page() {
         `Payment schedule: ${r.data?.upcoming_count ?? 0} upcoming · ${r.data?.overdue_count ?? 0} overdue · total ${r.data?.total_due ?? 0}`,
       );
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyCreditError(err));
     }
   }
 
@@ -240,8 +257,9 @@ export default function Page() {
       setPayChequeDate('');
       await refresh();
       await loadStatement();
+      await loadCreditInfo();
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyCreditError(err));
     } finally {
       setPayBusy(false);
     }
@@ -262,7 +280,7 @@ export default function Page() {
       setMessage('Customer credit limit and payment terms updated');
       await refresh();
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyCreditError(err));
     } finally {
       setLimitBusy(false);
     }
@@ -279,7 +297,7 @@ export default function Page() {
       setMessage('Supplier payment terms updated');
       await refresh();
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyCreditError(err));
     }
   }
 
@@ -301,7 +319,7 @@ export default function Page() {
           : 'Early pay discount disabled (set pct and days > 0)',
       );
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyCreditError(err));
     }
   }
 
@@ -316,7 +334,7 @@ export default function Page() {
       setMessage(`Saved ${fxCode} @ ${fxRate} ${baseCurrency}`);
       await refresh();
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyCreditError(err));
     }
   }
 
@@ -327,7 +345,7 @@ export default function Page() {
       setMessage(`Removed ${code}`);
       await refresh();
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyCreditError(err));
     }
   }
 
@@ -343,7 +361,7 @@ export default function Page() {
       setMessage(`Refreshed ${n} rate(s) from ${r.data?.provider || 'feed'}`);
       await refresh();
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyCreditError(err));
     }
   }
 
@@ -358,20 +376,41 @@ export default function Page() {
       setFxAutoRefresh(!!r.data?.fx_auto_refresh);
       setMessage(next ? 'Scheduled FX auto-refresh enabled' : 'Scheduled FX auto-refresh disabled');
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyCreditError(err));
     }
   }
 
   const parties = kind === 'receivable' ? customers : suppliers;
   const totals = report?.totals || {};
+  const payPanel = kind === 'payable' && searchParams.get('panel') === 'pay';
+  const dueOf = (id: string) => {
+    const row = (report?.parties || []).find((x: { party_id?: string }) => x.party_id === id);
+    return row?.total_due ?? 0;
+  };
+
+  function selectPayableView(panel?: 'pay') {
+    setKind('payable');
+    const qs = new URLSearchParams();
+    qs.set('kind', 'payable');
+    if (panel === 'pay') qs.set('panel', 'pay');
+    router.replace(`/credit?${qs.toString()}`, { scroll: false });
+  }
 
   return (
     <>
-      <h1>{kind === 'receivable' ? 'Customer credit' : 'Supplier bills'}</h1>
+      <h1>
+        {kind === 'receivable'
+          ? 'Customer credit'
+          : payPanel
+            ? 'Supplier payments'
+            : 'Supplier balances'}
+      </h1>
       <p className="muted">
         {kind === 'receivable'
-          ? 'Money customers still owe from credit sales. Record a repayment here. New credit sales are created on Sales or POS — not here. Changing a customer limit needs credit approval permission.'
-          : 'Bills we still owe suppliers. Record a supplier payment here. New bills come from Purchases. Paying here does not create a second bill.'}
+          ? 'Money customers still owe. Record a repayment here. New credit sales are created on Sales or POS.'
+          : payPanel
+            ? 'Pay open supplier bills. This records money going out — it does not create a new bill.'
+            : 'What we still owe suppliers from unpaid bills (and unbilled orders). Click a row to see documents.'}
       </p>
       {error && <p className="erp-banner err" role="alert">{error}</p>}
       {message && <p className="erp-banner ok" role="status">{message}</p>}
@@ -382,30 +421,37 @@ export default function Page() {
           disabled={kind === 'receivable'}
           aria-label="Show customer credit"
         >
-          Customers who owe us
+          Receivables
         </button>
         <button
-          onClick={() => selectKind('payable')}
-          disabled={kind === 'payable'}
-          aria-label="Show supplier bills"
+          onClick={() => selectPayableView()}
+          disabled={kind === 'payable' && !payPanel}
+          aria-label="Show supplier balances"
         >
-          Bills we owe
+          Payables
+        </button>
+        <button
+          onClick={() => selectPayableView('pay')}
+          disabled={payPanel}
+          aria-label="Show supplier payments"
+        >
+          Pay
         </button>
       </div>
 
       <div className="erp-kpis">
         <div className="card">
-          <div className="muted">{kind === 'receivable' ? 'Customer balance' : 'Supplier balance'}</div>
+          <div className="muted">{kind === 'receivable' ? 'Customer balance' : 'We owe'}</div>
           <div className="kpi">{report?.total_due ?? 0}</div>
         </div>
         <div className="card">
-          <div className="muted">Overdue (31+ days)</div>
+          <div className="muted">Overdue</div>
           <div className="kpi">
             {(Number(totals['31_60'] || 0) + Number(totals['61_90'] || 0) + Number(totals['90_plus'] || 0)).toFixed(2)}
           </div>
         </div>
         <div className="card">
-          <div className="muted">Current / not yet due</div>
+          <div className="muted">Not yet due</div>
           <div className="kpi">{totals.current ?? 0}</div>
         </div>
       </div>
@@ -515,9 +561,9 @@ export default function Page() {
       </details>
 
       <div className="card">
-          <h3>{kind === 'receivable' ? 'Record customer repayment' : 'Record supplier payment'}</h3>
+          <h3>{kind === 'receivable' ? 'Record repayment' : 'Record payment'}</h3>
           <p className="muted">
-            Partial amounts apply to the oldest open documents first. This does not create a new sale or bill.
+            Pays the oldest open documents first. This does not create a new sale or bill.
           </p>
           <select
             value={partyId}
@@ -526,42 +572,16 @@ export default function Page() {
           >
             {parties.map((p: any) => (
               <option key={p.id} value={p.id}>
-                {p.name} (bal {p.balance ?? 0}
+                {p.name} (owe {dueOf(p.id)}
                 {p.payment_terms_days != null ? ` · Net ${p.payment_terms_days}` : ''})
               </option>
             ))}
           </select>
           <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-            <button aria-label="Load party statement" onClick={loadStatement}>Statement</button>
-            <button type="button" aria-label="Load credit balance" onClick={loadCreditInfo}>
-              Balance
-            </button>
-            <input
-              type="date"
-              value={histFromDate}
-              onChange={(e) => setHistFromDate(e.target.value)}
-              title="History from date (YYYY-MM-DD)"
-              aria-label="Credit history from date"
-            />
-            <input
-              type="date"
-              value={histToDate}
-              onChange={(e) => setHistToDate(e.target.value)}
-              title="History to date (YYYY-MM-DD)"
-              aria-label="Credit history to date"
-            />
-            <button type="button" aria-label="Load party history" onClick={loadHistory}>
-              History
-            </button>
-            {kind === 'payable' && (
-              <button type="button" aria-label="Load payment schedule" onClick={loadPaymentSchedule}>
-                Payment schedule
-              </button>
-            )}
             <input
               value={payAmount}
               onChange={(e) => setPayAmount(e.target.value)}
-              placeholder="Payment amount"
+              placeholder="Amount"
               aria-label="Payment amount"
               style={{ width: 120 }}
             />
@@ -638,7 +658,7 @@ export default function Page() {
               aria-label="Payment FX rate"
             />
             <button onClick={recordPayment} aria-label="Record payment" disabled={payBusy || !payAmount}>
-              {payBusy ? 'Saving…' : kind === 'receivable' ? 'Record repayment' : 'Record supplier payment'}
+              {payBusy ? 'Saving…' : 'Pay'}
             </button>
           </div>
           {(kind === 'receivable' || kind === 'payable') && (
@@ -692,6 +712,31 @@ export default function Page() {
               </button>
             </div>
           )}
+          <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+            <button aria-label="Load party statement" onClick={loadStatement}>Statement</button>
+            {kind === 'payable' && (
+              <button type="button" aria-label="Load payment schedule" onClick={loadPaymentSchedule}>
+                Schedule
+              </button>
+            )}
+            <input
+              type="date"
+              value={histFromDate}
+              onChange={(e) => setHistFromDate(e.target.value)}
+              title="History from date (YYYY-MM-DD)"
+              aria-label="Credit history from date"
+            />
+            <input
+              type="date"
+              value={histToDate}
+              onChange={(e) => setHistToDate(e.target.value)}
+              title="History to date (YYYY-MM-DD)"
+              aria-label="Credit history to date"
+            />
+            <button type="button" aria-label="Load party history" onClick={loadHistory}>
+              History
+            </button>
+          </div>
         </div>
 
       <h3 style={{ marginTop: 16 }}>{kind === 'receivable' ? 'Customers' : 'Suppliers'}</h3>
@@ -709,7 +754,14 @@ export default function Page() {
         </thead>
         <tbody>
           {(report?.parties || []).map((r: any) => (
-            <tr key={r.party_id}>
+            <tr
+              key={r.party_id}
+              onClick={() => setPartyId(r.party_id)}
+              style={{
+                cursor: 'pointer',
+                background: r.party_id === partyId ? 'var(--row-selected, rgba(0,107,46,0.08))' : undefined,
+              }}
+            >
               <td>{r.name}</td>
               <td>{r.total_due}</td>
               <td>{r.current}</td>

@@ -31,6 +31,7 @@ export const HOTEL_INVENTORY_PROCUREMENT_CHILDREN: NavItem[] = [
   ['Purchase orders', '/purchasing?tab=orders', 'purchasing'],
   ['Goods received', '/purchasing?tab=grn', 'purchasing'],
   ['Suppliers', '/purchasing?tab=suppliers', 'purchasing'],
+  ['Purchase history', '/purchasing?tab=history', 'purchasing'],
 ];
 
 export const HOTEL_NAV_ITEMS: NavItem[] = [
@@ -78,10 +79,9 @@ export function groupedTenantNav(groups: NavGroup[], visible: NavItem[], industr
         return { ...group, items: [] as NavItem[] };
       }
       if (group.id === 'inventory') {
-        const label = ind === 'retail' || ind === 'mart' ? 'Retail management' : group.label;
         return {
           ...group,
-          label,
+          label: 'Inventory',
           items: group.items.filter(([, href]) => allowed.has(href)),
         };
       }

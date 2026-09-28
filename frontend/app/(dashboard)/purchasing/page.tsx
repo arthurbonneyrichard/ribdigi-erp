@@ -7,12 +7,34 @@ import AttachmentPreview from '../../../components/AttachmentPreview';
 import { api } from '../../../lib/api';
 import { useStoreContext } from '../../../lib/storeContext';
 
-type Tab = 'suppliers' | 'requests' | 'orders' | 'grn' | 'invoices' | 'returns';
+type Tab = 'suppliers' | 'requests' | 'orders' | 'grn' | 'invoices' | 'returns' | 'history';
 
-const PURCHASING_TABS: Tab[] = ['suppliers', 'requests', 'orders', 'grn', 'invoices', 'returns'];
+const PURCHASING_TABS: Tab[] = ['suppliers', 'requests', 'orders', 'grn', 'invoices', 'returns', 'history'];
 
 function isPurchasingTab(value: string | null): value is Tab {
   return Boolean(value && (PURCHASING_TABS as string[]).includes(value));
+}
+
+function asList<T>(data: unknown): T[] {
+  if (Array.isArray(data)) return data as T[];
+  if (data && typeof data === 'object') {
+    const rec = data as Record<string, unknown>;
+    if (Array.isArray(rec.items)) return rec.items as T[];
+    if (Array.isArray(rec.data)) return rec.data as T[];
+  }
+  return [];
+}
+
+function friendlyPurchaseError(raw: unknown): string {
+  const m = String((raw as { message?: string })?.message || raw || 'Something went wrong. Try again.');
+  if (/nothing left to receive/i.test(m)) return 'This order is already fully received.';
+  if (/already received|fully received|409/i.test(m)) return 'Those goods were already received. Refresh the list.';
+  if (/rejection reason/i.test(m)) return 'Add a reason for any rejected quantity.';
+  if (/batch number required/i.test(m)) return m;
+  if (/cannot reach|failed to fetch/i.test(m)) {
+    return 'Cannot reach the server. Check your connection and try again.';
+  }
+  return m;
 }
 
 /** Keep aligned with backend SystemRoleValue / rbac.VALID_ROLES (PR approval matrix). */
@@ -93,6 +115,7 @@ type PurchaseOrder = {
   emailed_at?: string | null;
   emailed_to?: string | null;
   delivery?: { to?: string; mode?: string };
+  created_at?: string;
   items: PoItem[];
 };
 type GrnItem = {
@@ -113,6 +136,7 @@ type Grn = {
   supplier_id: string;
   status: string;
   items: GrnItem[];
+  created_at?: string;
 };
 type PurchaseReturn = {
   id: string;
@@ -127,6 +151,7 @@ type PurchaseReturn = {
   tax_amount?: number;
   can_cancel?: boolean;
   notes?: string | null;
+  created_at?: string;
 };
 type PurchaseInvoice = {
   id: string;
@@ -149,6 +174,8 @@ type PurchaseInvoice = {
   discount_amount?: number;
   can_cancel?: boolean;
   notes?: string | null;
+  created_at?: string;
+  invoice_date?: string | null;
   items?: {
     id: string;
     product_id: string;
@@ -328,16 +355,16 @@ export default function Page() {
       api('/purchasing/invoices'),
       api('/purchasing/returns'),
     ]);
-    setOrders(poRes.data || []);
-    setRequests(prRes.data || []);
+    setOrders(asList<PurchaseOrder>(poRes.data));
+    setRequests(asList<PurchaseRequest>(prRes.data));
     setPrLevels(settingsRes.data?.levels || []);
-    setSuppliers(supRes.data || []);
-    setProducts(prodRes.data || []);
-    setUnits((unitRes.data || []).filter((u: Unit) => u.is_active !== false));
-    setWarehouses(Array.isArray(whRes.data) ? whRes.data : []);
-    setGrns(grnRes.data || []);
-    setInvoices(invRes.data || []);
-    setReturns(retRes.data || []);
+    setSuppliers(asList<Supplier>(supRes.data));
+    setProducts(asList<Product>(prodRes.data));
+    setUnits(asList<Unit>(unitRes.data).filter((u) => u.is_active !== false));
+    setWarehouses(asList(whRes.data));
+    setGrns(asList<Grn>(grnRes.data));
+    setInvoices(asList<PurchaseInvoice>(invRes.data));
+    setReturns(asList<PurchaseReturn>(retRes.data));
   }
 
   useEffect(() => {
@@ -403,7 +430,7 @@ export default function Page() {
       setMessage('Supplier created');
       setSupplierDrawer(false);
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyPurchaseError(err));
     } finally {
       setSaveBusy(false);
     }
@@ -427,7 +454,7 @@ export default function Page() {
           : `Supplier ${r.data?.name || ''} deactivated`,
       );
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyPurchaseError(err));
     }
   }
 
@@ -466,7 +493,7 @@ export default function Page() {
       setSelected(r.data);
       setTab('orders');
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyPurchaseError(err));
     } finally {
       setSaveBusy(false);
     }
@@ -487,7 +514,7 @@ export default function Page() {
       await refresh();
       setSelected(r.data);
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyPurchaseError(err));
     }
   }
 
@@ -509,7 +536,7 @@ export default function Page() {
       await refresh();
       setSelected(r.data);
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyPurchaseError(err));
     }
   }
 
@@ -596,7 +623,7 @@ export default function Page() {
       await refresh();
       setSelected(r.data);
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyPurchaseError(err));
     }
   }
 
@@ -653,9 +680,9 @@ export default function Page() {
       const updated = await api(`/purchasing/orders/${po.id}`);
       setSelected(updated.data);
       setReceiveDrafts({});
-      setTab('grn');
+      selectTab('grn');
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyPurchaseError(err));
     } finally {
       setSaveBusy(false);
     }
@@ -757,9 +784,9 @@ export default function Page() {
         };
       }
       setReceiveDrafts(drafts);
-      setTab('grn');
+      selectTab('grn');
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyPurchaseError(err));
     } finally {
       setSaveBusy(false);
     }
@@ -789,7 +816,7 @@ export default function Page() {
       setTab('returns');
       await refresh();
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyPurchaseError(err));
     }
   }
 
@@ -823,7 +850,7 @@ export default function Page() {
       setInvExchangeRate('');
       await refresh();
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyPurchaseError(err));
     }
   }
 
@@ -873,7 +900,7 @@ export default function Page() {
       setInvExchangeRate('');
       await refresh();
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyPurchaseError(err));
     }
   }
 
@@ -885,7 +912,7 @@ export default function Page() {
       await refresh();
       if (selectedInvoice?.id === id) setSelectedInvoice(r.data);
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyPurchaseError(err));
     }
   }
 
@@ -907,7 +934,7 @@ export default function Page() {
       await refresh();
       setSelectedInvoice(r.data);
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyPurchaseError(err));
     }
   }
 
@@ -962,7 +989,7 @@ export default function Page() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyPurchaseError(err));
     }
   }
 
@@ -985,7 +1012,7 @@ export default function Page() {
           : `OCR suggestions ready (${r.data?.engine || 'ocr'})`,
       );
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyPurchaseError(err));
     }
   }
 
@@ -1009,7 +1036,7 @@ export default function Page() {
       setOcrMeta(null);
       await refresh();
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyPurchaseError(err));
     }
   }
 
@@ -1020,7 +1047,7 @@ export default function Page() {
       setMessage(`Posted ${r.data.return_number} / ${r.data.debit_note_number}`);
       await refresh();
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyPurchaseError(err));
     }
   }
 
@@ -1041,7 +1068,7 @@ export default function Page() {
       setPrCancelReason('');
       await refresh();
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyPurchaseError(err));
     }
   }
 
@@ -1072,7 +1099,7 @@ export default function Page() {
       await refresh();
       setTab('requests');
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyPurchaseError(err));
     }
   }
 
@@ -1093,7 +1120,7 @@ export default function Page() {
       setPrLevels(r.data?.levels || []);
       setMessage(`PR approval matrix saved (${r.data?.steps_required || prLevels.length} levels)`);
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyPurchaseError(err));
     }
   }
 
@@ -1136,7 +1163,7 @@ export default function Page() {
       }
       await refresh();
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyPurchaseError(err));
     } finally {
       setPrBusy('');
     }
@@ -1163,6 +1190,63 @@ export default function Page() {
 
   const supplierNameOf = (id: string) => suppliers.find((s) => s.id === id)?.name || id.slice(0, 8);
   const poNumberOf = (id: string) => orders.find((o) => o.id === id)?.po_number || id.slice(0, 8);
+  const productNameOf = (id: string) => products.find((p) => p.id === id)?.name || id.slice(0, 8);
+  const receivableOrders = orders.filter(
+    (o) => o.status === 'sent' || o.status === 'partially_received',
+  );
+  const purchaseHistory = useMemo(() => {
+    const stamp = (iso?: string | null) => (iso ? String(iso) : '');
+    const rows: { key: string; at: string; kind: string; ref: string; party: string; status: string; amount: string }[] =
+      [];
+    for (const o of orders) {
+      rows.push({
+        key: `po-${o.id}`,
+        at: stamp(o.created_at),
+        kind: 'Order',
+        ref: o.po_number,
+        party: supplierNameOf(o.supplier_id),
+        status: o.status,
+        amount: String(o.total_amount ?? ''),
+      });
+    }
+    for (const g of grns) {
+      rows.push({
+        key: `grn-${g.id}`,
+        at: stamp(g.created_at),
+        kind: 'Received',
+        ref: g.grn_number,
+        party: supplierNameOf(g.supplier_id),
+        status: g.status,
+        amount: String((g.items || []).reduce((s, i) => s + Number(i.accepted_qty || 0), 0)),
+      });
+    }
+    for (const inv of invoices) {
+      const g = grns.find((x) => x.id === inv.goods_receipt_id);
+      rows.push({
+        key: `inv-${inv.id}`,
+        at: stamp(inv.created_at || inv.invoice_date),
+        kind: 'Bill',
+        ref: inv.invoice_number,
+        party: g ? supplierNameOf(g.supplier_id) : inv.supplier_invoice_number || '—',
+        status: inv.status,
+        amount: String(inv.total_amount ?? ''),
+      });
+    }
+    for (const ret of returns) {
+      const g = grns.find((x) => x.id === ret.goods_receipt_id);
+      rows.push({
+        key: `ret-${ret.id}`,
+        at: stamp(ret.created_at),
+        kind: 'Return',
+        ref: ret.return_number,
+        party: g ? supplierNameOf(g.supplier_id) : '—',
+        status: ret.status,
+        amount: String(ret.total_amount ?? ''),
+      });
+    }
+    rows.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
+    return rows;
+  }, [orders, grns, invoices, returns, suppliers]);
   const filteredSuppliers = suppliers.filter((s) => {
     const st = s.status || 'active';
     if (supplierManageFilter === 'inactive' && st !== 'inactive') return false;
@@ -1190,10 +1274,11 @@ export default function Page() {
           [
             ['suppliers', 'Suppliers'],
             ['requests', 'Requests'],
-            ['orders', 'Purchase Orders'],
+            ['orders', 'Orders'],
             ['grn', 'Receive Goods'],
             ['invoices', 'Supplier Bills'],
             ['returns', 'Returns'],
+            ['history', 'History'],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -2039,7 +2124,7 @@ export default function Page() {
                     const tracks = products.find((p) => p.id === i.product_id)?.tracks_batches;
                     return (
                       <tr key={i.id}>
-                        <td>{i.product_id}</td>
+                        <td>{productNameOf(i.product_id)}</td>
                         <td>{i.quantity}</td>
                         <td>{i.received_qty}</td>
                         <td>{i.outstanding_qty}</td>
@@ -2333,58 +2418,216 @@ export default function Page() {
       {tab === 'grn' && (
         <div className="card cat-panel">
         <div className="cat-head">
-          <h2 style={{ margin: 0 }}>Receive Goods</h2>
+          <h2 style={{ margin: 0 }}>Receive goods</h2>
         </div>
         <p className="muted" style={{ margin: 0 }}>
-          Receive against a sent purchase order. Stock is posted once; a retry on a fully received order is rejected.
+          Pick a sent order, then receive. Stock posts once — a fully received order cannot be received again.
         </p>
+        <div className="erp-form-grid" style={{ marginTop: 12 }}>
+          <select
+            value={selected && receivableOrders.some((o) => o.id === selected.id) ? selected.id : ''}
+            onChange={(e) => {
+              const po = orders.find((o) => o.id === e.target.value);
+              if (po) openAmend(po);
+            }}
+            aria-label="Order to receive"
+          >
+            <option value="">Choose an order to receive</option>
+            {receivableOrders.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.po_number} · {supplierNameOf(o.supplier_id)}
+              </option>
+            ))}
+          </select>
+        </div>
+        {receivableOrders.length === 0 ? (
+          <p className="muted">No sent orders waiting to receive. Send an order first.</p>
+        ) : null}
+        {selected && (selected.status === 'sent' || selected.status === 'partially_received') && (
+          <div style={{ marginTop: 12 }}>
+            <table className="table compact">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Left</th>
+                  <th>Receive</th>
+                  <th>Accept</th>
+                  <th>Reject</th>
+                  <th>Batch</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selected.items
+                  .filter((i) => i.outstanding_qty > 0)
+                  .map((i) => {
+                    const draft = receiveDrafts[i.id] || {
+                      received: String(i.outstanding_qty),
+                      accepted: String(i.outstanding_qty),
+                      rejected: '0',
+                      reason: '',
+                      batch: '',
+                      mfg: '',
+                      expiry: '',
+                    };
+                    const tracks = products.find((p) => p.id === i.product_id)?.tracks_batches;
+                    return (
+                      <tr key={i.id}>
+                        <td>{productNameOf(i.product_id)}</td>
+                        <td>{i.outstanding_qty}</td>
+                        <td>
+                          <input
+                            value={draft.received}
+                            onChange={(e) =>
+                              setReceiveDrafts((d) => ({
+                                ...d,
+                                [i.id]: { ...draft, received: e.target.value },
+                              }))
+                            }
+                            aria-label={`Receive qty ${i.id}`}
+                            style={{ width: 80 }}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            value={draft.accepted}
+                            onChange={(e) =>
+                              setReceiveDrafts((d) => ({
+                                ...d,
+                                [i.id]: { ...draft, accepted: e.target.value },
+                              }))
+                            }
+                            aria-label={`Accept qty ${i.id}`}
+                            style={{ width: 80 }}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            value={draft.rejected}
+                            onChange={(e) =>
+                              setReceiveDrafts((d) => ({
+                                ...d,
+                                [i.id]: { ...draft, rejected: e.target.value },
+                              }))
+                            }
+                            aria-label={`Reject qty ${i.id}`}
+                            style={{ width: 80 }}
+                          />
+                        </td>
+                        <td>
+                          {tracks ? (
+                            <input
+                              value={draft.batch}
+                              onChange={(e) =>
+                                setReceiveDrafts((d) => ({
+                                  ...d,
+                                  [i.id]: { ...draft, batch: e.target.value },
+                                }))
+                              }
+                              placeholder="Batch"
+                              aria-label="GRN batch number"
+                            />
+                          ) : (
+                            '—'
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8, alignItems: 'center' }}>
+              <input
+                value={grnNotes}
+                onChange={(e) => setGrnNotes(e.target.value)}
+                placeholder="Notes (optional)"
+                aria-label="GRN notes"
+              />
+              <button type="button" className="btn-ok" onClick={() => postPartialReceive(selected)} aria-label="Post GRN">
+                Receive lines
+              </button>
+              <button type="button" className="btn-ok" onClick={() => receiveAll(selected)} aria-label="Receive all accepted">
+                Receive all
+              </button>
+            </div>
+          </div>
+        )}
+        <h3 style={{ marginTop: 24 }}>Received</h3>
         {grns.length === 0 ? (
-          <p className="cat-empty muted">No received goods yet. Open a purchase order and receive lines.</p>
+          <p className="cat-empty muted">Nothing received yet.</p>
         ) : (
         <table className="table cat-table">
           <thead>
             <tr>
               <th>GRN</th>
               <th>PO</th>
+              <th>Supplier</th>
+              <th>Date</th>
               <th>Status</th>
-              <th>Lines</th>
               <th>Accepted</th>
               <th>Rejected</th>
-              <th>Batches</th>
-              <th>Reject reasons</th>
             </tr>
           </thead>
           <tbody>
             {grns.map((g) => {
               const accepted = (g.items || []).reduce((s, i) => s + Number(i.accepted_qty || 0), 0);
               const rejected = (g.items || []).reduce((s, i) => s + Number(i.rejected_qty || 0), 0);
-              const reasons = (g.items || [])
-                .filter((i) => (i.rejected_qty || 0) > 0 && i.rejection_reason)
-                .map((i) => i.rejection_reason)
-                .join('; ');
-              const batches = (g.items || [])
-                .filter((i) => i.batch_number)
-                .map((i) => {
-                  const exp = i.expiry_date ? String(i.expiry_date).slice(0, 10) : '';
-                  return exp ? `${i.batch_number} (exp ${exp})` : i.batch_number;
-                })
-                .join('; ');
               return (
                 <tr key={g.id}>
                   <td data-label="GRN">{g.grn_number}</td>
                   <td data-label="PO">{poNumberOf(g.purchase_order_id)}</td>
+                  <td>{supplierNameOf(g.supplier_id)}</td>
+                  <td>{g.created_at ? String(g.created_at).slice(0, 10) : '—'}</td>
                   <td>{g.status}</td>
-                  <td>{g.items?.length || 0}</td>
                   <td>{accepted}</td>
                   <td>{rejected}</td>
-                  <td>{batches || '—'}</td>
-                  <td>{reasons || '—'}</td>
                 </tr>
               );
             })}
           </tbody>
         </table>
         )}
+        </div>
+      )}
+
+      {tab === 'history' && (
+        <div className="card cat-panel">
+          <div className="cat-head">
+            <h2 style={{ margin: 0 }}>Purchase history</h2>
+          </div>
+          <p className="muted" style={{ margin: 0 }}>
+            Orders, goods received, supplier bills, and returns — not the reports summary.
+          </p>
+          <table className="table cat-table" style={{ marginTop: 12 }}>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Number</th>
+                <th>Supplier / ref</th>
+                <th>Status</th>
+                <th>Amount / qty</th>
+              </tr>
+            </thead>
+            <tbody>
+              {purchaseHistory.map((row) => (
+                <tr key={row.key}>
+                  <td>{row.at ? String(row.at).slice(0, 10) : '—'}</td>
+                  <td>{row.kind}</td>
+                  <td>{row.ref}</td>
+                  <td>{row.party}</td>
+                  <td>{row.status}</td>
+                  <td>{row.amount || '—'}</td>
+                </tr>
+              ))}
+              {purchaseHistory.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="muted">
+                    No purchase documents yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -2712,7 +2955,7 @@ export default function Page() {
                         const r = await api(`/purchasing/invoices/${inv.id}`);
                         setSelectedInvoice(r.data);
                       } catch (err: any) {
-                        setError(err.message);
+                        setError(friendlyPurchaseError(err));
                       }
                     }}
                     style={{ background: 'none', border: 0, color: 'var(--deep-green, #006B2E)', cursor: 'pointer' }}

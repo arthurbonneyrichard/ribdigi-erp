@@ -203,6 +203,113 @@ function HotelDelta({ value }: { value: number | null }) {
   );
 }
 
+type MixSeg = { key: string; n: number; color: string };
+
+function hotelPolar(cx: number, cy: number, r: number, angleDeg: number) {
+  const a = ((angleDeg - 90) * Math.PI) / 180;
+  return [cx + r * Math.cos(a), cy + r * Math.sin(a)] as const;
+}
+
+function HotelDonut({
+  segments,
+  size = 88,
+  stroke = 10,
+}: {
+  segments: MixSeg[];
+  size?: number;
+  stroke?: number;
+}) {
+  const r = (size - stroke) / 2 - 2;
+  const cx = size / 2;
+  const circ = 2 * Math.PI * r;
+  const total = segments.reduce((s, x) => s + Math.max(0, x.n), 0);
+  let offset = 0;
+  return (
+    <svg className="hotel-donut" viewBox={`0 0 ${size} ${size}`} width={size} height={size} aria-hidden="true">
+      <circle cx={cx} cy={cx} r={r} fill="none" stroke="var(--line)" strokeWidth={stroke} />
+      {total > 0 &&
+        segments.map((s) => {
+          if (s.n <= 0) return null;
+          const len = (s.n / total) * circ;
+          const el = (
+            <circle
+              key={s.key}
+              cx={cx}
+              cy={cx}
+              r={r}
+              fill="none"
+              stroke={s.color}
+              strokeWidth={stroke}
+              strokeDasharray={`${len} ${circ}`}
+              strokeDashoffset={-offset}
+              transform={`rotate(-90 ${cx} ${cx})`}
+            />
+          );
+          offset += len;
+          return el;
+        })}
+    </svg>
+  );
+}
+
+function HotelPie({ slices, size = 92 }: { slices: MixSeg[]; size?: number }) {
+  const cx = size / 2;
+  const r = size / 2 - 2;
+  const total = slices.reduce((s, x) => s + Math.max(0, x.n), 0);
+  let start = 0;
+  if (total <= 0) {
+    return (
+      <svg className="hotel-pie" viewBox={`0 0 ${size} ${size}`} width={size} height={size} aria-hidden="true">
+        <circle cx={cx} cy={cx} r={r} fill="var(--mist)" stroke="var(--line)" />
+      </svg>
+    );
+  }
+  return (
+    <svg className="hotel-pie" viewBox={`0 0 ${size} ${size}`} width={size} height={size} aria-hidden="true">
+      {slices.map((s) => {
+        if (s.n <= 0) return null;
+        const sweep = (s.n / total) * 360;
+        const end = start + sweep;
+        const slice =
+          sweep >= 359.9 ? (
+            <circle key={s.key} cx={cx} cy={cx} r={r} fill={s.color} />
+          ) : (
+            <path
+              key={s.key}
+              d={`M ${cx} ${cx} L ${hotelPolar(cx, cx, r, start).join(' ')} A ${r} ${r} 0 ${sweep > 180 ? 1 : 0} 1 ${hotelPolar(cx, cx, r, end).join(' ')} Z`}
+              fill={s.color}
+            />
+          );
+        start = end;
+        return slice;
+      })}
+    </svg>
+  );
+}
+
+function HotelAreaChart({ points }: { points: { date: string; occupancy_rate: number }[] }) {
+  if (!points.length) return <p className="empty">No occupancy nights yet.</p>;
+  const w = 220;
+  const h = 120;
+  const max = Math.max(100, ...points.map((p) => p.occupancy_rate));
+  const coords = points.map((p, i) => {
+    const x = points.length <= 1 ? w / 2 : (i / (points.length - 1)) * (w - 8) + 4;
+    const y = h - 18 - (p.occupancy_rate / max) * (h - 28);
+    return { x, y, p };
+  });
+  const line = coords.map((c) => `${c.x},${c.y}`).join(' ');
+  const area = `M ${coords[0].x},${h - 16} L ${coords.map((c) => `${c.x},${c.y}`).join(' L ')} L ${coords[coords.length - 1].x},${h - 16} Z`;
+  return (
+    <svg className="hotel-area-chart" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" role="img" aria-label="Occupancy rate over recent nights">
+      <path d={area} fill="var(--leaf)" opacity="0.85" />
+      <polyline fill="none" stroke="var(--brand)" strokeWidth="2.2" points={line} />
+      {coords.map((c) => (
+        <circle key={c.p.date} cx={c.x} cy={c.y} r="2.2" fill="var(--brand-dark)" />
+      ))}
+    </svg>
+  );
+}
+
 function statusClass(status: string) {
   const key = status.replace(/\s+/g, '_');
   return `hotel-st hotel-st-${key}`;
@@ -821,8 +928,9 @@ export default function HotelPage() {
                 r.check_out_date === yest && (r.status === 'checked_in' || r.status === 'checked_out')
             ).length;
             const occPct = Number(summary.occupancy_rate || 0);
-            const availShare = Math.max(0, Math.min(100, (availableN / tot) * 100));
-            const circ = 2 * Math.PI * 18;
+            const soldN = summary.rooms_sold_night ?? 0;
+            const unsoldN = Math.max(0, tot - soldN);
+            const rmix = summary.reservation_status_mix || {};
             const reqOpen = guestRequests.filter((q) => q.status !== 'completed').length;
             const reqDone = guestRequests.filter((q) => q.status === 'completed').length;
             const sourceCounts = reservations.reduce<Record<string, number>>((acc, r) => {
@@ -831,75 +939,100 @@ export default function HotelPage() {
               return acc;
             }, {});
             const sourceMax = Math.max(1, ...Object.values(sourceCounts), 0);
+            const purpose = reservations.reduce(
+              (acc, r) => {
+                const src = (r.booking_source || 'direct').toLowerCase();
+                if (src === 'corporate' || src === 'group') acc.business += 1;
+                else acc.leisure += 1;
+                return acc;
+              },
+              { business: 0, leisure: 0 }
+            );
+            const purposeTotal = purpose.business + purpose.leisure;
+            const mixDonut: MixSeg[] = segs.map((s) => ({ key: s.key, n: s.n, color: s.color }));
+            const cioSlices: MixSeg[] = [
+              { key: 'arrivals', n: summary.expected_arrivals ?? summary.arrivals_today ?? 0, color: 'var(--brand)' },
+              { key: 'departures', n: summary.departures_today ?? 0, color: 'var(--brand-light)' },
+              { key: 'in house', n: summary.reservations_in_house || 0, color: 'var(--forest)' },
+            ];
+            const bookMixMax = Math.max(
+              1,
+              ...trend.map((p) => {
+                const cx = reservations.filter(
+                  (r) =>
+                    r.check_in_date === p.date && (r.status === 'cancelled' || r.status === 'canceled' || r.status === 'no_show')
+                ).length;
+                return p.sold + cx;
+              })
+            );
+            const occAvg =
+              trend.length > 0 ? trend.reduce((s, p) => s + p.occupancy_rate, 0) / trend.length : occPct;
             const liveRooms = rooms.filter((r) => r.is_active).slice(0, 10);
             const assigned = rooms.filter((r) => r.status === 'occupied' || r.status === 'reserved').slice(0, 8);
             return (
               <>
                 <div className="hotel-ops-kpis">
-                  <div className="hotel-kpi">
-                    <div className="hotel-kpi-row">
-                      <div>
-                        <div className="lbl">Occupancy</div>
-                        <div className="val">{occPct.toFixed(1)}%</div>
-                        <HotelDelta value={pctChange(occPct, occPrev)} />
+                  <div className="hotel-kpi hotel-kpi-graphic">
+                    <div className="lbl">Occupancy</div>
+                    <div className="val">{occPct.toFixed(1)}%</div>
+                    <HotelDelta value={pctChange(occPct, occPrev)} />
+                    <div className="hotel-kpi-visual">
+                      <HotelDonut
+                        segments={[
+                          { key: 'sold', n: soldN, color: 'var(--brand)' },
+                          { key: 'unsold', n: unsoldN, color: 'var(--line)' },
+                        ]}
+                        size={86}
+                        stroke={12}
+                      />
+                      <div className="hotel-kpi-spark tall" aria-hidden="true">
+                        {trend.map((p) => (
+                          <span key={p.date} style={{ height: `${Math.max(8, Math.min(100, p.occupancy_rate))}%` }} />
+                        ))}
                       </div>
                     </div>
-                    <div className="hint">{summary.rooms_sold_night ?? 0} rooms sold this night</div>
-                    <div className="hotel-kpi-spark" aria-hidden="true">
-                      {trend.map((p) => (
-                        <span key={p.date} style={{ height: `${Math.max(8, Math.min(100, p.occupancy_rate))}%` }} />
-                      ))}
-                    </div>
+                    <div className="hint">{soldN} rooms sold this night of {summary.rooms_total}</div>
                   </div>
-                  <div className="hotel-kpi">
-                    <div className="hotel-kpi-row">
-                      <div>
-                        <div className="lbl">Available rooms</div>
-                        <div className="val">{availableN}</div>
-                      </div>
-                      <svg className="hotel-kpi-donut" viewBox="0 0 44 44" aria-hidden="true">
-                        <circle cx="22" cy="22" r="18" fill="none" stroke="var(--mist)" strokeWidth="6" />
-                        <circle
-                          cx="22"
-                          cy="22"
-                          r="18"
-                          fill="none"
-                          stroke="var(--brand)"
-                          strokeWidth="6"
-                          strokeDasharray={`${(availShare / 100) * circ} ${circ}`}
-                          strokeLinecap="round"
-                          transform="rotate(-90 22 22)"
-                        />
-                      </svg>
+                  <div className="hotel-kpi hotel-kpi-graphic">
+                    <div className="lbl">Available rooms</div>
+                    <div className="val">{availableN}</div>
+                    <div className="hotel-kpi-visual center">
+                      <HotelDonut segments={mixDonut} size={96} stroke={14} />
                     </div>
-                    <div className="hint">{summary.rooms_total} rooms in inventory</div>
+                    <div className="hint">Live house mix · {summary.rooms_total} rooms in inventory</div>
                   </div>
-                  <div className="hotel-kpi">
+                  <div className="hotel-kpi hotel-kpi-graphic">
                     <div className="lbl">Revenue</div>
                     <div className="val">{Number(summary.revenue_today || 0).toFixed(2)}</div>
+                    <div className="hotel-rev-bars" aria-label="Room, extras, and payments">
+                      {[
+                        { k: 'Room', n: Number(summary.room_revenue || 0), c: 'var(--brand)' },
+                        { k: 'Extras', n: Number(summary.service_revenue || 0), c: 'var(--brand-dark)' },
+                        { k: 'Paid', n: Number(summary.payments_received || 0), c: 'var(--forest)' },
+                      ].map((b) => {
+                        const mx = Math.max(1, Number(summary.revenue_today || 0), Number(summary.payments_received || 0), b.n);
+                        return (
+                          <span key={b.k} title={`${b.k} ${b.n.toFixed(2)}`} style={{ height: `${Math.max(10, (b.n / mx) * 100)}%`, background: b.c }} />
+                        );
+                      })}
+                    </div>
                     <div className="hint">
                       Room {Number(summary.room_revenue || 0).toFixed(2)} · extras{' '}
                       {Number(summary.service_revenue || 0).toFixed(2)}
                     </div>
-                    <div className="hotel-kpi-spark" aria-hidden="true">
-                      <span style={{ height: `${Math.max(12, Math.min(100, (Number(summary.room_revenue || 0) / Math.max(1, Number(summary.revenue_today || 1))) * 100))}%` }} />
-                      <span
-                        style={{
-                          height: `${Math.max(12, Math.min(100, (Number(summary.service_revenue || 0) / Math.max(1, Number(summary.revenue_today || 1))) * 100))}%`,
-                          background: 'var(--forest)',
-                        }}
-                      />
-                    </div>
                   </div>
-                  <div className="hotel-kpi">
+                  <div className="hotel-kpi hotel-kpi-graphic">
                     <div className="lbl">Check-in / out</div>
                     <div className="val">
                       {summary.expected_arrivals ?? summary.arrivals_today ?? 0}
-                      <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--muted)' }}>
+                      <span className="hotel-kpi-sub">
                         {' '}/ {summary.departures_today ?? 0}
                       </span>
                     </div>
                     <HotelDelta value={pctChange(summary.departures_today ?? 0, depPrev)} />
+                    <div className="hotel-kpi-visual center">
+                      <HotelPie slices={cioSlices} size={88} />
+                    </div>
                     <div className="hint">{summary.reservations_in_house} in house · payments {Number(summary.payments_received || 0).toFixed(2)}</div>
                   </div>
                 </div>
@@ -931,19 +1064,31 @@ export default function HotelPage() {
                     </div>
                   </div>
                   <div className="panel">
-                    <h3>Occupancy (14 nights)</h3>
-                    <p className="hint">Sold rooms vs remaining inventory, from stored reservations.</p>
-                    <div className="hotel-gbar" aria-label="Occupancy by night">
+                    <h3>Reservation mix</h3>
+                    <p className="hint">
+                      Rooms sold each night from occupancy trend, stacked with cancelled or no-show check-ins that date.
+                      Booked {rmix.booked ?? summary.reservations_booked} · cancelled {rmix.cancelled ?? summary.reservations_cancelled ?? 0}.
+                    </p>
+                    <div className="hotel-mix-legend">
+                      <span><i style={{ background: 'var(--forest)' }} /> Sold nights</span>
+                      <span><i style={{ background: 'var(--brand-light)' }} /> Cancelled / no-show</span>
+                    </div>
+                    <div className="hotel-gbar" aria-label="Reservation mix by night">
                       {trend.map((p) => {
-                        const soldH = (p.sold / tot) * 100;
-                        const vacH = Math.max(0, 100 - soldH);
+                        const cx = reservations.filter(
+                          (r) =>
+                            r.check_in_date === p.date &&
+                            (r.status === 'cancelled' || r.status === 'canceled' || r.status === 'no_show')
+                        ).length;
+                        const soldH = (p.sold / bookMixMax) * 100;
+                        const cxH = (cx / bookMixMax) * 100;
                         return (
-                          <div className="col" key={p.date} title={`${p.date}: ${p.sold} sold (${p.occupancy_rate}%)`}>
+                          <div className="col" key={p.date} title={`${p.date}: ${p.sold} sold, ${cx} cancelled`}>
                             <div className="stack">
                               <div className="seg sold" style={{ height: `${soldH}%` }} />
-                              <div className="seg vac" style={{ height: `${vacH}%` }} />
+                              <div className="seg cx" style={{ height: `${cxH}%` }} />
                             </div>
-                            <span className="dl">{p.date.slice(5)}</span>
+                            <span className="dl">{p.date.slice(8)}</span>
                           </div>
                         );
                       })}
@@ -1031,9 +1176,37 @@ export default function HotelPage() {
                     </p>
                   </div>
                   <div className="panel">
-                    <h3>Booking source</h3>
-                    <p className="hint">How stored reservations were logged. OTA is a manual source label only.</p>
-                    <div className="hotel-source">
+                    <h3>Guest purpose</h3>
+                    <p className="hint">
+                      Corporate and group bookings vs other stored sources. Not an OTA marketplace mix.
+                    </p>
+                    <div className="hotel-purpose">
+                      <HotelDonut
+                        segments={[
+                          { key: 'business', n: purpose.business, color: 'var(--forest)' },
+                          { key: 'leisure', n: purpose.leisure, color: 'var(--brand)' },
+                        ]}
+                        size={148}
+                        stroke={22}
+                      />
+                      <div className="hotel-purpose-center">
+                        <span className="k">Guests</span>
+                        <span className="n">{summary.guests_total}</span>
+                      </div>
+                    </div>
+                    <ul className="hotel-purpose-legend">
+                      <li>
+                        <span className="sw" style={{ background: 'var(--forest)' }} />
+                        Business {purpose.business}
+                        {purposeTotal ? ` (${Math.round((purpose.business / purposeTotal) * 100)}%)` : ''}
+                      </li>
+                      <li>
+                        <span className="sw" style={{ background: 'var(--brand)' }} />
+                        Leisure {purpose.leisure}
+                        {purposeTotal ? ` (${Math.round((purpose.leisure / purposeTotal) * 100)}%)` : ''}
+                      </li>
+                    </ul>
+                    <div className="hotel-source compact">
                       {Object.entries(sourceCounts).map(([label, n]) => (
                         <div className="bar-row" key={label}>
                           <span className="bl">{label}</span>
@@ -1044,6 +1217,87 @@ export default function HotelPage() {
                         </div>
                       ))}
                       {!Object.keys(sourceCounts).length && <p className="empty">No reservations yet.</p>}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="hotel-ops-split">
+                  <div className="panel hotel-occ-hero">
+                    <h3>Hotel occupancy rate</h3>
+                    <p className="hint">Sold room-nights on each business date — not live occupied tiles.</p>
+                    <div className="hotel-occ-hero-pct">
+                      {occPct.toFixed(1)}%
+                      <HotelDelta value={pctChange(occPct, occPrev)} />
+                    </div>
+                    <div className="hint">Selected night occupancy</div>
+                    <div className="hotel-occ-hero-meta">
+                      <div>
+                        <div className="k">Previous night</div>
+                        <div className="n">{occPrev != null ? `${Number(occPrev).toFixed(1)}%` : '—'}</div>
+                      </div>
+                      <div>
+                        <div className="k">14-night average</div>
+                        <div className="n">{occAvg.toFixed(1)}%</div>
+                      </div>
+                    </div>
+                    <HotelAreaChart points={trend} />
+                  </div>
+                  <div className="panel">
+                    <h3>Arrivals and departures</h3>
+                    <p className="hint">Expected arrivals, departures, and in-house from the hotel summary.</p>
+                    <div className="hotel-cio">
+                      <div className="hotel-cio-item">
+                        <HotelDonut
+                          segments={[
+                            { key: 'in', n: summary.expected_arrivals ?? summary.arrivals_today ?? 0, color: 'var(--brand)' },
+                            { key: 'rest', n: Math.max(0, tot - (summary.expected_arrivals ?? summary.arrivals_today ?? 0)), color: 'var(--line)' },
+                          ]}
+                          size={72}
+                          stroke={9}
+                        />
+                        <div>
+                          <div className="k">Arrivals</div>
+                          <div className="n">{summary.expected_arrivals ?? summary.arrivals_today ?? 0}</div>
+                        </div>
+                      </div>
+                      <div className="hotel-cio-item">
+                        <HotelDonut
+                          segments={[
+                            { key: 'out', n: summary.departures_today ?? 0, color: 'var(--brand-light)' },
+                            { key: 'rest', n: Math.max(0, tot - (summary.departures_today ?? 0)), color: 'var(--line)' },
+                          ]}
+                          size={72}
+                          stroke={9}
+                        />
+                        <div>
+                          <div className="k">Departures</div>
+                          <div className="n">{summary.departures_today ?? 0}</div>
+                        </div>
+                      </div>
+                      <div className="hotel-cio-item">
+                        <HotelDonut
+                          segments={[
+                            { key: 'stay', n: summary.reservations_in_house || 0, color: 'var(--forest)' },
+                            { key: 'rest', n: Math.max(0, tot - (summary.reservations_in_house || 0)), color: 'var(--line)' },
+                          ]}
+                          size={72}
+                          stroke={9}
+                        />
+                        <div>
+                          <div className="k">In house</div>
+                          <div className="n">{summary.reservations_in_house}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="hotel-gbar short" aria-label="Rooms sold over recent nights">
+                      {trend.map((p) => (
+                        <div className="col" key={`sold-${p.date}`} title={`${p.date}: ${p.sold} sold`}>
+                          <div className="stack">
+                            <div className="seg sold" style={{ height: `${Math.max(4, (p.sold / Math.max(1, tot)) * 100)}%` }} />
+                          </div>
+                          <span className="dl">{p.date.slice(8)}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>

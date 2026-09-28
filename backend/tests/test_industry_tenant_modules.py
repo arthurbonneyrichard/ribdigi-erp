@@ -163,6 +163,8 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "/purchasing?tab=orders" in nav
     assert "/purchasing?tab=grn" in nav
     assert "/purchasing?tab=suppliers" in nav
+    assert "/purchasing?tab=history" in nav
+    assert "Retail management" not in nav
     assert "hotel-inventory" in nav
     assert "id: 'hotel'" in nav or 'id: "hotel"' in nav
     assert "from '../lib/tenantNav'" in shell

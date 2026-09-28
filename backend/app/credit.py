@@ -990,9 +990,8 @@ async def supplier_credit_info(db: AsyncSession, tenant_id: str, supplier_id: st
             }
         )
 
-    outstanding = money_json(supplier.balance or 0)
-    if abs(outstanding) < 1e-9 and open_total > 0:
-        outstanding = money_json(round(open_total, 2))
+    # Live open documents — party.balance can be stale after payments.
+    outstanding = money_json(round(open_total, 2))
 
     return {
         "supplier": {
@@ -1003,6 +1002,7 @@ async def supplier_credit_info(db: AsyncSession, tenant_id: str, supplier_id: st
             "payment_terms_days": getattr(supplier, "payment_terms_days", None),
         },
         "outstanding_balance": money_json(round(outstanding, 2)),
+        "party_balance": money_json(supplier.balance or 0),
         "open_bill_count": len(open_bills),
         "open_bill_total": money_json(round(open_total, 2)),
         "open_bills": open_bills,

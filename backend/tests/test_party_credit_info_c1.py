@@ -74,7 +74,7 @@ async def test_supplier_credit_info_open_bills(client, db_session):
     tenant_id = seed["t1"].id
 
     supplier = m.Party(
-        tenant_id=tenant_id, name="Credit Supplier", kind="supplier", balance=55
+        tenant_id=tenant_id, name="Credit Supplier", kind="supplier", balance=999
     )
     db_session.add(supplier)
     await db_session.flush()
