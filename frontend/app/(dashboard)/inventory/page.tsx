@@ -2284,6 +2284,7 @@ export default function Page() {
         )}
 
       {tab === 'lookup' && (
+        <div className="erp-split">
         <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 12 }}>
           <h3>Product lookup</h3>
           <p className="muted" style={{ margin: 0 }}>
@@ -2414,6 +2415,7 @@ export default function Page() {
               </p>
             </div>
           )}
+        </div>
         </div>
       )}
 
@@ -4797,8 +4799,7 @@ export default function Page() {
             </div>
           </div>
           <p className="muted inv-child">
-            View quantity, receive stock, and set reorder levels. Quantity corrections belong on Adjust
-            stock.
+            View quantity, receive stock, and set reorder levels. Quantity corrections belong on Adjust stock.
           </p>
           <div className="cat-toolbar">
             <select

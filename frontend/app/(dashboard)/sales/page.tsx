@@ -127,28 +127,12 @@ export default function Page() {
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [invPrefix, setInvPrefix] = useState('INV');
-  const [invNext, setInvNext] = useState('1');
-  const [invPreview, setInvPreview] = useState('');
-  const [qtPrefix, setQtPrefix] = useState('QT');
-  const [qtNext, setQtNext] = useState('1');
-  const [qtPreview, setQtPreview] = useState('');
-  const [soPrefix, setSoPrefix] = useState('SO');
-  const [soNext, setSoNext] = useState('1');
-  const [soPreview, setSoPreview] = useState('');
-  const [srPrefix, setSrPrefix] = useState('SR');
-  const [srNext, setSrNext] = useState('1');
-  const [srPreview, setSrPreview] = useState('');
-  const [cnPrefix, setCnPrefix] = useState('CN');
-  const [cnNext, setCnNext] = useState('1');
-  const [cnPreview, setCnPreview] = useState('');
-  const [rcpPrefix, setRcpPrefix] = useState('RCP');
-  const [rcpNext, setRcpNext] = useState('1');
-  const [rcpPreview, setRcpPreview] = useState('');
   const [fmt, setFmt] = useState<FormatPrefs | null>(null);
+  const [listSearch, setListSearch] = useState('');
+  const [composerOpen, setComposerOpen] = useState(false);
 
   async function refresh() {
-    const [invRes, custRes, prodRes, unitRes, qRes, oRes, rRes, storeRes, settingsRes, groupRes, tenantRes] =
+    const [invRes, custRes, prodRes, unitRes, qRes, oRes, rRes, storeRes, groupRes, tenantRes] =
       await Promise.all([
         api('/sales/invoices'),
         api('/customers'),
@@ -158,7 +142,6 @@ export default function Page() {
         api('/sales/orders'),
         api('/sales/returns'),
         api('/stores').catch(() => ({ data: [] })),
-        api('/sales/settings').catch(() => ({ data: null })),
         api('/customers/groups').catch(() => ({ data: [] })),
         api('/tenants/me').catch(() => ({ data: null })),
       ]);
@@ -178,42 +161,6 @@ export default function Page() {
       Object.fromEntries((groupRes.data || []).map((g: any) => [g.id, String(g.discount_percent ?? 0)]))
     );
     if (tenantRes.data) setFmt(tenantRes.data);
-    const numbering = settingsRes.data?.invoice_numbering;
-    if (numbering) {
-      setInvPrefix(numbering.prefix || 'INV');
-      setInvNext(String(numbering.next_number ?? 1));
-      setInvPreview(numbering.preview || '');
-    }
-    const qt = settingsRes.data?.quotation_numbering;
-    if (qt) {
-      setQtPrefix(qt.prefix || 'QT');
-      setQtNext(String(qt.next_number ?? 1));
-      setQtPreview(qt.preview || '');
-    }
-    const so = settingsRes.data?.sales_order_numbering;
-    if (so) {
-      setSoPrefix(so.prefix || 'SO');
-      setSoNext(String(so.next_number ?? 1));
-      setSoPreview(so.preview || '');
-    }
-    const sr = settingsRes.data?.sales_return_numbering;
-    if (sr) {
-      setSrPrefix(sr.prefix || 'SR');
-      setSrNext(String(sr.next_number ?? 1));
-      setSrPreview(sr.preview || '');
-    }
-    const cn = settingsRes.data?.credit_note_numbering;
-    if (cn) {
-      setCnPrefix(cn.prefix || 'CN');
-      setCnNext(String(cn.next_number ?? 1));
-      setCnPreview(cn.preview || '');
-    }
-    const rcp = settingsRes.data?.payment_receipt_numbering;
-    if (rcp) {
-      setRcpPrefix(rcp.prefix || 'RCP');
-      setRcpNext(String(rcp.next_number ?? 1));
-      setRcpPreview(rcp.preview || '');
-    }
   }
 
   useEffect(() => {
@@ -443,6 +390,7 @@ export default function Page() {
       const r = await api('/sales/invoices', { method: 'POST', body: JSON.stringify(invoicePayload) });
       setMessage(`Draft ${r.data.invoice_number} created`);
       setSelected(r.data);
+      setComposerOpen(false);
       setLineDiscount('');
       setHeaderDiscount('');
       setDocNotes('');
@@ -459,6 +407,7 @@ export default function Page() {
       const r = await api('/sales/quotations', { method: 'POST', body: JSON.stringify(linePayload) });
       setMessage(`Quotation ${r.data.quotation_number} created`);
       setSelected(r.data);
+      setComposerOpen(false);
       setLineDiscount('');
       setHeaderDiscount('');
       setDocNotes('');
@@ -475,6 +424,7 @@ export default function Page() {
       const r = await api('/sales/orders', { method: 'POST', body: JSON.stringify(linePayload) });
       setMessage(`Order ${r.data.order_number} created`);
       setSelected(r.data);
+      setComposerOpen(false);
       setLineDiscount('');
       setHeaderDiscount('');
       setDocNotes('');
@@ -674,41 +624,69 @@ export default function Page() {
     const active = g.is_active !== false;
     return groupManageFilter === 'inactive' ? !active : active;
   });
+  function matchesList(row: any) {
+    const q = listSearch.trim().toLowerCase();
+    if (!q) return true;
+    const cust = customers.find((c) => c.id === row.customer_id);
+    const hay = [
+      row.invoice_number,
+      row.quotation_number,
+      row.order_number,
+      row.return_number,
+      row.credit_note_number,
+      row.status,
+      row.notes,
+      row.reason,
+      cust?.name,
+      cust?.code,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    return hay.includes(q);
+  }
   const managedReturns = returns.filter((r) => {
-    if (returnManageFilter === 'all') return true;
-    return (r.status || 'draft') === returnManageFilter;
+    if (returnManageFilter !== 'all' && (r.status || 'draft') !== returnManageFilter) return false;
+    return matchesList(r);
   });
   const managedInvoices = invoices.filter((inv) => {
-    if (invoiceManageFilter === 'all') return true;
-    return (inv.status || 'draft') === invoiceManageFilter;
+    if (invoiceManageFilter !== 'all' && (inv.status || 'draft') !== invoiceManageFilter) return false;
+    return matchesList(inv);
   });
   const managedQuotations = quotations.filter((q) => {
-    if (quotationManageFilter === 'all') return true;
-    return (q.status || 'draft') === quotationManageFilter;
+    if (quotationManageFilter !== 'all' && (q.status || 'draft') !== quotationManageFilter) return false;
+    return matchesList(q);
   });
   const managedOrders = orders.filter((o) => {
-    if (orderManageFilter === 'all') return true;
-    return (o.status || 'draft') === orderManageFilter;
+    if (orderManageFilter !== 'all' && (o.status || 'draft') !== orderManageFilter) return false;
+    return matchesList(o);
   });
 
   return (
-    <>
-      <h1>Sales</h1>
-      <p className="muted">Quotations → orders → invoices → returns</p>
-      {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
+    <div className="sales-desk">
+      <header className="sales-desk-head">
+        <div>
+          <h1>Sales</h1>
+          <p className="muted">Find a document, or create a new quote, order, or invoice.</p>
+        </div>
+        <button type="button" className="btn-primary" onClick={() => setComposerOpen(true)}>
+          New
+        </button>
+      </header>
 
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+      <div className="sales-toolbar">
         {(
           [
             ['invoices', 'Invoices'],
-            ['quotations', 'Quotations'],
+            ['quotations', 'Quotes'],
             ['orders', 'Orders'],
             ['returns', 'Returns'],
           ] as [Tab, string][]
         ).map(([id, label]) => (
           <button
             key={id}
+            type="button"
+            className={tab === id ? 'sales-tab is-on' : 'sales-tab'}
             onClick={() => setTab(id)}
             disabled={tab === id}
             aria-label={`Show sales ${id} tab`}
@@ -716,18 +694,39 @@ export default function Page() {
             {label}
           </button>
         ))}
+        <input
+          className="sales-search"
+          value={listSearch}
+          onChange={(e) => setListSearch(e.target.value)}
+          placeholder="Search number, customer, status…"
+          aria-label="Search sales documents"
+        />
       </div>
+      {(error || message) && !composerOpen && !selected ? (
+        <p className={error ? 'sales-flash sales-flash-err' : 'sales-flash sales-flash-ok'} role={error ? 'alert' : undefined}>
+          {error || message}
+        </p>
+      ) : null}
 
+      {composerOpen ? (
+      <div className="sales-drawer-backdrop" onClick={() => setComposerOpen(false)}>
+      <div className="sales-drawer" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Create sale">
+        <div className="sales-drawer-head">
+          <h2>New document</h2>
+          <button type="button" onClick={() => setComposerOpen(false)}>Close</button>
+        </div>
+        {(error || message) ? (
+          <p className={error ? 'sales-flash sales-flash-err' : 'sales-flash sales-flash-ok'} role={error ? 'alert' : undefined}>
+            {error || message}
+          </p>
+        ) : null}
       <div className="erp-split">
         <div className="card">
           <h3>Customer</h3>
           <div className="erp-stack" style={{ marginBottom: 0 }}>
+        <details className="sales-more">
+          <summary>Customer groups</summary>
         <div style={{ display: 'grid', gap: 8 }}>
-          <strong>Customer groups</strong>
-          <p className="muted" style={{ margin: 0 }}>
-            Soft-deactivate hides a group from assign/create pickers; existing customers keep the link
-            but pricing ignores inactive groups until reassigned or reactivated.
-          </p>
           <select
             value={groupManageFilter}
             onChange={(e) => setGroupManageFilter(e.target.value as 'all' | 'active' | 'inactive')}
@@ -808,6 +807,7 @@ export default function Page() {
             </button>
           </div>
         </div>
+        </details>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <select
             value={customerManageFilter}
@@ -852,6 +852,23 @@ export default function Page() {
               </option>
             ))}
           </select>
+          <select
+            value={storeId}
+            onChange={(e) => {
+              setStoreId(e.target.value);
+              setCtxStoreId(e.target.value);
+            }}
+            aria-label="Sale store"
+          >
+            <option value="">Store (required to confirm orders)</option>
+            {stores
+              .filter((s) => s.is_active !== false)
+              .map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.code} — {s.name}
+              </option>
+            ))}
+          </select>
           {customerId ? (
             <button
               type="button"
@@ -872,47 +889,6 @@ export default function Page() {
                 : 'Deactivate'}
             </button>
           ) : null}
-          <select
-            value={
-              customerId &&
-              (customers.find((c) => c.id === customerId)?.status || 'active') !== 'inactive'
-                ? customerId
-                : ''
-            }
-            onChange={(e) => setCustomerId(e.target.value)}
-            title="Customer for new sales"
-            aria-label="Sale customer"
-          >
-            <option value="">Sale customer</option>
-            {customers
-              .filter((c) => c.status !== 'inactive')
-              .map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.code ? `${c.code} — ` : ''}
-                {c.name}
-                {c.profile_type === 'walk_in' ? ' (walk-in)' : ''}
-                {c.customer_group ? ` [${c.customer_group.name}]` : ''}
-                {c.email ? ` (${c.email})` : ''}
-              </option>
-            ))}
-          </select>
-          <select
-            value={storeId}
-            onChange={(e) => {
-              setStoreId(e.target.value);
-              setCtxStoreId(e.target.value);
-            }}
-            aria-label="Sale store"
-          >
-            <option value="">Store (required to confirm orders)</option>
-            {stores
-              .filter((s) => s.is_active !== false)
-              .map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.code} — {s.name}
-              </option>
-            ))}
-          </select>
           <input
             aria-label="SO delivery date"
             type="text"
@@ -928,23 +904,39 @@ export default function Page() {
             aria-label="SO delivery address"
             style={{ minWidth: 180 }}
           />
+          <details className="sales-more">
+            <summary>Currency</summary>
           <input
             value={currency}
             onChange={(e) => setCurrency(e.target.value.toUpperCase())}
-            placeholder="Currency (blank=base)"
+            placeholder="Currency"
             aria-label="Sales invoice currency"
             pattern="[A-Z]{3}"
             maxLength={3}
-            title="ISO-4217 currency (blank = company base)"
             style={{ width: 140 }}
           />
           <input
             value={exchangeRate}
             onChange={(e) => setExchangeRate(e.target.value)}
-            placeholder="FX rate (optional)"
+            placeholder="Exchange rate"
             style={{ width: 120 }}
             aria-label="Sales invoice FX rate"
           />
+          <input
+            value={customerLat}
+            onChange={(e) => setCustomerLat(e.target.value)}
+            placeholder="Latitude"
+            style={{ width: 90 }}
+            aria-label="Customer latitude"
+          />
+          <input
+            value={customerLng}
+            onChange={(e) => setCustomerLng(e.target.value)}
+            placeholder="Longitude"
+            style={{ width: 90 }}
+            aria-label="Customer longitude"
+          />
+          </details>
           <input
             value={customerName}
             onChange={(e) => setCustomerName(e.target.value)}
@@ -1006,22 +998,6 @@ export default function Page() {
             aria-label="Customer address"
             style={{ minWidth: 160 }}
           />
-          <input
-            value={customerLat}
-            onChange={(e) => setCustomerLat(e.target.value)}
-            placeholder="Lat"
-            style={{ width: 90 }}
-            title="GPS latitude (−90…90)"
-            aria-label="Customer latitude"
-          />
-          <input
-            value={customerLng}
-            onChange={(e) => setCustomerLng(e.target.value)}
-            placeholder="Lng"
-            style={{ width: 90 }}
-            title="GPS longitude (−180…180)"
-            aria-label="Customer longitude"
-          />
           <select
             value={customerGroupId}
             onChange={(e) => setCustomerGroupId(e.target.value)}
@@ -1060,16 +1036,18 @@ export default function Page() {
         {customerId &&
           (customers.find((c) => c.id === customerId)?.status || 'active') === 'inactive' && (
             <p className="muted" style={{ margin: 0 }}>
-              Inactive — hidden from new sale / quote / order / POS pickers; existing documents can still
-              settle.
+              Inactive — not shown on new sales. Existing documents can still be settled.
             </p>
           )}
         {customerId ? (
+          <details className="sales-more">
+            <summary>Contacts</summary>
           <PartyContactsPanel
             kind="customer"
             partyId={customerId}
             partyLabel={customers.find((c) => c.id === customerId)?.name || 'Selected customer'}
           />
+          </details>
         ) : null}
           </div>
         </div>
@@ -1175,10 +1153,6 @@ export default function Page() {
             style={{ minWidth: 180 }}
           />
         </div>
-        <p className="muted" style={{ margin: '4px 0 0', fontSize: 12 }}>
-          Line discount is stored on the line (tax before discount). Header discount reduces the
-          document total — same model as Purchasing invoices.
-        </p>
         <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8 }}>
           <input
             type="checkbox"
@@ -1190,18 +1164,26 @@ export default function Page() {
         </label>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button onClick={createQuotation} aria-label="Create quotation">
-            Create quotation
+            Save quote
           </button>
           <button onClick={createOrder} aria-label="Create order">
-            Create order
+            Save order
           </button>
           <button onClick={createInvoice} aria-label="Create invoice">
-            Create invoice
+            Save invoice
           </button>
         </div>
+        {(error || message) ? (
+          <p className={error ? 'sales-flash sales-flash-err' : 'sales-flash sales-flash-ok'} role={error ? 'alert' : undefined}>
+            {error || message}
+          </p>
+        ) : null}
           </div>
         </div>
       </div>
+      </div>
+      </div>
+      ) : null}
 
       {tab === 'quotations' && (
         <>
@@ -1211,24 +1193,18 @@ export default function Page() {
               <input
                 value={quoteRejectReason}
                 onChange={(e) => setQuoteRejectReason(e.target.value)}
-                placeholder="Required before Reject"
+                placeholder="Required to reject"
                 aria-label="Quotation reject reason"
-                title="Required reason for Reject (1–500 chars; letters/digits required)"
-                style={{ minWidth: 280 }}
               />
             </label>
-            <p className="muted" style={{ marginTop: 6 }}>
-              Used by Reject on draft/sent quotations (stored as <code>rejection_reason</code>).
-            </p>
             <label style={{ display: 'block', marginTop: 8 }}>
-              Email override{' '}
+              Email to{' '}
               <input
                 type="email"
                 value={docEmailTo}
                 onChange={(e) => setDocEmailTo(e.target.value)}
-                placeholder="Optional to= (omit → customer email)"
+                placeholder="Optional — uses customer email if blank"
                 aria-label="Document email override to"
-                style={{ minWidth: 280 }}
               />
             </label>
           </div>
@@ -1360,16 +1336,10 @@ export default function Page() {
               <input
                 value={soCancelReason}
                 onChange={(e) => setSoCancelReason(e.target.value)}
-                placeholder="Required before Cancel"
-                title="Required cancel reason (1–500 chars; letters/digits required)"
+                placeholder="Required to cancel"
                 aria-label="Sales order cancel reason"
-                style={{ minWidth: 280 }}
               />
             </label>
-            <p className="muted" style={{ marginTop: 6 }}>
-              Appended to order notes and audit (<code>POST .../orders/.../cancel</code>{' '}
-              {'{ reason }'}).
-            </p>
           </div>
           <select
             value={orderManageFilter}
@@ -1533,46 +1503,31 @@ export default function Page() {
         <>
           <div className="card" style={{ marginBottom: 12 }}>
             <label>
-              Credit override reason{' '}
+              Credit override{' '}
               <input
                 value={creditOverrideReason}
                 onChange={(e) => setCreditOverrideReason(e.target.value)}
-                placeholder="Required when posting over credit limit"
-                style={{ minWidth: 300 }}
-                title="Required on over-limit confirm (1–500 chars; letters/digits required)"
+                placeholder="If posting over credit limit"
                 aria-label="Credit override reason"
               />
             </label>
-            <p className="muted" style={{ marginTop: 6 }}>
-              Used when Post hits credit limit and you confirm manager override (sent as{' '}
-              <code>override_reason</code>).
-            </p>
-          </div>
-          <div className="card" style={{ marginBottom: 12 }}>
-            <label>
+            <label style={{ display: 'block', marginTop: 8 }}>
               Cancel reason{' '}
               <input
                 value={siCancelReason}
                 onChange={(e) => setSiCancelReason(e.target.value)}
-                placeholder="Required before Cancel"
-                title="Required cancel reason (1–500 chars; letters/digits required)"
+                placeholder="Required to cancel a draft"
                 aria-label="Sales invoice cancel reason"
-                style={{ minWidth: 280 }}
               />
             </label>
-            <p className="muted" style={{ marginTop: 6 }}>
-              Appended to draft invoice notes and audit (<code>POST .../invoices/.../cancel</code>{' '}
-              {'{ reason }'}). Draft only.
-            </p>
             <label style={{ display: 'block', marginTop: 8 }}>
-              Email override{' '}
+              Email to{' '}
               <input
                 type="email"
                 value={docEmailTo}
                 onChange={(e) => setDocEmailTo(e.target.value)}
-                placeholder="Optional to= (omit → customer email)"
+                placeholder="Optional — uses customer email if blank"
                 aria-label="Document email override to"
-                style={{ minWidth: 280 }}
               />
             </label>
           </div>
@@ -1796,16 +1751,10 @@ export default function Page() {
               <input
                 value={srCancelReason}
                 onChange={(e) => setSrCancelReason(e.target.value)}
-                placeholder="Required before Cancel"
-                title="Required cancel reason (1–500 chars; letters/digits required)"
+                placeholder="Required to cancel"
                 aria-label="Sales return cancel reason"
-                style={{ minWidth: 280 }}
               />
             </label>
-            <p className="muted" style={{ marginTop: 6 }}>
-              Appended to draft return notes and audit (<code>POST .../returns/.../cancel</code>{' '}
-              {'{ reason }'}). Draft only.
-            </p>
           </div>
         <select
           value={returnManageFilter}
@@ -1907,10 +1856,19 @@ export default function Page() {
       )}
 
       {selected && (
-        <div className="card" style={{ marginTop: 16 }}>
-          <h3>
-            {selected.invoice_number || 'Selected'} — {selected.status}
-          </h3>
+        <div className="sales-drawer-backdrop" onClick={() => setSelected(null)}>
+        <div className="sales-drawer" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Document details">
+          <div className="sales-drawer-head">
+            <h2>
+              {selected.invoice_number || selected.quotation_number || selected.order_number || selected.return_number || 'Document'} — {selected.status}
+            </h2>
+            <button type="button" onClick={() => setSelected(null)}>Close</button>
+          </div>
+          {(error || message) ? (
+            <p className={error ? 'sales-flash sales-flash-err' : 'sales-flash sales-flash-ok'} role={error ? 'alert' : undefined}>
+              {error || message}
+            </p>
+          ) : null}
           {selected.emailed_to && (
             <p className="muted" style={{ marginBottom: 8 }}>
               Last emailed to {selected.emailed_to}
@@ -2005,7 +1963,8 @@ export default function Page() {
             </div>
           )}
         </div>
+        </div>
       )}
-    </>
+    </div>
   );
 }
