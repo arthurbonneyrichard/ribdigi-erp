@@ -33,8 +33,7 @@ def test_product_category_update_tax_rate_id_schema():
 def test_product_category_update_tax_rate_id_ui_and_docs():
     page = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
     assert "Edit category tax rate" in page
-    assert "tax_rate_id: value" in page
-    assert "const value = e.target.value.trim() || null" in page
+    assert "tax_rate_id: catTaxRateId.trim() || null" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Category update tax_rate_id OpenAPI" in agents
     assert "UuidIdValue" in agents

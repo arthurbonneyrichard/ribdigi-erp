@@ -21,6 +21,8 @@ def test_category_code_value_schema():
         with pytest.raises(ValidationError):
             _code.validate_python(bad)
 
+    omit = ProductCategoryCreate.model_validate({"name": "Colas"})
+    assert omit.code is None
     ok = ProductCategoryCreate.model_validate({"code": "  COLA  ", "name": "Colas"})
     assert ok.code == "COLA"
     with pytest.raises(ValidationError):
@@ -36,14 +38,15 @@ def test_category_code_value_schema():
 
 def test_category_code_ui_and_docs():
     page = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
-    assert 'aria-label="Category code"' in page
-    assert "code: catCode.trim()" in page
+    assert "Category created" in page
+    assert "Main category" in page
+    assert "code: catCode.trim()" not in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Category code OpenAPI" in agents
     assert "CategoryCodeValue" in agents
     docs = (ROOT / "docs/API_DOCUMENTATION.md").read_text(encoding="utf-8")
     assert "CategoryCodeValue" in docs
-    assert "Category code" in docs
+    assert "CAT-NNNN" in docs
 
 
 @pytest.mark.asyncio

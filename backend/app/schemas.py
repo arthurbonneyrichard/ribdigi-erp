@@ -1462,10 +1462,10 @@ class StockCountCancel(BaseModel):
 class ProductCategoryCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    # Required category code ∈ CategoryCodeValue; blank/`!!!`/`http://…` → **422**
-    # (was free `str`; blank reached service **400**; punctuation/URL could persist).
+    # Optional category code ∈ CategoryCodeValue; omit/`null` → server allocates
+    # CAT-NNNN (existing codes preserved). If sent, blank/`!!!`/`http://…` → **422**.
     # Tenant uniqueness remains create_category **409**.
-    code: CategoryCodeValue
+    code: CategoryCodeValue | None = None
     # Required category label ∈ CategoryNameValue; blank/`!!!`/`http://…` → **422**
     # (was free `str`; blank/garbage could persist on catalog category create).
     name: CategoryNameValue

@@ -78,6 +78,29 @@ function categoryIndent(depth?: number) {
   return '\u00A0\u00A0'.repeat(d);
 }
 
+function categoryParentName(categories: any[], parentId?: string | null) {
+  if (!parentId) return 'Main category';
+  const parent = categories.find((c) => c.id === parentId);
+  return parent?.name || 'Main category';
+}
+
+function categoryDescendantIds(categories: any[], rootId: string) {
+  const kids: Record<string, string[]> = {};
+  for (const row of categories) {
+    const pid = row.parent_id || '';
+    (kids[pid] ||= []).push(row.id);
+  }
+  const out = new Set<string>();
+  const stack = [...(kids[rootId] || [])];
+  while (stack.length) {
+    const id = stack.pop() as string;
+    if (out.has(id)) continue;
+    out.add(id);
+    stack.push(...(kids[id] || []));
+  }
+  return out;
+}
+
 function stockStatusOf(p: { stock_qty?: number; reorder_level?: number; stock_status?: string }) {
   if (p.stock_status === 'red' || p.stock_status === 'yellow' || p.stock_status === 'green') {
     return p.stock_status;
@@ -248,10 +271,15 @@ export default function Page() {
   );
   const [lookupStock, setLookupStock] = useState<any | null>(null);
 
-  const [catCode, setCatCode] = useState('');
   const [catName, setCatName] = useState('');
   const [catParentId, setCatParentId] = useState('');
   const [catTaxRateId, setCatTaxRateId] = useState('');
+  const [catSearch, setCatSearch] = useState('');
+  const [catDrawerOpen, setCatDrawerOpen] = useState(false);
+  const [catEditId, setCatEditId] = useState('');
+  const [catTaxAdvanced, setCatTaxAdvanced] = useState(false);
+  const [catMenuId, setCatMenuId] = useState('');
+  const [catCollapsed, setCatCollapsed] = useState<Record<string, boolean>>({});
   const [taxRates, setTaxRates] = useState<any[]>([]);
   const [brandCode, setBrandCode] = useState('');
   const [brandName, setBrandName] = useState('');
@@ -1577,6 +1605,91 @@ export default function Page() {
     }
   }
 
+  function openCategoryCreate() {
+    setCatEditId('');
+    setCatName('');
+    setCatParentId('');
+    setCatTaxRateId('');
+    setCatTaxAdvanced(false);
+    setFormFlash({});
+    setCatDrawerOpen(true);
+  }
+
+  function openCategoryEdit(row: any) {
+    setCatEditId(row.id);
+    setCatName(row.name || '');
+    setCatParentId(row.parent_id || '');
+    setCatTaxRateId(row.tax_rate_id || '');
+    setCatTaxAdvanced(Boolean(row.tax_rate_id));
+    setFormFlash({});
+    setCatMenuId('');
+    setCatDrawerOpen(true);
+  }
+
+  async function saveCategory() {
+    if (saveBusy) return;
+    const name = catName.trim();
+    if (!name) {
+      setFormFlash({ err: 'Enter a category name' });
+      return;
+    }
+    setSaveBusy(true);
+    setFormFlash({});
+    try {
+      const body = {
+        name,
+        parent_id: catParentId.trim() || null,
+        tax_rate_id: catTaxRateId.trim() || null,
+      };
+      if (catEditId) {
+        await api(`/catalog/categories/${catEditId}`, {
+          method: 'PATCH',
+          body: JSON.stringify(body),
+        });
+        setFormFlash({ ok: 'Category updated' });
+      } else {
+        await api('/catalog/categories', {
+          method: 'POST',
+          body: JSON.stringify(body),
+        });
+        setFormFlash({ ok: 'Category created' });
+      }
+      await refresh();
+    } catch (err: any) {
+      setFormFlash({ err: err.message || 'Could not save category' });
+    } finally {
+      setSaveBusy(false);
+    }
+  }
+
+  async function setCategoryActive(row: any, isActive: boolean) {
+    setError('');
+    setCatMenuId('');
+    if (
+      !isActive &&
+      !window.confirm(
+        'Deactivate this category? Products stay in the catalog. You can activate the category again later.',
+      )
+    ) {
+      return;
+    }
+    try {
+      if (isActive) {
+        await api(`/catalog/categories/${row.id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ is_active: true }),
+        });
+        setMessage('Category activated');
+      } else {
+        await api(`/catalog/categories/${row.id}`, { method: 'DELETE' });
+        setMessage('Category deactivated');
+      }
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
   const selected = products.find((p) => p.id === selectedId);
   const managedProducts = products.filter((p) => {
     if (productManageFilter === 'all') return true;
@@ -1593,6 +1706,22 @@ export default function Page() {
       return filter === 'inactive' ? !active : active;
     });
   const managedCategories = byStatus(categories, categoryManageFilter);
+  const categoryQuery = catSearch.trim().toLowerCase();
+  const visibleCategories = managedCategories.filter((c) => {
+    if (categoryQuery) {
+      const parentName = categoryParentName(categories, c.parent_id).toLowerCase();
+      const hay = `${c.name || ''} ${c.path || ''} ${parentName}`.toLowerCase();
+      if (!hay.includes(categoryQuery)) return false;
+    }
+    if (categoryQuery) return true;
+    let pid = c.parent_id;
+    while (pid) {
+      if (catCollapsed[pid]) return false;
+      const parent = categories.find((x) => x.id === pid);
+      pid = parent?.parent_id;
+    }
+    return true;
+  });
   const managedBrands = byStatus(brands, brandManageFilter);
   const managedUnits = byStatus(units, unitManageFilter);
   const managedVariants = byStatus(variants, variantManageFilter);
@@ -2221,88 +2350,20 @@ export default function Page() {
       )}
 
       {tab === 'categories' && (
-        <div style={{ display: 'grid', gap: 16 }}>
-          <div className="card" style={{ display: 'grid', gap: 8 }}>
-            <h3>Category tree (BR-5.1)</h3>
-            <p className="muted" style={{ margin: 0 }}>
-              Hierarchical parent/child categories with codes. Optional category tax rate applies when
-              a product has no product-level rate (nearest parent wins). Product rate still overrides.
-            </p>
-            <input
-              value={catCode}
-              onChange={(e) => setCatCode(e.target.value)}
-              placeholder="Code"
-              aria-label="Category code"
-              title="Category code (1–40 chars; letters/digits required)"
-            />
-            <input
-              value={catName}
-              onChange={(e) => setCatName(e.target.value)}
-              placeholder="Name"
-              aria-label="Category name"
-              title="Category name (1–120 chars; letters/digits required)"
-            />
-            <select
-              value={catParentId}
-              onChange={(e) => setCatParentId(e.target.value)}
-              aria-label="Category parent"
-              title="Parent category (optional — root when blank)"
-            >
-              <option value="">Parent (optional — root)</option>
-              {categories
-                .filter((c) => c.is_active !== false)
-                .map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {categoryIndent(c.depth)}
-                    {categoryLabel(c)}
-                  </option>
-                ))}
-            </select>
-            <select
-              value={catTaxRateId}
-              onChange={(e) => setCatTaxRateId(e.target.value)}
-              aria-label="Category tax rate"
-              title="Category tax rate (optional — tenant default when blank)"
-            >
-              <option value="">Tax rate (optional — tenant default)</option>
-              {taxRates
-                .filter((r) => r.is_active !== false)
-                .map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name} ({r.rate}%){r.is_default ? ' · default' : ''}
-                  </option>
-                ))}
-            </select>
-            <button
-              onClick={async () => {
-                setError('');
-                try {
-                  const r = await api('/catalog/categories', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                      code: catCode.trim(),
-                      name: catName.trim(),
-                      parent_id: catParentId.trim() || null,
-                      tax_rate_id: catTaxRateId.trim() || null,
-                    }),
-                  });
-                  setCatCode('');
-                  setCatName('');
-                  setCatParentId('');
-                  setCatTaxRateId('');
-                  setFormFlash({ ok: `Category created: ${r.data?.path || r.data?.name || catName}` });
-                  await refresh();
-                } catch (err: any) {
-                  setFormFlash({ err: err.message });
-                }
-              }}
-              disabled={!catCode.trim() || !catName.trim() || saveBusy}
-              aria-label="Add category"
-            >
+        <div className="card cat-panel">
+          <div className="cat-head">
+            <h2 style={{ margin: 0 }}>Categories</h2>
+            <button type="button" onClick={openCategoryCreate} aria-label="Add category">
               Add category
             </button>
-            {formFlash.ok ? <p className="form-flash ok">{formFlash.ok}</p> : null}
-            {formFlash.err ? <p className="form-flash err">{formFlash.err}</p> : null}
+          </div>
+          <div className="cat-toolbar">
+            <input
+              value={catSearch}
+              onChange={(e) => setCatSearch(e.target.value)}
+              placeholder="Search categories"
+              aria-label="Search categories"
+            />
             <select
               value={categoryManageFilter}
               onChange={(e) =>
@@ -2315,142 +2376,218 @@ export default function Page() {
               <option value="active">Active only</option>
               <option value="inactive">Inactive only</option>
             </select>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
-              {managedCategories.map((c) => {
-                const rate = taxRates.find((r) => r.id === c.tax_rate_id);
-                const depth = Math.max(0, Number(c.depth) || 0);
-                return (
-                  <li
-                    key={c.id}
-                    style={{
-                      display: 'flex',
-                      gap: 8,
-                      alignItems: 'center',
-                      flexWrap: 'wrap',
-                      paddingLeft: depth * 16,
-                      borderLeft: depth ? '2px solid var(--line, #D4E5C4)' : undefined,
-                    }}
-                  >
-                    <span className="muted" style={{ minWidth: 220 }}>
-                      <strong style={{ color: 'inherit' }}>
-                        {c.code} — {c.name}
-                      </strong>
-                      {depth > 0 ? ` · ${c.path || ''}` : ''}
-                      {!c.is_active ? ' [inactive]' : ''}
-                      {rate
-                        ? ` · tax ${rate.name} (${rate.rate}%)`
-                        : c.tax_rate_id
-                          ? ' · tax set'
-                          : ' · tax inherit/default'}
-                    </span>
-                    {c.is_active === false ? (
-                      <button
-                        type="button"
-                        className="btn-ok"
-                        aria-label={`Activate category ${c.id}`}
-                        onClick={async () => {
-                          setError('');
-                          try {
-                            await api(`/catalog/categories/${c.id}`, {
-                              method: 'PATCH',
-                              body: JSON.stringify({ is_active: true }),
-                            });
-                            setMessage(`Category ${c.code} activated`);
-                            await refresh();
-                          } catch (err: any) {
-                            setError(err.message);
-                          }
-                        }}
-                      >
-                        Activate
-                      </button>
-                    ) : (
-                      <>
-                        <select
-                          aria-label={`Edit category parent ${c.code}`}
-                          value={c.parent_id || ''}
-                          onChange={async (e) => {
-                            setError('');
-                            try {
-                              const value = e.target.value.trim() || null;
-                              await api(`/catalog/categories/${c.id}`, {
-                                method: 'PATCH',
-                                body: JSON.stringify({ parent_id: value }),
-                              });
-                              setMessage(
-                                value
-                                  ? `Reparented ${c.code}`
-                                  : `${c.code} moved to root`,
-                              );
-                              await refresh();
-                            } catch (err: any) {
-                              setError(err.message);
-                            }
-                          }}
-                        >
-                          <option value="">Root (no parent)</option>
-                          {categories
-                            .filter((p) => p.id !== c.id && p.is_active !== false)
-                            .map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {categoryIndent(p.depth)}
-                                {categoryLabel(p)}
-                              </option>
-                            ))}
-                        </select>
-                        <select
-                          aria-label={`Edit category tax rate ${c.code}`}
-                          value={c.tax_rate_id || ''}
-                          onChange={async (e) => {
-                            setError('');
-                            try {
-                              const value = e.target.value.trim() || null;
-                              await api(`/catalog/categories/${c.id}`, {
-                                method: 'PATCH',
-                                body: JSON.stringify({ tax_rate_id: value }),
-                              });
-                              setMessage(
-                                value ? `Tax rate set on ${c.code}` : `Tax rate cleared on ${c.code}`,
-                              );
-                              await refresh();
-                            } catch (err: any) {
-                              setError(err.message);
-                            }
-                          }}
-                        >
-                          <option value="">Inherit / tenant default</option>
-                          {taxRates
-                            .filter((r) => r.is_active !== false)
-                            .map((r) => (
-                              <option key={r.id} value={r.id}>
-                                {r.name} ({r.rate}%)
-                              </option>
-                            ))}
-                        </select>
-                        <button
-                          type="button"
-                          className="btn-danger"
-                          aria-label={`Deactivate category ${c.id}`}
-                          onClick={async () => {
-                            setError('');
-                            try {
-                              await api(`/catalog/categories/${c.id}`, { method: 'DELETE' });
-                              setMessage('Category deactivated');
-                              await refresh();
-                            } catch (err: any) {
-                              setError(err.message);
-                            }
-                          }}
-                        >
-                          Deactivate
-                        </button>
-                      </>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
           </div>
+          {visibleCategories.length === 0 ? (
+            <div className="cat-empty">
+              <p style={{ margin: 0 }}>No categories yet.</p>
+              <p className="muted" style={{ margin: '8px 0 0' }}>
+                Add a main category, then nest others under it.
+              </p>
+              <button type="button" style={{ marginTop: 12 }} onClick={openCategoryCreate}>
+                Add category
+              </button>
+            </div>
+          ) : (
+            <div className="cat-table-wrap">
+              <table className="table cat-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Parent</th>
+                    <th>Status</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleCategories.map((c) => {
+                    const depth = Math.max(0, Number(c.depth) || 0);
+                    const hasKids = categories.some((x) => x.parent_id === c.id);
+                    const collapsed = Boolean(catCollapsed[c.id]);
+                    return (
+                      <tr key={c.id}>
+                        <td data-label="Name">
+                          <div
+                            className="cat-name-cell"
+                            style={{ paddingLeft: Math.min(depth, 6) * 14 }}
+                          >
+                            {hasKids ? (
+                              <button
+                                type="button"
+                                className="cat-twist"
+                                aria-label={collapsed ? `Expand ${c.name}` : `Collapse ${c.name}`}
+                                onClick={() =>
+                                  setCatCollapsed((prev) => ({ ...prev, [c.id]: !collapsed }))
+                                }
+                              >
+                                {collapsed ? '+' : '−'}
+                              </button>
+                            ) : (
+                              <span className="cat-twist-spacer" />
+                            )}
+                            <strong>{c.name}</strong>
+                          </div>
+                        </td>
+                        <td data-label="Parent">{categoryParentName(categories, c.parent_id)}</td>
+                        <td data-label="Status">{c.is_active === false ? 'Inactive' : 'Active'}</td>
+                        <td className="cat-actions">
+                          <button type="button" onClick={() => openCategoryEdit(c)} aria-label={`Edit ${c.name}`}>
+                            Edit
+                          </button>
+                          <div className="cat-menu">
+                            <button
+                              type="button"
+                              aria-label={`More actions for ${c.name}`}
+                              onClick={() => setCatMenuId(catMenuId === c.id ? '' : c.id)}
+                            >
+                              ⋯
+                            </button>
+                            {catMenuId === c.id ? (
+                              <div className="cat-menu-pop">
+                                {c.is_active === false ? (
+                                  <button type="button" className="btn-ok" onClick={() => setCategoryActive(c, true)}>
+                                    Activate
+                                  </button>
+                                ) : (
+                                  <button type="button" className="btn-danger" onClick={() => setCategoryActive(c, false)}>
+                                    Deactivate
+                                  </button>
+                                )}
+                              </div>
+                            ) : null}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {catDrawerOpen ? (
+            <>
+              <div
+                className="inv-drawer-back"
+                onClick={() => !saveBusy && setCatDrawerOpen(false)}
+                aria-hidden
+              />
+              <aside className="inv-drawer" aria-label={catEditId ? 'Edit category' : 'Add category'}>
+                <button type="button" onClick={() => setCatDrawerOpen(false)} disabled={saveBusy}>
+                  Close
+                </button>
+                <h3>{catEditId ? 'Edit category' : 'Add category'}</h3>
+                <label className="muted" htmlFor="cat-name-field">
+                  Name
+                </label>
+                <input
+                  id="cat-name-field"
+                  value={catName}
+                  onChange={(e) => setCatName(e.target.value)}
+                  placeholder="Name"
+                  aria-label="Category name"
+                  title="Category name (1–120 chars; letters/digits required)"
+                />
+                <label className="muted" htmlFor="cat-parent-field">
+                  Parent
+                </label>
+                {catEditId ? (
+                  <select
+                    id="cat-parent-field"
+                    value={catParentId}
+                    onChange={(e) => setCatParentId(e.target.value)}
+                    aria-label="Edit category parent"
+                    title="Main category when blank"
+                  >
+                    <option value="">Main category</option>
+                    {categories
+                      .filter((c) => c.is_active !== false)
+                      .filter((c) => c.id !== catEditId && !categoryDescendantIds(categories, catEditId).has(c.id))
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {categoryIndent(c.depth)}
+                          {c.name}
+                        </option>
+                      ))}
+                  </select>
+                ) : (
+                  <select
+                    id="cat-parent-field"
+                    value={catParentId}
+                    onChange={(e) => setCatParentId(e.target.value)}
+                    aria-label="Category parent"
+                    title="Main category when blank"
+                  >
+                    <option value="">Main category</option>
+                    {categories
+                      .filter((c) => c.is_active !== false)
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {categoryIndent(c.depth)}
+                          {c.name}
+                        </option>
+                      ))}
+                  </select>
+                )}
+                <p className="muted" style={{ margin: 0 }}>
+                  Uses your company default tax unless you set a different rate.
+                </p>
+                <button
+                  type="button"
+                  className="cat-advanced"
+                  onClick={() => setCatTaxAdvanced((v) => !v)}
+                  aria-expanded={catTaxAdvanced}
+                >
+                  {catTaxAdvanced ? 'Hide tax rate' : 'Advanced: tax rate'}
+                </button>
+                {catTaxAdvanced ? (
+                  catEditId ? (
+                  <select
+                    value={catTaxRateId}
+                    onChange={(e) => setCatTaxRateId(e.target.value)}
+                    aria-label="Edit category tax rate"
+                    title="Optional tax rate for this category"
+                  >
+                    <option value="">Company default</option>
+                    {taxRates
+                      .filter((r) => r.is_active !== false)
+                      .map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.name} ({r.rate}%){r.is_default ? ' · default' : ''}
+                        </option>
+                      ))}
+                  </select>
+                  ) : (
+                  <select
+                    value={catTaxRateId}
+                    onChange={(e) => setCatTaxRateId(e.target.value)}
+                    aria-label="Category tax rate"
+                    title="Optional tax rate for this category"
+                  >
+                    <option value="">Company default</option>
+                    {taxRates
+                      .filter((r) => r.is_active !== false)
+                      .map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.name} ({r.rate}%){r.is_default ? ' · default' : ''}
+                        </option>
+                      ))}
+                  </select>
+                  )
+                ) : null}
+                <div className="cat-save-row">
+                  <button
+                    type="button"
+                    onClick={saveCategory}
+                    disabled={!catName.trim() || saveBusy}
+                    aria-label={catEditId ? 'Save category' : 'Add category'}
+                  >
+                    {saveBusy ? 'Saving…' : catEditId ? 'Save' : 'Add category'}
+                  </button>
+                  {formFlash.ok ? <p className="form-flash ok">{formFlash.ok}</p> : null}
+                  {formFlash.err ? <p className="form-flash err">{formFlash.err}</p> : null}
+                </div>
+              </aside>
+            </>
+          ) : null}
         </div>
       )}
 

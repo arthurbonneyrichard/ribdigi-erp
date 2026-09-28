@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,6 +25,8 @@ DEFAULT_CATEGORIES = (
     ("BEV", "Beverages", None),
     ("FOOD", "Food", None),
 )
+
+_CAT_CODE_RE = re.compile(r"^CAT-(\d+)$", re.IGNORECASE)
 
 
 def serialize_category(row: m.ProductCategory) -> dict:
@@ -256,26 +260,56 @@ async def _validate_category_tax_rate(
     return rate.id
 
 
+async def allocate_category_code(db: AsyncSession, tenant_id: str) -> str:
+    """Allocate CAT-NNNN under a tenant row lock (same idea as POS numbers).
+
+    Existing codes (GEN/BEV/FOOD and any client-supplied values) are left unchanged.
+    """
+    await db.execute(select(m.Tenant).where(m.Tenant.id == tenant_id).with_for_update())
+    taken = {
+        str(c).strip().upper()
+        for c in await schema_compat.existing_codes(db, "product_categories", tenant_id)
+    }
+    seq = 0
+    for existing in taken:
+        match = _CAT_CODE_RE.match(existing)
+        if match:
+            seq = max(seq, int(match.group(1)))
+    n = seq + 1
+    for _ in range(10_000):
+        candidate = f"CAT-{n:04d}"
+        if candidate not in taken:
+            return candidate
+        n += 1
+    raise HTTPException(status_code=500, detail="The server could not complete this request.")
+
+
 async def create_category(
     db: AsyncSession,
     *,
     tenant_id: str,
-    code: str,
+    code: str | None = None,
     name: str,
     parent_id: str | None = None,
     tax_rate_id: str | None = None,
 ) -> m.ProductCategory:
-    # OpenAPI CategoryCodeValue → 422; service defense-in-depth → 400.
-    code = require_honest_narrative(
-        (code or "").strip().upper(), label="category code", max_length=40
-    )
     name = require_honest_narrative(name, label="category name", max_length=120)
+    supplied = (code or "").strip()
+    if supplied:
+        # OpenAPI CategoryCodeValue → 422; service defense-in-depth → 400.
+        code = require_honest_narrative(supplied, label="category code", max_length=40).upper()
+    else:
+        code = await allocate_category_code(db, tenant_id)
     if parent_id:
         parent = await schema_compat.get_mapped(db, m.ProductCategory, parent_id)
         if not parent or parent.tenant_id != tenant_id:
             raise HTTPException(status_code=404, detail="Parent category not found")
     tax_rate_id = await _validate_category_tax_rate(db, tenant_id=tenant_id, tax_rate_id=tax_rate_id)
-    if code in await schema_compat.existing_codes(db, "product_categories", tenant_id):
+    taken = {
+        str(c).strip().upper()
+        for c in await schema_compat.existing_codes(db, "product_categories", tenant_id)
+    }
+    if code in taken:
         raise HTTPException(status_code=409, detail="Category code exists")
     row = await schema_compat.insert_and_get(
         db,

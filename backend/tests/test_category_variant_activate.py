@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_category_variant_activate_ui_wired():
     inventory = (ROOT / "frontend/app/(dashboard)/inventory/page.tsx").read_text(encoding="utf-8")
-    assert "Category ${c.code} activated" in inventory
+    assert "Category activated" in inventory
     assert "activateVariant" in inventory
     assert "Variant activated" in inventory
     assert 'JSON.stringify({ is_active: true })' in inventory
