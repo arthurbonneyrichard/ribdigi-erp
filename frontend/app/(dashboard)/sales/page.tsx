@@ -1728,8 +1728,6 @@ export default function Page() {
         </>
       )}
 
-      )}
-
       {tab === 'coupons' && (
         <div className="card cat-panel">
           <h3>Coupons</h3>

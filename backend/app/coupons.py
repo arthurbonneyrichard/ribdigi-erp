@@ -311,6 +311,17 @@ async def record_redemption(
     source_type: str,
     source_id: str,
 ) -> m.SalesCouponRedemption:
+    existing = (
+        await db.execute(
+            select(m.SalesCouponRedemption).where(
+                m.SalesCouponRedemption.tenant_id == tenant_id,
+                m.SalesCouponRedemption.source_type == source_type,
+                m.SalesCouponRedemption.source_id == source_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if existing:
+        return existing
     row = m.SalesCouponRedemption(
         tenant_id=tenant_id,
         coupon_id=coupon_id,
@@ -323,3 +334,63 @@ async def record_redemption(
     db.add(row)
     await db.flush()
     return row
+
+
+async def product_category_ids(db: AsyncSession, product_ids: list[str]) -> list[str]:
+    cats: list[str] = []
+    for pid in product_ids:
+        if not pid:
+            continue
+        prod = await db.get(m.Product, pid)
+        if prod and prod.category_id:
+            cats.append(prod.category_id)
+    return cats
+
+
+async def resolve_optional_coupon(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    code: str | None,
+    header_base: float,
+    product_ids: list[str],
+    customer_id: str | None = None,
+) -> dict | None:
+    if not code or not str(code).strip():
+        return None
+    return await apply_coupon(
+        db,
+        tenant_id=tenant_id,
+        code=code,
+        header_base=header_base,
+        product_ids=product_ids,
+        category_ids=await product_category_ids(db, product_ids),
+        customer_id=customer_id,
+    )
+
+
+async def release_redemptions(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    source_type: str,
+    source_id: str,
+) -> int:
+    rows = (
+        (
+            await db.execute(
+                select(m.SalesCouponRedemption).where(
+                    m.SalesCouponRedemption.tenant_id == tenant_id,
+                    m.SalesCouponRedemption.source_type == source_type,
+                    m.SalesCouponRedemption.source_id == source_id,
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    for row in rows:
+        await db.delete(row)
+    if rows:
+        await db.flush()
+    return len(rows)
