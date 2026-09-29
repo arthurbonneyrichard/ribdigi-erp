@@ -8704,10 +8704,13 @@ async def pos_sale(
 async def pos_search(
     q: Annotated[ProductSearchQueryValue, Query()] = "",
     barcode: Annotated[ProductBarcodeValue | None, Query()] = None,
+    store_id: Annotated[UuidIdValue | None, Query()] = None,
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     from app.tax import resolve_product_tax
+    from app import store_access as store_access_svc
+    from app.inventory import store_warehouse_on_hand
 
     stmt = select(m.Product).where(
         m.Product.tenant_id == claims["tenant_id"],
@@ -8832,6 +8835,38 @@ async def pos_search(
                     }
                 )
             out.append(row)
+
+    scoped_store = (store_id or "").strip() or None
+    if scoped_store:
+        await stores_svc.get_store(db, claims["tenant_id"], scoped_store)
+        await store_access_svc.assert_store_access(
+            db,
+            tenant_id=claims["tenant_id"],
+            user_id=claims["sub"],
+            store_id=scoped_store,
+        )
+        product_ids = {str(r.get("product_id") or "") for r in out if r.get("product_id")}
+        warehouse_qty = await store_warehouse_on_hand(
+            db, claims["tenant_id"], scoped_store, product_ids
+        )
+        for r in out:
+            pid = str(r.get("product_id") or "")
+            parent = product_by_id.get(pid)
+            r["stock_qty"] = money_json(warehouse_qty.get(pid, 0))
+            r["is_low_stock"] = catalog_meta_svc.qty_is_low_stock(
+                r["stock_qty"],
+                minimum_stock=getattr(parent, "minimum_stock", 0) if parent is not None else 0,
+                reorder_level=parent.reorder_level if parent is not None else 0,
+            )
+    else:
+        for r in out:
+            pid = str(r.get("product_id") or "")
+            parent = product_by_id.get(pid)
+            r["is_low_stock"] = catalog_meta_svc.qty_is_low_stock(
+                r["stock_qty"],
+                minimum_stock=getattr(parent, "minimum_stock", 0) if parent is not None else 0,
+                reorder_level=parent.reorder_level if parent is not None else 0,
+            )
     return env(out[:40])
 
 

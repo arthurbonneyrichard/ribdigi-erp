@@ -1371,3 +1371,27 @@
   .purch-desk .sales-toolbar{flex-wrap:wrap;overflow-x:visible}
 }
 
+/* Credit / supplier balances — keep catalog list + coupon/income styles intact */
+.credit-page{
+  display:flex;flex-direction:column;gap:14px;min-width:0;max-width:100%;overflow-x:hidden
+}
+.credit-page h1{margin:0 0 4px}
+.credit-page > .muted{margin:0}
+.credit-page .erp-banner{margin:0}
+.credit-page .erp-tabs{
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0
+}
+.credit-page .erp-tabs button{min-height:40px;padding:8px 14px}
+.credit-page .credit-kpis.erp-kpis,.credit-page .erp-kpis{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0;align-items:stretch
+}
+.credit-page .credit-kpis > .card{margin:0;min-width:0;height:auto}
+.credit-page .credit-commitments{margin:0}
+.credit-page .credit-bill-info.erp-split{margin:0;align-items:start}
+.credit-page .credit-compact-card{height:auto;padding:12px 14px}
+.credit-page .credit-compact-card h3{margin:0 0 6px;font-size:1rem}
+.credit-page .credit-compact-card p{margin:0 0 10px}
+.credit-page .list-table-wrap{max-width:100%}
+@media(max-width:720px){
+  .credit-page .credit-kpis.erp-kpis,.credit-page .erp-kpis{grid-template-columns:1fr;gap:10px}
+}

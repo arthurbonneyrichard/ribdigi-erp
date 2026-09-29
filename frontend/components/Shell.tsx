@@ -44,6 +44,7 @@ const TENANT_ITEMS: NavItem[] = [
   ['Expiry', '/inventory?tab=expiry', 'inventory'],
   ['Batches', '/inventory?tab=batches', 'inventory'],
   ['Sales', '/sales', 'sales'],
+  ['Customers', '/customers', 'sales'],
   ['POS', '/pos', 'pos'],
   ['Suppliers', '/purchasing?tab=suppliers', 'purchasing'],
   ['Orders', '/purchasing?tab=orders', 'purchasing'],
@@ -106,6 +107,7 @@ const TENANT_NAV_GROUPS: NavGroup[] = [
     label: 'Sales and POS',
     items: [
       ['Sales', '/sales', 'sales'],
+      ['Customers', '/customers', 'sales'],
       ['POS', '/pos', 'pos'],
     ],
   },

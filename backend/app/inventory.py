@@ -659,3 +659,37 @@ async def list_product_warehouse_stock(
         "items": items,
         "total_quantity": money_json(round(sum(i["quantity"] for i in items), 3)),
     }
+
+
+async def store_warehouse_on_hand(
+    db: AsyncSession,
+    tenant_id: str,
+    store_id: str,
+    product_ids: set[str],
+) -> dict[str, float]:
+    """Store-warehouse quantity by product_id. Missing rows are 0. Does not create warehouses."""
+    if not product_ids:
+        return {}
+    wh = (
+        await db.execute(
+            select(m.Warehouse).where(
+                m.Warehouse.tenant_id == tenant_id,
+                m.Warehouse.store_id == store_id,
+            )
+        )
+    ).scalar_one_or_none()
+    qty = {pid: 0.0 for pid in product_ids}
+    if not wh:
+        return qty
+    rows = (
+        await db.execute(
+            select(m.WarehouseStock).where(
+                m.WarehouseStock.tenant_id == tenant_id,
+                m.WarehouseStock.warehouse_id == wh.id,
+                m.WarehouseStock.product_id.in_(product_ids),
+            )
+        )
+    ).scalars().all()
+    for row in rows:
+        qty[row.product_id] = money_json(row.quantity or 0)
+    return qty

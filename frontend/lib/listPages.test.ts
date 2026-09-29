@@ -2,8 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   LIST_PAGE_SIZE,
+  matchesCustomerList,
   matchesProductList,
   paginate,
+  sortCustomers,
   sortProducts,
 } from './listPages';
 
@@ -54,4 +56,43 @@ test('sort products by qty and name', () => {
   ];
   assert.equal(sortProducts(rows, 'name', 1)[0].name, 'A');
   assert.equal(sortProducts(rows, 'qty', -1)[0].stock_qty, 9);
+});
+
+test('customer filters search status group and profile', () => {
+  const c = {
+    name: 'Ama Stores',
+    code: 'C-1',
+    email: 'ama@example.com',
+    phone: '+233200000000',
+    category: 'Retail',
+    status: 'active',
+    profile_type: 'registered',
+    customer_group_id: 'g1',
+    customer_group: { name: 'Gold' },
+  };
+  assert.equal(
+    matchesCustomerList(c, { q: 'ama', status: 'all', groupId: '', profileType: 'all' }),
+    true,
+  );
+  assert.equal(
+    matchesCustomerList(c, { q: '', status: 'inactive', groupId: '', profileType: 'all' }),
+    false,
+  );
+  assert.equal(
+    matchesCustomerList(c, { q: '', status: 'all', groupId: 'g2', profileType: 'all' }),
+    false,
+  );
+  assert.equal(
+    matchesCustomerList(c, { q: '', status: 'all', groupId: '', profileType: 'walk_in' }),
+    false,
+  );
+});
+
+test('sort customers by name and balance', () => {
+  const rows = [
+    { name: 'B', balance: 2 },
+    { name: 'A', balance: 9 },
+  ];
+  assert.equal(sortCustomers(rows, 'name', 1)[0].name, 'A');
+  assert.equal(sortCustomers(rows, 'balance', -1)[0].balance, 9);
 });

@@ -44,3 +44,13 @@ def test_serialize_category_and_product():
     assert data["has_image"] is True
     assert data["category_id"] == "c1"
     assert data["sku"] == "W1"
+
+
+def test_low_stock_floor_uses_max_of_minimum_and_reorder():
+    from app.catalog_meta import low_stock_floor, qty_is_low_stock
+
+    assert low_stock_floor(3, 10) == 10
+    assert low_stock_floor(12, 10) == 12
+    assert qty_is_low_stock(10, minimum_stock=3, reorder_level=10) is True
+    assert qty_is_low_stock(11, minimum_stock=3, reorder_level=10) is False
+    assert qty_is_low_stock(0, minimum_stock=0, reorder_level=0) is True

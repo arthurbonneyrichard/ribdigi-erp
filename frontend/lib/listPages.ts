@@ -85,3 +85,60 @@ export function sortByKey<T>(rows: T[], get: (row: T) => string | number, dir: S
   });
   return copy;
 }
+
+export type CustomerListFilters = {
+  q: string;
+  status: 'all' | 'active' | 'inactive';
+  groupId: string;
+  profileType: 'all' | 'registered' | 'walk_in';
+};
+
+export function matchesCustomerList(
+  c: {
+    name?: string | null;
+    code?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    category?: string | null;
+    status?: string | null;
+    profile_type?: string | null;
+    customer_group_id?: string | null;
+    customer_group?: { name?: string } | null;
+  },
+  f: CustomerListFilters,
+) {
+  const q = f.q.trim().toLowerCase();
+  if (q) {
+    const hay = `${c.name || ''} ${c.code || ''} ${c.email || ''} ${c.phone || ''} ${c.category || ''} ${
+      c.customer_group?.name || ''
+    }`.toLowerCase();
+    if (!hay.includes(q)) return false;
+  }
+  const st = c.status || 'active';
+  if (f.status === 'active' && st === 'inactive') return false;
+  if (f.status === 'inactive' && st !== 'inactive') return false;
+  if (f.groupId && String(c.customer_group_id || '') !== f.groupId) return false;
+  if (f.profileType !== 'all' && (c.profile_type || 'registered') !== f.profileType) return false;
+  return true;
+}
+
+export function sortCustomers(rows: any[], key: string, dir: SortDir) {
+  const copy = rows.slice();
+  copy.sort((a, b) => {
+    switch (key) {
+      case 'code':
+        return compareText(a.code, b.code, dir);
+      case 'status':
+        return compareText(a.status || 'active', b.status || 'active', dir);
+      case 'group':
+        return compareText(a.customer_group?.name, b.customer_group?.name, dir);
+      case 'email':
+        return compareText(a.email, b.email, dir);
+      case 'balance':
+        return (Number(a.balance || 0) - Number(b.balance || 0)) * dir;
+      default:
+        return compareText(a.name, b.name, dir);
+    }
+  });
+  return copy;
+}

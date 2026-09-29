@@ -164,6 +164,21 @@ def compute_stock_status(stock_qty: float, reorder_level: float) -> dict:
     return {"status": code, "label": label}
 
 
+def low_stock_floor(minimum_stock: float | None = None, reorder_level: float | None = None) -> float:
+    """Policy floor: max(minimum_stock, reorder_level). Missing values treat as 0."""
+    return max(money_json(minimum_stock or 0), money_json(reorder_level or 0))
+
+
+def qty_is_low_stock(
+    qty: float,
+    *,
+    minimum_stock: float | None = None,
+    reorder_level: float | None = None,
+) -> bool:
+    """True when on-hand is at or below the policy floor (including empty when floor is 0)."""
+    return money_json(qty or 0) <= low_stock_floor(minimum_stock, reorder_level)
+
+
 def serialize_product(row: m.Product) -> dict:
     def _opt_float(value) -> float | None:
         return None if value is None else money_json(value)

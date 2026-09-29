@@ -937,6 +937,17 @@ export default function Page() {
         )}
       </div>
       )}
+      {loading ? (
+        <p className="muted" role="status">
+          Loading report…
+        </p>
+      ) : null}
+      {!loading && tab !== 'schedules' && !data && !error ? (
+        <div className="list-empty">
+          <p>No report data for this view.</p>
+          <p className="muted">Apply filters, or select an account for the statement.</p>
+        </div>
+      ) : null}
 
       {tab === 'summary' && data && (
         <div className="grid">
@@ -983,6 +994,7 @@ export default function Page() {
             {data.products?.store_id ? ' · store filtered' : ''}
             {data.products?.category_name ? ` · ${data.products.category_name}` : ''}
           </p>
+          <div className="list-table-wrap">
           <table className="table">
             <thead>
               <tr>
@@ -1005,6 +1017,7 @@ export default function Page() {
               ))}
             </tbody>
           </table>
+          </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
             <button
               onClick={() => download('xlsx', 'sales_returns')}
@@ -1066,6 +1079,7 @@ export default function Page() {
             refunded {data.returns?.refunded_amount ?? 0}
             {data.returns?.store_name ? ` · ${data.returns.store_name}` : ""}
           </p>
+          <div className="list-table-wrap">
           <table className="table">
             <thead>
               <tr>
@@ -1097,6 +1111,7 @@ export default function Page() {
               )}
             </tbody>
           </table>
+          </div>
           {(data.returns?.by_reason || []).length > 0 && (
             <>
               <h4 style={{ marginTop: 12 }}>Returns by reason</h4>
@@ -1130,6 +1145,7 @@ export default function Page() {
               </div>
             </div>
           </div>
+          <div className="list-table-wrap">
           <table className="table" style={{ marginTop: 16 }}>
             <thead>
               <tr>
@@ -1162,6 +1178,7 @@ export default function Page() {
               ))}
             </tbody>
           </table>
+          </div>
         </>
       )}
 
@@ -1187,6 +1204,7 @@ export default function Page() {
               </div>
             </div>
           </div>
+          <div className="list-table-wrap">
           <table className="table" style={{ marginTop: 16 }}>
             <thead>
               <tr>
@@ -1229,6 +1247,7 @@ export default function Page() {
               )}
             </tbody>
           </table>
+          </div>
         </>
       )}
 
@@ -1250,6 +1269,7 @@ export default function Page() {
               </div>
             </div>
           </div>
+          <div className="list-table-wrap">
           <table className="table" style={{ marginTop: 16 }}>
             <thead>
               <tr>
@@ -1280,6 +1300,7 @@ export default function Page() {
               ))}
             </tbody>
           </table>
+          </div>
         </>
       )}
 
@@ -1306,6 +1327,7 @@ export default function Page() {
               Filtered to {data.department_name}
             </p>
           ) : null}
+          <div className="list-table-wrap">
           <table className="table" style={{ marginTop: 16 }}>
             <thead>
               <tr>
@@ -1343,6 +1365,7 @@ export default function Page() {
               )}
             </tbody>
           </table>
+          </div>
         </>
       )}
 
@@ -1378,6 +1401,7 @@ export default function Page() {
             {(data.suggestions?.lines || []).length === 0 ? (
               <p className="muted">No actionable low-stock lines (or all already on an open PR).</p>
             ) : (
+              <div className="list-table-wrap">
               <table className="table" style={{ marginTop: 8 }}>
                 <thead>
                   <tr>
@@ -1416,6 +1440,7 @@ export default function Page() {
                   })}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
           <div className="card" style={{ marginTop: 16 }}>
@@ -1516,6 +1541,7 @@ export default function Page() {
                 Movements CSV
               </button>
             </div>
+            <div className="list-table-wrap">
             <table className="table">
               <thead>
                 <tr>
@@ -1562,10 +1588,12 @@ export default function Page() {
                 )}
               </tbody>
             </table>
+            </div>
           </div>
           <h3 style={{ marginTop: 16 }}>
             Stock value: {data.valuation?.total_value ?? data.balance?.total_value ?? 0}
           </h3>
+          <div className="list-table-wrap">
           <table className="table">
             <thead>
               <tr>
@@ -1588,6 +1616,7 @@ export default function Page() {
               ))}
             </tbody>
           </table>
+          </div>
           <h3 style={{ marginTop: 16 }}>Expiry</h3>
           <p className="muted">
             {data.expiry?.count ?? 0} batches within {data.expiry?.within_days ?? expiryDays} days ·
@@ -1614,6 +1643,7 @@ export default function Page() {
               Expiry CSV
             </button>
           </div>
+          <div className="list-table-wrap">
           <table className="table">
             <thead>
               <tr>
@@ -1645,6 +1675,7 @@ export default function Page() {
               )}
             </tbody>
           </table>
+          </div>
           <h3 style={{ marginTop: 16 }}>Inter-store transfers</h3>
           <p className="muted">
             <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', marginRight: 8 }}>
@@ -1693,6 +1724,7 @@ export default function Page() {
               Transfers CSV
             </button>
           </div>
+          <div className="list-table-wrap">
           <table className="table">
             <thead>
               <tr>
@@ -1728,6 +1760,7 @@ export default function Page() {
               )}
             </tbody>
           </table>
+          </div>
           {(data.transfers?.by_route || []).length > 0 && (
             <>
               <h4 style={{ marginTop: 12 }}>By route</h4>
@@ -1784,6 +1817,7 @@ export default function Page() {
                 Count variances CSV
               </button>
             </div>
+            <div className="list-table-wrap">
             <table className="table">
               <thead>
                 <tr>
@@ -1817,6 +1851,7 @@ export default function Page() {
                 )}
               </tbody>
             </table>
+            </div>
           </div>
         </>
       )}
@@ -1926,6 +1961,7 @@ export default function Page() {
                 ? ` · ${data.returns.warehouse_name}`
                 : ''}
           </p>
+          <div className="list-table-wrap">
           <table className="table">
             <thead>
               <tr>
@@ -1957,6 +1993,7 @@ export default function Page() {
               )}
             </tbody>
           </table>
+          </div>
           {(data.returns?.by_reason || []).length > 0 && (
             <>
               <h4 style={{ marginTop: 12 }}>Returns by reason</h4>
@@ -1992,6 +2029,7 @@ export default function Page() {
             {(data.pending?.order_count ?? 0) === 1 ? 'order' : 'orders'} · qty open{' '}
             {data.pending?.total_outstanding_qty ?? 0}
           </p>
+          <div className="list-table-wrap">
           <table className="table">
             <thead>
               <tr>
@@ -2025,7 +2063,9 @@ export default function Page() {
               )}
             </tbody>
           </table>
+          </div>
           <h3 style={{ marginTop: 16 }}>By supplier</h3>
+          <div className="list-table-wrap">
           <table className="table">
             <thead>
               <tr>
@@ -2044,6 +2084,7 @@ export default function Page() {
               ))}
             </tbody>
           </table>
+          </div>
         </>
       )}
 
@@ -2077,6 +2118,7 @@ export default function Page() {
             ))}
             {!data.top_categories?.length && <li className="muted">No spend yet</li>}
           </ul>
+          <div className="list-table-wrap">
           <table className="table" style={{ marginTop: 16 }}>
             <thead>
               <tr>
@@ -2104,6 +2146,7 @@ export default function Page() {
               ))}
             </tbody>
           </table>
+          </div>
         </>
       )}
 
@@ -2149,6 +2192,7 @@ export default function Page() {
               </div>
             ))}
           </div>
+          <div className="list-table-wrap">
           <table className="table" style={{ marginTop: 16 }}>
             <thead>
               <tr>
@@ -2171,6 +2215,7 @@ export default function Page() {
               ))}
             </tbody>
           </table>
+          </div>
         </>
       )}
 
@@ -2205,6 +2250,7 @@ export default function Page() {
               <div className="kpi">{data.net_profit ?? 0}</div>
             </div>
           </div>
+          <div className="list-table-wrap">
           <table className="table" style={{ marginTop: 16 }}>
             <thead>
               <tr>
@@ -2232,6 +2278,7 @@ export default function Page() {
               )}
             </tbody>
           </table>
+          </div>
         </>
       )}
 
@@ -2362,6 +2409,7 @@ export default function Page() {
           {(['assets', 'liabilities', 'equity'] as const).map((section) => (
             <div key={section} style={{ marginTop: 16 }}>
               <h3>{section}</h3>
+              <div className="list-table-wrap">
               <table className="table">
                 <thead>
                   <tr>
@@ -2392,6 +2440,7 @@ export default function Page() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           ))}
         </>
@@ -2511,6 +2560,7 @@ export default function Page() {
               <option value="weekly">Weekly only</option>
             </select>
           </div>
+          <div className="list-table-wrap">
           <table className="table">
             <thead>
               <tr>
@@ -2563,6 +2613,7 @@ export default function Page() {
               )}
             </tbody>
           </table>
+          </div>
           {!schedules.length && !loading && <p className="muted">No schedules yet.</p>}
         </>
       )}

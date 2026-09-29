@@ -17,7 +17,8 @@ function friendlyCreditError(raw: unknown): string {
 export default function Page() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [kind, setKind] = useState<'receivable' | 'payable'>('receivable');
+  const urlKind = searchParams.get('kind') === 'payable' ? 'payable' : 'receivable';
+  const [kind, setKind] = useState<'receivable' | 'payable'>(urlKind);
   const [report, setReport] = useState<any>(null);
   const [customers, setCustomers] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
@@ -53,36 +54,49 @@ export default function Page() {
   const [error, setError] = useState('');
   const [payBusy, setPayBusy] = useState(false);
   const [limitBusy, setLimitBusy] = useState(false);
+  const [loadState, setLoadState] = useState<'loading' | 'success' | 'empty' | 'error'>('loading');
 
   async function refresh() {
-    const [aging, cust, supp, settings, liquid, fx] = await Promise.all([
-      api(`/credit/aging?kind=${kind}`),
-      api('/customers'),
-      api('/suppliers'),
-      api('/credit/settings'),
-      api('/accounting/liquid-accounts').catch(() => ({ data: [] })),
-      api('/credit/exchange-rates').catch(() => ({ data: { base_currency: 'GHS', rates: [] } })),
-    ]);
-    setReport(aging.data);
-    setCustomers(cust.data || []);
-    setSuppliers(supp.data || []);
-    setLiquidAccounts(liquid.data || []);
-    setEpPct(String(settings.data?.early_pay_discount_pct ?? 0));
-    setEpDays(String(settings.data?.early_pay_discount_days ?? 0));
-    setEpEnabled(!!settings.data?.enabled);
-    setBaseCurrency(fx.data?.base_currency || 'GHS');
-    setFxRates(fx.data?.rates || []);
-    setFxAutoRefresh(fx.data?.fx_auto_refresh !== false);
-    if (!partyId) {
-      const first = kind === 'receivable' ? cust.data?.[0]?.id : supp.data?.[0]?.id;
-      if (first) setPartyId(first);
+    setLoadState('loading');
+    setError('');
+    try {
+      const aging = await api(`/credit/aging?kind=${kind}`);
+      const [cust, supp, settings, liquid, fx] = await Promise.all([
+        api('/customers').catch(() => ({ data: [] })),
+        api('/suppliers').catch(() => ({ data: [] })),
+        api('/credit/settings').catch(() => ({ data: {} })),
+        api('/accounting/liquid-accounts').catch(() => ({ data: [] })),
+        api('/credit/exchange-rates').catch(() => ({ data: { base_currency: 'GHS', rates: [] } })),
+      ]);
+      const data = aging.data;
+      setReport(data);
+      setCustomers(cust.data || []);
+      setSuppliers(supp.data || []);
+      setLiquidAccounts(liquid.data || []);
+      setEpPct(String(settings.data?.early_pay_discount_pct ?? 0));
+      setEpDays(String(settings.data?.early_pay_discount_days ?? 0));
+      setEpEnabled(!!settings.data?.enabled);
+      setBaseCurrency(fx.data?.base_currency || 'GHS');
+      setFxRates(fx.data?.rates || []);
+      setFxAutoRefresh(fx.data?.fx_auto_refresh !== false);
+      if (!partyId) {
+        const first = kind === 'receivable' ? cust.data?.[0]?.id : supp.data?.[0]?.id;
+        if (first) setPartyId(first);
+      }
+      const due = Number(data?.total_due || 0);
+      const docs = data?.documents || [];
+      const parties = data?.parties || [];
+      setLoadState(due === 0 && docs.length === 0 && parties.length === 0 ? 'empty' : 'success');
+    } catch (err) {
+      setReport(null);
+      setLoadState('error');
+      throw err;
     }
   }
 
   useEffect(() => {
-    const next = searchParams.get('kind');
-    if ((next === 'payable' || next === 'receivable') && next !== kind) setKind(next);
-  }, [searchParams, kind]);
+    if (urlKind !== kind) setKind(urlKind);
+  }, [urlKind, kind]);
 
   function selectKind(next: 'receivable' | 'payable') {
     if (next === 'receivable') setKind('receivable');
@@ -396,8 +410,13 @@ export default function Page() {
     router.replace(`/credit?${qs.toString()}`, { scroll: false });
   }
 
+  const balancesOk = loadState === 'success' || loadState === 'empty';
+  const overdueAmt = balancesOk ? (report?.overdue_total ?? 0) : null;
+  const notDueAmt = balancesOk ? (report?.not_yet_due_total ?? report?.totals?.current ?? 0) : null;
+  const weOweAmt = balancesOk ? (report?.total_due ?? 0) : null;
+
   return (
-    <>
+    <div className="credit-page">
       <h1>
         {kind === 'receivable'
           ? 'Customer credit'
@@ -410,9 +429,24 @@ export default function Page() {
           ? 'Money customers still owe. Record a repayment here. New credit sales are created on Sales or POS.'
           : payPanel
             ? 'Pay open supplier bills. This records money going out — it does not create a new bill.'
-            : 'What we still owe suppliers from unpaid bills (and unbilled orders). Click a row to see documents.'}
+            : 'What we still owe suppliers from posted supplier bills after recorded payments, purchase returns, and credits. Open purchase orders are listed separately and are not treated as invoiced amounts due. Click a bill to open it or payment history.'}
       </p>
-      {error && <p className="erp-banner err" role="alert">{error}</p>}
+      {error && (
+        <p className="erp-banner err" role="alert">
+          {error}{' '}
+          <button
+            type="button"
+            onClick={() => {
+              setError('');
+              refresh().catch((err) => setError(friendlyCreditError(err)));
+            }}
+            aria-label="Retry credit data"
+          >
+            Retry
+          </button>
+        </p>
+      )}
+      {loadState === 'loading' ? <p className="muted">Loading balances…</p> : null}
       {message && <p className="erp-banner ok" role="status">{message}</p>}
 
       <div className="erp-tabs">
@@ -439,32 +473,35 @@ export default function Page() {
         </button>
       </div>
 
-      <div className="erp-kpis">
+      <div className="erp-kpis credit-kpis">
         <div className="card">
           <div className="muted">{kind === 'receivable' ? 'Customer balance' : 'We owe'}</div>
-          <div className="kpi">{report?.total_due ?? 0}</div>
+          <div className="kpi">{loadState === 'loading' ? '…' : loadState === 'error' ? '—' : weOweAmt}</div>
         </div>
         <div className="card">
           <div className="muted">Overdue</div>
-          <div className="kpi">
-            {(Number(totals['31_60'] || 0) + Number(totals['61_90'] || 0) + Number(totals['90_plus'] || 0)).toFixed(2)}
-          </div>
+          <div className="kpi">{loadState === 'loading' ? '…' : loadState === 'error' ? '—' : overdueAmt}</div>
         </div>
         <div className="card">
           <div className="muted">Not yet due</div>
-          <div className="kpi">{totals.current ?? 0}</div>
+          <div className="kpi">{loadState === 'loading' ? '…' : loadState === 'error' ? '—' : notDueAmt}</div>
         </div>
       </div>
+      {kind === 'payable' && loadState === 'success' && Number(report?.commitment_total || 0) > 0 ? (
+        <p className="muted credit-commitments" role="status">
+          Open purchase-order commitments (not yet billed): {report.commitment_total}
+        </p>
+      ) : null}
 
-      <div className="erp-split">
-        <div className="card">
+      <div className="erp-split credit-bill-info">
+        <div className="card credit-compact-card">
           <h3>{kind === 'receivable' ? 'New credit sale' : 'New supplier bill'}</h3>
           <p className="muted">
             {kind === 'receivable'
               ? 'Open Sales to post an invoice. That increases what the customer owes. This page only records money coming in.'
               : 'Open Purchases to post a supplier invoice. That increases what we owe. This page only records money going out.'}
           </p>
-          <a href={kind === 'receivable' ? '/sales' : '/purchasing'}>
+          <a href={kind === 'receivable' ? '/sales' : '/purchasing?tab=invoices'}>
             <button type="button">
               {kind === 'receivable' ? 'Go to Sales' : 'Go to Purchases'}
             </button>
@@ -739,6 +776,16 @@ export default function Page() {
           </div>
         </div>
 
+      {loadState === 'error' ? (
+        <div className="list-empty" role="alert">
+          <p>Balances could not be loaded. Use Retry — totals are not shown as zero.</p>
+        </div>
+      ) : null}
+      {loadState === 'empty' && kind === 'payable' ? (
+        <div className="list-empty">
+          <p>No supplier bills with a remaining balance.</p>
+        </div>
+      ) : null}
       <div className="list-page-head">
         <h3 style={{ margin: 0 }}>{kind === 'receivable' ? 'Customers' : 'Suppliers'}</h3>
       </div>
@@ -777,6 +824,99 @@ export default function Page() {
         </tbody>
       </table>
       </div>
+
+
+      {kind === 'payable' && loadState === 'success' && (report?.documents || []).length > 0 ? (
+        <div className="card cat-panel" style={{ marginTop: 16 }}>
+          <h3 style={{ margin: 0 }}>Supplier bills</h3>
+          <div className="list-table-wrap">
+            <table className="table compact">
+              <thead>
+                <tr>
+                  <th>Supplier</th>
+                  <th>Bill / ref</th>
+                  <th>Invoice date</th>
+                  <th>Due</th>
+                  <th>Total</th>
+                  <th>Paid</th>
+                  <th>Balance</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(report.documents || []).map((row: any) => (
+                  <tr
+                    key={row.id}
+                    onClick={() => {
+                      setPartyId(row.party_id);
+                      router.push('/purchasing?tab=invoices');
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <td>{row.party_name}</td>
+                    <td>{row.document_number}</td>
+                    <td>{String(row.invoice_date || '').slice(0, 10) || '—'}</td>
+                    <td>{String(row.due_date || '').slice(0, 10) || '—'}</td>
+                    <td>{row.total_amount}</td>
+                    <td>{row.paid_amount}</td>
+                    <td>{row.balance_due}</td>
+                    <td>{row.status}</td>
+                    <td>
+                      <button
+                        type="button"
+                        aria-label="Open payment history"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPartyId(row.party_id);
+                          loadHistory();
+                        }}
+                      >
+                        History
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
+
+      {kind === 'payable' && loadState === 'success' && (report?.commitments || []).length > 0 ? (
+        <div className="card cat-panel" style={{ marginTop: 16 }}>
+          <h3 style={{ margin: 0 }}>Open purchase orders (not invoiced)</h3>
+          <p className="muted" style={{ marginTop: 0 }}>
+            These are commitments, not amounts due on supplier bills.
+          </p>
+          <div className="list-table-wrap">
+            <table className="table compact">
+              <thead>
+                <tr>
+                  <th>Supplier</th>
+                  <th>PO</th>
+                  <th>Status</th>
+                  <th>Commitment</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(report.commitments || []).map((row: any) => (
+                  <tr
+                    key={row.id}
+                    onClick={() => router.push('/purchasing?tab=orders')}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <td>{row.party_name}</td>
+                    <td>{row.document_number}</td>
+                    <td>{row.status}</td>
+                    <td>{row.balance_due}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
 
       {statement && (
         <div className="card" style={{ marginTop: 16 }}>
@@ -1027,6 +1167,6 @@ export default function Page() {
           </table>
         </div>
       )}
-    </>
+    </div>
   );
 }

@@ -8,6 +8,7 @@ from typing import Any
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import defer
 
 from app import models as m
 from app.honesty import money_json, require_honest_narrative
@@ -213,7 +214,9 @@ async def ar_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
     as_of = as_of or datetime.utcnow()
     invoices = (
         await db.execute(
-            select(m.SalesInvoice).where(
+            select(m.SalesInvoice)
+            .options(defer(m.SalesInvoice.coupon_id))
+            .where(
                 m.SalesInvoice.tenant_id == tenant_id,
                 m.SalesInvoice.status.in_(["posted", "sent", "partial", "overdue"]),
             )
@@ -283,13 +286,57 @@ async def ar_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
     }
 
 
+OPEN_PO_STATUSES = ("sent", "partially_received", "received")
+
+
+async def _posted_return_credit_by_po(db: AsyncSession, tenant_id: str) -> dict[str, float]:
+    """Posted purchase-return debit notes grouped by PO (credits AP)."""
+    rows = (
+        await db.execute(
+            select(m.PurchaseReturn.purchase_order_id, m.PurchaseReturn.total_amount).where(
+                m.PurchaseReturn.tenant_id == tenant_id,
+                m.PurchaseReturn.status == "posted",
+            )
+        )
+    ).all()
+    out: dict[str, float] = {}
+    for po_id, amount in rows:
+        if not po_id:
+            continue
+        out[str(po_id)] = money_json(round(out.get(str(po_id), 0.0) + money_json(amount), 2))
+    return out
+
+
+def _apply_po_return_credit(due: float, po_id: str | None, remaining: dict[str, float]) -> float:
+    if due <= 0 or not po_id:
+        return money_json(due)
+    credit = remaining.get(po_id, 0.0)
+    if credit <= 0:
+        return money_json(due)
+    applied = min(due, credit)
+    remaining[po_id] = money_json(round(credit - applied, 2))
+    return money_json(round(due - applied, 2))
+
+
+def _bill_is_overdue(as_of: datetime, due_date: datetime | None) -> bool:
+    return bool(due_date and due_date.date() < as_of.date())
+
+
 async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = None) -> dict:
+    """Supplier amounts due from billed invoices only.
+
+    Unbilled PO remaining value is returned as open_commitments, not total_due.
+    """
+    from app.purchasing import PURCHASE_INVOICE_OPEN, refresh_overdue_purchase_invoices
+
     as_of = as_of or datetime.utcnow()
+    await refresh_overdue_purchase_invoices(db, tenant_id, as_of=as_of)
+
     invoices = (
         await db.execute(
             select(m.PurchaseInvoice).where(
                 m.PurchaseInvoice.tenant_id == tenant_id,
-                m.PurchaseInvoice.status.in_(["unpaid", "partial", "overdue"]),
+                m.PurchaseInvoice.status.in_(list(PURCHASE_INVOICE_OPEN)),
             )
         )
     ).scalars().all()
@@ -299,7 +346,7 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
         await db.execute(
             select(m.PurchaseOrder).where(
                 m.PurchaseOrder.tenant_id == tenant_id,
-                m.PurchaseOrder.status.in_(["sent", "partially_received", "received"]),
+                m.PurchaseOrder.status.in_(list(OPEN_PO_STATUSES)),
             )
         )
     ).scalars().all()
@@ -311,10 +358,14 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
             )
         ).scalars().all()
     }
+    return_credit = await _posted_return_credit_by_po(db, tenant_id)
 
     by_supplier: dict[str, dict] = {}
     totals = empty_buckets()
-    documents = []
+    documents: list[dict] = []
+    commitments: list[dict] = []
+    overdue_total = 0.0
+    not_yet_due_total = 0.0
 
     def _party_row(supplier_id: str) -> dict:
         sup = suppliers.get(supplier_id)
@@ -326,12 +377,15 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
                 "credit_limit": money_json(sup.credit_limit) if sup else money_json(0),
                 "balance": money_json(sup.balance) if sup else money_json(0),
                 "total_due": money_json(0),
+                "commitment_total": money_json(0),
                 **empty_buckets(),
             },
         )
 
+    remaining_credit = dict(return_credit)
     for inv in invoices:
         due = max(money_json(inv.total_amount) - money_json(inv.paid_amount), 0)
+        due = _apply_po_return_credit(due, inv.purchase_order_id, remaining_credit)
         if due <= 0:
             continue
         days = days_overdue(as_of, inv.due_date, inv.invoice_date or inv.created_at)
@@ -340,6 +394,11 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
         row = _party_row(inv.supplier_id)
         row["total_due"] = money_json(round(row["total_due"] + due, 2))
         row[bucket] = money_json(round(row[bucket] + due, 2))
+        if _bill_is_overdue(as_of, inv.due_date):
+            overdue_total = money_json(round(overdue_total + due, 2))
+        else:
+            not_yet_due_total = money_json(round(not_yet_due_total + due, 2))
+        paid = money_json(inv.paid_amount)
         documents.append(
             {
                 "id": inv.id,
@@ -347,33 +406,33 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
                 "document_type": "purchase_invoice",
                 "party_id": inv.supplier_id,
                 "party_name": row["name"],
+                "invoice_date": inv.invoice_date,
                 "due_date": inv.due_date,
+                "total_amount": money_json(inv.total_amount),
+                "paid_amount": paid,
                 "balance_due": money_json(due),
+                "status": inv.status,
                 "currency": getattr(inv, "currency", None) or "",
                 "exchange_rate": money_json(getattr(inv, "exchange_rate", None), default=1.0),
                 "balance_due_base": money_json(
-                    round(
-                        due * money_json(getattr(inv, "exchange_rate", None), default=1.0), 2
-                    )
+                    round(due * money_json(getattr(inv, "exchange_rate", None), default=1.0), 2)
                 ),
                 "days_overdue": days,
                 "bucket": bucket,
             }
         )
 
+    commitment_total = 0.0
     for po in orders:
         if po.id in invoiced_po_ids:
             continue
         due = max(money_json(po.total_amount) - money_json(po.paid_amount), 0)
         if due <= 0:
             continue
-        days = days_overdue(as_of, po.due_date, po.created_at)
-        bucket = age_bucket(days)
-        add_to_bucket(totals, days, due)
         row = _party_row(po.supplier_id)
-        row["total_due"] = money_json(round(row["total_due"] + due, 2))
-        row[bucket] = money_json(round(row[bucket] + due, 2))
-        documents.append(
+        row["commitment_total"] = money_json(round(row["commitment_total"] + due, 2))
+        commitment_total = money_json(round(commitment_total + due, 2))
+        commitments.append(
             {
                 "id": po.id,
                 "document_number": po.po_number,
@@ -382,18 +441,22 @@ async def ap_aging(db: AsyncSession, tenant_id: str, as_of: datetime | None = No
                 "party_name": row["name"],
                 "due_date": po.due_date,
                 "balance_due": money_json(due),
-                "days_overdue": days,
-                "bucket": bucket,
+                "status": po.status,
             }
         )
 
+    total_due = money_json(round(sum(totals.values()), 2))
     return {
         "as_of": as_of,
         "kind": "payable",
         "totals": {k: money_json(v) for k, v in totals.items()},
-        "total_due": money_json(round(sum(totals.values()), 2)),
+        "total_due": total_due,
+        "overdue_total": money_json(overdue_total),
+        "not_yet_due_total": money_json(not_yet_due_total),
+        "commitment_total": money_json(commitment_total),
         "parties": sorted(by_supplier.values(), key=lambda x: x["total_due"], reverse=True),
         "documents": documents,
+        "commitments": commitments,
     }
 
 
@@ -934,12 +997,14 @@ async def supplier_credit_info(db: AsyncSession, tenant_id: str, supplier_id: st
     if not supplier:
         raise HTTPException(status_code=404, detail="Supplier not found")
 
+    from app.purchasing import PURCHASE_INVOICE_OPEN
+
     invoices = (
         await db.execute(
             select(m.PurchaseInvoice).where(
                 m.PurchaseInvoice.tenant_id == tenant_id,
                 m.PurchaseInvoice.supplier_id == supplier_id,
-                m.PurchaseInvoice.status.in_(["unpaid", "partial", "overdue"]),
+                m.PurchaseInvoice.status.in_(list(PURCHASE_INVOICE_OPEN)),
             )
         )
     ).scalars().all()
@@ -948,15 +1013,17 @@ async def supplier_credit_info(db: AsyncSession, tenant_id: str, supplier_id: st
             select(m.PurchaseOrder).where(
                 m.PurchaseOrder.tenant_id == tenant_id,
                 m.PurchaseOrder.supplier_id == supplier_id,
-                m.PurchaseOrder.status.in_(["sent", "partially_received", "received"]),
+                m.PurchaseOrder.status.in_(list(OPEN_PO_STATUSES)),
             )
         )
     ).scalars().all()
+    remaining_credit = await _posted_return_credit_by_po(db, tenant_id)
 
     open_bills: list[dict] = []
     open_total = 0.0
     for inv in invoices:
         due = max(money_json(inv.total_amount) - money_json(inv.paid_amount), 0)
+        due = _apply_po_return_credit(due, inv.purchase_order_id, remaining_credit)
         if due <= 0:
             continue
         open_total += due
@@ -966,20 +1033,24 @@ async def supplier_credit_info(db: AsyncSession, tenant_id: str, supplier_id: st
                 "purchase_invoice_id": inv.id,
                 "invoice_number": inv.invoice_number,
                 "purchase_order_id": inv.purchase_order_id,
+                "total_amount": money_json(inv.total_amount),
+                "paid_amount": money_json(inv.paid_amount),
                 "amount": money_json(round(due, 2)),
                 "due_date": inv.due_date,
                 "status": inv.status,
             }
         )
     invoiced_pos = {i.purchase_order_id for i in invoices if i.purchase_order_id}
+    open_commitments: list[dict] = []
+    commitment_total = 0.0
     for po in orders:
         if po.id in invoiced_pos:
             continue
         due = max(money_json(po.total_amount) - money_json(po.paid_amount), 0)
         if due <= 0:
             continue
-        open_total += due
-        open_bills.append(
+        commitment_total += due
+        open_commitments.append(
             {
                 "document_type": "purchase_order",
                 "purchase_order_id": po.id,
@@ -990,7 +1061,6 @@ async def supplier_credit_info(db: AsyncSession, tenant_id: str, supplier_id: st
             }
         )
 
-    # Live open documents — party.balance can be stale after payments.
     outstanding = money_json(round(open_total, 2))
 
     return {
@@ -1006,6 +1076,8 @@ async def supplier_credit_info(db: AsyncSession, tenant_id: str, supplier_id: st
         "open_bill_count": len(open_bills),
         "open_bill_total": money_json(round(open_total, 2)),
         "open_bills": open_bills,
+        "commitment_total": money_json(round(commitment_total, 2)),
+        "open_commitments": open_commitments,
     }
 
 
@@ -1060,8 +1132,11 @@ async def supplier_payment_schedule(
     ep = early_pay_settings(tenant) if tenant else {"enabled": False}
 
     items: list[dict] = []
+    commitments: list[dict] = []
+    remaining_credit = await _posted_return_credit_by_po(db, tenant_id)
     for inv in invoices:
         balance = max(money_json(inv.total_amount) - money_json(inv.paid_amount or 0), 0)
+        balance = _apply_po_return_credit(balance, inv.purchase_order_id, remaining_credit)
         if balance <= 0:
             continue
         overdue_days = days_overdue(as_of, inv.due_date, inv.invoice_date or inv.created_at)
@@ -1109,7 +1184,7 @@ async def supplier_payment_schedule(
         days_until = None
         if po.due_date:
             days_until = (po.due_date.date() - as_of.date()).days
-        items.append(
+        commitments.append(
             {
                 "document_type": "purchase_order",
                 "id": po.id,
@@ -1134,6 +1209,8 @@ async def supplier_payment_schedule(
     items.sort(key=_sort_key)
     upcoming = [r for r in items if (r.get("days_until_due") is None or r["days_until_due"] >= 0)]
     overdue = [r for r in items if r.get("days_until_due") is not None and r["days_until_due"] < 0]
+    bill_due = money_json(round(sum(r["balance_due"] for r in items), 2))
+    commitment_total = money_json(round(sum(r["balance_due"] for r in commitments), 2))
 
     return {
         "as_of": as_of,
@@ -1142,10 +1219,12 @@ async def supplier_payment_schedule(
             "name": supplier.name,
             "balance": money_json(supplier.balance),
         },
-        "total_due": money_json(round(sum(r["balance_due"] for r in items), 2)),
+        "total_due": bill_due,
+        "commitment_total": commitment_total,
         "overdue_count": len(overdue),
         "upcoming_count": len(upcoming),
         "items": items,
+        "commitments": commitments,
     }
 
 

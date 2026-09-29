@@ -442,6 +442,7 @@ export default function Page() {
         {filing?.government?.boxes?.length ? (
           <>
             <h4 style={{ marginTop: 8 }}>{filing.government.template_name || 'Government return'}</h4>
+            <div className="list-table-wrap">
             <table className="table">
               <thead>
                 <tr>
@@ -460,9 +461,11 @@ export default function Page() {
                 ))}
               </tbody>
             </table>
+            </div>
           </>
         ) : null}
         <h4 style={{ marginTop: 12 }}>Neutral boxes</h4>
+        <div className="list-table-wrap">
         <table className="table">
           <thead>
             <tr>
@@ -488,6 +491,7 @@ export default function Page() {
             )}
           </tbody>
         </table>
+        </div>
         <p className="muted" style={{ marginTop: 8 }}>
           Output lines: {filing?.schedules?.output?.length ?? 0} · Input lines:{' '}
           {filing?.schedules?.input?.length ?? 0}

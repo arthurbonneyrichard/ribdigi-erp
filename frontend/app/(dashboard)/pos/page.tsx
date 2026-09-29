@@ -41,6 +41,7 @@ type Product = {
   selling_price: number;
   cost_price?: number | null;
   stock_qty: number;
+  is_low_stock?: boolean;
   kind?: string;
   has_image?: boolean;
   tax_rate_pct?: number;
@@ -355,8 +356,12 @@ export default function Page() {
   }
 
   const browse = useCallback(async (query = '') => {
+    const posStore = (session?.store_id || storeId).trim();
+    const params = new URLSearchParams();
+    if (query) params.set('q', query);
+    if (posStore) params.set('store_id', posStore);
     try {
-      const r = await api('/pos/products/search?q=' + encodeURIComponent(query));
+      const r = await api('/pos/products/search?' + params.toString());
       const list = (r.data || []) as Product[];
       setRows(list);
       if (!query.trim()) {
@@ -383,7 +388,7 @@ export default function Page() {
       }
       throw err;
     }
-  }, []);
+  }, [session?.store_id, storeId]);
 
   async function refreshPendingCount() {
     try {
@@ -631,9 +636,11 @@ export default function Page() {
     try {
       // USB/Bluetooth wedge scanners type digits then Enter — accept as barcode.
       if (looksLikeBarcode(query)) {
-        const exact = await api(
-          '/pos/products/search?barcode=' + encodeURIComponent(query)
-        );
+        const params = new URLSearchParams();
+        params.set('barcode', query);
+        const posStore = (session?.store_id || storeId).trim();
+        if (posStore) params.set('store_id', posStore);
+        const exact = await api('/pos/products/search?' + params.toString());
         const hits: Product[] = exact.data || [];
         if (hits.length === 1) {
           addToCart(hits[0]);
@@ -709,7 +716,9 @@ export default function Page() {
       prev
         .map((p) => {
           if (p.id !== id) return p;
-          const quantity = p.quantity + delta;
+          const nextQty = p.quantity + delta;
+          if (delta > 0 && nextQty > Number(p.stock_qty)) return p;
+          const quantity = nextQty;
           const maxDisc = groupUnitPrice(Number(p.selling_price)) * Math.max(quantity, 0);
           return {
             ...p,
@@ -1319,6 +1328,7 @@ export default function Page() {
             <div className="tpos-grid">
               {rows.map((r) => {
                 const out = Number(r.stock_qty) <= 0;
+                const low = Boolean(r.is_low_stock) && !out;
                 const inCart = cart.find((c) => c.id === r.id)?.quantity || 0;
                 return (
                   <button
@@ -1337,6 +1347,7 @@ export default function Page() {
                       />
                       {inCart > 0 && <span className="tpos-badge">{inCart}</span>}
                       {out && <span className="tpos-oos">Out</span>}
+                      {low && !out && <span className="tpos-oos">Low</span>}
                     </div>
                     <div className="tpos-tile-body">
                       <strong title={r.name}>{r.name}</strong>
@@ -1410,6 +1421,14 @@ export default function Page() {
                       <span>
                         {money(unit)} each
                         {groupDiscountPct > 0 ? ` (−${groupDiscountPct}%)` : ''}
+                      </span>
+                      <span className="muted">
+                        Stock {c.stock_qty}
+                        {Number(c.stock_qty) <= 0
+                          ? ' · Out'
+                          : c.is_low_stock
+                            ? ' · Low'
+                            : ''}
                       </span>
                       <label className="tpos-line-disc">
                         <span>Disc</span>
