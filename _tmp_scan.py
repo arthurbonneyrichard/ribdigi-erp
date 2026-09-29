@@ -1,11 +1,6 @@
 from pathlib import Path
-p = Path(r"C:\Users\arthu\ribdigi-erp-production\frontend\app\globals.css")
-text = p.read_text(encoding="utf-8")
-for key in ["list-page-head", "list-pager", "list-btn-primary", "list-sort", "list-toast"]:
-    i = text.find("." + key if not key.startswith(".") else key)
-    # search without assuming
-    idx = text.find(key)
-    print(key, idx)
-    if idx >= 0:
-        print(text[max(0, idx-80): idx+400])
-        print("---")
+p = Path(r"C:\Users\arthu\ribdigi-erp-production\frontend\app\(dashboard)\reports\page.tsx")
+for i,l in enumerate(p.read_text(encoding="utf-8").splitlines(),1):
+    if "loading" in l.lower() and ("Load" in l or "loading" in l):
+        if i < 650 or "Loading" in l:
+            print(f"{i}:{l.rstrip()[:140]}")
