@@ -240,6 +240,9 @@ export default function Page() {
     // omit blank so UuidIdValue Query customer_id / variant_id do not 422
     if (customerTrim) qs.set('customer_id', customerTrim);
     if (variantTrim) qs.set('variant_id', variantTrim);
+    const qtyNum = Number(qty);
+    if (Number.isFinite(qtyNum) && qtyNum > 0) qs.set('quantity', String(qtyNum));
+    if (wholesaleOps) qs.set('sales_channel', 'wholesale');
     api(`/products/${productId}/price?${qs.toString()}`)
       .then((r) => {
         if (!cancelled && r.data?.unit_price != null) {
@@ -250,7 +253,7 @@ export default function Page() {
     return () => {
       cancelled = true;
     };
-  }, [productId, variantId, customerId, useGroupPrice]);
+  }, [productId, variantId, customerId, useGroupPrice, qty, wholesaleOps]);
 
   const lineDisc = Math.max(0, Number(lineDiscount) || 0);
   const hdrDisc = Math.max(0, Number(headerDiscount) || 0);
@@ -280,6 +283,17 @@ export default function Page() {
     discount_type: headerDiscountType,
     discount_percent: headerDiscountType === 'percent' ? Math.max(0, Math.min(100, hdrDisc)) : 0,
     notes: docNotes.trim() || null,
+    ...(wholesaleOps ? { sales_channel: 'wholesale' as const } : {}),
+    items: lineItems,
+  };
+
+  const quotePayload = {
+    customer_id: customerId.trim(),
+    discount_amount: headerDiscountType === 'percent' ? 0 : hdrDisc,
+    discount_type: headerDiscountType,
+    discount_percent: headerDiscountType === 'percent' ? Math.max(0, Math.min(100, hdrDisc)) : 0,
+    notes: docNotes.trim() || null,
+    ...(wholesaleOps ? { sales_channel: 'wholesale' as const } : {}),
     items: lineItems,
   };
 
@@ -295,6 +309,7 @@ export default function Page() {
     exchange_rate: exchangeRate === '' ? null : Number(exchangeRate),
     is_reverse_charge: invoiceReverseCharge,
     coupon_code: couponCode.trim() || null,
+    ...(wholesaleOps ? { sales_channel: 'wholesale' as const } : {}),
   };
 
   async function createCustomer() {
@@ -464,7 +479,7 @@ export default function Page() {
     setError('');
     setSaveBusy(true);
     try {
-      const r = await api('/sales/quotations', { method: 'POST', body: JSON.stringify(linePayload) });
+      const r = await api('/sales/quotations', { method: 'POST', body: JSON.stringify(quotePayload) });
       setMessage(`Quotation ${r.data.quotation_number} created`);
       setSelected(r.data);
       setComposerOpen(false);
@@ -1200,7 +1215,7 @@ export default function Page() {
               checked={useGroupPrice}
               onChange={(e) => setUseGroupPrice(e.target.checked)}
             />
-            Group price
+            {wholesaleOps ? 'Quantity price' : 'Group price'}
           </label>
           <input
             value={taxRate}
@@ -1673,6 +1688,7 @@ export default function Page() {
           <thead>
             <tr>
               <th>Number</th>
+              <th>Channel</th>
               <th>Status</th>
               <th>Store</th>
               <th>Total</th>
@@ -1685,6 +1701,7 @@ export default function Page() {
             {managedInvoices.map((inv) => (
               <tr key={inv.id}>
                 <td>{inv.invoice_number}</td>
+                <td>{channelLabel(inv.sales_channel)}</td>
                 <td>{inv.status}</td>
                 <td>
                   {stores.find((s) => s.id === inv.store_id)?.name ||
@@ -1781,7 +1798,7 @@ export default function Page() {
             ))}
             {managedInvoices.length === 0 && (
               <tr>
-                <td colSpan={7} className="muted">
+                <td colSpan={8} className="muted">
                   {invoices.length === 0
                     ? 'No invoices yet'
                     : 'No sales invoices for this filter'}

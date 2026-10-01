@@ -3637,6 +3637,8 @@ class SalesInvoiceCreate(BaseModel):
     # omit/`null` → resolve_rate; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
     exchange_rate: PositiveMoneyValue | None = None
     is_reverse_charge: bool = False
+    # omit → industry default (wholesale on wholesale / retail+wholesale; POS stays retail).
+    sales_channel: Literal["retail", "wholesale"] | None = None
     items: list[SalesInvoiceItemCreate] = Field(min_length=1)
 
 

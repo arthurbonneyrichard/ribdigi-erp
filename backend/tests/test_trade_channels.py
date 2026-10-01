@@ -30,6 +30,9 @@ def test_retail_wholesale_is_canonical_and_provisioned():
     assert default_sales_channel("retail_wholesale", source="pos") == "retail"
     assert default_sales_channel("retail_wholesale", source="order") == "wholesale"
     assert default_sales_channel("wholesale", source="pos") == "wholesale"
+    assert default_sales_channel("wholesale", source="invoice") == "wholesale"
+    assert default_sales_channel("retail_wholesale", source="invoice") == "wholesale"
+    assert default_sales_channel("retail", source="invoice") == "retail"
     assert default_sales_channel("pharmacy", source="pos") == "retail"
 
 
@@ -290,3 +293,83 @@ async def test_pharmacy_rx_activity_report(client, db_session, seeded):
     retail = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
     denied = await ac.get("/api/v1/reports/pharmacy/rx-activity", headers=retail)
     assert denied.status_code == 403, denied.text
+
+
+@pytest.mark.asyncio
+async def test_wholesale_price_preview_and_invoice_follow_qty_tier(client, db_session, seeded):
+    """Desk preview and a direct invoice use the same qty break as a sales order."""
+    ac, seed = client
+    await set_tenant_industry(db_session, seed["t1"], "wholesale")
+    admin = await _super(ac, seed)
+    product_id = seed["p1"].id
+    patched = await ac.patch(
+        f"/api/v1/products/{product_id}",
+        headers=admin,
+        json={"min_order_qty": 12, "selling_price": 10},
+    )
+    assert patched.status_code == 200, patched.text
+    tier = await ac.post(
+        f"/api/v1/products/{product_id}/price-tiers",
+        headers=admin,
+        json={"min_qty": 12, "unit_price": 8},
+    )
+    assert tier.status_code == 200, tier.text
+
+    below = await ac.get(
+        f"/api/v1/products/{product_id}/price",
+        headers=admin,
+        params={"quantity": 2, "sales_channel": "wholesale"},
+    )
+    assert below.status_code == 200, below.text
+    assert below.json()["data"]["unit_price"] == 10
+    assert below.json()["data"]["sales_channel"] == "wholesale"
+
+    preview = await ac.get(
+        f"/api/v1/products/{product_id}/price",
+        headers=admin,
+        params={"quantity": 12, "sales_channel": "wholesale"},
+    )
+    assert preview.status_code == 200, preview.text
+    assert preview.json()["data"]["unit_price"] == 8
+
+    quote = await ac.post(
+        "/api/v1/sales/quotations",
+        headers=admin,
+        json={
+            "customer_id": seed["party1"].id,
+            "items": [{"product_id": product_id, "quantity": 12}],
+        },
+    )
+    assert quote.status_code == 200, quote.text
+    assert quote.json()["data"]["items"][0]["unit_price"] == 8
+
+    short_invoice = await ac.post(
+        "/api/v1/sales/invoices",
+        headers=admin,
+        json={
+            "customer_id": seed["party1"].id,
+            "items": [{"product_id": product_id, "quantity": 2}],
+        },
+    )
+    assert short_invoice.status_code == 409, short_invoice.text
+    assert short_invoice.json()["detail"]["code"] == "MOQ_NOT_MET"
+
+    invoice = await ac.post(
+        "/api/v1/sales/invoices",
+        headers=admin,
+        json={
+            "customer_id": seed["party1"].id,
+            "items": [{"product_id": product_id, "quantity": 12}],
+        },
+    )
+    assert invoice.status_code == 200, invoice.text
+    body = invoice.json()["data"]
+    assert body["sales_channel"] == "wholesale"
+    assert body["items"][0]["unit_price"] == 8
+
+    retail_channel = await ac.get(
+        f"/api/v1/products/{product_id}/price",
+        headers=admin,
+        params={"quantity": 12, "sales_channel": "retail"},
+    )
+    assert retail_channel.status_code == 409, retail_channel.text

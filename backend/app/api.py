@@ -5825,7 +5825,7 @@ async def create_customer_group(
         discount_percent=payload.discount_percent,
     )
     await db.commit()
-    await db.refresh(row)
+    # create_group returns a loaded row that is not in this Session (raw insert).
     return env(customer_groups_svc.serialize_group(row))
 
 
@@ -6079,11 +6079,15 @@ async def product_price_for_customer(
     # (was free `str`; garbage could reach party/variant lookup).
     customer_id: Annotated[UuidIdValue | None, Query()] = None,
     variant_id: Annotated[UuidIdValue | None, Query()] = None,
+    # omit → no qty break; ≤0 → 422. Wholesale channel uses this for price tiers.
+    quantity: Annotated[float | None, Query()] = None,
+    sales_channel: Annotated[str | None, Query()] = None,
     claims=Depends(require_permission("sales", "read")),
     db: AsyncSession = Depends(get_db),
 ):
     from app.catalog import get_product, get_variant, resolve_sale_line
     from app import customer_groups as customer_groups_svc
+    from app.trade import resolve_document_channel
 
     product = await get_product(db, claims["tenant_id"], product_id)
     variant = None
@@ -6092,11 +6096,25 @@ async def product_price_for_customer(
     list_price = money_json(
         (variant.selling_price if variant is not None else product.selling_price) or 0
     )
+    channel = await resolve_document_channel(
+        db,
+        tenant_id=claims["tenant_id"],
+        requested=sales_channel,
+        source="order",
+    )
+    item: dict = {"product_id": product_id, "variant_id": variant_id}
+    qty = None
+    if quantity is not None:
+        qty = money_json(quantity)
+        if qty <= 0:
+            raise HTTPException(status_code=422, detail="quantity must be greater than zero")
+        item["quantity"] = qty
     _product, _variant, unit_price = await resolve_sale_line(
         db,
         claims["tenant_id"],
-        {"product_id": product_id, "variant_id": variant_id},
+        item,
         customer_id=customer_id,
+        sales_channel=channel,
     )
     pct, group = await customer_groups_svc.customer_group_discount(
         db, claims["tenant_id"], customer_id
@@ -6107,6 +6125,8 @@ async def product_price_for_customer(
             "variant_id": variant_id,
             "customer_id": customer_id,
             "list_price": list_price,
+            "quantity": qty,
+            "sales_channel": channel,
             "unit_price": unit_price,
             "discount_percent": pct,
             "customer_group": customer_groups_svc.serialize_group(group) if group else None,
@@ -6689,6 +6709,7 @@ async def create_sales_invoice(
         exchange_rate=payload.exchange_rate,
         is_reverse_charge=bool(payload.is_reverse_charge),
         coupon_code=payload.coupon_code,
+        sales_channel=payload.sales_channel,
         items=[i.model_dump() for i in payload.items],
     )
     await db.commit()

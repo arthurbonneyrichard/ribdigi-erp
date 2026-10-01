@@ -71,12 +71,12 @@ def assert_channel_allowed(industry: str | None, channel: str, *, source: str) -
                     "sales_channel": ch,
                 },
             )
-        if src in {"quote", "order"} and ch != "wholesale":
+        if src in {"quote", "order", "invoice"} and ch != "wholesale":
             raise HTTPException(
                 status_code=409,
                 detail={
                     "code": "CHANNEL_MISMATCH",
-                    "message": "Retail+Wholesale quotes and orders are wholesale; use POS for retail",
+                    "message": "Retail+Wholesale quotes, orders, and invoices are wholesale; use POS for retail",
                     "sales_channel": ch,
                 },
             )

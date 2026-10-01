@@ -191,6 +191,7 @@ async def serialize_invoice(db: AsyncSession, invoice: m.SalesInvoice) -> dict:
         "due_date": invoice.due_date,
         "emailed_at": invoice.emailed_at,
         "emailed_to": invoice.emailed_to,
+        "sales_channel": getattr(invoice, "sales_channel", None) or "retail",
         "created_at": invoice.created_at,
         "days_overdue": overdue_days if status == "overdue" else 0,
         "can_print": status in SALES_INVOICE_BILLED,
@@ -304,10 +305,16 @@ async def create_sales_invoice(
     exchange_rate: float | None = None,
     is_reverse_charge: bool = False,
     coupon_code: str | None = None,
+    sales_channel: str | None = None,
 ) -> m.SalesInvoice:
     if not items:
         raise HTTPException(status_code=400, detail="Invoice requires at least one line item")
     await require_active_customer(db, tenant_id, customer_id)
+    from app.trade import assert_moq, resolve_document_channel
+
+    channel = await resolve_document_channel(
+        db, tenant_id=tenant_id, requested=sales_channel, source="invoice"
+    )
 
     from app.fx import resolve_rate
 
@@ -335,15 +342,16 @@ async def create_sales_invoice(
     prepared: list[tuple[dict, float]] = []
     for item in items:
         product, variant, unit_price = await resolve_sale_line(
-            db, tenant_id, item, customer_id=customer_id
+            db, tenant_id, item, customer_id=customer_id, sales_channel=channel
         )
-        unit_id, qty, _qty_base = await resolve_line_unit(
+        unit_id, qty, qty_base = await resolve_line_unit(
             db,
             tenant_id=tenant_id,
             product=product,
             unit_id=item.get("unit_id"),
             quantity=money_json(item["quantity"]),
         )
+        assert_moq(product, qty_base or qty, channel)
         explicit = item.get("tax_rate")
         if explicit is not None:
             spec = await resolve_product_tax(
@@ -470,6 +478,7 @@ async def create_sales_invoice(
         created_by=user_id,
         store_id=resolved_store_id,
         coupon_id=coupon_id,
+        sales_channel=channel,
     )
     db.add(invoice)
     await db.flush()
