@@ -1499,6 +1499,7 @@ async def trial_balance(
     as_of: datetime | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    limit_store_ids: list[str] | None = None,
 ) -> dict:
     """Trial balance (BR-10.6 / BR-14.5).
 
@@ -1516,7 +1517,7 @@ async def trial_balance(
     ).scalars().all()
 
     store_ids = await _pnl_store_ids(
-        db, tenant_id, store_id=store_id, branch_id=branch_id
+        db, tenant_id, store_id=store_id, branch_id=branch_id, limit_store_ids=limit_store_ids
     )
     location_filter = store_ids is not None
     effective_as_of = as_of
@@ -1607,6 +1608,7 @@ async def _pnl_store_ids(
     *,
     store_id: str | None,
     branch_id: str | None,
+    limit_store_ids: list[str] | None = None,
 ) -> list[str] | None:
     """Resolve store ids for location-filtered P&L; None means no location filter."""
     if store_id:
@@ -1624,6 +1626,15 @@ async def _pnl_store_ids(
             raise HTTPException(
                 status_code=400,
                 detail="store_id is not in the requested branch",
+            )
+        if limit_store_ids is not None and store.id not in set(limit_store_ids):
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": "STORE_ACCESS_DENIED",
+                    "message": "You are not assigned to this store",
+                    "store_id": store.id,
+                },
             )
         return [store.id]
     if branch_id:
@@ -1645,7 +1656,13 @@ async def _pnl_store_ids(
                 )
             )
         ).scalars().all()
-        return list(rows)
+        ids = list(rows)
+        if limit_store_ids is not None:
+            allow = set(limit_store_ids)
+            ids = [sid for sid in ids if sid in allow]
+        return ids
+    if limit_store_ids is not None:
+        return list(limit_store_ids)
     return None
 
 
@@ -1807,6 +1824,7 @@ async def profit_and_loss(
     to_date: datetime | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    limit_store_ids: list[str] | None = None,
 ) -> dict:
     """P&L with revenue, COGS (5000), gross profit, and operating expenses (BR-10.6 / BR-14.5).
 
@@ -1816,7 +1834,7 @@ async def profit_and_loss(
     attributable to the store(s); unattributable journals are excluded.
     """
     store_ids = await _pnl_store_ids(
-        db, tenant_id, store_id=store_id, branch_id=branch_id
+        db, tenant_id, store_id=store_id, branch_id=branch_id, limit_store_ids=limit_store_ids
     )
     use_journals = bool(from_date or to_date or store_ids is not None)
 

@@ -27,6 +27,7 @@ def serialize_account(account: m.Account) -> dict:
         "is_active": bool(getattr(account, "is_active", True)),
         "is_cash_account": bool(account.is_cash_account),
         "is_bank_account": bool(account.is_bank_account),
+        "parent_id": getattr(account, "parent_id", None),
         "bank_name": account.bank_name,
         "account_number": account.account_number,
         "bank_branch": getattr(account, "bank_branch", None),

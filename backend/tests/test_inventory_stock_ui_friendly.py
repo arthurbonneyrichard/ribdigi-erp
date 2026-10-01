@@ -9,9 +9,9 @@ PAGE = ROOT / "frontend/app/(dashboard)/inventory/page.tsx"
 
 
 def _section(text: str, tab: str, nxt: str | None) -> str:
-    start = text.find(f"{{tab === '{tab}' && (")
+    start = text.find(f"{{tab === '{tab}' &&")
     if nxt:
-        end = text.find(f"{{tab === '{nxt}' && (")
+        end = text.find(f"{{tab === '{nxt}' &&")
     else:
         end = len(text)
     assert start >= 0 and end > start, (tab, nxt, start, end)
@@ -47,7 +47,7 @@ def test_stock_tabs_ui_matches_categories_pattern():
 
     assert "<h2" in batches and "Batches" in batches
     assert "Receive batch" in batches
-    assert "inv-drawer" in batches
+    assert "FormModal" in batches
     assert "No batches yet" in batches
 
     assert "Opening stock" in opening
@@ -56,7 +56,10 @@ def test_stock_tabs_ui_matches_categories_pattern():
     assert "Post opening stock" in opening
 
     assert "Expiry" in expiry
+    assert "Set expiry" in expiry
     assert "No batches expiring" in expiry
+    assert "Save expiry lot" in page
+    assert "recordExpiryLot" in page
 
     assert "Stock count" in counts
     assert "Start count" in counts
@@ -79,7 +82,6 @@ def test_stock_tabs_ui_matches_categories_pattern():
     assert "Adjust stock" in whstock
 
     assert "Stock transfer" in transfers
-    assert "New transfer" in transfers
+    assert "Add Transfer" in transfers
     assert "assigned when you save" in transfers
-    assert "Create & request" in transfers
     assert 'aria-label="Opening stock reference"' in page

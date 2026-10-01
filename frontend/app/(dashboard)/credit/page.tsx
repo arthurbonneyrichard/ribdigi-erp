@@ -1,11 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '../../../lib/api';
 
+function retryAfterFrom(raw: unknown): number {
+  const n = Number((raw as { retryAfter?: number })?.retryAfter);
+  return Number.isFinite(n) && n > 0 ? Math.min(60, Math.ceil(n)) : 0;
+}
+
 function friendlyCreditError(raw: unknown): string {
+  const status = (raw as { status?: number })?.status;
   const m = String((raw as { message?: string })?.message || raw || 'Something went wrong. Try again.');
+  if (status === 429 || /too many requests|rate limit/i.test(m)) {
+    return 'Could not load supplier or customer balances. Wait for the cooldown, then retry.';
+  }
   if (/must be positive|payment amount/i.test(m)) return 'Enter an amount greater than zero.';
   if (/select a supplier|supplier not found|customer not found/i.test(m)) {
     return 'Select a supplier or customer first.';
@@ -55,48 +64,74 @@ export default function Page() {
   const [payBusy, setPayBusy] = useState(false);
   const [limitBusy, setLimitBusy] = useState(false);
   const [loadState, setLoadState] = useState<'loading' | 'success' | 'empty' | 'error'>('loading');
+  const [retryAfterSec, setRetryAfterSec] = useState(0);
+  const refreshInflight = useRef<Promise<void> | null>(null);
 
   async function refresh() {
+    if (refreshInflight.current) return refreshInflight.current;
     setLoadState('loading');
     setError('');
-    try {
-      const aging = await api(`/credit/aging?kind=${kind}`);
-      const [cust, supp, settings, liquid, fx] = await Promise.all([
-        api('/customers').catch(() => ({ data: [] })),
-        api('/suppliers').catch(() => ({ data: [] })),
-        api('/credit/settings').catch(() => ({ data: {} })),
-        api('/accounting/liquid-accounts').catch(() => ({ data: [] })),
-        api('/credit/exchange-rates').catch(() => ({ data: { base_currency: 'GHS', rates: [] } })),
-      ]);
-      const data = aging.data;
-      setReport(data);
-      setCustomers(cust.data || []);
-      setSuppliers(supp.data || []);
-      setLiquidAccounts(liquid.data || []);
-      setEpPct(String(settings.data?.early_pay_discount_pct ?? 0));
-      setEpDays(String(settings.data?.early_pay_discount_days ?? 0));
-      setEpEnabled(!!settings.data?.enabled);
-      setBaseCurrency(fx.data?.base_currency || 'GHS');
-      setFxRates(fx.data?.rates || []);
-      setFxAutoRefresh(fx.data?.fx_auto_refresh !== false);
-      if (!partyId) {
-        const first = kind === 'receivable' ? cust.data?.[0]?.id : supp.data?.[0]?.id;
-        if (first) setPartyId(first);
+    const run = (async () => {
+      try {
+        const aging = await api(`/credit/aging?kind=${kind}`);
+        const [cust, supp, settings, liquid, fx] = await Promise.all([
+          api('/customers').catch(() => ({ data: [] })),
+          api('/suppliers').catch(() => ({ data: [] })),
+          api('/credit/settings').catch(() => ({ data: {} })),
+          api('/accounting/liquid-accounts').catch(() => ({ data: [] })),
+          api('/credit/exchange-rates').catch(() => ({ data: { base_currency: 'GHS', rates: [] } })),
+        ]);
+        const data = aging.data;
+        setReport(data);
+        setCustomers(cust.data || []);
+        setSuppliers(supp.data || []);
+        setLiquidAccounts(liquid.data || []);
+        setEpPct(String(settings.data?.early_pay_discount_pct ?? 0));
+        setEpDays(String(settings.data?.early_pay_discount_days ?? 0));
+        setEpEnabled(!!settings.data?.enabled);
+        setBaseCurrency(fx.data?.base_currency || 'GHS');
+        setFxRates(fx.data?.rates || []);
+        setFxAutoRefresh(fx.data?.fx_auto_refresh !== false);
+        if (!partyId) {
+          const first = kind === 'receivable' ? cust.data?.[0]?.id : supp.data?.[0]?.id;
+          if (first) setPartyId(first);
+        }
+        const due = Number(data?.total_due || 0);
+        const docs = data?.documents || [];
+        const parties = data?.parties || [];
+        setLoadState(due === 0 && docs.length === 0 && parties.length === 0 ? 'empty' : 'success');
+      } catch (err) {
+        setReport(null);
+        setLoadState('error');
+        const wait = retryAfterFrom(err);
+        if (wait) setRetryAfterSec(wait);
+        throw err;
       }
-      const due = Number(data?.total_due || 0);
-      const docs = data?.documents || [];
-      const parties = data?.parties || [];
-      setLoadState(due === 0 && docs.length === 0 && parties.length === 0 ? 'empty' : 'success');
-    } catch (err) {
-      setReport(null);
-      setLoadState('error');
-      throw err;
-    }
+    })().finally(() => {
+      refreshInflight.current = null;
+    });
+    refreshInflight.current = run;
+    return run;
   }
 
   useEffect(() => {
-    if (urlKind !== kind) setKind(urlKind);
-  }, [urlKind, kind]);
+    if (urlKind !== kind) {
+      setKind(urlKind);
+      return;
+    }
+    setSchedule(null);
+    setHistory(null);
+    setStatement(null);
+    setCreditInfo(null);
+    refresh().catch((err) => setError(friendlyCreditError(err)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kind, urlKind]);
+
+  useEffect(() => {
+    if (retryAfterSec <= 0) return;
+    const id = window.setTimeout(() => setRetryAfterSec((s) => Math.max(0, s - 1)), 1000);
+    return () => window.clearTimeout(id);
+  }, [retryAfterSec]);
 
   function selectKind(next: 'receivable' | 'payable') {
     if (next === 'receivable') setKind('receivable');
@@ -107,14 +142,6 @@ export default function Page() {
     if (next === 'payable' && panel === 'pay') qs.set('panel', 'pay');
     router.replace(`/credit?${qs.toString()}`, { scroll: false });
   }
-
-  useEffect(() => {
-    setSchedule(null);
-    setHistory(null);
-    setStatement(null);
-    setCreditInfo(null);
-    refresh().catch((err) => setError(friendlyCreditError(err)));
-  }, [kind]);
 
   useEffect(() => {
     const list = kind === 'receivable' ? customers : suppliers;
@@ -128,9 +155,10 @@ export default function Page() {
 
   useEffect(() => {
     if (!partyId) return;
+    if (loadState === 'loading' || loadState === 'error') return;
     loadCreditInfo().catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [partyId, kind]);
+  }, [partyId, kind, loadState]);
 
   async function loadStatement() {
     if (!partyId) return;
@@ -436,13 +464,15 @@ export default function Page() {
           {error}{' '}
           <button
             type="button"
+            disabled={loadState === 'loading' || retryAfterSec > 0}
             onClick={() => {
+              if (loadState === 'loading' || retryAfterSec > 0) return;
               setError('');
               refresh().catch((err) => setError(friendlyCreditError(err)));
             }}
             aria-label="Retry credit data"
           >
-            Retry
+            {loadState === 'loading' ? 'Loading…' : retryAfterSec > 0 ? `Retry in ${retryAfterSec}s` : 'Retry'}
           </button>
         </p>
       )}
@@ -476,15 +506,15 @@ export default function Page() {
       <div className="erp-kpis credit-kpis">
         <div className="card">
           <div className="muted">{kind === 'receivable' ? 'Customer balance' : 'We owe'}</div>
-          <div className="kpi">{loadState === 'loading' ? '…' : loadState === 'error' ? '—' : weOweAmt}</div>
+          <div className="kpi">{loadState === 'loading' ? '…' : loadState === 'error' ? 'Unavailable' : weOweAmt}</div>
         </div>
         <div className="card">
           <div className="muted">Overdue</div>
-          <div className="kpi">{loadState === 'loading' ? '…' : loadState === 'error' ? '—' : overdueAmt}</div>
+          <div className="kpi">{loadState === 'loading' ? '…' : loadState === 'error' ? 'Unavailable' : overdueAmt}</div>
         </div>
         <div className="card">
           <div className="muted">Not yet due</div>
-          <div className="kpi">{loadState === 'loading' ? '…' : loadState === 'error' ? '—' : notDueAmt}</div>
+          <div className="kpi">{loadState === 'loading' ? '…' : loadState === 'error' ? 'Unavailable' : notDueAmt}</div>
         </div>
       </div>
       {kind === 'payable' && loadState === 'success' && Number(report?.commitment_total || 0) > 0 ? (
@@ -509,11 +539,17 @@ export default function Page() {
         </div>
         <div className="card">
           <h3>Aging</h3>
+          {loadState === 'error' ? (
+            <p className="muted">Aging is unavailable until balances load.</p>
+          ) : (
+            <>
           <p>Not yet due: {totals.current ?? 0}</p>
           <p>1–30 days: {totals['1_30'] ?? 0}</p>
           <p>31–60 days: {totals['31_60'] ?? 0}</p>
           <p>61–90 days: {totals['61_90'] ?? 0}</p>
           <p>90+ days: {totals['90_plus'] ?? 0}</p>
+            </>
+          )}
         </div>
       </div>
 

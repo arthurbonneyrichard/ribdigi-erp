@@ -42,8 +42,16 @@ def test_custom_role_base_role_literal_schema():
         )
     with pytest.raises(ValidationError):
         CustomRoleCreate.model_validate(
-            {"key": "x", "label": "X", "base_role": "garbage_xyz"}
+            {"key": "x", "label": "X", "base_role": "platform_owner"}
         )
+    hotel = CustomRoleCreate.model_validate(
+        {"key": "lead_x", "label": "X", "base_role": "hotel_manager"}
+    )
+    assert hotel.base_role == "hotel_manager"
+    unknown = CustomRoleCreate.model_validate(
+        {"key": "lead_y", "label": "X", "base_role": "garbage_xyz"}
+    )
+    assert unknown.base_role == "garbage_xyz"
 
 
 def test_custom_role_base_role_ui_and_docs():

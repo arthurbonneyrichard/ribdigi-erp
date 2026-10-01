@@ -4,6 +4,7 @@ import pytest
 
 def test_expected_cash():
     assert compute_expected_cash(200, 150.5) == 350.5
+    assert compute_expected_cash(200, 150, 25, 10) == 365
 
 
 def test_variance():

@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api } from '../../../lib/api';
+import FormModal from '../../../components/FormModal';
+import { api, getAccessToken } from '../../../lib/api';
 import { useStoreContext } from '../../../lib/storeContext';
 
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -39,6 +40,8 @@ export default function Page() {
   const [error, setError] = useState('');
   const [taxRateManageFilter, setTaxRateManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [filingJurisdictionFilter, setFilingJurisdictionFilter] = useState<'' | 'GH'>('');
+  const [rateBusy, setRateBusy] = useState(false);
+  const [taxAddOpen, setTaxAddOpen] = useState(false);
 
   const managedRates = rows.filter((r) => {
     if (taxRateManageFilter === 'all') return true;
@@ -86,6 +89,7 @@ export default function Page() {
     if (ctxStoreId) setStoreId(ctxStoreId);
   }, [ctxStoreId]);
   async function createRate() {
+    if (rateBusy) return;
     const trimmedName = name.trim();
     if (!trimmedName) {
       setError('Tax rate name is required.');
@@ -94,6 +98,7 @@ export default function Page() {
     }
     setError('');
     setMessage('');
+    setRateBusy(true);
     try {
       let components = null;
       if (componentsJson.trim()) {
@@ -130,9 +135,12 @@ export default function Page() {
       setMessage('Tax rate created');
       setComponentsJson('');
       setReverseCharge(false);
+      setTaxAddOpen(false);
       await refresh();
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setRateBusy(false);
     }
   }
 
@@ -179,7 +187,7 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const tenant = localStorage.getItem('tenant');
       const params = new URLSearchParams();
       params.set('report_type', reportType);
@@ -294,8 +302,18 @@ export default function Page() {
       </div>
 
       <div className="grid">
-        <div className="card">
-          <h3>Add a tax rate</h3>
+        <div>
+          <button type="button" className="list-btn-primary" onClick={() => setTaxAddOpen(true)} aria-label="Add a tax rate">
+            Add a tax rate
+          </button>
+        </div>
+        {taxAddOpen ? (
+        <FormModal
+          title="Add a tax rate"
+          busy={rateBusy}
+          dirty={Boolean(name.trim() && name.trim() !== 'Standard VAT') || rate !== '15' || Boolean(componentsJson.trim())}
+          onClose={() => setTaxAddOpen(false)}
+        >
           <div style={{ display: 'grid', gap: 8 }}>
             <label>
               Name
@@ -349,11 +367,12 @@ export default function Page() {
               title="JSON array of {code,name,rate,basis}; code/name omit or non-empty (blank/!!!/URL → 422); basis net|compound"
             />
             </details>
-            <button type="button" aria-label="Add tax rate" onClick={createRate} disabled={!name.trim()}>
-              Add rate
+            <button type="button" aria-label="Add tax rate" onClick={createRate} disabled={!name.trim() || rateBusy}>
+              {rateBusy ? 'Saving…' : 'Add rate'}
             </button>
           </div>
-        </div>
+        </FormModal>
+        ) : null}
         <div className="card">
           <h3>Preview with default rate</h3>
           <p className="muted">Estimate only. Posted documents use the server calculation.</p>

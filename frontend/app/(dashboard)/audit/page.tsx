@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { api } from '../../../lib/api';
+import { api, getAccessToken } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -149,7 +149,7 @@ export default function Page() {
         setError('Entity must be snake_case starting with a letter');
         return;
       }
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const tenant = localStorage.getItem('tenant');
       const params = new URLSearchParams();
       if (module) params.set('module', module);

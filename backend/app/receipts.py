@@ -1,7 +1,8 @@
-"""POS thermal receipt builders (text + narrow PDF)."""
+"""POS thermal receipt builders (HTML + text + narrow PDF)."""
 
 from __future__ import annotations
 
+import html
 from datetime import datetime
 from typing import Any
 
@@ -10,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.honesty import money_json
+
+WALK_IN_CUSTOMER = "Walk-in"
 
 # Typical 80mm thermal width (~48 monospace chars); 58mm ~32
 THERMAL_WIDTHS = {"80mm": 42, "58mm": 32}
@@ -58,12 +61,74 @@ def _clean_text(value: Any) -> str | None:
     return text or None
 
 
+def _receipt_customer_name(
+    *,
+    tx: m.Transaction,
+    payload: dict[str, Any],
+    party: m.Party | None = None,
+) -> str:
+    """Name of the customer on this sale, or Walk-in.
+
+    Checkout `party_id` is the source of truth. A leftover `customer_name` on
+    the stored payload is ignored for walk-in sales and overridden by the
+    selected party's name when `party_id` is set.
+    """
+    party_id = getattr(tx, "party_id", None)
+    if not party_id:
+        return WALK_IN_CUSTOMER
+    if party is not None:
+        named = _clean_text(getattr(party, "name", None))
+        if named:
+            return named
+    stored = payload.get("customer_name")
+    if isinstance(stored, str):
+        named = stored.strip() or None
+        if named:
+            return named
+    return WALK_IN_CUSTOMER
+
+
+async def load_sale_party(
+    db: AsyncSession, *, tenant_id: str, party_id: str | None
+) -> m.Party | None:
+    if not party_id:
+        return None
+    from sqlalchemy import select
+
+    return (
+        await db.execute(
+            select(m.Party).where(
+                m.Party.id == party_id,
+                m.Party.tenant_id == tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
+
+
+def _receipt_payments(raw: Any) -> list[dict[str, Any]]:
+    """Tender method + amount only — never card/auth payment references."""
+    out: list[dict[str, Any]] = []
+    if not isinstance(raw, list):
+        return out
+    for pay in raw:
+        if not isinstance(pay, dict):
+            continue
+        out.append(
+            {
+                "payment_method": pay.get("payment_method") or "cash",
+                "amount": money_json(pay.get("amount") or 0),
+            }
+        )
+    return out
+
+
 def build_receipt_payload(
     *,
     tx: m.Transaction,
     tenant: m.Tenant | None,
     cashier_name: str | None = None,
     store: m.Store | None = None,
+    party: m.Party | None = None,
 ) -> dict[str, Any]:
     payload = tx.payload or {}
     items = payload.get("items") or []
@@ -100,11 +165,8 @@ def build_receipt_payload(
                 "variant_id": raw.get("variant_id"),
             }
         )
-    customer_name = payload.get("customer_name")
-    if isinstance(customer_name, str):
-        customer_name = customer_name.strip() or None
-    else:
-        customer_name = None
+    customer_name = _receipt_customer_name(tx=tx, payload=payload, party=party)
+    receipt_payments = _receipt_payments(payload.get("payments") or [])
 
     company_name = _clean_text(tenant.company_name if tenant else None) or "RIBDIGI ERP"
     store_name = _clean_text(store.name if store else None)
@@ -119,8 +181,14 @@ def build_receipt_payload(
     )
 
     from app.print_branding import branding_fields_for_payload
+    from app.pos import sale_settlement
 
     branding = branding_fields_for_payload(tenant)
+    settle = sale_settlement(
+        total=money_json(tx.total),
+        payments=payload.get("payments") or None,
+        payment_method=payload.get("payment_method"),
+    )
 
     return {
         "sale_id": tx.id,
@@ -151,10 +219,16 @@ def build_receipt_payload(
         "total": money_json(tx.total),
         "items": normalized_items,
         "payment_method": payload.get("payment_method", "cash"),
-        "payments": payload.get("payments") or [],
+        "payments": receipt_payments,
         "session_id": payload.get("session_id") or getattr(tx, "session_id", None),
         "created_at": tx.created_at,
         "format": "json",
+        "paid_amount": settle["paid_amount"],
+        "credit_amount": settle["credit_amount"],
+        "balance_due": settle["balance_due"],
+        "payment_status": settle["payment_status"],
+        "invoice_number": payload.get("invoice_number"),
+        "sales_invoice_id": payload.get("sales_invoice_id"),
     }
 
 
@@ -185,8 +259,8 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
         lines.append(_lr("Date", str(created)[:16], width))
     if receipt.get("cashier_name"):
         lines.append(_lr("Cashier", str(receipt["cashier_name"])[: width // 2], width))
-    if receipt.get("customer_name"):
-        lines.append(_lr("Customer", str(receipt["customer_name"])[: width // 2], width))
+    customer_label = str(receipt.get("customer_name") or WALK_IN_CUSTOMER).strip() or WALK_IN_CUSTOMER
+    lines.append(_lr("Customer", customer_label[: width // 2], width))
     lines.append("-" * width)
     for item in receipt.get("items") or []:
         name = str(item.get("name") or "Item")
@@ -213,8 +287,20 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
         for pay in payments:
             method = str(pay.get("payment_method") or "cash").upper()
             lines.append(_lr(method, _money(pay.get("amount") or 0), width))
+            # Payment reference (card/auth) is till-only — never print it.
     else:
         lines.append(_lr("Payment", str(receipt.get("payment_method") or "cash").upper(), width))
+    paid_amount = money_json(receipt.get("paid_amount"))
+    balance_due = money_json(receipt.get("balance_due"))
+    status = str(receipt.get("payment_status") or "").replace("_", " ")
+    if paid_amount > 0 or balance_due > 0 or status:
+        lines.append(_lr("Paid", _money(paid_amount), width))
+        if balance_due > 0:
+            lines.append(_lr("Balance due", _money(balance_due), width))
+        if status:
+            lines.append(_lr("Status", status.upper(), width))
+    if receipt.get("invoice_number"):
+        lines.append(_lr("Invoice", str(receipt.get("invoice_number")), width))
     lines.append("-" * width)
     footer = receipt.get("print_footer") or "Thank you"
     for part in _wrap(str(footer), width):
@@ -222,6 +308,15 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     lines.append(_center("Powered by RIBDIGI", width))
     lines.append("")
     return "\n".join(lines)
+
+
+def render_thermal_html(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
+    """Browser/email HTML for the same thermal receipt (no payment references)."""
+    text = render_thermal_text(receipt, paper=paper)
+    return (
+        '<pre style="font-family:monospace;white-space:pre-wrap">'
+        f"{html.escape(text)}</pre>"
+    )
 
 
 def escpos_drawer_kick() -> bytes:
@@ -301,6 +396,8 @@ async def build_sale_receipt(
                 )
             ).scalar_one_or_none()
 
+    party = await load_sale_party(db, tenant_id=tenant_id, party_id=tx.party_id)
+
     return build_receipt_payload(
-        tx=tx, tenant=tenant, cashier_name=cashier_name, store=store
+        tx=tx, tenant=tenant, cashier_name=cashier_name, store=store, party=party
     )

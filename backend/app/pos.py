@@ -14,11 +14,38 @@ from app.doc_numbers import (  # re-exported for API callers
     next_pos_session_number,
     resolve_pos_company_id,
 )
-from app.honesty import money_json, optional_honest_narrative
+from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
+
+CASH_MOVEMENT_TYPES = frozenset({"cash_in", "cash_out"})
+SESSION_SUPERVISOR_ROLES = frozenset(
+    {"company_admin", "super_admin", "store_manager"}
+)
 
 
-def compute_expected_cash(opening_cash: float, cash_sales: float) -> float:
-    return money_json(round(money_json(opening_cash or 0) + money_json(cash_sales or 0), 2))
+def compute_expected_cash(
+    opening_cash: float,
+    cash_sales: float,
+    cash_in: float = 0,
+    cash_out: float = 0,
+) -> float:
+    return money_json(
+        round(
+            money_json(opening_cash or 0)
+            + money_json(cash_sales or 0)
+            + money_json(cash_in or 0)
+            - money_json(cash_out or 0),
+            2,
+        )
+    )
+
+
+def expected_cash_for_session(session: m.PosSession) -> float:
+    return compute_expected_cash(
+        session.opening_cash,
+        session.cash_sales,
+        getattr(session, "cash_in", 0) or 0,
+        getattr(session, "cash_out", 0) or 0,
+    )
 
 
 def compute_variance(actual_cash: float, expected_cash: float) -> float:
@@ -252,6 +279,43 @@ def credit_portion(payments: list[dict]) -> float:
     )
 
 
+def collected_portion(payments: list[dict]) -> float:
+    return money_json(
+        round(
+            sum(p["amount"] for p in payments if p["payment_method"] != "credit"),
+            2,
+        )
+    )
+
+
+def sale_settlement(
+    *,
+    total: float,
+    payments: list[dict] | None = None,
+    payment_method: str | None = None,
+) -> dict:
+    """Sale total vs cash/card collected vs on-account remainder (not a second ledger)."""
+    sale_total = money_json(round(money_json(total or 0), 2))
+    tenders = list(payments or [])
+    if not tenders:
+        method = normalize_payment_method(payment_method, strict=False)
+        tenders = [{"payment_method": method, "amount": sale_total}]
+    credit = credit_portion(tenders)
+    paid = money_json(round(max(sale_total - credit, 0), 2))
+    if credit <= 1e-9:
+        status = "paid"
+    elif paid > 1e-9:
+        status = "partially_paid"
+    else:
+        status = "unpaid"
+    return {
+        "paid_amount": paid,
+        "credit_amount": money_json(credit),
+        "balance_due": money_json(credit),
+        "payment_status": status,
+    }
+
+
 def has_cash_tender(payments: list[dict]) -> bool:
     return any(p["payment_method"] == "cash" for p in payments)
 
@@ -278,7 +342,7 @@ async def apply_sale_to_session(
             session.card_sales = money_json(round(money_json(session.card_sales or 0) + part, 2))
         else:
             session.other_sales = money_json(round(money_json(session.other_sales or 0) + part, 2))
-    session.expected_cash = compute_expected_cash(session.opening_cash, session.cash_sales)
+    session.expected_cash = expected_cash_for_session(session)
 
 
 async def record_pos_payments(
@@ -331,7 +395,7 @@ async def close_session(
     if session.status != "open":
         raise HTTPException(status_code=409, detail="POS session is already closed")
 
-    expected = compute_expected_cash(session.opening_cash, session.cash_sales)
+    expected = expected_cash_for_session(session)
     actual = money_json(round(money_json(actual_cash), 2))
     variance = compute_variance(actual, expected)
 
@@ -363,13 +427,17 @@ async def close_session(
 
 
 async def drawer_summary(session: m.PosSession) -> dict:
-    expected = compute_expected_cash(session.opening_cash, session.cash_sales)
+    expected = expected_cash_for_session(session)
+    cash_in = money_json(getattr(session, "cash_in", 0) or 0)
+    cash_out = money_json(getattr(session, "cash_out", 0) or 0)
     return {
         "session_id": session.id,
         "session_number": session.session_number,
         "status": session.status,
         "opening_cash": money_json(session.opening_cash),
         "cash_sales": money_json(session.cash_sales),
+        "cash_in": cash_in,
+        "cash_out": cash_out,
         "card_sales": money_json(session.card_sales),
         "other_sales": money_json(session.other_sales),
         "total_sales": money_json(session.total_sales),
@@ -396,12 +464,22 @@ async def serialize_session(db: AsyncSession, session: m.PosSession) -> dict:
         if store:
             store_name = store.name
             store_address = store.address
+    cashier = (
+        await db.execute(
+            select(m.User).where(
+                m.User.id == session.user_id,
+                m.User.tenant_id == session.tenant_id,
+            )
+        )
+    ).scalar_one_or_none()
     return {
         **drawer,
         "store_id": session.store_id,
         "store_name": store_name,
         "store_address": store_address,
         "user_id": session.user_id,
+        "cashier_id": session.user_id,
+        "cashier_name": cashier.full_name if cashier else None,
         "notes": session.notes,
         "opened_at": session.opened_at,
         "closed_at": session.closed_at,
@@ -439,6 +517,11 @@ async def shift_report(db: AsyncSession, session: m.PosSession) -> dict:
         tax_sum += tax
         discount_sum += disc
         net_sum += total
+        settle = sale_settlement(
+            total=total,
+            payments=payload.get("payments") or None,
+            payment_method=payload.get("payment_method"),
+        )
         sale_rows.append(
             {
                 "id": s.id,
@@ -450,10 +533,17 @@ async def shift_report(db: AsyncSession, session: m.PosSession) -> dict:
                 "payment_method": payload.get("payment_method", "cash"),
                 "payments": payload.get("payments") or [],
                 "customer_name": payload.get("customer_name"),
+                "cashier_id": session.user_id,
+                "session_id": session.id,
                 "discount_amount": money_json(cart_disc),
                 "line_discounts": money_json(line_disc),
                 "discounts": money_json(disc),
                 "created_at": s.created_at,
+                "paid_amount": settle["paid_amount"],
+                "balance_due": settle["balance_due"],
+                "payment_status": settle["payment_status"],
+                "sales_invoice_id": payload.get("sales_invoice_id"),
+                "invoice_number": payload.get("invoice_number"),
             }
         )
 
@@ -511,15 +601,94 @@ async def shift_report(db: AsyncSession, session: m.PosSession) -> dict:
         "net_after_returns": money_json(round(net_sum - return_total, 2)),
     }
 
+    movements = await list_cash_movements(db, session)
     return {
         "session": await serialize_session(db, session),
         "summary": summary,
         "sales": sale_rows,
         "returns": return_rows,
+        "cash_movements": movements,
         "payment_breakdown": {
             "cash": money_json(session.cash_sales or 0),
             "card": money_json(session.card_sales or 0),
             "other": money_json(session.other_sales or 0),
+            "cash_in": money_json(getattr(session, "cash_in", 0) or 0),
+            "cash_out": money_json(getattr(session, "cash_out", 0) or 0),
             "total": money_json(session.total_sales or 0),
         },
     }
+
+
+def serialize_cash_movement(row: m.PosCashMovement) -> dict:
+    return {
+        "id": row.id,
+        "session_id": row.session_id,
+        "store_id": row.store_id,
+        "user_id": row.user_id,
+        "movement_type": row.movement_type,
+        "amount": money_json(row.amount),
+        "reason": row.reason,
+        "created_at": row.created_at,
+    }
+
+
+async def list_cash_movements(db: AsyncSession, session: m.PosSession) -> list[dict]:
+    rows = (
+        await db.execute(
+            select(m.PosCashMovement)
+            .where(
+                m.PosCashMovement.tenant_id == session.tenant_id,
+                m.PosCashMovement.session_id == session.id,
+            )
+            .order_by(m.PosCashMovement.created_at.asc())
+        )
+    ).scalars().all()
+    return [serialize_cash_movement(r) for r in rows]
+
+
+def assert_can_operate_session(session: m.PosSession, claims: dict) -> None:
+    """Cashier may operate own shift; store managers/admins may operate assigned-store shifts."""
+    if session.user_id == claims.get("sub"):
+        return
+    role = (claims.get("role") or "").strip().lower()
+    if role in SESSION_SUPERVISOR_ROLES:
+        return
+    raise HTTPException(status_code=403, detail="Not your POS session")
+
+
+async def record_cash_movement(
+    db: AsyncSession,
+    *,
+    session: m.PosSession,
+    user_id: str,
+    movement_type: str,
+    amount: float,
+    reason: str,
+) -> m.PosCashMovement:
+    kind = (movement_type or "").strip().lower()
+    if kind not in CASH_MOVEMENT_TYPES:
+        raise HTTPException(status_code=400, detail="movement_type must be cash_in or cash_out")
+    if session.status != "open":
+        raise HTTPException(status_code=409, detail="POS session is not open")
+    qty = money_json(round(money_json(amount), 2))
+    if qty <= 0:
+        raise HTTPException(status_code=400, detail="amount must be positive")
+    reason_s = require_honest_narrative(reason, label="cash movement reason", max_length=200)
+
+    row = m.PosCashMovement(
+        tenant_id=session.tenant_id,
+        session_id=session.id,
+        store_id=session.store_id,
+        user_id=user_id,
+        movement_type=kind,
+        amount=qty,
+        reason=reason_s,
+    )
+    db.add(row)
+    if kind == "cash_in":
+        session.cash_in = money_json(round(money_json(getattr(session, "cash_in", 0) or 0) + qty, 2))
+    else:
+        session.cash_out = money_json(round(money_json(getattr(session, "cash_out", 0) or 0) + qty, 2))
+    session.expected_cash = expected_cash_for_session(session)
+    await db.flush()
+    return row

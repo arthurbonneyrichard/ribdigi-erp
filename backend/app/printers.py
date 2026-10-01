@@ -25,6 +25,13 @@ from app.honesty import require_honest_narrative
 from app.security import hash_token
 
 PURPOSES = frozenset({"customer_receipt", "invoice", "kitchen", "bar", "barcode"})
+GENERAL_PURPOSES = frozenset({"customer_receipt", "invoice", "barcode"})
+# Extra destinations keyed by saved Tenant.industry (canonical).
+# Hotel is in the industry catalog but has no extra print destinations —
+# do not invent restaurant kitchen/bar for hotel tenants.
+INDUSTRY_PURPOSES: dict[str, frozenset[str]] = {
+    "restaurant": frozenset({"kitchen", "bar"}),
+}
 CONNECTION_TYPES = frozenset({"browser_dialog", "print_agent", "network"})
 PAPERS = frozenset({"58mm", "80mm", "a4"})
 PREP_STATIONS = frozenset({"kitchen", "bar"})
@@ -110,6 +117,45 @@ class BrowserAckBody(BaseModel):
     detail: str | None = None
 
 
+def _canonical_industry(industry: str | None) -> str | None:
+    from app.packages import canonicalize_industry
+
+    return canonicalize_industry(industry)
+
+
+def purposes_for_industry(industry: str | None) -> list[str]:
+    extra = INDUSTRY_PURPOSES.get(_canonical_industry(industry) or "", frozenset())
+    return sorted(GENERAL_PURPOSES | extra)
+
+
+def purpose_allowed_for_industry(purpose: str, industry: str | None) -> bool:
+    return purpose in set(purposes_for_industry(industry))
+
+
+def visible_purposes_for_industry(purposes: list[str] | None, industry: str | None) -> list[str]:
+    """Purposes the operator may see/select for this saved industry.
+
+    Leftover kitchen/bar rows stay in the DB; they are omitted from the list
+    when none of their purposes apply (does not delete other tenants' printers).
+    """
+    allowed = set(purposes_for_industry(industry))
+    return [p for p in (purposes or []) if p in allowed]
+
+
+def printer_visible_for_industry(row: m.Printer, industry: str | None) -> bool:
+    return bool(visible_purposes_for_industry(row.purposes, industry))
+
+
+async def load_tenant_industry(
+    db: AsyncSession, tenant_id: str, tenant: m.Tenant | None = None
+) -> str | None:
+    """Saved Tenant.industry only — never a UI-only or client-supplied value."""
+    row = tenant if tenant is not None and getattr(tenant, "id", None) == tenant_id else await db.get(
+        m.Tenant, tenant_id
+    )
+    return _canonical_industry(getattr(row, "industry", None) if row else None)
+
+
 def normalize_purpose(value: str) -> str:
     key = (value or "").strip().lower()
     if key not in PURPOSES:
@@ -120,12 +166,21 @@ def normalize_purpose(value: str) -> str:
     return key
 
 
-def normalize_purposes(values: list[str] | None) -> list[str]:
+def normalize_purposes(values: list[str] | None, *, industry: str | None) -> list[str]:
     if not values:
         raise HTTPException(status_code=400, detail="Select at least one printer purpose")
+    allowed = set(purposes_for_industry(industry))
     out: list[str] = []
     for raw in values:
         key = normalize_purpose(str(raw))
+        if key not in allowed:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"'{key}' printers are not available for this business type. "
+                    f"Allowed: {', '.join(sorted(allowed))}"
+                ),
+            )
         if key not in out:
             out.append(key)
     return out
@@ -198,23 +253,56 @@ def validate_network_host(host: str) -> str:
     )
 
 
-def capabilities() -> dict[str, Any]:
+def capabilities(industry: str | None = None) -> dict[str, Any]:
+    ind = _canonical_industry(industry)
+    allowed = purposes_for_industry(ind)
+    extra = sorted(INDUSTRY_PURPOSES.get(ind or "", frozenset()))
+    prep = sorted(PREP_STATIONS) if extra else []
     return {
         "browser_enumerates_os_printers": False,
         "browser_silent_fanout": False,
         "fallback": "browser_print_dialog",
         "destinations": sorted(CONNECTION_TYPES),
-        "purposes": sorted(PURPOSES),
+        "industry": ind,
+        "purposes": allowed,
+        "industry_specific_purposes": extra,
         "papers": sorted(PAPERS),
-        "prep_stations": sorted(PREP_STATIONS),
+        "prep_stations": prep,
         "printed_means": "agent_or_browser_ack_or_network_send_success",
         "queued_is_not_printed": True,
         "notes": (
             "The browser cannot list every OS printer. Pair a till print agent "
             "or register an allowlisted network printer. Checkout still completes "
-            "if a printer is offline; receipt numbers are issued by the server."
+            "if a printer is offline; receipt numbers are issued by the server. "
+            "Kitchen and bar destinations are restaurant-only."
         ),
     }
+
+
+async def drop_inapplicable_printer_destinations(
+    db: AsyncSession, *, tenant_id: str, industry: str | None
+) -> None:
+    """Industry change: strip inapplicable purposes; disable printers with none left.
+
+    Does not remap kitchen/bar onto receipt/invoice/barcode.
+    Scoped to this tenant_id only.
+    """
+    allowed = set(purposes_for_industry(industry))
+    rows = list(
+        (
+            await db.execute(select(m.Printer).where(m.Printer.tenant_id == tenant_id))
+        ).scalars().all()
+    )
+    now = datetime.utcnow()
+    for row in rows:
+        current = [str(p) for p in (row.purposes or [])]
+        kept = [p for p in current if p in allowed]
+        if kept == current:
+            continue
+        row.purposes = kept
+        if not kept:
+            row.is_enabled = False
+        row.updated_at = now
 
 
 def serialize_agent(row: m.PrintAgent, *, include_secret: str | None = None) -> dict[str, Any]:
@@ -332,9 +420,14 @@ async def list_printers(
     if store_id:
         stmt = stmt.where(or_(m.Printer.store_id == store_id, m.Printer.store_id.is_(None)))
     rows = list((await db.execute(stmt)).scalars().all())
+    industry = await load_tenant_industry(db, tenant_id)
     if purpose:
         want = normalize_purpose(purpose)
+        if not purpose_allowed_for_industry(want, industry):
+            return []
         rows = [r for r in rows if want in (r.purposes or [])]
+    else:
+        rows = [r for r in rows if printer_visible_for_industry(r, industry)]
     return rows
 
 
@@ -348,7 +441,8 @@ async def create_printer(
     name = require_honest_narrative(payload.name, label="printer name", max_length=120)
     conn = normalize_connection(payload.connection_type)
     paper = normalize_paper(payload.paper)
-    purposes = normalize_purposes(payload.purposes)
+    industry = await load_tenant_industry(db, tenant_id)
+    purposes = normalize_purposes(payload.purposes, industry=industry)
     await _require_store(db, tenant_id, payload.store_id)
     host = None
     agent_id = payload.agent_id
@@ -427,7 +521,8 @@ async def update_printer(
     if payload.paper is not None:
         row.paper = normalize_paper(payload.paper)
     if payload.purposes is not None:
-        row.purposes = normalize_purposes(payload.purposes)
+        industry = await load_tenant_industry(db, tenant_id)
+        row.purposes = normalize_purposes(payload.purposes, industry=industry)
     if payload.copies is not None:
         row.copies = int(payload.copies)
     if payload.is_enabled is not None:
@@ -619,7 +714,12 @@ async def matching_printers(
     tenant_id: str,
     store_id: str | None,
     purpose: str,
+    industry: str | None = None,
 ) -> list[m.Printer]:
+    if industry is None:
+        industry = await load_tenant_industry(db, tenant_id)
+    if not purpose_allowed_for_industry(purpose, industry):
+        return []
     rows = await list_printers(db, tenant_id=tenant_id, store_id=store_id, purpose=purpose)
     enabled = [r for r in rows if r.is_enabled]
     if store_id:
@@ -660,7 +760,15 @@ async def enqueue_job(
     user_id: str | None,
     reprint_of_job_id: str | None = None,
     reprint_seq: int = 0,
+    industry: str | None = None,
 ) -> m.PrintJob:
+    if industry is None:
+        industry = await load_tenant_industry(db, tenant_id)
+    if not purpose_allowed_for_industry(purpose, industry):
+        raise HTTPException(
+            status_code=400,
+            detail=f"'{purpose}' printers are not available for this business type",
+        )
     key = _idempotency_key(
         source_type=source_type,
         source_id=source_id,
@@ -727,14 +835,18 @@ async def enqueue_pos_sale_prints(
     jobs: list[m.PrintJob] = []
     from app import receipts as receipts_svc
 
+    industry = await load_tenant_industry(db, tenant_id, tenant)
+    party = await receipts_svc.load_sale_party(
+        db, tenant_id=tenant_id, party_id=getattr(tx, "party_id", None)
+    )
     receipt = receipts_svc.build_receipt_payload(
-        tx=tx, tenant=tenant, store=store, cashier_name=None
+        tx=tx, tenant=tenant, store=store, cashier_name=None, party=party
     )
-    receipt_text = receipts_svc.render_thermal_text(
-        receipt, paper=(receipt.get("default_receipt_paper") or "80mm")
-    )
+    paper_default = receipt.get("default_receipt_paper") or "80mm"
+    receipt_text = receipts_svc.render_thermal_text(receipt, paper=paper_default)
+    receipt_html = receipts_svc.render_thermal_html(receipt, paper=paper_default)
     receipt_printers = await matching_printers(
-        db, tenant_id=tenant_id, store_id=store_id, purpose="customer_receipt"
+        db, tenant_id=tenant_id, store_id=store_id, purpose="customer_receipt", industry=industry
     )
     for printer in receipt_printers:
         paper = printer.paper if printer.paper in {"58mm", "80mm"} else "80mm"
@@ -743,6 +855,7 @@ async def enqueue_pos_sale_prints(
             "reference": tx.reference,
             "sale_id": tx.id,
             "text": receipts_svc.render_thermal_text(receipt, paper=paper),
+            "html": receipts_svc.render_thermal_html(receipt, paper=paper),
             "receipt": {k: v for k, v in receipt.items() if k != "logo_key"},
             "browser_fallback": printer.connection_type == "browser_dialog",
             "payments_included": True,
@@ -761,6 +874,13 @@ async def enqueue_pos_sale_prints(
         )
 
     items = list((tx.payload or {}).get("items") or [])
+    if not (
+        purpose_allowed_for_industry("kitchen", industry)
+        or purpose_allowed_for_industry("bar", industry)
+    ):
+        _ = (receipt_text, receipt_html)
+        return jobs
+
     product_ids = [i.get("product_id") for i in items if i.get("product_id")]
     products: dict[str, m.Product] = {}
     if product_ids:
@@ -806,7 +926,7 @@ async def enqueue_pos_sale_prints(
             continue
         purpose = station
         for printer in await matching_printers(
-            db, tenant_id=tenant_id, store_id=store_id, purpose=purpose
+            db, tenant_id=tenant_id, store_id=store_id, purpose=purpose, industry=industry
         ):
             paper = printer.paper if printer.paper in {"58mm", "80mm"} else "80mm"
             text = render_prep_ticket(
@@ -838,7 +958,7 @@ async def enqueue_pos_sale_prints(
                     user_id=user_id,
                 )
             )
-    _ = receipt_text
+    _ = (receipt_text, receipt_html)
     return jobs
 
 
@@ -851,8 +971,9 @@ async def enqueue_invoice_prints(
     text: str,
 ) -> list[m.PrintJob]:
     jobs: list[m.PrintJob] = []
+    industry = await load_tenant_industry(db, tenant_id)
     printers = await matching_printers(
-        db, tenant_id=tenant_id, store_id=invoice.store_id, purpose="invoice"
+        db, tenant_id=tenant_id, store_id=invoice.store_id, purpose="invoice", industry=industry
     )
     for printer in printers:
         payload = {
@@ -891,15 +1012,21 @@ async def enqueue_test_print(
         "browser_fallback": printer.connection_type == "browser_dialog",
     }
     key_source = f"test:{printer.id}:{datetime.utcnow().strftime('%Y%m%d%H%M%S')}:{secrets.token_hex(3)}"
+    industry = await load_tenant_industry(db, tenant_id)
+    purpose = next(
+        (p for p in (printer.purposes or []) if purpose_allowed_for_industry(p, industry)),
+        "customer_receipt",
+    )
     return await enqueue_job(
         db,
         tenant_id=tenant_id,
         printer=printer,
         source_type="test",
         source_id=key_source,
-        purpose=(printer.purposes or ["customer_receipt"])[0],
+        purpose=purpose,
         payload=payload,
         user_id=user_id,
+        industry=industry,
     )
 
 
@@ -949,7 +1076,19 @@ async def reprint_source(
     ).scalars().all()
     if not prior:
         raise HTTPException(status_code=404, detail="No print jobs for this document")
+    industry = await load_tenant_industry(db, tenant_id)
     want = {normalize_purpose(p) for p in purposes} if purposes else {j.purpose for j in prior}
+    if purposes:
+        bad = sorted(p for p in want if not purpose_allowed_for_industry(p, industry))
+        if bad:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Print destinations not available for this business type: "
+                    + ", ".join(bad)
+                ),
+            )
+    want = {p for p in want if purpose_allowed_for_industry(p, industry)}
     reprints: list[m.PrintJob] = []
     for purpose in want:
         originals = [j for j in prior if j.purpose == purpose]

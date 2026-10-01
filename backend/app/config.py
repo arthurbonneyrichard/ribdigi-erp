@@ -10,12 +10,21 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    # Offline POS authorization window. Default matches refresh-token days (7×24h).
+    # Tenants may set 1–168 hours via company profile; the POS client must not hardcode 7 days.
+    OFFLINE_AUTH_HOURS_DEFAULT: int = 168
+    OFFLINE_AUTH_HOURS_MIN: int = 1
+    OFFLINE_AUTH_HOURS_MAX: int = 168
+    OFFLINE_SYNC_MAX_RETRIES: int = 8
     REDIS_URL: str = "redis://redis:6379/0"
     RABBITMQ_URL: str = "amqp://ribdigi:ribdigi@rabbitmq:5672/"
     CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
     TRUSTED_HOSTS: str = ""
     RATE_LIMIT_ENABLED: bool = True
     RATE_LIMIT_PER_MINUTE: int = 120
+    # GET/HEAD share this bucket. Default matches PER_MINUTE; raise only when
+    # a real read burst (inventory + credit + notifications) is blocked.
+    RATE_LIMIT_READ_PER_MINUTE: int = 180
     RATE_LIMIT_AUTH_PER_MINUTE: int = 20
     RATE_LIMIT_BACKEND: str = "auto"  # auto | redis | memory
     RATE_LIMIT_REQUIRE_REDIS: bool = False
@@ -81,6 +90,7 @@ class Settings(BaseSettings):
     CELERY_LOW_STOCK_INTERVAL_MINUTES: int = 60
     CELERY_PAYMENT_DUE_INTERVAL_MINUTES: int = 60
     CELERY_QUOTATION_EXPIRY_INTERVAL_MINUTES: int = 60
+    CELERY_BATCH_EXPIRY_INTERVAL_MINUTES: int = 60
     CELERY_RECURRING_INTERVAL_MINUTES: int = 15
     CELERY_RECURRING_NOTIFY_INTERVAL_MINUTES: int = 60
     CELERY_BACKUP_INTERVAL_MINUTES: int = 60
@@ -163,7 +173,11 @@ class Settings(BaseSettings):
                 raise ValueError("Production CORS_ORIGINS must not include wildcard '*'")
             if not self.RATE_LIMIT_ENABLED:
                 raise ValueError("RATE_LIMIT_ENABLED must be true in production")
-            if self.RATE_LIMIT_PER_MINUTE < 1 or self.RATE_LIMIT_AUTH_PER_MINUTE < 1:
+            if (
+                self.RATE_LIMIT_PER_MINUTE < 1
+                or self.RATE_LIMIT_AUTH_PER_MINUTE < 1
+                or self.RATE_LIMIT_READ_PER_MINUTE < 1
+            ):
                 raise ValueError("Rate limit values must be positive in production")
             if not self.trusted_hosts:
                 raise ValueError(

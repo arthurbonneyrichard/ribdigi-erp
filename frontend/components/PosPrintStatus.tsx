@@ -7,7 +7,7 @@ type PrintJob = {
   id: string;
   purpose: string;
   status: string;
-  payload?: { text?: string; browser_fallback?: boolean };
+  payload?: { text?: string; html?: string; browser_fallback?: boolean };
 };
 
 export default function PosPrintStatus({
@@ -22,12 +22,16 @@ export default function PosPrintStatus({
   const [note, setNote] = useState('');
 
   async function browserPrint(job: PrintJob) {
+    const html = job.payload?.html;
     const text = job.payload?.text || '';
     setBusy(true);
     try {
       const frame = window.open('', '_blank', 'noopener,noreferrer,width=480,height=640');
       if (frame) {
-        frame.document.write(`<pre style="font-family:monospace;white-space:pre-wrap">${text.replace(/</g, '&lt;')}</pre>`);
+        const body = html
+          ? html
+          : `<pre style="font-family:monospace;white-space:pre-wrap">${text.replace(/</g, '&lt;')}</pre>`;
+        frame.document.write(body);
         frame.document.close();
         frame.focus();
         frame.print();
@@ -67,7 +71,7 @@ export default function PosPrintStatus({
   if (!rows.length) {
     return (
       <p className="muted tpos-print-note">
-        Sale saved. Print from the receipt buttons if the kitchen printer did not fire.
+        Sale saved. Print from the receipt buttons if a printer did not fire.
       </p>
     );
   }

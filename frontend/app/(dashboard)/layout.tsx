@@ -10,7 +10,7 @@ import Shell from '../../components/Shell';
  */
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<div className="page-skeleton" role="status" aria-live="polite"><div className="page-skeleton-progress" /><p className="muted">Loading workspace…</p></div>}>
       <Shell>{children}</Shell>
     </Suspense>
   );

@@ -525,6 +525,7 @@ async def build_report_payload(
     as_of: str | None = None,
     compare: str | None = None,
     department_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> Any:
     # Defense in depth: /reports/export report_type Query Literal → 422 on blank/unknown.
     if report_type not in EXPORTABLE:
@@ -539,10 +540,10 @@ async def build_report_payload(
 
     if report_type == "summary":
         daily = await reports_svc.sales_daily(
-            db, tenant_id, now, store_id=store_id or None
+            db, tenant_id, now, store_id=store_id or None, store_ids=store_ids
         )
         monthly = await reports_svc.sales_monthly(
-            db, tenant_id, now.year, now.month, store_id=store_id or None
+            db, tenant_id, now.year, now.month, store_id=store_id or None, store_ids=store_ids
         )
         low = await reports_svc.inventory_low_stock(db, tenant_id)
         expenses = await reports_svc.expenses_summary(db, tenant_id)
@@ -558,6 +559,7 @@ async def build_report_payload(
             tenant_id,
             reports_svc.parse_date(date) or now,
             store_id=store_id or None,
+            store_ids=store_ids,
         )
     if report_type == "sales_monthly":
         return await reports_svc.sales_monthly(
@@ -566,6 +568,7 @@ async def build_report_payload(
             year or now.year,
             month or now.month,
             store_id=store_id or None,
+            store_ids=store_ids,
         )
     if report_type == "sales_products":
         return await reports_svc.sales_by_product(
@@ -574,6 +577,7 @@ async def build_report_payload(
             from_date=fd,
             to_date=td,
             store_id=store_id or None,
+            store_ids=store_ids,
             category_id=category_id or None,
         )
     if report_type == "sales_salesperson":

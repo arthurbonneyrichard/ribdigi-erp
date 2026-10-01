@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import FormModal from '../../../components/FormModal';
 import { api, apiOptional } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { isHotelIndustry } from '../../../lib/tenantNav';
@@ -179,6 +180,7 @@ export default function Page() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [storeBusy, setStoreBusy] = useState(false);
+  const [storeAddOpen, setStoreAddOpen] = useState(false);
   const [storeManageFilter, setStoreManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [warehouseManageFilter, setWarehouseManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [branchManageFilter, setBranchManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -195,6 +197,7 @@ export default function Page() {
     store_limit?: number | null;
     over_entitlement?: boolean;
     unlimited?: boolean;
+    multi_store?: boolean;
   } | null>(null);
   const [storeLimitDraft, setStoreLimitDraft] = useState('');
 
@@ -283,6 +286,7 @@ export default function Page() {
   }, [hotelHome]);
 
   async function createStore() {
+    if (storeBusy) return;
     setError('');
     setStoreBusy(true);
     try {
@@ -307,6 +311,7 @@ export default function Page() {
       setBranchId('');
       setHours(defaultHours());
       setMessage('Store created');
+      setStoreAddOpen(false);
       await refresh();
     } catch (err: any) {
       const detail = err?.detail || err?.data?.detail;
@@ -893,6 +898,10 @@ export default function Page() {
     }),
   );
 
+  const canCreateStore =
+    Boolean(entitlement?.unlimited) ||
+    ((entitlement?.stores_remaining ?? 0) > 0 && !entitlement?.over_entitlement);
+
   if (hotelHome !== false) {
     return <p className="muted">{hotelHome ? 'Opening hotel dashboard…' : 'Checking account…'}</p>;
   }
@@ -901,6 +910,13 @@ export default function Page() {
     <>
       <h1>Multi-Store</h1>
       <p className="muted">Branches, departments, stores, warehouses, FEFO mode, and transfers</p>
+      {canCreateStore ? (
+      <div style={{ marginBottom: 12 }}>
+        <button type="button" className="list-btn-primary" onClick={() => setStoreAddOpen(true)} aria-label="Create store">
+          Create store
+        </button>
+      </div>
+      ) : null}
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 
@@ -1049,8 +1065,13 @@ export default function Page() {
             )}
           </div>
         </div>
-        <div className="card">
-          <h3>New store</h3>
+        {storeAddOpen ? (
+        <FormModal
+          title="New store"
+          busy={storeBusy}
+          dirty={Boolean(code.trim() || name.trim() || address.trim() || phone.trim())}
+          onClose={() => setStoreAddOpen(false)}
+        >
           <div style={{ display: 'grid', gap: 8 }}>
             <input
               value={code}
@@ -1117,7 +1138,8 @@ export default function Page() {
               {storeBusy ? 'Creating store…' : 'Create store'}
             </button>
           </div>
-        </div>
+        </FormModal>
+        ) : null}
         <div className="card">
           <h3>{editWhId ? 'Edit warehouse' : 'New warehouse'}</h3>
           <div style={{ display: 'grid', gap: 8 }}>
@@ -1368,7 +1390,7 @@ export default function Page() {
         </div>
       </div>
 
-      <h3 style={{ marginTop: 16 }}>Branches</h3>
+      <h3 id="branches" style={{ marginTop: 16 }}>Branches</h3>
       <p className="muted">Code, manager, address, and contact; deactivate without data loss (BR-2.2).</p>
       <select
         value={branchManageFilter}
@@ -1484,7 +1506,7 @@ export default function Page() {
         </tbody>
       </table>
 
-      <h3 style={{ marginTop: 16 }}>Stores</h3>
+      <h3 id="stores" style={{ marginTop: 16 }}>Stores</h3>
       <p className="muted">Manager, branch, hours, and warehouse link (BR-2.3). Soft-deactivate hides the store from POS and new sales without deleting history.</p>
       {entitlement && (
         <div
@@ -1580,9 +1602,11 @@ export default function Page() {
                 </button>
                 <button onClick={() => loadInventory(s.id)} aria-label={`Open inventory reorder for store ${s.id}`}>Inventory / reorder</button>
                 {s.is_active === false ? (
+                  canCreateStore ? (
                   <button type="button" className="btn-ok" onClick={() => setStoreActive(s.id, true)} aria-label={`Activate store ${s.id}`}>
                     Activate
                   </button>
+                  ) : null
                 ) : (
                   <button type="button" className="btn-danger" onClick={() => setStoreActive(s.id, false)} aria-label={`Deactivate store ${s.id}`}>
                     Deactivate
@@ -1706,6 +1730,7 @@ export default function Page() {
             <thead>
               <tr>
                 <th>Product</th>
+                <th>SKU</th>
                 <th>Qty</th>
                 <th>Reorder</th>
                 <th>Suggest</th>
@@ -1715,9 +1740,8 @@ export default function Page() {
             <tbody>
               {inventory.map((i) => (
                 <tr key={i.product_id}>
-                  <td>
-                    {i.name} ({i.sku})
-                  </td>
+                  <td>{i.name}</td>
+                  <td>{i.sku || '—'}</td>
                   <td>{i.quantity}</td>
                   <td>
                     {i.reorder_level} / {i.reorder_qty}

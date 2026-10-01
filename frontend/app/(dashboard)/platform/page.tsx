@@ -75,6 +75,8 @@ const emptyCreate = {
   currency: 'GHS',
   admin_email: '',
   admin_password: '',
+  store_mode: 'single' as 'single' | 'multi',
+  max_stores: '10',
 };
 
 function statusClass(status: string) {
@@ -268,6 +270,10 @@ export default function PlatformConsole() {
           currency: form.currency.trim().toUpperCase() || 'GHS',
           admin_email: form.admin_email.trim(),
           admin_password: trimmedPassword,
+          store_mode: form.store_mode,
+          ...(form.store_mode === 'multi' && form.max_stores.trim() !== ''
+            ? { max_stores_override: Number(form.max_stores) }
+            : {}),
         }),
       });
       setForm(emptyCreate);
@@ -648,6 +654,46 @@ export default function PlatformConsole() {
                 required
               />
             </label>
+            <fieldset style={{ border: '1px solid var(--border, #ddd)', borderRadius: 8, padding: 10 }}>
+              <legend>Store layout</legend>
+              <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <input
+                  type="radio"
+                  name="create-store-mode"
+                  checked={form.store_mode === 'single'}
+                  onChange={() => setForm((f) => ({ ...f, store_mode: 'single' }))}
+                  aria-label="Single store"
+                />
+                Single store
+              </label>
+              <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <input
+                  type="radio"
+                  name="create-store-mode"
+                  checked={form.store_mode === 'multi'}
+                  onChange={() => setForm((f) => ({ ...f, store_mode: 'multi' }))}
+                  aria-label="Multi-store"
+                />
+                Multi-store (includes branches)
+              </label>
+              {form.store_mode === 'multi' ? (
+                <label style={{ marginTop: 8 }}>
+                  <span>Max stores</span>
+                  <input
+                    type="number"
+                    min={2}
+                    value={form.max_stores}
+                    onChange={(e) => setForm((f) => ({ ...f, max_stores: e.target.value }))}
+                    aria-label="Create tenant max stores"
+                  />
+                </label>
+              ) : (
+                <p className="muted" style={{ fontSize: 13, margin: '8px 0 0' }}>
+                  One operating store. Extra store create is blocked until you switch this tenant to
+                  Multi-store.
+                </p>
+              )}
+            </fieldset>
             <button
               type="submit"
               disabled={creating || !form.admin_password.trim()}
@@ -874,7 +920,9 @@ export default function PlatformConsole() {
             <h3 style={{ marginTop: 20, fontSize: 15 }}>Business type</h3>
             <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>
               Current: {industryLabel(selected.industry)}. Only the Platform Owner can change this.
-              Staff must re-login after a change so session claims refresh.
+              APIs follow the saved industry immediately. Ask staff to refresh or sign in again so
+              the sidebar matches. Records (including prescriptions) are kept — they are not
+              deleted. Pharmacy APIs return 403 after you leave pharmacy.
             </p>
             {canDeleteTenant ? (
               <div className="plat-form" style={{ marginTop: 8, display: 'grid', gap: 8 }}>
@@ -988,19 +1036,57 @@ export default function PlatformConsole() {
                   onChange={(e) => setSubForm((f) => ({ ...f, start_at: e.target.value }))}
                 />
               </label>
-              <label>
-                <span>Store entitlement override</span>
-                <input
-                  type="number"
-                  min={0}
-                  placeholder="Package default"
-                  value={subForm.max_stores_override}
-                  onChange={(e) =>
-                    setSubForm((f) => ({ ...f, max_stores_override: e.target.value }))
-                  }
-                  aria-label="Store entitlement override"
-                />
-              </label>
+              <fieldset style={{ border: '1px solid var(--border, #ddd)', borderRadius: 8, padding: 10 }}>
+                <legend>Store layout</legend>
+                <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input
+                    type="radio"
+                    name="assign-store-mode"
+                    checked={
+                      subForm.max_stores_override === '1' ||
+                      (subForm.max_stores_override === '' &&
+                        (packages.find((p) => p.code === subForm.package_code)?.max_stores ?? 1) === 1)
+                    }
+                    onChange={() => setSubForm((f) => ({ ...f, max_stores_override: '1' }))}
+                    aria-label="Assign single store"
+                  />
+                  Single store
+                </label>
+                <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input
+                    type="radio"
+                    name="assign-store-mode"
+                    checked={
+                      subForm.max_stores_override !== '1' &&
+                      !(
+                        subForm.max_stores_override === '' &&
+                        (packages.find((p) => p.code === subForm.package_code)?.max_stores ?? 1) === 1
+                      )
+                    }
+                    onChange={() =>
+                      setSubForm((f) => ({
+                        ...f,
+                        max_stores_override: f.max_stores_override === '1' ? '10' : f.max_stores_override || '10',
+                      }))
+                    }
+                    aria-label="Assign multi-store"
+                  />
+                  Multi-store (includes branches)
+                </label>
+                <label style={{ marginTop: 8 }}>
+                  <span>Store entitlement override</span>
+                  <input
+                    type="number"
+                    min={0}
+                    placeholder="Package default"
+                    value={subForm.max_stores_override}
+                    onChange={(e) =>
+                      setSubForm((f) => ({ ...f, max_stores_override: e.target.value }))
+                    }
+                    aria-label="Store entitlement override"
+                  />
+                </label>
+              </fieldset>
               <button
                 type="submit"
                 disabled={busy === selected.id}
@@ -1022,6 +1108,57 @@ export default function PlatformConsole() {
                 : ''}
             </p>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8, flexWrap: 'wrap' }}>
+              <span className="muted">Save store layout</span>
+              <button
+                type="button"
+                disabled={busy === selected.id}
+                aria-label="Save as single store"
+                onClick={async () => {
+                  setBusy(selected.id);
+                  setError('');
+                  try {
+                    await api(`/tenants/${selected.slug || selected.id}/store-entitlement`, {
+                      method: 'PATCH',
+                      body: JSON.stringify({ max_stores_override: 1 }),
+                    });
+                    setOverrideDraft('1');
+                    setMessage('Store entitlement set to Single store');
+                    await refresh({ force: true });
+                  } catch (err: any) {
+                    setError(err.message || 'Override failed');
+                  } finally {
+                    setBusy(null);
+                  }
+                }}
+              >
+                Single store
+              </button>
+              <button
+                type="button"
+                disabled={busy === selected.id}
+                aria-label="Save as multi-store"
+                onClick={async () => {
+                  setBusy(selected.id);
+                  setError('');
+                  try {
+                    const raw = overrideDraft.trim();
+                    const n = raw === '' || Number(raw) <= 1 ? 10 : Number(raw);
+                    await api(`/tenants/${selected.slug || selected.id}/store-entitlement`, {
+                      method: 'PATCH',
+                      body: JSON.stringify({ max_stores_override: n }),
+                    });
+                    setOverrideDraft(String(n));
+                    setMessage('Store entitlement set to Multi-store');
+                    await refresh({ force: true });
+                  } catch (err: any) {
+                    setError(err.message || 'Override failed');
+                  } finally {
+                    setBusy(null);
+                  }
+                }}
+              >
+                Multi-store
+              </button>
               <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                 <span>max_stores_override</span>
                 <input

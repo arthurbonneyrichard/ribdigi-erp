@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api } from '../../../lib/api';
+import FormModal from '../../../components/FormModal';
+import { api, getAccessToken } from '../../../lib/api';
+import { industryAllowsModule } from '../../../lib/industryModules';
 import { getMe } from '../../../lib/meCache';
-import { isHotelIndustry } from '../../../lib/tenantNav';
+import { hideStoreUx as shouldHideStoreUx, isHotelIndustry } from '../../../lib/tenantNav';
 
 type RoleRow = {
   role: string;
@@ -12,6 +14,9 @@ type RoleRow = {
   base_role?: string | null;
   record_scope?: string;
   is_active?: boolean;
+  cloneable?: boolean;
+  clone_group?: 'system_template' | 'tenant_role';
+  permissions?: Record<string, string[]>;
 };
 type BranchRow = { id: string; code: string; name: string; is_active?: boolean };
 type DepartmentRow = {
@@ -21,7 +26,13 @@ type DepartmentRow = {
   branch_id?: string | null;
   is_active?: boolean;
 };
-type StoreRow = { id: string; code: string; name: string; is_active?: boolean };
+type StoreRow = {
+  id: string;
+  code: string;
+  name: string;
+  is_active?: boolean;
+  branch_id?: string | null;
+};
 type UserRow = {
   id: string;
   full_name: string;
@@ -32,6 +43,8 @@ type UserRow = {
   phone?: string | null;
   branch_id?: string | null;
   department_id?: string | null;
+  store_id?: string | null;
+  store_ids?: string[];
   record_scope?: string | null;
 };
 
@@ -43,6 +56,7 @@ const emptyForm = {
   phone: '',
   branch_id: '',
   department_id: '',
+  store_ids: [] as string[],
   record_scope: '',
 };
 
@@ -89,6 +103,223 @@ function canWriteUsers(role: string, perms: Record<string, string[]> | undefined
   return actions.includes('write') || actions.includes('create') || actions.includes('*');
 }
 
+/** Align with POST /stores (stores:write). */
+function canWriteModule(perms: Record<string, string[]> | undefined, module: string): boolean {
+  if (moduleActions(perms, '*').includes('*')) return true;
+  const actions = moduleActions(perms, module);
+  return actions.includes('write') || actions.includes('create') || actions.includes('*');
+}
+
+/** Matches backend `custom_roles.ASSIGNABLE_MODULES` — no platform modules. */
+const TENANT_RBAC_MODULES = [
+  'dashboard',
+  'inventory',
+  'sales',
+  'pos',
+  'purchasing',
+  'suppliers',
+  'customers',
+  'expenses',
+  'accounting',
+  'credit',
+  'tax',
+  'stores',
+  'hotel',
+  'fmcg',
+  'reports',
+  'notifications',
+  'users',
+  'audit',
+  'ai',
+  'security',
+  'backup',
+  'company',
+  'printers',
+] as const;
+
+const TENANT_RBAC_ACTIONS = ['read', 'write', 'approve'] as const;
+
+function pickAssignablePerms(
+  perms?: Record<string, string[]> | null,
+  industry?: string | null,
+): Record<string, string[]> {
+  const out: Record<string, string[]> = {};
+  if (!perms || perms['*']?.includes('*')) return out;
+  for (const mod of TENANT_RBAC_MODULES) {
+    if (!industryAllowsModule(industry, mod)) continue;
+    const acts = (perms[mod] || []).filter((a) =>
+      (TENANT_RBAC_ACTIONS as readonly string[]).includes(a),
+    );
+    if (acts.length) out[mod] = acts;
+  }
+  return out;
+}
+
+function togglePermAction(
+  map: Record<string, string[]>,
+  module: string,
+  action: string,
+): Record<string, string[]> {
+  const current = map[module] || [];
+  const next = current.includes(action)
+    ? current.filter((a) => a !== action)
+    : [...current, action];
+  const copy = { ...map };
+  if (next.length) copy[module] = next;
+  else delete copy[module];
+  return copy;
+}
+
+function PermissionGrid({
+  value,
+  onChange,
+  disabled,
+  industry,
+}: {
+  value: Record<string, string[]>;
+  onChange: (next: Record<string, string[]>) => void;
+  disabled?: boolean;
+  industry?: string | null;
+}) {
+  const modules = TENANT_RBAC_MODULES.filter((mod) => industryAllowsModule(industry, mod));
+  return (
+    <div style={{ display: 'grid', gap: 6, maxHeight: 320, overflow: 'auto' }}>
+      {modules.map((mod) => (
+        <div key={mod} style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ minWidth: 120 }}>{mod}</span>
+          {TENANT_RBAC_ACTIONS.map((act) => (
+            <label key={act} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              <input
+                type="checkbox"
+                checked={(value[mod] || []).includes(act)}
+                disabled={disabled}
+                onChange={() => onChange(togglePermAction(value, mod, act))}
+                aria-label={`${mod} ${act}`}
+              />
+              {act}
+            </label>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CloneFromPicker({
+  roles,
+  value,
+  onSelect,
+}: {
+  roles: RoleRow[];
+  value: string;
+  onSelect: (role: RoleRow | null) => void;
+}) {
+  const [query, setQuery] = useState('');
+  const needle = query.trim().toLowerCase();
+  const cloneable = roles.filter((r) => r.cloneable !== false && !PLATFORM_USER_ROLES.has(r.role));
+  const systemRows = cloneable.filter((r) => r.system !== false && r.clone_group !== 'tenant_role');
+  const tenantRows = cloneable.filter((r) => r.system === false || r.clone_group === 'tenant_role');
+  const match = (r: RoleRow) =>
+    !needle || r.label.toLowerCase().includes(needle) || r.role.toLowerCase().includes(needle);
+  const systemHits = systemRows.filter(match);
+  const tenantHits = tenantRows.filter(match);
+  const empty = !systemHits.length && !tenantHits.length;
+
+  return (
+    <div style={{ display: 'grid', gap: 6 }}>
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search compatible roles"
+        aria-label="Clone from system role"
+      />
+      <div
+        role="listbox"
+        aria-label="Clone from"
+        style={{
+          border: '1px solid var(--border, #d0d5dd)',
+          borderRadius: 8,
+          maxHeight: 168,
+          overflow: 'auto',
+          padding: 6,
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => onSelect(null)}
+          style={{
+            display: 'block',
+            width: '100%',
+            textAlign: 'left',
+            background: !value ? 'var(--surface-muted, #f2f4f7)' : 'transparent',
+            border: 0,
+            padding: '6px 8px',
+          }}
+        >
+          Create without cloning
+        </button>
+        {empty ? (
+          <p className="muted" style={{ margin: '8px 6px' }}>
+            No compatible roles available
+          </p>
+        ) : null}
+        {systemHits.length ? (
+          <>
+            <p className="muted" style={{ margin: '8px 6px 4px', fontSize: 12 }}>
+              System templates
+            </p>
+            {systemHits.map((r) => (
+              <button
+                key={r.role}
+                type="button"
+                role="option"
+                aria-selected={value === r.role}
+                onClick={() => onSelect(r)}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  textAlign: 'left',
+                  background: value === r.role ? 'var(--surface-muted, #f2f4f7)' : 'transparent',
+                  border: 0,
+                  padding: '6px 8px',
+                }}
+              >
+                Clone from {r.label}
+              </button>
+            ))}
+          </>
+        ) : null}
+        {tenantHits.length ? (
+          <>
+            <p className="muted" style={{ margin: '8px 6px 4px', fontSize: 12 }}>
+              This company&apos;s roles
+            </p>
+            {tenantHits.map((r) => (
+              <button
+                key={r.role}
+                type="button"
+                role="option"
+                aria-selected={value === r.role}
+                onClick={() => onSelect(r)}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  textAlign: 'left',
+                  background: value === r.role ? 'var(--surface-muted, #f2f4f7)' : 'transparent',
+                  border: 0,
+                  padding: '6px 8px',
+                }}
+              >
+                Clone from {r.label}
+              </button>
+            ))}
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 type ImportReportRow = {
   line: number;
   email: string;
@@ -120,21 +351,40 @@ export default function Page() {
   const [roleForm, setRoleForm] = useState({
     key: '',
     label: '',
-    base_role: 'inventory_officer',
+    base_role: '',
   });
+  const [meIndustry, setMeIndustry] = useState<string | null>(null);
+  const [createPerms, setCreatePerms] = useState<Record<string, string[]>>({});
+  const [permRole, setPermRole] = useState<string | null>(null);
+  const [permMap, setPermMap] = useState<Record<string, string[]>>({});
+  const [permBusy, setPermBusy] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const [userAddOpen, setUserAddOpen] = useState(false);
+  const [storeAddOpen, setStoreAddOpen] = useState(false);
   const [canWrite, setCanWrite] = useState(false);
+  const [canWriteStores, setCanWriteStores] = useState(false);
+  const [hideStoreUx, setHideStoreUx] = useState(false);
+  const [hideStoreAssign, setHideStoreAssign] = useState(false);
   const [permChecked, setPermChecked] = useState(false);
   const [meRole, setMeRole] = useState('');
   const [meId, setMeId] = useState('');
+  const [storeForm, setStoreForm] = useState({
+    code: '',
+    name: '',
+    address: '',
+    phone: '',
+    manager_id: '',
+    branch_id: '',
+  });
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importReport, setImportReport] = useState<ImportReport | null>(null);
   const [importBusy, setImportBusy] = useState(false);
   const [userQuery, setUserQuery] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
-  const [hideStoreUx, setHideStoreUx] = useState(false);
+  const [branchFilter, setBranchFilter] = useState('');
+  const [storeFilter, setStoreFilter] = useState('');
 
   async function refresh() {
     const meRes = await getMe();
@@ -143,43 +393,40 @@ export default function Page() {
     setMeId(String(meRes.data?.id || '').trim());
     setMeRole(role);
     setCanWrite(canWriteUsers(role, perms));
+    setCanWriteStores(canWriteModule(perms, 'stores'));
+    setHideStoreUx(shouldHideStoreUx(meRes.data));
+    setHideStoreAssign(isHotelIndustry(meRes.data?.industry));
+    setMeIndustry(meRes.data?.industry || null);
     setPermChecked(true);
-    const hotelUx = isHotelIndustry(meRes.data?.industry);
-    setHideStoreUx(hotelUx);
-
     const [usersRes, rolesRes, branchesRes, deptsRes, storesRes] = await Promise.all([
       api('/users'),
       // Manage list needs inactive custom roles for Activate / Deactivate (BR-3.2).
       api('/roles?include_inactive=true'),
       api('/branches').catch(() => ({ data: [] })),
       api('/departments').catch(() => ({ data: [] })),
-      hotelUx ? Promise.resolve({ data: [] }) : api('/stores').catch(() => ({ data: [] })),
+      api('/stores').catch(() => ({ data: [] })),
     ]);
     const listed: UserRow[] = usersRes.data || [];
     const hidePlatform = !PLATFORM_USER_ROLES.has(role);
     setRows(hidePlatform ? listed.filter((u) => !PLATFORM_USER_ROLES.has(u.role)) : listed);
-    setRoles(rolesRes.data || []);
+    const catalog: RoleRow[] = rolesRes.data || [];
+    setRoles(catalog);
+    setCreatePerms((prev) => {
+      if (Object.keys(prev).length) return prev;
+      const industry = meRes.data?.industry || null;
+      const selected = catalog.find((r) => r.role === roleForm.base_role && r.cloneable);
+      if (selected) return pickAssignablePerms(selected.permissions, industry);
+      return {};
+    });
     setBranches(branchesRes.data || []);
     setDepartments(deptsRes.data || []);
     setStores((storesRes.data || []).filter((s: StoreRow) => s.is_active !== false));
     const users: UserRow[] = hidePlatform
       ? listed.filter((u) => !PLATFORM_USER_ROLES.has(u.role))
       : listed;
-    if (hotelUx) {
-      setUserStoreIds({});
-      return;
-    }
-    const membershipEntries = await Promise.all(
-      users.map(async (u) => {
-        try {
-          const r = await api(`/users/${u.id}/stores`);
-          return [u.id, r.data?.store_ids || []] as const;
-        } catch {
-          return [u.id, []] as const;
-        }
-      })
+    setUserStoreIds(
+      Object.fromEntries(users.map((u) => [u.id, u.store_ids || []])),
     );
-    setUserStoreIds(Object.fromEntries(membershipEntries));
   }
 
   const isCustomRole = (r: RoleRow) => r.system === false;
@@ -207,6 +454,36 @@ export default function Page() {
     return d ? `${d.code} — ${d.name}` : id.slice(0, 8);
   };
 
+  const storeLabel = (id?: string | null) => {
+    if (!id) return '—';
+    const s = stores.find((x) => x.id === id);
+    return s ? `${s.code} — ${s.name}` : id.slice(0, 8);
+  };
+
+  const storesForBranch = (branchId?: string, extraIds: string[] = []) => {
+    const inBranch = stores.filter((s) => !branchId || s.branch_id === branchId);
+    const extra = stores.filter(
+      (s) => extraIds.includes(s.id) && !inBranch.some((x) => x.id === s.id),
+    );
+    return extra.length ? [...inBranch, ...extra] : inBranch;
+  };
+
+  const assignedStoreNames = (userId: string, row?: UserRow) => {
+    const ids = userStoreIds[userId] || row?.store_ids || [];
+    if (!ids.length) return 'All stores in this company';
+    return ids.map((id) => storeLabel(id)).join(', ');
+  };
+
+  const soleStoreId = stores.length === 1 ? stores[0].id : '';
+  const openAddUser = () => {
+    setError('');
+    setMessage('');
+    const next = { ...emptyForm, store_ids: [] as string[] };
+    if (!hideStoreAssign && soleStoreId) next.store_ids = [soleStoreId];
+    setForm(next);
+    setUserAddOpen(true);
+  };
+
   const activeBranches = branches.filter((b) => b.is_active !== false);
   const managedUsers = rows.filter((r) => {
     if (userManageFilter === 'all') {
@@ -216,9 +493,14 @@ export default function Page() {
       if (userManageFilter === 'inactive' ? active : !active) return false;
     }
     if (deptFilter && r.department_id !== deptFilter) return false;
+    if (branchFilter && r.branch_id !== branchFilter) return false;
+    if (storeFilter) {
+      const ids = userStoreIds[r.id] || r.store_ids || [];
+      if (!ids.includes(storeFilter)) return false;
+    }
     const needle = userQuery.trim().toLowerCase();
     if (needle) {
-      const hay = `${r.full_name} ${r.email} ${deptLabel(r.department_id)}`.toLowerCase();
+      const hay = `${r.full_name} ${r.email} ${deptLabel(r.department_id)} ${branchLabel(r.branch_id)} ${assignedStoreNames(r.id, r)}`.toLowerCase();
       if (!hay.includes(needle)) return false;
     }
     return true;
@@ -237,6 +519,7 @@ export default function Page() {
 
   async function createUser(e: React.FormEvent) {
     e.preventDefault();
+    if (busy) return;
     const fullName = form.full_name.trim();
     if (!fullName) {
       setError('User full name is required.');
@@ -261,16 +544,67 @@ export default function Page() {
           password: trimmedPassword,
           role: form.role,
           phone: form.phone.trim() || null,
-          branch_id: form.branch_id.trim() || null,
+          branch_id: hideStoreUx ? null : form.branch_id.trim() || null,
           department_id: form.department_id.trim() || null,
+          store_id: hideStoreAssign ? null : form.store_ids[0] || null,
+          store_ids: hideStoreAssign ? [] : form.store_ids,
           record_scope: form.record_scope || null,
         }),
       });
       setForm(emptyForm);
       setMessage('User created. They can sign in with this workspace.');
+      setUserAddOpen(false);
       await refresh();
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function createStore(e: React.FormEvent) {
+    e.preventDefault();
+    if (busy) return;
+    const codeTrim = storeForm.code.trim();
+    const nameTrim = storeForm.name.trim();
+    if (!codeTrim || !nameTrim) {
+      setError('Store code and name are required.');
+      setMessage('');
+      return;
+    }
+    setError('');
+    setMessage('');
+    setBusy(true);
+    try {
+      await api('/stores', {
+        method: 'POST',
+        body: JSON.stringify({
+          code: codeTrim,
+          name: nameTrim,
+          ...(storeForm.address.trim() ? { address: storeForm.address.trim() } : {}),
+          phone: storeForm.phone.trim() || null,
+          manager_id: storeForm.manager_id.trim() || null,
+          branch_id: storeForm.branch_id.trim() || null,
+        }),
+      });
+      setStoreForm({
+        code: '',
+        name: '',
+        address: '',
+        phone: '',
+        manager_id: '',
+        branch_id: '',
+      });
+      setMessage('Store created');
+      setStoreAddOpen(false);
+      await refresh();
+    } catch (err: any) {
+      const detail = err?.detail || err?.data?.detail;
+      if (detail && typeof detail === 'object' && detail.message) {
+        setError(detail.message);
+      } else {
+        setError(err.message || 'Store was not created');
+      }
     } finally {
       setBusy(false);
     }
@@ -293,10 +627,12 @@ export default function Page() {
         body: JSON.stringify({
           key: roleForm.key.trim(),
           label,
-          base_role: roleForm.base_role || null,
+          ...(roleForm.base_role ? { base_role: roleForm.base_role } : {}),
+          ...(Object.keys(createPerms).length ? { permissions: createPerms } : {}),
         }),
       });
-      setRoleForm({ key: '', label: '', base_role: 'inventory_officer' });
+      setRoleForm({ key: '', label: '', base_role: '' });
+      setCreatePerms({});
       setMessage(`Custom role ${r.data?.role || roleForm.key} created`);
       await refresh();
     } catch (err: any) {
@@ -333,6 +669,31 @@ export default function Page() {
     }
   }
 
+  async function saveCustomRolePerms() {
+    if (!permRole) return;
+    if (!Object.keys(permMap).length) {
+      setError('Select at least one module permission.');
+      setMessage('');
+      return;
+    }
+    setError('');
+    setMessage('');
+    setPermBusy(true);
+    try {
+      await api(`/roles/${permRole}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ permissions: permMap }),
+      });
+      setMessage(`Permissions saved for ${permRole}. Assigned users pick this up on their next request.`);
+      setPermRole(null);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setPermBusy(false);
+    }
+  }
+
   async function patchUser(userId: string, body: Record<string, unknown>, okMsg: string) {
     setError('');
     setMessage('');
@@ -354,13 +715,22 @@ export default function Page() {
 
   async function setBranch(userId: string, branchId: string) {
     const trimmed = branchId.trim();
+    const currentStores = userStoreIds[userId] || [];
+    const validStores = currentStores.filter((id) =>
+      storesForBranch(trimmed).some((s) => s.id === id),
+    );
     await patchUser(
       userId,
       trimmed
-        ? { branch_id: trimmed }
+        ? validStores.length === 1
+          ? { branch_id: trimmed, store_id: validStores[0] }
+          : { branch_id: trimmed }
         : { clear_branch: true, clear_department: true },
       'Branch assignment updated',
     );
+    if (trimmed && validStores.length !== currentStores.length && validStores.length > 0) {
+      await setUserStores(userId, validStores);
+    }
   }
 
   async function setDepartment(userId: string, departmentId: string) {
@@ -391,8 +761,8 @@ export default function Page() {
       setUserStoreIds((prev) => ({ ...prev, [userId]: storeIds }));
       setMessage(
         storeIds.length
-          ? `Store access limited to ${storeIds.length} store(s)`
-          : 'Store access cleared (all stores)'
+          ? `Store access limited to ${storeIds.length} store(s) in this company`
+          : 'Store access set to all stores in this company'
       );
     } catch (err: any) {
       setError(err.message);
@@ -455,7 +825,7 @@ export default function Page() {
   async function downloadImportTemplate() {
     setError('');
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const tenant = localStorage.getItem('tenant');
       const res = await fetch(`${apiBase}/users/import/template`, {
         headers: {
@@ -489,7 +859,7 @@ export default function Page() {
     setMessage('');
     setImportBusy(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const tenant = localStorage.getItem('tenant');
       const formData = new FormData();
       formData.append('file', importFile);
@@ -535,19 +905,38 @@ export default function Page() {
 
   return (
     <>
-      <div className="users-page-head">
+      <div className="list-page-head">
         <div>
-          <h1>User Management</h1>
+          <h1 style={{ margin: 0 }}>User Management</h1>
           <p className="muted" style={{ margin: '8px 0 0' }}>
-            Add staff with a short form (name, email, temporary password, role). Invite means they
-            sign in to this company. Platform owner roles are not created here. Deactivate stops
-            sign-in but keeps history; Delete removes the account.
+            Add staff with a short form (name, email, temporary password, role, and store access).
+            Single-store companies assign that one store; multi-store companies pick one or several
+            in this company. Platform owner roles are not created here. Deactivate stops sign-in but
+            keeps history; Delete removes the account.
           </p>
         </div>
-        {canWrite ? (
-          <a className="users-add-btn" href="#create-user" aria-label="Add User">
-            Add User
-          </a>
+        {(canWrite || (canWriteStores && !hideStoreUx)) ? (
+        <div className="list-head-actions">
+          {canWrite ? (
+            <button type="button" className="list-btn-primary" onClick={openAddUser} aria-label="Add User">
+              Add User
+            </button>
+          ) : null}
+          {canWriteStores && !hideStoreUx ? (
+            <button
+              type="button"
+              className="list-btn-primary"
+              onClick={() => {
+                setError('');
+                setMessage('');
+                setStoreAddOpen(true);
+              }}
+              aria-label="Create store"
+            >
+              Create store
+            </button>
+          ) : null}
+        </div>
         ) : null}
       </div>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
@@ -563,14 +952,18 @@ export default function Page() {
         </div>
       ) : null}
 
-      {canWrite && (
+      {canWrite && userAddOpen ? (
+        <FormModal
+          title="Add user"
+          busy={busy}
+          dirty={Boolean(form.full_name.trim() || form.email.trim() || form.password.trim())}
+          onClose={() => setUserAddOpen(false)}
+        >
         <form
           id="create-user"
           onSubmit={createUser}
-          className="card users-create-card"
-          style={{ margin: '20px 0', display: 'grid', gap: 8 }}
+          style={{ display: 'grid', gap: 8 }}
         >
-          <h2 style={{ fontSize: 18, margin: 0 }}>Add user</h2>
           <input
             value={form.full_name}
             onChange={(e) => setForm({ ...form, full_name: e.target.value })}
@@ -612,11 +1005,21 @@ export default function Page() {
               </option>
             ))}
           </select>
+          {!hideStoreUx ? (
           <select
             value={form.branch_id}
-            onChange={(e) =>
-              setForm({ ...form, branch_id: e.target.value, department_id: '' })
-            }
+            onChange={(e) => {
+              const nextBranch = e.target.value;
+              const keepStores = form.store_ids.filter((id) =>
+                storesForBranch(nextBranch).some((s) => s.id === id),
+              );
+              setForm({
+                ...form,
+                branch_id: nextBranch,
+                department_id: '',
+                store_ids: keepStores,
+              });
+            }}
             aria-label="User branch"
             title="Optional branch assignment (UuidIdValue)"
           >
@@ -627,6 +1030,59 @@ export default function Page() {
               </option>
             ))}
           </select>
+          ) : null}
+          {!hideStoreAssign ? (
+          <fieldset style={{ border: '1px solid var(--border, #ddd)', padding: 8, margin: 0 }}>
+            <legend>
+              {stores.length <= 1
+                ? 'Store (this company)'
+                : 'Assigned stores (this company)'}
+            </legend>
+            {stores.length === 0 ? (
+              <p className="muted" style={{ margin: 0 }}>No store to assign yet.</p>
+            ) : stores.length === 1 ? (
+              <select
+                value={form.store_ids[0] || stores[0].id}
+                onChange={(e) => setForm({ ...form, store_ids: e.target.value ? [e.target.value] : [] })}
+                aria-label="User store"
+              >
+                {stores.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.code} — {s.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div style={{ display: 'grid', gap: 4 }}>
+                <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <input
+                    type="checkbox"
+                    checked={form.store_ids.length === 0}
+                    onChange={() => setForm({ ...form, store_ids: [] })}
+                    aria-label="All stores in this company"
+                  />
+                  All stores in this company
+                </label>
+                {storesForBranch(form.branch_id).map((s) => (
+                  <label key={s.id} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <input
+                      type="checkbox"
+                      checked={form.store_ids.includes(s.id)}
+                      onChange={() => {
+                        const next = form.store_ids.includes(s.id)
+                          ? form.store_ids.filter((id) => id !== s.id)
+                          : [...form.store_ids, s.id];
+                        setForm({ ...form, store_ids: next });
+                      }}
+                      aria-label={`Assign store ${s.code}`}
+                    />
+                    {s.code} — {s.name}
+                  </label>
+                ))}
+              </div>
+            )}
+          </fieldset>
+          ) : null}
           <select
             value={form.department_id}
             onChange={(e) => setForm({ ...form, department_id: e.target.value })}
@@ -659,16 +1115,99 @@ export default function Page() {
             {busy ? 'Creating…' : 'Create User'}
           </button>
         </form>
-      )}
+        </FormModal>
+      ) : null}
+
+      {canWriteStores && !hideStoreUx && storeAddOpen ? (
+        <FormModal
+          title="New store"
+          busy={busy}
+          dirty={Boolean(
+            storeForm.code.trim() ||
+              storeForm.name.trim() ||
+              storeForm.address.trim() ||
+              storeForm.phone.trim(),
+          )}
+          onClose={() => setStoreAddOpen(false)}
+        >
+          <form onSubmit={createStore} style={{ display: 'grid', gap: 8 }}>
+            <input
+              value={storeForm.code}
+              onChange={(e) => setStoreForm({ ...storeForm, code: e.target.value })}
+              placeholder="Code"
+              aria-label="Store code"
+              title="Store code (1–50 chars; letters/digits required)"
+              required
+            />
+            <input
+              value={storeForm.name}
+              onChange={(e) => setStoreForm({ ...storeForm, name: e.target.value })}
+              placeholder="Name"
+              aria-label="Store name"
+              title="Store name (1–150 chars; letters/digits required)"
+              required
+            />
+            <input
+              value={storeForm.address}
+              onChange={(e) => setStoreForm({ ...storeForm, address: e.target.value })}
+              placeholder="Address"
+              aria-label="Store address"
+            />
+            <input
+              value={storeForm.phone}
+              onChange={(e) => setStoreForm({ ...storeForm, phone: e.target.value })}
+              placeholder="Phone (optional, E.164 e.g. +233...)"
+              aria-label="Store phone"
+            />
+            <select
+              value={storeForm.manager_id}
+              onChange={(e) => setStoreForm({ ...storeForm, manager_id: e.target.value })}
+              aria-label="Store manager"
+              title="Store manager (optional tenant user)"
+            >
+              <option value="">Manager (optional)</option>
+              {rows.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.full_name || u.email}
+                </option>
+              ))}
+            </select>
+            <select
+              value={storeForm.branch_id}
+              onChange={(e) => setStoreForm({ ...storeForm, branch_id: e.target.value })}
+              aria-label="Store branch"
+              title="Store branch (optional)"
+            >
+              <option value="">Branch (optional)</option>
+              {activeBranches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.code} — {b.name}
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              disabled={busy || !storeForm.code.trim() || !storeForm.name.trim()}
+              aria-label="Create store"
+              aria-busy={busy}
+            >
+              {busy ? 'Creating store…' : 'Create store'}
+            </button>
+            {message ? <p className="form-flash ok" role="status">{message}</p> : null}
+            {error ? <p className="form-flash err" role="alert">{error}</p> : null}
+          </form>
+        </FormModal>
+      ) : null}
 
       {canWrite && (
         <form onSubmit={createCustomRole} className="card" style={{ margin: '20px 0', display: 'grid', gap: 8 }}>
           <h2 style={{ fontSize: 18, margin: 0 }}>Custom roles</h2>
           <p className="muted" style={{ margin: 0 }}>
-            Clone a system role&apos;s permissions into a tenant-specific role key, then assign it to
-            users. Soft-deactivate with <strong>Deactivate</strong> (keeps assignees; blocks new
+            Clone a system role&apos;s permissions into a tenant-specific role key, then tick the
+            modules this company actually uses. Saved permissions apply to navigation, pages, buttons,
+            and APIs. Soft-deactivate with <strong>Deactivate</strong> (keeps assignees; blocks new
             assignment). Delete is blocked while any user still has the role. System roles stay
-            immutable.
+            immutable — clone them instead of granting platform-owner rights.
           </p>
           <input
             value={roleForm.key}
@@ -684,19 +1223,19 @@ export default function Page() {
             required
             aria-label="Custom role label"
           />
-          <select
+          <CloneFromPicker
+            roles={roles}
             value={roleForm.base_role}
-            onChange={(e) => setRoleForm({ ...roleForm, base_role: e.target.value })}
-            aria-label="Clone from system role"
-          >
-            {roles
-              .filter((r) => !isCustomRole(r) && !PLATFORM_USER_ROLES.has(r.role))
-              .map((r) => (
-                <option key={r.role} value={r.role}>
-                  Clone from {r.label}
-                </option>
-              ))}
-          </select>
+            onSelect={(source) => {
+              setRoleForm({ ...roleForm, base_role: source?.role || '' });
+              setCreatePerms(pickAssignablePerms(source?.permissions, meIndustry));
+            }}
+          />
+          <p className="muted" style={{ margin: 0 }}>
+            Selecting a source copies permissions as an editable starting point. It does not copy
+            users or keep a live link. Store assignments stay separate.
+          </p>
+          <PermissionGrid value={createPerms} onChange={setCreatePerms} industry={meIndustry} />
           <button type="submit" disabled={busy || !roleForm.key.trim() || !roleForm.label.trim()} aria-label="Create custom role">
             {busy ? 'Saving…' : 'Create custom role'}
           </button>
@@ -740,6 +1279,19 @@ export default function Page() {
                     Deactivate
                   </button>
                 )}
+                <button
+                  type="button"
+                  style={{ marginLeft: 8 }}
+                  onClick={() => {
+                    setPermRole(r.role);
+                    setPermMap(pickAssignablePerms(r.permissions, meIndustry));
+                    setError('');
+                    setMessage('');
+                  }}
+                  aria-label={`Edit permissions for custom role ${r.role}`}
+                >
+                  Edit permissions
+                </button>
                 <button
                   type="button"
                   style={{ marginLeft: 8 }}
@@ -846,10 +1398,48 @@ export default function Page() {
       <input
         value={userQuery}
         onChange={(e) => setUserQuery(e.target.value)}
-        placeholder="Search name, email, department"
+        placeholder={hideStoreUx ? 'Search name, email, department' : 'Search name, email, department, branch, store'}
         aria-label="Search users"
         style={{ marginLeft: 8, marginBottom: 8 }}
       />
+      {!hideStoreUx ? (
+      <select
+        value={branchFilter}
+        onChange={(e) => {
+          setBranchFilter(e.target.value);
+          if (e.target.value && storeFilter) {
+            const stillValid = stores.some(
+              (s) => s.id === storeFilter && s.branch_id === e.target.value,
+            );
+            if (!stillValid) setStoreFilter('');
+          }
+        }}
+        aria-label="Filter users by branch"
+        style={{ marginLeft: 8, marginBottom: 8 }}
+      >
+        <option value="">All branches</option>
+        {branches.map((b) => (
+          <option key={b.id} value={b.id}>
+            {b.name}
+          </option>
+        ))}
+      </select>
+      ) : null}
+      {!hideStoreUx ? (
+      <select
+        value={storeFilter}
+        onChange={(e) => setStoreFilter(e.target.value)}
+        aria-label="Filter users by store"
+        style={{ marginLeft: 8, marginBottom: 8 }}
+      >
+        <option value="">All stores</option>
+        {storesForBranch(branchFilter).map((s) => (
+          <option key={s.id} value={s.id}>
+            {s.code} — {s.name}
+          </option>
+        ))}
+      </select>
+      ) : null}
       <select
         value={deptFilter}
         onChange={(e) => setDeptFilter(e.target.value)}
@@ -870,10 +1460,10 @@ export default function Page() {
             <th>Full Name</th>
             <th>Email</th>
             <th>Role</th>
-            <th>Branch</th>
+            {!hideStoreUx ? <th>Branch</th> : null}
+            {!hideStoreAssign ? <th>Store</th> : null}
             <th>Department</th>
             <th>Scope</th>
-            {!hideStoreUx && <th>Stores</th>}
             <th>Active</th>
             {canWrite && <th>Actions</th>}
           </tr>
@@ -881,7 +1471,7 @@ export default function Page() {
         <tbody>
           {managedUsers.length === 0 && (
             <tr>
-              <td colSpan={canWrite ? (hideStoreUx ? 8 : 9) : hideStoreUx ? 7 : 8} className="muted">
+              <td colSpan={(canWrite ? 7 : 6) + (hideStoreUx ? 0 : 1) + (hideStoreAssign ? 0 : 1)} className="muted">
                 {rows.length ? 'No users for this filter' : 'No users yet'}
               </td>
             </tr>
@@ -916,6 +1506,7 @@ export default function Page() {
                   r.role
                 )}
               </td>
+              {!hideStoreUx ? (
               <td>
                 {canWrite ? (
                   <select
@@ -934,6 +1525,72 @@ export default function Page() {
                   branchLabel(r.branch_id)
                 )}
               </td>
+              ) : null}
+              {!hideStoreAssign ? (
+              <td>
+                {canWrite && !PLATFORM_USER_ROLES.has(r.role) && r.role !== 'company_admin' ? (
+                  stores.length <= 1 ? (
+                    <select
+                      value={(userStoreIds[r.id] || r.store_ids || [])[0] || soleStoreId}
+                      onChange={(e) => {
+                        const next = e.target.value.trim();
+                        setUserStores(r.id, next ? [next] : soleStoreId ? [soleStoreId] : []);
+                      }}
+                      aria-label={`Edit user store for ${r.email}`}
+                      title="Single-store companies assign this store. Company admins keep all stores in this company."
+                    >
+                      {stores.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.code} — {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div>
+                      <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                        <input
+                          type="checkbox"
+                          checked={(userStoreIds[r.id] || r.store_ids || []).length === 0}
+                          onChange={() => setUserStores(r.id, [])}
+                          aria-label={`All stores in this company for ${r.email}`}
+                        />
+                        All stores in this company
+                      </label>
+                      {storesForBranch(r.branch_id || undefined, userStoreIds[r.id] || r.store_ids || []).map(
+                        (s) => {
+                          const selected = userStoreIds[r.id] || r.store_ids || [];
+                          return (
+                            <label key={s.id} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                              <input
+                                type="checkbox"
+                                checked={selected.includes(s.id)}
+                                onChange={() => {
+                                  const next = selected.includes(s.id)
+                                    ? selected.filter((id) => id !== s.id)
+                                    : [...selected, s.id];
+                                  setUserStores(r.id, next);
+                                }}
+                                aria-label={`Assign ${s.code} to ${r.email}`}
+                              />
+                              {s.code}
+                              {r.branch_id && s.branch_id && s.branch_id !== r.branch_id
+                                ? ' (other branch)'
+                                : ''}
+                            </label>
+                          );
+                        },
+                      )}
+                    </div>
+                  )
+                ) : (
+                  <span className="muted">
+                    {r.role === 'company_admin' || PLATFORM_USER_ROLES.has(r.role)
+                      ? 'All stores in this company'
+                      : assignedStoreNames(r.id, r)}
+                  </span>
+                )}
+              </td>
+              ) : null}
               <td>
                 {canWrite ? (
                   <select
@@ -969,37 +1626,6 @@ export default function Page() {
                   r.record_scope || '—'
                 )}
               </td>
-              {!hideStoreUx && (
-              <td>
-                {canWrite && !PLATFORM_USER_ROLES.has(r.role) && r.role !== 'company_admin' ? (
-                  <select
-                    multiple
-                    value={userStoreIds[r.id] || []}
-                    onChange={(e) => {
-                      const selected = Array.from(e.target.selectedOptions).map((o) => o.value);
-                      setUserStores(r.id, selected);
-                    }}
-                    aria-label={`Assign stores for ${r.email}`}
-                    title="Empty = all stores. Select one or more to restrict POS/store access."
-                    style={{ minWidth: 140, minHeight: 64 }}
-                  >
-                    {stores.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.code} — {s.name}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <span className="muted">
-                    {r.role === 'company_admin' || PLATFORM_USER_ROLES.has(r.role)
-                      ? 'All stores'
-                      : (userStoreIds[r.id] || []).length
-                        ? `${(userStoreIds[r.id] || []).length} assigned`
-                        : 'All stores'}
-                  </span>
-                )}
-              </td>
-              )}
               <td>{r.is_active ? 'Yes' : 'No'}</td>
               {canWrite && (
                 <td>
@@ -1038,6 +1664,28 @@ export default function Page() {
           ))}
         </tbody>
       </table>
+      {canWrite && permRole ? (
+        <FormModal
+          title={`Edit permissions: ${permRole}`}
+          busy={permBusy}
+          dirty={true}
+          onClose={() => setPermRole(null)}
+        >
+          <p className="muted" style={{ marginTop: 0 }}>
+            Existing RBAC modules only. This does not grant platform-owner rights. Changes apply to
+            users with this custom role (nav, pages, buttons, and APIs).
+          </p>
+          <PermissionGrid value={permMap} onChange={setPermMap} disabled={permBusy} industry={meIndustry} />
+          <button
+            type="button"
+            onClick={() => void saveCustomRolePerms()}
+            disabled={permBusy || !Object.keys(permMap).length}
+            aria-label="Save role permissions"
+          >
+            {permBusy ? 'Saving…' : 'Save permissions'}
+          </button>
+        </FormModal>
+      ) : null}
     </>
   );
 }

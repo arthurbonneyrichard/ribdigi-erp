@@ -23,6 +23,7 @@ const CATEGORY_CHIPS: { id: string; label: string }[] = [
   { id: 'shift_variance', label: 'POS' },
   { id: 'expense_approval', label: 'Expenses' },
   { id: 'quotation_expiry', label: 'Quotations' },
+  { id: 'batch_expiry', label: 'Expiry' },
   { id: 'recurring_expense_due', label: 'Recurring' },
   { id: 'transfer', label: 'Transfers' },
   { id: 'system', label: 'System' },

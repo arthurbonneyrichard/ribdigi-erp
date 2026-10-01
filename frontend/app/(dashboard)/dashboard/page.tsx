@@ -5,7 +5,14 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
-import { normalizeIndustry } from '../../../lib/industries';
+import { industryLabel, normalizeIndustry } from '../../../lib/industries';
+import {
+  filterIndustryDashboardFeatures,
+  industryDashboardFeatures,
+  industryDashboardSectionLabel,
+  industryHomePath,
+  type IndustryDashboardFeature,
+} from '../../../lib/industryDashboard';
 import { useStoreContext } from '../../../lib/storeContext';
 
 type Subscription = {
@@ -35,6 +42,11 @@ type Dash = {
   expiring_soon?: number;
   customers?: number;
   suppliers?: number;
+  ar_total_due?: number;
+  ap_total_due?: number;
+  credit_outstanding?: number;
+  ar_open_parties?: number;
+  ap_open_parties?: number;
   comparisons?: {
     sales_today?: number;
     sales_yesterday?: number;
@@ -45,6 +57,17 @@ type Dash = {
   };
   monthly_sales?: { label: string; total: number }[];
   daily_sales?: { label: string; sales: number; profit: number }[];
+  gross_profit_7d?: number;
+  gross_profit_30d?: number;
+  rx_queue?: {
+    received?: number;
+    review?: number;
+    approved?: number;
+    dispensed?: number;
+    cancelled?: number;
+    open?: number;
+  } | null;
+  rx_only_count?: number | null;
   recent_sales?: { reference: string; date: string; total: number; customer: string; type: string }[];
   top_products_by_revenue?: TopProduct[];
   top_products_by_quantity?: TopProduct[];
@@ -53,6 +76,9 @@ type Dash = {
   scope?: string;
   store_id?: string | null;
   store_name?: string | null;
+  industry?: string | null;
+  industry_home?: string | null;
+  industry_features?: IndustryDashboardFeature[];
 };
 
 // Monochrome line icons for panel headings (same style as the sidebar).
@@ -268,13 +294,16 @@ export default function Page() {
   const [dashError, setDashError] = useState('');
   const [dashTick, setDashTick] = useState(0);
   const [hotelHome, setHotelHome] = useState(false);
+  const [industry, setIndustry] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     getMe()
       .then((me) => {
         if (cancelled) return;
-        if (normalizeIndustry(me.data?.industry) === 'hotel') {
+        const ind = normalizeIndustry(me.data?.industry);
+        setIndustry(ind);
+        if (industryHomePath(ind) === '/hotel') {
           setHotelHome(true);
           router.replace('/hotel');
         }
@@ -297,6 +326,12 @@ export default function Page() {
         if (cancelled) return;
         setD(r.data || {});
         setDashStatus('ready');
+        const payloadIndustry = normalizeIndustry((r.data || {}).industry);
+        if (payloadIndustry) setIndustry(payloadIndustry);
+        if (industryHomePath((r.data || {}).industry) === '/hotel' || (r.data || {}).industry_home === '/hotel') {
+          setHotelHome(true);
+          router.replace('/hotel');
+        }
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -318,6 +353,27 @@ export default function Page() {
       .catch(() => {
         setCompanyName('');
       });
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let lastTenant = localStorage.getItem('tenant') || '';
+    const applyTenantChange = () => {
+      const next = localStorage.getItem('tenant') || '';
+      if (next === lastTenant) return;
+      lastTenant = next;
+      void getMe({ force: true })
+        .then((r) => {
+          setCompanyName(String(r.data?.company_name || r.data?.tenant?.company_name || '').trim());
+        })
+        .catch(() => undefined);
+    };
+    window.addEventListener('storage', applyTenantChange);
+    const id = window.setInterval(applyTenantChange, 800);
+    return () => {
+      window.removeEventListener('storage', applyTenantChange);
+      window.clearInterval(id);
+    };
   }, []);
 
   const firstName = fullName.trim().split(/\s+/)[0] || '';
@@ -342,7 +398,7 @@ export default function Page() {
   const low = d.low_stock || 0;
   const oos = d.out_of_stock || 0;
   const expiring = d.expiring_soon || 0;
-  const inStock = Math.max(0, products - low);
+  const inStock = Math.max(0, products - low - oos);
   const customers = d.customers || 0;
   const suppliers = d.suppliers || 0;
   const cmp = d.comparisons || {};
@@ -385,13 +441,31 @@ export default function Page() {
     { cls: 's-buy', ico: '\ud83d\uded2', label: 'Purchases', val: num(purchases), href: links.purchases || '/purchasing' },
     { cls: 's-exp', ico: '\ud83e\udde7', label: 'Expenses', val: num(expenses), href: links.expenses || '/expenses' },
     { cls: 's-net', ico: '\ud83d\udcc8', label: 'Net Position', val: num(net), href: links.reports_sales || '/reports' },
+    {
+      cls: 's-sales',
+      ico: '\ud83d\udcc8',
+      label: 'Gross profit (7d)',
+      val: num(d.gross_profit_7d),
+      href: links.reports_sales || '/reports',
+      sub: `30d ${num(d.gross_profit_30d)} · from posted sale lines (price − cost)`,
+    },
   ];
 
   const countStats = [
-    { label: 'Customers', val: customers, href: links.customers || '/sales' },
-    { label: 'Suppliers', val: suppliers, href: links.suppliers || '/purchasing' },
     { label: 'Products', val: products, href: links.products || '/inventory' },
+    { label: 'Low stock', val: low, href: links.low_stock || '/inventory?tab=lowstock' },
+    { label: 'Out of stock', val: oos, href: links.out_of_stock || '/inventory?tab=products&stock=oos' },
+    { label: 'Expiring soon', val: expiring, href: links.expiring || '/inventory?tab=expiry' },
   ];
+
+  const liveIndustry = normalizeIndustry(d.industry) || industry;
+  const featureCards = filterIndustryDashboardFeatures(
+    d.industry_features && d.industry_features.length
+      ? d.industry_features
+      : industryDashboardFeatures(liveIndustry),
+    liveIndustry
+  );
+  const industrySection = industryDashboardSectionLabel(liveIndustry);
 
   if (hotelHome) {
     return <p className="muted">Opening hotel dashboard…</p>;
@@ -415,8 +489,10 @@ export default function Page() {
             <span className="wave">{tod.icon}</span>
           </h1>
           <p className="greet-sub">{tod.sub}</p>
-          <p className="dash-house-mark">A Ribdigi House product</p>
           <p className="greet-date">{dateLabel}</p>
+          {liveIndustry && liveIndustry !== 'retail' && (
+            <p className="greet-date">{industryLabel(liveIndustry)} dashboard</p>
+          )}
           {sub?.status === 'trial' && sub?.trial_ends_at && (
             <p className="greet-date">Trial ends {fmtDate(sub.trial_ends_at)}</p>
           )}
@@ -466,13 +542,32 @@ export default function Page() {
               <div className="val">{num(s.val)}</div>
             </Link>
           ))}
-          <Link className="stat" href={links.low_stock || '/reports'} style={{ textDecoration: 'none', color: 'inherit' }}>
-            <div className="label">Inventory alerts</div>
-            <div className="val" style={{ fontSize: 16 }}>
-              Low {num(low)} · OOS {num(oos)} · Exp {num(expiring)}
-            </div>
-          </Link>
         </section>
+
+        {industrySection && featureCards.length > 0 && (
+          <section className="stat-grid" style={{ marginTop: 12 }} aria-label={industrySection}>
+            <h2 className="hint" style={{ gridColumn: '1 / -1', margin: 0 }}>
+              {industrySection}
+            </h2>
+            {featureCards.map((f) => {
+              let value = 'Open';
+              if (f.id === 'expiry_lots') value = num(expiring);
+              if (f.id === 'prescriptions') value = num(d.rx_queue?.open ?? 0);
+              if (f.id === 'rx_products') value = num(d.rx_only_count ?? 0);
+              return (
+              <Link
+                className="stat"
+                key={f.id}
+                href={f.href}
+                style={{ textDecoration: 'none', color: 'inherit' }}
+              >
+                <div className="label">{f.label}</div>
+                <div className="val">{value}</div>
+              </Link>
+              );
+            })}
+          </section>
+        )}
 
         <section className="info-grid">
           <div className="panel">
@@ -558,7 +653,7 @@ export default function Page() {
                   <span className="dot" style={{ background: '#f59e0b', width: 12, height: 12, borderRadius: 4 }} />
                   Out of stock&nbsp;<b>{num(oos)}</b>
                 </Link>
-                <Link className="pill" href={links.expiring || '/inventory'} style={{ textDecoration: 'none', color: 'inherit' }}>
+                <Link className="pill" href={links.expiring || '/inventory?tab=expiry'} style={{ textDecoration: 'none', color: 'inherit' }}>
                   <span className="dot" style={{ background: '#13612E', width: 12, height: 12, borderRadius: 4 }} />
                   Expiring (30d)&nbsp;<b>{num(expiring)}</b>
                 </Link>

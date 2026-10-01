@@ -2,10 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import FormModal from '../../../components/FormModal';
 import PartyContactsPanel from '../../../components/PartyContactsPanel';
 import AttachmentPreview from '../../../components/AttachmentPreview';
-import { api } from '../../../lib/api';
+import { api, getAccessToken } from '../../../lib/api';
+import { getMe } from '../../../lib/meCache';
 import { useStoreContext } from '../../../lib/storeContext';
+import { tenantIsMultiStore } from '../../../lib/tenantNav';
 
 type Tab = 'suppliers' | 'requests' | 'orders' | 'grn' | 'invoices' | 'returns' | 'history';
 
@@ -23,6 +26,59 @@ function asList<T>(data: unknown): T[] {
     if (Array.isArray(rec.data)) return rec.data as T[];
   }
   return [];
+}
+
+type BillLineDraft = {
+  key: string;
+  productId: string;
+  qty: string;
+  unitCost: string;
+  taxRate: string;
+  discount: string;
+};
+
+function newBillLineKey() {
+  return `bl-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function emptyBillLine(): BillLineDraft {
+  return { key: newBillLineKey(), productId: '', qty: '1', unitCost: '0', taxRate: '', discount: '0' };
+}
+
+function billLineMerch(line: BillLineDraft) {
+  const qty = Number(line.qty);
+  const unit = Number(line.unitCost);
+  if (!Number.isFinite(qty) || !Number.isFinite(unit) || qty <= 0 || unit < 0) return 0;
+  return qty * unit;
+}
+
+function billLineTax(line: BillLineDraft) {
+  const rate = line.taxRate.trim() === '' ? 0 : Number(line.taxRate);
+  if (!Number.isFinite(rate) || rate < 0) return 0;
+  return billLineMerch(line) * (rate / 100);
+}
+
+function billLineTotal(line: BillLineDraft) {
+  const disc = Math.max(0, Number(line.discount) || 0);
+  return Math.max(billLineMerch(line) + billLineTax(line) - disc, 0);
+}
+
+function isValidBillLine(line: BillLineDraft) {
+  const qty = Number(line.qty);
+  const unit = Number(line.unitCost);
+  const disc = Number(line.discount);
+  const tax = line.taxRate.trim() === '' ? 0 : Number(line.taxRate);
+  return (
+    Boolean(line.productId.trim()) &&
+    Number.isFinite(qty) &&
+    qty > 0 &&
+    Number.isFinite(unit) &&
+    unit >= 0 &&
+    Number.isFinite(disc) &&
+    disc >= 0 &&
+    Number.isFinite(tax) &&
+    tax >= 0
+  );
 }
 
 function friendlyPurchaseError(raw: unknown): string {
@@ -177,6 +233,8 @@ type PurchaseInvoice = {
   notes?: string | null;
   created_at?: string;
   invoice_date?: string | null;
+  warehouse_id?: string | null;
+  store_id?: string | null;
   items?: {
     id: string;
     product_id: string;
@@ -233,19 +291,43 @@ export default function Page() {
   const [products, setProducts] = useState<Product[]>([]);
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const [warehouseId, setWarehouseId] = useState('');
+  const [billWarehouseId, setBillWarehouseId] = useState('');
+  const [hideWarehouseUx, setHideWarehouseUx] = useState(false);
   const storeWarehouses = useMemo(
     () => warehouses.filter((w: any) => !w.store_id || !storeId || String(w.store_id) === String(storeId)),
     [warehouses, storeId],
   );
   useEffect(() => {
-    if (!storeId || !storeWarehouses.length) {
+    getMe()
+      .then((r) => setHideWarehouseUx(!tenantIsMultiStore(r.data)))
+      .catch(() => undefined);
+  }, []);
+  useEffect(() => {
+    if (!storeWarehouses.length) {
+      if (warehouseId) setWarehouseId('');
+      return;
+    }
+    if (!hideWarehouseUx && !storeId) {
       if (warehouseId) setWarehouseId('');
       return;
     }
     const ids = new Set(storeWarehouses.map((w: any) => String(w.id)));
     const pick = (cur: string) => (cur && ids.has(String(cur)) ? cur : String(storeWarehouses[0].id));
     setWarehouseId((cur) => pick(cur));
-  }, [storeId, storeWarehouses, warehouseId]);
+  }, [hideWarehouseUx, storeId, storeWarehouses, warehouseId]);
+  useEffect(() => {
+    if (!storeWarehouses.length) {
+      if (billWarehouseId) setBillWarehouseId('');
+      return;
+    }
+    if (!hideWarehouseUx && !storeId) {
+      if (billWarehouseId) setBillWarehouseId('');
+      return;
+    }
+    const ids = new Set(storeWarehouses.map((w: any) => String(w.id)));
+    const pick = (cur: string) => (cur && ids.has(String(cur)) ? cur : String(storeWarehouses[0].id));
+    setBillWarehouseId((cur) => pick(cur));
+  }, [hideWarehouseUx, storeId, storeWarehouses, billWarehouseId]);
   const [units, setUnits] = useState<Unit[]>([]);
   const [selected, setSelected] = useState<PurchaseOrder | null>(null);
   const [receiveDrafts, setReceiveDrafts] = useState<
@@ -320,16 +402,23 @@ export default function Page() {
   const [invAttachmentUrl, setInvAttachmentUrl] = useState('');
   const [grnNotes, setGrnNotes] = useState('');
   const [manualInvSupplierId, setManualInvSupplierId] = useState('');
-  const [manualInvProductId, setManualInvProductId] = useState('');
-  const [manualInvQty, setManualInvQty] = useState('1');
-  const [manualInvPrice, setManualInvPrice] = useState('0');
-  const [manualInvTaxRate, setManualInvTaxRate] = useState('');
-  const [manualInvLineDiscount, setManualInvLineDiscount] = useState('0');
+  const [billLines, setBillLines] = useState<BillLineDraft[]>(() => [emptyBillLine()]);
   const [manualInvHeaderDiscount, setManualInvHeaderDiscount] = useState('0');
   const [grnInvHeaderDiscount, setGrnInvHeaderDiscount] = useState('0');
   const [invCurrency, setInvCurrency] = useState('');
   const [invExchangeRate, setInvExchangeRate] = useState('');
   const [manualInvRc, setManualInvRc] = useState(false);
+  const billPreview = useMemo(() => {
+    const lines = billLines.filter(isValidBillLine);
+    const subtotal = lines.reduce((sum, line) => sum + billLineMerch(line), 0);
+    const lineDiscount = lines.reduce((sum, line) => sum + Math.max(0, Number(line.discount) || 0), 0);
+    const tax = lines.reduce((sum, line) => sum + billLineTax(line), 0);
+    const headerDiscount = Math.max(0, Number(manualInvHeaderDiscount) || 0);
+    const total = manualInvRc
+      ? Math.max(subtotal - headerDiscount, 0)
+      : Math.max(subtotal + tax - headerDiscount, 0);
+    return { lines, subtotal, lineDiscount, tax, headerDiscount, total };
+  }, [billLines, manualInvHeaderDiscount, manualInvRc]);
   const [ocrFor, setOcrFor] = useState<string | null>(null);
   const [ocrDraft, setOcrDraft] = useState<{
     supplier_invoice_number: string;
@@ -343,6 +432,11 @@ export default function Page() {
   const [saveBusy, setSaveBusy] = useState(false);
   const [listQuery, setListQuery] = useState('');
   const [supplierDrawer, setSupplierDrawer] = useState(false);
+  const [prCreateOpen, setPrCreateOpen] = useState(false);
+  const [poCreateOpen, setPoCreateOpen] = useState(false);
+  const [billCreateOpen, setBillCreateOpen] = useState(false);
+  const [billManualOpen, setBillManualOpen] = useState(false);
+  const [returnCreateOpen, setReturnCreateOpen] = useState(false);
   async function refresh() {
     const [poRes, prRes, settingsRes, supRes, prodRes, unitRes, whRes, grnRes, invRes, retRes] =
       await Promise.all([
@@ -377,11 +471,6 @@ export default function Page() {
     const product = products.find((p) => p.id === productId);
     if (product) setUnitPrice(String(product.cost_price ?? 0));
   }, [productId, products]);
-
-  useEffect(() => {
-    const product = products.find((p) => p.id === manualInvProductId);
-    if (product) setManualInvPrice(String(product.cost_price ?? 0));
-  }, [manualInvProductId, products]);
 
   useEffect(() => {
     const grn = grns.find((g) => g.id === grnId);
@@ -494,6 +583,7 @@ export default function Page() {
       await refresh();
       setSelected(r.data);
       setTab('orders');
+      setPoCreateOpen(false);
     } catch (err: any) {
       setError(friendlyPurchaseError(err));
     } finally {
@@ -795,6 +885,7 @@ export default function Page() {
   }
 
   async function createReturn() {
+    if (saveBusy) return;
     setError('');
     setMessage('');
     if (!returnReason.trim()) {
@@ -812,6 +903,7 @@ export default function Page() {
       setError(`Return quantity cannot exceed remaining accepted qty (${remaining})`);
       return;
     }
+    setSaveBusy(true);
     try {
       const r = await api('/purchasing/returns', {
         method: 'POST',
@@ -828,13 +920,18 @@ export default function Page() {
       setReturnNotes('');
       setTab('returns');
       await refresh();
+      setReturnCreateOpen(false);
     } catch (err: any) {
       setError(friendlyPurchaseError(err));
+    } finally {
+      setSaveBusy(false);
     }
   }
 
   async function createInvoiceFromGrn() {
+    if (saveBusy) return;
     setError('');
+    setSaveBusy(true);
     try {
       const headerDisc = Math.max(0, Number(grnInvHeaderDiscount) || 0);
       const r = await api('/purchasing/invoices', {
@@ -862,15 +959,24 @@ export default function Page() {
       setInvCurrency('');
       setInvExchangeRate('');
       await refresh();
+      setBillCreateOpen(false);
     } catch (err: any) {
       setError(friendlyPurchaseError(err));
+    } finally {
+      setSaveBusy(false);
     }
   }
 
   async function createManualInvoice() {
+    if (saveBusy) return;
     setError('');
+    const lines = billLines.filter(isValidBillLine);
+    if (lines.length < 1) {
+      setError('Add at least one product line with quantity and unit cost.');
+      return;
+    }
+    setSaveBusy(true);
     try {
-      const lineDisc = Math.max(0, Number(manualInvLineDiscount) || 0);
       const headerDisc = Math.max(0, Number(manualInvHeaderDiscount) || 0);
       const r = await api('/purchasing/invoices', {
         method: 'POST',
@@ -884,17 +990,15 @@ export default function Page() {
           discount_amount: headerDisc,
           currency: invCurrency.trim() || null,
           exchange_rate: invExchangeRate === '' ? null : Number(invExchangeRate),
-          items: [
-            {
-              product_id: manualInvProductId.trim(),
-              quantity: Number(manualInvQty),
-              unit_price: Number(manualInvPrice),
-              discount: lineDisc,
-              ...(manualInvTaxRate.trim() !== ''
-                ? { tax_rate: Number(manualInvTaxRate) }
-                : {}),
-            },
-          ],
+          warehouse_id: billWarehouseId.trim() || null,
+          store_id: storeId || null,
+          items: lines.map((line) => ({
+            product_id: line.productId.trim(),
+            quantity: Number(line.qty),
+            unit_price: Number(line.unitCost),
+            discount: Math.max(0, Number(line.discount) || 0),
+            ...(line.taxRate.trim() !== '' ? { tax_rate: Number(line.taxRate) } : {}),
+          })),
         }),
       });
       setMessage(
@@ -906,14 +1010,17 @@ export default function Page() {
       setSupplierInvoiceNo('');
       setInvNotes('');
       setInvAttachmentUrl('');
-      setManualInvLineDiscount('0');
+      setBillLines([emptyBillLine()]);
       setManualInvHeaderDiscount('0');
       setManualInvRc(false);
       setInvCurrency('');
       setInvExchangeRate('');
       await refresh();
+      setBillManualOpen(false);
     } catch (err: any) {
       setError(friendlyPurchaseError(err));
+    } finally {
+      setSaveBusy(false);
     }
   }
 
@@ -956,7 +1063,7 @@ export default function Page() {
   async function uploadInvoiceAttachment(id: string, file: File) {
     setError('');
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const tenant = localStorage.getItem('tenant');
       const form = new FormData();
       form.append('file', file);
@@ -980,7 +1087,7 @@ export default function Page() {
   async function downloadInvoiceAttachment(id: string) {
     setError('');
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const tenant = localStorage.getItem('tenant');
       const res = await fetch(`${apiBase}/purchasing/invoices/${id}/attachment`, {
         headers: {
@@ -1086,8 +1193,10 @@ export default function Page() {
   }
 
   async function createRequest() {
+    if (saveBusy) return;
     setError('');
     setMessage('');
+    setSaveBusy(true);
     try {
       const r = await api('/purchasing/requests', {
         method: 'POST',
@@ -1111,8 +1220,11 @@ export default function Page() {
       setPrRequiredDate('');
       await refresh();
       setTab('requests');
+      setPrCreateOpen(false);
     } catch (err: any) {
       setError(friendlyPurchaseError(err));
+    } finally {
+      setSaveBusy(false);
     }
   }
 
@@ -1375,8 +1487,18 @@ export default function Page() {
               </button>
             </div>
           </div>
-          <div className="card">
-            <h3>Create purchase request</h3>
+          <div>
+            <button type="button" className="btn-primary" onClick={() => setPrCreateOpen(true)} aria-label="Create purchase request">
+              Create purchase request
+            </button>
+          </div>
+          {prCreateOpen ? (
+          <FormModal
+            title="Create purchase request"
+            busy={saveBusy}
+            dirty={Boolean(prProductId || prNotes.trim() || prDepartment.trim())}
+            onClose={() => setPrCreateOpen(false)}
+          >
             <div className="erp-form-grid">
               <select
                 value={prSupplierId}
@@ -1443,13 +1565,14 @@ export default function Page() {
               />
               <button
                 onClick={createRequest}
-                disabled={!prProductId}
+                disabled={!prProductId || saveBusy}
                 aria-label="Create draft purchase request"
               >
-                Create draft PR
+                {saveBusy ? 'Saving…' : 'Create draft PR'}
               </button>
             </div>
-          </div>
+          </FormModal>
+          ) : null}
           </div>
           <div className="card">
             <label className="field">
@@ -1680,8 +1803,12 @@ export default function Page() {
           )}
         </div>
         {supplierDrawer ? (
-      <div className="card">
-        <h3>Add supplier</h3>
+      <FormModal
+        title="Add supplier"
+        busy={saveBusy}
+        dirty={Boolean(supplierName.trim() || supplierCode.trim() || supplierEmail.trim() || supplierPhone.trim())}
+        onClose={() => setSupplierDrawer(false)}
+      >
         <div className="erp-form-grid">
           <label className="field">
             <span>Name</span>
@@ -1808,7 +1935,7 @@ export default function Page() {
             {saveBusy ? 'Saving…' : 'Add supplier'}
           </button>
         </div>
-      </div>
+      </FormModal>
         ) : null}
         {supplierId ? (
       <div className="card">
@@ -1871,8 +1998,18 @@ export default function Page() {
       )}
       {tab === 'orders' && (
       <>
-      <div className="card" style={{ marginBottom: 16 }}>
-        <h3>Add purchase order</h3>
+      <div style={{ marginBottom: 12 }}>
+        <button type="button" className="btn-primary" onClick={() => setPoCreateOpen(true)} aria-label="Add purchase order">
+          Add purchase order
+        </button>
+      </div>
+      {poCreateOpen ? (
+      <FormModal
+        title="Add purchase order"
+        busy={saveBusy}
+        dirty={Boolean(supplierId || productId || poNotes.trim() || poDeliveryAddress.trim())}
+        onClose={() => setPoCreateOpen(false)}
+      >
         <div className="erp-form-grid">
           <select
             value={supplierId}
@@ -1949,6 +2086,7 @@ export default function Page() {
             aria-label="PO notes"
             title="Optional notes (1–500 chars; letters/digits required)"
           />
+          {!hideWarehouseUx ? (
           <label className="field">
             <span>Warehouse (store context)</span>
             <select aria-label="PO warehouse" value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)}>
@@ -1958,6 +2096,7 @@ export default function Page() {
               ))}
             </select>
           </label>
+          ) : null}
           <button
             className="btn-primary"
             onClick={createPo}
@@ -1968,7 +2107,8 @@ export default function Page() {
           </button>
           {message ? <p className="form-flash ok">{message}</p> : null}
         </div>
-      </div>
+      </FormModal>
+      ) : null}
 
           <div className="card">
             <label className="field">
@@ -2145,6 +2285,7 @@ export default function Page() {
                 <thead>
                   <tr>
                     <th>Product</th>
+                    <th>SKU</th>
                     <th>Ordered</th>
                     <th>Received</th>
                     <th>Outstanding</th>
@@ -2182,6 +2323,7 @@ export default function Page() {
                     return (
                       <tr key={i.id}>
                         <td>{productNameOf(i.product_id)}</td>
+                        <td>{products.find((p) => p.id === i.product_id)?.sku || '—'}</td>
                         <td>{i.quantity}</td>
                         <td>{i.received_qty}</td>
                         <td>{i.outstanding_qty}</td>
@@ -2508,6 +2650,7 @@ export default function Page() {
               <thead>
                 <tr>
                   <th>Product</th>
+                  <th>SKU</th>
                   <th>Left</th>
                   <th>Receive</th>
                   <th>Accept</th>
@@ -2532,6 +2675,7 @@ export default function Page() {
                     return (
                       <tr key={i.id}>
                         <td>{productNameOf(i.product_id)}</td>
+                        <td>{products.find((p) => p.id === i.product_id)?.sku || '—'}</td>
                         <td>{i.outstanding_qty}</td>
                         <td>
                           <input
@@ -2699,9 +2843,22 @@ export default function Page() {
 
       {tab === 'invoices' && (
         <>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+            <button type="button" className="btn-primary" onClick={() => setBillCreateOpen(true)} aria-label="Create supplier bill from received goods">
+              Bill from GRN
+            </button>
+            <button type="button" onClick={() => setBillManualOpen(true)} aria-label="Create supplier bill">
+              Create supplier bill
+            </button>
+          </div>
           <div className="erp-split">
-      <div className="card" style={{ marginBottom: 16 }}>
-        <h3>Create supplier bill from received goods</h3>
+      {billCreateOpen ? (
+      <FormModal
+        title="Create supplier bill from received goods"
+        busy={saveBusy}
+        dirty={Boolean(invoiceGrnId || supplierInvoiceNo.trim())}
+        onClose={() => setBillCreateOpen(false)}
+      >
         <div className="erp-form-grid">
           <select
             value={invoiceGrnId}
@@ -2771,15 +2928,21 @@ export default function Page() {
           </span>
           <button
             onClick={createInvoiceFromGrn}
-            disabled={!invoiceGrnId}
+            disabled={!invoiceGrnId || saveBusy}
             aria-label="Draft purchase invoice from GRN"
           >
-            Draft invoice from GRN
+            {saveBusy ? 'Saving…' : 'Draft invoice from GRN'}
           </button>
         </div>
-      </div>
-      <div className="card" style={{ marginBottom: 16 }}>
-        <h3>Create supplier bill</h3>
+      </FormModal>
+      ) : null}
+      {billManualOpen ? (
+      <FormModal
+        title="Create supplier bill"
+        busy={saveBusy}
+        dirty={Boolean(manualInvSupplierId || billLines.some((line) => line.productId))}
+        onClose={() => setBillManualOpen(false)}
+      >
         <div className="erp-form-grid">
           <select
             value={manualInvSupplierId}
@@ -2795,56 +2958,21 @@ export default function Page() {
               </option>
             ))}
           </select>
-          <select
-            value={manualInvProductId}
-            onChange={(e) => setManualInvProductId(e.target.value)}
-            aria-label="Purchase invoice product"
-          >
-            <option value="">Select product</option>
-            {products
-              .filter((p) => p.is_active !== false)
-              .map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} ({p.sku})
-              </option>
-            ))}
-          </select>
-          <input
-            value={manualInvQty}
-            onChange={(e) => setManualInvQty(e.target.value)}
-            placeholder="Quantity"
-            aria-label="Purchase invoice quantity"
-          />
-          <input
-            value={manualInvPrice}
-            onChange={(e) => setManualInvPrice(e.target.value)}
-            placeholder="Unit price"
-            aria-label="Purchase invoice unit price"
-          />
-          <input
-            value={manualInvTaxRate}
-            onChange={(e) => setManualInvTaxRate(e.target.value)}
-            placeholder="Tax rate % (blank = auto)"
-            aria-label="Purchase invoice tax rate percent"
-          />
-          <input
-            value={manualInvLineDiscount}
-            onChange={(e) => setManualInvLineDiscount(e.target.value)}
-            placeholder="Line discount amount"
-            aria-label="Purchase invoice line discount"
-            type="number"
-            min={0}
-            step="0.01"
-          />
-          <input
-            value={manualInvHeaderDiscount}
-            onChange={(e) => setManualInvHeaderDiscount(e.target.value)}
-            placeholder="Header discount amount"
-            aria-label="Purchase invoice header discount"
-            type="number"
-            min={0}
-            step="0.01"
-          />
+          {!hideWarehouseUx ? (
+          <label className="field">
+            <span>Warehouse (store context)</span>
+            <select
+              aria-label="Purchase invoice warehouse"
+              value={billWarehouseId}
+              onChange={(e) => setBillWarehouseId(e.target.value)}
+            >
+              <option value="">Default / any</option>
+              {storeWarehouses.map((w: any) => (
+                <option key={w.id} value={w.id}>{w.code} — {w.name}</option>
+              ))}
+            </select>
+          </label>
+          ) : null}
           <input
             value={supplierInvoiceNo}
             onChange={(e) => setSupplierInvoiceNo(e.target.value)}
@@ -2886,19 +3014,187 @@ export default function Page() {
             step="0.0001"
             aria-label="Purchase invoice FX rate"
           />
+          <input
+            value={manualInvHeaderDiscount}
+            onChange={(e) => setManualInvHeaderDiscount(e.target.value)}
+            placeholder="Header discount amount"
+            aria-label="Purchase invoice header discount"
+            type="number"
+            min={0}
+            step="0.01"
+          />
           <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <input type="checkbox" checked={manualInvRc} onChange={(e) => setManualInvRc(e.target.checked)} aria-label="Purchase invoice reverse charge" />
             Reverse charge (self-assess VAT; AP = net)
           </label>
+          <span className="muted span-2">
+            One supplier and bill header. Add product lines below — adding a product does not replace earlier lines.
+            Header discount and FX apply once on the bill total (tax is not doubled). Draft saves the bill only; posting receives stock for every line at the selected warehouse.
+          </span>
+        </div>
+        <div className="cat-table-wrap" style={{ marginTop: 12 }}>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>SKU</th>
+                <th>Qty</th>
+                <th>Unit cost</th>
+                <th>Tax %</th>
+                <th>Discount</th>
+                <th>Line total</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {billLines.map((line) => (
+                <tr key={line.key}>
+                  <td>
+                    <select
+                      value={line.productId}
+                      onChange={(e) => {
+                        const productId = e.target.value;
+                        const product = products.find((p) => p.id === productId);
+                        setBillLines((rows) =>
+                          rows.map((row) =>
+                            row.key === line.key
+                              ? {
+                                  ...row,
+                                  productId,
+                                  unitCost: product ? String(product.cost_price ?? 0) : row.unitCost,
+                                }
+                              : row,
+                          ),
+                        );
+                      }}
+                      aria-label="Purchase invoice product"
+                    >
+                      <option value="">Select product</option>
+                      {products
+                        .filter((p) => p.is_active !== false)
+                        .map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} ({p.sku})
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td>{products.find((p) => p.id === line.productId)?.sku || '—'}</td>
+                  <td>
+                    <input
+                      value={line.qty}
+                      onChange={(e) =>
+                        setBillLines((rows) =>
+                          rows.map((row) => (row.key === line.key ? { ...row, qty: e.target.value } : row)),
+                        )
+                      }
+                      placeholder="Quantity"
+                      aria-label="Purchase invoice quantity"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      value={line.unitCost}
+                      onChange={(e) =>
+                        setBillLines((rows) =>
+                          rows.map((row) => (row.key === line.key ? { ...row, unitCost: e.target.value } : row)),
+                        )
+                      }
+                      placeholder="Unit cost"
+                      aria-label="Purchase invoice unit price"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      value={line.taxRate}
+                      onChange={(e) =>
+                        setBillLines((rows) =>
+                          rows.map((row) => (row.key === line.key ? { ...row, taxRate: e.target.value } : row)),
+                        )
+                      }
+                      placeholder="Tax rate % (blank = auto)"
+                      aria-label="Purchase invoice tax rate percent"
+                    />
+                  </td>
+                  <td>
+                    <input
+                      value={line.discount}
+                      onChange={(e) =>
+                        setBillLines((rows) =>
+                          rows.map((row) => (row.key === line.key ? { ...row, discount: e.target.value } : row)),
+                        )
+                      }
+                      placeholder="Line discount amount"
+                      aria-label="Purchase invoice line discount"
+                      type="number"
+                      min={0}
+                      step="0.01"
+                    />
+                  </td>
+                  <td>{billLineTotal(line).toFixed(2)}</td>
+                  <td>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setBillLines((rows) =>
+                          rows.length <= 1 ? [emptyBillLine()] : rows.filter((row) => row.key !== line.key),
+                        )
+                      }
+                      aria-label="Remove purchase invoice line"
+                    >
+                      Remove
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
           <button
-            onClick={createManualInvoice}
-            disabled={!manualInvSupplierId || !manualInvProductId}
-            aria-label="Draft manual purchase invoice"
+            type="button"
+            onClick={() => setBillLines((rows) => [...rows, emptyBillLine()])}
+            aria-label="Add purchase invoice product"
           >
-            Draft manual invoice
+            Add product
           </button>
         </div>
-      </div>
+        <div className="grid" style={{ marginTop: 12 }}>
+          <div className="card">
+            <div className="muted">Subtotal</div>
+            <div className="kpi">{billPreview.subtotal.toFixed(2)}</div>
+          </div>
+          <div className="card">
+            <div className="muted">Line discounts</div>
+            <div className="kpi">{billPreview.lineDiscount.toFixed(2)}</div>
+          </div>
+          <div className="card">
+            <div className="muted">Header discount</div>
+            <div className="kpi">{billPreview.headerDiscount.toFixed(2)}</div>
+          </div>
+          <div className="card">
+            <div className="muted">{manualInvRc ? 'Tax (memo)' : 'Tax'}</div>
+            <div className="kpi">{billPreview.tax.toFixed(2)}</div>
+          </div>
+          <div className="card">
+            <div className="muted">Bill total</div>
+            <div className="kpi">{billPreview.total.toFixed(2)}</div>
+          </div>
+        </div>
+        <p className="muted">
+          Bill total = subtotal {manualInvRc ? '' : '+ tax '}− header discount in document currency.
+          Line discounts change line totals only; they are not added again to the header (no double-count).
+          {invCurrency.trim() ? ` FX ${invCurrency.trim()} @ ${invExchangeRate || 'resolve'}.` : ''}
+        </p>
+        <button
+          onClick={createManualInvoice}
+          disabled={!manualInvSupplierId || billPreview.lines.length < 1 || saveBusy}
+          aria-label="Draft manual purchase invoice"
+        >
+          {saveBusy ? 'Saving…' : 'Draft manual invoice'}
+        </button>
+      </FormModal>
+      ) : null}
           </div>
 
           {ocrDraft && ocrFor && (
@@ -3130,6 +3426,9 @@ export default function Page() {
               {selectedInvoice.currency
                 ? ` · ${selectedInvoice.currency} @ ${selectedInvoice.exchange_rate ?? 1}`
                 : ''}
+              {selectedInvoice.warehouse_id
+                ? ` · ${warehouses.find((w: any) => w.id === selectedInvoice.warehouse_id)?.code || selectedInvoice.warehouse_id}`
+                : ''}
             </h3>
             {selectedInvoice.can_cancel && (
               <p style={{ marginTop: 0 }}>
@@ -3157,6 +3456,7 @@ export default function Page() {
               <thead>
                 <tr>
                   <th>Product</th>
+                  <th>SKU</th>
                   <th>Qty</th>
                   <th>Unit</th>
                   <th>Tax %</th>
@@ -3169,6 +3469,7 @@ export default function Page() {
                 {(selectedInvoice.items || []).map((it) => (
                   <tr key={it.id}>
                     <td>{productName(it.product_id)}</td>
+                    <td>{products.find((p) => p.id === it.product_id)?.sku || '—'}</td>
                     <td>{it.quantity}</td>
                     <td>{it.unit_price}</td>
                     <td>{it.tax_rate}</td>
@@ -3240,8 +3541,18 @@ export default function Page() {
 
       {tab === 'returns' && (
         <>
-      <div className="card" style={{ marginBottom: 16 }}>
-        <h3>Create purchase return</h3>
+      <div style={{ marginBottom: 12 }}>
+        <button type="button" className="btn-primary" onClick={() => setReturnCreateOpen(true)} aria-label="Create purchase return">
+          Create purchase return
+        </button>
+      </div>
+      {returnCreateOpen ? (
+      <FormModal
+        title="Create purchase return"
+        busy={saveBusy}
+        dirty={Boolean(grnId || returnReason || returnNotes.trim())}
+        onClose={() => setReturnCreateOpen(false)}
+      >
         <div className="erp-form-grid">
           <select
             value={grnId}
@@ -3295,13 +3606,14 @@ export default function Page() {
           />
           <button
             onClick={createReturn}
-            disabled={!grnId || !grnItemId || !returnReason}
+            disabled={!grnId || !grnItemId || !returnReason || saveBusy}
             aria-label="Create purchase return"
           >
-            Draft return
+            {saveBusy ? 'Saving…' : 'Draft return'}
           </button>
         </div>
-      </div>
+      </FormModal>
+      ) : null}
       <div className="card">
         <label className="field">
           <span>Cancel reason</span>
@@ -3381,7 +3693,7 @@ export default function Page() {
                   <button
                     type="button"
                     onClick={() => {
-                      const token = localStorage.getItem('token');
+                      const token = getAccessToken();
                       const tenant = localStorage.getItem('tenant');
                       const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
                       fetch(`${base}/purchasing/returns/${r.id}/print`, {

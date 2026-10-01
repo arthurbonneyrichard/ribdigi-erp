@@ -3,22 +3,40 @@
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { api, apiRoot, clearSessionAndRedirect, idleTimeoutMs, tenantHeaderValue } from '../lib/api';
+import { api, apiRoot, clearSessionAndRedirect, idleTimeoutMs, isConfirmedAuthExpiry, tenantHeaderValue, getAccessToken, hydrateAuth } from '../lib/api';
 import { industryAllowsModule, INDUSTRY_SPECIFIC_MODULES } from '../lib/industryModules';
 import { industryLabel, normalizeIndustry } from '../lib/industries';
+import { isStoreNetworkNavItem, tenantIsMultiStore } from '../lib/tenantNav';
 import { getMe, invalidateMeCache } from '../lib/meCache';
 import { prefetchGet } from '../lib/prefetchCache';
 import { loadUserTheme, writeUserTheme } from '../lib/theme';
 import { StoreProvider } from '../lib/storeContext';
 import {
+  ACTIVITY_EVENTS,
+  LAST_ACTIVITY_KEY,
+  bumpLastActivity,
+  isIdleExpired,
+  readLastActivity,
+  resetIdleWriteThrottle,
+  shouldWarnIdle,
+} from '../lib/idleSession';
+import {
+  ALWAYS_LIST_NAV_GROUP_IDS,
+  CASHIER_NAV_MODULES,
   FMCG_NAV_ITEMS,
   groupedTenantNav,
+  HOTEL_CASHIER_NAV_MODULES,
   HOTEL_INVENTORY_PROCUREMENT_CHILDREN,
   HOTEL_NAV_ITEMS,
   isHotelIndustry,
+  navAllowlistFromPermissions,
+  PEOPLE_NAV_ITEMS,
+  PHARMACY_NAV_ITEMS,
+  unauthorizedNavRedirect,
   type NavGroup,
   type NavItem,
 } from '../lib/tenantNav';
+import { chromeLogoAlt, chromeLogoSrc, PLATFORM_SIDEBAR_LOGO } from '../lib/chromeBrand';
 import OnboardingChecklist from './OnboardingChecklist';
 import StoreSwitcher from './StoreSwitcher';
 
@@ -58,10 +76,11 @@ const TENANT_ITEMS: NavItem[] = [
   ['Accounting', '/accounting', 'accounting'],
   ['Customer credit', '/credit?kind=receivable', 'credit'],
   ['Tax', '/tax', 'tax'],
-  ['Multi-Store', '/stores', 'stores'],
+  ...PEOPLE_NAV_ITEMS,
   ...HOTEL_NAV_ITEMS,
   ...HOTEL_INVENTORY_PROCUREMENT_CHILDREN,
   ...FMCG_NAV_ITEMS,
+  ...PHARMACY_NAV_ITEMS,
   ['Reports', '/reports', 'reports'],
   ['Notifications', '/notifications', 'notifications'],
   ['Audit', '/audit', 'audit'],
@@ -70,8 +89,6 @@ const TENANT_ITEMS: NavItem[] = [
   ['Security', '/security', 'security'],
   ['Printers', '/printers', 'printers'],
   ['AI Assistant', '/ai', 'ai'],
-  ['Users', '/users', 'users'],
-  ['Departments', '/departments', 'users'],
 ];
 
 /** Never accordion — click navigates even if later given extra children. */
@@ -79,14 +96,6 @@ const STANDALONE_NAV_IDS = new Set(['dashboard', 'notifications', 'hotel']);
 
 const TENANT_NAV_GROUPS: NavGroup[] = [
   { id: 'dashboard', label: 'Dashboard', items: [['Dashboard', '/dashboard', 'dashboard']] },
-  {
-    id: 'company',
-    label: 'Company and Setup',
-    items: [
-      ['Company', '/company', 'company'],
-      ['Integrations', '/integrations', 'integrations'],
-    ],
-  },
   { id: 'inventory', label: 'Inventory', items: [
     ['Products', '/inventory?tab=products', 'inventory'],
     ['Categories', '/inventory?tab=categories', 'inventory'],
@@ -131,7 +140,6 @@ const TENANT_NAV_GROUPS: NavGroup[] = [
       ['Tax', '/tax', 'tax'],
     ],
   },
-  { id: 'stores', label: 'Stores and Warehouses', items: [['Multi-Store', '/stores', 'stores']] },
   {
     id: 'reports',
     label: 'Reports',
@@ -143,16 +151,15 @@ const TENANT_NAV_GROUPS: NavGroup[] = [
   {
     id: 'people',
     label: 'User Management',
-    items: [
-      ['Users', '/users', 'users'],
-      ['Departments', '/departments', 'users'],
-    ],
+    items: [...PEOPLE_NAV_ITEMS],
   },
   { id: 'notifications', label: 'Notifications', items: [['Notifications', '/notifications', 'notifications']] },
   {
     id: 'settings',
     label: 'Settings',
     items: [
+      ['Company', '/company', 'company'],
+      ['Integrations', '/integrations', 'integrations'],
       ['Security', '/security', 'security'],
       ['Printers', '/printers', 'printers'],
       ['Backup', '/backup', 'backup'],
@@ -162,12 +169,13 @@ const TENANT_NAV_GROUPS: NavGroup[] = [
   {
     id: 'industry',
     label: 'Industry-specific features',
-    items: [...HOTEL_NAV_ITEMS, ...FMCG_NAV_ITEMS],
+    items: [...HOTEL_NAV_ITEMS, ...FMCG_NAV_ITEMS, ...PHARMACY_NAV_ITEMS],
   },
 ];
 
 function usesAccordion(group: NavGroup): boolean {
   if (!group.label || STANDALONE_NAV_IDS.has(group.id)) return false;
+  if (ALWAYS_LIST_NAV_GROUP_IDS.has(group.id)) return false;
   if (group.id === 'hotel-inventory') return group.items.length > 0;
   return group.items.length > 1;
 }
@@ -257,7 +265,7 @@ const ROLE_NAV_MODULES: Record<string, string[] | '*'> = {
     'audit',
     'security',
   ],
-  cashier: ['dashboard', 'inventory', 'pos', 'sales', 'notifications', 'security'],
+  cashier: [...CASHIER_NAV_MODULES],
   hotel_manager: [
     'dashboard',
     'hotel',
@@ -279,7 +287,7 @@ const ROLE_NAV_MODULES: Record<string, string[] | '*'> = {
   hotel_reservations: ['hotel', 'notifications', 'security'],
   hotel_housekeeping: ['hotel', 'inventory', 'notifications', 'security'],
   hotel_maintenance: ['hotel', 'inventory', 'notifications', 'security'],
-  hotel_cashier: ['hotel', 'pos', 'accounting', 'notifications', 'security'],
+  hotel_cashier: [...HOTEL_CASHIER_NAV_MODULES],
   hotel_auditor: ['hotel', 'reports', 'audit', 'accounting', 'notifications', 'security'],
 };
 
@@ -495,11 +503,21 @@ const DEFAULT_NAV_TABS: Record<string, string> = {
   '/reports': 'summary',
 };
 
-function hrefParts(href: string): { path: string; params: URLSearchParams } {
-  const q = href.indexOf('?');
-  const path = ((q === -1 ? href : href.slice(0, q)).replace(/\/$/, '') || '/');
-  const params = new URLSearchParams(q === -1 ? '' : href.slice(q + 1));
-  return { path, params };
+function hrefParts(href: string): { path: string; params: URLSearchParams; hash: string } {
+  const hashIdx = href.indexOf('#');
+  const hash = hashIdx === -1 ? '' : href.slice(hashIdx + 1);
+  const withoutHash = hashIdx === -1 ? href : href.slice(0, hashIdx);
+  const q = withoutHash.indexOf('?');
+  const path = ((q === -1 ? withoutHash : withoutHash.slice(0, q)).replace(/\/$/, '') || '/');
+  const params = new URLSearchParams(q === -1 ? '' : withoutHash.slice(q + 1));
+  return { path, params, hash };
+}
+
+function currentNavHash(path: string, locationHash: string): string {
+  const h = (locationHash || '').replace(/^#/, '');
+  if (h) return h;
+  if (path === '/stores') return 'stores';
+  return '';
 }
 
 function currentNavValue(key: string, path: string, current: URLSearchParams): string {
@@ -510,8 +528,8 @@ function currentNavValue(key: string, path: string, current: URLSearchParams): s
   return '';
 }
 
-/** Highlight the most specific item (query-aware). /platform must not stay active on /platform/staff. */
-function navMatchScore(pathname: string, search: string, href: string): number {
+/** Highlight the most specific item (query- and hash-aware). /platform must not stay active on /platform/staff. */
+function navMatchScore(pathname: string, search: string, href: string, locationHash = ''): number {
   const currentPath = pathname.split('?')[0].replace(/\/$/, '') || '/';
   const current = new URLSearchParams((search || '').replace(/^\?/, ''));
   const target = hrefParts(href);
@@ -523,20 +541,34 @@ function navMatchScore(pathname: string, search: string, href: string): number {
   if (!target.params.has('panel') && current.get('panel') && target.params.get('kind') === 'payable') {
     return -1;
   }
-  return target.path.length * 20 + Array.from(target.params.keys()).length * 5 + (currentPath === target.path ? 3 : 0);
+  const effectiveHash = currentNavHash(currentPath, locationHash);
+  if (target.hash && effectiveHash !== target.hash) return -1;
+  const hashBonus = target.hash && effectiveHash === target.hash ? 8 : 0;
+  return target.path.length * 20 + Array.from(target.params.keys()).length * 5 + (currentPath === target.path ? 3 : 0) + hashBonus;
 }
 
-function isNavActive(pathname: string, href: string, items: NavItem[], search = ''): boolean {
-  const score = navMatchScore(pathname, search, href);
+function isNavActive(pathname: string, href: string, items: NavItem[], search = '', locationHash = ''): boolean {
+  const score = navMatchScore(pathname, search, href, locationHash);
   if (score < 0) return false;
-  return !items.some(([, other]) => other !== href && navMatchScore(pathname, search, other) > score);
+  return !items.some(([, other]) => other !== href && navMatchScore(pathname, search, other, locationHash) > score);
+}
+
+function navAllowlistForRole(
+  role: string,
+  permissions: Record<string, string[]> | null,
+): string[] | '*' {
+  if (Object.prototype.hasOwnProperty.call(ROLE_NAV_MODULES, role)) {
+    return ROLE_NAV_MODULES[role];
+  }
+  return navAllowlistFromPermissions(permissions);
 }
 
 function navItemsForRole(
   role: string,
   permissions: Record<string, string[]> | null,
   enabledModules: string[] | null,
-  industry: string | null
+  industry: string | null,
+  multiStore = true
 ): NavItem[] {
   // Software owner staff: platform console nav only.
   if (PLATFORM_ROLES.has(role)) {
@@ -547,24 +579,25 @@ function navItemsForRole(
     });
   }
 
-  const allowed = ROLE_NAV_MODULES[role] ?? ROLE_NAV_MODULES.cashier;
+  const allowed = navAllowlistForRole(role, permissions);
   const packageSet =
     enabledModules && enabledModules.length > 0 ? new Set(enabledModules.map((m) => m.toLowerCase())) : null;
   const industrySpecific = new Set<string>(INDUSTRY_SPECIFIC_MODULES);
-  return TENANT_ITEMS.filter(([, , module]) => {
+  return TENANT_ITEMS.filter(([, href, module]) => {
     const permModule = module === 'integrations' ? 'company' : module;
     if (allowed !== '*' && !allowed.includes(permModule) && module !== 'integrations')
       return false;
     if (allowed !== '*' && module === 'integrations' && !allowed.includes('company'))
       return false;
     if (isHotelIndustry(industry) && permModule === 'stores') return false;
+    if (!multiStore && isStoreNetworkNavItem(href, permModule)) return false;
     if (industrySpecific.has(permModule)) {
       if (!industryAllowsModule(industry, permModule)) return false;
       if (!packageSet || !packageSet.has(permModule)) return false;
     } else if (
       packageSet &&
       !packageSet.has(permModule) &&
-      !['dashboard', 'notifications', 'security', 'users', 'printers'].includes(module)
+      !['dashboard', 'notifications', 'security', 'users', 'printers', 'stores'].includes(module)
     ) {
       return false;
     }
@@ -604,12 +637,13 @@ function activeNavGroupId(
   groups: NavGroup[],
   pathname: string,
   items: NavItem[],
-  search = ''
+  search = '',
+  locationHash = ''
 ): string | null {
   const path = pathname || '';
   for (const group of groups) {
     if (!usesAccordion(group)) continue;
-    if (group.items.some(([, href]) => isNavActive(path, href, items, search))) return group.id;
+    if (group.items.some(([, href]) => isNavActive(path, href, items, search, locationHash))) return group.id;
   }
   return null;
 }
@@ -643,14 +677,18 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [enabledModules, setEnabledModules] = useState<string[] | null>(null);
   const [industry, setIndustry] = useState<string | null>(null);
   const [industryValid, setIndustryValid] = useState<boolean | null>(null);
+  const [multiStore, setMultiStore] = useState(true);
   const [role, setRole] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
   const [fullName, setFullName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [hasLogo, setHasLogo] = useState(false);
+  const [logoTick, setLogoTick] = useState(0);
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string | null>(null);
   const [idleMinutes, setIdleMinutes] = useState(30);
+  const [idleWarn, setIdleWarn] = useState(false);
+  const idleLoggingOut = useRef(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [userId, setUserId] = useState('');
   const [bellOpen, setBellOpen] = useState(false);
@@ -660,8 +698,22 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const navSearch = searchParams?.toString() || '';
+  const [navHash, setNavHash] = useState('');
   const router = useRouter();
+  const [navPending, setNavPending] = useState<string | null>(null);
   const isPlatformOwner = PLATFORM_ROLES.has(role);
+
+  useEffect(() => {
+    setNavPending(null);
+  }, [pathname, navSearch]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const syncHash = () => setNavHash(window.location.hash || '');
+    syncHash();
+    window.addEventListener('hashchange', syncHash);
+    return () => window.removeEventListener('hashchange', syncHash);
+  }, [pathname, navSearch]);
 
   // Market readiness: no anonymous browsing of /pos, /inventory, etc.
   // Run once while this Shell stays mounted across dashboard navigations.
@@ -669,7 +721,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     let active = true;
     let timer = 0;
     async function requireAccount() {
-      const token = (localStorage.getItem('token') || '').trim();
+      await hydrateAuth();
+      const token = (getAccessToken() || '').trim();
       if (!token) {
         clearSessionAndRedirect();
         return;
@@ -690,6 +743,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                 ? meRes.data.industry_valid
                 : Boolean(normalizeIndustry(meRes.data?.industry))
             );
+            setMultiStore(tenantIsMultiStore(meRes.data));
             setRole(meRes.data?.role || '');
             setFullName(meRes.data?.full_name || '');
             setCompanyName(meRes.data?.company_name || '');
@@ -718,9 +772,15 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           if (active) setAuthReady(true);
           return;
         }
+        if (isConfirmedAuthExpiry(err)) {
+          clearSessionAndRedirect();
+          return;
+        }
         const message = err instanceof Error ? err.message : 'Could not verify your account.';
-        if (active) setAuthGateError(message);
-        clearSessionAndRedirect();
+        if (active) {
+          setAuthGateError(message);
+          setAuthReady(true);
+        }
       } finally {
         window.clearTimeout(timer);
       }
@@ -882,6 +942,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             ? meRes.data.industry_valid
             : Boolean(normalizeIndustry(meRes.data?.industry))
         );
+        setMultiStore(tenantIsMultiStore(meRes.data));
         setRole(meRes.data?.role || '');
         setFullName(meRes.data?.full_name || '');
         setCompanyName(meRes.data?.company_name || '');
@@ -895,7 +956,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         if (Number.isFinite(mins)) setIdleMinutes(mins);
       } catch (err) {
         if (enrollmentRequired(err)) return;
-        clearSessionAndRedirect();
+        if (isConfirmedAuthExpiry(err)) {
+          clearSessionAndRedirect();
+        }
       }
     }
     load();
@@ -943,7 +1006,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         return;
       }
       try {
-        const token = localStorage.getItem('token');
+        await hydrateAuth();
+        const token = getAccessToken();
         const tenantId = tenantHeaderValue(localStorage.getItem('tenant'));
         const res = await fetch(`${apiRoot()}/tenants/me/logo`, {
           headers: {
@@ -967,37 +1031,78 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       revoked = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [hasLogo]);
+  }, [hasLogo, logoTick]);
+
+  useEffect(() => {
+    function onTenantLogoChanged() {
+      void getMe({ force: true })
+        .then((meRes) => {
+          setHasLogo(Boolean(meRes.data?.has_logo));
+          setCompanyName(meRes.data?.company_name || '');
+          setLogoTick((n) => n + 1);
+        })
+        .catch(() => {
+          /* ignore — next poll refreshes */
+        });
+    }
+    window.addEventListener('ribdigi-tenant-logo', onTenantLogoChanged);
+    return () => window.removeEventListener('ribdigi-tenant-logo', onTenantLogoChanged);
+  }, []);
+
+  async function staySignedIn() {
+    resetIdleWriteThrottle();
+    bumpLastActivity();
+    try {
+      await getMe({ force: true });
+      setIdleWarn(false);
+    } catch (err) {
+      if (isConfirmedAuthExpiry(err)) {
+        clearSessionAndRedirect();
+        return;
+      }
+      setIdleWarn(false);
+    }
+  }
+
+  async function idleLogout() {
+    if (idleLoggingOut.current) return;
+    idleLoggingOut.current = true;
+    try {
+      await api('/auth/logout', { method: 'POST' });
+    } catch {
+      /* revoke best-effort */
+    }
+    clearSessionAndRedirect();
+  }
 
   // BR-19.3: auto-logout after tenant-configured idle period (default 30 minutes).
   useEffect(() => {
     if (typeof window === 'undefined' || !authReady) return;
     const limitMs = idleTimeoutMs(idleMinutes);
-    let last = Date.now();
+    resetIdleWriteThrottle();
+    bumpLastActivity();
     const bump = () => {
-      last = Date.now();
+      bumpLastActivity();
+      setIdleWarn(false);
     };
-    const events: Array<keyof WindowEventMap> = [
-      'mousemove',
-      'mousedown',
-      'keydown',
-      'scroll',
-      'touchstart',
-      'click',
-    ];
-    events.forEach((e) => window.addEventListener(e, bump, { passive: true }));
-    const onVis = () => {
-      if (document.visibilityState === 'visible') bump();
+    const opts: AddEventListenerOptions = { capture: true, passive: true };
+    ACTIVITY_EVENTS.forEach((name) => document.addEventListener(name, bump, opts));
+    const onStorage = (ev: StorageEvent) => {
+      if (ev.key === LAST_ACTIVITY_KEY) setIdleWarn(false);
     };
-    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('storage', onStorage);
     const id = window.setInterval(() => {
-      if (Date.now() - last >= limitMs) {
-        clearSessionAndRedirect();
+      const now = Date.now();
+      const last = readLastActivity(now);
+      if (isIdleExpired(limitMs, now, last)) {
+        void idleLogout();
+        return;
       }
-    }, 15000);
+      if (shouldWarnIdle(limitMs, now, last)) setIdleWarn(true);
+    }, 5000);
     return () => {
-      events.forEach((e) => window.removeEventListener(e, bump));
-      document.removeEventListener('visibilitychange', onVis);
+      ACTIVITY_EVENTS.forEach((name) => document.removeEventListener(name, bump, opts));
+      window.removeEventListener('storage', onStorage);
       window.clearInterval(id);
     };
   }, [idleMinutes, authReady]);
@@ -1022,8 +1127,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               ? meRes.data.industry_valid
               : Boolean(normalizeIndustry(meRes.data?.industry))
           );
+          setMultiStore(tenantIsMultiStore(meRes.data));
           setRole(meRes.data?.role || '');
           setCompanyName(meRes.data?.company_name || '');
+          setHasLogo(Boolean(meRes.data?.has_logo));
+          setLogoTick((n) => n + 1);
         })
         .catch(() => undefined);
     };
@@ -1039,13 +1147,23 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   }, [authReady]);
 
   const visible = useMemo(
-    () => navItemsForRole(role, permissions, enabledModules, industry),
-    [role, permissions, enabledModules, industry]
+    () => navItemsForRole(role, permissions, enabledModules, industry, multiStore),
+    [role, permissions, enabledModules, industry, multiStore]
   );
   const navGroups = useMemo(
-    () => groupedTenantNav(TENANT_NAV_GROUPS, visible, industry),
-    [visible, industry]
+    () => groupedTenantNav(TENANT_NAV_GROUPS, visible, industry, multiStore),
+    [visible, industry, multiStore]
   );
+  const navRedirectTo = useMemo(() => {
+    if (!authReady || !role || PLATFORM_ROLES.has(role)) return null;
+    const allowed = navAllowlistForRole(role, permissions);
+    return unauthorizedNavRedirect(pathname || '', role, allowed);
+  }, [authReady, role, permissions, pathname]);
+
+  useEffect(() => {
+    if (!navRedirectTo) return;
+    router.replace(navRedirectTo);
+  }, [navRedirectTo, router]);
   const autoOpenedForPath = useRef('');
   const navStorageSeeded = useRef(false);
 
@@ -1054,7 +1172,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     navStorageSeeded.current = true;
     const path = pathname || '';
     const locKey = `${path}?${navSearch}`;
-    const activeId = isPlatformOwner ? null : activeNavGroupId(navGroups, path, visible, navSearch);
+    const activeId = isPlatformOwner ? null : activeNavGroupId(navGroups, path, visible, navSearch, navHash);
     const accordionIds = new Set(navGroups.filter(usesAccordion).map((g) => g.id));
     const storedOne = storedIds?.filter((id) => accordionIds.has(id)).slice(-1)[0] ?? null;
     const shouldAutoOpen = Boolean(activeId) && autoOpenedForPath.current !== locKey;
@@ -1071,7 +1189,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       writeExpandedNav(next);
       return next;
     });
-  }, [pathname, navSearch, navGroups, visible, isPlatformOwner]);
+  }, [pathname, navSearch, navHash, navGroups, visible, isPlatformOwner]);
 
   function toggleNavGroup(id: string) {
     setExpandedNav((prev) => {
@@ -1081,10 +1199,10 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     });
   }
   const showAlerts = visible.some(([, href]) => href === '/notifications');
-  const sidebarLogoSrc = companyLogoUrl || '/brand/logo-sidebar.png';
-  const sidebarLogoAlt = companyLogoUrl
-    ? companyName || 'Company logo'
-    : 'RIBDIGI ERP';
+  // App chrome only: RIBDIGI ERP default, then this tenant's uploaded logo.
+  // Receipts/invoices stay name-only until upload (not this slot).
+  const sidebarLogoSrc = chromeLogoSrc(companyLogoUrl, PLATFORM_SIDEBAR_LOGO);
+  const sidebarLogoAlt = chromeLogoAlt(Boolean(companyLogoUrl), companyName);
 
   // Warm the Next.js route and API payloads for sidebar destinations.
   useEffect(() => {
@@ -1097,6 +1215,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   }, [authReady, router]);
 
   function warmDestination(href: string) {
+    const path = href.split('?')[0];
     try {
       router.prefetch(href);
     } catch {
@@ -1111,6 +1230,18 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       void prefetchGet('/platform/app-users');
     } else if (href === '/platform/reports') {
       void prefetchGet('/platform/reports');
+    } else if (path === '/security') {
+      void prefetchGet('/auth/2fa/status');
+      void prefetchGet('/auth/webauthn/credentials');
+      void prefetchGet('/auth/sessions');
+    } else if (path === '/pos') {
+      void prefetchGet('/pos/sessions/current');
+      void prefetchGet('/pos/stores');
+    } else if (path === '/inventory') {
+      void prefetchGet('/products?limit=80');
+      void prefetchGet('/catalog/categories');
+      void prefetchGet('/catalog/brands');
+      void prefetchGet('/catalog/units');
     }
   }
 
@@ -1130,13 +1261,15 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         aria-hidden={mobileNav && !menuOpen}
         {...(mobileNav && !menuOpen ? { inert: true } : {})}
       >
-        <div className="brand" aria-label="Company brand">
-          <img
-            className="brand-logo"
-            src={sidebarLogoSrc}
-            alt={sidebarLogoAlt}
-            draggable={false}
-          />
+        <div className="brand" aria-label="Workspace brand">
+          <div className="brand-logo-slot">
+            <img
+              className="brand-logo"
+              src={sidebarLogoSrc}
+              alt={sidebarLogoAlt}
+              draggable={false}
+            />
+          </div>
           {companyName ? (
             <div className="brand-name">{companyName}</div>
           ) : isPlatformOwner ? (
@@ -1151,7 +1284,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         >
           {(isPlatformOwner ? [{ id: 'platform', label: '', items: visible }] : navGroups).map((group) => {
             const links = group.items.map(([n, h, module]) => {
-              const active = isNavActive(pathname || '', h, visible, navSearch);
+              const active = isNavActive(pathname || '', h, visible, navSearch, navHash);
               return (
                 <Link
                   key={h}
@@ -1159,7 +1292,15 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                   prefetch={false}
                   className={active ? 'active' : undefined}
                   aria-current={active ? 'page' : undefined}
-                  onClick={() => setMenuOpen(false)}
+                  onClick={() => {
+                    setMenuOpen(false);
+                    const dest = hrefParts(h);
+                    if (dest.hash) setNavHash(`#${dest.hash}`);
+                    else setNavHash('');
+                    const destPath = dest.path;
+                    if (destPath !== (pathname || '')) setNavPending(h);
+                    else if (h !== `${pathname || ''}${navSearch ? `?${navSearch}` : ''}${navHash}`) setNavPending(h);
+                  }}
                   onMouseEnter={() => warmDestination(h)}
                   onFocus={() => warmDestination(h)}
                   onTouchStart={() => warmDestination(h)}
@@ -1176,10 +1317,24 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                 </Link>
               );
             });
+            if (ALWAYS_LIST_NAV_GROUP_IDS.has(group.id) && group.label) {
+              const childActive = group.items.some(([, h]) =>
+                isNavActive(pathname || '', h, visible, navSearch, navHash)
+              );
+              return (
+                <div
+                  key={group.id}
+                  className={`nav-group nav-group-static${childActive ? ' nav-group-has-active' : ''}`}
+                >
+                  <div className="nav-group-heading">{group.label}</div>
+                  <div className="nav-group-items">{links}</div>
+                </div>
+              );
+            }
             if (!group.label || !usesAccordion(group)) {
               return <div key={group.id} className="nav-standalone">{links}</div>;
             }
-            const childActive = group.items.some(([, h]) => isNavActive(pathname || '', h, visible, navSearch));
+            const childActive = group.items.some(([, h]) => isNavActive(pathname || '', h, visible, navSearch, navHash));
             const isOpen = expandedNav.has(group.id);
             return (
               <details
@@ -1337,10 +1492,30 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             canManage={role === 'company_admin' || role === 'super_admin'}
           />
         )}
+        {navPending ? <div className="nav-progress" role="progressbar" aria-label="Loading page" /> : null}
         <div key={pathname || '/'} className="page-view">
-          {children}
+          {navRedirectTo ? (
+            <p className="muted" role="status">
+              Opening an allowed page…
+            </p>
+          ) : (
+            children
+          )}
         </div>
       </main>
+      {idleWarn ? (
+        <div className="idle-warn" role="alertdialog" aria-labelledby="idle-warn-title" aria-describedby="idle-warn-body">
+          <p id="idle-warn-title" style={{ margin: '0 0 8px', fontWeight: 700 }}>
+            You will be signed out soon
+          </p>
+          <p id="idle-warn-body" className="muted" style={{ margin: '0 0 12px' }}>
+            This session is idle. Stay signed in if you are still working.
+          </p>
+          <button type="button" className="list-btn-primary" onClick={() => void staySignedIn()}>
+            Stay signed in
+          </button>
+        </div>
+      ) : null}
     </div>
     </StoreProvider>
   );

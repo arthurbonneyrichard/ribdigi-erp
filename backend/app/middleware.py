@@ -71,9 +71,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         raw = (request.headers.get("x-tenant-id") or "").strip()
         return raw or "anon"
 
-    def _limit_for_path(self, path: str) -> int:
+    def _limit_for_path(self, path: str, method: str = "GET") -> int:
         if any(path.startswith(p) for p in AUTH_PATH_PREFIXES):
             return settings.RATE_LIMIT_AUTH_PER_MINUTE
+        if method.upper() in {"GET", "HEAD"}:
+            return settings.RATE_LIMIT_READ_PER_MINUTE
         return settings.RATE_LIMIT_PER_MINUTE
 
     # Kept for unit tests that call the memory path directly
@@ -88,8 +90,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         path = request.url.path
-        limit = self._limit_for_path(path)
-        kind = "auth" if any(path.startswith(p) for p in AUTH_PATH_PREFIXES) else "api"
+        method = request.method.upper()
+        limit = self._limit_for_path(path, method)
+        if any(path.startswith(p) for p in AUTH_PATH_PREFIXES):
+            kind = "auth"
+        elif method in {"GET", "HEAD"}:
+            kind = "read"
+        else:
+            kind = "api"
         key = f"{self._client_ip(request)}:{kind}:{self._tenant_scope(request)}"
         allowed, retry_after, remaining = await rate_limiter.allow(key, limit)
         if not allowed:

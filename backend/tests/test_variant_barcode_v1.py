@@ -71,3 +71,37 @@ async def test_variant_barcode_generate_and_clash(client, db_session):
     )
     assert label.status_code == 200
     assert "EAN13" in label.text or "ean13" in label.text.lower()
+
+    qr = await ac.get(
+        f"/api/v1/products/{product.id}/variants/{vid}/qr.png",
+        headers=headers,
+    )
+    assert qr.status_code == 200, qr.text
+    assert qr.content[:8] == b"\x89PNG\r\n\x1a\n"
+
+
+@pytest.mark.asyncio
+async def test_variant_barcode_generate_does_not_overwrite_without_force(client):
+    ac, seed = client
+    headers = await _admin(ac, seed)
+    product = seed["p1"]
+    created = await ac.post(
+        f"/api/v1/products/{product.id}/variants",
+        headers=headers,
+        json={"name": "KeepCode", "sku": "P1-KEEP"},
+    )
+    assert created.status_code == 200, created.text
+    vid = created.json()["data"]["id"]
+    first = await ac.post(
+        f"/api/v1/products/{product.id}/variants/{vid}/barcode/generate",
+        headers=headers,
+    )
+    assert first.status_code == 200, first.text
+    code = first.json()["data"]["barcode"]
+    second = await ac.post(
+        f"/api/v1/products/{product.id}/variants/{vid}/barcode/generate",
+        headers=headers,
+    )
+    assert second.status_code == 200, second.text
+    assert second.json()["data"]["barcode"] == code
+    assert "already" in second.json()["message"].lower()

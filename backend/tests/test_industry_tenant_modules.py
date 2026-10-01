@@ -153,7 +153,13 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "isHotelIndustry" in nav
     assert "'finance'" in nav and "'people'" in nav
     assert "Hostel" not in nav and "hostel" not in nav.lower()
-    assert "Pharmacy" not in nav
+    hotel_start = nav.find("export const HOTEL_NAV_ITEMS")
+    hotel_end = nav.find("export const FMCG_NAV_ITEMS")
+    hotel_block = nav[hotel_start:hotel_end]
+    assert hotel_start >= 0 and hotel_end > hotel_start
+    assert "Pharmacy" not in hotel_block
+    assert "PHARMACY_NAV_ITEMS" in nav
+    assert "Pharmacy management" in nav
     assert "['POS'" not in nav and '["POS"' not in nav
     assert "Restaurant and POS" in nav
     assert "['Hotel Dashboard', '/hotel', 'hotel']" in nav or '["Hotel Dashboard", "/hotel", "hotel"]' in nav
@@ -172,12 +178,23 @@ def test_hotel_sidebar_omits_unrelated_industry_features():
     assert "hotel-inventory" in nav
     assert "id: 'hotel'" in nav or 'id: "hotel"' in nav
     assert "from '../lib/tenantNav'" in shell
-    assert "groupedTenantNav(TENANT_NAV_GROUPS, visible, industry)" in shell
+    assert "groupedTenantNav(TENANT_NAV_GROUPS, visible, industry, multiStore)" in shell
     assert "HOTEL_NAV_ITEMS" in shell
     assert "HOTEL_INVENTORY_PROCUREMENT_CHILDREN" in shell
     assert "hotel-inventory" in shell
     assert "isHotelIndustry(industry) && permModule === 'stores'" in shell
     assert "StoreSwitcher visible={!isHotelIndustry(industry)}" in shell
+    assert "ALWAYS_LIST_NAV_GROUP_IDS" in nav
+    assert "PEOPLE_NAV_ITEMS" in nav
+    assert "['Branch', '/stores#branches', 'stores']" in nav
+    assert "['Store', '/stores#stores', 'stores']" in nav
+    assert "id: 'people'" in shell
+    assert "label: 'User Management'" in shell
+    assert "nav-group-static" in shell
+    assert "ALWAYS_LIST_NAV_GROUP_IDS.has(group.id)" in shell
+    assert "{ id: 'stores'" not in shell
+    assert 'id="branches"' in stores
+    assert 'id="stores"' in stores
     assert "router.replace('/hotel')" in stores
     assert "isHotelIndustry" in stores
     assert "hideStoreUx" in users

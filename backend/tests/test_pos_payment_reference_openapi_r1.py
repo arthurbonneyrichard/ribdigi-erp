@@ -53,7 +53,7 @@ def test_pos_payment_reference_ui_and_docs():
     page = (ROOT / "frontend/app/(dashboard)/pos/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="POS payment reference"' in page
     assert "paymentReference.trim() || null" in page
-    assert 'aria-label="Charge complete sale"' in page
+    assert 'aria-label="Charge"' in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "PosPaymentLine.reference" in agents
     assert "PaymentReferenceValue" in agents
@@ -131,3 +131,13 @@ async def test_pos_payment_reference_api_blank_invalid_422(client, db_session):
     payments = data.get("payments") or []
     assert payments, data
     assert payments[0].get("reference") == tag, data
+
+    receipt = await ac.get(f"/api/v1/pos/sales/{data['id']}/receipt", headers=headers)
+    assert receipt.status_code == 200, receipt.text
+    body = receipt.json()["data"]
+    text = body.get("text") or ""
+    html = body.get("html") or ""
+    assert tag not in text
+    assert tag not in html
+    for pay in body.get("payments") or []:
+        assert "reference" not in pay

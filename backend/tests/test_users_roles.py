@@ -25,7 +25,11 @@ async def test_roles_catalog_lists_system_roles(client):
     roles = {row["role"] for row in r.json()["data"]}
     assert "cashier" in roles
     assert "company_admin" in roles
-    assert "super_admin" in roles
+    assert "store_manager" in roles
+    assert "super_admin" not in roles
+    assert "platform_owner" not in roles
+    assert "platform_admin" not in roles
+    assert "hotel_manager" not in roles
     detail = await ac.get("/api/v1/roles/cashier", headers=headers)
     assert detail.status_code == 200
     assert "pos" in detail.json()["data"]["permissions"]
@@ -215,10 +219,11 @@ def test_user_management_create_button_wired_for_company_admin():
     assert 'aria-label="Create user"' in users
     assert "users:write" in users
     assert "users-perm-msg" in users
-    assert "users-page-head" in users
+    assert "list-page-head" in users
+    assert "list-btn-primary" in users
     assert "users-add-btn" in css
     assert "@media(max-width:720px)" in css
-    assert "['dashboard', 'notifications', 'security', 'users']" in shell
+    assert "['dashboard', 'notifications', 'security', 'users', 'printers'" in shell
     assert 'href="/users#create-user"' in company
     assert has_permission("company_admin", "users", "write")
     assert has_permission(
@@ -335,3 +340,67 @@ async def test_users_module_always_on_when_package_stripped(client, db_session):
     assert listed.status_code == 200, listed.text
     me = await ac.get("/api/v1/me", headers=headers)
     assert "users" in me.json()["data"]["enabled_modules"]
+
+
+@pytest.mark.asyncio
+async def test_company_admin_can_delete_other_tenant_user(client):
+    ac, seed = client
+    headers = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    created = await ac.post(
+        "/api/v1/users",
+        headers=headers,
+        json={
+            "email": "deleteme@alpha.example.com",
+            "full_name": "Delete Me",
+            "password": "SecurePass123!",
+            "role": "cashier",
+        },
+    )
+    assert created.status_code == 200, created.text
+    uid = created.json()["data"]["id"]
+
+    deleted = await ac.delete(f"/api/v1/users/{uid}/account", headers=headers)
+    assert deleted.status_code == 200, deleted.text
+    assert deleted.json()["data"]["id"] == uid
+    missing = await ac.get(f"/api/v1/users/{uid}", headers=headers)
+    assert missing.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_user_delete_denies_self_last_admin_platform_and_other_tenant(client):
+    ac, seed = client
+    admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    cashier = await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")
+    mgr = await auth_headers(ac, email="mgr@alpha.example.com", tenant_slug="alpha")
+
+    self_del = await ac.delete(f"/api/v1/users/{seed['admin1'].id}/account", headers=admin)
+    assert self_del.status_code == 400
+
+    last_admin = await ac.delete(
+        f"/api/v1/users/{seed['admin1'].id}/account",
+        headers=await _admin_headers(ac, seed),
+    )
+    assert last_admin.status_code == 400
+
+    platform = await ac.delete(f"/api/v1/users/{seed['super'].id}/account", headers=admin)
+    assert platform.status_code in {400, 404}
+
+    foreign = await ac.delete(f"/api/v1/users/{seed['u2'].id}/account", headers=admin)
+    assert foreign.status_code == 404
+
+    cashier_denied = await ac.delete(f"/api/v1/users/{seed['mgr1'].id}/account", headers=cashier)
+    assert cashier_denied.status_code == 403
+    mgr_denied = await ac.delete(f"/api/v1/users/{seed['u1'].id}/account", headers=mgr)
+    assert mgr_denied.status_code == 403
+
+
+def test_user_delete_ui_confirm_wired():
+    from pathlib import Path
+
+    users = (
+        Path(__file__).resolve().parents[2] / "frontend/app/(dashboard)/users/page.tsx"
+    ).read_text(encoding="utf-8")
+    assert "deleteUser" in users
+    assert "/account" in users
+    assert "window.confirm" in users
+    assert "Delete user" in users

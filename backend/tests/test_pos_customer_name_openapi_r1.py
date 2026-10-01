@@ -120,3 +120,46 @@ async def test_pos_customer_name_api_blank_invalid_422(client, db_session):
     )
     assert ok.status_code == 200, ok.text
     assert ok.json()["data"]["customer_name"] == f"Tip140 Guest {suffix}"
+
+    leftover_receipt = await ac.get(
+        f"/api/v1/pos/sales/{ok.json()['data']['id']}/receipt",
+        headers=headers,
+    )
+    assert leftover_receipt.status_code == 200, leftover_receipt.text
+    leftover_data = leftover_receipt.json()["data"]
+    leftover_text = leftover_data.get("text") or ""
+    leftover_html = leftover_data.get("html") or ""
+    assert leftover_data.get("customer_name") == "Walk-in"
+    assert "Walk-in" in leftover_text
+    assert f"Tip140 Guest {suffix}" not in leftover_text
+    assert f"Tip140 Guest {suffix}" not in leftover_html
+
+    omit_receipt = await ac.get(
+        f"/api/v1/pos/sales/{omit.json()['data']['id']}/receipt",
+        headers=headers,
+    )
+    assert omit_receipt.status_code == 200, omit_receipt.text
+    assert "Walk-in" in (omit_receipt.json()["data"].get("text") or "")
+
+    customer = seed["party1"]
+    named = await ac.post(
+        "/api/v1/pos/sales",
+        headers=headers,
+        json={
+            "session_id": session_id,
+            "payment_method": "cash",
+            "party_id": customer.id,
+            "customer_name": "Leftover Till Name",
+            "items": base_items,
+        },
+    )
+    assert named.status_code == 200, named.text
+    assert named.json()["data"]["customer_name"] == customer.name
+    selected_receipt = await ac.get(
+        f"/api/v1/pos/sales/{named.json()['data']['id']}/receipt",
+        headers=headers,
+    )
+    assert selected_receipt.status_code == 200, selected_receipt.text
+    selected_text = selected_receipt.json()["data"].get("text") or ""
+    assert customer.name in selected_text
+    assert "Leftover Till Name" not in selected_text

@@ -6,7 +6,7 @@ import { useStoreContext } from '../lib/storeContext';
 export default function StoreSwitcher({ visible }: { visible: boolean }) {
   const { stores, storeId, setStoreId, loading } = useStoreContext();
 
-  if (!visible || stores.length === 0) return null;
+  if (!visible || stores.length <= 1) return null;
 
   return (
     <label

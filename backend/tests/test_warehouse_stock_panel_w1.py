@@ -142,3 +142,65 @@ async def test_warehouse_stock_reorder_policy(client, db_session):
     assert float(row["reorder_level"]) == 10
     assert float(row["reorder_qty"]) == 25
     assert row["below_reorder"] is True
+
+
+@pytest.mark.asyncio
+async def test_warehouse_stock_include_zero_lists_active_products_without_balance(
+    client, db_session
+):
+    ac, seed = client
+    headers = await _admin(ac, seed)
+    tenant_id = seed["t1"].id
+    with_stock = seed["p1"]
+    without_stock = m.Product(
+        tenant_id=tenant_id,
+        name="Zero Balance Widget",
+        sku="Z-BAL-1",
+        cost_price=1,
+        selling_price=2,
+        stock_qty=0,
+        is_active=True,
+    )
+    db_session.add(without_stock)
+    await db_session.flush()
+
+    store = m.Store(tenant_id=tenant_id, code="WSZ", name="WH Zero Store")
+    db_session.add(store)
+    await db_session.flush()
+    wh = m.Warehouse(
+        tenant_id=tenant_id, code="WH-ZERO", name="Zero WH", store_id=store.id
+    )
+    db_session.add(wh)
+    await db_session.flush()
+    await apply_stock_change(
+        db_session,
+        tenant_id=tenant_id,
+        product_id=with_stock.id,
+        quantity_delta=4,
+        movement_type="stock_in",
+        user_id=seed["super"].id,
+        warehouse_id=wh.id,
+        allow_negative=False,
+    )
+    await db_session.commit()
+
+    hidden = await ac.get(
+        f"/api/v1/inventory/warehouse-stock?warehouse_id={wh.id}",
+        headers=headers,
+    )
+    assert hidden.status_code == 200, hidden.text
+    hidden_ids = {i["product_id"] for i in hidden.json()["data"]["items"]}
+    assert with_stock.id in hidden_ids
+    assert without_stock.id not in hidden_ids
+
+    listed = await ac.get(
+        f"/api/v1/inventory/warehouse-stock?warehouse_id={wh.id}&include_zero=true",
+        headers=headers,
+    )
+    assert listed.status_code == 200, listed.text
+    items = listed.json()["data"]["items"]
+    by_id = {i["product_id"]: i for i in items}
+    assert with_stock.id in by_id
+    assert without_stock.id in by_id
+    assert float(by_id[without_stock.id]["quantity"]) == 0
+    assert float(by_id[with_stock.id]["quantity"]) == 4

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { api } from '../../../lib/api';
+import { api, getAccessToken } from '../../../lib/api';
 import { useStoreContext } from '../../../lib/storeContext';
 
 export default function Page() {
@@ -369,7 +369,7 @@ export default function Page() {
     try {
       const prompt = q.trim() || 'monthly sales for this month';
       const period = reportPeriod.trim() ? reportPeriod.trim() : null;
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const tenant = localStorage.getItem('tenant');
       const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
       const res = await fetch(`${base}/ai/reports/export`, {

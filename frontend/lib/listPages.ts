@@ -1,5 +1,11 @@
 export const LIST_PAGE_SIZE = 10;
 
+/** Display-only product title. Does not mutate stored catalog names. */
+export function displayProductName(name: unknown): string {
+  const text = String(name ?? '').trim();
+  return text ? text.toUpperCase() : '—';
+}
+
 export type SortDir = 1 | -1;
 
 export function paginate<T>(rows: T[], page: number, pageSize = LIST_PAGE_SIZE) {
@@ -23,7 +29,7 @@ export type ProductListFilters = {
   q: string;
   categoryId: string;
   brandId: string;
-  stock: 'all' | 'low' | 'ok';
+  stock: 'all' | 'low' | 'oos' | 'ok';
 };
 
 export function matchesProductList(
@@ -37,7 +43,7 @@ export function matchesProductList(
     brand_id?: string;
   },
   f: ProductListFilters,
-  stockStatus: 'red' | 'yellow' | 'green',
+  stockStatus: 'out' | 'red' | 'yellow' | 'green',
 ) {
   const q = f.q.trim().toLowerCase();
   if (q) {
@@ -47,7 +53,8 @@ export function matchesProductList(
   }
   if (f.categoryId && String(p.category_id || '') !== f.categoryId) return false;
   if (f.brandId && String(p.brand_id || '') !== f.brandId) return false;
-  if (f.stock === 'low' && stockStatus === 'green') return false;
+  if (f.stock === 'oos' && stockStatus !== 'out') return false;
+  if (f.stock === 'low' && stockStatus !== 'red') return false;
   if (f.stock === 'ok' && stockStatus !== 'green') return false;
   return true;
 }

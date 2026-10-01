@@ -50,7 +50,11 @@ def test_backup_bodies_ui_and_docs():
     assert 'aria-label="Create backup now"' in page
     assert 'aria-label="Backup dry-run restore"' in page
     assert 'aria-label="Apply backup restore"' in page
+    assert 'aria-label="Restore confirmation text"' in page
+    assert 'id="restore"' in page
     assert "confirm_text" in page and "RESTORE" in page
+    assert "Restore apply: platform ops" not in page
+    assert "{false ?" not in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Backup create/verify/restore bodies OpenAPI" in agents
     assert "BackupCreateBody" in agents
@@ -132,3 +136,49 @@ async def test_backup_bodies_api_unknown_422(client):
     )
     assert dry.status_code == 200, dry.text
     assert dry.json()["data"].get("dry_run") is True or dry.json()["data"].get("valid") is not None
+
+
+@pytest.mark.asyncio
+async def test_company_admin_restore_apply_and_cashier_forbidden(
+    client, db_session, tmp_path, monkeypatch
+):
+    """Tenant company_admin may upsert their own .ribbak; cashiers cannot hit restore."""
+    ac, seed = client
+    monkeypatch.setattr("app.backup.settings.BACKUP_DIR", str(tmp_path))
+    monkeypatch.setattr("app.backup.settings.BACKUP_ENCRYPTION_KEY", "")
+    monkeypatch.setattr("app.config.settings.BACKUP_DIR", str(tmp_path))
+
+    admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    created = await ac.post("/api/v1/backup", headers=admin, json={"notes": "restore-ui-wire"})
+    assert created.status_code == 200, created.text
+    backup_id = created.json()["data"]["id"]
+    product = seed["p1"]
+    original = product.name
+    product.name = "RESTORE_CORRUPTED"
+    await db_session.commit()
+
+    cashier = await auth_headers(ac, email="cashier@alpha.example.com", tenant_slug="alpha")
+    denied = await ac.post(
+        f"/api/v1/backup/{backup_id}/restore",
+        headers=cashier,
+        json={"dry_run": True, "confirm": False},
+    )
+    assert denied.status_code == 403, denied.text
+
+    applied = await ac.post(
+        f"/api/v1/backup/{backup_id}/restore",
+        headers=admin,
+        json={"dry_run": False, "confirm": True, "confirm_text": "RESTORE"},
+    )
+    assert applied.status_code == 200, applied.text
+    body = applied.json()["data"]
+    assert body.get("applied") is True
+    assert body.get("dry_run") is False
+    assert (body.get("proof") or {}).get("ok") is True
+
+    await db_session.refresh(product)
+    assert product.name == original
+    assert product.tenant_id == seed["t1"].id
+    beta = seed["p2"]
+    await db_session.refresh(beta)
+    assert beta.name == "Beta Widget"

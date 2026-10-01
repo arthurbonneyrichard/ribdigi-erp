@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { api } from '../../../lib/api';
+import { api, isAbortError } from '../../../lib/api';
+import { getPrefetched } from '../../../lib/prefetchCache';
+import { pageLoadStarted } from '../../../lib/navTiming';
+import PageSkeleton from '../../../components/PageSkeleton';
 
 function bufferToBase64url(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
@@ -101,20 +104,41 @@ export default function Page() {
   const [newPassword, setNewPassword] = useState('');
   const [pwdBusy, setPwdBusy] = useState(false);
   const [revokeOthersBusy, setRevokeOthersBusy] = useState(false);
+  const [bootLoading, setBootLoading] = useState(true);
 
-  async function refresh() {
+  async function refresh(opts?: { force?: boolean; signal?: AbortSignal }) {
+    const force = Boolean(opts?.force);
+    const load = (path: string) =>
+      force ? api(path, opts?.signal ? { signal: opts.signal } : {}) : getPrefetched(path);
     const [r, keys, sess] = await Promise.all([
-      api('/auth/2fa/status'),
-      api('/auth/webauthn/credentials').catch(() => ({ data: [] })),
-      api('/auth/sessions').catch(() => ({ data: [] })),
+      load('/auth/2fa/status'),
+      load('/auth/webauthn/credentials').catch((err: unknown) => {
+        if (isAbortError(err)) throw err;
+        return { data: [] };
+      }),
+      load('/auth/sessions').catch((err: unknown) => {
+        if (isAbortError(err)) throw err;
+        return { data: [] };
+      }),
     ]);
+    if (opts?.signal?.aborted) return;
     setStatus(r.data);
     setPasskeys(keys.data || []);
     setSessions(Array.isArray(sess.data) ? sess.data : []);
   }
 
   useEffect(() => {
-    refresh().catch((err) => setError(err.message));
+    const ac = new AbortController();
+    const done = pageLoadStarted('security');
+    refresh({ signal: ac.signal })
+      .catch((err) => {
+        if (!isAbortError(err)) setError(err.message);
+      })
+      .finally(() => {
+        if (!ac.signal.aborted) setBootLoading(false);
+        done();
+      });
+    return () => ac.abort();
   }, []);
 
   async function revokeSession(id: string, isCurrent: boolean) {
@@ -136,7 +160,7 @@ export default function Page() {
         return;
       }
       setMessage('Session revoked');
-      await refresh();
+      await refresh({ force: true });
     } catch (err: any) {
       setError(err.message || 'Failed to revoke session');
     } finally {
@@ -168,7 +192,7 @@ export default function Page() {
       setSetup(null);
       setCode('');
       setMessage(r.message || '2FA enabled');
-      await refresh();
+      await refresh({ force: true });
     } catch (err: any) {
       setError(err.message);
     }
@@ -193,7 +217,7 @@ export default function Page() {
         }),
       });
       setMessage('Passkey registered');
-      await refresh();
+      await refresh({ force: true });
     } catch (err: any) {
       setError(err.message || 'Passkey registration failed');
     }
@@ -204,7 +228,7 @@ export default function Page() {
     try {
       await api(`/auth/webauthn/credentials/${id}`, { method: 'DELETE' });
       setMessage('Passkey removed');
-      await refresh();
+      await refresh({ force: true });
     } catch (err: any) {
       setError(err.message);
     }
@@ -241,7 +265,7 @@ export default function Page() {
       setCode('');
       setDisablePassword('');
       setBackupCodes([]);
-      await refresh();
+      await refresh({ force: true });
     } catch (err: any) {
       setError(err.message);
     }
@@ -256,6 +280,7 @@ export default function Page() {
       </p>
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
+      {bootLoading && !status ? <PageSkeleton label="Loading security…" cards={4} /> : null}
 
       {status && (
         <div className="card" style={{ marginBottom: 16 }}>
@@ -374,7 +399,7 @@ export default function Page() {
             try {
               const r = await api('/auth/sessions/revoke-others', { method: 'POST', body: '{}' });
               setMessage(r.message || 'Other sessions signed out');
-              await refresh();
+              await refresh({ force: true });
             } catch (err: any) {
               setError(err.message);
             } finally {

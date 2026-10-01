@@ -44,9 +44,15 @@ def test_single_head_linear_chain():
     ids = {rev for _n, rev, _d in rows}
     downs = {down for _n, _r, down in rows if down is not None}
     heads = ids - downs
-    assert heads == {"20260928_0125"}, heads
+    # Unique linear chain: pharmacy 0130 revises 0129. Later 0131+ must
+    # revise the current head (not branch). Do not pin a revision id here.
+    assert len(heads) == 1, heads
     children: dict[str | None, list[str]] = defaultdict(list)
     for _name, rev, down in rows:
         children[down].append(rev)
     branched = {p: c for p, c in children.items() if len(c) > 1}
     assert not branched, branched
+    assert "20261001_0130" in ids
+    assert any(rev == "20261001_0130" and down == "20260930_0129" for _n, rev, down in rows)
+    assert "20261001_0131" in ids
+    assert any(rev == "20261001_0131" and down == "20261001_0130" for _n, rev, down in rows)

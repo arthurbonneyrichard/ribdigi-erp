@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import FormModal from '../../../../components/FormModal';
 import { api } from '../../../../lib/api';
 import { getMe } from '../../../../lib/meCache';
 import { getPrefetched } from '../../../../lib/prefetchCache';
@@ -43,6 +44,7 @@ export default function PlatformStaffPage() {
   });
   const [grantRole, setGrantRole] = useState('platform_support');
   const [busy, setBusy] = useState(false);
+  const [staffAddOpen, setStaffAddOpen] = useState(false);
   const [meRole, setMeRole] = useState('');
   const [meId, setMeId] = useState('');
   const [editingId, setEditingId] = useState('');
@@ -83,6 +85,7 @@ export default function PlatformStaffPage() {
 
   async function createStaff(e: React.FormEvent) {
     e.preventDefault();
+    if (busy) return;
     const fullName = form.full_name.trim();
     const trimmedPassword = form.password.trim();
     if (!fullName) {
@@ -116,6 +119,7 @@ export default function PlatformStaffPage() {
         }),
       });
       setForm({ email: '', full_name: '', password: '', role: 'platform_support', phone: '' });
+      setStaffAddOpen(false);
       const sent = Boolean(r.data?.verification_email?.sent);
       setMessage(
         sent
@@ -343,8 +347,18 @@ export default function PlatformStaffPage() {
         )}
         {message && <p className="plat-msg">{message}</p>}
 
-        <div className="plat-panel">
-          <h2>Add staff user</h2>
+        <div style={{ marginBottom: 12 }}>
+          <button type="button" className="list-btn-primary" onClick={() => setStaffAddOpen(true)} aria-label="Add staff user">
+            Add staff user
+          </button>
+        </div>
+        {staffAddOpen ? (
+        <FormModal
+          title="Add staff user"
+          busy={busy}
+          dirty={Boolean(form.full_name.trim() || form.email.trim() || form.password.trim())}
+          onClose={() => setStaffAddOpen(false)}
+        >
           <form className="plat-form" onSubmit={createStaff}>
             <label>
               <span>Full name</span>
@@ -408,7 +422,8 @@ export default function PlatformStaffPage() {
               {busy ? 'Saving…' : 'Create staff'}
             </button>
           </form>
-        </div>
+        </FormModal>
+        ) : null}
 
         <div className="plat-panel">
           <h2>App users → software owner dashboard</h2>

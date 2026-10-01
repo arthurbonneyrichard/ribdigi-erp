@@ -113,12 +113,13 @@ def render_branded_html(
     company_name: str | None = None,
     tenant: Any | None = None,
     title: str | None = None,
+    allow_platform_logo: bool | None = None,
 ) -> str:
     """Wrap inner HTML in branded email chrome (logo, header, footer).
 
-    Prefer the tenant company logo when configured. Otherwise embed the Ribdigi
-    House platform mark so noreply verification mail shows the logo instead of
-    plain \"Ribdigi House\" / \"RIBDIGI ERP\" text.
+    Prefer the tenant company logo when configured. Tenant documents never fall
+    back to the Ribdigi House mark — company name only. Platform noreply mail
+    (verify/reset) may embed the House logo when ``allow_platform_logo`` is true.
     """
     from app.print_branding import load_logo_jpeg, print_branding_settings
 
@@ -129,6 +130,8 @@ def render_branded_html(
     branding = print_branding_settings(tenant)
     header = str(branding.get("header_text") or "").strip()
     footer = str(branding.get("footer_text") or "").strip()
+    if allow_platform_logo is None:
+        allow_platform_logo = tenant is None
 
     logo_html = ""
     used_platform_logo = False
@@ -141,16 +144,18 @@ def render_branded_html(
         logo_html = (
             f'<img class="ribdigi-email-logo" src="data:image/jpeg;base64,{b64}" '
             f'width="{int(width_px)}" height="{int(height_px)}" alt="{company_esc}" '
-            'style="display:block;max-width:240px;height:auto;margin:0 auto 12px;" />'
+            'style="display:block;max-width:240px;max-height:80px;width:auto;height:auto;'
+            'object-fit:contain;margin:0 auto 12px;" />'
         )
-    else:
+    elif allow_platform_logo:
         platform = _platform_house_logo_data_uri()
         if platform:
             data_uri, width_px, height_px = platform
             logo_html = (
                 f'<img class="ribdigi-email-logo ribdigi-house-logo" src="{data_uri}" '
                 f'width="{int(width_px)}" height="{int(height_px)}" alt="Ribdigi House" '
-                'style="display:block;max-width:220px;height:auto;margin:0 auto 8px;" />'
+                'style="display:block;max-width:220px;max-height:72px;width:auto;height:auto;'
+                'object-fit:contain;margin:0 auto 8px;" />'
             )
             used_platform_logo = True
 
@@ -386,7 +391,11 @@ async def send_verification_email(
             f"<p>Or paste: {html.escape(link)}</p>"
         )
         branded = render_branded_html(
-            body_html=inner, company_name=brand_company, tenant=tenant, title="Verify your email"
+            body_html=inner,
+            company_name=brand_company,
+            tenant=tenant,
+            title="Verify your email",
+            allow_platform_logo=True,
         )
         return await send_email(to=to, subject=subject, text_body=text, html_body=branded, tenant=tenant)
     except Exception:
@@ -409,7 +418,11 @@ async def send_password_reset_email(*, to: str, token: str, tenant: Any | None =
         f"<p>Or paste: {html.escape(link)}</p>"
     )
     branded = render_branded_html(
-        body_html=inner, company_name=company, tenant=tenant, title="Password reset"
+        body_html=inner,
+        company_name=company,
+        tenant=tenant,
+        title="Password reset",
+        allow_platform_logo=True,
     )
     return await send_email(to=to, subject=subject, text_body=text, html_body=branded, tenant=tenant)
 

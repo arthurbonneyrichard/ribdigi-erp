@@ -20,8 +20,9 @@ DEFAULT_PREFERENCES = {
     "credit_limit": {"dashboard": True, "email": False, "sms": False},
     "purchase_received": {"dashboard": True, "email": False, "sms": False},
     "payment_due": {"dashboard": True, "email": True, "sms": False},
-    "quotation_expiry": {"dashboard": True, "email": False, "sms": False},
-    "recurring_expense_due": {"dashboard": True, "email": True, "sms": False},
+        "quotation_expiry": {"dashboard": True, "email": False, "sms": False},
+        "batch_expiry": {"dashboard": True, "email": True, "sms": False},
+        "recurring_expense_due": {"dashboard": True, "email": True, "sms": False},
     "new_order": {"dashboard": True, "email": False, "sms": False},
     "transfer": {"dashboard": True, "email": False, "sms": False},
     "billing": {"dashboard": True, "email": True, "sms": False},
@@ -730,6 +731,63 @@ async def scan_recurring_expense_due(db: AsyncSession, tenant_id: str, within_da
             message=message,
             entity_type="recurring_expense",
             entity_id=row.id,
+        )
+        created += 1
+    return created
+
+
+async def scan_batch_expiry(db: AsyncSession, tenant_id: str, within_days: int = 30) -> int:
+    """Notify for on-hand batches expiring within ``within_days`` (including already expired)."""
+    from app.catalog import list_expiring_batches
+
+    created = 0
+    batches = await list_expiring_batches(db, tenant_id, within_days=within_days)
+    now = datetime.utcnow()
+    product_ids = {b.product_id for b in batches}
+    products: dict[str, m.Product] = {}
+    if product_ids:
+        rows = (
+            await db.execute(
+                select(m.Product).where(
+                    m.Product.tenant_id == tenant_id,
+                    m.Product.id.in_(product_ids),
+                )
+            )
+        ).scalars().all()
+        products = {p.id: p for p in rows}
+    for batch in batches:
+        existing = (
+            await db.execute(
+                select(m.Notification).where(
+                    m.Notification.tenant_id == tenant_id,
+                    m.Notification.category == "batch_expiry",
+                    m.Notification.entity_id == batch.id,
+                    m.Notification.status == "unread",
+                )
+            )
+        ).scalar_one_or_none()
+        if existing:
+            continue
+        product = products.get(batch.product_id)
+        sku = product.sku if product else batch.product_id[:8]
+        name = product.name if product else "Product"
+        expiry = batch.expiry_date
+        until_label = expiry.date().isoformat() if expiry else "unknown"
+        past = bool(expiry and expiry <= now)
+        qty = money_json(batch.quantity or 0)
+        await create_notification(
+            db,
+            tenant_id=tenant_id,
+            category="batch_expiry",
+            title="Batch expired" if past else "Batch expiring soon",
+            message=(
+                f"{name} ({sku}) lot {batch.batch_number} "
+                f"({qty} on hand) "
+                + (f"expired on {until_label}." if past else f"expires on {until_label}.")
+            ),
+            entity_type="product_batch",
+            entity_id=batch.id,
+            roles=list(LOW_STOCK_NOTIFY_ROLES),
         )
         created += 1
     return created

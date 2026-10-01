@@ -675,6 +675,8 @@ async def customer_history(
     pos_stmt = pos_stmt.order_by(m.Transaction.created_at.desc())
     pos_rows = (await db.execute(pos_stmt)).scalars().all()
 
+    from app.pos import sale_settlement
+
     purchase_rows: list[dict] = []
     for inv in invoices:
         purchase_rows.append(
@@ -687,21 +689,33 @@ async def customer_history(
                 "tax_amount": money_json(inv.tax_amount or 0),
                 "total_amount": money_json(inv.total_amount or 0),
                 "paid_amount": money_json(inv.paid_amount or 0),
+                "balance_due": money_json(
+                    max(money_json(inv.total_amount or 0) - money_json(inv.paid_amount or 0), 0)
+                ),
                 "posted_at": inv.posted_at,
                 "created_at": inv.created_at,
             }
         )
     for tx in pos_rows:
+        payload = tx.payload if isinstance(tx.payload, dict) else {}
+        if payload.get("sales_invoice_id"):
+            continue
+        settle = sale_settlement(
+            total=money_json(tx.total or 0),
+            payments=payload.get("payments") or None,
+            payment_method=payload.get("payment_method"),
+        )
         purchase_rows.append(
             {
                 "id": tx.id,
                 "type": "pos",
                 "reference": tx.reference,
-                "status": tx.status,
+                "status": settle["payment_status"],
                 "subtotal": money_json(tx.subtotal or 0),
                 "tax_amount": money_json(tx.tax or 0),
                 "total_amount": money_json(tx.total or 0),
-                "paid_amount": money_json(tx.total or 0),
+                "paid_amount": settle["paid_amount"],
+                "balance_due": settle["balance_due"],
                 "posted_at": tx.created_at,
                 "created_at": tx.created_at,
             }

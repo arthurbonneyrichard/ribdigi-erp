@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import FormModal from '../../../components/FormModal';
 import PartyContactsPanel from '../../../components/PartyContactsPanel';
-import { api } from '../../../lib/api';
+import { api, getAccessToken } from '../../../lib/api';
 import { formatNumber, type FormatPrefs } from '../../../lib/format';
 import { useStoreContext } from '../../../lib/storeContext';
 
@@ -16,7 +17,7 @@ async function downloadInvoicePdf(
   template: 'a4' | 'thermal',
   paper = '80mm'
 ) {
-  const token = localStorage.getItem('token');
+  const token = getAccessToken();
   const tenant = localStorage.getItem('tenant');
   const qs =
     template === 'thermal'
@@ -139,6 +140,8 @@ export default function Page() {
   const [fmt, setFmt] = useState<FormatPrefs | null>(null);
   const [listSearch, setListSearch] = useState('');
   const [composerOpen, setComposerOpen] = useState(false);
+  const [saveBusy, setSaveBusy] = useState(false);
+  const [returnCreateOpen, setReturnCreateOpen] = useState(false);
 
   async function refresh() {
     const [invRes, custRes, prodRes, unitRes, qRes, oRes, rRes, storeRes, groupRes, tenantRes, couponRes] =
@@ -266,7 +269,9 @@ export default function Page() {
   };
 
   async function createCustomer() {
+    if (saveBusy) return;
     setError('');
+    setSaveBusy(true);
     try {
       const r = await api('/customers', {
         method: 'POST',
@@ -304,6 +309,8 @@ export default function Page() {
       setMessage('Customer created');
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setSaveBusy(false);
     }
   }
 
@@ -403,7 +410,9 @@ export default function Page() {
   }
 
   async function createInvoice() {
+    if (saveBusy) return;
     setError('');
+    setSaveBusy(true);
     try {
       const r = await api('/sales/invoices', { method: 'POST', body: JSON.stringify(invoicePayload) });
       setMessage(`Draft ${r.data.invoice_number} created`);
@@ -416,11 +425,15 @@ export default function Page() {
       await refresh();
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setSaveBusy(false);
     }
   }
 
   async function createQuotation() {
+    if (saveBusy) return;
     setError('');
+    setSaveBusy(true);
     try {
       const r = await api('/sales/quotations', { method: 'POST', body: JSON.stringify(linePayload) });
       setMessage(`Quotation ${r.data.quotation_number} created`);
@@ -433,11 +446,15 @@ export default function Page() {
       await refresh();
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setSaveBusy(false);
     }
   }
 
   async function createOrder() {
+    if (saveBusy) return;
     setError('');
+    setSaveBusy(true);
     try {
       const r = await api('/sales/orders', { method: 'POST', body: JSON.stringify(linePayload) });
       setMessage(`Order ${r.data.order_number} created`);
@@ -450,10 +467,13 @@ export default function Page() {
       await refresh();
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setSaveBusy(false);
     }
   }
 
   async function createReturn() {
+    if (saveBusy) return;
     setError('');
     setMessage('');
     if (!returnReason.trim()) {
@@ -464,6 +484,7 @@ export default function Page() {
       setError('Select a return condition');
       return;
     }
+    setSaveBusy(true);
     try {
       const r = await api('/sales/returns', {
         method: 'POST',
@@ -490,8 +511,11 @@ export default function Page() {
       setReturnNotes('');
       setTab('returns');
       await refresh();
+      setReturnCreateOpen(false);
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setSaveBusy(false);
     }
   }
 
@@ -728,12 +752,12 @@ export default function Page() {
       ) : null}
 
       {composerOpen ? (
-      <div className="sales-drawer-backdrop" onClick={() => setComposerOpen(false)}>
-      <div className="sales-drawer" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Create sale">
-        <div className="sales-drawer-head">
-          <h2>New document</h2>
-          <button type="button" onClick={() => setComposerOpen(false)}>Close</button>
-        </div>
+      <FormModal
+        title="New document"
+        busy={saveBusy}
+        dirty={Boolean(customerName.trim() || customerId || productId || docNotes.trim() || qty !== '1')}
+        onClose={() => setComposerOpen(false)}
+      >
         {(error || message) ? (
           <p className={error ? 'sales-flash sales-flash-err' : 'sales-flash sales-flash-ok'} role={error ? 'alert' : undefined}>
             {error || message}
@@ -1084,7 +1108,7 @@ export default function Page() {
               .filter((p) => p.is_active !== false)
               .map((p) => (
               <option key={p.id} value={p.id}>
-                {p.sku} — {p.name}
+                {p.name} — {p.sku}
               </option>
             ))}
           </select>
@@ -1097,7 +1121,7 @@ export default function Page() {
               <option value="">Variant (optional)</option>
               {variants.map((v) => (
                 <option key={v.id} value={v.id}>
-                  {v.sku} — {v.name} ({v.selling_price})
+                  {v.name} — {v.sku} ({v.selling_price})
                 </option>
               ))}
             </select>
@@ -1205,14 +1229,14 @@ export default function Page() {
           Reverse charge (tax memo only — not charged to customer)
         </label>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button onClick={createQuotation} aria-label="Create quotation">
-            Save quote
+          <button onClick={createQuotation} disabled={saveBusy} aria-label="Create quotation">
+            {saveBusy ? 'Saving…' : 'Save quote'}
           </button>
-          <button onClick={createOrder} aria-label="Create order">
-            Save order
+          <button onClick={createOrder} disabled={saveBusy} aria-label="Create order">
+            {saveBusy ? 'Saving…' : 'Save order'}
           </button>
-          <button onClick={createInvoice} aria-label="Create invoice">
-            Save invoice
+          <button onClick={createInvoice} disabled={saveBusy} aria-label="Create invoice">
+            {saveBusy ? 'Saving…' : 'Save invoice'}
           </button>
         </div>
         {(error || message) ? (
@@ -1223,8 +1247,7 @@ export default function Page() {
           </div>
         </div>
       </div>
-      </div>
-      </div>
+      </FormModal>
       ) : null}
 
       {tab === 'quotations' && (
@@ -1808,8 +1831,18 @@ export default function Page() {
 
       {tab === 'returns' && (
         <>
-          <div className="card" style={{ marginBottom: 16 }}>
-            <h3>Create return</h3>
+          <div style={{ marginBottom: 12 }}>
+            <button type="button" className="btn-primary" onClick={() => setReturnCreateOpen(true)} aria-label="Create return">
+              Create return
+            </button>
+          </div>
+          {returnCreateOpen ? (
+          <FormModal
+            title="Create return"
+            busy={saveBusy}
+            dirty={Boolean(invoiceId || returnReason || returnCondition || returnNotes.trim())}
+            onClose={() => setReturnCreateOpen(false)}
+          >
             <div className="erp-form-grid">
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
           <select
@@ -1860,14 +1893,15 @@ export default function Page() {
           />
           <button
             onClick={createReturn}
-            disabled={!invoiceId || !productId || !returnReason || !returnCondition}
+            disabled={!invoiceId || !productId || !returnReason || !returnCondition || saveBusy}
             aria-label="Create sales return"
           >
-            Create return
+            {saveBusy ? 'Saving…' : 'Create return'}
           </button>
         </div>
-                  </div>
-          </div>
+            </div>
+          </FormModal>
+          ) : null}
           <div className="card" style={{ marginBottom: 12 }}>
             <label>
               Cancel reason{' '}
@@ -2002,6 +2036,7 @@ export default function Page() {
             <thead>
               <tr>
                 <th>Product</th>
+                <th>SKU</th>
                 <th>Qty</th>
                 <th>Unit</th>
                 <th>Tax %</th>
@@ -2012,12 +2047,15 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {(selected.items || []).map((it: any) => (
+              {(selected.items || []).map((it: any) => {
+                const prod = products.find((p) => p.id === it.product_id);
+                return (
                 <tr key={it.id}>
                   <td>
-                    {it.product_id}
+                    {prod?.name || it.product_id}
                     {it.is_reverse_charge ? ' · RC' : ''}
                   </td>
+                  <td>{prod?.sku || '—'}</td>
                   <td>{it.quantity}</td>
                   <td>{it.unit_price}</td>
                   <td>{it.tax_rate}</td>
@@ -2036,7 +2074,8 @@ export default function Page() {
                   </td>
                   <td>{it.line_total}</td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
           <div className="grid" style={{ marginTop: 12 }}>

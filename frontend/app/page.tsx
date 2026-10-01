@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { api, unreachableApiMessage } from '../lib/api';
+import { api, setAuthTokens, unreachableApiMessage } from '../lib/api';
 import { invalidateMeCache } from '../lib/meCache';
 import { invalidatePrefetchCache } from '../lib/prefetchCache';
 import { useRouter } from 'next/navigation';
@@ -42,13 +42,10 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const router = useRouter();
 
-  function finishLogin(data: any) {
+  async function finishLogin(data: any) {
     invalidateMeCache();
     invalidatePrefetchCache();
-    localStorage.setItem('token', data.access_token);
-    if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
-    // Only persist UUID tenant ids — slug values (e.g. platform) cause
-    // X-Tenant-ID 422s and bounce the session back to login.
+    await setAuthTokens(data.access_token, data.refresh_token || null);
     const tenantId = String(data.user?.tenant_id || '').trim();
     if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(tenantId)) {
       localStorage.setItem('tenant', tenantId);
@@ -56,7 +53,14 @@ export default function Login() {
       localStorage.removeItem('tenant');
     }
     const uid = String(data.user?.id || '').trim();
-    if (uid) loadUserTheme(uid);
+    if (uid) {
+      try {
+        sessionStorage.setItem('ribdigi:uid', uid);
+      } catch {
+        /* ignore */
+      }
+      loadUserTheme(uid);
+    }
     if (data.must_enroll_2fa) {
       router.push('/security');
     } else if (
@@ -72,6 +76,12 @@ export default function Login() {
 
   async function verifyPasskey() {
     setError('');
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setError(
+        'Sign-in requires a connection. Offline selling is allowed only on a device that already signed in online with a valid offline authorization — first-time offline login is not supported.'
+      );
+      return;
+    }
     setBusy(true);
     try {
       if (!window.PublicKeyCredential) {
@@ -113,7 +123,7 @@ export default function Login() {
         method: 'POST',
         body: JSON.stringify({ challenge_token: trimmedChallenge, credential }),
       });
-      finishLogin(r.data);
+      await finishLogin(r.data);
     } catch (err: any) {
       setError(err.message || 'Passkey login failed');
     } finally {
@@ -124,6 +134,12 @@ export default function Login() {
   async function go(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setError(
+        'Sign-in requires a connection. Offline selling is allowed only on a device that already signed in online with a valid offline authorization — first-time offline login is not supported.'
+      );
+      return;
+    }
     setBusy(true);
     try {
       if (needs2fa && challengeToken) {
@@ -143,7 +159,7 @@ export default function Login() {
             code: totpCode.trim(),
           }),
         });
-        finishLogin(r.data);
+        await finishLogin(r.data);
         return;
       }
 
@@ -173,7 +189,7 @@ export default function Login() {
         setTotpCode('');
         return;
       }
-      finishLogin(r.data);
+      await finishLogin(r.data);
     } catch (err: any) {
       const detail = err.detail;
       const code = typeof detail === 'object' && detail ? detail.code : null;

@@ -528,6 +528,115 @@ async def create_sales_invoice(
     return invoice
 
 
+async def open_ar_from_pos_sale(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    user_id: str,
+    customer: m.Party,
+    tx: m.Transaction,
+    priced_items: list[dict],
+    subtotal: float,
+    tax_amount: float,
+    total: float,
+    paid_amount: float,
+    cart_discount: float = 0,
+    cart_disc_type: str = "fixed",
+    cart_disc_pct: float = 0,
+    coupon_id: str | None = None,
+    store_id: str | None = None,
+) -> m.SalesInvoice:
+    """Open the existing AR invoice for a POS on-account tender.
+
+    Does not post a second sales journal or move stock — POS already did both.
+    Does not change ``customer.balance``; the POS path increments it by the credit tender.
+    """
+    from app.credit import default_due_date, party_terms_days
+    from app.doc_numbers import next_sales_invoice_number
+    from app.fx import resolve_rate
+
+    invoice_total = money_json(round(money_json(total or 0), 2))
+    collected = money_json(round(min(money_json(paid_amount or 0), invoice_total), 2))
+    if invoice_total <= 0 or collected + 1e-9 >= invoice_total:
+        raise HTTPException(status_code=400, detail="POS credit invoice requires an outstanding balance")
+    lines = [row for row in (priced_items or []) if row.get("product_id")]
+    if not lines:
+        raise HTTPException(status_code=400, detail="POS credit invoice requires at least one product line")
+
+    tenant = await db.get(m.Tenant, tenant_id)
+    cur, rate = await resolve_rate(
+        db, tenant_id, getattr(tenant, "currency", None) if tenant else None
+    )
+    now = datetime.utcnow()
+    invoice = m.SalesInvoice(
+        tenant_id=tenant_id,
+        invoice_number=await next_sales_invoice_number(db, tenant_id),
+        customer_id=customer.id,
+        status="posted",
+        subtotal=money_json(subtotal),
+        tax_amount=money_json(tax_amount),
+        discount_amount=money_json(cart_discount),
+        discount_type=cart_disc_type or "fixed",
+        discount_percent=money_json(cart_disc_pct or 0),
+        total_amount=invoice_total,
+        paid_amount=collected,
+        currency=cur,
+        exchange_rate=rate,
+        notes=optional_honest_narrative(
+            f"POS {tx.reference}", label="sales invoice notes"
+        ),
+        created_by=user_id,
+        store_id=store_id,
+        posted_at=now,
+        due_date=default_due_date(now, party_terms_days(customer)),
+        coupon_id=coupon_id,
+    )
+    db.add(invoice)
+    await db.flush()
+    for item in lines:
+        db.add(
+            m.SalesInvoiceItem(
+                tenant_id=tenant_id,
+                sales_invoice_id=invoice.id,
+                product_id=item["product_id"],
+                variant_id=item.get("variant_id"),
+                quantity=money_json(item.get("quantity") or 0),
+                unit_id=item.get("unit_id"),
+                unit_price=money_json(item.get("unit_price") or 0),
+                tax_rate=money_json(item.get("tax_rate") or 0),
+                tax_supply_class=item.get("tax_supply_class") or "standard",
+                discount=money_json(item.get("discount") or 0),
+                discount_type=item.get("discount_type") or "fixed",
+                discount_percent=money_json(item.get("discount_percent") or 0),
+                line_subtotal=money_json(item.get("line_subtotal") or 0),
+                line_tax=money_json(item.get("line_tax") or 0),
+                is_reverse_charge=bool(item.get("is_reverse_charge")),
+                tax_components=item.get("tax_components"),
+                line_total=money_json(item.get("line_total") or 0),
+            )
+        )
+    apply_invoice_status(invoice, leave_draft=True, as_of=now)
+    invoice.updated_at = now
+    db.add(
+        m.AuditLog(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            action="invoice_created",
+            entity="sales_invoice",
+            entity_id=invoice.id,
+            details={
+                "invoice_number": invoice.invoice_number,
+                "total": money_json(invoice.total_amount),
+                "paid_amount": money_json(invoice.paid_amount),
+                "source": "pos_sale",
+                "transaction_id": tx.id,
+                "reference": tx.reference,
+            },
+        )
+    )
+    return invoice
+
+
 async def post_sales_invoice(
     db: AsyncSession,
     *,

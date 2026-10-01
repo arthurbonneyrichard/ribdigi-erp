@@ -186,3 +186,13 @@ async def test_product_variants_list_is_active_filter(client, seeded):
     )
     assert vid in {r["id"] for r in inactive_only.json()["data"]}
     assert all(r["is_active"] is False for r in inactive_only.json()["data"])
+
+    roster_all = await ac.get("/api/v1/products/variants", headers=admin)
+    assert roster_all.status_code == 200, roster_all.text
+    assert vid in {r["id"] for r in roster_all.json()["data"]}
+    roster_active = await ac.get("/api/v1/products/variants?is_active=true", headers=admin)
+    assert vid not in {r["id"] for r in roster_active.json()["data"]}
+    roster_inactive = await ac.get(
+        "/api/v1/products/variants?is_active=false", headers=admin
+    )
+    assert vid in {r["id"] for r in roster_inactive.json()["data"]}

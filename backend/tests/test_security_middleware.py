@@ -109,6 +109,7 @@ def test_rate_limit_headers_and_tenant_buckets(monkeypatch):
 
     monkeypatch.setattr("app.middleware.settings.RATE_LIMIT_ENABLED", True)
     monkeypatch.setattr("app.middleware.settings.RATE_LIMIT_PER_MINUTE", 2)
+    monkeypatch.setattr("app.middleware.settings.RATE_LIMIT_READ_PER_MINUTE", 2)
     monkeypatch.setattr("app.middleware.settings.RATE_LIMIT_AUTH_PER_MINUTE", 2)
     monkeypatch.setattr("app.rate_limit.settings.RATE_LIMIT_BACKEND", "memory")
     monkeypatch.setattr("app.rate_limit.settings.RATE_LIMIT_REQUIRE_REDIS", False)

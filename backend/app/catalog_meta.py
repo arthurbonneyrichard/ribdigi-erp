@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import time
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -143,30 +144,36 @@ def serialize_unit(row: m.UnitOfMeasure, *, base: m.UnitOfMeasure | None = None)
 STOCK_STATUS_YELLOW_FACTOR = 1.5
 
 
-def compute_stock_status(stock_qty: float, reorder_level: float) -> dict:
+def compute_stock_status(
+    stock_qty: float,
+    reorder_level: float,
+    minimum_stock: float | None = None,
+) -> dict:
     """Traffic-light stock status for product list (BR-5.5).
 
-    - red: on-hand ≤ 0, or (reorder > 0 and on-hand ≤ reorder) — matches low-stock report
-    - yellow: reorder > 0 and reorder < on-hand ≤ reorder × 1.5
-    - green: otherwise (incl. reorder unset/0 with positive stock)
+    - out: on-hand ≤ 0 (never called low stock)
+    - red: floor > 0 and 0 < on-hand ≤ floor (floor = max(minimum_stock, reorder_level))
+    - yellow: floor > 0 and floor < on-hand ≤ floor × 1.5
+    - green: otherwise
     """
     qty = money_json(stock_qty or 0)
-    reorder = money_json(reorder_level or 0)
-    if qty <= 0 or (reorder > 0 and qty <= reorder):
-        code = "red"
-        label = "out_of_stock" if qty <= 0 else "low"
-    elif reorder > 0 and qty <= reorder * STOCK_STATUS_YELLOW_FACTOR:
-        code = "yellow"
-        label = "near_reorder"
-    else:
-        code = "green"
-        label = "ok"
-    return {"status": code, "label": label}
+    floor = low_stock_floor(minimum_stock, reorder_level)
+    if qty <= 0:
+        return {"status": "out", "label": "out_of_stock"}
+    if floor > 0 and qty <= floor:
+        return {"status": "red", "label": "low"}
+    if floor > 0 and qty <= floor * STOCK_STATUS_YELLOW_FACTOR:
+        return {"status": "yellow", "label": "near_reorder"}
+    return {"status": "green", "label": "ok"}
 
 
 def low_stock_floor(minimum_stock: float | None = None, reorder_level: float | None = None) -> float:
     """Policy floor: max(minimum_stock, reorder_level). Missing values treat as 0."""
     return max(money_json(minimum_stock or 0), money_json(reorder_level or 0))
+
+
+def qty_is_out_of_stock(qty: float) -> bool:
+    return money_json(qty or 0) <= 0
 
 
 def qty_is_low_stock(
@@ -175,8 +182,100 @@ def qty_is_low_stock(
     minimum_stock: float | None = None,
     reorder_level: float | None = None,
 ) -> bool:
-    """True when on-hand is at or below the policy floor (including empty when floor is 0)."""
-    return money_json(qty or 0) <= low_stock_floor(minimum_stock, reorder_level)
+    """True when 0 < on-hand ≤ policy floor. Qty ≤ 0 is out of stock, not low."""
+    on_hand = money_json(qty or 0)
+    if on_hand <= 0:
+        return False
+    floor = low_stock_floor(minimum_stock, reorder_level)
+    return floor > 0 and on_hand <= floor
+
+
+def location_policy_floor(
+    *,
+    product_minimum_stock: float | None = None,
+    product_reorder_level: float | None = None,
+    location_minimum_stock: float | None = None,
+    location_reorder_level: float | None = None,
+) -> float:
+    """Location max(minimum_stock, reorder_level) when set; otherwise the product floor."""
+    loc = low_stock_floor(location_minimum_stock, location_reorder_level)
+    if loc > 0:
+        return loc
+    return low_stock_floor(product_minimum_stock, product_reorder_level)
+
+
+def serialize_location_stock(
+    *,
+    product: m.Product,
+    warehouse: m.Warehouse,
+    stock: m.WarehouseStock | None,
+) -> dict:
+    """On-hand + low/OOS flags for one product at one warehouse.
+
+    Missing ``warehouse_stocks`` is quantity 0. Low stock uses the location
+    floor when that location has a threshold; otherwise the product floor.
+    Qty ≤ 0 is out of stock, never low.
+    """
+    qty = money_json(stock.quantity if stock is not None else 0)
+    loc_min = money_json(getattr(stock, "minimum_stock", 0) if stock is not None else 0)
+    loc_reorder = money_json(getattr(stock, "reorder_level", 0) if stock is not None else 0)
+    reorder_qty = money_json(getattr(stock, "reorder_qty", 0) if stock is not None else 0)
+    prod_min = money_json(getattr(product, "minimum_stock", 0) or 0)
+    prod_reorder = money_json(getattr(product, "reorder_level", 0) or 0)
+    floor = location_policy_floor(
+        product_minimum_stock=prod_min,
+        product_reorder_level=prod_reorder,
+        location_minimum_stock=loc_min,
+        location_reorder_level=loc_reorder,
+    )
+    flags = pos_stock_flags(qty, minimum_stock=floor, reorder_level=floor)
+    low = flags["is_low_stock"]
+    return {
+        "product_id": product.id,
+        "name": product.name,
+        "sku": product.sku,
+        "category": getattr(product, "category", None) or None,
+        "quantity": qty,
+        "reorder_level": loc_reorder,
+        "minimum_stock": loc_min,
+        "product_reorder_level": prod_reorder,
+        "product_minimum_stock": prod_min,
+        "low_stock_floor": floor,
+        "reorder_qty": reorder_qty,
+        "is_out_of_stock": flags["is_out_of_stock"],
+        "is_low_stock": low,
+        "below_reorder": low,
+        "stock_status": flags["stock_status"],
+        "stock_status_label": flags["stock_status_label"],
+        "suggested_order_qty": (
+            money_json(max(reorder_qty, money_json(round(floor - qty, 3))))
+            if low
+            else reorder_qty
+        ),
+        "warehouse_id": warehouse.id,
+        "warehouse_code": warehouse.code,
+        "warehouse_name": warehouse.name,
+        "store_id": warehouse.store_id,
+        "consolidated_stock": money_json(getattr(product, "stock_qty", 0) or 0),
+        "scope": "warehouse",
+    }
+
+
+def pos_stock_flags(
+    qty: float,
+    *,
+    minimum_stock: float | None = None,
+    reorder_level: float | None = None,
+) -> dict:
+    status = compute_stock_status(qty, reorder_level or 0, minimum_stock)
+    return {
+        "is_out_of_stock": qty_is_out_of_stock(qty),
+        "is_low_stock": qty_is_low_stock(
+            qty, minimum_stock=minimum_stock, reorder_level=reorder_level
+        ),
+        "stock_status": status["status"],
+        "stock_status_label": status["label"],
+    }
 
 
 def serialize_product(row: m.Product) -> dict:
@@ -185,7 +284,8 @@ def serialize_product(row: m.Product) -> dict:
 
     stock_qty = money_json(row.stock_qty)
     reorder_level = money_json(row.reorder_level)
-    status = compute_stock_status(stock_qty, reorder_level)
+    minimum_stock = money_json(getattr(row, "minimum_stock", 0) or 0)
+    status = compute_stock_status(stock_qty, reorder_level, minimum_stock)
     return {
         "id": row.id,
         "name": row.name,
@@ -206,6 +306,8 @@ def serialize_product(row: m.Product) -> dict:
         "height": _opt_float(getattr(row, "height", None)),
         "stock_qty": stock_qty,
         "reorder_level": reorder_level,
+        "minimum_stock": minimum_stock,
+        "low_stock_floor": low_stock_floor(minimum_stock, reorder_level),
         "stock_status": status["status"],
         "stock_status_label": status["label"],
         "tax_rate_id": row.tax_rate_id,
@@ -213,6 +315,8 @@ def serialize_product(row: m.Product) -> dict:
         "tax_supply_class": getattr(row, "tax_supply_class", None)
         or ("exempt" if row.tax_exempt else "standard"),
         "tracks_batches": bool(row.tracks_batches),
+        "dosage_instructions": getattr(row, "dosage_instructions", None),
+        "rx_only": bool(getattr(row, "rx_only", False)),
         "is_active": bool(row.is_active),
         "prep_station": getattr(row, "prep_station", None),
         "created_by": getattr(row, "created_by", None),
@@ -259,7 +363,13 @@ async def serialize_products_list(
     return payloads
 
 
+_ENSURED_AT: dict[str, float] = {}
+_ENSURE_TTL_S = 120.0
+
 async def ensure_default_catalog(db: AsyncSession, tenant_id: str) -> None:
+    now = time.monotonic()
+    if now - _ENSURED_AT.get(tenant_id, 0.0) < _ENSURE_TTL_S:
+        return
     unit_codes = await schema_compat.existing_codes(db, "units_of_measure", tenant_id)
     if not unit_codes:
         for code, name in DEFAULT_UNITS:
@@ -292,6 +402,7 @@ async def ensure_default_catalog(db: AsyncSession, tenant_id: str) -> None:
                 },
             )
     await db.flush()
+    _ENSURED_AT[tenant_id] = now
 
 
 async def list_categories(

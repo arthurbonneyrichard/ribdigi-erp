@@ -1,12 +1,16 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { api, apiOptional } from '../../../lib/api';
+import { api, apiOptional, isAbortError, getAccessToken, apiRoot, tenantHeaderValue } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
+import { getPrefetched, peekPrefetch } from '../../../lib/prefetchCache';
+import { pageLoadStarted } from '../../../lib/navTiming';
+import PageSkeleton from '../../../components/PageSkeleton';
 import { useStoreContext } from '../../../lib/storeContext';
-import { isHotelIndustry } from '../../../lib/tenantNav';
-import { usesStoreStockTransfers } from '../../../lib/industries';
+import { isHotelIndustry, tenantIsMultiStore } from '../../../lib/tenantNav';
+import { normalizeIndustry, usesStoreStockTransfers } from '../../../lib/industries';
 import {
   formatTransferDate,
   matchesTransferSearch,
@@ -16,10 +20,13 @@ import {
   transferProductCount,
   transferQtyTotal,
 } from '../../../lib/stockTransfers';
-import { LIST_PAGE_SIZE, matchesProductList, paginate, sortByKey, sortProducts } from '../../../lib/listPages';
+import { LIST_PAGE_SIZE, displayProductName, matchesProductList, paginate, sortByKey, sortProducts } from '../../../lib/listPages';
+
+const FormModal = dynamic(() => import('../../../components/FormModal'), { ssr: false });
 
 type Tab =
   | 'products'
+  | 'labels'
   | 'lookup'
   | 'import'
   | 'categories'
@@ -39,6 +46,7 @@ type Tab =
 
 const INVENTORY_TABS: Tab[] = [
   'products',
+  'labels',
   'lookup',
   'import',
   'categories',
@@ -61,6 +69,27 @@ function isInventoryTab(value: string | null): value is Tab {
   return Boolean(value && (INVENTORY_TABS as string[]).includes(value));
 }
 
+const VIEW_TITLE: Record<Tab, string> = {
+  products: 'Products',
+  labels: 'Labels',
+  lookup: 'Lookup',
+  import: 'Import',
+  categories: 'Categories',
+  brands: 'Brands',
+  units: 'Units',
+  variants: 'Variants',
+  batches: 'Batches',
+  opening: 'Opening stock',
+  expiry: 'Expiry',
+  counts: 'Stock count',
+  movements: 'Stock History',
+  adjust: 'Stock Adjustment',
+  stockout: 'Stock out',
+  lowstock: 'Low Stock',
+  whstock: 'Manage Stock',
+  transfers: 'Stock transfer',
+};
+
 type ImportReportRow = {
   line: number;
   sku: string;
@@ -80,8 +109,6 @@ type ImportReport = {
 };
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-
-const STOCK_STATUS_YELLOW_FACTOR = 1.5;
 
 function categoryLabel(c: { path?: string; name?: string; code?: string; depth?: number }) {
   if (c.path) return c.path;
@@ -118,6 +145,35 @@ function unitDepthOf(units: any[], row: any) {
   return depth;
 }
 
+function uniqueById<T extends { id?: string }>(rows: T[]): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const row of rows) {
+    if (!row?.id || seen.has(row.id)) continue;
+    seen.add(row.id);
+    out.push(row);
+  }
+  return out;
+}
+
+function lotNumberForExpiry(batch: string, expiry: string): string | null {
+  const lot = batch.trim();
+  if (lot) return lot;
+  const day = expiry.trim().replace(/-/g, '');
+  if (!day) return null;
+  return `LOT-${day}`;
+}
+
+function activeCatalogVariants(rows: any[]): any[] {
+  return uniqueById(rows).filter((v) => v.is_active !== false);
+}
+
+function variantOptionLabel(v: any, products: any[]) {
+  const parent = products.find((p) => p.id === v.product_id);
+  const parentBit = parent?.name ? ` — ${parent.name}` : '';
+  return `${v.name || 'Variant'}${v.sku ? ` (${v.sku})` : ''}${parentBit}`;
+}
+
 function categoryDescendantIds(categories: any[], rootId: string) {
   const kids: Record<string, string[]> = {};
   for (const row of categories) {
@@ -135,28 +191,64 @@ function categoryDescendantIds(categories: any[], rootId: string) {
   return out;
 }
 
-function stockStatusOf(p: { stock_qty?: number; reorder_level?: number; stock_status?: string }) {
-  if (p.stock_status === 'red' || p.stock_status === 'yellow' || p.stock_status === 'green') {
+const STOCK_STATUS_YELLOW_FACTOR = 1.5;
+
+function stockStatusOf(p: {
+  stock_qty?: number;
+  reorder_level?: number;
+  minimum_stock?: number;
+  stock_status?: string;
+}): 'out' | 'red' | 'yellow' | 'green' {
+  if (p.stock_status === 'out' || p.stock_status === 'red' || p.stock_status === 'yellow' || p.stock_status === 'green') {
     return p.stock_status;
   }
   const qty = Number(p.stock_qty ?? 0);
-  const reorder = Number(p.reorder_level ?? 0);
-  if (qty <= 0 || (reorder > 0 && qty <= reorder)) return 'red';
-  if (reorder > 0 && qty <= reorder * STOCK_STATUS_YELLOW_FACTOR) return 'yellow';
+  const floor = Math.max(Number(p.minimum_stock ?? 0), Number(p.reorder_level ?? 0));
+  if (qty <= 0) return 'out';
+  if (floor > 0 && qty <= floor) return 'red';
+  if (floor > 0 && qty <= floor * STOCK_STATUS_YELLOW_FACTOR) return 'yellow';
   return 'green';
+}
+
+function warehouseRowIsLow(r: {
+  quantity?: number;
+  reorder_level?: number;
+  minimum_stock?: number;
+  product_reorder_level?: number;
+  product_minimum_stock?: number;
+  low_stock_floor?: number;
+  below_reorder?: boolean;
+  is_low_stock?: boolean;
+  is_out_of_stock?: boolean;
+  stock_status?: string;
+}): boolean {
+  const qty = Number(r.quantity ?? 0);
+  if (r.is_out_of_stock || qty <= 0) return false;
+  if (r.stock_status === 'red' || r.below_reorder === true || r.is_low_stock === true) return true;
+  const floor = Number(
+    r.low_stock_floor ??
+      Math.max(
+        Number(r.minimum_stock ?? 0),
+        Number(r.reorder_level ?? 0),
+        Number(r.product_minimum_stock ?? 0),
+        Number(r.product_reorder_level ?? 0),
+      ),
+  );
+  return floor > 0 && qty <= floor;
 }
 
 function StockStatusBadge({ product }: { product: any }) {
   const status = stockStatusOf(product);
   const colors: Record<string, { bg: string; fg: string; text: string }> = {
-    red: { bg: '#fee2e2', fg: '#b91c1c', text: 'Low / out' },
+    out: { bg: '#fee2e2', fg: '#991b1b', text: 'Out of stock' },
+    red: { bg: '#ffedd5', fg: '#c2410c', text: 'Low stock' },
     yellow: { bg: '#fef9c3', fg: '#a16207', text: 'Near reorder' },
     green: { bg: '#eaf8d8', fg: '#006B2E', text: 'OK' },
   };
   const c = colors[status] || colors.green;
   return (
     <span
-      title={`Stock ${product.stock_qty ?? 0} · reorder ${product.reorder_level ?? 0}`}
+      title={`Stock ${product.stock_qty ?? 0} · floor ${Math.max(Number(product.minimum_stock ?? 0), Number(product.reorder_level ?? 0))}`}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
@@ -204,22 +296,27 @@ export default function Page() {
   const [units, setUnits] = useState<any[]>([]);
   const { storeId } = useStoreContext();
   const [hotelOps, setHotelOps] = useState(false);
+  const [pharmacyOps, setPharmacyOps] = useState(false);
   const [retailTransfers, setRetailTransfers] = useState(true);
+  const [hideWarehouseUx, setHideWarehouseUx] = useState(false);
   useEffect(() => {
     getMe()
       .then((r) => {
         const industry = r.data?.industry;
+        const multi = tenantIsMultiStore(r.data);
         setHotelOps(isHotelIndustry(industry));
-        setRetailTransfers(usesStoreStockTransfers(industry));
+        setPharmacyOps(normalizeIndustry(industry) === 'pharmacy');
+        setRetailTransfers(usesStoreStockTransfers(industry) && multi);
+        setHideWarehouseUx(!multi);
       })
       .catch(() => undefined);
   }, []);
   useEffect(() => {
-    if (hotelOps && tab === 'transfers') {
+    if ((hotelOps || !retailTransfers) && tab === 'transfers') {
       setTab('products');
       router.replace('/inventory?tab=products', { scroll: false });
     }
-  }, [hotelOps, tab, router]);
+  }, [hotelOps, retailTransfers, tab, router]);
   const scopeStoreId = hotelOps ? '' : storeId;
   const [warehouses, setWarehouses] = useState<any[]>([]);
   const storeWarehouses = useMemo(
@@ -229,20 +326,27 @@ export default function Page() {
         : warehouses.filter((w: any) => !w.store_id || String(w.store_id) === String(scopeStoreId)),
     [warehouses, scopeStoreId],
   );
+  const defaultWarehouseId = useMemo(() => {
+    const row = storeWarehouses.find((w: any) => w && w.is_active !== false);
+    return row?.id ? String(row.id) : '';
+  }, [storeWarehouses]);
   useEffect(() => {
-    if (!scopeStoreId || !storeWarehouses.length) return;
-    const ids = new Set(storeWarehouses.map((w: any) => String(w.id)));
-    const pick = (cur: string) => (cur && ids.has(String(cur)) ? cur : String(storeWarehouses[0].id));
+    const list = storeWarehouses.filter((w: any) => w && w.is_active !== false);
+    if (!list.length) return;
+    if (!hideWarehouseUx && !scopeStoreId) return;
+    const ids = new Set(list.map((w: any) => String(w.id)));
+    const pick = (cur: string) => (cur && ids.has(String(cur)) ? cur : String(list[0].id));
     setStockWarehouseId((cur: string) => pick(cur));
     setOutWarehouseId((cur: string) => pick(cur));
     setOpeningWarehouseId((cur: string) => pick(cur));
     setAdjWarehouseId((cur: string) => pick(cur));
     setCreateOpeningWh((cur: string) => pick(cur));
+    setLotWh((cur: string) => pick(cur));
     setXferFromWh((cur: string) => pick(cur));
     setWhStockWarehouseId((cur: string) => pick(cur));
     setCountWarehouseId((cur: string) => pick(cur));
-    setMvWarehouseId((cur: string) => (cur && ids.has(String(cur)) ? cur : ''));
-  }, [scopeStoreId, storeWarehouses]);
+    setMvWarehouseId((cur: string) => (hideWarehouseUx ? '' : pick(cur)));
+  }, [hideWarehouseUx, scopeStoreId, storeWarehouses]);
   const [selectedId, setSelectedId] = useState('');
   const [productManageFilter, setProductManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [categoryManageFilter, setCategoryManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -250,6 +354,11 @@ export default function Page() {
   const [unitManageFilter, setUnitManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [variantManageFilter, setVariantManageFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [variants, setVariants] = useState<any[]>([]);
+  const [variantsReady, setVariantsReady] = useState(false);
+  const [variantsError, setVariantsError] = useState('');
+  const [variantParentFilter, setVariantParentFilter] = useState('');
+  const [variantProductId, setVariantProductId] = useState('');
+  const [productVariantId, setProductVariantId] = useState('');
   const [gallery, setGallery] = useState<any[]>([]);
   const [batches, setBatches] = useState<any[]>([]);
   const [expiring, setExpiring] = useState<any[]>([]);
@@ -267,6 +376,7 @@ export default function Page() {
   const [countLineNotes, setCountLineNotes] = useState<Record<string, string>>({});
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [bootLoading, setBootLoading] = useState(true);
   const [formFlash, setFormFlash] = useState<{ ok?: string; err?: string }>({});
   const [saveBusy, setSaveBusy] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -274,10 +384,18 @@ export default function Page() {
   const [productSearch, setProductSearch] = useState('');
   const [productCategoryFilter, setProductCategoryFilter] = useState('');
   const [productBrandFilter, setProductBrandFilter] = useState('');
-  const [productStockFilter, setProductStockFilter] = useState<'all' | 'low' | 'ok'>('all');
+  const [productStockFilter, setProductStockFilter] = useState<'all' | 'low' | 'oos' | 'ok'>('all');
+  const [rxOnlyFilter, setRxOnlyFilter] = useState(false);
   const [productSort, setProductSort] = useState('name');
   const [productSortDir, setProductSortDir] = useState<1 | -1>(1);
   const [productPage, setProductPage] = useState(1);
+  useEffect(() => {
+    const stock = searchParams.get('stock');
+    if (stock === 'oos' || stock === 'low' || stock === 'ok' || stock === 'all') {
+      setProductStockFilter(stock === 'all' ? 'all' : stock);
+    }
+    setRxOnlyFilter(searchParams.get('rx') === '1');
+  }, [searchParams]);
   const [productEditMode, setProductEditMode] = useState(false);
   const [createExpiryOpen, setCreateExpiryOpen] = useState(false);
   const [createOpenStockOpen, setCreateOpenStockOpen] = useState(false);
@@ -287,12 +405,21 @@ export default function Page() {
   const [createOpeningMfg, setCreateOpeningMfg] = useState('');
   const [createOpeningExpiry, setCreateOpeningExpiry] = useState('');
   const [createOpeningCost, setCreateOpeningCost] = useState('');
+  const [lotQty, setLotQty] = useState('');
+  const [lotWh, setLotWh] = useState('');
+  const [lotExpiry, setLotExpiry] = useState('');
+  const [lotBatch, setLotBatch] = useState('');
+  const [expiryDrawerOpen, setExpiryDrawerOpen] = useState(false);
+  const [expiryBusy, setExpiryBusy] = useState(false);
+  const [expiryFailed, setExpiryFailed] = useState(false);
 
   const [productName, setProductName] = useState('');
   const [productSku, setProductSku] = useState('');
   const [productPrice, setProductPrice] = useState('0');
   const [productCost, setProductCost] = useState('0');
   const [productDescription, setProductDescription] = useState('');
+  const [productDosage, setProductDosage] = useState('');
+  const [productRxOnly, setProductRxOnly] = useState(false);
   const [productWeight, setProductWeight] = useState('');
   const [productLength, setProductLength] = useState('');
   const [productWidth, setProductWidth] = useState('');
@@ -306,6 +433,8 @@ export default function Page() {
   const [editCost, setEditCost] = useState('0');
   const [editBarcode, setEditBarcode] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const [editDosage, setEditDosage] = useState('');
+  const [editRxOnly, setEditRxOnly] = useState(false);
   const [editWeight, setEditWeight] = useState('');
   const [editLength, setEditLength] = useState('');
   const [editWidth, setEditWidth] = useState('');
@@ -330,6 +459,8 @@ export default function Page() {
     null
   );
   const [lookupStock, setLookupStock] = useState<any | null>(null);
+  const [productMenuId, setProductMenuId] = useState('');
+  const [labelPick, setLabelPick] = useState<Record<string, boolean>>({});
 
   const [catName, setCatName] = useState('');
   const [catParentId, setCatParentId] = useState('');
@@ -417,8 +548,11 @@ export default function Page() {
   const [outBatchId, setOutBatchId] = useState('');
   const [outNotes, setOutNotes] = useState('');
   const [whStockWarehouseId, setWhStockWarehouseId] = useState('');
-  const [whStockIncludeZero, setWhStockIncludeZero] = useState(false);
+  const [whStockIncludeZero, setWhStockIncludeZero] = useState(true);
+  const [adjustSearch, setAdjustSearch] = useState('');
   const [whStockRows, setWhStockRows] = useState<any[]>([]);
+  const [whStockBusy, setWhStockBusy] = useState(false);
+  const [whStockFailed, setWhStockFailed] = useState(false);
   const [whStockMeta, setWhStockMeta] = useState<{
     warehouse_name?: string;
     total_quantity?: number;
@@ -475,63 +609,185 @@ export default function Page() {
   const [xferAvail, setXferAvail] = useState<Record<string, number>>({});
   const [xferDrawerOpen, setXferDrawerOpen] = useState(false);
   const [mvSearch, setMvSearch] = useState('');
-  async function refresh() {
-    const [p, e, c, b, u, w, st, sc, os, rates, settings] = await Promise.all([
-      apiOptional('/products'),
-      apiOptional('/inventory/batches/expiring?days=60'),
-      apiOptional('/catalog/categories'),
-      apiOptional('/catalog/brands'),
-      apiOptional('/catalog/units'),
-      apiOptional('/warehouses'),
-      apiOptional('/stores'),
-      apiOptional('/inventory/stock-counts'),
-      apiOptional('/inventory/opening-stock'),
-      apiOptional('/tax/rates'),
-      apiOptional('/inventory/settings'),
+  async function loadTabExtras(current: Tab, req: RequestInit = {}) {
+    const jobs: Promise<void>[] = [];
+    if (
+      current === 'expiry' ||
+      current === 'batches' ||
+      current === 'opening'
+    ) {
+      jobs.push(
+        (async () => {
+          if (current === 'expiry') {
+            setExpiryBusy(true);
+            setExpiryFailed(false);
+          }
+          const e = await apiOptional('/inventory/batches/expiring?days=365', req);
+          if ((e as { aborted?: boolean }).aborted) return;
+          if (e.error) {
+            if (current === 'expiry') setExpiryFailed(true);
+            setError(e.error);
+            if (current === 'expiry') setExpiring([]);
+            return;
+          }
+          if (current === 'expiry') setExpiryFailed(false);
+          setExpiring(e.data?.batches || []);
+        })().finally(() => {
+          if (current === 'expiry') setExpiryBusy(false);
+        }),
+      );
+    }
+    if (current === 'counts') {
+      jobs.push(
+        apiOptional('/inventory/stock-counts', req).then((sc) => {
+          if ((sc as { aborted?: boolean }).aborted) return;
+          setCounts(sc.data || []);
+        }),
+      );
+    }
+    if (current === 'opening') {
+      jobs.push(
+        apiOptional('/inventory/opening-stock', req).then((os) => {
+          if ((os as { aborted?: boolean }).aborted) return;
+          if (os.error) {
+            setError(os.error);
+            return;
+          }
+          setOpeningHistory(os.data || []);
+        }),
+      );
+    }
+    if (current === 'categories' || current === 'products') {
+      jobs.push(
+        apiOptional('/tax/rates', req).then((rates) => {
+          if ((rates as { aborted?: boolean }).aborted) return;
+          setTaxRates(rates.data || []);
+        }),
+      );
+    }
+    if (current === 'transfers' || current === 'whstock' || current === 'products') {
+      jobs.push(
+        apiOptional('/stores', req).then((st) => {
+          if ((st as { aborted?: boolean }).aborted) return;
+          setStores(st.data || []);
+        }),
+      );
+    }
+    if (current === 'products') {
+      jobs.push(
+        apiOptional('/inventory/settings', req).then((settings) => {
+          if ((settings as { aborted?: boolean }).aborted) return;
+          setInvNumbering(settings.data || {});
+        }),
+      );
+    }
+    if (jobs.length) await Promise.all(jobs);
+  }
+
+  async function refresh(opts?: { signal?: AbortSignal }) {
+    const req: RequestInit = opts?.signal ? { signal: opts.signal } : {};
+    const cachedFast = peekPrefetch('/products?limit=80') || peekPrefetch('/products');
+    if (cachedFast?.data) {
+      setProducts(cachedFast.data || []);
+      setBootLoading(false);
+    }
+    const [pFast, c, b, u, w] = await Promise.all([
+      getPrefetched('/products?limit=80'),
+      getPrefetched('/catalog/categories'),
+      getPrefetched('/catalog/brands'),
+      getPrefetched('/catalog/units'),
+      apiOptional('/warehouses', req),
     ]);
-    const loadError = [p, e, c, b, u, w, sc].map((x) => x.error).filter(Boolean).join(' ');
+    if (opts?.signal?.aborted) return;
+    const loadError = [c, b, u, w]
+      .map((x: { error?: string | null }) => x.error)
+      .filter(Boolean)
+      .join(' ');
     if (loadError) setError(loadError);
     else setError('');
-    setProducts(p.data || []);
-    setExpiring(e.data?.batches || []);
+    setProducts(pFast.data || []);
     setCategories(c.data || []);
     setBrands(b.data || []);
     setUnits(u.data || []);
     setWarehouses(w.data || []);
-    setStores(st.data || []);
-    setCounts(sc.data || []);
-    setOpeningHistory(os.data || []);
-    setTaxRates(rates.data || []);
-    setInvNumbering(settings.data || {});
     if (!countWarehouseId && w.data?.length) setCountWarehouseId(w.data[0].id);
     if (!openingWarehouseId && w.data?.length) setOpeningWarehouseId(w.data[0].id);
+    if (!lotWh && w.data?.length) setLotWh(w.data[0].id);
     if (!stockWarehouseId && w.data?.length) setStockWarehouseId(w.data[0].id);
     if (!whStockWarehouseId && w.data?.length) setWhStockWarehouseId(w.data[0].id);
     const linked = hotelOps ? w.data || [] : (w.data || []).filter((x: any) => x.store_id);
     if (!xferFromWh && linked[0]) setXferFromWh(linked[0].id);
     if (!xferToWh && linked[1]) setXferToWh(linked[1].id);
     else if (!xferToWh && linked[0]) setXferToWh(linked[0].id);
+    setBootLoading(false);
+
+    const pFullP = apiOptional('/products', req);
+    const vJob = loadAllVariants(req);
+    const pFull = await pFullP;
+    await vJob;
+    if (opts?.signal?.aborted || (pFull as { aborted?: boolean }).aborted) return;
+    if (pFull.error) setError(pFull.error);
+    if (Array.isArray(pFull.data)) setProducts(pFull.data);
+
+    await loadTabExtras(tab, req);
+  }
+
+  async function loadAllVariants(req: RequestInit = {}) {
+    const v = await apiOptional('/products/variants', req);
+    if ((v as { aborted?: boolean }).aborted) return;
+    if (v.error) {
+      setVariantsError(v.error);
+      setError(v.error);
+      setVariantsReady(true);
+      return;
+    }
+    if (!Array.isArray(v.data)) {
+      setVariantsError('Could not load variants');
+      setError('Could not load variants');
+      setVariantsReady(true);
+      return;
+    }
+    setVariantsError('');
+    setVariants(uniqueById(v.data));
+    setVariantsReady(true);
   }
 
   async function refreshSelected(id: string) {
     if (!id) return;
-    const [v, b, g] = await Promise.all([
-      apiOptional(`/products/${id}/variants`),
+    const [b, g] = await Promise.all([
       apiOptional(`/products/${id}/batches`),
       apiOptional(`/products/${id}/images`),
     ]);
-    const selectedError = [v, b, g].map((x) => x.error).filter(Boolean).join(' ');
+    const selectedError = [b, g].map((x) => x.error).filter(Boolean).join(' ');
     if (selectedError) setError(selectedError);
-    setVariants(v.data || []);
-    setBatches(b.data || []);
-    setGallery(g.data || []);
+    if (!b.error && Array.isArray(b.data)) setBatches(b.data);
+    else if (b.error) setError(b.error);
+    if (!g.error && Array.isArray(g.data)) setGallery(g.data);
+    else if (g.error) setError(g.error);
     setStockVariantId('');
     setOpeningVariantId('');
   }
 
   useEffect(() => {
-    refresh().catch((err) => setError(err.message));
+    const ac = new AbortController();
+    const done = pageLoadStarted('products');
+    refresh({ signal: ac.signal })
+      .catch((err) => {
+        if (!isAbortError(err)) setError(err.message);
+      })
+      .finally(() => {
+        if (!ac.signal.aborted) setBootLoading(false);
+        done();
+      });
+    return () => ac.abort();
   }, []);
+
+  useEffect(() => {
+    loadTabExtras(tab).catch((err) => {
+      if (!isAbortError(err)) setError(err.message);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
 
   async function loadMovements(overrides: {
     warehouse_id?: string;
@@ -593,6 +849,7 @@ export default function Page() {
     include_zero?: boolean;
   } = {}) {
     setError('');
+    setWhStockFailed(false);
     const warehouse = overrides.warehouse_id ?? whStockWarehouseId;
     const includeZero = overrides.include_zero ?? whStockIncludeZero;
     if (!warehouse) {
@@ -600,6 +857,7 @@ export default function Page() {
       setWhStockMeta({});
       return;
     }
+    setWhStockBusy(true);
     try {
       const params = new URLSearchParams();
       params.set('warehouse_id', warehouse);
@@ -612,8 +870,14 @@ export default function Page() {
         total_quantity: data.total_quantity,
         count: data.count,
       });
+      setWhStockFailed(false);
     } catch (err: any) {
       setError(err.message);
+      setWhStockRows([]);
+      setWhStockMeta({});
+      setWhStockFailed(true);
+    } finally {
+      setWhStockBusy(false);
     }
   }
 
@@ -703,18 +967,6 @@ export default function Page() {
       cancelled = true;
     };
   }, [xferDrawerOpen, xferFromWh]);
-
-  useEffect(() => {
-    if (!productAddOpen && !xferDrawerOpen) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key !== 'Escape' || saveBusy) return;
-      setProductAddOpen(false);
-      setXferDrawerOpen(false);
-      setXferConfirming(false);
-    }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [productAddOpen, xferDrawerOpen, saveBusy]);
 
   function parsedXferItems():
     | { ok: false; error: string }
@@ -854,8 +1106,9 @@ export default function Page() {
     setError('');
     setMessage('');
     setFormFlash({});
-    if (!whStockWarehouseId) {
-      setFormFlash({ err: 'Select a location' });
+    const reorderWh = whStockWarehouseId.trim() || (hideWarehouseUx ? defaultWarehouseId : '');
+    if (!reorderWh) {
+      setFormFlash({ err: hideWarehouseUx ? 'No warehouse is available for this store' : 'Select a location' });
       return;
     }
     if (!whReorderProductId) {
@@ -867,7 +1120,7 @@ export default function Page() {
       const r = await api('/inventory/warehouse-stock/reorder', {
         method: 'PUT',
         body: JSON.stringify({
-          warehouse_id: whStockWarehouseId.trim(),
+          warehouse_id: reorderWh,
           product_id: whReorderProductId.trim(),
           reorder_level: Number(whReorderLevel) || 0,
           reorder_qty: Number(whReorderQty) || 0,
@@ -906,6 +1159,8 @@ export default function Page() {
         setEditCost(String(p.cost_price ?? 0));
         setEditBarcode(String(p.barcode || ''));
         setEditDescription(String(p.description || ''));
+        setEditDosage(String(p.dosage_instructions || ''));
+        setEditRxOnly(Boolean(p.rx_only));
         setEditWeight(p.weight != null ? String(p.weight) : '');
         setEditLength(p.length != null ? String(p.length) : '');
         setEditWidth(p.width != null ? String(p.width) : '');
@@ -919,16 +1174,11 @@ export default function Page() {
     }
   }, [selectedId, products]);
 
-  useEffect(() => {
-    if (tab !== 'variants') return;
-    if (selectedId) return;
-    const first = products.find((p) => p.is_active !== false) || products[0];
-    if (first?.id) setSelectedId(first.id);
-  }, [tab, products, selectedId]);
-
   async function saveProductEdits() {
     if (!selectedId) return;
     setError('');
+    setFormFlash({});
+    setSaveBusy(true);
     try {
       await api(`/products/${selectedId}`, {
         method: 'PATCH',
@@ -938,6 +1188,8 @@ export default function Page() {
           cost_price: Number(editCost) || 0,
           barcode: editBarcode.trim() || null,
           description: editDescription.trim() || null,
+          dosage_instructions: pharmacyOps ? editDosage.trim() || null : undefined,
+          rx_only: pharmacyOps ? editRxOnly : undefined,
           weight: editWeight === '' ? null : Number(editWeight),
           length: editLength === '' ? null : Number(editLength),
           width: editWidth === '' ? null : Number(editWidth),
@@ -950,9 +1202,14 @@ export default function Page() {
         }),
       });
       setFormFlash({ ok: 'Product updated' });
+      setProductEditMode(false);
       await refresh();
+      return true;
     } catch (err: any) {
-      setFormFlash({ err: err.message });
+      setFormFlash({ err: err.message || 'Could not update product' });
+      return false;
+    } finally {
+      setSaveBusy(false);
     }
   }
 
@@ -971,53 +1228,203 @@ export default function Page() {
     }
   }
 
-  async function generateBarcode() {
-    if (!selectedId) return;
+  function inventoryAuthHeaders(): Record<string, string> {
+    const token = getAccessToken();
+    const tenant = tenantHeaderValue(typeof window !== 'undefined' ? localStorage.getItem('tenant') : null);
+    return {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+    };
+  }
+
+  async function fetchInventoryText(path: string): Promise<string> {
+    const res = await fetch(`${apiRoot()}${path}`, { headers: inventoryAuthHeaders() });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      const detail = (body as { detail?: string; message?: string }).detail || (body as { message?: string }).message;
+      throw new Error(detail || 'Request failed');
+    }
+    return res.text();
+  }
+
+  async function fetchInventoryBlob(path: string): Promise<Blob> {
+    const res = await fetch(`${apiRoot()}${path}`, { headers: inventoryAuthHeaders() });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      const detail = (body as { detail?: string; message?: string }).detail || (body as { message?: string }).message;
+      throw new Error(detail || 'Request failed');
+    }
+    return res.blob();
+  }
+
+  function openHtmlPrint(html: string) {
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const w = window.open(url, '_blank', 'noopener,noreferrer,width=720,height=640');
+    if (!w) {
+      URL.revokeObjectURL(url);
+      throw new Error('Pop-up blocked — allow pop-ups to print labels');
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  }
+
+  function downloadBlob(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  }
+
+  async function generateBarcode(productId?: string, opts?: { force?: boolean }): Promise<boolean> {
+    const id = productId || selectedId;
+    if (!id) return false;
     setError('');
     try {
-      const r = await api(
-        `/products/${selectedId}/barcode/generate?force=true&symbology=${encodeURIComponent(barcodeSymbology)}`,
-        { method: 'POST', body: '{}' }
+      const row = products.find((p) => p.id === id);
+      let force = Boolean(opts?.force);
+      if (!force && row?.barcode) {
+        const ok = window.confirm(
+          `This product already has barcode ${row.barcode}. Replace it with a new unique code?`
+        );
+        if (!ok) return false;
+        force = true;
+      }
+      const qs = `${force ? 'force=true&' : ''}symbology=${encodeURIComponent(barcodeSymbology)}`;
+      const r = await api(`/products/${id}/barcode/generate?${qs}`, { method: 'POST', body: '{}' });
+      if (id === selectedId) setEditBarcode(r.data?.barcode || '');
+      const already = String(r.message || '').toLowerCase().includes('already');
+      setMessage(
+        already
+          ? `Barcode already set (${r.data?.barcode || row?.barcode || ''})`
+          : `Barcode set to ${r.data?.barcode} (${r.data?.symbology || barcodeSymbology})`
       );
-      setEditBarcode(r.data?.barcode || '');
-      setMessage(`Barcode set to ${r.data?.barcode} (${r.data?.symbology || barcodeSymbology})`);
       await refresh();
+      return true;
+    } catch (err: any) {
+      setError(err.message);
+      return false;
+    }
+  }
+
+  async function generateQr(productId?: string) {
+    const id = productId || selectedId;
+    if (!id) return;
+    setError('');
+    try {
+      const row = products.find((p) => p.id === id);
+      if (!row?.barcode) {
+        const ok = await generateBarcode(id);
+        if (!ok) return;
+      }
+      const blob = await fetchInventoryBlob(`/products/${id}/qr.png`);
+      const sku = row?.sku || id;
+      downloadBlob(blob, `qr-${sku}.png`);
+      setMessage('QR downloaded — payload is barcode or SKU only');
     } catch (err: any) {
       setError(err.message);
     }
   }
 
-  async function printBarcodeLabel() {
-    if (!selectedId) return;
+  async function printBarcodeLabel(productId?: string) {
+    const id = productId || selectedId;
+    if (!id) return;
+    await printBarcodeLabelsForIds([id]);
+  }
+
+  async function printBarcodeLabelsForIds(ids: string[]) {
+    if (!ids.length) return;
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
       const copies = Math.max(1, Math.min(40, Number(labelCopies) || 1));
-      const res = await fetch(
-        `${apiBase}/products/${selectedId}/barcode/label?copies=${copies}&symbology=${encodeURIComponent(barcodeSymbology)}`,
-        {
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-          },
-        }
+      const pages: string[] = [];
+      for (const id of ids) {
+        pages.push(
+          await fetchInventoryText(
+            `/products/${id}/barcode/label?copies=${copies}&symbology=${encodeURIComponent(barcodeSymbology)}`
+          )
+        );
+      }
+      if (pages.length === 1) {
+        openHtmlPrint(pages[0]);
+        setMessage('Barcode / QR label opened — use Print labels');
+        return;
+      }
+      const labels: string[] = [];
+      let styles = '';
+      for (const html of pages) {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        if (!styles) styles = doc.querySelector('style')?.innerHTML || '';
+        doc.querySelectorAll('.label').forEach((el) => labels.push(el.outerHTML));
+      }
+      openHtmlPrint(
+        `<!doctype html><html><head><meta charset="utf-8"/><title>Barcode / QR labels</title><style>${styles}</style></head><body><div class="toolbar"><div><strong>Barcode / QR labels</strong></div><button onclick="window.print()">Print labels</button></div><div class="sheet">${labels.join('')}</div></body></html>`
       );
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail || body.message || 'Label failed');
+      setMessage(`Opened ${labels.length} barcode / QR labels — use Print labels`);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  function selectedLabelIds(): string[] {
+    return Object.entries(labelPick)
+      .filter(([, on]) => on)
+      .map(([id]) => id);
+  }
+
+  async function generateBarcodesForSelected() {
+    const ids = selectedLabelIds();
+    if (!ids.length) {
+      setError('Select one or more products');
+      return;
+    }
+    setError('');
+    let generated = 0;
+    let skipped = 0;
+    for (const id of ids) {
+      const row = products.find((p) => p.id === id);
+      if (row?.barcode) {
+        skipped += 1;
+        continue;
       }
-      const html = await res.text();
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const w = window.open(url, '_blank', 'noopener,noreferrer,width=720,height=640');
-      if (!w) {
-        URL.revokeObjectURL(url);
-        throw new Error('Pop-up blocked — allow pop-ups to print labels');
+      try {
+        const r = await api(
+          `/products/${id}/barcode/generate?symbology=${encodeURIComponent(barcodeSymbology)}`,
+          { method: 'POST', body: '{}' }
+        );
+        if (String(r.message || '').toLowerCase().includes('already')) skipped += 1;
+        else generated += 1;
+      } catch (err: any) {
+        setError(err.message);
+        return;
       }
-      // Revoke after the new tab has a chance to load the blob.
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
-      setMessage('Barcode label opened — use Print labels');
+    }
+    setMessage(`Generated ${generated} barcode${generated === 1 ? '' : 's'}${skipped ? ` · ${skipped} already had a barcode (not overwritten)` : ''}`);
+    await refresh();
+  }
+
+  async function generateQrForSelected() {
+    const ids = selectedLabelIds();
+    if (!ids.length) {
+      setError('Select one or more products');
+      return;
+    }
+    setError('');
+    try {
+      for (const id of ids) {
+        const row = products.find((p) => p.id === id);
+        if (!row?.barcode) {
+          await api(
+            `/products/${id}/barcode/generate?symbology=${encodeURIComponent(barcodeSymbology)}`,
+            { method: 'POST', body: '{}' }
+          );
+        }
+        const blob = await fetchInventoryBlob(`/products/${id}/qr.png`);
+        downloadBlob(blob, `qr-${row?.sku || id}.png`);
+      }
+      setMessage(ids.length === 1 ? 'QR downloaded — payload is barcode or SKU only' : `Downloaded ${ids.length} QR codes`);
+      await refresh();
     } catch (err: any) {
       setError(err.message);
     }
@@ -1027,8 +1434,9 @@ export default function Page() {
     if (saveBusy) return;
     setError('');
     setFormFlash({});
-    if (!countWarehouseId.trim()) {
-      setFormFlash({ err: 'Select a location' });
+    const countWh = countWarehouseId.trim() || (hideWarehouseUx ? defaultWarehouseId : '');
+    if (!countWh) {
+      setFormFlash({ err: hideWarehouseUx ? 'No warehouse is available for this store' : 'Select a location' });
       return;
     }
     setSaveBusy(true);
@@ -1036,7 +1444,7 @@ export default function Page() {
       const r = await api('/inventory/stock-counts', {
         method: 'POST',
         body: JSON.stringify({
-          warehouse_id: countWarehouseId.trim(),
+          warehouse_id: countWh,
           notes: countNotes.trim() || null,
         }),
       });
@@ -1052,6 +1460,7 @@ export default function Page() {
       setCountQtys(qtys);
       setCountNotes('');
       setFormFlash({ ok: `Count ${r.data.count_number} created` });
+      setCountDrawerOpen(false);
       setTab('counts');
       await refresh();
     } catch (err: any) {
@@ -1172,8 +1581,18 @@ export default function Page() {
     }
     const openingQty = Number(createOpeningQty);
     const wantsOpening = createOpeningQty.trim() !== '' && Number.isFinite(openingQty) && openingQty > 0;
-    if (wantsOpening && !createOpeningWh.trim()) {
-      setFormFlash({ err: 'Select a warehouse for opening stock' });
+    const wantsExpiry = Boolean(createOpeningExpiry.trim() || createOpeningBatch.trim() || createOpeningMfg.trim());
+    if (wantsExpiry && !wantsOpening) {
+      setFormFlash({ err: hideWarehouseUx
+        ? 'Expiry is stored on a lot, not the product. Enter quantity with the expiry date.'
+        : 'Expiry is stored on a warehouse lot, not the product. Enter quantity and location with the expiry date.' });
+      setCreateOpenStockOpen(true);
+      setCreateExpiryOpen(true);
+      return;
+    }
+    const openingWh = createOpeningWh.trim() || (hideWarehouseUx ? defaultWarehouseId : '');
+    if (wantsOpening && !openingWh) {
+      setFormFlash({ err: hideWarehouseUx ? 'No warehouse is available for this store' : 'Select a warehouse for opening stock' });
       setCreateOpenStockOpen(true);
       return;
     }
@@ -1184,9 +1603,10 @@ export default function Page() {
     }
     setSaveBusy(true);
     try {
-      const tracksBatches = Boolean(
-        createOpeningBatch.trim() || createOpeningExpiry.trim() || createOpeningMfg.trim()
-      );
+      const lotNumber = wantsExpiry
+        ? lotNumberForExpiry(createOpeningBatch, createOpeningExpiry || createOpeningMfg)
+        : createOpeningBatch.trim() || null;
+      const tracksBatches = Boolean(lotNumber);
       const r = await api('/products', {
         method: 'POST',
         body: JSON.stringify({
@@ -1194,6 +1614,8 @@ export default function Page() {
           sku: productSku.trim() || null,
           barcode: productBarcode.trim() || null,
           description: productDescription.trim() || null,
+          dosage_instructions: pharmacyOps ? productDosage.trim() || null : undefined,
+          rx_only: pharmacyOps ? productRxOnly : undefined,
           selling_price: Number(productPrice) || 0,
           cost_price: Number(productCost) || 0,
           weight: productWeight === '' ? null : Number(productWeight),
@@ -1218,8 +1640,8 @@ export default function Page() {
         const line: Record<string, unknown> = {
           product_id: productId,
           quantity: openingQty,
-          warehouse_id: createOpeningWh.trim(),
-          batch_number: createOpeningBatch.trim() || null,
+          warehouse_id: openingWh,
+          batch_number: lotNumber,
           manufacturing_date: createOpeningMfg.trim() || null,
           expiry_date: createOpeningExpiry.trim() || null,
         };
@@ -1233,6 +1655,8 @@ export default function Page() {
       setProductSku('');
       setProductBarcode('');
       setProductDescription('');
+      setProductDosage('');
+      setProductRxOnly(false);
       setProductWeight('');
       setProductLength('');
       setProductWidth('');
@@ -1251,15 +1675,100 @@ export default function Page() {
       setCreateOpeningCost('');
       setFormFlash({
         ok: wantsOpening
-          ? `Saved ${r.data.sku || name} with opening stock`
-          : `Saved ${r.data.sku || name}`,
+          ? createOpeningExpiry.trim()
+            ? `Saved ${r.data.sku || name} with opening stock and expiry`
+            : `Saved ${r.data.sku || name} with opening stock`
+          : `Saved ${r.data.sku || name}. Set expiry below with quantity and warehouse, or use the Expiry tab.`,
       });
       setProductAddOpen(false);
       await refresh();
       setSelectedId(productId);
       setTab('products');
+      setDrawerOpen(true);
+      setProductEditMode(false);
+      if (!lotWh && createOpeningWh) setLotWh(createOpeningWh);
     } catch (err: any) {
       setFormFlash({ err: err.message || 'Could not save product' });
+    } finally {
+      setSaveBusy(false);
+    }
+  }
+
+  async function recordExpiryLot() {
+    if (saveBusy) return;
+    setError('');
+    setFormFlash({});
+    const productId = selectedId.trim();
+    if (!productId) {
+      setFormFlash({ err: 'Select a product' });
+      return;
+    }
+    const qty = Number(lotQty);
+    if (!Number.isFinite(qty) || qty <= 0) {
+      setFormFlash({ err: 'Enter quantity for this warehouse lot' });
+      return;
+    }
+    const warehouseId = (lotWh || createOpeningWh || stockWarehouseId || (hideWarehouseUx ? defaultWarehouseId : '')).trim();
+    if (!warehouseId) {
+      setFormFlash({ err: hideWarehouseUx ? 'No warehouse is available for this store' : 'Select a warehouse' });
+      return;
+    }
+    const expiry = lotExpiry.trim();
+    if (!expiry) {
+      setFormFlash({ err: 'Enter an expiry date' });
+      return;
+    }
+    const batch = lotNumberForExpiry(lotBatch, expiry);
+    const product = products.find((p) => p.id === productId);
+    const useOpening = Number(product?.stock_qty ?? 0) <= 0;
+    setSaveBusy(true);
+    try {
+      if (useOpening) {
+        const r = await api('/inventory/opening-stock', {
+          method: 'POST',
+          body: JSON.stringify({
+            post_journal: true,
+            lines: [
+              {
+                product_id: productId,
+                quantity: qty,
+                warehouse_id: warehouseId,
+                batch_number: batch,
+                expiry_date: expiry,
+              },
+            ],
+          }),
+        });
+        if (!r.data?.id && !r.data?.reference) {
+          setFormFlash({ err: 'Server did not confirm opening stock' });
+          return;
+        }
+        setFormFlash({ ok: `Expiry saved on lot ${batch} · opening ${r.data.reference}` });
+      } else {
+        const r = await api('/inventory/stock-in', {
+          method: 'POST',
+          body: JSON.stringify({
+            product_id: productId,
+            quantity: qty,
+            warehouse_id: warehouseId,
+            batch_number: batch,
+            expiry_date: expiry,
+          }),
+        });
+        if (r.data?.stock_qty == null && !r.data?.batch) {
+          setFormFlash({ err: 'Server did not confirm the lot' });
+          return;
+        }
+        setFormFlash({ ok: `Expiry saved on lot ${batch} — on-hand ${r.data.stock_qty}` });
+      }
+      setLotQty('');
+      setLotExpiry('');
+      setLotBatch('');
+      setExpiryDrawerOpen(false);
+      await refresh();
+      await refreshSelected(productId);
+    } catch (err: any) {
+      setFormFlash({ err: err.message || 'Could not save expiry' });
     } finally {
       setSaveBusy(false);
     }
@@ -1268,7 +1777,7 @@ export default function Page() {
   async function downloadImportTemplate() {
     setError('');
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const tenant = localStorage.getItem('tenant');
       const res = await fetch(`${apiBase}/products/import/template`, {
         headers: {
@@ -1296,7 +1805,7 @@ export default function Page() {
   async function downloadProductsExport() {
     setError('');
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const tenant = localStorage.getItem('tenant');
       const res = await fetch(`${apiBase}/products/export`, {
         headers: {
@@ -1381,7 +1890,7 @@ export default function Page() {
     setMessage('');
     setImportBusy(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const tenant = localStorage.getItem('tenant');
       const form = new FormData();
       form.append('file', importFile);
@@ -1431,7 +1940,7 @@ export default function Page() {
 
   async function loadBrandLogoPreview(brandId: string) {
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const tenant = localStorage.getItem('tenant');
       const res = await fetch(`${apiBase}/catalog/brands/${brandId}/logo`, {
         headers: {
@@ -1454,7 +1963,7 @@ export default function Page() {
   async function uploadBrandLogo(brandId: string, file: File) {
     setError('');
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const tenant = localStorage.getItem('tenant');
       const form = new FormData();
       form.append('file', file);
@@ -1498,7 +2007,7 @@ export default function Page() {
     if (!selectedId) return;
     setError('');
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const tenant = localStorage.getItem('tenant');
       const form = new FormData();
       form.append('file', file);
@@ -1552,8 +2061,17 @@ export default function Page() {
     }
   }
 
+  function variantApiProductId(variantId: string) {
+    return (
+      variants.find((v) => v.id === variantId)?.product_id ||
+      variantProductId ||
+      selectedId
+    );
+  }
+
   async function deactivateVariant(variantId: string) {
-    if (!selectedId) return;
+    const productId = variantApiProductId(variantId);
+    if (!productId) return;
     setError('');
     setVariantMenuId('');
     if (
@@ -1564,106 +2082,131 @@ export default function Page() {
       return;
     }
     try {
-      await api(`/products/${selectedId}/variants/${variantId}`, { method: 'DELETE' });
+      await api(`/products/${productId}/variants/${variantId}`, { method: 'DELETE' });
       setMessage('Variant deactivated');
-      await refreshSelected(selectedId);
+      setVariants((prev) =>
+        prev.map((v) => (v.id === variantId ? { ...v, is_active: false } : v)),
+      );
+      await loadAllVariants();
     } catch (err: any) {
       setError(err.message);
     }
   }
 
   async function activateVariant(variantId: string) {
-    if (!selectedId) return;
+    const productId = variantApiProductId(variantId);
+    if (!productId) return;
     setError('');
     setVariantMenuId('');
     try {
-      await api(`/products/${selectedId}/variants/${variantId}`, {
+      await api(`/products/${productId}/variants/${variantId}`, {
         method: 'PATCH',
         body: JSON.stringify({ is_active: true }),
       });
       setMessage('Variant activated');
-      await refreshSelected(selectedId);
+      setVariants((prev) =>
+        prev.map((v) => (v.id === variantId ? { ...v, is_active: true } : v)),
+      );
+      await loadAllVariants();
     } catch (err: any) {
       setError(err.message);
     }
   }
 
   async function saveVariantPrice(variantId: string, price: string) {
-    if (!selectedId) return;
+    const productId = variantApiProductId(variantId);
+    if (!productId) return;
     setError('');
     try {
-      await api(`/products/${selectedId}/variants/${variantId}`, {
+      await api(`/products/${productId}/variants/${variantId}`, {
         method: 'PATCH',
         body: JSON.stringify({ selling_price: Number(price) || 0 }),
       });
       setMessage('Variant updated');
-      await refreshSelected(selectedId);
+      await loadAllVariants();
     } catch (err: any) {
       setError(err.message);
     }
   }
 
   async function saveVariantCost(variantId: string, cost: string) {
-    if (!selectedId) return;
+    const productId = variantApiProductId(variantId);
+    if (!productId) return;
     setError('');
     try {
-      await api(`/products/${selectedId}/variants/${variantId}`, {
+      await api(`/products/${productId}/variants/${variantId}`, {
         method: 'PATCH',
         body: JSON.stringify({ cost_price: Number(cost) || 0 }),
       });
       setMessage('Variant cost updated');
-      await refreshSelected(selectedId);
+      await loadAllVariants();
     } catch (err: any) {
       setError(err.message);
     }
   }
 
   async function generateVariantBarcode(variantId: string) {
-    if (!selectedId) return;
+    const productId = variantApiProductId(variantId);
+    if (!productId) return;
     setError('');
     try {
+      const row = variants.find((v) => v.id === variantId);
+      let force = false;
+      if (row?.barcode) {
+        const ok = window.confirm(
+          `This variant already has barcode ${row.barcode}. Replace it with a new unique code?`
+        );
+        if (!ok) return;
+        force = true;
+      }
+      const qs = `${force ? 'force=true&' : ''}symbology=${encodeURIComponent(barcodeSymbology)}`;
       const r = await api(
-        `/products/${selectedId}/variants/${variantId}/barcode/generate?force=true&symbology=${encodeURIComponent(barcodeSymbology)}`,
+        `/products/${productId}/variants/${variantId}/barcode/generate?${qs}`,
         { method: 'POST', body: '{}' }
       );
+      const already = String(r.message || '').toLowerCase().includes('already');
       setMessage(
-        `Variant barcode set to ${r.data?.barcode} (${r.data?.symbology || barcodeSymbology})`
+        already
+          ? `Variant barcode already set (${r.data?.barcode || row?.barcode || ''})`
+          : `Variant barcode set to ${r.data?.barcode} (${r.data?.symbology || barcodeSymbology})`
       );
-      await refreshSelected(selectedId);
+      await loadAllVariants();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function generateVariantQr(variantId: string) {
+    const productId = variantApiProductId(variantId);
+    if (!productId) return;
+    setError('');
+    try {
+      const row = variants.find((v) => v.id === variantId);
+      if (!row?.barcode) {
+        await api(
+          `/products/${productId}/variants/${variantId}/barcode/generate?symbology=${encodeURIComponent(barcodeSymbology)}`,
+          { method: 'POST', body: '{}' }
+        );
+        await loadAllVariants();
+      }
+      const blob = await fetchInventoryBlob(`/products/${productId}/variants/${variantId}/qr.png`);
+      downloadBlob(blob, `qr-${row?.sku || variantId}.png`);
+      setMessage('Variant QR downloaded — payload is barcode or SKU only');
     } catch (err: any) {
       setError(err.message);
     }
   }
 
   async function printVariantBarcodeLabel(variantId: string) {
-    if (!selectedId) return;
+    const productId = variantApiProductId(variantId);
+    if (!productId) return;
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const tenant = localStorage.getItem('tenant');
       const copies = Math.max(1, Math.min(40, Number(labelCopies) || 1));
-      const res = await fetch(
-        `${apiBase}/products/${selectedId}/variants/${variantId}/barcode/label?copies=${copies}&symbology=${encodeURIComponent(barcodeSymbology)}`,
-        {
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
-          },
-        }
+      const html = await fetchInventoryText(
+        `/products/${productId}/variants/${variantId}/barcode/label?copies=${copies}&symbology=${encodeURIComponent(barcodeSymbology)}`
       );
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail || body.message || 'Label failed');
-      }
-      const html = await res.text();
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const w = window.open(url, '_blank', 'noopener,noreferrer,width=720,height=640');
-      if (!w) {
-        URL.revokeObjectURL(url);
-        throw new Error('Pop-up blocked — allow pop-ups to print labels');
-      }
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      openHtmlPrint(html);
       setMessage('Variant barcode label opened — use Print labels');
     } catch (err: any) {
       setError(err.message);
@@ -1843,6 +2386,7 @@ export default function Page() {
 
   function openVariantCreate() {
     setVariantEditId('');
+    setVariantProductId(variantParentFilter || selectedId);
     setVariantName('');
     setVariantSku('');
     setVariantBarcode('');
@@ -1859,6 +2403,7 @@ export default function Page() {
 
   function openVariantEdit(row: any) {
     setVariantEditId(row.id);
+    setVariantProductId(row.product_id || selectedId);
     setVariantName(row.name || '');
     setVariantSku(row.sku || '');
     setVariantBarcode(row.barcode || '');
@@ -1878,7 +2423,8 @@ export default function Page() {
     if (saveBusy) return;
     setError('');
     setFormFlash({});
-    if (!selectedId) {
+    const parentId = variantProductId || selectedId;
+    if (!parentId) {
       setFormFlash({ err: 'Select a product first' });
       return;
     }
@@ -1901,13 +2447,16 @@ export default function Page() {
       if (variantCost.trim()) body.cost_price = Number(variantCost) || 0;
       if (variantPrice.trim()) body.selling_price = Number(variantPrice) || 0;
       if (variantEditId) {
-        await api(`/products/${selectedId}/variants/${variantEditId}`, {
+        const r = await api(`/products/${parentId}/variants/${variantEditId}`, {
           method: 'PATCH',
           body: JSON.stringify(body),
         });
+        if (r.data?.id) {
+          setVariants((prev) => uniqueById([...prev.filter((x) => x.id !== r.data.id), r.data]));
+        }
         setFormFlash({ ok: 'Variant updated' });
       } else {
-        const r = await api(`/products/${selectedId}/variants`, {
+        const r = await api(`/products/${parentId}/variants`, {
           method: 'POST',
           body: JSON.stringify(body),
         });
@@ -1915,9 +2464,10 @@ export default function Page() {
           setFormFlash({ err: 'Server did not confirm the variant' });
           return;
         }
+        setVariants((prev) => uniqueById([...prev.filter((x) => x.id !== r.data.id), r.data]));
         setFormFlash({ ok: `Variant ${r.data.sku || r.data.name} saved` });
       }
-      await refreshSelected(selectedId);
+      await loadAllVariants();
       setTab('variants');
     } catch (err: any) {
       setFormFlash({ err: err.message || 'Could not save variant' });
@@ -1934,9 +2484,9 @@ export default function Page() {
       setFormFlash({ err: 'Select a product' });
       return;
     }
-    const wh = (stockWarehouseId || whStockWarehouseId).trim();
+    const wh = (stockWarehouseId || whStockWarehouseId || (hideWarehouseUx ? defaultWarehouseId : '')).trim();
     if (!wh) {
-      setFormFlash({ err: 'Select a location' });
+      setFormFlash({ err: hideWarehouseUx ? 'No warehouse is available for this store' : 'Select a location' });
       return;
     }
     if (opts?.requireBatch && !batchNumber.trim()) {
@@ -1959,7 +2509,7 @@ export default function Page() {
           warehouse_id: wh,
           variant_id: stockVariantId.trim() || null,
           notes: stockNotes.trim() || null,
-          batch_number: batchNumber.trim() || null,
+          batch_number: lotNumberForExpiry(batchNumber, expiryDate) || (opts?.requireBatch ? batchNumber.trim() : null),
           manufacturing_date: mfgDate.trim() || null,
           expiry_date: expiryDate.trim() || null,
           reference_type: stockRefType.trim() || null,
@@ -1994,15 +2544,29 @@ export default function Page() {
       setFormFlash({ err: 'Select a product' });
       return;
     }
+    const qty = Number(openingQty);
+    if (!Number.isFinite(qty) || qty <= 0) {
+      setFormFlash({ err: 'Quantity must be a positive number' });
+      return;
+    }
+    const openingWhId = openingWarehouseId.trim() || (hideWarehouseUx ? defaultWarehouseId : '');
+    if ((openingExpiry.trim() || openingBatch.trim() || openingMfg.trim()) && !openingWhId) {
+      setFormFlash({ err: hideWarehouseUx ? 'No warehouse is available for this store' : 'Select a warehouse to record expiry' });
+      return;
+    }
+    if (openingExpiry && openingMfg && openingExpiry < openingMfg) {
+      setFormFlash({ err: 'Expiry date cannot be before manufacturing date' });
+      return;
+    }
     setSaveBusy(true);
     try {
       const line: Record<string, unknown> = {
         product_id: selectedId.trim(),
-        quantity: Number(openingQty),
+        quantity: qty,
         unit_id: openingUnitId.trim() || null,
-        warehouse_id: openingWarehouseId.trim() || null,
+        warehouse_id: openingWhId || null,
         variant_id: openingVariantId.trim() || null,
-        batch_number: openingBatch.trim() || null,
+        batch_number: lotNumberForExpiry(openingBatch, openingExpiry || openingMfg),
         manufacturing_date: openingMfg.trim() || null,
         expiry_date: openingExpiry.trim() || null,
         notes: openingLineNotes.trim() || null,
@@ -2241,16 +2805,15 @@ export default function Page() {
           q: productSearch,
           categoryId: productCategoryFilter,
           brandId: productBrandFilter,
-          stock: productStockFilter,
+                stock: productStockFilter,
         },
-        stockStatusOf(p) as 'red' | 'yellow' | 'green',
-      ),
+        stockStatusOf(p),
+      ) && (!rxOnlyFilter || Boolean(p.rx_only)),
     ),
     productSort,
     productSortDir,
   );
   const productPaged = paginate(productListRows, productPage, LIST_PAGE_SIZE);
-  const showCreatedBy = products.some((p) => p.created_by_name || p.created_by_email);
   const byStatus = <T extends { is_active?: boolean }>(
     rows: T[],
     filter: 'all' | 'active' | 'inactive',
@@ -2309,14 +2872,16 @@ export default function Page() {
       if (da !== db) return da - db;
       return String(a.name || '').localeCompare(String(b.name || ''));
     });
-  const managedVariants = byStatus(variants, variantManageFilter);
+  const managedVariants = byStatus(uniqueById(variants), variantManageFilter);
   const variantQuery = variantSearch.trim().toLowerCase();
   const visibleVariants = managedVariants.filter((v) => {
+    if (variantParentFilter && v.product_id !== variantParentFilter) return false;
     if (!variantQuery) return true;
-    const parentName = products.find((p) => p.id === selectedId)?.name || '';
+    const parentName = products.find((p) => p.id === v.product_id)?.name || '';
     const hay = `${v.name || ''} ${v.sku || ''} ${parentName}`.toLowerCase();
     return hay.includes(variantQuery);
   });
+  const selectorVariants = activeCatalogVariants(variants);
   const managedCounts = counts.filter((c) => {
     if (countManageFilter === 'all') return true;
     return (c.status || 'draft') === countManageFilter;
@@ -2343,10 +2908,13 @@ export default function Page() {
     return hay.includes(openingQuery);
   });
   const expiryQuery = expirySearch.trim().toLowerCase();
+  const storeWhIds = new Set(storeWarehouses.map((w: any) => String(w.id)));
   const visibleExpiring = expiring.filter((b) => {
+    if (scopeStoreId && b.warehouse_id && !storeWhIds.has(String(b.warehouse_id))) return false;
     if (!expiryQuery) return true;
     const prod = products.find((p) => p.id === b.product_id);
-    const hay = `${b.batch_number || ''} ${prod?.name || ''} ${prod?.sku || ''}`.toLowerCase();
+    const wh = warehouses.find((w) => w.id === b.warehouse_id);
+    const hay = `${b.batch_number || ''} ${prod?.name || ''} ${prod?.sku || ''} ${wh?.name || ''} ${wh?.code || ''}`.toLowerCase();
     return hay.includes(expiryQuery);
   });
   const countQuery = countSearch.trim().toLowerCase();
@@ -2363,7 +2931,7 @@ export default function Page() {
   });
   const whQuery = whSearch.trim().toLowerCase();
   const visibleWhRows = whStockRows.filter((r) => {
-    if (whLowOnly && !r.below_reorder) return false;
+    if (whLowOnly && !warehouseRowIsLow(r)) return false;
     if (!whQuery) return true;
     const hay = `${r.sku || ''} ${r.name || ''}`.toLowerCase();
     return hay.includes(whQuery);
@@ -2394,37 +2962,86 @@ export default function Page() {
     return `${p.name || ''} ${p.sku || ''} ${p.barcode || ''}`.toLowerCase().includes(q);
   });
   const xferParsed = parsedXferItems();
-  const lowStockProducts = products.filter((p) => stockStatusOf(p) === 'red' && p.is_active !== false);
+  const adjustEligible = products.filter((p) => p.is_active !== false);
+  const adjQuery = adjustSearch.trim().toLowerCase();
+  const adjustVisible = adjustEligible.filter((p) => {
+    if (!adjQuery) return true;
+    return `${p.name || ''} ${p.sku || ''} ${p.barcode || ''}`.toLowerCase().includes(adjQuery);
+  });
+  const adjustLowOutCount = adjustVisible.filter((p) => {
+    const st = stockStatusOf(p);
+    return st === 'red' || st === 'out';
+  }).length;
+  const batchFormDirty = Boolean(
+    batchNumber.trim() ||
+      mfgDate ||
+      expiryDate ||
+      stockNotes.trim() ||
+      stockRefType.trim() ||
+      stockRefId.trim() ||
+      stockQty !== '10',
+  );
+  const openingFormDirty = Boolean(
+    openingBatch.trim() ||
+      openingMfg ||
+      openingExpiry ||
+      openingNotes.trim() ||
+      openingLineNotes.trim() ||
+      openingReference.trim() ||
+      openingUnitCost.trim() ||
+      openingQty !== '10',
+  );
+  const countFormDirty = Boolean(countNotes.trim());
+  const adjustFormDirty = Boolean(adjQty.trim() || adjReason || adjNotes.trim() || adjConfirming);
+  const stockOutFormDirty = Boolean(outQty.trim() || outRefType || outRefId.trim() || outNotes.trim());
+  const receiveFormDirty = Boolean(stockQty !== '10' || batchNumber.trim() || expiryDate);
+  const reorderFormDirty = Boolean(whReorderProductId || whReorderLevel.trim() || whReorderQty.trim());
+  const productAddDirty = Boolean(
+    productName.trim() ||
+      productSku.trim() ||
+      productBarcode.trim() ||
+      productDescription.trim() ||
+      productDosage.trim() ||
+      productRxOnly ||
+      (productPrice !== '' && productPrice !== '0') ||
+      (productCost !== '' && productCost !== '0') ||
+      productCategoryId ||
+      productBrandId ||
+      productUnitId ||
+      createOpeningQty.trim() ||
+      createOpeningExpiry ||
+      createOpeningBatch.trim(),
+  );
   const lsQuery = lowStockSearch.trim().toLowerCase();
-  const lowStockRows = [
-    ...(lowStockPayload?.products || []).map((p: any) => ({
-      key: `p-${p.id}`,
-      name: p.name,
-      sku: p.sku,
-      category: p.category || '—',
-      qty: p.stock_qty,
-      reorder: p.reorder_level,
-      location: 'Company stock',
-    })),
-    ...(lowStockPayload?.warehouse_low_stock || []).map((w: any) => ({
-      key: `w-${w.warehouse_id}-${w.product_id}`,
-      name: w.name,
-      sku: w.sku,
-      category: w.category || '—',
-      qty: w.quantity,
-      reorder: w.reorder_level,
-      location: [w.warehouse_name || w.warehouse_code, !hotelOps && w.store_id ? 'store' : '']
-        .filter(Boolean)
-        .join(' · ') || 'Warehouse',
-    })),
-  ].filter((row) => {
+  const lowStockSource = scopeStoreId
+    ? (lowStockPayload?.warehouse_low_stock || []).map((w: any) => ({
+        key: `w-${w.product_id}-${w.warehouse_id || ''}`,
+        id: w.product_id,
+        name: w.name,
+        sku: w.sku,
+        category: w.category || '—',
+        qty: w.quantity,
+        floor: w.low_stock_floor ?? Math.max(Number(w.minimum_stock || 0), Number(w.reorder_level || 0)),
+        status: w.stock_status_label || 'low',
+      }))
+    : (lowStockPayload?.products || []).map((p: any) => ({
+        key: `p-${p.id}`,
+        id: p.id,
+        name: p.name,
+        sku: p.sku,
+        category: p.category || '—',
+        qty: p.stock_qty,
+        floor: p.low_stock_floor ?? Math.max(Number(p.minimum_stock || 0), Number(p.reorder_level || 0)),
+        status: p.stock_status_label || 'low',
+      }));
+  const lowStockRows = lowStockSource.filter((row: any) => {
     if (!lsQuery) return true;
-    return `${row.name} ${row.sku} ${row.category} ${row.location}`.toLowerCase().includes(lsQuery);
+    return `${row.name} ${row.sku} ${row.category}`.toLowerCase().includes(lsQuery);
   });
 
   return (
     <>
-      <h1>{hotelOps ? 'Products and stock' : 'Inventory'}</h1>
+      <h1>{VIEW_TITLE[tab]}</h1>
       <p className="muted">
         {hotelOps
           ? 'Linen, toiletries, F&B, and cleaning supplies use the same inventory ledger as the rest of the hotel.'
@@ -2437,6 +3054,7 @@ export default function Page() {
         {(
           [
             ['products', 'Products'],
+            ['labels', 'Labels'],
             ['lookup', 'Lookup'],
             ['import', 'Import'],
             ['categories', 'Categories'],
@@ -2469,6 +3087,7 @@ export default function Page() {
       </div>
 
       {tab !== 'products' &&
+        tab !== 'labels' &&
         tab !== 'categories' &&
         tab !== 'brands' &&
         tab !== 'units' &&
@@ -2585,8 +3204,8 @@ export default function Page() {
           <table className="table">
             <thead>
               <tr>
+                <th>Product</th>
                 <th>SKU</th>
-                <th>Name</th>
                 <th>Barcode</th>
                 <th>Stock</th>
                 <th>Status</th>
@@ -2596,8 +3215,8 @@ export default function Page() {
             <tbody>
               {lookupHits.map((p) => (
                 <tr key={p.id} style={{ background: p.id === selectedId ? '#eaf8d8' : undefined }}>
-                  <td>{p.sku}</td>
                   <td>{p.name}</td>
+                  <td>{p.sku}</td>
                   <td>{p.barcode || '—'}</td>
                   <td>
                     <StockStatusBadge product={p} />
@@ -2722,8 +3341,8 @@ export default function Page() {
                 <thead>
                   <tr>
                     <th>Line</th>
+                    <th>Product</th>
                     <th>SKU</th>
-                    <th>Name</th>
                     <th>Status</th>
                     <th>Errors</th>
                   </tr>
@@ -2732,8 +3351,8 @@ export default function Page() {
                   {importReport.rows.map((r) => (
                     <tr key={`${r.line}-${r.sku}`}>
                       <td>{r.line}</td>
-                      <td>{r.sku || '—'}</td>
                       <td>{r.name || '—'}</td>
+                      <td>{r.sku || '—'}</td>
                       <td style={{ color: r.ok ? 'var(--brand, #4AB012)' : '#b91c1c' }}>{r.ok ? 'OK' : 'Error'}</td>
                       <td>{r.errors?.length ? r.errors.join('; ') : '—'}</td>
                     </tr>
@@ -2747,6 +3366,7 @@ export default function Page() {
 
       {tab === 'products' && (
         <>
+          {bootLoading && products.length === 0 ? <PageSkeleton label="Loading products…" cards={3} /> : null}
           <div className="card cat-panel">
             <div className="list-page-head">
               <div>
@@ -2780,6 +3400,20 @@ export default function Page() {
             {formFlash.err && !productAddOpen ? (
               <p className="list-toast err" role="alert">
                 {formFlash.err}
+              </p>
+            ) : null}
+            {pharmacyOps && rxOnlyFilter ? (
+              <p className="muted" role="status">
+                Showing Rx-only products.{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRxOnlyFilter(false);
+                    router.replace('/inventory?tab=products', { scroll: false });
+                  }}
+                >
+                  Show all products
+                </button>
               </p>
             ) : null}
             <div className="list-toolbar">
@@ -2819,11 +3453,12 @@ export default function Page() {
               </select>
               <select
                 value={productStockFilter}
-                onChange={(e) => setProductStockFilter(e.target.value as 'all' | 'low' | 'ok')}
+                onChange={(e) => setProductStockFilter(e.target.value as 'all' | 'low' | 'oos' | 'ok')}
                 aria-label="Filter by stock status"
               >
                 <option value="all">All stock</option>
                 <option value="low">Low stock</option>
+                <option value="oos">Out of stock</option>
                 <option value="ok">In stock</option>
               </select>
               <select
@@ -2861,7 +3496,7 @@ export default function Page() {
                 <table className="table cat-table">
                   <thead>
                     <tr>
-                      <th>
+                      <th aria-sort={productSort === 'name' ? (productSortDir === 1 ? 'ascending' : 'descending') : 'none'}>
                         <button
                           type="button"
                           className="list-sort"
@@ -2870,10 +3505,10 @@ export default function Page() {
                             setProductSortDir((d) => (productSort === 'name' ? ((d === 1 ? -1 : 1) as 1 | -1) : 1));
                           }}
                         >
-                          Product
+                          Product{productSort === 'name' ? (productSortDir === 1 ? ' ↑' : ' ↓') : ''}
                         </button>
                       </th>
-                      <th>
+                      <th aria-sort={productSort === 'sku' ? (productSortDir === 1 ? 'ascending' : 'descending') : 'none'}>
                         <button
                           type="button"
                           className="list-sort"
@@ -2882,10 +3517,10 @@ export default function Page() {
                             setProductSortDir((d) => (productSort === 'sku' ? ((d === 1 ? -1 : 1) as 1 | -1) : 1));
                           }}
                         >
-                          SKU
+                          SKU{productSort === 'sku' ? (productSortDir === 1 ? ' ↑' : ' ↓') : ''}
                         </button>
                       </th>
-                      <th>
+                      <th aria-sort={productSort === 'category' ? (productSortDir === 1 ? 'ascending' : 'descending') : 'none'}>
                         <button
                           type="button"
                           className="list-sort"
@@ -2894,10 +3529,10 @@ export default function Page() {
                             setProductSortDir((d) => (productSort === 'category' ? ((d === 1 ? -1 : 1) as 1 | -1) : 1));
                           }}
                         >
-                          Category
+                          Category{productSort === 'category' ? (productSortDir === 1 ? ' ↑' : ' ↓') : ''}
                         </button>
                       </th>
-                      <th>
+                      <th aria-sort={productSort === 'brand' ? (productSortDir === 1 ? 'ascending' : 'descending') : 'none'}>
                         <button
                           type="button"
                           className="list-sort"
@@ -2906,10 +3541,10 @@ export default function Page() {
                             setProductSortDir((d) => (productSort === 'brand' ? ((d === 1 ? -1 : 1) as 1 | -1) : 1));
                           }}
                         >
-                          Brand
+                          Brand{productSort === 'brand' ? (productSortDir === 1 ? ' ↑' : ' ↓') : ''}
                         </button>
                       </th>
-                      <th>
+                      <th aria-sort={productSort === 'price' ? (productSortDir === 1 ? 'ascending' : 'descending') : 'none'}>
                         <button
                           type="button"
                           className="list-sort"
@@ -2918,11 +3553,10 @@ export default function Page() {
                             setProductSortDir((d) => (productSort === 'price' ? ((d === 1 ? -1 : 1) as 1 | -1) : 1));
                           }}
                         >
-                          Selling price
+                          Selling Price{productSort === 'price' ? (productSortDir === 1 ? ' ↑' : ' ↓') : ''}
                         </button>
                       </th>
-                      <th>Unit</th>
-                      <th>
+                      <th aria-sort={productSort === 'qty' ? (productSortDir === 1 ? 'ascending' : 'descending') : 'none'}>
                         <button
                           type="button"
                           className="list-sort"
@@ -2931,16 +3565,15 @@ export default function Page() {
                             setProductSortDir((d) => (productSort === 'qty' ? ((d === 1 ? -1 : 1) as 1 | -1) : 1));
                           }}
                         >
-                          Qty
+                          Qty{productSort === 'qty' ? (productSortDir === 1 ? ' ↑' : ' ↓') : ''}
                         </button>
                       </th>
-                      {showCreatedBy ? <th>Created by</th> : null}
-                      <th />
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {productPaged.rows.map((p) => {
-                      const low = stockStatusOf(p) === 'red';
+                      const st = stockStatusOf(p);
                       const img = p.image_url || p.thumbnail_url || p.photo_url;
                       return (
                         <tr key={p.id}>
@@ -2955,24 +3588,19 @@ export default function Page() {
                                 </span>
                               )}
                               <span className="list-prod-name">
-                                {p.name}
+                                {displayProductName(p.name)}
                                 {p.is_active === false ? ' [inactive]' : ''}
+                                {pharmacyOps && p.rx_only ? ' [Rx]' : ''}
                               </span>
                             </div>
                           </td>
-                          <td data-label="SKU">{p.sku || '—'}</td>
-                          <td data-label="Category">{p.category || '—'}</td>
-                          <td data-label="Brand">{p.brand || '—'}</td>
-                          <td data-label="Price">{p.selling_price ?? 0}</td>
-                          <td data-label="Unit">
-                            {p.unit_name || p.unit_code || (typeof p.unit === 'string' ? p.unit : '—')}
-                          </td>
-                          <td data-label="Qty" className={low ? 'list-qty-low' : undefined}>
+                          <td data-label="SKU" className="list-secondary">{p.sku || '—'}</td>
+                          <td data-label="Category" className="list-secondary">{p.category || '—'}</td>
+                          <td data-label="Brand" className="list-secondary">{p.brand || '—'}</td>
+                          <td data-label="Selling Price">{p.selling_price ?? 0}</td>
+                          <td data-label="Qty" className={st === 'out' || st === 'red' ? 'list-qty-low' : undefined}>
                             <StockStatusBadge product={p} />
                           </td>
-                          {showCreatedBy ? (
-                            <td data-label="Created by">{p.created_by_name || p.created_by_email || '—'}</td>
-                          ) : null}
                           <td className="cat-actions">
                             <button
                               type="button"
@@ -2998,6 +3626,52 @@ export default function Page() {
                             >
                               Edit
                             </button>
+                            <div className="cat-menu">
+                              <button
+                                type="button"
+                                aria-label={`More actions for ${p.name}`}
+                                onClick={() => setProductMenuId(productMenuId === p.id ? '' : p.id)}
+                              >
+                                ···
+                              </button>
+                              {productMenuId === p.id ? (
+                                <div className="cat-menu-pop">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedId(p.id);
+                                      generateBarcode(p.id);
+                                      setProductMenuId('');
+                                    }}
+                                    aria-label={`Generate barcode for ${p.name}`}
+                                  >
+                                    Generate barcode
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedId(p.id);
+                                      generateQr(p.id);
+                                      setProductMenuId('');
+                                    }}
+                                    aria-label={`Generate QR for ${p.name}`}
+                                  >
+                                    Generate QR
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedId(p.id);
+                                      printBarcodeLabel(p.id);
+                                      setProductMenuId('');
+                                    }}
+                                    aria-label={`Print barcode label for ${p.name}`}
+                                  >
+                                    Print label
+                                  </button>
+                                </div>
+                              ) : null}
+                            </div>
                           </td>
                         </tr>
                       );
@@ -3033,17 +3707,35 @@ export default function Page() {
             ) : null}
           </div>
           {productAddOpen ? (
-            <>
-              <div
-                className="inv-drawer-back"
-                onClick={() => !saveBusy && setProductAddOpen(false)}
-                aria-hidden
-              />
-              <aside className="inv-drawer" role="dialog" aria-modal="true" aria-label="Add Product">
-                <button type="button" onClick={() => setProductAddOpen(false)} disabled={saveBusy}>
-                  Close
-                </button>
-            <h3>Add product</h3>
+            <FormModal
+              title="Add product"
+              busy={saveBusy}
+              dirty={productAddDirty}
+              headerClose={false}
+              closeLabel="Cancel"
+              closeAriaLabel="Cancel add product"
+              onClose={() => {
+                setProductAddOpen(false);
+                setFormFlash({});
+              }}
+              footer={
+                <>
+                  <button
+                    type="button"
+                    className="list-btn-primary"
+                    onClick={createProduct}
+                    disabled={!productName.trim() || saveBusy}
+                    aria-label="Create product"
+                  >
+                    {saveBusy ? 'Saving…' : 'Save'}
+                  </button>
+                  {formFlash.ok ? <p className="form-flash ok" role="status">{formFlash.ok}</p> : null}
+                  {formFlash.err ? <p className="form-flash err" role="alert">{formFlash.err}</p> : null}
+                </>
+              }
+            >
+            <div className="erp-form-grid">
+            <h3 className="muted span-2" style={{ margin: 0, fontWeight: 600 }}>New catalog item</h3>
             <input
               value={productName}
               onChange={(e) => setProductName(e.target.value)}
@@ -3065,6 +3757,9 @@ export default function Page() {
               aria-label="Product barcode"
               title="Optional barcode (4–48 chars: letters, numbers, - . _)"
             />
+            <p className="muted span-2" style={{ margin: 0 }}>
+              Leave blank to generate after save (Actions, product form, or Labels). Existing unique barcodes are not overwritten.
+            </p>
             <textarea
               value={productDescription}
               onChange={(e) => setProductDescription(e.target.value)}
@@ -3073,6 +3768,27 @@ export default function Page() {
               title="Optional description (1–500 chars; letters/digits required)"
               rows={2}
             />
+            {pharmacyOps ? (
+              <>
+                <textarea
+                  value={productDosage}
+                  onChange={(e) => setProductDosage(e.target.value)}
+                  placeholder="Dosage instructions (optional)"
+                  aria-label="Product dosage instructions"
+                  title="Optional dosage instructions (1–500 chars)"
+                  rows={2}
+                />
+                <label className="muted span-2">
+                  <input
+                    type="checkbox"
+                    checked={productRxOnly}
+                    onChange={(e) => setProductRxOnly(e.target.checked)}
+                    aria-label="Rx-only product"
+                  />{' '}
+                  Rx-only (prescription required)
+                </label>
+              </>
+            ) : null}
           <div className="product-price-field">
                       <label className="product-price-label" htmlFor="add-product-actual-price">Actual price</label>
                       <input
@@ -3101,7 +3817,7 @@ export default function Page() {
                         aria-label="Product selling price"
                       />
                     </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div className="span-2" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <input
                 value={productWeight}
                 onChange={(e) => setProductWeight(e.target.value)}
@@ -3178,6 +3894,19 @@ export default function Page() {
               ))}
             </select>
             <select
+              value={productVariantId}
+              onChange={(e) => setProductVariantId(e.target.value)}
+              aria-label="Product variant"
+              title="Existing active variants for this company"
+            >
+              <option value="">Variant (optional)</option>
+              {selectorVariants.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {variantOptionLabel(v, products)}
+                </option>
+              ))}
+            </select>
+            <select
               value={productSupplyClass}
               onChange={(e) => setProductSupplyClass(e.target.value)}
               aria-label="Product supply class"
@@ -3201,134 +3930,399 @@ export default function Page() {
                   </option>
                 ))}
             </select>
-            <details open={createExpiryOpen} onToggle={(e) => setCreateExpiryOpen((e.target as HTMLDetailsElement).open)}>
-              <summary style={{ cursor: 'pointer', fontWeight: 700 }}>Optional expiry / batch</summary>
-              <p className="muted">Leave blank if this product does not expire. Not required to save.</p>
-              <input
-                value={createOpeningBatch}
-                onChange={(e) => setCreateOpeningBatch(e.target.value)}
-                placeholder="Batch number"
-                aria-label="Create product batch number"
-              />
-              <label className="muted">Manufacturing date</label>
-              <input
-                type="date"
-                value={createOpeningMfg}
-                onChange={(e) => setCreateOpeningMfg(e.target.value)}
-                aria-label="Create product manufacturing date"
-              />
-              <label className="muted">Expiry date</label>
-              <input
-                type="date"
-                value={createOpeningExpiry}
-                onChange={(e) => setCreateOpeningExpiry(e.target.value)}
-                aria-label="Create product expiry date"
-              />
-            </details>
-            <details open={createOpenStockOpen} onToggle={(e) => setCreateOpenStockOpen((e.target as HTMLDetailsElement).open)}>
-              <summary style={{ cursor: 'pointer', fontWeight: 700 }}>Optional opening stock</summary>
-              <p className="muted">Empty or zero quantity creates the product only.</p>
-              <input
-                value={createOpeningQty}
-                onChange={(e) => setCreateOpeningQty(e.target.value)}
-                placeholder="Quantity"
-                aria-label="Create product opening quantity"
-              />
-              <select
-                value={createOpeningWh}
-                onChange={(e) => setCreateOpeningWh(e.target.value)}
-                aria-label="Create product opening warehouse"
-              >
-                <option value="">Warehouse (required when quantity is set)</option>
-                {storeWarehouses
-                  .filter((w) => w.is_active !== false)
-                  .map((w) => (
-                    <option key={w.id} value={w.id}>
-                      {w.name || w.code}
-                    </option>
-                  ))}
-              </select>
-              <input
-                value={createOpeningCost}
-                onChange={(e) => setCreateOpeningCost(e.target.value)}
-                placeholder="Unit cost (optional)"
-                aria-label="Create product opening unit cost"
-              />
-            </details>
-            <div className="form-actions">
-            <button
-              type="button"
-              className="list-btn-primary"
-              onClick={createProduct}
-              disabled={!productName.trim() || saveBusy}
-              aria-label="Create product"
-            >
-              {saveBusy ? 'Saving…' : 'Save'}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setProductAddOpen(false);
-                setFormFlash({});
-              }}
-              disabled={saveBusy}
-              aria-label="Cancel add product"
-            >
-              Cancel
-            </button>
-            {formFlash.ok ? <p className="form-flash ok" role="status">{formFlash.ok}</p> : null}
-            {formFlash.err ? <p className="form-flash err" role="alert">{formFlash.err}</p> : null}
+            <p className="muted span-2">
+              {hideWarehouseUx
+                ? 'Expiry is stored on a lot, not the product header. Enter quantity and expiry together — or save the product and set them from the product panel / Expiry tab.'
+                : 'Expiry is stored on a warehouse lot, not the product header. Enter quantity, location, and expiry together — or save the product and set them from the product panel / Expiry tab.'}
+            </p>
+            <div className="field">
+            <label className="muted">Expiry date</label>
+            <input
+              type="date"
+              value={createOpeningExpiry}
+              onChange={(e) => setCreateOpeningExpiry(e.target.value)}
+              aria-label="Create product expiry date"
+            />
             </div>
-              </aside>
-            </>
+            <input
+              value={createOpeningBatch}
+              onChange={(e) => setCreateOpeningBatch(e.target.value)}
+              placeholder="Batch number (optional — assigned if expiry is set)"
+              aria-label="Create product batch number"
+            />
+            <div className="field">
+            <label className="muted">Manufacturing date (optional)</label>
+            <input
+              type="date"
+              value={createOpeningMfg}
+              onChange={(e) => setCreateOpeningMfg(e.target.value)}
+              aria-label="Create product manufacturing date"
+            />
+            </div>
+            <div className="field">
+            <label className="muted">Quantity</label>
+            <input
+              value={createOpeningQty}
+              onChange={(e) => setCreateOpeningQty(e.target.value)}
+              placeholder="Quantity"
+              aria-label="Create product opening quantity"
+            />
+            </div>
+            {!hideWarehouseUx ? (
+            <select
+              value={createOpeningWh}
+              onChange={(e) => setCreateOpeningWh(e.target.value)}
+              aria-label="Create product opening warehouse"
+            >
+              <option value="">Warehouse (required with quantity or expiry)</option>
+              {storeWarehouses
+                .filter((w) => w.is_active !== false)
+                .map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name || w.code}
+                  </option>
+                ))}
+            </select>
+            ) : null}
+            <input
+              value={createOpeningCost}
+              onChange={(e) => setCreateOpeningCost(e.target.value)}
+              placeholder="Unit cost (optional)"
+              aria-label="Create product opening unit cost"
+            />
+            </div>
+            </FormModal>
           ) : null}
           {drawerOpen && selected && tab === 'products' && (
             <>
               <div className="inv-drawer-back" onClick={() => setDrawerOpen(false)} aria-hidden />
-              <aside className="inv-drawer" aria-label="Product details">
-                <button type="button" onClick={() => setDrawerOpen(false)} aria-label="Close product details">
-                  Close
-                </button>
-                <h3>{selected.name}</h3>
+              <aside className="inv-drawer drawer product-detail" aria-label="Product details">
+                <div className="inv-drawer-head">
+                  <h3>{selected.name}</h3>
+                  <button type="button" onClick={() => setDrawerOpen(false)} aria-label="Close product details">
+                    Close
+                  </button>
+                </div>
+                <div className="inv-drawer-body">
+                <div className="drawer-meta product-detail-meta">
                 <p className="muted">SKU {selected.sku}</p>
                 <p className="muted">Barcode {selected.barcode || '—'}</p>
                 <p className="muted">Category {selected.category || '—'}</p>
                 <p className="muted">On-hand {selected.stock_qty ?? 0}</p>
-                {!productEditMode ? (
-                  <button type="button" onClick={() => setProductEditMode(true)} aria-label="Edit product">
-                    Edit
-                  </button>
+                {pharmacyOps ? (
+                  <>
+                    <p className="muted">Rx-only {selected.rx_only ? 'Yes' : 'No'}</p>
+                    <p className="muted">Dosage {selected.dosage_instructions || '—'}</p>
+                  </>
+                ) : null}
+                </div>
+                <h4>Warehouse lots / expiry</h4>
+                <p className="muted">
+                  Expiry is not a product field. Record quantity at a location with an expiry date.
+                </p>
+                {batches.length === 0 ? (
+                  <p className="muted">No lots yet for this product.</p>
                 ) : (
-                  <div style={{ display: 'grid', gap: 8 }}>
+                  <ul style={{ margin: 0, paddingLeft: 18 }}>
+                    {batches.map((b) => {
+                      const wh = warehouses.find((w) => w.id === b.warehouse_id);
+                      return (
+                        <li key={b.id}>
+                          {b.batch_number} · qty {b.quantity}
+                          {b.expiry_date ? ` · expires ${String(b.expiry_date).slice(0, 10)}` : ' · no expiry'}
+                          {wh ? ` · ${wh.name || wh.code}` : ''}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                <div className="erp-form-grid form-grid">
+                {!hideWarehouseUx ? (
+                <div className="field">
+                <label className="muted">Location</label>
+                <select
+                  value={lotWh}
+                  onChange={(e) => setLotWh(e.target.value)}
+                  aria-label="Product lot warehouse"
+                >
+                  <option value="">Select warehouse</option>
+                  {storeWarehouses
+                    .filter((w) => w.is_active !== false)
+                    .map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.name || w.code}
+                      </option>
+                    ))}
+                </select>
+                </div>
+                ) : null}
+                <div className="field">
+                <label className="muted">Quantity</label>
+                <input
+                  value={lotQty}
+                  onChange={(e) => setLotQty(e.target.value)}
+                  placeholder="Quantity"
+                  aria-label="Product lot quantity"
+                />
+                </div>
+                <div className="field">
+                <label className="muted">Expiry date</label>
+                <input
+                  type="date"
+                  value={lotExpiry}
+                  onChange={(e) => setLotExpiry(e.target.value)}
+                  aria-label="Product lot expiry date"
+                />
+                </div>
+                <input
+                  value={lotBatch}
+                  onChange={(e) => setLotBatch(e.target.value)}
+                  placeholder="Batch number (optional)"
+                  aria-label="Product lot batch number"
+                />
+                </div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <select
+                    value={barcodeSymbology}
+                    onChange={(e) => setBarcodeSymbology(e.target.value)}
+                    aria-label="Barcode symbology"
+                    title="Barcode symbology"
+                  >
+                    <option value="code128">Code 128</option>
+                    <option value="ean13">EAN-13</option>
+                    <option value="upca">UPC-A</option>
+                  </select>
+                  <button type="button" onClick={() => generateBarcode(selected.id)} aria-label="Generate product barcode">
+                    Generate barcode
+                  </button>
+                  <button type="button" onClick={() => generateQr(selected.id)} aria-label="Generate QR">
+                    Generate QR
+                  </button>
+                  <button type="button" onClick={() => printBarcodeLabel(selected.id)} aria-label="Print product barcode label">
+                    Print label
+                  </button>
+                </div>
+                {productEditMode ? (
+                  <div className="erp-form-grid form-grid">
+                    <div className="field span-2">
                     <label className="muted">Barcode</label>
-                    <input value={editBarcode} onChange={(e) => setEditBarcode(e.target.value)} aria-label="Edit product barcode" />
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <input value={editBarcode} onChange={(e) => setEditBarcode(e.target.value)} aria-label="Edit product barcode" />
+                      <button type="button" onClick={() => generateBarcode(selected.id)} aria-label="Generate barcode on product form">
+                        Generate barcode
+                      </button>
+                      <button type="button" onClick={() => generateQr(selected.id)} aria-label="Generate QR on product form">
+                        Generate QR
+                      </button>
+                    </div>
+                    </div>
+                    <div className="field span-2">
                     <label className="muted">Description</label>
                     <textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={2} aria-label="Edit product description" />
+                    </div>
+                    {pharmacyOps ? (
+                      <>
+                        <div className="field span-2">
+                        <label className="muted">Dosage instructions</label>
+                        <textarea
+                          value={editDosage}
+                          onChange={(e) => setEditDosage(e.target.value)}
+                          rows={2}
+                          aria-label="Edit product dosage instructions"
+                        />
+                        </div>
+                        <label className="muted span-2">
+                          <input
+                            type="checkbox"
+                            checked={editRxOnly}
+                            onChange={(e) => setEditRxOnly(e.target.checked)}
+                            aria-label="Edit Rx-only product"
+                          />{' '}
+                          Rx-only (prescription required)
+                        </label>
+                      </>
+                    ) : null}
+                    <div className="field">
                     <label className="muted">Reorder</label>
                     <input value={editReorder} onChange={(e) => setEditReorder(e.target.value)} aria-label="Edit product reorder level" />
+                    </div>
+                    <div className="field">
                     <label className="muted">Actual price</label>
                     <input value={editCost} onChange={(e) => setEditCost(e.target.value)} aria-label="Edit product cost price" />
+                    </div>
+                    <div className="field">
                     <label className="muted">Selling price</label>
                     <input value={editPrice} onChange={(e) => setEditPrice(e.target.value)} aria-label="Edit product selling price" />
+                    </div>
+                    <div className="field">
+                    <label className="muted">Variant</label>
+                    <select
+                      value={productVariantId}
+                      onChange={(e) => setProductVariantId(e.target.value)}
+                      aria-label="Product variant"
+                      title="Existing active variants for this company"
+                    >
+                      <option value="">Variant (optional)</option>
+                      {selectorVariants.map((v) => (
+                        <option key={v.id} value={v.id}>
+                          {variantOptionLabel(v, products)}
+                        </option>
+                      ))}
+                    </select>
+                    </div>
+                  </div>
+                ) : null}
+                </div>
+                <div className="inv-drawer-foot">
+                  {!productEditMode ? (
+                    <button type="button" onClick={() => setProductEditMode(true)} aria-label="Edit product">
+                      Edit
+                    </button>
+                  ) : (
                     <button
                       type="button"
-                      onClick={async () => {
-                        await saveProductEdits();
-                        setFormFlash({ ok: 'Product updated' });
-                        setProductEditMode(false);
-                      }}
+                      onClick={() => saveProductEdits()}
+                      disabled={saveBusy}
                       aria-label="Save product"
                     >
-                      Save
+                      {saveBusy ? 'Saving…' : 'Save'}
                     </button>
-                    {formFlash.ok ? <p className="form-flash ok">{formFlash.ok}</p> : null}
-                    {formFlash.err ? <p className="form-flash err">{formFlash.err}</p> : null}
-                  </div>
-                )}
+                  )}
+                  <button
+                    type="button"
+                    onClick={recordExpiryLot}
+                    disabled={saveBusy}
+                    aria-label="Save product expiry lot"
+                  >
+                    {saveBusy ? 'Saving…' : 'Save expiry lot'}
+                  </button>
+                  {formFlash.ok ? <p className="form-flash ok" role="status">{formFlash.ok}</p> : null}
+                  {formFlash.err ? <p className="form-flash err" role="alert">{formFlash.err}</p> : null}
+                </div>
               </aside>
             </>
           )}
         </>
+      )}
+
+      {tab === 'labels' && (
+        <div className="card cat-panel">
+          <div className="list-page-head">
+            <div>
+              <h2 style={{ margin: 0 }}>Barcode / QR labels</h2>
+              <p className="muted" style={{ margin: '4px 0 0' }}>
+                Generate a unique barcode or QR for selected products (name + SKU/barcode only), then print via the existing label sheet.
+              </p>
+            </div>
+          </div>
+          <div className="list-toolbar">
+            <input
+              value={productSearch}
+              onChange={(e) => setProductSearch(e.target.value)}
+              placeholder="Search name, SKU, barcode"
+              aria-label="Search products for labels"
+            />
+            <select
+              value={barcodeSymbology}
+              onChange={(e) => setBarcodeSymbology(e.target.value)}
+              aria-label="Barcode symbology"
+              title="Barcode symbology for generate / print"
+            >
+              <option value="code128">Code 128</option>
+              <option value="ean13">EAN-13</option>
+              <option value="upca">UPC-A</option>
+            </select>
+            <input
+              value={labelCopies}
+              onChange={(e) => setLabelCopies(e.target.value)}
+              placeholder="Copies"
+              aria-label="Label copies"
+              title="Copies (1–40)"
+              style={{ width: 88 }}
+            />
+            <button type="button" onClick={generateBarcodesForSelected} aria-label="Generate barcode for selected products">
+              Generate barcode
+            </button>
+            <button type="button" onClick={generateQrForSelected} aria-label="Generate QR for selected products">
+              Generate QR
+            </button>
+            <button
+              type="button"
+              onClick={() => printBarcodeLabelsForIds(selectedLabelIds())}
+              aria-label="Print product barcode label"
+            >
+              Print labels
+            </button>
+          </div>
+          <div className="list-table-wrap">
+            <table className="table cat-table">
+              <thead>
+                <tr>
+                  <th>
+                    <input
+                      type="checkbox"
+                      aria-label="Select all products for labels"
+                      checked={managedProducts.length > 0 && managedProducts.every((p) => labelPick[p.id])}
+                      onChange={(e) => {
+                        const on = e.target.checked;
+                        const next: Record<string, boolean> = { ...labelPick };
+                        managedProducts.forEach((p) => {
+                          next[p.id] = on;
+                        });
+                        setLabelPick(next);
+                      }}
+                    />
+                  </th>
+                  <th>Product</th>
+                  <th>SKU</th>
+                  <th>Barcode</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {managedProducts.filter((p) => {
+                  const q = productSearch.trim().toLowerCase();
+                  if (!q) return true;
+                  return `${p.name || ''} ${p.sku || ''} ${p.barcode || ''}`.toLowerCase().includes(q);
+                }).map((p) => (
+                  <tr key={p.id}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(labelPick[p.id])}
+                        onChange={(e) => setLabelPick((prev) => ({ ...prev, [p.id]: e.target.checked }))}
+                        aria-label={`Select ${p.name} for labels`}
+                      />
+                    </td>
+                    <td data-label="Product">{displayProductName(p.name)}</td>
+                    <td data-label="SKU" className="list-secondary">{p.sku || '—'}</td>
+                    <td data-label="Barcode" className="list-secondary">{p.barcode || '—'}</td>
+                    <td className="cat-actions">
+                      <button type="button" onClick={() => generateBarcode(p.id)} aria-label={`Generate barcode for ${p.name}`}>
+                        Generate barcode
+                      </button>
+                      <button type="button" onClick={() => generateQr(p.id)} aria-label={`Generate QR for ${p.name}`}>
+                        Generate QR
+                      </button>
+                      <button type="button" onClick={() => printBarcodeLabel(p.id)} aria-label={`Print barcode label for ${p.name}`}>
+                        Print label
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {managedProducts.filter((p) => {
+                  const q = productSearch.trim().toLowerCase();
+                  if (!q) return true;
+                  return `${p.name || ''} ${p.sku || ''} ${p.barcode || ''}`.toLowerCase().includes(q);
+                }).length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="muted">No products match.</td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
       {tab === 'categories' && (
@@ -3446,17 +4440,12 @@ export default function Page() {
             </div>
           )}
           {catDrawerOpen ? (
-            <>
-              <div
-                className="inv-drawer-back"
-                onClick={() => !saveBusy && setCatDrawerOpen(false)}
-                aria-hidden
-              />
-              <aside className="inv-drawer" aria-label={catEditId ? 'Edit category' : 'Add category'}>
-                <button type="button" onClick={() => setCatDrawerOpen(false)} disabled={saveBusy}>
-                  Close
-                </button>
-                <h3>{catEditId ? 'Edit category' : 'Add category'}</h3>
+            <FormModal
+              title={catEditId ? 'Edit category' : 'Add category'}
+              busy={saveBusy}
+              dirty={Boolean(catName.trim())}
+              onClose={() => setCatDrawerOpen(false)}
+            >
                 <label className="muted" htmlFor="cat-name-field">
                   Name
                 </label>
@@ -3567,8 +4556,7 @@ export default function Page() {
                   {formFlash.ok ? <p className="form-flash ok">{formFlash.ok}</p> : null}
                   {formFlash.err ? <p className="form-flash err">{formFlash.err}</p> : null}
                 </div>
-              </aside>
-            </>
+            </FormModal>
           ) : null}
         </div>
       )}
@@ -3672,17 +4660,12 @@ export default function Page() {
             </div>
           )}
           {brandDrawerOpen ? (
-            <>
-              <div
-                className="inv-drawer-back"
-                onClick={() => !saveBusy && setBrandDrawerOpen(false)}
-                aria-hidden
-              />
-              <aside className="inv-drawer" aria-label={brandEditId ? 'Edit brand' : 'Add brand'}>
-                <button type="button" onClick={() => setBrandDrawerOpen(false)} disabled={saveBusy}>
-                  Close
-                </button>
-                <h3>{brandEditId ? 'Edit brand' : 'Add brand'}</h3>
+            <FormModal
+              title={brandEditId ? 'Edit brand' : 'Add brand'}
+              busy={saveBusy}
+              dirty={Boolean(brandName.trim() || brandDescription.trim())}
+              onClose={() => setBrandDrawerOpen(false)}
+            >
                 <label className="muted" htmlFor="brand-name-field">
                   Name
                 </label>
@@ -3750,9 +4733,9 @@ export default function Page() {
                   {formFlash.ok ? <p className="form-flash ok">{formFlash.ok}</p> : null}
                   {formFlash.err ? <p className="form-flash err">{formFlash.err}</p> : null}
                 </div>
-              </aside>
-            </>
+            </FormModal>
           ) : null}
+          {/* inv-drawer: brand create/edit uses FormModal */}
         </div>
       )}
 
@@ -3869,17 +4852,12 @@ export default function Page() {
             </div>
           )}
           {unitDrawerOpen ? (
-            <>
-              <div
-                className="inv-drawer-back"
-                onClick={() => !saveBusy && setUnitDrawerOpen(false)}
-                aria-hidden
-              />
-              <aside className="inv-drawer" aria-label={unitEditId ? 'Edit unit' : 'Add unit'}>
-                <button type="button" onClick={() => setUnitDrawerOpen(false)} disabled={saveBusy}>
-                  Close
-                </button>
-                <h3>{unitEditId ? 'Edit unit' : 'Add unit'}</h3>
+            <FormModal
+              title={unitEditId ? 'Edit unit' : 'Add unit'}
+              busy={saveBusy}
+              dirty={Boolean(unitName.trim())}
+              onClose={() => setUnitDrawerOpen(false)}
+            >
                 <label className="muted" htmlFor="unit-name-field">
                   Name
                 </label>
@@ -3940,9 +4918,9 @@ export default function Page() {
                   {formFlash.ok ? <p className="form-flash ok">{formFlash.ok}</p> : null}
                   {formFlash.err ? <p className="form-flash err">{formFlash.err}</p> : null}
                 </div>
-              </aside>
-            </>
+            </FormModal>
           ) : null}
+          {/* inv-drawer: unit create/edit uses FormModal */}
         </div>
       )}
 
@@ -3956,11 +4934,11 @@ export default function Page() {
           </div>
           <div className="cat-toolbar">
             <select
-              value={selectedId}
-              onChange={(e) => setSelectedId(e.target.value)}
+              value={variantParentFilter}
+              onChange={(e) => setVariantParentFilter(e.target.value)}
               aria-label="Parent product for variant"
             >
-              <option value="">Select a product</option>
+              <option value="">All products</option>
               {products.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -3986,9 +4964,20 @@ export default function Page() {
               <option value="inactive">Inactive only</option>
             </select>
           </div>
-          {visibleVariants.length === 0 ? (
+          {!variantsReady ? (
+            <p className="muted">Loading variants…</p>
+          ) : variantsError ? (
             <div className="cat-empty">
-              <p style={{ margin: 0 }}>{selectedId ? 'No variants yet.' : 'Select a product first.'}</p>
+              <p style={{ margin: 0 }} role="alert">
+                Could not load variants. {variantsError}
+              </p>
+              <button type="button" style={{ marginTop: 12 }} onClick={() => loadAllVariants()}>
+                Retry
+              </button>
+            </div>
+          ) : visibleVariants.length === 0 ? (
+            <div className="cat-empty">
+              <p style={{ margin: 0 }}>No variants yet.</p>
               <p className="muted" style={{ margin: '8px 0 0' }}>
                 Choose the parent product, then add size, color, or other options.
               </p>
@@ -4016,7 +5005,7 @@ export default function Page() {
                         </div>
                       </td>
                       <td data-label="Parent">
-                        {products.find((p) => p.id === selectedId)?.name || '—'}
+                        {products.find((p) => p.id === v.product_id)?.name || '—'}
                       </td>
                       <td data-label="Status">{v.is_active === false ? 'Inactive' : 'Active'}</td>
                       <td className="cat-actions">
@@ -4045,6 +5034,9 @@ export default function Page() {
                               <button type="button" onClick={() => generateVariantBarcode(v.id)} aria-label={`Generate variant barcode ${v.id}`}>
                                 Generate barcode
                               </button>
+                              <button type="button" onClick={() => generateVariantQr(v.id)} aria-label={`Generate variant QR ${v.id}`}>
+                                Generate QR
+                              </button>
                               <button type="button" onClick={() => printVariantBarcodeLabel(v.id)} aria-label={`Print variant barcode label ${v.id}`}>
                                 Label
                               </button>
@@ -4059,17 +5051,12 @@ export default function Page() {
             </div>
           )}
           {variantDrawerOpen ? (
-            <>
-              <div
-                className="inv-drawer-back"
-                onClick={() => !saveBusy && setVariantDrawerOpen(false)}
-                aria-hidden
-              />
-              <aside className="inv-drawer" aria-label={variantEditId ? 'Edit variant' : 'Add variant'}>
-                <button type="button" onClick={() => setVariantDrawerOpen(false)} disabled={saveBusy}>
-                  Close
-                </button>
-                <h3>{variantEditId ? 'Edit variant' : 'Add variant'}</h3>
+            <FormModal
+              title={variantEditId ? 'Edit variant' : 'Add variant'}
+              busy={saveBusy}
+              dirty={Boolean(variantName.trim() || variantSku.trim())}
+              onClose={() => setVariantDrawerOpen(false)}
+            >
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -4093,8 +5080,8 @@ export default function Page() {
                 </label>
                 <select
                   id="variant-parent-product"
-                  value={selectedId}
-                  onChange={(e) => setSelectedId(e.target.value)}
+                  value={variantProductId}
+                  onChange={(e) => setVariantProductId(e.target.value)}
                   aria-label="Parent product for variant"
                   disabled={Boolean(variantEditId)}
                 >
@@ -4183,9 +5170,9 @@ export default function Page() {
                   {formFlash.err ? <p className="form-flash err" role="alert">{formFlash.err}</p> : null}
                 </div>
                 </form>
-              </aside>
-            </>
+            </FormModal>
           ) : null}
+          {/* inv-drawer: variant create/edit uses FormModal */}
         </div>
       )}
 
@@ -4266,13 +5253,12 @@ export default function Page() {
             </div>
           )}
           {batchDrawerOpen ? (
-            <>
-              <div className="inv-drawer-back" onClick={() => !saveBusy && setBatchDrawerOpen(false)} aria-hidden />
-              <aside className="inv-drawer" aria-label="Receive batch">
-                <button type="button" onClick={() => setBatchDrawerOpen(false)} disabled={saveBusy}>
-                  Close
-                </button>
-                <h3>Receive batch</h3>
+            <FormModal
+              title="Receive batch"
+              busy={saveBusy}
+              dirty={batchFormDirty}
+              onClose={() => setBatchDrawerOpen(false)}
+            >
                 <label className="muted" htmlFor="batch-product">
                   Product
                 </label>
@@ -4289,6 +5275,8 @@ export default function Page() {
                     </option>
                   ))}
                 </select>
+                {!hideWarehouseUx ? (
+                <>
                 <label className="muted" htmlFor="batch-wh">
                   Location
                 </label>
@@ -4307,6 +5295,8 @@ export default function Page() {
                       </option>
                     ))}
                 </select>
+                </>
+                ) : null}
                 <input
                   value={batchNumber}
                   onChange={(e) => setBatchNumber(e.target.value)}
@@ -4345,17 +5335,20 @@ export default function Page() {
                 </select>
                 <select
                   value={stockVariantId}
-                  onChange={(e) => setStockVariantId(e.target.value)}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setStockVariantId(id);
+                    const row = variants.find((v) => v.id === id);
+                    if (row?.product_id) setSelectedId(row.product_id);
+                  }}
                   aria-label="Stock-in variant"
                 >
                   <option value="">Variant (optional)</option>
-                  {variants
-                    .filter((v) => v.is_active !== false)
-                    .map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.name} ({v.sku})
-                      </option>
-                    ))}
+                  {selectorVariants.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {variantOptionLabel(v, products)}
+                    </option>
+                  ))}
                 </select>
                 <input
                   value={stockNotes}
@@ -4396,8 +5389,7 @@ export default function Page() {
                     </p>
                   ) : null}
                 </div>
-              </aside>
-            </>
+            </FormModal>
           ) : null}
         </div>
       )}
@@ -4447,8 +5439,9 @@ export default function Page() {
               <table className="table cat-table">
                 <thead>
                   <tr>
-                    <th>When</th>
                     <th>Product</th>
+                    <th>SKU</th>
+                    <th>When</th>
                     <th>Qty</th>
                     <th>After</th>
                   </tr>
@@ -4458,11 +5451,13 @@ export default function Page() {
                     const p = products.find((x) => x.id === m.product_id);
                     return (
                       <tr key={m.id}>
-                        <td data-label="When">{m.created_at ? String(m.created_at).slice(0, 19) : '—'}</td>
                         <td data-label="Product">
-                          <strong>{p ? p.sku : String(m.product_id).slice(0, 8)}</strong>
-                          <div className="muted inv-child">{p?.name || ''}</div>
+                          <strong className="list-prod-name">{displayProductName(p?.name)}</strong>
                         </td>
+                        <td data-label="SKU" className="list-secondary">
+                          {p?.sku || '—'}
+                        </td>
+                        <td data-label="When">{m.created_at ? String(m.created_at).slice(0, 19) : '—'}</td>
                         <td data-label="Qty">{m.quantity}</td>
                         <td data-label="After">{m.quantity_after}</td>
                       </tr>
@@ -4473,116 +5468,16 @@ export default function Page() {
             </div>
           )}
           {openingDrawerOpen ? (
-            <>
-              <div className="inv-drawer-back" onClick={() => !saveBusy && setOpeningDrawerOpen(false)} aria-hidden />
-              <aside className="inv-drawer" aria-label="Post opening stock">
-                <button type="button" onClick={() => setOpeningDrawerOpen(false)} disabled={saveBusy}>
-                  Close
-                </button>
-                <h3>Post opening stock</h3>
-                <p className="muted inv-child" style={{ margin: 0 }}>
-                  Number {invNumbering.opening_stock_numbering?.preview || 'assigned when you save'}
-                </p>
-                <input
-                  readOnly
-                  value={invNumbering.opening_stock_numbering?.preview || ''}
-                  placeholder="Assigned when you save"
-                  aria-label="Opening stock reference"
-                />
-                <label className="muted" htmlFor="opening-product">
-                  Product
-                </label>
-                <select
-                  id="opening-product"
-                  value={selectedId}
-                  onChange={(e) => setSelectedId(e.target.value)}
-                  aria-label="Opening stock product"
-                >
-                  <option value="">Select product</option>
-                  {managedProducts.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({p.sku})
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={openingWarehouseId}
-                  onChange={(e) => setOpeningWarehouseId(e.target.value)}
-                  aria-label="Opening stock warehouse"
-                >
-                  <option value="">Location (optional)</option>
-                  {storeWarehouses
-                    .filter((w) => w.is_active !== false)
-                    .map((w) => (
-                      <option key={w.id} value={w.id}>
-                        {w.name || w.code || w.id.slice(0, 8)}
-                      </option>
-                    ))}
-                </select>
-                <input
-                  value={openingQty}
-                  onChange={(e) => setOpeningQty(e.target.value)}
-                  placeholder="Quantity"
-                  aria-label="Opening stock quantity"
-                />
-                <select value={openingUnitId} onChange={(e) => setOpeningUnitId(e.target.value)} aria-label="Opening stock unit">
-                  <option value="">Unit (product default)</option>
-                  {units
-                    .filter((u) => u.is_active !== false)
-                    .map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.code}
-                      </option>
-                    ))}
-                </select>
-                <input
-                  value={openingUnitCost}
-                  onChange={(e) => setOpeningUnitCost(e.target.value)}
-                  placeholder={`Unit cost (default ${selected?.cost_price ?? 0})`}
-                  aria-label="Opening stock unit cost"
-                />
-                <input
-                  value={openingBatch}
-                  onChange={(e) => setOpeningBatch(e.target.value)}
-                  placeholder="Batch number (if tracked)"
-                  aria-label="Opening stock batch number"
-                />
-                <label className="muted">Manufacturing date</label>
-                <input
-                  aria-label="Opening stock manufacturing date"
-                  type="date"
-                  value={openingMfg}
-                  onChange={(e) => setOpeningMfg(e.target.value)}
-                />
-                <label className="muted">Expiry date</label>
-                <input
-                  aria-label="Opening stock expiry date"
-                  type="date"
-                  value={openingExpiry}
-                  onChange={(e) => setOpeningExpiry(e.target.value)}
-                />
-                <input
-                  value={openingNotes}
-                  onChange={(e) => setOpeningNotes(e.target.value)}
-                  placeholder="Notes"
-                  aria-label="Opening stock notes"
-                />
-                <input
-                  value={openingLineNotes}
-                  onChange={(e) => setOpeningLineNotes(e.target.value)}
-                  placeholder="Line notes (optional)"
-                  aria-label="Opening stock line notes"
-                />
-                <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <input
-                    type="checkbox"
-                    aria-label="Opening stock post journal"
-                    checked={openingPostJournal}
-                    onChange={(e) => setOpeningPostJournal(e.target.checked)}
-                  />
-                  Post inventory journal
-                </label>
-                <div className="cat-save-row">
+            <FormModal
+              title="Post opening stock"
+              busy={saveBusy}
+              dirty={openingFormDirty}
+              headerClose={false}
+              closeLabel="Cancel"
+              closeAriaLabel="Cancel opening stock"
+              onClose={() => setOpeningDrawerOpen(false)}
+              footer={
+                <>
                   <button
                     type="button"
                     className="btn-ok"
@@ -4602,9 +5497,140 @@ export default function Page() {
                       {formFlash.err}
                     </p>
                   ) : null}
+                </>
+              }
+            >
+                <div className="erp-form-grid form-grid">
+                <p className="muted inv-child span-2" style={{ margin: 0 }}>
+                  Number {invNumbering.opening_stock_numbering?.preview || 'assigned when you save'}
+                </p>
+                <input
+                  className="span-2"
+                  readOnly
+                  value={invNumbering.opening_stock_numbering?.preview || ''}
+                  placeholder="Assigned when you save"
+                  aria-label="Opening stock reference"
+                />
+                <div className="field">
+                <label className="muted" htmlFor="opening-product">
+                  Product
+                </label>
+                <select
+                  id="opening-product"
+                  value={selectedId}
+                  onChange={(e) => setSelectedId(e.target.value)}
+                  aria-label="Opening stock product"
+                >
+                  <option value="">Select product</option>
+                  {managedProducts.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.sku})
+                    </option>
+                  ))}
+                </select>
                 </div>
-              </aside>
-            </>
+                {!hideWarehouseUx ? (
+                <select
+                  value={openingWarehouseId}
+                  onChange={(e) => setOpeningWarehouseId(e.target.value)}
+                  aria-label="Opening stock warehouse"
+                >
+                  <option value="">Location (required with expiry)</option>
+                  {storeWarehouses
+                    .filter((w) => w.is_active !== false)
+                    .map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.name || w.code || w.id.slice(0, 8)}
+                      </option>
+                    ))}
+                </select>
+                ) : null}
+                <input
+                  value={openingQty}
+                  onChange={(e) => setOpeningQty(e.target.value)}
+                  placeholder="Quantity"
+                  aria-label="Opening stock quantity"
+                />
+                <select value={openingUnitId} onChange={(e) => setOpeningUnitId(e.target.value)} aria-label="Opening stock unit">
+                  <option value="">Unit (product default)</option>
+                  {units
+                    .filter((u) => u.is_active !== false)
+                    .map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.code}
+                      </option>
+                    ))}
+                </select>
+                <select
+                  value={openingVariantId}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setOpeningVariantId(id);
+                    const row = variants.find((v) => v.id === id);
+                    if (row?.product_id) setSelectedId(row.product_id);
+                  }}
+                  aria-label="Opening stock variant"
+                >
+                  <option value="">Variant (optional)</option>
+                  {selectorVariants.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {variantOptionLabel(v, products)}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  value={openingUnitCost}
+                  onChange={(e) => setOpeningUnitCost(e.target.value)}
+                  placeholder={`Unit cost (default ${selected?.cost_price ?? 0})`}
+                  aria-label="Opening stock unit cost"
+                />
+                <input
+                  value={openingBatch}
+                  onChange={(e) => setOpeningBatch(e.target.value)}
+                  placeholder="Batch number (if tracked)"
+                  aria-label="Opening stock batch number"
+                />
+                <div className="field">
+                <label className="muted">Manufacturing date</label>
+                <input
+                  aria-label="Opening stock manufacturing date"
+                  type="date"
+                  value={openingMfg}
+                  onChange={(e) => setOpeningMfg(e.target.value)}
+                />
+                </div>
+                <div className="field">
+                <label className="muted">Expiry date</label>
+                <input
+                  aria-label="Opening stock expiry date"
+                  type="date"
+                  value={openingExpiry}
+                  onChange={(e) => setOpeningExpiry(e.target.value)}
+                />
+                </div>
+                <input
+                  value={openingNotes}
+                  onChange={(e) => setOpeningNotes(e.target.value)}
+                  placeholder="Notes"
+                  aria-label="Opening stock notes"
+                />
+                <input
+                  value={openingLineNotes}
+                  onChange={(e) => setOpeningLineNotes(e.target.value)}
+                  placeholder="Line notes (optional)"
+                  aria-label="Opening stock line notes"
+                />
+                <label className="span-2" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input
+                    type="checkbox"
+                    aria-label="Opening stock post journal"
+                    checked={openingPostJournal}
+                    onChange={(e) => setOpeningPostJournal(e.target.checked)}
+                  />
+                  Post inventory journal
+                </label>
+                </div>
+            </FormModal>
           ) : null}
         </div>
       )}
@@ -4613,6 +5639,17 @@ export default function Page() {
         <div className="card cat-panel">
           <div className="cat-head">
             <h2 style={{ margin: 0 }}>Expiry</h2>
+            <button
+              type="button"
+              onClick={() => {
+                setFormFlash({});
+                setExpiryFailed(false);
+                setExpiryDrawerOpen(true);
+              }}
+              aria-label="Set expiry"
+            >
+              Set expiry
+            </button>
           </div>
           <div className="cat-toolbar">
             <input
@@ -4622,12 +5659,36 @@ export default function Page() {
               aria-label="Search expiry"
             />
           </div>
-          {visibleExpiring.length === 0 ? (
+          {expiryBusy ? <p className="muted" role="status">Loading expiry lots…</p> : null}
+          {expiryFailed ? (
             <div className="cat-empty">
-              <p style={{ margin: 0 }}>No batches expiring in the next 60 days.</p>
+              <p style={{ margin: 0, color: '#b91c1c' }} role="alert">Could not load expiry lots.</p>
+              <button
+                type="button"
+                style={{ marginTop: 12 }}
+                onClick={() => loadTabExtras('expiry').catch((err) => setError(err.message))}
+                aria-label="Retry expiry lots"
+              >
+                Retry
+              </button>
+            </div>
+          ) : visibleExpiring.length === 0 ? (
+            <div className="cat-empty">
+              <p style={{ margin: 0 }}>No batches expiring in the next year.</p>
               <p className="muted" style={{ margin: '8px 0 0' }}>
-                Receive stock with an expiry date to track it here.
+                After you add a product, set expiry here with quantity and warehouse. Expiry is stored on the lot, not the product header.
               </p>
+              <button
+                type="button"
+                style={{ marginTop: 12 }}
+                onClick={() => {
+                  setFormFlash({});
+                  setExpiryDrawerOpen(true);
+                }}
+                aria-label="Set expiry"
+              >
+                Set expiry
+              </button>
             </div>
           ) : (
             <div className="cat-table-wrap">
@@ -4638,11 +5699,13 @@ export default function Page() {
                     <th>Product</th>
                     <th>Qty</th>
                     <th>Expiry</th>
+                    <th>Location</th>
                   </tr>
                 </thead>
                 <tbody>
                   {visibleExpiring.map((b) => {
                     const prod = products.find((p) => p.id === b.product_id);
+                    const wh = warehouses.find((w) => w.id === b.warehouse_id);
                     return (
                       <tr key={b.id}>
                         <td data-label="Batch">
@@ -4651,6 +5714,7 @@ export default function Page() {
                         <td data-label="Product">{prod?.name || 'Unknown product'}</td>
                         <td data-label="Qty">{b.quantity}</td>
                         <td data-label="Expiry">{b.expiry_date ? String(b.expiry_date).slice(0, 10) : '—'}</td>
+                        <td data-label="Location">{wh ? wh.name || wh.code : '—'}</td>
                       </tr>
                     );
                   })}
@@ -4658,6 +5722,107 @@ export default function Page() {
               </table>
             </div>
           )}
+          {expiryDrawerOpen ? (
+            <FormModal
+              title="Set expiry"
+              busy={saveBusy}
+              dirty={Boolean(lotQty.trim() || lotExpiry || lotBatch.trim())}
+              headerClose={false}
+              closeLabel="Cancel"
+              closeAriaLabel="Cancel set expiry"
+              onClose={() => setExpiryDrawerOpen(false)}
+              footer={
+                <>
+                  <button
+                    type="button"
+                    className="btn-ok"
+                    onClick={recordExpiryLot}
+                    disabled={!selectedId || saveBusy}
+                    aria-label="Save expiry lot"
+                  >
+                    {saveBusy ? 'Saving…' : 'Save expiry'}
+                  </button>
+                  {formFlash.ok ? (
+                    <p className="form-flash ok" role="status">
+                      {formFlash.ok}
+                    </p>
+                  ) : null}
+                  {formFlash.err ? (
+                    <p className="form-flash err" role="alert">
+                      {formFlash.err}
+                    </p>
+                  ) : null}
+                </>
+              }
+            >
+              <div className="erp-form-grid form-grid">
+              <p className="muted span-2" style={{ margin: 0 }}>
+                Records quantity at the selected warehouse with an expiry date. Uses opening stock when on-hand is zero, otherwise receive stock.
+              </p>
+              <div className="field">
+              <label className="muted" htmlFor="expiry-product">
+                Product
+              </label>
+              <select
+                id="expiry-product"
+                value={selectedId}
+                onChange={(e) => setSelectedId(e.target.value)}
+                aria-label="Expiry product"
+              >
+                <option value="">Select product</option>
+                {managedProducts.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.sku})
+                  </option>
+                ))}
+              </select>
+              </div>
+              {!hideWarehouseUx ? (
+              <div className="field">
+              <label className="muted" htmlFor="expiry-wh">
+                Location
+              </label>
+              <select
+                id="expiry-wh"
+                value={lotWh}
+                onChange={(e) => setLotWh(e.target.value)}
+                aria-label="Expiry warehouse"
+              >
+                <option value="">Select warehouse</option>
+                {storeWarehouses
+                  .filter((w) => w.is_active !== false)
+                  .map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name || w.code}
+                    </option>
+                  ))}
+              </select>
+              </div>
+              ) : null}
+              <input
+                value={lotQty}
+                onChange={(e) => setLotQty(e.target.value)}
+                placeholder="Quantity"
+                aria-label="Expiry quantity"
+              />
+              <div className="field">
+              <label className="muted">Expiry date</label>
+              <input
+                type="date"
+                value={lotExpiry}
+                onChange={(e) => setLotExpiry(e.target.value)}
+                aria-label="Expiry date"
+              />
+              </div>
+              <input
+                value={lotBatch}
+                onChange={(e) => setLotBatch(e.target.value)}
+                placeholder="Batch number (optional)"
+                aria-label="Expiry batch number"
+              />
+              </div>
+            </FormModal>
+          ) : null}
         </div>
       )}
 
@@ -4758,16 +5923,16 @@ export default function Page() {
             </div>
           )}
           {countDrawerOpen ? (
-            <>
-              <div className="inv-drawer-back" onClick={() => !saveBusy && setCountDrawerOpen(false)} aria-hidden />
-              <aside className="inv-drawer" aria-label="Start stock count">
-                <button type="button" onClick={() => setCountDrawerOpen(false)} disabled={saveBusy}>
-                  Close
-                </button>
-                <h3>Start stock count</h3>
+            <FormModal
+              title="Start stock count"
+              busy={saveBusy}
+              dirty={countFormDirty}
+              onClose={() => setCountDrawerOpen(false)}
+            >
                 <p className="muted inv-child" style={{ margin: 0 }}>
                   Number {invNumbering.stock_count_numbering?.preview || 'assigned when you save'}
                 </p>
+                {!hideWarehouseUx ? (
                 <select
                   value={countWarehouseId}
                   onChange={(e) => setCountWarehouseId(e.target.value)}
@@ -4782,6 +5947,7 @@ export default function Page() {
                       </option>
                     ))}
                 </select>
+                ) : null}
                 <input
                   value={countNotes}
                   onChange={(e) => setCountNotes(e.target.value)}
@@ -4809,25 +5975,28 @@ export default function Page() {
                     </p>
                   ) : null}
                 </div>
-              </aside>
-            </>
+            </FormModal>
           ) : null}
           {activeCount ? (
             <>
               <div className="inv-drawer-back" onClick={() => !saveBusy && setActiveCount(null)} aria-hidden />
-              <aside className="inv-drawer" aria-label="Stock count details" style={{ width: 'min(560px,100vw)' }}>
-                <button type="button" onClick={() => setActiveCount(null)} disabled={saveBusy}>
-                  Close
-                </button>
-                <h3>
-                  {activeCount.count_number} — {activeCount.status}
-                </h3>
+              <aside className="inv-drawer drawer" aria-label="Stock count details" style={{ width: 'min(560px,100vw)' }}>
+                <div className="inv-drawer-head">
+                  <h3>
+                    {activeCount.count_number} — {activeCount.status}
+                  </h3>
+                  <button type="button" onClick={() => setActiveCount(null)} disabled={saveBusy}>
+                    Close
+                  </button>
+                </div>
+                <div className="inv-drawer-body">
                 {activeCount.notes ? <p className="muted inv-child">{activeCount.notes}</p> : null}
                 <div className="cat-table-wrap">
                   <table className="table cat-table">
                     <thead>
                       <tr>
                         <th>Product</th>
+                        <th>SKU</th>
                         <th>Expected</th>
                         <th>Counted</th>
                       </tr>
@@ -4836,8 +6005,12 @@ export default function Page() {
                       {(activeCount.items || []).map((item: any) => (
                         <tr key={item.id}>
                           <td data-label="Product">
-                            <strong>{item.product_sku || item.product_id}</strong>
-                            <div className="muted inv-child">{item.product_name}</div>
+                            <strong className="list-prod-name">
+                              {displayProductName(item.product_name)}
+                            </strong>
+                          </td>
+                          <td data-label="SKU" className="list-secondary">
+                            {item.product_sku || '—'}
                           </td>
                           <td data-label="Expected">{item.expected_qty}</td>
                           <td data-label="Counted">
@@ -4866,14 +6039,16 @@ export default function Page() {
                   </table>
                 </div>
                 {activeCount.status === 'draft' ? (
-                  <>
                     <input
                       value={countCancelReason}
                       onChange={(e) => setCountCancelReason(e.target.value)}
                       placeholder="Required before Cancel"
                       aria-label="Stock count cancel reason"
                     />
-                    <div className="cat-save-row">
+                ) : null}
+                </div>
+                {activeCount.status === 'draft' ? (
+                    <div className="inv-drawer-foot">
                       <button type="button" onClick={saveCountLines} disabled={saveBusy} aria-label="Save count lines">
                         {saveBusy ? 'Saving…' : 'Save counts'}
                       </button>
@@ -4905,7 +6080,6 @@ export default function Page() {
                         </p>
                       ) : null}
                     </div>
-                  </>
                 ) : null}
               </aside>
             </>
@@ -4928,6 +6102,7 @@ export default function Page() {
               placeholder="Search history"
               aria-label="Search stock history"
             />
+            {!hideWarehouseUx ? (
             <select
               value={mvWarehouseId}
               onChange={(e) => setMvWarehouseId(e.target.value)}
@@ -4942,6 +6117,7 @@ export default function Page() {
                   </option>
                 ))}
             </select>
+            ) : null}
             <select aria-label="Movement type filter" value={mvType} onChange={(e) => setMvType(e.target.value)}>
               <option value="">All types</option>
               <option value="stock_in">Received</option>
@@ -5015,11 +6191,7 @@ export default function Page() {
                     <tr key={mv.id}>
                       <td data-label="When">{mv.created_at ? String(mv.created_at).slice(0, 19) : '—'}</td>
                       <td data-label="Product">
-                        <strong>
-                          {mv.product_sku || mv.product_name
-                            ? `${mv.product_sku || ''} ${mv.product_name || ''}`.trim()
-                            : '—'}
-                        </strong>
+                        <strong className="list-prod-name">{displayProductName(mv.product_name)}</strong>
                         <div className="muted inv-child">
                           {mv.reason || '—'} · {mv.quantity_before} → {mv.quantity_after}
                         </div>
@@ -5058,29 +6230,72 @@ export default function Page() {
           </p>
           <div className="list-toolbar">
             <input
-              value={productSearch}
-              onChange={(e) => setProductSearch(e.target.value)}
+              value={adjustSearch}
+              onChange={(e) => setAdjustSearch(e.target.value)}
               placeholder="Search products to adjust"
               aria-label="Search products for stock adjustment"
             />
           </div>
-          {lowStockProducts.length === 0 ? (
-            <p className="muted inv-child">No products are currently below reorder.</p>
+          {adjustVisible.length === 0 ? (
+            <p className="muted inv-child">
+              {adjustEligible.length === 0
+                ? 'No eligible products to adjust.'
+                : 'No products match this search.'}
+            </p>
           ) : (
-            <p className="muted inv-child">{lowStockProducts.length} product(s) are low or out of stock.</p>
+            <>
+              <p className="muted inv-child">
+                {adjustLowOutCount} of {adjustVisible.length} listed product(s) are low or out of stock.
+              </p>
+              <div className="cat-table-wrap">
+                <table className="table cat-table">
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>SKU</th>
+                      <th>Qty</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {adjustVisible.map((p) => (
+                      <tr key={p.id}>
+                        <td data-label="Product">
+                          <strong className="list-prod-name">{displayProductName(p.name)}</strong>
+                        </td>
+                        <td data-label="SKU" className="list-secondary">{p.sku || '—'}</td>
+                        <td data-label="Qty">{p.stock_qty ?? 0}</td>
+                        <td className="cat-actions">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedId(p.id);
+                              setFormFlash({});
+                              setAdjConfirming(false);
+                              setAdjustDrawerOpen(true);
+                            }}
+                            aria-label={`Adjust ${p.name}`}
+                          >
+                            Adjust
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
           {adjustDrawerOpen ? (
-            <>
-              <div
-                className="inv-drawer-back"
-                onClick={() => !saveBusy && setAdjustDrawerOpen(false)}
-                aria-hidden
-              />
-              <aside className="inv-drawer" aria-label="Adjust stock">
-                <button type="button" onClick={() => setAdjustDrawerOpen(false)} disabled={saveBusy}>
-                  Close
-                </button>
-                <h3>Correct stock quantity</h3>
+            <FormModal
+              title="Correct stock quantity"
+              busy={saveBusy}
+              dirty={adjustFormDirty}
+              onClose={() => {
+                setAdjustDrawerOpen(false);
+                setAdjConfirming(false);
+              }}
+            >
                 <label className="muted" htmlFor="adj-product">
                   Product
                 </label>
@@ -5126,6 +6341,7 @@ export default function Page() {
                   <option value="found">Found</option>
                   <option value="lost">Lost</option>
                 </select>
+                {!hideWarehouseUx ? (
                 <select
                   value={adjWarehouseId}
                   onChange={(e) => setAdjWarehouseId(e.target.value)}
@@ -5140,6 +6356,7 @@ export default function Page() {
                       </option>
                     ))}
                 </select>
+                ) : null}
                 <input
                   value={adjNotes}
                   onChange={(e) => setAdjNotes(e.target.value)}
@@ -5173,8 +6390,7 @@ export default function Page() {
                     </p>
                   ) : null}
                 </div>
-              </aside>
-            </>
+            </FormModal>
           ) : null}
         </div>
       )}
@@ -5199,17 +6415,12 @@ export default function Page() {
             a batch.
           </p>
           {stockOutDrawerOpen ? (
-            <>
-              <div
-                className="inv-drawer-back"
-                onClick={() => !saveBusy && setStockOutDrawerOpen(false)}
-                aria-hidden
-              />
-              <aside className="inv-drawer" aria-label="Issue stock">
-                <button type="button" onClick={() => setStockOutDrawerOpen(false)} disabled={saveBusy}>
-                  Close
-                </button>
-                <h3>Issue stock</h3>
+            <FormModal
+              title="Issue stock"
+              busy={saveBusy}
+              dirty={stockOutFormDirty}
+              onClose={() => setStockOutDrawerOpen(false)}
+            >
                 <select
                   value={selectedId}
                   onChange={(e) => setSelectedId(e.target.value)}
@@ -5247,6 +6458,7 @@ export default function Page() {
                   placeholder="Reference (optional)"
                   aria-label="Stock-out reference id"
                 />
+                {!hideWarehouseUx ? (
                 <select
                   value={outWarehouseId}
                   onChange={(e) => setOutWarehouseId(e.target.value)}
@@ -5261,15 +6473,19 @@ export default function Page() {
                       </option>
                     ))}
                 </select>
-                <select value={outVariantId} onChange={(e) => setOutVariantId(e.target.value)} aria-label="Stock-out variant">
+                ) : null}
+                <select value={outVariantId} onChange={(e) => {
+                  const id = e.target.value;
+                  setOutVariantId(id);
+                  const row = variants.find((v) => v.id === id);
+                  if (row?.product_id) setSelectedId(row.product_id);
+                }} aria-label="Stock-out variant">
                   <option value="">Variant (optional)</option>
-                  {variants
-                    .filter((v) => v.is_active !== false)
-                    .map((v) => (
-                      <option key={v.id} value={v.id}>
-                        {v.name} ({v.sku})
-                      </option>
-                    ))}
+                  {selectorVariants.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {variantOptionLabel(v, products)}
+                    </option>
+                  ))}
                 </select>
                 <select value={outBatchId} onChange={(e) => setOutBatchId(e.target.value)} aria-label="Stock-out batch">
                   <option value="">Earliest expiry (automatic)</option>
@@ -5308,55 +6524,78 @@ export default function Page() {
                     </p>
                   ) : null}
                 </div>
-              </aside>
-            </>
+            </FormModal>
           ) : null}
         </div>
       )}
 
       {tab === 'lowstock' && (
         <div className="card cat-panel">
-          <div className="cat-head">
-            <h2 style={{ margin: 0 }}>Low stock</h2>
+          <div className="list-page-head">
+            <div>
+              <h2 style={{ margin: 0 }}>Low stock</h2>
+              <p className="muted" style={{ margin: '4px 0 0' }}>
+                On-hand above zero and at or below max(minimum stock, reorder). Out of stock is listed on Products.
+              </p>
+            </div>
           </div>
-          <p className="muted inv-child">
-            Products at or below reorder level, including warehouse locations you can access.
-          </p>
-          <input
-            value={lowStockSearch}
-            onChange={(e) => setLowStockSearch(e.target.value)}
-            placeholder="Search name, SKU, category, location"
-            aria-label="Search low stock"
-            style={{ maxWidth: 360, marginBottom: 12 }}
-          />
+          <div className="list-toolbar">
+            <input
+              value={lowStockSearch}
+              onChange={(e) => setLowStockSearch(e.target.value)}
+              placeholder="Search name, SKU, category"
+              aria-label="Search low stock"
+            />
+          </div>
           {lowStockBusy ? (
             <p className="muted">Loading…</p>
           ) : !lowStockPayload ? (
-            <p className="muted">Could not load low stock. Check the error above or retry from the menu.</p>
+            <div className="list-empty">
+              <p>Could not load low stock.</p>
+              <button type="button" onClick={() => loadLowStock()} aria-label="Retry low stock">
+                Retry
+              </button>
+            </div>
           ) : lowStockRows.length === 0 ? (
-            <p className="muted inv-child">No products are at or below reorder level.</p>
+            <div className="list-empty">
+              <p>No products are in the low-stock band.</p>
+            </div>
           ) : (
-            <div className="table-wrap">
-              <table>
+            <div className="list-table-wrap">
+              <table className="table cat-table">
                 <thead>
                   <tr>
                     <th>Product</th>
                     <th>SKU</th>
                     <th>Category</th>
-                    <th>Qty</th>
-                    <th>Reorder level</th>
-                    <th>Location</th>
+                    <th>Qty on hand</th>
+                    <th>Reorder/min</th>
+                    <th>Status</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {lowStockRows.map((row) => (
+                  {lowStockRows.map((row: any) => (
                     <tr key={row.key}>
-                      <td data-label="Product">{row.name}</td>
-                      <td data-label="SKU">{row.sku}</td>
-                      <td data-label="Category">{row.category}</td>
-                      <td data-label="Qty">{row.qty}</td>
-                      <td data-label="Reorder level">{row.reorder}</td>
-                      <td data-label="Location">{row.location}</td>
+                      <td data-label="Product"><span className="list-prod-name">{displayProductName(row.name)}</span></td>
+                      <td data-label="SKU" className="list-secondary">{row.sku}</td>
+                      <td data-label="Category" className="list-secondary">{row.category}</td>
+                      <td data-label="Qty on hand" className="list-qty-low">{row.qty}</td>
+                      <td data-label="Reorder/min">{row.floor}</td>
+                      <td data-label="Status">{row.status}</td>
+                      <td className="cat-actions">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedId(row.id);
+                            setDrawerOpen(true);
+                            setProductEditMode(false);
+                            setFormFlash({});
+                          }}
+                        >
+                          View
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -5387,6 +6626,7 @@ export default function Page() {
             View quantity, receive stock, and set reorder levels. Quantity corrections belong on Adjust stock.
           </p>
           <div className="cat-toolbar">
+            {!hideWarehouseUx ? (
             <select
               value={whStockWarehouseId}
               onChange={(e) => setWhStockWarehouseId(e.target.value)}
@@ -5401,6 +6641,7 @@ export default function Page() {
                   </option>
                 ))}
             </select>
+            ) : null}
             <input
               value={whSearch}
               onChange={(e) => setWhSearch(e.target.value)}
@@ -5441,14 +6682,34 @@ export default function Page() {
           <p className="muted inv-child" style={{ margin: 0 }}>
             {whStockMeta.warehouse_name
               ? `${whStockMeta.warehouse_name} — ${whStockMeta.count ?? 0} products · total ${whStockMeta.total_quantity ?? 0}`
-              : 'Pick a location to load stock'}
+              : hideWarehouseUx
+                ? 'Loading store stock'
+                : 'Pick a location to load stock'}
           </p>
-          {visibleWhRows.length === 0 ? (
+          {!whStockWarehouseId ? (
+            <p className="muted">{hideWarehouseUx ? 'No warehouse is available for this store' : 'Pick a location to load stock'}</p>
+          ) : whStockBusy ? (
+            <p className="muted">Loading…</p>
+          ) : whStockFailed ? (
+            <div className="cat-empty">
+              <p style={{ margin: 0 }}>Could not load stock for this location.</p>
+              <button
+                type="button"
+                onClick={() => loadWarehouseStock()}
+                aria-label="Retry warehouse stock"
+                style={{ marginTop: 8 }}
+              >
+                Retry
+              </button>
+            </div>
+          ) : visibleWhRows.length === 0 ? (
             <div className="cat-empty">
               <p style={{ margin: 0 }}>{whLowOnly ? 'No low-stock products here.' : 'No stock rows yet.'}</p>
-              <p className="muted" style={{ margin: '8px 0 0' }}>
-                Receive stock into this location, or include zero-quantity rows.
-              </p>
+              {!whLowOnly ? (
+                <p className="muted" style={{ margin: '8px 0 0' }}>
+                  Receive stock into this location, or include zero-quantity rows.
+                </p>
+              ) : null}
             </div>
           ) : (
             <div className="cat-table-wrap">
@@ -5456,6 +6717,7 @@ export default function Page() {
                 <thead>
                   <tr>
                     <th>Product</th>
+                    <th>SKU</th>
                     <th>Qty</th>
                     <th>Reorder</th>
                     <th>Status</th>
@@ -5465,15 +6727,19 @@ export default function Page() {
                   {visibleWhRows.map((r) => (
                     <tr key={r.product_id}>
                       <td data-label="Product">
-                        <strong>{r.name}</strong>
-                        <div className="muted inv-child">{r.sku}</div>
+                        <strong className="list-prod-name">{displayProductName(r.name)}</strong>
                       </td>
+                      <td data-label="SKU" className="list-secondary">{r.sku || '—'}</td>
                       <td data-label="Qty">{r.quantity}</td>
                       <td data-label="Reorder">
-                        {r.reorder_level} / {r.reorder_qty}
+                        {r.low_stock_floor ?? r.reorder_level} / {r.reorder_qty}
                       </td>
-                      <td data-label="Status" style={{ color: r.below_reorder ? '#b91c1c' : undefined }}>
-                        {r.below_reorder ? 'Low' : 'OK'}
+                      <td data-label="Status" style={{ color: r.is_out_of_stock || warehouseRowIsLow(r) ? '#b91c1c' : undefined }}>
+                        {r.is_out_of_stock || Number(r.quantity) <= 0
+                          ? 'Out of stock'
+                          : warehouseRowIsLow(r)
+                            ? 'Low'
+                            : 'OK'}
                       </td>
                     </tr>
                   ))}
@@ -5482,17 +6748,12 @@ export default function Page() {
             </div>
           )}
           {receiveDrawerOpen ? (
-            <>
-              <div
-                className="inv-drawer-back"
-                onClick={() => !saveBusy && setReceiveDrawerOpen(false)}
-                aria-hidden
-              />
-              <aside className="inv-drawer" aria-label="Receive stock">
-                <button type="button" onClick={() => setReceiveDrawerOpen(false)} disabled={saveBusy}>
-                  Close
-                </button>
-                <h3>Receive stock</h3>
+            <FormModal
+              title="Receive stock"
+              busy={saveBusy}
+              dirty={receiveFormDirty}
+              onClose={() => setReceiveDrawerOpen(false)}
+            >
                 <select
                   value={selectedId}
                   onChange={(e) => setSelectedId(e.target.value)}
@@ -5505,6 +6766,7 @@ export default function Page() {
                     </option>
                   ))}
                 </select>
+                {!hideWarehouseUx ? (
                 <select
                   value={whStockWarehouseId}
                   onChange={(e) => {
@@ -5522,6 +6784,7 @@ export default function Page() {
                       </option>
                     ))}
                 </select>
+                ) : null}
                 <input
                   value={stockQty}
                   onChange={(e) => setStockQty(e.target.value)}
@@ -5563,21 +6826,15 @@ export default function Page() {
                     </p>
                   ) : null}
                 </div>
-              </aside>
-            </>
+            </FormModal>
           ) : null}
           {reorderDrawerOpen ? (
-            <>
-              <div
-                className="inv-drawer-back"
-                onClick={() => !saveBusy && setReorderDrawerOpen(false)}
-                aria-hidden
-              />
-              <aside className="inv-drawer" aria-label="Set reorder">
-                <button type="button" onClick={() => setReorderDrawerOpen(false)} disabled={saveBusy}>
-                  Close
-                </button>
-                <h3>Set reorder level</h3>
+            <FormModal
+              title="Set reorder level"
+              busy={saveBusy}
+              dirty={reorderFormDirty}
+              onClose={() => setReorderDrawerOpen(false)}
+            >
                 <select
                   value={whReorderProductId}
                   onChange={(e) => {
@@ -5630,8 +6887,7 @@ export default function Page() {
                     </p>
                   ) : null}
                 </div>
-              </aside>
-            </>
+            </FormModal>
           ) : null}
         </div>
       )}
@@ -5872,6 +7128,7 @@ export default function Page() {
                             <thead>
                               <tr>
                                 <th>Product</th>
+                                <th>SKU</th>
                                 <th>Qty</th>
                                 <th>Shipped</th>
                                 <th>Received</th>
@@ -5883,10 +7140,9 @@ export default function Page() {
                                 return (
                                   <tr key={line.id || `${t.id}-${line.product_id}`}>
                                     <td>
-                                      {prod
-                                        ? `${prod.name} (${prod.sku})`
-                                        : line.product_id}
+                                      {prod ? displayProductName(prod.name) : line.product_id}
                                     </td>
+                                    <td>{prod?.sku || '—'}</td>
                                     <td>{line.quantity}</td>
                                     <td>{line.shipped_qty ?? '—'}</td>
                                     <td>{line.received_qty ?? '—'}</td>
@@ -5895,7 +7151,7 @@ export default function Page() {
                               })}
                               {!(t.items || []).length ? (
                                 <tr>
-                                  <td colSpan={4} className="muted">
+                                  <td colSpan={5} className="muted">
                                     No product lines
                                   </td>
                                 </tr>
@@ -5955,29 +7211,16 @@ export default function Page() {
             ) : null}
           </div>
           {xferDrawerOpen ? (
-            <>
-              <div
-                className="inv-drawer-back"
-                onClick={() => {
-                  if (saveBusy) return;
-                  setXferDrawerOpen(false);
-                  setXferConfirming(false);
-                }}
-                aria-hidden
-              />
-              <aside className="inv-drawer" aria-label="Create stock transfer">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setXferDrawerOpen(false);
-                    setXferConfirming(false);
-                  }}
-                  disabled={saveBusy}
-                >
-                  Close
-                </button>
-                <h3>Add Transfer</h3>
-                <p className="muted inv-child" style={{ margin: 0 }}>
+            <FormModal
+              title="Create stock transfer"
+              busy={saveBusy}
+              dirty={Boolean(xferReference.trim() || xferNotes.trim() || xferLines.some((l) => l.product_id || l.qty))}
+              onClose={() => {
+                setXferDrawerOpen(false);
+                setXferConfirming(false);
+              }}
+            >
+            <p className="muted inv-child" style={{ margin: 0 }}>
                   Number {invNumbering.stock_transfer_numbering?.preview || 'assigned when you save'}
                 </p>
                 <label className="muted">From store / warehouse</label>
@@ -6137,8 +7380,7 @@ export default function Page() {
                     </p>
                   ) : null}
                 </div>
-              </aside>
-            </>
+            </FormModal>
           ) : null}
         </div>
       )}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api, apiFetch, apiOptional } from '../../../lib/api';
-import { getMe } from '../../../lib/meCache';
+import { getMe, invalidateMeCache } from '../../../lib/meCache';
 import { formatDateTime, formatNumber } from '../../../lib/format';
 import { canDownloadStaffGuide, industryLabel } from '../../../lib/industries';
 import { TAX_COUNTRIES } from '../../../lib/taxCountries';
@@ -307,7 +307,9 @@ export default function Page() {
           Company logo
         </label>
         {tenant.has_logo && logoPreview && (
-          <img src={logoPreview} alt="Company logo" style={{ maxHeight: 80, maxWidth: 200, objectFit: 'contain' }} />
+          <div className="company-logo-preview">
+            <img src={logoPreview} alt="Company logo" />
+          </div>
         )}
         <input
           id="company-logo-file"
@@ -342,6 +344,8 @@ export default function Page() {
               const r = await api('/tenants/me/logo', { method: 'POST', body: form });
               setTenant(r.data);
               setMessage(r.message || 'Logo uploaded');
+              invalidateMeCache();
+              window.dispatchEvent(new Event('ribdigi-tenant-logo'));
               await loadLogoPreview(true);
             } catch (err: any) {
               setError(typeof err.message === 'string' ? err.message : 'Could not upload the logo.');
@@ -363,6 +367,8 @@ export default function Page() {
                 setTenant(r.data);
                 setLogoPreview(null);
                 setMessage('Logo removed');
+                invalidateMeCache();
+                window.dispatchEvent(new Event('ribdigi-tenant-logo'));
               } catch (err: any) {
                 setError(err.message);
               }

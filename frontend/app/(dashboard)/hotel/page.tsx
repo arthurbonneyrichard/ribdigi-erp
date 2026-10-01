@@ -2585,16 +2585,16 @@ export default function HotelPage() {
           <table className="table">
             <thead>
               <tr>
+                <th>Product</th>
                 <th>SKU</th>
-                <th>Name</th>
                 <th>Stock</th>
               </tr>
             </thead>
             <tbody>
               {(report.inventory_usage || []).map((p: { id: string; sku?: string; name: string; stock_qty: number }) => (
                 <tr key={p.id}>
-                  <td>{p.sku || '—'}</td>
                   <td>{p.name}</td>
+                  <td>{p.sku || '—'}</td>
                   <td>{Number(p.stock_qty || 0)}</td>
                 </tr>
               ))}

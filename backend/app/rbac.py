@@ -107,6 +107,7 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "inventory": ["read"],
         "pos": ["read", "write"],
         "sales": ["read"],
+        "credit": ["write"],
         "notifications": ["read", "write"],
         "security": ["read", "write"],
         "staff_guide": ["read", "download"],
@@ -208,6 +209,23 @@ PLATFORM_ROLES = frozenset(
 
 PLATFORM_OWNER_ROLES = frozenset({"super_admin", "platform_owner"})
 
+# Customer system templates. Hotel_* stay hotel-only; store_manager is the
+# retail/store counterpart (hotels use hotel_manager). Shared templates
+# (cashier, inventory_officer, accountant, sales_officer, company_admin)
+# remain valid across customer industries.
+HOTEL_ONLY_ROLES = frozenset(
+    {
+        "hotel_manager",
+        "hotel_front_desk",
+        "hotel_reservations",
+        "hotel_housekeeping",
+        "hotel_maintenance",
+        "hotel_cashier",
+        "hotel_auditor",
+    }
+)
+RETAIL_ONLY_ROLES = frozenset({"store_manager"})
+
 # Frontend nav href → required module (read). Used for menu filtering.
 # Platform owner (super_admin) UI only surfaces /platform + a small ops set;
 # tenant roles use the business modules below (see frontend Shell ROLE_NAV_MODULES).
@@ -218,6 +236,7 @@ MENU_MODULE_BY_PATH: dict[str, str] = {
     "/dashboard": "dashboard",
     "/company": "company",
     "/inventory": "inventory",
+    "/prescriptions": "inventory",
     "/sales": "sales",
     "/pos": "pos",
     "/purchasing": "purchasing",
@@ -291,6 +310,32 @@ def is_platform_role(role: str | None) -> bool:
 
 def is_platform_owner_role(role: str | None) -> bool:
     return (role or "") in PLATFORM_OWNER_ROLES
+
+
+def is_wildcard_permission_map(perms: dict | None) -> bool:
+    if not isinstance(perms, dict):
+        return False
+    return perms.get("*") == ["*"] or "*" in (perms.get("*") or [])
+
+
+def system_role_visible_for_industry(role: str, industry: str | None) -> bool:
+    """Whether a system role may appear on a tenant catalog / clone-from list."""
+    if role not in VALID_ROLES or role in PLATFORM_ROLES:
+        return False
+    from app.packages import canonicalize_industry
+
+    ind = canonicalize_industry(industry)
+    if role in HOTEL_ONLY_ROLES:
+        return ind == "hotel"
+    if role in RETAIL_ONLY_ROLES:
+        return ind != "hotel"
+    return True
+
+
+def list_customer_system_roles_for_industry(industry: str | None) -> list[str]:
+    return sorted(
+        role for role in VALID_ROLES if system_role_visible_for_industry(role, industry)
+    )
 
 
 def can_assign_platform_role(actor_role: str, target_role: str) -> bool:
@@ -425,6 +470,8 @@ def serialize_user(user) -> dict:
         "role": user.role,
         "branch_id": getattr(user, "branch_id", None),
         "department_id": getattr(user, "department_id", None),
+        "store_id": None,
+        "store_ids": [],
         "is_active": bool(user.is_active),
         "email_verified": bool(user.email_verified),
         "permissions": perms,
@@ -466,12 +513,51 @@ def has_permission(
     if "*" in module_perms or action in module_perms:
         return True
     if action == "read" and ("write" in module_perms or "create" in module_perms):
+        # Till BNPL is credit:write only. AR/AP aging and supplier AP stay credit:read.
+        if module == "credit":
+            return False
         return True
     if action == "download" and (
         "download" in module_perms or "read" in module_perms or "write" in module_perms
     ):
         return True
     # User Management create/edit uses users:write; accept users:create as the same grant.
+    if action in {"write", "create"} and (
+        "write" in module_perms or "create" in module_perms
+    ):
+        return True
+    return False
+
+
+def has_explicit_permission(
+    role: str,
+    module: str,
+    action: str,
+    overrides: dict | None = None,
+) -> bool:
+    """Like has_permission, but write/create do not imply read.
+
+    Cashiers get credit:write for POS buy-now-pay-later tender. That must not open
+    supplier AP aging, which remains credit:read.
+    """
+    clean_overrides = strip_meta_permissions(overrides)
+    if not is_system_role(role):
+        perms = clean_overrides
+    else:
+        perms = permissions_for_role(role)
+        if clean_overrides:
+            perms = {**perms, **clean_overrides}
+
+    if perms.get("*") == ["*"] or "*" in (perms.get("*") or []):
+        return True
+
+    module_perms = perms.get(module) or []
+    if "*" in module_perms or action in module_perms:
+        return True
+    if action == "download" and (
+        "download" in module_perms or "read" in module_perms
+    ):
+        return True
     if action in {"write", "create"} and (
         "write" in module_perms or "create" in module_perms
     ):

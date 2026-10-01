@@ -284,6 +284,7 @@ NotificationCategoryValue = Annotated[
         "purchase_received",
         "payment_due",
         "quotation_expiry",
+        "batch_expiry",
         "recurring_expense_due",
         "new_order",
         "transfer",
@@ -350,22 +351,6 @@ PlatformRoleValue = Annotated[
     BeforeValidator(coerce_platform_role_value),
 ]
 
-# System roles that may be cloned into a tenant custom role (excludes super_admin).
-CustomRoleBaseRoleValue = Annotated[
-    Literal[
-        "platform_owner",
-        "platform_admin",
-        "platform_support",
-        "platform_finance",
-        "company_admin",
-        "store_manager",
-        "sales_officer",
-        "inventory_officer",
-        "accountant",
-        "cashier",
-    ],
-    BeforeValidator(coerce_platform_role_value),
-]
 # Keep aligned with app.custom_roles.ALLOWED_ACTIONS / ApiKeyCreate actions.
 ApiKeyPermissionAction = Literal["read", "write", "approve", "*"]
 
@@ -425,6 +410,41 @@ RoleKeyValue = Annotated[
     str,
     BeforeValidator(coerce_role_key_value),
     AfterValidator(validate_role_key_value),
+]
+
+
+def validate_role_ref_value(value: str) -> str:
+    """Path role: custom-role UUID or RoleKeyValue shape."""
+    from app.custom_roles import ROLE_UUID_RE
+
+    if ROLE_UUID_RE.fullmatch(value):
+        return value
+    return validate_role_key_value(value)
+
+
+RoleRefValue = Annotated[
+    str,
+    BeforeValidator(coerce_role_key_value),
+    AfterValidator(validate_role_ref_value),
+]
+
+
+def validate_custom_role_base_role_value(value: str) -> str:
+    """AfterValidator: platform roles cannot be clone sources (422). Industry / tenant
+    existence is enforced in create_custom_role (404)."""
+    from app.rbac import PLATFORM_ROLES
+
+    if value in PLATFORM_ROLES:
+        raise ValueError("Cannot clone platform roles")
+    return value
+
+
+# Clone-from key: tenant custom role or customer system template (not platform).
+CustomRoleBaseRoleValue = Annotated[
+    str,
+    BeforeValidator(coerce_role_key_value),
+    AfterValidator(validate_role_key_value),
+    AfterValidator(validate_custom_role_base_role_value),
 ]
 
 
@@ -729,6 +749,10 @@ class TenantCreate(BaseModel):
     # → **422** (was free `str`; whitespace/`!!!`/URL could reach hash path; strength
     # still enforced by validate_password_strength → **400**).
     admin_password: TenantAdminPasswordValue
+    # Platform store layout. Default single so create persists max_stores_override=1.
+    store_mode: Literal["single", "multi"] = "single"
+    # Used only when store_mode=multi; omit → Professional default (10). Must be >= 2.
+    max_stores_override: int | None = Field(default=None, ge=0)
 
 
 class TenantProfileUpdate(BaseModel):
@@ -782,6 +806,9 @@ class TenantProfileUpdate(BaseModel):
     thousand_separator: ThousandSeparatorValue | None = None
     time_format: TimeFormatValue | None = None
     inactivity_timeout_minutes: int | None = Field(default=None, ge=5, le=480)
+    # Offline POS authorization window in hours. Default 168 (7 days, refresh-token aligned).
+    # omit = no change; out of 1–168 → **422**.
+    offline_auth_hours: int | None = Field(default=None, ge=1, le=168)
 
 
 class TenantSuspendRequest(BaseModel):
@@ -888,6 +915,15 @@ class UserCreate(BaseModel):
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach department
     # lookup). Existence remains tenant-scoped department lookup (**404**).
     department_id: UuidIdValue | None = None
+    # Optional store ∈ UuidIdValue; omit/`null` → no store membership (grandfather
+    # all stores in this tenant), unless the tenant has exactly one active store
+    # (auto-assigned). blank/`!!!`/`http://…`/non-UUID → **422**. Existence is
+    # tenant-scoped store lookup (**404**). If branch_id is set, store.branch_id
+    # must match (**400** STORE_BRANCH_MISMATCH). Does not grant extra RBAC.
+    store_id: UuidIdValue | None = None
+    # Optional multi-store assignment (same honesty as store_id). Combined with
+    # store_id. Empty list = omit store_id path (grandfather / sole-store auto).
+    store_ids: list[UuidIdValue] = Field(default_factory=list)
     # BR-3.3 — omit = role default; blank/invalid → 422 (no silent all from "")
     record_scope: RecordScopeValue | None = None
 
@@ -917,8 +953,16 @@ class UserUpdate(BaseModel):
     # garbage could reach department lookup). clear_department remains explicit clear.
     # Existence remains tenant-scoped department lookup (**404**).
     department_id: UuidIdValue | None = None
+    # omit → no change; blank/`!!!`/`http://…`/non-UUID → **422**. clear_store
+    # remains explicit clear (empty memberships → grandfather all stores).
+    # Existence remains tenant-scoped store lookup (**404**). Store must belong
+    # to the user's branch when set (**400** STORE_BRANCH_MISMATCH).
+    store_id: UuidIdValue | None = None
+    # omit → no change; list replaces memberships (empty = grandfather all tenant stores)
+    store_ids: list[UuidIdValue] | None = None
     clear_branch: bool = False
     clear_department: bool = False
+    clear_store: bool = False
 
 
 class UserStoreMembershipsReplace(BaseModel):
@@ -1022,6 +1066,11 @@ class AccountCreate(BaseModel):
     # omit/`null` → no branch; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank silent→null; garbage could persist).
     bank_branch: BankBranchValue | None = None
+    # Optional parent COA ∈ UuidIdValue; omit/`null` → top-level; blank/`!!!`/
+    # `http://…`/non-UUID → **422**. Existence is tenant-scoped lookup (**404**).
+    # Client must not send tenant_id or company_id (extra=forbid); company comes
+    # from the session.
+    parent_id: UuidIdValue | None = None
 
 
 class AccountUpdate(BaseModel):
@@ -1041,6 +1090,8 @@ class AccountUpdate(BaseModel):
     # blank silent→null; garbage could persist).
     bank_branch: BankBranchValue | None = None
     is_active: bool | None = None
+    # omit/`null` → no change; blank/`!!!`/`http://…`/non-UUID → **422**.
+    parent_id: UuidIdValue | None = None
 
 
 class OpeningBalanceLine(BaseModel):
@@ -1206,7 +1257,8 @@ class CustomRoleCreate(BaseModel):
     # (was free `str`; blank/garbage could persist on custom role create).
     label: CustomRoleLabelValue
     permissions: dict[str, list[ApiKeyPermissionAction]] | None = None
-    # Clone-from system role; omit/null OK when permissions set; blank/unknown/super_admin → 422
+    # Clone-from customer system template or this tenant's custom role key.
+    # omit/null OK when permissions set; blank/platform → 422; other-tenant / other-industry → 404
     base_role: CustomRoleBaseRoleValue | None = None
     # BR-3.3 — omit = base_role/own default; blank/invalid → 422
     record_scope: RecordScopeValue | None = None
@@ -1351,6 +1403,9 @@ class ProductCreate(BaseModel):
     # BR-12.1 / BR-5.1 — schema Literal; omit → standard; blank/invalid → 422
     tax_supply_class: Literal["standard", "zero_rated", "exempt"] = "standard"
     tracks_batches: bool = False
+    # Pharmacy catalog: omit/`null` → no dosage text; blank/URL/garbage → **422**
+    dosage_instructions: ProductDescriptionValue | None = None
+    rx_only: bool = False
     # omit/`null` → inherit category / no prep ticket (retail)
     prep_station: Literal["kitchen", "bar"] | None = None
 
@@ -1411,6 +1466,8 @@ class ProductUpdate(BaseModel):
     # BR-12.1 — omit = no change; blank/invalid → 422 (no silent standard)
     tax_supply_class: Literal["standard", "zero_rated", "exempt"] | None = None
     tracks_batches: bool | None = None
+    dosage_instructions: ProductDescriptionValue | None = None
+    rx_only: bool | None = None
     is_active: bool | None = None
     prep_station: Literal["kitchen", "bar"] | None = None
     clear_prep_station: bool = False
@@ -1805,6 +1862,8 @@ class LineItem(BaseModel):
     # Optional variant ∈ UuidIdValue; omit/`null` → no variant; blank/`!!!`/
     # `http://…`/non-UUID → **422** (was free `str`; garbage could reach variant lookup).
     variant_id: UuidIdValue | None = None
+    # Optional lot ∈ UuidIdValue; omit/`null` → FEFO when lots exist.
+    batch_id: UuidIdValue | None = None
     # omit/`null` → catalog/group price; nan/inf/<0 → **422**
     unit_price: NonNegativeMoneyValue | None = None
     # ∈ NonNegativeMoneyValue; nan/inf/<0 → **422** (was Field(ge=0) only — Inf could pass)
@@ -3440,6 +3499,14 @@ class PurchaseInvoiceCreate(BaseModel):
     currency: CurrencyCodeValue | None = None
     # omit/`null` → resolve_rate; nan/inf/≤0 → **422** (was Field(gt=0) only — Inf could pass)
     exchange_rate: PositiveMoneyValue | None = None
+    # Optional receive location for posted manual bills (stock for every line).
+    # omit/`null` → consolidated product qty (GRN path uses the GRN warehouse).
+    # blank/`!!!`/`http://…`/non-UUID → **422**. Existence is tenant-scoped (**404**).
+    warehouse_id: UuidIdValue | None = None
+    # Optional store ∈ UuidIdValue; omit/`null` → derive from warehouse.store_id.
+    # Must match warehouse.store_id when both are set (**400**). blank/`!!!`/
+    # `http://…`/non-UUID → **422**. Store access is membership-enforced (**403**).
+    store_id: UuidIdValue | None = None
     items: list[PurchaseInvoiceItemCreate] | None = None
 
 
@@ -4032,6 +4099,7 @@ JobNameValue = Annotated[
         "scan_low_stock",
         "scan_payment_due",
         "scan_quotation_expiry",
+        "scan_batch_expiry",
         "scan_recurring_expense_due",
         "generate_recurring_expenses",
         "run_due_backups",
@@ -8869,6 +8937,16 @@ class PosSessionClose(BaseModel):
     notes: PosSessionCloseNotesValue | None = None
 
 
+class PosCashMovementCreate(BaseModel):
+    """POST /pos/sessions/{id}/movements — cash in/out on an open shift."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    movement_type: Literal["cash_in", "cash_out"]
+    amount: PositiveMoneyValue
+    reason: PosDrawerOpenReasonValue
+
+
 class PosPaymentLine(BaseModel):
     """One tender toward a POS sale total (supports split payments).
 
@@ -8936,10 +9014,22 @@ class PosSaleCreate(BaseModel):
     # Offline / retry idempotency key; omit/`null` → no dedupe; blank/`!!!` → **422**.
     # Same tenant + client_request_id returns the original sale (never a duplicate).
     client_request_id: ClientRequestIdValue | None = None
+    # Offline sync metadata. Tokens are never accepted here; device_id is a terminal label.
+    device_id: str | None = Field(default=None, max_length=64)
+    offline_created_at: IsoDateQueryValue | None = None
+    offline_sync: bool = False
+    # Pharmacy POS fill. Omit on retail. Existence is tenant-scoped (**404**/409).
+    prescription_id: UuidIdValue | None = None
 
     @model_validator(mode="after")
     def require_override_reason_when_flagged(self):
         return _require_credit_override_reason(self)
+
+    @model_validator(mode="after")
+    def offline_sync_requires_idempotency(self):
+        if self.offline_sync and not (self.client_request_id or "").strip():
+            raise ValueError("client_request_id is required when offline_sync is true")
+        return self
 
 
 def coerce_pos_device_id_value(value: object) -> object:
@@ -9505,3 +9595,79 @@ class FmcgCustomerAssignmentUpsert(BaseModel):
     route_id: UuidIdValue | None = None
     salesperson_name: Annotated[str, Field(min_length=1, max_length=150)] | None = None
     notes: Annotated[str, Field(min_length=1, max_length=500)] | None = None
+
+
+class PrescriptionItemIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    product_id: UuidIdValue
+    variant_id: UuidIdValue | None = None
+    quantity: Annotated[float, Field(gt=0, le=1_000_000)]
+    dosage_text: ProductDescriptionValue | None = None
+    notes: ProductDescriptionValue | None = None
+
+
+class PrescriptionCreate(BaseModel):
+    """POST /pharmacy/prescriptions — pharmacy tenants only. Not a HIS."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    customer_id: UuidIdValue | None = None
+    sale_id: UuidIdValue | None = None
+    prescriber_name: Annotated[str, Field(min_length=1, max_length=150)] | None = None
+    notes: ProductDescriptionValue | None = None
+    items: Annotated[list[PrescriptionItemIn], Field(min_length=1, max_length=100)]
+
+
+class PrescriptionStatusUpdate(BaseModel):
+    """PATCH /pharmacy/prescriptions/{id} — counter statuses, not clinical review."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal[
+        "received",
+        "review",
+        "approved",
+        "partially_dispensed",
+        "dispensed",
+        "cancelled",
+        "voided",
+        "recorded",
+        "partial",
+    ]
+    sale_id: UuidIdValue | None = None
+
+
+class PrescriptionDispenseLine(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    product_id: UuidIdValue
+    variant_id: UuidIdValue | None = None
+    quantity: Annotated[float, Field(gt=0, le=1_000_000)]
+
+
+class PrescriptionDispense(BaseModel):
+    """POST /pharmacy/prescriptions/{id}/dispense — partial or full fill."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: Annotated[list[PrescriptionDispenseLine], Field(min_length=1, max_length=100)]
+    sale_id: UuidIdValue | None = None
+
+
+class PrescriptionVoid(PrescriptionStatusUpdate):
+    """Backward-compatible alias; voided maps to cancelled."""
+
+
+class BatchHoldCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    batch_id: UuidIdValue
+    hold_type: Literal["quarantine", "recall"]
+    reason: Annotated[str, Field(min_length=1, max_length=500)]
+
+
+class BatchHoldRelease(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["released"]

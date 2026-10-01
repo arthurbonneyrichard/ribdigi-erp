@@ -101,6 +101,9 @@ class Tenant(Base):
     # Subscription store quotas (Company == Tenant): null override/limit → package / full entitlement
     max_stores_override: Mapped[int | None] = mapped_column(Integer, nullable=True)
     store_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Offline POS auth window in hours (default 168 = 7 days, aligned with refresh-token policy).
+    # Configurable 1–168; not hardcoded in the POS client.
+    offline_auth_hours: Mapped[int] = mapped_column(Integer, default=168, server_default="168")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
@@ -363,6 +366,9 @@ class Product(Base):
     tax_supply_class: Mapped[str] = mapped_column(String(20), default="standard")
     tracks_batches: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Pharmacy catalog extras (unused by mart/retail/hotel UI).
+    dosage_instructions: Mapped[str | None] = mapped_column(Text, nullable=True)
+    rx_only: Mapped[bool] = mapped_column(Boolean, default=False)
     # Optional restaurant prep routing; overrides category when set
     prep_station: Mapped[str | None] = mapped_column(String(20), nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
@@ -1106,6 +1112,8 @@ class PosSession(Base):
     expected_cash: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     actual_cash: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
     cash_sales: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    cash_in: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    cash_out: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     card_sales: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     other_sales: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     total_sales: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
@@ -1114,6 +1122,22 @@ class PosSession(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     opened_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class PosCashMovement(Base):
+    """Cash in / cash out against an open POS shift (drops, pickups, paid-outs)."""
+
+    __tablename__ = "pos_cash_movements"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    session_id: Mapped[str] = mapped_column(ForeignKey("pos_sessions.id"), index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    movement_type: Mapped[str] = mapped_column(String(20), index=True)
+    amount: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    reason: Mapped[str] = mapped_column(String(200))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class PosPayment(Base):
@@ -1151,6 +1175,28 @@ class PosDevice(Base):
     last_seen_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class OfflineSyncEvent(Base):
+    """Audit trail for offline POS sync (created_at, user, device, result, conflict).
+
+    Does not hold funds. Payment rows on the sale remain details-only.
+    """
+
+    __tablename__ = "offline_sync_events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True, index=True)
+    device_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    client_request_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    sale_id: Mapped[str | None] = mapped_column(ForeignKey("transactions.id"), nullable=True, index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
+    offline_created_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    result: Mapped[str] = mapped_column(String(40), default="pending", index=True)
+    conflict_code: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    details: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
 
 
 class JournalEntry(Base):
@@ -1583,6 +1629,8 @@ class PurchaseInvoice(Base):
     supplier_id: Mapped[str] = mapped_column(ForeignKey("parties.id"), index=True)
     purchase_order_id: Mapped[str | None] = mapped_column(ForeignKey("purchase_orders.id"), nullable=True, index=True)
     goods_receipt_id: Mapped[str | None] = mapped_column(ForeignKey("goods_receipts.id"), nullable=True, index=True)
+    warehouse_id: Mapped[str | None] = mapped_column(ForeignKey("warehouses.id"), nullable=True, index=True)
+    store_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id"), nullable=True, index=True)
     supplier_invoice_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
     status: Mapped[str] = mapped_column(String(30), default="draft", index=True)
     # draft -> unpaid -> partial/paid | cancelled; overdue derived when past due
@@ -1615,6 +1663,7 @@ class PurchaseInvoiceItem(Base):
     tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
     purchase_invoice_id: Mapped[str] = mapped_column(ForeignKey("purchase_invoices.id"), index=True)
     product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    line_no: Mapped[int] = mapped_column(Integer, default=0)
     quantity: Mapped[float] = mapped_column(Numeric(14, 3))
     unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax_rate: Mapped[float] = mapped_column(Numeric(7, 4), default=0)
@@ -2340,6 +2389,71 @@ class OtherIncome(Base):
     reference: Mapped[str | None] = mapped_column(String(100), nullable=True)
     status: Mapped[str] = mapped_column(String(30), default="posted")
     journal_entry_id: Mapped[str | None] = mapped_column(ForeignKey("journal_entries.id"), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class Prescription(Base):
+    """Pharmacy Rx record with counter statuses — not a clinic/HIS diagnosis module."""
+
+    __tablename__ = "prescriptions"
+    __table_args__ = (UniqueConstraint("tenant_id", "rx_number"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    rx_number: Mapped[str] = mapped_column(String(50), index=True)
+    customer_id: Mapped[str | None] = mapped_column(ForeignKey("parties.id"), nullable=True, index=True)
+    sale_id: Mapped[str | None] = mapped_column(ForeignKey("sales_invoices.id"), nullable=True, index=True)
+    prescriber_name: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="received")
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    approved_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    dispensed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class PrescriptionItem(Base):
+    __tablename__ = "prescription_items"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    prescription_id: Mapped[str] = mapped_column(ForeignKey("prescriptions.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    variant_id: Mapped[str | None] = mapped_column(ForeignKey("product_variants.id"), nullable=True, index=True)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    qty_dispensed: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
+    dosage_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class BatchHold(Base):
+    """Quarantine/recall hold on a lot — pharmacy counter, not a regulator recall feed."""
+
+    __tablename__ = "batch_holds"
+    __table_args__ = (UniqueConstraint("tenant_id", "batch_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    batch_id: Mapped[str] = mapped_column(ForeignKey("product_batches.id"), index=True)
+    hold_type: Mapped[str] = mapped_column(String(20), default="quarantine")
+    status: Mapped[str] = mapped_column(String(20), default="open")
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    released_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class PrescriptionAttachment(Base):
+    __tablename__ = "prescription_attachments"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    prescription_id: Mapped[str] = mapped_column(ForeignKey("prescriptions.id"), index=True)
+    storage_key: Mapped[str] = mapped_column(String(500))
+    content_type: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    original_filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

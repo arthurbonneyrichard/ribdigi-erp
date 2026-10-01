@@ -41,6 +41,9 @@ def test_brands_units_variants_ui_matches_categories_pattern():
     assert "Main unit" in units
     assert "Parent product" in variants
     assert "Create variant" in variants
+    assert "/products/variants" in page
+    assert "Could not load variants" in variants
+    assert "Loading variants" in variants
     assert "code: brandCode.trim()" not in page
     assert "code: unitCode.trim()" not in page
     assert "Category created" in page

@@ -43,6 +43,12 @@ celery.conf.update(
                 run_every=max(1, int(settings.CELERY_QUOTATION_EXPIRY_INTERVAL_MINUTES)) * 60.0
             ),
         },
+        "scan-batch-expiry": {
+            "task": "app.tasks.scan_batch_expiry",
+            "schedule": schedule(
+                run_every=max(1, int(settings.CELERY_BATCH_EXPIRY_INTERVAL_MINUTES)) * 60.0
+            ),
+        },
         "scan-recurring-expense-due": {
             "task": "app.tasks.scan_recurring_expense_due",
             "schedule": schedule(

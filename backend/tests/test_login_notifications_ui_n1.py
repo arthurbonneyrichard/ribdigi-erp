@@ -15,9 +15,11 @@ def test_notifications_page_loads_list_without_settings():
 
 def test_sidebar_groups_keep_existing_routes():
     shell = (ROOT / "frontend/components/Shell.tsx").read_text(encoding="utf-8")
+    nav = (ROOT / "frontend/lib/tenantNav.ts").read_text(encoding="utf-8")
+    combined = shell + "\n" + nav
     assert "TENANT_NAV_GROUPS" in shell
     for href in ("/dashboard", "/inventory", "/sales", "/pos", "/departments", "/notifications"):
-        assert href in shell
+        assert href in combined
 
 
 def test_login_logo_is_preloaded():

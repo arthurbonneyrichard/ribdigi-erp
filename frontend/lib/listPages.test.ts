@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   LIST_PAGE_SIZE,
+  displayProductName,
   matchesCustomerList,
   matchesProductList,
   paginate,
@@ -86,6 +87,13 @@ test('customer filters search status group and profile', () => {
     matchesCustomerList(c, { q: '', status: 'all', groupId: '', profileType: 'walk_in' }),
     false,
   );
+});
+
+test('displayProductName is uppercase display-only and leaves blanks', () => {
+  assert.equal(displayProductName('Rice 5kg'), 'RICE 5KG');
+  assert.equal(displayProductName('  sku-safe  '), 'SKU-SAFE');
+  assert.equal(displayProductName(''), '—');
+  assert.equal(displayProductName(null), '—');
 });
 
 test('sort customers by name and balance', () => {

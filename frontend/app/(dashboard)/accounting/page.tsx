@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import AttachmentPreview from '../../../components/AttachmentPreview';
-import { api } from '../../../lib/api';
+import FormModal from '../../../components/FormModal';
+import { api, getAccessToken } from '../../../lib/api';
 import { useStoreContext } from '../../../lib/storeContext';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -32,6 +33,25 @@ const JOURNAL_SOURCE_LABEL: Record<string, string> = {
 function journalSourceLabel(sourceType?: string | null) {
   const key = String(sourceType || 'manual').toLowerCase();
   return JOURNAL_SOURCE_LABEL[key] || key.replace(/_/g, ' ');
+}
+
+function fieldErrorsFromDetail(detail: unknown): Record<string, string> {
+  const fields: Record<string, string> = {};
+  if (Array.isArray(detail)) {
+    for (const item of detail) {
+      if (!item || typeof item !== 'object') continue;
+      const rec = item as { loc?: unknown; msg?: unknown; message?: unknown };
+      const loc = Array.isArray(rec.loc) ? rec.loc : [];
+      const field = loc.find((x) => typeof x === 'string' && x !== 'body' && x !== 'query');
+      const msg = typeof rec.msg === 'string' ? rec.msg : typeof rec.message === 'string' ? rec.message : '';
+      if (typeof field === 'string' && msg) fields[field] = msg.replace(/^Value error,\s*/i, '');
+    }
+  } else if (detail && typeof detail === 'object') {
+    for (const [key, val] of Object.entries(detail as Record<string, unknown>)) {
+      if (typeof val === 'string' && key !== 'msg' && key !== 'message') fields[key] = val;
+    }
+  }
+  return fields;
 }
 
 function journalSourceHref(sourceType?: string | null): string | null {
@@ -128,9 +148,15 @@ export default function Page() {
   const [newAcctCode, setNewAcctCode] = useState('');
   const [newAcctName, setNewAcctName] = useState('');
   const [newAcctKind, setNewAcctKind] = useState('cash');
+  const [newAcctType, setNewAcctType] = useState('asset');
+  const [newAcctParent, setNewAcctParent] = useState('');
   const [newBankName, setNewBankName] = useState('');
   const [newAcctNumber, setNewAcctNumber] = useState('');
   const [newBankBranch, setNewBankBranch] = useState('');
+  const [acctFormOpen, setAcctFormOpen] = useState(false);
+  const [acctSaveBusy, setAcctSaveBusy] = useState(false);
+  const [acctFieldErrors, setAcctFieldErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
   const [coaOpenAccountId, setCoaOpenAccountId] = useState('');
   const [coaOpenAmount, setCoaOpenAmount] = useState('0');
   const [coaOpenLines, setCoaOpenLines] = useState<
@@ -333,7 +359,10 @@ export default function Page() {
   }
 
   useEffect(() => {
-    refresh().catch((err) => setError(err.message));
+    setLoading(true);
+    refresh()
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -429,7 +458,7 @@ export default function Page() {
   async function uploadJournalAttachment(id: string, file: File) {
     setError('');
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const tenant = localStorage.getItem('tenant');
       const form = new FormData();
       form.append('file', file);
@@ -453,7 +482,7 @@ export default function Page() {
   async function downloadJournalAttachment(id: string) {
     setError('');
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const tenant = localStorage.getItem('tenant');
       const res = await fetch(`${apiBase}/accounting/journal-entries/${id}/attachment`, {
         headers: {
@@ -490,33 +519,108 @@ export default function Page() {
     }
   }
 
-  async function createLiquidAccount() {
+  function openAddAccount(kind = '') {
+    setEditAcctId('');
+    setEditAcctName('');
+    setNewAcctCode('');
+    setNewAcctName('');
+    setNewAcctKind(kind);
+    setNewAcctType(kind === 'cash' || kind === 'bank' ? 'asset' : 'asset');
+    setNewAcctParent('');
+    setNewBankName('');
+    setNewAcctNumber('');
+    setNewBankBranch('');
+    setAcctFieldErrors({});
     setError('');
     setMessage('');
+    setAcctFormOpen(true);
+  }
+
+  function openEditAccount(row: any) {
+    setEditAcctId(row.id);
+    setEditAcctName(row.name || '');
+    setNewAcctCode(row.code || '');
+    setNewAcctName(row.name || '');
+    setNewAcctKind(row.is_cash_account ? 'cash' : row.is_bank_account ? 'bank' : '');
+    setNewAcctType(row.account_type || 'asset');
+    setNewAcctParent(row.parent_id || '');
+    setNewBankName(row.bank_name || '');
+    setNewAcctNumber(row.account_number || '');
+    setNewBankBranch(row.bank_branch || '');
+    setAcctFieldErrors({});
+    setError('');
+    setMessage('');
+    setAcctFormOpen(true);
+  }
+
+  async function createLiquidAccount() {
+    if (acctSaveBusy) return;
+    setError('');
+    setMessage('');
+    setAcctFieldErrors({});
+    const code = newAcctCode.trim();
+    const name = (editAcctId ? editAcctName : newAcctName).trim();
+    if (!editAcctId && !code) {
+      setAcctFieldErrors({ code: 'Enter an account code' });
+      setError('Enter an account code');
+      return;
+    }
+    if (!name) {
+      setAcctFieldErrors({ name: 'Enter an account name' });
+      setError('Enter an account name');
+      return;
+    }
+    setAcctSaveBusy(true);
     try {
-      const body: Record<string, unknown> = {
-        code: newAcctCode.trim(),
-        name: newAcctName.trim(),
-        liquid_kind: newAcctKind,
-      };
-      if (newAcctKind === 'bank') {
-        // Blank bank_name → schema 422 (BankNameValue); omit only when empty so
-        // service required-name 400 still covers intentional omit.
-        const trimmedBank = newBankName.trim();
-        if (trimmedBank) body.bank_name = trimmedBank;
-        body.account_number = newAcctNumber.trim() || null;
-        body.bank_branch = newBankBranch.trim() || null;
+      if (editAcctId) {
+        const patch: Record<string, unknown> = { name };
+        if (newAcctKind === 'bank') {
+          const trimmedBank = newBankName.trim();
+          if (trimmedBank) patch.bank_name = trimmedBank;
+          patch.account_number = newAcctNumber.trim() || null;
+          patch.bank_branch = newBankBranch.trim() || null;
+        }
+        if (newAcctParent.trim()) patch.parent_id = newAcctParent.trim();
+        const r = await api(`/accounting/accounts/${editAcctId}`, {
+          method: 'PATCH',
+          body: JSON.stringify(patch),
+        });
+        setMessage(`Updated ${r.data.code}`);
+      } else {
+        const body: Record<string, unknown> = {
+          code,
+          name: newAcctName.trim(),
+          account_type: newAcctType,
+        };
+        if (newAcctKind === 'cash' || newAcctKind === 'bank') {
+          body.liquid_kind = newAcctKind;
+          body.account_type = 'asset';
+        }
+        if (newAcctKind === 'bank') {
+          // Blank bank_name → schema 422 (BankNameValue); omit only when empty so
+          // service required-name 400 still covers intentional omit.
+          const trimmedBank = newBankName.trim();
+          if (trimmedBank) body.bank_name = trimmedBank;
+          body.account_number = newAcctNumber.trim() || null;
+          body.bank_branch = newBankBranch.trim() || null;
+        }
+        if (newAcctParent.trim()) body.parent_id = newAcctParent.trim();
+        const r = await api('/accounting/accounts', { method: 'POST', body: JSON.stringify(body) });
+        setMessage(`Account ${r.data.code} created`);
+        setNewAcctCode('');
+        setNewAcctName('');
+        setNewBankName('');
+        setNewAcctNumber('');
+        setNewBankBranch('');
+        setNewAcctParent('');
       }
-      const r = await api('/accounting/accounts', { method: 'POST', body: JSON.stringify(body) });
-      setMessage(`Account ${r.data.code} created`);
-      setNewAcctCode('');
-      setNewAcctName('');
-      setNewBankName('');
-      setNewAcctNumber('');
-      setNewBankBranch('');
+      setAcctFormOpen(false);
       await refresh();
     } catch (err: any) {
+      setAcctFieldErrors(fieldErrorsFromDetail(err.detail));
       setError(err.message);
+    } finally {
+      setAcctSaveBusy(false);
     }
   }
 
@@ -568,6 +672,7 @@ export default function Page() {
   async function saveAccountName() {
     setError('');
     setMessage('');
+    setAcctFieldErrors({});
     if (!editAcctId || !editAcctName.trim()) return;
     try {
       const r = await api(`/accounting/accounts/${editAcctId}`, {
@@ -579,6 +684,7 @@ export default function Page() {
       setEditAcctName('');
       await refresh();
     } catch (err: any) {
+      setAcctFieldErrors(fieldErrorsFromDetail(err.detail));
       setError(err.message);
     }
   }
@@ -660,7 +766,7 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const tenant = localStorage.getItem('tenant');
       const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
       const form = new FormData();
@@ -962,10 +1068,14 @@ export default function Page() {
       <p className="muted">
         One company ledger. Sales, expenses, and supplier bills post here — this is not a second set of books.
       </p>
+      <p className="muted" style={{ marginTop: 0 }}>
+        <strong>Books</strong> snapshot · <strong>Chart &amp; statements</strong> (journals, trial balance, P&amp;L, balance sheet, cash flow) · <strong>Cash</strong> tills &amp; transfers · <strong>Bank match</strong> · <strong>Cheques</strong>
+      </p>
+      {loading && <p className="muted">Loading accounting…</p>}
       {error && <p className="erp-banner err" role="alert">{error}</p>}
       {message && <p className="erp-banner ok" role="status">{message}</p>}
 
-      <div className="erp-tabs">
+      <div className="erp-tabs" role="tablist" aria-label="Accounting sections">
         <button
           onClick={() => setTab('overview')}
           disabled={tab === 'overview'}
@@ -976,9 +1086,9 @@ export default function Page() {
         <button
           onClick={() => setTab('ledger')}
           disabled={tab === 'ledger'}
-          aria-label="Show accounting tools"
+          aria-label="Show accounting ledger tab"
         >
-          Accounting tools
+          Chart &amp; statements
         </button>
         <button
           onClick={() => setTab('cash')}
@@ -1075,6 +1185,9 @@ export default function Page() {
 
       {tab === 'ledger' && (
         <>
+          <p className="muted">
+            Chart of accounts, opening balances, journals, and financial statements. Totals come from posted journals — they are not typed in by hand.
+          </p>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>Period close (BR-10.2)</h3>
             <p className="muted" style={{ margin: 0 }}>
@@ -1357,12 +1470,19 @@ export default function Page() {
 
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>Edit account name</h3>
+            <p className="muted" style={{ margin: 0 }}>
+              Quick rename. For type, parent, or bank details, use Edit on the chart below.
+            </p>
             <select
               value={editAcctId}
               onChange={(e) => {
-                setEditAcctId(e.target.value);
-                const a = accounts.find((x) => x.id === e.target.value);
-                setEditAcctName(a?.name || '');
+                const id = e.target.value;
+                const a = accounts.find((x) => x.id === id);
+                if (a) openEditAccount(a);
+                else {
+                  setEditAcctId('');
+                  setEditAcctName('');
+                }
               }}
               aria-label="Edit account"
               title="Account to rename"
@@ -1385,89 +1505,119 @@ export default function Page() {
             <button
               type="button"
               onClick={saveAccountName}
-              disabled={!editAcctId}
+              disabled={!editAcctId || acctSaveBusy}
               aria-label="Save account name"
             >
               Save name
             </button>
           </div>
 
-          <h3>Chart of accounts</h3>
-          <select
-            value={accountManageFilter}
-            onChange={(e) =>
-              setAccountManageFilter(e.target.value as 'all' | 'active' | 'inactive')
-            }
-            title="Filter manage chart of accounts by status"
-            aria-label="Account status filter"
-            style={{ marginBottom: 8 }}
-          >
-            <option value="all">All statuses</option>
-            <option value="active">Active only</option>
-            <option value="inactive">Inactive only</option>
-          </select>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Code</th>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Liquid</th>
-                <th>Opening</th>
-                <th>Balance</th>
-                <th>Active</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {managedAccounts.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="muted">
-                    No accounts for this filter
-                  </td>
-                </tr>
-              )}
-              {managedAccounts.map((r) => (
-                <tr key={r.id}>
-                  <td>{r.code}</td>
-                  <td>
-                    {r.name}
-                    {r.is_system ? ' · system' : ''}
-                    {r.is_active === false ? (
-                      <span className="muted" style={{ marginLeft: 6, fontSize: 12 }}>
-                        [inactive]
-                      </span>
-                    ) : null}
-                  </td>
-                  <td>{r.account_type}</td>
-                  <td>{r.is_cash_account ? 'cash' : r.is_bank_account ? 'bank' : '—'}</td>
-                  <td>{r.opening_balance ?? 0}</td>
-                  <td>{r.balance}</td>
-                  <td>{r.is_active === false ? 'no' : 'yes'}</td>
-                  <td>
-                    {r.is_active === false ? (
-<button type="button" className="btn-ok" onClick={() => setAccountActive(r.id, true)} aria-label={`Activate account ${r.id}`}>
-                          Activate
-                        </button>
-                    ) : (
-<button
-                          type="button"
-                          className="btn-danger"
-                          onClick={() => setAccountActive(r.id, false)}
-                          aria-label={`Deactivate account ${r.id}`}
-                        >
-                          Deactivate
-                        </button>
+          <div className="card" style={{ marginBottom: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+              <div>
+                <h3 style={{ marginTop: 0 }}>Chart of accounts</h3>
+                <p className="muted" style={{ margin: 0 }}>
+                  These are the buckets money is recorded in (assets, liabilities, income, expenses).
+                  Adding an account here does not post a journal.
+                </p>
+              </div>
+              <button type="button" className="list-btn-primary" onClick={() => openAddAccount('')}>
+                Add account
+              </button>
+            </div>
+            <select
+              value={accountManageFilter}
+              onChange={(e) =>
+                setAccountManageFilter(e.target.value as 'all' | 'active' | 'inactive')
+              }
+              title="Filter manage chart of accounts by status"
+              aria-label="Account status filter"
+              style={{ margin: '12px 0 8px' }}
+            >
+              <option value="all">All statuses</option>
+              <option value="active">Active only</option>
+              <option value="inactive">Inactive only</option>
+            </select>
+            {loading ? (
+              <p className="muted">Loading accounts…</p>
+            ) : (
+              <div className="table-wrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Code</th>
+                      <th>Name</th>
+                      <th>Type</th>
+                      <th>Parent</th>
+                      <th>Liquid</th>
+                      <th>Opening</th>
+                      <th>Balance</th>
+                      <th>Active</th>
+                      <th />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {managedAccounts.length === 0 && (
+                      <tr>
+                        <td colSpan={9} className="muted">
+                          No accounts for this filter
+                        </td>
+                      </tr>
                     )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    {managedAccounts.map((r) => {
+                      const parent = accounts.find((x) => x.id === r.parent_id);
+                      return (
+                        <tr key={r.id}>
+                          <td>{r.code}</td>
+                          <td>
+                            {r.name}
+                            {r.is_system ? ' · system' : ''}
+                            {r.is_active === false ? (
+                              <span className="muted" style={{ marginLeft: 6, fontSize: 12 }}>
+                                [inactive]
+                              </span>
+                            ) : null}
+                          </td>
+                          <td>{r.account_type}</td>
+                          <td>{parent ? `${parent.code}` : '—'}</td>
+                          <td>{r.is_cash_account ? 'cash' : r.is_bank_account ? 'bank' : '—'}</td>
+                          <td>{r.opening_balance ?? 0}</td>
+                          <td>{r.balance}</td>
+                          <td>{r.is_active === false ? 'no' : 'yes'}</td>
+                          <td style={{ whiteSpace: 'nowrap' }}>
+                            <button type="button" onClick={() => openEditAccount(r)} aria-label={`Edit account ${r.code}`}>
+                              Edit
+                            </button>{' '}
+                            {r.is_active === false ? (
+                              <button type="button" className="btn-ok" onClick={() => setAccountActive(r.id, true)} aria-label={`Activate account ${r.id}`}>
+                                Activate
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="btn-danger"
+                                onClick={() => setAccountActive(r.id, false)}
+                                aria-label={`Deactivate account ${r.id}`}
+                              >
+                                Deactivate
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
 
           <div className="grid" style={{ marginTop: 16 }}>
             <div className="card">
               <h3>Trial balance</h3>
+              <p className="muted" style={{ marginTop: 0 }}>
+                Checks that total debits equal total credits. Set a date or leave blank for live balances, then Generate.
+              </p>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
                 <input
                   type="date"
@@ -1481,7 +1631,7 @@ export default function Page() {
                   onClick={() => loadTrial().catch((err) => setError(err.message))}
                   aria-label="Apply trial balance filters"
                 >
-                  Apply
+                  Generate
                 </button>
               </div>
               <p className="muted">
@@ -1490,6 +1640,9 @@ export default function Page() {
                 Balanced: {String(trial?.balanced)} | Dr {trial?.total_debit} / Cr{' '}
                 {trial?.total_credit}
               </p>
+              {!trial?.rows?.length && !loading ? (
+                <p className="muted">No trial balance rows yet. Generate after you have journals.</p>
+              ) : null}
               {!!trial?.rows?.length && (
                 <table className="table" style={{ marginTop: 8 }}>
                   <thead>
@@ -1515,6 +1668,9 @@ export default function Page() {
             </div>
             <div className="card">
               <h3>Profit &amp; Loss</h3>
+              <p className="muted" style={{ marginTop: 0 }}>
+                Income minus expenses for a period. Filters work like Reports: set dates/store, then Generate.
+              </p>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
                 <input
                   type="date"
@@ -1568,7 +1724,7 @@ export default function Page() {
                   }
                   aria-label="Apply profit and loss filters"
                 >
-                  Apply
+                  Generate
                 </button>
               </div>
               <p className="muted" style={{ marginTop: 0 }}>
@@ -1590,7 +1746,7 @@ export default function Page() {
           <div className="card" style={{ marginTop: 12 }}>
           <h3 style={{ marginTop: 0 }}>Balance sheet</h3>
           <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
-            Point-in-time statement. Uses the same as-of date as Trial balance, plus optional compare.
+            What the business owns and owes at a point in time. Uses the same as-of date as Trial balance, plus optional compare.
             Store/branch follow the Shell header and P&amp;L branch filter when set.
           </p>
           <div className="row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
@@ -1616,7 +1772,7 @@ export default function Page() {
               </select>
             </div>
             <button type="button" className="btn" onClick={() => void loadBalanceSheet()} aria-label="Apply balance sheet filters">
-              Apply
+              Generate
             </button>
           </div>
           {balanceSheet ? (
@@ -1664,7 +1820,7 @@ export default function Page() {
         <div className="card" style={{ marginTop: 12 }}>
           <h3 style={{ marginTop: 0 }}>Cash flow</h3>
           <p className="muted" style={{ fontSize: 13, marginTop: 0 }}>
-            Period cash inflows and outflows (requires <code>reports:read</code>). Dates and store/branch match P&amp;L.
+            Cash in and cash out for a period (needs reports access). Dates and store/branch match P&amp;L.
           </p>
           <div className="row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
             <div>
@@ -1686,7 +1842,7 @@ export default function Page() {
               />
             </div>
             <button type="button" className="btn" onClick={() => void loadCashFlow()} aria-label="Apply cash flow filters">
-              Apply
+              Generate
             </button>
           </div>
           {cashFlow ? (
@@ -1731,11 +1887,10 @@ export default function Page() {
           )}
         </div>
 
-        <h3 style={{ marginTop: 16 }}>Recent journals</h3>
+        <h3 style={{ marginTop: 16 }}>Journals</h3>
           <p className="muted">
-            Manual journals can be unposted within the current fiscal period when books are open for
-            that date. Attach supporting
-            documents on any entry (BR-10.2).
+            Posted entries that make up the ledger. Manual journals can be unposted in the open fiscal period.
+            Attach supporting documents on any entry.
           </p>
           <select
             value={journalManageFilter}
@@ -1870,60 +2025,18 @@ export default function Page() {
       {tab === 'cash' && (
         <>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
-            <h3>Create cash / bank account</h3>
+            <h3>Cash and bank accounts</h3>
             <p className="muted" style={{ margin: 0 }}>
-              Add petty cash tills or bank accounts (BR-10.3). Bank accounts need a bank name.
+              Tills and bank GL accounts used for payments. Bank accounts need a bank name. For income
+              or expense accounts, use Chart &amp; statements → Add account.
             </p>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <input
-                value={newAcctCode}
-                onChange={(e) => setNewAcctCode(e.target.value)}
-                placeholder="Code (e.g. 1001)"
-                style={{ width: 120 }}
-                aria-label="Account code"
-                title="Account code (1–30 chars: letters, digits, _ or -)"
-              />
-              <input
-                value={newAcctName}
-                onChange={(e) => setNewAcctName(e.target.value)}
-                placeholder="Name (e.g. Petty Cash)"
-                aria-label="Account name"
-                title="Account display name (1–150 chars; letters/digits required)"
-              />
-              <select
-                value={newAcctKind}
-                onChange={(e) => setNewAcctKind(e.target.value)}
-                aria-label="Liquid account kind"
-              >
-                <option value="cash">Cash</option>
-                <option value="bank">Bank</option>
-              </select>
-              {newAcctKind === 'bank' && (
-                <>
-                  <input
-                    value={newBankName}
-                    onChange={(e) => setNewBankName(e.target.value)}
-                    placeholder="Bank name"
-                    aria-label="Bank name"
-                  />
-                  <input
-                    value={newAcctNumber}
-                    onChange={(e) => setNewAcctNumber(e.target.value)}
-                    placeholder="Account number"
-                    aria-label="Bank account number"
-                  />
-                  <input
-                    value={newBankBranch}
-                    onChange={(e) => setNewBankBranch(e.target.value)}
-                    placeholder="Branch"
-                    aria-label="Bank branch"
-                  />
-                </>
-              )}
-              <button type="button" onClick={createLiquidAccount} aria-label="Create liquid account">
-                Create account
-              </button>
-            </div>
+            <button
+              type="button"
+              className="list-btn-primary"
+              onClick={() => openAddAccount('cash')}
+            >
+              Add cash or bank account
+            </button>
           </div>
 
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
@@ -2076,6 +2189,9 @@ export default function Page() {
 
       {tab === 'reconcile' && (
         <>
+          <p className="muted">
+            Match bank statement lines to journal lines. Import a statement or connect a feed, then tick matching rows.
+          </p>
           <div className="card" style={{ marginBottom: 16, display: 'grid', gap: 8 }}>
             <h3>New statement</h3>
             <select
@@ -2662,6 +2778,188 @@ export default function Page() {
           </table>
         </>
       )}
+      {acctFormOpen ? (
+        <FormModal
+          title={editAcctId ? 'Edit account' : 'Add account'}
+          busy={acctSaveBusy}
+          dirty={Boolean(
+            newAcctCode.trim() ||
+              newAcctName.trim() ||
+              editAcctName.trim() ||
+              newBankName.trim() ||
+              newAcctNumber.trim() ||
+              newBankBranch.trim() ||
+              newAcctParent.trim(),
+          )}
+          headerClose={false}
+          closeLabel="Cancel"
+          closeAriaLabel="Cancel account form"
+          onClose={() => {
+            if (acctSaveBusy) return;
+            setAcctFormOpen(false);
+          }}
+          footer={
+            <button
+              type="button"
+              className="list-btn-primary"
+              onClick={createLiquidAccount}
+              disabled={acctSaveBusy || (!editAcctId && !newAcctCode.trim()) || !(editAcctId ? editAcctName.trim() : newAcctName.trim())}
+              aria-label="Create liquid account"
+            >
+              {acctSaveBusy ? 'Saving…' : 'Save'}
+            </button>
+          }
+        >
+          <p className="muted" style={{ marginTop: 0 }}>
+            Code and type cannot be changed after save. Tenant and company come from your sign-in, not this form.
+          </p>
+          <div className="erp-form-grid">
+            <label>
+              Code
+              <input
+                value={newAcctCode}
+                onChange={(e) => setNewAcctCode(e.target.value)}
+                placeholder="Code (e.g. 1001)"
+                style={{ width: '100%' }}
+                aria-label="Account code"
+                title="Account code (1–30 chars: letters, digits, _ or -)"
+                disabled={Boolean(editAcctId)}
+                aria-invalid={Boolean(acctFieldErrors.code)}
+              />
+            </label>
+            {acctFieldErrors.code ? (
+              <p className="list-toast err" role="alert">
+                {acctFieldErrors.code}
+              </p>
+            ) : null}
+            <label>
+              Name
+              <input
+                value={editAcctId ? editAcctName : newAcctName}
+                onChange={(e) => {
+                  setNewAcctName(e.target.value);
+                  setEditAcctName(e.target.value);
+                }}
+                placeholder="Name (e.g. Petty Cash)"
+                aria-label="Account name"
+                title="Account display name (1–150 chars; letters/digits required)"
+                aria-invalid={Boolean(acctFieldErrors.name)}
+              />
+            </label>
+            {acctFieldErrors.name ? (
+              <p className="list-toast err" role="alert">
+                {acctFieldErrors.name}
+              </p>
+            ) : null}
+            <label>
+              Type
+              <select
+                value={newAcctKind === 'cash' || newAcctKind === 'bank' ? 'asset' : newAcctType}
+                onChange={(e) => setNewAcctType(e.target.value)}
+                aria-label="Account type"
+                disabled={Boolean(editAcctId) || newAcctKind === 'cash' || newAcctKind === 'bank'}
+                aria-invalid={Boolean(acctFieldErrors.account_type)}
+              >
+                <option value="asset">Asset (what you own)</option>
+                <option value="liability">Liability (what you owe)</option>
+                <option value="equity">Equity (owner&apos;s funds)</option>
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+              </select>
+            </label>
+            {acctFieldErrors.account_type ? (
+              <p className="list-toast err" role="alert">
+                {acctFieldErrors.account_type}
+              </p>
+            ) : null}
+            <label>
+              Cash or bank
+              <select
+                value={newAcctKind}
+                onChange={(e) => {
+                  setNewAcctKind(e.target.value);
+                  if (e.target.value === 'cash' || e.target.value === 'bank') setNewAcctType('asset');
+                }}
+                aria-label="Liquid account kind"
+                disabled={Boolean(editAcctId)}
+              >
+                <option value="">Not cash or bank (GL)</option>
+                <option value="cash">Cash</option>
+                <option value="bank">Bank</option>
+              </select>
+            </label>
+            <label>
+              Parent account
+              <select
+                value={newAcctParent}
+                onChange={(e) => setNewAcctParent(e.target.value)}
+                aria-label="Parent account"
+                aria-invalid={Boolean(acctFieldErrors.parent_id)}
+              >
+                <option value="">None (top level)</option>
+                {activeAccounts
+                  .filter((a) => {
+                    if (editAcctId && a.id === editAcctId) return false;
+                    const t = newAcctKind === 'cash' || newAcctKind === 'bank' ? 'asset' : newAcctType;
+                    return !a.account_type || a.account_type === t;
+                  })
+                  .map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.code} — {a.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            {acctFieldErrors.parent_id ? (
+              <p className="list-toast err" role="alert">
+                {acctFieldErrors.parent_id}
+              </p>
+            ) : null}
+            {newAcctKind === 'bank' && (
+              <>
+                <label>
+                  Bank name
+                  <input
+                    value={newBankName}
+                    onChange={(e) => setNewBankName(e.target.value)}
+                    placeholder="Bank name"
+                    aria-label="Bank name"
+                    aria-invalid={Boolean(acctFieldErrors.bank_name)}
+                  />
+                </label>
+                {acctFieldErrors.bank_name ? (
+                  <p className="list-toast err" role="alert">
+                    {acctFieldErrors.bank_name}
+                  </p>
+                ) : null}
+                <label>
+                  Account number
+                  <input
+                    value={newAcctNumber}
+                    onChange={(e) => setNewAcctNumber(e.target.value)}
+                    placeholder="Account number"
+                    aria-label="Bank account number"
+                  />
+                </label>
+                <label>
+                  Branch
+                  <input
+                    value={newBankBranch}
+                    onChange={(e) => setNewBankBranch(e.target.value)}
+                    placeholder="Branch"
+                    aria-label="Bank branch"
+                  />
+                </label>
+              </>
+            )}
+            {acctFieldErrors.company ? (
+              <p className="list-toast err" role="alert">
+                {acctFieldErrors.company}
+              </p>
+            ) : null}
+          </div>
+        </FormModal>
+      ) : null}
       {attachPreview && (
         <AttachmentPreview
           open

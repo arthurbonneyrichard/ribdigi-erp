@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import FormModal from '../../../components/FormModal';
 import { useSearchParams } from 'next/navigation';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
@@ -98,6 +99,8 @@ export default function FmcgPage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const [schemeAddOpen, setSchemeAddOpen] = useState(false);
+  const [routeAddOpen, setRouteAddOpen] = useState(false);
   const [schemeForm, setSchemeForm] = useState({
     code: '',
     name: '',
@@ -180,6 +183,7 @@ export default function FmcgPage() {
 
   async function createScheme(e: React.FormEvent) {
     e.preventDefault();
+    if (busy) return;
     setBusy(true);
     setError('');
     setMessage('');
@@ -208,6 +212,7 @@ export default function FmcgPage() {
         ends_on: '',
       });
       setMessage('Trade scheme created');
+      setSchemeAddOpen(false);
       await refresh();
     } catch (err: any) {
       setError(err.message || 'Could not create scheme');
@@ -236,6 +241,7 @@ export default function FmcgPage() {
 
   async function createRoute(e: React.FormEvent) {
     e.preventDefault();
+    if (busy) return;
     setBusy(true);
     setError('');
     setMessage('');
@@ -251,6 +257,7 @@ export default function FmcgPage() {
       });
       setRouteForm({ code: '', name: '', driver_name: '', vehicle: '' });
       setMessage('Route created');
+      setRouteAddOpen(false);
       const newId = res.data?.id || '';
       if (newId) setSelectedRouteId(newId);
       await refresh(newId || undefined);
@@ -351,8 +358,18 @@ export default function FmcgPage() {
         </div>
       )}
 
-      <div className="card" style={{ marginBottom: 16 }}>
-        <h2>Add trade scheme</h2>
+      <div style={{ marginBottom: 12 }}>
+        <button type="button" className="list-btn-primary" onClick={() => setSchemeAddOpen(true)} aria-label="Add trade scheme">
+          Add trade scheme
+        </button>
+      </div>
+      {schemeAddOpen ? (
+      <FormModal
+        title="Add trade scheme"
+        busy={busy}
+        dirty={Boolean(schemeForm.code.trim() || schemeForm.name.trim())}
+        onClose={() => setSchemeAddOpen(false)}
+      >
         <form
           onSubmit={createScheme}
           style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))' }}
@@ -444,7 +461,8 @@ export default function FmcgPage() {
             </button>
           </div>
         </form>
-      </div>
+      </FormModal>
+      ) : null}
 
       <div className="card" style={{ marginBottom: 16 }}>
         <h2>Trade schemes</h2>
@@ -503,8 +521,18 @@ export default function FmcgPage() {
         </table>
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
-        <h2>Add distribution route</h2>
+      <div style={{ marginBottom: 12 }}>
+        <button type="button" className="list-btn-primary" onClick={() => setRouteAddOpen(true)} aria-label="Add distribution route">
+          Add distribution route
+        </button>
+      </div>
+      {routeAddOpen ? (
+      <FormModal
+        title="Add distribution route"
+        busy={busy}
+        dirty={Boolean(routeForm.code.trim() || routeForm.name.trim())}
+        onClose={() => setRouteAddOpen(false)}
+      >
         <form
           onSubmit={createRoute}
           style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' }}
@@ -549,6 +577,10 @@ export default function FmcgPage() {
             </button>
           </div>
         </form>
+      </FormModal>
+      ) : null}
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h2>Distribution routes</h2>
         <table className="table" style={{ marginTop: 12 }}>
           <thead>
             <tr>

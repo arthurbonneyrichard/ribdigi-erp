@@ -65,6 +65,7 @@ def _default_for_required_column(col, table_name: str = "", values: dict | None 
         "rate",
         "percentage",
         "drawer_port",
+        "offline_auth_hours",
         "reorder_level",
         "reserved_qty",
         "minimum_stock",
@@ -74,6 +75,8 @@ def _default_for_required_column(col, table_name: str = "", values: dict | None 
     }:
         if name == "drawer_port":
             return 9100
+        if name == "offline_auth_hours":
+            return 168
         if name in {"conversion_ratio", "conversion_factor"}:
             return 1
         if name in {"reserved_qty", "minimum_stock"}:
@@ -348,6 +351,8 @@ async def list_mapped(
     extra: str = "",
     extra_params: dict | None = None,
     order_by: str | None = "name",
+    limit: int | None = None,
+    offset: int = 0,
 ):
     table = model.__tablename__
     names = await table_column_names(db, table)
@@ -357,6 +362,9 @@ async def list_mapped(
         where = f"{where} AND ({extra})"
     if order_by and order_by in names and _IDENT.match(order_by):
         where = f"{where} ORDER BY {order_by}"
+    if isinstance(limit, int) and limit > 0:
+        off = max(0, int(offset or 0))
+        where = f"{where} LIMIT {int(limit)} OFFSET {off}"
     rows = await fetch_live_dicts(db, table, where, params)
     out = []
     for row in rows:

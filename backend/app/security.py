@@ -112,6 +112,8 @@ async def _claims_from_api_key(
         "industry": packages_svc.canonicalize_industry(getattr(tenant, "industry", None)) or "",
         "branch_id": None,
         "department_id": None,
+        "store_ids": None,
+        "store_scope": "all",
         "record_scope": "all",
         "scope_user_ids": None,
         "auth_method": "api_key",
@@ -260,6 +262,11 @@ async def current_claims(
     data["industry"] = packages_svc.canonicalize_industry(getattr(tenant, "industry", None)) or ""
     data["branch_id"] = getattr(user, "branch_id", None)
     data["department_id"] = getattr(user, "department_id", None)
+    from app import store_access as store_access_svc
+
+    await store_access_svc.bind_location_scope(
+        db, tenant_id=tenant_id, user_id=user_id, claims=data
+    )
     from app.rbac import record_scope_from_permissions
     from app import org_units as org_units_svc
 

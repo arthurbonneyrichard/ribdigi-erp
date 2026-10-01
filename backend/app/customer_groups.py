@@ -6,7 +6,7 @@ from datetime import datetime
 import re
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
@@ -70,7 +70,7 @@ def serialize_group(row: m.CustomerGroup) -> dict:
 
 
 async def list_groups(
-    db: AsyncSession, tenant_id: str, *, is_active: bool | None = None
+    db: AsyncSession, tenant_id: str, *, is_active: bool | None = None, company_id: str | None = None
 ) -> list[m.CustomerGroup]:
     await ensure_default_groups(db, tenant_id)
     stmt = (
@@ -80,6 +80,13 @@ async def list_groups(
     )
     if is_active is not None:
         stmt = stmt.where(m.CustomerGroup.is_active.is_(bool(is_active)))
+    cols = await schema_compat.table_column_names(db, "customer_groups")
+    if company_id and "company_id" in cols:
+        stmt = stmt.where(
+            text(
+                "(customer_groups.company_id = :_gid OR customer_groups.company_id IS NULL)"
+            ).bindparams(_gid=company_id)
+        )
     return list((await db.execute(stmt)).scalars().all())
 
 
@@ -137,15 +144,26 @@ async def create_group(
     ).scalar_one_or_none()
     if exists:
         raise HTTPException(status_code=409, detail="Customer group code already exists")
-    row = m.CustomerGroup(
-        tenant_id=tenant_id,
-        code=code_key,
-        name=name,
-        discount_percent=pct,
-        is_active=True,
-    )
-    db.add(row)
+    from app.models import uid
+
+    values = {
+        "id": uid(),
+        "tenant_id": tenant_id,
+        "code": code_key,
+        "name": name,
+        "discount_percent": pct,
+        "is_active": True,
+    }
+    group_cols = await schema_compat.table_column_names(db, "customer_groups")
+    if "company_id" in group_cols:
+        company_id = await schema_compat.resolve_tenant_company_id(db, tenant_id)
+        if company_id:
+            values["company_id"] = company_id
+    await schema_compat.insert_matching_row(db, "customer_groups", values)
     await db.flush()
+    row = await schema_compat.get_mapped(db, m.CustomerGroup, values["id"])
+    if row is None:
+        raise HTTPException(status_code=500, detail="The server could not complete this request.")
     return row
 
 

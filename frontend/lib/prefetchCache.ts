@@ -1,18 +1,42 @@
-/** In-flight + short TTL cache for GET payloads prefetched on nav hover. */
+/** Tenant-scoped in-flight + short TTL cache for GET payloads (nav hover / first paint). */
 
-import { api } from './api';
+import { api, tenantHeaderValue } from './api';
 
 type Body = Awaited<ReturnType<typeof api>>;
 
-const store = new Map<string, { at: number; body: Body }>();
+const store = new Map<string, { at: number; body: Body; tenant: string }>();
 const inflight = new Map<string, Promise<Body>>();
 
 const TTL_MS = 15_000;
 
+function activeTenant(): string {
+  if (typeof window === 'undefined') return '';
+  return tenantHeaderValue(localStorage.getItem('tenant')) || '';
+}
+
+function sessionScopePart(key: string): string {
+  if (typeof window === 'undefined') return '';
+  try {
+    return sessionStorage.getItem(key) || '';
+  } catch {
+    return '';
+  }
+}
+
+function cacheKey(path: string, tenant = activeTenant()): string {
+  const user = sessionScopePart('ribdigi:uid');
+  const store = sessionScopePart('ribdigi:store');
+  return `${tenant || '_'}::${user || '_'}::${store || '_'}::${path}`;
+}
+
 export function invalidatePrefetchCache(path?: string) {
   if (path) {
-    store.delete(path);
-    inflight.delete(path);
+    Array.from(store.keys()).forEach((key) => {
+      if (key.endsWith(`::${path}`) || key === cacheKey(path)) store.delete(key);
+    });
+    Array.from(inflight.keys()).forEach((key) => {
+      if (key.endsWith(`::${path}`) || key === cacheKey(path)) inflight.delete(key);
+    });
     return;
   }
   store.clear();
@@ -20,10 +44,16 @@ export function invalidatePrefetchCache(path?: string) {
 }
 
 export function peekPrefetch(path: string): Body | null {
-  const hit = store.get(path);
+  const tenant = activeTenant();
+  const key = cacheKey(path, tenant);
+  const hit = store.get(key);
   if (!hit) return null;
+  if (hit.tenant !== tenant) {
+    store.delete(key);
+    return null;
+  }
   if (Date.now() - hit.at > TTL_MS) {
-    store.delete(path);
+    store.delete(key);
     return null;
   }
   return hit.body;
@@ -31,25 +61,28 @@ export function peekPrefetch(path: string): Body | null {
 
 export async function prefetchGet(path: string, options?: { force?: boolean }): Promise<Body> {
   const force = Boolean(options?.force);
+  const tenant = activeTenant();
+  const key = cacheKey(path, tenant);
   if (!force) {
     const existing = peekPrefetch(path);
     if (existing) return existing;
-    const pending = inflight.get(path);
+    const pending = inflight.get(key);
     if (pending) return pending;
   } else {
-    store.delete(path);
-    inflight.delete(path);
+    store.delete(key);
+    inflight.delete(key);
   }
 
   const run = api(path)
     .then((body) => {
-      store.set(path, { at: Date.now(), body });
+      if (activeTenant() !== tenant) return body;
+      store.set(key, { at: Date.now(), body, tenant });
       return body;
     })
     .finally(() => {
-      inflight.delete(path);
+      inflight.delete(key);
     });
-  inflight.set(path, run);
+  inflight.set(key, run);
   return run;
 }
 

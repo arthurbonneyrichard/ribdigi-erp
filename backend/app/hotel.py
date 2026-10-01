@@ -2049,14 +2049,19 @@ async def summary(db: AsyncSession, *, tenant_id: str, on_date: date | None = No
         ),
     )
     maint_open = int(maint_count_rows[0][0]) if maint_count_rows else 0
+    from app.catalog_meta import qty_is_low_stock, qty_is_out_of_stock
+
     low_stock = []
     products = (
         await db.execute(select(m.Product).where(m.Product.tenant_id == tenant_id).limit(200))
     ).scalars().all()
     for prod in products:
         qty = float(getattr(prod, "stock_qty", 0) or 0)
-        reorder = float(getattr(prod, "reorder_level", 0) or getattr(prod, "min_stock", 0) or 0)
-        if reorder > 0 and qty <= reorder:
+        if qty_is_low_stock(
+            qty,
+            minimum_stock=getattr(prod, "minimum_stock", 0),
+            reorder_level=getattr(prod, "reorder_level", 0),
+        ) or qty_is_out_of_stock(qty):
             low_stock.append({"id": prod.id, "name": prod.name, "stock_qty": money_json(qty)})
     alerts: list[dict] = []
     dirty_n = sum(1 for r in rooms if r.status == "dirty" or r.housekeeping_status == "dirty")

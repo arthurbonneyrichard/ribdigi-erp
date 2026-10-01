@@ -30,8 +30,12 @@ def _agent_token(
 
 
 @router.get("/capabilities")
-async def printer_capabilities(claims=Depends(require_permission("printers", "read"))):
-    return env(printers_svc.capabilities())
+async def printer_capabilities(
+    claims=Depends(require_permission("printers", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    tenant = await db.get(m.Tenant, claims["tenant_id"])
+    return env(printers_svc.capabilities(getattr(tenant, "industry", None) if tenant else None))
 
 
 @router.get("")
@@ -48,10 +52,16 @@ async def list_printers(
         role=claims.get("role"),
         store_id=store_id,
     )
+    industry = await printers_svc.load_tenant_industry(db, claims["tenant_id"])
     rows = await printers_svc.list_printers(
         db, tenant_id=claims["tenant_id"], store_id=store_id, purpose=purpose
     )
-    return env([printers_svc.serialize_printer(r) for r in rows])
+    listed = []
+    for row in rows:
+        data = printers_svc.serialize_printer(row)
+        data["purposes"] = printers_svc.visible_purposes_for_industry(row.purposes, industry)
+        listed.append(data)
+    return env(listed)
 
 
 @router.post("")

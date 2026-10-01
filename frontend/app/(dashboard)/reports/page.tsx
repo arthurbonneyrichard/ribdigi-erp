@@ -1,8 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { api } from '../../../lib/api';
+import { api, getAccessToken } from '../../../lib/api';
+import { formatDate, formatDateTime, formatNumber } from '../../../lib/format';
+import {
+  REPORT_GROUP_ORDER,
+  reportFromTabView,
+  reportHasFilter,
+  reportsHref,
+  reportsInGroup,
+  type ReportDef,
+} from '../../../lib/reportGroups';
 import { useStoreContext } from '../../../lib/storeContext';
 
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -94,10 +103,57 @@ const REPORT_TYPES = [
   'tax_filing_gh',
 ];
 
+type TabCache = {
+  data: any;
+  error: string;
+  generatedAt: string;
+  sectionErrors: Record<string, string>;
+  loading: boolean;
+};
+
+function emptyTabCache(): TabCache {
+  return { data: null, error: '', generatedAt: '', sectionErrors: {}, loading: false };
+}
+
+function formatReportError(err: unknown): string {
+  const e = err as { message?: string; requestId?: string; status?: number };
+  const message = (e?.message || 'Could not load this report.').trim();
+  const rid = typeof e?.requestId === 'string' ? e.requestId.trim() : '';
+  if (rid && !message.includes(rid)) return `${message} Request ID: ${rid}`;
+  return message || 'Could not load this report.';
+}
+
+function fmtMoney(value: unknown): string {
+  if (value === null || value === undefined || value === '') return '—';
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(n)) return String(value);
+  return formatNumber(n);
+}
+
+function fmtDate(value: unknown): string {
+  if (value === null || value === undefined || value === '') return '—';
+  const raw = String(value);
+  const day = raw.slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(day) && raw.length <= 10) {
+    return formatDate(day) || raw;
+  }
+  return formatDateTime(raw) || raw;
+}
+
+async function fetchReport(path: string): Promise<{ data: any; error: string }> {
+  try {
+    const r = await api(path);
+    return { data: r.data, error: '' };
+  } catch (err: unknown) {
+    return { data: null, error: formatReportError(err) };
+  }
+}
+
 export default function Page() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<Tab>('summary');
+  const [view, setView] = useState('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [storeId, setStoreId] = useState('');
@@ -141,6 +197,11 @@ export default function Page() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [generatedAt, setGeneratedAt] = useState('');
+  const [sectionErrors, setSectionErrors] = useState<Record<string, string>>({});
+  const [loadingTabs, setLoadingTabs] = useState<Partial<Record<Tab, boolean>>>({});
+  const tabRef = useRef<Tab>('summary');
+  const loadGen = useRef<Partial<Record<Tab, number>>>({});
+  const tabCacheRef = useRef<Partial<Record<Tab, TabCache>>>({});
   const [schedules, setSchedules] = useState<any[]>([]);
   const [scheduleManageFilter, setScheduleManageFilter] = useState<
     'all' | 'enabled' | 'disabled'
@@ -169,6 +230,8 @@ export default function Page() {
   const [suggestSelected, setSuggestSelected] = useState<Record<string, boolean>>({});
   const [suggestBusy, setSuggestBusy] = useState(false);
   const [suggestNotes, setSuggestNotes] = useState('');
+  tabRef.current = tab;
+  const activeReport = useMemo(() => reportFromTabView(tab, view), [tab, view]);
 
   function qs(extra: Record<string, string> = {}) {
     const params = new URLSearchParams();
@@ -216,81 +279,158 @@ export default function Page() {
   }
 
   async function load(nextTab: Tab = tab) {
-    setLoading(true);
-    setError('');
+    const gen = (loadGen.current[nextTab] || 0) + 1;
+    loadGen.current[nextTab] = gen;
+    const isStale = () => loadGen.current[nextTab] !== gen;
+
+    function publish(patch: Partial<TabCache>) {
+      if (isStale()) return;
+      const prev = tabCacheRef.current[nextTab] || emptyTabCache();
+      const next = { ...prev, ...patch };
+      tabCacheRef.current[nextTab] = next;
+      if (tabRef.current !== nextTab) return;
+      setData(next.data);
+      setError(next.error);
+      setGeneratedAt(next.generatedAt);
+      setSectionErrors(next.sectionErrors);
+      setLoading(next.loading);
+    }
+
+    setLoadingTabs((prev) => ({ ...prev, [nextTab]: true }));
+    publish({ loading: true, error: '', sectionErrors: {} });
+    if (tabRef.current === nextTab) {
+      setError('');
+      setSectionErrors({});
+      setLoading(true);
+    }
+
     try {
       if (nextTab === 'schedules') {
-        const r = await api('/reports/schedules');
+        const r = await fetchReport('/reports/schedules');
+        if (isStale()) return;
+        if (r.error) {
+          publish({
+            loading: false,
+            error: r.error,
+            generatedAt: '',
+            data: null,
+          });
+          return;
+        }
         setSchedules(r.data || []);
-        setData(null);
+        publish({
+          loading: false,
+          error: '',
+          data: null,
+          generatedAt: new Date().toISOString(),
+          sectionErrors: {},
+        });
         return;
       }
-      let path = '/reports/summary';
-      if (nextTab === 'sales') {
-        const categoryTrim = categoryId.trim();
-        path = `/reports/sales/products${qs(
-          categoryTrim ? { category_id: categoryTrim } : {}
-        )}`;
-      }
-      if (nextTab === 'salesperson') path = `/reports/sales/salesperson${qs()}`;
-      if (nextTab === 'customers') path = `/reports/sales/customers${qs()}`;
-      if (nextTab === 'stores') path = `/reports/sales/by-store${qs()}`;
-      if (nextTab === 'departments') path = `/reports/sales/by-department${qs()}`;
-      if (nextTab === 'inventory') path = `/reports/inventory/low-stock${qs()}`;
-      if (nextTab === 'purchases') path = `/reports/purchases/summary${qs()}`;
-      if (nextTab === 'expenses') path = `/reports/expenses/budget-vs-actual${qs()}`;
-      if (nextTab === 'cashflow') path = `/reports/cash-flow${qs()}`;
-      if (nextTab === 'pnl') path = `/reports/profit-loss${qs()}`;
-      if (nextTab === 'trialbalance') path = `/reports/trial-balance${trialBalanceQs()}`;
-      if (nextTab === 'balancesheet') path = `/reports/balance-sheet${balanceSheetQs()}`;
+
       if (nextTab === 'accountstatement') {
         const acct = statementAccountId.trim();
         if (!acct) {
-          setData(null);
-          setError('Select an account for the statement');
+          publish({
+            loading: false,
+            data: null,
+            error: 'Select an account for the statement',
+            generatedAt: '',
+            sectionErrors: {},
+          });
           return;
         }
-        path = `/reports/account-statement${qs({ account_id: acct })}`;
       }
-      const r = await api(path);
+
+      const categoryTrim = categoryId.trim();
+      const paths: Record<Exclude<Tab, 'schedules'>, string> = {
+        summary: `/reports/summary${qs()}`,
+        sales: `/reports/sales/products${qs(categoryTrim ? { category_id: categoryTrim } : {})}`,
+        salesperson: `/reports/sales/salesperson${qs()}`,
+        customers: `/reports/sales/customers${qs()}`,
+        stores: `/reports/sales/by-store${qs()}`,
+        departments: `/reports/sales/by-department${qs()}`,
+        inventory: `/reports/inventory/low-stock${qs()}`,
+        purchases: `/reports/purchases/summary${qs()}`,
+        expenses: `/reports/expenses/budget-vs-actual${qs()}`,
+        cashflow: `/reports/cash-flow${qs()}`,
+        pnl: `/reports/profit-loss${qs()}`,
+        trialbalance: `/reports/trial-balance${trialBalanceQs()}`,
+        balancesheet: `/reports/balance-sheet${balanceSheetQs()}`,
+        accountstatement: `/reports/account-statement${qs({ account_id: statementAccountId.trim() })}`,
+      };
+      const path = paths[nextTab as Exclude<Tab, 'schedules'>];
+
       if (nextTab === 'sales') {
-        const [daily, monthly, returns] = await Promise.all([
-          api(
-            `/reports/sales/daily${qs(
-              toDate || fromDate ? { date: toDate || fromDate } : {}
-            )}`
+        const [products, daily, monthly, returns] = await Promise.all([
+          fetchReport(path),
+          fetchReport(
+            `/reports/sales/daily${qs(toDate || fromDate ? { date: toDate || fromDate } : {})}`
           ),
-          api(`/reports/sales/monthly${qs()}`),
-          api(
+          fetchReport(`/reports/sales/monthly${qs()}`),
+          fetchReport(
             `/reports/sales/returns${qs({
               ...(salesReturnStatus ? { status: salesReturnStatus } : {}),
               ...(salesReturnReason ? { reason: salesReturnReason } : {}),
             })}`
           ),
         ]);
-        setData({
-          products: r.data,
+        const sections: Record<string, string> = {};
+        if (products.error) sections.products = products.error;
+        if (daily.error) sections.daily = daily.error;
+        if (monthly.error) sections.monthly = monthly.error;
+        if (returns.error) sections.returns = returns.error;
+        const payload = {
+          products: products.data,
           daily: daily.data,
           monthly: monthly.data,
           returns: returns.data,
+        };
+        const hasData = Boolean(products.data || daily.data || monthly.data || returns.data);
+        publish({
+          loading: false,
+          data: hasData ? payload : null,
+          error: hasData ? '' : Object.values(sections)[0] || 'Could not load this report.',
+          sectionErrors: sections,
+          generatedAt: hasData ? new Date().toISOString() : '',
         });
-      } else if (nextTab === 'inventory') {
-        const [balance, valuation, movements, suggestions, transfers, expiry, stockCounts] =
+        return;
+      }
+
+      if (nextTab === 'inventory') {
+        const [lowStock, balance, valuation, movements, suggestions, transfers, expiry, stockCounts] =
           await Promise.all([
-          api(`/reports/inventory/balance${qs()}`),
-          api(`/reports/inventory/valuation${qs({ method: valuationMethod })}`),
-          api(`/reports/inventory/movements${qs()}`),
-          api(`/purchasing/suggestions/low-stock${qs()}`).catch(() => ({ data: null })),
-          api(`/reports/inventory/transfers${qs(transferStatus ? { status: transferStatus } : {})}`),
-          api(
-            `/reports/inventory/expiry${qs({
-              days: String(Math.max(1, Math.min(365, Number(expiryDays) || 30))),
-            })}`
-          ),
-          api(`/reports/inventory/stock-counts${qs({ variance_only: 'true', status: stockCountStatus })}`),
-        ]);
-        setData({
-          lowStock: r.data,
+            fetchReport(path),
+            fetchReport(`/reports/inventory/balance${qs()}`),
+            fetchReport(`/reports/inventory/valuation${qs({ method: valuationMethod })}`),
+            fetchReport(`/reports/inventory/movements${qs()}`),
+            fetchReport(`/purchasing/suggestions/low-stock${qs()}`),
+            fetchReport(
+              `/reports/inventory/transfers${qs(transferStatus ? { status: transferStatus } : {})}`
+            ),
+            fetchReport(
+              `/reports/inventory/expiry${qs({
+                days: String(Math.max(1, Math.min(365, Number(expiryDays) || 30))),
+              })}`
+            ),
+            fetchReport(
+              `/reports/inventory/stock-counts${qs({
+                variance_only: 'true',
+                status: stockCountStatus,
+              })}`
+            ),
+          ]);
+        const sections: Record<string, string> = {};
+        if (lowStock.error) sections.lowStock = lowStock.error;
+        if (balance.error) sections.balance = balance.error;
+        if (valuation.error) sections.valuation = valuation.error;
+        if (movements.error) sections.movements = movements.error;
+        if (suggestions.error) sections.suggestions = suggestions.error;
+        if (transfers.error) sections.transfers = transfers.error;
+        if (expiry.error) sections.expiry = expiry.error;
+        if (stockCounts.error) sections.stockCounts = stockCounts.error;
+        const payload = {
+          lowStock: lowStock.data,
           balance: balance.data,
           valuation: valuation.data,
           movements: movements.data,
@@ -298,37 +438,78 @@ export default function Page() {
           transfers: transfers.data,
           expiry: expiry.data,
           stockCounts: stockCounts.data,
+        };
+        const hasData = Object.values(payload).some((v) => v != null);
+        if (hasData) setSuggestSelected({});
+        publish({
+          loading: false,
+          data: hasData ? payload : null,
+          error: hasData ? '' : Object.values(sections)[0] || 'Could not load this report.',
+          sectionErrors: sections,
+          generatedAt: hasData ? new Date().toISOString() : '',
         });
-        setSuggestSelected({});
-      } else if (nextTab === 'purchases') {
-        const [suppliers, pending, returns] = await Promise.all([
-          api(`/reports/purchases/suppliers${qs()}`),
-          api(
+        return;
+      }
+
+      if (nextTab === 'purchases') {
+        const [summary, suppliers, pending, returns] = await Promise.all([
+          fetchReport(path),
+          fetchReport(`/reports/purchases/suppliers${qs()}`),
+          fetchReport(
             `/reports/purchases/pending-orders${qs(
               pendingPoStatus ? { status: pendingPoStatus } : {}
             )}`
           ),
-          api(
+          fetchReport(
             `/reports/purchases/returns${qs({
               ...(purchaseReturnStatus ? { status: purchaseReturnStatus } : {}),
               ...(purchaseReturnReason ? { reason: purchaseReturnReason } : {}),
             })}`
           ),
         ]);
-        setData({
-          summary: r.data,
+        const sections: Record<string, string> = {};
+        if (summary.error) sections.summary = summary.error;
+        if (suppliers.error) sections.suppliers = suppliers.error;
+        if (pending.error) sections.pending = pending.error;
+        if (returns.error) sections.returns = returns.error;
+        const payload = {
+          summary: summary.data,
           suppliers: suppliers.data,
           pending: pending.data,
           returns: returns.data,
+        };
+        const hasData = Object.values(payload).some((v) => v != null);
+        publish({
+          loading: false,
+          data: hasData ? payload : null,
+          error: hasData ? '' : Object.values(sections)[0] || 'Could not load this report.',
+          sectionErrors: sections,
+          generatedAt: hasData ? new Date().toISOString() : '',
         });
-      } else {
-        setData(r.data);
+        return;
       }
-    } catch (err: any) {
-      setError(err.message);
+
+      const r = await fetchReport(path);
+      if (isStale()) return;
+      publish({
+        loading: false,
+        data: r.error ? null : r.data,
+        error: r.error,
+        sectionErrors: {},
+        generatedAt: r.error ? '' : new Date().toISOString(),
+      });
+    } catch (err: unknown) {
+      publish({
+        loading: false,
+        data: null,
+        error: formatReportError(err),
+        generatedAt: '',
+        sectionErrors: {},
+      });
     } finally {
-      setLoading(false);
-      setGeneratedAt(new Date().toISOString());
+      if (!isStale()) {
+        setLoadingTabs((prev) => ({ ...prev, [nextTab]: false }));
+      }
     }
   }
 
@@ -387,17 +568,82 @@ export default function Page() {
     }
   }, [branchId, departmentId, departments]);
 
-  function switchTab(t: Tab) {
+  function switchTab(t: Tab, nextView?: string) {
+    tabRef.current = t;
     setTab(t);
-    router.replace(`/reports?tab=${t}`, { scroll: false });
+    if (nextView !== undefined) setView(nextView);
+    const cached = tabCacheRef.current[t];
+    if (cached) {
+      setData(cached.data);
+      setError(cached.error);
+      setGeneratedAt(cached.generatedAt);
+      setSectionErrors(cached.sectionErrors);
+      setLoading(cached.loading);
+    } else {
+      setData(null);
+      setError('');
+      setGeneratedAt('');
+      setSectionErrors({});
+      setLoading(false);
+    }
+    const href = reportsHref(reportFromTabView(t, nextView !== undefined ? nextView : view));
+    router.replace(href, { scroll: false });
     load(t);
+  }
+
+  function selectReport(def: ReportDef) {
+    const nextTab = def.tab as Tab;
+    const nextView = def.view || '';
+    if (nextTab === tab) {
+      setView(nextView);
+      router.replace(reportsHref(def), { scroll: false });
+      const cached = tabCacheRef.current[nextTab];
+      if (!cached || cached.loading) {
+        load(nextTab);
+      }
+      return;
+    }
+    switchTab(nextTab, nextView);
+  }
+
+  function resetFilters() {
+    setFromDate('');
+    setToDate('');
+    setAsOf('');
+    setCompare('');
+    setWarehouseId('');
+    setCategoryId('');
+    setDepartmentId('');
+    setStatementAccountId('');
+    setExpiryDays('30');
+    setValuationMethod('standard');
+    setStockCountStatus('completed');
+    setTransferStatus('');
+    setPendingPoStatus('');
+    setSalesReturnStatus('');
+    setSalesReturnReason('');
+    setPurchaseReturnStatus('');
+    setPurchaseReturnReason('');
+    setStoreId(ctxStoreId || '');
+    setBranchId('');
+    setData(null);
+    setGeneratedAt('');
+    setError('');
+    setSectionErrors({});
+    setMessage('');
+    tabCacheRef.current[tab] = emptyTabCache();
   }
 
   useEffect(() => {
     const next = searchParams.get('tab');
+    const nextView = searchParams.get('view') || '';
     if (isReportTab(next) && next !== tab) {
+      tabRef.current = next;
       setTab(next);
+      setView(nextView);
       load(next);
+    } else if (nextView !== view) {
+      setView(nextView);
     }
     // load is stable enough for tab query changes from the sidebar
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -454,10 +700,10 @@ export default function Page() {
     setError('');
     setMessage('');
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const tenant = localStorage.getItem('tenant');
       const params = new URLSearchParams();
-      const exportType = reportType || TAB_EXPORT[tab];
+      const exportType = reportType || activeReport.exportType || TAB_EXPORT[tab as Exclude<Tab, 'schedules'>];
       if (!exportType) return;
       params.set('report_type', exportType);
       params.set('format', format);
@@ -591,373 +837,484 @@ export default function Page() {
     <>
       <h1>Reports</h1>
       <p className="muted">
-        Company-scoped totals only (this tenant). Grouped by Sales, Inventory, Purchases, Finance,
-        Customers, and Staff. Preview, print, and export use the same filters.
+        Company-scoped totals only (this tenant). Pick a report, set the filters that apply, then
+        Generate. Export and print use the same filters.
       </p>
-      {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
-      {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
-      {generatedAt ? (
-        <p className="muted" style={{ fontSize: 13 }}>
-          Generated {new Date(generatedAt).toLocaleString()}
-        </p>
-      ) : null}
-
-      {(
-        [
-          ['Sales', [['summary', 'Summary'], ['sales', 'Products'], ['salesperson', 'Staff'], ['stores', 'Stores'], ['departments', 'Departments']]],
-          ['Inventory', [['inventory', 'Stock']]],
-          ['Purchases', [['purchases', 'Purchases']]],
-          ['Finance', [['expenses', 'Expenses'], ['cashflow', 'Cash flow'], ['pnl', 'P&L'], ['trialbalance', 'Trial balance'], ['balancesheet', 'Balance sheet'], ['accountstatement', 'Account statement']]],
-          ['Customers', [['customers', 'Customers']]],
-          ['Staff', [['schedules', 'Email schedules']]],
-        ] as [string, [Tab, string][]][]
-      ).map(([group, items]) => (
-        <div key={group} style={{ marginBottom: 10 }}>
-          <div className="muted" style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>{group}</div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {items.map(([id, label]) => (
+      <div className="reports-layout">
+        <nav className="reports-nav" aria-label="Report groups">
+          {REPORT_GROUP_ORDER.map((group) => (
+            <div
+              key={group.id}
+              className={`reports-nav-group${activeReport.group === group.id ? ' is-active' : ''}`}
+            >
+              <h2 className="reports-nav-title">{group.label}</h2>
+              {reportsInGroup(group.id).map((def) => {
+                const selected = activeReport.id === def.id;
+                const busy = !!loadingTabs[def.tab as Tab];
+                return (
+                  <button
+                    key={def.id}
+                    type="button"
+                    className={`reports-nav-item${selected ? ' is-active' : ''}`}
+                    onClick={() => (selected ? load(def.tab as Tab) : selectReport(def))}
+                    disabled={busy && selected}
+                    aria-pressed={selected}
+                    aria-busy={busy && selected}
+                    aria-label={selected ? `Retry ${def.name}` : `Show ${def.name}`}
+                  >
+                    <strong>{busy && selected ? `${def.name}…` : def.name}</strong>
+                    <span>{def.description}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
+        <div className="reports-main">
+          <p className="reports-crumb muted">
+            {REPORT_GROUP_ORDER.find((g) => g.id === activeReport.group)?.label || 'Reports'} ·{' '}
+            {activeReport.name}
+          </p>
+          <h2>{activeReport.name}</h2>
+          <p className="muted">{activeReport.description}</p>
+          {error && (
+            <p style={{ color: '#b91c1c' }} role="alert">
+              {error}{' '}
               <button
-                key={id}
                 type="button"
-                onClick={() => switchTab(id)}
-                disabled={tab === id || loading}
-                aria-label={`Show reports ${id} tab`}
+                onClick={() => load(tab)}
+                disabled={!!loadingTabs[tab]}
+                aria-label="Retry this report"
               >
-                {label}
+                Retry
               </button>
-            ))}
-          </div>
-        </div>
-      ))}
+            </p>
+          )}
+          {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
+          {generatedAt && !error ? (
+            <p className="muted" style={{ fontSize: 13 }}>
+              Generated {fmtDate(generatedAt)}
+            </p>
+          ) : null}
 
-      {tab !== 'schedules' && (
-      <div className="card list-toolbar" style={{ marginBottom: 16 }}>
-        <input
-          type="date"
-          value={fromDate}
-          onChange={(e) => setFromDate(e.target.value)}
-          title="From date (YYYY-MM-DD)"
-          aria-label="Report from date"
-        />
-        <input
-          type="date"
-          value={toDate}
-          onChange={(e) => setToDate(e.target.value)}
-          title="To date (YYYY-MM-DD)"
-          aria-label="Report to date"
-        />
-        {(tab === 'balancesheet' || tab === 'trialbalance') && (
-          <>
-            <input
-              type="date"
-              value={asOf}
-              onChange={(e) => setAsOf(e.target.value)}
-              title="As of date (defaults to To date)"
-              aria-label="Report as of date"
-            />
-            {tab === 'balancesheet' && (
-              <select
-                value={compare}
-                onChange={(e) => setCompare(e.target.value)}
-                aria-label="Balance sheet compare"
-              >
-                <option value="">No compare</option>
-                <option value="prior_period">vs prior month-end</option>
-                <option value="prior_year">vs prior year</option>
-              </select>
-            )}
-          </>
-        )}
-        {tab === 'accountstatement' && (
-          <select
-            value={statementAccountId}
-            onChange={(e) => setStatementAccountId(e.target.value)}
-            aria-label="Account for statement"
-          >
-            <option value="">Select account</option>
-            {coaAccounts.map((a: any) => (
-              <option key={a.id} value={a.id}>
-                {a.code} {a.name}
-              </option>
-            ))}
-          </select>
-        )}
-        {tab === 'inventory' && (
-          <>
-            <select
-              value={storeId || ctxStoreId}
-              onChange={(e) => {
-                setStoreId(e.target.value);
-                setCtxStoreId(e.target.value);
-                setWarehouseId('');
-              }}
-              aria-label="Report inventory store filter"
-            >
-              <option value="">All stores</option>
-              {stores
-                .filter((s) => s.is_active !== false)
-                .map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.code} — {s.name}
-                </option>
-              ))}
-            </select>
-            <select
-              value={warehouseId}
-              onChange={(e) => {
-                const next = e.target.value;
-                setWarehouseId(next);
-                if (next) {
-                  const wh = warehouses.find((w) => w.id === next);
-                  if (wh?.store_id) {
-                    setStoreId(wh.store_id);
-                    setCtxStoreId(wh.store_id);
-                  }
-                }
-              }}
-              aria-label="Report inventory warehouse filter"
-            >
-              <option value="">All warehouses (company stock)</option>
-              {warehouses
-                .filter((w) => w.is_active !== false)
-                .filter((w) => !effectiveStoreId || w.store_id === effectiveStoreId)
-                .map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.code} — {w.name}
-                  </option>
-                ))}
-            </select>
-            <input
-              type="number"
-              min={1}
-              max={365}
-              value={expiryDays}
-              onChange={(e) => setExpiryDays(e.target.value)}
-              placeholder="Expiry days"
-              style={{ width: 110 }}
-              title="Expiry horizon (1–365 days)"
-              aria-label="Inventory expiry days"
-            />
-          </>
-        )}
-        {tab === 'purchases' && (
-          <>
-            <select
-              value={storeId || ctxStoreId}
-              onChange={(e) => {
-                setStoreId(e.target.value);
-                setCtxStoreId(e.target.value);
-                setWarehouseId('');
-              }}
-              aria-label="Report purchases store filter"
-            >
-              <option value="">All stores</option>
-              {stores
-                .filter((s) => s.is_active !== false)
-                .map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.code} — {s.name}
-                </option>
-              ))}
-            </select>
-              <select
-                value={warehouseId}
-                onChange={(e) => {
-                  const id = e.target.value;
-                  setWarehouseId(id);
-                  if (!id) return;
-                  const wh = warehouses.find((w) => w.id === id);
-                  if (wh?.store_id) {
-                    setStoreId(wh.store_id);
-                    setCtxStoreId(wh.store_id);
-                  }
-                }}
-                aria-label="Report purchases warehouse filter"
-              >
-              <option value="">All warehouses</option>
-              {warehouses
-                .filter((w) => w.is_active !== false)
-                .filter((w) => !effectiveStoreId || w.store_id === effectiveStoreId)
-                .map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.code} — {w.name}
-                  </option>
-                ))}
-            </select>
-          </>
-        )}
-        {(tab === 'pnl' ||
-          tab === 'stores' ||
-          tab === 'sales' ||
-          tab === 'customers' ||
-          tab === 'expenses' ||
-          tab === 'cashflow' ||
-          tab === 'salesperson' ||
-          tab === 'balancesheet' ||
-          tab === 'trialbalance') && (
-          <>
-            {(tab === 'pnl' ||
-              tab === 'stores' ||
-              tab === 'expenses' ||
-              tab === 'cashflow' ||
-              tab === 'balancesheet' ||
-              tab === 'trialbalance') && (
-              <select
-                value={branchId}
-                onChange={(e) => setBranchId(e.target.value)}
-                aria-label="Report financial branch filter"
-              >
-                <option value="">All branches</option>
-                {branches.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.code} — {b.name}
-                  </option>
-                ))}
-              </select>
-            )}
-            <select
-              value={storeId || ctxStoreId}
-              onChange={(e) => {
-                setStoreId(e.target.value);
-                setCtxStoreId(e.target.value);
-              }}
-              aria-label="Report financial store filter"
-            >
-              <option value="">All stores</option>
-              {stores
-                .filter((s) => s.is_active !== false)
-                .filter((s) => !branchId || s.branch_id === branchId)
-                .map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.code} — {s.name}
-                  </option>
-                ))}
-            </select>
-          </>
-        )}
-        {(tab === 'salesperson' ||
-          tab === 'stores' ||
-          tab === 'departments' ||
-          tab === 'expenses') && (
-          <select
-            value={departmentId}
-            onChange={(e) => setDepartmentId(e.target.value)}
-            aria-label="Report department filter"
-          >
-            <option value="">All departments</option>
-            {departments
-              .filter((d) => !branchId || !d.branch_id || d.branch_id === branchId)
-              .map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.code} — {d.name}
-                </option>
-              ))}
-          </select>
-        )}
-        {tab === 'sales' && (
-          <select
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-            aria-label="Report sales category filter"
-          >
-            <option value="">All categories</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.code} — {c.name}
-              </option>
-            ))}
-          </select>
-        )}
-        <button onClick={() => load()} disabled={loading} aria-label="Apply report filters">
-          {loading ? 'Loading…' : 'Apply filters'}
-        </button>
-        <button onClick={() => download('csv')} aria-label="Export report CSV">
-          Export CSV
-        </button>
-        <button onClick={() => download('xlsx')} aria-label="Export report Excel">
-          Export Excel
-        </button>
-        <button onClick={() => download('pdf')} aria-label="Export report PDF">
-          Export PDF
-        </button>
-        <button type="button" onClick={() => window.print()} aria-label="Print report">
-          Print
-        </button>
-        {tab === 'sales' && (
-          <>
-            <button onClick={() => download('csv', 'sales_daily')} aria-label="Export sales daily CSV">
-              Daily CSV
-            </button>
-            <button
-              onClick={() => download('xlsx', 'sales_salesperson')}
-              aria-label="Export salespeople Excel"
-            >
-              Salespeople Excel
-            </button>
-            <button
-              onClick={() => download('xlsx', 'trial_balance')}
-              aria-label="Export trial balance Excel"
-            >
-              Trial balance Excel
-            </button>
-            <button
-              onClick={() => download('csv', 'trial_balance')}
-              aria-label="Export trial balance CSV"
-            >
-              Trial balance CSV
-            </button>
-            <button onClick={() => download('pdf', 'profit_loss')} aria-label="Export P&L PDF">
-              P&amp;L PDF
-            </button>
-          </>
-        )}
-        {tab === 'salesperson' && (
-          <button
-            onClick={() => download('xlsx', 'sales_salesperson')}
-            aria-label="Export salespeople Excel"
-          >
-            Export Excel
-          </button>
-        )}
-        {tab === 'customers' && (
-          <button
-            onClick={() => download('xlsx', 'sales_customers')}
-            aria-label="Export sales customers Excel"
-          >
-            Export Excel
-          </button>
-        )}
-        {tab === 'stores' && (
-          <button
-            onClick={() => download('xlsx', 'sales_by_store')}
-            aria-label="Export sales by store Excel"
-          >
-            Export Excel
-          </button>
-        )}
-      </div>
-      )}
-      {loading ? (
-        <p className="muted" role="status">
-          Loading report…
-        </p>
-      ) : null}
-      {!loading && tab !== 'schedules' && !data && !error ? (
-        <div className="list-empty">
-          <p>No report data for this view.</p>
-          <p className="muted">Apply filters, or select an account for the statement.</p>
-        </div>
-      ) : null}
+          {tab !== 'schedules' && (
+            <div className="card reports-filters" style={{ marginBottom: 16 }}>
+              {reportHasFilter(activeReport, 'dates') && (
+                <>
+                  <label>
+                    From
+                    <input
+                      type="date"
+                      value={fromDate}
+                      onChange={(e) => setFromDate(e.target.value)}
+                      title="From date (YYYY-MM-DD)"
+                      aria-label="Report from date"
+                    />
+                  </label>
+                  <label>
+                    To
+                    <input
+                      type="date"
+                      value={toDate}
+                      onChange={(e) => setToDate(e.target.value)}
+                      title="To date (YYYY-MM-DD)"
+                      aria-label="Report to date"
+                    />
+                  </label>
+                </>
+              )}
+              {reportHasFilter(activeReport, 'asOf') && (
+                <label>
+                  As of
+                  <input
+                    type="date"
+                    value={asOf}
+                    onChange={(e) => setAsOf(e.target.value)}
+                    title="As of date (defaults to To date)"
+                    aria-label="Report as of date"
+                  />
+                </label>
+              )}
+              {reportHasFilter(activeReport, 'compare') && (
+                <label>
+                  Compare
+                  <select
+                    value={compare}
+                    onChange={(e) => setCompare(e.target.value)}
+                    aria-label="Balance sheet compare"
+                  >
+                    <option value="">No compare</option>
+                    <option value="prior_period">vs prior month-end</option>
+                    <option value="prior_year">vs prior year</option>
+                  </select>
+                </label>
+              )}
+              {reportHasFilter(activeReport, 'account') && (
+                <label>
+                  Account
+                  <select
+                    value={statementAccountId}
+                    onChange={(e) => setStatementAccountId(e.target.value)}
+                    aria-label="Account for statement"
+                  >
+                    <option value="">Select account</option>
+                    {coaAccounts.map((a: any) => (
+                      <option key={a.id} value={a.id}>
+                        {a.code} {a.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              {reportHasFilter(activeReport, 'branch') && (
+                <label>
+                  Branch
+                  <select
+                    value={branchId}
+                    onChange={(e) => setBranchId(e.target.value)}
+                    aria-label="Report financial branch filter"
+                  >
+                    <option value="">All branches</option>
+                    {branches.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.code} — {b.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              {reportHasFilter(activeReport, 'store') && (
+                <label>
+                  Store
+                  <select
+                    value={storeId || ctxStoreId}
+                    onChange={(e) => {
+                      setStoreId(e.target.value);
+                      setCtxStoreId(e.target.value);
+                      if (reportHasFilter(activeReport, 'warehouse')) setWarehouseId('');
+                    }}
+                    aria-label="Report store filter"
+                  >
+                    <option value="">All stores</option>
+                    {stores
+                      .filter((s) => s.is_active !== false)
+                      .filter((s) => !branchId || s.branch_id === branchId)
+                      .map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.code} — {s.name}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+              )}
+              {reportHasFilter(activeReport, 'warehouse') && (
+                <label>
+                  Warehouse
+                  <select
+                    value={warehouseId}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setWarehouseId(next);
+                      if (next) {
+                        const wh = warehouses.find((w) => w.id === next);
+                        if (wh?.store_id) {
+                          setStoreId(wh.store_id);
+                          setCtxStoreId(wh.store_id);
+                        }
+                      }
+                    }}
+                    aria-label="Report warehouse filter"
+                  >
+                    <option value="">All warehouses</option>
+                    {warehouses
+                      .filter((w) => w.is_active !== false)
+                      .filter((w) => !effectiveStoreId || w.store_id === effectiveStoreId)
+                      .map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.code} — {w.name}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+              )}
+              {reportHasFilter(activeReport, 'department') && (
+                <label>
+                  Department
+                  <select
+                    value={departmentId}
+                    onChange={(e) => setDepartmentId(e.target.value)}
+                    aria-label="Report department filter"
+                  >
+                    <option value="">All departments</option>
+                    {departments
+                      .filter((d) => !branchId || !d.branch_id || d.branch_id === branchId)
+                      .map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.code} — {d.name}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+              )}
+              {reportHasFilter(activeReport, 'category') && (
+                <label>
+                  Category
+                  <select
+                    value={categoryId}
+                    onChange={(e) => setCategoryId(e.target.value)}
+                    aria-label="Report sales category filter"
+                  >
+                    <option value="">All categories</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.code} — {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              {reportHasFilter(activeReport, 'expiryDays') && (
+                <label>
+                  Expiry days
+                  <input
+                    type="number"
+                    min={1}
+                    max={365}
+                    value={expiryDays}
+                    onChange={(e) => setExpiryDays(e.target.value)}
+                    placeholder="Expiry days"
+                    style={{ width: 110 }}
+                    title="Expiry horizon (1–365 days)"
+                    aria-label="Inventory expiry days"
+                  />
+                </label>
+              )}
+              {reportHasFilter(activeReport, 'valuation') && (
+                <label>
+                  Valuation
+                  <select
+                    aria-label="Valuation method"
+                    value={valuationMethod}
+                    onChange={(e) => setValuationMethod(e.target.value as 'standard')}
+                  >
+                    <option value="standard">standard</option>
+                  </select>
+                </label>
+              )}
+              {reportHasFilter(activeReport, 'salesReturn') && (
+                <>
+                  <label>
+                    Return status
+                    <select
+                      aria-label="Sales return status"
+                      value={salesReturnStatus}
+                      onChange={(e) =>
+                        setSalesReturnStatus(e.target.value as '' | 'draft' | 'posted' | 'cancelled')
+                      }
+                    >
+                      <option value="">all</option>
+                      <option value="draft">draft</option>
+                      <option value="posted">posted</option>
+                      <option value="cancelled">cancelled</option>
+                    </select>
+                  </label>
+                  <label>
+                    Return reason
+                    <select
+                      aria-label="Sales return reason"
+                      value={salesReturnReason}
+                      onChange={(e) =>
+                        setSalesReturnReason(
+                          e.target.value as
+                            | ''
+                            | 'damaged'
+                            | 'wrong_item'
+                            | 'defective'
+                            | 'customer_change'
+                            | 'other'
+                        )
+                      }
+                    >
+                      <option value="">all</option>
+                      <option value="damaged">damaged</option>
+                      <option value="wrong_item">wrong item</option>
+                      <option value="defective">defective</option>
+                      <option value="customer_change">customer change</option>
+                      <option value="other">other</option>
+                    </select>
+                  </label>
+                </>
+              )}
+              {reportHasFilter(activeReport, 'purchaseReturn') && (
+                <>
+                  <label>
+                    Return status
+                    <select
+                      aria-label="Purchase return status"
+                      value={purchaseReturnStatus}
+                      onChange={(e) =>
+                        setPurchaseReturnStatus(e.target.value as '' | 'draft' | 'posted' | 'cancelled')
+                      }
+                    >
+                      <option value="">all</option>
+                      <option value="draft">draft</option>
+                      <option value="posted">posted</option>
+                      <option value="cancelled">cancelled</option>
+                    </select>
+                  </label>
+                  <label>
+                    Return reason
+                    <select
+                      aria-label="Purchase return reason"
+                      value={purchaseReturnReason}
+                      onChange={(e) =>
+                        setPurchaseReturnReason(
+                          e.target.value as
+                            | ''
+                            | 'damaged'
+                            | 'wrong_item'
+                            | 'expiry'
+                            | 'quality'
+                            | 'other'
+                        )
+                      }
+                    >
+                      <option value="">all</option>
+                      <option value="damaged">damaged</option>
+                      <option value="wrong_item">wrong item</option>
+                      <option value="expiry">expiry</option>
+                      <option value="quality">quality</option>
+                      <option value="other">other</option>
+                    </select>
+                  </label>
+                </>
+              )}
+              {reportHasFilter(activeReport, 'pendingPo') && (
+                <label>
+                  Pending status
+                  <select
+                    aria-label="Pending status"
+                    value={pendingPoStatus}
+                    onChange={(e) =>
+                      setPendingPoStatus(e.target.value as '' | 'draft' | 'sent' | 'partially_received')
+                    }
+                  >
+                    <option value="">all pending</option>
+                    <option value="draft">draft</option>
+                    <option value="sent">sent</option>
+                    <option value="partially_received">partially received</option>
+                  </select>
+                </label>
+              )}
+              {reportHasFilter(activeReport, 'transferStatus') && (
+                <label>
+                  Transfer status
+                  <select
+                    aria-label="Transfer status"
+                    value={transferStatus}
+                    onChange={(e) =>
+                      setTransferStatus(
+                        e.target.value as
+                          | ''
+                          | 'draft'
+                          | 'requested'
+                          | 'in_transit'
+                          | 'received'
+                          | 'cancelled'
+                      )
+                    }
+                  >
+                    <option value="">all</option>
+                    <option value="draft">draft</option>
+                    <option value="requested">requested</option>
+                    <option value="in_transit">in transit</option>
+                    <option value="received">received</option>
+                    <option value="cancelled">cancelled</option>
+                  </select>
+                </label>
+              )}
+              {reportHasFilter(activeReport, 'stockCountStatus') && (
+                <label>
+                  Count status
+                  <select
+                    aria-label="Count status"
+                    value={stockCountStatus}
+                    onChange={(e) =>
+                      setStockCountStatus(e.target.value as 'draft' | 'completed' | 'cancelled')
+                    }
+                  >
+                    <option value="completed">completed</option>
+                    <option value="draft">draft</option>
+                    <option value="cancelled">cancelled</option>
+                  </select>
+                </label>
+              )}
+              <div className="reports-actions">
+                <button
+                  type="button"
+                  onClick={() => load(tab)}
+                  disabled={!!loadingTabs[tab]}
+                  aria-label="Generate this report"
+                >
+                  {loadingTabs[tab] ? 'Generating…' : 'Generate'}
+                </button>
+                <button type="button" onClick={resetFilters} aria-label="Reset report filters">
+                  Reset
+                </button>
+                {activeReport.exportType ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => download('csv')}
+                      aria-label="Export report CSV"
+                    >
+                      Export CSV
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => download('xlsx')}
+                      aria-label="Export report Excel"
+                    >
+                      Export Excel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => download('pdf')}
+                      aria-label="Export report PDF"
+                    >
+                      Export PDF
+                    </button>
+                  </>
+                ) : null}
+                {activeReport.print ? (
+                  <button type="button" onClick={() => window.print()} aria-label="Print report">
+                    Print
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          )}
+          {loadingTabs[tab] ? (
+            <p className="muted" role="status">
+              Loading this report…
+            </p>
+          ) : null}
+          {!loadingTabs[tab] && tab !== 'schedules' && !data && !error ? (
+            <div className="list-empty">
+              <p>This report has not been generated yet.</p>
+              <p className="muted">Set any filters you need, then choose Generate.</p>
+            </div>
+          ) : null}
 
       {tab === 'summary' && data && (
         <div className="grid">
           <div className="card">
             <div className="muted">Today sales</div>
-            <div className="kpi">{data.today_sales?.total_revenue ?? 0}</div>
+            <div className="kpi">{fmtMoney(data.today_sales?.total_revenue)}</div>
           </div>
           <div className="card">
             <div className="muted">Month sales</div>
-            <div className="kpi">{data.month_sales?.total_revenue ?? 0}</div>
+            <div className="kpi">{fmtMoney(data.month_sales?.total_revenue)}</div>
             <p className="muted">vs prior: {data.month_sales?.change_pct ?? '—'}%</p>
           </div>
           <div className="card">
@@ -966,13 +1323,17 @@ export default function Page() {
           </div>
           <div className="card">
             <div className="muted">Approved expenses</div>
-            <div className="kpi">{data.expenses_summary?.total_amount ?? 0}</div>
+            <div className="kpi">{fmtMoney(data.expenses_summary?.total_amount)}</div>
           </div>
         </div>
       )}
 
       {tab === 'sales' && data && (
         <>
+          {activeReport.view !== 'returns' && (
+            <>
+          {sectionErrors.daily ? <p style={{ color: '#b91c1c' }}>{sectionErrors.daily}</p> : null}
+          {sectionErrors.monthly ? <p style={{ color: '#b91c1c' }}>{sectionErrors.monthly}</p> : null}
           <div className="grid">
             <div className="card">
               <h3>
@@ -989,8 +1350,10 @@ export default function Page() {
             </div>
           </div>
           <h3 style={{ marginTop: 16 }}>Products</h3>
+          {sectionErrors.products ? <p style={{ color: '#b91c1c' }}>{sectionErrors.products}</p> : null}
           <p className="muted">
             Qty {data.products?.total_quantity ?? 0} · revenue {data.products?.total_revenue ?? 0}
+            {data.products?.total_profit != null ? ` · profit ${data.products.total_profit}` : ''}
             {data.products?.store_id ? ' · store filtered' : ''}
             {data.products?.category_name ? ` · ${data.products.category_name}` : ''}
           </p>
@@ -998,86 +1361,46 @@ export default function Page() {
           <table className="table">
             <thead>
               <tr>
+                <th>Product</th>
                 <th>SKU</th>
-                <th>Name</th>
                 <th>Category</th>
                 <th>Qty</th>
                 <th>Revenue</th>
+                <th>Profit</th>
               </tr>
             </thead>
             <tbody>
               {(data.products?.products || []).map((p: any) => (
                 <tr key={p.product_id}>
-                  <td>{p.sku}</td>
                   <td>{p.name}</td>
+                  <td>{p.sku || '—'}</td>
                   <td>{p.category_name || '—'}</td>
                   <td>{p.quantity}</td>
-                  <td>{p.revenue}</td>
+                  <td>{fmtMoney(p.revenue)}</td>
+                  <td>{p.profit != null ? fmtMoney(p.profit) : '—'}</td>
                 </tr>
               ))}
+              {!(data.products?.products || []).length ? (
+                <tr>
+                  <td colSpan={6} className="muted">
+                    No product sales for this period.
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
           </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
-            <button
-              onClick={() => download('xlsx', 'sales_returns')}
-              aria-label="Export sales returns Excel"
-            >
-              Returns Excel
-            </button>
-            <button
-              onClick={() => download('csv', 'sales_returns')}
-              aria-label="Export sales returns CSV"
-            >
-              Returns CSV
-            </button>
-          </div>
+            </>
+          )}
+          {activeReport.view === 'returns' && (
+            <>
           <h3 style={{ marginTop: 16 }}>Sales returns</h3>
+          {sectionErrors.returns ? <p style={{ color: '#b91c1c' }}>{sectionErrors.returns}</p> : null}
           <p className="muted">
-            <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', marginRight: 8 }}>
-              Return status
-              <select
-                aria-label="Sales return status"
-                value={salesReturnStatus}
-                onChange={(e) =>
-                  setSalesReturnStatus(e.target.value as '' | 'draft' | 'posted' | 'cancelled')
-                }
-              >
-                <option value="">all</option>
-                <option value="draft">draft</option>
-                <option value="posted">posted</option>
-                <option value="cancelled">cancelled</option>
-              </select>
-            </label>
-            <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', marginRight: 8 }}>
-              Return reason
-              <select
-                aria-label="Sales return reason"
-                value={salesReturnReason}
-                onChange={(e) =>
-                  setSalesReturnReason(
-                    e.target.value as
-                      | ''
-                      | 'damaged'
-                      | 'wrong_item'
-                      | 'defective'
-                      | 'customer_change'
-                      | 'other'
-                  )
-                }
-              >
-                <option value="">all</option>
-                <option value="damaged">damaged</option>
-                <option value="wrong_item">wrong_item</option>
-                <option value="defective">defective</option>
-                <option value="customer_change">customer_change</option>
-                <option value="other">other</option>
-              </select>
-            </label>
-            {data.returns?.return_count ?? 0} returns · total {data.returns?.total_amount ?? 0} ·
-            posted {data.returns?.posted_amount ?? 0} · qty {data.returns?.total_quantity ?? 0} ·
-            refunded {data.returns?.refunded_amount ?? 0}
-            {data.returns?.store_name ? ` · ${data.returns.store_name}` : ""}
+            {data.returns?.return_count ?? 0} returns · total {fmtMoney(data.returns?.total_amount)} ·
+            posted {fmtMoney(data.returns?.posted_amount)} · qty {data.returns?.total_quantity ?? 0} ·
+            refunded {fmtMoney(data.returns?.refunded_amount)}
+            {data.returns?.store_name ? ` · ${data.returns.store_name}` : ''}
           </p>
           <div className="list-table-wrap">
           <table className="table">
@@ -1122,6 +1445,8 @@ export default function Page() {
                   </li>
                 ))}
               </ul>
+            </>
+          )}
             </>
           )}
         </>
@@ -1371,6 +1696,17 @@ export default function Page() {
 
       {tab === 'inventory' && data && (
         <>
+          {sectionErrors.suggestions ? <p style={{ color: '#b91c1c' }}>{sectionErrors.suggestions}</p> : null}
+          {sectionErrors.lowStock ? <p style={{ color: '#b91c1c' }}>{sectionErrors.lowStock}</p> : null}
+          {sectionErrors.balance || sectionErrors.valuation ? (
+            <p style={{ color: '#b91c1c' }}>{sectionErrors.balance || sectionErrors.valuation}</p>
+          ) : null}
+          {sectionErrors.movements ? <p style={{ color: '#b91c1c' }}>{sectionErrors.movements}</p> : null}
+          {sectionErrors.expiry ? <p style={{ color: '#b91c1c' }}>{sectionErrors.expiry}</p> : null}
+          {sectionErrors.transfers ? <p style={{ color: '#b91c1c' }}>{sectionErrors.transfers}</p> : null}
+          {sectionErrors.stockCounts ? <p style={{ color: '#b91c1c' }}>{sectionErrors.stockCounts}</p> : null}
+          {(activeReport.view || 'low_stock') === 'low_stock' && (
+          <>
           <div className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
               <h3 style={{ margin: 0 }}>
@@ -1396,7 +1732,11 @@ export default function Page() {
               </div>
             </div>
             <p className="muted" style={{ marginTop: 8 }}>
-              Select lines to raise draft purchase requests. Submit/approve remains in Purchasing.
+              Low stock {data.count ?? data.suggestions?.count ?? data.lowStock?.count ?? 0}
+              {data.out_of_stock_count != null || data.lowStock?.out_of_stock_count != null
+                ? ` · out of stock ${data.out_of_stock_count ?? data.lowStock?.out_of_stock_count}`
+                : ''}
+              . Select lines to raise draft purchase requests. Submit/approve remains in Purchasing.
             </p>
             {(data.suggestions?.lines || []).length === 0 ? (
               <p className="muted">No actionable low-stock lines (or all already on an open PR).</p>
@@ -1406,8 +1746,8 @@ export default function Page() {
                 <thead>
                   <tr>
                     <th></th>
+                    <th>Product</th>
                     <th>SKU</th>
-                    <th>Name</th>
                     <th>On hand</th>
                     <th>Reorder</th>
                     <th>Suggest qty</th>
@@ -1429,8 +1769,8 @@ export default function Page() {
                             }
                           />
                         </td>
-                        <td>{ln.sku}</td>
                         <td>{ln.name}</td>
+                        <td>{ln.sku || '—'}</td>
                         <td>{ln.stock_qty}</td>
                         <td>{ln.reorder_level}</td>
                         <td>{ln.suggested_order_qty}</td>
@@ -1474,6 +1814,9 @@ export default function Page() {
               </>
             )}
           </div>
+          </>
+          )}
+          {activeReport.view === 'value' && (
           <div className="card" style={{ marginTop: 16 }}>
             <h3>Stock valuation (standard cost)</h3>
             <p className="muted">
@@ -1515,6 +1858,8 @@ export default function Page() {
               Export valuation Excel
             </button>
           </div>
+          )}
+          {activeReport.view === 'movements' && (
           <div className="card" style={{ marginTop: 16 }}>
             <h3>Stock movements</h3>
             <p className="muted">
@@ -1545,8 +1890,9 @@ export default function Page() {
             <table className="table">
               <thead>
                 <tr>
-                  <th>When</th>
                   <th>Product</th>
+                  <th>SKU</th>
+                  <th>When</th>
                   <th>Type</th>
                   <th>Reason</th>
                   <th>Qty</th>
@@ -1558,14 +1904,9 @@ export default function Page() {
               <tbody>
                 {(data.movements?.movements || []).slice(0, 25).map((mv: any) => (
                   <tr key={mv.id}>
-                    <td>{mv.created_at ? String(mv.created_at).slice(0, 19) : '—'}</td>
-                    <td>
-                      {mv.product_sku || mv.product_name
-                        ? `${mv.product_sku || ''}${mv.product_name ? ` ${mv.product_name}` : ''}`.trim()
-                        : mv.product_id
-                          ? String(mv.product_id).slice(0, 8)
-                          : '—'}
-                    </td>
+                    <td>{mv.product_name || (mv.product_id ? String(mv.product_id).slice(0, 8) : '—')}</td>
+                    <td>{mv.product_sku || '—'}</td>
+                    <td>{fmtDate(mv.created_at)}</td>
                     <td>{mv.movement_type}</td>
                     <td>{mv.reason || '—'}</td>
                     <td>{mv.quantity}</td>
@@ -1581,8 +1922,8 @@ export default function Page() {
                 ))}
                 {!data.movements?.movements?.length && (
                   <tr>
-                    <td colSpan={8} className="muted">
-                      No stock movements
+                    <td colSpan={9} className="muted">
+                      No stock movements for this filter.
                     </td>
                   </tr>
                 )}
@@ -1590,15 +1931,18 @@ export default function Page() {
             </table>
             </div>
           </div>
+          )}
+          {activeReport.view === 'value' && (
+          <>
           <h3 style={{ marginTop: 16 }}>
-            Stock value: {data.valuation?.total_value ?? data.balance?.total_value ?? 0}
+            Stock value: {fmtMoney(data.valuation?.total_value ?? data.balance?.total_value)}
           </h3>
           <div className="list-table-wrap">
           <table className="table">
             <thead>
               <tr>
+                <th>Product</th>
                 <th>SKU</th>
-                <th>Name</th>
                 <th>Qty</th>
                 <th>Unit cost</th>
                 <th>Value</th>
@@ -1607,8 +1951,8 @@ export default function Page() {
             <tbody>
               {(data.valuation?.items || data.balance?.items || []).slice(0, 50).map((i: any) => (
                 <tr key={i.product_id}>
-                  <td>{i.sku}</td>
                   <td>{i.name}</td>
+                  <td>{i.sku || '—'}</td>
                   <td>{i.quantity}</td>
                   <td>{i.unit_cost ?? i.cost_price ?? '—'}</td>
                   <td>{i.value}</td>
@@ -1617,6 +1961,10 @@ export default function Page() {
             </tbody>
           </table>
           </div>
+          </>
+          )}
+          {activeReport.view === 'expiry' && (
+          <>
           <h3 style={{ marginTop: 16 }}>Expiry</h3>
           <p className="muted">
             {data.expiry?.count ?? 0} batches within {data.expiry?.within_days ?? expiryDays} days ·
@@ -1647,6 +1995,7 @@ export default function Page() {
           <table className="table">
             <thead>
               <tr>
+                <th>Product</th>
                 <th>SKU</th>
                 <th>Batch</th>
                 <th>Expiry</th>
@@ -1657,25 +2006,28 @@ export default function Page() {
             <tbody>
               {(data.expiry?.batches || []).map((b: any) => (
                 <tr key={b.id}>
-                  <td>
-                    {b.sku || '—'} {b.name ? `· ${b.name}` : ''}
-                  </td>
+                  <td>{b.name || '—'}</td>
+                  <td>{b.sku || '—'}</td>
                   <td>{b.batch_number}</td>
-                  <td>{b.expiry_date ? String(b.expiry_date).slice(0, 10) : '—'}</td>
+                  <td>{fmtDate(b.expiry_date ? String(b.expiry_date).slice(0, 10) : '')}</td>
                   <td>{b.days_until_expiry ?? '—'}</td>
                   <td>{b.quantity}</td>
                 </tr>
               ))}
-              {!data.expiry?.batches?.length && (
+                {!data.expiry?.batches?.length && (
                 <tr>
-                  <td colSpan={5} className="muted">
-                    No batches nearing expiry
+                  <td colSpan={6} className="muted">
+                    No batches nearing expiry for this filter.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
           </div>
+          </>
+          )}
+          {activeReport.view === 'transfers' && (
+          <>
           <h3 style={{ marginTop: 16 }}>Inter-store transfers</h3>
           <p className="muted">
             <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', marginRight: 8 }}>
@@ -1773,6 +2125,9 @@ export default function Page() {
               </ul>
             </>
           )}
+          </>
+          )}
+          {activeReport.view === 'counts' && (
           <div className="card" style={{ marginTop: 16 }}>
             <h3>Stock count variances</h3>
             <p className="muted">
@@ -1821,10 +2176,10 @@ export default function Page() {
             <table className="table">
               <thead>
                 <tr>
+                  <th>Product</th>
+                  <th>SKU</th>
                   <th>Count</th>
                   <th>Warehouse</th>
-                  <th>SKU</th>
-                  <th>Name</th>
                   <th>Expected</th>
                   <th>Counted</th>
                   <th>Variance</th>
@@ -1833,10 +2188,10 @@ export default function Page() {
               <tbody>
                 {(data.stockCounts?.lines || []).slice(0, 40).map((line: any, idx: number) => (
                   <tr key={`${line.count_id}-${line.product_id}-${idx}`}>
+                    <td>{line.name || '—'}</td>
+                    <td>{line.sku || '—'}</td>
                     <td>{line.count_number}</td>
                     <td>{line.warehouse_name || '—'}</td>
-                    <td>{line.sku || '—'}</td>
-                    <td>{line.name || '—'}</td>
                     <td>{line.expected_qty}</td>
                     <td>{line.counted_qty}</td>
                     <td>{line.variance}</td>
@@ -1853,11 +2208,17 @@ export default function Page() {
             </table>
             </div>
           </div>
+          )}
         </>
       )}
 
       {tab === 'purchases' && data && (
         <>
+          {sectionErrors.summary ? <p style={{ color: '#b91c1c' }}>{sectionErrors.summary}</p> : null}
+          {sectionErrors.suppliers ? <p style={{ color: '#b91c1c' }}>{sectionErrors.suppliers}</p> : null}
+          {sectionErrors.pending ? <p style={{ color: '#b91c1c' }}>{sectionErrors.pending}</p> : null}
+          {sectionErrors.returns ? <p style={{ color: '#b91c1c' }}>{sectionErrors.returns}</p> : null}
+          {(activeReport.view || 'overview') === 'overview' && (
           <div className="grid">
             <div className="card">
               <div className="muted">
@@ -1871,90 +2232,18 @@ export default function Page() {
               <div className="kpi">{data.summary?.order_count ?? 0}</div>
             </div>
             <div className="card">
-              <div className="muted">Total / outstanding $</div>
+              <div className="muted">Total / outstanding</div>
               <div className="kpi">
-                {data.summary?.total_amount ?? 0} / {data.summary?.outstanding_amount ?? 0}
+                {fmtMoney(data.summary?.total_amount)} / {fmtMoney(data.summary?.outstanding_amount)}
               </div>
             </div>
-            <div className="card">
-              <div className="muted">Pending POs</div>
-              <div className="kpi">{data.pending?.order_count ?? 0}</div>
-              <p className="muted">
-                Qty open {data.pending?.total_outstanding_qty ?? 0} · amt{' '}
-                {data.pending?.total_amount ?? 0}
-              </p>
-            </div>
           </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-            <button
-              onClick={() => download('xlsx', 'purchases_pending_orders')}
-              aria-label="Export purchases pending orders Excel"
-            >
-              Pending orders Excel
-            </button>
-            <button
-              onClick={() => download('csv', 'purchases_pending_orders')}
-              aria-label="Export purchases pending orders CSV"
-            >
-              Pending orders CSV
-            </button>
-            <button
-              onClick={() => download('xlsx', 'purchases_returns')}
-              aria-label="Export purchases returns Excel"
-            >
-              Returns Excel
-            </button>
-            <button
-              onClick={() => download('csv', 'purchases_returns')}
-              aria-label="Export purchases returns CSV"
-            >
-              Returns CSV
-            </button>
-          </div>
-          <h3 style={{ marginTop: 16 }}>Purchase returns</h3>
+          )}
+          {activeReport.view === 'returns' && (
+          <>
           <p className="muted">
-            <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', marginRight: 8 }}>
-              Return status
-              <select
-                aria-label="Purchase return status"
-                value={purchaseReturnStatus}
-                onChange={(e) =>
-                  setPurchaseReturnStatus(e.target.value as '' | 'draft' | 'posted' | 'cancelled')
-                }
-              >
-                <option value="">all</option>
-                <option value="draft">draft</option>
-                <option value="posted">posted</option>
-                <option value="cancelled">cancelled</option>
-              </select>
-            </label>
-            <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', marginRight: 8 }}>
-              Return reason
-              <select
-                aria-label="Purchase return reason"
-                value={purchaseReturnReason}
-                onChange={(e) =>
-                  setPurchaseReturnReason(
-                    e.target.value as
-                      | ''
-                      | 'damaged'
-                      | 'wrong_item'
-                      | 'expiry'
-                      | 'quality'
-                      | 'other'
-                  )
-                }
-              >
-                <option value="">all</option>
-                <option value="damaged">damaged</option>
-                <option value="wrong_item">wrong_item</option>
-                <option value="expiry">expiry</option>
-                <option value="quality">quality</option>
-                <option value="other">other</option>
-              </select>
-            </label>
-            {data.returns?.return_count ?? 0} returns · total {data.returns?.total_amount ?? 0} ·
-            posted {data.returns?.posted_amount ?? 0} · qty {data.returns?.total_quantity ?? 0}
+            {data.returns?.return_count ?? 0} returns · total {fmtMoney(data.returns?.total_amount)} ·
+            posted {fmtMoney(data.returns?.posted_amount)} · qty {data.returns?.total_quantity ?? 0}
             {data.returns?.store_name
               ? ` · ${data.returns.store_name}`
               : data.returns?.warehouse_name
@@ -2006,6 +2295,10 @@ export default function Page() {
               </ul>
             </>
           )}
+          </>
+          )}
+          {activeReport.view === 'pending' && (
+          <>
           <h3 style={{ marginTop: 16 }}>Pending orders (not fully received)</h3>
           <p className="muted">
             <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center', marginRight: 8 }}>
@@ -2064,6 +2357,10 @@ export default function Page() {
             </tbody>
           </table>
           </div>
+          </>
+          )}
+          {activeReport.view === 'suppliers' && (
+          <>
           <h3 style={{ marginTop: 16 }}>By supplier</h3>
           <div className="list-table-wrap">
           <table className="table">
@@ -2079,12 +2376,21 @@ export default function Page() {
                 <tr key={s.supplier_id}>
                   <td>{s.name}</td>
                   <td>{s.order_count}</td>
-                  <td>{s.total_amount}</td>
+                  <td>{fmtMoney(s.total_amount)}</td>
                 </tr>
               ))}
+              {!(data.suppliers?.suppliers || []).length ? (
+                <tr>
+                  <td colSpan={3} className="muted">
+                    No supplier purchases for this period.
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
           </div>
+          </>
+          )}
         </>
       )}
 
@@ -2617,6 +2923,8 @@ export default function Page() {
           {!schedules.length && !loading && <p className="muted">No schedules yet.</p>}
         </>
       )}
+        </div>
+      </div>
     </>
   );
 }

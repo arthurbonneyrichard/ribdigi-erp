@@ -6,11 +6,22 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException
-from sqlalchemy import func, or_, select
+from sqlalchemy import false as sql_false, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
 from app.honesty import money_json
+
+
+def apply_store_scope(stmt, column, store_id: str | None, store_ids: list[str] | None):
+    """Filter by a single store or an authorized IN-list. None/None = all tenant stores."""
+    if store_id:
+        return stmt.where(column == store_id)
+    if store_ids is not None:
+        if not store_ids:
+            return stmt.where(sql_false())
+        return stmt.where(column.in_(store_ids))
+    return stmt
 
 
 def parse_date(value: str | datetime | None, *, end_of_day: bool = False) -> datetime | None:
@@ -106,6 +117,7 @@ async def sales_daily(
     date: datetime | None = None,
     *,
     store_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
     day = date or datetime.utcnow()
     start, end = day_bounds(day)
@@ -117,8 +129,7 @@ async def sales_daily(
         m.SalesInvoice.posted_at >= start,
         m.SalesInvoice.posted_at <= end,
     )
-    if store_id:
-        inv_stmt = inv_stmt.where(m.SalesInvoice.store_id == store_id)
+    inv_stmt = apply_store_scope(inv_stmt, m.SalesInvoice.store_id, store_id, store_ids)
     invoices = (await db.execute(inv_stmt)).scalars().all()
 
     pos_stmt = (
@@ -131,8 +142,7 @@ async def sales_daily(
             m.Transaction.created_at <= end,
         )
     )
-    if store_id:
-        pos_stmt = pos_stmt.where(m.PosSession.store_id == store_id)
+    pos_stmt = apply_store_scope(pos_stmt, m.PosSession.store_id, store_id, store_ids)
     pos_rows = (await db.execute(pos_stmt)).all()
 
     invoice_total = sum(money_json(i.total_amount) for i in invoices)
@@ -163,6 +173,7 @@ async def sales_monthly(
     month: int,
     *,
     store_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
     start, end = month_bounds(year, month)
     store_id, store_name = await _resolve_sales_store(db, tenant_id, store_id)
@@ -173,8 +184,7 @@ async def sales_monthly(
         m.SalesInvoice.posted_at >= start,
         m.SalesInvoice.posted_at <= end,
     )
-    if store_id:
-        inv_stmt = inv_stmt.where(m.SalesInvoice.store_id == store_id)
+    inv_stmt = apply_store_scope(inv_stmt, m.SalesInvoice.store_id, store_id, store_ids)
     invoices = (await db.execute(inv_stmt)).scalars().all()
 
     pos_stmt = (
@@ -187,15 +197,19 @@ async def sales_monthly(
             m.Transaction.created_at <= end,
         )
     )
-    if store_id:
-        pos_stmt = pos_stmt.where(m.PosSession.store_id == store_id)
+    pos_stmt = apply_store_scope(pos_stmt, m.PosSession.store_id, store_id, store_ids)
     pos_rows = (await db.execute(pos_stmt)).all()
 
     by_day: dict[str, float] = defaultdict(float)
     for inv in invoices:
-        key = (inv.posted_at or inv.created_at).date().isoformat()
+        stamped = inv.posted_at or inv.created_at
+        if stamped is None:
+            continue
+        key = stamped.date().isoformat()
         by_day[key] += money_json(inv.total_amount)
     for tx, _ in pos_rows:
+        if tx.created_at is None:
+            continue
         key = tx.created_at.date().isoformat()
         by_day[key] += money_json(tx.total)
 
@@ -266,6 +280,7 @@ async def sales_by_product(
     from_date: datetime | None = None,
     to_date: datetime | None = None,
     store_id: str | None = None,
+    store_ids: list[str] | None = None,
     category_id: str | None = None,
 ) -> dict:
     """Product-wise quantity and revenue; optional store / category filters (BR-14.1)."""
@@ -312,8 +327,7 @@ async def sales_by_product(
         stmt = stmt.where(m.SalesInvoice.posted_at >= from_date)
     if to_date:
         stmt = stmt.where(m.SalesInvoice.posted_at <= to_date)
-    if store_id:
-        stmt = stmt.where(m.SalesInvoice.store_id == store_id)
+    stmt = apply_store_scope(stmt, m.SalesInvoice.store_id, store_id, store_ids)
     if category_id:
         stmt = stmt.where(m.Product.category_id == category_id)
     rows = (await db.execute(stmt)).all()
@@ -328,13 +342,11 @@ async def sales_by_product(
         pos_stmt = pos_stmt.where(m.Transaction.created_at >= from_date)
     if to_date:
         pos_stmt = pos_stmt.where(m.Transaction.created_at <= to_date)
-    if store_id:
-        pos_stmt = (
-            pos_stmt.join(m.PosSession, m.PosSession.id == m.Transaction.session_id).where(
-                m.PosSession.tenant_id == tenant_id,
-                m.PosSession.store_id == store_id,
-            )
-        )
+    if store_id or store_ids is not None:
+        pos_stmt = pos_stmt.join(m.PosSession, m.PosSession.id == m.Transaction.session_id)
+        pos_stmt = apply_store_scope(pos_stmt, m.PosSession.store_id, store_id, store_ids)
+        if store_id:
+            pos_stmt = pos_stmt.where(m.PosSession.tenant_id == tenant_id)
     pos_txs = (await db.execute(pos_stmt)).scalars().all()
 
     product_cache: dict[str, m.Product] = {}
@@ -366,20 +378,26 @@ async def sales_by_product(
             product.id,
             {
                 "product_id": product.id,
-                "sku": product.sku,
                 "name": product.name,
+                "sku": product.sku,
                 "category_id": product.category_id,
                 "category_name": cat_names.get(product.category_id or "", None),
                 "quantity": 0.0,
                 "revenue": 0.0,
+                "cost": 0.0,
+                "profit": 0.0,
             },
         )
 
     agg: dict[str, dict] = {}
     for item, _inv, product in rows:
         row = _bucket(agg, product)
-        row["quantity"] = money_json(round(row["quantity"] + money_json(item.quantity), 3))
+        qty = money_json(item.quantity)
+        row["quantity"] = money_json(round(row["quantity"] + qty, 3))
         row["revenue"] = money_json(round(row["revenue"] + money_json(item.line_total), 2))
+        unit_cost = money_json(product.cost_price) if product.cost_price is not None else None
+        if unit_cost is not None:
+            row["cost"] = money_json(round(row["cost"] + unit_cost * qty, 2))
 
     for tx in pos_txs:
         for line in (tx.payload or {}).get("items") or []:
@@ -399,20 +417,27 @@ async def sales_by_product(
             )
             row["quantity"] = money_json(round(row["quantity"] + qty, 3))
             row["revenue"] = money_json(round(row["revenue"] + revenue, 2))
+            unit_cost = money_json(product.cost_price) if product.cost_price is not None else None
+            if unit_cost is not None:
+                row["cost"] = money_json(round(row["cost"] + unit_cost * qty, 2))
 
     products = sorted(agg.values(), key=lambda x: x["revenue"], reverse=True)
     for row in products:
         row["quantity"] = money_json(round(row["quantity"], 3))
         row["revenue"] = money_json(round(row["revenue"], 2))
+        row["cost"] = money_json(round(row["cost"], 2))
+        row["profit"] = money_json(round(row["revenue"] - row["cost"], 2))
     return {
-        "from_date": from_date,
-        "to_date": to_date,
+        "from_date": from_date.isoformat() if from_date else None,
+        "to_date": to_date.isoformat() if to_date else None,
         "store_id": store_id,
         "category_id": category_id,
         "category_name": category_name,
         "products": products,
         "total_revenue": money_json(round(sum(p["revenue"] for p in products), 2)),
         "total_quantity": money_json(round(sum(p["quantity"] for p in products), 3)),
+        "total_cost": money_json(round(sum(p["cost"] for p in products), 2)),
+        "total_profit": money_json(round(sum(p["profit"] for p in products), 2)),
     }
 
 
@@ -1304,50 +1329,52 @@ async def inventory_balance(
     )
 
     if warehouse_ids is not None:
-        if not warehouse_ids:
-            items: list[dict] = []
-        else:
+        products = (
+            await db.execute(
+                select(m.Product)
+                .where(
+                    m.Product.tenant_id == tenant_id,
+                    m.Product.is_active == True,  # noqa: E712
+                )
+                .order_by(m.Product.name)
+            )
+        ).scalars().all()
+        qty_by_product: dict[str, float] = {p.id: 0.0 for p in products}
+        last_wh: dict[str, str] = {}
+        if warehouse_ids:
             rows = (
                 await db.execute(
-                    select(m.WarehouseStock, m.Product)
-                    .join(m.Product, m.Product.id == m.WarehouseStock.product_id)
-                    .where(
+                    select(m.WarehouseStock).where(
                         m.WarehouseStock.tenant_id == tenant_id,
                         m.WarehouseStock.warehouse_id.in_(warehouse_ids),
                     )
-                    .order_by(m.Product.name)
                 )
-            ).all()
-            agg: dict[str, dict] = {}
-            for stock, product in rows:
-                row = agg.get(product.id)
-                qty = money_json(stock.quantity)
-                if not row:
-                    agg[product.id] = {
-                        "product_id": product.id,
-                        "sku": product.sku,
-                        "name": product.name,
-                        "warehouse_id": warehouse_id
-                        if warehouse_id
-                        else (stock.warehouse_id if len(warehouse_ids) == 1 else None),
-                        "quantity": qty,
-                        "cost_price": money_json(product.cost_price),
-                        "value": money_json(0),
-                    }
-                else:
-                    row["quantity"] = money_json(
-                        round(money_json(row["quantity"]) + qty, 3)
-                    )
-            items = []
-            for row in agg.values():
-                row["quantity"] = money_json(round(money_json(row["quantity"]), 3))
-                row["value"] = money_json(
-                    round(
-                        money_json(row["quantity"]) * money_json(row["cost_price"]), 2
-                    )
+            ).scalars().all()
+            for stock in rows:
+                pid = stock.product_id
+                if pid not in qty_by_product:
+                    continue
+                qty_by_product[pid] = money_json(
+                    round(qty_by_product[pid] + money_json(stock.quantity), 3)
                 )
-                items.append(row)
-            items.sort(key=lambda x: x["name"] or "")
+                last_wh[pid] = stock.warehouse_id
+        items = []
+        for product in products:
+            qty = money_json(qty_by_product.get(product.id, 0))
+            cost = money_json(product.cost_price)
+            items.append(
+                {
+                    "product_id": product.id,
+                    "name": product.name,
+                    "sku": product.sku,
+                    "warehouse_id": warehouse_id
+                    if warehouse_id
+                    else (last_wh.get(product.id) if len(warehouse_ids or []) == 1 else None),
+                    "quantity": qty,
+                    "cost_price": cost,
+                    "value": money_json(round(qty * cost, 2)),
+                }
+            )
     else:
         products = (
             await db.execute(
@@ -1359,8 +1386,8 @@ async def inventory_balance(
         items = [
             {
                 "product_id": p.id,
-                "sku": p.sku,
                 "name": p.name,
+                "sku": p.sku,
                 "warehouse_id": None,
                 "quantity": money_json(p.stock_qty),
                 "cost_price": money_json(p.cost_price),
@@ -1421,8 +1448,8 @@ async def inventory_valuation(
     items = [
         {
             "product_id": i["product_id"],
-            "sku": i["sku"],
             "name": i["name"],
+            "sku": i["sku"],
             "warehouse_id": i.get("warehouse_id"),
             "quantity": i["quantity"],
             "unit_cost": i["cost_price"],
@@ -1574,8 +1601,8 @@ async def inventory_movements(
             {
                 "id": r.id,
                 "product_id": r.product_id,
-                "product_sku": product.sku if product else None,
                 "product_name": product.name if product else None,
+                "product_sku": product.sku if product else None,
                 "warehouse_id": r.warehouse_id,
                 "movement_type": r.movement_type,
                 "quantity": money_json(r.quantity),
@@ -1613,35 +1640,65 @@ async def inventory_low_stock(
     warehouse_id: str | None = None,
 ) -> dict:
     """Product-level and optional store/warehouse reorder breaches."""
-    products = (
+    from app.catalog_meta import (
+        compute_stock_status,
+        low_stock_floor,
+        qty_is_low_stock,
+        qty_is_out_of_stock,
+        serialize_location_stock,
+    )
+
+    all_products = (
         await db.execute(
             select(m.Product).where(
                 m.Product.tenant_id == tenant_id,
                 m.Product.is_active == True,  # noqa: E712
-                m.Product.stock_qty <= m.Product.reorder_level,
-            ).order_by(m.Product.stock_qty.asc())
+            )
         )
     ).scalars().all()
-    product_rows = [
-        {
+    low_products = [
+        p
+        for p in all_products
+        if qty_is_low_stock(
+            p.stock_qty,
+            minimum_stock=getattr(p, "minimum_stock", 0),
+            reorder_level=p.reorder_level,
+        )
+    ]
+    oos_products = [p for p in all_products if qty_is_out_of_stock(p.stock_qty)]
+    low_products.sort(
+        key=lambda p: (
+            money_json(p.stock_qty) - low_stock_floor(getattr(p, "minimum_stock", 0), p.reorder_level),
+            money_json(p.stock_qty),
+            p.name or "",
+        )
+    )
+
+    def _product_row(p: m.Product) -> dict:
+        qty = money_json(p.stock_qty)
+        reorder = money_json(p.reorder_level)
+        minimum = money_json(getattr(p, "minimum_stock", 0) or 0)
+        floor = low_stock_floor(minimum, reorder)
+        status = compute_stock_status(qty, reorder, minimum)
+        return {
             "id": p.id,
-            "sku": p.sku,
             "name": p.name,
+            "sku": p.sku,
             "category": p.category or None,
             "category_id": getattr(p, "category_id", None),
-            "stock_qty": money_json(p.stock_qty),
-            "reorder_level": money_json(p.reorder_level),
-            "suggested_order_qty": money_json(
-                max(
-                    1.0, money_json(round(money_json(p.reorder_level) - money_json(p.stock_qty), 3))
-                )
-            )
-            if money_json(p.stock_qty) <= money_json(p.reorder_level)
+            "stock_qty": qty,
+            "reorder_level": reorder,
+            "minimum_stock": minimum,
+            "low_stock_floor": floor,
+            "stock_status": status["status"],
+            "stock_status_label": status["label"],
+            "suggested_order_qty": money_json(max(1.0, money_json(round(floor - qty, 3))))
+            if qty <= floor
             else money_json(0),
             "scope": "product",
         }
-        for p in products
-    ]
+
+    product_rows = [_product_row(p) for p in low_products]
 
     wh_filter = warehouse_id
     store = None
@@ -1653,45 +1710,50 @@ async def inventory_low_stock(
         wh_filter = wh.id
 
     warehouse_rows: list[dict] = []
-    stmt = (
-        select(m.WarehouseStock, m.Product, m.Warehouse)
-        .join(m.Product, m.Product.id == m.WarehouseStock.product_id)
-        .join(m.Warehouse, m.Warehouse.id == m.WarehouseStock.warehouse_id)
-        .where(
-            m.WarehouseStock.tenant_id == tenant_id,
-            m.WarehouseStock.reorder_level > 0,
-            m.WarehouseStock.quantity <= m.WarehouseStock.reorder_level,
-        )
-        .order_by(m.WarehouseStock.quantity.asc())
-    )
     if wh_filter:
-        stmt = stmt.where(m.WarehouseStock.warehouse_id == wh_filter)
-    for stock, product, wh in (await db.execute(stmt)).all():
-        qty = money_json(stock.quantity)
-        reorder = money_json(stock.reorder_level)
-        reorder_qty = money_json(stock.reorder_qty)
-        warehouse_rows.append(
-            {
-                "product_id": product.id,
-                "sku": product.sku,
-                "name": product.name,
-                "category": product.category or None,
-                "quantity": qty,
-                "reorder_level": reorder,
-                "reorder_qty": reorder_qty,
-                "suggested_order_qty": money_json(
-                    max(reorder_qty, money_json(round(reorder - qty, 3)))
-                ),
-                "warehouse_id": wh.id,
-                "warehouse_code": wh.code,
-                "warehouse_name": wh.name,
-                "store_id": wh.store_id,
-                "scope": "warehouse",
-            }
+        from app.warehouses import get_warehouse
+
+        scoped_wh = await get_warehouse(db, tenant_id, wh_filter)
+        stock_by_product = {
+            row.product_id: row
+            for row in (
+                await db.execute(
+                    select(m.WarehouseStock).where(
+                        m.WarehouseStock.tenant_id == tenant_id,
+                        m.WarehouseStock.warehouse_id == scoped_wh.id,
+                    )
+                )
+            ).scalars().all()
+        }
+        for product in all_products:
+            item = serialize_location_stock(
+                product=product,
+                warehouse=scoped_wh,
+                stock=stock_by_product.get(product.id),
+            )
+            if item["is_low_stock"]:
+                warehouse_rows.append(item)
+        warehouse_rows.sort(key=lambda r: (r["quantity"], r["name"] or ""))
+    else:
+        stmt = (
+            select(m.WarehouseStock, m.Product, m.Warehouse)
+            .join(m.Product, m.Product.id == m.WarehouseStock.product_id)
+            .join(m.Warehouse, m.Warehouse.id == m.WarehouseStock.warehouse_id)
+            .where(
+                m.WarehouseStock.tenant_id == tenant_id,
+                m.Product.tenant_id == tenant_id,
+                m.Product.is_active == True,  # noqa: E712
+            )
+            .order_by(m.WarehouseStock.quantity.asc())
         )
+        for stock, product, wh in (await db.execute(stmt)).all():
+            item = serialize_location_stock(product=product, warehouse=wh, stock=stock)
+            if item["is_low_stock"]:
+                warehouse_rows.append(item)
 
     return {
         "count": len(product_rows),
+        "out_of_stock_count": len(oos_products),
         "products": product_rows,
         "warehouse_count": len(warehouse_rows),
         "warehouse_low_stock": warehouse_rows,
@@ -1758,8 +1820,8 @@ async def inventory_expiry(
         row = catalog_svc.serialize_batch(b)
         row.update(
             {
-                "sku": product.sku if product else None,
                 "name": product.name if product else None,
+                "sku": product.sku if product else None,
                 "days_until_expiry": days_until,
                 "is_expired": bool(days_until is not None and days_until < 0),
             }
@@ -2951,6 +3013,7 @@ async def cash_flow(
     to_date: datetime | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    limit_store_ids: list[str] | None = None,
 ) -> dict:
     """Cash flow from cash + bank GL accounts with O/I/F sections (BR-10.6 / BR-14.5).
 
@@ -2971,7 +3034,7 @@ async def cash_flow(
         "transfers": _round_cf_bucket(_empty_cf_bucket()),
     }
     store_ids = await _pnl_store_ids(
-        db, tenant_id, store_id=store_id, branch_id=branch_id
+        db, tenant_id, store_id=store_id, branch_id=branch_id, limit_store_ids=limit_store_ids
     )
     location_filter = store_ids is not None
     allowed_journal_ids: set[str] | None = None
@@ -3189,6 +3252,7 @@ def _pack_balance_sheet(
     compare: dict | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    limit_store_ids: list[str] | None = None,
 ) -> dict:
     total_assets = money_json(round(sum(money_json(r["balance"]) for r in assets), 2))
     total_liabilities = money_json(
@@ -3304,6 +3368,7 @@ async def _balance_sheet_at(
     as_of: datetime | None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    limit_store_ids: list[str] | None = None,
 ) -> dict:
     """Build BS at as_of from posted journals, or live balances when as_of is None.
 
@@ -3325,7 +3390,7 @@ async def _balance_sheet_at(
     ).scalars().all()
 
     store_ids = await _pnl_store_ids(
-        db, tenant_id, store_id=store_id, branch_id=branch_id
+        db, tenant_id, store_id=store_id, branch_id=branch_id, limit_store_ids=limit_store_ids
     )
     location_filter = store_ids is not None
     effective_as_of = as_of
@@ -3420,6 +3485,7 @@ async def balance_sheet(
     compare: str | None = None,
     store_id: str | None = None,
     branch_id: str | None = None,
+    limit_store_ids: list[str] | None = None,
 ) -> dict:
     """Point-in-time balance sheet (BR-14.5).
 
@@ -3452,6 +3518,7 @@ async def balance_sheet(
         as_of=effective_as_of,
         store_id=store_id,
         branch_id=branch_id,
+        limit_store_ids=limit_store_ids,
     )
     if not compare_mode:
         return current
@@ -3470,5 +3537,6 @@ async def balance_sheet(
         as_of=prior_dt,
         store_id=store_id,
         branch_id=branch_id,
+        limit_store_ids=limit_store_ids,
     )
     return _merge_bs_compare(current, prior, compare_mode)

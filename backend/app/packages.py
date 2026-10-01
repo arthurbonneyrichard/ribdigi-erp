@@ -359,4 +359,7 @@ def usage_snapshot(tenant, *, now: datetime | None = None) -> dict[str, Any]:
         "store_limit": getattr(tenant, "store_limit", None),
         "subscription_store_entitlement": store_ent_svc.subscription_store_entitlement(tenant),
         "effective_store_limit": store_ent_svc.effective_store_limit(tenant),
+        "max_stores": store_ent_svc.subscription_store_entitlement(tenant),
+        "multi_store": store_ent_svc.is_multi_store(tenant),
+        "unlimited_stores": store_ent_svc.subscription_store_entitlement(tenant) is None,
     }

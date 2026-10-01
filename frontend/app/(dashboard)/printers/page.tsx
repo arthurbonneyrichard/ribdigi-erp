@@ -1,9 +1,18 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import FormModal from '../../../components/FormModal';
 import { api } from '../../../lib/api';
+import { industryLabel } from '../../../lib/industries';
 import { getMe } from '../../../lib/meCache';
-import { isHotelIndustry } from '../../../lib/tenantNav';
+import {
+  filterListedPrinterPurposes,
+  printerPurposeLabel,
+  printerPurposesForIndustry,
+  printerRowVisible,
+  resolvePrinterPurposes,
+} from '../../../lib/printerPurposes';
+import { hideStoreUx as shouldHideStoreUx } from '../../../lib/tenantNav';
 
 type Printer = {
   id: string;
@@ -20,14 +29,15 @@ type Printer = {
   status: string;
 };
 
-const PURPOSES = ['customer_receipt', 'invoice', 'kitchen', 'bar', 'barcode'];
-
 export default function PrinterSettingsPage() {
   const [rows, setRows] = useState<Printer[]>([]);
   const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
   const [hideStoreUx, setHideStoreUx] = useState(false);
+  const [industry, setIndustry] = useState<string | null>(null);
+  const [purposeOptions, setPurposeOptions] = useState<string[]>(() => printerPurposesForIndustry(null));
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [printerAddOpen, setPrinterAddOpen] = useState(false);
   const [pairing, setPairing] = useState('');
   const [form, setForm] = useState({
     name: '',
@@ -42,14 +52,25 @@ export default function PrinterSettingsPage() {
 
   const load = useCallback(async () => {
     try {
-      const [printers, storeRes, me] = await Promise.all([
+      const [caps, printers, storeRes, me] = await Promise.all([
+        api('/printers/capabilities').catch(() => ({ data: null })),
         api('/printers'),
         api('/stores').catch(() => ({ data: [] })),
         getMe().catch(() => ({ data: {} })),
       ]);
-      setRows(printers.data || []);
-      setHideStoreUx(isHotelIndustry(me.data?.industry));
+      const savedIndustry = (me.data?.industry as string | null | undefined) || null;
+      const options = resolvePrinterPurposes(savedIndustry, caps.data?.purposes || null);
+      setIndustry(savedIndustry);
+      setPurposeOptions(options);
+      setRows(
+        (printers.data || []).filter((row: Printer) => printerRowVisible(row.purposes, options))
+      );
+      setHideStoreUx(shouldHideStoreUx(me.data));
       setStores(storeRes.data || []);
+      setForm((prev) => {
+        const next = prev.purposes.filter((p) => options.includes(p));
+        return { ...prev, purposes: next.length ? next : ['customer_receipt'] };
+      });
       setError('');
     } catch (err: any) {
       setError(err?.message || 'Unable to load printers');
@@ -61,6 +82,7 @@ export default function PrinterSettingsPage() {
   }, [load]);
 
   function togglePurpose(purpose: string) {
+    if (!purposeOptions.includes(purpose)) return;
     setForm((prev) => ({
       ...prev,
       purposes: prev.purposes.includes(purpose)
@@ -70,6 +92,7 @@ export default function PrinterSettingsPage() {
   }
 
   async function createPrinter() {
+    if (busy) return;
     setBusy(true);
     setError('');
     try {
@@ -80,13 +103,14 @@ export default function PrinterSettingsPage() {
           connection_type: form.connection_type,
           store_id: form.store_id || null,
           paper: form.paper,
-          purposes: form.purposes,
+          purposes: form.purposes.filter((p) => purposeOptions.includes(p)),
           copies: form.copies,
           host: form.connection_type === 'network' ? form.host : null,
           port: form.connection_type === 'network' ? form.port : 9100,
         }),
       });
       setForm((f) => ({ ...f, name: '', host: '' }));
+      setPrinterAddOpen(false);
       await load();
     } catch (err: any) {
       setError(err?.message || 'Save failed');
@@ -145,9 +169,16 @@ export default function PrinterSettingsPage() {
         The browser cannot list every OS printer or send to all of them silently. Use the OS print
         dialog as fallback, pair a till print agent (desktop or Android), or register a private
         network printer. Checkout still completes if a printer is offline. Receipt numbers come from
-        the server.
+        the server. Destinations follow this tenant&apos;s saved business type
+        {industry ? ` (${industryLabel(industry)})` : ''}: Receipt, Invoice, and Barcode
+        {purposeOptions.includes('kitchen') ? ', plus Kitchen and Bar' : ''}.
       </p>
       {error ? <p className="muted" style={{ color: 'var(--danger)' }}>{error}</p> : null}
+      <div style={{ marginBottom: 12 }}>
+        <button type="button" className="list-btn-primary" onClick={() => setPrinterAddOpen(true)} aria-label="Add printer">
+          Add printer
+        </button>
+      </div>
       {pairing ? (
         <div className="card" style={{ marginBottom: 16 }}>
           <strong>Pairing code (shown once):</strong> <code>{pairing}</code>
@@ -155,8 +186,13 @@ export default function PrinterSettingsPage() {
         </div>
       ) : null}
 
-      <div className="card" style={{ marginBottom: 16 }}>
-        <h2>Add printer</h2>
+      {printerAddOpen ? (
+      <FormModal
+        title="Add printer"
+        busy={busy}
+        dirty={Boolean(form.name.trim() || form.host.trim())}
+        onClose={() => setPrinterAddOpen(false)}
+      >
         <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))' }}>
           <label>
             Friendly name
@@ -222,14 +258,14 @@ export default function PrinterSettingsPage() {
           ) : null}
         </div>
         <div style={{ marginTop: 12 }}>
-          {PURPOSES.map((p) => (
+          {purposeOptions.map((p) => (
             <label key={p} style={{ marginRight: 12 }}>
               <input
                 type="checkbox"
                 checked={form.purposes.includes(p)}
                 onChange={() => togglePurpose(p)}
               />{' '}
-              {p.replace('_', ' ')}
+              {printerPurposeLabel(p)}
             </label>
           ))}
         </div>
@@ -241,7 +277,8 @@ export default function PrinterSettingsPage() {
             Issue till pairing code
           </button>
         </div>
-      </div>
+      </FormModal>
+      ) : null}
 
       <table className="table">
         <thead>
@@ -260,7 +297,11 @@ export default function PrinterSettingsPage() {
               <td>{row.name}</td>
               <td>{row.connection_type}</td>
               <td>{row.paper}</td>
-              <td>{(row.purposes || []).join(', ')}</td>
+              <td>
+                {filterListedPrinterPurposes(row.purposes, purposeOptions)
+                  .map((p) => printerPurposeLabel(p))
+                  .join(', ')}
+              </td>
               <td>
                 {row.status} {row.is_enabled ? '' : '(disabled)'}
               </td>

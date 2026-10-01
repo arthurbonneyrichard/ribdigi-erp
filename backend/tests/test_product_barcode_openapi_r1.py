@@ -55,6 +55,14 @@ def test_product_barcode_ui_and_docs():
     assert "editBarcode.trim() || null" in page
     assert "variantBarcode.trim() || null" in page
     assert 'aria-label="Save product"' in page
+    assert 'aria-label="Generate product barcode"' in page
+    assert 'aria-label="Generate QR"' in page
+    assert 'aria-label="Print product barcode label"' in page
+    assert "{tab === 'labels' && (" in page
+    assert "Generate barcode" in page
+    assert "Generate QR" in page
+    assert "/products/${id}/barcode/generate" in page
+    assert "/products/${id}/qr.png" in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Product barcode OpenAPI" in agents
     assert "ProductBarcodeValue" in agents

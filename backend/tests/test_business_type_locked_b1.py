@@ -33,6 +33,32 @@ async def test_platform_owner_can_change_industry_with_reason(client):
     assert resp.status_code == 200, resp.text
     assert resp.json()["data"]["industry"] == "pharmacy"
 
+    admin = await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
+    created = await ac.post(
+        "/api/v1/pharmacy/prescriptions",
+        headers=admin,
+        json={"items": [{"product_id": seed["p1"].id, "quantity": 1}]},
+    )
+    assert created.status_code == 200, created.text
+    rx_id = created.json()["data"]["id"]
+
+    locked = await ac.patch(
+        f"/api/v1/tenants/{tenant_id}/industry",
+        headers=headers,
+        json={"industry": "retail", "reason": "Reverted to retail operations"},
+    )
+    assert locked.status_code == 200, locked.text
+    assert locked.json()["data"]["industry"] == "retail"
+    denied = await ac.get("/api/v1/pharmacy/prescriptions", headers=admin)
+    assert denied.status_code == 403, denied.text
+    still = await ac.get(f"/api/v1/pharmacy/prescriptions/{rx_id}", headers=admin)
+    assert still.status_code == 403
+    dash = await ac.get("/api/v1/dashboard", headers=admin)
+    assert dash.status_code == 200
+    ids = {row["id"] for row in dash.json()["data"]["industry_features"]}
+    assert "prescriptions" not in ids
+    assert dash.json()["data"].get("rx_queue") is None
+
 
 @pytest.mark.asyncio
 async def test_create_tenant_blank_industry_rejected(client):

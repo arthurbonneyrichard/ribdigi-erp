@@ -5,10 +5,12 @@ from __future__ import annotations
 from datetime import datetime
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import models as m
+from app import schema_compat
 from app.accounting import ensure_default_accounts, get_account_by_code, post_journal_entry
 from app.doc_numbers import next_cash_transfer_number
 from app.honesty import money_json, optional_honest_narrative, require_honest_narrative
@@ -22,25 +24,110 @@ def _is_liquid(account: m.Account) -> bool:
     return bool(account.is_cash_account or account.is_bank_account)
 
 
-def serialize_account(account: m.Account) -> dict:
+def _account_attr(account: object, name: str, default=None):
+    if isinstance(account, dict):
+        if name in account:
+            return account.get(name, default)
+        aliases = {"account_type": "type", "type": "account_type"}
+        return account.get(aliases.get(name, name), default)
+    return getattr(account, name, default)
+
+
+def serialize_account(account: m.Account | dict) -> dict:
     from app.accounting import DEFAULT_ACCOUNTS
 
     system_codes = {c[0] for c in DEFAULT_ACCOUNTS}
+    code = _account_attr(account, "code")
     return {
-        "id": account.id,
-        "code": account.code,
-        "name": account.name,
-        "account_type": account.account_type,
-        "balance": money_json(account.balance),
-        "opening_balance": money_json(getattr(account, "opening_balance", 0)),
-        "is_system": account.code in system_codes,
-        "is_active": bool(getattr(account, "is_active", True)),
-        "is_cash_account": bool(account.is_cash_account),
-        "is_bank_account": bool(account.is_bank_account),
-        "bank_name": account.bank_name,
-        "account_number": account.account_number,
-        "bank_branch": getattr(account, "bank_branch", None),
+        "id": _account_attr(account, "id"),
+        "code": code,
+        "name": _account_attr(account, "name"),
+        "account_type": _account_attr(account, "account_type"),
+        "parent_id": _account_attr(account, "parent_id"),
+        "balance": money_json(_account_attr(account, "balance") or 0),
+        "opening_balance": money_json(_account_attr(account, "opening_balance") or 0),
+        "is_system": bool(_account_attr(account, "is_system"))
+        if _account_attr(account, "is_system") is not None
+        else code in system_codes,
+        "is_active": bool(_account_attr(account, "is_active", True)),
+        "is_cash_account": bool(_account_attr(account, "is_cash_account")),
+        "is_bank_account": bool(_account_attr(account, "is_bank_account")),
+        "bank_name": _account_attr(account, "bank_name"),
+        "account_number": _account_attr(account, "account_number"),
+        "bank_branch": _account_attr(account, "bank_branch"),
     }
+
+
+def _field_error(status: int, field: str, message: str) -> HTTPException:
+    return HTTPException(
+        status_code=status,
+        detail=[{"loc": ["body", field], "msg": message, "type": "value_error"}],
+    )
+
+
+def _integrity_account_error(exc: IntegrityError) -> HTTPException:
+    raw = str(getattr(exc, "orig", None) or exc).lower()
+    if "code" in raw or "accounts_code" in raw or "uq_accounts" in raw:
+        return _field_error(409, "code", "Account code already exists")
+    if "company_id" in raw or "not null" in raw or "null value" in raw:
+        return _field_error(
+            400,
+            "company",
+            "Company is required. Create a company for this workspace, then try again.",
+        )
+    return HTTPException(status_code=409, detail="That record already exists.")
+
+
+async def _session_company_id(db: AsyncSession, tenant_id: str) -> str | None:
+    cols = await schema_compat.table_column_names(db, "accounts")
+    if "company_id" not in cols:
+        return None
+    return await schema_compat.ensure_tenant_company(db, tenant_id)
+
+
+async def _account_code_taken(
+    db: AsyncSession,
+    tenant_id: str,
+    code: str,
+    *,
+    company_id: str | None,
+    exclude_id: str | None = None,
+) -> bool:
+    cols = await schema_compat.table_column_names(db, "accounts")
+    if "code" not in cols or "tenant_id" not in cols:
+        return False
+    sql = "SELECT id FROM accounts WHERE tenant_id = :tid AND code = :code"
+    params: dict = {"tid": tenant_id, "code": code}
+    if company_id and "company_id" in cols:
+        sql += " AND (company_id = :cid OR company_id IS NULL)"
+        params["cid"] = company_id
+    if exclude_id:
+        sql += " AND id != :eid"
+        params["eid"] = exclude_id
+    sql += " LIMIT 1"
+    return (await db.execute(text(sql), params)).first() is not None
+
+
+async def _validate_parent(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    parent_id: str | None,
+    account_type: str,
+    account_id: str | None = None,
+) -> str | None:
+    pid = (parent_id or "").strip() or None
+    if not pid:
+        return None
+    if account_id and pid == account_id:
+        raise _field_error(400, "parent_id", "An account cannot be its own parent")
+    parent = await get_account(db, tenant_id, pid)
+    if getattr(parent, "is_active", True) is False:
+        raise _field_error(400, "parent_id", "Parent account is inactive")
+    parent_type = (parent.account_type or "").strip().lower()
+    if parent_type and parent_type != account_type:
+        raise _field_error(400, "parent_id", "Parent account must be the same type")
+    return parent.id
 
 
 def serialize_transfer(row: m.CashTransfer, *, accounts: dict[str, m.Account] | None = None) -> dict:
@@ -87,32 +174,49 @@ async def update_account(
     account_number: str | None = None,
     bank_branch: str | None = None,
     is_active: bool | None = None,
+    parent_id: str | None = None,
 ) -> m.Account:
     row = await get_account(db, tenant_id, account_id)
+    values: dict = {}
     if name is not None:
         # OpenAPI AccountNameValue → 422; service defense-in-depth → 400.
-        row.name = require_honest_narrative(name, label="account name", max_length=150)
+        values["name"] = require_honest_narrative(name, label="account name", max_length=150)
     if bank_name is not None:
         # OpenAPI BankNameValue → 422; service defense-in-depth → 400.
-        row.bank_name = optional_honest_narrative(
+        values["bank_name"] = optional_honest_narrative(
             bank_name, label="bank name", max_length=120
         )
     if account_number is not None:
         # OpenAPI BankAccountNumberValue → 422; service defense-in-depth → 400.
-        row.account_number = optional_honest_narrative(
+        values["account_number"] = optional_honest_narrative(
             account_number, label="bank account number", max_length=64
         )
     if bank_branch is not None:
         # OpenAPI BankBranchValue → 422; service defense-in-depth → 400.
-        row.bank_branch = optional_honest_narrative(
+        values["bank_branch"] = optional_honest_narrative(
             bank_branch, label="bank branch", max_length=120
         )
     if is_active is not None:
-        row.is_active = bool(is_active)
-    if row.is_bank_account and not row.bank_name:
-        raise HTTPException(status_code=400, detail="bank_name is required for bank accounts")
-    await db.flush()
-    return row
+        values["is_active"] = bool(is_active)
+    if parent_id is not None:
+        atype = (row.account_type or "asset").strip().lower()
+        values["parent_id"] = await _validate_parent(
+            db,
+            tenant_id=tenant_id,
+            parent_id=parent_id,
+            account_type=atype,
+            account_id=row.id,
+        )
+    next_bank_name = values["bank_name"] if "bank_name" in values else row.bank_name
+    if row.is_bank_account and not next_bank_name:
+        raise _field_error(400, "bank_name", "bank_name is required for bank accounts")
+    if not values:
+        return row
+    try:
+        await schema_compat.apply_updates(db, m.Account, row.id, values)
+    except IntegrityError as exc:
+        raise _integrity_account_error(exc) from exc
+    return await get_account(db, tenant_id, account_id)
 
 
 async def create_account(
@@ -126,7 +230,13 @@ async def create_account(
     bank_name: str | None = None,
     account_number: str | None = None,
     bank_branch: str | None = None,
+    parent_id: str | None = None,
 ) -> m.Account:
+    """Insert a COA row using live table columns (company_id / parent_id / is_system).
+
+    Tenant and company come from the session, never from client IDs. Flush only —
+    the API commits after audit so a failed save does not persist a partial row.
+    """
     await ensure_default_accounts(db, tenant_id)
     # OpenAPI AccountCodeValue → 422; service defense-in-depth → 400.
     code_key = require_honest_narrative(
@@ -138,50 +248,56 @@ async def create_account(
     # before this runs. Empty account_type used to coerce to "asset".
     atype = (account_type or "asset").strip().lower()
     if atype not in ACCOUNT_TYPES:
-        raise HTTPException(
-            status_code=422,
-            detail=f"account_type must be one of: {', '.join(sorted(ACCOUNT_TYPES))}",
+        raise _field_error(
+            422,
+            "account_type",
+            f"account_type must be one of: {', '.join(sorted(ACCOUNT_TYPES))}",
         )
     kind = (liquid_kind or "").strip().lower() or None
     if kind and kind not in LIQUID_KINDS:
-        raise HTTPException(status_code=422, detail="liquid_kind must be cash or bank")
+        raise _field_error(422, "liquid_kind", "liquid_kind must be cash or bank")
     if kind:
         atype = "asset"
-    exists = (
-        await db.execute(
-            select(m.Account).where(
-                m.Account.tenant_id == tenant_id,
-                m.Account.code == code_key,
-            )
-        )
-    ).scalar_one_or_none()
-    if exists:
-        raise HTTPException(status_code=409, detail="Account code already exists")
-
-    row = m.Account(
-        tenant_id=tenant_id,
-        code=code_key,
-        name=name_key,
-        account_type=atype,
-        balance=0,
-        is_cash_account=kind == "cash",
-        is_bank_account=kind == "bank",
-        bank_name=optional_honest_narrative(
-            bank_name, label="bank name", max_length=120
-        ),
-        # OpenAPI BankAccountNumberValue → 422; service defense-in-depth → 400.
-        account_number=optional_honest_narrative(
+    company_id = await _session_company_id(db, tenant_id)
+    if await _account_code_taken(db, tenant_id, code_key, company_id=company_id):
+        raise _field_error(409, "code", "Account code already exists")
+    parent_key = await _validate_parent(
+        db, tenant_id=tenant_id, parent_id=parent_id, account_type=atype
+    )
+    bank_name_key = optional_honest_narrative(
+        bank_name, label="bank name", max_length=120
+    )
+    if kind == "bank" and not bank_name_key:
+        raise _field_error(400, "bank_name", "bank_name is required for bank accounts")
+    values = {
+        "tenant_id": tenant_id,
+        "code": code_key,
+        "name": name_key,
+        "account_type": atype,
+        "balance": 0,
+        "opening_balance": 0,
+        "is_cash_account": kind == "cash",
+        "is_bank_account": kind == "bank",
+        "is_system": False,
+        "is_active": True,
+        "parent_id": parent_key,
+        "bank_name": bank_name_key,
+        "account_number": optional_honest_narrative(
             account_number, label="bank account number", max_length=64
         ),
-        bank_branch=optional_honest_narrative(
+        "bank_branch": optional_honest_narrative(
             bank_branch, label="bank branch", max_length=120
         ),
-    )
-    if kind == "bank" and not row.bank_name:
-        raise HTTPException(status_code=400, detail="bank_name is required for bank accounts")
-    db.add(row)
-    await db.flush()
-    return row
+    }
+    if company_id:
+        values["company_id"] = company_id
+    try:
+        inserted = await schema_compat.insert_and_get(db, m.Account, values)
+    except IntegrityError as exc:
+        raise _integrity_account_error(exc) from exc
+    if not inserted or not getattr(inserted, "id", None):
+        raise HTTPException(status_code=500, detail="Account could not be saved")
+    return await get_account(db, tenant_id, inserted.id)
 
 
 async def list_transfers(

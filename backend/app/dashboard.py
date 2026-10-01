@@ -116,25 +116,43 @@ async def build_dashboard(
     if store_id:
         expenses_stmt = expenses_stmt.where(m.Expense.store_id == store_id)
     expenses = money_json(await scalar(expenses_stmt))
-    products = int(
-        await scalar(select(func.count(m.Product.id)).where(m.Product.tenant_id == tenant_id))
+    # Never SELECT the full Product mapper row — live DBs can omit later catalog
+    # columns while still having extra company_id.
+    from app import schema_compat
+    from app.catalog_meta import qty_is_low_stock, qty_is_out_of_stock
+
+    live_product_cols = await schema_compat.table_column_names(db, "products")
+    stock_col_names = (
+        "id",
+        "stock_qty",
+        "is_active",
+        "reorder_level",
+        "minimum_stock",
     )
-    low_stock = int(
-        await scalar(
-            select(func.count(m.Product.id)).where(
-                m.Product.tenant_id == tenant_id,
-                m.Product.stock_qty <= m.Product.reorder_level,
-            )
-        )
-    )
-    out_of_stock = int(
-        await scalar(
-            select(func.count(m.Product.id)).where(
-                m.Product.tenant_id == tenant_id,
-                m.Product.stock_qty <= 0,
-            )
-        )
-    )
+    stock_cols = [
+        getattr(m.Product, name)
+        for name in stock_col_names
+        if name in live_product_cols and hasattr(m.Product, name)
+    ]
+    product_rows = (
+        await db.execute(select(*stock_cols).where(m.Product.tenant_id == tenant_id))
+    ).all()
+    products = len(product_rows)
+    out_of_stock = 0
+    low_stock = 0
+    for row in product_rows:
+        data = row._mapping
+        if not data.get("is_active", True):
+            continue
+        qty = data.get("stock_qty") or 0
+        if qty_is_out_of_stock(qty):
+            out_of_stock += 1
+        elif qty_is_low_stock(
+            qty,
+            minimum_stock=data.get("minimum_stock") or 0,
+            reorder_level=data.get("reorder_level") or 0,
+        ):
+            low_stock += 1
     customers = int(
         await scalar(
             select(func.count(m.Party.id)).where(
@@ -151,9 +169,23 @@ async def build_dashboard(
     )
 
     from app.catalog import list_expiring_batches
+    from app import credit as credit_svc
 
     expiring_batches = await list_expiring_batches(db, tenant_id, within_days=30)
     expiring_soon = len(expiring_batches)
+
+    # Tenant-scoped AR/AP from the same aging engine as /credit/aging (not store-invented).
+    ar_aging = await credit_svc.ar_aging(db, tenant_id)
+    ap_aging = await credit_svc.ap_aging(db, tenant_id)
+    ar_total_due = money_json(ar_aging.get("total_due") or 0)
+    ap_total_due = money_json(ap_aging.get("total_due") or 0)
+    credit_outstanding = money_json(round(float(ar_total_due) + float(ap_total_due), 2))
+    ar_open_parties = sum(
+        1 for p in (ar_aging.get("parties") or []) if money_json(p.get("total_due") or 0) > 0
+    )
+    ap_open_parties = sum(
+        1 for p in (ap_aging.get("parties") or []) if money_json(p.get("total_due") or 0) > 0
+    )
 
     # Monthly sales trend (last 12 calendar months)
     months_seq = []
@@ -246,6 +278,8 @@ async def build_dashboard(
         }
         for d in days_seq
     ]
+    gross_profit_7d = money_json(round(sum(row["profit"] for row in daily_sales[-7:]), 2))
+    gross_profit_30d = money_json(round(sum(row["profit"] for row in daily_sales), 2))
 
     def _top(metric: dict[str, float], *, limit: int = 5) -> list[dict]:
         ranked = sorted(metric.items(), key=lambda kv: kv[1], reverse=True)[:limit]
@@ -299,6 +333,36 @@ async def build_dashboard(
     ]
 
     tenant = await db.get(m.Tenant, tenant_id)
+    from app.industry_dashboard import industry_dashboard_payload
+
+    industry_payload = industry_dashboard_payload(tenant)
+    rx_queue = None
+    rx_only_count = None
+    if industry_payload.get("industry") == "pharmacy":
+        from app import pharmacy as pharmacy_svc
+        from app import schema_compat as schema_compat_svc
+
+        if await schema_compat_svc.table_column_names(db, "prescriptions"):
+            rx_queue = await pharmacy_svc.queue_counts(db, tenant_id)
+        else:
+            rx_queue = {key: 0 for key in pharmacy_svc.RX_STATUSES}
+            rx_queue["open"] = 0
+        if "rx_only" in live_product_cols:
+            from sqlalchemy import text as sql_text
+
+            rx_only_count = int(
+                (
+                    await db.execute(
+                        sql_text(
+                            "SELECT COUNT(*) FROM products WHERE tenant_id = :tid AND rx_only = :rx"
+                        ),
+                        {"tid": tenant_id, "rx": True},
+                    )
+                ).scalar()
+                or 0
+            )
+        else:
+            rx_only_count = 0
     if tenant and tenant.status == "trial":
         days_remaining = tenants_svc.calendar_days_until(tenant.trial_ends_at)
     elif tenant and tenant.status == "grace":
@@ -328,6 +392,11 @@ async def build_dashboard(
         "expiring_within_days": 30,
         "customers": customers,
         "suppliers": suppliers,
+        "ar_total_due": ar_total_due,
+        "ap_total_due": ap_total_due,
+        "credit_outstanding": credit_outstanding,
+        "ar_open_parties": ar_open_parties,
+        "ap_open_parties": ap_open_parties,
         "comparisons": {
             "sales_today": money_json(round(money_json(sales_today), 2)),
             "sales_yesterday": money_json(round(money_json(sales_yesterday), 2)),
@@ -338,6 +407,10 @@ async def build_dashboard(
         },
         "monthly_sales": monthly_sales,
         "daily_sales": daily_sales,
+        "gross_profit_7d": gross_profit_7d,
+        "gross_profit_30d": gross_profit_30d,
+        "rx_queue": rx_queue,
+        "rx_only_count": rx_only_count,
         "recent_sales": recent_sales,
         "top_products_by_revenue": top_products_by_revenue,
         "top_products_by_quantity": top_products_by_quantity,
@@ -345,13 +418,20 @@ async def build_dashboard(
             "sales": "/sales",
             "purchases": "/purchasing",
             "expenses": "/expenses",
-            "customers": "/sales",
+            "customers": "/customers",
             "suppliers": "/purchasing",
             "products": "/inventory",
             "low_stock": "/inventory?tab=lowstock",
-            "expiring": "/inventory",
+            "out_of_stock": "/inventory?tab=products&stock=oos",
+            "expiring": "/inventory?tab=expiry",
+            "batches": "/inventory?tab=batches",
+            "prescriptions": "/prescriptions",
+            "credit": "/credit",
+            "ar_total_due": "/credit?kind=receivable",
+            "ap_total_due": "/credit?kind=payable",
             "reports_sales": "/reports",
         },
         "subscription": subscription,
         "generated_at": now_dt,
+        **industry_payload,
     }

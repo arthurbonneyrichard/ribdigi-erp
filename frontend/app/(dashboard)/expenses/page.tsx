@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import FormModal from '../../../components/FormModal';
 import AttachmentPreview from '../../../components/AttachmentPreview';
-import { api } from '../../../lib/api';
+import { api, getAccessToken } from '../../../lib/api';
 import { useStoreContext } from '../../../lib/storeContext';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -140,6 +141,7 @@ export default function Page() {
   const [supplierId, setSupplierId] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [createBusy, setCreateBusy] = useState(false);
+  const [expenseAddOpen, setExpenseAddOpen] = useState(false);
   const [rowBusyId, setRowBusyId] = useState<string | null>(null);
 
   async function refresh() {
@@ -318,6 +320,7 @@ export default function Page() {
       setReference('');
       setExpenseDate('');
       setSupplierId('');
+      setExpenseAddOpen(false);
       await refresh();
     } catch (err: any) {
       setError(err.message);
@@ -539,7 +542,7 @@ export default function Page() {
   async function uploadAttachment(id: string, file: File) {
     setError('');
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const tenant = localStorage.getItem('tenant');
       const form = new FormData();
       form.append('file', file);
@@ -563,7 +566,7 @@ export default function Page() {
   async function downloadAttachment(id: string) {
     setError('');
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const tenant = localStorage.getItem('tenant');
       const res = await fetch(`${apiBase}/expenses/${id}/attachment`, {
         headers: {
@@ -808,12 +811,19 @@ export default function Page() {
 
   return (
     <>
-      <h1>Expenses</h1>
-      <p className="muted">
+      <div className="list-page-head" style={{ marginBottom: 16 }}>
+        <div>
+          <h1 style={{ margin: 0 }}>Expenses</h1>
+          <p className="muted" style={{ margin: '8px 0 0' }}>
         Record what the company paid. Amounts at or below {threshold} post automatically.
         Receipts attach on the list. VAT on supplier invoices is calculated under Tax / Purchases,
         not here. Other income (below) posts to Other Income (4400) against cash/bank — it does not collect funds.
-      </p>
+          </p>
+        </div>
+        <button type="button" className="list-btn-primary" onClick={() => setExpenseAddOpen(true)} aria-label="Add expense">
+          Add expense
+        </button>
+      </div>
       <div className="card cat-panel" style={{ marginBottom: 16 }}>
         <h3>Other income</h3>
         <div className="erp-form-grid">
@@ -895,8 +905,13 @@ export default function Page() {
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
-        <h3>Add expense</h3>
+      {expenseAddOpen ? (
+      <FormModal
+        title="Add expense"
+        busy={createBusy}
+        dirty={Boolean(amount.trim() || description.trim() || payee.trim() || reference.trim())}
+        onClose={() => setExpenseAddOpen(false)}
+      >
         <div className="erp-form-grid">
           <label>
             Category
@@ -1099,7 +1114,8 @@ export default function Page() {
             {createBusy ? 'Saving…' : 'Save expense'}
           </button>
         </div>
-      </div>
+      </FormModal>
+      ) : null}
 
       <details className="erp-advanced" id="approval-matrix">
         <summary>Approval rules</summary>

@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import FormModal from '../../../components/FormModal';
 import PartyContactsPanel from '../../../components/PartyContactsPanel';
 import { api } from '../../../lib/api';
+import { getMe } from '../../../lib/meCache';
 import {
   matchesCustomerList,
   paginate,
@@ -30,6 +32,38 @@ type Customer = {
 };
 
 type Group = { id: string; name: string; discount_percent?: number; is_active?: boolean };
+
+function canWriteCredit(me: { permissions?: Record<string, string[]> | null } | null | undefined) {
+  const perms = me?.permissions;
+  if (!perms || typeof perms !== 'object') return false;
+  const star = perms['*'] || [];
+  if (star.includes('*') || star.includes('write')) return true;
+  const credit = perms.credit || [];
+  return credit.includes('write') || credit.includes('*') || credit.includes('approve');
+}
+
+function money(n: number) {
+  return new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+}
+
+function fieldErrorsFromDetail(detail: unknown): Record<string, string> {
+  const fields: Record<string, string> = {};
+  if (Array.isArray(detail)) {
+    for (const item of detail) {
+      if (!item || typeof item !== 'object') continue;
+      const rec = item as { loc?: unknown; msg?: unknown; message?: unknown };
+      const loc = Array.isArray(rec.loc) ? rec.loc : [];
+      const field = loc.find((x) => typeof x === 'string' && x !== 'body' && x !== 'query');
+      const msg = typeof rec.msg === 'string' ? rec.msg : typeof rec.message === 'string' ? rec.message : '';
+      if (typeof field === 'string' && msg) fields[field] = msg;
+    }
+  } else if (detail && typeof detail === 'object') {
+    for (const [key, val] of Object.entries(detail as Record<string, unknown>)) {
+      if (typeof val === 'string' && key !== 'msg' && key !== 'message') fields[key] = val;
+    }
+  }
+  return fields;
+}
 
 const emptyForm = {
   name: '',
@@ -64,6 +98,23 @@ export default function Page() {
   const [editingId, setEditingId] = useState('');
   const [form, setForm] = useState(emptyForm);
   const [saveBusy, setSaveBusy] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [arCustomer, setArCustomer] = useState<Customer | null>(null);
+  const [arBusy, setArBusy] = useState(false);
+  const [arError, setArError] = useState('');
+  const [arCredit, setArCredit] = useState<any>(null);
+  const [arStatement, setArStatement] = useState<any>(null);
+  const [arHistory, setArHistory] = useState<any>(null);
+  const [accountId, setAccountId] = useState('');
+  const [accountName, setAccountName] = useState('');
+  const [accountBusy, setAccountBusy] = useState(false);
+  const [creditInfo, setCreditInfo] = useState<any>(null);
+  const [history, setHistory] = useState<any>(null);
+  const [payAmount, setPayAmount] = useState('');
+  const [payMethod, setPayMethod] = useState('cash');
+  const [payDateNote, setPayDateNote] = useState('');
+  const [payBusy, setPayBusy] = useState(false);
+  const [canPay, setCanPay] = useState(false);
 
   async function refresh() {
     setError('');
@@ -84,6 +135,12 @@ export default function Page() {
     // status is a real API filter
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
+
+  useEffect(() => {
+    getMe()
+      .then((me) => setCanPay(canWriteCredit(me.data)))
+      .catch(() => setCanPay(false));
+  }, []);
 
   const filtered = useMemo(() => {
     const rows = customers.filter((c) =>
@@ -109,6 +166,7 @@ export default function Page() {
     setFormOpen(true);
     setMessage('');
     setError('');
+    setFieldErrors({});
   }
 
   function openEdit(c: Customer) {
@@ -131,6 +189,7 @@ export default function Page() {
     setFormOpen(true);
     setMessage('');
     setError('');
+    setFieldErrors({});
   }
 
   function partyBody() {
@@ -152,8 +211,15 @@ export default function Page() {
   }
 
   async function save() {
+    if (saveBusy) return;
     setError('');
     setMessage('');
+    setFieldErrors({});
+    if (!form.name.trim()) {
+      setFieldErrors({ name: 'Enter a customer name' });
+      setError('Enter a customer name');
+      return;
+    }
     setSaveBusy(true);
     try {
       if (editingId) {
@@ -166,9 +232,11 @@ export default function Page() {
         await api('/customers', { method: 'POST', body: JSON.stringify(partyBody()) });
         setMessage('Customer created');
         setForm(emptyForm);
+        setFormOpen(false);
       }
       await refresh();
     } catch (err: any) {
+      setFieldErrors(fieldErrorsFromDetail(err.detail));
       setError(err.message || 'Save failed');
     } finally {
       setSaveBusy(false);
@@ -186,6 +254,89 @@ export default function Page() {
       setMessage(isActive ? `${c.name} activated` : `${c.name} deactivated`);
     } catch (err: any) {
       setError(err.message);
+    }
+  }
+
+  async function openAr(c: Customer) {
+    setArCustomer(c);
+    setArError('');
+    setArBusy(true);
+    setArCredit(null);
+    setArStatement(null);
+    setArHistory(null);
+    try {
+      const [creditRes, stmtRes, histRes] = await Promise.all([
+        api(`/customers/${c.id}/credit`).catch((err: any) => ({ error: err.message })),
+        api(`/credit/customers/${c.id}/statement`).catch((err: any) => ({ error: err.message })),
+        api(`/customers/${c.id}/history`).catch((err: any) => ({ error: err.message })),
+      ]);
+      if ((creditRes as any).error && (stmtRes as any).error && (histRes as any).error) {
+        setArError((creditRes as any).error);
+      }
+      setArCredit((creditRes as any).data ?? null);
+      setArStatement((stmtRes as any).data ?? null);
+      setArHistory((histRes as any).data ?? null);
+    } finally {
+      setArBusy(false);
+    }
+  }
+
+  async function openAccount(c: Customer) {
+    setAccountId(c.id);
+    setAccountName(c.name);
+    setAccountBusy(true);
+    setCreditInfo(null);
+    setHistory(null);
+    setPayAmount('');
+    setPayDateNote(new Date().toISOString().slice(0, 10));
+    setError('');
+    try {
+      const [creditRes, histRes] = await Promise.all([
+        api(`/customers/${c.id}/credit`).catch(() => ({ data: null })),
+        api(`/customers/${c.id}/history`).catch(() => ({ data: null })),
+      ]);
+      setCreditInfo(creditRes.data || {
+        outstanding_balance: c.balance || 0,
+        credit_limit: c.credit_limit || 0,
+        credit_sales: [],
+      });
+      setHistory(histRes.data || { payments: [], purchases: [] });
+    } catch (err: any) {
+      setError(err.message || 'Could not load account');
+    } finally {
+      setAccountBusy(false);
+    }
+  }
+
+  async function recordRepayment() {
+    if (!accountId || payBusy) return;
+    const amount = Number(payAmount);
+    if (!(amount > 0)) {
+      setError('Enter an amount greater than zero');
+      return;
+    }
+    setPayBusy(true);
+    setError('');
+    try {
+      const notes = payDateNote.trim() ? `Received ${payDateNote.trim()}` : null;
+      await api(`/customers/${accountId}/payments`, {
+        method: 'POST',
+        body: JSON.stringify({
+          customer_id: accountId,
+          amount,
+          payment_method: payMethod,
+          notes,
+        }),
+      });
+      setMessage('Payment recorded against customer balance');
+      setPayAmount('');
+      const current = customers.find((row) => row.id === accountId);
+      if (current) await openAccount(current);
+      await refresh();
+    } catch (err: any) {
+      setError(err.message || 'Payment failed');
+    } finally {
+      setPayBusy(false);
     }
   }
 
@@ -324,6 +475,16 @@ export default function Page() {
                     <button type="button" onClick={() => openEdit(c)} aria-label={`Edit ${c.name}`}>
                       Edit
                     </button>
+                    <button type="button" onClick={() => openAr(c)} aria-label={`AR for ${c.name}`}>
+                      AR
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openAccount(c)}
+                      aria-label={`Account for ${c.name}`}
+                    >
+                      Account
+                    </button>
                     <button
                       type="button"
                       onClick={() => setActive(c, c.status === 'inactive')}
@@ -366,21 +527,148 @@ export default function Page() {
         </div>
       ) : null}
 
-      {formOpen ? (
-        <div className="card" style={{ marginTop: 16 }}>
-          <div className="cat-head">
-            <h2>{editingId ? 'Edit customer' : 'Add customer'}</h2>
-            <button type="button" onClick={() => setFormOpen(false)} disabled={saveBusy}>
+      {accountId ? (
+        <div className="card" style={{ marginTop: 16 }} aria-label="Customer account">
+          <div className="list-page-head">
+            <div>
+              <h2 style={{ margin: 0 }}>Account · {accountName}</h2>
+              <p className="muted" style={{ margin: '4px 0 0' }}>
+                Outstanding balance and payments on the AR ledger (invoices + customer payments).
+              </p>
+            </div>
+            <button type="button" onClick={() => setAccountId('')} aria-label="Close customer account">
               Close
             </button>
           </div>
+          {accountBusy ? <p className="muted">Loading account…</p> : null}
+          {creditInfo ? (
+            <p>
+              Outstanding <strong>{money(Number(creditInfo.outstanding_balance || 0))}</strong>
+              {Number(creditInfo.credit_limit || 0) > 0
+                ? ` · limit ${money(Number(creditInfo.credit_limit))}`
+                : ' · no credit limit'}
+              {creditInfo.open_invoice_count
+                ? ` · ${creditInfo.open_invoice_count} open invoice(s)`
+                : ''}
+            </p>
+          ) : null}
+          {canPay ? (
+            <div className="list-toolbar" style={{ flexWrap: 'wrap' }}>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={payAmount}
+                onChange={(e) => setPayAmount(e.target.value)}
+                placeholder="Amount"
+                aria-label="Repayment amount"
+              />
+              <select
+                value={payMethod}
+                onChange={(e) => setPayMethod(e.target.value)}
+                aria-label="Repayment method"
+              >
+                <option value="cash">Cash</option>
+                <option value="card">Card</option>
+                <option value="bank_transfer">Bank transfer</option>
+                <option value="cheque">Cheque</option>
+              </select>
+              <input
+                type="date"
+                value={payDateNote}
+                onChange={(e) => setPayDateNote(e.target.value)}
+                aria-label="Repayment date"
+              />
+              <button type="button" onClick={recordRepayment} disabled={payBusy}>
+                {payBusy ? 'Recording…' : 'Record payment'}
+              </button>
+            </div>
+          ) : (
+            <p className="muted">Recording repayments needs credit write permission.</p>
+          )}
+          {(creditInfo?.credit_sales || []).length > 0 ? (
+            <div className="list-table-wrap">
+              <table className="table cat-table">
+                <thead>
+                  <tr>
+                    <th>Open invoice</th>
+                    <th>Status</th>
+                    <th>Total</th>
+                    <th>Paid</th>
+                    <th>Due</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {creditInfo.credit_sales.map((inv: any) => (
+                    <tr key={inv.invoice_id}>
+                      <td>{inv.invoice_number}</td>
+                      <td>{inv.status}</td>
+                      <td>{money(Number(inv.total_amount || 0))}</td>
+                      <td>{money(Number(inv.paid_amount || 0))}</td>
+                      <td>{money(Number(inv.amount || 0))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+          {(history?.payments || []).length > 0 ? (
+            <div className="list-table-wrap" style={{ marginTop: 12 }}>
+              <table className="table cat-table">
+                <thead>
+                  <tr>
+                    <th>Payment</th>
+                    <th>Date</th>
+                    <th>Method</th>
+                    <th>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.payments.map((p: any) => (
+                    <tr key={p.id}>
+                      <td>{p.payment_number}</td>
+                      <td>
+                        {p.created_at ? String(p.created_at).replace('T', ' ').slice(0, 16) : '—'}
+                      </td>
+                      <td>{String(p.payment_method || '').replace(/_/g, ' ')}</td>
+                      <td>{money(Number(p.amount || 0))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : !accountBusy ? (
+            <p className="muted">No payment history yet.</p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {formOpen ? (
+        <FormModal
+          title={editingId ? 'Edit customer' : 'Add customer'}
+          busy={saveBusy}
+          dirty={Boolean(
+            form.name.trim() ||
+              form.code.trim() ||
+              form.email.trim() ||
+              form.phone.trim() ||
+              form.address.trim(),
+          )}
+          onClose={() => setFormOpen(false)}
+        >
           <div className="erp-form-grid">
             <input
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="Name"
               aria-label="Customer name"
+              aria-invalid={Boolean(fieldErrors.name)}
             />
+            {fieldErrors.name ? (
+              <p className="list-toast err" role="alert">
+                {fieldErrors.name}
+              </p>
+            ) : null}
             <input
               value={form.code}
               onChange={(e) => setForm({ ...form, code: e.target.value })}
@@ -431,8 +719,9 @@ export default function Page() {
               value={form.groupId}
               onChange={(e) => setForm({ ...form, groupId: e.target.value })}
               aria-label="Customer group"
+              aria-invalid={Boolean(fieldErrors.customer_group || fieldErrors.customer_group_id)}
             >
-              <option value="">Group (optional)</option>
+              <option value="">Customer group (optional)</option>
               {groups
                 .filter((g) => g.is_active !== false || g.id === form.groupId)
                 .map((g) => (
@@ -441,6 +730,16 @@ export default function Page() {
                   </option>
                 ))}
             </select>
+            {fieldErrors.customer_group || fieldErrors.customer_group_id ? (
+              <p className="list-toast err" role="alert">
+                {fieldErrors.customer_group || fieldErrors.customer_group_id}
+              </p>
+            ) : null}
+            {fieldErrors.company ? (
+              <p className="list-toast err" role="alert">
+                {fieldErrors.company}
+              </p>
+            ) : null}
             <input
               value={form.creditLimit}
               onChange={(e) => setForm({ ...form, creditLimit: e.target.value })}
@@ -478,7 +777,65 @@ export default function Page() {
               />
             </div>
           ) : null}
-        </div>
+        </FormModal>
+      ) : null}
+      {arCustomer ? (
+        <FormModal
+          title={`AR · ${arCustomer.name}`}
+          onClose={() => setArCustomer(null)}
+        >
+          <div className="stack">
+            {arBusy ? <p className="muted">Loading ledger…</p> : null}
+            {arError ? (
+              <p className="list-toast err" role="alert">
+                {arError}
+              </p>
+            ) : null}
+            {arCredit ? (
+              <p>
+                Balance {arCredit.balance ?? arCustomer.balance ?? 0}
+                {arCredit.credit_limit != null ? ` · limit ${arCredit.credit_limit}` : ''}
+                {arCredit.overdue_amount != null ? ` · overdue ${arCredit.overdue_amount}` : ''}
+              </p>
+            ) : null}
+            {arStatement?.lines?.length ? (
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Doc</th>
+                    <th>Debit</th>
+                    <th>Credit</th>
+                    <th>Balance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {arStatement.lines.map((line: any, idx: number) => (
+                    <tr key={line.id || idx}>
+                      <td>
+                        {line.date
+                          ? String(line.date).replace('T', ' ').slice(0, 16)
+                          : '—'}
+                      </td>
+                      <td>{line.document_number || line.reference || line.description || line.type || '—'}</td>
+                      <td>{line.debit ?? line.amount_debit ?? ''}</td>
+                      <td>{line.credit ?? line.amount_credit ?? ''}</td>
+                      <td>{line.balance ?? ''}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : !arBusy ? (
+              <p className="muted">No statement lines.</p>
+            ) : null}
+            {arHistory?.summary || arHistory?.purchases?.length || arHistory?.payments?.length ? (
+              <p className="muted">
+                {(arHistory.summary?.purchase_count ?? (arHistory.purchases || []).length)} invoices ·{' '}
+                {(arHistory.summary?.payment_count ?? (arHistory.payments || []).length)} payments
+              </p>
+            ) : null}
+          </div>
+        </FormModal>
       ) : null}
     </div>
   );

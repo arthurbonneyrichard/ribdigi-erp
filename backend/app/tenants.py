@@ -243,6 +243,7 @@ def serialize_tenant(tenant: m.Tenant) -> dict:
         "inactivity_timeout_minutes": int(
             getattr(tenant, "inactivity_timeout_minutes", None) or 30
         ),
+        "offline_auth_hours": int(getattr(tenant, "offline_auth_hours", None) or 168),
         "expense_approval_threshold": money_json(tenant.expense_approval_threshold),
         "expense_l2_threshold": money_json(
             getattr(tenant, "expense_l2_threshold", None), default=1000.0
@@ -266,6 +267,9 @@ def serialize_tenant(tenant: m.Tenant) -> dict:
         "package_code": getattr(tenant, "package_code", None) or "trial",
         "max_stores_override": getattr(tenant, "max_stores_override", None),
         "store_limit": getattr(tenant, "store_limit", None),
+        "max_stores": usage.get("subscription_store_entitlement"),
+        "multi_store": usage.get("subscription_store_entitlement") is None
+        or int(usage.get("subscription_store_entitlement") or 0) > 1,
         "subscription": usage,
         "enabled_modules": usage["enabled_modules"],
         "created_at": tenant.created_at,
@@ -773,6 +777,7 @@ async def update_profile(
     thousand_separator: str | None = None,
     time_format: str | None = None,
     inactivity_timeout_minutes: int | None = None,
+    offline_auth_hours: int | None = None,
 ) -> m.Tenant:
     if company_name is not None:
         # OpenAPI CompanyNameValue → 422; service defense-in-depth → 400.
@@ -789,6 +794,11 @@ async def update_profile(
                 if m_on not in pruned:
                     pruned.append(m_on)
             tenant.enabled_modules = pruned
+        from app import printers as printers_svc
+
+        await printers_svc.drop_inapplicable_printer_destinations(
+            db, tenant_id=tenant.id, industry=tenant.industry
+        )
     if currency is not None:
         # Defense in depth: TenantProfileUpdate CurrencyCodeValue → 422 on blank/non-ISO.
         from app.fx import normalize_currency
@@ -924,6 +934,19 @@ async def update_profile(
                 detail="inactivity_timeout_minutes must be between 5 and 480",
             )
         tenant.inactivity_timeout_minutes = minutes
+    if offline_auth_hours is not None:
+        from app.offline_pos import clamp_offline_auth_hours
+        from app.config import settings as app_settings
+
+        hours = int(offline_auth_hours)
+        lo = int(app_settings.OFFLINE_AUTH_HOURS_MIN or 1)
+        hi = int(app_settings.OFFLINE_AUTH_HOURS_MAX or 168)
+        if hours < lo or hours > hi:
+            raise HTTPException(
+                status_code=400,
+                detail=f"offline_auth_hours must be between {lo} and {hi}",
+            )
+        tenant.offline_auth_hours = clamp_offline_auth_hours(hours)
     _validate_separators(
         getattr(tenant, "decimal_separator", None) or ".",
         getattr(tenant, "thousand_separator", None)

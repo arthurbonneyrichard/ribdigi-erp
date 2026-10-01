@@ -494,6 +494,69 @@ async def resolve_product_tax(
     return TaxSpec(rate_pct=0.0, pricing_mode="exclusive", supply_class="standard")
 
 
+async def resolve_products_tax_map(
+    db: AsyncSession,
+    tenant_id: str,
+    products: list[m.Product],
+) -> dict[str, TaxSpec]:
+    """Resolve tax for many products with two tenant-scoped queries (not per-row)."""
+    if not products:
+        return {}
+    rates = (
+        await db.execute(select(m.TaxRate).where(m.TaxRate.tenant_id == tenant_id))
+    ).scalars().all()
+    rate_by_id = {r.id: r for r in rates}
+    default = next((r for r in rates if r.is_default and r.is_active), None)
+    cats = (
+        await db.execute(
+            select(m.ProductCategory).where(m.ProductCategory.tenant_id == tenant_id)
+        )
+    ).scalars().all()
+    cat_by_id = {c.id: c for c in cats}
+
+    def category_rate(category_id: str | None) -> m.TaxRate | None:
+        seen: set[str] = set()
+        current_id = category_id
+        depth = 0
+        while current_id and depth < 16:
+            if current_id in seen:
+                break
+            seen.add(current_id)
+            cat = cat_by_id.get(current_id)
+            if not cat:
+                break
+            if cat.tax_rate_id:
+                rate = rate_by_id.get(cat.tax_rate_id)
+                if rate is not None and rate.is_active:
+                    return rate
+            current_id = cat.parent_id
+            depth += 1
+        return None
+
+    out: dict[str, TaxSpec] = {}
+    for product in products:
+        supply = product_supply_class(product)
+        if supply in {"exempt", "zero_rated"}:
+            out[product.id] = TaxSpec(rate_pct=0.0, pricing_mode="exclusive", supply_class=supply)
+            continue
+        if product.tax_rate_id:
+            rate = rate_by_id.get(product.tax_rate_id)
+            if rate is None:
+                raise HTTPException(status_code=404, detail="Tax rate not found")
+            if rate.is_active:
+                out[product.id] = tax_spec_from_rate(rate, supply_class="standard")
+                continue
+        found = category_rate(getattr(product, "category_id", None))
+        if found:
+            out[product.id] = tax_spec_from_rate(found, supply_class="standard")
+            continue
+        if default:
+            out[product.id] = tax_spec_from_rate(default, supply_class="standard")
+            continue
+        out[product.id] = TaxSpec(rate_pct=0.0, pricing_mode="exclusive", supply_class="standard")
+    return out
+
+
 async def resolve_product_tax_rate(
     db: AsyncSession,
     tenant_id: str,
