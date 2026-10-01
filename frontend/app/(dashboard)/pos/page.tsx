@@ -325,6 +325,7 @@ export default function Page() {
   const [cartDiscount, setCartDiscount] = useState('');
   const [cartDiscountType, setCartDiscountType] = useState<'fixed' | 'percent'>('fixed');
   const [couponCode, setCouponCode] = useState('');
+  const [showAdjustments, setShowAdjustments] = useState(false);
   const [isPharmacy, setIsPharmacy] = useState(false);
   const [tradeBanner, setTradeBanner] = useState('');
   const [rxList, setRxList] = useState<OpenPrescription[]>([]);
@@ -990,6 +991,10 @@ export default function Page() {
         })
         .filter((p) => p.quantity > 0)
     );
+  }
+
+  function removeLine(id: string) {
+    setCart((prev) => prev.filter((p) => p.id !== id));
   }
 
   function clearCart() {
@@ -1842,7 +1847,12 @@ export default function Page() {
             </div>
 
             <div className="tpos-cart-list">
-              {cart.length === 0 && <p className="muted">Tap a product image to add it.</p>}
+              {cart.length === 0 ? (
+                <div className="tpos-cart-empty">
+                  <strong>Cart is empty</strong>
+                  <p>Tap a product or scan a barcode to add it.</p>
+                </div>
+              ) : null}
               {cart.map((c) => {
                 const unit = groupUnitPrice(Number(c.selling_price));
                 const lineMerch = unit * c.quantity;
@@ -1855,173 +1865,124 @@ export default function Page() {
                   Boolean(c.tax_reverse_charge),
                   c.tax_components
                 );
+                const stockOut = Number(c.stock_qty) <= 0 || c.is_out_of_stock;
                 return (
                   <div key={c.id} className="tpos-cart-row">
-                    <div className="tpos-cart-mini">
-                      <ProductThumb
-                        productId={c.product_id || c.id}
-                        hasImage={c.has_image}
-                        name={c.name}
-                      />
+                    <div className="tpos-cart-line">
+                      <strong className="tpos-cart-name" title={c.name}>
+                        <span className="tpos-cart-name-text">{c.name}</span>
+                        {c.rx_only ? <span className="tpos-cart-flag">Rx</span> : null}
+                        {stockOut ? (
+                          <span className="tpos-cart-flag tpos-cart-flag-out">Out</span>
+                        ) : c.is_low_stock ? (
+                          <span className="tpos-cart-flag tpos-cart-flag-low">Low</span>
+                        ) : null}
+                      </strong>
+                      <div className="tpos-line">{money(lineAmounts.gross)}</div>
                     </div>
-                    <strong className="tpos-cart-name" title={c.name}>
-                      {c.name}
-                    </strong>
-                    <div className="tpos-qty">
-                      <button type="button" aria-label="Decrease" onClick={() => bumpQty(c.id, -1)}>
-                        −
-                      </button>
-                      <input
-                        type="number"
-                        min={1}
-                        max={Math.max(0, Number(c.stock_qty) || 0)}
-                        step={1}
-                        value={c.quantity}
-                        onChange={(e) => {
-                          if (e.target.value === '') return;
-                          const n = Number(e.target.value);
-                          if (!Number.isFinite(n)) return;
-                          setLineQty(c.id, n);
-                        }}
-                        inputMode="numeric"
-                        aria-label={`Quantity for ${c.name}`}
-                      />
-                      <button type="button" aria-label="Increase" onClick={() => bumpQty(c.id, 1)}>
-                        +
-                      </button>
-                    </div>
-                    <div className="tpos-line">{money(lineAmounts.gross)}</div>
-                    <div className="tpos-cart-meta">
-                      <span className="tpos-cart-unit">
-                        {money(unit)} each
-                        {groupDiscountPct > 0 ? ` (−${groupDiscountPct}%)` : ''}
-                      </span>
-                      <span
-                        className={
-                          Number(c.stock_qty) <= 0 || c.is_out_of_stock
-                            ? 'tpos-cart-stock tpos-cart-stock-out'
-                            : c.is_low_stock
-                              ? 'tpos-cart-stock tpos-cart-stock-low'
-                              : 'tpos-cart-stock'
-                        }
-                      >
-                        Stock {c.stock_qty}
-                        {Number(c.stock_qty) <= 0 || c.is_out_of_stock
-                          ? ' · Out of stock at this store'
-                          : c.is_low_stock
-                            ? ' · Low'
-                            : ''}
-                      </span>
-                      <label className="tpos-line-disc">
-                        <span>Disc</span>
-                        <select
-                          value={c.discountType || 'fixed'}
-                          onChange={(e) => {
-                            const next = e.target.value === 'percent' ? 'percent' : 'fixed';
-                            setCart((prev) =>
-                              prev.map((p) =>
-                                p.id === c.id
-                                  ? { ...p, discountType: next, discount: 0, discountPercent: 0 }
-                                  : p,
-                              ),
-                            );
-                          }}
-                          aria-label={`Discount type for ${c.name}`}
+                    <div className="tpos-cart-controls">
+                      <div className="tpos-qty">
+                        <button
+                          type="button"
+                          aria-label={`Decrease quantity of ${c.name}`}
+                          onClick={() => bumpQty(c.id, -1)}
                         >
-                          <option value="fixed">Amount</option>
-                          <option value="percent">%</option>
-                        </select>
+                          −
+                        </button>
                         <input
                           type="number"
-                          min={0}
-                          max={c.discountType === 'percent' ? 100 : lineMerch}
-                          step="0.01"
-                          value={c.discountType === 'percent' ? c.discountPercent || 0 : c.discount || 0}
-                          onChange={(e) =>
-                            setLineDiscount(c.id, Number(e.target.value) || 0, c.discountType || 'fixed')
-                          }
-                          inputMode="decimal"
-                          aria-label={`Discount for ${c.name}`}
+                          min={1}
+                          max={Math.max(0, Number(c.stock_qty) || 0)}
+                          step={1}
+                          value={c.quantity}
+                          onChange={(e) => {
+                            if (e.target.value === '') return;
+                            const n = Number(e.target.value);
+                            if (!Number.isFinite(n)) return;
+                            setLineQty(c.id, n);
+                          }}
+                          inputMode="numeric"
+                          aria-label={`Quantity for ${c.name}`}
                         />
-                      </label>
+                        <button
+                          type="button"
+                          aria-label={`Increase quantity of ${c.name}`}
+                          onClick={() => bumpQty(c.id, 1)}
+                        >
+                          +
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        className="tpos-cart-remove"
+                        onClick={() => removeLine(c.id)}
+                        aria-label={`Remove ${c.name}`}
+                      >
+                        Remove
+                      </button>
                     </div>
+                    {showAdjustments ? (
+                      <div className="tpos-cart-meta">
+                        <span className="tpos-cart-unit">
+                          {money(unit)} each
+                          {groupDiscountPct > 0 ? ` (−${groupDiscountPct}%)` : ''}
+                        </span>
+                        <span
+                          className={
+                            stockOut
+                              ? 'tpos-cart-stock tpos-cart-stock-out'
+                              : c.is_low_stock
+                                ? 'tpos-cart-stock tpos-cart-stock-low'
+                                : 'tpos-cart-stock'
+                          }
+                        >
+                          Stock {c.stock_qty}
+                          {stockOut
+                            ? ' · Out of stock at this store'
+                            : c.is_low_stock
+                              ? ' · Low'
+                              : ''}
+                        </span>
+                        <label className="tpos-line-disc">
+                          <span>Disc</span>
+                          <select
+                            value={c.discountType || 'fixed'}
+                            onChange={(e) => {
+                              const next = e.target.value === 'percent' ? 'percent' : 'fixed';
+                              setCart((prev) =>
+                                prev.map((p) =>
+                                  p.id === c.id
+                                    ? { ...p, discountType: next, discount: 0, discountPercent: 0 }
+                                    : p,
+                                ),
+                              );
+                            }}
+                            aria-label={`Discount type for ${c.name}`}
+                          >
+                            <option value="fixed">Amount</option>
+                            <option value="percent">%</option>
+                          </select>
+                          <input
+                            type="number"
+                            min={0}
+                            max={c.discountType === 'percent' ? 100 : lineMerch}
+                            step="0.01"
+                            value={c.discountType === 'percent' ? c.discountPercent || 0 : c.discount || 0}
+                            onChange={(e) =>
+                              setLineDiscount(c.id, Number(e.target.value) || 0, c.discountType || 'fixed')
+                            }
+                            inputMode="decimal"
+                            aria-label={`Discount for ${c.name}`}
+                          />
+                        </label>
+                      </div>
+                    ) : null}
                   </div>
                 );
               })}
             </div>
 
             <div className="tpos-cart-foot">
-              <div className="tpos-foot-discounts">
-                <label className="tpos-field tpos-field-compact">
-                  <span>Cart discount</span>
-                  <span className="tpos-inline-controls">
-                    <select
-                      value={cartDiscountType}
-                      onChange={(e) => {
-                        setCartDiscountType(e.target.value === 'percent' ? 'percent' : 'fixed');
-                        setCartDiscount('');
-                      }}
-                      aria-label="POS cart discount type"
-                    >
-                      <option value="fixed">Amount</option>
-                      <option value="percent">Percent</option>
-                    </select>
-                    <input
-                      className="tpos-input"
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      value={cartDiscount}
-                      onChange={(e) => setCartDiscount(e.target.value)}
-                      placeholder={cartDiscountType === 'percent' ? '0' : '0.00'}
-                      inputMode="decimal"
-                      aria-label="POS cart discount"
-                    />
-                  </span>
-                </label>
-                <label className="tpos-field tpos-field-compact">
-                  <span>Coupon</span>
-                  <input
-                    className="tpos-input"
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                    placeholder="CODE"
-                    aria-label="POS coupon code"
-                  />
-                </label>
-              </div>
-
-              <div className="tpos-totals" aria-label="POS cart totals">
-                <div className="tpos-total-row">
-                  <span>Subtotal</span>
-                  <strong>{money(cartTotals.subtotal)}</strong>
-                </div>
-                <div className="tpos-total-row">
-                  <span>Discount</span>
-                  <strong>{money(cartDiscountAmount)}</strong>
-                </div>
-                <div className="tpos-total-row">
-                  <span>Tax</span>
-                  <strong>{money(cartTotals.tax)}</strong>
-                </div>
-                <div className="tpos-total">
-                  <span>Amount due</span>
-                  <strong>{money(cartTotal)}</strong>
-                </div>
-                {paymentMethod === 'credit' && !splitTender ? (
-                  <>
-                    <div className="tpos-total-row">
-                      <span>Paid now</span>
-                      <strong>{money(creditPaidNow)}</strong>
-                    </div>
-                    <div className="tpos-total-row">
-                      <span>On account</span>
-                      <strong>{money(creditRemaining)}</strong>
-                    </div>
-                  </>
-                ) : null}
-              </div>
-
               <label className="tpos-field">
                 <span>Customer {paymentMethod === 'credit' ? '(required)' : '(optional)'}</span>
                 <select
@@ -2252,7 +2213,92 @@ export default function Page() {
                   <option value="58mm">58mm thermal</option>
                 </select>
               </label>
+            </div>
 
+            <div className="tpos-cart-dock">
+              <button
+                type="button"
+                className="tpos-details-toggle"
+                aria-expanded={showAdjustments}
+                onClick={() => setShowAdjustments((open) => !open)}
+              >
+                {showAdjustments ? 'Hide discounts & tax' : 'Discounts & tax'}
+              </button>
+              {showAdjustments ? (
+                <>
+                  <div className="tpos-foot-discounts">
+                    <label className="tpos-field tpos-field-compact">
+                      <span>Cart discount</span>
+                      <span className="tpos-inline-controls">
+                        <select
+                          value={cartDiscountType}
+                          onChange={(e) => {
+                            setCartDiscountType(e.target.value === 'percent' ? 'percent' : 'fixed');
+                            setCartDiscount('');
+                          }}
+                          aria-label="POS cart discount type"
+                        >
+                          <option value="fixed">Amount</option>
+                          <option value="percent">Percent</option>
+                        </select>
+                        <input
+                          className="tpos-input"
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={cartDiscount}
+                          onChange={(e) => setCartDiscount(e.target.value)}
+                          placeholder={cartDiscountType === 'percent' ? '0' : '0.00'}
+                          inputMode="decimal"
+                          aria-label="POS cart discount"
+                        />
+                      </span>
+                    </label>
+                    <label className="tpos-field tpos-field-compact">
+                      <span>Coupon</span>
+                      <input
+                        className="tpos-input"
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                        placeholder="CODE"
+                        aria-label="POS coupon code"
+                      />
+                    </label>
+                  </div>
+                  <div className="tpos-totals" aria-label="POS cart totals">
+                    <div className="tpos-total-row">
+                      <span>Discount</span>
+                      <strong>{money(cartDiscountAmount)}</strong>
+                    </div>
+                    <div className="tpos-total-row">
+                      <span>Tax</span>
+                      <strong>{money(cartTotals.tax)}</strong>
+                    </div>
+                  </div>
+                </>
+              ) : null}
+              {paymentMethod === 'credit' && !splitTender ? (
+                <>
+                  <div className="tpos-total-row">
+                    <span>Paid now</span>
+                    <strong>{money(creditPaidNow)}</strong>
+                  </div>
+                  <div className="tpos-total-row">
+                    <span>On account</span>
+                    <strong>{money(creditRemaining)}</strong>
+                  </div>
+                </>
+              ) : null}
+              {Math.abs(cartTotals.subtotal - cartTotal) >= 0.01 ? (
+                <div className="tpos-total-row tpos-dock-subtotal">
+                  <span>Subtotal</span>
+                  <strong>{money(cartTotals.subtotal)}</strong>
+                </div>
+              ) : null}
+              <div className="tpos-total">
+                <span>{Math.abs(cartTotals.subtotal - cartTotal) >= 0.01 ? 'Amount due' : 'Subtotal'}</span>
+                <strong>{money(cartTotal)}</strong>
+              </div>
               <div className="tpos-cart-actions">
                 <button
                   type="button"
