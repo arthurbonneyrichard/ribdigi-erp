@@ -133,12 +133,14 @@ async def resolve_sale_line(
     item: dict,
     *,
     customer_id: str | None = None,
+    sales_channel: str | None = None,
 ) -> tuple[m.Product, m.ProductVariant | None, float]:
     """Validate product/variant and resolve unit price (variant price wins when set).
 
-    When ``unit_price`` is omitted, list/variant price is used. If ``customer_id``
-    is set and that customer belongs to an active group, the group's discount
-    percent is applied (BR-7.1). Explicit ``unit_price`` is treated as an override.
+    When ``unit_price`` is omitted, list/variant price is used. Wholesale channel
+    then applies qty/group price tiers. If ``customer_id`` is set and that
+    customer belongs to an active group, the group's discount percent is applied
+    (BR-7.1). Explicit ``unit_price`` is treated as an override.
     """
     product = await get_product(db, tenant_id, item["product_id"])
     if not product.is_active:
@@ -158,12 +160,30 @@ async def resolve_sale_line(
             unit_price = money_json(variant.selling_price or 0)
         else:
             unit_price = money_json(product.selling_price or 0)
+        group_id = None
+        group_pct = 0.0
         if customer_id:
             from app.customer_groups import apply_discount, customer_group_discount
 
-            pct, _group = await customer_group_discount(db, tenant_id, customer_id)
-            if pct:
-                unit_price = apply_discount(unit_price, pct)
+            group_pct, group = await customer_group_discount(db, tenant_id, customer_id)
+            group_id = getattr(group, "id", None) if group else None
+        if (sales_channel or "").strip().lower() == "wholesale":
+            from app.trade import best_tier_price
+
+            qty = money_json(item.get("quantity") or 0)
+            tier = await best_tier_price(
+                db,
+                tenant_id=tenant_id,
+                product_id=product.id,
+                quantity=qty,
+                customer_group_id=group_id,
+            )
+            if tier is not None:
+                unit_price = tier
+        if group_pct:
+            from app.customer_groups import apply_discount
+
+            unit_price = apply_discount(unit_price, group_pct)
     return product, variant, unit_price
 
 

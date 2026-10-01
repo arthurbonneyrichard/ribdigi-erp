@@ -10,7 +10,7 @@ import { pageLoadStarted } from '../../../lib/navTiming';
 import PageSkeleton from '../../../components/PageSkeleton';
 import { useStoreContext } from '../../../lib/storeContext';
 import { isHotelIndustry, tenantIsMultiStore } from '../../../lib/tenantNav';
-import { normalizeIndustry, usesStoreStockTransfers } from '../../../lib/industries';
+import { normalizeIndustry, usesStoreStockTransfers, usesWholesaleTrade } from '../../../lib/industries';
 import {
   formatTransferDate,
   matchesTransferSearch,
@@ -297,6 +297,7 @@ export default function Page() {
   const { storeId } = useStoreContext();
   const [hotelOps, setHotelOps] = useState(false);
   const [pharmacyOps, setPharmacyOps] = useState(false);
+  const [wholesaleOps, setWholesaleOps] = useState(false);
   const [retailTransfers, setRetailTransfers] = useState(true);
   const [hideWarehouseUx, setHideWarehouseUx] = useState(false);
   useEffect(() => {
@@ -306,6 +307,7 @@ export default function Page() {
         const multi = tenantIsMultiStore(r.data);
         setHotelOps(isHotelIndustry(industry));
         setPharmacyOps(normalizeIndustry(industry) === 'pharmacy');
+        setWholesaleOps(usesWholesaleTrade(industry));
         setRetailTransfers(usesStoreStockTransfers(industry) && multi);
         setHideWarehouseUx(!multi);
       })
@@ -416,6 +418,7 @@ export default function Page() {
   const [productName, setProductName] = useState('');
   const [productSku, setProductSku] = useState('');
   const [productPrice, setProductPrice] = useState('0');
+  const [productMoq, setProductMoq] = useState('0');
   const [productCost, setProductCost] = useState('0');
   const [productDescription, setProductDescription] = useState('');
   const [productDosage, setProductDosage] = useState('');
@@ -430,6 +433,7 @@ export default function Page() {
   const [productUnitId, setProductUnitId] = useState('');
   const [editReorder, setEditReorder] = useState('0');
   const [editPrice, setEditPrice] = useState('0');
+  const [editMoq, setEditMoq] = useState('0');
   const [editCost, setEditCost] = useState('0');
   const [editBarcode, setEditBarcode] = useState('');
   const [editDescription, setEditDescription] = useState('');
@@ -446,6 +450,9 @@ export default function Page() {
   const [editBrandId, setEditBrandId] = useState('');
   const [editUnitId, setEditUnitId] = useState('');
   const [editTaxRateId, setEditTaxRateId] = useState('');
+  const [priceTiers, setPriceTiers] = useState<any[]>([]);
+  const [tierMinQty, setTierMinQty] = useState('');
+  const [tierPrice, setTierPrice] = useState('');
   const [labelCopies, setLabelCopies] = useState('1');
   const [barcodeSymbology, setBarcodeSymbology] = useState('code128');
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -754,9 +761,10 @@ export default function Page() {
 
   async function refreshSelected(id: string) {
     if (!id) return;
-    const [b, g] = await Promise.all([
+    const [b, g, t] = await Promise.all([
       apiOptional(`/products/${id}/batches`),
       apiOptional(`/products/${id}/images`),
+      apiOptional(`/products/${id}/price-tiers`),
     ]);
     const selectedError = [b, g].map((x) => x.error).filter(Boolean).join(' ');
     if (selectedError) setError(selectedError);
@@ -764,6 +772,8 @@ export default function Page() {
     else if (b.error) setError(b.error);
     if (!g.error && Array.isArray(g.data)) setGallery(g.data);
     else if (g.error) setError(g.error);
+    if (!t.error && Array.isArray(t.data)) setPriceTiers(t.data);
+    else setPriceTiers([]);
     setStockVariantId('');
     setOpeningVariantId('');
   }
@@ -1156,6 +1166,7 @@ export default function Page() {
       if (p) {
         setEditReorder(String(p.reorder_level ?? 0));
         setEditPrice(String(p.selling_price ?? 0));
+        setEditMoq(String(p.min_order_qty ?? 0));
         setEditCost(String(p.cost_price ?? 0));
         setEditBarcode(String(p.barcode || ''));
         setEditDescription(String(p.description || ''));
@@ -1185,6 +1196,7 @@ export default function Page() {
         body: JSON.stringify({
           reorder_level: Number(editReorder) || 0,
           selling_price: Number(editPrice) || 0,
+          min_order_qty: wholesaleOps ? Number(editMoq) || 0 : undefined,
           cost_price: Number(editCost) || 0,
           barcode: editBarcode.trim() || null,
           description: editDescription.trim() || null,
@@ -1208,6 +1220,47 @@ export default function Page() {
     } catch (err: any) {
       setFormFlash({ err: err.message || 'Could not update product' });
       return false;
+    } finally {
+      setSaveBusy(false);
+    }
+  }
+
+  async function addPriceTier() {
+    if (!selectedId || saveBusy) return;
+    const minQty = Number(tierMinQty);
+    const unitPrice = Number(tierPrice);
+    if (!(minQty > 0) || !(unitPrice >= 0) || Number.isNaN(unitPrice)) {
+      setFormFlash({ err: 'Enter a quantity greater than zero and a unit price' });
+      return;
+    }
+    setSaveBusy(true);
+    setFormFlash({});
+    try {
+      await api(`/products/${selectedId}/price-tiers`, {
+        method: 'POST',
+        body: JSON.stringify({ min_qty: minQty, unit_price: unitPrice }),
+      });
+      setTierMinQty('');
+      setTierPrice('');
+      setFormFlash({ ok: 'Price tier saved' });
+      await refreshSelected(selectedId);
+    } catch (err: any) {
+      setFormFlash({ err: err.message || 'Could not save price tier' });
+    } finally {
+      setSaveBusy(false);
+    }
+  }
+
+  async function removePriceTier(tierId: string) {
+    if (!selectedId || saveBusy) return;
+    setSaveBusy(true);
+    setFormFlash({});
+    try {
+      await api(`/products/${selectedId}/price-tiers/${tierId}`, { method: 'DELETE' });
+      setFormFlash({ ok: 'Price tier deleted' });
+      await refreshSelected(selectedId);
+    } catch (err: any) {
+      setFormFlash({ err: err.message || 'Could not delete price tier' });
     } finally {
       setSaveBusy(false);
     }
@@ -1617,6 +1670,7 @@ export default function Page() {
           dosage_instructions: pharmacyOps ? productDosage.trim() || null : undefined,
           rx_only: pharmacyOps ? productRxOnly : undefined,
           selling_price: Number(productPrice) || 0,
+          min_order_qty: wholesaleOps ? Number(productMoq) || 0 : undefined,
           cost_price: Number(productCost) || 0,
           weight: productWeight === '' ? null : Number(productWeight),
           length: productLength === '' ? null : Number(productLength),
@@ -1662,6 +1716,7 @@ export default function Page() {
       setProductWidth('');
       setProductHeight('');
       setProductPrice('0');
+      setProductMoq('0');
       setProductCost('0');
       setProductSupplyClass('standard');
       setProductTaxRateId('');
@@ -3004,6 +3059,7 @@ export default function Page() {
       productDosage.trim() ||
       productRxOnly ||
       (productPrice !== '' && productPrice !== '0') ||
+      (productMoq !== '' && productMoq !== '0') ||
       (productCost !== '' && productCost !== '0') ||
       productCategoryId ||
       productBrandId ||
@@ -3817,6 +3873,22 @@ export default function Page() {
                         aria-label="Product selling price"
                       />
                     </div>
+            {wholesaleOps ? (
+              <div className="product-price-field">
+                <label className="product-price-label" htmlFor="add-product-moq">Wholesale MOQ</label>
+                <input
+                  id="add-product-moq"
+                  type="number"
+                  min="0"
+                  step="0.001"
+                  inputMode="decimal"
+                  placeholder="0"
+                  value={productMoq}
+                  onChange={(e) => setProductMoq(e.target.value)}
+                  aria-label="Wholesale minimum order quantity"
+                />
+              </div>
+            ) : null}
             <div className="span-2" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <input
                 value={productWeight}
@@ -4015,7 +4087,57 @@ export default function Page() {
                     <p className="muted">Dosage {selected.dosage_instructions || '—'}</p>
                   </>
                 ) : null}
+                {wholesaleOps ? (
+                  <p className="muted">Wholesale MOQ {selected.min_order_qty ?? 0}</p>
+                ) : null}
                 </div>
+                {wholesaleOps ? (
+                  <>
+                    <h4>Wholesale price tiers</h4>
+                    <p className="muted">Quantity breaks apply on wholesale quotes and orders, not retail POS.</p>
+                    {priceTiers.length === 0 ? (
+                      <p className="muted">No quantity price tiers yet.</p>
+                    ) : (
+                      <ul style={{ margin: 0, paddingLeft: 18 }}>
+                        {priceTiers.map((tier) => (
+                          <li key={tier.id} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                            <span>
+                              From {tier.min_qty} @ {tier.unit_price}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => removePriceTier(tier.id)}
+                              aria-label={`Delete price tier ${tier.min_qty}`}
+                            >
+                              Delete
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <div className="erp-form-grid form-grid" style={{ marginBottom: 12 }}>
+                      <div className="field">
+                        <label className="muted">Min qty</label>
+                        <input
+                          value={tierMinQty}
+                          onChange={(e) => setTierMinQty(e.target.value)}
+                          aria-label="Price tier minimum quantity"
+                        />
+                      </div>
+                      <div className="field">
+                        <label className="muted">Unit price</label>
+                        <input
+                          value={tierPrice}
+                          onChange={(e) => setTierPrice(e.target.value)}
+                          aria-label="Price tier unit price"
+                        />
+                      </div>
+                      <button type="button" onClick={addPriceTier} disabled={saveBusy} aria-label="Save price tier">
+                        Save tier
+                      </button>
+                    </div>
+                  </>
+                ) : null}
                 <h4>Warehouse lots / expiry</h4>
                 <p className="muted">
                   Expiry is not a product field. Record quantity at a location with an expiry date.
@@ -4154,6 +4276,12 @@ export default function Page() {
                     <label className="muted">Selling price</label>
                     <input value={editPrice} onChange={(e) => setEditPrice(e.target.value)} aria-label="Edit product selling price" />
                     </div>
+                    {wholesaleOps ? (
+                    <div className="field">
+                    <label className="muted">Wholesale MOQ</label>
+                    <input value={editMoq} onChange={(e) => setEditMoq(e.target.value)} aria-label="Edit wholesale minimum order quantity" />
+                    </div>
+                    ) : null}
                     <div className="field">
                     <label className="muted">Variant</label>
                     <select

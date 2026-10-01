@@ -47,9 +47,11 @@ async def _prepare_lines(
     items: list[dict],
     *,
     customer_id: str | None = None,
+    sales_channel: str | None = None,
 ) -> tuple[float, float, list[tuple[dict, float]]]:
     from app.uom import resolve_line_unit
     from app.sale_discounts import resolve_discount
+    from app.trade import assert_moq
 
     if not items:
         raise HTTPException(status_code=400, detail="At least one line item is required")
@@ -58,15 +60,16 @@ async def _prepare_lines(
     prepared: list[tuple[dict, float]] = []
     for item in items:
         product, variant, unit = await resolve_sale_line(
-            db, tenant_id, item, customer_id=customer_id
+            db, tenant_id, item, customer_id=customer_id, sales_channel=sales_channel
         )
-        unit_id, qty, _qty_base = await resolve_line_unit(
+        unit_id, qty, qty_base = await resolve_line_unit(
             db,
             tenant_id=tenant_id,
             product=product,
             unit_id=item.get("unit_id"),
             quantity=money_json(item["quantity"]),
         )
+        assert_moq(product, qty_base or qty, sales_channel or "retail")
         gross = money_json(round(qty * unit, 2))
         discount, line_disc_type, line_disc_pct = resolve_discount(
             base_amount=gross,
@@ -181,6 +184,7 @@ async def serialize_quotation(db: AsyncSession, quote: m.SalesQuotation) -> dict
         "converted_invoice_id": quote.converted_invoice_id,
         "emailed_at": quote.emailed_at,
         "emailed_to": quote.emailed_to,
+        "sales_channel": getattr(quote, "sales_channel", None) or "retail",
         "created_at": quote.created_at,
         "items": [
             {
@@ -213,10 +217,16 @@ async def create_quotation(
     discount_percent: float = 0,
     notes: str | None = None,
     valid_days: int = 14,
+    sales_channel: str | None = None,
 ) -> m.SalesQuotation:
     await require_active_customer(db, tenant_id, customer_id)
+    from app.trade import resolve_document_channel
+
+    channel = await resolve_document_channel(
+        db, tenant_id=tenant_id, requested=sales_channel, source="quote"
+    )
     subtotal, tax_total, prepared = await _prepare_lines(
-        db, tenant_id, items, customer_id=customer_id
+        db, tenant_id, items, customer_id=customer_id, sales_channel=channel
     )
     from app.sale_discounts import resolve_discount
 
@@ -245,6 +255,7 @@ async def create_quotation(
         valid_until=datetime.utcnow() + timedelta(days=max(valid_days, 1)),
         notes=optional_honest_narrative(notes, label="quotation notes"),
         created_by=user_id,
+        sales_channel=channel,
     )
     db.add(quote)
     await db.flush()
@@ -404,6 +415,8 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
         "processing_at": getattr(order, "processing_at", None),
         "shipped_at": getattr(order, "shipped_at", None),
         "delivered_at": getattr(order, "delivered_at", None),
+        "delivery_note_number": getattr(order, "delivery_note_number", None),
+        "sales_channel": getattr(order, "sales_channel", None) or "retail",
         "created_at": order.created_at,
         "reserved_qty": money_json(round(sum(money_json(r.quantity) for r in active), 3)),
         "reservation_status": (
@@ -412,6 +425,7 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
             else ("consumed" if any(r.status == "consumed" for r in reservations) else None)
         ),
         "can_process": order.status == "confirmed",
+        "can_fulfill": order.status in {"confirmed", "processing"},
         "can_ship": order.status == "processing",
         "can_deliver": order.status == "shipped",
         "can_cancel": order.status in {"draft", "confirmed", "processing"},
@@ -429,6 +443,7 @@ async def serialize_order(db: AsyncSession, order: m.SalesOrder) -> dict:
                 "discount_type": getattr(i, "discount_type", None) or "fixed",
                 "discount_percent": money_json(getattr(i, "discount_percent", None) or 0),
                 "line_total": money_json(i.line_total),
+                "qty_fulfilled": money_json(getattr(i, "qty_fulfilled", 0) or 0),
                 "reserved_qty": reserved_by_item.get(i.id, 0.0),
             }
             for i in items
@@ -451,12 +466,15 @@ async def create_order(
     store_id: str | None = None,
     delivery_date: datetime | None = None,
     delivery_address: str | None = None,
+    sales_channel: str | None = None,
 ) -> m.SalesOrder:
     await require_active_customer(db, tenant_id, customer_id)
     if quotation_id:
         quote = await get_quotation(db, tenant_id, quotation_id)
         if quote.customer_id != customer_id:
             raise HTTPException(status_code=400, detail="Quotation customer mismatch")
+        if sales_channel is None:
+            sales_channel = getattr(quote, "sales_channel", None)
     resolved_store_id = None
     if store_id:
         from app.stores import get_store
@@ -467,8 +485,13 @@ async def create_order(
             db, tenant_id=tenant_id, user_id=user_id, store_id=store.id
         )
         resolved_store_id = store.id
+    from app.trade import resolve_document_channel
+
+    channel = await resolve_document_channel(
+        db, tenant_id=tenant_id, requested=sales_channel, source="order"
+    )
     subtotal, tax_total, prepared = await _prepare_lines(
-        db, tenant_id, items, customer_id=customer_id
+        db, tenant_id, items, customer_id=customer_id, sales_channel=channel
     )
     from app.sale_discounts import resolve_discount
 
@@ -500,6 +523,7 @@ async def create_order(
         total_amount=total,
         notes=optional_honest_narrative(notes, label="sales order notes"),
         created_by=user_id,
+        sales_channel=channel,
     )
     db.add(order)
     await db.flush()
@@ -556,6 +580,7 @@ async def convert_quotation_to_order(
         discount_amount=money_json(quote.discount_amount or 0),
         notes=quote.notes,
         quotation_id=quote.id,
+        sales_channel=getattr(quote, "sales_channel", None),
     )
     quote.status = "converted"
     quote.converted_order_id = order.id
@@ -683,7 +708,7 @@ async def start_processing_order(db: AsyncSession, tenant_id: str, order_id: str
 
 
 async def ship_order(db: AsyncSession, tenant_id: str, order_id: str) -> m.SalesOrder:
-    return await _advance_order(
+    order = await _advance_order(
         db,
         tenant_id=tenant_id,
         order_id=order_id,
@@ -693,6 +718,73 @@ async def ship_order(db: AsyncSession, tenant_id: str, order_id: str) -> m.Sales
         notify_title="Sales order shipped",
         notify_message="Order {number} has been shipped.",
     )
+    if not getattr(order, "delivery_note_number", None):
+        from app.trade import allocate_delivery_note_number
+
+        order.delivery_note_number = await allocate_delivery_note_number(db, tenant_id)
+        await db.flush()
+    items = await list_order_items(db, tenant_id, order.id)
+    for item in items:
+        already = money_json(getattr(item, "qty_fulfilled", 0) or 0)
+        ordered = money_json(item.quantity or 0)
+        if already <= 1e-9 and ordered > 0:
+            item.qty_fulfilled = ordered
+    await db.flush()
+    return order
+
+
+async def fulfill_order(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    order_id: str,
+    items: list[dict],
+) -> m.SalesOrder:
+    """Record a partial fill. Does not deduct stock (invoice/POS still own stock)."""
+    order = await get_order(db, tenant_id, order_id)
+    if order.status not in {"confirmed", "processing"}:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Cannot fulfill order in status {order.status}",
+        )
+    if not items:
+        raise HTTPException(status_code=400, detail="At least one fulfill line is required")
+    lines = await list_order_items(db, tenant_id, order.id)
+    by_product: dict[str, m.SalesOrderItem] = {i.product_id: i for i in lines}
+    for raw in items:
+        product_id = str(raw.get("product_id") or "").strip()
+        take = money_json(raw.get("quantity") or 0)
+        if take <= 0:
+            raise HTTPException(status_code=400, detail="Fulfill quantity must be greater than zero")
+        line = by_product.get(product_id)
+        if not line:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "ORDER_LINE_MISMATCH",
+                    "message": "Product is not on this sales order",
+                    "product_id": product_id,
+                },
+            )
+        already = money_json(getattr(line, "qty_fulfilled", 0) or 0)
+        remaining = money_json(max(money_json(line.quantity or 0) - already, 0))
+        if take - remaining > 1e-9:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "FULFILL_QTY_EXCEEDED",
+                    "message": "Cannot fulfill more than remaining ordered quantity",
+                    "remaining": remaining,
+                    "requested": take,
+                },
+            )
+        line.qty_fulfilled = money_json(already + take)
+    if order.status == "confirmed":
+        order.status = "processing"
+        order.processing_at = order.processing_at or datetime.utcnow()
+    order.updated_at = datetime.utcnow()
+    await db.flush()
+    return order
 
 
 async def deliver_order(db: AsyncSession, tenant_id: str, order_id: str) -> m.SalesOrder:
@@ -775,6 +867,8 @@ async def convert_order_to_invoice(
     )
     invoice.sales_order_id = order.id
     invoice.quotation_id = order.quotation_id
+    if hasattr(invoice, "sales_channel"):
+        invoice.sales_channel = getattr(order, "sales_channel", None) or invoice.sales_channel
     order.status = "invoiced"
     order.converted_invoice_id = invoice.id
     order.updated_at = datetime.utcnow()

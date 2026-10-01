@@ -1,13 +1,28 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import FormModal from '../../../components/FormModal';
 import PartyContactsPanel from '../../../components/PartyContactsPanel';
 import { api, getAccessToken } from '../../../lib/api';
 import { formatNumber, type FormatPrefs } from '../../../lib/format';
+import { getMe } from '../../../lib/meCache';
+import { usesWholesaleTrade } from '../../../lib/industries';
 import { useStoreContext } from '../../../lib/storeContext';
 
 type Tab = 'invoices' | 'quotations' | 'orders' | 'returns' | 'coupons';
+
+const SALES_TABS: Tab[] = ['invoices', 'quotations', 'orders', 'returns', 'coupons'];
+
+function isSalesTab(value: string | null): value is Tab {
+  return Boolean(value && (SALES_TABS as string[]).includes(value));
+}
+
+function channelLabel(value?: string | null) {
+  if (value === 'wholesale') return 'Wholesale';
+  if (value === 'retail') return 'Retail';
+  return '—';
+}
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -46,6 +61,7 @@ async function downloadInvoicePdf(
 }
 
 export default function Page() {
+  const searchParams = useSearchParams();
   const [tab, setTab] = useState<Tab>('invoices');
   const [invoices, setInvoices] = useState<any[]>([]);
   const [invoiceManageFilter, setInvoiceManageFilter] = useState<
@@ -142,6 +158,19 @@ export default function Page() {
   const [composerOpen, setComposerOpen] = useState(false);
   const [saveBusy, setSaveBusy] = useState(false);
   const [returnCreateOpen, setReturnCreateOpen] = useState(false);
+  const [wholesaleOps, setWholesaleOps] = useState(false);
+  const [fulfillQty, setFulfillQty] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const next = searchParams.get('tab');
+    if (isSalesTab(next)) setTab(next);
+  }, [searchParams]);
+
+  useEffect(() => {
+    getMe()
+      .then((r) => setWholesaleOps(usesWholesaleTrade(r.data?.industry)))
+      .catch(() => undefined);
+  }, []);
 
   async function refresh() {
     const [invRes, custRes, prodRes, unitRes, qRes, oRes, rRes, storeRes, groupRes, tenantRes, couponRes] =
@@ -709,7 +738,11 @@ export default function Page() {
       <header className="sales-desk-head">
         <div>
           <h1>Sales</h1>
-          <p className="muted">Find a document, or create a new quote, order, or invoice.</p>
+          <p className="muted">
+            {wholesaleOps
+              ? 'Wholesale quotes and orders share stock with POS. Minimum order quantity and quantity prices apply on this desk.'
+              : 'Find a document, or create a new quote, order, or invoice.'}
+          </p>
         </div>
         <button type="button" className="btn-primary" onClick={() => setComposerOpen(true)}>
           New
@@ -1145,6 +1178,11 @@ export default function Page() {
             aria-label="Line quantity"
             style={{ width: 80 }}
           />
+          {wholesaleOps && Number(products.find((p) => p.id === productId)?.min_order_qty || 0) > 0 ? (
+            <span className="muted">
+              Wholesale minimum {products.find((p) => p.id === productId)?.min_order_qty}
+            </span>
+          ) : null}
           <input
             value={unitPrice}
             onChange={(e) => {
@@ -1303,6 +1341,7 @@ export default function Page() {
           <thead>
             <tr>
               <th>Number</th>
+              <th>Channel</th>
               <th>Status</th>
               <th>Total</th>
               <th>Valid</th>
@@ -1314,6 +1353,7 @@ export default function Page() {
             {managedQuotations.map((q) => (
               <tr key={q.id}>
                 <td>{q.quotation_number}</td>
+                <td>{channelLabel(q.sales_channel)}</td>
                 <td>{q.status}</td>
                 <td>{formatNumber(q.total_amount, fmt)}</td>
                 <td>{q.valid_until ? String(q.valid_until).slice(0, 10) : '—'}</td>
@@ -1381,7 +1421,7 @@ export default function Page() {
             ))}
             {managedQuotations.length === 0 && (
               <tr>
-                <td colSpan={6} className="muted">
+                <td colSpan={7} className="muted">
                   {quotations.length === 0
                     ? 'No quotations yet'
                     : 'No quotations for this filter'}
@@ -1438,6 +1478,7 @@ export default function Page() {
           <thead>
             <tr>
               <th>Number</th>
+              <th>Channel</th>
               <th>Status</th>
               <th>Store</th>
               <th>Reserved</th>
@@ -1451,6 +1492,7 @@ export default function Page() {
             {managedOrders.map((o) => (
               <tr key={o.id}>
                 <td>{o.order_number}</td>
+                <td>{channelLabel(o.sales_channel)}</td>
                 <td>{o.status}</td>
                 <td>
                   {stores.find((s) => s.id === o.store_id)?.name ||
@@ -1466,6 +1508,7 @@ export default function Page() {
                     ? new Date(o.delivery_date).toLocaleDateString()
                     : '—'}
                   {o.delivery_address ? ` · ${o.delivery_address}` : ''}
+                  {o.delivery_note_number ? ` · ${o.delivery_note_number}` : ''}
                 </td>
                 <td>{formatNumber(o.total_amount, fmt)}</td>
                 <td className="muted" style={{ maxWidth: 220, whiteSpace: 'pre-wrap' }}>
@@ -1552,7 +1595,7 @@ export default function Page() {
             ))}
             {managedOrders.length === 0 && (
               <tr>
-                <td colSpan={8} className="muted">
+                <td colSpan={9} className="muted">
                   {orders.length === 0
                     ? 'No sales orders yet'
                     : 'No sales orders for this filter'}
@@ -2032,12 +2075,19 @@ export default function Page() {
               {selected.emailed_at ? ` · ${String(selected.emailed_at).slice(0, 19)}` : ''}
             </p>
           )}
+          {selected.sales_channel ? (
+            <p className="muted" style={{ marginBottom: 8 }}>
+              Channel {channelLabel(selected.sales_channel)}
+              {selected.delivery_note_number ? ` · Delivery note ${selected.delivery_note_number}` : ''}
+            </p>
+          ) : null}
           <table className="table">
             <thead>
               <tr>
                 <th>Product</th>
                 <th>SKU</th>
                 <th>Qty</th>
+                <th>Filled</th>
                 <th>Unit</th>
                 <th>Tax %</th>
                 <th>Discount</th>
@@ -2057,6 +2107,7 @@ export default function Page() {
                   </td>
                   <td>{prod?.sku || '—'}</td>
                   <td>{it.quantity}</td>
+                  <td>{it.qty_fulfilled ?? '—'}</td>
                   <td>{it.unit_price}</td>
                   <td>{it.tax_rate}</td>
                   <td>
@@ -2078,6 +2129,51 @@ export default function Page() {
               })}
             </tbody>
           </table>
+          {selected.order_number && selected.can_fulfill ? (
+            <div style={{ marginTop: 12 }}>
+              <h4 style={{ margin: '8px 0' }}>Partial fill</h4>
+              <p className="muted">Record quantity shipped now. Stock still moves when the invoice posts.</p>
+              {(selected.items || []).map((it: any) => {
+                const prod = products.find((p) => p.id === it.product_id);
+                const remaining = Math.max(Number(it.quantity || 0) - Number(it.qty_fulfilled || 0), 0);
+                return (
+                  <label key={it.id} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
+                    <span>{prod?.name || it.product_id}</span>
+                    <span className="muted">remaining {remaining}</span>
+                    <input
+                      value={fulfillQty[it.product_id] || ''}
+                      onChange={(e) =>
+                        setFulfillQty((prev) => ({ ...prev, [it.product_id]: e.target.value }))
+                      }
+                      placeholder="Qty"
+                      aria-label={`Fill quantity for ${prod?.name || it.product_id}`}
+                      style={{ width: 80 }}
+                    />
+                  </label>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => {
+                  const items = (selected.items || [])
+                    .map((it: any) => ({
+                      product_id: it.product_id,
+                      quantity: Number(fulfillQty[it.product_id] || 0),
+                    }))
+                    .filter((it: { quantity: number }) => it.quantity > 0);
+                  if (!items.length) {
+                    setError('Enter a fill quantity for at least one line');
+                    return;
+                  }
+                  setFulfillQty({});
+                  act(`/sales/orders/${selected.id}/fulfill`, 'Filled', { items });
+                }}
+                aria-label="Record partial fill"
+              >
+                Record fill
+              </button>
+            </div>
+          ) : null}
           <div className="grid" style={{ marginTop: 12 }}>
             <div className="card">
               <div className="muted">Subtotal</div>

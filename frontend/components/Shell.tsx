@@ -32,7 +32,9 @@ import {
   navAllowlistFromPermissions,
   PEOPLE_NAV_ITEMS,
   PHARMACY_NAV_ITEMS,
+  RETAIL_WHOLESALE_NAV_ITEMS,
   unauthorizedNavRedirect,
+  WHOLESALE_NAV_ITEMS,
   type NavGroup,
   type NavItem,
 } from '../lib/tenantNav';
@@ -81,6 +83,8 @@ const TENANT_ITEMS: NavItem[] = [
   ...HOTEL_INVENTORY_PROCUREMENT_CHILDREN,
   ...FMCG_NAV_ITEMS,
   ...PHARMACY_NAV_ITEMS,
+  ...WHOLESALE_NAV_ITEMS,
+  ...RETAIL_WHOLESALE_NAV_ITEMS,
   ['Reports', '/reports', 'reports'],
   ['Notifications', '/notifications', 'notifications'],
   ['Audit', '/audit', 'audit'],
@@ -169,7 +173,13 @@ const TENANT_NAV_GROUPS: NavGroup[] = [
   {
     id: 'industry',
     label: 'Industry-specific features',
-    items: [...HOTEL_NAV_ITEMS, ...FMCG_NAV_ITEMS, ...PHARMACY_NAV_ITEMS],
+    items: [
+      ...HOTEL_NAV_ITEMS,
+      ...FMCG_NAV_ITEMS,
+      ...PHARMACY_NAV_ITEMS,
+      ...WHOLESALE_NAV_ITEMS,
+      ...RETAIL_WHOLESALE_NAV_ITEMS,
+    ],
   },
 ];
 

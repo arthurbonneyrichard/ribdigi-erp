@@ -257,6 +257,7 @@ from app.schemas import (
     ProductCategoryUpdate,
     ProductCreate,
     ProductImagePrimaryUpdate,
+    ProductPriceTierCreate,
     ProductVariantCreate,
     ProductVariantUpdate,
     ProfileUpdate,
@@ -289,6 +290,7 @@ from app.schemas import (
     SalesOrderCancel,
     SalesInvoiceCancel,
     SalesOrderConfirm,
+    SalesOrderFulfill,
     SalesQuotationCreate,
     SalesQuotationReject,
     SalesReturnCreate,
@@ -3886,6 +3888,7 @@ async def add_product(
             data["dosage_instructions"], label="dosage instructions"
         )
     data["rx_only"] = bool(data.get("rx_only"))
+    data["min_order_qty"] = money_json(data.get("min_order_qty") or 0)
     for dim in ("weight", "length", "width", "height"):
         if data.get(dim) is not None:
             data[dim] = money_json(data[dim])
@@ -4032,6 +4035,59 @@ async def get_product(
     return env(catalog_meta_svc.serialize_product(product))
 
 
+@api.get("/products/{product_id}/price-tiers")
+async def list_product_price_tiers(
+    product_id: UuidIdValue,
+    claims=Depends(require_permission("inventory", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import trade as trade_svc
+    from app.catalog import get_product
+
+    await get_product(db, claims["tenant_id"], product_id)
+    rows = await trade_svc.list_price_tiers(
+        db, tenant_id=claims["tenant_id"], product_id=product_id
+    )
+    return env([trade_svc.serialize_tier(r) for r in rows])
+
+
+@api.post("/products/{product_id}/price-tiers")
+async def create_product_price_tier(
+    product_id: UuidIdValue,
+    payload: ProductPriceTierCreate,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import trade as trade_svc
+
+    row = await trade_svc.create_price_tier(
+        db,
+        tenant_id=claims["tenant_id"],
+        product_id=product_id,
+        min_qty=payload.min_qty,
+        unit_price=payload.unit_price,
+        customer_group_id=payload.customer_group_id,
+    )
+    await db.commit()
+    return env(trade_svc.serialize_tier(row), "Price tier saved")
+
+
+@api.delete("/products/{product_id}/price-tiers/{tier_id}")
+async def delete_product_price_tier(
+    product_id: UuidIdValue,
+    tier_id: UuidIdValue,
+    claims=Depends(require_permission("inventory", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    from app import trade as trade_svc
+
+    await trade_svc.delete_price_tier(
+        db, tenant_id=claims["tenant_id"], product_id=product_id, tier_id=tier_id
+    )
+    await db.commit()
+    return env({"id": tier_id, "deleted": True}, "Price tier deleted")
+
+
 @api.patch("/products/{product_id}")
 async def patch_product(
     product_id: UuidIdValue,
@@ -4068,6 +4124,7 @@ async def patch_product(
         "tracks_batches",
         "dosage_instructions",
         "rx_only",
+        "min_order_qty",
         "is_active",
         "weight",
         "length",
@@ -4132,7 +4189,7 @@ async def patch_product(
                     exclude_product_id=product.id,
                 )
             product.barcode = code
-        elif key in {"cost_price", "selling_price", "reorder_level"} and value is not None:
+        elif key in {"cost_price", "selling_price", "reorder_level", "min_order_qty"} and value is not None:
             setattr(product, key, money_json(value))
         elif key == "description":
             from app.honesty import optional_honest_narrative
@@ -6930,6 +6987,7 @@ async def create_quotation(
         notes=payload.notes,
         valid_days=payload.valid_days,
         items=[i.model_dump() for i in payload.items],
+        sales_channel=payload.sales_channel,
     )
     await db.commit()
     return env(await sales_docs_svc.serialize_quotation(db, quote), "Quotation created")
@@ -7094,6 +7152,7 @@ async def create_sales_order(
         discount_percent=payload.discount_percent,
         notes=payload.notes,
         items=[i.model_dump() for i in payload.items],
+        sales_channel=payload.sales_channel,
     )
     await db.commit()
     return env(await sales_docs_svc.serialize_order(db, order), "Sales order created")
@@ -7156,6 +7215,25 @@ async def ship_sales_order(
     order = await sales_docs_svc.ship_order(db, claims["tenant_id"], order_id)
     await db.commit()
     return env(await sales_docs_svc.serialize_order(db, order), "Order shipped")
+
+
+@api.post("/sales/orders/{order_id}/fulfill")
+async def fulfill_sales_order(
+    order_id: UuidIdValue,
+    payload: SalesOrderFulfill,
+    claims=Depends(require_permission("sales", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    existing = await sales_docs_svc.get_order(db, claims["tenant_id"], order_id)
+    assert_record_access(claims, existing.created_by)
+    order = await sales_docs_svc.fulfill_order(
+        db,
+        tenant_id=claims["tenant_id"],
+        order_id=order_id,
+        items=[i.model_dump() for i in payload.items],
+    )
+    await db.commit()
+    return env(await sales_docs_svc.serialize_order(db, order), "Order fulfilled")
 
 
 @api.post("/sales/orders/{order_id}/deliver")
@@ -8912,6 +8990,14 @@ async def pos_sale(
     body.pop("offline_created_at", None)
     body.pop("offline_sync", None)
     body.pop("prescription_id", None)
+
+    from app.trade import assert_channel_allowed, default_sales_channel
+
+    pos_channel = assert_channel_allowed(
+        claims.get("industry"),
+        default_sales_channel(claims.get("industry"), source="pos"),
+        source="pos",
+    )
     body["payload"] = {
         "items": priced_items,
         "payment_method": payment_method,
@@ -8934,6 +9020,7 @@ async def pos_sale(
         "balance_due": settlement["balance_due"],
         "payment_status": settlement["payment_status"],
         "prescription_id": payload.prescription_id,
+        "sales_channel": pos_channel,
     }
     tx = m.Transaction(
         tenant_id=claims["tenant_id"],
@@ -9032,6 +9119,8 @@ async def pos_sale(
                 coupon_id=(coupon_meta or {}).get("coupon_id"),
                 store_id=session.store_id,
             )
+            if ar_invoice is not None and hasattr(ar_invoice, "sales_channel"):
+                ar_invoice.sales_channel = pos_channel
             payload_map = dict(tx.payload or {})
             payload_map["sales_invoice_id"] = ar_invoice.id
             payload_map["invoice_number"] = ar_invoice.invoice_number
@@ -9242,6 +9331,8 @@ async def pos_sale(
         "credit_limit_overridden": bool(pos_override_info),
         "client_request_id": client_request_id,
         "idempotent_replay": False,
+        "sales_channel": pos_channel,
+        "prescription_id": payload.prescription_id,
     }
     if drawer is not None:
         payload_out["drawer"] = drawer
@@ -11988,6 +12079,24 @@ async def report_inventory_expiry(
             within_days=days,
             warehouse_id=warehouse_id or None,
             store_id=store_id or None,
+        )
+    )
+
+
+@api.get("/reports/pharmacy/rx-activity")
+async def report_pharmacy_rx_activity(
+    from_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    to_date: Annotated[IsoDateQueryValue | None, Query()] = None,
+    claims=Depends(require_permission("reports", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    pharmacy_svc.assert_pharmacy_industry(claims)
+    return env(
+        await reports_svc.pharmacy_rx_activity(
+            db,
+            claims["tenant_id"],
+            from_date=reports_svc.parse_date(from_date),
+            to_date=reports_svc.parse_date(to_date),
         )
     )
 

@@ -363,6 +363,36 @@ async def build_dashboard(
             )
         else:
             rx_only_count = 0
+
+    open_quotes = 0
+    open_orders = 0
+    reserved_qty = 0.0
+    if industry_payload.get("industry") in {"wholesale", "retail_wholesale"}:
+        open_quotes = int(
+            await scalar(
+                select(func.count(m.SalesQuotation.id)).where(
+                    m.SalesQuotation.tenant_id == tenant_id,
+                    m.SalesQuotation.status.in_(["draft", "sent", "accepted"]),
+                )
+            )
+        )
+        open_orders = int(
+            await scalar(
+                select(func.count(m.SalesOrder.id)).where(
+                    m.SalesOrder.tenant_id == tenant_id,
+                    m.SalesOrder.status.in_(["draft", "confirmed", "processing", "shipped"]),
+                )
+            )
+        )
+        reserved_qty = money_json(
+            await scalar(
+                select(func.coalesce(func.sum(m.StockReservation.quantity), 0)).where(
+                    m.StockReservation.tenant_id == tenant_id,
+                    m.StockReservation.status == "active",
+                )
+            )
+        )
+
     if tenant and tenant.status == "trial":
         days_remaining = tenants_svc.calendar_days_until(tenant.trial_ends_at)
     elif tenant and tenant.status == "grace":
@@ -411,6 +441,9 @@ async def build_dashboard(
         "gross_profit_30d": gross_profit_30d,
         "rx_queue": rx_queue,
         "rx_only_count": rx_only_count,
+        "open_quotes": open_quotes,
+        "open_orders": open_orders,
+        "reserved_qty": reserved_qty,
         "recent_sales": recent_sales,
         "top_products_by_revenue": top_products_by_revenue,
         "top_products_by_quantity": top_products_by_quantity,

@@ -50,6 +50,7 @@ IndustryValue = Annotated[
         "restaurant",
         "bakery",
         "wholesale",
+        "retail_wholesale",
         "manufacturing",
         "mart",
         "hotel",
@@ -1406,6 +1407,8 @@ class ProductCreate(BaseModel):
     # Pharmacy catalog: omit/`null` → no dosage text; blank/URL/garbage → **422**
     dosage_instructions: ProductDescriptionValue | None = None
     rx_only: bool = False
+    # Wholesale MOQ in stockkeeping qty; omit → 0 (no floor). Retail POS ignores it.
+    min_order_qty: NonNegativeQtyValue = 0
     # omit/`null` → inherit category / no prep ticket (retail)
     prep_station: Literal["kitchen", "bar"] | None = None
 
@@ -1468,6 +1471,7 @@ class ProductUpdate(BaseModel):
     tracks_batches: bool | None = None
     dosage_instructions: ProductDescriptionValue | None = None
     rx_only: bool | None = None
+    min_order_qty: NonNegativeQtyValue | None = None
     is_active: bool | None = None
     prep_station: Literal["kitchen", "bar"] | None = None
     clear_prep_station: bool = False
@@ -3707,6 +3711,8 @@ class SalesQuotationCreate(BaseModel):
     # blank/garbage could persist on SalesQuotation.notes Text).
     notes: SalesDocumentNotesValue | None = None
     valid_days: int = Field(default=14, ge=1, le=365)
+    # omit → industry default (wholesale for wholesale / retail+wholesale).
+    sales_channel: Literal["retail", "wholesale"] | None = None
     items: list[SalesInvoiceItemCreate] = Field(min_length=1)
 
 
@@ -3755,7 +3761,24 @@ class SalesOrderCreate(BaseModel):
     # omit/`null` → no notes; blank/`!!!`/`http://…` → **422** (was free `str`;
     # blank/garbage could persist on SalesOrder.notes Text).
     notes: SalesDocumentNotesValue | None = None
+    sales_channel: Literal["retail", "wholesale"] | None = None
     items: list[SalesInvoiceItemCreate] = Field(min_length=1)
+
+
+class SalesOrderFulfill(BaseModel):
+    """Partial fill against a confirmed/processing sales order (wholesale)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[LineItem] = Field(min_length=1)
+
+
+class ProductPriceTierCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    min_qty: PositiveQtyValue
+    unit_price: NonNegativeMoneyValue
+    customer_group_id: UuidIdValue | None = None
 
 
 class SalesOrderConfirm(BaseModel):
@@ -6936,6 +6959,7 @@ ReportTypeValue = Annotated[
         "inventory_movements",
         "inventory_low_stock",
         "inventory_expiry",
+        "pharmacy_rx_activity",
         "inventory_transfers",
         "inventory_stock_counts",
         "purchases_summary",

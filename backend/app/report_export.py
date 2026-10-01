@@ -33,6 +33,7 @@ EXPORTABLE = frozenset(
         "inventory_movements",
         "inventory_low_stock",
         "inventory_expiry",
+        "pharmacy_rx_activity",
         "inventory_transfers",
         "inventory_stock_counts",
         "purchases_summary",
@@ -323,6 +324,15 @@ def flatten_report(report_type: str, payload: Any) -> tuple[list[dict], list[str
             for r in rows[:60]
         ]
         return rows or [{"note": "no rows"}], lines, "Inventory Expiry"
+
+    if report_type == "pharmacy_rx_activity":
+        items = payload.get("prescriptions") or []
+        rows = [dict(x) for x in items]
+        lines = _kv_lines(payload) + [
+            f"{r.get('rx_number')} {r.get('status')} remaining={r.get('qty_remaining')}"
+            for r in rows[:60]
+        ]
+        return rows or [{"note": "no rows"}], lines, "Pharmacy Rx Activity"
 
     if report_type == "inventory_transfers":
         items = payload.get("transfers") or []
@@ -659,6 +669,13 @@ async def build_report_payload(
             within_days=int(days) if days is not None else 30,
             warehouse_id=warehouse_id or None,
             store_id=store_id or None,
+        )
+    if report_type == "pharmacy_rx_activity":
+        return await reports_svc.pharmacy_rx_activity(
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
         )
     if report_type == "inventory_transfers":
         return await reports_svc.inventory_transfers(

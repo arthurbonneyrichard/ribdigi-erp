@@ -1841,6 +1841,20 @@ async def inventory_expiry(
     }
 
 
+async def pharmacy_rx_activity(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+) -> dict:
+    from app import pharmacy as pharmacy_svc
+
+    return await pharmacy_svc.rx_activity(
+        db, tenant_id, from_date=from_date, to_date=to_date
+    )
+
+
 TRANSFER_REPORT_STATUSES = frozenset(
     {"draft", "requested", "in_transit", "received", "cancelled"}
 )

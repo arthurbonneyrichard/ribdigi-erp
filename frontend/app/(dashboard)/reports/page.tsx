@@ -86,6 +86,7 @@ const REPORT_TYPES = [
   'inventory_movements',
   'inventory_low_stock',
   'inventory_expiry',
+  'pharmacy_rx_activity',
   'inventory_transfers',
   'inventory_stock_counts',
   'purchases_summary',
@@ -398,7 +399,7 @@ export default function Page() {
       }
 
       if (nextTab === 'inventory') {
-        const [lowStock, balance, valuation, movements, suggestions, transfers, expiry, stockCounts] =
+        const [lowStock, balance, valuation, movements, suggestions, transfers, expiry, stockCounts, rxActivity] =
           await Promise.all([
             fetchReport(path),
             fetchReport(`/reports/inventory/balance${qs()}`),
@@ -419,6 +420,7 @@ export default function Page() {
                 status: stockCountStatus,
               })}`
             ),
+            fetchReport(`/reports/pharmacy/rx-activity${qs()}`),
           ]);
         const sections: Record<string, string> = {};
         if (lowStock.error) sections.lowStock = lowStock.error;
@@ -429,6 +431,8 @@ export default function Page() {
         if (transfers.error) sections.transfers = transfers.error;
         if (expiry.error) sections.expiry = expiry.error;
         if (stockCounts.error) sections.stockCounts = stockCounts.error;
+        const rxDenied = /403|INDUSTRY_MODULE/i.test(rxActivity.error || '');
+        if (rxActivity.error && !rxDenied) sections.rxActivity = rxActivity.error;
         const payload = {
           lowStock: lowStock.data,
           balance: balance.data,
@@ -438,6 +442,7 @@ export default function Page() {
           transfers: transfers.data,
           expiry: expiry.data,
           stockCounts: stockCounts.data,
+          rxActivity: rxDenied ? null : rxActivity.data,
         };
         const hasData = Object.values(payload).some((v) => v != null);
         if (hasData) setSuggestSelected({});
@@ -2018,6 +2023,47 @@ export default function Page() {
                 <tr>
                   <td colSpan={6} className="muted">
                     No batches nearing expiry for this filter.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          </div>
+          </>
+          )}
+          {activeReport.view === 'rx' && (
+          <>
+          <h3 style={{ marginTop: 16 }}>Rx activity</h3>
+          <p className="muted">
+            {data.rxActivity?.counts?.total ?? 0} prescriptions · open {data.rxActivity?.counts?.open ?? 0} ·
+            dispensed qty {data.rxActivity?.qty_dispensed ?? 0} of {data.rxActivity?.qty_prescribed ?? 0}
+          </p>
+          {sectionErrors.rxActivity && <p className="muted">{sectionErrors.rxActivity}</p>}
+          <div className="list-table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Rx</th>
+                <th>Status</th>
+                <th>Customer</th>
+                <th>Sale</th>
+                <th>Remaining</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.rxActivity?.prescriptions || []).map((row: any) => (
+                <tr key={row.id}>
+                  <td>{row.rx_number}</td>
+                  <td>{row.status}</td>
+                  <td>{row.customer_name || '—'}</td>
+                  <td>{row.sale_number || '—'}</td>
+                  <td>{row.qty_remaining}</td>
+                </tr>
+              ))}
+              {!data.rxActivity?.prescriptions?.length && (
+                <tr>
+                  <td colSpan={5} className="muted">
+                    No prescription activity for this filter (pharmacy tenants only).
                   </td>
                 </tr>
               )}

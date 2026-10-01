@@ -902,3 +902,67 @@ async def get_attachment(
     if not row:
         raise HTTPException(status_code=404, detail="Attachment not found")
     return row
+
+
+async def rx_activity(
+    db: AsyncSession,
+    tenant_id: str,
+    *,
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
+) -> dict:
+    """Prescription counts and fills from the Rx ledger — not a clinic report."""
+    from app import schema_compat as schema_compat_svc
+
+    if not await schema_compat_svc.table_column_names(db, "prescriptions"):
+        return {
+            "from_date": from_date.isoformat() if from_date else None,
+            "to_date": to_date.isoformat() if to_date else None,
+            "counts": {key: 0 for key in RX_STATUSES} | {"open": 0, "total": 0},
+            "qty_prescribed": 0,
+            "qty_dispensed": 0,
+            "prescriptions": [],
+        }
+    stmt = select(m.Prescription).where(m.Prescription.tenant_id == tenant_id)
+    if from_date:
+        stmt = stmt.where(m.Prescription.created_at >= from_date)
+    if to_date:
+        stmt = stmt.where(m.Prescription.created_at < to_date)
+    stmt = stmt.order_by(m.Prescription.created_at.desc()).limit(500)
+    rows = list((await db.execute(stmt)).scalars().all())
+    counts = {key: 0 for key in RX_STATUSES}
+    out = []
+    qty_prescribed = 0.0
+    qty_dispensed = 0.0
+    for row in rows:
+        data = await _hydrate(db, tenant_id, row)
+        status = canonicalize_rx_status(row.status)
+        counts[status] = counts.get(status, 0) + 1
+        for item in data.get("items") or []:
+            qty_prescribed += money_json(item.get("quantity") or 0)
+            qty_dispensed += money_json(item.get("qty_dispensed") or 0)
+        out.append(
+            {
+                "id": data["id"],
+                "rx_number": data["rx_number"],
+                "status": data["status"],
+                "customer_name": data.get("customer_name"),
+                "sale_number": data.get("sale_number"),
+                "created_at": data.get("created_at"),
+                "dispensed_at": data.get("dispensed_at"),
+                "item_count": len(data.get("items") or []),
+                "qty_remaining": money_json(
+                    sum(money_json(i.get("qty_remaining") or 0) for i in (data.get("items") or []))
+                ),
+            }
+        )
+    counts["open"] = sum(counts[k] for k in RX_OPEN_QUEUE)
+    counts["total"] = len(rows)
+    return {
+        "from_date": from_date.isoformat() if from_date else None,
+        "to_date": to_date.isoformat() if to_date else None,
+        "counts": counts,
+        "qty_prescribed": money_json(qty_prescribed),
+        "qty_dispensed": money_json(qty_dispensed),
+        "prescriptions": out,
+    }

@@ -191,6 +191,42 @@ test('pharmacy grouped nav surfaces lots/batches, not hotel PMS', () => {
   );
 });
 
+test('wholesale grouped nav is quotes/orders/credit without hotel or pharmacy Rx', () => {
+  const groups: NavGroup[] = [
+    {
+      id: 'industry',
+      label: 'Industry-specific features',
+      items: [
+        ['Hotel Dashboard', '/hotel', 'hotel'],
+        ['Prescriptions', '/prescriptions', 'inventory'],
+      ],
+    },
+  ];
+  const visible: NavItem[] = [
+    ['Quotations', '/sales?tab=quotations', 'sales'],
+    ['Sales orders', '/sales?tab=orders', 'sales'],
+    ['B2B credit', '/credit', 'credit'],
+    ['Retail POS', '/pos', 'pos'],
+  ];
+  const wholesale = groupedTenantNav(groups, visible, 'wholesale');
+  const industry = wholesale.find((g) => g.id === 'industry');
+  assert.ok(industry);
+  assert.equal(industry.label, 'Wholesale operations');
+  assert.deepEqual(
+    industry.items.map(([, href]) => href),
+    ['/sales?tab=quotations', '/sales?tab=orders', '/credit'],
+  );
+  const combo = groupedTenantNav(groups, visible, 'retail_wholesale');
+  const comboInd = combo.find((g) => g.id === 'industry');
+  assert.ok(comboInd);
+  assert.equal(comboInd.label, 'Retail + wholesale');
+  assert.equal(comboInd.items[0][1], '/pos');
+  assert.equal(
+    comboInd.items.some(([, href]) => href.startsWith('/hotel') || href === '/prescriptions'),
+    false,
+  );
+});
+
 test('mart grouped nav has no pharmacy or hotel industry group', () => {
   const groups: NavGroup[] = [
     {

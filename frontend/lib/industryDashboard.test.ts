@@ -28,8 +28,25 @@ test('pharmacy extras are lots/batches/POS plus Rx catalog and prescriptions; ma
   );
   assert.equal(pharmacy.some((f) => f.href === '/prescriptions'), true);
   assert.deepEqual(industryDashboardFeatures('mart'), []);
-  assert.deepEqual(industryDashboardFeatures('retail'), []);
+  assert.deepEqual(
+    industryDashboardFeatures('retail').map((f) => f.id),
+    ['pos', 'inventory', 'customers'],
+  );
   assert.equal(industryDashboardSectionLabel('pharmacy'), 'Pharmacy management');
+  assert.equal(industryDashboardSectionLabel('wholesale'), 'Wholesale operations');
+  assert.equal(industryDashboardSectionLabel('retail_wholesale'), 'Retail + wholesale');
+  assert.deepEqual(
+    industryDashboardFeatures('wholesale').map((f) => f.id),
+    ['quotes', 'orders', 'credit', 'customers'],
+  );
+  assert.deepEqual(
+    industryDashboardFeatures('retail_wholesale').map((f) => f.id),
+    ['pos', 'quotes', 'orders', 'credit', 'inventory'],
+  );
+  assert.equal(
+    industryDashboardFeatures('wholesale').some((f) => f.href.startsWith('/hotel')),
+    false,
+  );
   assert.equal(industryDashboardSectionLabel('mart'), null);
 });
 

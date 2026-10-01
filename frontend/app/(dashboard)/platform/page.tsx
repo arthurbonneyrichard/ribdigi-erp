@@ -6,7 +6,7 @@ import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { getPrefetched } from '../../../lib/prefetchCache';
 import { industryAllowsModule, INDUSTRY_SPECIFIC_MODULES } from '../../../lib/industryModules';
-import { INDUSTRIES, industryLabel } from '../../../lib/industries';
+import { INDUSTRIES, PROVISION_INDUSTRIES, industryLabel } from '../../../lib/industries';
 
 type SubscriptionInfo = {
   package_code?: string;
@@ -616,7 +616,7 @@ export default function PlatformConsole() {
                 required
               >
                 <option value="">Select business type</option>
-                {INDUSTRIES.map((i) => (
+                {PROVISION_INDUSTRIES.map((i) => (
                   <option key={i} value={i}>
                     {industryLabel(i)}
                   </option>

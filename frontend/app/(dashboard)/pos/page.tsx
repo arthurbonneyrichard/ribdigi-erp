@@ -326,6 +326,7 @@ export default function Page() {
   const [cartDiscountType, setCartDiscountType] = useState<'fixed' | 'percent'>('fixed');
   const [couponCode, setCouponCode] = useState('');
   const [isPharmacy, setIsPharmacy] = useState(false);
+  const [tradeBanner, setTradeBanner] = useState('');
   const [rxList, setRxList] = useState<OpenPrescription[]>([]);
   const [prescriptionId, setPrescriptionId] = useState('');
   const [message, setMessage] = useState('');
@@ -603,8 +604,16 @@ export default function Page() {
             list.length <= 1 ||
             !tenantIsMultiStore(meRes.data)
         );
-        const pharmacy = normalizeIndustry(meRes.data?.industry) === 'pharmacy';
+        const industry = normalizeIndustry(meRes.data?.industry);
+        const pharmacy = industry === 'pharmacy';
         setIsPharmacy(pharmacy);
+        setTradeBanner(
+          industry === 'retail_wholesale'
+            ? 'Retail counter. Wholesale quotes and orders stay on Sales.'
+            : industry === 'wholesale'
+              ? 'Wholesale counter. Sales from this register use the wholesale channel.'
+              : ''
+        );
         if (pharmacy) {
           const rx = await api('/pharmacy/prescriptions').catch(() => ({ data: [] }));
           const open = (Array.isArray(rx.data) ? rx.data : []).filter((row: OpenPrescription) =>
@@ -1304,6 +1313,7 @@ export default function Page() {
         <header className="tpos-top">
           <div className="tpos-top-copy">
             <h1>Point of Sale</h1>
+            {tradeBanner ? <p className="muted">{tradeBanner}</p> : null}
             <p className="muted">
               {cashierName ? cashierName : 'Tap a product or scan a barcode'}
               {' · '}

@@ -84,6 +84,18 @@ export const PHARMACY_NAV_ITEMS: NavItem[] = [
   ['Prescriptions', '/prescriptions', 'inventory'],
 ];
 
+/** Wholesale extras: B2B quotes/orders. Shared stock stays on Inventory. */
+export const WHOLESALE_NAV_ITEMS: NavItem[] = [
+  ['Quotations', '/sales?tab=quotations', 'sales'],
+  ['Sales orders', '/sales?tab=orders', 'sales'],
+  ['B2B credit', '/credit', 'credit'],
+];
+
+export const RETAIL_WHOLESALE_NAV_ITEMS: NavItem[] = [
+  ['Retail POS', '/pos', 'pos'],
+  ...WHOLESALE_NAV_ITEMS,
+];
+
 export function isHotelIndustry(industry: string | null | undefined): boolean {
   return normalizeIndustry(industry) === 'hotel';
 }
@@ -172,6 +184,20 @@ export function groupedTenantNav(
             id: 'industry',
             label: 'Pharmacy management',
             items: PHARMACY_NAV_ITEMS.filter(([, href]) => allowed.has(href)),
+          };
+        }
+        if (ind === 'wholesale') {
+          return {
+            id: 'industry',
+            label: 'Wholesale operations',
+            items: WHOLESALE_NAV_ITEMS.filter(([, href]) => allowed.has(href)),
+          };
+        }
+        if (ind === 'retail_wholesale') {
+          return {
+            id: 'industry',
+            label: 'Retail + wholesale',
+            items: RETAIL_WHOLESALE_NAV_ITEMS.filter(([, href]) => allowed.has(href)),
           };
         }
         return { ...group, items: [] };

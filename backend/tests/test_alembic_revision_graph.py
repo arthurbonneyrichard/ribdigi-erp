@@ -56,3 +56,5 @@ def test_single_head_linear_chain():
     assert any(rev == "20261001_0130" and down == "20260930_0129" for _n, rev, down in rows)
     assert "20261001_0131" in ids
     assert any(rev == "20261001_0131" and down == "20261001_0130" for _n, rev, down in rows)
+    assert "20261001_0132" in ids
+    assert any(rev == "20261001_0132" and down == "20261001_0131" for _n, rev, down in rows)

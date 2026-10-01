@@ -406,6 +406,37 @@ async def apply_line_items_stock(
                     warehouse_id=warehouse_id,
                     product_id=product_id,
                 )
+            if warehouse_id:
+                from app.catalog import get_product
+                from app.reservations import available_qty
+                from app.uom import to_stock_qty
+
+                product = await get_product(db, tenant_id, product_id)
+                stock_qty, _u, _e = await to_stock_qty(
+                    db,
+                    tenant_id=tenant_id,
+                    quantity=qty,
+                    from_unit_id=unit_id,
+                    product=product,
+                )
+                avail = await available_qty(
+                    db,
+                    tenant_id=tenant_id,
+                    warehouse_id=warehouse_id,
+                    product_id=product_id,
+                )
+                if avail + 1e-9 < stock_qty:
+                    raise HTTPException(
+                        status_code=409,
+                        detail={
+                            "code": "INSUFFICIENT_AVAILABLE_STOCK",
+                            "message": "Insufficient available stock (on hand minus reserved wholesale orders)",
+                            "product_id": product_id,
+                            "warehouse_id": warehouse_id,
+                            "available": avail,
+                            "requested": stock_qty,
+                        },
+                    )
             await stock_out_with_batch(
                 db,
                 tenant_id=tenant_id,

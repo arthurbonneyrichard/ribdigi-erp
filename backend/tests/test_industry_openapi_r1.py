@@ -98,6 +98,7 @@ def test_industry_ui_and_docs():
         "restaurant",
         "bakery",
         "wholesale",
+        "retail_wholesale",
         "manufacturing",
         "hotel",
         "fmcg",

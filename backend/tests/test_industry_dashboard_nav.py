@@ -34,7 +34,11 @@ def test_industry_home_and_feature_catalog():
     mart = industry_dashboard_features("mart")
     assert mart == []
     retail = industry_dashboard_features("retail")
-    assert retail == []
+    assert {row["id"] for row in retail} == {"pos", "inventory", "customers"}
+    wholesale = industry_dashboard_features("wholesale")
+    assert "quotes" in {row["id"] for row in wholesale}
+    combo = industry_dashboard_features("retail_wholesale")
+    assert {row["id"] for row in combo} >= {"pos", "quotes", "orders"}
     assert "batches" not in {row["id"] for row in mart}
 
     restaurant = industry_dashboard_features("restaurant")
@@ -70,6 +74,10 @@ def test_payload_uses_tenant_industry_not_client():
     T.industry = "mart"
     mart = industry_dashboard_payload(T())
     assert mart["industry_features"] == []
+
+    T.industry = "wholesale"
+    wholesale = industry_dashboard_payload(T())
+    assert {row["id"] for row in wholesale["industry_features"]} >= {"quotes", "orders", "credit"}
 
 
 async def test_dashboard_industry_from_tenant_ignores_query(client, db_session):

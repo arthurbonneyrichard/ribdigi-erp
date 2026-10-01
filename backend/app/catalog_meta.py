@@ -317,6 +317,7 @@ def serialize_product(row: m.Product) -> dict:
         "tracks_batches": bool(row.tracks_batches),
         "dosage_instructions": getattr(row, "dosage_instructions", None),
         "rx_only": bool(getattr(row, "rx_only", False)),
+        "min_order_qty": money_json(getattr(row, "min_order_qty", 0) or 0),
         "is_active": bool(row.is_active),
         "prep_station": getattr(row, "prep_station", None),
         "created_by": getattr(row, "created_by", None),

@@ -1,6 +1,6 @@
 """Industry dashboard cards — existing ERP routes only.
 
-Does not invent HIS, dispensing, hotel PMS, or other unimplemented verticals.
+Does not invent HIS, gift cards, or hotel PMS for trade tenants.
 Industry is always taken from the tenant record (see ``build_dashboard``).
 """
 
@@ -84,8 +84,32 @@ _RESTAURANT_FEATURES: tuple[dict[str, str], ...] = (
     {"id": "printers", "label": "Printers", "href": "/printers", "module": "printers"},
 )
 
+_RETAIL_FEATURES: tuple[dict[str, str], ...] = (
+    {"id": "pos", "label": "POS", "href": "/pos", "module": "pos"},
+    {"id": "inventory", "label": "Inventory", "href": "/inventory", "module": "inventory"},
+    {"id": "customers", "label": "Customers", "href": "/customers", "module": "customers"},
+)
+
+_WHOLESALE_FEATURES: tuple[dict[str, str], ...] = (
+    {"id": "quotes", "label": "Quotations", "href": "/sales?tab=quotations", "module": "sales"},
+    {"id": "orders", "label": "Sales orders", "href": "/sales?tab=orders", "module": "sales"},
+    {"id": "credit", "label": "B2B credit", "href": "/credit", "module": "credit"},
+    {"id": "customers", "label": "Customers", "href": "/customers", "module": "customers"},
+)
+
+_RETAIL_WHOLESALE_FEATURES: tuple[dict[str, str], ...] = (
+    {"id": "pos", "label": "Retail POS", "href": "/pos", "module": "pos"},
+    {"id": "quotes", "label": "Wholesale quotes", "href": "/sales?tab=quotations", "module": "sales"},
+    {"id": "orders", "label": "Wholesale orders", "href": "/sales?tab=orders", "module": "sales"},
+    {"id": "credit", "label": "B2B credit", "href": "/credit", "module": "credit"},
+    {"id": "inventory", "label": "Shared stock", "href": "/inventory", "module": "inventory"},
+)
+
 _FEATURES: dict[str, tuple[dict[str, str], ...]] = {
+    "retail": _RETAIL_FEATURES,
     "pharmacy": _PHARMACY_FEATURES,
+    "wholesale": _WHOLESALE_FEATURES,
+    "retail_wholesale": _RETAIL_WHOLESALE_FEATURES,
     "fmcg": _FMCG_FEATURES,
     "hotel": _HOTEL_FEATURES,
     "restaurant": _RESTAURANT_FEATURES,
@@ -99,7 +123,7 @@ def industry_home_path(industry: str | None) -> str:
 
 
 def industry_dashboard_features(industry: str | None) -> list[dict[str, str]]:
-    """Cards for the saved industry only. Empty for mart/retail (stock row only)."""
+    """Cards for the saved industry only. Mart keeps the stock row only."""
     ind = canonicalize_industry(industry)
     if not ind:
         return []
@@ -113,9 +137,9 @@ def industry_dashboard_payload(tenant: Any) -> dict[str, Any]:
     features: list[dict[str, str]] = []
     for feat in industry_dashboard_features(industry):
         mod = (feat.get("module") or "").strip().lower()
+        if mod and mod not in enabled:
+            continue
         if mod in INDUSTRY_SPECIFIC_MODULES:
-            if mod not in enabled:
-                continue
             if not industry_allows_module(industry, mod):
                 continue
         href = feat.get("href") or ""

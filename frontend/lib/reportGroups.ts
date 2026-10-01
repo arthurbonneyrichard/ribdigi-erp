@@ -147,6 +147,17 @@ export const REPORT_CATALOG: ReportDef[] = [
     print: true,
   },
   {
+    id: 'pharmacy_rx_activity',
+    tab: 'inventory',
+    view: 'rx',
+    group: 'inventory',
+    name: 'Rx activity',
+    description: 'Prescription queue, fills, and remaining qty from the Rx ledger.',
+    filters: ['dates'],
+    exportType: 'pharmacy_rx_activity',
+    print: true,
+  },
+  {
     id: 'inventory_transfers',
     tab: 'inventory',
     view: 'transfers',

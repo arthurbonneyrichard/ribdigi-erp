@@ -25,6 +25,7 @@ VALID_INDUSTRIES = frozenset(
         "restaurant",
         "bakery",
         "wholesale",
+        "retail_wholesale",
         "manufacturing",
         "mart",
         "hotel",
@@ -42,10 +43,18 @@ INDUSTRY_LABELS = {
     "restaurant": "Restaurant",
     "bakery": "Bakery",
     "wholesale": "Wholesale",
+    "retail_wholesale": "Retail + Wholesale",
     "distribution": "Distribution",
     "general_trading": "General Trading",
     "manufacturing": "Manufacturing",
 }
+# Platform Owner trade provision surface. Hotel/FMCG remain valid for existing tenants.
+PROVISION_INDUSTRIES: tuple[str, ...] = (
+    "retail",
+    "pharmacy",
+    "wholesale",
+    "retail_wholesale",
+)
 VALID_DATE_FORMATS = frozenset({"DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"})
 VALID_DECIMAL_SEPARATORS = frozenset({".", ","})
 VALID_THOUSAND_SEPARATORS = frozenset({",", ".", " ", ""})

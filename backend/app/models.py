@@ -369,9 +369,27 @@ class Product(Base):
     # Pharmacy catalog extras (unused by mart/retail/hotel UI).
     dosage_instructions: Mapped[str | None] = mapped_column(Text, nullable=True)
     rx_only: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Wholesale MOQ in stockkeeping qty; 0 = no minimum (retail POS ignores it).
+    min_order_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     # Optional restaurant prep routing; overrides category when set
     prep_station: Mapped[str | None] = mapped_column(String(20), nullable=True)
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+
+
+class ProductPriceTier(Base):
+    """Qty break (and optional customer-group) wholesale unit price."""
+
+    __tablename__ = "product_price_tiers"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
+    customer_group_id: Mapped[str | None] = mapped_column(
+        ForeignKey("customer_groups.id"), nullable=True, index=True
+    )
+    min_qty: Mapped[float] = mapped_column(Numeric(14, 3), default=1)
+    unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class ProductVariant(Base):
@@ -983,6 +1001,7 @@ class SalesInvoice(Base):
     quotation_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     sales_order_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
     coupon_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
+    sales_channel: Mapped[str] = mapped_column(String(20), default="retail")
     emailed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     emailed_to: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -1440,6 +1459,7 @@ class SalesQuotation(Base):
     converted_invoice_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     emailed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     emailed_to: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    sales_channel: Mapped[str] = mapped_column(String(20), default="wholesale")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -1488,6 +1508,8 @@ class SalesOrder(Base):
     processing_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     shipped_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     delivered_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    delivery_note_number: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
+    sales_channel: Mapped[str] = mapped_column(String(20), default="wholesale")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -1523,6 +1545,7 @@ class SalesOrderItem(Base):
     product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), index=True)
     variant_id: Mapped[str | None] = mapped_column(ForeignKey("product_variants.id"), nullable=True, index=True)
     quantity: Mapped[float] = mapped_column(Numeric(14, 3))
+    qty_fulfilled: Mapped[float] = mapped_column(Numeric(14, 3), default=0)
     unit_id: Mapped[str | None] = mapped_column(ForeignKey("units_of_measure.id"), nullable=True, index=True)
     unit_price: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     tax_rate: Mapped[float] = mapped_column(Numeric(7, 4), default=0)

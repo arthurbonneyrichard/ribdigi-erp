@@ -9,12 +9,21 @@ export const INDUSTRIES = [
   'restaurant',
   'bakery',
   'wholesale',
+  'retail_wholesale',
   'distribution',
   'general_trading',
   'manufacturing',
 ] as const;
 
 export type IndustryKey = (typeof INDUSTRIES)[number];
+
+/** Platform Owner trade provision surface. Other verticals stay valid for existing tenants. */
+export const PROVISION_INDUSTRIES = [
+  'retail',
+  'pharmacy',
+  'wholesale',
+  'retail_wholesale',
+] as const;
 
 export const INDUSTRY_LABELS: Record<string, string> = {
   retail: 'Retail',
@@ -25,6 +34,7 @@ export const INDUSTRY_LABELS: Record<string, string> = {
   restaurant: 'Restaurant',
   bakery: 'Bakery',
   wholesale: 'Wholesale',
+  retail_wholesale: 'Retail + Wholesale',
   distribution: 'Distribution',
   general_trading: 'General Trading',
   manufacturing: 'Manufacturing',
@@ -55,6 +65,12 @@ export function normalizeIndustry(value?: string | null): string | null {
     food_service: 'restaurant',
     cafe: 'restaurant',
     wholesaler: 'wholesale',
+    retail_wholesale: 'retail_wholesale',
+    retail_and_wholesale: 'retail_wholesale',
+    retailwholesale: 'retail_wholesale',
+    dual_trade: 'retail_wholesale',
+    'retail_+_wholesale': 'retail_wholesale',
+    'retail+wholesale': 'retail_wholesale',
     distributor: 'distribution',
     trading: 'general_trading',
     manufacture: 'manufacturing',
@@ -68,6 +84,12 @@ export function normalizeIndustry(value?: string | null): string | null {
 export function usesStoreStockTransfers(industry?: string | null): boolean {
   const ind = normalizeIndustry(industry);
   return Boolean(ind && ind !== 'hotel');
+}
+
+/** Wholesale desk: MOQ, qty price tiers, B2B quotes/orders. POS stays retail on combo. */
+export function usesWholesaleTrade(industry?: string | null): boolean {
+  const ind = normalizeIndustry(industry);
+  return ind === 'wholesale' || ind === 'retail_wholesale';
 }
 
 export function industryLabel(value?: string | null): string {
