@@ -256,6 +256,8 @@ async def test_partial_fulfill_and_delivery_note(client, db_session, seeded):
     assert fill.status_code == 200, fill.text
     assert fill.json()["data"]["status"] == "processing"
     assert fill.json()["data"]["items"][0]["qty_fulfilled"] == 2
+    await db_session.refresh(product)
+    assert float(product.stock_qty) == 8
 
     over = await ac.post(
         f"/api/v1/sales/orders/{oid}/fulfill",

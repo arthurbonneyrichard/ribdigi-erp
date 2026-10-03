@@ -707,6 +707,70 @@ async def start_processing_order(db: AsyncSession, tenant_id: str, order_id: str
     )
 
 
+async def _order_warehouse_id(db: AsyncSession, tenant_id: str, order: m.SalesOrder) -> str | None:
+    if not order.store_id:
+        return None
+    from app.stores import warehouse_for_store
+
+    warehouse = await warehouse_for_store(db, tenant_id, order.store_id)
+    return warehouse.id
+
+
+async def issue_order_stock(
+    db: AsyncSession,
+    *,
+    tenant_id: str,
+    order: m.SalesOrder,
+    product_id: str,
+    quantity: float,
+    user_id: str | None = None,
+) -> None:
+    """Remove fulfilled quantity from stock once. Invoice posting skips this quantity."""
+    qty = money_json(quantity)
+    if qty <= 0:
+        return
+    warehouse_id = await _order_warehouse_id(db, tenant_id, order)
+    if warehouse_id:
+        from app.inventory import allocate_unlocated_stock
+
+        await allocate_unlocated_stock(
+            db,
+            tenant_id=tenant_id,
+            warehouse_id=warehouse_id,
+            product_id=product_id,
+        )
+    await apply_stock_change(
+        db,
+        tenant_id=tenant_id,
+        product_id=product_id,
+        quantity_delta=-qty,
+        movement_type="stock_out",
+        user_id=user_id,
+        reference_type="sales_order",
+        reference_id=order.id,
+        notes=f"Sales order {order.order_number} fulfilled",
+        warehouse_id=warehouse_id,
+    )
+    if not warehouse_id:
+        return
+    from app.reservations import list_order_reservations
+
+    left = qty
+    now = datetime.utcnow()
+    for row in await list_order_reservations(db, tenant_id, order.id, status="active"):
+        if row.product_id != product_id or left <= 1e-9:
+            continue
+        held = money_json(row.quantity or 0)
+        use = min(held, left)
+        row.quantity = money_json(held - use)
+        left = money_json(left - use)
+        if money_json(row.quantity or 0) <= 1e-9:
+            row.quantity = 0
+            row.status = "consumed"
+            row.consumed_at = now
+    await db.flush()
+
+
 async def ship_order(db: AsyncSession, tenant_id: str, order_id: str) -> m.SalesOrder:
     order = await _advance_order(
         db,
@@ -728,6 +792,13 @@ async def ship_order(db: AsyncSession, tenant_id: str, order_id: str) -> m.Sales
         already = money_json(getattr(item, "qty_fulfilled", 0) or 0)
         ordered = money_json(item.quantity or 0)
         if already <= 1e-9 and ordered > 0:
+            await issue_order_stock(
+                db,
+                tenant_id=tenant_id,
+                order=order,
+                product_id=item.product_id,
+                quantity=ordered,
+            )
             item.qty_fulfilled = ordered
     await db.flush()
     return order
@@ -740,7 +811,7 @@ async def fulfill_order(
     order_id: str,
     items: list[dict],
 ) -> m.SalesOrder:
-    """Record a partial fill. Does not deduct stock (invoice/POS still own stock)."""
+    """Record a partial fill and remove that quantity from stock."""
     order = await get_order(db, tenant_id, order_id)
     if order.status not in {"confirmed", "processing"}:
         raise HTTPException(
@@ -778,6 +849,13 @@ async def fulfill_order(
                     "requested": take,
                 },
             )
+        await issue_order_stock(
+            db,
+            tenant_id=tenant_id,
+            order=order,
+            product_id=product_id,
+            quantity=take,
+        )
         line.qty_fulfilled = money_json(already + take)
     if order.status == "confirmed":
         order.status = "processing"

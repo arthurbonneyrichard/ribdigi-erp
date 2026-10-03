@@ -701,7 +701,24 @@ async def post_sales_invoice(
             db, tenant_id=tenant_id, order_id=invoice.sales_order_id
         )
 
+    fulfilled_left: dict[str, float] = {}
+    if invoice.sales_order_id:
+        from app.sales_docs import list_order_items
+
+        for line in await list_order_items(db, tenant_id, invoice.sales_order_id):
+            pid = line.product_id
+            fulfilled_left[pid] = money_json(
+                fulfilled_left.get(pid, 0) + money_json(getattr(line, "qty_fulfilled", 0) or 0)
+            )
+
     for item in items:
+        qty = money_json(item.quantity)
+        already = money_json(fulfilled_left.get(item.product_id, 0))
+        skip = min(qty, already)
+        fulfilled_left[item.product_id] = money_json(already - skip)
+        issue_qty = money_json(qty - skip)
+        if issue_qty <= 1e-9:
+            continue
         if warehouse_id:
             await allocate_unlocated_stock(
                 db,
@@ -714,7 +731,7 @@ async def post_sales_invoice(
             tenant_id=tenant_id,
             user_id=user_id,
             product_id=item.product_id,
-            quantity=money_json(item.quantity),
+            quantity=issue_qty,
             unit_id=item.unit_id,
             notes=f"Invoice {invoice.invoice_number}",
             variant_id=item.variant_id,
