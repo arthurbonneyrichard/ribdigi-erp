@@ -967,6 +967,87 @@ async def update_profile(
     return tenant
 
 
+async def request_admin_password_reset(
+    db: AsyncSession,
+    tenant: m.Tenant,
+    *,
+    actor_id: str,
+    user_id: str | None = None,
+) -> dict:
+    """Email a single-use reset link to this tenant's company administrator.
+
+    Does not return the current password, a new password, or the raw token.
+    Existing sessions for that administrator are revoked.
+    """
+    from app import emailer
+    from app.security import issue_one_time_token
+
+    if user_id:
+        user = await db.get(m.User, user_id)
+        if not user or user.tenant_id != tenant.id:
+            raise HTTPException(status_code=404, detail="Tenant administrator not found")
+        if user.role != "company_admin":
+            raise HTTPException(
+                status_code=403,
+                detail="Only that tenant's administrator can be reset from the platform console",
+            )
+    else:
+        user = (
+            await db.execute(
+                select(m.User)
+                .where(m.User.tenant_id == tenant.id, m.User.role == "company_admin")
+                .order_by(m.User.created_at.asc())
+            )
+        ).scalars().first()
+        if not user:
+            raise HTTPException(status_code=404, detail="Tenant administrator not found")
+
+    now = datetime.utcnow()
+    raw, token_hash, expires = issue_one_time_token()
+    db.add(
+        m.AuthToken(
+            tenant_id=tenant.id,
+            user_id=user.id,
+            purpose="password_reset",
+            token_hash=token_hash,
+            expires_at=expires,
+        )
+    )
+    sessions = (
+        await db.execute(
+            select(m.AuthSession).where(
+                m.AuthSession.user_id == user.id,
+                m.AuthSession.tenant_id == tenant.id,
+                m.AuthSession.revoked_at.is_(None),
+            )
+        )
+    ).scalars().all()
+    for session in sessions:
+        session.revoked_at = now
+    await db.flush()
+
+    email_sent = False
+    email_error = None
+    try:
+        result = await emailer.send_password_reset_email(to=user.email, token=raw, tenant=tenant)
+        email_sent = bool(result.sent)
+        email_error = result.error
+    except Exception:
+        email_error = "send_failed"
+
+    return {
+        "tenant_id": tenant.id,
+        "slug": tenant.slug,
+        "user_id": user.id,
+        "email": user.email,
+        "initiated_by": actor_id,
+        "initiated_at": now.isoformat() + "Z",
+        "sessions_revoked": len(sessions),
+        "email_sent": email_sent,
+        "email_error": email_error,
+    }
+
+
 async def list_tenants(db: AsyncSession, *, status: str | None = None, limit: int = 100) -> list[m.Tenant]:
     q = select(m.Tenant).order_by(m.Tenant.created_at.desc()).limit(min(max(limit, 1), 500))
     # Schema TenantStatusFilterValue rejects blank/invalid → 422; keep allow-list

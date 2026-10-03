@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pyotp
 import pytest
 
 from app.notifications import create_notification
@@ -10,10 +9,9 @@ from tests.conftest import auth_headers
 
 
 async def _admin(ac, seed):
-    code = pyotp.TOTP(seed["super_totp_secret"]).now()
-    return await auth_headers(
-        ac, email="super@alpha.example.com", tenant_slug="alpha", totp_code=code
-    )
+    # Tenant administrator, not Platform Owner — store alerts stay on this audience.
+    del seed
+    return await auth_headers(ac, email="admin@alpha.example.com", tenant_slug="alpha")
 
 
 @pytest.mark.asyncio
@@ -21,7 +19,7 @@ async def test_mark_unread_round_trip_and_category_limit(client, db_session):
     ac, seed = client
     headers = await _admin(ac, seed)
     tid = seed["t1"].id
-    uid = seed["super"].id
+    uid = seed["admin1"].id
 
     n1 = await create_notification(
         db_session,

@@ -75,9 +75,6 @@ function canWriteCredit(me: { permissions?: Record<string, string[]> | null } | 
 
 type CartItem = Product & {
   quantity: number;
-  discount: number;
-  discountType: 'fixed' | 'percent';
-  discountPercent: number;
 };
 
 type OpenPrescription = {
@@ -131,8 +128,8 @@ type Session = {
   cashier_name?: string | null;
 };
 
-async function downloadReceiptPdf(saleId: string, paper: string) {
-  const res = await apiFetch(`/pos/sales/${saleId}/receipt?format=pdf&paper=${paper}`);
+async function downloadReceiptPdf(saleId: string) {
+  const res = await apiFetch(`/pos/sales/${saleId}/receipt?format=pdf`);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.detail || body.message || 'PDF download failed');
@@ -148,6 +145,39 @@ async function downloadReceiptPdf(saleId: string, paper: string) {
 
 function money(n: number) {
   return new Intl.NumberFormat(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+}
+
+/** Turn movement API failures into a till-friendly sentence. */
+function plainCashMoveError(err: unknown): string {
+  const raw = err instanceof Error ? err.message.trim() : '';
+  if (!raw) return 'Could not record the cash movement. Try again.';
+  let text = raw.replace(/^(amount|reason|movement_type):\s*/i, '').trim();
+  const lower = text.toLowerCase();
+  if (
+    lower.includes('greater than 0') ||
+    lower.includes('must be positive') ||
+    lower.includes('positive cash')
+  ) {
+    return 'Enter an amount greater than zero.';
+  }
+  if (
+    lower.includes('narrative') ||
+    lower.includes('reason is required') ||
+    lower.includes('cash movement reason')
+  ) {
+    return 'Enter a short reason (at least 3 characters).';
+  }
+  if (lower.includes('not your pos session') || lower.includes('do not have permission')) {
+    return 'You do not have permission to change this drawer.';
+  }
+  if (lower.includes('session is not open')) {
+    return 'This shift is not open.';
+  }
+  if (lower.includes('email, role, phone')) {
+    return 'Check the amount and the reason, then try again.';
+  }
+  if (!/[.!?]$/.test(text)) text = `${text}.`;
+  return text;
 }
 
 /** Mirror backend `compute_tax_amounts` for cart preview (cashiers lack tax:read). */
@@ -311,21 +341,19 @@ export default function Page() {
   const [amountPaidNow, setAmountPaidNow] = useState('');
   const [depositMethod, setDepositMethod] = useState('cash');
   const [paymentReference, setPaymentReference] = useState('');
-  const [paper, setPaper] = useState('80mm');
   const [receiptTo, setReceiptTo] = useState('');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerId, setCustomerId] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [creditOverrideReason, setCreditOverrideReason] = useState('');
   const [drawerReason, setDrawerReason] = useState('');
-  const [cashMoveType, setCashMoveType] = useState<'cash_in' | 'cash_out'>('cash_out');
   const [cashMoveAmount, setCashMoveAmount] = useState('');
   const [cashMoveReason, setCashMoveReason] = useState('');
-  const [cashMoveBusy, setCashMoveBusy] = useState(false);
+  const [cashMoveBusy, setCashMoveBusy] = useState<null | 'cash_in' | 'cash_out'>(null);
+  const [cashMoveError, setCashMoveError] = useState('');
   const [cartDiscount, setCartDiscount] = useState('');
   const [cartDiscountType, setCartDiscountType] = useState<'fixed' | 'percent'>('fixed');
   const [couponCode, setCouponCode] = useState('');
-  const [showAdjustments, setShowAdjustments] = useState(false);
   const [isPharmacy, setIsPharmacy] = useState(false);
   const [tradeBanner, setTradeBanner] = useState('');
   const [rxList, setRxList] = useState<OpenPrescription[]>([]);
@@ -357,6 +385,7 @@ export default function Page() {
   const [newCustName, setNewCustName] = useState('');
   const [custBusy, setCustBusy] = useState(false);
   const checkoutReqRef = useRef<string | null>(null);
+  const cashMoveLock = useRef(false);
   const browseGen = useRef(0);
   const skipEmptyBrowse = useRef(false);
   const prevQ = useRef(q);
@@ -372,24 +401,12 @@ export default function Page() {
     return Math.round(Number(listPrice) * (1 - groupDiscountPct / 100) * 100) / 100;
   }
 
-  function lineDiscountAmount(c: CartItem) {
-    const merch = groupUnitPrice(Number(c.selling_price)) * c.quantity;
-    if (c.discountType === 'percent') {
-      const pct = Math.max(0, Math.min(100, Number(c.discountPercent) || 0));
-      return Math.round((merch * pct) / 100 * 100) / 100;
-    }
-    return Math.min(Math.max(0, Number(c.discount) || 0), merch);
-  }
-
   const cartTotals = useMemo(() => {
     let subtotal = 0;
     let tax = 0;
     for (const c of cart) {
       const unit = groupUnitPrice(Number(c.selling_price));
-      const taxable = Math.max(
-        0,
-        Math.round((unit * c.quantity - lineDiscountAmount(c)) * 100) / 100
-      );
+      const taxable = Math.max(0, Math.round(unit * c.quantity * 100) / 100);
       const amounts = computeLineTaxAmounts(
         taxable,
         Number(c.tax_rate_pct) || 0,
@@ -735,24 +752,6 @@ export default function Page() {
     }
   }
 
-  function setLineDiscount(id: string, discount: number, kind: 'fixed' | 'percent' = 'fixed') {
-    setCart((prev) =>
-      prev.map((p) => {
-        if (p.id !== id) return p;
-        if (kind === 'percent') {
-          return { ...p, discountType: 'percent', discountPercent: Math.max(0, Math.min(100, discount)), discount: 0 };
-        }
-        const maxDisc = groupUnitPrice(Number(p.selling_price)) * p.quantity;
-        return {
-          ...p,
-          discountType: 'fixed',
-          discount: Math.min(Math.max(0, discount), maxDisc),
-          discountPercent: 0,
-        };
-      })
-    );
-  }
-
   async function openShift() {
     setError('');
     setMessage('');
@@ -813,6 +812,50 @@ export default function Page() {
       setError(err.message);
     } finally {
       setShiftBusy(false);
+    }
+  }
+
+  async function recordCashMove(kind: 'cash_in' | 'cash_out') {
+    if (!session || cashMoveLock.current) return;
+    setError('');
+    setCashMoveError('');
+    setMessage('');
+    const amt = Math.round(Number(cashMoveAmount) * 100) / 100;
+    const reason = cashMoveReason.trim();
+    if (!cashMoveAmount.trim() || !Number.isFinite(amt) || amt <= 0) {
+      const msg = 'Enter an amount greater than zero.';
+      setCashMoveError(msg);
+      setError(msg);
+      return;
+    }
+    if (reason.length < 3) {
+      const msg = 'Enter a short reason (at least 3 characters).';
+      setCashMoveError(msg);
+      setError(msg);
+      return;
+    }
+    cashMoveLock.current = true;
+    setCashMoveBusy(kind);
+    try {
+      const r = await api(`/pos/sessions/${session.session_id}/movements`, {
+        method: 'POST',
+        body: JSON.stringify({
+          movement_type: kind,
+          amount: amt,
+          reason,
+        }),
+      });
+      if (r.data?.session) setSession(r.data.session);
+      setCashMoveAmount('');
+      setCashMoveReason('');
+      setMessage(r.message || (kind === 'cash_in' ? 'Cash in recorded.' : 'Cash out recorded.'));
+    } catch (err: unknown) {
+      const msg = plainCashMoveError(err);
+      setCashMoveError(msg);
+      setError(msg);
+    } finally {
+      cashMoveLock.current = false;
+      setCashMoveBusy(null);
     }
   }
 
@@ -937,9 +980,6 @@ export default function Page() {
           product_id: pid,
           variant_id: product.variant_id || null,
           quantity: 1,
-          discount: 0,
-          discountType: 'fixed',
-          discountPercent: 0,
         },
       ];
     });
@@ -954,16 +994,7 @@ export default function Page() {
     }
     setCart((prev) =>
       prev
-        .map((p) => {
-          if (p.id !== id) return p;
-          const quantity = p.quantity + delta;
-          const maxDisc = groupUnitPrice(Number(p.selling_price)) * Math.max(quantity, 0);
-          return {
-            ...p,
-            quantity,
-            discount: p.discountType === 'percent' ? 0 : Math.min(p.discount || 0, maxDisc),
-          };
-        })
+        .map((p) => (p.id === id ? { ...p, quantity: p.quantity + delta } : p))
         .filter((p) => p.quantity > 0)
     );
   }
@@ -980,15 +1011,7 @@ export default function Page() {
     if (quantity === line.quantity) return;
     setCart((prev) =>
       prev
-        .map((p) => {
-          if (p.id !== id) return p;
-          const maxDisc = groupUnitPrice(Number(p.selling_price)) * Math.max(quantity, 0);
-          return {
-            ...p,
-            quantity,
-            discount: p.discountType === 'percent' ? 0 : Math.min(p.discount || 0, maxDisc),
-          };
-        })
+        .map((p) => (p.id === id ? { ...p, quantity } : p))
         .filter((p) => p.quantity > 0)
     );
   }
@@ -1077,9 +1100,9 @@ export default function Page() {
       product_id: c.product_id || c.id,
       variant_id: c.variant_id || null,
       quantity: c.quantity,
-      discount: c.discountType === 'percent' ? 0 : Number(c.discount) || 0,
-      discount_type: c.discountType || 'fixed',
-      discount_percent: c.discountType === 'percent' ? Number(c.discountPercent) || 0 : 0,
+      discount: 0,
+      discount_type: 'fixed',
+      discount_percent: 0,
     }));
     const body: Record<string, unknown> = {
       // trim so Complete sale (UuidIdValue session_id / party_id) does not 422
@@ -1281,7 +1304,7 @@ export default function Page() {
     setError('');
     setReceiptBusy('print');
     try {
-      await downloadReceiptPdf(lastSale.id, paper);
+      await downloadReceiptPdf(lastSale.id);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -1460,82 +1483,64 @@ export default function Page() {
                     </button>
                   </div>
                 </details>
-                <details className="tpos-more">
-                  <summary>Cash in / out</summary>
-                  <div className="tpos-more-body">
-                    <p className="muted" style={{ margin: 0 }}>
-                      Drawer expected {money(Number(session.expected_cash || 0))}
-                      {session.cash_in || session.cash_out
-                        ? ` · in ${money(Number(session.cash_in || 0))} · out ${money(Number(session.cash_out || 0))}`
-                        : ''}
-                    </p>
-                    <select
-                      className="tpos-input"
-                      value={cashMoveType}
-                      onChange={(e) => setCashMoveType(e.target.value as 'cash_in' | 'cash_out')}
-                      aria-label="Cash movement type"
-                    >
-                      <option value="cash_in">Cash in (float / pickup)</option>
-                      <option value="cash_out">Cash out (drop / paid-out)</option>
-                    </select>
+                <section className="tpos-cash" aria-label="Shift drawer cash">
+                  <p className="tpos-cash-balance">
+                    <span>Drawer</span>
+                    <strong>{money(Number(session.expected_cash || 0))}</strong>
+                    <span>
+                      In {money(Number(session.cash_in || 0))} · Out {money(Number(session.cash_out || 0))}
+                    </span>
+                  </p>
+                  <label className="tpos-cash-field">
+                    Amount
                     <input
                       className="tpos-input"
                       value={cashMoveAmount}
                       onChange={(e) => setCashMoveAmount(e.target.value)}
                       inputMode="decimal"
-                      placeholder="Amount"
-                      aria-label="Cash movement amount"
+                      placeholder="0.00"
+                      autoComplete="off"
+                      aria-label="Amount"
                     />
+                  </label>
+                  <label className="tpos-cash-field">
+                    Reason
                     <input
                       className="tpos-input"
                       value={cashMoveReason}
                       onChange={(e) => setCashMoveReason(e.target.value)}
-                      placeholder="Reason"
+                      placeholder="Short note"
                       maxLength={200}
-                      aria-label="Cash movement reason"
+                      autoComplete="off"
+                      aria-label="Reason"
                     />
+                  </label>
+                  <div className="tpos-cash-actions">
+                    <button
+                      type="button"
+                      className="tpos-btn tpos-btn-primary"
+                      disabled={!!cashMoveBusy}
+                      aria-label="Cash in"
+                      onClick={() => recordCashMove('cash_in')}
+                    >
+                      {cashMoveBusy === 'cash_in' ? 'Saving…' : 'Cash in'}
+                    </button>
                     <button
                       type="button"
                       className="tpos-btn"
-                      disabled={cashMoveBusy}
-                      aria-label="Record cash movement"
-                      onClick={async () => {
-                        setError('');
-                        const amt = Number(cashMoveAmount);
-                        const reason = cashMoveReason.trim();
-                        if (!Number.isFinite(amt) || amt <= 0) {
-                          setError('Enter a positive cash amount');
-                          return;
-                        }
-                        if (reason.length < 3) {
-                          setError('Enter a cash movement reason (at least 3 characters)');
-                          return;
-                        }
-                        setCashMoveBusy(true);
-                        try {
-                          const r = await api(`/pos/sessions/${session.session_id}/movements`, {
-                            method: 'POST',
-                            body: JSON.stringify({
-                              movement_type: cashMoveType,
-                              amount: amt,
-                              reason,
-                            }),
-                          });
-                          if (r.data?.session) setSession(r.data.session);
-                          setCashMoveAmount('');
-                          setCashMoveReason('');
-                          setMessage(r.message || 'Cash movement recorded');
-                        } catch (err: any) {
-                          setError(err.message);
-                        } finally {
-                          setCashMoveBusy(false);
-                        }
-                      }}
+                      disabled={!!cashMoveBusy}
+                      aria-label="Cash out"
+                      onClick={() => recordCashMove('cash_out')}
                     >
-                      {cashMoveBusy ? 'Saving…' : 'Record movement'}
+                      {cashMoveBusy === 'cash_out' ? 'Saving…' : 'Cash out'}
                     </button>
                   </div>
-                </details>
+                  {cashMoveError ? (
+                    <p className="tpos-cash-error" role="alert">
+                      {cashMoveError}
+                    </p>
+                  ) : null}
+                </section>
                 <details className="tpos-more">
                   <summary>Close shift</summary>
                   <div className="tpos-more-body">
@@ -1841,174 +1846,34 @@ export default function Page() {
           <aside className="tpos-cart" aria-label="Cart">
             <div className="tpos-cart-head">
               <h2>Cart</h2>
-              <span>
-                {cartCount} item{cartCount === 1 ? '' : 's'}
-              </span>
+              <span className="tpos-items-badge">Items {cartCount}</span>
             </div>
-
-            <div className="tpos-cart-list">
-              {cart.length === 0 ? (
-                <div className="tpos-cart-empty">
-                  <strong>Cart is empty</strong>
-                  <p>Tap a product or scan a barcode to add it.</p>
-                </div>
-              ) : null}
-              {cart.map((c) => {
-                const unit = groupUnitPrice(Number(c.selling_price));
-                const lineMerch = unit * c.quantity;
-                const lineDisc = lineDiscountAmount(c);
-                const taxable = Math.max(0, Math.round((lineMerch - lineDisc) * 100) / 100);
-                const lineAmounts = computeLineTaxAmounts(
-                  taxable,
-                  Number(c.tax_rate_pct) || 0,
-                  c.tax_pricing_mode || 'exclusive',
-                  Boolean(c.tax_reverse_charge),
-                  c.tax_components
-                );
-                const stockOut = Number(c.stock_qty) <= 0 || c.is_out_of_stock;
-                return (
-                  <div key={c.id} className="tpos-cart-row">
-                    <div className="tpos-cart-line">
-                      <strong className="tpos-cart-name" title={c.name}>
-                        <span className="tpos-cart-name-text">{c.name}</span>
-                        {c.rx_only ? <span className="tpos-cart-flag">Rx</span> : null}
-                        {stockOut ? (
-                          <span className="tpos-cart-flag tpos-cart-flag-out">Out</span>
-                        ) : c.is_low_stock ? (
-                          <span className="tpos-cart-flag tpos-cart-flag-low">Low</span>
-                        ) : null}
-                      </strong>
-                      <div className="tpos-line">{money(lineAmounts.gross)}</div>
-                    </div>
-                    <div className="tpos-cart-controls">
-                      <div className="tpos-qty">
-                        <button
-                          type="button"
-                          aria-label={`Decrease quantity of ${c.name}`}
-                          onClick={() => bumpQty(c.id, -1)}
-                        >
-                          −
-                        </button>
-                        <input
-                          type="number"
-                          min={1}
-                          max={Math.max(0, Number(c.stock_qty) || 0)}
-                          step={1}
-                          value={c.quantity}
-                          onChange={(e) => {
-                            if (e.target.value === '') return;
-                            const n = Number(e.target.value);
-                            if (!Number.isFinite(n)) return;
-                            setLineQty(c.id, n);
-                          }}
-                          inputMode="numeric"
-                          aria-label={`Quantity for ${c.name}`}
-                        />
-                        <button
-                          type="button"
-                          aria-label={`Increase quantity of ${c.name}`}
-                          onClick={() => bumpQty(c.id, 1)}
-                        >
-                          +
-                        </button>
-                      </div>
-                      <button
-                        type="button"
-                        className="tpos-cart-remove"
-                        onClick={() => removeLine(c.id)}
-                        aria-label={`Remove ${c.name}`}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                    {showAdjustments ? (
-                      <div className="tpos-cart-meta">
-                        <span className="tpos-cart-unit">
-                          {money(unit)} each
-                          {groupDiscountPct > 0 ? ` (−${groupDiscountPct}%)` : ''}
-                        </span>
-                        <span
-                          className={
-                            stockOut
-                              ? 'tpos-cart-stock tpos-cart-stock-out'
-                              : c.is_low_stock
-                                ? 'tpos-cart-stock tpos-cart-stock-low'
-                                : 'tpos-cart-stock'
-                          }
-                        >
-                          Stock {c.stock_qty}
-                          {stockOut
-                            ? ' · Out of stock at this store'
-                            : c.is_low_stock
-                              ? ' · Low'
-                              : ''}
-                        </span>
-                        <label className="tpos-line-disc">
-                          <span>Disc</span>
-                          <select
-                            value={c.discountType || 'fixed'}
-                            onChange={(e) => {
-                              const next = e.target.value === 'percent' ? 'percent' : 'fixed';
-                              setCart((prev) =>
-                                prev.map((p) =>
-                                  p.id === c.id
-                                    ? { ...p, discountType: next, discount: 0, discountPercent: 0 }
-                                    : p,
-                                ),
-                              );
-                            }}
-                            aria-label={`Discount type for ${c.name}`}
-                          >
-                            <option value="fixed">Amount</option>
-                            <option value="percent">%</option>
-                          </select>
-                          <input
-                            type="number"
-                            min={0}
-                            max={c.discountType === 'percent' ? 100 : lineMerch}
-                            step="0.01"
-                            value={c.discountType === 'percent' ? c.discountPercent || 0 : c.discount || 0}
-                            onChange={(e) =>
-                              setLineDiscount(c.id, Number(e.target.value) || 0, c.discountType || 'fixed')
-                            }
-                            inputMode="decimal"
-                            aria-label={`Discount for ${c.name}`}
-                          />
-                        </label>
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="tpos-cart-foot">
-              <label className="tpos-field">
-                <span>Customer {paymentMethod === 'credit' ? '(required)' : '(optional)'}</span>
-                <select
-                  value={customerId}
-                  onChange={(e) => selectCustomer(e.target.value)}
-                  aria-label="POS customer"
-                >
-                  <option value="">Walk-in / none</option>
-                  {customers
-                    .filter((c) => c.status !== 'inactive')
-                    .map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                      {c.customer_group
-                        ? ` [${c.customer_group.name}${
-                            c.customer_group.discount_percent
-                              ? ` −${c.customer_group.discount_percent}%`
-                              : ''
-                          }]`
-                        : ''}
-                    </option>
-                  ))}
-                </select>
-              </label>
+            <label className="tpos-field tpos-customer">
+              <span>Customer</span>
+              <select
+                value={customerId}
+                onChange={(e) => selectCustomer(e.target.value)}
+                aria-label="POS customer"
+              >
+                <option value="">Walk-in</option>
+                {customers
+                  .filter((c) => c.status !== 'inactive')
+                  .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                    {c.customer_group
+                      ? ` [${c.customer_group.name}${
+                          c.customer_group.discount_percent
+                            ? ` −${c.customer_group.discount_percent}%`
+                            : ''
+                        }]`
+                      : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
               {isPharmacy ? (
-                <label className="tpos-field">
+                <label className="tpos-field tpos-customer">
                   <span>Prescription (required for Rx-only)</span>
                   <select
                     value={prescriptionId}
@@ -2038,54 +1903,130 @@ export default function Page() {
                     : ' · no credit limit'}
                 </p>
               ) : null}
-              <label className="tpos-field">
-                <span>New customer</span>
-                <input
-                  className="tpos-input"
-                  value={newCustName}
-                  onChange={(e) => setNewCustName(e.target.value)}
-                  placeholder="Name — saved to customer master"
-                  maxLength={180}
-                  autoComplete="off"
-                  aria-label="Create POS customer name"
-                />
-                <button
-                  type="button"
-                  className="tpos-btn"
-                  onClick={createPosCustomer}
-                  disabled={custBusy || !newCustName.trim()}
-                  aria-label="Save new customer"
-                >
-                  {custBusy ? 'Saving…' : 'Save customer'}
-                </button>
-              </label>
 
-              <label className="tpos-field">
-                <span>Customer name</span>
-                <input
-                  className="tpos-input"
-                  aria-label="POS customer name"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="Walk-in if none selected"
-                  maxLength={180}
-                  autoComplete="off"
-                />
-              </label>
+            <div className="tpos-cart-list">
+              {cart.length === 0 ? (
+                <div className="tpos-cart-empty">
+                  <strong>No products selected</strong>
+                  <p>Tap a product or scan a barcode.</p>
+                </div>
+              ) : (
+                <div className="tpos-order-head" aria-hidden>
+                  <span>Product</span>
+                  <span>Qty</span>
+                  <span>Price</span>
+                  <span />
+                </div>
+              )}
+              {cart.map((c) => {
+                const unit = groupUnitPrice(Number(c.selling_price));
+                const taxable = Math.max(0, Math.round(unit * c.quantity * 100) / 100);
+                const lineAmounts = computeLineTaxAmounts(
+                  taxable,
+                  Number(c.tax_rate_pct) || 0,
+                  c.tax_pricing_mode || 'exclusive',
+                  Boolean(c.tax_reverse_charge),
+                  c.tax_components
+                );
+                const stockOut = Number(c.stock_qty) <= 0 || c.is_out_of_stock;
+                return (
+                  <div key={c.id} className="tpos-cart-row">
+                    <div className="tpos-cart-product">
+                      <strong className="tpos-cart-name" title={c.name}>
+                        <span className="tpos-cart-name-text">{c.name}</span>
+                        {c.rx_only ? <span className="tpos-cart-flag">Rx</span> : null}
+                        {stockOut ? (
+                          <span className="tpos-cart-flag tpos-cart-flag-out">Out</span>
+                        ) : c.is_low_stock ? (
+                          <span className="tpos-cart-flag tpos-cart-flag-low">Low</span>
+                        ) : null}
+                      </strong>
+                      <span className="tpos-cart-unit">{money(unit)} each</span>
+                    </div>
+                    <div className="tpos-qty">
+                      <button
+                        type="button"
+                        aria-label={`Decrease quantity of ${c.name}`}
+                        onClick={() => bumpQty(c.id, -1)}
+                      >
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        min={1}
+                        max={Math.max(0, Number(c.stock_qty) || 0)}
+                        step={1}
+                        value={c.quantity}
+                        onChange={(e) => {
+                          if (e.target.value === '') return;
+                          const n = Number(e.target.value);
+                          if (!Number.isFinite(n)) return;
+                          setLineQty(c.id, n);
+                        }}
+                        inputMode="numeric"
+                        aria-label={`Quantity for ${c.name}`}
+                      />
+                      <button
+                        type="button"
+                        aria-label={`Increase quantity of ${c.name}`}
+                        onClick={() => bumpQty(c.id, 1)}
+                      >
+                        +
+                      </button>
+                    </div>
+                    <div className="tpos-line">{money(lineAmounts.gross)}</div>
+                    <button
+                      type="button"
+                      className="tpos-cart-remove"
+                      onClick={() => removeLine(c.id)}
+                      aria-label={`Remove ${c.name}`}
+                    >
+                      ×
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
 
-              <label className="tpos-split-toggle">
-                <input
-                  type="checkbox"
-                  aria-label="POS split tender"
-                  checked={splitTender}
-                  onChange={(e) => enableSplit(e.target.checked)}
-                />
-                <span>Split cash + card</span>
-              </label>
-
-              {!splitTender ? (
-                <>
-                <label className="tpos-field">
+            <div className="tpos-cart-dock">
+              <div className="tpos-cart-lines">
+                <div className="tpos-name-ref">
+                  <label className="tpos-field">
+                    <span>Customer name</span>
+                    <input
+                      className="tpos-input"
+                      aria-label="POS customer name"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      placeholder="Walk-in if none selected"
+                      maxLength={180}
+                      autoComplete="off"
+                    />
+                  </label>
+                  <label className="tpos-field">
+                    <span>Payment reference</span>
+                    <input
+                      className="tpos-input"
+                      value={paymentReference}
+                      onChange={(e) => setPaymentReference(e.target.value)}
+                      placeholder="Card/auth ref (optional)"
+                      aria-label="POS payment reference"
+                      title="Optional tender reference (1–100 chars; letters/digits required)"
+                      maxLength={100}
+                      autoComplete="off"
+                    />
+                  </label>
+                </div>
+                <label className="tpos-split-toggle">
+                  <input
+                    type="checkbox"
+                    aria-label="POS split tender"
+                    checked={splitTender}
+                    onChange={(e) => enableSplit(e.target.checked)}
+                  />
+                  <span>Split cash + card</span>
+                </label>
+                <label className="tpos-pay-select">
                   <span>Payment</span>
                   <select
                     value={paymentMethod}
@@ -2094,11 +2035,49 @@ export default function Page() {
                   >
                     <option value="cash">Cash</option>
                     <option value="card">Card</option>
-                    <option value="wallet">Digital wallet</option>
+                    <option value="wallet">Wallet</option>
                     {canCreditSale ? <option value="credit">Credit</option> : null}
                   </select>
                 </label>
-                {paymentMethod === 'credit' ? (
+                {splitTender ? (
+                  <div className="tpos-split-fields">
+                    <label className="tpos-field">
+                      <span>Cash</span>
+                      <input
+                        className="tpos-input tpos-cash-tender"
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={cashTender}
+                        onChange={(e) => {
+                          const cash = Number(e.target.value) || 0;
+                          setCashTender(e.target.value);
+                          setCardTender(String(Math.max(0, Math.round((cartTotal - cash) * 100) / 100)));
+                        }}
+                        inputMode="decimal"
+                        aria-label="POS cash tender"
+                      />
+                    </label>
+                    <label className="tpos-field">
+                      <span>Card</span>
+                      <input
+                        className="tpos-input tpos-card-tender"
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={cardTender}
+                        onChange={(e) => {
+                          const card = Number(e.target.value) || 0;
+                          setCardTender(e.target.value);
+                          setCashTender(String(Math.max(0, Math.round((cartTotal - card) * 100) / 100)));
+                        }}
+                        inputMode="decimal"
+                        aria-label="POS card tender"
+                      />
+                    </label>
+                  </div>
+                ) : null}
+                {!splitTender && paymentMethod === 'credit' ? (
                   <>
                     <label className="tpos-field">
                       <span>Amount paid now</span>
@@ -2129,174 +2108,96 @@ export default function Page() {
                       </label>
                     ) : null}
                   </>
-                ) : null}
-                </>
-              ) : (
-                <div className="tpos-split-fields">
-                  <label className="tpos-field">
-                    <span>Cash</span>
-                    <input
-                      className="tpos-input"
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      value={cashTender}
-                      onChange={(e) => {
-                        const cash = Number(e.target.value) || 0;
-                        setCashTender(e.target.value);
-                        setCardTender(String(Math.max(0, Math.round((cartTotal - cash) * 100) / 100)));
-                      }}
-                      inputMode="decimal"
-                      aria-label="POS cash tender"
-                    />
-                  </label>
-                  <label className="tpos-field">
-                    <span>Card</span>
-                    <input
-                      className="tpos-input"
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      value={cardTender}
-                      onChange={(e) => {
-                        const card = Number(e.target.value) || 0;
-                        setCardTender(e.target.value);
-                        setCashTender(String(Math.max(0, Math.round((cartTotal - card) * 100) / 100)));
-                      }}
-                      inputMode="decimal"
-                      aria-label="POS card tender"
-                    />
-                  </label>
+                ) : splitTender ? (
                   <p className="tpos-split-hint">
                     Split {money((Number(cashTender) || 0) + (Number(cardTender) || 0))} · due{' '}
                     {money(cartTotal)}
                   </p>
-                </div>
-              )}
-
-              <label className="tpos-field">
-                <span>Payment reference</span>
-                <input
-                  className="tpos-input"
-                  value={paymentReference}
-                  onChange={(e) => setPaymentReference(e.target.value)}
-                  placeholder="Card/auth ref (optional)"
-                  aria-label="POS payment reference"
-                  title="Optional tender reference (1–100 chars; letters/digits required)"
-                  maxLength={100}
-                  autoComplete="off"
-                />
-              </label>
-
-              {paymentMethod === 'credit' && !splitTender ? (
-              <label className="tpos-field">
-                <span>Credit override reason</span>
-                <input
-                  className="tpos-input"
-                  value={creditOverrideReason}
-                  onChange={(e) => setCreditOverrideReason(e.target.value)}
-                  placeholder="Needed only if over the credit limit"
-                  maxLength={500}
-                  autoComplete="off"
-                  aria-label="Credit override reason"
-                />
-              </label>
-              ) : null}
-              <label className="tpos-field">
-                <span>Receipt size</span>
-                <select
-                  value={paper}
-                  onChange={(e) => setPaper(e.target.value)}
-                  aria-label="POS receipt paper"
-                >
-                  <option value="80mm">80mm thermal</option>
-                  <option value="58mm">58mm thermal</option>
-                </select>
-              </label>
-            </div>
-
-            <div className="tpos-cart-dock">
-              <button
-                type="button"
-                className="tpos-details-toggle"
-                aria-expanded={showAdjustments}
-                onClick={() => setShowAdjustments((open) => !open)}
-              >
-                {showAdjustments ? 'Hide discounts & tax' : 'Discounts & tax'}
-              </button>
-              {showAdjustments ? (
-                <>
-                  <div className="tpos-foot-discounts">
-                    <label className="tpos-field tpos-field-compact">
-                      <span>Cart discount</span>
-                      <span className="tpos-inline-controls">
-                        <select
-                          value={cartDiscountType}
-                          onChange={(e) => {
-                            setCartDiscountType(e.target.value === 'percent' ? 'percent' : 'fixed');
-                            setCartDiscount('');
-                          }}
-                          aria-label="POS cart discount type"
-                        >
-                          <option value="fixed">Amount</option>
-                          <option value="percent">Percent</option>
-                        </select>
-                        <input
-                          className="tpos-input"
-                          type="number"
-                          min={0}
-                          step="0.01"
-                          value={cartDiscount}
-                          onChange={(e) => setCartDiscount(e.target.value)}
-                          placeholder={cartDiscountType === 'percent' ? '0' : '0.00'}
-                          inputMode="decimal"
-                          aria-label="POS cart discount"
-                        />
-                      </span>
-                    </label>
-                    <label className="tpos-field tpos-field-compact">
-                      <span>Coupon</span>
+                ) : null}
+                {paymentMethod === 'credit' && !splitTender ? (
+                  <label className="tpos-field">
+                    <span>Credit override reason</span>
+                    <input
+                      className="tpos-input"
+                      value={creditOverrideReason}
+                      onChange={(e) => setCreditOverrideReason(e.target.value)}
+                      placeholder="Needed only if over the credit limit"
+                      maxLength={500}
+                      autoComplete="off"
+                      aria-label="Credit override reason"
+                    />
+                  </label>
+                ) : null}
+                <label className="tpos-field tpos-new-customer">
+                  <span>New customer</span>
+                  <input
+                    className="tpos-input"
+                    value={newCustName}
+                    onChange={(e) => setNewCustName(e.target.value)}
+                    placeholder="Name"
+                    maxLength={180}
+                    autoComplete="off"
+                    aria-label="Create POS customer name"
+                  />
+                  <button
+                    type="button"
+                    className="tpos-btn"
+                    onClick={createPosCustomer}
+                    disabled={custBusy || !newCustName.trim()}
+                    aria-label="Save new customer"
+                  >
+                    {custBusy ? 'Saving…' : 'Save'}
+                  </button>
+                </label>
+                <div className="tpos-foot-discounts">
+                  <label className="tpos-field tpos-field-compact">
+                    <span>Cart discount</span>
+                    <span className="tpos-inline-controls">
+                      <select
+                        value={cartDiscountType}
+                        onChange={(e) => {
+                          setCartDiscountType(e.target.value === 'percent' ? 'percent' : 'fixed');
+                          setCartDiscount('');
+                        }}
+                        aria-label="POS cart discount type"
+                      >
+                        <option value="fixed">Amount</option>
+                        <option value="percent">Percent</option>
+                      </select>
                       <input
                         className="tpos-input"
-                        value={couponCode}
-                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                        placeholder="CODE"
-                        aria-label="POS coupon code"
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={cartDiscount}
+                        onChange={(e) => setCartDiscount(e.target.value)}
+                        placeholder={cartDiscountType === 'percent' ? '0' : '0.00'}
+                        inputMode="decimal"
+                        aria-label="POS cart discount"
                       />
-                    </label>
-                  </div>
-                  <div className="tpos-totals" aria-label="POS cart totals">
-                    <div className="tpos-total-row">
-                      <span>Discount</span>
-                      <strong>{money(cartDiscountAmount)}</strong>
-                    </div>
-                    <div className="tpos-total-row">
-                      <span>Tax</span>
-                      <strong>{money(cartTotals.tax)}</strong>
-                    </div>
-                  </div>
-                </>
-              ) : null}
-              {paymentMethod === 'credit' && !splitTender ? (
-                <>
-                  <div className="tpos-total-row">
-                    <span>Paid now</span>
-                    <strong>{money(creditPaidNow)}</strong>
-                  </div>
-                  <div className="tpos-total-row">
-                    <span>On account</span>
-                    <strong>{money(creditRemaining)}</strong>
-                  </div>
-                </>
-              ) : null}
-              {Math.abs(cartTotals.subtotal - cartTotal) >= 0.01 ? (
-                <div className="tpos-total-row tpos-dock-subtotal">
-                  <span>Subtotal</span>
-                  <strong>{money(cartTotals.subtotal)}</strong>
+                    </span>
+                  </label>
+                  <label className="tpos-field tpos-field-compact">
+                    <span>Coupon</span>
+                    <input
+                      className="tpos-input"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                      placeholder="CODE"
+                      aria-label="POS coupon code"
+                    />
+                  </label>
                 </div>
-              ) : null}
-              <div className="tpos-total">
-                <span>{Math.abs(cartTotals.subtotal - cartTotal) >= 0.01 ? 'Amount due' : 'Subtotal'}</span>
+              </div>
+              <div className="tpos-total" aria-label="POS cart totals">
+                <span>
+                  Subtotal {money(cartTotals.subtotal)}
+                  {cartTotals.tax > 0 ? ` · Tax ${money(cartTotals.tax)}` : ''}
+                  {cartDiscountAmount > 0 ? ` · Disc −${money(cartDiscountAmount)}` : ''}
+                  {paymentMethod === 'credit' && !splitTender
+                    ? ` · On account ${money(creditRemaining)}`
+                    : ''}
+                </span>
                 <strong>{money(cartTotal)}</strong>
               </div>
               <div className="tpos-cart-actions">
@@ -2305,7 +2206,8 @@ export default function Page() {
                   className="tpos-btn"
                   onClick={clearCart}
                   disabled={!cart.length}
-                 aria-label="Clear POS cart">
+                  aria-label="Clear POS cart"
+                >
                   Clear
                 </button>
                 <button
@@ -2313,9 +2215,9 @@ export default function Page() {
                   className="tpos-btn tpos-btn-pay"
                   onClick={checkout}
                   disabled={!cart.length || !session || busy}
-                  aria-label="Charge"
+                  aria-label="Pay"
                 >
-                  {busy ? 'Charging…' : `Charge ${money(cartTotal)}`}
+                  {busy ? 'Paying…' : `Pay ${money(cartTotal)}`}
                 </button>
               </div>
               {error ? (

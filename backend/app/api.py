@@ -321,6 +321,7 @@ from app.schemas import (
     TenantDeleteConfirm,
     TenantSubscriptionAssign,
     TenantModulesUpdate,
+    TenantAdminPasswordReset,
     TenantIndustryChange,
     TenantStoreLimitUpdate,
     TenantMaxStoresOverrideUpdate,
@@ -792,6 +793,18 @@ async def create_tenant(
     except Exception as exc:
         await db.rollback()
         logger.exception("tenant create failed slug=%s", slug)
+        try:
+            await notifications_svc.notify_platform_event(
+                db,
+                tenant_id=claims["tenant_id"],
+                category="provisioning",
+                title="Tenant provisioning failed",
+                message=f"Could not provision tenant '{slug}'.",
+                entity_type="tenant",
+            )
+            await db.commit()
+        except Exception:
+            logger.exception("provisioning failure notification failed slug=%s", slug)
         raise http_exception_for_tenant_create_failure(exc) from None
 
     try:
@@ -1301,8 +1314,68 @@ async def tenant_update_industry(
             "reason": reason,
         },
     )
+    await notifications_svc.notify_platform_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        category="platform",
+        title="Tenant industry changed",
+        message=f"{tenant.company_name} business type is now {tenant.industry}.",
+        entity_type="tenant",
+        entity_id=tenant.id,
+    )
     await db.commit()
     return env(tenants_svc.serialize_tenant(tenant), "Business type updated")
+
+
+@api.post("/tenants/{tenant_ref}/admin-password-reset")
+async def tenant_admin_password_reset(
+    tenant_ref: TenantRefValue,
+    payload: TenantAdminPasswordReset,
+    claims=Depends(require_platform_permission("platform_tenants", "write")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Start a one-time reset for that tenant's administrator. No password is returned."""
+    if not is_platform_owner_role(claims.get("role")):
+        raise HTTPException(
+            status_code=403,
+            detail="Only the platform owner can reset a tenant administrator password",
+        )
+    tenant = await tenants_svc.resolve_tenant(db, tenant_ref)
+    result = await tenants_svc.request_admin_password_reset(
+        db,
+        tenant,
+        actor_id=claims["sub"],
+        user_id=payload.user_id,
+    )
+    await audit_svc.record_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        module="tenants",
+        action="admin_password_reset_requested",
+        entity="user",
+        entity_id=result["user_id"],
+        details={
+            "target_tenant": tenant.id,
+            "target_user_id": result["user_id"],
+            "initiated_by": claims["sub"],
+            "initiated_at": result["initiated_at"],
+            "sessions_revoked": result["sessions_revoked"],
+        },
+    )
+    await notifications_svc.notify_platform_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        category="admin_password_reset",
+        title="Tenant administrator password reset",
+        message=(
+            f"A password reset was requested for the administrator of {tenant.company_name}."
+        ),
+        entity_type="user",
+        entity_id=result["user_id"],
+    )
+    await db.commit()
+    return env(result, "Password reset link sent to the tenant administrator")
 
 
 @api.patch("/tenants/{tenant_ref}/modules")
@@ -1338,6 +1411,15 @@ async def tenant_update_modules(
             "reset_to_package": payload.reset_to_package,
             "enabled_modules": tenant.enabled_modules,
         },
+    )
+    await notifications_svc.notify_platform_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        category="platform",
+        title="Tenant modules updated",
+        message=f"Feature modules were updated for {tenant.company_name}.",
+        entity_type="tenant",
+        entity_id=tenant.id,
     )
     await db.commit()
     return env(tenants_svc.serialize_tenant(tenant), "Tenant modules updated")
@@ -1482,6 +1564,15 @@ async def platform_staff_create(
         entity_id=user.id,
         details={"email": user.email, "role": user.role, "email_verified": False},
     )
+    await notifications_svc.notify_platform_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        category="staff_account",
+        title="Platform staff account created",
+        message=f"{user.full_name} ({user.email}) was added as {user.role}.",
+        entity_type="user",
+        entity_id=user.id,
+    )
     tenant = await db.get(m.Tenant, claims["tenant_id"])
     email_info = await _issue_email_verification(db, user, tenant)
     data = platform_staff_svc.serialize_staff(user)
@@ -1515,6 +1606,15 @@ async def platform_staff_verify_email(
         entity="user",
         entity_id=user.id,
         details={"email": user.email},
+    )
+    await notifications_svc.notify_platform_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        category="staff_account",
+        title="Platform staff account verified",
+        message=f"{user.full_name} ({user.email}) was verified by the platform owner.",
+        entity_type="user",
+        entity_id=user.id,
     )
     await db.commit()
     return env(platform_staff_svc.serialize_staff(user), "Staff account verified. They can sign in.")
@@ -1579,6 +1679,15 @@ async def platform_staff_grant(
         entity_id=user.id,
         details={"from_role": prev_role, "to_role": user.role, "email": user.email},
     )
+    await notifications_svc.notify_platform_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        category="staff_account",
+        title="Platform staff access granted",
+        message=f"{user.full_name} ({user.email}) was granted {user.role} dashboard access.",
+        entity_type="user",
+        entity_id=user.id,
+    )
     await db.commit()
     return env(
         platform_staff_svc.serialize_staff(user),
@@ -1622,6 +1731,15 @@ async def platform_staff_revoke(
         entity="user",
         entity_id=user.id,
         details={"role": user.role, "email": user.email},
+    )
+    await notifications_svc.notify_platform_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        category="staff_account",
+        title="Platform staff access revoked",
+        message=f"Dashboard access was revoked for {user.full_name} ({user.email}).",
+        entity_type="user",
+        entity_id=user.id,
     )
     await db.commit()
     return env(
@@ -1677,6 +1795,15 @@ async def platform_staff_update(
             "password_changed": payload.password is not None,
         },
     )
+    await notifications_svc.notify_platform_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        category="staff_account",
+        title="Platform staff account updated",
+        message=f"{user.full_name} ({user.email}) was updated.",
+        entity_type="user",
+        entity_id=user.id,
+    )
     await db.commit()
     return env(platform_staff_svc.serialize_staff(user), "Platform staff updated")
 
@@ -1703,10 +1830,44 @@ async def platform_staff_delete(
         action="delete",
         entity="user",
         entity_id=snapshot["id"],
-        details={"email": snapshot["email"], "role": snapshot["role"], "full_name": snapshot["full_name"]},
+        details={
+            "email": snapshot["email"],
+            "role": snapshot["role"],
+            "full_name": snapshot["full_name"],
+            "marked_deleted": True,
+            "access_revoked": True,
+        },
+    )
+    await notifications_svc.notify_platform_event(
+        db,
+        tenant_id=claims["tenant_id"],
+        category="staff_account",
+        title="Platform staff account deleted",
+        message=f"{snapshot['full_name']} ({snapshot['email']}) was removed from platform staff.",
+        entity_type="user",
+        entity_id=snapshot["id"],
     )
     await db.commit()
     return env(snapshot, "Platform staff account deleted")
+
+
+@api.get("/platform/directory")
+async def platform_directory(
+    claims=Depends(require_platform_permission("platform_tenants", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Platform-level tenant summary (no store operational metrics)."""
+    return env(await platform_reports_svc.build_platform_directory(db))
+
+
+@api.get("/platform/activity")
+async def platform_activity(
+    limit: Annotated[int, Query(ge=1, le=200)] = 50,
+    claims=Depends(require_platform_permission("platform_tenants", "read")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Platform events: tenants, packages, staff, and admin password resets."""
+    return env(await platform_reports_svc.build_platform_activity(db, limit=limit))
 
 
 @api.get("/platform/reports")
@@ -9573,7 +9734,7 @@ async def pos_receipt(
     sale_id: UuidIdValue,
     # omit → json; blank/invalid → 422 (was `format or "json"`)
     format: Annotated[ReceiptPrintFormatValue, Query()] = "json",
-    # omit → branding default; blank/invalid → 422 (was silent branding fallback)
+    # omit → receipt printer paper, else branding default; blank/invalid → 422
     paper: Annotated[ReceiptPaperValue | None, Query()] = None,
     claims=Depends(require_permission("pos", "read")),
     db: AsyncSession = Depends(get_db),
@@ -9591,7 +9752,20 @@ async def pos_receipt(
         await tenants_svc.get_tenant(db, claims["tenant_id"])
     )
     fmt = format
-    paper = paper if paper is not None else branding["default_receipt_paper"]
+    if paper is None:
+        from app import printers as printers_svc
+
+        for printer in await printers_svc.matching_printers(
+            db,
+            tenant_id=claims["tenant_id"],
+            store_id=receipt.get("store_id"),
+            purpose="customer_receipt",
+        ):
+            if printer.paper in {"58mm", "80mm"}:
+                paper = printer.paper
+                break
+    if paper is None:
+        paper = branding["default_receipt_paper"]
     if fmt == "json":
         public = {k: v for k, v in receipt.items() if k != "logo_key"}
         public["paper"] = paper
@@ -13837,6 +14011,7 @@ async def notifications(
     db: AsyncSession = Depends(get_db),
 ):
     lim = max(1, min(int(limit or 100), 200))
+    audience = notifications_svc.audience_for_role(claims.get("role"))
     rows = await notifications_svc.list_notifications(
         db,
         tenant_id=claims["tenant_id"],
@@ -13844,6 +14019,7 @@ async def notifications(
         status=status,
         category=category,
         limit=lim,
+        audience=audience,
     )
     return env([notifications_svc.serialize_notification(n) for n in rows])
 
@@ -13853,7 +14029,12 @@ async def notifications_unread_count(
     claims=Depends(require_permission("notifications", "read")),
     db: AsyncSession = Depends(get_db),
 ):
-    count = await notifications_svc.unread_count(db, claims["tenant_id"], claims["sub"])
+    count = await notifications_svc.unread_count(
+        db,
+        claims["tenant_id"],
+        claims["sub"],
+        audience=notifications_svc.audience_for_role(claims.get("role")),
+    )
     return env({"count": count})
 
 
@@ -13864,7 +14045,11 @@ async def notification_read(
     db: AsyncSession = Depends(get_db),
 ):
     note = await notifications_svc.mark_read(
-        db, tenant_id=claims["tenant_id"], notification_id=nid, user_id=claims["sub"]
+        db,
+        tenant_id=claims["tenant_id"],
+        notification_id=nid,
+        user_id=claims["sub"],
+        audience=notifications_svc.audience_for_role(claims.get("role")),
     )
     await db.commit()
     return env(notifications_svc.serialize_notification(note), "Marked read")
@@ -13877,7 +14062,11 @@ async def notification_unread(
     db: AsyncSession = Depends(get_db),
 ):
     note = await notifications_svc.mark_unread(
-        db, tenant_id=claims["tenant_id"], notification_id=nid, user_id=claims["sub"]
+        db,
+        tenant_id=claims["tenant_id"],
+        notification_id=nid,
+        user_id=claims["sub"],
+        audience=notifications_svc.audience_for_role(claims.get("role")),
     )
     await db.commit()
     return env(notifications_svc.serialize_notification(note), "Marked unread")
@@ -13889,7 +14078,10 @@ async def notifications_read_all(
     db: AsyncSession = Depends(get_db),
 ):
     count = await notifications_svc.mark_all_read(
-        db, tenant_id=claims["tenant_id"], user_id=claims["sub"]
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        audience=notifications_svc.audience_for_role(claims.get("role")),
     )
     await db.commit()
     return env({"marked": count}, "All notifications marked read")

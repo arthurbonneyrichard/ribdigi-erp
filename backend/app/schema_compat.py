@@ -33,6 +33,7 @@ _COL_CACHE: dict[str, set[str]] = {}
 
 def clear_column_cache() -> None:
     _COL_CACHE.clear()
+    clear_live_schema_cache()
 
 
 def _python_type(col) -> type | None:
@@ -99,6 +100,10 @@ def _default_for_required_column(col, table_name: str = "", values: dict | None 
         return "vat"
     if name == "pricing_mode":
         return "exclusive"
+    if name == "sales_channel":
+        return "wholesale" if table_name in {"sales_orders", "sales_quotations"} else "retail"
+    if name in {"min_order_qty", "qty_fulfilled"}:
+        return 0
     if name == "industry":
         return "retail"
     if name == "currency":
@@ -446,3 +451,240 @@ async def count_tenant_rows(db: AsyncSession, table_name: str, tenant_id: str) -
         )
     ).first()
     return int(row[0] or 0) if row else 0
+
+
+# Mapped columns the running ORM has but this database has not migrated yet.
+# SELECT defers them, INSERT/UPDATE omit them, and reads return a Python default.
+_MISSING_COLS: dict[type, tuple[str, ...]] | None = None
+_GUARD_INSTALLED = False
+_DISCOVERING = False
+# Column defaults are compiled into INSERT even after the value is removed from
+# the instance. Hold the originals so tests can restore them.
+_SAVED_DEFAULTS: dict[tuple[str, str], tuple] = {}
+
+
+def clear_live_schema_cache() -> None:
+    global _MISSING_COLS
+    _MISSING_COLS = None
+    _restore_column_defaults()
+
+
+def _fallback_for_missing(target, name: str):
+    col = target.__table__.c[name]
+    if col.nullable:
+        return None
+    return _default_for_required_column(col, getattr(target, "__tablename__", "") or "", {})
+
+
+def _missing_for(target) -> tuple[str, ...]:
+    missing = _MISSING_COLS or {}
+    for cls in type(target).__mro__:
+        cols = missing.get(cls)
+        if cols:
+            return cols
+    return ()
+
+
+def _live_columns_by_table(connection) -> dict[str, set[str]]:
+    if connection.dialect.name == "postgresql":
+        rows = connection.execute(
+            text(
+                "SELECT table_name, column_name FROM information_schema.columns "
+                "WHERE table_schema = current_schema()"
+            )
+        ).all()
+        found: dict[str, set[str]] = {}
+        for table_name, column_name in rows:
+            found.setdefault(str(table_name), set()).add(str(column_name))
+        return found
+    insp = inspect(connection)
+    return {
+        table_name: {c["name"] for c in insp.get_columns(table_name)}
+        for table_name in insp.get_table_names()
+    }
+
+
+def _discover_missing_columns(connection) -> dict[type, tuple[str, ...]]:
+    from app.models import Base
+
+    live = _live_columns_by_table(connection)
+    missing: dict[type, tuple[str, ...]] = {}
+    for mapper in Base.registry.mappers:
+        table = mapper.local_table
+        if table is None or table.name not in live:
+            continue
+        present = live[table.name]
+        absent = tuple(
+            col.name for col in table.columns if col.name not in present and not col.primary_key
+        )
+        if absent:
+            missing[mapper.class_] = absent
+    _silence_missing_defaults(missing)
+    return missing
+
+
+def _ensure_missing(connection) -> dict[type, tuple[str, ...]]:
+    global _MISSING_COLS, _DISCOVERING
+    if _MISSING_COLS is not None:
+        return _MISSING_COLS
+    if _DISCOVERING:
+        return {}
+    _DISCOVERING = True
+    try:
+        found = _discover_missing_columns(connection)
+    finally:
+        _DISCOVERING = False
+    _MISSING_COLS = found
+    if found:
+        import logging
+
+        omitted = ", ".join(
+            f"{cls.__tablename__}.{name}" for cls, cols in found.items() for name in cols
+        )
+        logging.getLogger("ribdigi.schema_compat").info(
+            "omitting unmigrated columns from ORM IO: %s", omitted
+        )
+    return found
+
+
+def _silence_missing_defaults(missing: dict[type, tuple[str, ...]]) -> None:
+    """Stop SQLAlchemy from compiling a default for a column the database lacks."""
+    from sqlalchemy.orm import class_mapper
+
+    for cls, cols in missing.items():
+        table = cls.__table__
+        try:
+            cache = getattr(class_mapper(cls), "_compiled_cache", None)
+            if cache is not None:
+                cache.clear()
+        except Exception:
+            pass
+        for name in cols:
+            col = table.c[name]
+            key = (table.name, name)
+            if key not in _SAVED_DEFAULTS:
+                _SAVED_DEFAULTS[key] = (col.default, col.server_default)
+            col.default = None
+            col.server_default = None
+
+
+def _restore_column_defaults() -> None:
+    from app.models import Base
+
+    if not _SAVED_DEFAULTS:
+        return
+    tables = {mapper.local_table.name: mapper.local_table for mapper in Base.registry.mappers if mapper.local_table is not None}
+    for (table_name, name), (default, server_default) in list(_SAVED_DEFAULTS.items()):
+        table = tables.get(table_name)
+        if table is None or name not in table.c:
+            continue
+        col = table.c[name]
+        col.default = default
+        col.server_default = server_default
+        try:
+            from sqlalchemy.orm import class_mapper
+
+            for mapper in Base.registry.mappers:
+                if mapper.local_table is not None and mapper.local_table.name == table_name:
+                    cache = getattr(mapper, "_compiled_cache", None)
+                    if cache is not None:
+                        cache.clear()
+        except Exception:
+            pass
+    _SAVED_DEFAULTS.clear()
+
+
+def _selected_entity_classes(statement) -> set[type]:
+    """Mapped classes selected as rows, not as individual columns or aggregates."""
+    found: set[type] = set()
+    try:
+        descriptions = statement.column_descriptions
+    except Exception:
+        return found
+    for desc in descriptions:
+        expr = desc.get("expr")
+        entity = desc.get("entity")
+        if entity is None:
+            continue
+        if expr is entity or getattr(expr, "is_aliased_class", False):
+            cls = entity if isinstance(entity, type) else getattr(entity, "class_", None)
+            if not isinstance(cls, type):
+                cls = getattr(expr, "class_", None)
+            if isinstance(cls, type):
+                found.add(cls)
+    return found
+
+
+def _sync_connection(session):
+    sync = getattr(session, "sync_session", None)
+    if sync is not None:
+        return sync.connection()
+    return session.connection()
+
+
+def install_live_schema_guard() -> None:
+    """Tolerate ORM models that are ahead of the live database.
+
+    A process whose code includes a column the database has not migrated yet
+    would otherwise fail every ``select(Model)`` with UndefinedColumnError.
+    """
+    global _GUARD_INSTALLED
+    if _GUARD_INSTALLED:
+        return
+    _GUARD_INSTALLED = True
+
+    from sqlalchemy import event
+    from sqlalchemy.orm import Session, defer
+    from sqlalchemy.orm.attributes import instance_state, set_committed_value
+
+    from app.models import Base
+
+    @event.listens_for(Session, "do_orm_execute")
+    def _defer_unmigrated(state):
+        if not state.is_select or not state.is_orm_statement or state.is_column_load:
+            return
+        try:
+            conn = _sync_connection(state.session)
+        except Exception:
+            return
+        missing = _ensure_missing(conn)
+        if not missing:
+            return
+        # Column-only selects (dashboard stock counts) cannot take defer().
+        present = _selected_entity_classes(state.statement)
+        opts = []
+        for cls, cols in missing.items():
+            if cls not in present:
+                continue
+            for name in cols:
+                attr = getattr(cls, name, None)
+                if attr is not None:
+                    opts.append(defer(attr))
+        if opts:
+            state.statement = state.statement.options(*opts)
+
+    @event.listens_for(Base, "load", propagate=True)
+    def _fill_unmigrated_on_load(target, context):
+        for name in _missing_for(target):
+            set_committed_value(target, name, _fallback_for_missing(target, name))
+
+    @event.listens_for(Base, "before_insert", propagate=True)
+    def _omit_unmigrated_on_insert(mapper, connection, target):
+        _ensure_missing(connection)
+        cols = _missing_for(target)
+        if not cols:
+            return
+        state = instance_state(target)
+        for name in cols:
+            state.dict.pop(name, None)
+
+    @event.listens_for(Base, "after_insert", propagate=True)
+    def _fill_unmigrated_after_insert(mapper, connection, target):
+        for name in _missing_for(target):
+            set_committed_value(target, name, _fallback_for_missing(target, name))
+
+    @event.listens_for(Base, "before_update", propagate=True)
+    def _omit_unmigrated_on_update(mapper, connection, target):
+        _ensure_missing(connection)
+        for name in _missing_for(target):
+            set_committed_value(target, name, _fallback_for_missing(target, name))

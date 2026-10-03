@@ -5,8 +5,11 @@ import { useRouter } from 'next/navigation';
 import { api } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
 import { getPrefetched } from '../../../lib/prefetchCache';
-import { industryAllowsModule, INDUSTRY_SPECIFIC_MODULES } from '../../../lib/industryModules';
+import { industryAllowsModule } from '../../../lib/industryModules';
 import { INDUSTRIES, PROVISION_INDUSTRIES, industryLabel } from '../../../lib/industries';
+
+/** Trade provision industries plus implemented verticals (hotel PMS, FMCG). */
+const CREATE_INDUSTRIES = [...PROVISION_INDUSTRIES, 'hotel', 'fmcg'] as const;
 
 type SubscriptionInfo = {
   package_code?: string;
@@ -57,6 +60,19 @@ type TenantRow = {
   };
   subscription?: SubscriptionInfo;
   enabled_modules?: string[];
+  store_mode?: string;
+  user_count?: number;
+  store_count?: number;
+  branch_count?: number;
+  account_status?: string;
+};
+
+type ActivityRow = {
+  id: string;
+  created_at?: string;
+  summary?: string;
+  module?: string;
+  action?: string;
 };
 
 type PackageInfo = {
@@ -134,6 +150,7 @@ export default function PlatformConsole() {
   const [overrideDraft, setOverrideDraft] = useState('');
   const [industryDraft, setIndustryDraft] = useState('');
   const [industryReason, setIndustryReason] = useState('');
+  const [activity, setActivity] = useState<ActivityRow[]>([]);
   const [meRole, setMeRole] = useState('');
   const managePanelRef = useRef<HTMLDivElement | null>(null);
 
@@ -157,10 +174,12 @@ export default function PlatformConsole() {
 
   async function refresh(options?: { force?: boolean }) {
     const force = Boolean(options?.force);
-    const [me, res, pkgs] = await Promise.all([
+    const [me, res, pkgs, directory, activityRes] = await Promise.all([
       getMe({ force }),
       getPrefetched('/tenants', { force }),
       getPrefetched('/packages', { force }),
+      api('/platform/directory'),
+      api('/platform/activity'),
     ]);
     const role = me.data?.role || '';
     const platformRoles = [
@@ -175,7 +194,11 @@ export default function PlatformConsole() {
       return;
     }
     setMeRole(role);
-    setTenants(res.data || []);
+    const summary = new Map((directory.data || []).map((row: TenantRow) => [row.id, row]));
+    setTenants(
+      (res.data || []).map((row: TenantRow) => ({ ...row, ...(summary.get(row.id) || {}) }))
+    );
+    setActivity(activityRes.data || []);
     setPackages(pkgs.data?.packages || []);
     setPackageable(pkgs.data?.packageable_modules || []);
     setReady(true);
@@ -461,9 +484,12 @@ export default function PlatformConsole() {
     setError('');
     setMessage('');
     try {
+      const enabled_modules = moduleDraft.filter((mod) =>
+        industryAllowsModule(selected.industry, mod)
+      );
       await api(`/tenants/${selected.slug || selected.id}/modules`, {
         method: 'PATCH',
-        body: JSON.stringify({ enabled_modules: moduleDraft }),
+        body: JSON.stringify({ enabled_modules }),
       });
       setMessage(`Updated feature modules for ${selected.company_name}`);
       await refresh({ force: true });
@@ -503,7 +529,36 @@ export default function PlatformConsole() {
 
   function applyPackageModules(code: string) {
     const pkg = packages.find((p) => p.code === code);
-    if (pkg) setModuleDraft(pkg.modules);
+    if (pkg) {
+      setModuleDraft(pkg.modules.filter((mod) => industryAllowsModule(selected?.industry, mod)));
+    }
+  }
+
+  async function resetTenantAdminPassword(row?: TenantRow) {
+    const target = row || selected;
+    if (!target) return;
+    const ok = window.confirm(
+      `Send a password reset link to the administrator of ${target.company_name}?\n\nThe current password is not shown, and a new password is not displayed here.`
+    );
+    if (!ok) return;
+    setBusy(target.id);
+    setError('');
+    setMessage('');
+    try {
+      const res = await api(`/tenants/${target.slug || target.id}/admin-password-reset`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+      const when = res.data?.initiated_at ? ` at ${fmtDate(res.data.initiated_at)}` : '';
+      setMessage(
+        `Password reset requested for the administrator of ${target.company_name}${when}. A reset link was emailed. No password is shown.`
+      );
+      await refresh({ force: true });
+    } catch (err: any) {
+      setError(err.message || 'Password reset failed');
+    } finally {
+      setBusy(null);
+    }
   }
 
   if (!ready && !error) {
@@ -569,6 +624,34 @@ export default function PlatformConsole() {
           </div>
         </div>
 
+        <div className="plat-panel">
+          <h2>Platform activity</h2>
+          <p className="muted" style={{ marginTop: 0 }}>
+            Tenant creation, industry and package changes, administrator password resets, and staff
+            account changes. Store stock, orders, POS, and payments are not listed here.
+          </p>
+          {activity.length === 0 ? (
+            <p className="muted">No platform events yet.</p>
+          ) : (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>When</th>
+                  <th>Event</th>
+                </tr>
+              </thead>
+              <tbody>
+                {activity.map((event) => (
+                  <tr key={event.id}>
+                    <td>{fmtDate(event.created_at)}</td>
+                    <td>{event.summary || `${event.module || ''} ${event.action || ''}`}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
         {error && (
           <p className="login-error" role="alert">
             {error}
@@ -616,7 +699,7 @@ export default function PlatformConsole() {
                 required
               >
                 <option value="">Select business type</option>
-                {PROVISION_INDUSTRIES.map((i) => (
+                {CREATE_INDUSTRIES.map((i) => (
                   <option key={i} value={i}>
                     {industryLabel(i)}
                   </option>
@@ -745,58 +828,47 @@ export default function PlatformConsole() {
           <table className="table">
             <thead>
               <tr>
-                <th>Company</th>
-                <th>Package</th>
-                <th>Term / usage</th>
-                <th>Remaining</th>
+                <th>Tenant</th>
                 <th>Status</th>
-                <th>Suspend reason</th>
+                <th>Industry</th>
+                <th>Store mode</th>
+                <th>Users</th>
+                <th>Stores / branches</th>
+                <th>Created</th>
+                <th>Account</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {visible.map((t) => {
-                const s = t.subscription || {};
                 return (
                   <tr key={t.id} className={selectedId === t.id ? 'plat-row-selected' : undefined}>
                     <td>
                       <div className="plat-co">{t.company_name}</div>
                       <div className="muted" style={{ fontSize: 12 }}>
-                        {t.slug} · {t.email || 'No email'}
+                        {t.slug}
                       </div>
-                    </td>
-                    <td>
-                      <strong>{s.package_name || t.package_code || 'trial'}</strong>
-                      {s.modules_customized ? (
-                        <div className="muted" style={{ fontSize: 11 }}>
-                          custom modules
-                        </div>
-                      ) : null}
-                    </td>
-                    <td style={{ fontSize: 13 }}>
-                      {s.term_value != null
-                        ? `${s.term_value} ${s.term_unit || 'months'}`
-                        : '—'}
-                      <div className="muted" style={{ fontSize: 11 }}>
-                        used {s.months_used ?? 0} mo
-                        {s.years_used != null ? ` (${s.years_used} y)` : ''}
-                      </div>
-                    </td>
-                    <td style={{ fontSize: 13 }}>
-                      {s.months_remaining != null ? `${s.months_remaining} mo` : '—'}
-                      {s.days_remaining != null ? (
-                        <div className="muted" style={{ fontSize: 11 }}>
-                          {s.days_remaining}d · renew {fmtDate(s.subscription_ends_at)}
-                        </div>
-                      ) : null}
                     </td>
                     <td>
                       <span className={`status-pill ${statusClass(t.status)}`} style={{ margin: 0 }}>
                         {t.status}
                       </span>
                     </td>
-                    <td style={{ fontSize: 12, maxWidth: 220 }}>
-                      {t.suspended_reason || '—'}
+                    <td>{industryLabel(t.industry)}</td>
+                    <td>{t.store_mode === 'multi' ? 'Multi-store' : 'Single store'}</td>
+                    <td>{t.user_count ?? '—'}</td>
+                    <td>
+                      {t.store_count ?? 0} / {t.branch_count ?? 0}
+                    </td>
+                    <td>{fmtDate(t.created_at)}</td>
+                    <td style={{ fontSize: 13 }}>
+                      {t.account_status === 'verified'
+                        ? 'Verified'
+                        : t.account_status === 'pending_verification'
+                          ? 'Pending verification'
+                          : t.account_status === 'no_administrator'
+                            ? 'No administrator'
+                            : t.account_status || '—'}
                     </td>
                     <td>
                       <div className="plat-actions">
@@ -829,6 +901,16 @@ export default function PlatformConsole() {
                         >
                           Verify account
                         </button>
+                        {canDeleteTenant ? (
+                          <button
+                            type="button"
+                            disabled={busy === t.id}
+                            onClick={() => resetTenantAdminPassword(t)}
+                            aria-label={`Reset administrator password for tenant ${t.slug || t.id}`}
+                          >
+                            Reset admin password
+                          </button>
+                        ) : null}
                         {t.status === 'suspended' ? (
                           <button type="button" className="btn-ok" disabled={busy === t.id} onClick={() => activateTenant(t)} aria-label={`Activate tenant ${t.id}`}>
                             Activate
@@ -1203,10 +1285,22 @@ export default function PlatformConsole() {
 
             <h3 style={{ marginTop: 20, fontSize: 15 }}>Feature modules (package control)</h3>
             <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>
-              Toggle which modules this tenant can use. Dashboard, notifications, and security stay on.
-              Industry-specific modules (hotel, fmcg) can only be enabled when the tenant industry
-              matches — backend rejects mismatches even if checked here.
+              Modules offered here match {industryLabel(selected.industry)}. Shared ERP modules stay
+              available when the plan includes them. Another industry&apos;s features are not listed.
+              Dashboard, notifications, and security stay on.
             </p>
+            {canDeleteTenant ? (
+              <div className="plat-actions" style={{ marginTop: 8 }}>
+                <button
+                  type="button"
+                  disabled={busy === selected.id}
+                  onClick={() => resetTenantAdminPassword(selected)}
+                  aria-label={`Reset administrator password for ${selected.company_name}`}
+                >
+                  Reset administrator password
+                </button>
+              </div>
+            ) : null}
             <div
               style={{
                 display: 'grid',
@@ -1215,20 +1309,14 @@ export default function PlatformConsole() {
                 marginTop: 12,
               }}
             >
-              {packageable.map((mod) => {
+              {packageable
+                .filter((mod) => industryAllowsModule(selected.industry, mod))
+                .map((mod) => {
                 const locked = ['dashboard', 'notifications', 'security'].includes(mod);
-                const industryBlocked =
-                  (INDUSTRY_SPECIFIC_MODULES as readonly string[]).includes(mod) &&
-                  !industryAllowsModule(selected.industry, mod);
-                const on = (moduleDraft.includes(mod) || locked) && !industryBlocked;
+                const on = moduleDraft.includes(mod) || locked;
                 return (
                   <label
                     key={mod}
-                    title={
-                      industryBlocked
-                        ? `Not available for industry "${selected.industry || 'retail'}"`
-                        : undefined
-                    }
                     style={{
                       display: 'flex',
                       gap: 8,
@@ -1237,18 +1325,17 @@ export default function PlatformConsole() {
                       padding: '6px 8px',
                       border: '1px solid var(--line, #D4E5C4)',
                       borderRadius: 8,
-                      opacity: locked || industryBlocked ? 0.7 : 1,
+                      opacity: locked ? 0.7 : 1,
                     }}
                   >
                     <input
                       type="checkbox"
                       aria-label={`Platform feature module ${mod}`}
                       checked={on}
-                      disabled={locked || industryBlocked}
+                      disabled={locked}
                       onChange={() => toggleModule(mod)}
                     />
                     {mod}
-                    {industryBlocked ? ' (industry)' : ''}
                   </label>
                 );
               })}

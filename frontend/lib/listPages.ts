@@ -1,5 +1,9 @@
 export const LIST_PAGE_SIZE = 10;
 
+/** Product catalog page sizes. Default is 50; transfers and other lists stay on LIST_PAGE_SIZE. */
+export const PRODUCT_LIST_PAGE_SIZES = [25, 50, 100] as const;
+export const PRODUCT_LIST_PAGE_SIZE = 50;
+
 /** Display-only product title. Does not mutate stored catalog names. */
 export function displayProductName(name: unknown): string {
   const text = String(name ?? '').trim();

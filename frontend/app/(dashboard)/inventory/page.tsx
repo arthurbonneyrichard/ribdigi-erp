@@ -20,7 +20,16 @@ import {
   transferProductCount,
   transferQtyTotal,
 } from '../../../lib/stockTransfers';
-import { LIST_PAGE_SIZE, displayProductName, matchesProductList, paginate, sortByKey, sortProducts } from '../../../lib/listPages';
+import {
+  LIST_PAGE_SIZE,
+  PRODUCT_LIST_PAGE_SIZE,
+  PRODUCT_LIST_PAGE_SIZES,
+  displayProductName,
+  matchesProductList,
+  paginate,
+  sortByKey,
+  sortProducts,
+} from '../../../lib/listPages';
 
 const FormModal = dynamic(() => import('../../../components/FormModal'), { ssr: false });
 
@@ -391,6 +400,7 @@ export default function Page() {
   const [productSort, setProductSort] = useState('name');
   const [productSortDir, setProductSortDir] = useState<1 | -1>(1);
   const [productPage, setProductPage] = useState(1);
+  const [productPageSize, setProductPageSize] = useState<number>(PRODUCT_LIST_PAGE_SIZE);
   useEffect(() => {
     const stock = searchParams.get('stock');
     if (stock === 'oos' || stock === 'low' || stock === 'ok' || stock === 'all') {
@@ -949,7 +959,15 @@ export default function Page() {
 
   useEffect(() => {
     setProductPage(1);
-  }, [productSearch, productCategoryFilter, productBrandFilter, productStockFilter, productManageFilter]);
+  }, [
+    productSearch,
+    productCategoryFilter,
+    productBrandFilter,
+    productStockFilter,
+    productManageFilter,
+    rxOnlyFilter,
+    productPageSize,
+  ]);
 
   useEffect(() => {
     setXferPage(1);
@@ -2868,7 +2886,7 @@ export default function Page() {
     productSort,
     productSortDir,
   );
-  const productPaged = paginate(productListRows, productPage, LIST_PAGE_SIZE);
+  const productPaged = paginate(productListRows, productPage, productPageSize);
   const byStatus = <T extends { is_active?: boolean }>(
     rows: T[],
     filter: 'all' | 'active' | 'inactive',
@@ -3742,6 +3760,20 @@ export default function Page() {
                   {productPaged.total} entries · page {productPaged.page} of {productPaged.pages}
                 </span>
                 <div className="list-pager-nav">
+                  <label className="list-pager-size">
+                    Max per page
+                    <select
+                      value={productPageSize}
+                      aria-label="Maximum products per page"
+                      onChange={(e) => setProductPageSize(Number(e.target.value))}
+                    >
+                      {PRODUCT_LIST_PAGE_SIZES.map((size) => (
+                        <option key={size} value={size}>
+                          {size}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                   <button
                     type="button"
                     disabled={productPaged.page <= 1}

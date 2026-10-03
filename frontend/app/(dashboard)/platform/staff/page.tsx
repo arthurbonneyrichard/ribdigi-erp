@@ -300,7 +300,7 @@ export default function PlatformStaffPage() {
       return;
     }
     const ok = window.confirm(
-      `Delete ${row.full_name} (${row.email}) permanently?\n\nThis removes the account from the staff directory. This cannot be undone.`
+      `Delete ${row.full_name} (${row.email})?\n\nThey lose access immediately. The account is marked deleted and audit history is kept.`
     );
     if (!ok) return;
     setBusy(true);
@@ -490,7 +490,8 @@ export default function PlatformStaffPage() {
           <p className="muted" style={{ marginTop: 0 }}>
             The platform owner can edit a staff account, set a new password, or delete the account.
             Leave the password blank when editing to keep the current one. Deactivate keeps the
-            account; Delete removes it permanently.
+            account signed out but listed. Delete removes access immediately, marks the account
+            deleted, and keeps the audit history. The last active platform owner cannot be deleted.
           </p>
           {canEditStaff && editingId ? (
             <form className="plat-form" onSubmit={saveEdit} style={{ marginBottom: 16 }}>

@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   LIST_PAGE_SIZE,
+  PRODUCT_LIST_PAGE_SIZE,
+  PRODUCT_LIST_PAGE_SIZES,
   displayProductName,
   matchesCustomerList,
   matchesProductList,
@@ -20,6 +22,17 @@ test('paginate slices and clamps page', () => {
   const last = paginate(rows, 99);
   assert.equal(last.page, 3);
   assert.equal(last.rows.length, 3);
+});
+
+test('product list pages 50 by default and accepts 25 or 100', () => {
+  assert.equal(PRODUCT_LIST_PAGE_SIZE, 50);
+  assert.deepEqual([...PRODUCT_LIST_PAGE_SIZES], [25, 50, 100]);
+  const rows = Array.from({ length: 120 }, (_, i) => i + 1);
+  const first = paginate(rows, 1, PRODUCT_LIST_PAGE_SIZE);
+  assert.equal(first.pages, 3);
+  assert.equal(first.rows.length, 50);
+  assert.equal(paginate(rows, 2, 25).rows.length, 25);
+  assert.equal(paginate(rows, 2, 100).rows[0], 101);
 });
 
 test('product filters search category brand and low stock', () => {

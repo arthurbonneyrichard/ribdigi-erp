@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '../../../lib/api';
+import { getMe } from '../../../lib/meCache';
 
 type Note = {
   id: string;
@@ -13,6 +14,39 @@ type Note = {
 };
 
 /** BR-4.4 category chips — maps to backend notification categories. */
+const PLATFORM_ROLES = new Set([
+  'super_admin',
+  'platform_owner',
+  'platform_admin',
+  'platform_support',
+  'platform_finance',
+]);
+
+/** Store operations stay on the tenant notification list. */
+const OPERATIONAL_CATEGORIES = new Set([
+  'low_stock',
+  'new_order',
+  'payment_due',
+  'purchase_received',
+  'credit_limit',
+  'shift_variance',
+  'expense_approval',
+  'quotation_expiry',
+  'batch_expiry',
+  'recurring_expense_due',
+  'transfer',
+]);
+
+const PLATFORM_CATEGORY_CHIPS: { id: string; label: string }[] = [
+  { id: '', label: 'All platform' },
+  { id: 'provisioning', label: 'Provisioning' },
+  { id: 'platform_security', label: 'Platform security' },
+  { id: 'staff_account', label: 'Staff accounts' },
+  { id: 'admin_password_reset', label: 'Password resets' },
+  { id: 'platform', label: 'Platform actions' },
+  { id: 'security', label: 'Security' },
+];
+
 const CATEGORY_CHIPS: { id: string; label: string }[] = [
   { id: '', label: 'All types' },
   { id: 'low_stock', label: 'Stock' },
@@ -38,6 +72,15 @@ export default function Page() {
   const [prefs, setPrefs] = useState<any>(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [platformAudience, setPlatformAudience] = useState(false);
+
+  useEffect(() => {
+    getMe()
+      .then((me) => setPlatformAudience(PLATFORM_ROLES.has(me.data?.role || '')))
+      .catch(() => setPlatformAudience(false));
+  }, []);
+
+  const chips = platformAudience ? PLATFORM_CATEGORY_CHIPS : CATEGORY_CHIPS;
 
   async function refresh() {
     const params = new URLSearchParams();
@@ -137,6 +180,13 @@ export default function Page() {
         In-app notification center — unread badge, category filters, mark read/unread, and 90-day
         history. Channel preferences for dashboard / email / SMS per type.
       </p>
+      {platformAudience ? (
+        <p className="muted">
+          Platform Owner notices only: provisioning, platform security, staff accounts, administrator
+          password resets, and other platform actions. Stock, orders, payments, and POS stay on
+          tenant notification lists.
+        </p>
+      ) : null}
       {error && <p style={{ color: '#b91c1c' }}>{error}</p>}
       {message && <p style={{ color: 'var(--brand, #4AB012)' }}>{message}</p>}
 
@@ -156,13 +206,15 @@ export default function Page() {
           All (90 days)
         </button>
         <button onClick={markAll} aria-label="Mark all notifications read">Mark all read</button>
-        <button onClick={scanDue} aria-label="Scan due notification alerts">
-          Scan due alerts
-        </button>
+        {!platformAudience ? (
+          <button onClick={scanDue} aria-label="Scan due notification alerts">
+            Scan due alerts
+          </button>
+        ) : null}
       </div>
 
       <div className="notif-chips" aria-label="Filter by category">
-        {CATEGORY_CHIPS.map((c) => (
+        {chips.map((c) => (
           <button
             key={c.id || 'all'}
             type="button"
@@ -227,7 +279,11 @@ export default function Page() {
               </tr>
             </thead>
             <tbody>
-              {Object.entries(prefs).map(([cat, channels]: any) => (
+              {Object.entries(prefs)
+                .filter(([cat]) =>
+                  platformAudience ? !OPERATIONAL_CATEGORIES.has(cat) : true
+                )
+                .map(([cat, channels]: any) => (
                 <tr key={cat}>
                   <td>{cat}</td>
                   {(['dashboard', 'email', 'sms'] as const).map((ch) => (

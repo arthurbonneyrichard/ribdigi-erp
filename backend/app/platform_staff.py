@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from fastapi import HTTPException
-from sqlalchemy import delete, select, update
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,6 +25,10 @@ from app.security import hash_password, validate_password_strength
 # Safe fallback when revoking software-owner dashboard access.
 DEFAULT_APP_ROLE = "company_admin"
 
+# Retention marker on users.permissions. The row stays so audit history remains
+# attributable; login and sessions are cut off immediately.
+DELETED_FLAG = "_deleted"
+
 
 async def list_platform_staff(db: AsyncSession, *, tenant_id: str) -> list[m.User]:
     rows = (
@@ -32,7 +38,7 @@ async def list_platform_staff(db: AsyncSession, *, tenant_id: str) -> list[m.Use
             .order_by(m.User.full_name.asc())
         )
     ).scalars().all()
-    return [u for u in rows if is_platform_role(u.role)]
+    return [u for u in rows if is_platform_role(u.role) and not is_marked_deleted(u)]
 
 
 async def list_app_users(db: AsyncSession, *, tenant_id: str) -> list[m.User]:
@@ -44,7 +50,7 @@ async def list_app_users(db: AsyncSession, *, tenant_id: str) -> list[m.User]:
             .order_by(m.User.full_name.asc())
         )
     ).scalars().all()
-    return [u for u in rows if not is_platform_role(u.role)]
+    return [u for u in rows if not is_platform_role(u.role) and not is_marked_deleted(u)]
 
 
 async def _get_workspace_user(db: AsyncSession, tenant_id: str, user_id: str) -> m.User:
@@ -53,7 +59,7 @@ async def _get_workspace_user(db: AsyncSession, tenant_id: str, user_id: str) ->
             select(m.User).where(m.User.id == user_id, m.User.tenant_id == tenant_id)
         )
     ).scalar_one_or_none()
-    if not user:
+    if not user or is_marked_deleted(user):
         raise HTTPException(status_code=404, detail="User not found on this workspace")
     return user
 
@@ -211,7 +217,7 @@ async def update_platform_staff(
             select(m.User).where(m.User.id == user_id, m.User.tenant_id == tenant_id)
         )
     ).scalar_one_or_none()
-    if not user or not is_platform_role(user.role):
+    if not user or not is_platform_role(user.role) or is_marked_deleted(user):
         raise HTTPException(status_code=404, detail="Platform staff user not found")
     if user.id == actor_id and role is not None and role != user.role:
         raise HTTPException(status_code=400, detail="Cannot change your own role")
@@ -264,6 +270,25 @@ async def update_platform_staff(
     return user
 
 
+def is_marked_deleted(user: m.User) -> bool:
+    perms = user.permissions if isinstance(user.permissions, dict) else {}
+    return bool(perms.get(DELETED_FLAG))
+
+
+async def _other_active_owners(db: AsyncSession, *, tenant_id: str, user_id: str) -> list[m.User]:
+    rows = (
+        await db.execute(
+            select(m.User).where(
+                m.User.tenant_id == tenant_id,
+                m.User.id != user_id,
+                m.User.role.in_(tuple(PLATFORM_OWNER_ROLES)),
+                m.User.is_active.is_(True),
+            )
+        )
+    ).scalars().all()
+    return [row for row in rows if not is_marked_deleted(row)]
+
+
 async def delete_platform_staff(
     db: AsyncSession,
     *,
@@ -272,7 +297,12 @@ async def delete_platform_staff(
     actor_role: str,
     user_id: str,
 ) -> dict:
-    """Permanently remove a platform staff account (owner only)."""
+    """Mark a platform staff account deleted (owner only).
+
+    The user row is retained for audit attribution. Sessions and reset tokens
+    are revoked, the login email is tombstoned, and ``is_active`` is cleared
+    so existing tokens stop working on the next request.
+    """
     if not is_platform_owner_role(actor_role):
         raise HTTPException(
             status_code=403,
@@ -283,97 +313,63 @@ async def delete_platform_staff(
             select(m.User).where(m.User.id == user_id, m.User.tenant_id == tenant_id)
         )
     ).scalar_one_or_none()
-    if not user or not is_platform_role(user.role):
+    if not user or not is_platform_role(user.role) or is_marked_deleted(user):
         raise HTTPException(status_code=404, detail="Platform staff user not found")
-    if user.id == actor_id:
-        raise HTTPException(status_code=400, detail="Cannot delete your own account")
     if not can_assign_platform_role(actor_role, user.role):
         raise HTTPException(
             status_code=403,
             detail="You cannot delete a staff user with this role",
         )
-    if user.role in PLATFORM_OWNER_ROLES:
-        other_owners = (
-            await db.execute(
-                select(m.User).where(
-                    m.User.tenant_id == tenant_id,
-                    m.User.id != user.id,
-                    m.User.role.in_(tuple(PLATFORM_OWNER_ROLES)),
-                    m.User.is_active.is_(True),
-                )
-            )
-        ).scalars().all()
-        if not other_owners:
-            raise HTTPException(
-                status_code=400,
-                detail="Cannot delete the last active platform owner",
-            )
+    last_owner = False
+    if user.role in PLATFORM_OWNER_ROLES and user.is_active:
+        others = await _other_active_owners(db, tenant_id=tenant_id, user_id=user.id)
+        last_owner = not others
+    if last_owner and user.id == actor_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete your own account; it is the last active platform owner",
+        )
+    if last_owner:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete the last active platform owner",
+        )
+    if user.id == actor_id:
+        raise HTTPException(status_code=400, detail="Cannot delete your own account")
 
     snapshot = {
         "id": user.id,
         "email": user.email,
         "full_name": user.full_name,
         "role": user.role,
+        "marked_deleted": True,
     }
-
-    # Auth / MFA / prefs owned by this user.
-    for model in (
-        m.AuthSession,
-        m.AuthToken,
-        m.WebAuthnCredential,
-        m.WebAuthnChallenge,
-        m.TwoFactorBackupCode,
-        m.UserStoreMembership,
-        m.NotificationPreference,
-    ):
-        await db.execute(delete(model).where(model.user_id == user.id))
-
-    # Optional references — clear instead of blocking delete.
+    now = datetime.utcnow()
     await db.execute(
-        update(m.Notification).where(m.Notification.user_id == user.id).values(user_id=None)
-    )
-    if hasattr(m, "PosDevice"):
-        await db.execute(
-            update(m.PosDevice).where(m.PosDevice.user_id == user.id).values(user_id=None)
-        )
-    await db.execute(
-        update(m.Branch).where(m.Branch.manager_id == user.id).values(manager_id=None)
+        update(m.AuthSession)
+        .where(m.AuthSession.user_id == user.id, m.AuthSession.revoked_at.is_(None))
+        .values(revoked_at=now)
     )
     await db.execute(
-        update(m.Department)
-        .where(m.Department.head_user_id == user.id)
-        .values(head_user_id=None)
+        update(m.AuthToken)
+        .where(m.AuthToken.user_id == user.id, m.AuthToken.used_at.is_(None))
+        .values(used_at=now)
     )
-    await db.execute(
-        update(m.Store).where(m.Store.manager_id == user.id).values(manager_id=None)
-    )
-    if hasattr(m, "Warehouse"):
-        await db.execute(
-            update(m.Warehouse).where(m.Warehouse.manager_id == user.id).values(manager_id=None)
-        )
-
-    pos_sessions = (
-        await db.execute(select(m.PosSession.id).where(m.PosSession.user_id == user.id).limit(1))
-    ).first()
-    if pos_sessions:
-        raise HTTPException(
-            status_code=409,
-            detail=(
-                "Cannot delete this account because it has POS shift history. "
-                "Deactivate the account instead."
-            ),
-        )
-
+    perms = dict(user.permissions) if isinstance(user.permissions, dict) else {}
+    perms[DELETED_FLAG] = True
+    perms["_deleted_at"] = now.isoformat() + "Z"
+    perms["_deleted_by"] = actor_id
+    perms["_retained_email"] = user.email
+    user.permissions = perms
+    user.is_active = False
+    user.email = f"deleted.{user.id}@staff.invalid"
+    user.email_verified = False
     try:
-        await db.delete(user)
         await db.flush()
     except IntegrityError as exc:
         raise HTTPException(
             status_code=409,
-            detail=(
-                "Cannot delete this account because it is linked to business records. "
-                "Deactivate the account instead."
-            ),
+            detail="Cannot delete this account because the retained record could not be saved",
         ) from exc
     return snapshot
 

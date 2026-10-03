@@ -292,6 +292,11 @@ NotificationCategoryValue = Annotated[
         "billing",
         "security",
         "system",
+        "platform",
+        "provisioning",
+        "platform_security",
+        "staff_account",
+        "admin_password_reset",
     ],
     BeforeValidator(coerce_package_code_value),
 ]
@@ -855,6 +860,19 @@ class TenantSubscriptionAssign(BaseModel):
     # Platform store entitlement override; omit = no change; null clears to package default
     max_stores_override: int | None = Field(default=None, ge=0)
     clear_max_stores_override: bool = False
+
+
+class TenantAdminPasswordReset(BaseModel):
+    """Platform Owner starts a reset for that tenant's company administrator.
+
+    No password field — the existing one-time reset link is emailed.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    # omit → the tenant's administrator (earliest company_admin).
+    # A user id from another tenant is rejected by the service.
+    user_id: UuidIdValue | None = None
 
 
 class TenantIndustryChange(BaseModel):
@@ -7644,12 +7662,18 @@ class NotificationPreferencesMap(BaseModel):
     purchase_received: NotificationChannelPrefs | None = None
     payment_due: NotificationChannelPrefs | None = None
     quotation_expiry: NotificationChannelPrefs | None = None
+    batch_expiry: NotificationChannelPrefs | None = None
     recurring_expense_due: NotificationChannelPrefs | None = None
     new_order: NotificationChannelPrefs | None = None
     transfer: NotificationChannelPrefs | None = None
     billing: NotificationChannelPrefs | None = None
     security: NotificationChannelPrefs | None = None
     system: NotificationChannelPrefs | None = None
+    platform: NotificationChannelPrefs | None = None
+    provisioning: NotificationChannelPrefs | None = None
+    platform_security: NotificationChannelPrefs | None = None
+    staff_account: NotificationChannelPrefs | None = None
+    admin_password_reset: NotificationChannelPrefs | None = None
 
 
 class NotificationPreferencesUpdate(BaseModel):
