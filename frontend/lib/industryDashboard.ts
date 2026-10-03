@@ -11,7 +11,6 @@ export type IndustryDashboardFeature = {
 export const PHARMACY_DASHBOARD_FEATURES: readonly IndustryDashboardFeature[] = [
   { id: 'expiry_lots', label: 'Expiring lots', href: '/inventory?tab=expiry', module: 'inventory' },
   { id: 'batches', label: 'Batches', href: '/inventory?tab=batches', module: 'inventory' },
-  { id: 'pos', label: 'POS', href: '/pos', module: 'pos' },
   { id: 'rx_products', label: 'Rx-only products', href: '/inventory?tab=products&rx=1', module: 'inventory' },
   { id: 'prescriptions', label: 'Prescriptions', href: '/prescriptions', module: 'inventory' },
 ];
@@ -34,29 +33,21 @@ export const HOTEL_DASHBOARD_FEATURES: readonly IndustryDashboardFeature[] = [
 ];
 
 export const RESTAURANT_DASHBOARD_FEATURES: readonly IndustryDashboardFeature[] = [
-  { id: 'pos', label: 'POS', href: '/pos', module: 'pos' },
   { id: 'printers', label: 'Printers', href: '/printers', module: 'printers' },
 ];
 
-export const RETAIL_DASHBOARD_FEATURES: readonly IndustryDashboardFeature[] = [
-  { id: 'pos', label: 'POS', href: '/pos', module: 'pos' },
-  { id: 'inventory', label: 'Inventory', href: '/inventory', module: 'inventory' },
-  { id: 'customers', label: 'Customers', href: '/customers', module: 'customers' },
-];
+export const RETAIL_DASHBOARD_FEATURES: readonly IndustryDashboardFeature[] = [];
 
 export const WHOLESALE_DASHBOARD_FEATURES: readonly IndustryDashboardFeature[] = [
   { id: 'quotes', label: 'Quotations', href: '/sales?tab=quotations', module: 'sales' },
   { id: 'orders', label: 'Sales orders', href: '/sales?tab=orders', module: 'sales' },
   { id: 'credit', label: 'B2B credit', href: '/credit', module: 'credit' },
-  { id: 'customers', label: 'Customers', href: '/customers', module: 'customers' },
 ];
 
 export const RETAIL_WHOLESALE_DASHBOARD_FEATURES: readonly IndustryDashboardFeature[] = [
-  { id: 'pos', label: 'Retail POS', href: '/pos', module: 'pos' },
   { id: 'quotes', label: 'Wholesale quotes', href: '/sales?tab=quotations', module: 'sales' },
   { id: 'orders', label: 'Wholesale orders', href: '/sales?tab=orders', module: 'sales' },
   { id: 'credit', label: 'B2B credit', href: '/credit', module: 'credit' },
-  { id: 'inventory', label: 'Shared stock', href: '/inventory', module: 'inventory' },
 ];
 
 const BY_INDUSTRY: Record<string, readonly IndustryDashboardFeature[]> = {

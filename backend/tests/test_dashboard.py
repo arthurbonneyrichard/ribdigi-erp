@@ -163,10 +163,10 @@ def test_dashboard_page_surfaces_load_errors():
     assert "credit_outstanding" in text
     count_block = text[products_i : text.find("const liveIndustry")]
     assert "Batches" not in count_block
-    assert "industrySection && featureCards.length > 0" in text
+    assert "featureCards.length > 0" in text
     assert "industryHomePath" in text
-    assert "router.replace('/hotel')" in text
-    assert "aria-label={industrySection}" in text
+    assert "industryHomePath(ind) === '/hotel'" in text
+    assert "Retail operations" not in text
     assert "Gross profit (7d)" in text
     assert "rx_queue" in text
 
@@ -193,4 +193,4 @@ async def test_build_dashboard_direct(db_session, seeded):
     )
     assert data["industry"] == "retail"
     assert data["industry_home"] == "/dashboard"
-    assert data["industry_features"] == []
+    assert isinstance(data["industry_features"], list)

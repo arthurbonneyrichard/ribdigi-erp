@@ -3933,13 +3933,20 @@ async def dashboard(
     from app.dashboard import build_dashboard
     from app import store_access as store_access_svc
 
-    await store_access_svc.assert_store_access(
+    scope = await store_access_svc.report_store_kwargs(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
         store_id=store_id,
     )
-    return env(await build_dashboard(db, claims["tenant_id"], store_id=store_id))
+    return env(
+        await build_dashboard(
+            db,
+            claims["tenant_id"],
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
+        )
+    )
 
 
 @api.get("/products")
@@ -12093,13 +12100,22 @@ async def report_sales_customers(
     db: AsyncSession = Depends(get_db),
 ):
     """BR-14.1 — top customers by revenue and sale frequency."""
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.sales_by_customer(
             db,
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
             limit=limit,
         )
     )
@@ -12164,6 +12180,14 @@ async def report_sales_by_store(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=None,
+    )
     return env(
         await reports_svc.sales_by_store(
             db,
@@ -12171,6 +12195,7 @@ async def report_sales_by_store(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             department_id=department_id or None,
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -13978,20 +14003,23 @@ async def report(
     from app.dashboard import build_dashboard
     from app import store_access as store_access_svc
 
-    sid = store_id or None
-    await store_access_svc.assert_store_access(
+    scope = await store_access_svc.report_store_kwargs(
         db,
         tenant_id=claims["tenant_id"],
         user_id=claims["sub"],
-        store_id=sid,
+        store_id=store_id,
     )
-    dash = await build_dashboard(db, claims["tenant_id"], store_id=sid)
+    sid = scope["store_id"]
+    sids = scope["store_ids"]
+    dash = await build_dashboard(
+        db, claims["tenant_id"], store_id=sid, store_ids=sids
+    )
     day = reports_svc.parse_date(to_date or from_date) or datetime.utcnow()
     daily = await reports_svc.sales_daily(
-        db, claims["tenant_id"], day, store_id=sid
+        db, claims["tenant_id"], day, store_id=sid, store_ids=sids
     )
     monthly = await reports_svc.sales_monthly(
-        db, claims["tenant_id"], day.year, day.month, store_id=sid
+        db, claims["tenant_id"], day.year, day.month, store_id=sid, store_ids=sids
     )
     low = await reports_svc.inventory_low_stock(
         db, claims["tenant_id"], store_id=sid
@@ -15035,8 +15063,20 @@ async def ai_chat(
 @api.get("/ai/insights")
 async def insights(claims=Depends(require_permission("ai", "read")), db: AsyncSession = Depends(get_db)):
     from app.dashboard import build_dashboard
+    from app import store_access as store_access_svc
 
-    dash = await build_dashboard(db, claims["tenant_id"])
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=None,
+    )
+    dash = await build_dashboard(
+        db,
+        claims["tenant_id"],
+        store_id=scope["store_id"],
+        store_ids=scope["store_ids"],
+    )
     data = await ai_svc.handle_insights(db, claims=claims, dash=dash)
     return env(data)
 

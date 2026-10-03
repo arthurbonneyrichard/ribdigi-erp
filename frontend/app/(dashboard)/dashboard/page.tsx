@@ -463,7 +463,7 @@ export default function Page() {
       ? d.industry_features
       : industryDashboardFeatures(liveIndustry),
     liveIndustry
-  );
+  ).filter((f) => f.id !== 'pos' && f.id !== 'inventory' && f.id !== 'customers');
 
   if (hotelHome) {
     return <p className="muted">Opening hotel dashboard…</p>;

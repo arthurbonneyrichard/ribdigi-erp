@@ -22,7 +22,7 @@ def test_inventory_and_pos_pages_label_out_of_stock():
     assert "oos" in lists
     assert "out of stock at this store" in pos.lower()
     assert "is_out_of_stock" in pos
-    assert "Save customer" in pos
+    assert "New customer" in pos
 
 
 @pytest.mark.asyncio

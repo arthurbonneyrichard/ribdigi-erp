@@ -27,22 +27,25 @@ def test_industry_home_and_feature_catalog():
     assert industry_home_path("retail") == "/dashboard"
 
     pharmacy_ids = {row["id"] for row in industry_dashboard_features("pharmacy")}
-    assert pharmacy_ids == {"expiry_lots", "batches", "pos", "rx_products", "prescriptions"}
+    assert pharmacy_ids == {"expiry_lots", "batches", "rx_products", "prescriptions"}
     assert all(not row["href"].startswith("/hotel") for row in industry_dashboard_features("pharmacy"))
     assert any(row["href"] == "/prescriptions" for row in industry_dashboard_features("pharmacy"))
 
     mart = industry_dashboard_features("mart")
     assert mart == []
     retail = industry_dashboard_features("retail")
-    assert {row["id"] for row in retail} == {"pos", "inventory", "customers"}
+    assert retail == []
     wholesale = industry_dashboard_features("wholesale")
     assert "quotes" in {row["id"] for row in wholesale}
+    assert "customers" not in {row["id"] for row in wholesale}
     combo = industry_dashboard_features("retail_wholesale")
-    assert {row["id"] for row in combo} >= {"pos", "quotes", "orders"}
+    assert {row["id"] for row in combo} >= {"quotes", "orders"}
+    assert "pos" not in {row["id"] for row in combo}
+    assert "inventory" not in {row["id"] for row in combo}
     assert "batches" not in {row["id"] for row in mart}
 
     restaurant = industry_dashboard_features("restaurant")
-    assert {row["id"] for row in restaurant} == {"pos", "printers"}
+    assert {row["id"] for row in restaurant} == {"printers"}
     assert all(not row["href"].startswith("/hotel") for row in restaurant)
 
     hotel = industry_dashboard_features("hotel")
@@ -60,7 +63,6 @@ def test_payload_uses_tenant_industry_not_client():
     assert {row["id"] for row in payload["industry_features"]} == {
         "expiry_lots",
         "batches",
-        "pos",
         "rx_products",
         "prescriptions",
     }
@@ -106,8 +108,8 @@ async def test_dashboard_industry_from_tenant_ignores_query(client, db_session):
     assert {row["id"] for row in cashier_dash.json()["data"]["industry_features"]} >= {
         "batches",
         "expiry_lots",
-        "pos",
     }
+    assert "pos" not in {row["id"] for row in cashier_dash.json()["data"]["industry_features"]}
 
 
 async def test_mart_dashboard_omits_pharmacy_tiles(client, db_session):
@@ -133,7 +135,7 @@ async def test_restaurant_dashboard_omits_hotel_pms(client, db_session):
     assert data["industry"] == "restaurant"
     assert data["industry_home"] == "/dashboard"
     hrefs = [row["href"] for row in data["industry_features"]]
-    assert "/pos" in hrefs
+    assert "/pos" not in hrefs
     assert "/printers" in hrefs
     assert all(not href.startswith("/hotel") for href in hrefs)
     denied = await ac.get("/api/v1/hotel/rooms", headers=admin)

@@ -99,7 +99,11 @@ async def allocate_unlocated_stock(
     warehouse_id: str,
     product_id: str,
 ) -> None:
-    """If product has consolidated stock but no warehouse rows, park it at warehouse_id."""
+    """Park consolidated stock that is not on a warehouse row.
+
+    A warehouse row already at zero stays zero. Search shows that quantity,
+    and the sale must reject it instead of filling the row from product.stock_qty.
+    """
     located = money_json(
         (
             await db.execute(
@@ -111,6 +115,19 @@ async def allocate_unlocated_stock(
         ).scalar()
         or 0
     )
+    here = (
+        await db.execute(
+            select(m.WarehouseStock).where(
+                m.WarehouseStock.tenant_id == tenant_id,
+                m.WarehouseStock.warehouse_id == warehouse_id,
+                m.WarehouseStock.product_id == product_id,
+            )
+        )
+    ).scalar_one_or_none()
+    # A store already recorded at zero must not absorb unlocated product qty
+    # during a sale. Search shows that zero; the sale has to reject it.
+    if here is not None and money_json(here.quantity or 0) <= 0:
+        return
     product = (
         await db.execute(
             select(m.Product).where(m.Product.id == product_id, m.Product.tenant_id == tenant_id)
@@ -426,6 +443,18 @@ async def apply_line_items_stock(
                     product_id=product_id,
                 )
                 if avail + 1e-9 < stock_qty:
+                    if money_json(avail) <= 0:
+                        raise HTTPException(
+                            status_code=409,
+                            detail={
+                                "code": "INSUFFICIENT_WAREHOUSE_STOCK",
+                                "message": "Out of stock at this store",
+                                "product_id": product_id,
+                                "warehouse_id": warehouse_id,
+                                "available": avail,
+                                "requested": stock_qty,
+                            },
+                        )
                     raise HTTPException(
                         status_code=409,
                         detail={

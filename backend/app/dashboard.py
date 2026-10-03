@@ -33,6 +33,16 @@ def _add_months(year: int, month: int, delta: int) -> tuple[int, int]:
     return idx // 12, idx % 12 + 1
 
 
+def _tx_store_scope(stmt, store_id: str | None, store_ids: list[str] | None):
+    """Limit sale rows to one store or the caller's assigned stores."""
+    if not store_id and store_ids is None:
+        return stmt
+    from app.reports import apply_store_scope
+
+    stmt = stmt.outerjoin(m.PosSession, m.Transaction.session_id == m.PosSession.id)
+    return apply_store_scope(stmt, m.PosSession.store_id, store_id, store_ids)
+
+
 async def _sum_sales(
     db: AsyncSession,
     tenant_id: str,
@@ -40,15 +50,13 @@ async def _sum_sales(
     start: datetime | None = None,
     end: datetime | None = None,
     store_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> float:
     stmt = select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
         m.Transaction.tenant_id == tenant_id,
         m.Transaction.tx_type.in_(["sale", "pos_sale"]),
     )
-    if store_id:
-        stmt = stmt.outerjoin(
-            m.PosSession, m.Transaction.session_id == m.PosSession.id
-        ).where(m.PosSession.store_id == store_id)
+    stmt = _tx_store_scope(stmt, store_id, store_ids)
     if start is not None:
         stmt = stmt.where(m.Transaction.created_at >= start)
     if end is not None:
@@ -61,6 +69,7 @@ async def build_dashboard(
     tenant_id: str,
     *,
     store_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict[str, Any]:
     from fastapi import HTTPException
 
@@ -86,35 +95,33 @@ async def build_dashboard(
     prev_y, prev_m = _add_months(today.year, today.month, -1)
     prev_month = _month_start(prev_y, prev_m)
 
-    sales_all = await _sum_sales(db, tenant_id, store_id=store_id)
+    sales_all = await _sum_sales(db, tenant_id, store_id=store_id, store_ids=store_ids)
     sales_today = await _sum_sales(
-        db, tenant_id, start=_day_start(today), end=_day_start(tomorrow), store_id=store_id
+        db, tenant_id, start=_day_start(today), end=_day_start(tomorrow), store_id=store_id, store_ids=store_ids
     )
     sales_yesterday = await _sum_sales(
-        db, tenant_id, start=_day_start(yesterday), end=_day_start(today), store_id=store_id
+        db, tenant_id, start=_day_start(yesterday), end=_day_start(today), store_id=store_id, store_ids=store_ids
     )
     sales_mtd = await _sum_sales(
-        db, tenant_id, start=this_month, end=_day_start(tomorrow), store_id=store_id
+        db, tenant_id, start=this_month, end=_day_start(tomorrow), store_id=store_id, store_ids=store_ids
     )
     sales_prev_month = await _sum_sales(
-        db, tenant_id, start=prev_month, end=this_month, store_id=store_id
+        db, tenant_id, start=prev_month, end=this_month, store_id=store_id, store_ids=store_ids
     )
 
     purchases_stmt = select(func.coalesce(func.sum(m.Transaction.total), 0)).where(
         m.Transaction.tenant_id == tenant_id,
         m.Transaction.tx_type == "purchase",
     )
-    if store_id:
-        purchases_stmt = purchases_stmt.outerjoin(
-            m.PosSession, m.Transaction.session_id == m.PosSession.id
-        ).where(m.PosSession.store_id == store_id)
+    purchases_stmt = _tx_store_scope(purchases_stmt, store_id, store_ids)
     purchases = money_json(await scalar(purchases_stmt))
     expenses_stmt = select(func.coalesce(func.sum(m.Expense.amount), 0)).where(
         m.Expense.tenant_id == tenant_id,
         m.Expense.status == "approved",
     )
-    if store_id:
-        expenses_stmt = expenses_stmt.where(m.Expense.store_id == store_id)
+    from app.reports import apply_store_scope
+
+    expenses_stmt = apply_store_scope(expenses_stmt, m.Expense.store_id, store_id, store_ids)
     expenses = money_json(await scalar(expenses_stmt))
     # Never SELECT the full Product mapper row — live DBs can omit later catalog
     # columns while still having extra company_id.
@@ -137,6 +144,30 @@ async def build_dashboard(
     product_rows = (
         await db.execute(select(*stock_cols).where(m.Product.tenant_id == tenant_id))
     ).all()
+    qty_by_product: dict[str, float] | None = None
+    if store_id or store_ids is not None:
+        wh_stmt = select(m.Warehouse.id).where(m.Warehouse.tenant_id == tenant_id)
+        if store_id:
+            wh_stmt = wh_stmt.where(m.Warehouse.store_id == store_id)
+        elif store_ids:
+            wh_stmt = wh_stmt.where(m.Warehouse.store_id.in_(list(store_ids)))
+        else:
+            wh_stmt = wh_stmt.where(m.Warehouse.id.is_(None))
+        wh_ids = list((await db.execute(wh_stmt)).scalars().all())
+        qty_by_product = {row._mapping["id"]: 0.0 for row in product_rows}
+        if wh_ids:
+            sums = (
+                await db.execute(
+                    select(m.WarehouseStock.product_id, func.sum(m.WarehouseStock.quantity))
+                    .where(
+                        m.WarehouseStock.tenant_id == tenant_id,
+                        m.WarehouseStock.warehouse_id.in_(wh_ids),
+                    )
+                    .group_by(m.WarehouseStock.product_id)
+                )
+            ).all()
+            for pid, qty in sums:
+                qty_by_product[pid] = qty or 0
     products = len(product_rows)
     out_of_stock = 0
     low_stock = 0
@@ -144,7 +175,11 @@ async def build_dashboard(
         data = row._mapping
         if not data.get("is_active", True):
             continue
-        qty = data.get("stock_qty") or 0
+        qty = (
+            qty_by_product.get(data["id"], 0)
+            if qty_by_product is not None
+            else data.get("stock_qty") or 0
+        )
         if qty_is_out_of_stock(qty):
             out_of_stock += 1
         elif qty_is_low_stock(
@@ -199,10 +234,7 @@ async def build_dashboard(
         m.Transaction.tx_type.in_(["sale", "pos_sale"]),
         m.Transaction.created_at >= earliest_month,
     )
-    if store_id:
-        trend_stmt = trend_stmt.outerjoin(
-            m.PosSession, m.Transaction.session_id == m.PosSession.id
-        ).where(m.PosSession.store_id == store_id)
+    trend_stmt = _tx_store_scope(trend_stmt, store_id, store_ids)
     trend_rows = (await db.execute(trend_stmt)).all()
     for created_at, total in trend_rows:
         if created_at is None:
@@ -249,10 +281,7 @@ async def build_dashboard(
         m.Transaction.tx_type.in_(["sale", "pos_sale"]),
         m.Transaction.created_at >= earliest_day,
     )
-    if store_id:
-        daily_stmt = daily_stmt.outerjoin(
-            m.PosSession, m.Transaction.session_id == m.PosSession.id
-        ).where(m.PosSession.store_id == store_id)
+    daily_stmt = _tx_store_scope(daily_stmt, store_id, store_ids)
     daily_rows = (await db.execute(daily_stmt)).all()
     for created_at, total, payload in daily_rows:
         if created_at is None:
@@ -306,10 +335,7 @@ async def build_dashboard(
         .order_by(m.Transaction.created_at.desc())
         .limit(10)
     )
-    if store_id:
-        recent_stmt = recent_stmt.outerjoin(
-            m.PosSession, m.Transaction.session_id == m.PosSession.id
-        ).where(m.PosSession.store_id == store_id)
+    recent_stmt = _tx_store_scope(recent_stmt, store_id, store_ids)
     recent_rows = (await db.execute(recent_stmt)).scalars().all()
     recent_party_ids = [t.party_id for t in recent_rows if t.party_id]
     recent_party_names: dict = {}
@@ -409,7 +435,7 @@ async def build_dashboard(
     }
 
     return {
-        "scope": "store" if store_id else "tenant",
+        "scope": "store" if store_id or store_ids is not None else "tenant",
         "store_id": store_id,
         "store_name": store_name,
         "total_sales": money_json(sales_all),

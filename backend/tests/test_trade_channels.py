@@ -56,7 +56,8 @@ async def test_wholesale_and_combo_deny_hotel_fmcg(client, db_session, seeded):
     dash = await ac.get("/api/v1/dashboard", headers=combo)
     assert dash.status_code == 200, dash.text
     ids = {row["id"] for row in dash.json()["data"]["industry_features"]}
-    assert "pos" in ids
+    assert "pos" not in ids
+    assert "inventory" not in ids
     assert "quotes" in ids
     assert "orders" in ids
     hrefs = [row["href"] for row in dash.json()["data"]["industry_features"]]

@@ -1,8 +1,27 @@
 # RIBDIGI ERP — GO-LIVE CHECKLIST (authoritative)
 
-**Date:** 2026-09-17  
+**2026-10-03 audit status: NOT READY.** Do not treat the 2026-09-17 rows as reconfirmed. This audit did not click through every industry workflow, did not restore a production backup, and did not run the full backend suite.
+
+**Date:** 2026-09-17 (historical snapshot below)  
 **Branch evidence:** commercial readiness work on the production release branch  
 **Rule:** Evidence required. Docs ≠ implementation. Local Docker ≠ production.
+
+## Audit 2026-10-03 (local, not deployed)
+
+Supported industries in product code: Retail, Pharmacy, Wholesale, Retail + Wholesale. Hotel, FMCG, and Hospital remain implemented verticals; they were not removed and their data was not deleted. Offline Complete, paid checkout, and a hospital information system are not claimed.
+
+| Area | Status | Evidence |
+|------|--------|----------|
+| Tenant isolation matrix (SQLite) | PASS | `tests/test_tenant_isolation_matrix.py` in the 48-test slice |
+| Trade channels, platform owner, loyalty/gift/hospital, ops repairs, logical backup drill | PASS | Same slice: 48 passed |
+| Sales-by-store limited to assigned stores | PASS | `tests/test_sales_by_store.py` + `tests/test_reports.py`: 9 passed |
+| POS sale when the store warehouse quantity is zero | PASS | `tests/test_out_of_stock.py::test_pos_search_store_warehouse_zero_and_sale_409` |
+| Store scope on every report (returns, inventory, purchasing, finance) | FAIL | Those routes still omit `report_store_kwargs` |
+| Dashboard product stock counts for an assigned store | FAIL | `dashboard.py` product totals stay tenant-wide |
+| Signed-in Retail / Pharmacy / Wholesale / combo walkthrough | BLOCKED | No authenticated browser session in this audit |
+| Operator backup restore of a real database | BLOCKED | Logical drill tests only; production data was not restored |
+| Frontend production build | BLOCKED | Not run in this audit |
+| Full backend suite and Alembic against a staging database | BLOCKED | Not run in this audit |
 
 Legend: **PASS** | **FAIL** | **BLOCKED** | **NOT REQUIRED FOR MVP**
 
