@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '../../../lib/api';
 
@@ -21,6 +21,111 @@ function friendlyCreditError(raw: unknown): string {
   }
   if (/cannot reach|failed to fetch/i.test(m)) return 'Cannot reach the server. Try again in a moment.';
   return m;
+}
+
+function CreateCreditForm({
+  customers,
+  onCreated,
+  onError,
+  onMessage,
+}: {
+  customers: { id: string; name: string }[];
+  onCreated: () => void;
+  onError: (msg: string) => void;
+  onMessage: (msg: string) => void;
+}) {
+  const [customerId, setCustomerId] = useState('');
+  const [products, setProducts] = useState<{ id: string; name: string; selling_price?: number }[]>([]);
+  const [productId, setProductId] = useState('');
+  const [qty, setQty] = useState('1');
+  const [price, setPrice] = useState('');
+  const [notes, setNotes] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    api('/products?limit=50')
+      .then((r) => setProducts(r.data || []))
+      .catch(() => setProducts([]));
+  }, []);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    onError('');
+    onMessage('');
+    setBusy(true);
+    try {
+      const created = await api('/sales/invoices', {
+        method: 'POST',
+        body: JSON.stringify({
+          customer_id: customerId,
+          notes: notes.trim() || null,
+          items: [
+            {
+              product_id: productId,
+              quantity: Number(qty),
+              unit_price: Number(price),
+            },
+          ],
+        }),
+      });
+      await api(`/sales/invoices/${created.data.id}/post`, { method: 'POST', body: '{}' });
+      onMessage('Credit invoice posted. It stays unpaid until a payment is recorded.');
+      setNotes('');
+      onCreated();
+    } catch (err) {
+      onError(friendlyCreditError(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="erp-form-grid">
+      <p className="muted">
+        Posts an invoice the customer still owes. Recording a payment is a separate step.
+      </p>
+      <label>
+        Customer
+        <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} required aria-label="Credit customer">
+          <option value="">Select</option>
+          {customers.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Product
+        <select
+          value={productId}
+          onChange={(e) => {
+            setProductId(e.target.value);
+            const row = products.find((p) => p.id === e.target.value);
+            if (row && price === '') setPrice(String(row.selling_price ?? ''));
+          }}
+          required
+          aria-label="Credit product"
+        >
+          <option value="">Select</option>
+          {products.map((p) => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Quantity
+        <input value={qty} onChange={(e) => setQty(e.target.value)} type="number" min="0.001" step="0.001" required aria-label="Credit quantity" />
+      </label>
+      <label>
+        Price
+        <input value={price} onChange={(e) => setPrice(e.target.value)} type="number" min="0" step="0.01" required aria-label="Credit price" />
+      </label>
+      <label>
+        Notes
+        <input value={notes} onChange={(e) => setNotes(e.target.value)} aria-label="Credit notes" />
+      </label>
+      <button type="submit" disabled={busy}>Create credit</button>
+    </form>
+  );
 }
 
 export default function Page() {
@@ -525,17 +630,19 @@ export default function Page() {
 
       <div className="erp-split credit-bill-info">
         <div className="card credit-compact-card">
-          <h3>{kind === 'receivable' ? 'New credit sale' : 'New supplier bill'}</h3>
+          <h3>{kind === 'receivable' ? 'Create credit' : 'New supplier bill'}</h3>
+          {kind === 'receivable' ? (
+            <CreateCreditForm customers={customers} onCreated={() => refresh()} onError={setError} onMessage={setMessage} />
+          ) : (
+            <>
           <p className="muted">
-            {kind === 'receivable'
-              ? 'Open Sales to post an invoice. That increases what the customer owes. This page only records money coming in.'
-              : 'Open Purchases to post a supplier invoice. That increases what we owe. This page only records money going out.'}
+            Open Purchases to post a supplier invoice. That increases what we owe. This page only records money going out.
           </p>
-          <a href={kind === 'receivable' ? '/sales' : '/purchasing?tab=invoices'}>
-            <button type="button">
-              {kind === 'receivable' ? 'Go to Sales' : 'Go to Purchases'}
-            </button>
+          <a href="/purchasing?tab=invoices">
+            <button type="button">Go to Purchases</button>
           </a>
+            </>
+          )}
         </div>
         <div className="card">
           <h3>Aging</h3>

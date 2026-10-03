@@ -52,13 +52,31 @@ def compute_variance(actual_cash: float, expected_cash: float) -> float:
     return money_json(round(money_json(actual_cash) - money_json(expected_cash), 2))
 
 
-PAYMENT_METHODS = frozenset({"cash", "card", "wallet", "credit", "other", "gift_card", "loyalty"})
+PAYMENT_METHODS = frozenset(
+    {"cash", "card", "wallet", "credit", "other", "gift_card", "loyalty", "mobile_money"}
+)
 PAYMENT_METHOD_ALIASES = {
     "digital_wallet": "wallet",
-    "mobile_money": "wallet",
-    "momo": "wallet",
-    "mobilemoney": "wallet",
+    "momo": "mobile_money",
+    "mobilemoney": "mobile_money",
+    "mobile_money": "mobile_money",
 }
+
+
+def payment_method_label(method: str | None) -> str:
+    key = (method or "cash").strip().lower()
+    labels = {
+        "cash": "Cash",
+        "card": "Card",
+        "wallet": "Wallet",
+        "credit": "Credit",
+        "gift_card": "Gift card",
+        "loyalty": "Loyalty points",
+        "mobile_money": "Mobile Money (MoMo)",
+        "split": "Split",
+        "other": "Other",
+    }
+    return labels.get(key, key.replace("_", " ").title())
 
 
 def coerce_payment_method_value(value: object) -> object:

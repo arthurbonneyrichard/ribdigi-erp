@@ -351,6 +351,15 @@ export default function Page() {
         body: JSON.stringify({ prompt, format: 'csv', period }),
       });
       const d = r.data || {};
+      if (d.mapped === false) {
+        const options = (d.closest || d.supported || [])
+          .map((row: { label?: string; report_type?: string }) => row.label || row.report_type)
+          .filter(Boolean)
+          .join(', ');
+        setA([d.follow_up || d.message, options].filter(Boolean).join('\n'));
+        setMessage(d.message || 'Choose a supported report');
+        return;
+      }
       setA(
         [
           `type=${d.report_type} period=${d.period_label || '-'} rows=${d.row_count}`,

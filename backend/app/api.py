@@ -2943,17 +2943,21 @@ STAFF_GUIDE_PATHS = (
 @api.get("/staff-guide")
 async def download_staff_guide(
     claims=Depends(require_permission("staff_guide", "download")),
+    db: AsyncSession = Depends(get_db),
 ):
-    """Authenticated tenant download of the staff user guide (not Company Admin only)."""
-    for path in STAFF_GUIDE_PATHS:
-        if path.is_file():
-            return FileResponse(
-                path,
-                media_type="application/pdf",
-                filename=STAFF_GUIDE_NAME,
-                headers={"Cache-Control": "private, no-store"},
-            )
-    raise HTTPException(status_code=404, detail="Guide file is not available")
+    """PDF for this tenant's industry, enabled modules, and the caller's role."""
+    from app.staff_guide import build_staff_guide_pdf
+
+    pdf = await build_staff_guide_pdf(db, claims)
+    filename = f"{(claims.get('tenant_id') or 'company')[:8]}-staff-guide.pdf"
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "private, no-store",
+        },
+    )
 
 
 @api.get("/me")
@@ -14560,6 +14564,7 @@ async def backup_restore(
         backup_id=backup_id,
         dry_run=dry_run or not confirm,
         confirm=confirm and not dry_run,
+        user_id=claims.get("sub"),
     )
     await audit_svc.record_event(
         db,

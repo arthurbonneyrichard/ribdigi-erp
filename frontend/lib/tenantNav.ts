@@ -15,7 +15,7 @@ export const PEOPLE_NAV_ITEMS: NavItem[] = [
 ];
 
 /** These groups always render children in the sidebar (no collapsed <details>). */
-export const ALWAYS_LIST_NAV_GROUP_IDS = new Set(['people']);
+export const ALWAYS_LIST_NAV_GROUP_IDS = new Set<string>();
 
 /** Hotel tenants use one flat Hotel Management list. Shared ERP pages are
  * reached only through Hotel-labeled items (no duplicate Reports/Settings). */

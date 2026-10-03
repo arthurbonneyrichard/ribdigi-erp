@@ -38,7 +38,7 @@ test('people nav ids match users/departments routes and stores section hashes', 
   assert.deepEqual(byLabel.Store, { href: '/stores#stores', module: 'stores' });
   assert.deepEqual(byLabel.Departments, { href: '/departments', module: 'users' });
   assert.equal(PEOPLE_NAV_ITEMS.some(([label]) => /brand/i.test(label)), false);
-  assert.equal(ALWAYS_LIST_NAV_GROUP_IDS.has('people'), true);
+  assert.equal(ALWAYS_LIST_NAV_GROUP_IDS.has('people'), false);
 });
 
 test('retail grouped nav lists Branch and Store under people', () => {

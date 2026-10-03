@@ -29,6 +29,14 @@ import {
 
 const PosPrintStatus = dynamic(() => import('../../../components/PosPrintStatus'), { ssr: false });
 
+function posPayLabel(method?: string | null) {
+  const key = String(method || 'cash');
+  if (key === 'mobile_money') return 'Mobile Money (MoMo)';
+  if (key === 'gift_card') return 'Gift card';
+  if (key === 'loyalty') return 'Loyalty points';
+  return key.split('_').join(' ');
+}
+
 type TaxComponent = {
   code?: string;
   name?: string;
@@ -338,6 +346,7 @@ export default function Page() {
   const [splitTender, setSplitTender] = useState(false);
   const [cashTender, setCashTender] = useState('');
   const [cardTender, setCardTender] = useState('');
+  const [splitOtherMethod, setSplitOtherMethod] = useState<'card' | 'mobile_money'>('card');
   const [amountPaidNow, setAmountPaidNow] = useState('');
   const [depositMethod, setDepositMethod] = useState('cash');
   const [paymentReference, setPaymentReference] = useState('');
@@ -1123,7 +1132,7 @@ export default function Page() {
     if (splitTender) {
       payments = [
         { payment_method: 'cash', amount: Number(cashTender) || 0, reference: null },
-        { payment_method: 'card', amount: Number(cardTender) || 0, reference: tenderRef },
+        { payment_method: splitOtherMethod, amount: Number(cardTender) || 0, reference: tenderRef },
       ].filter((p) => p.amount > 0);
       if (payments.length < 2) {
         setError('Split tender needs cash and card amounts');
@@ -1170,6 +1179,13 @@ export default function Page() {
     }
     if (paymentMethod === 'gift_card' && !tenderRef) {
       setError('Enter the gift card code in payment reference');
+      return;
+    }
+    if (
+      (paymentMethod === 'mobile_money' || (splitTender && splitOtherMethod === 'mobile_money')) &&
+      !tenderRef
+    ) {
+      setError('Enter the Mobile Money reference in payment reference');
       return;
     }
     if (paymentMethod === 'loyalty' && !customerId) {
@@ -1692,12 +1708,12 @@ export default function Page() {
                           ? sale.payments
                               .map(
                                 (p: any) =>
-                                  `${String(p.payment_method || '').toUpperCase()} ${money(
+                                  `${posPayLabel(p.payment_method)} ${money(
                                     Number(p.amount || 0)
                                   )}`
                               )
                               .join(' + ')
-                          : String(sale.payment_method || 'cash').toUpperCase()}
+                          : posPayLabel(sale.payment_method)}
                         {sale.payment_status && sale.payment_status !== 'paid'
                           ? ` · ${String(sale.payment_status).replace(/_/g, ' ')}`
                           : ''}
@@ -2017,7 +2033,7 @@ export default function Page() {
                       className="tpos-input"
                       value={paymentReference}
                       onChange={(e) => setPaymentReference(e.target.value)}
-                      placeholder="Card/auth ref (optional)"
+                      placeholder="MoMo, card, or gift card reference"
                       aria-label="POS payment reference"
                       title="Optional tender reference (1–100 chars; letters/digits required)"
                       maxLength={100}
@@ -2044,6 +2060,7 @@ export default function Page() {
                     <option value="cash">Cash</option>
                     <option value="card">Card</option>
                     <option value="wallet">Wallet</option>
+                    <option value="mobile_money">Mobile Money (MoMo)</option>
                     <option value="gift_card">Gift card</option>
                     <option value="loyalty">Loyalty points</option>
                     {canCreditSale ? <option value="credit">Credit</option> : null}
@@ -2069,7 +2086,18 @@ export default function Page() {
                       />
                     </label>
                     <label className="tpos-field">
-                      <span>Card</span>
+                      <span>{splitOtherMethod === 'mobile_money' ? 'Mobile Money' : 'Card'}</span>
+                      <select
+                        value={splitOtherMethod}
+                        onChange={(e) => setSplitOtherMethod(e.target.value as 'card' | 'mobile_money')}
+                        aria-label="POS split second method"
+                      >
+                        <option value="card">Card</option>
+                        <option value="mobile_money">Mobile Money (MoMo)</option>
+                      </select>
+                    </label>
+                    <label className="tpos-field">
+                      <span>Amount</span>
                       <input
                         className="tpos-input tpos-card-tender"
                         type="number"
@@ -2114,6 +2142,7 @@ export default function Page() {
                           <option value="cash">Cash</option>
                           <option value="card">Card</option>
                           <option value="wallet">Digital wallet</option>
+                          <option value="mobile_money">Mobile Money (MoMo)</option>
                         </select>
                       </label>
                     ) : null}

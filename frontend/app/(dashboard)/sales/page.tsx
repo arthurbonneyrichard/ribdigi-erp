@@ -60,6 +60,27 @@ async function downloadInvoicePdf(
   URL.revokeObjectURL(url);
 }
 
+async function previewInvoicePdf(invoiceId: string, template: 'a4' | 'thermal') {
+  const token = getAccessToken();
+  const tenant = localStorage.getItem('tenant');
+  const qs = template === 'thermal' ? 'template=thermal&format=pdf&paper=80mm' : 'template=a4&format=pdf';
+  const res = await fetch(`${apiBase}/sales/invoices/${invoiceId}/print?${qs}`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(tenant ? { 'X-Tenant-ID': tenant } : {}),
+    },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const detail = body.detail;
+    throw new Error(typeof detail === 'string' ? detail : detail?.message || 'Preview failed');
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank', 'noopener');
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
 export default function Page() {
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<Tab>('invoices');
@@ -2078,6 +2099,33 @@ export default function Page() {
           <div className="sales-drawer-head">
             <h2>
               {selected.invoice_number || selected.quotation_number || selected.order_number || selected.return_number || 'Document'} — {selected.status}
+              {selected.invoice_number ? (
+                <span style={{ display: 'inline-flex', gap: 8, marginLeft: 12 }}>
+                  <button
+                    type="button"
+                    onClick={() => previewInvoicePdf(selected.id, 'a4').catch((err) => alert(err.message))}
+                    aria-label="Preview invoice"
+                  >
+                    Preview
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => downloadInvoicePdf(selected.id, selected.invoice_number, 'a4')}
+                    aria-label="Print invoice A4"
+                  >
+                    Print invoice
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      downloadInvoicePdf(selected.id, selected.invoice_number, 'thermal', '80mm')
+                    }
+                    aria-label="Print invoice thermal"
+                  >
+                    Thermal
+                  </button>
+                </span>
+              ) : null}
             </h2>
             <button type="button" onClick={() => setSelected(null)}>Close</button>
           </div>

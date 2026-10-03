@@ -17,8 +17,9 @@ def test_normalize_payment_method_aliases():
     assert normalize_payment_method("wallet") == "wallet"
     assert normalize_payment_method("digital_wallet") == "wallet"
     assert normalize_payment_method("digital-wallet") == "wallet"
-    assert normalize_payment_method("mobile_money") == "wallet"
-    assert normalize_payment_method("MoMo") == "wallet"
+    assert normalize_payment_method("mobile_money") == "mobile_money"
+    assert normalize_payment_method("momo") == "mobile_money"
+    assert normalize_payment_method("MoMo") == "mobile_money"
     assert normalize_payment_method("credit") == "credit"
     with pytest.raises(Exception):
         normalize_payment_method("weird")

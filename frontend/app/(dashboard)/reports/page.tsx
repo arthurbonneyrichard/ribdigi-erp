@@ -12,6 +12,8 @@ import {
   reportsInGroup,
   type ReportDef,
 } from '../../../lib/reportGroups';
+import { getMe } from '../../../lib/meCache';
+import { tenantIsMultiStore } from '../../../lib/tenantNav';
 import { useStoreContext } from '../../../lib/storeContext';
 
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -160,6 +162,7 @@ export default function Page() {
   const [storeId, setStoreId] = useState('');
   const { storeId: ctxStoreId, setStoreId: setCtxStoreId } = useStoreContext();
   const [branchId, setBranchId] = useState('');
+  const [multiStore, setMultiStore] = useState(true);
   const [stores, setStores] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
   const [asOf, setAsOf] = useState('');
@@ -240,9 +243,9 @@ export default function Page() {
     if (toDate) params.set('to_date', toDate);
     // trim so UuidIdValue Query store/warehouse/branch/department do not 422
     // Prefer page store filter; fall back to Shell header store when page is "All stores"
-    const storeTrim = (storeId || ctxStoreId || '').trim();
+    const storeTrim = multiStore ? (storeId || ctxStoreId || '').trim() : '';
     const warehouseTrim = warehouseId.trim();
-    const branchTrim = branchId.trim();
+    const branchTrim = multiStore ? branchId.trim() : '';
     const departmentTrim = departmentId.trim();
     if (storeTrim) params.set('store_id', storeTrim);
     if (branchTrim) params.set('branch_id', branchTrim);
@@ -519,6 +522,9 @@ export default function Page() {
   }
 
   useEffect(() => {
+    getMe()
+      .then((me) => setMultiStore(tenantIsMultiStore(me?.data)))
+      .catch(() => setMultiStore(true));
     load('summary');
     Promise.all([
       api('/stores').catch(() => ({ data: [] })),
@@ -853,7 +859,9 @@ export default function Page() {
               className={`reports-nav-group${activeReport.group === group.id ? ' is-active' : ''}`}
             >
               <h2 className="reports-nav-title">{group.label}</h2>
-              {reportsInGroup(group.id).map((def) => {
+              {reportsInGroup(group.id)
+                .filter((def) => multiStore || (def.id !== 'stores' && def.tab !== 'stores'))
+                .map((def) => {
                 const selected = activeReport.id === def.id;
                 const busy = !!loadingTabs[def.tab as Tab];
                 return (
@@ -971,7 +979,7 @@ export default function Page() {
                   </select>
                 </label>
               )}
-              {reportHasFilter(activeReport, 'branch') && (
+              {multiStore && reportHasFilter(activeReport, 'branch') && (
                 <label>
                   Branch
                   <select
@@ -988,7 +996,7 @@ export default function Page() {
                   </select>
                 </label>
               )}
-              {reportHasFilter(activeReport, 'store') && (
+              {multiStore && reportHasFilter(activeReport, 'store') && (
                 <label>
                   Store
                   <select

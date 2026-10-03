@@ -1187,7 +1187,7 @@ export default function Page() {
         </div>
       </div>
       </details>
-      <details className="erp-advanced" id="budgets">
+      <details className="erp-advanced" id="budgets" open>
         <summary>Categories and monthly budgets</summary>
       <div className="card" style={{ marginBottom: 0, boxShadow: 'none', border: 0, padding: '0 0 8px' }}>
         <h3>Categories and monthly budgets</h3>
@@ -1794,6 +1794,9 @@ export default function Page() {
         </div>
       )}
 
+      <div className="card" id="expense-register" style={{ marginBottom: 16 }}>
+        <h2 style={{ marginTop: 0 }}>Paid and unpaid expenses</h2>
+        <p className="muted">Paid means the expense was posted. Unpaid means it is still waiting for approval.</p>
       <div className="erp-toolbar">
         <input
           value={searchQuery}
@@ -1812,8 +1815,8 @@ export default function Page() {
           aria-label="Expense status filter"
         >
           <option value="all">All</option>
-          <option value="pending">Waiting approval</option>
-          <option value="approved">Posted</option>
+          <option value="approved">Paid</option>
+          <option value="pending">Unpaid</option>
           <option value="rejected">Voided</option>
         </select>
       </div>
@@ -1949,6 +1952,7 @@ export default function Page() {
           )}
         </tbody>
       </table>
+      </div>
       {attachPreview && (
         <AttachmentPreview
           open

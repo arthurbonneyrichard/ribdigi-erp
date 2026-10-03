@@ -9,7 +9,6 @@ import { industryLabel, normalizeIndustry } from '../../../lib/industries';
 import {
   filterIndustryDashboardFeatures,
   industryDashboardFeatures,
-  industryDashboardSectionLabel,
   industryHomePath,
   type IndustryDashboardFeature,
 } from '../../../lib/industryDashboard';
@@ -465,7 +464,6 @@ export default function Page() {
       : industryDashboardFeatures(liveIndustry),
     liveIndustry
   );
-  const industrySection = industryDashboardSectionLabel(liveIndustry);
 
   if (hotelHome) {
     return <p className="muted">Opening hotel dashboard…</p>;
@@ -544,11 +542,8 @@ export default function Page() {
           ))}
         </section>
 
-        {industrySection && featureCards.length > 0 && (
-          <section className="stat-grid" style={{ marginTop: 12 }} aria-label={industrySection}>
-            <h2 className="hint" style={{ gridColumn: '1 / -1', margin: 0 }}>
-              {industrySection}
-            </h2>
+        {featureCards.length > 0 && (
+          <section className="stat-grid" style={{ marginTop: 12 }} aria-label="Company shortcuts">
             {featureCards.map((f) => {
               let value = 'Open';
               if (f.id === 'expiry_lots') value = num(expiring);

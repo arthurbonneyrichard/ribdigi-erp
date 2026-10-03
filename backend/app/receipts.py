@@ -285,11 +285,15 @@ def render_thermal_text(receipt: dict[str, Any], *, paper: str = "80mm") -> str:
     if len(payments) > 1:
         lines.append(_center("Payments", width))
         for pay in payments:
-            method = str(pay.get("payment_method") or "cash").upper()
+            from app.pos import payment_method_label
+
+            method = payment_method_label(pay.get("payment_method"))
             lines.append(_lr(method, _money(pay.get("amount") or 0), width))
             # Payment reference (card/auth) is till-only — never print it.
     else:
-        lines.append(_lr("Payment", str(receipt.get("payment_method") or "cash").upper(), width))
+        from app.pos import payment_method_label
+
+        lines.append(_lr("Payment", payment_method_label(receipt.get("payment_method")), width))
     paid_amount = money_json(receipt.get("paid_amount"))
     balance_due = money_json(receipt.get("balance_due"))
     status = str(receipt.get("payment_status") or "").replace("_", " ")

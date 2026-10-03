@@ -26,10 +26,13 @@ _REPORT_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("sales_daily", re.compile(r"\b(daily\s+sales|sales\s+daily|today'?s?\s+sales)\b", re.I)),
     ("sales_by_store", re.compile(r"\b(sales\s+by\s+store|store\s+sales|sales\s+per\s+store)\b", re.I)),
     ("sales_salesperson", re.compile(r"\b(sales\s*person|salesperson|by\s+rep)\b", re.I)),
-    ("sales_products", re.compile(r"\b(sales\s+by\s+product|product\s+sales|top\s+products)\b", re.I)),
+    ("sales_products", re.compile(r"\b(sales\s+by\s+product|product\s+sales|top\s+products|invoices?)\b", re.I)),
+    ("sales_returns", re.compile(r"\b(returns?|refunds?)\b", re.I)),
+    ("sales_customers", re.compile(r"\b(customer\s+sales|customers?|receivables?|credit)\b", re.I)),
+    ("pharmacy_rx_activity", re.compile(r"\b(prescriptions?|pharmacy\s+rx)\b", re.I)),
     ("inventory_low_stock", re.compile(r"\b(low[\s-]?stock|reorder|stockout)\b", re.I)),
     ("inventory_movements", re.compile(r"\b(stock\s+movements?|inventory\s+movements?)\b", re.I)),
-    ("inventory_balance", re.compile(r"\b(inventory\s+balance|stock\s+balance|stock\s+on\s+hand)\b", re.I)),
+    ("inventory_balance", re.compile(r"\b(inventory\s+balance|stock\s+balance|stock\s+on\s+hand|inventory)\b", re.I)),
     ("expenses_summary", re.compile(r"\b(expense|expenses|spend|spending|costs?)\b", re.I)),
     ("purchases_suppliers", re.compile(r"\b(purchases?\s+by\s+supplier|supplier\s+purchases?)\b", re.I)),
     ("purchases_summary", re.compile(r"\b(purchase|purchases|buying)\b", re.I)),
@@ -62,9 +65,47 @@ def _quarter_bounds(q: int, year: int) -> tuple[datetime, datetime, int, int]:
     return start, end, year, end_month
 
 
-def parse_prompt(prompt: str, *, now: datetime | None = None) -> dict[str, Any]:
-    """Map NL prompt → report_type + params. Raises 400 on unknown intent."""
-    # OpenAPI AiReportPromptValue → 422; service defense-in-depth → 400.
+_REPORT_LABELS = {
+    "sales_monthly": "Monthly sales",
+    "sales_daily": "Daily sales",
+    "sales_by_store": "Sales by store",
+    "sales_salesperson": "Sales by salesperson",
+    "sales_products": "Sales by product",
+    "sales_returns": "Sales returns",
+    "sales_customers": "Customer sales",
+    "inventory_low_stock": "Low stock",
+    "inventory_movements": "Stock movements",
+    "inventory_balance": "Stock on hand",
+    "expenses_summary": "Expenses",
+    "purchases_suppliers": "Purchases by supplier",
+    "purchases_summary": "Purchases",
+    "cash_flow": "Cash flow",
+    "profit_loss": "Profit and loss",
+    "trial_balance": "Trial balance",
+    "balance_sheet": "Balance sheet",
+    "tax": "Tax",
+    "pharmacy_rx_activity": "Prescription activity",
+    "summary": "Summary",
+}
+
+
+def _closest_reports(text: str, limit: int = 4) -> list[dict[str, str]]:
+    words = set(re.findall(r"[a-z0-9]+", text.lower()))
+    scored: list[tuple[int, str]] = []
+    for rtype in sorted(report_export_svc.EXPORTABLE):
+        label = _REPORT_LABELS.get(rtype, rtype.replace("_", " "))
+        hay = set(re.findall(r"[a-z0-9]+", f"{rtype} {label}"))
+        score = len(words & hay)
+        scored.append((score, rtype))
+    scored.sort(key=lambda item: (-item[0], item[1]))
+    picked = [rtype for score, rtype in scored if score > 0][:limit]
+    if not picked:
+        picked = ["sales_monthly", "inventory_low_stock", "expenses_summary", "profit_loss"]
+    return [{"report_type": rtype, "label": _REPORT_LABELS.get(rtype, rtype.replace("_", " "))} for rtype in picked]
+
+
+def classify_prompt(prompt: str, *, now: datetime | None = None) -> dict[str, Any]:
+    """Map a prompt to a report, or return follow-up options without loading data."""
     text = require_honest_narrative(
         prompt, label="AI report prompt", max_length=ai_svc.max_message_chars()
     )
@@ -78,14 +119,14 @@ def parse_prompt(prompt: str, *, now: datetime | None = None) -> dict[str, Any]:
             report_type = rtype
             break
     if not report_type:
-        raise HTTPException(
-            status_code=422,
-            detail={
-                "message": "Could not map prompt to a supported report",
-                "hint": "Try e.g. 'monthly sales for Q2', 'low stock', 'expense summary'",
-                "supported": sorted(report_export_svc.EXPORTABLE),
-            },
-        )
+        closest = _closest_reports(text)
+        return {
+            "mapped": False,
+            "message": "That request is not a supported report.",
+            "follow_up": "Name one of these reports, or add a period such as this month or Q2.",
+            "closest": closest,
+            "supported": [{"report_type": row["report_type"], "label": row["label"]} for row in closest],
+        }
 
     now = now or datetime.utcnow()
     params: dict[str, Any] = {}
@@ -131,7 +172,6 @@ def parse_prompt(prompt: str, *, now: datetime | None = None) -> dict[str, Any]:
             params["to_date"] = datetime(y, mo, monthrange(y, mo)[1]).strftime("%Y-%m-%d")
             matched_period = f"{y}-{mo:02d}"
 
-    # Defaults for monthly sales when no period given
     if report_type == "sales_monthly" and "year" not in params:
         params["year"] = now.year
         params["month"] = now.month
@@ -145,6 +185,7 @@ def parse_prompt(prompt: str, *, now: datetime | None = None) -> dict[str, Any]:
             fmt = "xlsx"
 
     return {
+        "mapped": True,
         "report_type": report_type,
         "params": params,
         "format": fmt,
@@ -152,6 +193,14 @@ def parse_prompt(prompt: str, *, now: datetime | None = None) -> dict[str, Any]:
         "prompt": text,
         "method": "constrained_nl",
     }
+
+
+def parse_prompt(prompt: str, *, now: datetime | None = None) -> dict[str, Any]:
+    """Map NL prompt → report_type + params. Unmapped prompts raise 422 with options."""
+    intent = classify_prompt(prompt, now=now)
+    if not intent.get("mapped"):
+        raise HTTPException(status_code=422, detail=intent)
+    return intent
 
 
 def serialize_template(row: m.AiReportTemplate) -> dict[str, Any]:
@@ -269,7 +318,9 @@ async def generate_report(
             "template_id": tmpl.id,
         }
     elif prompt:
-        intent = parse_prompt(prompt)
+        intent = classify_prompt(prompt)
+        if not intent.get("mapped"):
+            return intent
         if format:
             intent["format"] = format
     elif report_type:

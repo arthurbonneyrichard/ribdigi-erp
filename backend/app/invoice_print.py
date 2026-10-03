@@ -93,6 +93,33 @@ async def build_invoice_print_payload(
     paid = money_json(invoice.paid_amount)
     total = money_json(invoice.total_amount)
     balance = max(total - paid, 0)
+    pay_rows = (
+        await db.execute(
+            select(m.CustomerPayment)
+            .where(
+                m.CustomerPayment.tenant_id == tenant_id,
+                m.CustomerPayment.sales_invoice_id == invoice.id,
+            )
+            .order_by(m.CustomerPayment.created_at.asc())
+        )
+    ).scalars().all()
+    payments = [
+        {
+            "payment_method": row.payment_method or "cash",
+            "amount": money_json(row.amount),
+            "reference": row.reference,
+        }
+        for row in pay_rows
+    ]
+    if balance <= 0.009:
+        payment_status = "paid"
+    elif paid > 0:
+        payment_status = "partial"
+    else:
+        payment_status = "unpaid"
+    method_label = ", ".join(
+        dict.fromkeys(str(p["payment_method"]).replace("_", " ") for p in payments)
+    ) or payment_status
 
     from app.print_branding import branding_fields_for_payload
 
@@ -135,8 +162,9 @@ async def build_invoice_print_payload(
         "total_amount": total,
         "paid_amount": paid,
         "balance_due": balance,
-        "payment_method": invoice.status,
-        "payments": [],
+        "payment_method": method_label,
+        "payment_status": payment_status,
+        "payments": payments,
         "items": normalized_items,
         "notes": invoice.notes,
         "posted_at": invoice.posted_at,
@@ -198,6 +226,8 @@ def render_invoice_thermal_text(payload: dict[str, Any], *, paper: str = "80mm")
     lines.append(_lr(f"TOTAL {currency}".strip(), _money(payload.get("total") or 0), width))
     lines.append(_lr("Paid", _money(payload.get("paid_amount") or 0), width))
     lines.append(_lr("Balance", _money(payload.get("balance_due") or 0), width))
+    lines.append(_lr("Payment", str(payload.get("payment_method") or "unpaid")[: width // 2], width))
+    lines.append(_lr("Pay status", str(payload.get("payment_status") or "").upper(), width))
     if payload.get("notes"):
         lines.append("-" * width)
         for part in _wrap(f"Notes: {payload['notes']}", width):
