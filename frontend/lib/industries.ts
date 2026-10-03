@@ -13,6 +13,7 @@ export const INDUSTRIES = [
   'distribution',
   'general_trading',
   'manufacturing',
+  'hospital',
 ] as const;
 
 export type IndustryKey = (typeof INDUSTRIES)[number];
@@ -38,6 +39,7 @@ export const INDUSTRY_LABELS: Record<string, string> = {
   distribution: 'Distribution',
   general_trading: 'General Trading',
   manufacturing: 'Manufacturing',
+  hospital: 'Hospital',
 };
 
 export function normalizeIndustry(value?: string | null): string | null {

@@ -25,6 +25,7 @@ type Customer = {
   credit_limit?: number;
   payment_terms_days?: number;
   balance?: number;
+  loyalty_points?: number;
   customer_group_id?: string | null;
   customer_group?: { id: string; name: string } | null;
   latitude?: number | null;
@@ -455,6 +456,7 @@ export default function Page() {
                     Balance
                   </button>
                 </th>
+                <th>Loyalty</th>
                 <th />
               </tr>
             </thead>
@@ -471,6 +473,7 @@ export default function Page() {
                   <td data-label="Email">{c.email || '—'}</td>
                   <td data-label="Phone">{c.phone || '—'}</td>
                   <td data-label="Balance">{c.balance ?? 0}</td>
+                  <td data-label="Loyalty">{c.loyalty_points ?? 0}</td>
                   <td className="cat-actions">
                     <button type="button" onClick={() => openEdit(c)} aria-label={`Edit ${c.name}`}>
                       Edit

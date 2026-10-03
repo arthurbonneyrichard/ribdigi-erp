@@ -32,6 +32,7 @@ VALID_INDUSTRIES = frozenset(
         "fmcg",
         "distribution",
         "general_trading",
+        "hospital",
     }
 )
 INDUSTRY_LABELS = {
@@ -47,6 +48,7 @@ INDUSTRY_LABELS = {
     "distribution": "Distribution",
     "general_trading": "General Trading",
     "manufacturing": "Manufacturing",
+    "hospital": "Hospital",
 }
 # Platform Owner trade provision surface. Hotel/FMCG remain valid for existing tenants.
 PROVISION_INDUSTRIES: tuple[str, ...] = (

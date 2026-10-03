@@ -36,11 +36,11 @@ from app.fx import coerce_currency_code_value
 from app.honesty import money_json
 
 PosTenderMethod = Annotated[
-    Literal["cash", "card", "wallet", "credit", "other"],
+    Literal["cash", "card", "wallet", "credit", "other", "gift_card", "loyalty"],
     BeforeValidator(coerce_payment_method_value),
 ]
 PosSalePaymentMethod = Annotated[
-    Literal["cash", "card", "wallet", "credit", "other", "split"],
+    Literal["cash", "card", "wallet", "credit", "other", "gift_card", "loyalty", "split"],
     BeforeValidator(coerce_payment_method_value),
 ]
 IndustryValue = Annotated[
@@ -57,6 +57,7 @@ IndustryValue = Annotated[
         "fmcg",
         "distribution",
         "general_trading",
+        "hospital",
     ],
     BeforeValidator(coerce_industry_value),
 ]

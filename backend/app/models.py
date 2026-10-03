@@ -505,6 +505,8 @@ class Party(Base):
     customer_group_id: Mapped[str | None] = mapped_column(
         ForeignKey("customer_groups.id"), nullable=True, index=True
     )
+    # 1 point = 1 currency unit. Earned on POS sales; spent as a loyalty tender.
+    loyalty_points: Mapped[float] = mapped_column(Numeric(14, 2), default=0, server_default="0")
 
 
 class PartyContact(Base):
@@ -2477,6 +2479,63 @@ class PrescriptionAttachment(Base):
     storage_key: Mapped[str] = mapped_column(String(500))
     content_type: Mapped[str | None] = mapped_column(String(80), nullable=True)
     original_filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class GiftCard(Base):
+    """Stored-value card. Balance is tenant-scoped and never shared."""
+
+    __tablename__ = "gift_cards"
+    __table_args__ = (UniqueConstraint("tenant_id", "code"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    code: Mapped[str] = mapped_column(String(32), index=True)
+    balance: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
+    status: Mapped[str] = mapped_column(String(20), default="active")
+    issued_to_party_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HospitalPatient(Base):
+    __tablename__ = "hospital_patients"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    name: Mapped[str] = mapped_column(String(180))
+    phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class HospitalEncounter(Base):
+    """A visit. Not a diagnosis coder, insurer, or operating-theatre record."""
+
+    __tablename__ = "hospital_encounters"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    patient_id: Mapped[str] = mapped_column(ForeignKey("hospital_patients.id"), index=True)
+    reason: Mapped[str] = mapped_column(String(240))
+    status: Mapped[str] = mapped_column(String(20), default="open")
+    opened_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class CheckoutPaymentNotice(Base):
+    """Recorded payment information. No card capture and no fabricated subscription revenue."""
+
+    __tablename__ = "checkout_payment_notices"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    tenant_id: Mapped[str] = mapped_column(ForeignKey("tenants.id"), index=True)
+    amount: Mapped[float] = mapped_column(Numeric(14, 2))
+    method: Mapped[str] = mapped_column(String(40))
+    reference: Mapped[str] = mapped_column(String(100))
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    funds_captured: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     created_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

@@ -23,6 +23,10 @@ export const FMCG_DASHBOARD_FEATURES: readonly IndustryDashboardFeature[] = [
   { id: 'fmcg_deliveries', label: 'Deliveries', href: '/fmcg?tab=deliveries', module: 'fmcg' },
 ];
 
+export const HOSPITAL_DASHBOARD_FEATURES: readonly IndustryDashboardFeature[] = [
+  { id: 'hospital_home', label: 'Patients and visits', href: '/hospital', module: 'hospital' },
+];
+
 export const HOTEL_DASHBOARD_FEATURES: readonly IndustryDashboardFeature[] = [
   { id: 'hotel_home', label: 'Hotel dashboard', href: '/hotel', module: 'hotel' },
   { id: 'hotel_reservations', label: 'Reservations', href: '/hotel?tab=reservations', module: 'hotel' },
@@ -62,6 +66,7 @@ const BY_INDUSTRY: Record<string, readonly IndustryDashboardFeature[]> = {
   retail_wholesale: RETAIL_WHOLESALE_DASHBOARD_FEATURES,
   fmcg: FMCG_DASHBOARD_FEATURES,
   hotel: HOTEL_DASHBOARD_FEATURES,
+  hospital: HOSPITAL_DASHBOARD_FEATURES,
   restaurant: RESTAURANT_DASHBOARD_FEATURES,
 };
 
@@ -86,6 +91,7 @@ export function industryDashboardSectionLabel(industry?: string | null): string 
   if (ind === 'fmcg') return 'FMCG management';
   if (ind === 'restaurant') return 'Restaurant operations';
   if (ind === 'hotel') return 'Hotel dashboard';
+  if (ind === 'hospital') return 'Hospital';
   return null;
 }
 

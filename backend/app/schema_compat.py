@@ -73,6 +73,8 @@ def _default_for_required_column(col, table_name: str = "", values: dict | None 
         "stock_qty",
         "cost_price",
         "selling_price",
+        "loyalty_points",
+        "balance",
     }:
         if name == "drawer_port":
             return 9100

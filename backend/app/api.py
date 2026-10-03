@@ -381,6 +381,9 @@ from app.rbac import PLATFORM_ROLES, is_platform_owner_role, is_platform_role
 
 api = APIRouter(prefix="/api/v1")
 api.include_router(printers_api_mod.router)
+from app import commerce_extras_api as commerce_extras_api_mod
+
+api.include_router(commerce_extras_api_mod.router)
 logger = logging.getLogger("ribdigi.api")
 
 
@@ -5842,6 +5845,7 @@ def _serialize_party(row: m.Party, group: m.CustomerGroup | None = None) -> dict
         "credit_limit": money_json(row.credit_limit),
         "payment_terms_days": int(getattr(row, "payment_terms_days", None) or 30),
         "balance": money_json(row.balance),
+        "loyalty_points": money_json(getattr(row, "loyalty_points", 0) or 0),
         "customer_group_id": getattr(row, "customer_group_id", None),
         "company_id": getattr(row, "company_id", None),
     }
@@ -9101,6 +9105,14 @@ async def pos_sale(
         payment_method=payload.payment_method,
         payments=[p.model_dump() for p in payload.payments] if payload.payments else None,
     )
+    from app import loyalty_gift as loyalty_gift_svc
+
+    await loyalty_gift_svc.settle_pos_tenders(
+        db,
+        tenant_id=claims["tenant_id"],
+        party_id=payload.party_id,
+        payments=payments,
+    )
     payment_method = pos_svc.primary_payment_method(payments)
     credit_amount = pos_svc.credit_portion(payments)
     settlement = pos_svc.sale_settlement(total=total, payments=payments)
@@ -9275,6 +9287,13 @@ async def pos_sale(
     )
     await pos_svc.apply_sale_to_session(
         session, total=total, payment_method=payment_method, payments=payments
+    )
+    await loyalty_gift_svc.award_sale_points(
+        db,
+        tenant_id=claims["tenant_id"],
+        party_id=payload.party_id,
+        total=total,
+        payments=payments,
     )
 
     ar_invoice = None

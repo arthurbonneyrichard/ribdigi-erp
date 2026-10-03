@@ -1168,6 +1168,14 @@ export default function Page() {
     } else {
       body.payment_method = paymentMethod;
     }
+    if (paymentMethod === 'gift_card' && !tenderRef) {
+      setError('Enter the gift card code in payment reference');
+      return;
+    }
+    if (paymentMethod === 'loyalty' && !customerId) {
+      setError('Select a customer before paying with loyalty points');
+      return;
+    }
     setBusy(true);
     try {
       const clientRequestId = checkoutReqRef.current || newClientRequestId();
@@ -2036,6 +2044,8 @@ export default function Page() {
                     <option value="cash">Cash</option>
                     <option value="card">Card</option>
                     <option value="wallet">Wallet</option>
+                    <option value="gift_card">Gift card</option>
+                    <option value="loyalty">Loyalty points</option>
                     {canCreditSale ? <option value="credit">Credit</option> : null}
                   </select>
                 </label>

@@ -77,6 +77,10 @@ export const FMCG_NAV_ITEMS: NavItem[] = [
 ];
 
 /** Pharmacy extras: lots/batches plus catalog Rx/dosage and Rx records. Not HIS. */
+export const HOSPITAL_NAV_ITEMS: NavItem[] = [
+  ['Patients and visits', '/hospital', 'hospital'],
+];
+
 export const PHARMACY_NAV_ITEMS: NavItem[] = [
   ['Expiring lots', '/inventory?tab=expiry', 'inventory'],
   ['Batches', '/inventory?tab=batches', 'inventory'],
@@ -179,6 +183,13 @@ export function groupedTenantNav(
             items: FMCG_NAV_ITEMS.filter(([, href]) => allowed.has(href)),
           };
         }
+        if (ind === 'hospital') {
+          return {
+            id: 'industry',
+            label: 'Hospital',
+            items: HOSPITAL_NAV_ITEMS.filter(([, href]) => allowed.has(href)),
+          };
+        }
         if (ind === 'pharmacy') {
           return {
             id: 'industry',
@@ -270,9 +281,12 @@ export const NAV_MODULE_BY_PATH: Record<string, string> = {
   '/sales': 'sales',
   '/customers': 'sales',
   '/pos': 'pos',
+  '/gift-cards': 'pos',
   '/purchasing': 'purchasing',
   '/expenses': 'expenses',
   '/accounting': 'accounting',
+  '/billing': 'accounting',
+  '/hospital': 'hospital',
   '/credit': 'credit',
   '/tax': 'tax',
   '/stores': 'stores',

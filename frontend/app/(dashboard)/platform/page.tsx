@@ -9,7 +9,7 @@ import { industryAllowsModule } from '../../../lib/industryModules';
 import { INDUSTRIES, PROVISION_INDUSTRIES, industryLabel } from '../../../lib/industries';
 
 /** Trade provision industries plus implemented verticals (hotel PMS, FMCG). */
-const CREATE_INDUSTRIES = [...PROVISION_INDUSTRIES, 'hotel', 'fmcg'] as const;
+const CREATE_INDUSTRIES = [...PROVISION_INDUSTRIES, 'hotel', 'fmcg', 'hospital'] as const;
 
 type SubscriptionInfo = {
   package_code?: string;

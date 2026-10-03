@@ -52,7 +52,7 @@ def compute_variance(actual_cash: float, expected_cash: float) -> float:
     return money_json(round(money_json(actual_cash) - money_json(expected_cash), 2))
 
 
-PAYMENT_METHODS = frozenset({"cash", "card", "wallet", "credit", "other"})
+PAYMENT_METHODS = frozenset({"cash", "card", "wallet", "credit", "other", "gift_card", "loyalty"})
 PAYMENT_METHOD_ALIASES = {
     "digital_wallet": "wallet",
     "mobile_money": "wallet",
