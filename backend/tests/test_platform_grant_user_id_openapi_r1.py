@@ -33,8 +33,8 @@ def test_platform_grant_user_id_schema():
 
 def test_platform_grant_user_id_ui_and_docs():
     page = (ROOT / "frontend/app/(dashboard)/platform/staff/page.tsx").read_text(encoding="utf-8")
-    assert 'aria-label="Grant dashboard"' in page
-    assert "user_id: String(row.id).trim()" in page
+    assert 'aria-label="Grant dashboard"' not in page
+    assert "App users" not in page
     agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     assert "Platform grant user_id OpenAPI" in agents
     assert "UuidIdValue" in agents

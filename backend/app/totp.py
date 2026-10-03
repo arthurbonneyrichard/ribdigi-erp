@@ -303,6 +303,7 @@ ENROLLMENT_ALLOWED_SUFFIXES = (
     "/health",
     "/notifications/unread-count",
     "/staff-guide",
+    "/live-test-script",
 )
 
 

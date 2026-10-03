@@ -390,6 +390,98 @@ async def build_dashboard(
         else:
             rx_only_count = 0
 
+    pharmacy_desk = None
+    if industry_payload.get("industry") == "pharmacy":
+        from app import schema_compat as schema_compat_svc
+
+        wh_ids: list[str] | None = None
+        if store_id or store_ids is not None:
+            wh_stmt = select(m.Warehouse.id).where(m.Warehouse.tenant_id == tenant_id)
+            if store_id:
+                wh_stmt = wh_stmt.where(m.Warehouse.store_id == store_id)
+            elif not store_ids:
+                wh_ids = []
+            else:
+                wh_stmt = wh_stmt.where(m.Warehouse.store_id.in_(store_ids))
+            if wh_ids is None:
+                wh_ids = list((await db.execute(wh_stmt)).scalars().all())
+
+        def _limit_warehouses(stmt, column):
+            if wh_ids is None:
+                return stmt
+            if not wh_ids:
+                return stmt.where(column == "__none__")
+            return stmt.where(column.in_(wh_ids))
+
+        returns_today = 0
+        if await schema_compat_svc.table_column_names(db, "sales_returns"):
+            ret_stmt = select(func.count()).select_from(m.SalesReturn).where(
+                m.SalesReturn.tenant_id == tenant_id,
+                m.SalesReturn.status == "posted",
+                m.SalesReturn.created_at >= _day_start(today),
+                m.SalesReturn.created_at < _day_start(tomorrow),
+            )
+            if store_id or store_ids is not None:
+                ret_stmt = ret_stmt.join(
+                    m.SalesInvoice, m.SalesInvoice.id == m.SalesReturn.sales_invoice_id
+                )
+                ret_stmt = apply_store_scope(ret_stmt, m.SalesInvoice.store_id, store_id, store_ids)
+            returns_today = int((await db.execute(ret_stmt)).scalar() or 0)
+
+        expired_lots = 0
+        if await schema_compat_svc.table_column_names(db, "product_batches"):
+            exp_stmt = select(func.count()).select_from(m.ProductBatch).where(
+                m.ProductBatch.tenant_id == tenant_id,
+                m.ProductBatch.expiry_date.is_not(None),
+                m.ProductBatch.expiry_date < now_dt,
+                m.ProductBatch.quantity > 0,
+            )
+            expired_lots = int((await db.execute(_limit_warehouses(exp_stmt, m.ProductBatch.warehouse_id))).scalar() or 0)
+
+        quarantined = 0
+        recalled = 0
+        if await schema_compat_svc.table_column_names(db, "batch_holds"):
+            hold_stmt = (
+                select(m.BatchHold.hold_type, func.count())
+                .where(m.BatchHold.tenant_id == tenant_id, m.BatchHold.status == "open")
+                .group_by(m.BatchHold.hold_type)
+            )
+            if wh_ids is not None:
+                hold_stmt = hold_stmt.join(m.ProductBatch, m.ProductBatch.id == m.BatchHold.batch_id)
+                hold_stmt = _limit_warehouses(hold_stmt, m.ProductBatch.warehouse_id)
+            for hold_type, n in (await db.execute(hold_stmt)).all():
+                if hold_type == "recall":
+                    recalled += int(n or 0)
+                else:
+                    quarantined += int(n or 0)
+
+        pending_purchase_orders = 0
+        if await schema_compat_svc.table_column_names(db, "purchase_orders"):
+            po_stmt = select(func.count()).select_from(m.PurchaseOrder).where(
+                m.PurchaseOrder.tenant_id == tenant_id,
+                m.PurchaseOrder.status.in_(["draft", "sent", "partially_received"]),
+            )
+            pending_purchase_orders = int(
+                (await db.execute(_limit_warehouses(po_stmt, m.PurchaseOrder.warehouse_id))).scalar() or 0
+            )
+
+        queue = rx_queue or {}
+        pharmacy_desk = {
+            "sales_today": money_json(sales_today),
+            "returns_today": returns_today,
+            "awaiting_review": int(queue.get("received") or 0) + int(queue.get("review") or 0),
+            "ready_to_dispense": int(queue.get("approved") or 0),
+            "partially_dispensed": int(queue.get("partially_dispensed") or 0),
+            "low_stock": low_stock,
+            "out_of_stock": out_of_stock,
+            "expiring_soon": expiring_soon,
+            "expired_lots": expired_lots,
+            "quarantined": quarantined,
+            "recalled": recalled,
+            "pending_purchase_orders": pending_purchase_orders,
+            "rx_only_count": rx_only_count or 0,
+        }
+
     open_quotes = 0
     open_orders = 0
     reserved_qty = 0.0
@@ -467,6 +559,7 @@ async def build_dashboard(
         "gross_profit_30d": gross_profit_30d,
         "rx_queue": rx_queue,
         "rx_only_count": rx_only_count,
+        "pharmacy_desk": pharmacy_desk,
         "open_quotes": open_quotes,
         "open_orders": open_orders,
         "reserved_qty": reserved_qty,

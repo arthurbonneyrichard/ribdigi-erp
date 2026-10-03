@@ -16,8 +16,9 @@ Supported industries in product code: Retail, Pharmacy, Wholesale, Retail + Whol
 | Trade channels, platform owner, loyalty/gift/hospital, ops repairs, logical backup drill | PASS | Same slice: 48 passed |
 | Sales-by-store limited to assigned stores | PASS | `tests/test_sales_by_store.py` + `tests/test_reports.py`: 9 passed |
 | POS sale when the store warehouse quantity is zero | PASS | `tests/test_out_of_stock.py::test_pos_search_store_warehouse_zero_and_sale_409` |
-| Store scope on every report (returns, inventory, purchasing, finance) | FAIL | Those routes still omit `report_store_kwargs` |
-| Dashboard product stock counts for an assigned store | FAIL | `dashboard.py` product totals stay tenant-wide |
+| Store scope on sales, inventory, purchasing, expenses, tax, and report export | PASS | Report routes and exports pass `report_store_kwargs`. Assigned store sees only its own customer sales and tax (`tests/test_live_test_and_store_scope.py`) |
+| Dashboard product stock counts for an assigned store | PASS | `dashboard.py` uses warehouse quantities when a store filter is set |
+| Live test script PDF | PASS | `GET /api/v1/live-test-script` returns a multi-page Retail, Pharmacy, and Wholesale checklist |
 | Signed-in Retail / Pharmacy / Wholesale / combo walkthrough | BLOCKED | No authenticated browser session in this audit |
 | Operator backup restore of a real database | BLOCKED | Logical drill tests only; production data was not restored |
 | Frontend production build | BLOCKED | Not run in this audit |

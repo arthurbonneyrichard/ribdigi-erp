@@ -442,8 +442,18 @@ async def apply_line_items_stock(
                     warehouse_id=warehouse_id,
                     product_id=product_id,
                 )
+                on_hand_row = (
+                    await db.execute(
+                        select(m.WarehouseStock).where(
+                            m.WarehouseStock.tenant_id == tenant_id,
+                            m.WarehouseStock.warehouse_id == warehouse_id,
+                            m.WarehouseStock.product_id == product_id,
+                        )
+                    )
+                ).scalar_one_or_none()
+                on_hand = money_json(on_hand_row.quantity or 0) if on_hand_row else 0
                 if avail + 1e-9 < stock_qty:
-                    if money_json(avail) <= 0:
+                    if money_json(avail) <= 0 and on_hand <= 0:
                         raise HTTPException(
                             status_code=409,
                             detail={

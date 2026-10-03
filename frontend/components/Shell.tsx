@@ -200,10 +200,10 @@ function usesAccordion(group: NavGroup): boolean {
 /** Software-owner / platform console navigation only. */
 const PLATFORM_ITEMS: NavItem[] = [
   ['Platform', '/platform', 'platform'],
+  ['Tenant', '/platform/tenants', 'platform_tenants'],
   ['Staff', '/platform/staff', 'platform_staff'],
   ['Reports', '/platform/reports', 'platform_reports'],
   ['Jobs', '/jobs', 'jobs'],
-  ['Users', '/users', 'users'],
   ['Notifications', '/notifications', 'notifications'],
   ['Audit', '/audit', 'audit'],
   ['Security', '/security', 'security'],
@@ -469,6 +469,13 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </>
   ),
+  platform_tenants: (
+    <>
+      <path d="M3 21h18" />
+      <path d="M5 21V7l7-4 7 4v14" />
+      <path d="M9 21v-6h6v6" />
+    </>
+  ),
   platform_staff: (
     <>
       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -592,7 +599,7 @@ function navItemsForRole(
   // Software owner staff: platform console nav only.
   if (PLATFORM_ROLES.has(role)) {
     return PLATFORM_ITEMS.filter(([, , module]) => {
-      if (module === 'platform') return true;
+      if (module === 'platform' || module === 'platform_tenants') return true;
       if (permissions?.['*']?.includes('*')) return true;
       return canReadModule(permissions, module);
     });
@@ -1242,11 +1249,13 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     }
     if (href === '/platform') {
       void prefetchGet('/tenants');
+      void prefetchGet('/platform/activity');
+    } else if (href === '/platform/tenants') {
+      void prefetchGet('/tenants');
       void prefetchGet('/packages');
     } else if (href === '/platform/staff') {
       void prefetchGet('/platform/staff');
       void prefetchGet('/platform/roles');
-      void prefetchGet('/platform/app-users');
     } else if (href === '/platform/reports') {
       void prefetchGet('/platform/reports');
     } else if (path === '/security') {

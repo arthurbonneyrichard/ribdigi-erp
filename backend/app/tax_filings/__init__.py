@@ -178,6 +178,7 @@ async def government_filing_pack(
     to_date=None,
     jurisdiction: str | None = None,
     store_id: str | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict:
     from app import tax as tax_svc
 
@@ -185,7 +186,12 @@ async def government_filing_pack(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
     pack = await tax_svc.tax_filing_pack(
-        db, tenant_id, from_date=from_date, to_date=to_date, store_id=store_id
+        db,
+        tenant_id,
+        from_date=from_date,
+        to_date=to_date,
+        store_id=store_id,
+        store_ids=store_ids,
     )
     tenant_juris = normalize_jurisdiction(
         getattr(tenant, "tax_jurisdiction", None) or "GH"

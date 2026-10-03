@@ -304,6 +304,7 @@ async def generate_report(
     report_type: str | None = None,
     period: str | None = None,
     filters: dict | Any | None = None,
+    store_ids: list[str] | None = None,
 ) -> dict[str, Any]:
     """Return JSON preview of generated report (+ export metadata)."""
     if template_id:
@@ -371,6 +372,7 @@ async def generate_report(
         as_of=params.get("as_of"),
         compare=params.get("compare"),
         department_id=params.get("department_id"),
+        store_ids=store_ids,
     )
     rows, _pdf_lines, title = report_export_svc.flatten_report(rtype, payload)
     fmt = (intent.get("format") or format or "csv").lower()
@@ -433,6 +435,7 @@ async def export_from_intent(
     report_type: str | None = None,
     period: str | None = None,
     params: dict | Any | None = None,
+    store_ids: list[str] | None = None,
 ) -> tuple[bytes, str, str, dict[str, Any]]:
     """Return (content, media_type, filename, intent_meta)."""
     generated = await generate_report(
@@ -445,6 +448,7 @@ async def export_from_intent(
         report_type=report_type,
         period=period,
         filters=params,
+        store_ids=store_ids,
     )
     # generate_report already committed; build export bytes again without re-audit noise
     rtype = generated["report_type"]
@@ -469,5 +473,6 @@ async def export_from_intent(
         as_of=p.get("as_of"),
         compare=p.get("compare"),
         department_id=p.get("department_id"),
+        store_ids=store_ids,
     )
     return content, media, filename, generated

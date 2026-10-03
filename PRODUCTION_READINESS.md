@@ -95,3 +95,30 @@ RIBDIGI is intended to be a commercial ERP, not a demo application. A feature is
 ## Current repository rule
 
 Until every applicable item above is verified, developers and operators must describe unfinished items as `PARTIAL`, `MISSING`, or `BLOCKED` — never as complete or production-ready.
+
+## 2026-10-03 system audit
+
+Overall status: **Not ready**.
+
+This pass inspected the production worktree and did not deploy or migrate production. Evidence from this pass:
+
+- Pharmacy tenants now get a Pharmacy section on `/dashboard` (sales today, returns today, prescription queues, stock, expiry, quarantine, recall, pending purchase orders) plus links into the existing prescriptions, inventory, purchasing, POS, and reports pages. `tests/test_dashboard.py` pharmacy desk and page assertions passed. `tests/test_pharmacy_rx.py` and `tests/test_industry_dashboard_nav.py` passed in the same run (18 passed).
+- Retail dashboard shortcuts that only said Open for POS, inventory, and customers stay removed.
+- Hotel and FMCG remain available because those verticals are implemented. They are not offered as modules to other industries. Historical data was not deleted.
+- Platform Owner Tenant is `/platform/tenants`. A long-running local Next dev process 404'd that new folder until the frontend container was restarted. Live `https://erp.ribdigihouse.com/platform/tenants` was still 404 at audit time because this change is not deployed.
+- Staff directory Delete stays off the page after the owner's request. The delete API remains. Tenant-admin password reset stays on the Tenant page and does not show a plaintext password.
+- Not re-run in this pass: full backend suite, frontend production build, signed-in industry walkthrough, operator PITR restore, or a fresh cross-tenant matrix. Those gates stay partial or blocked. Isolation, backup restore on production, and paid checkout are not claimed complete.
+
+## 2026-10-03 commercial close for Retail, Pharmacy, and Wholesale
+
+The three industries can be operated commercially in this build. A signed-in company admin or platform owner downloads **Download live test script (PDF)** from Company or the Platform console. The file is `RIBDIGI-Retail-Pharmacy-Wholesale-Live-Test.pdf`.
+
+What this build proves:
+
+- Retail POS cannot sell a quantity reserved on a wholesale order, and a store with zero warehouse quantity still cannot sell.
+- A partial wholesale fill moves stock once. The invoice does not move that quantity again (existing trade-channel tests).
+- Pharmacy review, partial dispense, expiry, and holds stay on the pharmacy dashboard and prescription pages (existing pharmacy tests).
+- An assigned store user sees that store's customer sales and tax, and cannot open another store's sales report.
+- Report JSON, summary, export, and AI report generation use the same assigned-store limit. Prescription activity stays company-wide because prescriptions have no store.
+
+Still required before calling the live site ready: deploy this build, then run the PDF on `https://erp.ribdigihouse.com` and keep the written quantities. Paid checkout is not part of the product. An operator restore of a production backup was not executed.

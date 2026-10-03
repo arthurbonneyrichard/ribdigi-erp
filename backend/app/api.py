@@ -2960,6 +2960,24 @@ async def download_staff_guide(
     )
 
 
+@api.get("/live-test-script")
+async def download_live_test_script(
+    claims=Depends(require_permission("staff_guide", "download")),
+):
+    """Retail, Pharmacy, and Wholesale checklist for a live test."""
+    from app.live_test_script import build_live_test_pdf
+
+    pdf = build_live_test_pdf()
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": 'attachment; filename="RIBDIGI-Retail-Pharmacy-Wholesale-Live-Test.pdf"',
+            "Cache-Control": "private, no-store",
+        },
+    )
+
+
 @api.get("/me")
 async def me(claims=Depends(current_claims), db: AsyncSession = Depends(get_db)):
     user = await db.get(m.User, claims["sub"])
@@ -12135,6 +12153,14 @@ async def report_sales_returns(
     db: AsyncSession = Depends(get_db),
 ):
     """BR-14.1 — sales return summary by reason / customer."""
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.sales_returns_summary(
             db,
@@ -12144,7 +12170,8 @@ async def report_sales_returns(
             customer_id=customer_id or None,
             reason=reason,
             status=status,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -12160,6 +12187,14 @@ async def report_sales_salesperson(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.sales_by_salesperson(
             db,
@@ -12167,7 +12202,8 @@ async def report_sales_salesperson(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             department_id=department_id or None,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -12209,6 +12245,14 @@ async def report_sales_by_department(
     db: AsyncSession = Depends(get_db),
 ):
     """BR-2.5 — sales aggregated by seller department; optional department filter."""
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=None,
+    )
     return env(
         await reports_svc.sales_by_department(
             db,
@@ -12216,6 +12260,7 @@ async def report_sales_by_department(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             department_id=department_id or None,
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -12228,12 +12273,21 @@ async def report_inventory_balance(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.inventory_balance(
             db,
             claims["tenant_id"],
             warehouse_id=warehouse_id or None,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -12247,13 +12301,22 @@ async def report_inventory_valuation(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.inventory_valuation(
             db,
             claims["tenant_id"],
             method=method,
             warehouse_id=warehouse_id or None,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -12272,6 +12335,14 @@ async def report_inventory_movements(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.inventory_movements(
             db,
@@ -12280,7 +12351,8 @@ async def report_inventory_movements(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             warehouse_id=warehouse_id or None,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
             movement_type=movement_type or None,
             created_by=created_by or None,
             reason=reason or None,
@@ -12297,9 +12369,21 @@ async def report_low_stock(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.inventory_low_stock(
-            db, claims["tenant_id"], store_id=store_id, warehouse_id=warehouse_id
+            db,
+            claims["tenant_id"],
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
+            warehouse_id=warehouse_id,
         )
     )
 
@@ -12315,13 +12399,22 @@ async def report_inventory_expiry(
     db: AsyncSession = Depends(get_db),
 ):
     """BR-14.2 — batches nearing expiry (pharmacy/food)."""
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.inventory_expiry(
             db,
             claims["tenant_id"],
             within_days=days,
             warehouse_id=warehouse_id or None,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -12358,6 +12451,14 @@ async def report_inventory_transfers(
     db: AsyncSession = Depends(get_db),
 ):
     """BR-13.2 — inter-store transfer history and aggregates."""
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.inventory_transfers(
             db,
@@ -12367,7 +12468,8 @@ async def report_inventory_transfers(
             status=status,
             from_store_id=from_store_id or None,
             to_store_id=to_store_id or None,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -12385,6 +12487,14 @@ async def report_inventory_stock_counts(
     db: AsyncSession = Depends(get_db),
 ):
     """BR-5.2 — physical stock count variance report."""
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.inventory_stock_counts(
             db,
@@ -12392,7 +12502,8 @@ async def report_inventory_stock_counts(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             warehouse_id=warehouse_id or None,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
             variance_only=variance_only,
             status=status,
         )
@@ -12410,6 +12521,14 @@ async def report_purchases_summary(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.purchases_summary(
             db,
@@ -12417,7 +12536,8 @@ async def report_purchases_summary(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             warehouse_id=warehouse_id or None,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -12434,6 +12554,14 @@ async def report_purchases_suppliers(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.purchases_by_supplier(
             db,
@@ -12442,7 +12570,8 @@ async def report_purchases_suppliers(
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
             warehouse_id=warehouse_id or None,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -12459,6 +12588,14 @@ async def report_purchases_pending_orders(
     db: AsyncSession = Depends(get_db),
 ):
     """BR-14.3 — POs not yet fully received (draft/sent/partially_received)."""
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.purchases_pending_orders(
             db,
@@ -12468,7 +12605,8 @@ async def report_purchases_pending_orders(
             supplier_id=supplier_id or None,
             status=status,
             warehouse_id=warehouse_id or None,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -12486,6 +12624,14 @@ async def report_purchases_returns(
     db: AsyncSession = Depends(get_db),
 ):
     """BR-14.3 — purchase return summary by reason / supplier."""
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.purchases_returns_summary(
             db,
@@ -12496,7 +12642,8 @@ async def report_purchases_returns(
             reason=reason,
             status=status,
             warehouse_id=warehouse_id or None,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -12514,6 +12661,14 @@ async def report_expenses_summary(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.expenses_summary(
             db,
@@ -12523,7 +12678,8 @@ async def report_expenses_summary(
             category_id=category_id or None,
             branch_id=branch_id or None,
             department_id=department_id or None,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -12539,6 +12695,14 @@ async def report_expenses_budget_vs_actual(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await reports_svc.budget_vs_actual(
             db,
@@ -12548,7 +12712,8 @@ async def report_expenses_budget_vs_actual(
             category_id=category_id or None,
             branch_id=branch_id or None,
             department_id=department_id or None,
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -13195,13 +13360,22 @@ async def reports_tax(
     claims=Depends(require_permission("reports", "read")),
     db: AsyncSession = Depends(get_db),
 ):
+    from app import store_access as store_access_svc
+
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
     return env(
         await tax_svc.tax_report(
             db,
             claims["tenant_id"],
             from_date=reports_svc.parse_date(from_date),
             to_date=reports_svc.parse_date(to_date, end_of_day=True),
-            store_id=store_id or None,
+            store_id=scope["store_id"],
+            store_ids=scope["store_ids"],
         )
     )
 
@@ -13217,10 +13391,19 @@ async def reports_tax_filing(
     db: AsyncSession = Depends(get_db),
 ):
     from app import tax_filings as tax_filings_svc
+    from app import store_access as store_access_svc
 
     # Schema TaxFilingJurisdictionValue rejects blank/unknown → 422 (blank was silent omit).
     fd = reports_svc.parse_date(from_date)
     td = reports_svc.parse_date(to_date, end_of_day=True)
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=store_id,
+    )
+    sid = scope["store_id"]
+    sids = scope["store_ids"]
     if jurisdiction:
         return env(
             await tax_filings_svc.government_filing_pack(
@@ -13229,7 +13412,8 @@ async def reports_tax_filing(
                 from_date=fd,
                 to_date=td,
                 jurisdiction=jurisdiction,
-                store_id=store_id or None,
+                store_id=sid,
+                store_ids=sids,
             )
         )
     # Default: neutral pack + government section for tenant jurisdiction when supported
@@ -13243,7 +13427,8 @@ async def reports_tax_filing(
                 from_date=fd,
                 to_date=td,
                 jurisdiction=juris,
-                store_id=store_id or None,
+                store_id=sid,
+                store_ids=sids,
             )
         )
     except HTTPException as exc:
@@ -13253,7 +13438,8 @@ async def reports_tax_filing(
                 claims["tenant_id"],
                 from_date=fd,
                 to_date=td,
-                store_id=store_id or None,
+                store_id=sid,
+                store_ids=sids,
             )
             pack["jurisdiction"] = juris
             pack["government"] = None
@@ -14022,7 +14208,7 @@ async def report(
         db, claims["tenant_id"], day.year, day.month, store_id=sid, store_ids=sids
     )
     low = await reports_svc.inventory_low_stock(
-        db, claims["tenant_id"], store_id=sid
+        db, claims["tenant_id"], store_id=sid, store_ids=sids
     )
     expenses = await reports_svc.expenses_summary(
         db,
@@ -14030,6 +14216,7 @@ async def report(
         from_date=reports_svc.parse_date(from_date),
         to_date=reports_svc.parse_date(to_date, end_of_day=True),
         store_id=sid,
+        store_ids=sids,
     )
     return env(
         {
@@ -15299,6 +15486,20 @@ async def ai_reports_generate(
     """BR-21.7 constrained NL / structured report generation (JSON preview)."""
     # Schema AiReportsGenerateBody rejects unknown keys / bad format|type /
     # missing prompt|template_id|report_type → 422.
+    from app import store_access as store_access_svc
+
+    raw_filters = payload.filters or payload.params
+    requested_store = None
+    if isinstance(raw_filters, dict):
+        requested_store = raw_filters.get("store_id")
+    elif raw_filters is not None:
+        requested_store = getattr(raw_filters, "store_id", None)
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=requested_store,
+    )
     data = await ai_reports_svc.generate_report(
         db,
         tenant_id=claims["tenant_id"],
@@ -15309,6 +15510,7 @@ async def ai_reports_generate(
         report_type=payload.report_type,
         period=payload.period,
         filters=payload.filters or payload.params,
+        store_ids=scope["store_ids"],
     )
     return env(data, "Report generated")
 
@@ -15322,6 +15524,20 @@ async def ai_reports_export(
     """Export a generated AI report as csv/pdf/xlsx."""
     # Schema AiReportsExportBody rejects unknown keys / bad format|type /
     # missing prompt|template_id|report_type → 422.
+    from app import store_access as store_access_svc
+
+    raw_filters = payload.params or payload.filters
+    requested_store = None
+    if isinstance(raw_filters, dict):
+        requested_store = raw_filters.get("store_id")
+    elif raw_filters is not None:
+        requested_store = getattr(raw_filters, "store_id", None)
+    scope = await store_access_svc.report_store_kwargs(
+        db,
+        tenant_id=claims["tenant_id"],
+        user_id=claims["sub"],
+        store_id=requested_store,
+    )
     content, media, filename, _meta = await ai_reports_svc.export_from_intent(
         db,
         tenant_id=claims["tenant_id"],
@@ -15332,6 +15548,7 @@ async def ai_reports_export(
         report_type=payload.report_type,
         period=payload.period,
         params=payload.params or payload.filters,
+        store_ids=scope["store_ids"],
     )
     return Response(
         content=content,

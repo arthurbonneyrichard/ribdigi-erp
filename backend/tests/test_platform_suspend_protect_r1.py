@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_platform_suspend_protect_ui_wired():
-    plat = (ROOT / "frontend/app/(dashboard)/platform/page.tsx").read_text(encoding="utf-8")
+    plat = (ROOT / "frontend/app/(dashboard)/platform/tenants/page.tsx").read_text(encoding="utf-8")
     assert "t.slug !== 'platform' && t.slug !== 'ribdigi-platform'" in plat
     assert "aria-label={`Suspend tenant ${t.id}`}" in plat
     assert "aria-label={`Activate tenant ${t.id}`}" in plat

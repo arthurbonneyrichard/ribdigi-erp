@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import FormModal from '../../../components/FormModal';
 import { api, apiRoot, getAccessToken } from '../../../lib/api';
 import { getMe } from '../../../lib/meCache';
@@ -71,6 +72,8 @@ const NEXT: Record<string, { status: string; label: string }[]> = {
 };
 
 export default function PrescriptionsPage() {
+  const searchParams = useSearchParams();
+  const statusFilter = (searchParams.get('status') || '').trim();
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [canWrite, setCanWrite] = useState(false);
   const [rows, setRows] = useState<Prescription[]>([]);
@@ -92,6 +95,14 @@ export default function PrescriptionsPage() {
     quantity: '1',
     dosage_text: '',
   });
+
+  const visibleRows = useMemo(() => {
+    if (!statusFilter) return rows;
+    if (statusFilter === 'review') {
+      return rows.filter((row) => row.status === 'review' || row.status === 'received');
+    }
+    return rows.filter((row) => row.status === statusFilter);
+  }, [rows, statusFilter]);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
@@ -131,7 +142,9 @@ export default function PrescriptionsPage() {
         }
         const perms = me.data?.permissions || {};
         const inv = perms['*'] || perms.inventory || [];
-        setCanWrite(inv.includes('*') || inv.includes('write'));
+        const writable = inv.includes('*') || inv.includes('write');
+        setCanWrite(writable);
+        if (writable && searchParams.get('new') === '1') setAddOpen(true);
         setAllowed(true);
         await refresh();
       } catch (err: unknown) {
@@ -340,8 +353,10 @@ export default function PrescriptionsPage() {
         )}
       </div>
 
-      {rows.length === 0 ? (
-        <p className="muted">No prescriptions recorded yet.</p>
+      {visibleRows.length === 0 ? (
+        <p className="muted">
+          {statusFilter ? 'No prescriptions in this queue.' : 'No prescriptions recorded yet.'}
+        </p>
       ) : (
         <table className="table">
           <thead>
@@ -354,7 +369,7 @@ export default function PrescriptionsPage() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
+            {visibleRows.map((row) => (
               <tr key={row.id}>
                 <td>{row.rx_number}</td>
                 <td>{row.customer_name || '—'}</td>

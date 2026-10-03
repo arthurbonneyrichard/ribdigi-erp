@@ -88,9 +88,9 @@ def test_action_bodies_forbid_ui_and_docs():
     assert "PosDrawerOpen" in docs
     assert "JournalUnpost" in docs
 
-    assert 'aria-label="Grant dashboard"' in (
-        ROOT / "frontend/app/(dashboard)/platform/staff/page.tsx"
-    ).read_text(encoding="utf-8")
+    staff = (ROOT / "frontend/app/(dashboard)/platform/staff/page.tsx").read_text(encoding="utf-8")
+    assert 'aria-label="Grant dashboard"' not in staff
+    assert "Staff directory" in staff
     assert 'aria-label="Skip next reason"' in (
         ROOT / "frontend/app/(dashboard)/expenses/page.tsx"
     ).read_text(encoding="utf-8")

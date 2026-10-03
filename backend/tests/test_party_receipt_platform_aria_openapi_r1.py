@@ -58,7 +58,7 @@ def test_party_receipt_platform_aria_ui_and_docs():
     assert 'aria-label="Supplier status"' in purchasing
     assert 'aria-label="Purchase return reason"' in purchasing
 
-    platform = (ROOT / "frontend/app/(dashboard)/platform/page.tsx").read_text(encoding="utf-8")
+    platform = (ROOT / "frontend/app/(dashboard)/platform/tenants/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Subscription package"' in platform
     assert 'aria-label="Subscription term unit"' in platform
 

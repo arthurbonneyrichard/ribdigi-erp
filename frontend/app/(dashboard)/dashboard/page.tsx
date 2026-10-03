@@ -78,6 +78,21 @@ type Dash = {
   industry?: string | null;
   industry_home?: string | null;
   industry_features?: IndustryDashboardFeature[];
+  pharmacy_desk?: {
+    sales_today?: number;
+    returns_today?: number;
+    awaiting_review?: number;
+    ready_to_dispense?: number;
+    partially_dispensed?: number;
+    low_stock?: number;
+    out_of_stock?: number;
+    expiring_soon?: number;
+    expired_lots?: number;
+    quarantined?: number;
+    recalled?: number;
+    pending_purchase_orders?: number;
+    rx_only_count?: number;
+  } | null;
 };
 
 // Monochrome line icons for panel headings (same style as the sidebar).
@@ -542,6 +557,41 @@ export default function Page() {
           ))}
         </section>
 
+        {liveIndustry === 'pharmacy' && d.pharmacy_desk && (
+          <section aria-label="Pharmacy" style={{ marginTop: 16 }}>
+            <h2 style={{ margin: '0 0 8px', fontSize: 18 }}>Pharmacy</h2>
+            <div className="stat-grid">
+              {[
+                { label: "Today's pharmacy sales", val: num(d.pharmacy_desk.sales_today), href: '/reports' },
+                { label: "Today's returns", val: num(d.pharmacy_desk.returns_today), href: '/sales' },
+                { label: 'Awaiting review', val: num(d.pharmacy_desk.awaiting_review), href: '/prescriptions?status=review' },
+                { label: 'Ready to dispense', val: num(d.pharmacy_desk.ready_to_dispense), href: '/prescriptions?status=approved' },
+                { label: 'Partially dispensed', val: num(d.pharmacy_desk.partially_dispensed), href: '/prescriptions?status=partially_dispensed' },
+                { label: 'Low-stock medicines', val: num(d.pharmacy_desk.low_stock), href: '/inventory?tab=lowstock' },
+                { label: 'Out of stock', val: num(d.pharmacy_desk.out_of_stock), href: '/inventory?tab=products&stock=oos' },
+                { label: 'Nearing expiry', val: num(d.pharmacy_desk.expiring_soon), href: '/inventory?tab=expiry' },
+                { label: 'Expired lots', val: num(d.pharmacy_desk.expired_lots), href: '/inventory?tab=expiry' },
+                { label: 'Quarantined', val: num(d.pharmacy_desk.quarantined), href: '/prescriptions' },
+                { label: 'Recalled', val: num(d.pharmacy_desk.recalled), href: '/prescriptions' },
+                { label: 'Pending purchase orders', val: num(d.pharmacy_desk.pending_purchase_orders), href: '/purchasing' },
+              ].map((card) => (
+                <Link className="stat" key={card.label} href={card.href} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <div className="label">{card.label}</div>
+                  <div className="val">{card.val}</div>
+                </Link>
+              ))}
+            </div>
+            <div className="plat-actions" style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <Link href="/prescriptions?new=1">New prescription</Link>
+              <Link href="/prescriptions?status=approved">Dispense prescription</Link>
+              <Link href="/inventory?tab=products">New medicine</Link>
+              <Link href="/purchasing">Receive stock</Link>
+              <Link href="/pos">Pharmacy POS</Link>
+              <Link href="/reports">Pharmacy reports</Link>
+            </div>
+          </section>
+        )}
+
         {featureCards.length > 0 && (
           <section className="stat-grid" style={{ marginTop: 12 }} aria-label="Company shortcuts">
             {featureCards.map((f) => {
@@ -807,6 +857,7 @@ export default function Page() {
             </table>
           )}
         </section>
+        <p className="muted">A Ribdigi House product</p>
         </>
         )}
       </div>

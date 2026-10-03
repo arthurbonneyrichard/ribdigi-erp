@@ -31,17 +31,25 @@ async def _owner(ac, seed):
 
 
 def test_platform_console_ui_keeps_working_controls():
-    page = (ROOT / "frontend/app/(dashboard)/platform/page.tsx").read_text(encoding="utf-8")
+    overview = (ROOT / "frontend/app/(dashboard)/platform/page.tsx").read_text(encoding="utf-8")
+    page = (ROOT / "frontend/app/(dashboard)/platform/tenants/page.tsx").read_text(encoding="utf-8")
     staff = (ROOT / "frontend/app/(dashboard)/platform/staff/page.tsx").read_text(encoding="utf-8")
     notes = (ROOT / "frontend/app/(dashboard)/notifications/page.tsx").read_text(encoding="utf-8")
+    shell = (ROOT / "frontend/components/Shell.tsx").read_text(encoding="utf-8")
+    assert "Platform activity" in overview
+    assert "Tenants by status" in overview
+    assert "Tenants by industry" in overview
+    assert "Create tenant" not in overview
     assert "Reset administrator password" in page
     assert "admin-password-reset" in page
     assert "industryAllowsModule(selected.industry, mod)" in page
     assert "(industry)" not in page
     assert "'hotel', 'fmcg'" in page
-    assert "Platform activity" in page
-    assert "async function deleteStaff" in staff
-    assert "last active platform owner" in staff
+    assert "['Tenant', '/platform/tenants', 'platform_tenants']" in shell
+    assert "['Users', '/users', 'users']" not in shell.split("PLATFORM_ITEMS", 1)[1].split("PLATFORM_ROLES", 1)[0]
+    assert "async function deleteStaff" not in staff
+    assert "Delete platform staff" not in staff
+    assert "Staff directory" in staff
     assert "PLATFORM_CATEGORY_CHIPS" in notes
     assert "low_stock" in notes
     assert "OPERATIONAL_CATEGORIES" in notes

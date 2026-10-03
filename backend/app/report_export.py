@@ -555,8 +555,12 @@ async def build_report_payload(
         monthly = await reports_svc.sales_monthly(
             db, tenant_id, now.year, now.month, store_id=store_id or None, store_ids=store_ids
         )
-        low = await reports_svc.inventory_low_stock(db, tenant_id)
-        expenses = await reports_svc.expenses_summary(db, tenant_id)
+        low = await reports_svc.inventory_low_stock(
+            db, tenant_id, store_id=store_id or None, store_ids=store_ids
+        )
+        expenses = await reports_svc.expenses_summary(
+            db, tenant_id, store_id=store_id or None, store_ids=store_ids
+        )
         return {
             "today_sales": daily,
             "month_sales": monthly,
@@ -598,6 +602,7 @@ async def build_report_payload(
             to_date=td,
             department_id=department_id or None,
             store_id=store_id or None,
+            store_ids=store_ids,
         )
     if report_type == "sales_customers":
         return await reports_svc.sales_by_customer(
@@ -606,6 +611,7 @@ async def build_report_payload(
             from_date=fd,
             to_date=td,
             store_id=store_id or None,
+            store_ids=store_ids,
         )
     if report_type == "sales_returns":
         return await reports_svc.sales_returns_summary(
@@ -614,6 +620,7 @@ async def build_report_payload(
             from_date=fd,
             to_date=td,
             store_id=store_id or None,
+            store_ids=store_ids,
         )
     if report_type == "sales_by_store":
         return await reports_svc.sales_by_store(
@@ -622,6 +629,7 @@ async def build_report_payload(
             from_date=fd,
             to_date=td,
             department_id=department_id or None,
+            store_ids=store_ids,
         )
     if report_type == "sales_by_department":
         return await reports_svc.sales_by_department(
@@ -630,6 +638,7 @@ async def build_report_payload(
             from_date=fd,
             to_date=td,
             department_id=department_id or None,
+            store_ids=store_ids,
         )
     if report_type == "inventory_balance":
         return await reports_svc.inventory_balance(
@@ -637,6 +646,7 @@ async def build_report_payload(
             tenant_id,
             warehouse_id=warehouse_id or None,
             store_id=store_id or None,
+            store_ids=store_ids,
         )
     if report_type == "inventory_valuation":
         return await reports_svc.inventory_valuation(
@@ -645,6 +655,7 @@ async def build_report_payload(
             method="standard",
             warehouse_id=warehouse_id or None,
             store_id=store_id or None,
+            store_ids=store_ids,
         )
     if report_type == "inventory_movements":
         return await reports_svc.inventory_movements(
@@ -654,12 +665,14 @@ async def build_report_payload(
             to_date=td,
             warehouse_id=warehouse_id or None,
             store_id=store_id or None,
+            store_ids=store_ids,
         )
     if report_type == "inventory_low_stock":
         return await reports_svc.inventory_low_stock(
             db,
             tenant_id,
             store_id=store_id or None,
+            store_ids=store_ids,
             warehouse_id=warehouse_id or None,
         )
     if report_type == "inventory_expiry":
@@ -669,6 +682,7 @@ async def build_report_payload(
             within_days=int(days) if days is not None else 30,
             warehouse_id=warehouse_id or None,
             store_id=store_id or None,
+            store_ids=store_ids,
         )
     if report_type == "pharmacy_rx_activity":
         return await reports_svc.pharmacy_rx_activity(
@@ -684,6 +698,7 @@ async def build_report_payload(
             from_date=fd,
             to_date=td,
             store_id=store_id or None,
+            store_ids=store_ids,
         )
     if report_type == "inventory_stock_counts":
         return await reports_svc.inventory_stock_counts(
@@ -693,6 +708,7 @@ async def build_report_payload(
             to_date=td,
             warehouse_id=warehouse_id or None,
             store_id=store_id or None,
+            store_ids=store_ids,
             variance_only=True,
             status="completed",
         )
@@ -704,6 +720,7 @@ async def build_report_payload(
             to_date=td,
             warehouse_id=warehouse_id or None,
             store_id=store_id or None,
+            store_ids=store_ids,
         )
     if report_type == "purchases_suppliers":
         return await reports_svc.purchases_by_supplier(
@@ -713,6 +730,7 @@ async def build_report_payload(
             to_date=td,
             warehouse_id=warehouse_id or None,
             store_id=store_id or None,
+            store_ids=store_ids,
         )
     if report_type == "purchases_pending_orders":
         return await reports_svc.purchases_pending_orders(
@@ -722,6 +740,7 @@ async def build_report_payload(
             to_date=td,
             warehouse_id=warehouse_id or None,
             store_id=store_id or None,
+            store_ids=store_ids,
         )
     if report_type == "purchases_returns":
         return await reports_svc.purchases_returns_summary(
@@ -731,6 +750,7 @@ async def build_report_payload(
             to_date=td,
             warehouse_id=warehouse_id or None,
             store_id=store_id or None,
+            store_ids=store_ids,
         )
     if report_type == "expenses_summary":
         return await reports_svc.expenses_summary(
@@ -741,6 +761,7 @@ async def build_report_payload(
             branch_id=branch_id or None,
             department_id=department_id or None,
             store_id=store_id or None,
+            store_ids=store_ids,
         )
     if report_type == "expenses_budget_vs_actual":
         return await reports_svc.budget_vs_actual(
@@ -752,6 +773,7 @@ async def build_report_payload(
             branch_id=branch_id or None,
             department_id=department_id or None,
             store_id=store_id or None,
+            store_ids=store_ids,
         )
     if report_type == "cash_flow":
         return await reports_svc.cash_flow(
@@ -761,6 +783,7 @@ async def build_report_payload(
             to_date=td,
             store_id=store_id or None,
             branch_id=branch_id or None,
+            limit_store_ids=store_ids,
         )
     if report_type == "trial_balance":
         as_of_raw = as_of or to_date or date
@@ -770,6 +793,7 @@ async def build_report_payload(
             as_of=reports_svc.parse_date(as_of_raw, end_of_day=True),
             store_id=store_id or None,
             branch_id=branch_id or None,
+            limit_store_ids=store_ids,
         )
     if report_type == "profit_loss":
         return await accounting_svc.profit_and_loss(
@@ -779,6 +803,7 @@ async def build_report_payload(
             to_date=td,
             store_id=store_id or None,
             branch_id=branch_id or None,
+            limit_store_ids=store_ids,
         )
     if report_type == "balance_sheet":
         as_of_raw = as_of or to_date or date
@@ -789,14 +814,25 @@ async def build_report_payload(
             compare=compare,
             store_id=store_id or None,
             branch_id=branch_id or None,
+            limit_store_ids=store_ids,
         )
     if report_type == "tax":
         return await tax_svc.tax_report(
-            db, tenant_id, from_date=fd, to_date=td, store_id=store_id or None
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            store_id=store_id or None,
+            store_ids=store_ids,
         )
     if report_type == "tax_filing":
         return await tax_svc.tax_filing_pack(
-            db, tenant_id, from_date=fd, to_date=td, store_id=store_id or None
+            db,
+            tenant_id,
+            from_date=fd,
+            to_date=td,
+            store_id=store_id or None,
+            store_ids=store_ids,
         )
     if report_type == "tax_filing_gh":
         from app import tenants as tenants_svc
@@ -816,6 +852,7 @@ async def build_report_payload(
             to_date=td,
             jurisdiction=jurisdiction or "GH",
             store_id=store_id or None,
+            store_ids=store_ids,
         )
     raise HTTPException(status_code=400, detail="Unhandled report type")
 

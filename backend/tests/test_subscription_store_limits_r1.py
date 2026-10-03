@@ -64,7 +64,7 @@ def test_stores_entitlement_ui_wired():
     assert "Stores Used" in stores
     assert "store-limit" in stores
     assert "canCreateStore" in stores
-    platform = (ROOT / "frontend/app/(dashboard)/platform/page.tsx").read_text(encoding="utf-8")
+    platform = (ROOT / "frontend/app/(dashboard)/platform/tenants/page.tsx").read_text(encoding="utf-8")
     assert "max_stores_override" in platform
     assert "store-entitlement" in platform
     assert "Single store" in platform

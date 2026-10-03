@@ -108,7 +108,7 @@ def test_honesty_batch16_docs_and_agents():
     assert 'aria-label="Create recurring expense schedule"' in expenses
     assert "Edit recurring expense schedule" in expenses
 
-    platform = (ROOT / "frontend/app/(dashboard)/platform/page.tsx").read_text(encoding="utf-8")
+    platform = (ROOT / "frontend/app/(dashboard)/platform/tenants/page.tsx").read_text(encoding="utf-8")
     assert 'aria-label="Save feature modules"' in platform
 
     credit = (ROOT / "frontend/app/(dashboard)/credit/page.tsx").read_text(encoding="utf-8")

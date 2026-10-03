@@ -26,6 +26,8 @@ def test_dashboard_product_query_skips_unmigrated_pharmacy_columns():
     assert "table_column_names" in src
     assert "minimum_stock" in src
     assert "rx_only = :rx" in src
+    assert "pharmacy_desk" in src
+    assert "awaiting_review" in src
 
 
 async def _super(ac, seed):
@@ -169,6 +171,9 @@ def test_dashboard_page_surfaces_load_errors():
     assert "Retail operations" not in text
     assert "Gross profit (7d)" in text
     assert "rx_queue" in text
+    assert "aria-label=\"Pharmacy\"" in text
+    assert "New prescription" in text
+    assert "Pharmacy POS" in text
 
 
 @pytest.mark.asyncio
@@ -193,4 +198,22 @@ async def test_build_dashboard_direct(db_session, seeded):
     )
     assert data["industry"] == "retail"
     assert data["industry_home"] == "/dashboard"
+    assert data["pharmacy_desk"] is None
     assert isinstance(data["industry_features"], list)
+
+
+@pytest.mark.asyncio
+async def test_pharmacy_dashboard_desk_counts(db_session, seeded):
+    tenant = await db_session.get(m.Tenant, seeded["t1"].id)
+    tenant.industry = "pharmacy"
+    await db_session.commit()
+    data = await build_dashboard(db_session, seeded["t1"].id)
+    desk = data["pharmacy_desk"]
+    assert desk["awaiting_review"] == 0
+    assert desk["ready_to_dispense"] == 0
+    assert desk["partially_dispensed"] == 0
+    assert desk["returns_today"] == 0
+    assert "expired_lots" in desk
+    assert "quarantined" in desk
+    assert "recalled" in desk
+    assert "pending_purchase_orders" in desk

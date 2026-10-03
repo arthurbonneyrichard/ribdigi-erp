@@ -13,14 +13,12 @@ from tests.conftest import auth_headers
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_platform_staff_delete_ui_wired():
+def test_platform_staff_delete_ui_removed():
     staff = (ROOT / "frontend/app/(dashboard)/platform/staff/page.tsx").read_text(encoding="utf-8")
-    assert "async function deleteStaff" in staff
-    assert 'method: \'DELETE\'' in staff or 'method: "DELETE"' in staff
-    assert "/platform/staff/${String(row.id).trim()}" in staff or "`/platform/staff/${String(row.id).trim()}`" in staff
-    assert 'aria-label={`Delete platform staff ${u.email}`}' in staff
-    assert 'className="btn-danger"' in staff and "deleteStaff(u)" in staff
-    assert "Cannot delete your own account" in staff or "cannot delete your own account" in staff.lower()
+    assert "async function deleteStaff" not in staff
+    assert "Delete platform staff" not in staff
+    assert "Staff directory" in staff
+    assert "Deactivate" in staff
 
 
 @pytest.mark.asyncio

@@ -16,6 +16,7 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "notifications": ["read", "write"],
         "audit": ["read"],
         "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
     },
     "platform_support": {
         "platform": ["read"],
@@ -26,6 +27,7 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "notifications": ["read"],
         "audit": ["read"],
         "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
     },
     "platform_finance": {
         "platform": ["read"],
@@ -36,6 +38,7 @@ ROLE_PERMISSIONS: dict[str, dict[str, list[str]]] = {
         "notifications": ["read"],
         "audit": ["read"],
         "security": ["read", "write"],
+        "staff_guide": ["read", "download"],
     },
     "company_admin": {"*": ["*"]},
     "store_manager": {
